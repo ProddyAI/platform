@@ -9,6 +9,7 @@ import { ModalProvider } from "@/components/modal-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TidioChat } from "@/components/tidio-chat";
 import { UsetifulProvider } from "@/components/usetiful-provider";
+import { ClarityTracking } from "@/components/clarity-tracking";
 import { siteConfig } from "@/config";
 
 import "./globals.css";
@@ -60,6 +61,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
                 <Toaster theme="light" richColors closeButton />
                 <ModalProvider />
                 <TidioChat />
+                <ClarityTracking />
 
                 {children}
                 <Analytics />
