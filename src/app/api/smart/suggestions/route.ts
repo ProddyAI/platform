@@ -265,7 +265,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 			let text;
 			try {
 				const response = await generateText({
-					model: google('gemini-2.0-flash-exp'),
+					model: google('gemini-2.5-flash'),
 					messages: [
 						{
 							role: 'system',
