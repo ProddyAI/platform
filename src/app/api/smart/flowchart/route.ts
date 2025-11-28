@@ -37,10 +37,13 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		console.log('[Smart Flowchart] Processing flowchart request for prompt:', prompt);
+		console.log(
+			'[Smart Flowchart] Processing flowchart request for prompt:',
+			prompt
+		);
 
 		// Create the Gemini model
-		const model = google('gemini-1.5-flash-latest');
+		const model = google('gemini-1.5-flash');
 
 		// Prepare the flowchart generation prompt
 		const systemPrompt = `You are an expert flowchart designer and Mermaid diagram specialist. Your task is to convert text descriptions into well-structured Mermaid flowchart diagrams.
@@ -99,14 +102,17 @@ Generate the Mermaid flowchart code:`;
 
 			// Clean up the response to ensure it's valid Mermaid code
 			let mermaidCode = text.trim();
-			
+
 			// Remove any markdown code block wrappers if present
 			mermaidCode = mermaidCode.replace(/^```mermaid\s*\n?/, '');
 			mermaidCode = mermaidCode.replace(/^```\s*\n?/, '');
 			mermaidCode = mermaidCode.replace(/\n?```\s*$/, '');
-			
+
 			// Ensure it starts with flowchart directive
-			if (!mermaidCode.startsWith('flowchart') && !mermaidCode.startsWith('graph')) {
+			if (
+				!mermaidCode.startsWith('flowchart') &&
+				!mermaidCode.startsWith('graph')
+			) {
 				mermaidCode = 'flowchart TD\n' + mermaidCode;
 			}
 
@@ -114,10 +120,9 @@ Generate the Mermaid flowchart code:`;
 				mermaidCode: mermaidCode.trim(),
 				originalPrompt: prompt,
 			});
-
 		} catch (aiError) {
 			console.error('[Smart Flowchart] AI generation failed:', aiError);
-			
+
 			// Return a fallback response with a simple flowchart
 			const fallbackMermaid = `flowchart TD
     A([Start]) --> B[${prompt.substring(0, 30)}...]
@@ -126,14 +131,16 @@ Generate the Mermaid flowchart code:`;
     C -->|No| E([End])
     D --> E`;
 
-			return NextResponse.json({
-				mermaidCode: fallbackMermaid,
-				originalPrompt: prompt,
-				error: 'AI generation failed, using fallback diagram',
-				fallback: true,
-			}, { status: 503 });
+			return NextResponse.json(
+				{
+					mermaidCode: fallbackMermaid,
+					originalPrompt: prompt,
+					error: 'AI generation failed, using fallback diagram',
+					fallback: true,
+				},
+				{ status: 503 }
+			);
 		}
-
 	} catch (error) {
 		console.error('[Smart Flowchart] Unexpected error:', error);
 		return NextResponse.json(
