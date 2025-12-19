@@ -25,7 +25,7 @@ import { useGetMembers } from '@/features/members/api/use-get-members';
 import { useGetWorkspace } from '@/features/workspaces/api/use-get-workspace';
 import { useWorkspaceSearch } from '@/features/workspaces/store/use-workspace-search';
 import { useGetUnreadMentionsCount } from '@/features/messages/api/use-get-unread-mentions-count';
-import { showTidioChat } from '@/lib/tidio-helpers';
+import { showZohoChat } from '@/lib/zoho-helpers';
 
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 
@@ -172,23 +172,6 @@ export const WorkspaceToolbar = ({
                     >
                         <div className="relative">
                             <HelpCircle className="size-5" />
-                        </div>
-                    </Button>
-                </Hint>
-
-                {/* Chat Support Button */}
-                <Hint label="Chat Support" side="bottom">
-                    <Button
-                        variant="ghost"
-                        size="iconSm"
-                        className="text-white relative hover:bg-white/15 transition-colors"
-                        onClick={() => {
-                            // Show Tidio chat widget
-                            showTidioChat();
-                        }}
-                    >
-                        <div className="relative">
-                            <HeartPulse className="size-5" />
                         </div>
                     </Button>
                 </Hint>

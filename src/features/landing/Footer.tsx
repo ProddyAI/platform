@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { GithubIcon, Linkedin, TwitterIcon, ExternalLink } from "lucide-react";
-import { showTidioChat } from "@/lib/tidio-helpers";
+import { showZohoChat } from "@/lib/zoho-helpers";
 
 export const Footer = () => {
   return (
@@ -110,7 +110,7 @@ export const Footer = () => {
                 </li>
                 <li>
                   <button
-                    onClick={() => showTidioChat()}
+                    onClick={() => showZohoChat()}
                     className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
                   >
                     Support

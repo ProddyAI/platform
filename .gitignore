@@ -33,13 +33,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-
-.env.local
-.idea
-.codacy
-.github
-
-
-#Ignore vscode AI rules
-.github\instructions\codacy.instructions.md
