@@ -100,7 +100,7 @@ export const Footer = () => {
                 </li>
                 <li>
                   <a
-                    href="https://proddy.usetiful.help/"
+                    href="https://proddy.zohodesk.in/portal/en/kb"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"

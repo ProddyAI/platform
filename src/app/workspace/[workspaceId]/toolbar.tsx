@@ -166,7 +166,7 @@ export const WorkspaceToolbar = ({
                         className="text-white relative hover:bg-white/15 transition-colors"
                         onClick={() => {
                             // Open documentation in a new tab
-                            const docsUrl = 'https://proddy.usetiful.help/';
+                            const docsUrl = 'https://proddy.zohodesk.in/portal/en/kb';
                             window.open(docsUrl, '_blank', 'noopener,noreferrer');
                         }}
                     >
