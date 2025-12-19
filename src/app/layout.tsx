@@ -8,6 +8,7 @@ import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ZohoSalesIQ } from "@/components/zoho-salesiq";
+import { Formbricks } from "@/components/formbricks";
 import { UsetifulProvider } from "@/components/usetiful-provider";
 import { ClarityTracking } from "@/components/clarity-tracking";
 import { siteConfig } from "@/config";
@@ -61,6 +62,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
                 <Toaster theme="light" richColors closeButton />
                 <ModalProvider />
                 <ZohoSalesIQ />
+                <Formbricks />
                 <ClarityTracking />
 
                 {children}
