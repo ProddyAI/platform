@@ -52,7 +52,7 @@ const Topbar = () => {
   const activeTab = tabs.find(tab => tab.active)?.href.split('/').pop() || 'chats';
 
   return (
-    <div className="flex w-full items-center justify-center border-b bg-white shadow-sm">
+    <div className="channel-topbar flex w-full items-center justify-center border-b bg-white shadow-sm">
       <div className="grid h-12 w-full grid-cols-4 bg-white p-0 relative z-10 min-w-0">
         {tabs.map((tab, index) => {
           const Icon = tab.icon;
