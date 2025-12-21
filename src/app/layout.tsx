@@ -7,7 +7,7 @@ import { ConvexClientProvider } from "@/config/convex-client-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { ZohoSalesIQ } from "@/components/zoho-salesiq";
+import { TidioChat } from "@/components/tidio-chat";
 import { Formbricks } from "@/components/formbricks";
 import { UsetifulProvider } from "@/components/usetiful-provider";
 import { ClarityTracking } from "@/components/clarity-tracking";
@@ -61,7 +61,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
               <UsetifulProvider>
                 <Toaster theme="light" richColors closeButton />
                 <ModalProvider />
-                <ZohoSalesIQ />
+                <TidioChat />
                 <Formbricks />
                 <ClarityTracking />
 

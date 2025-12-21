@@ -25,7 +25,7 @@ import { useGetMembers } from '@/features/members/api/use-get-members';
 import { useGetWorkspace } from '@/features/workspaces/api/use-get-workspace';
 import { useWorkspaceSearch } from '@/features/workspaces/store/use-workspace-search';
 import { useGetUnreadMentionsCount } from '@/features/messages/api/use-get-unread-mentions-count';
-import { showZohoChat } from '@/lib/zoho-helpers';
+import { showTidioChat } from '@/lib/tidio-helpers';
 
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 
@@ -166,12 +166,29 @@ export const WorkspaceToolbar = ({
                         className="text-white relative hover:bg-white/15 transition-colors"
                         onClick={() => {
                             // Open documentation in a new tab
-                            const docsUrl = 'https://proddy.zohodesk.in/portal/en/kb';
+                            const docsUrl = 'https://docs.proddy.tech/';
                             window.open(docsUrl, '_blank', 'noopener,noreferrer');
                         }}
                     >
                         <div className="relative">
                             <HelpCircle className="size-5" />
+                        </div>
+                    </Button>
+                </Hint>
+
+                {/* Chat Support Button */}
+                <Hint label="Chat Support" side="bottom">
+                    <Button
+                        variant="ghost"
+                        size="iconSm"
+                        className="text-white relative hover:bg-white/15 transition-colors"
+                        onClick={() => {
+                            // Show Tidio chat widget
+                            showTidioChat();
+                        }}
+                    >
+                        <div className="relative">
+                            <HeartPulse className="size-5" />
                         </div>
                     </Button>
                 </Hint>

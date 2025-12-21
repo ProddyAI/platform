@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { GithubIcon, Linkedin, TwitterIcon, ExternalLink } from "lucide-react";
-import { showZohoChat } from "@/lib/zoho-helpers";
+import { showTidioChat } from "@/lib/tidio-helpers";
 
 export const Footer = () => {
   return (
@@ -100,7 +100,7 @@ export const Footer = () => {
                 </li>
                 <li>
                   <a
-                    href="https://proddy.zohodesk.in/portal/en/kb"
+                    href="https://docs.proddy.tech/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
@@ -110,7 +110,7 @@ export const Footer = () => {
                 </li>
                 <li>
                   <button
-                    onClick={() => showZohoChat()}
+                    onClick={() => showTidioChat()}
                     className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
                   >
                     Support
