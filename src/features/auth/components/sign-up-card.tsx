@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 
 import type { SignInFlow } from '../types';
+import { PasswordStrengthIndicator } from './password-strength-indicator';
+import { isPasswordValid } from '../utils/password-validation';
 
 interface SignUpCardProps {
   setState?: (state: SignInFlow) => void;
@@ -42,16 +44,11 @@ export const SignUpCard = ({ setState, isStandalone = false }: SignUpCardProps) 
         );
     };
 
-    const validatePassword = (password: string) => {
-      return String(password).match(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&])[A-Za-z\d@.#$!%*?&]{8,15}$/
-      );
-    };
-
-    if (!validateEmail(email)) return setError('Invalid Email.');
+    if (!validateEmail(email)) return setError('Invalid email address.');
+    if (!isPasswordValid(password))
+      return setError('Password does not meet all requirements.');
     if (password !== confirmPassword)
-      return setError("Password and Confirm Password doesn't match.");
-    if (!validatePassword(password)) return setError('Password must be strong.');
+      return setError("Passwords don't match.");
 
     setPending(true);
     setError('');
@@ -96,14 +93,17 @@ export const SignUpCard = ({ setState, isStandalone = false }: SignUpCardProps) 
             type="email"
             required
           />
-          <Input
-            disabled={pending}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            type="password"
-            required
-          />
+          <div className="space-y-2">
+            <Input
+              disabled={pending}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              type="password"
+              required
+            />
+            <PasswordStrengthIndicator password={password} />
+          </div>
 
           <Input
             disabled={pending}

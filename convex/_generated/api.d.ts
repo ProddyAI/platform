@@ -237,6 +237,7 @@ export declare const components: {
         "internal",
         {
           entryId: string;
+          order: "desc" | "asc";
           paginationOpts: {
             cursor: string | null;
             endCursor?: string | null;
