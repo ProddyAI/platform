@@ -298,6 +298,7 @@ Try asking me things like:`;
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           message: userQuery,
           workspaceContext,

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import {
+  convexAuthNextjsToken,
+  isAuthenticatedNextjs,
+} from "@convex-dev/auth/nextjs/server";
 import {
   createComposioClient,
   getAllToolsForApps,
@@ -13,15 +18,29 @@ import {
   type AvailableApp,
 } from "@/lib/composio-config";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+export const dynamic = "force-dynamic";
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY is not set");
+function createConvexClient(): ConvexHttpClient {
+  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
+  }
+  return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function shouldPreferWorkspaceSummaryOrTasks(query: string): boolean {
+  const lower = query.toLowerCase();
+  const isSummaryQuery =
+    /\b(what happened|summari[sz]e|summary|recap|overview)\b/i.test(lower);
+  const isTasksQuery = /\b(tasks?|to-?dos?|to-?do)\b/i.test(lower);
+
+  // If the user is explicitly asking about GitHub/repos/issues/PRs, don't intercept.
+  const mentionsExplicitExternalDev =
+    /\b(github|repo|repository|pull request|pull requests|issue|issues)\b/i.test(
+      lower,
+    );
+
+  return (isSummaryQuery || isTasksQuery) && !mentionsExplicitExternalDev;
+}
 
 // Simple in-memory cache for common queries (expires every 5 minutes)
 const queryCache = new Map<string, { response: string; timestamp: number }>();
@@ -72,6 +91,29 @@ function extractKeywords(query: string): string[] {
 
 export async function POST(req: NextRequest) {
   try {
+    const convex = createConvexClient();
+
+    // Pass auth through to Convex so membership/tasks/channels work.
+    // We attempt token retrieval even if isAuthenticatedNextjs() is false, because
+    // auth state can depend on request cookies and runtime environment.
+    try {
+      const token = convexAuthNextjsToken();
+      if (token) {
+        convex.setAuth(token);
+      } else if (isAuthenticatedNextjs()) {
+        console.warn(
+          "[Chatbot Assistant] Authenticated session but no Convex token found",
+        );
+      }
+    } catch (err) {
+      if (isAuthenticatedNextjs()) {
+        console.warn(
+          "[Chatbot Assistant] Failed to read Convex auth token from request",
+          err,
+        );
+      }
+    }
+
     const { message, workspaceContext, workspaceId, conversationHistory } =
       await req.json();
 
@@ -108,6 +150,51 @@ export async function POST(req: NextRequest) {
       } else {
         queryCache.delete(cacheKey); // Remove expired cache
       }
+    }
+
+    // Gemini-only mode: always route to Convex assistant (which uses Gemini 1.5 Flash).
+    // This avoids OpenAI entirely while keeping the dashboard response shape stable.
+    try {
+      const result = await convex.action(api.chatbot.askAssistant, {
+        query: message,
+        workspaceId: workspaceId as Id<"workspaces">,
+      });
+
+      const responseText = result?.answer || "No response generated";
+      const sources = (result?.sources ?? []).map((s: string, idx: number) => ({
+        id: `source-${idx}`,
+        type: "source",
+        text: s,
+      }));
+
+      if (cacheKey && isSimpleQuery) {
+        queryCache.set(cacheKey, {
+          response: responseText,
+          timestamp: Date.now(),
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        response: responseText,
+        sources,
+        actions: [],
+        toolResults: [],
+        assistantType: "convex",
+        composioToolsUsed: false,
+      });
+    } catch (error) {
+      console.error("[Chatbot Assistant] Convex assistant failed:", error);
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to generate assistant response",
+        },
+        { status: 500 },
+      );
     }
 
     // Search for relevant workspace content using semantic search
@@ -425,6 +512,21 @@ ${connectedAppsDescriptions}`;
       connectedApps: connectedApps
         .filter((app) => app.connected)
         .map((app) => `${app.app}:${app.connectionId}`),
+    });
+
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "OPENAI_API_KEY is not set. Set GOOGLE_GENERATIVE_AI_API_KEY to use the workspace assistant without OpenAI.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
 
     const completion = await openai.chat.completions.create({
