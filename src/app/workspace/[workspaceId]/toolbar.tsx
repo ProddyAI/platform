@@ -28,6 +28,7 @@ import { useGetUnreadMentionsCount } from '@/features/messages/api/use-get-unrea
 import { showTidioChat } from '@/lib/tidio-helpers';
 
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
+import ThemeToggle from '@/components/theme-toggle';
 
 interface WorkspaceToolbarProps {
     children: ReactNode;
@@ -90,7 +91,7 @@ export const WorkspaceToolbar = ({
 
     return (
         <nav
-            className="sticky top-0 z-50 flex h-16 items-center overflow-hidden border-b bg-primary text-secondary-foreground shadow-md">
+            className="workspace-topbar sticky top-0 z-50 flex h-16 items-center overflow-hidden border-b bg-primary text-secondary-foreground shadow-md ml-[-2px]">
             {/* Left section - Entity info (Channel/Member/etc) */}
             <div className="flex items-center px-6">
                 {children}
@@ -239,6 +240,8 @@ export const WorkspaceToolbar = ({
                     open={notificationsOpen}
                     onOpenChange={setNotificationsOpen}
                 />
+
+                <ThemeToggle />
 
                 <UserButton
                     forceOpenSettings={forceOpenUserSettings}
