@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: 'en'
+early_access: true
+reviews:
+  request_changes_workflow: true
+  high_level_summary: true
+  high_level_summary_placeholder: '@coderabbitai summary'
+  poem: false
+  profile: assertive
+  review_status: true
+  commit_status: true
+  collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  suggested_reviewers: true
+  in_progress_fortune: true
+  enable_prompt_for_ai_agents: true
+  abort_on_close: true
+  path_instructions:
+    - path: 'src/app/**/*'
+      instructions: |
+        "Confirm that the code adheres to the following:
+        - Next.js App Router best practices, including file structure and route handlers.
+        - Server Components vs Client Components usage patterns.
+        - Optimal use of TypeScript for component and utility type safety."
+    - path: 'src/components/**/*'
+      instructions: |
+        "Confirm that the code adheres to the following:
+        - Reusability and composability of React components.
+        - TypeScript usage for defining props and exporting types.
+        - Proper use of React hooks and state management patterns."
+    - path: 'src/features/**/*'
+      instructions: |
+        "Confirm that the code adheres to the following:
+        - Feature-based code organization and modularity.
+        - Clean separation of concerns between UI and business logic.
+        - Consistent patterns for data fetching and state management."
+    - path: 'convex/**/*'
+      instructions: |
+        "Confirm that the code adheres to the following:
+        - Convex best practices for queries, mutations, and actions.
+        - Proper schema definitions and data validation.
+        - Efficient database operations and query patterns."
+    - path: 'src/lib/**/*'
+      instructions: |
+        "Confirm that the code adheres to the following:
+        - Utility functions that are pure and well-tested.
+        - TypeScript best practices to ensure type safety and reusability.
+        - Clear documentation and examples for function usage."
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - 'main'
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - '**/.cursorrules'
+      - '.github/copilot-instructions.md'
+      - '**/CLAUDE.md'
+      - '**/AGENT.md'
+      - '**/.clinerules'
+      - 'docs/**/*.mdx'
+chat:
+  auto_reply: true
