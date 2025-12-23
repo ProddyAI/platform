@@ -42,11 +42,11 @@ export const CalendarHeader = ({
   };
 
   return (
-    <div className="border-b bg-white px-4 sm:px-6 py-4 shadow-sm">
+    <div className="calendar-header border-b bg-white px-4 sm:px-6 py-4 shadow-sm">
       {/* Top row with navigation and search */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         {/* Left side - Month navigation */}
-        <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
+        <div className="calendar-month-nav flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
           <Button
             variant="ghost"
             size="sm"
@@ -55,7 +55,7 @@ export const CalendarHeader = ({
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="min-w-[160px] text-center font-medium bg-white px-4 py-1.5 rounded-md border border-gray-200 shadow-sm">
+          <div className="calendar-month-pill min-w-[160px] text-center font-medium bg-white px-4 py-1.5 rounded-md border border-gray-200 shadow-sm">
             {format(currentDate, 'MMMM yyyy')}
           </div>
           <Button
@@ -90,8 +90,8 @@ export const CalendarHeader = ({
       </div>
 
       {/* Bottom row with event counts */}
-      <div className="flex flex-wrap items-center gap-2 mt-3 text-sm text-gray-500 bg-gray-50 p-2 rounded-md border border-gray-200">
-        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-200">
+      <div className="calendar-filter-bar flex flex-wrap items-center gap-2 mt-3 text-sm text-gray-500 bg-gray-50 p-2 rounded-md border border-gray-200">
+        <div className="calendar-filter-inner flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-200">
           <span className="font-medium">
             {filterOptions.eventTypes.length === 0
               ? 'No filters applied'

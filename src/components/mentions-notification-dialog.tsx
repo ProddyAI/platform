@@ -170,7 +170,7 @@ export const MentionsNotificationDialog = ({
   const renderNotificationsList = (notificationsList: any[]) => (
     <div className="divide-y max-h-[450px] overflow-y-auto">
       {notificationsList?.length === 0 ? (
-        <div className="flex h-[250px] w-full flex-col items-center justify-center gap-y-3 bg-gray-50">
+        <div className="flex h-[250px] w-full flex-col items-center justify-center gap-y-3 bg-gray-50 dark:bg-card">
           {activeTab === 'unread' ? (
             <>
               <div className="rounded-full bg-green-100 p-3">
@@ -228,7 +228,7 @@ export const MentionsNotificationDialog = ({
               key={notification.id}
               href={link}
               onClick={() => onOpenChange(false)}
-              className={`block p-4 transition-colors hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''} relative group`}
+              className={`block p-4 transition-colors hover:bg-gray-50 dark:hover:bg-card-accent ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/30' : 'dark:bg-card'} relative group`}
             >
               <div className="flex items-start gap-3">
                 <Avatar className="h-10 w-10 border">
@@ -247,7 +247,7 @@ export const MentionsNotificationDialog = ({
                     </div>
 
                     {/* Source badge - different for direct messages */}
-                    <div className="ml-auto flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium">
+                    <div className="ml-auto flex items-center gap-1.5 rounded-full bg-gray-100 dark:bg-card-accent px-2.5 py-1 text-xs font-medium">
                       {isDirect ? (
                         <MessageSquare className="size-4 text-green-500" />
                       ) : (
@@ -287,7 +287,7 @@ export const MentionsNotificationDialog = ({
                   </div>
 
                   {/* Border separator below the button */}
-                  <div className="border-t mt-2"></div>
+                  <div className="border-t border-border/10 dark:border-border/30 mt-2"></div>
                 </div>
               </div>
             </Link>
@@ -300,7 +300,7 @@ export const MentionsNotificationDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden shadow-lg [&>button]:hidden">
-        <DialogHeader className="p-5 border-b bg-white">
+        <DialogHeader className="p-5 border-b bg-white dark:bg-card dark:border-transparent">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-xl">
               <div className="bg-blue-100 p-1.5 rounded-full">
@@ -328,7 +328,7 @@ export const MentionsNotificationDialog = ({
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex h-[300px] w-full items-center justify-center bg-gray-50">
+          <div className="flex h-[300px] w-full items-center justify-center bg-gray-50 dark:bg-card">
             <div className="flex flex-col items-center gap-3">
               <Loader className="size-8 animate-spin text-secondary" />
               <p className="text-sm text-muted-foreground">Loading your mentions...</p>
@@ -336,9 +336,9 @@ export const MentionsNotificationDialog = ({
           </div>
         ) : (
           <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b px-4 py-3 bg-gray-50">
-              <TabsList className="grid w-full grid-cols-5 p-1 bg-gray-100">
-                <TabsTrigger value="all" className="relative py-1.5 data-[state=active]:bg-white">
+            <div className="border-b px-4 py-3 bg-gray-50 dark:bg-card dark:border-border/20">
+              <TabsList className="grid w-full grid-cols-5 p-1 bg-gray-100 rounded-lg dark:bg-card-accent dark:border dark:border-border/10">
+                <TabsTrigger value="all" className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40">
                   <div className="flex items-center gap-1.5">
                     <Filter className="size-3.5" />
                     <span>All</span>
@@ -350,7 +350,7 @@ export const MentionsNotificationDialog = ({
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger value="unread" className="relative py-1.5 data-[state=active]:bg-white">
+                <TabsTrigger value="unread" className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40">
                   <div className="flex items-center gap-1.5">
                     <Bell className="size-3.5" />
                     <span>Unread</span>
@@ -362,7 +362,7 @@ export const MentionsNotificationDialog = ({
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger value="channel" className="relative py-1.5 data-[state=active]:bg-white">
+                <TabsTrigger value="channel" className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40">
                   <div className="flex items-center gap-1.5">
                     <Hash className="size-3.5 text-blue-500" />
                     <span>Channel</span>
@@ -374,7 +374,7 @@ export const MentionsNotificationDialog = ({
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger value="direct" className="relative py-1.5 data-[state=active]:bg-white">
+                <TabsTrigger value="direct" className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40">
                   <div className="flex items-center gap-1.5">
                     <User className="size-3.5 text-green-500" />
                     <span>Direct</span>
@@ -386,7 +386,7 @@ export const MentionsNotificationDialog = ({
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger value="card" className="relative py-1.5 data-[state=active]:bg-white">
+                <TabsTrigger value="card" className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40">
                   <div className="flex items-center gap-1.5">
                     <LayoutGrid className="size-3.5 text-amber-500" />
                     <span>Cards</span>

@@ -197,7 +197,7 @@ export const WorkspaceSidebar = ({
   return (
     <div
       className={cn(
-        "flex h-full flex-col bg-primary transition-all duration-300 ease-in-out border-r-2 border-white",
+        "flex h-full flex-col bg-primary transition-all duration-300 ease-in-out border-r-2 border-white/20 dark:border-border/40",
         isCollapsed ? "w-[70px]" : "w-[280px]"
       )}
     >
