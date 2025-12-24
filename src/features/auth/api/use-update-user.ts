@@ -12,6 +12,8 @@ interface UpdateUserData {
   website?: string;
   phone?: string;
   image?: Id<'_storage'>;
+  banner?: Id<'_storage'> | null;
+  removeBanner?: boolean;
 }
 
 export const useUpdateUser = () => {
