@@ -34,14 +34,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# installation files 
-bun.lockb
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
 # Sentry Config File
 .env.sentry-build-plugin
-
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
