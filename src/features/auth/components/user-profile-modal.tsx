@@ -269,10 +269,12 @@ export const UserProfileModal = ({
                 throw new Error(`Upload response parse failed: ${text.slice(0, 200)}`);
             }
 
-            if (!storageId) throw new Error('Storage service did not return a storage id');
+            if (typeof storageId !== 'string' || storageId.trim().length === 0) {
+                throw new Error('Storage service did not return a valid storage id');
+            }
 
             // Update user profile with new banner
-            await updateUser({ banner: storageId as any });
+            await updateUser({ banner: storageId });
 
             toast.success('Banner updated successfully!');
 
