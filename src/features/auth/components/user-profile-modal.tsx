@@ -21,6 +21,7 @@ import { useGenerateUploadUrl } from '@/features/upload/api/use-generate-upload-
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useRouter } from 'next/navigation';
 import { useDeleteAccount } from '../api/use-delete-account';
+import type { Id } from '@/../convex/_generated/dataModel';
 
 interface UserProfileModalProps {
     open: boolean;
@@ -273,8 +274,10 @@ export const UserProfileModal = ({
                 throw new Error('Storage service did not return a valid storage id');
             }
 
+            const bannerId = storageId.trim() as Id<'_storage'>;
+
             // Update user profile with new banner
-            await updateUser({ banner: storageId });
+            await updateUser({ banner: bannerId });
 
             toast.success('Banner updated successfully!');
 
