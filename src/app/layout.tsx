@@ -48,11 +48,16 @@ const metadata: Metadata = {
 };
 
 export function generateMetadata(): Metadata {
+  const traceData = Sentry.getTraceData();
+  const validTraceData = Object.fromEntries(
+    Object.entries(traceData).filter(([, value]) => value !== undefined)
+  );
+
   return {
     ...metadata,
     other: {
       ...(metadata.other ?? {}),
-      ...Sentry.getTraceData(),
+      ...validTraceData,
     },
   };
 }
