@@ -716,7 +716,11 @@ export const UserProfileModal = ({
 
                     <DialogFooter>
                         <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setConfirmText(''); }} disabled={isDeleting}>Cancel</Button>
-                        <Button variant="destructive" onClick={handleDeleteAccount} disabled={isDeleting || confirmText.trim() !== 'Delete my account'}>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteAccount}
+                            disabled={isDeleting || confirmText.trim().toLowerCase() !== 'delete my account'}
+                        >
                             {isDeleting ? (
                                 <>
                                     <Loader2 className="mr-2 size-4 animate-spin" />
