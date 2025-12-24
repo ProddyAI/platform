@@ -323,6 +323,8 @@ export const UserProfileModal = ({
             router.replace('/');
         } catch (error) {
             console.error('Failed to delete account:', error);
+            toast.error('Failed to delete account. Please try again.');
+        } finally {
             setIsDeleting(false);
         }
     };
