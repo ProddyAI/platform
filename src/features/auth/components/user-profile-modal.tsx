@@ -293,7 +293,7 @@ export const UserProfileModal = ({
     const handleResetBanner = async () => {
         try {
             setIsUploadingBanner(true);
-            const res = await updateUser({ removeBanner: true });
+            await updateUser({ removeBanner: true });
             toast.success('Banner reset to default');
             setBannerPreview(null);
 
