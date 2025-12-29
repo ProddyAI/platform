@@ -161,8 +161,8 @@ export const LiveSidebar = ({
 
   if (collapsed) {
     return (
-      <div className={cn("w-12 border-r bg-muted/30 flex flex-col", className)}>
-        <div className="p-2 border-b">
+      <div className={cn("w-12 border-r bg-muted/30 dark:bg-[hsl(var(--card-accent))] flex flex-col", className)}>
+        <div className="p-2 border-b dark:border-[hsl(var(--border))]">
           <Button
             onClick={onToggleCollapse}
             variant="ghost"
@@ -183,9 +183,9 @@ export const LiveSidebar = ({
   }
 
   return (
-    <div className={cn("w-80 border-r bg-muted/30 flex flex-col", className)}>
+    <div className={cn("w-80 border-r bg-muted/30 dark:bg-[hsl(var(--card-accent))] flex flex-col", className)}>
       {/* Header */}
-      <div className="p-4 border-b">
+      <div className="p-4 border-b dark:border-[hsl(var(--border))]">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-sm flex items-center gap-2">
             {type === 'notes' ? (

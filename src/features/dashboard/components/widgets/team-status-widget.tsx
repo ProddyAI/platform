@@ -27,6 +27,7 @@ interface TeamStatusWidgetProps {
       image?: string;
     };
   };
+  isEditMode?: boolean;
 }
 
 interface TeamMember {
@@ -44,7 +45,7 @@ interface TeamMember {
   lastActive: number;
 }
 
-export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
+export const TeamStatusWidget = ({ workspaceId, isEditMode }: TeamStatusWidgetProps) => {
   const router = useRouter();
   const { data: members, isLoading: membersLoading } = useGetMembers({ workspaceId });
   const { presenceState, onlineCount } = useWorkspacePresence({ workspaceId });
@@ -97,7 +98,7 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Team Status</h3>
-          {onlineCount > 0 && (
+          {!isEditMode && onlineCount > 0 && (
             <Badge variant="default" className="ml-2">
               {onlineCount} online
             </Badge>
@@ -106,10 +107,10 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
       </div>
 
       {teamMembers.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-2 p-4">
             {teamMembers.map((teamMember) => (
-              <Card key={teamMember._id} className="overflow-hidden">
+              <Card key={teamMember._id} className="overflow-hidden border-2">
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
                     <div className="relative">
@@ -136,7 +137,7 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{teamMember.user?.name || 'Unknown User'}</p>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="border-2 text-xs">
                             {teamMember.role}
                           </Badge>
                         </div>
@@ -170,7 +171,7 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <Users className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No team members</h3>
           <p className="text-sm text-muted-foreground">

@@ -60,7 +60,7 @@ export const FullMessage = ({
     <>
       <div
         className={cn(
-          'group relative flex items-start gap-3 p-3 hover:bg-gray-100/60 transition-standard hover:shadow-sm rounded-[10px]',
+          'group relative flex items-start gap-3 p-3 hover:bg-gray-200/40 dark:hover:bg-slate-700/50 transition-standard hover:shadow-sm rounded-[10px]',
           isEditing && 'bg-secondary/20 hover:bg-secondary/20',
           isPending && 'origin-bottom scale-y-0 transform bg-rose-500/50 transition-standard',
           isSelected && 'bg-secondary/10 hover:bg-secondary/10',

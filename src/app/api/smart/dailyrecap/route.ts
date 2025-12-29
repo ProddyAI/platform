@@ -34,20 +34,27 @@ function extractTextFromRichText(body: string): string {
 		try {
 			const parsed = JSON.parse(trimmedBody);
 
-			if (parsed && Array.isArray(parsed.ops)) {
-				// Use a more efficient string building approach
-				const textParts: string[] = [];
+			// Check if this is a special message type (canvas, note, etc.)
+			if (parsed && typeof parsed === 'object') {
+				if (parsed.type === 'canvas' || parsed.type === 'canvas-live' || parsed.type === 'canvas-export') {
+					result = `📐 Canvas: ${parsed.canvasName || 'Untitled Canvas'}`;
+				} else if (parsed.type === 'note' || parsed.type === 'note-live' || parsed.type === 'note-export') {
+					result = `📝 Note: ${parsed.noteTitle || 'Untitled Note'}`;
+				} else if (parsed && Array.isArray(parsed.ops)) {
+					// Handle Quill Delta format
+					const textParts: string[] = [];
 
-				for (const op of parsed.ops) {
-					if (op && typeof op.insert === 'string') {
-						textParts.push(op.insert);
+					for (const op of parsed.ops) {
+						if (op && typeof op.insert === 'string') {
+							textParts.push(op.insert);
+						}
 					}
-				}
 
-				result = textParts
-					.join('')
-					.replace(/\\n|\\N|\n/g, ' ')
-					.trim();
+					result = textParts
+						.join('')
+						.replace(/\\n|\\N|\n/g, ' ')
+						.trim();
+				}
 			}
 		} catch (error) {
 			// If parsing fails, just use the original body

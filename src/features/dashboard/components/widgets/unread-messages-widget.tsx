@@ -27,11 +27,12 @@ interface UnreadMessagesWidgetProps {
       image?: string;
     };
   };
+  isEditMode?: boolean;
 }
 
 // No need for a separate interface as we're using typeof messages[0]
 
-export const UnreadMessagesWidget = ({ workspaceId }: UnreadMessagesWidgetProps) => {
+export const UnreadMessagesWidget = ({ workspaceId, isEditMode }: UnreadMessagesWidgetProps) => {
   const router = useRouter();
   const { data: rawMessages, isLoading } = useGetDirectMessages(false); // false to get only unread
   const { counts, isLoading: countsLoading } = useGetUnreadDirectMessagesCount();
@@ -93,14 +94,14 @@ export const UnreadMessagesWidget = ({ workspaceId }: UnreadMessagesWidgetProps)
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Unread Direct Messages</h3>
-          {counts && counts.total > 0 && (
+          {!isEditMode && counts && counts.total > 0 && (
             <Badge variant="default" className="ml-2">
               {counts.total}
             </Badge>
           )}
         </div>
-        {counts && counts.total > 0 && (
-          <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
+        {!isEditMode && counts && counts.total > 0 && (
+          <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} className="border-2">
             <CheckCircle className="mr-2 h-4 w-4" />
             Mark all as read
           </Button>
@@ -108,10 +109,10 @@ export const UnreadMessagesWidget = ({ workspaceId }: UnreadMessagesWidgetProps)
       </div>
 
       {messages && messages.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-2 p-4">
             {messages.map((message) => (
-              <Card key={message.id.toString()} className="overflow-hidden">
+              <Card key={message.id.toString()} className="overflow-hidden border-2">
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
                     <Avatar className="h-8 w-8">
@@ -164,7 +165,7 @@ export const UnreadMessagesWidget = ({ workspaceId }: UnreadMessagesWidgetProps)
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <MessageSquare className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No unread messages</h3>
           <p className="text-sm text-muted-foreground">

@@ -85,8 +85,8 @@ export const ContextMenuProvider = ({ children }: ContextMenuProviderProps) => {
 
   const openNewContextMenu = useCallback((x: number, y: number, messageId?: Id<'messages'>) => {
     // Calculate menu dimensions (approximate)
-    const menuWidth = 160;
-    const menuHeight = 200;
+    const menuWidth = 180;
+    const menuHeight = 240;
 
     // Get viewport dimensions
     const viewportWidth = window.innerWidth;
@@ -96,19 +96,23 @@ export const ContextMenuProvider = ({ children }: ContextMenuProviderProps) => {
     let adjustedX = x;
     let adjustedY = y;
 
-    // Adjust horizontal position if menu would go off-screen
-    if (adjustedX + menuWidth > viewportWidth) {
-      adjustedX = viewportWidth - menuWidth - 10; // 10px margin from edge
+    // Default: position menu below and slightly to the right of cursor
+    adjustedY = y + 5;
+    adjustedX = x + 5;
+
+    // If menu would go off-screen horizontally, position it to the left of cursor instead
+    if (adjustedX + menuWidth > viewportWidth - 10) {
+      adjustedX = x - menuWidth - 5; // Position to the left
     }
 
-    // Adjust vertical position if menu would go off-screen
-    if (adjustedY + menuHeight > viewportHeight) {
-      adjustedY = viewportHeight - menuHeight - 10; // 10px margin from edge
+    // If menu would go off-screen vertically, position it above cursor instead
+    if (adjustedY + menuHeight > viewportHeight - 10) {
+      adjustedY = y - menuHeight - 5; // Position above
     }
 
     // Ensure minimum distance from edges
-    adjustedX = Math.max(10, adjustedX);
-    adjustedY = Math.max(10, adjustedY);
+    adjustedX = Math.max(10, Math.min(adjustedX, viewportWidth - menuWidth - 10));
+    adjustedY = Math.max(10, Math.min(adjustedY, viewportHeight - menuHeight - 10));
 
     setContextMenu({
       show: true,

@@ -126,20 +126,22 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
   return (
     <Card
       data-message-component="true"
-      className="w-full max-w-lg !bg-white !text-gray-900 shadow-md border-l-4 border-l-primary"
+      className="w-full max-w-xl !bg-gradient-to-r !from-slate-50 !to-slate-100 dark:!from-slate-700 dark:!to-slate-800 !text-gray-900 dark:!text-gray-100 shadow-lg border border-primary/20 dark:border-slate-600 hover:shadow-xl transition-shadow"
     >
-      <div className="flex items-center justify-between p-4 min-h-[64px]">
-        <div className="flex items-center space-x-3 flex-1 min-w-0">
-          <Icon className="h-5 w-5 text-primary flex-shrink-0" />
+      <div className="flex items-center justify-between p-5 min-h-[72px] gap-4">
+        <div className="flex items-center space-x-4 flex-1 min-w-0">
+          <div className="p-2.5 bg-primary/15 dark:bg-purple-500/40 rounded-lg flex-shrink-0">
+            <Icon className="h-5 w-5 text-primary dark:text-purple-200" />
+          </div>
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-sm font-medium text-gray-900 truncate">
+            <CardTitle className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate mb-1">
               {getTitle()}
             </CardTitle>
 
             {/* Show participants for live sessions */}
             {isLive && (
-              <div className="flex items-center text-xs text-gray-600 mt-1">
-                <Users className="h-3 w-3 mr-1 flex-shrink-0" />
+              <div className="flex items-center text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <Users className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
                 {participantNames.length > 0 ? (
                   <span className="truncate">
                     {participantNames.join(", ")}{" "}
@@ -160,7 +162,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
           onClick={handleClick}
           variant="default"
           size="sm"
-          className="ml-3 flex-shrink-0 bg-primary !text-white hover:bg-primary/80"
+          className="ml-2 flex-shrink-0 bg-primary text-white hover:bg-primary/90 font-medium rounded-md transition-all"
         >
           {getButtonText()}
         </Button>

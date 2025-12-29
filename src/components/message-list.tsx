@@ -152,11 +152,11 @@ export const MessageList = ({
 
         {Object.entries(groupedMessages || {}).map(([dateKey, messages]) => (
         <div key={dateKey}>
-          <div className="relative my-2 text-center">
-            <hr className="absolute left-0 right-0 top-1/2 border-t border-gray-300" />
+          <div className="relative my-4 flex items-center justify-center">
+            <div className="absolute left-0 right-0 h-px bg-border" />
 
-            <div className="relative inline-flex items-center gap-2">
-              <span className="inline-block rounded-full border border-gray-300 bg-white px-4 py-1 text-xs shadow-sm">
+            <div className="relative flex items-center gap-2 bg-background px-4 dark:bg-[hsl(var(--background))]">
+              <span className="inline-block rounded-full border border-border bg-card px-4 py-1 text-xs shadow-sm dark:bg-[hsl(var(--card))]">
                 {formatDateLabel(dateKey)}
               </span>
 
@@ -164,12 +164,12 @@ export const MessageList = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 rounded-full bg-white border border-gray-300 shadow-sm hover:bg-blue-50"
+                  className="h-6 px-2 rounded-full bg-card border border-border shadow-sm hover:bg-accent text-foreground dark:text-gray-300 dark:bg-[hsl(var(--card))] dark:border-border dark:hover:bg-slate-700"
                   onClick={() => handleGenerateRecap(dateKey, messages)}
                   disabled={isGeneratingRecap}
                 >
-                  <Sparkles className="size-3 text-blue-500 mr-1" />
-                  <span className="text-xs font-medium text-blue-500">Recap</span>
+                  <Sparkles className="size-3 text-amber-500 dark:text-amber-400 mr-1" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Recap</span>
                 </Button>
               </Hint>
             </div>
@@ -232,11 +232,11 @@ export const MessageList = ({
       />
 
       {isLoadingMore && (
-        <div className="relative my-2 text-center">
-          <hr className="absolute left-0 right-0 top-1/2 border-t border-gray-300" />
+        <div className="relative my-4 flex items-center justify-center">
+          <div className="absolute left-0 right-0 h-px bg-border" />
 
-          <span className="relative inline-block rounded-full border border-gray-300 bg-white px-4 py-1 text-xs shadow-sm">
-            <Loader className="size-4 animate-spin" />
+          <span className="relative inline-block rounded-full border border-border bg-card px-4 py-1 text-xs shadow-sm dark:bg-[hsl(var(--card))]">
+            <Loader className="size-4 animate-spin text-foreground" />
           </span>
         </div>
       )}

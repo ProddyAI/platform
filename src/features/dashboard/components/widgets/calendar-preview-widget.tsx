@@ -40,9 +40,11 @@ interface CalendarEvent {
 interface CalendarPreviewWidgetProps {
   workspaceId: Id<'workspaces'>;
   member: any;
+  isEditMode?: boolean;
+  controls?: React.ReactNode;
 }
 
-export const CalendarPreviewWidget = ({ workspaceId }: CalendarPreviewWidgetProps) => {
+export const CalendarPreviewWidget = ({ workspaceId, isEditMode, controls }: CalendarPreviewWidgetProps) => {
   const router = useRouter();
   const today = new Date();
   const currentMonth = today.getMonth();
@@ -115,28 +117,32 @@ export const CalendarPreviewWidget = ({ workspaceId }: CalendarPreviewWidgetProp
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between pr-8">
+      <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Upcoming Events</h3>
-          {upcomingEvents.length > 0 && (
+          {!isEditMode && upcomingEvents.length > 0 && (
             <Badge variant="default" className="ml-2">
               {upcomingEvents.length}
             </Badge>
           )}
+        </div>
+        {isEditMode ? (
+          controls
+        ) : (
           <Button
             variant="outline"
             size="sm"
             onClick={handleViewCalendar}
-            className="ml-4"
+            className="border-2"
           >
             View All
           </Button>
-        </div>
+        )}
       </div>
 
       {upcomingEvents.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-4 p-4">
             {eventsByDay.map((dayData) => (
               <div key={format(dayData.date, 'yyyy-MM-dd')} className="space-y-2">
@@ -152,12 +158,12 @@ export const CalendarPreviewWidget = ({ workspaceId }: CalendarPreviewWidgetProp
 
                 {dayData.events.length > 0 ? (
                   dayData.events.map((event: CalendarEvent) => (
-                    <Card key={event._id} className="overflow-hidden">
+                    <Card key={event._id} className="overflow-hidden border-2">
                       <CardContent className="p-3">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
                             <h5 className="font-medium">{event.title}</h5>
-                            <Badge variant={!event.time ? "outline" : "secondary"} className="text-xs">
+                            <Badge variant={!event.time ? "outline" : "secondary"} className="text-xs border-2">
                               {!event.time
                                 ? 'All day'
                                 : event.time}
@@ -184,7 +190,7 @@ export const CalendarPreviewWidget = ({ workspaceId }: CalendarPreviewWidgetProp
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <CalendarIcon className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No upcoming events</h3>
           <p className="text-sm text-muted-foreground">
@@ -193,7 +199,7 @@ export const CalendarPreviewWidget = ({ workspaceId }: CalendarPreviewWidgetProp
           <Button
             variant="outline"
             size="sm"
-            className="mt-4"
+            className="mt-4 border-2"
             onClick={handleViewCalendar}
           >
             View Calendar <ArrowRight className="ml-2 h-3.5 w-3.5" />

@@ -13,11 +13,8 @@ export const ThemeToggle = () => {
       if (stored === "light" || stored === "dark") {
         setTheme(stored as "light" | "dark");
       } else {
-        const prefersDark =
-          typeof window !== "undefined" &&
-          window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches;
-        setTheme(prefersDark ? "dark" : "light");
+        // Default to light theme for new users
+        setTheme("light");
       }
     } catch (e) {
       // ignore

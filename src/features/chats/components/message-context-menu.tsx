@@ -35,60 +35,81 @@ export const MessageContextMenu = ({
 
   return (
     <div
-      className="context-menu fixed bg-white border rounded-lg shadow-lg py-1 z-[9999] min-w-[160px]"
+      className="context-menu fixed bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-2xl z-[9999999] min-w-[180px] overflow-hidden"
       style={{
         left: `${contextMenu.x}px`,
         top: `${contextMenu.y}px`,
+        pointerEvents: 'auto',
       }}
       onClick={(e) => e.stopPropagation()}
     >
+      {/* Message Actions Section */}
+      <div>
+        <button
+          className={cn(
+            "w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors",
+            isSelected 
+              ? "bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-300 font-medium"
+              : "text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700"
+          )}
+          onClick={() => handleAction('select')}
+        >
+          {isSelected ? '✓ Selected' : 'Select Message'}
+        </button>
+        <button
+          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+          onClick={() => handleAction('copy')}
+        >
+          Copy Message
+        </button>
+      </div>
+
+      <hr className="my-1 border-gray-200 dark:border-slate-700" />
+
+      {/* Primary Action */}
       <button
-        className={cn(
-          "w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2",
-          isSelected && "bg-blue-50 text-blue-600"
-        )}
-        onClick={() => handleAction('select')}
-      >
-        {isSelected ? '✓ Selected' : 'Select Message'}
-      </button>
-      <button
-        className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-        onClick={() => handleAction('copy')}
-      >
-        Copy Message
-      </button>
-      <hr className="my-1" />
-      <button
-        className="w-full px-3 py-2 text-left text-sm bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 font-medium"
+        className="w-full px-4 py-2.5 text-left text-sm bg-primary text-white hover:bg-primary/90 dark:bg-purple-600 dark:hover:bg-purple-700 flex items-center gap-2 font-medium transition-colors"
         onClick={() => handleAction('addToTask')}
       >
         <Plus className="h-4 w-4" />
         Add as Task
       </button>
-      <hr className="my-1" />
-      {isAuthor && (
-        <button
-          className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-          onClick={() => handleAction('edit')}
-        >
-          Edit
-        </button>
+
+      <hr className="my-1 border-gray-200 dark:border-slate-700" />
+
+      {/* Edit/Delete Section (Author only) */}
+      {(isAuthor) && (
+        <div>
+          {isAuthor && (
+            <button
+              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              onClick={() => handleAction('edit')}
+            >
+              Edit
+            </button>
+          )}
+          {isAuthor && (
+            <button
+              className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              onClick={() => handleAction('delete')}
+            >
+              Delete
+            </button>
+          )}
+        </div>
       )}
-      {isAuthor && (
-        <button
-          className="w-full px-3 py-2 text-left text-sm hover:bg-muted text-destructive"
-          onClick={() => handleAction('delete')}
-        >
-          Delete
-        </button>
-      )}
+
+      {/* Thread Section */}
       {!hideThreadButton && (
-        <button
-          className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-          onClick={() => handleAction('reply')}
-        >
-          Reply in Thread
-        </button>
+        <>
+          {isAuthor && <hr className="my-1 border-gray-200 dark:border-slate-700" />}
+          <button
+            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            onClick={() => handleAction('reply')}
+          >
+            Reply in Thread
+          </button>
+        </>
       )}
     </div>
   );
