@@ -44,6 +44,8 @@ import {
 } from "@/components/ui/popover";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { MentionPicker } from "@/components/mention-picker";
+import { ChannelPicker } from "@/components/channel-picker";
 interface DashboardChatbotProps {
   workspaceId: Id<"workspaces">;
   member: any;
@@ -87,6 +89,91 @@ export const DashboardChatbot = ({
   const { toast } = useToast();
   const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
+
+  // Autocomplete for @users and #channels in the chatbot input
+  const [autocompleteOpen, setAutocompleteOpen] = useState(false);
+  const [activeAutocomplete, setActiveAutocomplete] = useState<
+    "mention" | "channel" | null
+  >(null);
+  const [autocompleteQuery, setAutocompleteQuery] = useState("");
+  const [autocompleteStartIndex, setAutocompleteStartIndex] = useState<number | null>(null);
+  const [autocompleteCursorIndex, setAutocompleteCursorIndex] = useState<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+
+  const findAutocompleteTrigger = (text: string, cursorIndex: number) => {
+    const prefix = text.slice(0, cursorIndex);
+    const atIndex = prefix.lastIndexOf("@");
+    const hashIndex = prefix.lastIndexOf("#");
+    const startIndex = Math.max(atIndex, hashIndex);
+    if (startIndex < 0) return null;
+
+    const triggerChar = prefix[startIndex];
+    const type = triggerChar === "@" ? "mention" : "channel";
+
+    // Only treat it as a trigger if it starts a token
+    const charBefore = startIndex > 0 ? prefix[startIndex - 1] : "";
+    if (startIndex > 0 && !/\s/.test(charBefore)) return null;
+
+    const query = prefix.slice(startIndex + 1);
+    // Close if user typed whitespace in the token
+    if (/\s/.test(query)) return null;
+
+    return { type, startIndex, query, cursorIndex } as const;
+  };
+
+  const closeAutocomplete = () => {
+    setAutocompleteOpen(false);
+    setActiveAutocomplete(null);
+    setAutocompleteQuery("");
+    setAutocompleteStartIndex(null);
+    setAutocompleteCursorIndex(null);
+  };
+
+  const replaceAutocompleteToken = (replacement: string) => {
+    const start = autocompleteStartIndex;
+    const end = autocompleteCursorIndex;
+    if (start === null || end === null) return;
+
+    const newText = input.slice(0, start) + replacement + input.slice(end);
+    setInput(newText);
+
+    // Restore caret after React state update
+    const newCursor = start + replacement.length;
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(newCursor, newCursor);
+    });
+  };
+
+  const handleMentionInsert = (_memberId: Id<"members">, memberName: string) => {
+    replaceAutocompleteToken(`@${memberName} `);
+    closeAutocomplete();
+  };
+
+  const handleChannelInsert = (_channelId: Id<"channels">, channelName: string) => {
+    replaceAutocompleteToken(`#${channelName} `);
+    closeAutocomplete();
+  };
+
+  useEffect(() => {
+    if (!autocompleteOpen) return;
+
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        autocompleteRef.current &&
+        !autocompleteRef.current.contains(target) &&
+        inputRef.current &&
+        !inputRef.current.contains(target)
+      ) {
+        closeAutocomplete();
+      }
+    };
+
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, [autocompleteOpen]);
 
   // Get workspace data
   const workspace = useQuery(api.workspaces.getById, { id: workspaceId });
@@ -392,6 +479,18 @@ Try asking me things like:`;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape" && autocompleteOpen) {
+      e.preventDefault();
+      closeAutocomplete();
+      return;
+    }
+
+    // Prevent sending while picker is open
+    if (e.key === "Enter" && autocompleteOpen) {
+      e.preventDefault();
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -760,11 +859,47 @@ Try asking me things like:`;
         </ScrollArea>
       </CardContent>
       <CardFooter className="p-4 pt-3 border-t mt-auto">
+        {autocompleteOpen && (
+          <div ref={autocompleteRef}>
+            {activeAutocomplete === "channel" ? (
+              <ChannelPicker
+                open={autocompleteOpen}
+                onClose={closeAutocomplete}
+                onSelect={handleChannelInsert}
+                searchQuery={autocompleteQuery}
+              />
+            ) : (
+              <MentionPicker
+                open={autocompleteOpen}
+                onClose={closeAutocomplete}
+                onSelect={handleMentionInsert}
+                searchQuery={autocompleteQuery}
+              />
+            )}
+          </div>
+        )}
+
         <div className="flex w-full items-center gap-2">
           <Input
+            ref={inputRef}
             placeholder="Ask a question about your workspace..."
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              const cursor = e.target.selectionStart ?? next.length;
+              setInput(next);
+
+              const trigger = findAutocompleteTrigger(next, cursor);
+              if (trigger) {
+                setAutocompleteOpen(true);
+                setActiveAutocomplete(trigger.type);
+                setAutocompleteQuery(trigger.query);
+                setAutocompleteStartIndex(trigger.startIndex);
+                setAutocompleteCursorIndex(trigger.cursorIndex);
+              } else {
+                closeAutocomplete();
+              }
+            }}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
             className="flex-1"

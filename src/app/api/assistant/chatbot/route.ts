@@ -167,6 +167,10 @@ export async function POST(req: NextRequest) {
         text: s,
       }));
 
+      const actions = Array.isArray((result as any)?.actions)
+        ? (result as any).actions
+        : [];
+
       if (cacheKey && isSimpleQuery) {
         queryCache.set(cacheKey, {
           response: responseText,
@@ -178,7 +182,7 @@ export async function POST(req: NextRequest) {
         success: true,
         response: responseText,
         sources,
-        actions: [],
+        actions,
         toolResults: [],
         assistantType: "convex",
         composioToolsUsed: false,

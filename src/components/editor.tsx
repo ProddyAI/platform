@@ -22,6 +22,7 @@ import { useCreateNote } from '@/features/notes/api/use-create-note';
 import { CalendarPicker } from './calendar-picker';
 import { EmojiPopover } from './emoji-popover';
 import { Hint } from './hint';
+import { ChannelPicker } from './channel-picker';
 import { MentionPicker } from './mention-picker';
 
 type EditorValue = {
@@ -63,7 +64,7 @@ const Editor = ({
   const [calendarPickerOpen, setCalendarPickerOpen] = useState(false);
   const [mentionPickerOpen, setMentionPickerOpen] = useState(false);
   const [lastKeyWasExclamation, setLastKeyWasExclamation] = useState(false);
-  const [lastKeyWasAt, setLastKeyWasAt] = useState(false);
+  const [activeAutocomplete, setActiveAutocomplete] = useState<'mention' | 'channel' | null>(null);
   const [mentionSearchQuery, setMentionSearchQuery] = useState('');
   const [selectedCalendarEvent, setSelectedCalendarEvent] = useState<{ date: Date, time?: string } | null>(null);
   const mentionPickerRef = useRef<HTMLDivElement>(null);
@@ -98,7 +99,7 @@ const Editor = ({
         !(e.target as HTMLElement).closest('button[data-mention-button="true"]')
       ) {
         setMentionPickerOpen(false);
-        setLastKeyWasAt(false);
+        setActiveAutocomplete(null);
       }
     };
 
@@ -171,52 +172,59 @@ const Editor = ({
 
     quill.on(Quill.events.TEXT_CHANGE, () => {
       const newText = quill.getText();
+      const plainText = newText.replace(/\n+$/, '');
       setText(newText);
 
       // Check if the last character is "!" to trigger calendar picker
-      if (newText.trim().endsWith('!') && !lastKeyWasExclamation) {
+      if (plainText.trim().endsWith('!') && !lastKeyWasExclamation) {
         setLastKeyWasExclamation(true);
         setCalendarPickerOpen(true);
-      } else if (!newText.trim().endsWith('!')) {
+      } else if (!plainText.trim().endsWith('!')) {
         setLastKeyWasExclamation(false);
       }
 
-      // Check if the last character is "@" to trigger mention picker (only if mentions are enabled)
-      const lastChar = newText.slice(-1);
+      // Autocomplete triggers:
+      // - "@" for users (disabled in direct messages)
+      // - "#" for channels
+      if (!activeAutocomplete) {
+        if (!disableMentions && plainText.trim().endsWith('@')) {
+          setActiveAutocomplete('mention');
+          setMentionPickerOpen(true);
+          setMentionSearchQuery('');
+        } else if (plainText.trim().endsWith('#')) {
+          setActiveAutocomplete('channel');
+          setMentionPickerOpen(true);
+          setMentionSearchQuery('');
+        }
+      } else {
+        const triggerChar = activeAutocomplete === 'mention' ? '@' : '#';
+        const triggerIndex = plainText.lastIndexOf(triggerChar);
 
-      if (!disableMentions && newText.trim().endsWith('@') && !lastKeyWasAt) {
-        setLastKeyWasAt(true);
-        setMentionPickerOpen(true);
-        setMentionSearchQuery('');
-      } else if (!disableMentions && lastKeyWasAt) {
-        // If we're already in mention mode, check if we're still typing a mention
-        const atIndex = newText.lastIndexOf('@');
-        if (atIndex >= 0) {
-          // Extract the text after the @ symbol for filtering
-          const query = newText.substring(atIndex + 1).trim();
+        if (triggerIndex >= 0) {
+          const query = plainText.substring(triggerIndex + 1);
           setMentionSearchQuery(query);
 
-          // If user presses space after typing some text, close the mention picker
-          if (query.includes(' ')) {
-            setLastKeyWasAt(false);
+          // If user types whitespace after the token, close the picker
+          if (/\s/.test(query)) {
+            setActiveAutocomplete(null);
             setMentionPickerOpen(false);
           }
 
-          // If the @ symbol is the only character and it's deleted, close the picker
-          if (atIndex === -1 || newText.trim() === '') {
-            setLastKeyWasAt(false);
+          // If text becomes empty, close
+          if (plainText.trim() === '') {
+            setActiveAutocomplete(null);
             setMentionPickerOpen(false);
           }
         } else {
-          // If @ is deleted, close the mention picker
-          setLastKeyWasAt(false);
+          // If the trigger is deleted, close
+          setActiveAutocomplete(null);
           setMentionPickerOpen(false);
         }
       }
 
       // If the text is completely empty, close the mention picker
-      if (newText.trim() === '' && mentionPickerOpen) {
-        setLastKeyWasAt(false);
+      if (plainText.trim() === '' && mentionPickerOpen) {
+        setActiveAutocomplete(null);
         setMentionPickerOpen(false);
       }
 
@@ -224,7 +232,7 @@ const Editor = ({
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && mentionPickerOpen) {
           setMentionPickerOpen(false);
-          setLastKeyWasAt(false);
+          setActiveAutocomplete(null);
         }
       }, { once: true });
     });
@@ -363,7 +371,37 @@ const Editor = ({
     }
 
     // Close the mention picker
-    setLastKeyWasAt(false);
+    setActiveAutocomplete(null);
+    setMentionPickerOpen(false);
+  };
+
+  const handleChannelSelect = (_channelId: Id<'channels'>, channelName: string) => {
+    const quill = quillRef.current;
+    if (!quill) {
+      console.error('Quill editor not initialized');
+      return;
+    }
+
+    const currentText = quill.getText();
+    const plainText = currentText.replace(/\n+$/, '');
+    const hashIndex = plainText.lastIndexOf('#');
+
+    if (hashIndex >= 0) {
+      const currentPosition = quill.getSelection()?.index || plainText.length;
+      quill.deleteText(hashIndex, currentPosition - hashIndex);
+      const insertion = `#${channelName} `;
+      quill.insertText(hashIndex, insertion);
+      quill.setSelection(hashIndex + insertion.length, 0);
+      quill.focus();
+    } else {
+      const position = quill.getSelection()?.index || plainText.length;
+      const insertion = `#${channelName} `;
+      quill.insertText(position, insertion);
+      quill.setSelection(position + insertion.length, 0);
+      quill.focus();
+    }
+
+    setActiveAutocomplete(null);
     setMentionPickerOpen(false);
   };
 
@@ -486,15 +524,27 @@ const Editor = ({
       {/* Render the MentionPicker outside of any container for fixed positioning */}
       {mentionPickerOpen && (
         <div ref={mentionPickerRef}>
-          <MentionPicker
-            open={mentionPickerOpen}
-            onClose={() => {
-              setMentionPickerOpen(false);
-              setLastKeyWasAt(false);
-            }}
-            onSelect={handleMentionSelect}
-            searchQuery={mentionSearchQuery}
-          />
+          {activeAutocomplete === 'channel' ? (
+            <ChannelPicker
+              open={mentionPickerOpen}
+              onClose={() => {
+                setMentionPickerOpen(false);
+                setActiveAutocomplete(null);
+              }}
+              onSelect={handleChannelSelect}
+              searchQuery={mentionSearchQuery}
+            />
+          ) : (
+            <MentionPicker
+              open={mentionPickerOpen}
+              onClose={() => {
+                setMentionPickerOpen(false);
+                setActiveAutocomplete(null);
+              }}
+              onSelect={handleMentionSelect}
+              searchQuery={mentionSearchQuery}
+            />
+          )}
         </div>
       )}
 
@@ -576,7 +626,7 @@ const Editor = ({
                     data-mention-button="true"
                     onClick={() => {
                       // Just open the mention picker directly
-                      setLastKeyWasAt(true);
+                      setActiveAutocomplete('mention');
                       setMentionPickerOpen(true);
                       setMentionSearchQuery('');
 

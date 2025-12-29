@@ -11,6 +11,7 @@ import { TidioChat } from "@/components/tidio-chat";
 import { Formbricks } from "@/components/formbricks";
 import { UsetifulProvider } from "@/components/usetiful-provider";
 import { ClarityTracking } from "@/components/clarity-tracking";
+import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup";
 import { siteConfig } from "@/config";
 
 import "./globals.css";
@@ -59,6 +60,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
           <ConvexClientProvider>
             <JotaiProvider>
               <UsetifulProvider>
+                <DevServiceWorkerCleanup />
                 <Toaster theme="light" richColors closeButton />
                 <ModalProvider />
                 <TidioChat />
