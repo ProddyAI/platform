@@ -70,7 +70,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
           <script
             dangerouslySetInnerHTML={{
               __html:
-                "try{const t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}",
+                "try{const t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}",
             }}
           />
           <meta name="apple-mobile-web-app-capable" content="yes" />
