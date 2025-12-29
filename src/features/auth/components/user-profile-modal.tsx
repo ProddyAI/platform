@@ -21,6 +21,7 @@ import { useGenerateUploadUrl } from '@/features/upload/api/use-generate-upload-
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useRouter } from 'next/navigation';
 import { useDeleteAccount } from '../api/use-delete-account';
+import type { Id } from '@/../convex/_generated/dataModel';
 
 interface UserProfileModalProps {
     open: boolean;
@@ -269,10 +270,14 @@ export const UserProfileModal = ({
                 throw new Error(`Upload response parse failed: ${text.slice(0, 200)}`);
             }
 
-            if (!storageId) throw new Error('Storage service did not return a storage id');
+            if (typeof storageId !== 'string' || storageId.trim().length === 0) {
+                throw new Error('Storage service did not return a valid storage id');
+            }
+
+            const bannerId = storageId.trim() as Id<'_storage'>;
 
             // Update user profile with new banner
-            await updateUser({ banner: storageId as any });
+            await updateUser({ banner: bannerId });
 
             toast.success('Banner updated successfully!');
 
@@ -293,7 +298,7 @@ export const UserProfileModal = ({
     const handleResetBanner = async () => {
         try {
             setIsUploadingBanner(true);
-            const res = await updateUser({ removeBanner: true });
+            await updateUser({ removeBanner: true });
             toast.success('Banner reset to default');
             setBannerPreview(null);
 
@@ -325,6 +330,7 @@ export const UserProfileModal = ({
         } catch (error) {
             console.error('Failed to delete account:', error);
             toast.error('Failed to delete account. Please try again.');
+        } finally {
             setIsDeleting(false);
         }
     };
@@ -742,20 +748,11 @@ export const UserProfileModal = ({
                     </div>
 
                     <DialogFooter>
-                        <Button 
-                            variant="outline" 
-                            onClick={() => { 
-                                setDeleteDialogOpen(false); 
-                                setConfirmText(''); 
-                            }} 
-                            disabled={isDeleting}
-                        >
-                            Cancel
-                        </Button>
-                        <Button 
-                            variant="destructive" 
-                            onClick={handleDeleteAccount} 
-                            disabled={isDeleting || confirmText.trim().toUpperCase() !== 'DELETE'}
+                        <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setConfirmText(''); }} disabled={isDeleting}>Cancel</Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteAccount}
+                            disabled={isDeleting || confirmText.trim().toLowerCase() !== 'delete my account'}
                         >
                             {isDeleting ? (
                                 <>

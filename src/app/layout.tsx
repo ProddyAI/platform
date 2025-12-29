@@ -1,8 +1,9 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+import * as Sentry from "@sentry/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { PropsWithChildren } from "react";
-import { Analytics } from '@vercel/analytics/next';
+import { Analytics } from "@vercel/analytics/next";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
@@ -29,7 +30,7 @@ export const viewport: Viewport = {
   themeColor: "#4A0D68",
 };
 
-export const metadata: Metadata = {
+const metadata: Metadata = {
   ...siteConfig,
   title: "Proddy - Your Team's Second Brain",
   description:
@@ -45,6 +46,21 @@ export const metadata: Metadata = {
     telephone: false,
   },
 };
+
+export function generateMetadata(): Metadata {
+  const traceData = Sentry.getTraceData();
+  const validTraceData = Object.fromEntries(
+    Object.entries(traceData).filter(([, value]) => value !== undefined)
+  );
+
+  return {
+    ...metadata,
+    other: {
+      ...(metadata.other ?? {}),
+      ...validTraceData,
+    },
+  };
+}
 
 const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
   return (

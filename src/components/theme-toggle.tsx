@@ -13,7 +13,6 @@ export const ThemeToggle = () => {
       if (stored === "light" || stored === "dark") {
         setTheme(stored as "light" | "dark");
       } else {
-        // Default to light theme for new users
         setTheme("light");
       }
     } catch (e) {
