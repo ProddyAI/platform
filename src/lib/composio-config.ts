@@ -782,44 +782,46 @@ function validateToolsForOpenAI(tools: ComposioTool[]): ComposioTool[] {
   return validTools;
 }
 
-// Helper to check if ANY user has connected accounts for specific apps (for workspace-wide access)
+// Helper to check connected accounts for specific entity (user-specific or workspace-wide)
 export async function getAnyConnectedApps(
   composio: Composio,
-  workspaceId: string, // Make workspaceId required for workspace scoping
+  workspaceId: string, // Keep workspaceId for backward compatibility
+  entityId?: string, // Optional: specific entity ID (e.g., member_123 or workspace_456)
 ): Promise<ConnectedApp[]> {
   try {
-    // Always use workspace-scoped entity ID for consistency
-    const workspaceEntityId = `workspace_${workspaceId}`;
+    // Use provided entityId or fall back to workspace-scoped entity ID
+    const targetEntityId = entityId || `workspace_${workspaceId}`;
 
     console.log(
-      `[Composio] Checking connections for workspace-scoped entity: ${workspaceEntityId}`,
+      `[Composio] Checking connections for entity: ${targetEntityId}`,
     );
 
-    // Get workspace-scoped connections (primary approach)
-    let workspaceConnections: ComposioConnection[] = [];
+    // Get entity-specific connections
+    let entityConnections: ComposioConnection[] = [];
     try {
-      const workspaceConnectionsResponse =
+      const entityConnectionsResponse =
         await composio.connectedAccounts.list({
-          userIds: [workspaceEntityId],
+          userIds: [targetEntityId],
         });
-      workspaceConnections = workspaceConnectionsResponse.items || [];
+      entityConnections = entityConnectionsResponse.items || [];
       console.log(
         "[Composio] Found",
-        workspaceConnections.length,
-        "workspace-scoped connections for",
-        workspaceEntityId,
+        entityConnections.length,
+        "connections for entity",
+        targetEntityId,
       );
     } catch (error) {
       console.warn(
-        "[Composio] Failed to get workspace-scoped connections:",
+        `[Composio] Failed to get connections for entity ${targetEntityId}:`,
         error,
       );
     }
 
-    // Only fall back to global connections if no workspace connections found
+    // Only fall back to global connections if no entity connections found
     // and only for backward compatibility
     let globalConnections: ComposioConnection[] = [];
-    if (workspaceConnections.length === 0) {
+    if (entityConnections.length === 0 && !entityId) {
+      // Only fallback if no specific entityId was requested
       try {
         const globalConnectionsResponse = await composio.connectedAccounts.list(
           {},
@@ -835,8 +837,8 @@ export async function getAnyConnectedApps(
       }
     }
 
-    // Prioritize workspace-scoped connections, use global only as fallback
-    const allConnections = [...workspaceConnections, ...globalConnections];
+    // Prioritize entity-specific connections, use global only as fallback
+    const allConnections = [...entityConnections, ...globalConnections];
     console.log("[Composio] Total connections:", allConnections.length);
 
     return Object.values(AVAILABLE_APPS).map((app) => {
@@ -848,15 +850,15 @@ export async function getAnyConnectedApps(
           conn.toolkit?.slug?.toUpperCase() === app.toLowerCase().toUpperCase(),
       );
 
-      // Prefer workspace-scoped connections, then newest
+      // Prefer entity-specific connections, then newest
       const connection = appConnections
         .filter((conn: ComposioConnection) => conn.status === "ACTIVE")
         .sort((a: ComposioConnection, b: ComposioConnection) => {
-          // Strongly prefer workspace-scoped connections
-          const aIsWorkspace = workspaceConnections.includes(a);
-          const bIsWorkspace = workspaceConnections.includes(b);
-          if (aIsWorkspace && !bIsWorkspace) return -1;
-          if (!aIsWorkspace && bIsWorkspace) return 1;
+          // Strongly prefer entity-specific connections
+          const aIsEntity = entityConnections.includes(a);
+          const bIsEntity = entityConnections.includes(b);
+          if (aIsEntity && !bIsEntity) return -1;
+          if (!aIsEntity && bIsEntity) return 1;
 
           // Then by creation date (newest first)
           return (
@@ -865,15 +867,15 @@ export async function getAnyConnectedApps(
         })[0];
 
       console.log(
-        `[Composio] App ${app}: found ${appConnections.length} connections, using ${connection ? (workspaceConnections.includes(connection) ? "workspace-scoped" : "global (fallback)") : "none"}: connected=${!!connection}, connectionId=${connection?.id}, entityId=${workspaceEntityId}`,
+        `[Composio] App ${app}: found ${appConnections.length} connections, using ${connection ? (entityConnections.includes(connection) ? "entity-specific" : "global (fallback)") : "none"}: connected=${!!connection}, connectionId=${connection?.id}, entityId=${targetEntityId}`,
       );
 
       return {
         app,
         connected: !!connection,
         connectionId: connection?.id,
-        // Always return workspace entity ID for consistency
-        entityId: connection ? workspaceEntityId : undefined,
+        // Return the actual entity ID used for this connection
+        entityId: connection ? targetEntityId : undefined,
       };
     });
   } catch (error) {

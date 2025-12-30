@@ -35,7 +35,26 @@ async function getCurrentMember(ctx: any, workspaceId: Id<'workspaces'>) {
 
 // ===== AUTH CONFIGS =====
 
-// Get all auth configs for a workspace
+// Get auth configs for current member (user-specific)
+export const getMyAuthConfigs = query({
+    args: {
+        workspaceId: v.id('workspaces'),
+    },
+    handler: async (ctx, args) => {
+        const member = await getCurrentMember(ctx, args.workspaceId);
+
+        const authConfigs = await ctx.db
+            .query('auth_configs')
+            .withIndex('by_member_id', (q) =>
+                q.eq('memberId', member._id)
+            )
+            .collect();
+
+        return authConfigs;
+    },
+});
+
+// Get all auth configs for a workspace (for admin view)
 export const getAuthConfigs = query({
     args: {
         workspaceId: v.id('workspaces'),
@@ -58,21 +77,60 @@ export const getAuthConfigs = query({
 export const getAuthConfigsPublic = query({
     args: {
         workspaceId: v.id('workspaces'),
+        memberId: v.optional(v.id('members')), // Optional: if provided, return only this member's configs
     },
     handler: async (ctx, args) => {
         // Skip authentication check for API routes
-        const authConfigs = await ctx.db
-            .query('auth_configs')
-            .withIndex('by_workspace_id', (q) =>
-                q.eq('workspaceId', args.workspaceId)
-            )
-            .collect();
-
-        return authConfigs;
+        if (args.memberId) {
+            // Return only this member's auth configs
+            const authConfigs = await ctx.db
+                .query('auth_configs')
+                .withIndex('by_member_id', (q) =>
+                    q.eq('memberId', args.memberId!)
+                )
+                .collect();
+            return authConfigs;
+        } else {
+            // Return all workspace auth configs (backward compatibility)
+            const authConfigs = await ctx.db
+                .query('auth_configs')
+                .withIndex('by_workspace_id', (q) =>
+                    q.eq('workspaceId', args.workspaceId)
+                )
+                .collect();
+            return authConfigs;
+        }
     },
 });
 
-// Get auth config by workspace and toolkit
+// Get auth config by member and toolkit (user-specific)
+export const getMyAuthConfigByToolkit = query({
+    args: {
+        workspaceId: v.id('workspaces'),
+        toolkit: v.union(
+            v.literal('github'),
+            v.literal('gmail'),
+            v.literal('slack'),
+            v.literal('jira'),
+            v.literal('notion'),
+            v.literal('clickup')
+        ),
+    },
+    handler: async (ctx, args) => {
+        const member = await getCurrentMember(ctx, args.workspaceId);
+
+        const authConfig = await ctx.db
+            .query('auth_configs')
+            .withIndex('by_member_toolkit', (q) =>
+                q.eq('memberId', member._id).eq('toolkit', args.toolkit)
+            )
+            .first();
+
+        return authConfig;
+    },
+});
+
+// Get auth config by workspace and toolkit (for backward compatibility)
 export const getAuthConfigByToolkit = query({
     args: {
         workspaceId: v.id('workspaces'),
@@ -109,10 +167,11 @@ export const getAuthConfigById = query({
     },
 });
 
-// Store auth config in database
+// Store auth config in database (now member-specific)
 export const storeAuthConfig = mutation({
     args: {
         workspaceId: v.id('workspaces'),
+        memberId: v.optional(v.id('members')), // Optional for backward compatibility
         toolkit: v.union(
             v.literal('github'),
             v.literal('gmail'),
@@ -139,6 +198,7 @@ export const storeAuthConfig = mutation({
 
         const authConfigId = await ctx.db.insert('auth_configs', {
             workspaceId: args.workspaceId,
+            memberId: args.memberId,
             toolkit: args.toolkit,
             name: args.name,
             type: args.type,
@@ -158,7 +218,26 @@ export const storeAuthConfig = mutation({
 
 // ===== CONNECTED ACCOUNTS =====
 
-// Get all connected accounts for a workspace
+// Get connected accounts for current member (user-specific)
+export const getMyConnectedAccounts = query({
+    args: {
+        workspaceId: v.id('workspaces'),
+    },
+    handler: async (ctx, args) => {
+        const member = await getCurrentMember(ctx, args.workspaceId);
+
+        const connectedAccounts = await ctx.db
+            .query('connected_accounts')
+            .withIndex('by_member_id', (q) =>
+                q.eq('memberId', member._id)
+            )
+            .collect();
+
+        return connectedAccounts;
+    },
+});
+
+// Get all connected accounts for a workspace (for admin view)
 export const getConnectedAccounts = query({
     args: {
         workspaceId: v.id('workspaces'),
@@ -181,21 +260,51 @@ export const getConnectedAccounts = query({
 export const getConnectedAccountsPublic = query({
     args: {
         workspaceId: v.id('workspaces'),
+        memberId: v.optional(v.id('members')), // Optional: if provided, return only this member's accounts
     },
     handler: async (ctx, args) => {
         // Skip authentication check for API routes
-        const connectedAccounts = await ctx.db
-            .query('connected_accounts')
-            .withIndex('by_workspace_id', (q) =>
-                q.eq('workspaceId', args.workspaceId)
-            )
-            .collect();
-
-        return connectedAccounts;
+        if (args.memberId) {
+            // Return only this member's connected accounts
+            const connectedAccounts = await ctx.db
+                .query('connected_accounts')
+                .withIndex('by_member_id', (q) =>
+                    q.eq('memberId', args.memberId!)
+                )
+                .collect();
+            return connectedAccounts;
+        } else {
+            // Return all workspace connected accounts (backward compatibility)
+            const connectedAccounts = await ctx.db
+                .query('connected_accounts')
+                .withIndex('by_workspace_id', (q) =>
+                    q.eq('workspaceId', args.workspaceId)
+                )
+                .collect();
+            return connectedAccounts;
+        }
     },
 });
 
-// Get connected account by user and toolkit
+// Get connected account by member and toolkit (user-specific)
+export const getMyConnectedAccountByToolkit = query({
+    args: {
+        workspaceId: v.id('workspaces'),
+        toolkit: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const member = await getCurrentMember(ctx, args.workspaceId);
+
+        return await ctx.db
+            .query('connected_accounts')
+            .withIndex('by_member_toolkit', (q) =>
+                q.eq('memberId', member._id).eq('toolkit', args.toolkit)
+            )
+            .first();
+    },
+});
+
+// Get connected account by user and toolkit (for backward compatibility)
 export const getConnectedAccountByUserAndToolkit = query({
     args: {
         workspaceId: v.id('workspaces'),
@@ -220,10 +329,11 @@ export const getConnectedAccountByUserAndToolkit = query({
     },
 });
 
-// Store connected account in database
+// Store connected account in database (now member-specific)
 export const storeConnectedAccount = mutation({
     args: {
         workspaceId: v.id('workspaces'),
+        memberId: v.optional(v.id('members')), // Optional for backward compatibility
         authConfigId: v.id('auth_configs'),
         userId: v.string(),
         composioAccountId: v.string(),
@@ -245,6 +355,7 @@ export const storeConnectedAccount = mutation({
 
         const connectedAccountId = await ctx.db.insert('connected_accounts', {
             workspaceId: args.workspaceId,
+            memberId: args.memberId,
             authConfigId: args.authConfigId,
             userId: args.userId,
             composioAccountId: args.composioAccountId,
@@ -291,6 +402,29 @@ export const updateConnectedAccountStatus = mutation({
         }
 
         await ctx.db.patch(args.connectedAccountId, updateData);
+    },
+});
+
+// Delete connected account (for user-specific disconnection)
+export const deleteConnectedAccount = mutation({
+    args: {
+        connectedAccountId: v.id('connected_accounts'),
+        memberId: v.id('members'), // Ensure the account belongs to this member
+    },
+    handler: async (ctx, args) => {
+        // Verify the connected account belongs to this member
+        const connectedAccount = await ctx.db.get(args.connectedAccountId);
+        
+        if (!connectedAccount) {
+            throw new Error('Connected account not found');
+        }
+
+        if (connectedAccount.memberId !== args.memberId) {
+            throw new Error('Unauthorized: Cannot delete another member\'s connection');
+        }
+
+        // Delete the connected account from database
+        await ctx.db.delete(args.connectedAccountId);
     },
 });
 

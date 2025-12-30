@@ -300,8 +300,9 @@ Try asking me things like:`;
   useEffect(() => {
     const checkIntegrations = async () => {
       try {
+        // Pass memberId to get user-specific integrations
         const response = await fetch(
-          `/api/connections/status?workspaceId=${workspaceId}`,
+          `/api/connections/status?workspaceId=${workspaceId}&memberId=${member._id}`,
         );
         if (response.ok) {
           const data = await response.json();
@@ -319,10 +320,10 @@ Try asking me things like:`;
       }
     };
 
-    if (workspaceId) {
+    if (workspaceId && member?._id) {
       checkIntegrations();
     }
-  }, [workspaceId]);
+  }, [workspaceId, member]);
 
   // Scroll to bottom when messages change
   useEffect(() => {

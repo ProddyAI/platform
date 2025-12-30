@@ -69,9 +69,11 @@ const ManagePage = () => {
           {member.role === "member" ? (
             <div>
               <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Integrations</h2>
+                <h2 className="text-2xl font-bold mb-2">My Integrations</h2>
                 <p className="text-muted-foreground">
-                  Connect and manage your workspace integrations
+                  Connect and manage your personal integrations with external services.
+                  These connections are unique to you and will be used when you interact
+                  with Proddy AI and other features.
                 </p>
               </div>
               <div className="bg-background rounded-lg p-6 shadow-sm border">

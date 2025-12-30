@@ -144,22 +144,13 @@ export const ServiceIntegrationCard = ({
 
   const IconComponent = toolkits[toolkit].icon;
   const isConnected = connectedAccount && connectedAccount.status === "ACTIVE";
-  const isOwnerOrAdmin =
-    currentMember.role === "owner" || currentMember.role === "admin";
   const hasAuthConfig = !!authConfig;
 
   const handleCreateAuthConfig = async () => {
-    if (!isOwnerOrAdmin) {
-      toast.error(
-        "Only workspace owners and administrators can manage integrations",
-      );
-      return;
-    }
-
     setIsConnecting(true);
 
     try {
-      // Use AgentAuth to authorize user to toolkit
+      // Use AgentAuth to authorize user to toolkit with member-specific entity ID
       const response = await fetch("/api/composio/agentauth", {
         method: "POST",
         headers: {
@@ -167,7 +158,7 @@ export const ServiceIntegrationCard = ({
         },
         body: JSON.stringify({
           action: "authorize",
-          userId: `workspace_${workspaceId}`, // Use workspace entity ID pattern
+          userId: `member_${currentMember._id}`, // Use member entity ID for user-specific auth
           toolkit,
           workspaceId,
           memberId: currentMember._id,
@@ -190,35 +181,28 @@ export const ServiceIntegrationCard = ({
   };
 
   const handleConnect = async () => {
-    if (!isOwnerOrAdmin) {
-      toast.error(
-        "Only workspace owners and administrators can manage integrations",
-      );
-      return;
-    }
-
     // With AgentAuth, we don't need a separate auth config step
     // The authorization and connection happen in one flow
     await handleCreateAuthConfig();
   };
 
   const handleDisconnect = async () => {
-    if (!isOwnerOrAdmin) {
-      toast.error(
-        "Only workspace owners and administrators can manage integrations",
-      );
-      return;
-    }
-
     if (!connectedAccount) {
       toast.error("No connected account found");
       return;
     }
 
+    console.log(`[ServiceCard] Disconnecting ${toolkit}:`, {
+      connectedAccountId: connectedAccount._id,
+      composioAccountId: connectedAccount.composioAccountId,
+      memberId: currentMember._id,
+      workspaceId,
+    });
+
     setIsDisconnecting(true);
 
     try {
-      // Call AgentAuth API to disconnect the account
+      // Call AgentAuth API to disconnect the account with member-specific entity ID
       const response = await fetch("/api/composio/agentauth", {
         method: "DELETE",
         headers: {
@@ -228,41 +212,74 @@ export const ServiceIntegrationCard = ({
           workspaceId,
           connectedAccountId: connectedAccount._id,
           composioAccountId: connectedAccount.composioAccountId,
+          memberId: currentMember._id, // Pass memberId for user-specific deletion
         }),
       });
 
+      console.log(`[ServiceCard] Disconnect response status:`, response.status);
+
       if (!response.ok) {
-        throw new Error("Failed to disconnect account");
+        const error = await response.json();
+        console.error(`[ServiceCard] Disconnect failed:`, error);
+        throw new Error(error.error || "Failed to disconnect account");
       }
+
+      const result = await response.json();
+      console.log(`[ServiceCard] Disconnect successful:`, result);
 
       toast.success(`${toolkits[toolkit].name} disconnected successfully`);
       onConnectionChange?.();
     } catch (error) {
-      console.error(`Error disconnecting ${toolkit}:`, error);
-      toast.error(`Failed to disconnect ${toolkits[toolkit].name}`);
+      console.error(`[ServiceCard] Error disconnecting ${toolkit}:`, error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Failed to disconnect ${toolkits[toolkit].name}`,
+      );
     } finally {
       setIsDisconnecting(false);
     }
   };
 
-  const handleCheckConnectionStatus = async () => {
-    if (!connectedAccount?.composioAccountId) return;
+  const handleRefresh = async () => {
+    if (!connectedAccount?.composioAccountId) {
+      toast.error("No connected account to refresh");
+      return;
+    }
+
+    setIsConnecting(true);
 
     try {
       // Call AgentAuth API to check connection status
       const response = await fetch(
-        `/api/composio/agentauth?action=check-status&composioAccountId=${connectedAccount.composioAccountId}`,
+        `/api/composio/agentauth?action=check-status&composioAccountId=${connectedAccount.composioAccountId}&memberId=${currentMember._id}`,
         {
           method: "GET",
         },
       );
 
-      if (response.ok) {
-        const status = await response.json();
-        setConnectionStatus(status);
+      if (!response.ok) {
+        throw new Error("Failed to refresh connection status");
       }
+
+      const status = await response.json();
+      setConnectionStatus(status);
+
+      if (status.connected) {
+        toast.success(`${toolkits[toolkit].name} connection is active`);
+      } else {
+        toast.warning(
+          `${toolkits[toolkit].name} connection is not active. ${status.error || ""}`,
+        );
+      }
+
+      // Refresh the integrations list
+      onConnectionChange?.();
     } catch (error) {
-      console.error(`Error checking ${toolkit} connection:`, error);
+      console.error(`Error refreshing ${toolkit} connection:`, error);
+      toast.error(`Failed to refresh ${toolkits[toolkit].name} status`);
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -308,19 +325,28 @@ export const ServiceIntegrationCard = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleCheckConnectionStatus}
-                disabled={!isOwnerOrAdmin}
+                onClick={handleRefresh}
+                disabled={isConnecting}
                 className="bg-blue-100 border-blue-200 text-blue-700 hover:bg-blue-200 hover:border-blue-300"
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
+                {isConnecting ? (
+                  <>
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </>
+                )}
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleDisconnect}
-                disabled={isDisconnecting || !isOwnerOrAdmin}
+                disabled={isDisconnecting}
                 className="bg-red-100 border-red-200 text-red-700 hover:bg-red-200 hover:border-red-300"
               >
                 {isDisconnecting ? (
@@ -339,18 +365,9 @@ export const ServiceIntegrationCard = ({
           </div>
         ) : (
           <div className="space-y-3">
-            {!isOwnerOrAdmin && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <AlertCircle className="h-4 w-4" />
-                <span>
-                  Only workspace owners and administrators can connect services
-                </span>
-              </div>
-            )}
-
             <Button
               onClick={handleCreateAuthConfig}
-              disabled={isConnecting || !isOwnerOrAdmin}
+              disabled={isConnecting}
               className={`w-full ${toolkits[toolkit].color} text-white`}
             >
               {isConnecting ? (

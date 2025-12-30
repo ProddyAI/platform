@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const workspaceId = searchParams.get("workspaceId");
+    const memberId = searchParams.get("memberId"); // Optional: get member-specific connections
 
     if (!workspaceId) {
       return NextResponse.json(
@@ -18,12 +19,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log("[Connections Status] Checking for workspace:", workspaceId);
+    console.log(
+      `[Connections Status] Checking for workspace: ${workspaceId}${memberId ? ` and member: ${memberId}` : ""}`,
+    );
 
     const composio = createComposioClient();
 
-    // Get connected apps using the new comprehensive system (workspace-scoped)
-    const connectedApps = await getAnyConnectedApps(composio, workspaceId);
+    // Use member-specific entity ID if memberId is provided, otherwise workspace-level
+    const entityId = memberId ? `member_${memberId}` : `workspace_${workspaceId}`;
+
+    // Get connected apps using member-specific or workspace entity ID
+    const connectedApps = await getAnyConnectedApps(composio, workspaceId, entityId);
 
     console.log(
       "[Connections Status] Found connected apps:",
@@ -41,13 +47,11 @@ export async function GET(req: NextRequest) {
       .map((app) => app.app) as AvailableApp[];
 
     if (connectedAppNames.length > 0) {
-      const userId = `workspace_${workspaceId}`; // Always use workspace-scoped entity ID
-
       try {
-        // Get all available tools using the comprehensive system
+        // Get all available tools using the entity ID (member-specific or workspace)
         const allTools = await getAllToolsForApps(
           composio,
-          userId,
+          entityId,
           connectedAppNames,
           true, // use cache
         );
@@ -68,6 +72,8 @@ export async function GET(req: NextRequest) {
       connected: connectedApps.filter((app) => app.connected),
       totalTools,
       workspaceId,
+      memberId,
+      entityId,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -36,10 +36,10 @@ export async function POST(req: NextRequest) {
     const { apiClient } = initializeComposio();
 
     if (action === "authorize") {
-      // Always use workspace-scoped entity ID for all connections
-      const entityId = `workspace_${workspaceId}`;
+      // Use member-scoped entity ID for user-specific connections
+      const entityId = `member_${memberId}`;
       console.log(
-        `[AgentAuth] Authorizing workspace ${workspaceId} (entityId: ${entityId}) for ${toolkit}`,
+        `[AgentAuth] Authorizing member ${memberId} (entityId: ${entityId}) for ${toolkit}`,
       );
 
       try {
@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
             if (toolkitAuthConfigId) {
               await convex.mutation(api.integrations.storeAuthConfig, {
                 workspaceId: workspaceId as Id<"workspaces">,
+                memberId: memberId as Id<"members">,
                 toolkit: toolkit as any,
                 name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
                 type: "use_composio_managed_auth",
@@ -105,10 +106,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "complete") {
-      // Always use workspace-scoped entity ID for all connections
-      const entityId = `workspace_${workspaceId}`;
+      // Use member-scoped entity ID for user-specific connections
+      const entityId = `member_${memberId}`;
       console.log(
-        `[AgentAuth] Completing connection for workspace ${workspaceId} (entityId: ${entityId}) and ${toolkit}`,
+        `[AgentAuth] Completing connection for member ${memberId} (entityId: ${entityId}) and ${toolkit}`,
       );
 
       try {
@@ -165,6 +166,7 @@ export async function POST(req: NextRequest) {
                 api.integrations.storeAuthConfig,
                 {
                   workspaceId: workspaceId as Id<"workspaces">,
+                  memberId: memberId as Id<"members">,
                   toolkit: toolkit as any,
                   name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
                   type: "use_composio_managed_auth",
@@ -176,11 +178,12 @@ export async function POST(req: NextRequest) {
             }
 
             // Store connected account
-            // Use workspace-scoped entity ID for consistency instead of client-provided userId
+            // Use member-scoped entity ID for user-specific connections
             await convex.mutation(api.integrations.storeConnectedAccount, {
               workspaceId: workspaceId as Id<"workspaces">,
+              memberId: memberId as Id<"members">,
               authConfigId: authConfigId,
-              userId: entityId as Id<"users">,
+              userId: entityId,
               composioAccountId: connectedAccount.id,
               toolkit: toolkit as any, // Toolkit type validation
               status: "ACTIVE",
@@ -234,27 +237,33 @@ export async function GET(req: NextRequest) {
 
     // Fetch auth configs and connected accounts for workspace
     if (action === "fetch-data" && workspaceId) {
+      const memberId = searchParams.get("memberId"); // Optional: filter by member
       console.log(
-        `[AgentAuth] Fetching integration data for workspace: ${workspaceId}`,
+        `[AgentAuth] Fetching integration data for workspace: ${workspaceId}${memberId ? ` and member: ${memberId}` : ""}`,
       );
 
       try {
-        // Fetch auth configs from database
+        // Fetch auth configs from database (member-specific if memberId provided)
         const authConfigs = await convex.query(
           api.integrations.getAuthConfigsPublic,
           {
             workspaceId: workspaceId as Id<"workspaces">,
+            memberId: memberId ? (memberId as Id<"members">) : undefined,
           },
         );
 
-        // UPDATED: Fetch real connected accounts from Composio using the new helper
+        // UPDATED: Fetch real connected accounts from Composio using member-specific entity ID
         const { createComposioClient, getAnyConnectedApps } = await import(
           "@/lib/composio-config"
         );
         const composioClient = createComposioClient();
+        
+        // If memberId is provided, use member-specific entity ID
+        const entityId = memberId ? `member_${memberId}` : undefined;
         const realConnectedApps = await getAnyConnectedApps(
           composioClient,
           workspaceId,
+          entityId, // Pass member-specific entity ID if available
         );
 
         // Transform the real connected apps to match the expected format
@@ -263,15 +272,16 @@ export async function GET(req: NextRequest) {
           .map((app: any) => ({
             _id: app.connectionId, // Use connection ID as _id
             workspaceId: workspaceId as Id<"workspaces">,
+            memberId: memberId ? (memberId as Id<"members">) : undefined,
             authConfigId: `auth_${app.app.toLowerCase()}`, // Generate a fake auth config ID
-            userId: app.entityId || `workspace_${workspaceId}`,
+            userId: app.entityId || (memberId ? `member_${memberId}` : `workspace_${workspaceId}`),
             composioAccountId: app.connectionId,
             toolkit: app.app.toLowerCase(), // Convert to lowercase to match expected format
             status: "ACTIVE", // Since these are filtered as connected
             metadata: {},
             isDisabled: false,
             connectedAt: Date.now(), // Use current time as fallback
-            connectedBy: "system" as Id<"members">, // Placeholder
+            connectedBy: memberId ? (memberId as Id<"members">) : ("system" as Id<"members">), // Use memberId if available
           }));
 
         console.log(
@@ -320,12 +330,12 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch tools for connected toolkit (Step 2 from documentation)
-    if (action === "fetch-tools" && workspaceId && toolkit) {
-      // Use workspace-scoped entity ID for consistency
-      const entityId = `workspace_${workspaceId}`;
+    if (action === "fetch-tools" && workspaceId && toolkit && userId) {
+      // Use member-scoped entity ID for user-specific connections
+      const entityId = userId; // userId should be member_{memberId}
 
       console.log(
-        `[AgentAuth] Fetching tools for workspace ${workspaceId} (entityId: ${entityId}) and toolkit ${toolkit}`,
+        `[AgentAuth] Fetching tools for user ${userId} (entityId: ${entityId}) and toolkit ${toolkit}`,
       );
 
       try {
@@ -370,63 +380,92 @@ export async function GET(req: NextRequest) {
 // Disconnect account (unified DELETE endpoint)
 export async function DELETE(req: NextRequest) {
   try {
-    const { workspaceId, connectedAccountId, composioAccountId } =
+    const { workspaceId, connectedAccountId, composioAccountId, memberId } =
       await req.json();
 
-    if (!workspaceId || !composioAccountId) {
+    console.log(`[AgentAuth DELETE] Request received:`, {
+      workspaceId,
+      connectedAccountId,
+      composioAccountId,
+      memberId,
+    });
+
+    if (!workspaceId || !composioAccountId || !memberId) {
+      console.error(`[AgentAuth DELETE] Missing required fields`);
       return NextResponse.json(
-        { error: "workspaceId and composioAccountId are required" },
+        { error: "workspaceId, composioAccountId, and memberId are required" },
         { status: 400 },
       );
     }
 
-    console.log(`[AgentAuth] Disconnecting account: ${composioAccountId}`);
+    console.log(`[AgentAuth DELETE] Disconnecting account: ${composioAccountId} for member: ${memberId}`);
 
     const { apiClient } = initializeComposio();
 
-    // First, disconnect from Composio using the API client
+    // First, disconnect from Composio using the API client with member-specific entity ID
+    let composioDeleteSuccess = false;
     try {
+      console.log(`[AgentAuth DELETE] Calling Composio API to delete connection: ${composioAccountId}`);
       await apiClient.deleteConnection(composioAccountId);
+      composioDeleteSuccess = true;
       console.log(
-        `[AgentAuth] Successfully deleted from Composio: ${composioAccountId}`,
+        `[AgentAuth DELETE] ✓ Successfully deleted from Composio: ${composioAccountId}`,
       );
     } catch (error) {
-      console.warn("Error disconnecting from Composio:", error);
+      console.error("[AgentAuth DELETE] ✗ Error disconnecting from Composio:", error);
+      console.error("[AgentAuth DELETE] Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // Continue to delete from database even if Composio delete fails
     }
 
-    // If connectedAccountId is provided and looks like a valid Convex ID, update the database
+    // Delete the connected account record from database (member-specific)
     if (
       connectedAccountId &&
       connectedAccountId.length > 10 &&
       !connectedAccountId.startsWith("ca_")
     ) {
       try {
-        await convex.mutation(api.integrations.updateConnectedAccountStatus, {
+        console.log(`[AgentAuth DELETE] Deleting database record: ${connectedAccountId} for member: ${memberId}`);
+        await convex.mutation(api.integrations.deleteConnectedAccount, {
           connectedAccountId: connectedAccountId as Id<"connected_accounts">,
-          status: "DISABLED",
-          isDisabled: true,
+          memberId: memberId as Id<"members">,
         });
         console.log(
-          `[AgentAuth] Database record updated for ${connectedAccountId}`,
+          `[AgentAuth DELETE] ✓ Database record deleted for ${connectedAccountId}`,
         );
       } catch (error) {
-        console.warn("Error updating database record:", error);
-        // Don't fail the whole operation if database update fails
+        console.error("[AgentAuth DELETE] ✗ Error deleting database record:", error);
+        console.error("[AgentAuth DELETE] Database error details:", {
+          message: error instanceof Error ? error.message : String(error),
+          connectedAccountId,
+          memberId,
+        });
+        return NextResponse.json(
+          { error: "Failed to delete connection from database" },
+          { status: 500 },
+        );
       }
     } else {
       console.log(
-        `[AgentAuth] No valid database ID provided (got: ${connectedAccountId}), skipping database update`,
+        `[AgentAuth DELETE] No valid database ID provided (got: ${connectedAccountId}), skipping database deletion`,
       );
     }
 
-    console.log(`[AgentAuth] Account disconnected successfully`);
+    console.log(`[AgentAuth DELETE] ✓ Account disconnected successfully (Composio: ${composioDeleteSuccess})`);
 
     return NextResponse.json({
       success: true,
       message: "Account disconnected successfully",
+      composioDeleted: composioDeleteSuccess,
     });
   } catch (error) {
-    console.error("[AgentAuth] DELETE Error:", error);
+    console.error("[AgentAuth DELETE] Unexpected error:", error);
+    console.error("[AgentAuth DELETE] Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { error: "Failed to disconnect account" },
       { status: 500 },
