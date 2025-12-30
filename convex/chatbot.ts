@@ -124,7 +124,7 @@ async function generateLLMResponse(
 	const modelId =
 		process.env.GOOGLE_GENERATIVE_AI_MODEL ||
 		process.env.GEMINI_MODEL ||
-		'gemini-2.5-flash';
+		'gemini-1.5-flash-8b';
 
 	const system = (opts.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT).trim();
 	const userPrompt = String(opts.prompt ?? '').trim();
@@ -158,6 +158,7 @@ type AssistantIntent = {
 	mode:
 		| 'channel'
 		| 'channels_overview'
+		| 'workspace_summary'
 		| 'overview'
 		| 'team_status'
 		| 'incidents'
@@ -380,8 +381,8 @@ function renderAgendaDigest(opts: {
 	label: string;
 	windowLabel: string;
 	events: Array<{ title: string; date: number; time?: string }>;
-	tasks: Array<{ title: string; dueDate?: number; priority?: Priority }>
-	cards: Array<{ title: string; dueDate?: number; priority?: Priority; channelName?: string }>
+	tasks: Array<{ title: string; dueDate?: number; priority?: Priority }>;
+	cards: Array<{ title: string; dueDate?: number; priority?: Priority; channelName?: string }>;
 	mentionsCount: number;
 	mentionsSummary?: string;
 }): string {
@@ -587,13 +588,10 @@ function extractIntent(query: string): AssistantIntent {
 	}
 
 	// "summarize all" / "what happened in all channels" -> workspace overview.
-	// If the user explicitly says "channels", produce a channels-only recap.
-	if (wantsSummaryKeyword && mentionsChannelsWord && !channelFromText) {
-		return { mode: 'channels_overview', channel: null };
-	}
-	// Otherwise, generic "summarize all" / "workspace" is treated as a personal daily brief / workspace overview.
-	if (wantsSummaryKeyword && wantsAllChannels && !channelFromText) {
-		return { mode: 'overview', channel: null };
+	// If no channel is specified, treat summarization as a combined workspace chat summary.
+	// (No per-channel breakdown unless explicitly requested elsewhere.)
+	if (wantsSummaryKeyword && (mentionsChannelsWord || wantsAllChannels) && !channelFromText) {
+		return { mode: 'workspace_summary', channel: null };
 	}
 
 	const wantsNextWeek = q.includes('next week');
@@ -646,8 +644,8 @@ function extractIntent(query: string): AssistantIntent {
 	}
 
 	if (wantsOverview) {
-		// Treat generic "recap" requests as a daily assistant brief.
-		return { mode: 'agenda_today', channel: null };
+		// If user asks to summarize but didn't specify a channel, provide a combined workspace summary.
+		return { mode: 'workspace_summary', channel: null };
 	}
 
 	// Prioritize the new personal-assistant intents.
@@ -965,6 +963,99 @@ ${messageContext}`;
 				return {
 					answer: `${detail} I can't summarize #${resolvedChannelName} right now - please try again later.`,
 					sources: resolvedChannelName ? [`#${resolvedChannelName}`] : [],
+				};
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 3a. WORKSPACE SUMMARY (no channel specified)
+		// ---------------------------------------------------------------------
+		if (intent.mode === 'workspace_summary') {
+			const authUserId = await getAuthUserId(ctx);
+			if (!authUserId) {
+				return { answer: 'Sign in to use the assistant.', sources: [] };
+			}
+			// Ensure membership.
+			await ctx.runQuery(api.members.current, { workspaceId });
+
+			const recent = await ctx.runQuery(api.messages.getRecentWorkspaceChannelMessages, {
+				workspaceId,
+				// Use 0 to fetch the most recent messages irrespective of date.
+				from: 0,
+				// Keep token and query cost bounded.
+				limit: 220,
+				perChannelLimit: 2,
+			});
+
+			if (!recent?.length) {
+				return {
+					answer: 'No information available to summarize.',
+					sources: [],
+				};
+			}
+
+			const lines = (recent || [])
+				.map((m) => {
+					const channelName = String(m?.channelName ?? 'unknown').trim();
+					const who = String(m?.authorName ?? '').trim();
+					const body = truncateOneLine(String(m?.body ?? ''), 180);
+					if (!body) return '';
+					const prefix = `#${channelName}${who ? ` @${who}` : ''}: `;
+					return `${prefix}${body}`.trim();
+				})
+				.filter(Boolean)
+				.slice(-30);
+
+			if (!lines.length) {
+				return {
+					answer: 'No information available to summarize.',
+					sources: [],
+				};
+			}
+
+			const prompt = `You are Proddy, a personal work assistant.
+
+Task:
+- The user asked for a summary without specifying a channel.
+- Produce ONE concise, combined summary using ONLY the snippets provided.
+
+Strict rules:
+- Do NOT quote any snippet or copy 5+ consecutive words.
+- Do NOT output topic/keyword lists and do NOT mention message counts.
+- Do NOT invent details. If it isn't supported by the snippets, omit it.
+- Do NOT produce a per-channel breakdown. Keep it high-level.
+
+Output format:
+Workspace Summary
+- <bullet>
+- <bullet>
+
+Keep it concise: 5-10 bullets max.
+
+User request: ${args.query}
+
+Recent channel snippets (most recent last):
+${lines.map((l) => `- ${l}`).join('\n')}`;
+
+			try {
+				const answer = await generateLLMResponse({
+					prompt,
+					systemPrompt: '',
+					recentMessages: recentChatMessages,
+				});
+				return {
+					answer,
+					sources: ['Messages'],
+				};
+			} catch (e) {
+				const errorMessage = e instanceof Error ? e.message : '';
+				const detail = errorMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY is required')
+					? 'AI is not configured for workspace summaries.'
+					: 'AI workspace summary is temporarily unavailable.';
+
+				return {
+					answer: detail,
+					sources: ['Messages'],
 				};
 			}
 		}

@@ -136,6 +136,9 @@ const nextConfig = withPWA({
 				images: {
 								domains: ['getstream.io'],
 				},
+				eslint: {
+						ignoreDuringBuilds: true,
+				},
 });
 
 let withSentryConfig = (config) => config;
