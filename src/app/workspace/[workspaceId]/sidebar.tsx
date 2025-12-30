@@ -358,16 +358,14 @@ export const WorkspaceSidebar = ({
             isCollapsed={isCollapsed}
           />
         )}
-        {(member.role === "admin" || member.role === "owner") && (
-          <SidebarItem
-            label="Manage"
-            icon={Settings}
-            id="manage"
-            href={`/workspace/${workspaceId}/manage`}
-            isActive={pathname.includes("/manage")}
-            isCollapsed={isCollapsed}
-          />
-        )}
+        <SidebarItem
+          label="Manage"
+          icon={Settings}
+          id="manage"
+          href={`/workspace/${workspaceId}/manage`}
+          isActive={pathname.includes("/manage")}
+          isCollapsed={isCollapsed}
+        />
       </div>
 
       {/* Collapse/Expand Button */}

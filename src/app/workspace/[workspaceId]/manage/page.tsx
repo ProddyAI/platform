@@ -29,13 +29,6 @@ const ManagePage = () => {
     id: workspaceId,
   });
 
-  // Check if user has permission to access this page
-  if (!memberLoading && member && member.role === "member") {
-    // Redirect to workspace home if user is not an admin or owner
-    router.push(`/workspace/${workspaceId}`);
-    return null;
-  }
-
   if (memberLoading || workspaceLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -72,66 +65,85 @@ const ManagePage = () => {
       {/* Content */}
       <div className="flex-1 overflow-auto p-6 bg-white">
         <div className="max-w-6xl mx-auto">
-          <Tabs defaultValue="integrations" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-8">
-              <TabsTrigger value="workspace">
-                <Settings className="h-4 w-4 mr-2" />
-                Workspace
-              </TabsTrigger>
-              <TabsTrigger value="channels">
-                <Hash className="h-4 w-4 mr-2" />
-                Channels
-              </TabsTrigger>
-              <TabsTrigger value="members">
-                <Users className="h-4 w-4 mr-2" />
-                Members
-              </TabsTrigger>
-              <TabsTrigger value="integrations">
-                <Plug className="h-4 w-4 mr-2" />
-                Integrations
-              </TabsTrigger>
-            </TabsList>
+          {/* For members, show only Integrations */}
+          {member.role === "member" ? (
+            <div>
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Integrations</h2>
+                <p className="text-muted-foreground">
+                  Connect and manage your workspace integrations
+                </p>
+              </div>
+              <div className="bg-background rounded-lg p-6 shadow-sm border">
+                <IntegrationsManagement
+                  workspaceId={workspaceId}
+                  currentMember={member}
+                />
+              </div>
+            </div>
+          ) : (
+            /* For admins and owners, show all tabs */
+            <Tabs defaultValue="integrations" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-8">
+                <TabsTrigger value="workspace">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Workspace
+                </TabsTrigger>
+                <TabsTrigger value="channels">
+                  <Hash className="h-4 w-4 mr-2" />
+                  Channels
+                </TabsTrigger>
+                <TabsTrigger value="members">
+                  <Users className="h-4 w-4 mr-2" />
+                  Members
+                </TabsTrigger>
+                <TabsTrigger value="integrations">
+                  <Plug className="h-4 w-4 mr-2" />
+                  Integrations
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent
-              value="workspace"
-              className="bg-background rounded-lg p-6 shadow-sm border"
-            >
-              <WorkspaceManagement
-                workspace={workspace}
-                currentMember={member}
-              />
-            </TabsContent>
+              <TabsContent
+                value="workspace"
+                className="bg-background rounded-lg p-6 shadow-sm border"
+              >
+                <WorkspaceManagement
+                  workspace={workspace}
+                  currentMember={member}
+                />
+              </TabsContent>
 
-            <TabsContent
-              value="channels"
-              className="bg-background rounded-lg p-6 shadow-sm border"
-            >
-              <ChannelsManagement
-                workspaceId={workspaceId}
-                currentMember={member}
-              />
-            </TabsContent>
+              <TabsContent
+                value="channels"
+                className="bg-background rounded-lg p-6 shadow-sm border"
+              >
+                <ChannelsManagement
+                  workspaceId={workspaceId}
+                  currentMember={member}
+                />
+              </TabsContent>
 
-            <TabsContent
-              value="members"
-              className="bg-background rounded-lg p-6 shadow-sm border"
-            >
-              <MembersManagement
-                workspaceId={workspaceId}
-                currentMember={member}
-              />
-            </TabsContent>
+              <TabsContent
+                value="members"
+                className="bg-background rounded-lg p-6 shadow-sm border"
+              >
+                <MembersManagement
+                  workspaceId={workspaceId}
+                  currentMember={member}
+                />
+              </TabsContent>
 
-            <TabsContent
-              value="integrations"
-              className="bg-background rounded-lg p-6 shadow-sm border"
-            >
-              <IntegrationsManagement
-                workspaceId={workspaceId}
-                currentMember={member}
-              />
-            </TabsContent>
-          </Tabs>
+              <TabsContent
+                value="integrations"
+                className="bg-background rounded-lg p-6 shadow-sm border"
+              >
+                <IntegrationsManagement
+                  workspaceId={workspaceId}
+                  currentMember={member}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </div>
     </div>
