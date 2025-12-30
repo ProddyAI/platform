@@ -258,7 +258,7 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
           title: widgetConfig.title,
           description: widgetConfig.description,
           visible: true,
-          size: 'medium' as const,
+          size: 'medium' as WidgetSize,
         };
       })
       .filter((widget): widget is DashboardWidget => widget !== null);

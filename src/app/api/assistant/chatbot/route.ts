@@ -359,9 +359,11 @@ For now, I can help you with workspace content like messages, tasks, notes, and 
         "[Chatbot Assistant] Failed to load Composio tools:",
         error,
       );
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       console.error("[Chatbot Assistant] Error details:", {
-        message: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : undefined,
+        message: errorMessage,
+        stack: errorStack,
       });
 
       // Set empty arrays so the chatbot continues to work
