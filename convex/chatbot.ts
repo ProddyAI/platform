@@ -1,8 +1,10 @@
 import { action, mutation, query, QueryCtx } from './_generated/server';
 import { v } from 'convex/values';
-import { Id } from './_generated/dataModel';
+import { type TableNames, Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { api } from './_generated/api';
+import { generateText } from 'ai';
+import { google } from '@ai-sdk/google';
 
 // Define types for chat messages and responses
 type Source = {
@@ -34,7 +36,7 @@ type NavigationAction = {
 type GenerateResponseResult = {
 	response: string;
 	sources?: Array<{
-		id: Id<any>;
+		id: Id<TableNames>;
 		type: string;
 		text: string;
 	}>;
@@ -42,8 +44,20 @@ type GenerateResponseResult = {
 	error?: string;
 };
 
-let cachedGeminiModel: string | null = null;
-let cachedGeminiApiVersion: string | null = null;
+type LLMMessage = {
+	role: 'system' | 'user' | 'assistant';
+	content: string;
+};
+
+const DEFAULT_SYSTEM_PROMPT =
+	[
+		'You are Proddy, a personal work assistant for a team workspace.',
+		'You help with: calendar/meetings, tasks, incidents, team status, and project execution.',
+		'Respond in plain text with short headings and bullet points.',
+		'Recent chat messages are ONLY for conversational continuity; they are not a data source.',
+		'Do NOT output topic/keyword summaries of chat messages. Never write "topics" or any message counts.',
+		'If you do not know the answer, respond with "I do not have that information."',
+	].join(' ');
 
 function normalizeChannelName(name: string) {
 	return name.trim().toLowerCase().replace(/\s+/g, '-');
@@ -96,201 +110,58 @@ function scoreChannelMatch(channelSlug: string, querySlug: string) {
 }
 
 async function generateLLMResponse(
-	prompt: string,
-	systemPrompt?: string
+	opts: {
+		prompt: string;
+		systemPrompt?: string;
+		recentMessages?: ReadonlyArray<ChatMessage>;
+	}
 ): Promise<string> {
 	const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 	if (!apiKey) {
-		throw new Error(
-			'GOOGLE_GENERATIVE_AI_API_KEY is required for Gemini 1.5 Flash'
-		);
+		throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is required');
 	}
 
-	const preferredModel =
+	const modelId =
 		process.env.GOOGLE_GENERATIVE_AI_MODEL ||
 		process.env.GEMINI_MODEL ||
-		'gemini-1.5-flash';
+		'gemini-1.5-flash-8b';
 
-	// The Generative Language API frequently exposes models under v1beta.
-	// If you need to override, set GOOGLE_GENERATIVE_AI_API_VERSION to "v1beta" or "v1".
-	const apiVersion =
-		process.env.GOOGLE_GENERATIVE_AI_API_VERSION ||
-		cachedGeminiApiVersion ||
-		'v1beta';
+	const system = (opts.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT).trim();
+	const userPrompt = String(opts.prompt ?? '').trim();
+	if (!userPrompt) return '';
 
-	const finalPrompt = systemPrompt
-		? `System:\n${systemPrompt}\n\nUser:\n${prompt}`
-		: prompt;
+	const previous = (opts.recentMessages ?? [])
+		.filter((m) => m.role === 'user' || m.role === 'assistant')
+		.slice(-3)
+		.map<LLMMessage>((m) => ({
+			role: m.role,
+			content: truncateOneLine(String(m.content ?? '').trim(), 700),
+		}));
 
-	function cleanModelText(raw: unknown): string {
-		let text = String(raw ?? '').trim();
-		if (!text) return '';
+	const messages: LLMMessage[] = [
+		{ role: 'system', content: system },
+		...previous,
+		{ role: 'user', content: userPrompt },
+	];
 
-		// Gemini sometimes wraps the whole response in quotes (especially when the prompt contains quotes).
-		// Strip only obvious outer quotes to avoid altering legitimate quoted content.
-		if (
-			(text.startsWith('"') && text.endsWith('"') && text.length >= 2) ||
-			(text.startsWith("'") && text.endsWith("'") && text.length >= 2)
-		) {
-			text = text.slice(1, -1).trim();
-		}
-		// Also handle a single accidental leading quote.
-		if (text.startsWith('"High Priority') || text.startsWith("'High Priority")) {
-			text = text.slice(1).trim();
-		}
-		return text;
-	}
+	const { text } = await generateText({
+		model: google(modelId),
+		messages,
+		temperature: 0.2,
+		maxTokens: 1024,
+	});
 
-	function normalizeModelName(modelName: string): string {
-		return modelName.startsWith('models/') ? modelName.slice('models/'.length) : modelName;
-	}
-
-	async function listModels(version: string): Promise<any[]> {
-		const url = `https://generativelanguage.googleapis.com/${version}/models?key=${apiKey}`;
-		const res = await fetch(url);
-		if (!res.ok) {
-			const text = await res.text();
-			throw new Error(`Gemini ListModels failed: ${res.status} ${text}`);
-		}
-		const data: any = await res.json();
-		return Array.isArray(data?.models) ? data.models : [];
-	}
-
-	function pickBestModel(models: any[]): string | null {
-		const supportsGenerateContent = models.filter((m) =>
-			Array.isArray(m?.supportedGenerationMethods)
-				? m.supportedGenerationMethods.includes('generateContent')
-				: false
-		);
-
-		const names = supportsGenerateContent
-			.map((m) => String(m?.name || ''))
-			.filter(Boolean);
-
-		const normalized = names.map(normalizeModelName);
-
-		const exactFlash = normalized.find((n) => n.includes('gemini-1.5-flash'));
-		if (exactFlash) return exactFlash;
-
-		const anyFlash = normalized.find((n) => n.includes('flash'));
-		if (anyFlash) return anyFlash;
-
-		const anyGemini = normalized.find((n) => n.includes('gemini'));
-		if (anyGemini) return anyGemini;
-
-		return normalized[0] ?? null;
-	}
-
-	async function tryModel(version: string, model: string, textPrompt: string): Promise<any> {
-		const url = `https://generativelanguage.googleapis.com/${version}/models/${encodeURIComponent(
-			model
-		)}:generateContent?key=${apiKey}`;
-		const res = await fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				contents: [
-					{
-						role: 'user',
-						parts: [{ text: textPrompt }],
-					},
-				],
-				generationConfig: {
-					temperature: 0.2,
-					// Allow slightly longer outputs; some summaries (e.g., multi-channel) can hit the ceiling.
-					maxOutputTokens: 2048,
-				},
-			}),
-		});
-
-		if (!res.ok) {
-			const text = await res.text();
-			throw new Error(`Gemini request failed: ${res.status} ${text}`);
-		}
-
-		return await res.json();
-	}
-
-	const modelCandidates = [
-		normalizeModelName(cachedGeminiModel || ''),
-		normalizeModelName(preferredModel),
-		// Common fallbacks across releases.
-		'gemini-1.5-flash-latest',
-		'gemini-1.5-flash-002',
-		'gemini-1.5-flash-001',
-	].filter(Boolean);
-
-	let data: any = null;
-	let lastError: unknown = null;
-	let usedModel: string | null = null;
-	for (const model of modelCandidates) {
-		try {
-			data = await tryModel(apiVersion, model, finalPrompt);
-			usedModel = model;
-			lastError = null;
-			break;
-		} catch (err) {
-			lastError = err;
-			const msg = err instanceof Error ? err.message : '';
-			// If the model is missing/unsupported, resolve an available one via ListModels and retry.
-			if (msg.includes('Call ListModels') || msg.includes('NOT_FOUND') || msg.includes('not found')) {
-				try {
-					const models = await listModels(apiVersion);
-					const best = pickBestModel(models);
-					if (best) {
-						cachedGeminiModel = best;
-						cachedGeminiApiVersion = apiVersion;
-						data = await tryModel(apiVersion, best, finalPrompt);
-						usedModel = best;
-						lastError = null;
-						break;
-					}
-				} catch {
-					// Ignore ListModels failures and continue trying fallbacks.
-				}
-			}
-			continue;
-		}
-	}
-
-	if (!data) {
-		throw lastError instanceof Error
-			? lastError
-			: new Error('Gemini request failed');
-	}
-
-	const candidate = data?.candidates?.[0];
-	const firstText = candidate?.content?.parts?.map((p: any) => p?.text ?? '').join('') ?? '';
-	const finishReasonRaw = String(candidate?.finishReason ?? '').toUpperCase();
-
-	// If Gemini hit output token limits, attempt one continuation pass.
-	if (finishReasonRaw.includes('MAX') && usedModel) {
-		try {
-			const continuationPrompt = `${finalPrompt}\n\n---\nThe previous response was cut off. Continue from where you left off.
-
-Rules:
-- Output ONLY the continuation text (no repeated headings if already written).
-- Do not repeat any lines already present.
-- Never quote or paste any workspace message verbatim.
-
-Previous response so far:\n${firstText}`;
-			const more = await tryModel(apiVersion, usedModel, continuationPrompt);
-			const moreText =
-				more?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text ?? '').join('') ?? '';
-			return cleanModelText(`${firstText}\n${moreText}`);
-		} catch {
-			// Fall through to returning the best-effort partial text.
-		}
-	}
-
-	return cleanModelText(firstText);
+	return text.trim();
 }
 
 type AssistantIntent = {
 	mode:
 		| 'channel'
+		| 'channels_overview'
+		| 'workspace_summary'
 		| 'overview'
 		| 'team_status'
+		| 'incidents'
 		| 'tasks'
 		| 'agenda_today'
 		| 'agenda_tomorrow'
@@ -311,14 +182,19 @@ function toPlainText(input: unknown): string {
 	// Try to unwrap common editor JSON payloads.
 	if (text.startsWith('{') || text.startsWith('[')) {
 		try {
-			const parsed: any = JSON.parse(text);
+			const parsed: unknown = JSON.parse(text);
+			const isRecord = (v: unknown): v is Record<string, unknown> =>
+				typeof v === 'object' && v !== null;
+
 			// Quill Delta-like: { ops: [{ insert: "..." }] }
-			if (parsed?.ops && Array.isArray(parsed.ops)) {
-				return parsed.ops
-					.map((op: any) => (typeof op?.insert === 'string' ? op.insert : ''))
-					.join('')
-					.replace(/\s+/g, ' ')
-					.trim();
+			if (isRecord(parsed) && Array.isArray(parsed.ops)) {
+				const inserts = parsed.ops
+					.map((op: unknown) => {
+						if (!isRecord(op)) return '';
+						return typeof op.insert === 'string' ? op.insert : '';
+					})
+					.join('');
+				return inserts.replace(/\s+/g, ' ').trim();
 			}
 		} catch {
 			// ignore
@@ -434,33 +310,9 @@ function plural(n: number, one: string, many?: string) {
 }
 
 function clockEmojiForTime(time?: string): string {
-	if (!time) return '🗓️';
-	const t = time.trim().toLowerCase();
-	// Match: 10am, 10:30am, 10:30 am, 22:15
-	const m = t.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/);
-	if (!m) return '🗓️';
-	let hour = Number(m[1]);
-	const ampm = m[3];
-	if (ampm === 'pm' && hour < 12) hour += 12;
-	if (ampm === 'am' && hour === 12) hour = 0;
-	// Normalize to 1..12 for clock faces.
-	let h12 = hour % 12;
-	if (h12 === 0) h12 = 12;
-	const clocks: Record<number, string> = {
-		1: '🕐',
-		2: '🕑',
-		3: '🕒',
-		4: '🕓',
-		5: '🕔',
-		6: '🕕',
-		7: '🕖',
-		8: '🕗',
-		9: '🕘',
-		10: '🕙',
-		11: '🕚',
-		12: '🕛',
-	};
-	return clocks[h12] ?? '🗓️';
+	// The UI does not render Slack-style emoji shortcodes (e.g. :clock10:),
+	// so always return a single Unicode emoji.
+	return time ? '🕒' : '📅';
 }
 
 function renderTrafficLightPrioritySections(opts: {
@@ -527,9 +379,10 @@ function renderCalendarSection(opts: { title: string; events: Array<{ title: str
 function renderAgendaDigest(opts: {
 	now: Date;
 	label: string;
+	windowLabel: string;
 	events: Array<{ title: string; date: number; time?: string }>;
-	tasks: Array<{ title: string; dueDate?: number; priority?: 'low' | 'medium' | 'high' }>
-	cards: Array<{ title: string; dueDate?: number; priority?: any; channelName?: string }>
+	tasks: Array<{ title: string; dueDate?: number; priority?: Priority }>;
+	cards: Array<{ title: string; dueDate?: number; priority?: Priority; channelName?: string }>;
 	mentionsCount: number;
 	mentionsSummary?: string;
 }): string {
@@ -538,41 +391,75 @@ function renderAgendaDigest(opts: {
 	const lines: string[] = [];
 	lines.push(`${greeting} Here's ${opts.label} ahead:`);
 
-	const eventsSorted = sortEventsByTimeThenTitle(opts.events);
-	const meetingCount = eventsSorted.length;
-	if (!meetingCount) {
-		lines.push(`📅 No meetings scheduled`);
-	} else {
-		const first = eventsSorted[0];
-		const time = first.time ? ` at ${first.time}` : '';
-		const highlight = `${first.title}${time}`;
-		lines.push(`📅 ${meetingCount} ${plural(meetingCount, 'meeting')} — ${highlight}${meetingCount > 1 ? ' (+more)' : ''}`);
-	}
+	const section = (title: string, bodyLines: string[]) => {
+		lines.push('');
+		lines.push(title);
+		if (!bodyLines.length) {
+			lines.push('No items');
+			return;
+		}
+		for (const l of bodyLines) lines.push(`• ${l}`);
+	};
 
-	const taskCount = opts.tasks.length;
-	if (!taskCount) lines.push(`✅ No tasks due`);
-	else {
-		// Highlight one high-ish task if possible.
-		const sorted = [...opts.tasks].sort((a, b) => {
+	// Meetings
+	const eventsSorted = sortEventsByTimeThenTitle(opts.events);
+	section(
+		`📅 Meetings (${opts.windowLabel})`,
+		eventsSorted.map((e) => {
+			const timePart = e.time ? `${e.time} - ` : '';
+			return `${clockEmojiForTime(e.time)} ${timePart}${e.title}`;
+		})
+	);
+
+	// Tasks
+	const dueTasks = opts.tasks
+		.filter((t) => typeof t.dueDate === 'number')
+		.sort((a, b) => {
 			const ap = a.priority === 'high' ? 2 : a.priority === 'medium' ? 1 : 0;
 			const bp = b.priority === 'high' ? 2 : b.priority === 'medium' ? 1 : 0;
 			if (ap !== bp) return bp - ap;
 			return Number(a.dueDate ?? Number.MAX_SAFE_INTEGER) - Number(b.dueDate ?? Number.MAX_SAFE_INTEGER);
 		});
-		lines.push(`✅ ${taskCount} ${plural(taskCount, 'task')} — ${sorted[0]?.title}${taskCount > 1 ? ' (+more)' : ''}`);
-	}
+	const undatedTasks = opts.tasks.filter((t) => typeof t.dueDate !== 'number');
+	section(
+		`📋 Tasks due ${opts.windowLabel}`,
+		dueTasks.map((t) => `${t.title}${t.dueDate ? ` (${shortDate(t.dueDate)})` : ''}`)
+	);
+	section(
+		'📋 Tasks assigned without due date',
+		undatedTasks.map((t) => `${t.title} — no due date`)
+	);
 
-	const cardDueCount = opts.cards.filter((c) => Boolean(c.dueDate)).length;
-	if (!cardDueCount) lines.push(`📌 No assigned cards due`);
-	else lines.push(`📌 ${cardDueCount} assigned ${plural(cardDueCount, 'card')} with due dates`);
-
-	if (opts.mentionsCount) {
-		lines.push(`🔔 ${opts.mentionsCount} ${plural(opts.mentionsCount, 'mention')} (summarized)`);
-		if (opts.mentionsSummary && opts.mentionsSummary.trim()) {
-			lines.push(opts.mentionsSummary.trim());
-		}
+	// Cards
+	const dueCards = opts.cards
+		.filter((c) => typeof c.dueDate === 'number')
+		.sort((a, b) => {
+			const ap = a.priority === 'high' ? 2 : a.priority === 'medium' ? 1 : 0;
+			const bp = b.priority === 'high' ? 2 : b.priority === 'medium' ? 1 : 0;
+			if (ap !== bp) return bp - ap;
+			return Number(a.dueDate ?? Number.MAX_SAFE_INTEGER) - Number(b.dueDate ?? Number.MAX_SAFE_INTEGER);
+		});
+	const undatedCards = opts.cards.filter((c) => typeof c.dueDate !== 'number');
+	section(
+		`🗂️ Cards due ${opts.windowLabel}`,
+		dueCards.map((c) => {
+			const channelPart = c.channelName ? ` (#${c.channelName})` : '';
+			const duePart = c.dueDate ? ` (due ${shortDate(c.dueDate)})` : '';
+			return `${c.title}${channelPart}${duePart}`;
+		})
+	);
+	section(
+		'🗂️ Cards assigned without due date',
+		undatedCards.map((c) => {
+			const channelPart = c.channelName ? ` (#${c.channelName})` : '';
+			return `${c.title}${channelPart} — no due date`;
+		})
+	);
+	if (opts.mentionsCount && opts.mentionsSummary && opts.mentionsSummary.trim()) {
+		lines.push('');
+		lines.push('🔔 Mentions');
+		lines.push(opts.mentionsSummary.trim());
 	}
-	else lines.push(`🔔 No new mentions`);
 
 	return lines.join('\n');
 }
@@ -662,6 +549,10 @@ function extractIntent(query: string): AssistantIntent {
 	const q = query.trim().toLowerCase();
 	const qNoPunct = q.replace(/[^a-z0-9\s#@'-]/g, ' ');
 
+	const wantsSummaryKeyword = /\b(summarize|summary|recap|what\s+happened)\b/i.test(qNoPunct);
+	const wantsAllChannels = /\b(all|all\s+channels|all-channels|everything|everyone|workspace)\b/i.test(qNoPunct);
+	const mentionsChannelsWord = /\bchannels?\b/i.test(qNoPunct);
+
 	let channelFromText = extractChannelFromQueryText(query);
 	if (channelFromText) {
 		const norm = channelFromText.trim().toLowerCase();
@@ -681,6 +572,9 @@ function extractIntent(query: string): AssistantIntent {
 		q.includes('session');
 	const wantsMeetingsList = /\b(meetings?|meeting|standup|1\s*:\s*1|one\s*-?\s*on\s*-?\s*one)\b/i.test(qNoPunct);
 	const wantsBoards = q.includes('board') || q.includes('boards') || q.includes('kanban') || q.includes('card') || q.includes('cards');
+	const wantsIncidents = /\b(incident|incidents|p0|p1|sev\s*1|sev\s*2|sev1|sev2|outage|on\s*-?call|oncall)\b/i.test(
+		qNoPunct
+	);
 
 	// Privacy guard: if user asks for someone else's tasks (e.g. "@Anwita's tasks"), do not attempt lookup.
 	const seemsLikeOtherPerson = /@\w+/.test(qNoPunct) || /\b(\w+)'s\s+tasks\b/.test(qNoPunct);
@@ -688,9 +582,16 @@ function extractIntent(query: string): AssistantIntent {
 		// Still route to tasks, but the action handler will respond with a privacy-safe message.
 		return { mode: 'tasks', channel: null };
 	}
-	const wantsChannel = Boolean(channelFromText) && (q.includes('summar') || q.includes('what happened') || q.includes('recap'));
+	const wantsChannel = Boolean(channelFromText) && wantsSummaryKeyword;
 	if (wantsChannel) {
 		return { mode: 'channel', channel: channelFromText };
+	}
+
+	// "summarize all" / "what happened in all channels" -> workspace overview.
+	// If no channel is specified, treat summarization as a combined workspace chat summary.
+	// (No per-channel breakdown unless explicitly requested elsewhere.)
+	if (wantsSummaryKeyword && (mentionsChannelsWord || wantsAllChannels) && !channelFromText) {
+		return { mode: 'workspace_summary', channel: null };
 	}
 
 	const wantsNextWeek = q.includes('next week');
@@ -717,9 +618,21 @@ function extractIntent(query: string): AssistantIntent {
 		return { mode: 'team_status', channel: null };
 	}
 
-	const wantsOverview =
-		(q.includes('what happened') || q.includes('summarize') || q.includes('summary') || q.includes('recap') || wantsTeamStatus) &&
-		!channelFromText;
+	if (wantsIncidents) {
+		return { mode: 'incidents', channel: null };
+	}
+
+	// "day" / "overview" should produce a personal daily brief, not a message-topic recap.
+	const wantsDailyBrief =
+		qNoPunct.trim() === 'day' ||
+		qNoPunct.trim() === 'overview' ||
+		/\b(daily\s+(brief|summary)|day\s+(brief|summary|overview)|my\s+day)\b/i.test(qNoPunct) ||
+		/\boverview\b/i.test(qNoPunct);
+	if (wantsDailyBrief) {
+		return { mode: 'agenda_today', channel: null };
+	}
+
+	const wantsOverview = wantsSummaryKeyword && !channelFromText;
 
 	// If the user asks for a summary "for today/tomorrow", treat it as a personal agenda request,
 	// not a channel/workspace recap.
@@ -731,7 +644,8 @@ function extractIntent(query: string): AssistantIntent {
 	}
 
 	if (wantsOverview) {
-		return { mode: 'overview', channel: null };
+		// If user asks to summarize but didn't specify a channel, provide a combined workspace summary.
+		return { mode: 'workspace_summary', channel: null };
 	}
 
 	// Prioritize the new personal-assistant intents.
@@ -839,7 +753,24 @@ function shortDate(ms: number) {
 	return d.toISOString().slice(0, 10);
 }
 
-function bucketByDueDate(opts: { dueDate?: number; explicitPriority?: 'low' | 'medium' | 'high' | 'highest' | 'lowest' }) {
+type Priority = 'lowest' | 'low' | 'medium' | 'high' | 'highest';
+
+function isDefined<T>(value: T | null | undefined): value is T {
+	return value !== null && value !== undefined;
+}
+
+function normalizePriority(input: unknown): Priority | undefined {
+	if (typeof input !== 'string') return undefined;
+	const p = input.trim().toLowerCase();
+	if (p === 'lowest') return 'lowest';
+	if (p === 'low') return 'low';
+	if (p === 'medium') return 'medium';
+	if (p === 'high') return 'high';
+	if (p === 'highest') return 'highest';
+	return undefined;
+}
+
+function bucketByDueDate(opts: { dueDate?: number; explicitPriority?: Priority }) {
 	// If an explicit priority exists, respect it.
 	if (opts.explicitPriority) {
 		if (opts.explicitPriority === 'high' || opts.explicitPriority === 'highest') return 'high' as const;
@@ -868,12 +799,22 @@ export const askAssistant = action({
 		ctx,
 		args
 	): Promise<{ answer: string; sources: string[]; actions?: NavigationAction[] }> => {
-		if (!args.workspaceId) {
+		const workspaceId = args.workspaceId;
+		if (!workspaceId) {
 			return {
 				answer: 'Workspace context is required.',
 				sources: [],
 			};
 		}
+
+		const recentChatMessages = await (async (): Promise<ChatMessage[]> => {
+			try {
+				const history = await ctx.runQuery(api.chatbot.getChatHistory, { workspaceId });
+				return history.messages.slice(-3);
+			} catch {
+				return [];
+			}
+		})();
 
 		const calendarActionForWorkspace = (workspaceId: Id<'workspaces'>): NavigationAction => ({
 			label: 'View calendar',
@@ -896,10 +837,11 @@ export const askAssistant = action({
 			const raw = requestedChannelName || fallbackFromText;
 
 			if (raw) {
-				let channels: any[] = [];
+				type WorkspaceChannel = { _id: Id<'channels'>; name: string };
+				let channels: WorkspaceChannel[] = [];
 				try {
 					channels = await ctx.runQuery(api.channels.get, {
-						workspaceId: args.workspaceId!,
+						workspaceId,
 					});
 				} catch {
 					channels = [];
@@ -914,7 +856,7 @@ export const askAssistant = action({
 				}
 
 				const querySlug = normalizeChannelQuery(raw);
-				let best: { channel: any; score: number } | null = null;
+				let best: { channel: WorkspaceChannel; score: number } | null = null;
 				for (const ch of channels) {
 					const chSlug = normalizeChannelName(String(ch.name || ''));
 					const score = scoreChannelMatch(chSlug, querySlug);
@@ -934,7 +876,7 @@ export const askAssistant = action({
 					};
 				}
 
-				channelId = best.channel._id as Id<'channels'>;
+				channelId = best.channel._id;
 				resolvedChannelName = String(best.channel.name);
 			}
 		}
@@ -943,7 +885,7 @@ export const askAssistant = action({
 		// 3. CHANNEL SUMMARY (if requested)
 		// ---------------------------------------------------------------------
 		if (channelId) {
-			let results: any;
+			let results: { page: Array<{ _creationTime: number; body: string }> };
 			try {
 				results = await ctx.runQuery(api.messages.get, {
 					channelId,
@@ -957,11 +899,10 @@ export const askAssistant = action({
 					sources: resolvedChannelName ? [`#${resolvedChannelName}`] : [],
 				};
 			}
-			const messages: Array<{ _creationTime: number; body: string }> =
-				results.page.map((m: any) => ({
-					_creationTime: m._creationTime,
-					body: m.body,
-				}));
+			const messages: Array<{ _creationTime: number; body: string }> = results.page.map((m) => ({
+				_creationTime: m._creationTime,
+				body: String(m.body),
+			}));
 
 			if (!messages.length) {
 				return {
@@ -976,40 +917,145 @@ export const askAssistant = action({
 				maxCharsPerMessage: 200,
 			});
 
-			const chatPrompt = `Summarize only the recent messages provided.
+			const chatPrompt = `You are Proddy, a personal work assistant.
 
-Rules:
-- Never quote or paste any message verbatim.
-- Do not include any continuous 5+ words copied from a message.
-- Paraphrase and keep it concise.
+Task:
+- The user asked to summarize a channel. Use ONLY the provided recent messages as input.
+- Produce a work recap grounded in those messages: concrete updates, decisions, owners, deadlines, incidents, and next actions.
 
-Output format EXACTLY:
-High Priority:\n- ...\n
-Medium Priority:\n- ...\n
-Low Priority:\n- ...
+Strict rules:
+- Do NOT quote any message or copy 5+ consecutive words.
+- Do NOT output topic/keyword lists and do NOT mention message counts.
+- Do NOT use vague filler like "ongoing coordination" or "open threads likely exist".
+- Do NOT use emoji shortcodes like :clipboard: or :clock10: (they will be displayed literally).
 
-			If a section has no items, write:\nNo items
-			Do NOT write "If you are <name>" or any conditional identity statements.
+Output format (plain text):
+Channel Summary — #<channel>
+- <bullet point>
+- <bullet point>
 
-User question: ${args.query}
+Rules for bullets:
+- Only include information supported by the messages.
+- Keep it concise: 5-12 bullets max.
+- If something is unknown, omit it.
 
-Messages (most recent last):\n${messageContext}`;
+User request: ${args.query}
+
+Recent messages (most recent last):
+${messageContext}`;
 
 			try {
-				const answer = await generateLLMResponse(chatPrompt, '');
-				return {
-					answer,
-					sources: [`#${resolvedChannelName}`],
-				};
-			} catch {
-				// Gemini not available: return a safe, non-verbatim heuristic summary.
-				const answer = heuristicSummarizeMessagesToPriorityGroups({
-					messages: messages.map((m) => ({ body: m.body })),
-					includeChannels: false,
+				const answer = await generateLLMResponse({
+					prompt: chatPrompt,
+					systemPrompt: '',
+					recentMessages: recentChatMessages,
 				});
 				return {
 					answer,
-					sources: [`#${resolvedChannelName}`],
+					sources: [],
+				};
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : '';
+				const detail = errorMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY is required')
+					? 'AI is not configured for this environment.'
+					: 'AI summarization is temporarily unavailable.';
+
+				return {
+					answer: `${detail} I can't summarize #${resolvedChannelName} right now - please try again later.`,
+					sources: resolvedChannelName ? [`#${resolvedChannelName}`] : [],
+				};
+			}
+		}
+
+		// ---------------------------------------------------------------------
+		// 3a. WORKSPACE SUMMARY (no channel specified)
+		// ---------------------------------------------------------------------
+		if (intent.mode === 'workspace_summary') {
+			const authUserId = await getAuthUserId(ctx);
+			if (!authUserId) {
+				return { answer: 'Sign in to use the assistant.', sources: [] };
+			}
+			// Ensure membership.
+			await ctx.runQuery(api.members.current, { workspaceId });
+
+			const recent = await ctx.runQuery(api.messages.getRecentWorkspaceChannelMessages, {
+				workspaceId,
+				// Use 0 to fetch the most recent messages irrespective of date.
+				from: 0,
+				// Keep token and query cost bounded.
+				limit: 220,
+				perChannelLimit: 2,
+			});
+
+			if (!recent?.length) {
+				return {
+					answer: 'No information available to summarize.',
+					sources: [],
+				};
+			}
+
+			const lines = (recent || [])
+				.map((m) => {
+					const channelName = String(m?.channelName ?? 'unknown').trim();
+					const who = String(m?.authorName ?? '').trim();
+					const body = truncateOneLine(String(m?.body ?? ''), 180);
+					if (!body) return '';
+					const prefix = `#${channelName}${who ? ` @${who}` : ''}: `;
+					return `${prefix}${body}`.trim();
+				})
+				.filter(Boolean)
+				.slice(-30);
+
+			if (!lines.length) {
+				return {
+					answer: 'No information available to summarize.',
+					sources: [],
+				};
+			}
+
+			const prompt = `You are Proddy, a personal work assistant.
+
+Task:
+- The user asked for a summary without specifying a channel.
+- Produce ONE concise, combined summary using ONLY the snippets provided.
+
+Strict rules:
+- Do NOT quote any snippet or copy 5+ consecutive words.
+- Do NOT output topic/keyword lists and do NOT mention message counts.
+- Do NOT invent details. If it isn't supported by the snippets, omit it.
+- Do NOT produce a per-channel breakdown. Keep it high-level.
+
+Output format:
+Workspace Summary
+- <bullet>
+- <bullet>
+
+Keep it concise: 5-10 bullets max.
+
+User request: ${args.query}
+
+Recent channel snippets (most recent last):
+${lines.map((l) => `- ${l}`).join('\n')}`;
+
+			try {
+				const answer = await generateLLMResponse({
+					prompt,
+					systemPrompt: '',
+					recentMessages: recentChatMessages,
+				});
+				return {
+					answer,
+					sources: ['Messages'],
+				};
+			} catch (e) {
+				const errorMessage = e instanceof Error ? e.message : '';
+				const detail = errorMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY is required')
+					? 'AI is not configured for workspace summaries.'
+					: 'AI workspace summary is temporarily unavailable.';
+
+				return {
+					answer: detail,
+					sources: ['Messages'],
 				};
 			}
 		}
@@ -1031,21 +1077,22 @@ Messages (most recent last):\n${messageContext}`;
 
 				const [members, presenceState, channels] = await Promise.all([
 					ctx.runQuery(api.members.get, { workspaceId }),
-					ctx.runQuery(api.presence.listWorkspacePresence, { workspaceId }) as Promise<any[]>,
-					ctx.runQuery(api.channels.get, { workspaceId }) as Promise<any[]>,
+					ctx.runQuery(api.presence.listWorkspacePresence, { workspaceId }),
+					ctx.runQuery(api.channels.get, { workspaceId }),
 				]);
 
 				const onlineUserIds = new Set(
 					(presenceState || [])
-						.filter((p: any) => Boolean(p?.online))
-						.map((p: any) => String(p?.userId))
+						.filter((p) => Boolean(p?.online))
+						.map((p) => String(p?.userId))
 				);
 
 				const totalMembers = Array.isArray(members) ? members.length : 0;
-				const onlineMembers = (members || []).filter((m: any) => onlineUserIds.has(String(m?.userId)));
-				const offlineMembers = (members || []).filter((m: any) => !onlineUserIds.has(String(m?.userId)));
+				const onlineMembers = (members || []).filter((m) => onlineUserIds.has(String(m?.userId)));
+				const offlineMembers = (members || []).filter((m) => !onlineUserIds.has(String(m?.userId)));
 
-				const formatMember = (m: any) => `@${String(m?.user?.name ?? 'Unknown').trim()}`;
+				const formatMember = (m: { user?: { name?: string } }) =>
+					`@${String(m?.user?.name ?? 'Unknown').trim()}`;
 
 				const lines: string[] = [];
 				lines.push('Team Status Overview:');
@@ -1091,7 +1138,11 @@ Rules:
 - If you mention a person, format as @Name.
 
 Updates:\n${context}`;
-						const summary = await generateLLMResponse(prompt, '');
+						const summary = await generateLLMResponse({
+							prompt,
+							systemPrompt: '',
+							recentMessages: recentChatMessages,
+						});
 						lines.push(summary);
 					} catch {
 						// If Gemini isn't available, avoid showing raw messages; show a non-verbatim fallback.
@@ -1128,6 +1179,7 @@ Updates:\n${context}`;
 				intent.mode === 'calendar_today' ||
 				intent.mode === 'calendar_tomorrow' ||
 				intent.mode === 'calendar' ||
+				intent.mode === 'incidents' ||
 				intent.mode === 'boards' ||
 				intent.mode === 'tasks'
 			) {
@@ -1142,12 +1194,18 @@ Updates:\n${context}`;
 				const getAssignedCardsForUser = async () => {
 					const currentMember = await ctx.runQuery(api.members.current, { workspaceId });
 					if (!currentMember) {
-						return [] as any[];
+						return [];
 					}
-					return await ctx.runQuery(api.board.getAssignedCards, {
+					const cards = await ctx.runQuery(api.board.getAssignedCards, {
 						workspaceId,
 						memberId: currentMember._id,
 					});
+					return cards.map((c) => ({
+						title: String(c.title ?? ''),
+						dueDate: typeof c.dueDate === 'number' ? c.dueDate : undefined,
+						priority: normalizePriority(c.priority),
+						channelName: typeof c.channelName === 'string' ? c.channelName : undefined,
+					}));
 				};
 
 				// Privacy: prevent requests for other users' tasks.
@@ -1162,6 +1220,40 @@ Updates:\n${context}`;
 							sources: [],
 						};
 					}
+				}
+
+				if (intent.mode === 'incidents') {
+					// Ensure membership.
+					await ctx.runQuery(api.members.current, { workspaceId });
+
+					let channels: Array<{ _id: Id<'channels'>; name: string }> = [];
+					try {
+						channels = await ctx.runQuery(api.channels.get, { workspaceId });
+					} catch {
+						channels = [];
+					}
+
+					const candidates = (channels || [])
+						.map((c) => String(c?.name ?? '').trim())
+						.filter(Boolean)
+						.filter((name) => /\b(incident|incidents|oncall|ops|status|alerts)\b/i.test(name))
+						.slice(0, 6)
+						.map((name) => `#${name}`);
+
+					const lines: string[] = [];
+					lines.push('Incident Status');
+					
+					if (candidates.length) {
+						lines.push(`- Check incident channels: ${candidates.join(', ')}`);
+					} else {
+						lines.push('- Check your incident/oncall/status channels for the latest updates');
+					}
+					lines.push('- Identify owner, impact, current mitigation, and next update time');
+
+					return {
+						answer: lines.join('\n'),
+						sources: candidates.length ? ['Channels'] : [],
+					};
 				}
 
 				if (intent.mode === 'calendar_next_week') {
@@ -1360,7 +1452,7 @@ Updates:\n${context}`;
 				}
 
 				if (intent.mode === 'agenda_today') {
-					const [events, tasks, assignedCards, mentioned] = await Promise.all([
+					const [events, tasksDueToday, upcomingTasks, assignedCards, mentioned] = await Promise.all([
 						ctx.runQuery(api.chatbot.getMyCalendarEventsInRange, {
 							workspaceId,
 							from: todayFrom,
@@ -1372,27 +1464,56 @@ Updates:\n${context}`;
 							to: todayTo,
 							onlyIncomplete: true,
 						}),
+						ctx.runQuery(api.chatbot.getMyUpcomingTasks, {
+							workspaceId,
+							limit: 25,
+						}),
 						getAssignedCardsForUser(),
 						ctx.runQuery(api.messages.getMentionedMessages, {
 							workspaceId,
 							limit: 80,
-						}) as Promise<any[]>,
+						}),
 					]);
 
+					const undatedTasks = (upcomingTasks || [])
+						.filter((t) => typeof t?.dueDate !== 'number')
+						.slice(0, 10)
+						.map((t) => ({
+							title: String(t?.title ?? ''),
+							dueDate: undefined,
+							priority: t?.priority ?? undefined,
+						}));
+					const tasks = [...(tasksDueToday || []), ...undatedTasks].filter((t) => String(t?.title ?? '').trim());
+
+					const cardsDueToday = (assignedCards || []).filter((c) => typeof c?.dueDate === 'number' && c.dueDate >= todayFrom && c.dueDate <= todayTo);
+					const cardsUndated = (assignedCards || []).filter((c) => typeof c?.dueDate !== 'number').slice(0, 10);
+					const cards = [...cardsDueToday, ...cardsUndated].filter((c) => String(c?.title ?? '').trim());
+
 					// Match example style: a compact day-ahead digest (still user-scoped).
-					const createdTodayMentionsCount = (mentioned || []).filter((m) => {
-						const created = Number((m as any)?._creationTime ?? 0);
-						return Boolean(created) && created >= todayFrom && created <= todayTo;
-					}).length;
+					const todaysMentions = (mentioned || []).filter((m) => {
+						const created = typeof m?._creationTime === 'number' ? m._creationTime : 0;
+						return created >= todayFrom && created <= todayTo;
+					});
+					const createdTodayMentionsCount = todaysMentions.length;
+					const mentionsSummary = todaysMentions
+						.slice(0, 6)
+						.map((m) => {
+							const who = String(m?.user?.name ?? 'Someone').trim();
+							const ctxName = String(m?.context?.name ?? 'Mention').trim();
+							return `- @${who} in ${ctxName}`;
+						})
+						.join('\n');
 
 					return {
 						answer: renderAgendaDigest({
 							now,
 							label: 'your day',
+							windowLabel: 'today',
 							events,
 							tasks,
-							cards: assignedCards,
+							cards,
 							mentionsCount: createdTodayMentionsCount,
+							mentionsSummary: mentionsSummary || undefined,
 						}),
 						sources: ['Calendar', 'Tasks', 'Boards'],
 						actions: [calendarActionForWorkspace(workspaceId)],
@@ -1400,7 +1521,7 @@ Updates:\n${context}`;
 				}
 
 				if (intent.mode === 'agenda_tomorrow') {
-					const [events, tasks, assignedCards, mentioned] = await Promise.all([
+					const [events, tasksDueTomorrow, upcomingTasks, assignedCards, mentioned] = await Promise.all([
 						ctx.runQuery(api.chatbot.getMyCalendarEventsInRange, {
 							workspaceId,
 							from: tomorrowFrom,
@@ -1412,29 +1533,50 @@ Updates:\n${context}`;
 							to: tomorrowTo,
 							onlyIncomplete: true,
 						}),
+						ctx.runQuery(api.chatbot.getMyUpcomingTasks, {
+							workspaceId,
+							limit: 25,
+						}),
 						getAssignedCardsForUser(),
 						ctx.runQuery(api.messages.getMentionedMessages, {
 							workspaceId,
 							limit: 120,
-						}) as Promise<any[]>,
+						}),
 					]);
+
+					const undatedTasks = (upcomingTasks || [])
+						.filter((t) => typeof t?.dueDate !== 'number')
+						.slice(0, 10)
+						.map((t) => ({
+							title: String(t?.title ?? ''),
+							dueDate: undefined,
+							priority: t?.priority ?? undefined,
+						}));
+					const tasks = [...(tasksDueTomorrow || []), ...undatedTasks].filter((t) => String(t?.title ?? '').trim());
+
+					const cardsDueTomorrow = (assignedCards || []).filter((c) => typeof c?.dueDate === 'number' && c.dueDate >= tomorrowFrom && c.dueDate <= tomorrowTo);
+					const cardsUndated = (assignedCards || []).filter((c) => typeof c?.dueDate !== 'number').slice(0, 10);
+					const cards = [...cardsDueTomorrow, ...cardsUndated].filter((c) => String(c?.title ?? '').trim());
 
 					const tomorrowKey = shortDate(tomorrowFrom);
 					const mentionCandidates = (mentioned || [])
 						.filter((m) => {
-							const created = Number((m as any)?._creationTime ?? 0);
-							return Boolean(created) && created >= todayFrom;
+							const created = typeof m?._creationTime === 'number' ? m._creationTime : 0;
+							return created >= todayFrom;
 						})
 						.slice(0, 40)
 						.map((m) => {
-							const who = String((m as any)?.user?.name ?? 'Someone').trim();
-							const ctxName = String((m as any)?.context?.name ?? 'Mention');
-							const created = Number((m as any)?._creationTime ?? 0);
-							const body = String((m as any)?.body ?? '');
+							const who = String(m?.user?.name ?? 'Someone').trim();
+							const ctxName = String(m?.context?.name ?? 'Mention');
+							const created = typeof m?._creationTime === 'number' ? m._creationTime : 0;
+							const body = String(m?.body ?? '');
 							return { who, ctxName, created, body };
 						});
 
-					let tomorrowMentionsCount = 0;
+					const matches = mentionCandidates.filter((m) =>
+						isLikelyTomorrowReferenceFallback(m.body, tomorrowKey)
+					);
+					let tomorrowMentionsCount = matches.length;
 					let mentionsSummary: string | undefined;
 					if (mentionCandidates.length) {
 						try {
@@ -1459,46 +1601,29 @@ Strict rules:
 - Keep bullets short and action-oriented.
 - If you mention a person, format as @Name.
 
-Output format EXACTLY:
-Count: <number>
-• <summary>
-• <summary>
-• <summary>
+Output format:
+- <summary>
+- <summary>
+- <summary>
 
 If there are no relevant mentions, output EXACTLY:
-Count: 0
 No items
 
 Mentions:\n${mentionContext}`;
 
-							const llm = await generateLLMResponse(prompt, '');
-							const lines = String(llm ?? '')
-								.split(/\r?\n/)
-								.map((l) => l.trim())
-								.filter(Boolean);
-							const countLine = lines.find((l) => /^count\s*:\s*\d+/i.test(l));
-							const countMatch = countLine?.match(/(\d+)/);
-							tomorrowMentionsCount = countMatch ? Number(countMatch[1]) : 0;
-							const bullets = lines
-								.filter((l) => l.startsWith('•') || l.startsWith('-'))
-								.map((l) => (l.startsWith('-') ? `• ${l.slice(1).trim()}` : l))
-								.slice(0, 3);
-							if (bullets.length) mentionsSummary = bullets.join('\n');
-							if (!tomorrowMentionsCount && bullets.length) tomorrowMentionsCount = bullets.length;
+							mentionsSummary = await generateLLMResponse({
+								prompt,
+								systemPrompt: '',
+								recentMessages: recentChatMessages,
+							});
 						} catch {
-							// Gemini isn't available: keep a small, safe heuristic fallback.
-							const matches = mentionCandidates.filter((m) => isLikelyTomorrowReferenceFallback(m.body, tomorrowKey));
-							tomorrowMentionsCount = matches.length;
-							if (matches.length) {
-								mentionsSummary = matches
-									.slice(0, 3)
-									.map((m) => {
-										const keywords = extractTopicKeywords(m.body, 4);
-										const topicPart = keywords.length ? ` — topics: ${keywords.join(', ')}` : '';
-										return `• @${m.who} in ${m.ctxName}${topicPart}`;
-									})
-									.join('\n');
-							}
+								// Gemini isn't available: avoid topic/keyword heuristics; use a safe structured fallback.
+								if (matches.length) {
+									mentionsSummary = matches
+										.slice(0, 6)
+										.map((m) => `- @${m.who} in ${m.ctxName}`)
+										.join('\n');
+								}
 						}
 					}
 
@@ -1506,9 +1631,10 @@ Mentions:\n${mentionContext}`;
 						answer: renderAgendaDigest({
 							now,
 							label: 'tomorrow',
+							windowLabel: 'tomorrow',
 							events,
 							tasks,
-							cards: assignedCards,
+							cards,
 							mentionsCount: tomorrowMentionsCount,
 							mentionsSummary,
 						}),
@@ -1522,150 +1648,288 @@ Mentions:\n${mentionContext}`;
 		// ---------------------------------------------------------------------
 		// 3c. OVERVIEW SUMMARY ("what happened" across all channels)
 		// ---------------------------------------------------------------------
-		if (intent.mode === 'overview') {
-			const allChannels = await ctx.runQuery(api.channels.get, {
-				workspaceId: args.workspaceId!,
+		if (intent.mode === 'channels_overview') {
+			const authUserId = await getAuthUserId(ctx);
+			if (!authUserId) {
+				return { answer: 'Sign in to use the assistant.', sources: [] };
+			}
+			const workspaceId = args.workspaceId as Id<'workspaces'>;
+			await ctx.runQuery(api.members.current, { workspaceId });
+
+			const now = new Date();
+			const todayFrom = startOfDayMs(now);
+			const todayTo = endOfDayMs(now);
+
+			const recent = await ctx.runQuery(api.messages.getRecentWorkspaceChannelMessages, {
+				workspaceId,
+				from: todayFrom,
+				to: todayTo,
+				limit: 350,
+				perChannelLimit: 4,
 			});
 
-			const messagesByChannel = new Map<string, string[]>();
-			// Cost-safe: only sample a small number of channels to avoid N+1.
-			for (const ch of allChannels.slice(0, 6)) {
-				const res = await ctx.runQuery(api.messages.get, {
-					channelId: ch._id as Id<'channels'>,
-					paginationOpts: { numItems: 20, cursor: null },
+			if (!recent?.length) {
+				return {
+					answer: 'No channel updates found today.',
+					sources: ['Messages'],
+				};
+			}
+
+			type Rec = { channelName: string; authorName: string; body: string; creationTime: number };
+			const byChannel = new Map<string, Rec[]>();
+			for (const r of recent as unknown as Rec[]) {
+				const name = String(r?.channelName ?? '').trim();
+				if (!name) continue;
+				const list = byChannel.get(name) ?? [];
+				list.push({
+					channelName: name,
+					authorName: String(r?.authorName ?? '').trim(),
+					body: String(r?.body ?? ''),
+					creationTime: typeof r?.creationTime === 'number' ? r.creationTime : 0,
 				});
-				const items: Array<{ _creationTime: number; body: string }> = res.page.map(
-					(m: any) => ({ _creationTime: m._creationTime, body: m.body })
-				);
-				const chName = (ch.name as string) || 'unknown';
-				if (!messagesByChannel.has(chName)) messagesByChannel.set(chName, []);
-
-				const context = formatRecentMessagesForLLM(items, {
-					maxMessages: 4,
-					maxCharsPerMessage: 180,
-				});
-				if (context.trim()) messagesByChannel.get(chName)!.push(context);
+				byChannel.set(name, list);
 			}
 
-			let chatContext = '';
-			for (const [chName, msgs] of Array.from(messagesByChannel.entries())) {
-				if (!msgs.length) continue;
-				chatContext += `\n#${chName}:\n${msgs.join('\n')}\n`;
-			}
+			const activeChannels = Array.from(byChannel.entries())
+				.map(([channelName, msgs]) => ({
+					channelName,
+					count: msgs.length,
+					last: Math.max(...msgs.map((m) => m.creationTime || 0)),
+				}))
+				.sort((a, b) => (b.last - a.last) || (b.count - a.count))
+				.slice(0, 12);
 
-			if (!chatContext.trim()) {
-				return { answer: 'No recent channel activity found.', sources: [] };
-			}
+			const channelBlocks = activeChannels
+				.map(({ channelName }) => {
+					const msgs = (byChannel.get(channelName) ?? [])
+						.sort((a, b) => a.creationTime - b.creationTime)
+						.slice(-4);
+					const snippets = msgs
+						.map((m) => {
+							const who = m.authorName ? `@${m.authorName}: ` : '';
+							return `- ${who}${truncateOneLine(m.body, 200)}`;
+						})
+						.join('\n');
+					return `#${channelName}\n${snippets}`;
+				})
+				.join('\n\n');
 
-			const overviewPrompt = `Summarize only the recent messages provided.
+			const prompt = `You are Proddy, a personal work assistant.
 
-Rules:
-- Never quote or paste any message verbatim.
-- Do not include any continuous 5+ words copied from a message.
-- Paraphrase and keep it concise.
+Task:
+- The user asked: "summarize all channels".
+- Produce a short recap per channel, using ONLY the provided snippets.
 
-Output format EXACTLY:
-High Priority:\n- ...\n
-Medium Priority:\n- ...\n
-Low Priority:\n- ...
+Strict rules:
+- Do NOT quote any snippet or copy 5+ consecutive words.
+- Do NOT output topic/keyword lists and do NOT mention message counts.
+- Do NOT invent details.
+- Keep it short.
 
-			If a section has no items, write:\nNo items
-			Do NOT write "If you are <name>" or any conditional identity statements.
+Output format (plain text):
+#<channel>
+- <1 short bullet>
+- <optional 2nd bullet>
 
-User question: ${args.query}
+Only include channels provided.
 
-Recent messages:\n${chatContext}`;
+Channel snippets (today):
+${channelBlocks}`;
 
 			try {
-				const answer = await generateLLMResponse(overviewPrompt, '');
-				const sources = Array.from(messagesByChannel.keys()).map((c) => `#${c}`);
-				return { answer, sources };
-			} catch {
-				// Gemini not available: return a safe, non-verbatim heuristic summary by channel.
-				const flattened: Array<{ body: unknown; channel?: string }> = [];
-				for (const [chName, msgs] of Array.from(messagesByChannel.entries())) {
-					for (const raw of msgs) {
-						// raw is "[timestamp] body"; keep it internal for keyword extraction.
-						flattened.push({ body: raw, channel: chName });
-					}
-				}
-				const answer = heuristicSummarizeMessagesToPriorityGroups({ messages: flattened, includeChannels: true });
-				const sources = Array.from(messagesByChannel.keys()).map((c) => `#${c}`);
-				return { answer, sources };
+				const answer = await generateLLMResponse({
+					prompt,
+					systemPrompt: '',
+					recentMessages: recentChatMessages,
+				});
+				return {
+					answer,
+					sources: ['Messages'],
+				};
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : '';
+				const detail = errorMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY is required')
+					? 'AI is not configured for channel summaries.'
+					: 'AI channel summary is temporarily unavailable.';
+
+				const fallback = activeChannels
+					.map(({ channelName }) => `#${channelName}\n- Recent activity posted (summary unavailable)`)
+					.join('\n\n');
+
+				return {
+					answer: `${detail}\n\n${fallback}`,
+					sources: ['Messages'],
+				};
 			}
 		}
 
-		// ---------------------------------------------------------------------
-		// 4. FALLBACK → MIXED SEARCH (RAG + Recent Messages)
-		// ---------------------------------------------------------------------
-		// Cost-first: do a cheap keyword scan of recent messages before semantic search/LLM.
-		{
-			const terms = extractSearchTerms(args.query);
-			if (terms.length) {
-				let channels: any[] = [];
-				try {
-					channels = await ctx.runQuery(api.channels.get, { workspaceId: args.workspaceId! });
-				} catch {
-					channels = [];
-				}
+		if (intent.mode === 'overview') {
+			// Workspace "summarize all": today's agenda + a short recap across recent channel messages.
+			const authUserId = await getAuthUserId(ctx);
+			if (!authUserId) {
+				return { answer: 'Sign in to use the assistant.', sources: [] };
+			}
+			const now = new Date();
+			const todayFrom = startOfDayMs(now);
+			const todayTo = endOfDayMs(now);
+			const workspaceId = args.workspaceId as Id<'workspaces'>;
+			await ctx.runQuery(api.members.current, { workspaceId });
 
-				const hits: Array<{ score: number; channel: string; author: string; body: string }> = [];
-				for (const ch of channels.slice(0, 6)) {
-					const recent = await ctx.runQuery(api.messages.getRecentChannelMessages, {
-						channelId: ch._id as Id<'channels'>,
-						limit: 25,
+			const currentMember = await ctx.runQuery(api.members.current, { workspaceId });
+			const memberId = currentMember?._id;
+
+			const [events, tasksDueToday, upcomingTasks, assignedCards, mentioned] = await Promise.all([
+				ctx.runQuery(api.chatbot.getMyCalendarEventsInRange, {
+					workspaceId,
+					from: todayFrom,
+					to: todayTo,
+				}),
+				ctx.runQuery(api.chatbot.getMyTasksInRange, {
+					workspaceId,
+					from: todayFrom,
+					to: todayTo,
+					onlyIncomplete: true,
+				}),
+				ctx.runQuery(api.chatbot.getMyUpcomingTasks, {
+					workspaceId,
+					limit: 25,
+				}),
+				memberId
+					? ctx.runQuery(api.board.getAssignedCards, {
+						workspaceId,
+						memberId,
+					})
+					: Promise.resolve([]),
+				ctx.runQuery(api.messages.getMentionedMessages, {
+					workspaceId,
+					limit: 40,
+				}),
+			]);
+
+			const undatedTasks = (upcomingTasks || [])
+				.filter((t) => typeof t?.dueDate !== 'number')
+				.slice(0, 10)
+				.map((t) => ({
+					title: String(t?.title ?? ''),
+					dueDate: undefined,
+					priority: t?.priority ?? undefined,
+				}));
+			const tasks = [...(tasksDueToday || []), ...undatedTasks].filter((t) => String(t?.title ?? '').trim());
+
+			type AssignedCardShape = {
+				title?: unknown;
+				dueDate?: unknown;
+				priority?: unknown;
+				channelName?: unknown;
+			};
+			const mappedCards = (assignedCards || []).map((c: AssignedCardShape) => ({
+				title: String(c?.title ?? ''),
+				dueDate: typeof c?.dueDate === 'number' ? (c.dueDate as number) : undefined,
+				priority: normalizePriority(c?.priority),
+				channelName: typeof c?.channelName === 'string' ? (c.channelName as string) : undefined,
+			}));
+			const cardsDueToday = mappedCards.filter((c) => typeof c?.dueDate === 'number' && c.dueDate! >= todayFrom && c.dueDate! <= todayTo);
+			const cardsUndated = mappedCards.filter((c) => typeof c?.dueDate !== 'number').slice(0, 10);
+			const cards = [...cardsDueToday, ...cardsUndated].filter((c) => String(c?.title ?? '').trim());
+
+			const todaysMentions = (mentioned || []).filter((m) => {
+				const created = typeof m?._creationTime === 'number' ? m._creationTime : 0;
+				return created >= todayFrom && created <= todayTo;
+			});
+			const mentionsSummary = todaysMentions
+				.slice(0, 6)
+				.map((m) => {
+					const who = String(m?.user?.name ?? 'Someone').trim();
+					const ctxName = String(m?.context?.name ?? 'Mention').trim();
+					return `- @${who} in ${ctxName}`;
+				})
+				.join('\n');
+
+			let channelRecap: string | null = null;
+			try {
+				const recent = await ctx.runQuery(api.messages.getRecentWorkspaceChannelMessages, {
+					workspaceId,
+					from: todayFrom,
+					to: todayTo,
+					limit: 250,
+					perChannelLimit: 3,
+				});
+
+				const lines = (recent || [])
+					.map((m) => {
+						const channelName = String(m?.channelName ?? 'unknown').trim();
+						const who = String(m?.authorName ?? '').trim();
+						const body = truncateOneLine(String(m?.body ?? ''), 180);
+						const prefix = `#${channelName}${who ? ` @${who}` : ''}: `;
+						return `${prefix}${body}`.trim();
+					})
+					.filter(Boolean)
+					.slice(-30);
+
+				if (lines.length) {
+					const prompt = `You are Proddy, a personal work assistant.
+
+Task:
+- Summarize what happened across the workspace today using ONLY the provided recent channel snippets.
+
+Strict rules:
+- Do NOT quote any snippet or copy 5+ consecutive words.
+- Do NOT output topic/keyword lists and do NOT mention message counts.
+- Do NOT invent details. If it isn't supported by the snippets, omit it.
+- Output plain bullet points only (no priority buckets).
+
+Output format:
+Workspace Updates (Today)
+- <bullet>
+- <bullet>
+
+Keep it concise: 5-12 bullets max.
+
+Recent channel snippets:
+${lines.map((l) => `- ${l}`).join('\n')}`;
+
+					channelRecap = await generateLLMResponse({
+						prompt,
+						systemPrompt: '',
+						recentMessages: recentChatMessages,
 					});
-					for (const m of Array.isArray(recent) ? recent : []) {
-						const body = truncateOneLine(String((m as any)?.body ?? ''), 220);
-						if (!body) continue;
-						const hay = body.toLowerCase();
-						let score = 0;
-						for (const t of terms) {
-							if (hay.includes(t)) score += 1;
-						}
-						if (!score) continue;
-						const author = String((m as any)?.authorName ?? 'Someone').trim();
-						const channelName = String(ch?.name || 'unknown');
-						hits.push({ score, channel: channelName, author, body });
-					}
 				}
-
-				if (hits.length) {
-					hits.sort((a, b) => b.score - a.score);
-					const top = hits.slice(0, 8);
-					const messageContext = top
-						.map((h) => `@${h.author} in #${h.channel}: ${h.body}`)
-						.join('\n');
-
-					// Prefer Gemini to summarize/answer (small context). If Gemini isn't configured, fall back to a heuristic summary.
-					try {
-						const prompt = `Answer the user's question using ONLY the following recent messages.
-
-Be concise. Summarize; do NOT paste the messages verbatim.
-Never quote. Do not include any continuous 5+ words copied from a message.
-If you need to name people, use @Name.
-
-Question: ${args.query}
-
-Recent messages:\n${messageContext}`;
-						const answer = await generateLLMResponse(prompt, '');
-						return { answer, sources: ['Messages'] };
-					} catch {
-						const keywords = Array.from(
-							new Set(top.flatMap((h) => extractTopicKeywords(h.body, 4)))
-						).slice(0, 8);
-						const channelsUsed = Array.from(new Set(top.map((h) => `#${h.channel}`))).slice(0, 6);
-						const authorsUsed = Array.from(new Set(top.map((h) => `@${h.author}`))).slice(0, 6);
-						const lines: string[] = [];
-						lines.push("I found relevant recent activity, but AI summarization isn't available right now.");
-						if (channelsUsed.length) lines.push(`Channels: ${channelsUsed.join(', ')}`);
-						if (authorsUsed.length) lines.push(`People: ${authorsUsed.join(', ')}`);
-						if (keywords.length) lines.push(`Topics: ${keywords.join(', ')}`);
-						return { answer: lines.join('\n'), sources: ['Messages'] };
-					}
-				}
+			} catch (e) {
+				// Keep the agenda response even if the model fails.
+				const errorMessage = e instanceof Error ? e.message : '';
+				channelRecap = errorMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY is required')
+					? 'AI is not configured for workspace summaries.'
+					: 'AI workspace summary is temporarily unavailable.';
 			}
+
+			const agenda = renderAgendaDigest({
+				now,
+				label: 'today',
+				windowLabel: 'today',
+				events,
+				tasks,
+				cards,
+				mentionsCount: todaysMentions.length,
+				mentionsSummary: mentionsSummary || undefined,
+			});
+
+			const answer = [
+				agenda.trim(),
+				channelRecap ? `\n\n${channelRecap.trim()}` : '',
+			]
+				.join('')
+				.trim();
+
+			return {
+				answer,
+				sources: ['Calendar', 'Tasks', 'Boards', 'Messages'],
+			};
 		}
+
+		// ---------------------------------------------------------------------
+		// 4. FALLBACK → KNOWLEDGE BASE (RAG)
+		// ---------------------------------------------------------------------
+		// Note: We intentionally avoid mining/summarizing raw chat messages here.
 
 		const ragResults: Array<{ text: string }> = await ctx.runAction(
 			api.search.semanticSearch,
@@ -1677,7 +1941,7 @@ Recent messages:\n${messageContext}`;
 		);
 
 		const ragContext = ragResults
-			.map((c: any, i: number) => `[Doc ${i + 1}] ${c?.text ?? ''}`)
+			.map((c, i) => `[Doc ${i + 1}] ${c.text ?? ''}`)
 			.join('\n\n');
 
 		// Cost-safe: do not include large channel histories in general QA.
@@ -1691,34 +1955,34 @@ Recent messages:\n${messageContext}`;
 			};
 		}
 
-		const mixedPrompt = `Answer using ONLY the provided context.
+		const mixedPrompt = `Answer as a personal work assistant using ONLY the provided context.
 
 Rules:
 - Never quote or paste any context verbatim.
 - Do not include any continuous 5+ words copied from the context.
-- Paraphrase and keep it concise.
-
-If listing items, use this EXACT format:
-High Priority:\n- ...\n
-Medium Priority:\n- ...\n
-Low Priority:\n- ...
-
-			If a section has no items, write:\nNo items
+- Do NOT output topic/keyword lists or message counts.
+- Prefer short headings and bullet points.
 
 Question: ${args.query}
 
 Context:\n${combinedContext}`;
 
 		try {
-			const answer = await generateLLMResponse(mixedPrompt, '');
+			const answer = await generateLLMResponse({
+				prompt: mixedPrompt,
+				systemPrompt: '',
+				recentMessages: recentChatMessages,
+			});
 			const sources = [...(ragResults.length ? ['Knowledge Base'] : [])];
 			return { answer, sources };
 		} catch {
-			// If Gemini isn't configured, do not expose raw document text.
+			// Best-effort assistant response without quoting docs.
+			const lines: string[] = [];
+
+			lines.push('• [Unable to generate detailed answer at this time]');
 			return {
-				answer:
-					"I found some relevant workspace context, but AI summarization isn't available right now. Try again after configuring Gemini.",
-				sources: [...(ragResults.length ? ['Knowledge Base'] : [])],
+				answer: lines.join('\n'),
+				sources: [],
 			};
 		}
 	},
@@ -1891,13 +2155,13 @@ export const getMyAssignedCardsInRange = query({
 				const channelName = mention.channelId ? channelMap.get(String(mention.channelId))?.name : undefined;
 				return {
 					_id: card._id,
-					title: card.title ?? mention.cardTitle ?? 'Untitled card',
+					title: String(card.title ?? mention.cardTitle ?? 'Untitled card'),
 					dueDate: card.dueDate,
-					priority: card.priority,
+					priority: normalizePriority(card.priority),
 					boardName: channelName ? `#${channelName}` : 'Board',
 				};
 			})
-			.filter(Boolean) as Array<{ _id: Id<'cards'>; title: string; dueDate: number; priority?: any; boardName: string }>;
+			.filter(isDefined);
 
 		return inRange.sort((a, b) => a.dueDate - b.dueDate).slice(0, args.limit ?? 20);
 	},
