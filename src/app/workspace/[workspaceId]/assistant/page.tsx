@@ -4,15 +4,15 @@ import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { useCurrentMember } from '@/features/members/api/use-current-member';
 import { useCurrentUser } from '@/features/auth/api/use-current-user';
-import { DashboardWidgets } from '@/features/dashboard/components/dashboard-widgets';
-import { Loader, LayoutDashboard } from 'lucide-react';
+import { DashboardChatbot } from '@/features/dashboard/components/dashboard-chatbot';
+import { Loader, Bot } from 'lucide-react';
 import { WorkspaceToolbar } from '../toolbar';
 import { Button } from '@/components/ui/button';
 import { useMemo } from 'react';
 
-const DashboardPage = () => {
+const AssistantPage = () => {
   // Set document title
-  useDocumentTitle('Dashboard');
+  useDocumentTitle('Proddy AI');
 
   const workspaceId = useWorkspaceId();
 
@@ -56,18 +56,18 @@ const DashboardPage = () => {
           className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
           size="sm"
         >
-          <LayoutDashboard className="mr-2 size-5" />
-          <span className="truncate">Dashboard</span>
+          <Bot className="mr-2 size-5" />
+          <span className="truncate">Proddy AI</span>
         </Button>
       </WorkspaceToolbar>
       <div className="flex flex-1 overflow-hidden p-4 md:p-6">
         <div className="flex w-full flex-col">
-          {/* Full-width Widgets section */}
-          <DashboardWidgets workspaceId={workspaceId} member={enhancedMember} />
+          {/* Full-width Proddy AI Chatbot */}
+          <DashboardChatbot workspaceId={workspaceId} member={enhancedMember} />
         </div>
       </div>
     </div>
   );
 };
 
-export default DashboardPage;
+export default AssistantPage;

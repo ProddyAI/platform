@@ -183,7 +183,7 @@ export const NotesContent = ({
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden dark:bg-[hsl(var(--card-accent))]">
           {/* Live Header - always visible */}
           <LiveHeader
             type="notes"

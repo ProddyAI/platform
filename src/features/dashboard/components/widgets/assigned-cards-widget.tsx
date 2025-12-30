@@ -23,9 +23,11 @@ interface AssignedCardsWidgetProps {
       image?: string;
     };
   };
+  isEditMode?: boolean;
+  controls?: React.ReactNode;
 }
 
-export const AssignedCardsWidget = ({ workspaceId }: AssignedCardsWidgetProps) => {
+export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: AssignedCardsWidgetProps) => {
   const router = useRouter();
 
   // Fetch channels for the workspace
@@ -67,36 +69,38 @@ export const AssignedCardsWidget = ({ workspaceId }: AssignedCardsWidgetProps) =
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-8"> {/* Added padding-right to avoid overlap with drag handle */}
+      <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
           <KanbanSquare className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Assigned Cards</h3>
-          {sortedCards.length > 0 && (
+          {!isEditMode && sortedCards.length > 0 && (
             <Badge variant="default" className="ml-2">
               {sortedCards.length}
             </Badge>
           )}
-          {channels && channels.length > 0 && (
-            <div className="flex items-center gap-2 ml-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(`/workspace/${workspaceId}/channel/${channels[0]._id}/board`)}
-              >
-                View all
-              </Button>
-            </div>
-          )}
         </div>
+        {isEditMode ? (
+          controls
+        ) : (
+          channels && channels.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/workspace/${workspaceId}/channel/${channels[0]._id}/board`)}
+            >
+              View all
+            </Button>
+          )
+        )}
       </div>
 
       {sortedCards.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-2 p-4">
             {sortedCards.map((card) => (
               <Card
                 key={card._id}
-                className="overflow-hidden"
+                className="overflow-hidden border-2"
               >
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
@@ -122,7 +126,7 @@ export const AssignedCardsWidget = ({ workspaceId }: AssignedCardsWidgetProps) =
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs border-2">
                           {card.channelName || 'Unknown Channel'}
                         </Badge>
                         <Button
@@ -142,7 +146,7 @@ export const AssignedCardsWidget = ({ workspaceId }: AssignedCardsWidgetProps) =
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <KanbanSquare className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No assigned cards</h3>
           <p className="text-sm text-muted-foreground">

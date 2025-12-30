@@ -24,7 +24,7 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id('users'),
 		joinCode: v.string(),
-	}),
+	}).index('by_user_id', ['userId']),
 
 	members: defineTable({
 		userId: v.id('users'),
@@ -312,7 +312,7 @@ const schema = defineSchema({
 								title: v.string(),
 								description: v.string(),
 								visible: v.boolean(),
-								size: v.union(v.literal('small'), v.literal('large')),
+								size: v.union(v.literal('small'), v.literal('medium'), v.literal('large')),
 							})
 						)
 					),

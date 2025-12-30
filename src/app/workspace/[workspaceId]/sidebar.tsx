@@ -17,6 +17,7 @@ import {
   CheckSquare,
   Settings,
   LayoutDashboard,
+  Bot,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useToggle } from "react-use";
@@ -218,6 +219,18 @@ export const WorkspaceSidebar = ({
           id="dashboard"
           href={`/workspace/${workspaceId}/dashboard`}
           isActive={pathname.includes("/dashboard")}
+          isCollapsed={isCollapsed}
+        />
+      </div>
+
+      {/* Proddy AI Link */}
+      <div className="mt-2 px-2 md:px-4">
+        <SidebarItem
+          label="Proddy AI"
+          icon={Bot}
+          id="assistant"
+          href={`/workspace/${workspaceId}/assistant`}
+          isActive={pathname.includes("/assistant")}
           isCollapsed={isCollapsed}
         />
       </div>

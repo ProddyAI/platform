@@ -26,6 +26,8 @@ interface MentionsWidgetProps {
       image?: string;
     };
   };
+  isEditMode?: boolean;
+  controls?: React.ReactNode;
 }
 
 interface Mention {
@@ -47,7 +49,7 @@ interface Mention {
   };
 }
 
-export const MentionsWidget = ({ workspaceId }: MentionsWidgetProps) => {
+export const MentionsWidget = ({ workspaceId, isEditMode, controls }: MentionsWidgetProps) => {
   const router = useRouter();
   const { data: rawMentions, isLoading } = useGetMentionedMessages(false); // false to get only unread
   const { counts, isLoading: countsLoading } = useGetUnreadMentionsCount();
@@ -110,29 +112,33 @@ export const MentionsWidget = ({ workspaceId }: MentionsWidgetProps) => {
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-8"> {/* Added padding-right to avoid overlap with drag handle */}
+      <div className="flex items-center justify-between pr-2"> 
         <div className="flex items-center gap-2">
           <AtSign className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Mentions</h3>
-          {counts && counts.total > 0 && (
+          {!isEditMode && counts && counts.total > 0 && (
             <Badge variant="default" className="ml-2">
               {counts.total}
             </Badge>
           )}
         </div>
-        {counts && counts.total > 0 && (
-          <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
-            <CheckCircle className="mr-2 h-4 w-4" />
-            Mark all as read
-          </Button>
+        {isEditMode ? (
+          controls
+        ) : (
+          counts && counts.total > 0 && (
+            <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} className="border-2">
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Mark all as read
+            </Button>
+          )
         )}
       </div>
 
       {mentions && mentions.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-2 p-4">
             {mentions.map((mention) => (
-              <Card key={mention.id} className="overflow-hidden">
+              <Card key={mention.id} className="overflow-hidden border-2">
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
                     <Avatar className="h-8 w-8">
@@ -149,7 +155,7 @@ export const MentionsWidget = ({ workspaceId }: MentionsWidgetProps) => {
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{mention.author.name || 'Unknown User'}</p>
                           {mention.source.type === 'channel' && (
-                            <Badge variant="outline" className="flex items-center gap-1">
+                            <Badge variant="outline" className="flex items-center gap-1 border-2">
                               <Hash className="h-3 w-3" />
                               {mention.source.name}
                             </Badge>
@@ -193,7 +199,7 @@ export const MentionsWidget = ({ workspaceId }: MentionsWidgetProps) => {
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <AtSign className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No mentions</h3>
           <p className="text-sm text-muted-foreground">

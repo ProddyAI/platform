@@ -110,10 +110,16 @@
 	}
 
 	/* But do NOT darken message/chat surfaces or unified message cards — keep sent/received chats unchanged. */
-	.dark .messages-scrollbar [class*="bg-white"],
-	.dark [data-message-component="true"] {
+	.dark .messages-scrollbar [class*="bg-white"] {
 		background-color: unset !important;
 		color: unset !important;
+		border-color: unset !important;
+	}
+
+	/* Keep unified message cards (canvas/note previews) with their light background in dark mode */
+	.dark [data-message-component="true"] {
+		background-color: hsl(0 0% 100%) !important;
+		color: hsl(222.2 84% 4.9%) !important;
 		border-color: unset !important;
 	}
 
@@ -130,8 +136,8 @@
 
 	/* Prevent dark-mode from changing normal chat bubbles (non-author) — keep them light */
 	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer:not(.bg-primary) {
-		background-color: hsl(210 40% 96.1%) !important; /* original light muted */
-		color: hsl(222.2 84% 4.9%) !important; /* original foreground */
+		background-color: hsl(210 40% 95%) !important; /* slightly lighter for visibility */
+		color: hsl(222.2 84% 4.9%) !important; /* dark text for contrast */
 	}
 
 /* Calendar header: darken month pill and filter bar in dark mode to use the accent token */

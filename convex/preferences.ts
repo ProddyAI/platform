@@ -7,7 +7,7 @@ import { mutation, query } from './_generated/server';
 // Type definitions for workspace preferences
 export type ExpandedSections = Record<string, boolean>;
 
-export type WidgetSize = 'small' | 'large';
+export type WidgetSize = 'small' | 'medium' | 'large';
 
 export type DashboardWidget = {
 	id: string;
@@ -406,7 +406,7 @@ export const updateWorkspacePreferences = mutation({
 						title: v.string(),
 						description: v.string(),
 						visible: v.boolean(),
-						size: v.union(v.literal('small'), v.literal('large')),
+				size: v.union(v.literal('small'), v.literal('medium'), v.literal('large')),
 					})
 				)
 			),
@@ -531,7 +531,7 @@ export const updateDashboardWidgets = mutation({
 				title: v.string(),
 				description: v.string(),
 				visible: v.boolean(),
-				size: v.union(v.literal('small'), v.literal('large')),
+				size: v.union(v.literal('small'), v.literal('medium'), v.literal('large')),
 			})
 		),
 	},

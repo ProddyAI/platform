@@ -24,9 +24,11 @@ interface NotesWidgetProps {
       image?: string;
     };
   };
+  isEditMode?: boolean;
+  controls?: React.ReactNode;
 }
 
-export const NotesWidget = ({ workspaceId }: NotesWidgetProps) => {
+export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetProps) => {
   const router = useRouter();
   const { data: channels } = useGetChannels({ workspaceId });
 
@@ -93,32 +95,36 @@ export const NotesWidget = ({ workspaceId }: NotesWidgetProps) => {
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-8">
+      <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Recent Notes</h3>
-          {sortedNotes.length > 0 && (
+          {!isEditMode && sortedNotes.length > 0 && (
             <Badge variant="default" className="ml-2">
               {sortedNotes.length}
             </Badge>
           )}
+        </div>
+        {isEditMode ? (
+          controls
+        ) : (
           <Button
             variant="outline"
             size="sm"
             onClick={handleViewAll}
-            className="ml-4"
+            className="border-2"
           >
             View All
           </Button>
-        </div>
+        )}
       </div>
 
       {sortedNotes.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
           <div className="space-y-2 p-4">
             {sortedNotes.map((note) => (
-              <Card key={note._id} className="overflow-hidden">
-                <CardContent className="p-3">
+              <Card key={note._id} className="overflow-hidden border-2 dark:bg-[hsl(var(--card-accent))] dark:border-[hsl(var(--border))]">
+                <CardContent className="p-3 dark:bg-[hsl(var(--card-accent))]">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -129,7 +135,7 @@ export const NotesWidget = ({ workspaceId }: NotesWidgetProps) => {
                         {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="border-2 text-xs">
                       {note.channelName}
                     </Badge>
                     <p className="text-sm text-muted-foreground line-clamp-1">
@@ -189,7 +195,7 @@ export const NotesWidget = ({ workspaceId }: NotesWidgetProps) => {
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <FileText className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No notes found</h3>
           <p className="text-sm text-muted-foreground">
@@ -198,9 +204,10 @@ export const NotesWidget = ({ workspaceId }: NotesWidgetProps) => {
           <Button
             variant="outline"
             size="sm"
-            className="mt-4"
+            className="mt-4 border-2"
             onClick={handleCreateNote}
           >
+            <Plus className="mr-2 h-4 w-4" />
             Create Note <Plus className="ml-2 h-3.5 w-3.5" />
           </Button>
         </div>

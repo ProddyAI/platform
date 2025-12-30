@@ -322,8 +322,9 @@ export const UserProfileModal = ({
     const handleDeleteAccount = async () => {
         try {
             setIsDeleting(true);
-
+            
             await deleteAccount();
+            toast.success('Account deleted successfully');
             await signOut();
             router.replace('/');
         } catch (error) {
@@ -636,15 +637,28 @@ export const UserProfileModal = ({
                                                             </CardContent>
                                                         </Card>
 
-                                                        <Card>
+                                                        <Card className="border-destructive/50">
                                                             <CardHeader>
-                                                                <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                                                                <CardTitle className="text-destructive flex items-center gap-2">
+                                                                    <AlertTriangle className="size-5" />
+                                                                    Danger Zone
+                                                                </CardTitle>
                                                                 <CardDescription>Permanently delete your account and all associated data.</CardDescription>
                                                             </CardHeader>
                                                             <CardContent>
-                                                                <div className="flex items-center justify-between gap-4">
-                                                                    <p className="text-sm text-muted-foreground">This action cannot be undone. Your workspaces, channels, messages, and other data will be permanently deleted.</p>
-                                                                    <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)} className="gap-2"><Trash2 className="mr-2 size-4" />Delete Account</Button>
+                                                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-sm font-medium">Delete this account</p>
+                                                                        <p className="text-sm text-muted-foreground">This action cannot be undone. Your workspaces, channels, messages, and other data will be permanently deleted.</p>
+                                                                    </div>
+                                                                    <Button 
+                                                                        variant="destructive" 
+                                                                        onClick={() => setDeleteDialogOpen(true)} 
+                                                                        className="gap-2 whitespace-nowrap"
+                                                                    >
+                                                                        <Trash2 className="size-4" />
+                                                                        Delete Account
+                                                                    </Button>
                                                                 </div>
                                                             </CardContent>
                                                         </Card>
@@ -716,9 +730,21 @@ export const UserProfileModal = ({
                     </div>
 
                     <div className="mt-4">
-                        <Label htmlFor="confirm-delete" className="text-sm font-medium">Confirm Deletion</Label>
-                        <Input id="confirm-delete" placeholder="Delete my account" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} disabled={isDeleting} className="mt-2" />
-                        <p className="text-xs text-muted-foreground mt-2">Type <span className="font-medium">Delete my account</span> to enable the Delete button.</p>
+                        <Label htmlFor="confirm-delete" className="text-sm font-medium">
+                            Type <span className="font-semibold text-destructive">DELETE</span> to confirm
+                        </Label>
+                        <Input 
+                            id="confirm-delete" 
+                            placeholder="Type DELETE to confirm" 
+                            value={confirmText} 
+                            onChange={(e) => setConfirmText(e.target.value)} 
+                            disabled={isDeleting} 
+                            className="mt-2"
+                            autoComplete="off"
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">
+                            This will permanently delete your account and all associated data.
+                        </p>
                     </div>
 
                     <DialogFooter>
@@ -734,7 +760,10 @@ export const UserProfileModal = ({
                                     Deleting...
                                 </>
                             ) : (
-                                'Delete Account'
+                                <>
+                                    <Trash2 className="mr-2 size-4" />
+                                    Delete Account
+                                </>
                             )}
                         </Button>
                     </DialogFooter>

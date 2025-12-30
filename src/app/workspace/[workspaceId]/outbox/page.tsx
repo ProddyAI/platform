@@ -1,7 +1,7 @@
 'use client';
 
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowRight, Clock, Filter, Hash, Loader, Mail, Search, SortDesc, User } from 'lucide-react';
+import { ArrowRight, Clock, Filter, Hash, Loader, Mail, Search, SortDesc, User, FileText, Brush } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -50,17 +50,26 @@ export default function OutboxPage() {
   const parseMessageBody = (body: string) => {
     try {
       const parsed = JSON.parse(body);
+      if (parsed.type === 'canvas' || parsed.type === 'note') {
+        return parsed; 
+      }
       if (parsed.ops && parsed.ops[0] && parsed.ops[0].insert) {
-        return parsed.ops[0].insert;
+        return parsed.ops[0].insert.trim();
       }
     } catch (e) {
-      // If parsing fails, return the original body
       return body;
     }
     return body;
   };
 
   const getMessageUrl = (message: Message) => {
+    const parsedBody = parseMessageBody(message.body);
+    if (typeof parsedBody === 'object' && parsedBody.type === 'canvas') {
+      return `/workspace/${workspaceId}/channel/${message.context.id}/canvas?roomId=${parsedBody.roomId}`;
+    }
+    if (typeof parsedBody === 'object' && parsedBody.type === 'note') {
+      return `/workspace/${workspaceId}/channel/${message.context.id}/notes?noteId=${parsedBody.noteId}`;
+    }
     if (message.context.type === 'channel') {
       return `/workspace/${workspaceId}/channel/${message.context.id}/chats`;
     } else if (message.context.type === 'conversation' && message.context.memberId) {
@@ -278,6 +287,8 @@ export default function OutboxPage() {
   );
 
   function renderMessageCard(message: Message) {
+    const content = parseMessageBody(message.body);
+
     return (
       <Link
         key={message._id}
@@ -311,7 +322,24 @@ export default function OutboxPage() {
 
         <div className="flex items-start gap-3">
           <div className="flex-1 space-y-1">
-            <p className="text-sm">{parseMessageBody(message.body)}</p>
+            {typeof content === 'object' ? (
+              <div>
+                {content.type === 'canvas' && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Brush className="h-4 w-4 text-muted-foreground" />
+                    <span>Canvas: {content.canvasName}</span>
+                  </div>
+                )}
+                {content.type === 'note' && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>Note: {content.noteTitle}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm">{content}</p>
+            )}
             <div className="flex items-center justify-end mt-2">
               <span className="text-xs text-muted-foreground">
                 {format(new Date(message._creationTime), 'MMM d, h:mm a')}

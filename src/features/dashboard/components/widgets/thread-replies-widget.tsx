@@ -23,6 +23,8 @@ interface ThreadRepliesWidgetProps {
       image?: string;
     };
   };
+  isEditMode?: boolean;
+  controls?: React.ReactNode;
 }
 
 // Define the actual structure returned by the API
@@ -55,7 +57,7 @@ interface ThreadReplyMessage {
   };
 }
 
-export const ThreadRepliesWidget = ({ workspaceId }: ThreadRepliesWidgetProps) => {
+export const ThreadRepliesWidget = ({ workspaceId, isEditMode, controls }: ThreadRepliesWidgetProps) => {
   const router = useRouter();
   const rawThreadMessages = useGetThreadMessages();
 
@@ -106,31 +108,35 @@ export const ThreadRepliesWidget = ({ workspaceId }: ThreadRepliesWidgetProps) =
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-8"> {/* Added padding-right to avoid overlap with drag handle */}
+      <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
           <MessageSquareText className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Thread Replies</h3>
-          {threadMessages.length > 0 && (
+          {!isEditMode && threadMessages.length > 0 && (
             <Badge variant="default" className="ml-2">
               {threadMessages.length}
             </Badge>
           )}
+        </div>
+        {isEditMode ? (
+          controls
+        ) : (
           <Button
             variant="outline"
             size="sm"
             onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
-            className="ml-4"
+            className="border-2"
           >
             View All
           </Button>
-        </div>
+        )}
       </div>
 
       {threadMessages && threadMessages.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-2 p-4">
             {threadMessages.map((thread) => (
-              <Card key={thread.message._id.toString()} className="overflow-hidden">
+              <Card key={thread.message._id.toString()} className="overflow-hidden border-2">
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
                     <Avatar className="h-8 w-8">
@@ -147,7 +153,7 @@ export const ThreadRepliesWidget = ({ workspaceId }: ThreadRepliesWidgetProps) =
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{thread.currentUser.name || 'Unknown User'}</p>
                           {thread.context.type === 'channel' && (
-                            <Badge variant="outline" className="flex items-center gap-1">
+                            <Badge variant="outline" className="flex items-center gap-1 border-2">
                               <Hash className="h-3 w-3" />
                               {thread.context.name}
                             </Badge>
@@ -196,7 +202,7 @@ export const ThreadRepliesWidget = ({ workspaceId }: ThreadRepliesWidgetProps) =
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <MessageSquareText className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No thread replies</h3>
           <p className="text-sm text-muted-foreground">

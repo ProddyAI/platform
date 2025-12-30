@@ -24,11 +24,13 @@ interface TasksWidgetProps {
       image?: string;
     };
   };
+  isEditMode?: boolean;
+  controls?: React.ReactNode;
 }
 
 
 
-export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
+export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetProps) => {
   const router = useRouter();
 
   // Fetch your tasks
@@ -104,34 +106,37 @@ export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-8"> {/* Added padding-right to avoid overlap with drag handle */}
+      <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
           <CheckSquare className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Your Tasks</h3>
-          {sortedTasks.length > 0 && (
+          {!isEditMode && sortedTasks.length > 0 && (
             <Badge variant="default" className="ml-2">
               {sortedTasks.length}
             </Badge>
           )}
-          <div className="flex items-center gap-2 ml-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
-            >
-              View all
-            </Button>
-          </div>
         </div>
+        {isEditMode ? (
+          controls
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
+            className='border-2'
+          >
+            View all
+          </Button>
+        )}
       </div>
 
       {sortedTasks.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-2 p-4">
             {sortedTasks.map((task) => (
               <Card
                 key={task._id}
-                className={`overflow-hidden ${task.completed ? 'bg-muted/20' : ''}`}
+                className={`overflow-hidden border-2 ${task.completed ? 'bg-muted/20' : ''}`}
               >
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
@@ -169,19 +174,19 @@ export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="border-2 text-xs">
                           {getCategoryName(task.categoryId)}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-primary"
-                          onClick={() => handleViewTask(task._id)}
-                        >
-                          View
-                        </Button>
                       </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-primary"
+                      onClick={() => handleViewTask(task._id)}
+                    >
+                      View
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -189,7 +194,7 @@ export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <CheckSquare className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No tasks</h3>
           <p className="text-sm text-muted-foreground">
@@ -199,9 +204,10 @@ export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
+              className='border-2'
+              onClick={() => router.push(`/workspace/${workspaceId}/tasks?action=create`)}
             >
-              Create a task
+              Create Task
             </Button>
           </div>
         </div>
