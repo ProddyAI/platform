@@ -119,7 +119,10 @@ export const workspaceHeartbeat = mutation({
   handler: async (ctx, { workspaceId, sessionId, interval }) => {
     const authUserId = await getAuthUserId(ctx);
     if (!authUserId) {
-      throw new Error('Unauthorized');
+      // If the client is not authenticated (expired session, anonymous user, etc.),
+      // do not crash the mutation. We simply skip presence tracking.
+      // Return the expected format for compatibility with callers.
+      return { roomToken: `workspace-${workspaceId}`, sessionToken: sessionId };
     }
 
     // Check if user is a member of the workspace

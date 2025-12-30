@@ -1131,9 +1131,6 @@ export const getMentionedMessages = query({
 
 				console.log('getMentionedMessages - checking message:', {
 					messageId: message._id,
-					messageBody:
-						message.body.substring(0, 100) +
-						(message.body.length > 100 ? '...' : ''),
 					hasMention,
 				});
 
