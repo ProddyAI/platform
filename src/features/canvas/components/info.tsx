@@ -1,7 +1,6 @@
 "use client";
 
 import { Loader, Menu } from "lucide-react";
-import { Poppins } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -16,11 +15,6 @@ import { useWorkspaceId } from "../../../hooks/use-workspace-id";
 import { Id } from "../../../../convex/_generated/dataModel";
 
 const TabSeparator = () => <div className="text-neutral-300 px-1.5">|</div>;
-
-const font = Poppins({
-  subsets: ["latin"],
-  weight: ["600"],
-});
 
 type InfoProps = {
   boardId?: string;
@@ -73,7 +67,6 @@ export const Info = ({ boardId, canvasId }: InfoProps) => {
             <span
               className={cn(
                 "font-semibold text-xl ml-2 text-black",
-                font.className,
               )}
             >
               {isLoading ? (

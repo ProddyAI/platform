@@ -82,6 +82,8 @@ const rag = new RAG<FilterTypes>(components.rag, {
 	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
 });
 
+const NO_CHANNEL_FILTER_VALUE = '__none__';
+
 // Index content for RAG search
 export const indexContent = action({
 	args: {
@@ -113,20 +115,26 @@ export const indexContent = action({
 		}
 
 		try {
+			const channelIdFilterValue = (() => {
+				const metadata = args.metadata as unknown;
+				if (!metadata || typeof metadata !== 'object') {
+					return NO_CHANNEL_FILTER_VALUE;
+				}
+				const maybeChannelId = (metadata as { channelId?: unknown }).channelId;
+				if (typeof maybeChannelId === 'string' && maybeChannelId.length > 0) {
+					return maybeChannelId;
+				}
+				return NO_CHANNEL_FILTER_VALUE;
+			})();
+
 			const filterValues: Array<{
 				name: 'workspaceId' | 'contentType' | 'channelId';
 				value: string;
 			}> = [
 				{ name: 'workspaceId', value: args.workspaceId as string },
 				{ name: 'contentType', value: args.contentType },
+				{ name: 'channelId', value: channelIdFilterValue },
 			];
-
-			if (args.metadata.channelId) {
-				filterValues.push({
-					name: 'channelId',
-					value: args.metadata.channelId as string,
-				});
-			}
 
 			console.log('Filter values:', filterValues);
 

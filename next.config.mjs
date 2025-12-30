@@ -1,4 +1,3 @@
-import { withSentryConfig } from '@sentry/nextjs';
 /** @type {import('next').NextConfig} */
 import withPWA from 'next-pwa';
 
@@ -138,6 +137,17 @@ const nextConfig = withPWA({
 								domains: ['getstream.io'],
 				},
 });
+
+let withSentryConfig = (config) => config;
+try {
+	// Optional dependency: allow builds without Sentry installed.
+	const sentry = await import('@sentry/nextjs');
+	if (typeof sentry.withSentryConfig === 'function') {
+		withSentryConfig = sentry.withSentryConfig;
+	}
+} catch {
+	// No-op: Sentry disabled.
+}
 
 export default withSentryConfig(nextConfig, {
  // For all available options, see:

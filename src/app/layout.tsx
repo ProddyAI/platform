@@ -1,7 +1,5 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
-import * as Sentry from "@sentry/nextjs";
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
 import { PropsWithChildren } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
@@ -16,11 +14,6 @@ import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup
 import { siteConfig } from "@/config";
 
 import "./globals.css";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -49,17 +42,8 @@ const metadata: Metadata = {
 };
 
 export function generateMetadata(): Metadata {
-  const traceData = Sentry.getTraceData();
-  const validTraceData = Object.fromEntries(
-    Object.entries(traceData).filter(([, value]) => value !== undefined)
-  );
-
   return {
     ...metadata,
-    other: {
-      ...(metadata.other ?? {}),
-      ...validTraceData,
-    },
   };
 }
 
@@ -78,7 +62,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
           <meta name="mobile-web-app-capable" content="yes" />
           <link rel="apple-touch-icon" href="/logo-nobg.png" />
         </head>
-        <body className={`${poppins.className} antialiased`}>
+        <body className="antialiased">
           <ConvexClientProvider>
             <JotaiProvider>
               <UsetifulProvider>
