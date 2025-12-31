@@ -1,9 +1,8 @@
 'use client';
 
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowRight, Clock, Filter, Hash, Loader, MessageSquareText, Search, SortDesc, User } from 'lucide-react';
-import Link from 'next/link';
-import { useState } from 'react';
+import { Clock, Filter, Hash, Loader, MessageSquareText, Search, SortDesc, User, PaintBucket, FileText, MessageCircle } from 'lucide-react';
+import { useState, useMemo } from 'react';
 
 import type { Id } from '@/../convex/_generated/dataModel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,8 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Card, CardContent } from '@/components/ui/card';
 import { useGetThreadMessages } from '@/features/messages/api/use-get-thread-messages';
+import { ThreadModal } from '@/features/messages/components/thread-modal';
+import { useQuery } from 'convex/react';
+import { api } from '@/../convex/_generated/api';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { WorkspaceToolbar } from '../toolbar';
@@ -60,35 +62,91 @@ export default function ThreadsPage() {
   const threads = useGetThreadMessages() as ThreadMessage[] | undefined;
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'channels' | 'direct'>('all');
+  const [selectedThread, setSelectedThread] = useState<ThreadMessage | null>(null);
+  
+  // Get all thread titles for this workspace
+  const threadTitles = useQuery(api.threadTitles.getByWorkspaceId, {
+    workspaceId,
+  });
+
+  // Get thread reply counts
+  const threadReplyCounts = useQuery(
+    api.messages.getThreadReplyCounts,
+    threads ? { 
+      parentMessageIds: threads.map(t => t.message.parentMessageId).filter(Boolean) as Id<'messages'>[]
+    } : 'skip'
+  );
+
+  // Create a map of messageId -> threadTitle for quick lookup
+  const titleMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (threadTitles) {
+      threadTitles.forEach((tt) => {
+        map.set(tt.messageId.toString(), tt.title);
+      });
+    }
+    return map;
+  }, [threadTitles]);
 
   // Define helper functions first
-  const parseMessageBody = (body: string) => {
+  const parseMessageBody = (body: string): { type: 'text' | 'canvas' | 'note'; content: string; isSpecial: boolean } => {
     try {
       const parsed = JSON.parse(body);
-      if (parsed.ops && parsed.ops[0] && parsed.ops[0].insert) {
-        return parsed.ops[0].insert;
+      
+      // Check if it's a canvas message
+      if (parsed.type && parsed.type.includes('canvas')) {
+        return {
+          type: 'canvas',
+          content: parsed.canvasName || 'Untitled Canvas',
+          isSpecial: true
+        };
       }
+      
+      // Check if it's a note message
+      if (parsed.type && parsed.type.includes('note')) {
+        return {
+          type: 'note',
+          content: parsed.noteTitle || 'Untitled Note',
+          isSpecial: true
+        };
+      }
+      
+      // Handle Quill rich text format
+      if (parsed.ops && parsed.ops[0] && parsed.ops[0].insert) {
+        return {
+          type: 'text',
+          content: parsed.ops[0].insert,
+          isSpecial: false
+        };
+      }
+      
+      return {
+        type: 'text',
+        content: body,
+        isSpecial: false
+      };
     } catch (e) {
       // If parsing fails, return the original body
-      return body;
+      return {
+        type: 'text',
+        content: body,
+        isSpecial: false
+      };
     }
-    return body;
   };
 
-  const getThreadUrl = (thread: ThreadMessage) => {
-    if (thread.context.type === 'channel') {
-      return `/workspace/${workspaceId}/channel/${thread.context.id}/chats`;
-    } else if (thread.context.type === 'conversation' && thread.context.memberId) {
-      return `/workspace/${workspaceId}/member/${thread.context.memberId}`;
-    }
-    return '#';
+  const handleOpenThread = (thread: ThreadMessage) => {
+    setSelectedThread(thread);
   };
 
   // Filter threads based on search query and active filter
   const filteredThreads = threads?.filter(thread => {
+    const messageBody = parseMessageBody(thread.message.body);
+    const parentBody = parseMessageBody(thread.parentMessage.body);
+    
     const matchesSearch = searchQuery === '' ||
-      parseMessageBody(thread.message.body).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      parseMessageBody(thread.parentMessage.body).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      messageBody.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      parentBody.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
       thread.context.name.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesFilter =
@@ -149,34 +207,7 @@ export default function ThreadsPage() {
         <div className="flex flex-1 flex-col bg-white overflow-hidden">
           <div className="border-b p-4 flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Your Threads</h2>
-              <div className="flex items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Filter className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Filter threads</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <SortDesc className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Sort threads</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <h2 className="text-xl font-semibold">Threads</h2>
             </div>
 
             <div className="flex items-center gap-4">
@@ -216,7 +247,7 @@ export default function ThreadsPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-6">
             {filteredThreads?.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-y-2">
                 <Search className="size-12 text-muted-foreground" />
@@ -224,15 +255,15 @@ export default function ThreadsPage() {
                 <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 max-w-4xl mx-auto">
                 {/* Today's threads */}
                 {groupedThreads.today?.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="outline" className="rounded-full px-3 py-1 bg-secondary/5">
-                        <Clock className="mr-1 h-3 w-3" />
+                    <div className="flex items-center gap-2 mb-4">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         Today
-                      </Badge>
+                      </h3>
                     </div>
                     <div className="space-y-3">
                       {groupedThreads.today.map((thread) => renderThreadCard(thread))}
@@ -243,11 +274,11 @@ export default function ThreadsPage() {
                 {/* Yesterday's threads */}
                 {groupedThreads.yesterday?.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="outline" className="rounded-full px-3 py-1 bg-muted">
-                        <Clock className="mr-1 h-3 w-3" />
+                    <div className="flex items-center gap-2 mb-4">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         Yesterday
-                      </Badge>
+                      </h3>
                     </div>
                     <div className="space-y-3">
                       {groupedThreads.yesterday.map((thread) => renderThreadCard(thread))}
@@ -258,11 +289,11 @@ export default function ThreadsPage() {
                 {/* This week's threads */}
                 {groupedThreads.thisWeek?.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="outline" className="rounded-full px-3 py-1 bg-muted">
-                        <Clock className="mr-1 h-3 w-3" />
+                    <div className="flex items-center gap-2 mb-4">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         This Week
-                      </Badge>
+                      </h3>
                     </div>
                     <div className="space-y-3">
                       {groupedThreads.thisWeek.map((thread) => renderThreadCard(thread))}
@@ -273,11 +304,11 @@ export default function ThreadsPage() {
                 {/* Earlier threads */}
                 {groupedThreads.earlier?.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="outline" className="rounded-full px-3 py-1 bg-muted">
-                        <Clock className="mr-1 h-3 w-3" />
+                    <div className="flex items-center gap-2 mb-4">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         Earlier
-                      </Badge>
+                      </h3>
                     </div>
                     <div className="space-y-3">
                       {groupedThreads.earlier.map((thread) => renderThreadCard(thread))}
@@ -289,82 +320,121 @@ export default function ThreadsPage() {
           </div>
         </div>
       )}
+
+      {/* Thread Modal */}
+      {selectedThread && (
+        <ThreadModal
+          isOpen={!!selectedThread}
+          onClose={() => setSelectedThread(null)}
+          thread={selectedThread}
+        />
+      )}
     </>
   );
 
   function renderThreadCard(thread: ThreadMessage) {
+    const parsedParentBody = parseMessageBody(thread.parentMessage.body);
+    const threadReplyCount = threadReplyCounts?.find(
+      (tc: any) => tc.parentMessageId === thread.message.parentMessageId
+    )?.count || 0;
+
     return (
-      <div
+      <Card
         key={thread.message._id}
-        className="flex flex-col rounded-lg border bg-white p-4 shadow-sm hover:shadow-md transition-all"
+        className="group hover:shadow-md transition-all duration-200 cursor-pointer border-2"
+        onClick={() => handleOpenThread(thread)}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Badge
-              variant="outline"
-              className={`rounded-full px-2 py-0.5 ${thread.context.type === 'channel' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}
+        <CardContent className="p-4">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Avatar className="h-8 w-8 flex-shrink-0">
+                <AvatarImage src={thread.parentUser.image} />
+                <AvatarFallback>{thread.parentUser.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm truncate">{thread.parentUser.name}</span>
+                  <Badge
+                    variant="outline"
+                    className={`rounded-full text-xs flex-shrink-0 ${
+                      thread.context.type === 'channel'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300'
+                        : 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300'
+                    }`}
+                  >
+                    {thread.context.type === 'channel' ? (
+                      <span className="flex items-center gap-1">
+                        <Hash className="h-3 w-3" />
+                        {thread.context.name}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {thread.context.name}
+                      </span>
+                    )}
+                  </Badge>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(thread.message._creationTime), { addSuffix: true })}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Thread Title/Preview */}
+          <div className="mb-3">
+            {parsedParentBody.isSpecial ? (
+              <div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-3 border border-primary/20">
+                {parsedParentBody.type === 'canvas' ? (
+                  <PaintBucket className="h-5 w-5 text-primary flex-shrink-0" />
+                ) : (
+                  <FileText className="h-5 w-5 text-primary flex-shrink-0" />
+                )}
+                <span className="font-semibold text-sm truncate">{parsedParentBody.content}</span>
+              </div>
+            ) : (
+              <h3 className="font-semibold text-sm line-clamp-2 text-foreground">
+                {titleMap.get(thread.message._id.toString()) || parsedParentBody.content}
+              </h3>
+            )}
+          </div>
+
+          {/* Latest Reply Preview */}
+          <div className="flex items-start gap-2 p-2 rounded-md bg-muted/30">
+            <Avatar className="h-6 w-6 flex-shrink-0">
+              <AvatarImage src={thread.currentUser.image} />
+              <AvatarFallback className="text-xs">{thread.currentUser.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium text-xs text-muted-foreground">{thread.currentUser.name}</span>
+              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                {parseMessageBody(thread.message.body).content}
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MessageCircle className="h-3.5 w-3.5" />
+              <span>{threadReplyCount} {threadReplyCount === 1 ? 'reply' : 'replies'}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenThread(thread);
+              }}
             >
-              {thread.context.type === 'channel' ? (
-                <span className="flex items-center">
-                  <Hash className="mr-1 h-3 w-3" />
-                  {thread.context.name}
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <User className="mr-1 h-3 w-3" />
-                  {thread.context.name}
-                </span>
-              )}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(thread.message._creationTime), { addSuffix: true })}
-            </span>
+              Open
+            </Button>
           </div>
-
-          <Link
-            href={getThreadUrl(thread)}
-            className="text-xs font-medium text-secondary hover:underline flex items-center"
-          >
-            View <ArrowRight className="ml-1 h-3 w-3" />
-          </Link>
-        </div>
-
-        {/* Parent Message */}
-        <div className="flex items-start gap-3 mb-3 p-3 rounded-lg bg-muted/30">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={thread.parentUser.image} />
-            <AvatarFallback>{thread.parentUser.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-sm">{thread.parentUser.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {format(new Date(thread.parentMessage._creationTime), 'MMM d, h:mm a')}
-              </span>
-            </div>
-            <p className="text-sm">{parseMessageBody(thread.parentMessage.body)}</p>
-          </div>
-        </div>
-
-        {/* Thread Message */}
-        <div className="flex items-start gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={thread.currentUser.image} />
-            <AvatarFallback>{thread.currentUser.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-sm">{thread.currentUser.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {format(new Date(thread.message._creationTime), 'MMM d, h:mm a')}
-              </span>
-            </div>
-            <p className="text-sm">{parseMessageBody(thread.message.body)}</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 }

@@ -18,6 +18,7 @@ import { useCreateTask } from '../api/use-create-task';
 import { TaskCategorySelector } from './task-category-selector';
 import { TaskStatusSelector } from './task-status-selector';
 import { TaskTagInput } from './task-tag-input';
+import { toast } from 'sonner';
 
 interface TaskCreateFormProps {
   workspaceId: Id<'workspaces'>;
@@ -41,8 +42,9 @@ export const TaskCreateForm = ({ workspaceId, onSuccess }: TaskCreateFormProps) 
 
     if (!title.trim()) return;
 
+    setIsSubmitting(true);
+    
     try {
-      setIsSubmitting(true);
       await createTask({
         title,
         description: description || undefined,
@@ -51,6 +53,11 @@ export const TaskCreateForm = ({ workspaceId, onSuccess }: TaskCreateFormProps) 
         status: 'not_started',
         categoryId: categoryId || undefined,
         workspaceId,
+      });
+
+      // Show success toast
+      toast.success('Task created successfully', {
+        description: `"${title}" has been added to your tasks`,
       });
 
       // Reset form
@@ -63,10 +70,12 @@ export const TaskCreateForm = ({ workspaceId, onSuccess }: TaskCreateFormProps) 
       if (onSuccess) {
         onSuccess();
       }
-
-      setIsSubmitting(false);
     } catch (error) {
       console.error('Failed to create task:', error);
+      toast.error('Failed to create task', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -110,13 +119,13 @@ export const TaskCreateForm = ({ workspaceId, onSuccess }: TaskCreateFormProps) 
       <Button
         onClick={() => setIsExpanded(true)}
         variant="default"
-        className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group"
+        className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group dark:bg-secondary dark:hover:bg-rose-900"
       >
         <span className="absolute inset-0 rounded-lg bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
         <span className="absolute right-0 bottom-0 size-16 rounded-full -translate-x-5 translate-y-5 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
         <span className="absolute size-4 rounded-full bg-white/30 animate-ping"></span>
-        <Plus className="h-5 w-5" />
-        <span className="font-semibold text-base">Add new task</span>
+        <Plus className="h-5 w-5 relative z-10" />
+        <span className="font-semibold text-base relative z-10 dark:group-hover:text-white">Add new task</span>
       </Button>
     );
   }

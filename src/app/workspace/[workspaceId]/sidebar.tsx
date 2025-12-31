@@ -22,6 +22,9 @@ import {
 import { usePathname } from "next/navigation";
 import { useToggle } from "react-use";
 import { useState } from "react";
+import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
 
 import { Button } from "@/components/ui/button";
 import { Hint } from "@/components/hint";
@@ -173,6 +176,9 @@ export const WorkspaceSidebar = ({
     workspaceId,
   });
   const { data: members, isLoading: membersLoading } = useGetMembers({
+    workspaceId,
+  });
+  const threads = useQuery(api.threadTitles.getByWorkspaceId, {
     workspaceId,
   });
 

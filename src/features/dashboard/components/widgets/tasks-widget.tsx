@@ -11,6 +11,7 @@ import { useGetTasks } from '@/features/tasks/api/use-get-tasks';
 import { useGetTaskCategories } from '@/features/tasks/api/use-get-task-categories';
 import { useUpdateTask } from '@/features/tasks/api/use-update-task';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 interface TasksWidgetProps {
   workspaceId: Id<'workspaces'>;
@@ -65,11 +66,25 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
     router.push(`/workspace/${workspaceId}/tasks?taskId=${taskId}`);
   };
 
-  const handleToggleTaskCompletion = (id: Id<'tasks'>, completed: boolean) => {
-    updateTask({
-      id,
-      completed: !completed
-    });
+  const handleToggleTaskCompletion = async (id: Id<'tasks'>, completed: boolean) => {
+    try {
+      await updateTask({
+        id,
+        completed: !completed
+      });
+      
+      toast.success(
+        !completed ? 'Task completed' : 'Task marked as incomplete',
+        {
+          description: !completed ? 'Great job!' : 'Task reopened',
+        }
+      );
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      toast.error('Failed to update task', {
+        description: 'Please try again',
+      });
+    }
   };
 
   // Get category name by ID

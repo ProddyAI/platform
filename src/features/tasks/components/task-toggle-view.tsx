@@ -41,14 +41,14 @@ export const TaskToggleView = ({
   return (
     <div className="space-y-6">
       {/* Toggle Buttons */}
-      <div className="flex rounded-lg border overflow-hidden">
+      <div className="flex rounded-lg border overflow-hidden dark:border-gray-700">
         <Button
           variant="ghost"
           className={cn(
             "flex-1 rounded-none border-0 py-2 px-4 flex items-center justify-center gap-2",
             activeView === 'active'
               ? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-              : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
           )}
           onClick={() => setActiveView('active')}
         >
@@ -65,13 +65,13 @@ export const TaskToggleView = ({
             "flex-1 rounded-none border-0 py-2 px-4 flex items-center justify-center gap-2",
             activeView === 'completed'
               ? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-              : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
           )}
           onClick={() => setActiveView('completed')}
         >
           <CheckCircle2 className="h-4 w-4" />
           <span>Completed</span>
-          <span className="ml-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
+          <span className="ml-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium dark:bg-gray-800 dark:text-gray-400">
             {completedTasks.length}
           </span>
         </Button>
@@ -80,8 +80,8 @@ export const TaskToggleView = ({
       {/* Tasks List */}
       <div className="space-y-4">
         {isEmpty && showEmpty ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
-            <div className="text-gray-400">
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+            <div className="text-gray-400 dark:text-gray-500">
               {activeView === 'active'
                 ? "No active tasks"
                 : "No completed tasks"}

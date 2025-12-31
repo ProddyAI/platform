@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { calculateSvgTooltipPosition, getTooltipRectAttrs, getTooltipTextAttrs } from '@/features/reports/utils/tooltip-positioning';
 
 interface LineChartProps {
   data: {
@@ -123,7 +124,7 @@ export const LineChart = ({
           {/* Line */}
           <path
             d={linePath}
-            className={cn("fill-none stroke-2", lineColor)}
+            className={cn("fill-none stroke-1", lineColor)}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -153,36 +154,47 @@ export const LineChart = ({
                 />
 
                 {isHovered && (
-                  <>
-                    {/* Tooltip */}
-                    <g transform={`translate(${Math.max(chartMargin + 15, Math.min(100 - chartMargin - 15, point.x))}, ${Math.max(chartMargin + 20, point.y - 10)})`}>
-                      <rect
-                        x="-15"
-                        y="-20"
-                        width="30"
-                        height="20"
-                        rx="4"
-                        className="fill-background stroke-border"
-                      />
-                      <text
-                        x="0"
-                        y="-7"
-                        textAnchor="middle"
-                        className="fill-foreground text-[5px]"
-                      >
-                        {formatValue(point.value)}
-                      </text>
-                    </g>
+                   <>
+                     {/* Tooltip - using standardized positioning utility */}
+                     {(() => {
+                       const tooltipPos = calculateSvgTooltipPosition({
+                         viewBoxWidth: 100,
+                         viewBoxHeight: 100,
+                         tooltipWidth: 36,
+                         tooltipHeight: 18,
+                         offsetY: -15,
+                         offsetX: 0,
+                         padding: chartMargin + 5,
+                         pointX: point.x,
+                         pointY: point.y,
+                       });
+                       const rectAttrs = getTooltipRectAttrs(36, 18);
+                       const textAttrs = getTooltipTextAttrs();
+                       return (
+                         <g transform={tooltipPos.transform}>
+                           <rect
+                             {...rectAttrs}
+                             className="fill-foreground/90 stroke-border stroke-[0.5]"
+                           />
+                           <text
+                             {...textAttrs}
+                             className="fill-background text-[4px] font-medium"
+                           >
+                             {formatValue(point.value)}
+                           </text>
+                         </g>
+                       );
+                     })()}
 
-                    {/* Vertical guide line */}
-                    <line
-                      x1={point.x}
-                      y1={chartMargin}
-                      x2={point.x}
-                      y2={100 - chartMargin}
-                      className="stroke-secondary/30 stroke-[0.5] stroke-dashed"
-                    />
-                  </>
+                     {/* Vertical guide line */}
+                     <line
+                       x1={point.x}
+                       y1={chartMargin}
+                       x2={point.x}
+                       y2={100 - chartMargin}
+                       className="stroke-secondary/30 stroke-[0.5] stroke-dashed"
+                     />
+                   </>
                 )}
               </g>
             );
