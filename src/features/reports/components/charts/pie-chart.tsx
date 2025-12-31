@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { calculateSvgTooltipPosition, getTooltipRectAttrs, getTooltipTextAttrs } from '@/features/reports/utils/tooltip-positioning';
 
 interface PieChartProps {
   data: {
@@ -85,23 +86,60 @@ export const PieChart = ({
             const offsetY = offset * Math.sin(midAngleRad);
             
             return (
-              <path
-                key={segment.index}
-                d={createSegmentPath(segment)}
-                fill={segment.color}
-                stroke="#fff"
-                strokeWidth="1"
-                className={cn(
-                  "transition-all duration-200",
-                  onSegmentClick && "cursor-pointer"
-                )}
-                style={{
-                  transform: `translate(${offsetX}px, ${offsetY}px)`,
-                }}
-                onMouseEnter={() => setHoveredIndex(segment.index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                onClick={() => onSegmentClick?.(segment.label, segment.value, segment.index)}
-              />
+              <g key={segment.index}>
+                <path
+                  d={createSegmentPath(segment)}
+                  fill={segment.color}
+                  stroke="#fff"
+                  strokeWidth="1"
+                  className={cn(
+                    "transition-all duration-200",
+                    onSegmentClick && "cursor-pointer"
+                  )}
+                  style={{
+                    filter: isHovered ? 'brightness(0.9)' : 'brightness(1)',
+                  }}
+                  onMouseEnter={() => setHoveredIndex(segment.index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  onClick={() => onSegmentClick?.(segment.label, segment.value, segment.index)}
+                />
+                {/* Tooltip on hover */}
+                {isHovered && (() => {
+                  const midAngleRad = ((segment.startAngle + segment.endAngle) / 2 / 100) * Math.PI * 2 - Math.PI / 2;
+                  const tooltipDistance = 65; // Distance from center
+                  const tooltipX = 50 + tooltipDistance * Math.cos(midAngleRad);
+                  const tooltipY = 50 + tooltipDistance * Math.sin(midAngleRad);
+                  
+                  const tooltipPos = calculateSvgTooltipPosition({
+                    viewBoxWidth: 100,
+                    viewBoxHeight: 100,
+                    tooltipWidth: 40,
+                    tooltipHeight: 16,
+                    offsetY: 0,
+                    offsetX: 0,
+                    padding: 3,
+                    pointX: tooltipX,
+                    pointY: tooltipY,
+                  });
+                  const rectAttrs = getTooltipRectAttrs(40, 16);
+                  const textAttrs = getTooltipTextAttrs();
+                  
+                  return (
+                    <g transform={tooltipPos.transform}>
+                      <rect
+                        {...rectAttrs}
+                        className="fill-foreground/90 stroke-border stroke-[0.5]"
+                      />
+                      <text
+                        {...textAttrs}
+                        className="fill-background text-[3px] font-medium"
+                      >
+                        {segment.label}
+                      </text>
+                    </g>
+                  );
+                })()}
+              </g>
             );
           })}
         </svg>

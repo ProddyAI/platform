@@ -30,6 +30,7 @@ import type * as prosemirror from "../prosemirror.js";
 import type * as reactions from "../reactions.js";
 import type * as search from "../search.js";
 import type * as tasks from "../tasks.js";
+import type * as threadTitles from "../threadTitles.js";
 import type * as upload from "../upload.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
@@ -72,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   reactions: typeof reactions;
   search: typeof search;
   tasks: typeof tasks;
+  threadTitles: typeof threadTitles;
   upload: typeof upload;
   users: typeof users;
   utils: typeof utils;

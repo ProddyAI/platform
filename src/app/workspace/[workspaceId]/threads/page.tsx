@@ -3,7 +3,7 @@
 import { format, formatDistanceToNow } from 'date-fns';
 import { ArrowRight, Clock, Filter, Hash, Loader, MessageSquareText, Search, SortDesc, User } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import type { Id } from '@/../convex/_generated/dataModel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useGetThreadMessages } from '@/features/messages/api/use-get-thread-messages';
+import { useQuery } from 'convex/react';
+import { api } from '@/../convex/_generated/api';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { WorkspaceToolbar } from '../toolbar';
@@ -60,6 +62,22 @@ export default function ThreadsPage() {
   const threads = useGetThreadMessages() as ThreadMessage[] | undefined;
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'channels' | 'direct'>('all');
+  
+  // Get all thread titles for this workspace
+  const threadTitles = useQuery(api.threadTitles.getByWorkspaceId, {
+    workspaceId,
+  });
+
+  // Create a map of messageId -> threadTitle for quick lookup
+  const titleMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (threadTitles) {
+      threadTitles.forEach((tt) => {
+        map.set(tt.messageId.toString(), tt.title);
+      });
+    }
+    return map;
+  }, [threadTitles]);
 
   // Define helper functions first
   const parseMessageBody = (body: string) => {
@@ -327,6 +345,14 @@ export default function ThreadsPage() {
           >
             View <ArrowRight className="ml-1 h-3 w-3" />
           </Link>
+        </div>
+
+        {/* Thread Title - display saved title or parent message as context */}
+        <div className="mb-3 p-3 rounded-lg bg-primary/5 border-l-2 border-primary">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thread:</p>
+          <p className="text-sm font-semibold text-foreground line-clamp-2 mt-1">
+            {titleMap.get(thread.message._id.toString()) || parseMessageBody(thread.parentMessage.body)}
+          </p>
         </div>
 
         {/* Parent Message */}
