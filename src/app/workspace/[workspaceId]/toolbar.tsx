@@ -3,7 +3,9 @@
 import React from 'react';
 import { Activity, Bell, HeartPulse, HelpCircle, Map, Search } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, useCallback } from 'react';
+import { useAction, useQuery } from 'convex/react';
+import { api } from '@/../convex/_generated/api';
 
 import type { Id } from '@/../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -49,6 +51,85 @@ export const WorkspaceToolbar = ({
     const { data: members } = useGetMembers({ workspaceId });
     const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
 
+    // Message search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [messageResults, setMessageResults] = useState<{ id: string; text: string; summary?: string }[]>([]);
+    const [isSearchingMessages, setIsSearchingMessages] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+    const simpleAiSearch = useAction(api.aiSearch.simpleAiSearch.simpleAiSearch);
+
+    // AI mode detection
+    const isAiMode = searchQuery.startsWith('/ai ');
+
+    // Get all channels for mapping channelId to channelName
+    const channelMap = React.useMemo(() => {
+        const map: Record<string, string> = {};
+        (channels || []).forEach((c: any) => { map[c._id] = c.name; });
+        return map;
+    }, [channels]);
+
+    // Normal message search: call backend query only when not in AI mode
+    const normalMessageResults = useQuery(
+        // @ts-ignore
+        api.searchMessages.searchMessages,
+        !isAiMode && searchQuery.trim() && workspaceId
+            ? { workspaceId, search: searchQuery, limit: 20 }
+            : 'skip'
+    );
+
+    // AI search effect
+    React.useEffect(() => {
+        if (!isAiMode) {
+            // Clear AI state when switching back to normal mode
+            setMessageResults([]);
+            setIsSearchingMessages(false);
+            setAiError(null);
+            return;
+        }
+        const aiQuery = searchQuery.replace('/ai ', '').trim();
+        if (!aiQuery || !workspaceId) {
+            setMessageResults([]);
+            setIsSearchingMessages(false);
+            setAiError(null);
+            return;
+        }
+        let active = true;
+        setIsSearchingMessages(true);
+        setAiError(null);
+        simpleAiSearch({ workspaceId, query: aiQuery })
+            .then((res) => {
+                if (!active) return;
+                setMessageResults(
+                    res.sources.map((msg) => ({
+                        id: msg.id,
+                        text: msg.text,
+                        summary: res.answer
+                    }))
+                );
+                setIsSearchingMessages(false);
+            })
+            .catch((err) => {
+                if (!active) return;
+                setMessageResults([]);
+                setIsSearchingMessages(false);
+                setAiError('AI search failed');
+                // Log error for debugging
+                // eslint-disable-next-line no-console
+                console.error('AI search error:', err);
+            });
+        return () => {
+            active = false;
+        };
+    }, [isAiMode, searchQuery, workspaceId, simpleAiSearch]);
+
+    // Normal message search effect (placeholder, replace with your normal search logic)
+    React.useEffect(() => {
+        if (isAiMode) return; // Never run normal search in AI mode
+        // ...existing or placeholder normal message search logic here...
+        // For now, just clear messageResults and loading state
+        setMessageResults([]);
+        setIsSearchingMessages(false);
+    }, [isAiMode, searchQuery]);
     // Handle URL parameter for opening user settings
     useEffect(() => {
         const openUserSettings = searchParams.get('openUserSettings');
@@ -88,13 +169,11 @@ export const WorkspaceToolbar = ({
         return () => document.removeEventListener('keydown', down);
     }, [setSearchOpen]);
 
+
     return (
-        <nav
-            className="sticky top-0 z-50 flex h-16 items-center overflow-hidden border-b bg-primary text-secondary-foreground shadow-md">
+        <nav className="sticky top-0 z-50 flex h-16 items-center overflow-hidden border-b bg-primary text-secondary-foreground shadow-md">
             {/* Left section - Entity info (Channel/Member/etc) */}
-            <div className="flex items-center px-6">
-                {children}
-            </div>
+            <div className="flex items-center px-6">{children}</div>
 
             {/* Middle section - Search */}
             <div className="min-w-[280px] max-w-[642px] shrink grow-[2] px-4">
@@ -105,16 +184,21 @@ export const WorkspaceToolbar = ({
                 >
                     <Search className="mr-2 size-4 text-white" />
                     <span className="text-xs text-white">Search {workspace?.name ?? 'workspace'}...</span>
-                    <kbd
-                        className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-90">
+                    <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-90">
                         <span className="text-xs">⌘</span>K
                     </kbd>
                 </Button>
 
-                <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
-                    <CommandInput placeholder={`Search ${workspace?.name ?? 'workspace'}...`} />
+                <CommandDialog open={searchOpen} onOpenChange={(v: boolean) => setSearchOpen(v)}>
+                    <CommandInput
+                        placeholder={`Search ${workspace?.name ?? 'workspace'}...`}
+                        value={searchQuery}
+                        onValueChange={setSearchQuery}
+                    />
                     <CommandList>
-                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandEmpty>
+                            {isSearchingMessages ? 'Searching messages...' : 'No results found.'}
+                        </CommandEmpty>
 
                         <CommandGroup heading="Channels">
                             {channels?.map((channel) => (
@@ -130,6 +214,31 @@ export const WorkspaceToolbar = ({
                             {members?.map((member) => (
                                 <CommandItem onSelect={() => onMemberClick(member._id)} key={member._id}>
                                     {member.user.name}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+
+                        <CommandSeparator />
+
+                        <CommandGroup heading="Messages">
+                            {/* AI mode: show AI results */}
+                            {isAiMode && messageResults.length > 0 && messageResults.map((msg) => (
+                                <CommandItem key={msg.id}>
+                                    <div>
+                                        <div className="font-medium text-xs truncate max-w-[300px]">{msg.text}</div>
+                                        {msg.summary && (
+                                            <div className="text-[10px] text-muted-foreground mt-1 italic">Summary: {msg.summary}</div>
+                                        )}
+                                    </div>
+                                </CommandItem>
+                            ))}
+                            {/* Normal mode: show normal message results with channel name */}
+                            {!isAiMode && normalMessageResults && normalMessageResults.length > 0 && normalMessageResults.map((msg: any) => (
+                                <CommandItem key={msg._id}>
+                                    <div>
+                                        <div className="font-medium text-xs truncate max-w-[300px]">{msg.body}</div>
+                                        <div className="text-[10px] text-muted-foreground mt-1 italic">Channel: {channelMap[msg.channelId] || msg.channelId}</div>
+                                    </div>
                                 </CommandItem>
                             ))}
                         </CommandGroup>
