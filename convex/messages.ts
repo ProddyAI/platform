@@ -1341,3 +1341,37 @@ export const getRecentChannelMessages = query({
 		}
 	},
 });
+
+export const getThreadReplyCounts = query({
+	args: {
+		parentMessageIds: v.array(v.id('messages')),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+
+		if (!userId) throw new Error('Unauthorized.');
+
+		try {
+			const counts = await Promise.all(
+				args.parentMessageIds.map(async (parentMessageId) => {
+					const replies = await ctx.db
+						.query('messages')
+						.withIndex('by_parent_message_id', (q) =>
+							q.eq('parentMessageId', parentMessageId)
+						)
+						.collect();
+
+					return {
+						parentMessageId,
+						count: replies.length,
+					};
+				})
+			);
+
+			return counts;
+		} catch (error) {
+			console.error('Error in getThreadReplyCounts:', error);
+			return [];
+		}
+	},
+});

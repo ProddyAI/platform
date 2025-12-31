@@ -18,6 +18,7 @@ import { useCreateTask } from '../api/use-create-task';
 import { TaskCategorySelector } from './task-category-selector';
 import { TaskStatusSelector } from './task-status-selector';
 import { TaskTagInput } from './task-tag-input';
+import { toast } from 'sonner';
 
 interface TaskCreateFormProps {
   workspaceId: Id<'workspaces'>;
@@ -41,8 +42,9 @@ export const TaskCreateForm = ({ workspaceId, onSuccess }: TaskCreateFormProps) 
 
     if (!title.trim()) return;
 
+    setIsSubmitting(true);
+    
     try {
-      setIsSubmitting(true);
       await createTask({
         title,
         description: description || undefined,
@@ -51,6 +53,11 @@ export const TaskCreateForm = ({ workspaceId, onSuccess }: TaskCreateFormProps) 
         status: 'not_started',
         categoryId: categoryId || undefined,
         workspaceId,
+      });
+
+      // Show success toast
+      toast.success('Task created successfully', {
+        description: `"${title}" has been added to your tasks`,
       });
 
       // Reset form
@@ -63,10 +70,12 @@ export const TaskCreateForm = ({ workspaceId, onSuccess }: TaskCreateFormProps) 
       if (onSuccess) {
         onSuccess();
       }
-
-      setIsSubmitting(false);
     } catch (error) {
       console.error('Failed to create task:', error);
+      toast.error('Failed to create task', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    } finally {
       setIsSubmitting(false);
     }
   };

@@ -11,12 +11,10 @@ import { NotesWidget } from './widgets/notes-widget';
 import { CanvasWidget } from './widgets/canvas-widget';
 import { useState, useCallback, useEffect, useRef, cloneElement, ReactElement } from 'react';
 import {
-  RefreshCw,
   GripVertical,
   Edit3,
   Plus,
   X,
-  GripHorizontal,
   Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -181,7 +179,6 @@ const SortableWidget = ({ id, children, size, isEditMode, onDelete, onResize }: 
 };
 
 export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps) => {
-  const [refreshKey, setRefreshKey] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -201,10 +198,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  const handleRefresh = () => {
-    setRefreshKey(prevKey => prevKey + 1);
-  };
 
   const toggleEditMode = () => {
     setIsEditMode(prev => !prev);
@@ -305,7 +298,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       case 'mentions':
         return (
           <MentionsWidget
-            key={`mentions-${refreshKey}`}
             workspaceId={workspaceId}
             member={member}
             isEditMode={isEditMode}
@@ -314,7 +306,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       case 'threads':
         return (
           <ThreadRepliesWidget
-            key={`threads-${refreshKey}`}
             workspaceId={workspaceId}
             member={member}
             isEditMode={isEditMode}
@@ -323,7 +314,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       case 'tasks':
         return (
           <TasksWidget
-            key={`tasks-${refreshKey}`}
             workspaceId={workspaceId}
             member={member}
             isEditMode={isEditMode}
@@ -332,7 +322,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       case 'cards':
         return (
           <AssignedCardsWidget
-            key={`cards-${refreshKey}`}
             workspaceId={workspaceId}
             member={member}
             isEditMode={isEditMode}
@@ -341,7 +330,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       case 'calendar':
         return (
           <CalendarPreviewWidget
-            key={`calendar-${refreshKey}`}
             workspaceId={workspaceId}
             member={member}
             isEditMode={isEditMode}
@@ -350,7 +338,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       case 'notes':
         return (
           <NotesWidget
-            key={`notes-${refreshKey}`}
             workspaceId={workspaceId}
             member={member}
             isEditMode={isEditMode}
@@ -360,7 +347,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       case 'canvas':
         return (
           <CanvasWidget
-            key={`canvas-${refreshKey}`}
             workspaceId={workspaceId}
             member={member}
             isEditMode={isEditMode}
@@ -369,7 +355,7 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
       default:
         return null;
     }
-  }, [workspaceId, member, refreshKey, isEditMode]);
+  }, [workspaceId, member, isEditMode]);
 
   return (
     <>
@@ -391,15 +377,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
                   <span className="hidden sm:inline">Add Card</span>
                 </Button>
               )}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                className="h-8 w-8 p-0"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
 
               {/* Edit Mode Toggle */}
               <Button
@@ -425,6 +402,13 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
         </CardHeader>
         <CardContent className="p-4">
           <ScrollArea className="h-[calc(100vh-180px)] pb-8">
+            {!isEditMode && widgets.length > 0 && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>Real-time Updates:</strong> Your dashboard updates automatically when changes occur. No refresh needed!
+                </p>
+              </div>
+            )}
             {isEditMode && (
               <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-dashed">
                 <p className="text-sm text-muted-foreground">

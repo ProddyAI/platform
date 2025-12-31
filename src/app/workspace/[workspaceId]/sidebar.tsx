@@ -330,31 +330,14 @@ export const WorkspaceSidebar = ({
           isActive={pathname.includes("/outbox")}
           isCollapsed={isCollapsed}
         />
-        <div className="mt-2">
-          <DroppableItem
-            label="Threads"
-            hint="Threads"
-            icon={MessageSquareText}
-            isCollapsed={isCollapsed}
-            isExpanded={expandedSections.Threads}
-            onToggle={handleSectionToggle}
-          >
-            {threads && threads.map((thread) => (
-              <Link
-                key={thread._id}
-                href={`/workspace/${workspaceId}/threads`}
-                className={cn(
-                  "group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1",
-                  isCollapsed ? "justify-center px-1 md:px-2 py-2 md:py-2.5" : "justify-start px-2 md:px-4 py-2 md:py-2.5"
-                )}
-              >
-                {!isCollapsed && (
-                  <span className="truncate min-w-0 text-xs">{thread.title}</span>
-                )}
-              </Link>
-            ))}
-          </DroppableItem>
-        </div>
+        <SidebarItem
+          label="Threads"
+          icon={MessageSquareText}
+          id="threads"
+          href={`/workspace/${workspaceId}/threads`}
+          isActive={pathname.includes("/threads")}
+          isCollapsed={isCollapsed}
+        />
         <SidebarItem
           label="Tasks"
           icon={CheckSquare}

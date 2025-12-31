@@ -6,7 +6,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { WorkspaceToolbar } from '../toolbar';
@@ -25,7 +25,6 @@ const TasksPage = () => {
   const workspaceId = useWorkspaceId();
   const { data: tasks, isLoading } = useGetTasks({ workspaceId });
   const { data: categories, isLoading: categoriesLoading } = useGetTaskCategories({ workspaceId });
-  const { toast } = useToast();
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -152,11 +151,10 @@ const TasksPage = () => {
 
   // Handle task creation success
   const handleTaskCreated = useCallback(() => {
-    toast({
-      title: "Task created",
-      description: "Your task has been created successfully.",
+    toast.success('Task created successfully', {
+      description: 'Your new task has been added to the list',
     });
-  }, [toast]);
+  }, []);
 
   return (
     <div className="flex h-full flex-col">
