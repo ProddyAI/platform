@@ -10,19 +10,22 @@ type MessageDoc = {
   body: string;
 };
 
-function extractText(body: string): string {
-  try {
-    const parsed = JSON.parse(body);
-    if (parsed.ops) {
-      return parsed.ops
-        .map((op: { insert?: unknown }) =>
-          typeof op.insert === "string" ? op.insert : ""
-        )
-        .join("")
-        .trim();
+function extractText(body: any): string {
+  if (typeof body === "string") {
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed && Array.isArray(parsed.ops)) {
+        return parsed.ops.map((op: any) => typeof op.insert === "string" ? op.insert : "").join("").trim();
+      }
+      return body;
+    } catch {
+      return body;
     }
-  } catch {}
-  return body;
+  }
+  if (body && Array.isArray(body.ops)) {
+    return body.ops.map((op: any) => typeof op.insert === "string" ? op.insert : "").join("").trim();
+  }
+  return "";
 }
 
 export const simpleAiSearch = action({
@@ -39,7 +42,7 @@ export const simpleAiSearch = action({
     sources: { id: Id<"messages">; text: string }[];
   }> => {
     const messages: MessageDoc[] = await ctx.runQuery(
-      api.search.getWorkspaceMessages, // ✅ CORRECT NAMESPACE
+      api.search.getWorkspaceMessages, 
       {
         workspaceId: args.workspaceId,
         limit: 20,
@@ -53,14 +56,16 @@ export const simpleAiSearch = action({
       };
     }
 
+
     const context = messages
-      .map((m: MessageDoc) => extractText(m.body))
+      .map((m: any) => m.plainText ? m.plainText : extractText(m.body))
       .join("\n");
 
     const result = await generateText({
       model: google("models/gemini-2.5-flash"),
       prompt: `
 Answer the user's question using ONLY the messages below.
+please try to summarize whatever is in the message which contains the keyword the user typed
 If the messages are insufficient, say so clearly.
 
 Question:
@@ -75,9 +80,9 @@ ${context}
 
     return {
       answer: result.text.trim(),
-      sources: messages.slice(0, 5).map((m: MessageDoc) => ({
+      sources: messages.slice(0, 5).map((m: any) => ({
         id: m._id,
-        text: extractText(m.body),
+        text: m.plainText ? m.plainText : extractText(m.body),
       })),
     };
   },

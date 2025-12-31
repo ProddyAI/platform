@@ -1,6 +1,7 @@
 import { differenceInMinutes, format, isToday, isYesterday } from 'date-fns';
 import { Loader, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { useCurrentMember } from '@/features/members/api/use-current-member';
@@ -51,6 +52,16 @@ export const MessageList = ({
   canLoadMore,
 }: MessageListProps) => {
   const [editingId, setEditingId] = useState<Id<'messages'> | null>(null);
+
+  // Highlight logic (hooks must be inside component)
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const highlightId = searchParams ? searchParams.get('highlight') : null;
+  const highlightedRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightId]);
   const [isRecapModalOpen, setIsRecapModalOpen] = useState(false);
   const [recapData, setRecapData] = useState<{ recap: string; date: string; messageCount: number; isCached?: boolean } | null>(null);
   const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);
@@ -185,31 +196,38 @@ export const MessageList = ({
                 new Date(prevMessage._creationTime)
               ) < TIME_THRESHOLD;
 
+            const isHighlighted = highlightId && message._id === highlightId;
             return (
-              <Message
+              <div
                 key={message._id}
-                id={message._id}
-                memberId={message.memberId}
-                authorImage={message.user.image}
-                authorName={message.user.name}
-                isAuthor={message.memberId === currentMember?._id}
-                reactions={message.reactions}
-                body={message.body}
-                image={message.image}
-                updatedAt={message.updatedAt}
-                createdAt={message._creationTime}
-                threadCount={message.threadCount}
-                threadImage={message.threadImage}
-                threadName={message.threadName}
-                threadTimestamp={message.threadTimestamp}
-                isEditing={editingId === message._id}
-                setEditingId={setEditingId}
-                isCompact={isCompact}
-                hideThreadButton={variant === 'thread'}
-                calendarEvent={message.calendarEvent}
-              />
+                ref={isHighlighted ? highlightedRef : undefined}
+                className={isHighlighted ? 'animate-highlight-gradient' : ''}
+              >
+                <Message
+                  id={message._id}
+                  memberId={message.memberId}
+                  authorImage={message.user.image}
+                  authorName={message.user.name}
+                  isAuthor={message.memberId === currentMember?._id}
+                  reactions={message.reactions}
+                  body={message.body}
+                  image={message.image}
+                  updatedAt={message.updatedAt}
+                  createdAt={message._creationTime}
+                  threadCount={message.threadCount}
+                  threadImage={message.threadImage}
+                  threadName={message.threadName}
+                  threadTimestamp={message.threadTimestamp}
+                  isEditing={editingId === message._id}
+                  setEditingId={setEditingId}
+                  isCompact={isCompact}
+                  hideThreadButton={variant === 'thread'}
+                  calendarEvent={message.calendarEvent}
+                />
+              </div>
             );
           })}
+
         </div>
       ))}
 

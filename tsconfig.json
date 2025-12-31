@@ -5,6 +5,7 @@
       "dom.iterable",
       "esnext"
     ],
+    "target": "es2017",
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -31,7 +32,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
+    ".next/types/**/*.ts"
     // "src/features/landing/components/Replacement.tsx",
     // "src/features/canvas/types/**/*.d.ts"
   ],

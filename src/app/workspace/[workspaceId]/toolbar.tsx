@@ -50,37 +50,31 @@ export const WorkspaceToolbar = ({
     const { data: channels } = useGetChannels({ workspaceId });
     const { data: members } = useGetMembers({ workspaceId });
     const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
-
-    // Message search state
     const [searchQuery, setSearchQuery] = useState('');
     const [messageResults, setMessageResults] = useState<{ id: string; text: string; summary?: string }[]>([]);
     const [isSearchingMessages, setIsSearchingMessages] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
     const simpleAiSearch = useAction(api.aiSearch.simpleAiSearch.simpleAiSearch);
 
-    // AI mode detection
     const isAiMode = searchQuery.startsWith('/ai ');
 
-    // Get all channels for mapping channelId to channelName
     const channelMap = React.useMemo(() => {
         const map: Record<string, string> = {};
         (channels || []).forEach((c: any) => { map[c._id] = c.name; });
         return map;
     }, [channels]);
 
-    // Normal message search: call backend query only when not in AI mode
     const normalMessageResults = useQuery(
-        // @ts-ignore
         api.searchMessages.searchMessages,
         !isAiMode && searchQuery.trim() && workspaceId
             ? { workspaceId, search: searchQuery, limit: 20 }
             : 'skip'
     );
-
-    // AI search effect
+    console.log('searchQuery:', searchQuery, 'normalMessageResults:', normalMessageResults);
+    // Removed setSearchQuery from effects to ensure input is only controlled by onValueChange
+    
     React.useEffect(() => {
         if (!isAiMode) {
-            // Clear AI state when switching back to normal mode
             setMessageResults([]);
             setIsSearchingMessages(false);
             setAiError(null);
@@ -113,8 +107,7 @@ export const WorkspaceToolbar = ({
                 setMessageResults([]);
                 setIsSearchingMessages(false);
                 setAiError('AI search failed');
-                // Log error for debugging
-                // eslint-disable-next-line no-console
+    
                 console.error('AI search error:', err);
             });
         return () => {
@@ -122,15 +115,51 @@ export const WorkspaceToolbar = ({
         };
     }, [isAiMode, searchQuery, workspaceId, simpleAiSearch]);
 
-    // Normal message search effect (placeholder, replace with your normal search logic)
     React.useEffect(() => {
-        if (isAiMode) return; // Never run normal search in AI mode
-        // ...existing or placeholder normal message search logic here...
-        // For now, just clear messageResults and loading state
-        setMessageResults([]);
-        setIsSearchingMessages(false);
-    }, [isAiMode, searchQuery]);
-    // Handle URL parameter for opening user settings
+        if (!isAiMode) {
+            setMessageResults([]);
+            setIsSearchingMessages(false);
+            setAiError(null);
+            return;
+        }
+        const aiQuery = searchQuery.replace('/ai ', '').trim();
+        if (!aiQuery || !workspaceId) {
+            setMessageResults([]);
+            setIsSearchingMessages(false);
+            setAiError(null);
+            return;
+        }
+        let active = true;
+        setIsSearchingMessages(true);
+        setAiError(null);
+        simpleAiSearch({ workspaceId, query: aiQuery })
+            .then((res) => {
+                if (!active) return;
+                setMessageResults(
+                    res.sources.map((msg) => ({
+                        id: msg.id,
+                        text: msg.text,
+                        summary: res.answer
+                    }))
+                );
+                setIsSearchingMessages(false);
+            })
+            .catch((err) => {
+                if (!active) return;
+                setMessageResults([]);
+                setIsSearchingMessages(false);
+                setAiError('AI search failed');
+
+                console.error('AI search error:', err);
+            });
+        return () => {
+            active = false;
+        };
+    }, [isAiMode, searchQuery, workspaceId, simpleAiSearch]);
+
+    React.useEffect(() => {
+        if (isAiMode) return;
+    }, [searchQuery, workspaceId, isAiMode]);
     useEffect(() => {
         const openUserSettings = searchParams.get('openUserSettings');
         if (openUserSettings) {
@@ -189,11 +218,21 @@ export const WorkspaceToolbar = ({
                     </kbd>
                 </Button>
 
-                <CommandDialog open={searchOpen} onOpenChange={(v: boolean) => setSearchOpen(v)}>
+                <CommandDialog
+                    open={searchOpen}
+                    onOpenChange={(v: boolean) => {
+                        setSearchOpen(v);
+                        if (!v) {
+                            setMessageResults([]);
+                            setIsSearchingMessages(false);
+                            setAiError(null);
+                        }
+                    }}
+                >
                     <CommandInput
                         placeholder={`Search ${workspace?.name ?? 'workspace'}...`}
                         value={searchQuery}
-                        onValueChange={setSearchQuery}
+                        onValueChange={(val: string) => setSearchQuery(val)}
                     />
                     <CommandList>
                         <CommandEmpty>
@@ -234,9 +273,15 @@ export const WorkspaceToolbar = ({
                             ))}
                             {/* Normal mode: show normal message results with channel name */}
                             {!isAiMode && normalMessageResults && normalMessageResults.length > 0 && normalMessageResults.map((msg: any) => (
-                                <CommandItem key={msg._id}>
+                                <CommandItem
+                                    key={msg._id}
+                                    onSelect={() => {
+                                        setSearchOpen(false);
+                                        router.push(`/workspace/${workspaceId}/channel/${msg.channelId}/chats?highlight=${msg._id}`);
+                                    }}
+                                >
                                     <div>
-                                        <div className="font-medium text-xs truncate max-w-[300px]">{msg.body}</div>
+                                        <div className="font-medium text-xs truncate max-w-[300px]">{msg.text}</div>
                                         <div className="text-[10px] text-muted-foreground mt-1 italic">Channel: {channelMap[msg.channelId] || msg.channelId}</div>
                                     </div>
                                 </CommandItem>

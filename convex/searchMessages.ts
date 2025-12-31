@@ -10,14 +10,12 @@ export const searchMessages = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Find all channels in the workspace
     const channels = await ctx.db
       .query("channels")
       .withIndex("by_workspace_id", q => q.eq("workspaceId", args.workspaceId))
       .collect();
     const channelIds = channels.map(c => c._id);
     if (channelIds.length === 0) return [];
-    // Search messages in those channels (no anyOf, so query each channelId)
     let results: any[] = [];
     for (const channelId of channelIds) {
       const msgs = await ctx.db
@@ -26,13 +24,29 @@ export const searchMessages = query({
         .collect();
       results = results.concat(msgs);
     }
-    // Simple text search (case-insensitive substring)
+    function extractText(body: any): string {
+      if (typeof body === "string") {
+        try {
+          const parsed = JSON.parse(body);
+          if (parsed && Array.isArray(parsed.ops)) {
+            return parsed.ops.map((op: any) => typeof op.insert === "string" ? op.insert : "").join("");
+          }
+          return body;
+        } catch {
+          return body;
+        }
+      }
+      if (body && Array.isArray(body.ops)) {
+        return body.ops.map((op: any) => typeof op.insert === "string" ? op.insert : "").join("");
+      }
+      return "";
+    }
     const searchLower = args.search.toLowerCase();
-    results = results.filter(m =>
-      typeof m.body === "string" && m.body.toLowerCase().includes(searchLower)
-    );
+    results = results.filter(m => {
+      const text = extractText(m.body);
+      return text.toLowerCase().includes(searchLower);
+    });
     if (args.limit) results = results.slice(0, args.limit);
-    // Return message, channelId, and body
-    return results.map(m => ({ _id: m._id, channelId: m.channelId, body: m.body }));
+    return results.map(m => ({ _id: m._id, channelId: m.channelId, text: extractText(m.body) }));
   },
 });
