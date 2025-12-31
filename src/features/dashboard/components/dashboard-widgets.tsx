@@ -402,13 +402,6 @@ export const DashboardWidgets = ({ workspaceId, member }: DashboardWidgetsProps)
         </CardHeader>
         <CardContent className="p-4">
           <ScrollArea className="h-[calc(100vh-180px)] pb-8">
-            {!isEditMode && widgets.length > 0 && (
-              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <strong>Real-time Updates:</strong> Your dashboard updates automatically when changes occur. No refresh needed!
-                </p>
-              </div>
-            )}
             {isEditMode && (
               <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-dashed">
                 <p className="text-sm text-muted-foreground">
