@@ -41,51 +41,46 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
   const { data: categories } = useGetTaskCategories({ workspaceId });
   const updateTask = useUpdateTask();
 
-  // Filter tasks to show only incomplete ones first, then by due date
   const sortedTasks = tasks ? [...tasks]
     .sort((a, b) => {
-      // First sort by completion status
       if (a.completed !== b.completed) {
         return a.completed ? 1 : -1;
       }
 
-      // Then sort by due date if available
       if (a.dueDate && b.dueDate) {
         return a.dueDate - b.dueDate;
       }
 
-      // If only one has a due date, prioritize it
       if (a.dueDate) return -1;
       if (b.dueDate) return 1;
 
-      // Finally sort by creation time
       return b._creationTime - a._creationTime;
     })
-    .slice(0, 10) : []; // Limit to 10 tasks for the widget
+    .slice(0, 10) : [];
 
-  // Handle viewing a task
   const handleViewTask = (taskId: Id<'tasks'>) => {
     router.push(`/workspace/${workspaceId}/tasks?taskId=${taskId}`);
   };
 
   const handleToggleTaskCompletion = async (id: Id<'tasks'>, completed: boolean) => {
-    // Prevent multiple simultaneous updates
     if (updatingTaskId) return;
     
     setUpdatingTaskId(id);
     
     try {
-      await updateTask({
+      const result = await updateTask({
         id,
         completed: !completed
       });
       
-      toast.success(
-        !completed ? 'Task completed' : 'Task marked as incomplete',
-        {
-          description: !completed ? 'Great job!' : 'Task reopened',
-        }
-      );
+      if (result !== undefined) {
+        toast.success(
+          !completed ? 'Task completed' : 'Task marked as incomplete',
+          {
+            description: !completed ? 'Great job!' : 'Task reopened',
+          }
+        );
+      }
     } catch (error) {
       console.error('Failed to update task:', error);
       toast.error('Failed to update task', {

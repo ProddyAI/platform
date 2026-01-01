@@ -33,11 +33,7 @@ export const BarChart = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: string; left: string } | null>(null);
 
-  // Update tooltip position when hover changes
-  // Note: containerRef is intentionally not in dependencies as refs are stable
-  // and don't trigger re-renders. Null checks below handle unmounted scenarios.
   useEffect(() => {
-    // Early return if no hover or container not mounted
     if (hoveredIndex === null) {
       setTooltipPos(null);
       return;
@@ -110,7 +106,6 @@ export const BarChart = ({
           );
         })}
 
-        {/* Fixed position tooltip for precise control */}
         {showValues && hoveredIndex !== null && tooltipPos && (
           <div
             className="absolute bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"

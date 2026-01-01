@@ -68,8 +68,6 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
   
   const { mutate: createMessage, isPending } = useCreateMessage();
 
-  // Get replies to the parent message with pagination
-  // Using a reasonable limit of 50 per page to balance performance and UX
   const threadReplies = useQuery(
     api.messages.get,
     thread.message.parentMessageId
@@ -85,26 +83,21 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
       : 'skip'
   );
 
-  // Accumulate replies as we load more pages
   useEffect(() => {
     if (threadReplies?.page) {
       if (paginationCursor === null) {
-        // First load - replace all replies
         setAllReplies(threadReplies.page);
       } else {
-        // Subsequent loads - append new replies
         setAllReplies(prev => [...prev, ...threadReplies.page]);
       }
     }
   }, [threadReplies?.page, paginationCursor]);
 
-  // Reset pagination when modal opens/thread changes
   useEffect(() => {
     setPaginationCursor(null);
     setAllReplies([]);
   }, [thread.message._id, isOpen]);
 
-  // Auto-scroll to bottom when new messages arrive (only on initial load)
   useEffect(() => {
     if (scrollRef.current && allReplies.length > 0 && paginationCursor === null) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -117,7 +110,6 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
     }
   };
 
-  // Parse message body helper
   const parseMessageBody = (body: string): { type: 'text' | 'canvas' | 'note'; content: string; isSpecial: boolean } => {
     try {
       const parsed = JSON.parse(body);
@@ -219,10 +211,8 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
           </div>
         </div>
 
-        {/* Messages Area */}
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           <div className="space-y-4">
-            {/* Original Parent Message */}
             <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
               <div className="flex items-start gap-3">
                 <Avatar className="h-10 w-10 flex-shrink-0">
@@ -259,14 +249,12 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
             <Separator />
 
-            {/* Thread Replies */}
             {!threadReplies ? (
               <div className="flex items-center justify-center py-8">
                 <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
               <>
-                {/* Load More Button (shown at top for older messages) */}
                 {threadReplies.continueCursor && (
                   <div className="flex justify-center pb-4">
                     <Button
@@ -330,7 +318,6 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
           </div>
         </ScrollArea>
 
-        {/* Reply Input - Sticky */}
         <div className="border-t p-4 flex-shrink-0 bg-white dark:bg-card">
           <Editor
             key={editorKey}

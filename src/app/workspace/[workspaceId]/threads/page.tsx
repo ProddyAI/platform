@@ -92,12 +92,10 @@ export default function ThreadsPage() {
     return map;
   }, [threadTitles]);
 
-  // Define helper functions first
   const parseMessageBody = (body: string): { type: 'text' | 'canvas' | 'note'; content: string; isSpecial: boolean } => {
     try {
       const parsed = JSON.parse(body);
       
-      // Check if it's a canvas message
       if (parsed.type && parsed.type.includes('canvas')) {
         return {
           type: 'canvas',
@@ -106,7 +104,6 @@ export default function ThreadsPage() {
         };
       }
       
-      // Check if it's a note message
       if (parsed.type && parsed.type.includes('note')) {
         return {
           type: 'note',
@@ -115,7 +112,6 @@ export default function ThreadsPage() {
         };
       }
       
-      // Handle Quill rich text format
       if (parsed.ops && parsed.ops[0] && parsed.ops[0].insert) {
         return {
           type: 'text',
@@ -124,14 +120,12 @@ export default function ThreadsPage() {
         };
       }
       
-      // If none of the special formats match, treat as plain text
       return {
         type: 'text',
         content: body,
         isSpecial: false
       };
-    } catch (e) {
-      // If parsing fails, return the original body
+    } catch {
       return {
         type: 'text',
         content: body,
@@ -261,7 +255,6 @@ export default function ThreadsPage() {
               </div>
             ) : (
               <div className="space-y-6 max-w-4xl mx-auto">
-                {/* Today's threads */}
                 {groupedThreads.today?.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-4">
@@ -276,7 +269,6 @@ export default function ThreadsPage() {
                   </div>
                 )}
 
-                {/* Yesterday's threads */}
                 {groupedThreads.yesterday?.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-4">
@@ -291,7 +283,6 @@ export default function ThreadsPage() {
                   </div>
                 )}
 
-                {/* This week's threads */}
                 {groupedThreads.thisWeek?.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-4">
@@ -306,7 +297,6 @@ export default function ThreadsPage() {
                   </div>
                 )}
 
-                {/* Earlier threads */}
                 {groupedThreads.earlier?.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-4">
@@ -326,7 +316,6 @@ export default function ThreadsPage() {
         </div>
       )}
 
-      {/* Thread Modal */}
       {selectedThread && (
         <ThreadModal
           isOpen={!!selectedThread}
@@ -350,7 +339,6 @@ export default function ThreadsPage() {
         onClick={() => handleOpenThread(thread)}
       >
         <CardContent className="p-4">
-          {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <Avatar className="h-8 w-8 flex-shrink-0">
@@ -388,7 +376,6 @@ export default function ThreadsPage() {
             </div>
           </div>
 
-          {/* Thread Title/Preview */}
           <div className="mb-3">
             {parsedParentBody.isSpecial ? (
               <div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-3 border border-primary/20">
@@ -406,7 +393,6 @@ export default function ThreadsPage() {
             )}
           </div>
 
-          {/* Latest Reply Preview */}
           <div className="flex items-start gap-2 p-2 rounded-md bg-muted/30">
             <Avatar className="h-6 w-6 flex-shrink-0">
               <AvatarImage src={thread.currentUser.image} />
@@ -420,7 +406,6 @@ export default function ThreadsPage() {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <MessageCircle className="h-3.5 w-3.5" />

@@ -37,7 +37,6 @@ export const PieChart = ({
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
-  // Calculate segments
   let cumulativePercentage = 0;
   const segments = data.map((item, index) => {
     const percentage = (item.value / total) * 100;
@@ -54,7 +53,6 @@ export const PieChart = ({
     };
   });
 
-  // SVG path for each segment
   const createSegmentPath = (segment: typeof segments[0]) => {
     const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
     const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
@@ -79,8 +77,17 @@ export const PieChart = ({
           {segments.map((segment) => {
             const isHovered = hoveredIndex === segment.index;
             
+            const midAngleRad = ((segment.startAngle + segment.endAngle) / 2 / 100) * Math.PI * 2 - Math.PI / 2;
+            const offset = isHovered ? 3 : 0;
+            const offsetX = offset * Math.cos(midAngleRad);
+            const offsetY = offset * Math.sin(midAngleRad);
+            
             return (
-              <g key={segment.index}>
+              <g 
+                key={segment.index}
+                transform={`translate(${offsetX}, ${offsetY})`}
+                className="transition-transform duration-200"
+              >
                 <path
                   d={createSegmentPath(segment)}
                   fill={segment.color}
@@ -97,10 +104,8 @@ export const PieChart = ({
                   onMouseLeave={() => setHoveredIndex(null)}
                   onClick={() => onSegmentClick?.(segment.label, segment.value, segment.index)}
                 />
-                {/* Tooltip on hover */}
                 {isHovered && (() => {
-                  const midAngleRad = ((segment.startAngle + segment.endAngle) / 2 / 100) * Math.PI * 2 - Math.PI / 2;
-                  const tooltipDistance = 65; // Distance from center
+                  const tooltipDistance = 65;
                   const tooltipX = 50 + tooltipDistance * Math.cos(midAngleRad);
                   const tooltipY = 50 + tooltipDistance * Math.sin(midAngleRad);
                   
@@ -136,7 +141,6 @@ export const PieChart = ({
           })}
         </svg>
         
-        {/* Center text showing total */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <span className="text-sm font-medium">Total</span>
           <span className="text-lg font-bold">{formatValue(total)}</span>
