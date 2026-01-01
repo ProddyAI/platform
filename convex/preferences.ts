@@ -4,7 +4,6 @@ import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
-// Type definitions for workspace preferences
 export type ExpandedSections = Record<string, boolean>;
 
 export type WidgetSize = 'small' | 'medium' | 'large';
@@ -23,9 +22,6 @@ export type WorkspacePreference = {
 	dashboardWidgets?: DashboardWidget[];
 };
 
-/**
- * Update the last active workspace for a user
- */
 export const updateLastActiveWorkspace = mutation({
 	args: {
 		workspaceId: v.id('workspaces'),
@@ -37,7 +33,6 @@ export const updateLastActiveWorkspace = mutation({
 			throw new Error('Unauthorized');
 		}
 
-		// Check if the user is a member of the workspace
 		const member = await ctx.db
 			.query('members')
 			.withIndex('by_workspace_id_user_id', (q) =>

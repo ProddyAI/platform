@@ -1,10 +1,3 @@
-/**
- * Formats a duration in milliseconds into a human-readable string
- * 
- * @param ms Duration in milliseconds
- * @param format Format to use ('short' or 'long')
- * @returns Formatted duration string
- */
 export function formatDuration(ms: number, format: 'short' | 'long' = 'long'): string {
   if (ms < 1000) {
     return format === 'short' ? '< 1s' : 'less than a second';

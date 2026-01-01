@@ -1166,6 +1166,87 @@ export const getMentionedMessages = query({
 	},
 });
 
+export const getRecentWorkspaceChannelMessages = query({
+	args: {
+		workspaceId: v.id('workspaces'),
+		from: v.number(),
+		to: v.optional(v.number()),
+		limit: v.number(),
+		perChannelLimit: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			return [];
+		}
+
+		// Get all channels in the workspace
+		const channels = await ctx.db
+			.query('channels')
+			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
+			.collect();
+
+		if (channels.length === 0) {
+			return [];
+		}
+
+		const allMessages: Array<{
+			channelName: string;
+			authorName: string;
+			body: string;
+			_creationTime: number;
+		}> = [];
+
+		// Fetch messages from each channel
+		for (const channel of channels) {
+			const messages = await ctx.db
+				.query('messages')
+				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
+				.order('desc')
+				.filter((q) => {
+					if (args.to) {
+						return q.and(
+							q.gte(q.field('_creationTime'), args.from),
+							q.lte(q.field('_creationTime'), args.to)
+						);
+					}
+					// If from is 0, return all messages (no time filter)
+					return args.from > 0 ? q.gte(q.field('_creationTime'), args.from) : true;
+				})
+				.take(args.perChannelLimit);
+
+			// Filter out thread replies
+			const nonThreadMessages = messages.filter((msg) => !msg.parentMessageId);
+
+			// Get author info for each message
+			for (const message of nonThreadMessages) {
+				if (message.body) {
+					const member = await ctx.db.get(message.memberId);
+					if (member) {
+						const user = await ctx.db.get(member.userId);
+						allMessages.push({
+							channelName: channel.name,
+							authorName: user?.name || 'Unknown',
+							body: message.body,
+							_creationTime: message._creationTime,
+						});
+					}
+				}
+			}
+
+			// Stop if we've reached the overall limit
+			if (allMessages.length >= args.limit) {
+				break;
+			}
+		}
+
+		// Sort by creation time and limit total results
+		return allMessages
+			.sort((a, b) => a._creationTime - b._creationTime)
+			.slice(-args.limit);
+	},
+});
+
 export const getRecentChannelMessages = query({
 	args: {
 		channelId: v.id('channels'),
