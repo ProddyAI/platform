@@ -1,7 +1,7 @@
+import { useSearchParams } from 'next/navigation';
 import { differenceInMinutes, format, isToday, isYesterday } from 'date-fns';
 import { Loader, Sparkles } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { useCurrentMember } from '@/features/members/api/use-current-member';
@@ -53,9 +53,8 @@ export const MessageList = ({
 }: MessageListProps) => {
   const [editingId, setEditingId] = useState<Id<'messages'> | null>(null);
 
-  // Highlight logic (hooks must be inside component)
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const highlightId = searchParams ? searchParams.get('highlight') : null;
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
   const highlightedRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (highlightedRef.current) {

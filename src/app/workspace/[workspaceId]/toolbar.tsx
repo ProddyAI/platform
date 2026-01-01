@@ -157,9 +157,6 @@ export const WorkspaceToolbar = ({
         };
     }, [isAiMode, searchQuery, workspaceId, simpleAiSearch]);
 
-    React.useEffect(() => {
-        if (isAiMode) return;
-    }, [searchQuery, workspaceId, isAiMode]);
     useEffect(() => {
         const openUserSettings = searchParams.get('openUserSettings');
         if (openUserSettings) {

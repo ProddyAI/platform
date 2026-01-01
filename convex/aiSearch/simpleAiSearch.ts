@@ -64,8 +64,8 @@ export const simpleAiSearch = action({
     const result = await generateText({
       model: google("models/gemini-2.5-flash"),
       prompt: `
-Answer the user's question using ONLY the messages below.
-please try to summarize whatever is in the message which contains the keyword the user typed
+    Answer the user's question using ONLY the messages below.
+    Provide a concise summary of the relevant information from messages that match the user's query.
 If the messages are insufficient, say so clearly.
 
 Question:

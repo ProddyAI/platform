@@ -1,4 +1,3 @@
-// ...existing code...
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
@@ -10,6 +9,7 @@ export const searchMessages = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 50, 200);
     const channels = await ctx.db
       .query("channels")
       .withIndex("by_workspace_id", q => q.eq("workspaceId", args.workspaceId))
@@ -46,7 +46,11 @@ export const searchMessages = query({
       const text = extractText(m.body);
       return text.toLowerCase().includes(searchLower);
     });
-    if (args.limit) results = results.slice(0, args.limit);
-    return results.map(m => ({ _id: m._id, channelId: m.channelId, text: extractText(m.body) }));
+    if (limit) results = results.slice(0, limit);
+    return results.map(m => ({
+      _id: m._id,
+      channelId: m.channelId,
+      text: extractText(m.body).slice(0, 1000),
+    }));
   },
 });

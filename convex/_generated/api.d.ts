@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as aiSearch_devTest from "../aiSearch/devTest.js";
+import type * as aiSearch_getWorkspaceMessages from "../aiSearch/getWorkspaceMessages.js";
+import type * as aiSearch_simpleAiSearch from "../aiSearch/simpleAiSearch.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as board from "../board.js";
@@ -29,6 +32,7 @@ import type * as presence from "../presence.js";
 import type * as prosemirror from "../prosemirror.js";
 import type * as reactions from "../reactions.js";
 import type * as search from "../search.js";
+import type * as searchMessages from "../searchMessages.js";
 import type * as tasks from "../tasks.js";
 import type * as upload from "../upload.js";
 import type * as users from "../users.js";
@@ -50,6 +54,9 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "aiSearch/devTest": typeof aiSearch_devTest;
+  "aiSearch/getWorkspaceMessages": typeof aiSearch_getWorkspaceMessages;
+  "aiSearch/simpleAiSearch": typeof aiSearch_simpleAiSearch;
   analytics: typeof analytics;
   auth: typeof auth;
   board: typeof board;
@@ -71,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   prosemirror: typeof prosemirror;
   reactions: typeof reactions;
   search: typeof search;
+  searchMessages: typeof searchMessages;
   tasks: typeof tasks;
   upload: typeof upload;
   users: typeof users;
@@ -237,7 +245,6 @@ export declare const components: {
         "internal",
         {
           entryId: string;
-          order: "desc" | "asc";
           paginationOpts: {
             cursor: string | null;
             endCursor?: string | null;
