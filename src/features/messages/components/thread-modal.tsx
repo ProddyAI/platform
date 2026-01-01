@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { api } from '@/../convex/_generated/api';
@@ -159,7 +160,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
         conversationId: thread.message.conversationId,
         parentMessageId: thread.message.parentMessageId,
         body,
-        image,
+        ...(image && { image }),
       }, {
         onSuccess: () => {
           setEditorKey((prev) => prev + 1);
@@ -269,7 +270,10 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
                 {allReplies.length > 0 ? (
                   <div className="space-y-3">
-                    {allReplies.map((reply: any) => {
+                    {allReplies
+                      .slice()
+                      .sort((a, b) => a._creationTime - b._creationTime)
+                      .map((reply: any) => {
                   const parsedReplyBody = parseMessageBody(reply.body);
                   return (
                     <div key={reply._id} className="flex items-start gap-3 pl-4">
