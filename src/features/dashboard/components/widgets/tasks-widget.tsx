@@ -12,6 +12,7 @@ import { useGetTaskCategories } from '@/features/tasks/api/use-get-task-categori
 import { useUpdateTask } from '@/features/tasks/api/use-update-task';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface TasksWidgetProps {
   workspaceId: Id<'workspaces'>;
@@ -33,6 +34,7 @@ interface TasksWidgetProps {
 
 export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetProps) => {
   const router = useRouter();
+  const [updatingTaskId, setUpdatingTaskId] = useState<Id<'tasks'> | null>(null);
 
   // Fetch your tasks
   const { data: tasks, isLoading } = useGetTasks({ workspaceId });
@@ -67,6 +69,11 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
   };
 
   const handleToggleTaskCompletion = async (id: Id<'tasks'>, completed: boolean) => {
+    // Prevent multiple simultaneous updates
+    if (updatingTaskId) return;
+    
+    setUpdatingTaskId(id);
+    
     try {
       await updateTask({
         id,
@@ -84,6 +91,8 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
       toast.error('Failed to update task', {
         description: 'Please try again',
       });
+    } finally {
+      setUpdatingTaskId(null);
     }
   };
 
@@ -160,8 +169,11 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
                       size="icon"
                       className="h-6 w-6 rounded-full"
                       onClick={() => handleToggleTaskCompletion(task._id, task.completed)}
+                      disabled={updatingTaskId === task._id}
                     >
-                      {task.completed ? (
+                      {updatingTaskId === task._id ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : task.completed ? (
                         <CheckCircle2 className="h-5 w-5 text-green-500" />
                       ) : (
                         <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Send, Hash, User, Loader, MessageSquare, Paintbrush, FileText } from 'lucide-react';
+import { Hash, User, Loader, MessageSquare, Paintbrush, FileText } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { toast } from 'sonner';
 
@@ -63,10 +63,13 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
   const [editorKey, setEditorKey] = useState(0);
   const editorRef = useRef<{ clear: () => void } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
+  const [allReplies, setAllReplies] = useState<any[]>([]);
   
   const { mutate: createMessage, isPending } = useCreateMessage();
 
-  // Get all replies to the parent message
+  // Get replies to the parent message with pagination
+  // Using a reasonable limit of 50 per page to balance performance and UX
   const threadReplies = useQuery(
     api.messages.get,
     thread.message.parentMessageId
@@ -75,19 +78,44 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
           conversationId: thread.message.conversationId,
           parentMessageId: thread.message.parentMessageId,
           paginationOpts: {
-            numItems: 100,
-            cursor: null,
+            numItems: 50,
+            cursor: paginationCursor,
           },
         }
       : 'skip'
   );
 
-  // Auto-scroll to bottom when new messages arrive
+  // Accumulate replies as we load more pages
   useEffect(() => {
-    if (scrollRef.current && threadReplies?.page) {
+    if (threadReplies?.page) {
+      if (paginationCursor === null) {
+        // First load - replace all replies
+        setAllReplies(threadReplies.page);
+      } else {
+        // Subsequent loads - append new replies
+        setAllReplies(prev => [...prev, ...threadReplies.page]);
+      }
+    }
+  }, [threadReplies?.page, paginationCursor]);
+
+  // Reset pagination when modal opens/thread changes
+  useEffect(() => {
+    setPaginationCursor(null);
+    setAllReplies([]);
+  }, [thread.message._id, isOpen]);
+
+  // Auto-scroll to bottom when new messages arrive (only on initial load)
+  useEffect(() => {
+    if (scrollRef.current && allReplies.length > 0 && paginationCursor === null) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [threadReplies?.page?.length]);
+  }, [allReplies.length, paginationCursor]);
+
+  const handleLoadMore = () => {
+    if (threadReplies?.continueCursor) {
+      setPaginationCursor(threadReplies.continueCursor);
+    }
+  };
 
   // Parse message body helper
   const parseMessageBody = (body: string): { type: 'text' | 'canvas' | 'note'; content: string; isSpecial: boolean } => {
@@ -149,7 +177,10 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
         throwError: true,
       });
     } catch (error) {
-      toast.error('Failed to send message');
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
     }
   };
 
@@ -233,9 +264,25 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
               <div className="flex items-center justify-center py-8">
                 <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ) : threadReplies.page && threadReplies.page.length > 0 ? (
-              <div className="space-y-3">
-                {threadReplies.page.map((reply: any) => {
+            ) : (
+              <>
+                {/* Load More Button (shown at top for older messages) */}
+                {threadReplies.continueCursor && (
+                  <div className="flex justify-center pb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLoadMore}
+                      className="text-xs"
+                    >
+                      Load older replies
+                    </Button>
+                  </div>
+                )}
+
+                {allReplies.length > 0 ? (
+                  <div className="space-y-3">
+                    {allReplies.map((reply: any) => {
                   const parsedReplyBody = parseMessageBody(reply.body);
                   return (
                     <div key={reply._id} className="flex items-start gap-3 pl-4">
@@ -270,13 +317,15 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <MessageSquare className="h-8 w-8 mb-2" />
-                <p className="text-sm">No replies yet</p>
-              </div>
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <MessageSquare className="h-8 w-8 mb-2" />
+                    <p className="text-sm">No replies yet</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>

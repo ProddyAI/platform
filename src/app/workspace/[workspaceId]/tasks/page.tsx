@@ -176,13 +176,13 @@ const TasksPage = () => {
             <div className="mb-8 space-y-4">
               {/* <h1 className="text-2xl font-bold text-gray-900">Tasks</h1> */}
               <div className="relative">
-                 <Input
-                   placeholder="Search tasks..."
-                   value={searchQuery}
-                   onChange={(e) => setSearchQuery(e.target.value)}
-                   className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--muted))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--muted))]"
-                 />
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--muted))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--muted))]"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
               </div>
             </div>
 
@@ -193,8 +193,8 @@ const TasksPage = () => {
             ) : (
               <div className="space-y-6 pb-8">
                 <div className="pt-4 mt-8 border-t border-gray-100 dark:border-gray-700">
-                   <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Create a new task</h2>
-                   <TaskCreateForm workspaceId={workspaceId} onSuccess={handleTaskCreated} />
+                  <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Create a new task</h2>
+                  <TaskCreateForm workspaceId={workspaceId} onSuccess={handleTaskCreated} />
                 </div>
                 <div className="space-y-4">
                   {filteredTasks.length === 0 ? (

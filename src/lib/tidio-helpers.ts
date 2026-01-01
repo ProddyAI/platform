@@ -1,4 +1,4 @@
-export const showTidioChat = (): boolean => {
+	export const showTidioChat = (): boolean => {
 	if (typeof window === 'undefined') return false;
 
 	if (window.tidioChatApi) {

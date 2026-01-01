@@ -41,10 +41,9 @@ export const TaskCreateForm = ({ workspaceId, onSuccess }: TaskCreateFormProps) 
     e.preventDefault();
 
     if (!title.trim()) return;
-
-    setIsSubmitting(true);
     
     try {
+      setIsSubmitting(true);
       await createTask({
         title,
         description: description || undefined,

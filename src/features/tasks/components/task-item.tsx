@@ -200,14 +200,14 @@ export const TaskItem = ({
           </div>
 
           {/* Description */}
-           {description && (
-             <p className={cn(
-               "text-sm text-gray-600 mt-2 line-clamp-2 dark:text-gray-400",
-               completed && "text-gray-400 dark:text-gray-500"
-             )}>
-               {description}
-             </p>
-           )}
+          {description && (
+            <p className={cn(
+              "text-sm text-gray-600 mt-2 line-clamp-2 dark:text-gray-400",
+              completed && "text-gray-400 dark:text-gray-500"
+            )}>
+              {description}
+            </p>
+          )}
 
           {/* Task metadata */}
           <div className="flex flex-wrap items-center gap-3 mt-3">

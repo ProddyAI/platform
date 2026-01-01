@@ -460,7 +460,8 @@ const schema = defineSchema({
 		updatedAt: v.number(),
 	})
 		.index('by_message_id', ['messageId'])
-		.index('by_workspace_id', ['workspaceId']),
+		.index('by_workspace_id', ['workspaceId'])
+		.index('by_workspace_id_message_id', ['workspaceId', 'messageId']),
 });
 
 export default schema;

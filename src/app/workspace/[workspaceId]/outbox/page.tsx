@@ -80,8 +80,11 @@ export default function OutboxPage() {
 
   // Filter messages based on search query and active filter
   const filteredMessages = messages?.filter(message => {
+    const parsedBody = parseMessageBody(message.body);
+    const bodyText = typeof parsedBody === 'string' ? parsedBody : '';
+    
     const matchesSearch = searchQuery === '' ||
-      parseMessageBody(message.body).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bodyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
       message.context.name.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesFilter =

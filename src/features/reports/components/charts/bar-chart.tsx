@@ -34,16 +34,27 @@ export const BarChart = ({
   const [tooltipPos, setTooltipPos] = useState<{ top: string; left: string } | null>(null);
 
   // Update tooltip position when hover changes
+  // Note: containerRef is intentionally not in dependencies as refs are stable
+  // and don't trigger re-renders. Null checks below handle unmounted scenarios.
   useEffect(() => {
-    if (hoveredIndex === null || !containerRef.current) {
+    // Early return if no hover or container not mounted
+    if (hoveredIndex === null) {
       setTooltipPos(null);
       return;
     }
 
     const container = containerRef.current;
+    if (!container) {
+      setTooltipPos(null);
+      return;
+    }
+
     const hoveredElement = container.querySelector(`[data-bar-index="${hoveredIndex}"]`) as HTMLElement;
     
-    if (!hoveredElement) return;
+    if (!hoveredElement) {
+      setTooltipPos(null);
+      return;
+    }
 
     const containerRect = container.getBoundingClientRect();
     const pos = calculateDomTooltipPosition(hoveredElement, containerRect, 50, 24, -30);

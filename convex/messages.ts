@@ -1348,21 +1348,36 @@ export const getThreadReplyCounts = query({
 		if (!userId) throw new Error('Unauthorized.');
 
 		try {
-			const counts = await Promise.all(
-				args.parentMessageIds.map(async (parentMessageId) => {
-					const replies = await ctx.db
-						.query('messages')
-						.withIndex('by_parent_message_id', (q) =>
-							q.eq('parentMessageId', parentMessageId)
-						)
-						.collect();
+			// If no parent message IDs provided, return empty array
+			if (args.parentMessageIds.length === 0) return [];
 
-					return {
-						parentMessageId,
-						count: replies.length,
-					};
-				})
-			);
+			// Fetch all replies in a single query using 'or' filter
+			const allReplies = await ctx.db
+				.query('messages')
+				.withIndex('by_parent_message_id')
+				.filter((q) =>
+					q.or(
+						...args.parentMessageIds.map((id) =>
+							q.eq(q.field('parentMessageId'), id)
+						)
+					)
+				)
+				.collect();
+
+			// Group replies by parent message ID and count
+			const countsByParent = new Map<string, number>();
+			for (const reply of allReplies) {
+				if (reply.parentMessageId) {
+					const key = reply.parentMessageId;
+					countsByParent.set(key, (countsByParent.get(key) ?? 0) + 1);
+				}
+			}
+
+			// Build result array with counts (0 for parents with no replies)
+			const counts = args.parentMessageIds.map((parentMessageId) => ({
+				parentMessageId,
+				count: countsByParent.get(parentMessageId) ?? 0,
+			}));
 
 			return counts;
 		} catch (error) {

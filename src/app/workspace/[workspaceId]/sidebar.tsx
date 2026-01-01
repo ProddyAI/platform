@@ -178,9 +178,6 @@ export const WorkspaceSidebar = ({
   const { data: members, isLoading: membersLoading } = useGetMembers({
     workspaceId,
   });
-  const threads = useQuery(api.threadTitles.getByWorkspaceId, {
-    workspaceId,
-  });
 
   if (memberLoading || workspaceLoading || channelsLoading || membersLoading) {
     return (

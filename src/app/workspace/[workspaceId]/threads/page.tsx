@@ -72,9 +72,13 @@ export default function ThreadsPage() {
   // Get thread reply counts
   const threadReplyCounts = useQuery(
     api.messages.getThreadReplyCounts,
-    threads ? { 
-      parentMessageIds: threads.map(t => t.message.parentMessageId).filter(Boolean) as Id<'messages'>[]
-    } : 'skip'
+    threads && threads.length > 0
+      ? {
+          parentMessageIds: threads
+            .map((t) => t.message.parentMessageId)
+            .filter(Boolean) as Id<'messages'>[],
+        }
+      : 'skip'
   );
 
   // Create a map of messageId -> threadTitle for quick lookup
@@ -120,6 +124,7 @@ export default function ThreadsPage() {
         };
       }
       
+      // If none of the special formats match, treat as plain text
       return {
         type: 'text',
         content: body,

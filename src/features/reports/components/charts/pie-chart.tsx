@@ -78,12 +78,6 @@ export const PieChart = ({
         <svg viewBox="0 0 100 100" className="w-full h-full">
           {segments.map((segment) => {
             const isHovered = hoveredIndex === segment.index;
-            const offset = isHovered ? 3 : 0;
-            
-            // Calculate offset direction
-            const midAngleRad = ((segment.startAngle + segment.endAngle) / 2 / 100) * Math.PI * 2 - Math.PI / 2;
-            const offsetX = offset * Math.cos(midAngleRad);
-            const offsetY = offset * Math.sin(midAngleRad);
             
             return (
               <g key={segment.index}>
@@ -115,8 +109,6 @@ export const PieChart = ({
                     viewBoxHeight: 100,
                     tooltipWidth: 40,
                     tooltipHeight: 16,
-                    offsetY: 0,
-                    offsetX: 0,
                     padding: 3,
                     pointX: tooltipX,
                     pointY: tooltipY,

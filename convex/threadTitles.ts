@@ -44,6 +44,15 @@ export const upsert = mutation({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error('Unauthorized.');
 
+		// Validate title
+		const trimmedTitle = args.title.trim();
+		if (!trimmedTitle) {
+			throw new Error('Title cannot be empty');
+		}
+		if (trimmedTitle.length > 200) {
+			throw new Error('Title is too long (maximum 200 characters)');
+		}
+
 		// Get current member
 		const member = await ctx.db
 			.query('members')
@@ -63,7 +72,7 @@ export const upsert = mutation({
 		if (existing) {
 			// Update existing title
 			await ctx.db.patch(existing._id, {
-				title: args.title,
+				title: trimmedTitle,
 				updatedAt: Date.now(),
 			});
 			return existing._id;
@@ -71,7 +80,7 @@ export const upsert = mutation({
 			// Create new title
 			const id = await ctx.db.insert('threadTitles', {
 				messageId: args.messageId,
-				title: args.title,
+				title: trimmedTitle,
 				workspaceId: args.workspaceId,
 				createdBy: member._id,
 				createdAt: Date.now(),
@@ -86,17 +95,46 @@ export const upsert = mutation({
 export const remove = mutation({
 	args: {
 		messageId: v.id('messages'),
+		workspaceId: v.id('workspaces'),
 	},
 	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error('Unauthorized.');
+
+		// Get current member
+		const member = await ctx.db
+			.query('members')
+			.withIndex('by_workspace_id_user_id', (q) =>
+				q.eq('workspaceId', args.workspaceId).eq('userId', userId)
+			)
+			.unique();
+
+		if (!member) throw new Error('Member not found.');
+
 		const threadTitle = await ctx.db
 			.query('threadTitles')
 			.withIndex('by_message_id', (q) => q.eq('messageId', args.messageId))
 			.unique();
 
-		if (threadTitle) {
-			await ctx.db.delete(threadTitle._id);
+		if (!threadTitle) {
+			return null;
 		}
 
-		return threadTitle?._id;
+		// Verify the thread title belongs to the workspace
+		if (threadTitle.workspaceId !== args.workspaceId) {
+			throw new Error('Thread title does not belong to this workspace.');
+		}
+
+		// Only allow deletion if user is the creator or a workspace admin
+		const isCreator = threadTitle.createdBy === member._id;
+		const isAdmin = member.role === 'admin';
+
+		if (!isCreator && !isAdmin) {
+			throw new Error('Only the creator or workspace admins can delete thread titles.');
+		}
+
+		await ctx.db.delete(threadTitle._id);
+
+		return threadTitle._id;
 	},
 });

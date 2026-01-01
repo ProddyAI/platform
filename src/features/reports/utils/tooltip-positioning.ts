@@ -16,18 +16,17 @@ export interface TooltipConfig {
   pointY: number;
 }
 
-export function calculateSvgTooltipPosition(config: TooltipConfig): TooltipPosition {
-  const {
-    viewBoxWidth = 100,
-    viewBoxHeight = 100,
-    tooltipWidth = 36,
-    tooltipHeight = 18,
-    offsetY = -15,
-    offsetX = 0,
-    padding = 5,
-    pointX,
-    pointY,
-  } = config;
+export function calculateSvgTooltipPosition({
+  viewBoxWidth = 100,
+  viewBoxHeight = 100,
+  tooltipWidth = 36,
+  tooltipHeight = 18,
+  offsetY = -15,
+  offsetX = 0,
+  padding = 5,
+  pointX,
+  pointY,
+}: TooltipConfig): TooltipPosition {
 
   let x = pointX + offsetX;
   let y = pointY + offsetY;
