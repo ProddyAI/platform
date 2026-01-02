@@ -10,42 +10,40 @@ import { mutation } from './_generated/server';
 
 const CustomPassword = Password<DataModel>({
 	profile(params) {
+		// Validate email exists and is a string
+		const emailInput = params.email;
+		if (!emailInput || typeof emailInput !== 'string') {
+			throw new Error('Email is required');
+		}
+		
 		// Normalize email to lowercase to prevent lookup issues during signup
-		const email = (params.email as string).toLowerCase().trim();
+		const email = emailInput.toLowerCase().trim();
+		
+		if (!email) {
+			throw new Error('Email cannot be empty');
+		}
+		
 		return {
 			email: email,
 			name: params.name as string,
 		};
-	},
-	// Normalize email during login lookup as well
-	async verify(params, ctx) {
-		// Normalize the email for consistent lookup
-		const normalizedEmail = (params.email as string).toLowerCase().trim();
-		
-		// Find user by normalized email
-		const user = await ctx.db
-			.query('users')
-			.withIndex('email', (q) => q.eq('email', normalizedEmail))
-			.first();
-		
-		if (!user) {
-			throw new Error('Invalid email or password');
-		}
-		
-		return { userId: user._id };
 	},
 });
 
 // Custom GitHub provider with proper profile mapping
 const CustomGitHub = GitHub({
 	profile(profile) {
-		// Normalize email to lowercase to prevent lookup issues
-		const email = profile.email ? profile.email.toLowerCase().trim() : '';
+		// Safely normalize email to lowercase to prevent lookup issues
+		const emailInput = profile.email;
+		const email = emailInput && typeof emailInput === 'string' 
+			? emailInput.toLowerCase().trim() 
+			: '';
+		
 		return {
-			id: profile.id.toString(),
-			name: profile.name || profile.login || '',
+			id: profile.id?.toString() ?? '',
+			name: profile.name ?? profile.login ?? '',
 			email: email,
-			image: profile.avatar_url || '',
+			image: profile.avatar_url ?? '',
 		};
 	},
 });
@@ -53,13 +51,17 @@ const CustomGitHub = GitHub({
 // Custom Google provider with proper profile mapping
 const CustomGoogle = Google({
 	profile(profile) {
-		// Normalize email to lowercase to prevent lookup issues
-		const email = profile.email ? profile.email.toLowerCase().trim() : '';
+		// Safely normalize email to lowercase to prevent lookup issues
+		const emailInput = profile.email;
+		const email = emailInput && typeof emailInput === 'string'
+			? emailInput.toLowerCase().trim()
+			: '';
+		
 		return {
-			id: profile.sub,
-			name: profile.name || '',
+			id: profile.sub ?? '',
+			name: profile.name ?? '',
 			email: email,
-			image: profile.picture || '',
+			image: profile.picture ?? '',
 		};
 	},
 });
