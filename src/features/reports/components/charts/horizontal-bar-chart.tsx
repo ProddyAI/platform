@@ -39,8 +39,9 @@ export const HorizontalBarChart = ({
   const maxValue = Math.max(...data.map(item => item.value));
 
   return (
-    <div className={cn("w-full space-y-4", className)}>
-      {data.map((item, index) => {
+    <div className={cn("w-full h-full overflow-auto", className)}>
+      <div className="space-y-4 min-h-0">
+        {data.map((item, index) => {
         const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
         const isHovered = hoveredIndex === index;
 
@@ -77,8 +78,9 @@ export const HorizontalBarChart = ({
               />
             </div>
           </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };

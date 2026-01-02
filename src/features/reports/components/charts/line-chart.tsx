@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { calculateSvgTooltipPosition, getTooltipRectAttrs, getTooltipTextAttrs } from '@/features/reports/utils/tooltip-positioning';
 
 interface LineChartProps {
   data: {
@@ -33,6 +32,45 @@ export const LineChart = ({
   onPointClick,
 }: LineChartProps) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: string; left: string } | null>(null);
+
+  useEffect(() => {
+    if (hoveredIndex === null) {
+      setTooltipPos(null);
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) {
+      setTooltipPos(null);
+      return;
+    }
+
+    const svgElement = container.querySelector('svg');
+    if (!svgElement) {
+      setTooltipPos(null);
+      return;
+    }
+
+    const pointElement = svgElement.querySelector(`[data-point-index="${hoveredIndex}"]`) as SVGCircleElement;
+    if (!pointElement) {
+      setTooltipPos(null);
+      return;
+    }
+
+    const svgRect = svgElement.getBoundingClientRect();
+    const pointRect = pointElement.getBoundingClientRect();
+    
+    // Calculate position relative to the container
+    const left = pointRect.left - svgRect.left + pointRect.width / 2;
+    const top = pointRect.top - svgRect.top;
+
+    setTooltipPos({
+      left: `${left}px`,
+      top: `${top - 30}px`
+    });
+  }, [hoveredIndex]);
 
   if (!data || data.length === 0) {
     return (
@@ -79,8 +117,8 @@ export const LineChart = ({
   `;
 
   return (
-    <div className={cn("w-full", className)}>
-      <div className="relative overflow-hidden px-4 py-2" style={{ height: `${height}px` }}>
+    <div className={cn("w-full h-full flex flex-col overflow-hidden", className)} ref={containerRef}>
+      <div className="relative overflow-visible px-4 py-2 flex-1" style={{ height: `${Math.min(height, 400)}px`, minHeight: '200px' }}>
         <svg
           viewBox="0 0 100 100"
           className="w-full h-full"
@@ -134,77 +172,54 @@ export const LineChart = ({
             const isHovered = hoveredIndex === point.index;
 
             return (
-              <g
-                key={point.index}
-                className="transition-transform duration-200"
-                style={{ transform: isHovered ? 'scale(1.5)' : 'scale(1)' }}
-                onMouseEnter={() => setHoveredIndex(point.index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                onClick={() => onPointClick?.(point.label, point.value, point.index)}
-              >
+              <g key={point.index}>
                 <circle
+                  data-point-index={point.index}
                   cx={point.x}
                   cy={point.y}
-                  r="1.5"
+                  r={isHovered ? "2.5" : "1.5"}
                   className={cn(
-                    "stroke-white stroke-2",
+                    "stroke-white transition-all duration-200",
+                    isHovered ? "stroke-[3]" : "stroke-2",
                     pointColor,
                     onPointClick && "cursor-pointer"
                   )}
+                  onMouseEnter={() => setHoveredIndex(point.index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  onClick={() => onPointClick?.(point.label, point.value, point.index)}
                 />
 
                 {isHovered && (
-                   <>
-                     {/* Tooltip - using standardized positioning utility */}
-                     {(() => {
-                       const tooltipPos = calculateSvgTooltipPosition({
-                         viewBoxWidth: 100,
-                         viewBoxHeight: 100,
-                         tooltipWidth: 36,
-                         tooltipHeight: 18,
-                         offsetY: -15,
-                         offsetX: 0,
-                         padding: chartMargin + 5,
-                         pointX: point.x,
-                         pointY: point.y,
-                       });
-                       const rectAttrs = getTooltipRectAttrs(36, 18);
-                       const textAttrs = getTooltipTextAttrs();
-                       return (
-                         <g transform={tooltipPos.transform}>
-                           <rect
-                             {...rectAttrs}
-                             className="fill-foreground/90 stroke-border stroke-[0.5]"
-                           />
-                           <text
-                             {...textAttrs}
-                             className="fill-background text-[4px] font-medium"
-                           >
-                             {formatValue(point.value)}
-                           </text>
-                         </g>
-                       );
-                     })()}
-
-                     {/* Vertical guide line */}
-                     <line
-                       x1={point.x}
-                       y1={chartMargin}
-                       x2={point.x}
-                       y2={100 - chartMargin}
-                       className="stroke-secondary/30 stroke-[0.5] stroke-dashed"
-                     />
-                   </>
+                  <line
+                    x1={point.x}
+                    y1={chartMargin}
+                    x2={point.x}
+                    y2={100 - chartMargin}
+                    className="stroke-secondary/30 stroke-[0.5] stroke-dashed pointer-events-none"
+                  />
                 )}
               </g>
             );
           })}
         </svg>
+
+        {/* DOM-based tooltip */}
+        {hoveredIndex !== null && tooltipPos && (
+          <div
+            className="absolute bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50 -translate-x-1/2"
+            style={{
+              top: tooltipPos.top,
+              left: tooltipPos.left,
+            }}
+          >
+            {formatValue(data[hoveredIndex].value)}
+          </div>
+        )}
       </div>
 
       {/* X-axis labels */}
       {showLabels && (
-        <div className="flex justify-between mt-2">
+        <div className="flex justify-between mt-2 flex-shrink-0 px-4">
           {data.map((item, index) => (
             <div
               key={index}

@@ -76,7 +76,11 @@ export const UserActivityDashboard = ({ workspaceId, timeRange = '7d' }: UserAct
   const sortedByMessages = [...userActivity].sort((a, b) => b.messageCount - a.messageCount);
 
   // Sort users by time spent
-  const sortedByTimeSpent = [...userActivity].sort((a, b) => b.totalTimeSpent - a.totalTimeSpent);
+  const sortedByTimeSpent = [...userActivity].sort((a, b) => {
+    const timeA = a.totalTimeSpent || 0;
+    const timeB = b.totalTimeSpent || 0;
+    return timeB - timeA;
+  });
 
   // Prepare data for charts
   const messageCountData = sortedByMessages.slice(0, 10).map(item => ({
@@ -85,11 +89,25 @@ export const UserActivityDashboard = ({ workspaceId, timeRange = '7d' }: UserAct
     color: 'bg-secondary',
   }));
 
-  const timeSpentData = sortedByTimeSpent.slice(0, 10).map(item => ({
-    label: item.member?.user?.name || 'Unknown',
-    value: item.totalTimeSpent,
-    color: 'bg-secondary',
-  }));
+  const timeSpentData = sortedByTimeSpent
+    .filter(item => (item.totalTimeSpent || 0) > 0) // Only show users with time spent
+    .slice(0, 10)
+    .map(item => {
+      const timeValue = item.totalTimeSpent || 0;
+      // Color code based on time spent (in seconds)
+      // Green: > 1 hour, Yellow: 15min - 1 hour, Blue: < 15min
+      const color = timeValue > 3600 
+        ? 'bg-green-500' 
+        : timeValue > 900 
+          ? 'bg-yellow-500' 
+          : 'bg-secondary';
+      
+      return {
+        label: item.member?.user?.name || 'Unknown',
+        value: timeValue,
+        color,
+      };
+    });
 
   // Calculate total stats
   const totalMessages = userActivity.reduce((sum, item) => sum + item.messageCount, 0);
@@ -172,35 +190,49 @@ export const UserActivityDashboard = ({ workspaceId, timeRange = '7d' }: UserAct
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Messages by User</CardTitle>
             <CardDescription>
               Top 10 users by message count in the selected period
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <HorizontalBarChart
-              data={messageCountData}
-              height={30}
-              formatValue={(value) => `${value} messages`}
-            />
+          <CardContent className="flex-1 min-h-0">
+            <div className="h-[400px] max-h-[400px] overflow-auto">
+              <HorizontalBarChart
+                data={messageCountData}
+                height={30}
+                formatValue={(value) => `${value} messages`}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Time Spent by User</CardTitle>
             <CardDescription>
               Top 10 users by time spent in the selected period
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <HorizontalBarChart
-              data={timeSpentData}
-              height={30}
-              formatValue={(value) => formatDuration(value, 'short')}
-            />
+          <CardContent className="flex-1 min-h-0">
+            <div className="h-[400px] max-h-[400px] overflow-auto">
+              {timeSpentData.length > 0 ? (
+                <HorizontalBarChart
+                  data={timeSpentData}
+                  height={30}
+                  formatValue={(value) => formatDuration(value, 'short')}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full bg-muted/20 rounded-md">
+                  <Clock className="h-12 w-12 text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground text-sm">No time tracking data available</p>
+                  <p className="text-muted-foreground/70 text-xs mt-1">
+                    Time spent data will appear as users interact with the workspace
+                  </p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

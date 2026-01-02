@@ -71,8 +71,8 @@ export const PieChart = ({
   };
 
   return (
-    <div className={cn("flex flex-col md:flex-row items-center gap-6", className)}>
-      <div className="relative" style={{ width: size, height: size }}>
+    <div className={cn("flex flex-col md:flex-row items-center gap-6 w-full h-full overflow-auto", className)}>
+      <div className="relative flex-shrink-0" style={{ width: Math.min(size, 250), height: Math.min(size, 250) }}>
         <svg viewBox="0 0 100 100" className="w-full h-full">
           {segments.map((segment) => {
             const isHovered = hoveredIndex === segment.index;
