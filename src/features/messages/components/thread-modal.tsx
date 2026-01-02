@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { api } from '@/../convex/_generated/api';
 import type { Id } from '@/../convex/_generated/dataModel';
 import { useCreateMessage } from '@/features/messages/api/use-create-message';
+import { useGenerateUploadUrl } from '@/features/upload/api/use-generate-upload-url';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import Editor from '@/components/editor';
 
@@ -65,21 +66,22 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
   const [allReplies, setAllReplies] = useState<any[]>([]);
-  
+
   const { mutate: createMessage, isPending } = useCreateMessage();
+  const { mutate: generateUploadUrl } = useGenerateUploadUrl();
 
   const threadReplies = useQuery(
     api.messages.get,
     thread.message.parentMessageId
       ? {
-          channelId: thread.message.channelId,
-          conversationId: thread.message.conversationId,
-          parentMessageId: thread.message.parentMessageId,
-          paginationOpts: {
-            numItems: 50,
-            cursor: paginationCursor,
-          },
-        }
+        channelId: thread.message.channelId,
+        conversationId: thread.message.conversationId,
+        parentMessageId: thread.message.parentMessageId,
+        paginationOpts: {
+          numItems: 50,
+          cursor: paginationCursor,
+        },
+      }
       : 'skip'
   );
 
@@ -113,7 +115,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
   const parseMessageBody = (body: string): { type: 'text' | 'canvas' | 'note'; content: string; isSpecial: boolean } => {
     try {
       const parsed = JSON.parse(body);
-      
+
       if (parsed.type && parsed.type.includes('canvas')) {
         return {
           type: 'canvas',
@@ -121,7 +123,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
           isSpecial: true
         };
       }
-      
+
       if (parsed.type && parsed.type.includes('note')) {
         return {
           type: 'note',
@@ -129,7 +131,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
           isSpecial: true
         };
       }
-      
+
       if (parsed.ops && parsed.ops[0] && parsed.ops[0].insert) {
         return {
           type: 'text',
@@ -137,7 +139,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
           isSpecial: false
         };
       }
-      
+
       return {
         type: 'text',
         content: body,
@@ -152,15 +154,39 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
     }
   };
 
-  const handleSubmit = async ({ body, image }: { body: string; image?: Id<'_storage'> }) => {
+  const handleSubmit = async ({ body, image }: { body: string; image: File | null }) => {
     try {
+      let storageId: Id<'_storage'> | undefined = undefined;
+
+      if (image) {
+        const url = await generateUploadUrl(
+          {},
+          {
+            throwError: true,
+          }
+        );
+
+        if (!url) throw new Error('URL not found.');
+
+        const result = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-type': image.type },
+          body: image,
+        });
+
+        if (!result.ok) throw new Error('Failed to upload image.');
+
+        const { storageId: uploadedStorageId } = await result.json();
+        storageId = uploadedStorageId;
+      }
+
       await createMessage({
         workspaceId,
         channelId: thread.message.channelId,
         conversationId: thread.message.conversationId,
         parentMessageId: thread.message.parentMessageId,
         body,
-        ...(image && { image }),
+        ...(storageId && { image: storageId }),
       }, {
         onSuccess: () => {
           setEditorKey((prev) => prev + 1);
@@ -189,11 +215,10 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
             <div className="flex items-center gap-2 mt-1">
               <Badge
                 variant="outline"
-                className={`rounded-full text-xs ${
-                  thread.context.type === 'channel'
+                className={`rounded-full text-xs ${thread.context.type === 'channel'
                     ? 'bg-blue-50 text-blue-700 border-blue-200'
                     : 'bg-purple-50 text-purple-700 border-purple-200'
-                }`}
+                  }`}
               >
                 {thread.context.type === 'channel' ? (
                   <span className="flex items-center gap-1">
@@ -274,41 +299,41 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
                       .slice()
                       .sort((a, b) => a._creationTime - b._creationTime)
                       .map((reply: any) => {
-                  const parsedReplyBody = parseMessageBody(reply.body);
-                  return (
-                    <div key={reply._id} className="flex items-start gap-3 pl-4">
-                      <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarImage src={reply.user?.image} />
-                        <AvatarFallback>{reply.user?.name?.charAt(0) || '?'}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm">{reply.user?.name || 'Unknown'}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(reply._creationTime), 'MMM d, h:mm a')}
-                          </span>
-                        </div>
-                         {parsedReplyBody.isSpecial ? (
-                          <div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-2 border border-primary/20">
-                            {parsedReplyBody.type === 'canvas' ? (
-                              <span className="text-sm font-medium flex items-center gap-1.5">
-                                <Paintbrush className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                {parsedReplyBody.content}
-                              </span>
-                            ) : (
-                              <span className="text-sm font-medium flex items-center gap-1.5">
-                                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                {parsedReplyBody.content}
-                              </span>
-                            )}
+                        const parsedReplyBody = parseMessageBody(reply.body);
+                        return (
+                          <div key={reply._id} className="flex items-start gap-3 pl-4">
+                            <Avatar className="h-8 w-8 flex-shrink-0">
+                              <AvatarImage src={reply.user?.image} />
+                              <AvatarFallback>{reply.user?.name?.charAt(0) || '?'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">{reply.user?.name || 'Unknown'}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(reply._creationTime), 'MMM d, h:mm a')}
+                                </span>
+                              </div>
+                              {parsedReplyBody.isSpecial ? (
+                                <div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-2 border border-primary/20">
+                                  {parsedReplyBody.type === 'canvas' ? (
+                                    <span className="text-sm font-medium flex items-center gap-1.5">
+                                      <Paintbrush className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                      {parsedReplyBody.content}
+                                    </span>
+                                  ) : (
+                                    <span className="text-sm font-medium flex items-center gap-1.5">
+                                      <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                      {parsedReplyBody.content}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-sm break-words">{parsedReplyBody.content}</p>
+                              )}
+                            </div>
                           </div>
-                        ) : (
-                          <p className="text-sm break-words">{parsedReplyBody.content}</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                    })}
+                        );
+                      })}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
