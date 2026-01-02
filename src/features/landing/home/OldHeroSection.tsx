@@ -39,7 +39,7 @@ export const HeroSection = () => {
       y: 0,
       transition: {
         duration: 0.5,
-        ease: [0.25, 0.1, 0.25, 1.0],
+        ease: [0.25, 0.1, 0.25, 1.0] as any,
       },
     },
   };
@@ -51,7 +51,7 @@ export const HeroSection = () => {
       scale: 1,
       transition: {
         duration: 0.7,
-        ease: [0.25, 0.1, 0.25, 1.0],
+        ease: [0.25, 0.1, 0.25, 1.0] as any,
         delay: 0.6,
       },
     },

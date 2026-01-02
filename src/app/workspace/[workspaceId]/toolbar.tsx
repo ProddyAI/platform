@@ -72,6 +72,7 @@ export const WorkspaceToolbar = ({
     );
     console.log('searchQuery:', searchQuery, 'normalMessageResults:', normalMessageResults);
     // Removed setSearchQuery from effects to ensure input is only controlled by onValueChange
+    const [aiSearchTrigger, setAiSearchTrigger] = useState<string>('');
     
     React.useEffect(() => {
         if (!isAiMode) {
@@ -87,6 +88,12 @@ export const WorkspaceToolbar = ({
             setAiError(null);
             return;
         }
+        
+        // Only trigger when aiSearchTrigger changes (on Enter key)
+        if (aiQuery !== aiSearchTrigger) {
+            return;
+        }
+        
         let active = true;
         setIsSearchingMessages(true);
         setAiError(null);
@@ -113,49 +120,7 @@ export const WorkspaceToolbar = ({
         return () => {
             active = false;
         };
-    }, [isAiMode, searchQuery, workspaceId, simpleAiSearch]);
-
-    React.useEffect(() => {
-        if (!isAiMode) {
-            setMessageResults([]);
-            setIsSearchingMessages(false);
-            setAiError(null);
-            return;
-        }
-        const aiQuery = searchQuery.replace('/ai ', '').trim();
-        if (!aiQuery || !workspaceId) {
-            setMessageResults([]);
-            setIsSearchingMessages(false);
-            setAiError(null);
-            return;
-        }
-        let active = true;
-        setIsSearchingMessages(true);
-        setAiError(null);
-        simpleAiSearch({ workspaceId, query: aiQuery })
-            .then((res) => {
-                if (!active) return;
-                setMessageResults(
-                    res.sources.map((msg) => ({
-                        id: msg.id,
-                        text: msg.text,
-                        summary: res.answer
-                    }))
-                );
-                setIsSearchingMessages(false);
-            })
-            .catch((err) => {
-                if (!active) return;
-                setMessageResults([]);
-                setIsSearchingMessages(false);
-                setAiError('AI search failed');
-
-                console.error('AI search error:', err);
-            });
-        return () => {
-            active = false;
-        };
-    }, [isAiMode, searchQuery, workspaceId, simpleAiSearch]);
+    }, [isAiMode, aiSearchTrigger, workspaceId, simpleAiSearch]);
 
     useEffect(() => {
         const openUserSettings = searchParams.get('openUserSettings');
@@ -230,6 +195,12 @@ export const WorkspaceToolbar = ({
                         placeholder={`Search ${workspace?.name ?? 'workspace'}...`}
                         value={searchQuery}
                         onValueChange={(val: string) => setSearchQuery(val)}
+                        onKeyDown={(e: React.KeyboardEvent) => {
+                            if (e.key === 'Enter' && isAiMode) {
+                                const aiQuery = searchQuery.replace('/ai ', '').trim();
+                                setAiSearchTrigger(aiQuery);
+                            }
+                        }}
                     />
                     <CommandList>
                         <CommandEmpty>

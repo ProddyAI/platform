@@ -76,9 +76,9 @@ type FilterTypes = {
 };
 
 // Initialize RAG component with workspace and content type filters
-const rag = new RAG<FilterTypes>(components.rag, {
+const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ['workspaceId', 'contentType', 'channelId'],
-	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004'),
+	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004') as any,
 	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
 });
 

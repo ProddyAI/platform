@@ -265,7 +265,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 			let text;
 			try {
 				const response = await generateText({
-					model: google('gemini-2.5-flash'),
+					model: google('gemini-2.5-flash') as any,
 					messages: [
 						{
 							role: 'system',
@@ -277,12 +277,11 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 						},
 					],
 					temperature: 0.7, // Add some randomness
-					maxTokens: 200, // Limit response size
-				});
+			});
 
-				text = response.text;
-			} catch (error) {
-				const aiError = error as Error;
+			text = response.text;
+		} catch (error) {
+			const aiError = error as Error;
 				console.error('Error calling Gemini API:', aiError);
 				// Return fallback suggestions instead of throwing
 				return NextResponse.json({

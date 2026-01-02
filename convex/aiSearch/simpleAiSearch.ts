@@ -1,7 +1,7 @@
 import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { api } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 
@@ -61,8 +61,12 @@ export const simpleAiSearch = action({
       .map((m: any) => m.plainText ? m.plainText : extractText(m.body))
       .join("\n");
 
+    const openrouter = createOpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
+    });
+
     const result = await generateText({
-      model: google("models/gemini-2.5-flash"),
+      model: openrouter("meta-llama/llama-3.2-3b-instruct:free") as any,
       prompt: `
     Answer the user's question using ONLY the messages below.
     Provide a concise summary of the relevant information from messages that match the user's query.
@@ -75,7 +79,6 @@ Messages:
 ${context}
 `,
       temperature: 0.3,
-      maxTokens: 300,
     });
 
     return {
