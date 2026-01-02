@@ -10,12 +10,29 @@ import { mutation } from './_generated/server';
 
 const CustomPassword = Password<DataModel>({
 	profile(params) {
-		// Normalize email to lowercase to prevent lookup issues
+		// Normalize email to lowercase to prevent lookup issues during signup
 		const email = (params.email as string).toLowerCase().trim();
 		return {
 			email: email,
 			name: params.name as string,
 		};
+	},
+	// Normalize email during login lookup as well
+	async verify(params, ctx) {
+		// Normalize the email for consistent lookup
+		const normalizedEmail = (params.email as string).toLowerCase().trim();
+		
+		// Find user by normalized email
+		const user = await ctx.db
+			.query('users')
+			.withIndex('email', (q) => q.eq('email', normalizedEmail))
+			.first();
+		
+		if (!user) {
+			throw new Error('Invalid email or password');
+		}
+		
+		return { userId: user._id };
 	},
 });
 

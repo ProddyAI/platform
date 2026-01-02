@@ -129,7 +129,41 @@ export const ChannelsManagement = ({
       });
 
       if (!result.ok) {
-        throw new Error("Failed to upload image");
+        // Parse error response for detailed error messages
+        let errorMessage = "Failed to upload image";
+        
+        // Provide specific error based on HTTP status
+        if (result.status === 400) {
+          errorMessage = "Invalid file format. Please upload a valid image file.";
+        } else if (result.status === 401 || result.status === 403) {
+          errorMessage = "Authentication failed. Please try logging in again.";
+        } else if (result.status === 413) {
+          errorMessage = "Image file is too large. Maximum size is 5MB.";
+        } else if (result.status === 415) {
+          errorMessage = "Unsupported file type. Please use PNG, JPG, GIF, or WebP.";
+        } else if (result.status === 500 || result.status === 502 || result.status === 503) {
+          errorMessage = "Server error. Please try again in a few moments.";
+        } else if (result.status === 504) {
+          errorMessage = "Upload timeout. Please check your connection and try again.";
+        }
+        
+        // Try to get more specific error from response
+        try {
+          const errorData = await result.json();
+          if (errorData.message || errorData.error) {
+            errorMessage = errorData.message || errorData.error;
+          }
+        } catch {
+          // If JSON parsing fails, use status text if available
+          if (result.statusText) {
+            errorMessage = `${errorMessage} (${result.statusText})`;
+          }
+        }
+
+        // Throw error with HTTP status for better error handling
+        const error = new Error(errorMessage);
+        (error as any).status = result.status;
+        throw error;
       }
 
       const { storageId } = await result.json();
@@ -147,11 +181,26 @@ export const ChannelsManagement = ({
     } catch (error) {
       console.error("Failed to upload new channel icon:", error);
       
-      // Provide specific error messages based on error type
+      // Provide specific error messages based on error type and HTTP status
       if (error instanceof TypeError && error.message.includes("fetch")) {
         toast.error("Network error: Unable to connect to the server. Please check your internet connection.");
       } else if (error instanceof Error) {
-        if (error.message.includes("upload URL")) {
+        const status = (error as any).status;
+        
+        // Handle HTTP status codes
+        if (status === 400) {
+          toast.error("Invalid file format. Please upload a valid image file (PNG, JPG, SVG).");
+        } else if (status === 401 || status === 403) {
+          toast.error("You don't have permission to upload images. Please try logging in again.");
+        } else if (status === 413) {
+          toast.error("Image file is too large. Maximum size is 5MB.");
+        } else if (status === 415) {
+          toast.error("Unsupported file type. Please use PNG, JPG, or SVG format.");
+        } else if (status === 500 || status === 502 || status === 503) {
+          toast.error("Server error. Please try again in a few moments.");
+        } else if (status === 504) {
+          toast.error("Upload timeout. Please check your connection and try again.");
+        } else if (error.message.includes("upload URL")) {
           toast.error("Failed to get upload URL. Please try again.");
         } else if (error.message.includes("upload image")) {
           toast.error("Server rejected the upload. Please ensure the image is valid and try again.");
@@ -199,7 +248,41 @@ export const ChannelsManagement = ({
       });
 
       if (!result.ok) {
-        throw new Error("Failed to upload image");
+        // Parse error response for detailed error messages
+        let errorMessage = "Failed to upload image";
+        
+        // Provide specific error based on HTTP status
+        if (result.status === 400) {
+          errorMessage = "Invalid file format. Please upload a valid image file.";
+        } else if (result.status === 401 || result.status === 403) {
+          errorMessage = "Authentication failed. Please try logging in again.";
+        } else if (result.status === 413) {
+          errorMessage = "Image file is too large. Maximum size is 5MB.";
+        } else if (result.status === 415) {
+          errorMessage = "Unsupported file type. Please use PNG, JPG, GIF, or WebP.";
+        } else if (result.status === 500 || result.status === 502 || result.status === 503) {
+          errorMessage = "Server error. Please try again in a few moments.";
+        } else if (result.status === 504) {
+          errorMessage = "Upload timeout. Please check your connection and try again.";
+        }
+        
+        // Try to get more specific error from response
+        try {
+          const errorData = await result.json();
+          if (errorData.message || errorData.error) {
+            errorMessage = errorData.message || errorData.error;
+          }
+        } catch {
+          // If JSON parsing fails, use status text if available
+          if (result.statusText) {
+            errorMessage = `${errorMessage} (${result.statusText})`;
+          }
+        }
+
+        // Throw error with HTTP status for better error handling
+        const error = new Error(errorMessage);
+        (error as any).status = result.status;
+        throw error;
       }
 
       const { storageId } = await result.json();
@@ -217,11 +300,26 @@ export const ChannelsManagement = ({
     } catch (error) {
       console.error("Failed to upload edit channel icon:", error);
       
-      // Provide specific error messages based on error type
+      // Provide specific error messages based on error type and HTTP status
       if (error instanceof TypeError && error.message.includes("fetch")) {
         toast.error("Network error: Unable to connect to the server. Please check your internet connection.");
       } else if (error instanceof Error) {
-        if (error.message.includes("upload URL")) {
+        const status = (error as any).status;
+        
+        // Handle HTTP status codes
+        if (status === 400) {
+          toast.error("Invalid file format. Please upload a valid image file (PNG, JPG, SVG).");
+        } else if (status === 401 || status === 403) {
+          toast.error("You don't have permission to upload images. Please try logging in again.");
+        } else if (status === 413) {
+          toast.error("Image file is too large. Maximum size is 5MB.");
+        } else if (status === 415) {
+          toast.error("Unsupported file type. Please use PNG, JPG, or SVG format.");
+        } else if (status === 500 || status === 502 || status === 503) {
+          toast.error("Server error. Please try again in a few moments.");
+        } else if (status === 504) {
+          toast.error("Upload timeout. Please check your connection and try again.");
+        } else if (error.message.includes("upload URL")) {
           toast.error("Failed to get upload URL. Please try again.");
         } else if (error.message.includes("upload image")) {
           toast.error("Server rejected the upload. Please ensure the image is valid and try again.");
@@ -285,7 +383,24 @@ export const ChannelsManagement = ({
       setNewChannelIconPreview(undefined);
       setCreateDialogOpen(false);
     } catch (error) {
-      toast.error("Failed to create channel");
+      console.error("Failed to create channel:", error);
+      
+      // Provide specific error messages based on error type
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        toast.error("Network error: Unable to connect to the server. Please check your internet connection.");
+      } else if (error instanceof Error) {
+        if (error.message.includes("already exists") || error.message.includes("duplicate")) {
+          toast.error("A channel with this name already exists. Please choose a different name.");
+        } else if (error.message.includes("permission") || error.message.includes("unauthorized")) {
+          toast.error("You don't have permission to create channels in this workspace.");
+        } else if (error.message.includes("limit")) {
+          toast.error("Channel limit reached. Please delete some channels before creating new ones.");
+        } else {
+          toast.error(`Failed to create channel: ${error.message}`);
+        }
+      } else {
+        toast.error("An unexpected error occurred while creating the channel. Please try again.");
+      }
     } finally {
       setIsCreating(false);
     }
@@ -317,7 +432,24 @@ export const ChannelsManagement = ({
       setEditChannelId(null);
       setEditDialogOpen(false);
     } catch (error) {
-      toast.error("Failed to update channel");
+      console.error("Failed to update channel:", error);
+      
+      // Provide specific error messages based on error type
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        toast.error("Network error: Unable to connect to the server. Please check your internet connection.");
+      } else if (error instanceof Error) {
+        if (error.message.includes("not found")) {
+          toast.error("Channel not found. It may have been deleted by another user.");
+        } else if (error.message.includes("already exists") || error.message.includes("duplicate")) {
+          toast.error("A channel with this name already exists. Please choose a different name.");
+        } else if (error.message.includes("permission") || error.message.includes("unauthorized")) {
+          toast.error("You don't have permission to update this channel.");
+        } else {
+          toast.error(`Failed to update channel: ${error.message}`);
+        }
+      } else {
+        toast.error("An unexpected error occurred while updating the channel. Please try again.");
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -337,7 +469,26 @@ export const ChannelsManagement = ({
       setDeleteChannelId(null);
       setDeleteDialogOpen(false);
     } catch (error) {
-      toast.error("Failed to delete channel");
+      console.error("Failed to delete channel:", error);
+      
+      // Provide specific error messages based on error type
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        toast.error("Network error: Unable to connect to the server. Please check your internet connection.");
+      } else if (error instanceof Error) {
+        if (error.message.includes("not found")) {
+          toast.error("Channel not found. It may have already been deleted.");
+        } else if (error.message.includes("permission") || error.message.includes("unauthorized")) {
+          toast.error("You don't have permission to delete this channel.");
+        } else if (error.message.includes("has messages") || error.message.includes("not empty")) {
+          toast.error("Cannot delete channel with existing messages. Please archive it instead.");
+        } else if (error.message.includes("general") || error.message.includes("default")) {
+          toast.error("The general channel cannot be deleted.");
+        } else {
+          toast.error(`Failed to delete channel: ${error.message}`);
+        }
+      } else {
+        toast.error("An unexpected error occurred while deleting the channel. Please try again.");
+      }
     } finally {
       setIsDeleting(false);
     }

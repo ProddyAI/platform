@@ -157,12 +157,12 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
                 key={task._id}
                 className={`overflow-hidden border-2 ${task.completed ? 'bg-muted/20' : ''}`}
               >
-                <CardContent className="p-3">
+                <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 rounded-full"
+                      className="h-6 w-6 rounded-full flex-shrink-0 mt-0.5"
                       onClick={() => handleToggleTaskCompletion(task._id, task.completed)}
                       disabled={updatingTaskId === task._id}
                     >
@@ -174,37 +174,31 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
                         <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
                       )}
                     </Button>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <p className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.title}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          {getPriorityBadge(task.priority)}
-                          {task.dueDate && (
-                            <div className={`flex items-center text-xs ${new Date(task.dueDate) < new Date() && !task.completed
-                              ? 'text-red-500'
-                              : 'text-muted-foreground'
-                              }`}>
-                              <Clock className="mr-1 h-3 w-3" />
-                              {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
-                              {new Date(task.dueDate) < new Date() && !task.completed && (
-                                <AlertCircle className="ml-1 h-3 w-3" />
-                              )}
-                            </div>
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <p className={`font-medium break-words leading-tight ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                        {task.title}
+                      </p>
+                      {getPriorityBadge(task.priority)}
+                      {task.dueDate && (
+                        <div className={`flex items-center text-xs ${new Date(task.dueDate) < new Date() && !task.completed
+                          ? 'text-red-500'
+                          : 'text-muted-foreground'
+                          }`}>
+                          <Clock className="mr-1 h-3 w-3 flex-shrink-0" />
+                          <span>{formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}</span>
+                          {new Date(task.dueDate) < new Date() && !task.completed && (
+                            <AlertCircle className="ml-1 h-3 w-3 flex-shrink-0" />
                           )}
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="border-2 text-xs">
-                          {getCategoryName(task.categoryId)}
-                        </Badge>
-                      </div>
+                      )}
+                      <Badge variant="outline" className="border-2 text-xs w-fit">
+                        {getCategoryName(task.categoryId)}
+                      </Badge>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-xs text-primary"
+                      className="h-7 text-xs text-primary flex-shrink-0"
                       onClick={() => handleViewTask(task._id)}
                     >
                       View

@@ -425,13 +425,21 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
       </div>
 
       {/* Gantt Chart Content */}
-      <div className="flex-1 overflow-auto overflow-x-auto scrollbar-hide" ref={timelineContainerRef} style={{ msOverflowStyle: 'none', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex-1 overflow-auto overflow-x-auto" ref={timelineContainerRef} style={{ WebkitOverflowScrolling: 'touch' }}>
         <style jsx>{`
           ::-webkit-scrollbar {
-            width: 0px;
-            height: 0px;
+            width: 8px;
+            height: 8px;
+          }
+          ::-webkit-scrollbar-track {
             background: transparent;
-            display: none;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
           }
         `}</style>
         {/* Timeline Header */}

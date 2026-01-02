@@ -69,9 +69,23 @@ export const LineChart = ({
       const svgRect = svgElement.getBoundingClientRect();
       const pointRect = pointElement.getBoundingClientRect();
       
+      // Validate that the rects are valid and have proper dimensions
+      if (!svgRect.width || !svgRect.height || !pointRect.width || !pointRect.height) {
+        console.warn('LineChart: Invalid bounding rectangles for tooltip positioning');
+        setTooltipPos(null);
+        return;
+      }
+      
       // Calculate position relative to the container
       const left = pointRect.left - svgRect.left + pointRect.width / 2;
       const top = pointRect.top - svgRect.top;
+
+      // Validate calculated positions are finite numbers
+      if (!isFinite(left) || !isFinite(top)) {
+        console.warn('LineChart: Calculated positions are not finite numbers');
+        setTooltipPos(null);
+        return;
+      }
 
       setTooltipPos({
         left: `${left}px`,
