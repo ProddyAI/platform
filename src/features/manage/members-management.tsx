@@ -11,6 +11,7 @@ import {
   Eye,
   EyeOff,
   Copy,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -79,10 +80,22 @@ export const MembersManagement = ({
   const isOwner = currentMember.role === "owner";
   const isAdmin = currentMember.role === "admin";
 
+  // Count the number of owners in the workspace
+  const ownerCount = members?.filter((m) => m.role === "owner").length || 0;
+  const isOnlyOwner = isOwner && ownerCount === 1;
+
   const handleUpdateRole = async (
     memberId: Id<"members">,
     role: "owner" | "admin" | "member"
   ) => {
+    // Prevent the only owner from downgrading themselves
+    if (memberId === currentMember._id && isOnlyOwner && role !== "owner") {
+      toast.error("Cannot change role", {
+        description: "You are the only owner. Assign another owner first before changing your role.",
+      });
+      return;
+    }
+
     setIsUpdating(true);
 
     try {
@@ -140,6 +153,13 @@ export const MembersManagement = ({
   };
 
   const handleCopyJoinCode = () => {
+    if (!workspace) return;
+
+    navigator.clipboard.writeText(workspace.joinCode);
+    toast.success("Join code copied to clipboard");
+  };
+
+  const handleCopyJoinLink = () => {
     if (!workspace) return;
 
     const joinLink = `${window.location.origin}/join/${workspaceId}`;
@@ -211,9 +231,26 @@ export const MembersManagement = ({
                     )}
                   </Button>
                 </div>
-                <Button variant="outline" onClick={handleCopyJoinCode}>
-                  <Copy className="h-4 w-4" />
+                <div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyJoinCode}
+                  className="gap-1.5 h-8 px-2.5"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline text-xs italic font-medium">Copy Code</span>
                 </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyJoinLink}
+                  className="gap-1.5 h-8 px-2.5"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline text-xs italic font-medium">Copy Link</span>
+                </Button>
+                <div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
                 <Button
                   variant="outline"
                   onClick={handleGenerateNewCode}
@@ -283,10 +320,11 @@ export const MembersManagement = ({
                       {member.role}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                   <TableCell>
                     <div className="flex items-center gap-2">
                       {/* Role Management Dropdown */}
-                      {(isOwner || (isAdmin && member.role === "member")) && (
+                      {(isOwner || (isAdmin && member.role === "member")) && 
+                       !(member._id === currentMember._id && isOnlyOwner) && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -330,6 +368,12 @@ export const MembersManagement = ({
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      )}
+                      {/* Show a badge for the only owner instead of role change button */}
+                      {member._id === currentMember._id && isOnlyOwner && (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          Only Owner
+                        </Badge>
                       )}
 
                       {/* Remove Member Button */}

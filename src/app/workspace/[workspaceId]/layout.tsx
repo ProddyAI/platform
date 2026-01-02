@@ -75,7 +75,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
             {/* Fixed-width sidebar with collapse/expand functionality */}
             <div
               className={cn(
-                "h-full bg-primary/50 overflow-y-auto overflow-x-hidden",
+                "h-full bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
                 "transition-all duration-300 ease-in-out flex-shrink-0 relative z-10",
                 isCollapsed ? "w-[70px]" : "w-[280px]"
               )}

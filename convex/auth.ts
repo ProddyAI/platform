@@ -10,8 +10,10 @@ import { mutation } from './_generated/server';
 
 const CustomPassword = Password<DataModel>({
 	profile(params) {
+		// Normalize email to lowercase to prevent lookup issues
+		const email = (params.email as string).toLowerCase().trim();
 		return {
-			email: params.email as string,
+			email: email,
 			name: params.name as string,
 		};
 	},

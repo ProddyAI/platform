@@ -164,7 +164,11 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
               size="sm"
             >
               <div className="flex items-center">
-                {channel.icon ? (
+                {channel.iconImageUrl ? (
+                  <div className="mr-2 h-5 w-5 rounded-full overflow-hidden">
+                    <img src={channel.iconImageUrl} alt={channel.name} className="h-full w-full object-cover" />
+                  </div>
+                ) : channel.icon ? (
                   <span className="mr-2 text-xl">{channel.icon}</span>
                 ) : (
                   <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 mr-2">
@@ -180,7 +184,11 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
           <DialogContent className="overflow-hidden bg-gray-50 p-0">
             <DialogHeader className="border-b bg-white p-4">
               <DialogTitle className="flex items-center">
-                {channel.icon ? (
+                {channel.iconImageUrl ? (
+                  <div className="mr-2 h-6 w-6 rounded-full overflow-hidden">
+                    <img src={channel.iconImageUrl} alt={channel.name} className="h-full w-full object-cover" />
+                  </div>
+                ) : channel.icon ? (
                   <span className="mr-2 text-xl">{channel.icon}</span>
                 ) : (
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 mr-2">
@@ -210,8 +218,10 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
                       </div>
 
                       <div className="flex items-center gap-3 mt-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200">
-                          {channel.icon ? (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
+                          {channel.iconImageUrl ? (
+                            <img src={channel.iconImageUrl} alt={channel.name} className="h-full w-full object-cover" />
+                          ) : channel.icon ? (
                             <span className="text-xl">{channel.icon}</span>
                           ) : (
                             <span className="text-sm font-medium text-gray-600">{channel.name.charAt(0).toLowerCase()}</span>
@@ -220,7 +230,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
                         <div>
                           <p className="text-sm font-medium"># {channel.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {channel.icon ? "Custom emoji icon" : "Default letter icon"}
+                            {channel.iconImageUrl ? "Custom image icon" : channel.icon ? "Custom emoji icon" : "Default letter icon"}
                           </p>
                         </div>
                       </div>
@@ -240,8 +250,10 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
                     </div>
 
                     <div className="flex items-center gap-3 mt-2">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200">
-                        {channel.icon ? (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
+                        {channel.iconImageUrl ? (
+                          <img src={channel.iconImageUrl} alt={channel.name} className="h-full w-full object-cover" />
+                        ) : channel.icon ? (
                           <span className="text-xl">{channel.icon}</span>
                         ) : (
                           <span className="text-sm font-medium text-gray-600">{channel.name.charAt(0).toLowerCase()}</span>
@@ -249,7 +261,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          {channel.icon ? "Custom emoji icon" : "Default letter icon"}
+                          {channel.iconImageUrl ? "Custom image icon" : channel.icon ? "Custom emoji icon" : "Default letter icon"}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Click to change the channel icon

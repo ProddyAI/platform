@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Info,
-  GripHorizontal
+  GripHorizontal,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -532,20 +533,26 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 
       {/* Task Details Sidebar */}
       {selectedTask && (
-        <div className="absolute right-0 top-0 bottom-0 w-[300px] bg-white border-l shadow-lg p-4 overflow-y-auto z-20">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-lg font-semibold truncate">{selectedTask.title}</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setSelectedTask(null)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        <div className="absolute right-0 top-0 bottom-0 w-[300px] bg-white border-l shadow-lg overflow-hidden z-20 flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 p-4 border-b bg-white">
+            <div className="flex items-start gap-3">
+              <h3 className="text-lg font-semibold flex-1 min-w-0 break-words pr-2">{selectedTask.title}</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0 flex-shrink-0 rounded-full hover:bg-gray-100 border-gray-300"
+                onClick={() => setSelectedTask(null)}
+                aria-label="Close task details"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
-          <div className="space-y-4">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-4">
             <div>
               <div className="text-xs text-muted-foreground mb-1">List</div>
               <div className="text-sm font-medium">{selectedTask.listTitle}</div>
@@ -612,6 +619,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
               </Button>
             </div>
           </div>
+        </div>
         </div>
       )}
 

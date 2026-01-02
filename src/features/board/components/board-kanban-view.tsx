@@ -136,22 +136,15 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
   };
 
   return (
-    <div className="flex flex-1 overflow-x-auto gap-4 p-4 bg-white" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="flex flex-1 overflow-hidden gap-4 p-4 bg-white">
       <style jsx>{`
+        /* Hide scrollbars completely */
         ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          display: none;
         }
-        ::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
+        * {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
       <DndContext

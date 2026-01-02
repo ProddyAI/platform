@@ -152,13 +152,31 @@ interface ChannelItemProps {
   id: Id<'channels'>;
   label: string;
   icon?: string;
+  iconImageUrl?: string | null;
   isActive?: boolean;
   isCollapsed?: boolean;
 }
 
-export const ChannelItem = ({ id, label, icon, isActive = false, isCollapsed = false }: ChannelItemProps) => {
+export const ChannelItem = ({ id, label, icon, iconImageUrl, isActive = false, isCollapsed = false }: ChannelItemProps) => {
   const workspaceId = useWorkspaceId();
   const channelFallback = label.charAt(0).toLowerCase();
+
+  // Determine what to display in the icon area
+  const renderIcon = () => {
+    if (iconImageUrl) {
+      return (
+        <img 
+          src={iconImageUrl} 
+          alt={label}
+          className="h-full w-full object-cover rounded-full"
+        />
+      );
+    }
+    if (icon) {
+      return <span className="text-base">{icon}</span>;
+    }
+    return <span className="text-xs font-medium text-gray-600">{channelFallback}</span>;
+  };
 
   return (
     <Button
@@ -177,12 +195,8 @@ export const ChannelItem = ({ id, label, icon, isActive = false, isCollapsed = f
           <div className="relative flex-shrink-0">
             <Hint label={label} side="right" align="center">
               <div className="relative">
-                <div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110">
-                  {icon ? (
-                    <span className="text-base">{icon}</span>
-                  ) : (
-                    <span className="text-xs font-medium text-gray-600">{channelFallback}</span>
-                  )}
+                <div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
+                  {renderIcon()}
                 </div>
               </div>
             </Hint>
@@ -190,12 +204,8 @@ export const ChannelItem = ({ id, label, icon, isActive = false, isCollapsed = f
         ) : (
           <>
             <div className="relative mr-2 md:mr-3 flex-shrink-0">
-              <div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110">
-                {icon ? (
-                  <span className="text-base">{icon}</span>
-                ) : (
-                  <span className="text-xs font-medium text-gray-600">{channelFallback}</span>
-                )}
+              <div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
+                {renderIcon()}
               </div>
             </div>
             <span className="truncate min-w-0 text-sm flex-1">{label}</span>

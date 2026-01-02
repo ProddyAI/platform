@@ -65,26 +65,25 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
         lowest: cards.filter(c => c.priority === 'lowest').length,
     };
 
-    // Always use a consistent width for better horizontal scrolling
+    // Calculate responsive width based on number of lists
     const getWidthClass = () => {
-        return "w-80 min-w-[320px] max-w-[400px] flex-shrink-0";
+        if (listCount <= 3) {
+            return "flex-1 min-w-[280px]";
+        } else if (listCount === 4) {
+            return "flex-1 min-w-[250px]";
+        } else if (listCount === 5) {
+            return "flex-1 min-w-[220px]";
+        } else {
+            return "flex-1 min-w-[200px]";
+        }
     };
 
     return (
         <>
             <style jsx>{`
+                /* Hide scrollbars for list cards */
                 ::-webkit-scrollbar {
-                    width: 6px;
-                }
-                ::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                ::-webkit-scrollbar-thumb {
-                    background: #cbd5e1;
-                    border-radius: 3px;
-                }
-                ::-webkit-scrollbar-thumb:hover {
-                    background: #94a3b8;
+                    display: none;
                 }
             `}</style>
             <div

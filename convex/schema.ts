@@ -39,6 +39,7 @@ const schema = defineSchema({
 		name: v.string(),
 		workspaceId: v.id('workspaces'),
 		icon: v.optional(v.string()), // Store emoji as string
+		iconImage: v.optional(v.id('_storage')), // Store uploaded image
 	}).index('by_workspace_id', ['workspaceId']),
 
 	conversations: defineTable({

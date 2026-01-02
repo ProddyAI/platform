@@ -5,6 +5,30 @@
 /* Import react-day-picker styles */
 @import 'react-day-picker/style.css';
 
+/* Sidebar scrollbar styling to match purple background */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: rgba(74, 13, 104, 0.5); /* Darker purple for track */
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2); /* Semi-transparent white */
+  border-radius: 4px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3); /* Lighter on hover */
+}
+
+/* For Firefox */
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(74, 13, 104, 0.5);
+}
+
 @layer base {
 	:root {
 		/* Colors */

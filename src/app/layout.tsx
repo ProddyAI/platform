@@ -2,6 +2,7 @@ import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import type { Metadata, Viewport } from "next";
 import { PropsWithChildren } from "react";
 import { Analytics } from "@vercel/analytics/next";
+import { Poppins } from "next/font/google";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
@@ -14,6 +15,13 @@ import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup
 import { siteConfig } from "@/config";
 
 import "./globals.css";
+
+const poppins = Poppins({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-poppins',
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -62,7 +70,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
           <meta name="mobile-web-app-capable" content="yes" />
           <link rel="apple-touch-icon" href="/logo-nobg.png" />
         </head>
-        <body className="antialiased">
+        <body className={`${poppins.variable} antialiased font-sans`} style={{ fontFamily: 'var(--font-poppins), sans-serif' }}>
           <ConvexClientProvider>
             <JotaiProvider>
               <UsetifulProvider>
