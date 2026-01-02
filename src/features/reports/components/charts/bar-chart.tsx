@@ -11,6 +11,7 @@ interface BarChartProps {
     color?: string;
   }[];
   height?: number;
+  maxHeight?: number;
   showValues?: boolean;
   showLabels?: boolean;
   className?: string;
@@ -22,6 +23,7 @@ interface BarChartProps {
 export const BarChart = ({
   data,
   height = 200,
+  maxHeight,
   showValues = true,
   showLabels = true,
   className,
@@ -69,7 +71,7 @@ export const BarChart = ({
 
   return (
     <div className={cn("w-full h-full relative overflow-hidden", className)} ref={containerRef}>
-      <div className="flex items-end space-x-2 relative w-full" style={{ height: `${Math.min(height, 400)}px` }}>
+      <div className="flex items-end space-x-2 relative w-full" style={{ height: `${maxHeight ? Math.min(height, maxHeight) : height}px` }}>
         {data.map((item, index) => {
           const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
           const isHovered = hoveredIndex === index;

@@ -35,6 +35,9 @@ export const LineChart = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: string; left: string } | null>(null);
 
+  // Calculate tooltip position based on hovered point
+  // Note: This effect relies on the containerRef being attached to the outer div
+  // containing the SVG chart. The SVG must be a direct child with data-point-index attributes.
   useEffect(() => {
     if (hoveredIndex === null) {
       setTooltipPos(null);
@@ -43,33 +46,41 @@ export const LineChart = ({
 
     const container = containerRef.current;
     if (!container) {
+      console.warn('LineChart: Container ref not found for tooltip positioning');
       setTooltipPos(null);
       return;
     }
 
     const svgElement = container.querySelector('svg');
     if (!svgElement) {
+      console.warn('LineChart: SVG element not found within container for tooltip positioning');
       setTooltipPos(null);
       return;
     }
 
     const pointElement = svgElement.querySelector(`[data-point-index="${hoveredIndex}"]`) as SVGCircleElement;
     if (!pointElement) {
+      console.warn(`LineChart: Point element with index ${hoveredIndex} not found for tooltip positioning`);
       setTooltipPos(null);
       return;
     }
 
-    const svgRect = svgElement.getBoundingClientRect();
-    const pointRect = pointElement.getBoundingClientRect();
-    
-    // Calculate position relative to the container
-    const left = pointRect.left - svgRect.left + pointRect.width / 2;
-    const top = pointRect.top - svgRect.top;
+    try {
+      const svgRect = svgElement.getBoundingClientRect();
+      const pointRect = pointElement.getBoundingClientRect();
+      
+      // Calculate position relative to the container
+      const left = pointRect.left - svgRect.left + pointRect.width / 2;
+      const top = pointRect.top - svgRect.top;
 
-    setTooltipPos({
-      left: `${left}px`,
-      top: `${top - 30}px`
-    });
+      setTooltipPos({
+        left: `${left}px`,
+        top: `${top - 30}px`
+      });
+    } catch (error) {
+      console.error('LineChart: Error calculating tooltip position', error);
+      setTooltipPos(null);
+    }
   }, [hoveredIndex]);
 
   if (!data || data.length === 0) {
@@ -118,7 +129,7 @@ export const LineChart = ({
 
   return (
     <div className={cn("w-full h-full flex flex-col overflow-hidden", className)} ref={containerRef}>
-      <div className="relative overflow-visible px-4 py-2 flex-1" style={{ height: `${Math.min(height, 400)}px`, minHeight: '200px' }}>
+      <div className="relative overflow-visible px-4 py-2 flex-1" style={{ height: height !== undefined ? `${height}px` : undefined, minHeight: '200px' }}>
         <svg
           viewBox="0 0 100 100"
           className="w-full h-full"

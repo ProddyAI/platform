@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { Edit, Hash, Plus, RefreshCw, Save, Trash2, Upload, X, Smile } from "lucide-react";
+import { Edit, Hash, Plus, RefreshCw, Trash2, Upload, X, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,9 +100,10 @@ export const ChannelsManagement = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
+    // Validate file type - only allow safe image formats
+    const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowedImageTypes.includes(file.type)) {
+      toast.error("Please upload a JPEG, PNG, GIF, or WebP image");
       return;
     }
 
@@ -117,7 +118,7 @@ export const ChannelsManagement = ({
     try {
       const url = await generateUploadUrl({}, { throwError: true });
 
-      if (!url) {
+      if (typeof url !== "string" || url.trim().length === 0) {
         throw new Error("Failed to get upload URL");
       }
 
@@ -134,12 +135,32 @@ export const ChannelsManagement = ({
       const { storageId } = await result.json();
 
       setNewChannelIconImage(storageId);
-      setNewChannelIconPreview(URL.createObjectURL(file));
+      setNewChannelIconPreview((previousPreview) => {
+        if (previousPreview) {
+          URL.revokeObjectURL(previousPreview);
+        }
+        return URL.createObjectURL(file);
+      });
       setNewChannelIcon(undefined);
 
       toast.success("Icon image uploaded successfully");
     } catch (error) {
-      toast.error("Failed to upload icon image");
+      console.error("Failed to upload new channel icon:", error);
+      
+      // Provide specific error messages based on error type
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        toast.error("Network error: Unable to connect to the server. Please check your internet connection.");
+      } else if (error instanceof Error) {
+        if (error.message.includes("upload URL")) {
+          toast.error("Failed to get upload URL. Please try again.");
+        } else if (error.message.includes("upload image")) {
+          toast.error("Server rejected the upload. Please ensure the image is valid and try again.");
+        } else {
+          toast.error(`Upload failed: ${error.message}`);
+        }
+      } else {
+        toast.error("An unexpected error occurred while uploading the icon image. Please try again.");
+      }
     } finally {
       setIsUploadingNew(false);
     }
@@ -149,9 +170,10 @@ export const ChannelsManagement = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
+    // Validate file type - only allow safe image formats
+    const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowedImageTypes.includes(file.type)) {
+      toast.error("Please upload a JPEG, PNG, GIF, or WebP image");
       return;
     }
 
@@ -166,7 +188,7 @@ export const ChannelsManagement = ({
     try {
       const url = await generateUploadUrl({}, { throwError: true });
 
-      if (!url) {
+      if (typeof url !== "string" || url.trim().length === 0) {
         throw new Error("Failed to get upload URL");
       }
 
@@ -183,12 +205,32 @@ export const ChannelsManagement = ({
       const { storageId } = await result.json();
 
       setEditChannelIconImage(storageId);
-      setEditChannelIconPreview(URL.createObjectURL(file));
+      setEditChannelIconPreview((previousPreview) => {
+        if (previousPreview) {
+          URL.revokeObjectURL(previousPreview);
+        }
+        return URL.createObjectURL(file);
+      });
       setEditChannelIcon(undefined);
 
       toast.success("Icon image uploaded successfully");
     } catch (error) {
-      toast.error("Failed to upload icon image");
+      console.error("Failed to upload edit channel icon:", error);
+      
+      // Provide specific error messages based on error type
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        toast.error("Network error: Unable to connect to the server. Please check your internet connection.");
+      } else if (error instanceof Error) {
+        if (error.message.includes("upload URL")) {
+          toast.error("Failed to get upload URL. Please try again.");
+        } else if (error.message.includes("upload image")) {
+          toast.error("Server rejected the upload. Please ensure the image is valid and try again.");
+        } else {
+          toast.error(`Upload failed: ${error.message}`);
+        }
+      } else {
+        toast.error("An unexpected error occurred while uploading the icon image. Please try again.");
+      }
     } finally {
       setIsUploadingEdit(false);
     }
@@ -196,7 +238,12 @@ export const ChannelsManagement = ({
 
   const clearNewIconImage = () => {
     setNewChannelIconImage(undefined);
-    setNewChannelIconPreview(undefined);
+    setNewChannelIconPreview((previousPreview) => {
+      if (previousPreview) {
+        URL.revokeObjectURL(previousPreview);
+      }
+      return undefined;
+    });
     if (newImageInputRef.current) {
       newImageInputRef.current.value = "";
     }
@@ -204,7 +251,12 @@ export const ChannelsManagement = ({
 
   const clearEditIconImage = () => {
     setEditChannelIconImage(undefined);
-    setEditChannelIconPreview(undefined);
+    setEditChannelIconPreview((previousPreview) => {
+      if (previousPreview) {
+        URL.revokeObjectURL(previousPreview);
+      }
+      return undefined;
+    });
     if (editImageInputRef.current) {
       editImageInputRef.current.value = "";
     }
@@ -523,7 +575,8 @@ export const ChannelsManagement = ({
                             e.stopPropagation();
                             if (editChannelIconPreview || editChannelIconImage) {
                               clearEditIconImage();
-                            } else {
+                            }
+                            if (editChannelIcon) {
                               setEditChannelIcon(undefined);
                             }
                           }}

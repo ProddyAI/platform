@@ -323,8 +323,8 @@ export const MembersManagement = ({
                    <TableCell>
                     <div className="flex items-center gap-2">
                       {/* Role Management Dropdown */}
-                      {(isOwner || (isAdmin && member.role === "member")) && 
-                       !(member._id === currentMember._id && isOnlyOwner) && (
+                      {(isOwner || (isAdmin && member.role === "member")) &&
+                        !(member._id === currentMember._id && isOnlyOwner) && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

@@ -65,25 +65,43 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
         lowest: cards.filter(c => c.priority === 'lowest').length,
     };
 
-    // Calculate responsive width based on number of lists
+    /**
+     * Calculate responsive width to show 4 lists per row
+     * 
+     * Responsive Design Strategy:
+     * - Uses calculated width to fit exactly 4 lists per row
+     * - Additional lists wrap to new rows below
+     * - Width calculation: (100% - 3 gaps) / 4 = (100% - 48px) / 4
+     * - gap-4 in Tailwind = 16px, so 3 gaps = 48px total
+     * - On smaller screens (< 1200px), shows 3 per row
+     * - On very small screens (< 900px), shows 2 per row
+     * - On mobile (< 600px), shows 1 per row
+     * 
+     * This ensures:
+     * - Consistent grid layout with predictable wrapping
+     * - Cards remain readable with adequate whitespace
+     * - Responsive behavior on smaller screens
+     */
     const getWidthClass = () => {
-        if (listCount <= 3) {
-            return "flex-1 min-w-[280px]";
-        } else if (listCount === 4) {
-            return "flex-1 min-w-[250px]";
-        } else if (listCount === 5) {
-            return "flex-1 min-w-[220px]";
-        } else {
-            return "flex-1 min-w-[200px]";
-        }
+        return "w-[calc(25%-12px)] min-w-[280px] max-w-[400px] xl:w-[calc(25%-12px)] lg:w-[calc(33.333%-10.667px)] md:w-[calc(50%-8px)] sm:w-full";
     };
 
     return (
         <>
             <style jsx>{`
-                /* Hide scrollbars for list cards */
+                /* Custom scrollbar styling for list cards */
                 ::-webkit-scrollbar {
-                    display: none;
+                    width: 6px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                ::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 3px;
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8;
                 }
             `}</style>
             <div
@@ -91,7 +109,7 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
                 style={style}
                 {...attributes}
                 className={cn(
-                    "bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-md flex flex-col border border-gray-200 max-h-[calc(100vh-180px)]",
+                    "bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-md flex flex-col border border-gray-200",
                     getWidthClass(),
                     isDragging && "opacity-70 border-2 border-dashed border-secondary shadow-lg"
                 )}
@@ -170,19 +188,15 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
             <div
                 ref={setDroppableRef}
                 className={cn(
-                    "flex-1 min-h-[100px] transition-colors duration-200 overflow-y-auto",
+                    "transition-colors duration-200",
                     isOver ? "bg-secondary/10 ring-2 ring-secondary/40" : "bg-transparent"
                 )}
-                style={{ 
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#cbd5e1 transparent'
-                }}
             >
                 <SortableContext items={cards.map(c => c._id)} strategy={verticalListSortingStrategy}>
-                    <div className="flex-1 p-2 flex flex-col gap-2">
+                    <div className="p-2 flex flex-col gap-2">
                         {cards.length === 0 && (
                             <div className={cn(
-                                "h-20 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground text-sm",
+                                "h-16 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground text-sm",
                                 isOver ? "border-secondary/40 bg-secondary/5" : "border-gray-200"
                             )}>
                                 {isOver ? "Drop card here" : "No cards yet"}

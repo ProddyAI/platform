@@ -11,6 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BarChart, PieChart, HorizontalBarChart } from '@/features/reports/components/charts';
 import { formatDuration } from '@/features/reports/utils/format-duration';
 
+// Time threshold constants for activity color coding
+const ONE_HOUR_IN_SECONDS = 3600;
+const FIFTEEN_MINUTES_IN_SECONDS = 900;
+
 interface UserActivityDashboardProps {
   workspaceId: Id<'workspaces'>;
   timeRange?: '1d' | '7d' | '30d';
@@ -96,9 +100,9 @@ export const UserActivityDashboard = ({ workspaceId, timeRange = '7d' }: UserAct
       const timeValue = item.totalTimeSpent || 0;
       // Color code based on time spent (in seconds)
       // Green: > 1 hour, Yellow: 15min - 1 hour, Blue: < 15min
-      const color = timeValue > 3600 
+      const color = timeValue > ONE_HOUR_IN_SECONDS 
         ? 'bg-green-500' 
-        : timeValue > 900 
+        : timeValue > FIFTEEN_MINUTES_IN_SECONDS 
           ? 'bg-yellow-500' 
           : 'bg-secondary';
       

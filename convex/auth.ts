@@ -22,10 +22,12 @@ const CustomPassword = Password<DataModel>({
 // Custom GitHub provider with proper profile mapping
 const CustomGitHub = GitHub({
 	profile(profile) {
+		// Normalize email to lowercase to prevent lookup issues
+		const email = profile.email ? profile.email.toLowerCase().trim() : '';
 		return {
 			id: profile.id.toString(),
 			name: profile.name || profile.login || '',
-			email: profile.email || '',
+			email: email,
 			image: profile.avatar_url || '',
 		};
 	},
@@ -34,10 +36,12 @@ const CustomGitHub = GitHub({
 // Custom Google provider with proper profile mapping
 const CustomGoogle = Google({
 	profile(profile) {
+		// Normalize email to lowercase to prevent lookup issues
+		const email = profile.email ? profile.email.toLowerCase().trim() : '';
 		return {
 			id: profile.sub,
 			name: profile.name || '',
-			email: profile.email || '',
+			email: email,
 			image: profile.picture || '',
 		};
 	},
@@ -45,6 +49,35 @@ const CustomGoogle = Google({
 
 export const { auth, signIn, signOut, store } = convexAuth({
 	providers: [CustomPassword, CustomGitHub, CustomGoogle],
+});
+
+// Migration function to normalize existing user emails
+export const normalizeExistingEmails = mutation({
+	args: {},
+	handler: async (ctx) => {
+		// This function should be called by an admin to normalize all existing user emails
+		// Get all users
+		const users = await ctx.db.query('users').collect();
+
+		let normalizedCount = 0;
+
+		for (const user of users) {
+			if (user.email) {
+				const normalizedEmail = user.email.toLowerCase().trim();
+				
+				// Only update if the email changed after normalization
+				if (normalizedEmail !== user.email) {
+					await ctx.db.patch(user._id, { email: normalizedEmail });
+					normalizedCount++;
+					console.log(
+						`Normalized email for user ${user._id}: ${user.email} -> ${normalizedEmail}`
+					);
+				}
+			}
+		}
+
+		return { success: true, normalizedCount };
+	},
 });
 
 // Function to clean up orphaned auth accounts

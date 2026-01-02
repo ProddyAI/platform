@@ -70,7 +70,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
           <meta name="mobile-web-app-capable" content="yes" />
           <link rel="apple-touch-icon" href="/logo-nobg.png" />
         </head>
-        <body className={`${poppins.variable} antialiased font-sans`} style={{ fontFamily: 'var(--font-poppins), sans-serif' }}>
+        <body className={`${poppins.variable} antialiased font-sans`}>
           <ConvexClientProvider>
             <JotaiProvider>
               <UsetifulProvider>

@@ -11,6 +11,7 @@ interface PieChartProps {
     color: string;
   }[];
   size?: number;
+  maxSize?: number;
   showLegend?: boolean;
   className?: string;
   formatValue?: (value: number) => string;
@@ -20,6 +21,7 @@ interface PieChartProps {
 export const PieChart = ({
   data,
   size = 200,
+  maxSize,
   showLegend = true,
   className,
   formatValue = (value) => value.toString(),
@@ -72,7 +74,7 @@ export const PieChart = ({
 
   return (
     <div className={cn("flex flex-col md:flex-row items-center gap-6 w-full h-full overflow-auto", className)}>
-      <div className="relative flex-shrink-0" style={{ width: Math.min(size, 250), height: Math.min(size, 250) }}>
+      <div className="relative flex-shrink-0" style={{ width: maxSize ? Math.min(size, maxSize) : size, height: maxSize ? Math.min(size, maxSize) : size }}>
         <svg viewBox="0 0 100 100" className="w-full h-full">
           {segments.map((segment) => {
             const isHovered = hoveredIndex === segment.index;

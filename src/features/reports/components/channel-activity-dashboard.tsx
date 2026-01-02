@@ -11,6 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BarChart, PieChart, HorizontalBarChart } from '@/features/reports/components/charts';
 import { formatDuration } from '@/features/reports/utils/format-duration';
 
+// Time threshold constants (in seconds)
+const TWO_HOURS_IN_SECONDS = 7200;
+const THIRTY_MINUTES_IN_SECONDS = 1800;
+
 interface ChannelActivityDashboardProps {
   workspaceId: Id<'workspaces'>;
   timeRange?: '1d' | '7d' | '30d';
@@ -88,9 +92,9 @@ export const ChannelActivityDashboard = ({ workspaceId, timeRange = '7d' }: Chan
       const timeValue = item.totalTimeSpent || 0;
       // Color code based on time spent (in seconds)
       // Green: > 2 hours, Yellow: 30min - 2 hours, Blue: < 30min
-      const color = timeValue > 7200 
+      const color = timeValue > TWO_HOURS_IN_SECONDS 
         ? 'bg-green-500' 
-        : timeValue > 1800 
+        : timeValue > THIRTY_MINUTES_IN_SECONDS 
           ? 'bg-yellow-500' 
           : 'bg-secondary';
       

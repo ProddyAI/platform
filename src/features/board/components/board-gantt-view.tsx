@@ -618,8 +618,8 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
                 Delete
               </Button>
             </div>
+            </div>
           </div>
-        </div>
         </div>
       )}
 

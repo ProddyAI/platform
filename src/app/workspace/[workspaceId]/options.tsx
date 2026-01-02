@@ -167,7 +167,7 @@ export const ChannelItem = ({ id, label, icon, iconImageUrl, isActive = false, i
       return (
         <img 
           src={iconImageUrl} 
-          alt={label}
+          alt={`Channel icon for ${label}`}
           className="h-full w-full object-cover rounded-full"
         />
       );
