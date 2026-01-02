@@ -65,61 +65,7 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
         lowest: cards.filter(c => c.priority === 'lowest').length,
     };
 
-    /**
-     * Calculate responsive width to show 4 lists per row on large screens
-     * 
-     * Design Rationale:
-     * The Kanban board uses a grid-based layout where lists wrap to new rows when exceeding
-     * the maximum per row. This creates a predictable, organized view similar to tools like
-     * Trello, Jira, and Asana.
-     * 
-     * Width Calculation Breakdown:
-     * 
-     * 1. XL screens (≥1280px): 4 lists per row
-     *    - Formula: w-[calc(25%-12px)]
-     *    - Calculation: (100% / 4) - (gap × (4-1) / 4)
-     *    - Where gap-4 = 16px, so 3 gaps total = 48px
-     *    - Per column gap share: 48px / 4 = 12px
-     *    - Result: Each list = 25% width - 12px for gaps
-     * 
-     * 2. LG screens (≥1024px, <1280px): 3 lists per row
-     *    - Formula: lg:w-[calc(33.333%-10.667px)]
-     *    - Calculation: (100% / 3) - (gap × (3-1) / 3)
-     *    - Per column gap share: 32px / 3 ≈ 10.667px
-     *    - Result: Each list = 33.333% width - 10.667px for gaps
-     * 
-     * 3. MD screens (≥768px, <1024px): 2 lists per row
-     *    - Formula: md:w-[calc(50%-8px)]
-     *    - Calculation: (100% / 2) - (gap × (2-1) / 2)
-     *    - Per column gap share: 16px / 2 = 8px
-     *    - Result: Each list = 50% width - 8px for gaps
-     * 
-     * 4. SM screens (<768px): 1 list per row (full width)
-     *    - Formula: sm:w-full
-     *    - Result: Each list takes 100% width (no gap calculation needed)
-     * 
-     * Width Constraints:
-     * - min-w-[280px]: Ensures lists never become too narrow to read cards comfortably
-     *   Chosen based on minimum readable width for card titles, descriptions, and metadata
-     * 
-     * - max-w-[400px]: Prevents lists from becoming excessively wide on ultra-wide screens
-     *   Maintains optimal reading width and prevents wasted whitespace
-     * 
-     * Responsive Breakpoints Reasoning:
-     * - 4 columns at XL: Optimal for productivity on standard desktop monitors (1920px+)
-     * - 3 columns at LG: Balances screen real estate on laptop screens (1366px-1440px)
-     * - 2 columns at MD: Maintains usability on tablets and small laptops
-     * - 1 column at SM: Ensures mobile-friendly experience on phones
-     * 
-     * Benefits:
-     * - Predictable wrapping behavior (always wraps at 4/3/2/1 based on screen size)
-     * - No horizontal scrolling needed - vertical scrolling for additional rows
-     * - Consistent spacing between lists maintained by gap-4 utility
-     * - Responsive design accommodates all screen sizes gracefully
-     * - Easy to scan and organize across multiple rows
-     * 
-     * @returns Tailwind CSS classes for responsive list width
-     */
+    // Responsive width: 4 lists (XL), 3 lists (LG), 2 lists (MD), 1 list (SM)
     const getWidthClass = () => {
         return "w-[calc(25%-12px)] min-w-[280px] max-w-[400px] xl:w-[calc(25%-12px)] lg:w-[calc(33.333%-10.667px)] md:w-[calc(50%-8px)] sm:w-full";
     };
