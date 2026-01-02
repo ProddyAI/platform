@@ -852,17 +852,10 @@ export const getThreadMessages = query({
 
 					let context: {
 						name: string;
-						type: 'channel' | 'conversation' | 'unknown';
+						type: 'channel' | 'conversation';
 						id: Id<'channels'> | Id<'conversations'>;
 						memberId?: Id<'members'>;
-					} = {
-						name: 'Unknown',
-						type: 'unknown',
-						id:
-							message.channelId ||
-							message.conversationId ||
-							('' as Id<'channels'> | Id<'conversations'>),
-					};
+					} | null = null;
 
 					if (message.channelId) {
 						const channel = channelMap.get(message.channelId);
@@ -893,6 +886,11 @@ export const getThreadMessages = query({
 								}
 							}
 						}
+					}
+
+					// Return null if context couldn't be determined
+					if (!context) {
+						return null;
 					}
 
 					return {

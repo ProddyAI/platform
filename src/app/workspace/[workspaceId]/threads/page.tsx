@@ -48,7 +48,7 @@ interface ThreadMessage {
   };
   context: {
     name: string;
-    type: 'channel' | 'conversation' | 'unknown';
+    type: 'channel' | 'conversation';
     id: Id<'channels'> | Id<'conversations'>;
     memberId?: Id<'members'>;
   };
