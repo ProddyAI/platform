@@ -392,6 +392,7 @@ Try asking me things like:`;
           workspaceContext,
           workspaceId,
           conversationHistory,
+          memberId: member?._id, // Pass member ID for user-specific integrations
         }),
       });
 
@@ -595,6 +596,12 @@ Try asking me things like:`;
       case "event":
       case "calendar-event":
         return "Calendar Event";
+      case "tool":
+        return "Integration Tool";
+      case "github":
+        return "GitHub";
+      case "gmail":
+        return "Gmail";
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
