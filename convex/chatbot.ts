@@ -995,7 +995,7 @@ ${messageContext}`;
 			}
 
 			const lines = (recent || [])
-				.map((m) => {
+				.map((m: any) => {
 					const channelName = String(m?.channelName ?? 'unknown').trim();
 					const who = String(m?.authorName ?? '').trim();
 					const body = truncateOneLine(String(m?.body ?? ''), 180);
@@ -1035,7 +1035,7 @@ Keep it concise: 5-10 bullets max.
 User request: ${args.query}
 
 Recent channel snippets (most recent last):
-${lines.map((l) => `- ${l}`).join('\n')}`;
+${lines.map((l: string) => `- ${l}`).join('\n')}`;
 
 			try {
 				const answer = await generateLLMResponse({
@@ -1856,7 +1856,7 @@ ${channelBlocks}`;
 				});
 
 				const lines = (recent || [])
-					.map((m) => {
+					.map((m: any) => {
 						const channelName = String(m?.channelName ?? 'unknown').trim();
 						const who = String(m?.authorName ?? '').trim();
 						const body = truncateOneLine(String(m?.body ?? ''), 180);
@@ -1886,7 +1886,7 @@ Workspace Updates (Today)
 Keep it concise: 5-12 bullets max.
 
 Recent channel snippets:
-${lines.map((l) => `- ${l}`).join('\n')}`;
+${lines.map((l: string) => `- ${l}`).join('\n')}`;
 
 					channelRecap = await generateLLMResponse({
 						prompt,

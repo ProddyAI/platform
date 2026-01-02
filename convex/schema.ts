@@ -449,6 +449,19 @@ const schema = defineSchema({
 		updatedAt: v.number(),
 		createdBy: v.id('members'),
 	}).index('by_workspace_id', ['workspaceId']),
+
+	// Thread titles for storing user-defined thread names
+	threadTitles: defineTable({
+		messageId: v.id('messages'), // Parent message ID of the thread
+		title: v.string(), // User-defined thread title
+		workspaceId: v.id('workspaces'),
+		createdBy: v.id('members'),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index('by_message_id', ['messageId'])
+		.index('by_workspace_id', ['workspaceId'])
+		.index('by_workspace_id_message_id', ['workspaceId', 'messageId']),
 });
 
 export default schema;

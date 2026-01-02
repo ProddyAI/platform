@@ -67,9 +67,8 @@ export const AddMessageToTaskModal = ({
 
     if (!title.trim()) return;
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-
       await createTaskFromMessage({
         messageId,
         workspaceId,
@@ -84,6 +83,7 @@ export const AddMessageToTaskModal = ({
     } catch (error) {
       console.error('Failed to create task from message:', error);
       toast.error('Failed to add message to tasks');
+    } finally {
       setIsSubmitting(false);
     }
   };

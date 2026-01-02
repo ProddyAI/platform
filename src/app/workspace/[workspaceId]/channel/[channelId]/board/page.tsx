@@ -279,12 +279,7 @@ const BoardPage = () => {
     if (!lists) return <div className="p-4">Loading board...</div>;
 
     return (
-        <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
-            <style jsx global>{`
-              ::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
+        <div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
             <BoardHeader
                 totalCards={allCards.length}
                 listsCount={lists?.length || 0}
@@ -294,7 +289,7 @@ const BoardPage = () => {
                 onSearch={(query) => console.log('Search:', query)}
             />
 
-            <div className="flex-1 overflow-hidden overflow-x-hidden scrollbar-hide" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+            <div className="flex-1 overflow-hidden">
                 {view === 'kanban' && (
                     <BoardKanbanView
                         lists={lists}
