@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Hash, User, Loader, MessageSquare, Paintbrush, FileText } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { toast } from 'sonner';
+import Quill from 'quill';
 
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -62,7 +63,7 @@ interface ThreadModalProps {
 export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
   const workspaceId = useWorkspaceId();
   const [editorKey, setEditorKey] = useState(0);
-  const editorRef = useRef<{ clear: () => void } | null>(null);
+  const editorRef = useRef<Quill | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
   const [allReplies, setAllReplies] = useState<any[]>([]);
@@ -190,7 +191,6 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
       }, {
         onSuccess: () => {
           setEditorKey((prev) => prev + 1);
-          editorRef.current?.clear();
         },
         throwError: true,
       });
@@ -216,8 +216,8 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
               <Badge
                 variant="outline"
                 className={`rounded-full text-xs ${thread.context.type === 'channel'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : 'bg-purple-50 text-purple-700 border-purple-200'
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : 'bg-purple-50 text-purple-700 border-purple-200'
                   }`}
               >
                 {thread.context.type === 'channel' ? (
@@ -349,7 +349,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
         <div className="border-t p-4 flex-shrink-0 bg-white dark:bg-card">
           <Editor
             key={editorKey}
-            ref={editorRef}
+            innerRef={editorRef}
             onSubmit={handleSubmit}
             disabled={isPending}
             placeholder="Reply to thread..."
