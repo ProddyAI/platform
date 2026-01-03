@@ -58,10 +58,10 @@ export const MessageList = ({
   const highlightId = searchParams.get('highlight');
   const highlightedRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (highlightedRef.current) {
+    if (highlightId && highlightedRef.current) {
       highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [highlightId]);
+  }, [highlightId, data]);
   const [isRecapModalOpen, setIsRecapModalOpen] = useState(false);
   const [recapData, setRecapData] = useState<{ recap: string; date: string; messageCount: number; isCached?: boolean } | null>(null);
   const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);
@@ -196,36 +196,45 @@ export const MessageList = ({
                 new Date(prevMessage._creationTime)
               ) < TIME_THRESHOLD;
 
-            const isHighlighted = highlightId && message._id === highlightId;
-            return (
-              <div
-                key={message._id}
-                ref={isHighlighted ? highlightedRef : undefined}
-                className={isHighlighted ? 'animate-highlight-gradient' : ''}
-              >
-                <Message
-                  id={message._id}
-                  memberId={message.memberId}
-                  authorImage={message.user.image}
-                  authorName={message.user.name}
-                  isAuthor={message.memberId === currentMember?._id}
-                  reactions={message.reactions}
-                  body={message.body}
-                  image={message.image}
-                  updatedAt={message.updatedAt}
-                  createdAt={message._creationTime}
-                  threadCount={message.threadCount}
-                  threadImage={message.threadImage}
-                  threadName={message.threadName}
-                  threadTimestamp={message.threadTimestamp}
-                  isEditing={editingId === message._id}
-                  setEditingId={setEditingId}
-                  isCompact={isCompact}
-                  hideThreadButton={variant === 'thread'}
-                  calendarEvent={message.calendarEvent}
-                />
-              </div>
+            const isHighlighted = highlightId && message._id === (highlightId as Id<'messages'>);
+            
+            const messageElement = (
+              <Message
+                id={message._id}
+                memberId={message.memberId}
+                authorImage={message.user.image}
+                authorName={message.user.name}
+                isAuthor={message.memberId === currentMember?._id}
+                reactions={message.reactions}
+                body={message.body}
+                image={message.image}
+                updatedAt={message.updatedAt}
+                createdAt={message._creationTime}
+                threadCount={message.threadCount}
+                threadImage={message.threadImage}
+                threadName={message.threadName}
+                threadTimestamp={message.threadTimestamp}
+                isEditing={editingId === message._id}
+                setEditingId={setEditingId}
+                isCompact={isCompact}
+                hideThreadButton={variant === 'thread'}
+                calendarEvent={message.calendarEvent}
+              />
             );
+
+            if (isHighlighted) {
+              return (
+                <div
+                  key={message._id}
+                  ref={highlightedRef}
+                  className="animate-highlight-gradient"
+                >
+                  {messageElement}
+                </div>
+              );
+            }
+
+            return messageElement;
           })}
 
         </div>

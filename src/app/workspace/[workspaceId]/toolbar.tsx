@@ -54,18 +54,18 @@ export const WorkspaceToolbar = ({
     const [messageResults, setMessageResults] = useState<{ 
         id: Id<'messages'>; 
         text: string; 
-        channelId?: Id<'channels'>; 
-        summary?: string;
+        channelId?: Id<'channels'>;
     }[]>([]);
     const [isSearchingMessages, setIsSearchingMessages] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
+    const [aiSummary, setAiSummary] = useState<string | null>(null);
     const aiSearchMessages = useAction(api.search.aiSearchMessages);
 
     const isAiMode = searchQuery.startsWith('/ai ');
 
     const channelMap = React.useMemo(() => {
         const map: Record<string, string> = {};
-        (channels || []).forEach((c: any) => { map[c._id] = c.name; });
+        (channels || []).forEach((c) => { map[c._id] = c.name; });
         return map;
     }, [channels]);
 
@@ -83,6 +83,7 @@ export const WorkspaceToolbar = ({
             setMessageResults([]);
             setIsSearchingMessages(false);
             setAiError(null);
+            setAiSummary(null);
             return;
         }
         const aiQuery = searchQuery.replace('/ai ', '').trim();
@@ -90,6 +91,7 @@ export const WorkspaceToolbar = ({
             setMessageResults([]);
             setIsSearchingMessages(false);
             setAiError(null);
+            setAiSummary(null);
             return;
         }
         
@@ -101,15 +103,16 @@ export const WorkspaceToolbar = ({
         let active = true;
         setIsSearchingMessages(true);
         setAiError(null);
+        setAiSummary(null);
         aiSearchMessages({ workspaceId, query: aiQuery })
             .then((res) => {
                 if (!active) return;
+                setAiSummary(res.answer);
                 setMessageResults(
                     res.sources.map((msg) => ({
                         id: msg.id,
                         text: msg.text,
-                        channelId: msg.channelId,
-                        summary: res.answer
+                        channelId: msg.channelId
                     }))
                 );
                 setIsSearchingMessages(false);
@@ -193,6 +196,7 @@ export const WorkspaceToolbar = ({
                             setMessageResults([]);
                             setIsSearchingMessages(false);
                             setAiError(null);
+                            setAiSummary(null);
                         }
                     }}
                 >
@@ -240,6 +244,12 @@ export const WorkspaceToolbar = ({
                         <CommandSeparator />
 
                         <CommandGroup heading="Messages">
+                            {/* AI mode: show AI summary once at top */}
+                            {isAiMode && aiSummary && messageResults.length > 0 && (
+                                <div className="px-2 py-3 text-xs text-muted-foreground italic border-b">
+                                    <span className="font-semibold">AI Summary:</span> {aiSummary}
+                                </div>
+                            )}
                             {/* AI mode: show AI results */}
                             {isAiMode && messageResults.length > 0 && messageResults.map((msg) => (
                                 <CommandItem 
@@ -253,9 +263,6 @@ export const WorkspaceToolbar = ({
                                 >
                                     <div>
                                         <div className="font-medium text-xs truncate max-w-[300px]">{msg.text}</div>
-                                        {msg.summary && (
-                                            <div className="text-[10px] text-muted-foreground mt-1 italic">Summary: {msg.summary}</div>
-                                        )}
                                         {msg.channelId && (
                                             <div className="text-[10px] text-muted-foreground mt-1">Channel: {channelMap[msg.channelId] || msg.channelId}</div>
                                         )}
@@ -263,7 +270,7 @@ export const WorkspaceToolbar = ({
                                 </CommandItem>
                             ))}
                             {/* Normal mode: show normal message results with channel name */}
-                            {!isAiMode && normalMessageResults && normalMessageResults.length > 0 && normalMessageResults.map((msg: any) => (
+                            {!isAiMode && normalMessageResults && normalMessageResults.length > 0 && normalMessageResults.map((msg) => (
                                 <CommandItem
                                     key={msg._id}
                                     onSelect={() => {
@@ -273,7 +280,9 @@ export const WorkspaceToolbar = ({
                                 >
                                     <div>
                                         <div className="font-medium text-xs truncate max-w-[300px]">{msg.text}</div>
-                                        <div className="text-[10px] text-muted-foreground mt-1 italic">Channel: {channelMap[msg.channelId] || msg.channelId}</div>
+                                        {msg.channelId && (
+                                            <div className="text-[10px] text-muted-foreground mt-1 italic">Channel: {channelMap[msg.channelId] || msg.channelId}</div>
+                                        )}
                                     </div>
                                 </CommandItem>
                             ))}
