@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
 		);
 
 		// Create the Gemini model
-	const model = google('gemini-2.5-flash');
+		const model = google('gemini-2.5-flash');
+
 		// Prepare the formatting prompt
 		const prompt = `You are an expert document formatter and editor. Your task is to improve the formatting, structure, and readability of the provided document while preserving all the original content and meaning.
 
@@ -82,6 +83,7 @@ Formatted Content:`;
 			const { text } = await generateText({
 				model,
 				prompt,
+				maxTokens: 4000,
 				temperature: 0.3, // Lower temperature for more consistent formatting
 			});
 

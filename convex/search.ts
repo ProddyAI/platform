@@ -76,7 +76,7 @@ type FilterTypes = {
 };
 
 // Initialize RAG component with workspace and content type filters
-const rag = new RAG<FilterTypes>(components.rag, {
+const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ['workspaceId', 'contentType', 'channelId'],
 	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004') as any,
 	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
@@ -611,6 +611,7 @@ export const getWorkspaceMessages = query({
 		return await ctx.db
 			.query('messages')
 			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
+			.order('desc')
 			.take(limit);
 	},
 });
@@ -811,5 +812,80 @@ export const searchAllSemantic = action({
 			query: args.query,
 			limit: totalLimit,
 		});
+	},
+});
+
+// AI-powered search for messages with natural language understanding
+export const aiSearchMessages = action({
+	args: {
+		workspaceId: v.id('workspaces'),
+		query: v.string(),
+	},
+	handler: async (
+		ctx,
+		args
+	): Promise<{
+		answer: string;
+		sources: { id: Id<'messages'>; text: string }[];
+	}> => {
+		const messages = await ctx.runQuery(api.search.getWorkspaceMessages, {
+			workspaceId: args.workspaceId,
+			limit: 50, // Fetch more to filter from
+		});
+
+		if (messages.length === 0) {
+			return {
+				answer: 'No messages found in this workspace.',
+				sources: [],
+			};
+		}
+
+		// Filter messages that contain query keywords
+		const queryWords = args.query.toLowerCase().split(/\s+/);
+		const relevantMessages = messages
+			.map((m: any) => ({
+				...m,
+				text: m.plainText ? m.plainText : extractTextFromRichText(m.body),
+			}))
+			.filter((m) => {
+				const messageText = m.text.toLowerCase();
+				// Message must contain at least one query word
+				return queryWords.some((word) => messageText.includes(word));
+			})
+			.slice(0, 5); // Limit to top 5 relevant messages
+
+		if (relevantMessages.length === 0) {
+			return {
+				answer: 'No messages found matching your query.',
+				sources: [],
+			};
+		}
+
+		const context = relevantMessages.map((m) => m.text).join('\n\n');
+
+		const { generateText } = await import('ai');
+		const result = await generateText({
+			model: google('gemini-2.5-flash'),
+			maxTokens: 1000,
+			prompt: `
+Answer the user's question using ONLY the messages below.
+Provide a concise, direct answer based on the relevant information.
+If the messages don't contain enough information, say so.
+
+Question: ${args.query}
+
+Relevant Messages:
+${context}
+`,
+			temperature: 0.3,
+		});
+
+		return {
+			answer: result.text.trim(),
+			sources: relevantMessages.slice(0, 3).map((m) => ({
+				id: m._id,
+				text: m.text,
+			})),
+		};
 	},
 });

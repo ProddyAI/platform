@@ -169,7 +169,6 @@ export async function POST(req: NextRequest) {
 		try {
 			const { text } = await generateText({
 				model: google('gemini-2.5-flash'),
-				maxTokens: 1000,
 				messages: [
 					{
 						role: 'system',
@@ -202,19 +201,20 @@ Your recap should be comprehensive but well-organized, making it easy for someon
 					},
 				],
 				temperature: 0.2, // Lower temperature for more consistent output
-		});
+				maxTokens: 1500, // Allow for longer recaps
+			});
 
-		// Cache the result
-		recapCache.set(cacheKey, {
-			recap: text,
-			timestamp: Date.now(),
-		});
+			// Cache the result
+			recapCache.set(cacheKey, {
+				recap: text,
+				timestamp: Date.now(),
+			});
 
-		// Prune cache if needed
-		pruneCache();
+			// Prune cache if needed
+			pruneCache();
 
-		return NextResponse.json({ recap: text, date });
-	} catch (aiError) {
+			return NextResponse.json({ recap: text, date });
+		} catch (aiError) {
 			// More efficient fallback with markdown formatting
 			const fallbackRecap =
 				limitedMessages.length > 5

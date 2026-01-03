@@ -54,7 +54,7 @@ export const WorkspaceToolbar = ({
     const [messageResults, setMessageResults] = useState<{ id: string; text: string; summary?: string }[]>([]);
     const [isSearchingMessages, setIsSearchingMessages] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
-    const simpleAiSearch = useAction(api.aiSearch.simpleAiSearch.simpleAiSearch);
+    const aiSearchMessages = useAction(api.search.aiSearchMessages);
 
     const isAiMode = searchQuery.startsWith('/ai ');
 
@@ -65,9 +65,9 @@ export const WorkspaceToolbar = ({
     }, [channels]);
 
     const normalMessageResults = useQuery(
-        api.searchMessages.searchMessages,
+        api.search.searchMessages,
         !isAiMode && searchQuery.trim() && workspaceId
-            ? { workspaceId, search: searchQuery, limit: 20 }
+            ? { workspaceId, query: searchQuery, limit: 20 }
             : 'skip'
     );
     console.log('searchQuery:', searchQuery, 'normalMessageResults:', normalMessageResults);
@@ -97,7 +97,7 @@ export const WorkspaceToolbar = ({
         let active = true;
         setIsSearchingMessages(true);
         setAiError(null);
-        simpleAiSearch({ workspaceId, query: aiQuery })
+        aiSearchMessages({ workspaceId, query: aiQuery })
             .then((res) => {
                 if (!active) return;
                 setMessageResults(
@@ -120,7 +120,7 @@ export const WorkspaceToolbar = ({
         return () => {
             active = false;
         };
-    }, [isAiMode, aiSearchTrigger, workspaceId, simpleAiSearch]);
+    }, [isAiMode, aiSearchTrigger, workspaceId, aiSearchMessages]);
 
     useEffect(() => {
         const openUserSettings = searchParams.get('openUserSettings');
