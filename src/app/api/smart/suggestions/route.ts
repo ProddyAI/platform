@@ -263,9 +263,10 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 			const userContent = `Channel name: ${channelName || 'General'}\n\nRecent conversation:\n${chatHistory}\n\nGenerate 3 contextually relevant message suggestions:`;
 
 			let text;
-			try {
+				try {
 				const response = await generateText({
-					model: google('gemini-2.5-flash') as any,
+					model: google('gemini-2.5-flash'),
+					maxTokens: 150,
 					messages: [
 						{
 							role: 'system',

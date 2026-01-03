@@ -168,7 +168,8 @@ export async function POST(req: NextRequest) {
 
 		try {
 			const { text } = await generateText({
-				model: google('gemini-2.5-flash') as any,
+				model: google('gemini-2.5-flash'),
+				maxTokens: 1000,
 				messages: [
 					{
 						role: 'system',

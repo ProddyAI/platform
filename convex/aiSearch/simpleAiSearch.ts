@@ -1,7 +1,7 @@
 import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { generateText } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { google } from "@ai-sdk/google";
 import { api } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 
@@ -45,7 +45,7 @@ export const simpleAiSearch = action({
       api.search.getWorkspaceMessages, 
       {
         workspaceId: args.workspaceId,
-        limit: 20,
+        limit: 50, // Fetch more to filter from
       }
     );
 
@@ -56,26 +56,40 @@ export const simpleAiSearch = action({
       };
     }
 
+    // Filter messages that contain query keywords
+    const queryWords = args.query.toLowerCase().split(/\s+/);
+    const relevantMessages = messages
+      .map((m: any) => ({
+        ...m,
+        text: m.plainText ? m.plainText : extractText(m.body)
+      }))
+      .filter(m => {
+        const messageText = m.text.toLowerCase();
+        // Message must contain at least one query word
+        return queryWords.some(word => messageText.includes(word));
+      })
+      .slice(0, 5); // Limit to top 5 relevant messages
 
-    const context = messages
-      .map((m: any) => m.plainText ? m.plainText : extractText(m.body))
-      .join("\n");
+    if (relevantMessages.length === 0) {
+      return {
+        answer: "No messages found matching your query.",
+        sources: [],
+      };
+    }
 
-    const openrouter = createOpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
+    const context = relevantMessages.map(m => m.text).join("\n\n");
 
     const result = await generateText({
-      model: openrouter("meta-llama/llama-3.2-3b-instruct:free") as any,
+      model: google("gemini-2.5-flash"),
+      maxTokens: 1000,
       prompt: `
-    Answer the user's question using ONLY the messages below.
-    Provide a concise summary of the relevant information from messages that match the user's query.
-If the messages are insufficient, say so clearly.
+Answer the user's question using ONLY the messages below.
+Provide a concise, direct answer based on the relevant information.
+If the messages don't contain enough information, say so.
 
-Question:
-${args.query}
+Question: ${args.query}
 
-Messages:
+Relevant Messages:
 ${context}
 `,
       temperature: 0.3,
@@ -83,9 +97,9 @@ ${context}
 
     return {
       answer: result.text.trim(),
-      sources: messages.slice(0, 5).map((m: any) => ({
+      sources: relevantMessages.slice(0, 3).map(m => ({
         id: m._id,
-        text: m.plainText ? m.plainText : extractText(m.body),
+        text: m.text,
       })),
     };
   },

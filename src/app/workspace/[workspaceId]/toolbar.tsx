@@ -197,6 +197,7 @@ export const WorkspaceToolbar = ({
                         onValueChange={(val: string) => setSearchQuery(val)}
                         onKeyDown={(e: React.KeyboardEvent) => {
                             if (e.key === 'Enter' && isAiMode) {
+                                e.preventDefault(); // Prevent closing the dialog
                                 const aiQuery = searchQuery.replace('/ai ', '').trim();
                                 setAiSearchTrigger(aiQuery);
                             }
