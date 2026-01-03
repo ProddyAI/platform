@@ -283,9 +283,9 @@ export const OverviewDashboard = ({ workspaceId, timeRange = '7d' }: OverviewDas
       </div>
 
       {/* Activity Trends and Task Completion */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[500px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Activity Trend Card */}
-        <Card className="flex flex-col h-full">
+        <Card className="flex flex-col">
           <CardHeader className="pb-4 flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-secondary" />
@@ -295,20 +295,18 @@ export const OverviewDashboard = ({ workspaceId, timeRange = '7d' }: OverviewDas
               Daily message activity over the selected time period
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-6 pt-0">
+          <CardContent className="flex-1 flex flex-col p-6 pt-0 min-h-0">
             {activityTrendData.length > 0 ? (
-              <div className="flex-1 flex items-center justify-center min-h-[350px] overflow-hidden">
-                <div className="w-full h-full max-w-full">
-                  <LineChart
-                    data={activityTrendData}
-                    height={350}
-                    formatValue={(value) => `${value} messages`}
-                    className="w-full h-full"
-                  />
-                </div>
+              <div className="flex-1 flex items-center justify-center h-[400px] max-h-[400px] overflow-hidden">
+                <LineChart
+                  data={activityTrendData}
+                  height={350}
+                  formatValue={(value) => `${value} messages`}
+                  className="w-full h-full"
+                />
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center min-h-[350px]">
+              <div className="flex-1 flex items-center justify-center h-[400px]">
                 <div className="text-center p-8 bg-muted/20 rounded-lg w-full">
                   <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-muted-foreground mb-2">No activity data available</h3>
@@ -322,7 +320,7 @@ export const OverviewDashboard = ({ workspaceId, timeRange = '7d' }: OverviewDas
         </Card>
 
         {/* Task Completion Card */}
-        <Card className="flex flex-col h-full">
+        <Card className="flex flex-col">
           <CardHeader className="pb-4 flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
               <CheckSquare className="h-5 w-5 text-secondary" />
@@ -332,9 +330,9 @@ export const OverviewDashboard = ({ workspaceId, timeRange = '7d' }: OverviewDas
               Overall task completion rate and progress
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-6 pt-0">
+          <CardContent className="flex-1 flex flex-col p-6 pt-0 min-h-0">
             {taskCompletionData.length > 0 && taskData ? (
-              <div className="flex-1 flex flex-col items-center justify-center min-h-[350px] space-y-6">
+              <div className="flex-1 flex flex-col items-center justify-center h-[400px] max-h-[400px] overflow-auto space-y-6">
                 {/* Pie Chart */}
                 <div className="relative flex-shrink-0">
                   <PieChart
@@ -394,7 +392,7 @@ export const OverviewDashboard = ({ workspaceId, timeRange = '7d' }: OverviewDas
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center min-h-[350px]">
+              <div className="flex-1 flex items-center justify-center h-[400px]">
                 <div className="text-center p-8 bg-muted/20 rounded-lg w-full">
                   <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-muted-foreground mb-2">No task data available</h3>

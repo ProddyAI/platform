@@ -289,7 +289,7 @@ const BoardPage = () => {
                 onSearch={(query) => console.log('Search:', query)}
             />
 
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-auto">
                 {view === 'kanban' && (
                     <BoardKanbanView
                         lists={lists}

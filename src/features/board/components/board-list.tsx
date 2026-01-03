@@ -65,14 +65,15 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
         lowest: cards.filter(c => c.priority === 'lowest').length,
     };
 
-    // Always use a consistent width for better horizontal scrolling
+    // Responsive width: 4 lists (XL), 3 lists (LG), 2 lists (MD), 1 list (SM)
     const getWidthClass = () => {
-        return "w-80 min-w-[320px] max-w-[400px] flex-shrink-0";
+        return "w-[calc(25%-12px)] min-w-[280px] max-w-[400px] xl:w-[calc(25%-12px)] lg:w-[calc(33.333%-10.667px)] md:w-[calc(50%-8px)] sm:w-full";
     };
 
     return (
         <>
             <style jsx>{`
+                /* Custom scrollbar styling for list cards */
                 ::-webkit-scrollbar {
                     width: 6px;
                 }
@@ -92,7 +93,7 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
                 style={style}
                 {...attributes}
                 className={cn(
-                    "bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-md flex flex-col border border-gray-200 max-h-[calc(100vh-180px)]",
+                    "bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-md flex flex-col border border-gray-200",
                     getWidthClass(),
                     isDragging && "opacity-70 border-2 border-dashed border-secondary shadow-lg"
                 )}
@@ -171,19 +172,15 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
             <div
                 ref={setDroppableRef}
                 className={cn(
-                    "flex-1 min-h-[100px] transition-colors duration-200 overflow-y-auto",
+                    "transition-colors duration-200",
                     isOver ? "bg-secondary/10 ring-2 ring-secondary/40" : "bg-transparent"
                 )}
-                style={{ 
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#cbd5e1 transparent'
-                }}
             >
                 <SortableContext items={cards.map(c => c._id)} strategy={verticalListSortingStrategy}>
-                    <div className="flex-1 p-2 flex flex-col gap-2">
+                    <div className="p-2 flex flex-col gap-2">
                         {cards.length === 0 && (
                             <div className={cn(
-                                "h-20 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground text-sm",
+                                "h-16 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground text-sm",
                                 isOver ? "border-secondary/40 bg-secondary/5" : "border-gray-200"
                             )}>
                                 {isOver ? "Drop card here" : "No cards yet"}

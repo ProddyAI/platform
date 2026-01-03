@@ -56,6 +56,7 @@ export const update = mutation({
 		id: v.id('channels'),
 		name: v.string(),
 		icon: v.optional(v.string()),
+		iconImage: v.optional(v.id('_storage')),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -88,12 +89,16 @@ export const update = mutation({
 
 		const parsedName = args.name.replace(/\s+/g, '-').toLowerCase();
 
-		const updateData: { name: string; icon?: string } = {
+		const updateData: { name: string; icon?: string; iconImage?: typeof args.iconImage } = {
 			name: parsedName,
 		};
 
 		if (args.icon !== undefined) {
 			updateData.icon = args.icon;
+		}
+
+		if (args.iconImage !== undefined) {
+			updateData.iconImage = args.iconImage;
 		}
 
 		await ctx.db.patch(args.id, updateData);
@@ -107,6 +112,7 @@ export const create = mutation({
 		name: v.string(),
 		workspaceId: v.id('workspaces'),
 		icon: v.optional(v.string()),
+		iconImage: v.optional(v.id('_storage')),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -132,6 +138,7 @@ export const create = mutation({
 			name: parsedName,
 			workspaceId: args.workspaceId,
 			icon: args.icon,
+			iconImage: args.iconImage,
 		});
 
 		return channelId;
@@ -160,7 +167,15 @@ export const getById = query({
 
 		if (!member) return null;
 
-		return channel;
+		// Convert iconImage storage ID to URL if it exists
+		const iconImageUrl = channel.iconImage
+			? await ctx.storage.getUrl(channel.iconImage)
+			: undefined;
+
+		return {
+			...channel,
+			iconImageUrl,
+		};
 	},
 });
 
@@ -189,6 +204,20 @@ export const get = query({
 			)
 			.collect();
 
-		return channels;
+		// Convert iconImage storage IDs to URLs
+		const channelsWithUrls = await Promise.all(
+			channels.map(async (channel) => {
+				const iconImageUrl = channel.iconImage
+					? await ctx.storage.getUrl(channel.iconImage)
+					: undefined;
+
+				return {
+					...channel,
+					iconImageUrl,
+				};
+			})
+		);
+
+		return channelsWithUrls;
 	},
 });

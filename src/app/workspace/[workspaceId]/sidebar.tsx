@@ -255,6 +255,7 @@ export const WorkspaceSidebar = ({
                 id={item._id}
                 label={item.name}
                 icon={item.icon}
+                iconImageUrl={item.iconImageUrl}
                 isActive={channelId === item._id}
                 isCollapsed={isCollapsed}
               />

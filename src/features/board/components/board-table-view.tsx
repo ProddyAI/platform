@@ -132,13 +132,21 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({ lists, allCards, onEdit
       </div>
 
       {/* Table */}
-      <div className="w-full overflow-auto overflow-x-hidden scrollbar-hide flex-1 bg-white" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <div className="w-full overflow-auto overflow-x-hidden flex-1 bg-white" style={{ WebkitOverflowScrolling: 'touch' }}>
         <style jsx>{`
           ::-webkit-scrollbar {
-            width: 0px;
-            height: 0px;
+            width: 8px;
+            height: 8px;
+          }
+          ::-webkit-scrollbar-track {
             background: transparent;
-            display: none;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
           }
         `}</style>
         <table className="w-full border-collapse">
