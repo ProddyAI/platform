@@ -1,7 +1,6 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import type { Metadata, Viewport } from "next";
 import { PropsWithChildren } from "react";
-import { Analytics } from "@vercel/analytics/next";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
@@ -72,9 +71,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
                 <TidioChat />
                 <Formbricks />
                 <ClarityTracking />
-
                 {children}
-                <Analytics />
               </UsetifulProvider>
             </JotaiProvider>
           </ConvexClientProvider>
