@@ -79,7 +79,9 @@ export function initializeComposio() {
         // Try to initiate connection using auth config ID
         const connection = await (
           composioInstance as any
-        ).connectedAccounts?.initiate?.(userId, authConfigId);
+        ).connectedAccounts?.initiate?.(userId, authConfigId, {
+          allowMultiple: true, // Allow multiple connected accounts per user
+        });
 
         if (!connection) {
           throw new Error("Failed to create connection - method not available");

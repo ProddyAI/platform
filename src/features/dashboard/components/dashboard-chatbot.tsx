@@ -602,6 +602,12 @@ Try asking me things like:`;
         return "GitHub";
       case "gmail":
         return "Gmail";
+      case "slack":
+        return "Slack";
+      case "notion":
+        return "Notion";
+      case "clickup":
+        return "ClickUp";
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
