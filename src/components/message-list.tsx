@@ -16,6 +16,7 @@ import { Message } from './message';
 import { DailyRecapModal } from '@/features/smart/components/daily-recap-modal';
 import { Button } from './ui/button';
 import { Hint } from './hint';
+import './message-list-highlight.css';
 
 const TIME_THRESHOLD = 15;
 

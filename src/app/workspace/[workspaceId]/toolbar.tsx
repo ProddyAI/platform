@@ -51,7 +51,12 @@ export const WorkspaceToolbar = ({
     const { data: members } = useGetMembers({ workspaceId });
     const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
     const [searchQuery, setSearchQuery] = useState('');
-    const [messageResults, setMessageResults] = useState<{ id: string; text: string; summary?: string }[]>([]);
+    const [messageResults, setMessageResults] = useState<{ 
+        id: Id<'messages'>; 
+        text: string; 
+        channelId?: Id<'channels'>; 
+        summary?: string;
+    }[]>([]);
     const [isSearchingMessages, setIsSearchingMessages] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
     const aiSearchMessages = useAction(api.search.aiSearchMessages);
@@ -70,7 +75,6 @@ export const WorkspaceToolbar = ({
             ? { workspaceId, query: searchQuery, limit: 20 }
             : 'skip'
     );
-    console.log('searchQuery:', searchQuery, 'normalMessageResults:', normalMessageResults);
     // Removed setSearchQuery from effects to ensure input is only controlled by onValueChange
     const [aiSearchTrigger, setAiSearchTrigger] = useState<string>('');
     
@@ -104,6 +108,7 @@ export const WorkspaceToolbar = ({
                     res.sources.map((msg) => ({
                         id: msg.id,
                         text: msg.text,
+                        channelId: msg.channelId,
                         summary: res.answer
                     }))
                 );
@@ -205,7 +210,13 @@ export const WorkspaceToolbar = ({
                     />
                     <CommandList>
                         <CommandEmpty>
-                            {isSearchingMessages ? 'Searching messages...' : 'No results found.'}
+                            {isSearchingMessages ? (
+                                'Searching messages...'
+                            ) : aiError ? (
+                                <div className="text-destructive text-sm">{aiError}</div>
+                            ) : (
+                                'No results found.'
+                            )}
                         </CommandEmpty>
 
                         <CommandGroup heading="Channels">
@@ -231,11 +242,22 @@ export const WorkspaceToolbar = ({
                         <CommandGroup heading="Messages">
                             {/* AI mode: show AI results */}
                             {isAiMode && messageResults.length > 0 && messageResults.map((msg) => (
-                                <CommandItem key={msg.id}>
+                                <CommandItem 
+                                    key={msg.id}
+                                    onSelect={() => {
+                                        if (msg.channelId) {
+                                            setSearchOpen(false);
+                                            router.push(`/workspace/${workspaceId}/channel/${msg.channelId}/chats?highlight=${msg.id}`);
+                                        }
+                                    }}
+                                >
                                     <div>
                                         <div className="font-medium text-xs truncate max-w-[300px]">{msg.text}</div>
                                         {msg.summary && (
                                             <div className="text-[10px] text-muted-foreground mt-1 italic">Summary: {msg.summary}</div>
+                                        )}
+                                        {msg.channelId && (
+                                            <div className="text-[10px] text-muted-foreground mt-1">Channel: {channelMap[msg.channelId] || msg.channelId}</div>
                                         )}
                                     </div>
                                 </CommandItem>
