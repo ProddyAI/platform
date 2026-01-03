@@ -1,0 +1,14 @@
+{
+	"buildCommand": "npm run build",
+	"installCommand": "npm install --legacy-peer-deps",
+	"framework": "nextjs",
+	"outputDirectory": ".next",
+	"regions": ["sin1"],
+	"build": {
+		"env": {
+			"NEXT_JS_IGNORE_TYPE_ERRORS": "true",
+			"NEXT_DISABLE_ESLINT": "true",
+			"NEXT_TELEMETRY_DISABLED": "1"
+		}
+	}
+}

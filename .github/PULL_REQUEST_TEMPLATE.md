@@ -23,30 +23,25 @@
 
 ### Code Quality
 
-- [ ] I have performed a self-review of my own code
+- [ ] Performed a proper self-review of my own code
 - [ ] My changes generate no new warnings or errors
 - [ ] All the AI slop has been removed using `/deslop`
+- [ ] CodeRabbitAI comments has been implemented
+
+### Code Formatting
+
 - [ ] I have run `bun run type` and ensured type safety
 - [ ] I have run `bun run lint` and passed eslint checks
 - [ ] I have run `bun run format` and formatted code
 
-### Database & Schema
-
-- [ ] I have updated Convex schema if needed
-- [ ] I have run and tested any database migrations
-- [ ] I have considered backward compatibility
-
 ### Performance & Security
 
 - [ ] I have checked for potential performance impacts
+- [ ] I have updated Convex schema if needed
 - [ ] I have considered security implications
 - [ ] I have not introduced any console.log or debug code
 - [ ] I have handled errors appropriately
-
-### Dependencies
-
 - [ ] I have not added unnecessary dependencies
-- [ ] New dependencies are properly documented
 - [ ] I have run `bun i` after adding dependencies
 
 **Reviewer Checklist:**
