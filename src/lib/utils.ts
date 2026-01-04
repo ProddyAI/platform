@@ -14,16 +14,10 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-/**
- * Converts a Color object to a CSS color string
- */
 export function colorToCSS(color: Color) {
 	return `rgb(${color.r}, ${color.g}, ${color.b})`;
 }
 
-/**
- * Maps a connection ID to a consistent color
- */
 export function connectionIdToColor(connectionId: number): string {
 	const colors = [
 		'#FF5733', // Red
@@ -41,10 +35,6 @@ export function connectionIdToColor(connectionId: number): string {
 	return colors[connectionId % colors.length];
 }
 
-/**
- * Maps a string (user name, ID, etc.) to a consistent color
- * Uses the same color palette as connectionIdToColor for consistency
- */
 export function stringToColor(input: string): string {
 	const colors = [
 		'#FF5733', // Red

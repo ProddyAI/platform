@@ -13,22 +13,28 @@ export const current = query({
 		const user = await ctx.db.get(userId);
 		if (!user) return null;
 
-		// Get image URL if user has an image
-		// Check if it's a storage ID or external URL
 		let imageUrl: string | undefined = undefined;
 		if (user.image) {
-			// If it starts with http, it's an external URL (from OAuth providers)
 			if (user.image.startsWith('http')) {
 				imageUrl = user.image;
 			} else {
-				// Otherwise, it's a Convex storage ID
 				imageUrl = (await ctx.storage.getUrl(user.image)) || undefined;
+			}
+		}
+
+		let bannerUrl: string | undefined = undefined;
+		if ((user as any).banner) {
+			if ((user as any).banner.startsWith('http')) {
+				bannerUrl = (user as any).banner;
+			} else {
+				bannerUrl = (await ctx.storage.getUrl((user as any).banner)) || undefined;
 			}
 		}
 
 		return {
 			...user,
 			image: imageUrl,
+			banner: bannerUrl,
 		};
 	},
 });
@@ -62,10 +68,21 @@ export const getUserById = query({
 			}
 		}
 
+		// Get banner URL if user has a banner
+		let bannerUrl: string | undefined = undefined;
+		if ((user as any).banner) {
+			if ((user as any).banner.startsWith('http')) {
+				bannerUrl = (user as any).banner;
+			} else {
+				bannerUrl = (await ctx.storage.getUrl((user as any).banner)) || undefined;
+			}
+		}
+
 		// Return the user data with image URL
 		return {
 			...user,
 			image: imageUrl,
+			banner: bannerUrl,
 		};
 	},
 });
@@ -81,6 +98,8 @@ export const updateProfile = mutation({
 		website: v.optional(v.string()),
 		phone: v.optional(v.string()),
 		image: v.optional(v.id('_storage')),
+		banner: v.optional(v.union(v.id('_storage'), v.null())),
+		removeBanner: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -115,6 +134,13 @@ export const updateProfile = mutation({
 		}
 		if (args.image !== undefined) {
 			updateData.image = args.image;
+		}
+		if ((args as any).banner !== undefined) {
+			updateData.banner = (args as any).banner;
+		}
+		if ((args as any).removeBanner === true) {
+			// Explicitly clear the banner
+			updateData.banner = null;
 		}
 
 		// Update the user

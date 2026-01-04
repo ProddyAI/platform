@@ -47,9 +47,11 @@ export const useCreateMessage = () => {
         return response;
       } catch (error) {
         setStatus('error');
-        options?.onError?.(error as Error);
+        const err = error as Error;
+        setError(err);
+        options?.onError?.(err);
 
-        if (!options?.throwError) throw error;
+        if (options?.throwError) throw error;
       } finally {
         setStatus('settled');
         options?.onSettled?.();

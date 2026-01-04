@@ -1,20 +1,12 @@
 'use client';
 
 import { useAuthActions } from '@convex-dev/auth/react';
-import { AlertTriangle, Loader, LogOut, Settings, Trash2 } from 'lucide-react';
+import { Loader, LogOut, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,7 +15,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UserProfileModal } from './user-profile-modal';
-import { useDeleteAccount } from '../api/use-delete-account';
 import { useCurrentUser } from '../api/use-current-user';
 // Removed useMarkOfflineGlobally - now handled by presence system
 
@@ -41,10 +32,7 @@ export const UserButton = ({
     const router = useRouter();
     const { signOut } = useAuthActions();
     const { data, isLoading } = useCurrentUser();
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const deleteAccount = useDeleteAccount();
 
     // Handle external control for opening settings modal
     useEffect(() => {
@@ -78,20 +66,7 @@ export const UserButton = ({
         router.replace('/'); // Redirect to homepage after logout
     };
 
-    const handleDeleteAccount = async () => {
-        try {
-            setIsDeleting(true);
 
-            // Presence system handles disconnection automatically
-
-            await deleteAccount();
-            await signOut();
-            router.replace('/'); // Redirect to homepage after account deletion
-        } catch (error) {
-            console.error('Failed to delete account:', error);
-            setIsDeleting(false);
-        }
-    };
 
     return (
         <>
@@ -122,56 +97,11 @@ export const UserButton = ({
                         Log out
                     </DropdownMenuItem>
 
-                    <DropdownMenuSeparator />
 
-                    <DropdownMenuItem
-                        onClick={() => setDeleteDialogOpen(true)}
-                        className="h-10 text-destructive"
-                    >
-                        <Trash2 className="mr-2 size-4" />
-                        Delete Account
-                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Delete Account Dialog */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete Account</DialogTitle>
-                        <DialogDescription>
-                            This action cannot be undone. This will permanently delete your account and remove all
-                            associated data.
-                        </DialogDescription>
-                    </DialogHeader>
 
-                    <div
-                        className="flex items-center gap-x-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                        <AlertTriangle className="size-4" />
-                        <p>Warning: This will delete all your workspaces, channels, and messages.</p>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setDeleteDialogOpen(false)}
-                            disabled={isDeleting}
-                        >
-                            Cancel
-                        </Button>
-                        <Button variant="destructive" onClick={handleDeleteAccount} disabled={isDeleting}>
-                            {isDeleting ? (
-                                <>
-                                    <Loader className="mr-2 size-4 animate-spin" />
-                                    Deleting...
-                                </>
-                            ) : (
-                                'Delete Account'
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Account Settings Modal */}
             {data && (

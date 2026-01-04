@@ -1,10 +1,10 @@
 'use client';
 
 import { differenceInMinutes, format, isToday, isYesterday } from 'date-fns';
-import { AlertTriangle, Loader, XIcon } from 'lucide-react';
+import { AlertTriangle, Loader, XIcon, Edit2, Check, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import type Quill from 'quill';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import type { Id } from '@/../convex/_generated/dataModel';
@@ -14,6 +14,8 @@ import { useCurrentMember } from '@/features/members/api/use-current-member';
 import { useCreateMessage } from '@/features/messages/api/use-create-message';
 import { useGetMessage } from '@/features/messages/api/use-get-message';
 import { useGetMessages } from '@/features/messages/api/use-get-messages';
+import { useGetThreadTitle } from '@/features/messages/api/use-get-thread-title';
+import { useUpdateThreadTitle } from '@/features/messages/api/use-update-thread-title';
 import { useGenerateUploadUrl } from '@/features/upload/api/use-generate-upload-url';
 import { useChannelId } from '@/hooks/use-channel-id';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
@@ -59,11 +61,22 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
   const [editingId, setEditingId] = useState<Id<'messages'> | null>(null);
   const [editorKey, setEditorKey] = useState(0);
   const [isPending, setIsPending] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState<string>('');
 
   const innerRef = useRef<Quill | null>(null);
 
   const { data: currentMember } = useCurrentMember({ workspaceId });
   const { data: message, isLoading: isMessageLoading } = useGetMessage({ id: messageId });
+  const { title: savedTitle } = useGetThreadTitle(messageId);
+  const { updateTitle } = useUpdateThreadTitle();
+
+  // Initialize title input with saved title
+  useEffect(() => {
+    if (savedTitle) {
+      setTitleInput(savedTitle);
+    }
+  }, [savedTitle]);
 
   const { mutate: createMessage } = useCreateMessage();
   const { mutate: generateUploadUrl } = useGenerateUploadUrl();
@@ -138,9 +151,25 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
     {} as Record<string, typeof results>
   );
 
+  const handleSaveTitle = async () => {
+    if (titleInput.trim()) {
+      try {
+        await updateTitle(messageId, titleInput.trim(), workspaceId);
+        setIsEditingTitle(false);
+        toast.success('Thread title saved');
+      } catch (error) {
+        toast.error('Failed to save thread title');
+      }
+    }
+  };
+
+  const handleEditTitle = () => {
+    setIsEditingTitle(true);
+  };
+
   if (isMessageLoading || status === 'LoadingFirstPage') {
     return (
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col border-l border-border">
         <div className="flex h-[49px] items-center justify-between border-b px-4">
           <p className="text-lg font-bold">Thread</p>
 
@@ -158,7 +187,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
   if (!message) {
     return (
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col border-l border-border">
         <div className="flex h-[49px] items-center justify-between border-b px-4">
           <p className="text-lg font-bold">Thread</p>
 
@@ -177,13 +206,56 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
   return (
     <ContextMenuProvider>
-      <div className="flex h-full flex-col">
-        <div className="flex h-[49px] items-center justify-between border-b px-4">
-          <p className="text-lg font-bold">Thread</p>
+      <div className="flex h-full flex-col border-l border-border">
+        <div className="flex h-auto flex-col border-b px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2 flex-1">
+                <input
+                  type="text"
+                  value={titleInput}
+                  onChange={(e) => setTitleInput(e.target.value)}
+                  placeholder="Enter thread title..."
+                  className="flex-1 px-2 py-1 text-sm border border-border rounded bg-background"
+                  autoFocus
+                />
+                <Button
+                  size="iconSm"
+                  variant="ghost"
+                  onClick={handleSaveTitle}
+                  className="h-6 w-6"
+                >
+                  <Check className="size-4" />
+                </Button>
+                <Button
+                  size="iconSm"
+                  variant="ghost"
+                  onClick={() => setIsEditingTitle(false)}
+                  className="h-6 w-6"
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-1">
+                <p className="text-lg font-bold">
+                  {savedTitle || 'Thread'}
+                </p>
+                <Button
+                  size="iconSm"
+                  variant="ghost"
+                  onClick={handleEditTitle}
+                  className="h-6 w-6"
+                >
+                  <Edit2 className="size-4" />
+                </Button>
+              </div>
+            )}
 
-          <Button onClick={onClose} size="iconSm" variant="ghost">
-            <XIcon className="size-5 stroke-[1.5]" />
-          </Button>
+            <Button onClick={onClose} size="iconSm" variant="ghost">
+              <XIcon className="size-5 stroke-[1.5]" />
+            </Button>
+          </div>
         </div>
 
       <div className="messages-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4">

@@ -105,12 +105,12 @@ export const BlockNoteNotesEditor = ({
   };
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full relative dark:bg-[hsl(var(--card-accent))]">
       {/* Note Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden dark:bg-[hsl(var(--card-accent))]">
         <BlockNoteEditor
           noteId={note._id}
-          className="h-full"
+          className="h-full dark:bg-[hsl(var(--card-accent))]"
           onEditorReady={handleEditorReady}
         />
       </div>

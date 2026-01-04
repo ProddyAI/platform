@@ -1,4 +1,3 @@
-import { Kalam } from "next/font/google";
 import ContentEditable, {
   type ContentEditableEvent,
 } from "react-contenteditable";
@@ -7,11 +6,6 @@ import { useRef, useEffect, useState } from "react";
 import { cn, colorToCSS } from "../../../lib/utils";
 import type { TextLayer } from "../types/canvas";
 import { useMutation, useStorage, useSelf } from "../../../../liveblocks.config";
-
-const font = Kalam({
-  subsets: ["latin"],
-  weight: ["400"],
-});
 
 const calculateFontSize = (width: number, height: number) => {
   const maxFontSize = 96;
@@ -30,7 +24,9 @@ const MIN_HEIGHT = 50;
 const estimateTextDimensions = (text: string, fontSize: number): { width: number, height: number } => {
   // Create a temporary span to measure text
   const span = document.createElement('span');
-  span.style.font = `${fontSize}px ${font.style.fontFamily}`;
+  span.style.fontFamily = 'inherit';
+  span.style.fontSize = `${fontSize}px`;
+  span.style.fontWeight = '400';
   span.style.position = 'absolute';
   span.style.visibility = 'hidden';
   span.style.whiteSpace = 'pre-wrap';
@@ -366,7 +362,6 @@ export const Text = ({
           disabled={!isEditing}
           className={cn(
             "h-full w-full flex items-center justify-center text-center drop-shadow-md outline-none",
-            font.className
           )}
           style={{
             fontSize: calculateFontSize(width, height),

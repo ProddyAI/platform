@@ -135,31 +135,32 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
     handleDragEnd(event);
   };
 
-  // Determine container class based on list count
-  const getContainerClass = () => {
-    const listCount = lists.length;
-
-    // If more than 4 lists, enable horizontal scrolling
-    if (listCount > 4) {
-      return "flex flex-1 overflow-x-auto scrollbar-hide gap-4 p-4 bg-white";
-    }
-
-    // If 3 or fewer lists, use grid with appropriate columns
-    return "grid flex-1 gap-4 p-4 bg-white " +
-      (listCount === 1 ? "grid-cols-1" :
-        listCount === 2 ? "grid-cols-2" :
-          listCount === 3 ? "grid-cols-3" :
-            "grid-cols-4");
-  };
-
   return (
-    <div className={getContainerClass()} style={{ msOverflowStyle: 'none', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+    <div className="flex flex-wrap overflow-y-auto gap-4 p-4 bg-white h-full">
       <style jsx>{`
+        /* Custom scrollbar styling for better UX
+         * Shows styled scrollbars to indicate scrollable content
+         * instead of completely hiding them which could confuse users
+         */
         ::-webkit-scrollbar {
-          width: 0px;
-          height: 0px;
-          background: transparent;
-          display: none;
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+        /* Firefox scrollbar styling */
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 #f1f5f9;
         }
       `}</style>
       <DndContext

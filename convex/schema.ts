@@ -8,6 +8,7 @@ const schema = defineSchema({
 	users: defineTable({
 		name: v.optional(v.string()),
 		image: v.optional(v.string()),
+		banner: v.optional(v.union(v.string(), v.null())),
 		email: v.optional(v.string()),
 		emailVerificationTime: v.optional(v.number()),
 		phone: v.optional(v.string()),
@@ -23,7 +24,7 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id('users'),
 		joinCode: v.string(),
-	}),
+	}).index('by_user_id', ['userId']),
 
 	members: defineTable({
 		userId: v.id('users'),
@@ -38,6 +39,7 @@ const schema = defineSchema({
 		name: v.string(),
 		workspaceId: v.id('workspaces'),
 		icon: v.optional(v.string()), // Store emoji as string
+		iconImage: v.optional(v.id('_storage')), // Store uploaded image
 	}).index('by_workspace_id', ['workspaceId']),
 
 	conversations: defineTable({
@@ -311,7 +313,7 @@ const schema = defineSchema({
 								title: v.string(),
 								description: v.string(),
 								visible: v.boolean(),
-								size: v.union(v.literal('small'), v.literal('large')),
+								size: v.union(v.literal('small'), v.literal('medium'), v.literal('large')),
 							})
 						)
 					),
@@ -448,6 +450,19 @@ const schema = defineSchema({
 		updatedAt: v.number(),
 		createdBy: v.id('members'),
 	}).index('by_workspace_id', ['workspaceId']),
+
+	// Thread titles for storing user-defined thread names
+	threadTitles: defineTable({
+		messageId: v.id('messages'), // Parent message ID of the thread
+		title: v.string(), // User-defined thread title
+		workspaceId: v.id('workspaces'),
+		createdBy: v.id('members'),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index('by_message_id', ['messageId'])
+		.index('by_workspace_id', ['workspaceId'])
+		.index('by_workspace_id_message_id', ['workspaceId', 'messageId']),
 });
 
 export default schema;

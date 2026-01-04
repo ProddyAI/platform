@@ -65,39 +65,39 @@ export const TaskItem = ({
   const getPriorityColor = (priority?: 'low' | 'medium' | 'high') => {
     switch (priority) {
       case 'high':
-        return 'bg-red-500';
+        return 'bg-red-600';
       case 'medium':
-        return 'bg-yellow-500';
+        return 'bg-amber-500';
       case 'low':
-        return 'bg-blue-500';
+        return 'bg-blue-600';
       default:
-        return 'bg-gray-300';
+        return 'bg-gray-400';
     }
   };
 
   const getPriorityTextColor = (priority?: 'low' | 'medium' | 'high') => {
     switch (priority) {
       case 'high':
-        return 'text-red-600';
+        return 'text-red-700';
       case 'medium':
-        return 'text-yellow-600';
+        return 'text-amber-700';
       case 'low':
-        return 'text-blue-600';
+        return 'text-blue-700';
       default:
-        return 'text-gray-600';
+        return 'text-gray-700';
     }
   };
 
   const getPriorityBgColor = (priority?: 'low' | 'medium' | 'high') => {
     switch (priority) {
       case 'high':
-        return 'bg-red-50';
+        return 'bg-red-100';
       case 'medium':
-        return 'bg-yellow-50';
+        return 'bg-amber-100';
       case 'low':
-        return 'bg-blue-50';
+        return 'bg-blue-100';
       default:
-        return 'bg-gray-50';
+        return 'bg-gray-100';
     }
   };
 
@@ -140,8 +140,8 @@ export const TaskItem = ({
     <div className={cn(
       "group p-5 rounded-xl border transition-all hover:shadow-md",
       completed
-        ? "bg-gray-50 border-gray-200 opacity-80"
-        : "bg-white border-gray-200 hover:border-secondary/30",
+        ? "bg-gray-50 border-gray-200 opacity-80 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]"
+        : "bg-white border-gray-200 hover:border-secondary/30 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))] dark:hover:border-secondary/40",
       priority && !completed && `hover:border-${getPriorityTextColor(priority).replace('text-', '')}/30`
     )}>
       <div className="flex items-start gap-4">
@@ -156,7 +156,7 @@ export const TaskItem = ({
           <div className="flex items-start justify-between gap-2">
             <h3 className={cn(
               "font-medium text-base truncate",
-              completed ? "line-through text-gray-500" : "text-gray-900"
+              completed ? "line-through text-gray-500 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"
             )}>
               {title}
             </h3>
@@ -165,13 +165,13 @@ export const TaskItem = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="ghost"
-                      size="iconSm"
-                      onClick={() => setIsEditing(true)}
-                      className="h-8 w-8 rounded-full bg-gray-50 hover:bg-gray-100"
-                    >
-                      <Edit className="h-3.5 w-3.5 text-gray-600" />
-                    </Button>
+                       variant="ghost"
+                       size="iconSm"
+                       onClick={() => setIsEditing(true)}
+                       className="h-8 w-8 rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+                     >
+                       <Edit className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Edit task</p>
@@ -182,14 +182,14 @@ export const TaskItem = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="ghost"
-                      size="iconSm"
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                      className="h-8 w-8 rounded-full bg-gray-50 hover:bg-red-100 text-gray-600 hover:text-red-600"
-                    >
-                      <Trash className="h-3.5 w-3.5" />
-                    </Button>
+                       variant="ghost"
+                       size="iconSm"
+                       onClick={handleDelete}
+                       disabled={isDeleting}
+                       className="h-8 w-8 rounded-full bg-gray-50 hover:bg-red-100 text-gray-600 hover:text-red-600 dark:bg-gray-800 dark:hover:bg-red-900/30 dark:text-gray-400 dark:hover:text-red-400"
+                     >
+                       <Trash className="h-3.5 w-3.5" />
+                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Delete task</p>
@@ -202,8 +202,8 @@ export const TaskItem = ({
           {/* Description */}
           {description && (
             <p className={cn(
-              "text-sm text-gray-600 mt-2 line-clamp-2",
-              completed && "text-gray-400"
+              "text-sm text-gray-600 mt-2 line-clamp-2 dark:text-gray-400",
+              completed && "text-gray-400 dark:text-gray-500"
             )}>
               {description}
             </p>
@@ -246,8 +246,8 @@ export const TaskItem = ({
               <div className={cn(
                 "flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full",
                 new Date(dueDate) < new Date() && !completed
-                  ? "text-red-600 bg-red-50 font-medium"
-                  : "text-gray-600 bg-gray-50"
+                  ? "text-red-700 bg-red-100 font-medium"
+                  : "text-gray-700 bg-gray-100"
               )}>
                 <Clock className="h-3 w-3" />
                 <span>{format(new Date(dueDate), 'MMM d, yyyy')}</span>

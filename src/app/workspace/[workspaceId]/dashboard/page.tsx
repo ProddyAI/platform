@@ -4,7 +4,6 @@ import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { useCurrentMember } from '@/features/members/api/use-current-member';
 import { useCurrentUser } from '@/features/auth/api/use-current-user';
-import { DashboardChatbot } from '@/features/dashboard/components/dashboard-chatbot';
 import { DashboardWidgets } from '@/features/dashboard/components/dashboard-widgets';
 import { Loader, LayoutDashboard } from 'lucide-react';
 import { WorkspaceToolbar } from '../toolbar';
@@ -62,16 +61,9 @@ const DashboardPage = () => {
         </Button>
       </WorkspaceToolbar>
       <div className="flex flex-1 overflow-hidden p-4 md:p-6">
-        <div className="flex w-full flex-col space-y-6 md:flex-row md:space-x-6 md:space-y-0">
-          {/* Chatbot section - 40% width on desktop */}
-          <div className="w-full md:w-[40%] flex flex-col">
-            <DashboardChatbot workspaceId={workspaceId} member={enhancedMember} />
-          </div>
-
-          {/* Widgets section - 60% width on desktop */}
-          <div className="w-full md:w-[60%] flex flex-col">
-            <DashboardWidgets workspaceId={workspaceId} member={enhancedMember} />
-          </div>
+        <div className="flex w-full flex-col">
+          {/* Full-width Widgets section */}
+          <DashboardWidgets workspaceId={workspaceId} member={enhancedMember} />
         </div>
       </div>
     </div>

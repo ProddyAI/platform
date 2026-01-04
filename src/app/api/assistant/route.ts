@@ -6,6 +6,12 @@ export async function POST(req: NextRequest) {
     // Get the request body
     const body = await req.json();
 
+
+    // Forward auth context (cookies/authorization) so the downstream route can
+    // derive the Convex auth token and run authenticated queries.
+    const cookie = req.headers.get("cookie");
+    const authorization = req.headers.get("authorization");
+
     // Forward the request to the chatbot endpoint
     const chatbotResponse = await fetch(
       `${req.nextUrl.origin}/api/assistant/chatbot`,
@@ -13,8 +19,11 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(cookie ? { Cookie: cookie } : {}),
+          ...(authorization ? { Authorization: authorization } : {}),
         },
         body: JSON.stringify(body),
+        cache: "no-store",
       },
     );
 

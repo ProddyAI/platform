@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { calculateDomTooltipPosition } from '@/features/reports/utils/tooltip-positioning';
 
 interface BarChartProps {
   data: {
@@ -10,6 +11,7 @@ interface BarChartProps {
     color?: string;
   }[];
   height?: number;
+  maxHeight?: number;
   showValues?: boolean;
   showLabels?: boolean;
   className?: string;
@@ -21,6 +23,7 @@ interface BarChartProps {
 export const BarChart = ({
   data,
   height = 200,
+  maxHeight,
   showValues = true,
   showLabels = true,
   className,
@@ -29,6 +32,32 @@ export const BarChart = ({
   onBarClick,
 }: BarChartProps) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: string; left: string } | null>(null);
+
+  useEffect(() => {
+    if (hoveredIndex === null) {
+      setTooltipPos(null);
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) {
+      setTooltipPos(null);
+      return;
+    }
+
+    const hoveredElement = container.querySelector(`[data-bar-index="${hoveredIndex}"]`) as HTMLElement;
+    
+    if (!hoveredElement) {
+      setTooltipPos(null);
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const pos = calculateDomTooltipPosition(hoveredElement, containerRect, 50, 24, -30);
+    setTooltipPos(pos);
+  }, [hoveredIndex]);
 
   if (!data || data.length === 0) {
     return (
@@ -41,8 +70,8 @@ export const BarChart = ({
   const maxValue = Math.max(...data.map(item => item.value));
 
   return (
-    <div className={cn("w-full", className)}>
-      <div className="flex items-end space-x-2" style={{ height: `${height}px` }}>
+    <div className={cn("w-full h-full relative overflow-hidden", className)} ref={containerRef}>
+      <div className="flex items-end space-x-2 relative w-full" style={{ height: `${maxHeight ? Math.min(height, maxHeight) : height}px` }}>
         {data.map((item, index) => {
           const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
           const isHovered = hoveredIndex === index;
@@ -50,6 +79,7 @@ export const BarChart = ({
           return (
             <div
               key={index}
+              data-bar-index={index}
               className="relative flex flex-col items-center flex-1 group"
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
@@ -69,17 +99,6 @@ export const BarChart = ({
                 }}
               />
 
-              {showValues && (
-                <div
-                  className={cn(
-                    "absolute -top-6 text-xs font-medium transition-opacity duration-200",
-                    isHovered ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                  )}
-                >
-                  {formatValue(item.value)}
-                </div>
-              )}
-
               {showLabels && (
                 <div className="mt-1 text-xs text-muted-foreground truncate max-w-full px-1">
                   {item.label}
@@ -88,6 +107,18 @@ export const BarChart = ({
             </div>
           );
         })}
+
+        {showValues && hoveredIndex !== null && tooltipPos && (
+          <div
+            className="absolute bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
+            style={{
+              top: tooltipPos.top,
+              left: tooltipPos.left,
+            }}
+          >
+            {formatValue(data[hoveredIndex].value)}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,6 @@
 import { useMutation, useSelf } from '../../../../liveblocks.config';
 import { LiveList, LiveMap } from '@liveblocks/client';
 
-/**
- * Custom hook to delete selected layers from the canvas
- * @returns A function that deletes the currently selected layers
- */
 export const useDeleteLayers = () => {
 	const selection = useSelf((me) => me.presence.selection);
 
@@ -13,7 +9,6 @@ export const useDeleteLayers = () => {
 			const liveLayers = storage.get('layers');
 			const liveLayerIds = storage.get('layerIds');
 
-			// Check if liveLayers is a LiveMap with a delete method
 			if (!liveLayers || typeof liveLayers.delete !== 'function') {
 				console.error(
 					"Error: liveLayers is not a LiveMap or doesn't have a delete method",
@@ -22,21 +17,16 @@ export const useDeleteLayers = () => {
 				return;
 			}
 
-			// Delete each selected layer
 			for (const id of selection) {
-				// Delete from the layers map
 				liveLayers.delete(id);
 
-				// Remove from the layerIds array
 				if (liveLayerIds) {
-					// Check if it's a LiveList with delete method
 					if (typeof liveLayerIds.delete === 'function') {
 						const index = liveLayerIds.indexOf(id);
 						if (index !== -1) {
 							liveLayerIds.delete(index);
 						}
 					} else if (Array.isArray(liveLayerIds)) {
-						// If it's a regular array, try to create a new LiveList without the id
 						try {
 							const newLayerIds = new LiveList(
 								(liveLayerIds as string[]).filter((layerId) => layerId !== id)

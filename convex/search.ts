@@ -90,11 +90,16 @@ type FilterTypes = {
 };
 
 // Initialize RAG component with workspace and content type filters
-const rag = new RAG<FilterTypes>(components.rag, {
+// The generated Convex typings for `components.rag` currently omit the optional
+// `order` argument on `chunks.list`, while `@convex-dev/rag` expects it. Cast to
+// `any` to bypass the transient type mismatch without changing runtime behavior.
+const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ['workspaceId', 'contentType', 'channelId'],
 	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004'),
 	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
 });
+
+const NO_CHANNEL_FILTER_VALUE = '__none__';
 
 // Index content for RAG search
 export const indexContent = action({
@@ -127,20 +132,26 @@ export const indexContent = action({
 		}
 
 		try {
+			const channelIdFilterValue = (() => {
+				const metadata = args.metadata as unknown;
+				if (!metadata || typeof metadata !== 'object') {
+					return NO_CHANNEL_FILTER_VALUE;
+				}
+				const maybeChannelId = (metadata as { channelId?: unknown }).channelId;
+				if (typeof maybeChannelId === 'string' && maybeChannelId.length > 0) {
+					return maybeChannelId;
+				}
+				return NO_CHANNEL_FILTER_VALUE;
+			})();
+
 			const filterValues: Array<{
 				name: 'workspaceId' | 'contentType' | 'channelId';
 				value: string;
 			}> = [
 				{ name: 'workspaceId', value: args.workspaceId as string },
 				{ name: 'contentType', value: args.contentType },
+				{ name: 'channelId', value: channelIdFilterValue },
 			];
-
-			if (args.metadata.channelId) {
-				filterValues.push({
-					name: 'channelId',
-					value: args.metadata.channelId as string,
-				});
-			}
 
 			console.log('Filter values:', filterValues);
 

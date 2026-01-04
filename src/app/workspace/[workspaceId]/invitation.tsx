@@ -57,13 +57,20 @@ export const InviteModal = ({
     );
   };
 
-  const handleCopy = () => {
+  const handleCopyLink = () => {
     const inviteLink = `${window.location.origin}/join/${workspaceId}`;
 
     navigator.clipboard
       .writeText(inviteLink)
       .then(() => toast.success("Invite link copied to clipboard."))
       .catch(() => toast.error("Failed to copy link to clipboard"));
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard
+      .writeText(joinCode)
+      .then(() => toast.success("Invite code copied to clipboard."))
+      .catch(() => toast.error("Failed to copy code to clipboard"));
   };
 
   return (
@@ -86,15 +93,15 @@ export const InviteModal = ({
 
             <Button
               disabled={isPending}
-              onClick={handleCopy}
+              onClick={handleCopyCode}
               variant="ghost"
               size="sm"
             >
-              Copy link <CopyIcon className="ml-2 size-4" />
+              Copy code <CopyIcon className="ml-2 size-4" />
             </Button>
           </div>
 
-          <div className="flex w-full items-center justify-between">
+          <div className="flex w-full items-center justify-between gap-x-2">
             <Button
               disabled={isPending}
               onClick={handleNewCode}
@@ -102,6 +109,14 @@ export const InviteModal = ({
             >
               New code
               <RefreshCcw className="ml-2 size-4" />
+            </Button>
+
+            <Button
+              disabled={isPending}
+              onClick={handleCopyLink}
+              variant="outline"
+            >
+              Copy link <CopyIcon className="ml-2 size-4" />
             </Button>
 
             <DialogClose asChild>

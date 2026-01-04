@@ -1,52 +1,48 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Users, MessageSquare, Clock, Loader, CircleCheck, Circle } from 'lucide-react';
-import { Id } from '@/../convex/_generated/dataModel';
-import { useRouter } from 'next/navigation';
-import { useQuery } from 'convex/react';
-import { api } from '@/../convex/_generated/api';
-import { formatDistanceToNow } from 'date-fns';
-import { useGetMembers } from '@/features/members/api/use-get-members';
-import { useWorkspacePresence } from '@/features/presence/hooks/use-workspace-presence';
+import { useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  MessageSquare,
+  Clock,
+  Loader,
+  CircleCheck,
+  Circle,
+} from "lucide-react";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { useRouter } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
+import { useGetMembers } from "@/features/members/api/use-get-members";
+import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-presence";
 
 interface TeamStatusWidgetProps {
-  workspaceId: Id<'workspaces'>;
+  workspaceId: Id<"workspaces">;
   member: {
-    _id: Id<'members'>;
-    userId: Id<'users'>;
+    _id: Id<"members">;
+    userId: Id<"users">;
     role: string;
-    workspaceId: Id<'workspaces'>;
+    workspaceId: Id<"workspaces">;
     user?: {
       name: string;
       image?: string;
     };
   };
+  isEditMode?: boolean;
 }
 
-interface TeamMember {
-  _id: Id<'members'>;
-  userId: Id<'users'>;
-  role: string;
-  workspaceId: Id<'workspaces'>;
-  user?: {
-    name: string;
-    image?: string;
-  };
-  status?: string;
-  statusEmoji?: string;
-  isOnline: boolean;
-  lastActive: number;
-}
-
-export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
+export const TeamStatusWidget = ({
+  workspaceId,
+  isEditMode,
+}: TeamStatusWidgetProps) => {
   const router = useRouter();
-  const { data: members, isLoading: membersLoading } = useGetMembers({ workspaceId });
+  const { data: members, isLoading: membersLoading } = useGetMembers({
+    workspaceId,
+  });
   const { presenceState, onlineCount } = useWorkspacePresence({ workspaceId });
 
   // Combine member data with presence data
@@ -54,34 +50,37 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
     if (!members) return [];
 
     // Create a map of online users for quick lookup
-    const onlineUsers = new Set(presenceState.filter(p => p.online).map(p => p.userId));
+    const onlineUsers = new Set(
+      presenceState.filter((p) => p.online).map((p) => p.userId),
+    );
 
-    return members.map(member => {
-      const isOnline = onlineUsers.has(member.userId);
+    return members
+      .map((member) => {
+        const isOnline = onlineUsers.has(member.userId);
 
-      return {
-        ...member,
-        status: isOnline ? 'online' : 'offline',
-        statusEmoji: '',
-        isOnline,
-        lastActive: member._creationTime || Date.now(),
-        // Ensure user object exists
-        user: member?.user || { name: 'Unknown User', image: '' }
-      };
-    }).sort((a, b) => {
-      // Sort by online status first, then by name
-      if (a.isOnline !== b.isOnline) {
-        return a.isOnline ? -1 : 1;
-      }
+        return {
+          ...member,
+          status: isOnline ? "online" : "offline",
+          statusEmoji: "",
+          isOnline,
+          lastActive: member._creationTime || Date.now(),
+          // Ensure user object exists
+          user: member?.user || { name: "Unknown User", image: "" },
+        };
+      })
+      .sort((a, b) => {
+        // Sort by online status first, then by name
+        if (a.isOnline !== b.isOnline) {
+          return a.isOnline ? -1 : 1;
+        }
 
-      return (a.user?.name || '').localeCompare(b.user?.name || '') || 0;
-    });
+        return (a.user?.name ?? "").localeCompare(b.user?.name ?? "");
+      });
   }, [members, presenceState]);
 
   const handleStartChat = (userId: string) => {
     router.push(`/workspace/${workspaceId}/direct/${userId}`);
   };
-
 
   if (membersLoading) {
     return (
@@ -97,7 +96,7 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Team Status</h3>
-          {onlineCount > 0 && (
+          {!isEditMode && onlineCount > 0 && (
             <Badge variant="default" className="ml-2">
               {onlineCount} online
             </Badge>
@@ -106,22 +105,22 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
       </div>
 
       {teamMembers.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-2 p-4">
             {teamMembers.map((teamMember) => (
-              <Card key={teamMember._id} className="overflow-hidden">
+              <Card key={teamMember._id} className="overflow-hidden border-2">
                 <CardContent className="p-3">
                   <div className="flex items-start gap-3">
                     <div className="relative">
                       <Avatar className="h-8 w-8">
                         <AvatarImage
                           src={teamMember.user?.image}
-                          alt={teamMember.user?.name || 'User avatar'}
+                          alt={teamMember.user?.name ?? "User avatar"}
                         />
                         <AvatarFallback>
                           {teamMember.user?.name
                             ? teamMember.user.name.charAt(0).toUpperCase()
-                            : 'U'}
+                            : "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="absolute bottom-0 right-0 rounded-full border-2 border-background">
@@ -135,21 +134,24 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{teamMember.user?.name || 'Unknown User'}</p>
-                          <Badge variant="outline" className="text-xs">
+                          <p className="font-medium">
+                            {teamMember.user?.name ?? "Unknown User"}
+                          </p>
+                          <Badge variant="outline" className="border-2 text-xs">
                             {teamMember.role}
                           </Badge>
                         </div>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Clock className="mr-1 h-3 w-3" />
                           {teamMember.isOnline
-                            ? 'Online now'
+                            ? "Online now"
                             : `Last seen ${formatDistanceToNow(new Date(teamMember.lastActive), { addSuffix: true })}`}
                         </div>
                       </div>
                       {teamMember.status && (
                         <p className="text-sm text-muted-foreground">
-                          {teamMember.statusEmoji && `${teamMember.statusEmoji} `}
+                          {teamMember.statusEmoji &&
+                            `${teamMember.statusEmoji} `}
                           {teamMember.status}
                         </p>
                       )}
@@ -170,7 +172,7 @@ export const TeamStatusWidget = ({ workspaceId }: TeamStatusWidgetProps) => {
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <Users className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No team members</h3>
           <p className="text-sm text-muted-foreground">

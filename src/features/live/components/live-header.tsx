@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Share, Save, Download, Maximize2, Minimize2, Users, Tag, Check, Clock } from 'lucide-react';
+import { Plus, Search, Share, Save, Download, Maximize2, Minimize2, Users, Tag, Check, Clock, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { LiveParticipants } from './live-participants';
 import { TagInput } from '@/features/notes/components/tag-input';
 import { cn } from '@/lib/utils';
@@ -116,7 +117,7 @@ export const LiveHeader = ({
 
   return (
     <div className={cn(
-      "border-b bg-white p-4 flex flex-col gap-3",
+      "border-b bg-white p-4 flex flex-col gap-1",
       className
     )}>
       {/* Top Row - Title, Actions, and Participants */}
@@ -125,24 +126,65 @@ export const LiveHeader = ({
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {title !== undefined && (
             <div className="flex items-center gap-2 min-w-0">
-              {isEditing ? (
-                <Input
-                  value={localTitle}
-                  onChange={(e) => setLocalTitle(e.target.value)}
-                  onBlur={handleTitleSubmit}
-                  onKeyDown={handleTitleKeyDown}
-                  className="text-lg font-semibold border-none shadow-none p-0 h-auto focus-visible:ring-0"
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="text-lg font-semibold text-left truncate hover:text-primary transition-colors"
-                  title="Click to edit title"
-                >
-                  {title || `Untitled ${type === 'notes' ? 'Note' : 'Canvas'}`}
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {isEditing ? (
+                  <Input
+                    value={localTitle}
+                    onChange={(e) => setLocalTitle(e.target.value)}
+                    onBlur={handleTitleSubmit}
+                    onKeyDown={handleTitleKeyDown}
+                    className="text-lg font-semibold border-none shadow-none p-0 h-auto focus-visible:ring-0"
+                    autoFocus
+                  />
+                ) : (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="text-lg font-semibold text-left truncate hover:text-primary transition-colors"
+                    title="Click to edit title"
+                  >
+                    {title || `Untitled ${type === 'notes' ? 'Note' : 'Canvas'}`}
+                  </button>
+                )}
+
+                {/* Info Icon for Created/Updated dates */}
+                {(createdAt || updatedAt) && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-help flex-shrink-0">
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs">
+                        <div className="space-y-1">
+                          {createdAt && (
+                            <div>
+                              <span className="font-semibold">Created:</span> {new Date(createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          )}
+                          {updatedAt && (
+                            <div>
+                              <span className="font-semibold">Updated:</span> {new Date(updatedAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
 
               {/* Auto-save status */}
               {autoSaveStatus && (
@@ -218,31 +260,8 @@ export const LiveHeader = ({
         </div>
       </div>
 
-      {/* Second Row - Metadata and Tags */}
+      {/* Second Row - Tags */}
       <div className="flex items-center justify-between gap-4">
-        {/* Left - Metadata */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          {createdAt && (
-            <span>Created {new Date(createdAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}</span>
-          )}
-          {createdAt && updatedAt && <span>•</span>}
-          {updatedAt && (
-            <span>Updated {new Date(updatedAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}</span>
-          )}
-        </div>
-
         {/* Right - Tags or Search */}
         <div className="flex items-center gap-4">
           {/* Tags for both notes and canvas */}

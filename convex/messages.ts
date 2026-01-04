@@ -852,17 +852,10 @@ export const getThreadMessages = query({
 
 					let context: {
 						name: string;
-						type: 'channel' | 'conversation' | 'unknown';
+						type: 'channel' | 'conversation';
 						id: Id<'channels'> | Id<'conversations'>;
 						memberId?: Id<'members'>;
-					} = {
-						name: 'Unknown',
-						type: 'unknown',
-						id:
-							message.channelId ||
-							message.conversationId ||
-							('' as Id<'channels'> | Id<'conversations'>),
-					};
+					} | null = null;
 
 					if (message.channelId) {
 						const channel = channelMap.get(message.channelId);
@@ -893,6 +886,11 @@ export const getThreadMessages = query({
 								}
 							}
 						}
+					}
+
+					// Return null if context couldn't be determined
+					if (!context) {
+						return null;
 					}
 
 					return {
@@ -1000,7 +998,6 @@ export const getMentionedMessages = query({
 		try {
 			const userId = await getAuthUserId(ctx);
 			if (!userId) {
-				console.log('getMentionedMessages - No userId found');
 				return [];
 			}
 
@@ -1015,239 +1012,236 @@ export const getMentionedMessages = query({
 				.unique();
 
 			if (!currentMember) {
-				console.log(
-					'getMentionedMessages - No currentMember found for userId:',
-					userId
-				);
 				return [];
 			}
 
-			console.log('getMentionedMessages - currentMember:', currentMember);
+			const limit = args.limit ?? 50;
 
-			const limit = args.limit || 50; // Default to 50 messages
-
-			// Get all messages in the workspace
-			const messages = await ctx.db
-				.query('messages')
-				.withIndex('by_workspace_id', (q) =>
-					q.eq('workspaceId', args.workspaceId)
+			// Mentions are the authoritative source of truth; message bodies can be stored
+			// as structured JSON and are not safe to string-match.
+			const mentions = await ctx.db
+				.query('mentions')
+				.withIndex('by_workspace_id_mentioned_member_id', (q) =>
+					q
+						.eq('workspaceId', args.workspaceId)
+						.eq('mentionedMemberId', currentMember._id)
 				)
-				.order('desc') // Most recent first
+				.order('desc')
 				.take(limit);
 
-			console.log(
-				'getMentionedMessages - total messages found:',
-				messages.length
+			const mentionedMessages: any[] = [];
+			const seenMessageIds = new Set<string>();
+
+			const messageIds = Array.from(
+				new Set(
+					mentions
+						.map((m) => m.messageId)
+						.filter((id): id is Id<'messages'> => Boolean(id))
+				)
 			);
 
-			if (messages.length === 0) {
-				console.log('getMentionedMessages - No messages found in workspace');
-				return [];
-			}
-
-			// Filter messages that contain mentions of the current user (including self-mentions)
-			const mentionedMessages = [];
-
-			console.log(
-				'getMentionedMessages - currentMember._id:',
-				currentMember._id
+			const fetchedMessages = await Promise.all(
+				messageIds.map(async (id) => ctx.db.get(id))
+			);
+			const messageById = new Map(
+				fetchedMessages
+					.filter((m): m is Doc<'messages'> => Boolean(m))
+					.map((m) => [m._id, m])
 			);
 
-			for (const message of messages) {
-				// Check if the message body contains a mention of the current user
-				// There are multiple ways mentions might appear in the message body:
-				// 1. data-member-id="memberId" (in the HTML attribute)
-				// 2. @username (in the text content)
-				// 3. The message might be stored as a JSON string with Quill Delta format
+			for (const mention of mentions) {
+				if (!mention.messageId) continue;
+				const message = messageById.get(mention.messageId);
+				if (!message) continue;
+				if (message.workspaceId !== args.workspaceId) continue;
+				if (seenMessageIds.has(String(message._id))) continue;
+				seenMessageIds.add(String(message._id));
 
-				let hasMention = false;
+				// Get the member who sent the message
+				const member = await populateMember(ctx, message.memberId);
+				if (!member) continue;
 
-				try {
-					// First, try to find by member ID in the HTML
-					const memberIdPattern = `data-member-id="${currentMember._id}"`;
-					hasMention = message.body.includes(memberIdPattern);
+				// Get the user associated with the member
+				const user = await populateUser(ctx, member.userId);
+				if (!user) continue;
 
-					// If we didn't find a mention by ID, try to get the current user's name
-					if (!hasMention && currentMember) {
-						// Get the user associated with the current member to find their name
-						const currentUser = await populateUser(ctx, currentMember.userId);
-						if (currentUser && currentUser.name) {
-							// Look for @username pattern in various formats
-							const usernameMentionPatterns = [
-								`>@${currentUser.name}<`,
-								`@${currentUser.name}`,
-								`"@${currentUser.name}"`,
-								`'@${currentUser.name}'`,
-							];
+				// Get reactions for the message
+				const reactions = await populateReactions(ctx, message._id);
 
-							for (const pattern of usernameMentionPatterns) {
-								if (message.body.includes(pattern)) {
-									hasMention = true;
-									break;
-								}
+				// Get image URL if present
+				const image = message.image
+					? await ctx.storage.getUrl(message.image)
+					: undefined;
+
+				// Format reactions with counts
+				const reactionsWithCounts = reactions.reduce(
+					(acc, reaction) => {
+						const existingReaction = acc.find(
+							(r) => r.value === reaction.value
+						);
+
+						if (existingReaction) {
+							existingReaction.count += 1;
+							existingReaction.memberIds.push(reaction.memberId);
+							return acc;
+						}
+
+						return [
+							...acc,
+							{
+								...reaction,
+								count: 1,
+								memberIds: [reaction.memberId],
+							},
+						];
+					},
+					[] as Array<
+						Omit<Doc<'reactions'>, 'memberId'> & {
+							count: number;
+							memberIds: Id<'members'>[];
+						}
+					>
+				);
+
+				// Get thread information if this message has replies
+				const thread = await populateThread(ctx, message._id);
+
+				// Add context information (channel or conversation)
+				let context = null;
+
+				if (message.channelId) {
+					const channel = await ctx.db.get(message.channelId);
+					if (channel) {
+						context = {
+							type: 'channel',
+							name: channel.name,
+							id: channel._id,
+						};
+					}
+				} else if (message.conversationId) {
+					const conversation = await ctx.db.get(message.conversationId);
+					if (conversation) {
+						const otherMemberId =
+							conversation.memberOneId === message.memberId
+								? conversation.memberTwoId
+								: conversation.memberOneId;
+						const otherMember = await populateMember(ctx, otherMemberId);
+						if (otherMember) {
+							const otherUser = await populateUser(ctx, otherMember.userId);
+							if (otherUser) {
+								context = {
+									type: 'conversation',
+									name: `Direct Message with ${otherUser.name}`,
+									id: conversation._id,
+									memberId: otherMember._id,
+								};
 							}
 						}
 					}
-
-					// If still no mention found, try parsing the body as JSON (Quill Delta format)
-					if (!hasMention) {
-						try {
-							const parsedBody = JSON.parse(message.body);
-							if (parsedBody.ops) {
-								// It's a Quill Delta format
-								for (const op of parsedBody.ops) {
-									if (op.insert && typeof op.insert === 'string') {
-										// Check if the insert contains a mention of the current member ID
-										if (
-											op.insert.includes(
-												`data-member-id="${currentMember._id}"`
-											)
-										) {
-											hasMention = true;
-											break;
-										}
-
-										// If we have the user's name, check for that too
-										const currentUser = await populateUser(
-											ctx,
-											currentMember.userId
-										);
-										if (currentUser && currentUser.name) {
-											if (op.insert.includes(`@${currentUser.name}`)) {
-												hasMention = true;
-												break;
-											}
-										}
-									}
-								}
-							}
-						} catch (e) {
-							// Not JSON, continue with other checks
-						}
-					}
-				} catch (e) {
-					console.error('Error checking for mentions:', e);
 				}
 
-				console.log('getMentionedMessages - checking message:', {
-					messageId: message._id,
-					messageBody:
-						message.body.substring(0, 100) +
-						(message.body.length > 100 ? '...' : ''),
-					hasMention,
+				mentionedMessages.push({
+					...message,
+					user: {
+						name: user.name,
+						image: user.image,
+					},
+					reactions: reactionsWithCounts,
+					image,
+					threadCount: thread?.count,
+					threadImage: thread?.image,
+					threadName: thread?.name,
+					threadTimestamp: thread?.timestamp,
+					context,
 				});
-
-				if (hasMention) {
-					// Get the member who sent the message
-					const member = await populateMember(ctx, message.memberId);
-					if (!member) continue;
-
-					// Get the user associated with the member
-					const user = await populateUser(ctx, member.userId);
-					if (!user) continue;
-
-					// Get reactions for the message
-					const reactions = await populateReactions(ctx, message._id);
-
-					// Get image URL if present
-					const image = message.image
-						? await ctx.storage.getUrl(message.image)
-						: undefined;
-
-					// Format reactions with counts
-					const reactionsWithCounts = reactions.reduce(
-						(acc, reaction) => {
-							const existingReaction = acc.find(
-								(r) => r.value === reaction.value
-							);
-
-							if (existingReaction) {
-								existingReaction.count += 1;
-								existingReaction.memberIds.push(reaction.memberId);
-								return acc;
-							}
-
-							return [
-								...acc,
-								{
-									...reaction,
-									count: 1,
-									memberIds: [reaction.memberId],
-								},
-							];
-						},
-						[] as Array<
-							Omit<Doc<'reactions'>, 'memberId'> & {
-								count: number;
-								memberIds: Id<'members'>[];
-							}
-						>
-					);
-
-					// Get thread information if this message has replies
-					const thread = await populateThread(ctx, message._id);
-
-					// Add context information (channel or conversation)
-					let context = null;
-
-					if (message.channelId) {
-						const channel = await ctx.db.get(message.channelId);
-						if (channel) {
-							context = {
-								type: 'channel',
-								name: channel.name,
-								id: channel._id,
-							};
-						}
-					} else if (message.conversationId) {
-						const conversation = await ctx.db.get(message.conversationId);
-						if (conversation) {
-							const otherMemberId =
-								conversation.memberOneId === message.memberId
-									? conversation.memberTwoId
-									: conversation.memberOneId;
-							const otherMember = await populateMember(ctx, otherMemberId);
-							if (otherMember) {
-								const otherUser = await populateUser(ctx, otherMember.userId);
-								if (otherUser) {
-									context = {
-										type: 'conversation',
-										name: `Direct Message with ${otherUser.name}`,
-										id: conversation._id,
-										memberId: otherMember._id,
-									};
-								}
-							}
-						}
-					}
-
-					// Add the message to the result
-					mentionedMessages.push({
-						...message,
-						user: {
-							name: user.name,
-							image: user.image,
-						},
-						reactions: reactionsWithCounts,
-						image,
-						threadCount: thread?.count,
-						threadImage: thread?.image,
-						threadName: thread?.name,
-						threadTimestamp: thread?.timestamp,
-						context,
-					});
-				}
 			}
 
-			console.log(
-				'getMentionedMessages - found mentioned messages:',
-				mentionedMessages.length
-			);
 			return mentionedMessages;
 		} catch (error) {
 			console.error('Error in getMentionedMessages:', error);
 			return [];
 		}
+	},
+});
+
+export const getRecentWorkspaceChannelMessages = query({
+	args: {
+		workspaceId: v.id('workspaces'),
+		from: v.number(),
+		to: v.optional(v.number()),
+		limit: v.number(),
+		perChannelLimit: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			return [];
+		}
+
+		// Get all channels in the workspace
+		const channels = await ctx.db
+			.query('channels')
+			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
+			.collect();
+
+		if (channels.length === 0) {
+			return [];
+		}
+
+		const allMessages: Array<{
+			channelName: string;
+			authorName: string;
+			body: string;
+			_creationTime: number;
+		}> = [];
+
+		// Fetch messages from each channel
+		for (const channel of channels) {
+			const messages = await ctx.db
+				.query('messages')
+				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
+				.order('desc')
+				.filter((q) => {
+					if (args.to) {
+						return q.and(
+							q.gte(q.field('_creationTime'), args.from),
+							q.lte(q.field('_creationTime'), args.to)
+						);
+					}
+					// If from is 0, return all messages (no time filter)
+					return args.from > 0 ? q.gte(q.field('_creationTime'), args.from) : true;
+				})
+				.take(args.perChannelLimit);
+
+			// Filter out thread replies
+			const nonThreadMessages = messages.filter((msg) => !msg.parentMessageId);
+
+			// Get author info for each message
+			for (const message of nonThreadMessages) {
+				if (message.body) {
+					const member = await ctx.db.get(message.memberId);
+					if (member) {
+						const user = await ctx.db.get(member.userId);
+						allMessages.push({
+							channelName: channel.name,
+							authorName: user?.name || 'Unknown',
+							body: message.body,
+							_creationTime: message._creationTime,
+						});
+					}
+				}
+			}
+
+			// Stop if we've reached the overall limit
+			if (allMessages.length >= args.limit) {
+				break;
+			}
+		}
+
+		// Sort by creation time and limit total results
+		return allMessages
+			.sort((a, b) => a._creationTime - b._creationTime)
+			.slice(-args.limit);
 	},
 });
 
@@ -1337,6 +1331,55 @@ export const getRecentChannelMessages = query({
 			return formattedMessages;
 		} catch (error) {
 			console.error('Error in getRecentChannelMessages:', error);
+			return [];
+		}
+	},
+});
+
+export const getThreadReplyCounts = query({
+	args: {
+		parentMessageIds: v.array(v.id('messages')),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+
+		if (!userId) throw new Error('Unauthorized.');
+
+		try {
+			// If no parent message IDs provided, return empty array
+			if (args.parentMessageIds.length === 0) return [];
+
+			// Fetch all replies in a single query using 'or' filter
+			const allReplies = await ctx.db
+				.query('messages')
+				.withIndex('by_parent_message_id')
+				.filter((q) =>
+					q.or(
+						...args.parentMessageIds.map((id) =>
+							q.eq(q.field('parentMessageId'), id)
+						)
+					)
+				)
+				.collect();
+
+			// Group replies by parent message ID and count
+			const countsByParent = new Map<string, number>();
+			for (const reply of allReplies) {
+				if (reply.parentMessageId) {
+					const key = reply.parentMessageId;
+					countsByParent.set(key, (countsByParent.get(key) ?? 0) + 1);
+				}
+			}
+
+			// Build result array with counts (0 for parents with no replies)
+			const counts = args.parentMessageIds.map((parentMessageId) => ({
+				parentMessageId,
+				count: countsByParent.get(parentMessageId) ?? 0,
+			}));
+
+			return counts;
+		} catch (error) {
+			console.error('Error in getThreadReplyCounts:', error);
 			return [];
 		}
 	},

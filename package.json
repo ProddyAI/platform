@@ -7,10 +7,9 @@
     "build": "next build",
     "convex": "convex dev",
     "start": "next start",
-    "lint": "eslint",
-    "lint:fix": "eslint --fix",
-    "format": "prettier --check . --config .prettierrc.mjs",
-    "format:fix": "prettier --write . --config .prettierrc.mjs"
+    "type": "tsc --noEmit",
+    "lint": "eslint . --fix --max-warnings 0",
+    "format": "prettier --write . --config .prettierrc.mjs"
   },
   "author": {
     "name": "George Bobby",
@@ -50,14 +49,6 @@
     "lucide-react"
   ],
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/george-bobby/proddy-platform.git"
-  },
-  "homepage": "https://github.com/george-bobby/proddy-platform#readme",
-  "bugs": {
-    "url": "https://github.com/george-bobby/proddy-platform/issues"
-  },
   "dependencies": {
     "@ai-sdk/google": "^1.2.22",
     "@ai-sdk/openai": "^2.0.22",
@@ -77,7 +68,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@formbricks/js": "^4.3.0",
     "@google/generative-ai": "^0.24.0",
-    "@hotjar/browser": "^1.0.9",
     "@langchain/core": "^0.3.57",
     "@liveblocks/node": "^2.24.1",
     "@liveblocks/react": "^2.24.1",
@@ -102,10 +92,10 @@
     "@radix-ui/react-tooltip": "^1.1.2",
     "@radix-ui/react-visually-hidden": "^1.1.0",
     "@react-email/components": "^0.0.39",
+    "@sentry/nextjs": "^10.32.1",
     "@stream-io/node-sdk": "^0.4.25",
     "@stream-io/video-react-sdk": "^1.18.8",
     "@types/dompurify": "^3.2.0",
-    "@vercel/analytics": "^1.5.0",
     "ai": "^4.3.19",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.0",
@@ -158,13 +148,13 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
-    "eslint-config-next": "14.2.8",
+    "eslint-config-next": "^14.2.35",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "postcss": "^8",
     "prettier-plugin-tailwindcss": "^0.6.6",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   }
 }

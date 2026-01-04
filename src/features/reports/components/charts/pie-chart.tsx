@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { calculateSvgTooltipPosition, getTooltipRectAttrs, getTooltipTextAttrs } from '@/features/reports/utils/tooltip-positioning';
 
 interface PieChartProps {
   data: {
@@ -10,6 +11,7 @@ interface PieChartProps {
     color: string;
   }[];
   size?: number;
+  maxSize?: number;
   showLegend?: boolean;
   className?: string;
   formatValue?: (value: number) => string;
@@ -19,6 +21,7 @@ interface PieChartProps {
 export const PieChart = ({
   data,
   size = 200,
+  maxSize,
   showLegend = true,
   className,
   formatValue = (value) => value.toString(),
@@ -36,7 +39,6 @@ export const PieChart = ({
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
-  // Calculate segments
   let cumulativePercentage = 0;
   const segments = data.map((item, index) => {
     const percentage = (item.value / total) * 100;
@@ -53,7 +55,6 @@ export const PieChart = ({
     };
   });
 
-  // SVG path for each segment
   const createSegmentPath = (segment: typeof segments[0]) => {
     const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
     const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
@@ -72,41 +73,76 @@ export const PieChart = ({
   };
 
   return (
-    <div className={cn("flex flex-col md:flex-row items-center gap-6", className)}>
-      <div className="relative" style={{ width: size, height: size }}>
+    <div className={cn("flex flex-col md:flex-row items-center gap-6 w-full h-full overflow-auto", className)}>
+      <div className="relative flex-shrink-0" style={{ width: maxSize ? Math.min(size, maxSize) : size, height: maxSize ? Math.min(size, maxSize) : size }}>
         <svg viewBox="0 0 100 100" className="w-full h-full">
           {segments.map((segment) => {
             const isHovered = hoveredIndex === segment.index;
-            const offset = isHovered ? 3 : 0;
             
-            // Calculate offset direction
             const midAngleRad = ((segment.startAngle + segment.endAngle) / 2 / 100) * Math.PI * 2 - Math.PI / 2;
+            const offset = isHovered ? 3 : 0;
             const offsetX = offset * Math.cos(midAngleRad);
             const offsetY = offset * Math.sin(midAngleRad);
             
             return (
-              <path
+              <g 
                 key={segment.index}
-                d={createSegmentPath(segment)}
-                fill={segment.color}
-                stroke="#fff"
-                strokeWidth="1"
-                className={cn(
-                  "transition-all duration-200",
-                  onSegmentClick && "cursor-pointer"
-                )}
-                style={{
-                  transform: `translate(${offsetX}px, ${offsetY}px)`,
-                }}
-                onMouseEnter={() => setHoveredIndex(segment.index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                onClick={() => onSegmentClick?.(segment.label, segment.value, segment.index)}
-              />
+                transform={`translate(${offsetX}, ${offsetY})`}
+                className="transition-transform duration-200"
+              >
+                <path
+                  d={createSegmentPath(segment)}
+                  fill={segment.color}
+                  stroke="#fff"
+                  strokeWidth="1"
+                  className={cn(
+                    "transition-all duration-200",
+                    onSegmentClick && "cursor-pointer"
+                  )}
+                  style={{
+                    filter: isHovered ? 'brightness(0.9)' : 'brightness(1)',
+                  }}
+                  onMouseEnter={() => setHoveredIndex(segment.index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  onClick={() => onSegmentClick?.(segment.label, segment.value, segment.index)}
+                />
+                {isHovered && (() => {
+                  const tooltipDistance = 65;
+                  const tooltipX = 50 + tooltipDistance * Math.cos(midAngleRad);
+                  const tooltipY = 50 + tooltipDistance * Math.sin(midAngleRad);
+                  
+                  const tooltipPos = calculateSvgTooltipPosition({
+                    viewBoxWidth: 100,
+                    viewBoxHeight: 100,
+                    tooltipWidth: 40,
+                    tooltipHeight: 16,
+                    padding: 3,
+                    pointX: tooltipX,
+                    pointY: tooltipY,
+                  });
+                  const rectAttrs = getTooltipRectAttrs(40, 16);
+                  const textAttrs = getTooltipTextAttrs();
+                  
+                  return (
+                    <g transform={tooltipPos.transform}>
+                      <rect
+                        {...rectAttrs}
+                        className="fill-foreground/90 stroke-border stroke-[0.5]"
+                      />
+                      <text
+                        {...textAttrs}
+                        className="fill-background text-[3px] font-medium"
+                      >
+                        {segment.label}
+                      </text>
+                    </g>
+                  );
+                })()}
+              </g>
             );
           })}
         </svg>
         
-        {/* Center text showing total */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <span className="text-sm font-medium">Total</span>
           <span className="text-lg font-bold">{formatValue(total)}</span>

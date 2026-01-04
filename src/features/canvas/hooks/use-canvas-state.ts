@@ -11,12 +11,6 @@ import {
 	XYWH,
 } from '../types/canvas';
 
-/**
- * Hook to manage canvas state
- *
- * @param initialColor Initial color for drawing
- * @returns Canvas state and setter
- */
 export function useCanvasState(initialColor: Color = { r: 0, g: 0, b: 0 }) {
 	const [canvasState, setCanvasState] = useState<CanvasState>({
 		mode: CanvasMode.None,
@@ -25,7 +19,6 @@ export function useCanvasState(initialColor: Color = { r: 0, g: 0, b: 0 }) {
 	const [lastUsedColor, setLastUsedColor] = useState<Color>(initialColor);
 	const [strokeWidth, setStrokeWidth] = useState<number>(16);
 
-	// Helper functions to update canvas state
 	const setMode = (mode: CanvasMode) => {
 		if (mode === CanvasMode.None) {
 			setCanvasState({ mode: CanvasMode.None });

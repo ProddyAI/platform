@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 
-// Email types that users can unsubscribe from
 export type EmailType =
 	| 'mentions'
 	| 'assignee'
@@ -8,14 +7,10 @@ export type EmailType =
 	| 'directMessage'
 	| 'weeklyDigest';
 
-// Get the secret key for signing unsubscribe URLs
 function getUnsubscribeSecret(): string {
 	return process.env.NEXT_PUBLIC_EMAIL_UNSUBSCRIBE_SECRET!;
 }
 
-/**
- * Generate a signed unsubscribe URL
- */
 export function generateUnsubscribeUrl(
 	userId: string,
 	emailType: EmailType
@@ -23,16 +18,13 @@ export function generateUnsubscribeUrl(
 	const secret = getUnsubscribeSecret();
 	const timestamp = Date.now().toString();
 
-	// Create the data to sign
 	const data = `${userId}:${emailType}:${timestamp}`;
 
-	// Generate HMAC signature
 	const signature = crypto
 		.createHmac('sha256', secret)
 		.update(data)
 		.digest('hex');
 
-	// Create the unsubscribe URL
 	const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 	const params = new URLSearchParams({
 		userId,

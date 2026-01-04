@@ -1,16 +1,133 @@
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
+import { ConvexHttpClient } from 'convex/browser';
 import { format } from 'date-fns';
-import * as dotenv from 'dotenv';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Load environment variables
-dotenv.config();
+import { api } from '@/../convex/_generated/api';
+import type { Id } from '@/../convex/_generated/dataModel';
+import {
+	convexAuthNextjsToken,
+	isAuthenticatedNextjs,
+} from '@convex-dev/auth/nextjs/server';
 
 interface MessageData {
 	body: string;
 	authorName: string;
 	creationTime: number;
+}
+
+type RequestBody =
+	| { messages: MessageData[] }
+	| {
+			workspaceId: Id<'workspaces'>;
+			channel?: string;
+			channelId?: Id<'channels'>;
+			limit?: number;
+	  };
+
+function createConvexClient(): ConvexHttpClient {
+	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+		throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
+	}
+	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+}
+
+function normalizeChannelName(name: string) {
+	return name.trim().toLowerCase().replace(/\s+/g, '-');
+}
+
+function normalizeChannelQuery(raw: string) {
+	let s = raw.trim().toLowerCase();
+	if (s.startsWith('#')) s = s.slice(1);
+	s = s.replace(/\bchannel\b/g, '').trim();
+	s = s.replace(/[\s_]+/g, '-');
+	s = s.replace(/[^a-z0-9-]/g, '');
+	s = s.replace(/-+/g, '-');
+	s = s.replace(/^-+|-+$/g, '');
+	return s;
+}
+
+async function fetchRecentChannelMessages(opts: {
+	workspaceId: Id<'workspaces'>;
+	channelId?: Id<'channels'>;
+	channel?: string;
+	limit: number;
+}): Promise<{ resolvedChannelName: string; messages: MessageData[] }> {
+	const convex = createConvexClient();
+
+	// Pass auth through to Convex so channel membership checks work.
+	try {
+		const token = convexAuthNextjsToken();
+		if (token) {
+			convex.setAuth(token);
+		} else if (isAuthenticatedNextjs()) {
+			console.warn('[Smart Summarize] Authenticated session but no Convex token found');
+		}
+	} catch (err) {
+		if (isAuthenticatedNextjs()) {
+			console.warn('[Smart Summarize] Failed to read Convex auth token from request', err);
+		}
+	}
+
+	let resolvedChannelId: Id<'channels'> | undefined = opts.channelId;
+	let resolvedChannelName = '';
+
+	if (!resolvedChannelId) {
+		const channelQuery = String(opts.channel ?? '').trim();
+		if (!channelQuery) {
+			throw new Error('channel or channelId is required');
+		}
+
+		const channels = await convex.query(api.channels.get, {
+			workspaceId: opts.workspaceId,
+		});
+
+		if (!Array.isArray(channels) || channels.length === 0) {
+			throw new Error('No channels found for workspace (or no access)');
+		}
+
+		const querySlug = normalizeChannelQuery(channelQuery);
+		let best: { id: Id<'channels'>; name: string; score: number } | null = null;
+
+		for (const ch of channels as Array<{ _id: Id<'channels'>; name: string }>) {
+			const chSlug = normalizeChannelName(String(ch?.name ?? ''));
+			const score = chSlug === querySlug ? 1000 : chSlug.includes(querySlug) ? 600 : 0;
+			if (!best || score > best.score) {
+				best = { id: ch._id, name: ch.name, score };
+			}
+		}
+
+		if (!best || best.score < 500) {
+			throw new Error(`Channel not found: ${channelQuery}`);
+		}
+
+		resolvedChannelId = best.id;
+		resolvedChannelName = best.name;
+	} else {
+		// If caller gave an ID, we still attempt to resolve name for nicer output.
+		try {
+			const channels = await convex.query(api.channels.get, {
+				workspaceId: opts.workspaceId,
+			});
+			const found = (channels as Array<{ _id: Id<'channels'>; name: string }>).find(
+				(c) => String(c?._id) === String(resolvedChannelId)
+			);
+			resolvedChannelName = found?.name ?? '';
+		} catch {
+			resolvedChannelName = '';
+		}
+	}
+
+	const messages = await convex.query(api.messages.getRecentChannelMessages, {
+		channelId: resolvedChannelId,
+		limit: opts.limit,
+	});
+
+	return {
+		resolvedChannelName: resolvedChannelName || String(opts.channel ?? '').replace(/^#/, '').trim(),
+		messages: (messages as MessageData[]) ?? [],
+	};
 }
 
 // More efficient text extraction with memoization
@@ -98,7 +215,10 @@ export async function POST(req: NextRequest) {
 	try {
 		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
 			return NextResponse.json(
-				{ error: 'API key not configured' },
+				{
+					error:
+						'GOOGLE_GENERATIVE_AI_API_KEY is not configured (required for smart summarization).',
+				},
 				{ status: 500 }
 			);
 		}
@@ -113,19 +233,58 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { messages } = requestData;
+		let messages: MessageData[] | null = null;
+		let channelLabel: string | null = null;
 
-		if (!messages || !Array.isArray(messages)) {
-			return NextResponse.json(
-				{ error: 'Invalid messages format' },
-				{ status: 400 }
-			);
+		// Back-compat: accept explicit messages.
+		if (Array.isArray((requestData as any)?.messages)) {
+			messages = (requestData as any).messages as MessageData[];
 		}
 
-		if (messages.length === 0) {
+		// New mode: accept workspaceId + channel / channelId and fetch from DB.
+		if (!messages) {
+			const workspaceId = (requestData as any)?.workspaceId as Id<'workspaces'> | undefined;
+			const channel = (requestData as any)?.channel as string | undefined;
+			const channelId = (requestData as any)?.channelId as Id<'channels'> | undefined;
+			const limitRaw = (requestData as any)?.limit;
+			const limit =
+				typeof limitRaw === 'number' && Number.isFinite(limitRaw)
+					? Math.max(1, Math.min(MAX_MESSAGES, Math.floor(limitRaw)))
+					: MAX_MESSAGES;
+
+			if (!workspaceId) {
+				return NextResponse.json(
+					{ error: 'Either messages[] or workspaceId is required' },
+					{ status: 400 }
+				);
+			}
+
+			try {
+				const fetched = await fetchRecentChannelMessages({
+					workspaceId,
+					channel,
+					channelId,
+					limit,
+				});
+				messages = fetched.messages;
+				channelLabel = fetched.resolvedChannelName ? `#${fetched.resolvedChannelName}` : null;
+			} catch (err) {
+				return NextResponse.json(
+					{
+						error:
+							err instanceof Error
+								? err.message
+								: 'Failed to fetch channel messages',
+					},
+					{ status: 404 }
+				);
+			}
+		}
+
+		if (!messages || messages.length === 0) {
 			return NextResponse.json(
-				{ error: 'No messages to summarize' },
-				{ status: 400 }
+				{ error: 'No messages found to summarize' },
+				{ status: 404 }
 			);
 		}
 
@@ -136,7 +295,7 @@ export async function POST(req: NextRequest) {
 				: messages;
 
 		// Check cache first
-		const cacheKey = generateCacheKey(limitedMessages);
+		const cacheKey = `${channelLabel ?? 'messages'}::${generateCacheKey(limitedMessages)}`;
 		const cachedResult = summaryCache.get(cacheKey);
 
 		if (cachedResult) {
@@ -173,24 +332,30 @@ export async function POST(req: NextRequest) {
 				messages: [
 					{
 						role: 'system',
-						content: `You are an efficient text summarizer for group chat conversations.
-Your task is to create a concise, informative summary of the conversation.
-Focus on:
-- Key topics and themes (most important)
-- Decisions made or conclusions reached
-- Action items and deadlines (if any)
-- Important questions or unresolved issues
+						content: `You summarize workspace chat for a user.
 
-Guidelines:
-- Format your response in Markdown
-- Be extremely concise (3-4 sentences maximum)
-- Use bullet points for clarity
-- Use **bold** for important names, topics, and action items
-- Use headings (## or ###) to organize by topic when appropriate
-- Use > blockquotes for important quotes from the conversation
-- Focus only on substantive content, ignore greetings and small talk
-- Group by topic rather than chronology
-- Return only the summary with no introductory phrases`,
+Task:
+- Create a concise, informative recap grounded ONLY in the provided messages.
+- Focus on concrete updates, decisions, blockers/risks, owners, and next actions.
+
+Strict rules:
+- Do NOT quote messages verbatim and do NOT include any continuous 5+ words copied from the messages.
+- Do NOT use blockquotes.
+- Avoid vague filler.
+- If something is unknown, say "Not specified".
+
+Output format (Markdown, no intro text):
+## Summary${channelLabel ? ` — ${channelLabel}` : ''}
+- ...
+
+## Action items
+- ... (Owner: @Name, Due: ...)
+
+## Decisions
+- ...
+
+## Risks / blockers
+- ...`,
 					},
 					{
 						role: 'user',
@@ -210,25 +375,14 @@ Guidelines:
 
 			return NextResponse.json({ summary: text });
 		} catch (aiError) {
-			// More efficient fallback with markdown formatting
-			const fallbackSummary =
-				limitedMessages.length > 5
-					? `### Summarization Failed\n\n${limitedMessages.length} messages selected. AI summarization failed. Try selecting fewer messages.`
-					: `### Message Contents\n\n${limitedMessages
-							.map((msg: MessageData) => {
-								const plainText = extractTextFromRichText(msg.body);
-								const formattedDate = format(
-									new Date(msg.creationTime),
-									"MMM d 'at' h:mm a"
-								);
-								return `**${msg.authorName}** (${formattedDate}):\n> ${plainText}`;
-							})
-							.join('\n\n')}`;
-
-			return NextResponse.json({
-				summary: fallbackSummary,
-				note: 'AI summarization failed',
-			});
+			console.error('[Smart Summarize] AI summarization failed:', aiError);
+			return NextResponse.json(
+				{
+					error:
+						'Summarization failed. Verify the channel is accessible and the AI key/model are configured.',
+				},
+				{ status: 502 }
+			);
 		}
 	} catch (error) {
 		return NextResponse.json(

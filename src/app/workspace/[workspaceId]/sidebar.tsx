@@ -17,10 +17,14 @@ import {
   CheckSquare,
   Settings,
   LayoutDashboard,
+  Bot,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useToggle } from "react-use";
 import { useState } from "react";
+import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
 
 import { Button } from "@/components/ui/button";
 import { Hint } from "@/components/hint";
@@ -197,7 +201,7 @@ export const WorkspaceSidebar = ({
   return (
     <div
       className={cn(
-        "flex h-full flex-col bg-primary transition-all duration-300 ease-in-out border-r-2 border-white",
+        "flex h-full flex-col bg-primary transition-all duration-300 ease-in-out border-r-2 border-white/20 dark:border-border/40",
         isCollapsed ? "w-[70px]" : "w-[280px]"
       )}
     >
@@ -222,6 +226,18 @@ export const WorkspaceSidebar = ({
         />
       </div>
 
+      {/* Proddy AI Link */}
+      <div className="mt-2 px-2 md:px-4">
+        <SidebarItem
+          label="Proddy AI"
+          icon={Bot}
+          id="assistant"
+          href={`/workspace/${workspaceId}/assistant`}
+          isActive={pathname.includes("/assistant")}
+          isCollapsed={isCollapsed}
+        />
+      </div>
+
       {/* Channels Section */}
       {channels && channels.length > 0 && (
         <div className="mt-2">
@@ -239,6 +255,7 @@ export const WorkspaceSidebar = ({
                 id={item._id}
                 label={item.name}
                 icon={item.icon}
+                iconImageUrl={item.iconImageUrl}
                 isActive={channelId === item._id}
                 isCollapsed={isCollapsed}
               />

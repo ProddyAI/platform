@@ -11,6 +11,8 @@ import { useGetTasks } from '@/features/tasks/api/use-get-tasks';
 import { useGetTaskCategories } from '@/features/tasks/api/use-get-task-categories';
 import { useUpdateTask } from '@/features/tasks/api/use-update-task';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface TasksWidgetProps {
   workspaceId: Id<'workspaces'>;
@@ -24,50 +26,69 @@ interface TasksWidgetProps {
       image?: string;
     };
   };
+  isEditMode?: boolean;
+  controls?: React.ReactNode;
 }
 
 
 
-export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
+export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetProps) => {
   const router = useRouter();
+  const [updatingTaskId, setUpdatingTaskId] = useState<Id<'tasks'> | null>(null);
 
   // Fetch your tasks
   const { data: tasks, isLoading } = useGetTasks({ workspaceId });
   const { data: categories } = useGetTaskCategories({ workspaceId });
   const updateTask = useUpdateTask();
 
-  // Filter tasks to show only incomplete ones first, then by due date
   const sortedTasks = tasks ? [...tasks]
     .sort((a, b) => {
-      // First sort by completion status
       if (a.completed !== b.completed) {
         return a.completed ? 1 : -1;
       }
 
-      // Then sort by due date if available
       if (a.dueDate && b.dueDate) {
         return a.dueDate - b.dueDate;
       }
 
-      // If only one has a due date, prioritize it
       if (a.dueDate) return -1;
       if (b.dueDate) return 1;
 
-      // Finally sort by creation time
       return b._creationTime - a._creationTime;
     })
-    .slice(0, 10) : []; // Limit to 10 tasks for the widget
+    .slice(0, 10) : [];
 
-  // Handle viewing a task
   const handleViewTask = (taskId: Id<'tasks'>) => {
     router.push(`/workspace/${workspaceId}/tasks?taskId=${taskId}`);
   };
 
-  const handleToggleTaskCompletion = (id: Id<'tasks'>, completed: boolean) => {
-    updateTask({
-      id,
-      completed: !completed
-    });
+  const handleToggleTaskCompletion = async (id: Id<'tasks'>, completed: boolean) => {
+    if (updatingTaskId) return;
+    
+    setUpdatingTaskId(id);
+    
+    try {
+      const result = await updateTask({
+        id,
+        completed: !completed
+      });
+      
+      if (result !== undefined) {
+        toast.success(
+          !completed ? 'Task completed' : 'Task marked as incomplete',
+          {
+            description: !completed ? 'Great job!' : 'Task reopened',
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      toast.error('Failed to update task', {
+        description: 'Please try again',
+      });
+    } finally {
+      setUpdatingTaskId(null);
+    }
   };
 
   // Get category name by ID
@@ -104,84 +125,84 @@ export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-8"> {/* Added padding-right to avoid overlap with drag handle */}
+      <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
           <CheckSquare className="h-5 w-5 text-primary" />
           <h3 className="font-medium">Your Tasks</h3>
-          {sortedTasks.length > 0 && (
+          {!isEditMode && sortedTasks.length > 0 && (
             <Badge variant="default" className="ml-2">
               {sortedTasks.length}
             </Badge>
           )}
-          <div className="flex items-center gap-2 ml-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
-            >
-              View all
-            </Button>
-          </div>
         </div>
+        {isEditMode ? (
+          controls
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
+            className='border-2'
+          >
+            View all
+          </Button>
+        )}
       </div>
 
       {sortedTasks.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border">
+        <ScrollArea className="h-[250px] rounded-md border-2">
           <div className="space-y-2 p-4">
             {sortedTasks.map((task) => (
               <Card
                 key={task._id}
-                className={`overflow-hidden ${task.completed ? 'bg-muted/20' : ''}`}
+                className={`overflow-hidden border-2 ${task.completed ? 'bg-muted/20' : ''}`}
               >
-                <CardContent className="p-3">
+                <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 rounded-full"
+                      className="h-6 w-6 rounded-full flex-shrink-0 mt-0.5"
                       onClick={() => handleToggleTaskCompletion(task._id, task.completed)}
+                      disabled={updatingTaskId === task._id}
                     >
-                      {task.completed ? (
+                      {updatingTaskId === task._id ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : task.completed ? (
                         <CheckCircle2 className="h-5 w-5 text-green-500" />
                       ) : (
                         <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
                       )}
                     </Button>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <p className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.title}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          {getPriorityBadge(task.priority)}
-                          {task.dueDate && (
-                            <div className={`flex items-center text-xs ${new Date(task.dueDate) < new Date() && !task.completed
-                              ? 'text-red-500'
-                              : 'text-muted-foreground'
-                              }`}>
-                              <Clock className="mr-1 h-3 w-3" />
-                              {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
-                              {new Date(task.dueDate) < new Date() && !task.completed && (
-                                <AlertCircle className="ml-1 h-3 w-3" />
-                              )}
-                            </div>
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <p className={`font-medium break-words leading-tight ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                        {task.title}
+                      </p>
+                      {getPriorityBadge(task.priority)}
+                      {task.dueDate && (
+                        <div className={`flex items-center text-xs ${new Date(task.dueDate) < new Date() && !task.completed
+                          ? 'text-red-500'
+                          : 'text-muted-foreground'
+                          }`}>
+                          <Clock className="mr-1 h-3 w-3 flex-shrink-0" />
+                          <span>{formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}</span>
+                          {new Date(task.dueDate) < new Date() && !task.completed && (
+                            <AlertCircle className="ml-1 h-3 w-3 flex-shrink-0" />
                           )}
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-xs">
-                          {getCategoryName(task.categoryId)}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-primary"
-                          onClick={() => handleViewTask(task._id)}
-                        >
-                          View
-                        </Button>
-                      </div>
+                      )}
+                      <Badge variant="outline" className="border-2 text-xs w-fit">
+                        {getCategoryName(task.categoryId)}
+                      </Badge>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-primary flex-shrink-0"
+                      onClick={() => handleViewTask(task._id)}
+                    >
+                      View
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -189,7 +210,7 @@ export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
           </div>
         </ScrollArea>
       ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border bg-muted/10">
+        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
           <CheckSquare className="mb-2 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">No tasks</h3>
           <p className="text-sm text-muted-foreground">
@@ -199,9 +220,10 @@ export const TasksWidget = ({ workspaceId }: TasksWidgetProps) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
+              className='border-2'
+              onClick={() => router.push(`/workspace/${workspaceId}/tasks?action=create`)}
             >
-              Create a task
+              Create Task
             </Button>
           </div>
         </div>
