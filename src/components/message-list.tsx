@@ -209,6 +209,7 @@ export const MessageList = ({
             
             const messageElement = (
               <Message
+                key={message._id}
                 id={message._id}
                 memberId={message.memberId}
                 authorImage={message.user.image}
