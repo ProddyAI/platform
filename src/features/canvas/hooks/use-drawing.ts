@@ -3,19 +3,11 @@
 import { useMutation } from '../../../../liveblocks.config';
 import { CanvasMode, Color, Point } from '../types/canvas';
 
-/**
- * Hook for drawing operations
- *
- * @param canvasMode Current canvas mode
- * @param lastUsedColor Current color for drawing
- * @returns Drawing operation functions
- */
 export function useDrawing(
 	canvasMode: CanvasMode,
 	lastUsedColor: Color,
 	strokeWidth: number = 16
 ) {
-	// Start drawing
 	const startDrawing = useMutation(
 		({ setMyPresence }, point: Point, pressure: number) => {
 			setMyPresence({
@@ -27,7 +19,6 @@ export function useDrawing(
 		[lastUsedColor, strokeWidth]
 	);
 
-	// Continue drawing
 	const continueDrawing = useMutation(
 		({ self, setMyPresence }, point: Point, e: React.PointerEvent) => {
 			const {

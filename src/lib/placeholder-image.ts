@@ -1,12 +1,3 @@
-/**
- * Generate a data URL for a placeholder image with initials
- * @param text - The text/initials to display
- * @param width - Width of the image (default: 40)
- * @param height - Height of the image (default: 40)
- * @param bgColor - Background color (default: '#4f46e5')
- * @param textColor - Text color (default: '#ffffff')
- * @returns Data URL for the generated image
- */
 export function generatePlaceholderImage(
 	text: string,
 	width: number = 40,
@@ -14,13 +5,11 @@ export function generatePlaceholderImage(
 	bgColor: string = '#4f46e5',
 	textColor: string = '#ffffff'
 ): string {
-	// For server-side rendering or when canvas is not available, use SVG fallback
 	if (typeof window === 'undefined' || typeof document === 'undefined') {
 		return generateSVGPlaceholder(text, width, height, bgColor, textColor);
 	}
 
 	try {
-		// Create a canvas element
 		const canvas = document.createElement('canvas');
 		canvas.width = width;
 		canvas.height = height;
@@ -30,11 +19,9 @@ export function generatePlaceholderImage(
 			return generateSVGPlaceholder(text, width, height, bgColor, textColor);
 		}
 
-		// Fill background
 		ctx.fillStyle = bgColor;
 		ctx.fillRect(0, 0, width, height);
 
-		// Draw text
 		ctx.fillStyle = textColor;
 		ctx.font = `bold ${Math.floor(height * 0.4)}px Arial, sans-serif`;
 		ctx.textAlign = 'center';

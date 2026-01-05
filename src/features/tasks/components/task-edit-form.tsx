@@ -53,8 +53,8 @@ export const TaskEditForm = ({
 
     if (!title.trim()) return;
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
       await updateTask({
         id,
         title,
@@ -66,6 +66,7 @@ export const TaskEditForm = ({
       onSave();
     } catch (error) {
       console.error('Failed to update task:', error);
+    } finally {
       setIsSubmitting(false);
     }
   };

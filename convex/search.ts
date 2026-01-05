@@ -76,7 +76,10 @@ type FilterTypes = {
 };
 
 // Initialize RAG component with workspace and content type filters
-const rag = new RAG<FilterTypes>(components.rag, {
+// The generated Convex typings for `components.rag` currently omit the optional
+// `order` argument on `chunks.list`, while `@convex-dev/rag` expects it. Cast to
+// `any` to bypass the transient type mismatch without changing runtime behavior.
+const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ['workspaceId', 'contentType', 'channelId'],
 	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004'),
 	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions

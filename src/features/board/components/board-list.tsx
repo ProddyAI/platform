@@ -65,28 +65,39 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
         lowest: cards.filter(c => c.priority === 'lowest').length,
     };
 
-    // Determine width class based on list count
+    // Responsive width: 4 lists (XL), 3 lists (LG), 2 lists (MD), 1 list (SM)
     const getWidthClass = () => {
-        // If more than 4 lists, use fixed width
-        if (listCount > 4) {
-            return "w-80";
-        }
-
-        // For 4 or fewer lists, use full width
-        return "w-full";
+        return "w-[calc(25%-12px)] min-w-[280px] max-w-[400px] xl:w-[calc(25%-12px)] lg:w-[calc(33.333%-10.667px)] md:w-[calc(50%-8px)] sm:w-full";
     };
 
     return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            {...attributes}
-            className={cn(
-                "bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-md flex flex-col border border-gray-200",
-                getWidthClass(),
-                isDragging && "opacity-70 border-2 border-dashed border-secondary shadow-lg"
-            )}
-        >
+        <>
+            <style jsx>{`
+                /* Custom scrollbar styling for list cards */
+                ::-webkit-scrollbar {
+                    width: 6px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                ::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 3px;
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8;
+                }
+            `}</style>
+            <div
+                ref={setNodeRef}
+                style={style}
+                {...attributes}
+                className={cn(
+                    "bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-md flex flex-col border border-gray-200",
+                    getWidthClass(),
+                    isDragging && "opacity-70 border-2 border-dashed border-secondary shadow-lg"
+                )}
+            >
             {/* List Header */}
             <div className="p-3 font-bold border-b flex items-center justify-between bg-white rounded-t-lg">
                 <div className="flex items-center gap-2">
@@ -161,15 +172,15 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
             <div
                 ref={setDroppableRef}
                 className={cn(
-                    "flex-1 min-h-[100px] transition-colors duration-200 overflow-y-auto max-h-[calc(100vh-300px)]",
+                    "transition-colors duration-200",
                     isOver ? "bg-secondary/10 ring-2 ring-secondary/40" : "bg-transparent"
                 )}
             >
                 <SortableContext items={cards.map(c => c._id)} strategy={verticalListSortingStrategy}>
-                    <div className="flex-1 p-2 flex flex-col gap-2">
+                    <div className="p-2 flex flex-col gap-2">
                         {cards.length === 0 && (
                             <div className={cn(
-                                "h-20 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground text-sm",
+                                "h-16 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground text-sm",
                                 isOver ? "border-secondary/40 bg-secondary/5" : "border-gray-200"
                             )}>
                                 {isOver ? "Drop card here" : "No cards yet"}
@@ -204,7 +215,8 @@ const BoardList: React.FC<BoardListProps> = ({ list, cards, onEditList, onDelete
                     <Plus className="w-4 h-4 mr-1" /> Add Card
                 </Button>
             </div>
-        </div>
+            </div>
+        </>
     );
 };
 

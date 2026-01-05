@@ -3,7 +3,6 @@ import { api } from '../../convex/_generated/api';
 import { type Id } from '../../convex/_generated/dataModel';
 import { type EmailType, getNotificationKey } from './email-unsubscribe';
 
-// Create a Convex client for server-side use
 function getConvexClient() {
 	const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 	if (!convexUrl) {
@@ -12,9 +11,6 @@ function getConvexClient() {
 	return new ConvexHttpClient(convexUrl);
 }
 
-/**
- * Check if a user should receive a specific email type (server-side)
- */
 export async function shouldSendEmailServer(
 	userId: Id<'users'>,
 	emailType: EmailType
@@ -22,7 +18,6 @@ export async function shouldSendEmailServer(
 	try {
 		const convex = getConvexClient();
 
-		// Get user notification preferences
 		const preferences = await convex.query(
 			api.preferences.getNotificationPreferencesByUserId,
 			{
@@ -31,7 +26,6 @@ export async function shouldSendEmailServer(
 		);
 
 		if (!preferences) {
-			// If no preferences found, default to allowing emails (except weekly digest)
 			return emailType !== 'weeklyDigest';
 		}
 

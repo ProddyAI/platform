@@ -21,7 +21,6 @@ export const siteConfig: Metadata = {
 
 		'typescript',
 		'javascript',
-		'vercel',
 		'postcss',
 		'prettier',
 		'eslint',

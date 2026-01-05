@@ -1,7 +1,7 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import type { Metadata, Viewport } from "next";
 import { PropsWithChildren } from "react";
-import { Analytics } from "@vercel/analytics/next";
+import { Poppins } from "next/font/google";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
@@ -10,10 +10,19 @@ import { TidioChat } from "@/components/tidio-chat";
 import { Formbricks } from "@/components/formbricks";
 import { UsetifulProvider } from "@/components/usetiful-provider";
 import { ClarityTracking } from "@/components/clarity-tracking";
+import { ApolloTracking } from "@/components/apollo-tracking";
 import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup";
+import { ThemeInitScript } from "@/components/theme-init-script";
 import { siteConfig } from "@/config";
 
 import "./globals.css";
+
+const poppins = Poppins({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-poppins',
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -52,17 +61,12 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
     <ConvexAuthNextjsServerProvider>
       <html lang="en">
         <head>
-          <script
-            dangerouslySetInnerHTML={{
-              __html:
-                "try{const t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}",
-            }}
-          />
+          <ThemeInitScript />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="mobile-web-app-capable" content="yes" />
           <link rel="apple-touch-icon" href="/logo-nobg.png" />
         </head>
-        <body className="antialiased">
+        <body className={`${poppins.variable} antialiased font-sans`}>
           <ConvexClientProvider>
             <JotaiProvider>
               <UsetifulProvider>
@@ -72,9 +76,8 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
                 <TidioChat />
                 <Formbricks />
                 <ClarityTracking />
-
+                <ApolloTracking />
                 {children}
-                <Analytics />
               </UsetifulProvider>
             </JotaiProvider>
           </ConvexClientProvider>

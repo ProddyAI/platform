@@ -268,61 +268,66 @@ export const PerformanceMetricsDashboard = ({ workspaceId, timeRange = '7d' }: P
 
           {/* Charts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+            <Card className="flex flex-col">
               <CardHeader>
                 <CardTitle>Task Completion Trend</CardTitle>
                 <CardDescription>
                   Tasks completed over time
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-80">
-                {taskCompletionTrend.length > 0 ? (
-                  <LineChart
-                    data={taskCompletionTrend}
-                    height={300}
-                    formatValue={(value) => `${value} tasks`}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
-                    <p className="text-muted-foreground">No task data available</p>
-                  </div>
-                )}
+              <CardContent className="flex-1 min-h-0">
+                <div className="h-[320px] max-h-[320px] overflow-hidden">
+                  {taskCompletionTrend.length > 0 ? (
+                    <LineChart
+                      data={taskCompletionTrend}
+                      height={300}
+                      formatValue={(value) => `${value} tasks`}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+                      <p className="text-muted-foreground">No task data available</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="flex flex-col">
               <CardHeader>
                 <CardTitle>Task Status Distribution</CardTitle>
                 <CardDescription>
                   Current status of all tasks
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-80">
-                {taskStatusData.length > 0 ? (
-                  <PieChart
-                    data={taskStatusData}
-                    size={180}
-                    formatValue={(value) => `${value} tasks`}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
-                    <p className="text-muted-foreground">No task data available</p>
-                  </div>
-                )}
+              <CardContent className="flex-1 min-h-0">
+                <div className="h-[320px] max-h-[320px] flex items-center justify-center overflow-auto">
+                  {taskStatusData.length > 0 ? (
+                    <PieChart
+                      data={taskStatusData}
+                      size={180}
+                      formatValue={(value) => `${value} tasks`}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+                      <p className="text-muted-foreground">No task data available</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="flex flex-col">
             <CardHeader>
               <CardTitle>Tasks by Assignee</CardTitle>
               <CardDescription>
                 Task distribution and completion rates by user
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              {tasksByAssignee.length > 0 ? (
-                <div className="space-y-4">
+            <CardContent className="flex-1 min-h-0">
+              <div className="max-h-[300px] overflow-auto">
+                {tasksByAssignee.length > 0 ? (
+                  <div className="space-y-4">
                   {tasksByAssignee.map((user, index) => (
                     <div key={index} className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -336,13 +341,14 @@ export const PerformanceMetricsDashboard = ({ workspaceId, timeRange = '7d' }: P
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-40 bg-muted/20 rounded-md">
-                  <p className="text-muted-foreground">No assignee data available</p>
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-40 bg-muted/20 rounded-md">
+                    <p className="text-muted-foreground">No assignee data available</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -350,16 +356,17 @@ export const PerformanceMetricsDashboard = ({ workspaceId, timeRange = '7d' }: P
         {/* User Performance Tab */}
         <TabsContent value="users" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+            <Card className="flex flex-col">
               <CardHeader>
                 <CardTitle>Top Performers</CardTitle>
                 <CardDescription>
                   Users with highest activity scores
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {userPerformanceData.length > 0 ? (
-                  <div className="space-y-4">
+              <CardContent className="flex-1 min-h-0">
+                <div className="max-h-[300px] overflow-auto">
+                  {userPerformanceData.length > 0 ? (
+                    <div className="space-y-4">
                     {userPerformanceData.map((user, index) => (
                       <div key={index} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -376,66 +383,71 @@ export const PerformanceMetricsDashboard = ({ workspaceId, timeRange = '7d' }: P
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-64 bg-muted/20 rounded-md">
-                    <p className="text-muted-foreground">No user performance data available</p>
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-64 bg-muted/20 rounded-md">
+                      <p className="text-muted-foreground">No user performance data available</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="flex flex-col">
               <CardHeader>
                 <CardTitle>Task Completion by User</CardTitle>
                 <CardDescription>
                   Percentage of assigned tasks completed
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {userPerformanceData.length > 0 ? (
-                  <HorizontalBarChart
-                    data={userPerformanceData.map(user => ({
-                      label: user.name,
-                      value: user.taskCompletion,
-                      color: user.taskCompletion >= 70 ? 'bg-green-500' :
-                        user.taskCompletion >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                    }))}
-                    formatValue={(value) => `${value}%`}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-64 bg-muted/20 rounded-md">
-                    <p className="text-muted-foreground">No task completion data available</p>
-                  </div>
-                )}
+              <CardContent className="flex-1 min-h-0">
+                <div className="h-[300px] max-h-[300px] overflow-auto">
+                  {userPerformanceData.length > 0 ? (
+                    <HorizontalBarChart
+                      data={userPerformanceData.map(user => ({
+                        label: user.name,
+                        value: user.taskCompletion,
+                        color: user.taskCompletion >= 70 ? 'bg-green-500' :
+                          user.taskCompletion >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                      }))}
+                      formatValue={(value) => `${value}%`}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+                      <p className="text-muted-foreground">No task completion data available</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="flex flex-col">
             <CardHeader>
               <CardTitle>Response Time by User</CardTitle>
               <CardDescription>
                 Average time to respond to messages (minutes)
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              {userPerformanceData.length > 0 ? (
-                <HorizontalBarChart
-                  data={userPerformanceData.map(user => ({
-                    label: user.name,
-                    value: user.responseTime,
-                    color: user.responseTime <= 10 ? 'bg-green-500' :
-                      user.responseTime <= 20 ? 'bg-yellow-500' : 'bg-red-500'
-                  }))}
-                  formatValue={(value) => `${value} min`}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-64 bg-muted/20 rounded-md">
-                  <p className="text-muted-foreground">No response time data available</p>
-                </div>
-              )}
+            <CardContent className="flex-1 min-h-0">
+              <div className="h-[300px] max-h-[300px] overflow-auto">
+                {userPerformanceData.length > 0 ? (
+                  <HorizontalBarChart
+                    data={userPerformanceData.map(user => ({
+                      label: user.name,
+                      value: user.responseTime,
+                      color: user.responseTime <= 10 ? 'bg-green-500' :
+                        user.responseTime <= 20 ? 'bg-yellow-500' : 'bg-red-500'
+                    }))}
+                    formatValue={(value) => `${value} min`}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+                    <p className="text-muted-foreground">No response time data available</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

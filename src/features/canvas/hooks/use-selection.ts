@@ -10,36 +10,23 @@ import {
 
 const MULTISELECTION_THRESHOLD = 2;
 
-/**
- * Hook for selection operations
- *
- * @param canvasState Current canvas state
- * @param setCanvasState Function to update canvas state
- * @param layerIds Array of layer IDs
- * @param history History object for undo/redo
- * @returns Selection operation functions
- */
 export function useSelection(
 	canvasState: any,
 	setCanvasState: (state: any) => void,
 	layerIds: readonly string[],
 	history: any
 ) {
-	// Unselect all layers
 	const unselectLayers = useMutation(({ self, setMyPresence }) => {
 		if (self.presence.selection.length > 0) {
 			setMyPresence({ selection: [] }, { addToHistory: true });
 		}
 	}, []);
 
-	// Update selection net
 	const updateSelectionNet = useMutation(
 		({ storage, setMyPresence }, current: Point, origin: Point) => {
 			try {
-				// Get the layers from storage
 				const layersMap = storage.get('layers');
 
-				// Check if layersMap is valid for intersection testing
 				if (!layersMap) return;
 
 				setCanvasState({
@@ -48,7 +35,6 @@ export function useSelection(
 					current,
 				});
 
-				// Find intersecting layers
 				const ids = findIntersectingLayersWithRectangle(
 					layerIds,
 					layersMap,
@@ -64,7 +50,6 @@ export function useSelection(
 		[layerIds, setCanvasState]
 	);
 
-	// Start multi-selection
 	const startMultiSelection = useCallback(
 		(current: Point, origin: Point) => {
 			if (
@@ -81,20 +66,17 @@ export function useSelection(
 		[setCanvasState]
 	);
 
-	// Resize selected layer
 	const resizeSelectedLayer = useMutation(
 		({ storage, self }, point: Point) => {
 			if (canvasState.mode !== CanvasMode.Resizing) return;
 
 			try {
-				// Calculate new bounds based on resize operation
 				const bounds = resizeBounds(
 					canvasState.initialBounds,
 					canvasState.corner,
 					point
 				);
 
-				// Ensure minimum dimensions
 				const minWidth = 20;
 				const minHeight = 20;
 				const newBounds = {
@@ -105,7 +87,6 @@ export function useSelection(
 
 				const liveLayers = storage.get('layers');
 
-				// Check if liveLayers is a LiveMap with a get method
 				if (!liveLayers || typeof liveLayers.get !== 'function') return;
 
 				const layerId = self.presence.selection[0];
@@ -114,10 +95,8 @@ export function useSelection(
 				const layer = liveLayers.get(layerId);
 
 				if (layer) {
-					// Update the layer with new bounds
 					layer.update(newBounds);
 
-					// Force a storage update to ensure changes are synchronized
 					storage.set('lastUpdate', Date.now());
 				}
 			} catch (error) {
@@ -127,7 +106,6 @@ export function useSelection(
 		[canvasState]
 	);
 
-	// Handle resize handle pointer down
 	const onResizeHandlePointerDown = useCallback(
 		(corner: Side, initialBounds: XYWH) => {
 			history.pause();
@@ -141,13 +119,11 @@ export function useSelection(
 		[history, setCanvasState]
 	);
 
-	// Translate selected layers
 	const translateSelectedLayers = useMutation(
 		({ storage, self }, point: Point) => {
 			if (canvasState.mode !== CanvasMode.Translating) return;
 
 			try {
-				// Calculate the offset from the last position
 				const offset = {
 					x: point.x - canvasState.current.x,
 					y: point.y - canvasState.current.y,
@@ -155,7 +131,6 @@ export function useSelection(
 
 				const liveLayers = storage.get('layers');
 
-				// Check if liveLayers is a LiveMap with a get method
 				if (!liveLayers || typeof liveLayers.get !== 'function') return;
 
 				for (const id of self.presence.selection) {
@@ -163,21 +138,16 @@ export function useSelection(
 
 					if (layer) {
 						try {
-							// Get current position
 							let currentX, currentY;
 
-							// Try to get properties using toObject method first (for LiveObjects)
 							if (typeof layer.toObject === 'function') {
 								const layerData = layer.toObject();
 								currentX = layerData.x;
 								currentY = layerData.y;
 							} else if (typeof layer.get === 'function') {
-								// Alternatively, use get method
 								currentX = layer.get('x');
 								currentY = layer.get('y');
 							} else {
-								// Fall back to direct property access as a last resort
-								// This should not be needed with proper LiveObjects
 								console.warn(
 									'Using direct property access on layer - this may cause type errors'
 								);
@@ -186,7 +156,6 @@ export function useSelection(
 								currentY = layerAny.y;
 							}
 
-							// Ensure we have valid numbers
 							if (
 								typeof currentX !== 'number' ||
 								typeof currentY !== 'number'
@@ -195,7 +164,6 @@ export function useSelection(
 								continue;
 							}
 
-							// Update the layer position
 							layer.update({
 								x: currentX + offset.x,
 								y: currentY + offset.y,
@@ -206,13 +174,11 @@ export function useSelection(
 					}
 				}
 
-				// Update the current point for the next translation
 				setCanvasState({
 					mode: CanvasMode.Translating,
 					current: point,
 				});
 
-				// Force a storage update to ensure changes are synchronized
 				storage.set('lastUpdate', Date.now());
 			} catch (error) {
 				console.error('Error translating layers:', error);

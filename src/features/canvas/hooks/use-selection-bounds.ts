@@ -1,41 +1,29 @@
 import { useSelf, useStorage } from '../../../../liveblocks.config';
 import { type XYWH } from '../types/canvas';
 
-/**
- * Custom hook to calculate the bounding box of the current selection
- * @returns The bounding box of the current selection, or null if nothing is selected
- */
 export const useSelectionBounds = (): XYWH | null => {
-	// Always call hooks in the same order
 	const selection = useSelf((me) => me.presence.selection);
 
-	// Force update when lastUpdate changes
 	const lastUpdate = useStorage((root) => root.lastUpdate);
 
-	// Get the layers from storage - always call this hook regardless of selection
 	const selectedLayers = useStorage((root) => {
 		const layers = root.layers;
 
-		// Handle case where layers might not have a get method (mock implementation)
 		const getLayer = (id: string) => {
 			if (!layers) return null;
 
-			// If layers has a get method, use it
 			if (typeof layers.get === 'function') {
 				return layers.get(id);
 			}
 
-			// If layers is a Map, use its get method
 			if (layers instanceof Map) {
 				return layers.get(id);
 			}
 
-			// If layers is an object with the id as a property, return that
 			if (layers && typeof layers === 'object' && id in layers) {
 				return (layers as any)[id];
 			}
 
-			// Otherwise return null
 			return null;
 		};
 

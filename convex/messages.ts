@@ -852,17 +852,10 @@ export const getThreadMessages = query({
 
 					let context: {
 						name: string;
-						type: 'channel' | 'conversation' | 'unknown';
+						type: 'channel' | 'conversation';
 						id: Id<'channels'> | Id<'conversations'>;
 						memberId?: Id<'members'>;
-					} = {
-						name: 'Unknown',
-						type: 'unknown',
-						id:
-							message.channelId ||
-							message.conversationId ||
-							('' as Id<'channels'> | Id<'conversations'>),
-					};
+					} | null = null;
 
 					if (message.channelId) {
 						const channel = channelMap.get(message.channelId);
@@ -893,6 +886,11 @@ export const getThreadMessages = query({
 								}
 							}
 						}
+					}
+
+					// Return null if context couldn't be determined
+					if (!context) {
+						return null;
 					}
 
 					return {
@@ -1166,6 +1164,87 @@ export const getMentionedMessages = query({
 	},
 });
 
+export const getRecentWorkspaceChannelMessages = query({
+	args: {
+		workspaceId: v.id('workspaces'),
+		from: v.number(),
+		to: v.optional(v.number()),
+		limit: v.number(),
+		perChannelLimit: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			return [];
+		}
+
+		// Get all channels in the workspace
+		const channels = await ctx.db
+			.query('channels')
+			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
+			.collect();
+
+		if (channels.length === 0) {
+			return [];
+		}
+
+		const allMessages: Array<{
+			channelName: string;
+			authorName: string;
+			body: string;
+			_creationTime: number;
+		}> = [];
+
+		// Fetch messages from each channel
+		for (const channel of channels) {
+			const messages = await ctx.db
+				.query('messages')
+				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
+				.order('desc')
+				.filter((q) => {
+					if (args.to) {
+						return q.and(
+							q.gte(q.field('_creationTime'), args.from),
+							q.lte(q.field('_creationTime'), args.to)
+						);
+					}
+					// If from is 0, return all messages (no time filter)
+					return args.from > 0 ? q.gte(q.field('_creationTime'), args.from) : true;
+				})
+				.take(args.perChannelLimit);
+
+			// Filter out thread replies
+			const nonThreadMessages = messages.filter((msg) => !msg.parentMessageId);
+
+			// Get author info for each message
+			for (const message of nonThreadMessages) {
+				if (message.body) {
+					const member = await ctx.db.get(message.memberId);
+					if (member) {
+						const user = await ctx.db.get(member.userId);
+						allMessages.push({
+							channelName: channel.name,
+							authorName: user?.name || 'Unknown',
+							body: message.body,
+							_creationTime: message._creationTime,
+						});
+					}
+				}
+			}
+
+			// Stop if we've reached the overall limit
+			if (allMessages.length >= args.limit) {
+				break;
+			}
+		}
+
+		// Sort by creation time and limit total results
+		return allMessages
+			.sort((a, b) => a._creationTime - b._creationTime)
+			.slice(-args.limit);
+	},
+});
+
 export const getRecentChannelMessages = query({
 	args: {
 		channelId: v.id('channels'),
@@ -1257,110 +1336,50 @@ export const getRecentChannelMessages = query({
 	},
 });
 
-export const getRecentWorkspaceChannelMessages = query({
+export const getThreadReplyCounts = query({
 	args: {
-		workspaceId: v.id('workspaces'),
-		from: v.number(),
-		to: v.optional(v.number()),
-		limit: v.optional(v.number()),
-		perChannelLimit: v.optional(v.number()),
+		parentMessageIds: v.array(v.id('messages')),
 	},
 	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+
+		if (!userId) throw new Error('Unauthorized.');
+
 		try {
-			const userId = await getAuthUserId(ctx);
-			if (!userId) return [];
+			// If no parent message IDs provided, return empty array
+			if (args.parentMessageIds.length === 0) return [];
 
-			const currentMember = await getMember(
-				ctx,
-				args.workspaceId,
-				userId as Id<'users'>
-			);
-			if (!currentMember) return [];
-
-			const limit = args.limit ?? 250;
-			const perChannelLimit = args.perChannelLimit ?? 4;
-
-			let messagesQuery = ctx.db
+			// Fetch all replies in a single query using 'or' filter
+			const allReplies = await ctx.db
 				.query('messages')
-				.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
-				.filter((q) => q.gte(q.field('_creationTime'), args.from))
-				.order('desc');
-
-			if (typeof args.to === 'number') {
-				messagesQuery = ctx.db
-					.query('messages')
-					.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
-					.filter((q) =>
-						q.and(
-							q.gte(q.field('_creationTime'), args.from),
-							q.lte(q.field('_creationTime'), args.to as number)
+				.withIndex('by_parent_message_id')
+				.filter((q) =>
+					q.or(
+						...args.parentMessageIds.map((id) =>
+							q.eq(q.field('parentMessageId'), id)
 						)
 					)
-					.order('desc');
+				)
+				.collect();
+
+			// Group replies by parent message ID and count
+			const countsByParent = new Map<string, number>();
+			for (const reply of allReplies) {
+				if (reply.parentMessageId) {
+					const key = reply.parentMessageId;
+					countsByParent.set(key, (countsByParent.get(key) ?? 0) + 1);
+				}
 			}
 
-			const messages = (await messagesQuery.take(limit))
-				.filter((m) => !m.parentMessageId)
-				.filter((m) => Boolean(m.channelId));
+			// Build result array with counts (0 for parents with no replies)
+			const counts = args.parentMessageIds.map((parentMessageId) => ({
+				parentMessageId,
+				count: countsByParent.get(parentMessageId) ?? 0,
+			}));
 
-			if (!messages.length) return [];
-
-			const channels = await ctx.db
-				.query('channels')
-				.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
-				.collect();
-			const channelNameById = new Map(channels.map((c) => [c._id, c.name]));
-
-			const memberIds = new Set(messages.map((m) => m.memberId));
-			const members = await ctx.db
-				.query('members')
-				.filter((q) => q.or(...Array.from(memberIds).map((id) => q.eq(q.field('_id'), id))))
-				.collect();
-			const memberById = new Map(members.map((m) => [m._id, m]));
-
-			const userIds = new Set(members.map((m) => m.userId));
-			const users = await ctx.db
-				.query('users')
-				.filter((q) => q.or(...Array.from(userIds).map((id) => q.eq(q.field('_id'), id))))
-				.collect();
-			const userById = new Map(users.map((u) => [u._id, u]));
-
-			const perChannelCounts = new Map<string, number>();
-			const results: Array<{
-				id: Id<'messages'>;
-				channelId: Id<'channels'>;
-				channelName: string;
-				authorName: string;
-				body: string;
-				creationTime: number;
-			}> = [];
-
-			for (const message of messages) {
-				const channelId = message.channelId as Id<'channels'>;
-				const key = String(channelId);
-				const count = perChannelCounts.get(key) ?? 0;
-				if (count >= perChannelLimit) continue;
-
-				const member = memberById.get(message.memberId);
-				if (!member) continue;
-				const user = userById.get(member.userId);
-				if (!user) continue;
-
-				results.push({
-					id: message._id,
-					channelId,
-					channelName: String(channelNameById.get(channelId) ?? 'unknown'),
-					authorName: String(user.name ?? 'Someone'),
-					body: String(message.body ?? ''),
-					creationTime: message._creationTime,
-				});
-				perChannelCounts.set(key, count + 1);
-			}
-
-			// Return chronological order (oldest first) for nicer summarization.
-			return results.sort((a, b) => a.creationTime - b.creationTime);
+			return counts;
 		} catch (error) {
-			console.error('Error in getRecentWorkspaceChannelMessages:', error);
+			console.error('Error in getThreadReplyCounts:', error);
 			return [];
 		}
 	},

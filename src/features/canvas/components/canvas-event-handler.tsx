@@ -30,9 +30,6 @@ interface CanvasEventHandlerProps {
   }) => React.ReactNode;
 }
 
-/**
- * Component that handles all canvas pointer events
- */
 export const CanvasEventHandler = ({
   camera,
   canvasState,

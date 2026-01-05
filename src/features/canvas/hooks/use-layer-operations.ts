@@ -8,14 +8,7 @@ import { penPointsToPathLayer } from '../../../lib/utils';
 
 const MAX_LAYERS = 100;
 
-/**
- * Hook for layer operations (insert, translate, resize, delete)
- *
- * @param lastUsedColor Current color for new layers
- * @returns Object with layer operation functions
- */
 export function useLayerOperations(lastUsedColor: Color) {
-	// Insert a new shape layer
 	const insertLayer = useMutation(
 		(
 			{ storage, setMyPresence },
@@ -28,11 +21,9 @@ export function useLayerOperations(lastUsedColor: Color) {
 			position: Point
 		) => {
 			try {
-				// Get the storage objects
 				let liveLayers = storage.get('layers');
 				let liveLayerIds = storage.get('layerIds');
 
-				// Initialize storage if needed
 				if (!liveLayers || typeof liveLayers.set !== 'function') {
 					liveLayers = new LiveMap<string, LiveObject<any>>();
 					storage.set('layers', liveLayers);
