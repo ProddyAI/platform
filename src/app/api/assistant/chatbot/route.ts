@@ -70,11 +70,49 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		console.log('[Chatbot Assistant] Processing message:', {
-			workspaceId,
-			memberId,
-			messageLength: message.length,
-		});
+		// Verify authentication when memberId is provided
+		if (memberId) {
+			const isAuthenticated = await isAuthenticatedNextjs();
+			if (!isAuthenticated) {
+				return NextResponse.json(
+					{ error: 'Authentication required when specifying memberId' },
+					{ status: 401 }
+				);
+			}
+
+			// Get the authenticated user's information
+			const token = await convexAuthNextjsToken();
+			if (token && typeof token === 'string') {
+				convex.setAuth(token);
+			}
+
+			const currentUser = await convex.query(api.users.current);
+			if (!currentUser) {
+				return NextResponse.json(
+					{ error: 'User not found' },
+					{ status: 404 }
+				);
+			}
+
+			// Get the member for this workspace and verify ownership
+			const member = await convex.query(api.members._getMemberById, {
+				memberId: memberId as Id<'members'>,
+			});
+
+			if (!member) {
+				return NextResponse.json(
+					{ error: 'Member not found' },
+					{ status: 404 }
+				);
+			}
+
+			if (member.userId !== currentUser._id) {
+				return NextResponse.json(
+					{ error: 'Unauthorized: Cannot access integrations for another user\'s member' },
+					{ status: 403 }
+				);
+			}
+		}
 
 		// Check if Composio integration is available and relevant
 		let useComposio = false;
@@ -94,23 +132,11 @@ export async function POST(req: NextRequest) {
 		const needsLinear = /\b(linear|linear\s+(issue|ticket)|in\s+linear|on\s+linear|my\s+linear)\b/i.test(queryLower);
 		const needsExternalTools = needsGmail || needsGithub || needsSlack || needsNotion || needsClickup || needsLinear;
 
-		console.log('[Chatbot Assistant] Query analysis:', {
-			needsGmail,
-			needsGithub,
-			needsSlack,
-			needsNotion,
-			needsClickup,
-			needsLinear,
-			needsExternalTools,
-		});
-
 		// If external tools are needed and Composio is configured, try to use it
 		if (needsExternalTools && process.env.COMPOSIO_API_KEY) {
 			try {
 				composioClient = createComposioClient();
 				userId = memberId ? `member_${memberId}` : getWorkspaceEntityId(workspaceId);
-				
-				console.log('[Chatbot Assistant] Checking Composio connections for userId:', userId);
 				
 				// Get connected apps
 				const apps = await getAnyConnectedApps(composioClient, workspaceId, userId);
@@ -118,13 +144,9 @@ export async function POST(req: NextRequest) {
 					.filter((app) => app.connected)
 					.map((app) => app.app);
 
-				console.log('[Chatbot Assistant] Connected apps:', connectedApps);
-
 				if (connectedApps.length > 0) {
 					// Get all available tools
 					const allTools = await getAllToolsForApps(composioClient, userId, connectedApps);
-					
-					console.log('[Chatbot Assistant] Total tools available:', allTools.length);
 
 					// Filter tools based on query
 					composioTools = filterToolsForQuery(allTools, message, {
@@ -132,28 +154,18 @@ export async function POST(req: NextRequest) {
 						preferDashboard: true,
 					});
 
-					console.log('[Chatbot Assistant] Filtered tools for query:', composioTools.length);
-
 					if (composioTools.length > 0) {
 						useComposio = true;
 					}
 				}
 			} catch (error) {
-				console.error('[Chatbot Assistant] Composio setup failed:', {
-					error: error instanceof Error ? error.message : String(error),
-					stack: error instanceof Error ? error.stack : undefined,
-					workspaceId,
-					userId,
-				});
-				console.warn('[Chatbot Assistant] Falling back to Convex due to Composio error');
+				// Composio setup failed, fall back to Convex
 			}
 		}
 
 		// If Composio should be used, handle with OpenAI + Composio tools
 		if (useComposio && composioTools.length > 0 && composioClient) {
 			try {
-				console.log('[Chatbot Assistant] Using OpenAI with Composio tools');
-				
 				const openai = createOpenAIClient();
 				// Reuse the composio client that already has userId context
 				// userId is already set from the previous block
@@ -200,14 +212,9 @@ export async function POST(req: NextRequest) {
 
 				// Execute tool calls if any
 				if (completion.choices[0]?.message?.tool_calls && completion.choices[0].message.tool_calls.length > 0) {
-					console.log('[Chatbot Assistant] Executing tool calls:', completion.choices[0].message.tool_calls.length);
-					console.log('[Chatbot Assistant] Using userId:', userId);
-
 					try {
 						// Use Composio's provider.handleToolCalls method (matches sample code pattern)
 						const result = await composioClient.provider.handleToolCalls(userId, completion);
-						
-						console.log('[Chatbot Assistant] Tool execution result:', result);
 
 						// Extract tool results for display
 						toolResults = Array.isArray(result) ? result : [result];
@@ -245,8 +252,6 @@ export async function POST(req: NextRequest) {
 					}
 				}
 
-				console.log('[Chatbot Assistant] Composio response generated');
-
 				return NextResponse.json({
 					success: true,
 					response: responseText,
@@ -265,8 +270,6 @@ export async function POST(req: NextRequest) {
 
 		// Default: Use Convex assistant (Gemini-based)
 		try {
-			console.log('[Chatbot Assistant] Using Convex assistant (Gemini)');
-			
 			const result = await convex.action(api.chatbot.askAssistant, {
 				query: message,
 				workspaceId: workspaceId as Id<'workspaces'>,

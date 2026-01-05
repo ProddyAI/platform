@@ -19,10 +19,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log(
-      `[Connections Status] Checking for workspace: ${workspaceId}${memberId ? ` and member: ${memberId}` : ""}`,
-    );
-
     const composio = createComposioClient();
 
     // Use member-specific entity ID if memberId is provided, otherwise workspace-level
@@ -30,15 +26,6 @@ export async function GET(req: NextRequest) {
 
     // Get connected apps using member-specific or workspace entity ID
     const connectedApps = await getAnyConnectedApps(composio, workspaceId, entityId);
-
-    console.log(
-      "[Connections Status] Found connected apps:",
-      connectedApps.map((app) => ({
-        app: app.app,
-        connected: app.connected,
-        connectionId: app.connectionId,
-      })),
-    );
 
     // Get total tool count if there are connected apps
     let totalTools = 0;
@@ -56,10 +43,6 @@ export async function GET(req: NextRequest) {
           true, // use cache
         );
         totalTools = allTools.length;
-
-        console.log(
-          `[Connections Status] Found ${totalTools} total tools for connected apps`,
-        );
       } catch (error) {
         console.warn("[Connections Status] Failed to get tool count:", error);
         // Don't fail the whole request if tool fetching fails
