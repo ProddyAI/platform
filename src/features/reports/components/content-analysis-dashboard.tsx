@@ -69,27 +69,27 @@ export const ContentAnalysisDashboard = ({ workspaceId, timeRange = '7d' }: Cont
 
   // Mock data for content types (in a real app, this would come from the backend)
   const contentTypeData = useMemo(() => [
-    { label: 'Text', value: 65, color: 'bg-blue-500' },
-    { label: 'Images', value: 15, color: 'bg-green-500' },
-    { label: 'Files', value: 10, color: 'bg-yellow-500' },
-    { label: 'Links', value: 8, color: 'bg-purple-500' },
-    { label: 'Code', value: 2, color: 'bg-red-500' },
+    { label: 'Text', value: 65, color: '#3b82f6' },
+    { label: 'Images', value: 15, color: '#22c55e' },
+    { label: 'Files', value: 10, color: '#eab308' },
+    { label: 'Links', value: 8, color: '#a855f7' },
+    { label: 'Code', value: 2, color: '#ef4444' },
   ], []);
 
   // Mock data for message length distribution
   const messageLengthData = useMemo(() => [
-    { label: 'Short (<50 chars)', value: 45, color: 'bg-blue-300' },
-    { label: 'Medium (50-200 chars)', value: 35, color: 'bg-blue-500' },
-    { label: 'Long (>200 chars)', value: 20, color: 'bg-blue-700' },
+    { label: 'Short (<50 chars)', value: 45, color: '#93c5fd' },
+    { label: 'Medium (50-200 chars)', value: 35, color: '#3b82f6' },
+    { label: 'Long (>200 chars)', value: 20, color: '#1d4ed8' },
   ], []);
 
   // Mock data for file types
   const fileTypeData = useMemo(() => [
-    { label: 'Images', value: 42, color: 'bg-green-500' },
-    { label: 'Documents', value: 28, color: 'bg-blue-500' },
-    { label: 'Spreadsheets', value: 15, color: 'bg-yellow-500' },
-    { label: 'PDFs', value: 10, color: 'bg-red-500' },
-    { label: 'Other', value: 5, color: 'bg-gray-500' },
+    { label: 'Images', value: 42, color: '#22c55e' },
+    { label: 'Documents', value: 28, color: '#3b82f6' },
+    { label: 'Spreadsheets', value: 15, color: '#eab308' },
+    { label: 'PDFs', value: 10, color: '#ef4444' },
+    { label: 'Other', value: 5, color: '#6b7280' },
   ], []);
 
   // Mock data for busiest hours
@@ -224,7 +224,7 @@ export const ContentAnalysisDashboard = ({ workspaceId, timeRange = '7d' }: Cont
                     data={messageData.topSenders.map(sender => ({
                       label: sender.name,
                       value: sender.count,
-                      color: 'bg-secondary'
+                      color: 'hsl(var(--secondary))'
                     }))}
                     formatValue={(value) => `${value} messages`}
                   />
@@ -294,7 +294,7 @@ export const ContentAnalysisDashboard = ({ workspaceId, timeRange = '7d' }: Cont
                   data={messageData?.topSenders?.slice(0, 5).map(sender => ({
                     label: sender.name,
                     value: Math.round(sender.count * 0.15), // Mock data - in real app would be actual file counts
-                    color: 'bg-green-500'
+                    color: '#22c55e'
                   })) || []}
                   formatValue={(value) => `${value} files`}
                 />
@@ -362,11 +362,11 @@ export const ContentAnalysisDashboard = ({ workspaceId, timeRange = '7d' }: Cont
               <div className="h-[240px] max-h-[240px] overflow-auto">
                 <HorizontalBarChart
                   data={[
-                    { label: 'General', value: 5, color: 'bg-green-500' },
-                    { label: 'Marketing', value: 12, color: 'bg-green-500' },
-                    { label: 'Development', value: 8, color: 'bg-green-500' },
-                    { label: 'Design', value: 15, color: 'bg-yellow-500' },
-                    { label: 'Sales', value: 3, color: 'bg-green-500' },
+                    { label: 'General', value: 5, color: '#22c55e' },
+                    { label: 'Marketing', value: 12, color: '#22c55e' },
+                    { label: 'Development', value: 8, color: '#22c55e' },
+                    { label: 'Design', value: 15, color: '#eab308' },
+                    { label: 'Sales', value: 3, color: '#22c55e' },
                   ]}
                   formatValue={(value) => `${value} min`}
                 />

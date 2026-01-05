@@ -71,7 +71,7 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
-          <KanbanSquare className="h-5 w-5 text-primary" />
+          <KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400" />
           <h3 className="font-medium">Assigned Cards</h3>
           {!isEditMode && sortedCards.length > 0 && (
             <Badge variant="default" className="ml-2">
@@ -84,9 +84,10 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
         ) : (
           channels && channels.length > 0 && (
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={() => router.push(`/workspace/${workspaceId}/channel/${channels[0]._id}/board`)}
+              className='bg-primary/90 hover:bg-primary'
             >
               View all
             </Button>
@@ -95,16 +96,16 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
       </div>
 
       {sortedCards.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2">
+        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
           <div className="space-y-2 p-4">
             {sortedCards.map((card) => (
               <Card
                 key={card._id}
-                className="overflow-hidden border-2"
+                className="overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]"
               >
-                <CardContent className="p-3">
+                <CardContent className="p-3 dark:bg-[hsl(var(--card))]">
                   <div className="flex items-start gap-3">
-                    <KanbanSquare className="h-5 w-5 text-primary mt-1" />
+                    <KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400 mt-1" />
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
                         <p className="font-medium">
@@ -132,7 +133,7 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-xs text-primary"
+                          className="h-7 px-3 text-xs text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
                           onClick={() => handleViewCard(card)}
                         >
                           View
@@ -155,9 +156,10 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
           {channels && channels.length > 0 && (
             <div className="flex gap-2 mt-4">
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={() => router.push(`/workspace/${workspaceId}/channel/${channels[0]._id}/board`)}
+                className='bg-primary/90 hover:bg-primary'
               >
                 View boards
               </Button>

@@ -97,7 +97,7 @@ export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetPr
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
+          <FileText className="h-5 w-5 text-primary dark:text-purple-400" />
           <h3 className="font-medium">Recent Notes</h3>
           {!isEditMode && sortedNotes.length > 0 && (
             <Badge variant="default" className="ml-2">
@@ -109,10 +109,10 @@ export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetPr
           controls
         ) : (
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={handleViewAll}
-            className="border-2"
+            className="bg-primary/90 hover:bg-primary"
           >
             View All
           </Button>
@@ -123,8 +123,8 @@ export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetPr
         <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
           <div className="space-y-2 p-4">
             {sortedNotes.map((note) => (
-              <Card key={note._id} className="overflow-hidden border-2 dark:bg-[hsl(var(--card-accent))] dark:border-[hsl(var(--border))]">
-                <CardContent className="p-3 dark:bg-[hsl(var(--card-accent))]">
+              <Card key={note._id} className="overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]">
+                <CardContent className="p-3 dark:bg-[hsl(var(--card))]">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetPr
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-1 w-full justify-start text-primary"
+                      className="mt-1 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
                       onClick={() => handleViewNote(note._id, note.channelId)}
                     >
                       View note
@@ -202,9 +202,9 @@ export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetPr
             Create notes to see them here
           </p>
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
-            className="mt-4 border-2"
+            className="mt-4 bg-primary/90 hover:bg-primary"
             onClick={handleCreateNote}
           >
             <Plus className="mr-2 h-4 w-4" />
