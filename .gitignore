@@ -12,7 +12,3 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 .vscode/mcp.json
-    
-
-#Ignore vscode AI rules
-.github\instructions\codacy.instructions.md

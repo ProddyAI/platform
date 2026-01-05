@@ -93,7 +93,6 @@ type FilterTypes = {
 // The generated Convex typings for `components.rag` currently omit the optional
 // `order` argument on `chunks.list`, while `@convex-dev/rag` expects it. Cast to
 // `any` to bypass the transient type mismatch without changing runtime behavior.
-// Note: google.textEmbeddingModel returns V1 but RAG expects V2, cast needed for compatibility
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ['workspaceId', 'contentType', 'channelId'],
 	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004') as any,
@@ -898,15 +897,22 @@ export const aiSearchMessages = action({
 		// Filter messages that contain query keywords
 		const queryWords = args.query.toLowerCase().split(/\s+/);
 		const relevantMessages = messages
-			.map((m: any) => ({
-				...m,
-				text: m.plainText ? m.plainText : extractTextFromRichText(m.body),
-			}))
+			.map((m) => {
+				const text = extractTextFromRichText(m.body);
+				return {
+					id: m._id,
+					text,
+					channelId: m.channelId,
+				};
+			})
 			.filter((m) => {
 				const messageText = m.text.toLowerCase();
 				// Message must contain at least one query word
 				return queryWords.some((word) => messageText.includes(word));
 			})
+			.filter((m): m is { id: Id<'messages'>; text: string; channelId: Id<'channels'> } => 
+				m.channelId !== undefined
+			)
 			.slice(0, 5); // Limit to top 5 relevant messages
 
 		if (relevantMessages.length === 0) {
@@ -938,7 +944,7 @@ ${context}
 			return {
 				answer: result.text.trim(),
 				sources: relevantMessages.slice(0, 3).map((m) => ({
-					id: m._id,
+					id: m.id,
 					text: m.text,
 					channelId: m.channelId,
 				})),
@@ -949,7 +955,7 @@ ${context}
 			return {
 				answer: `I found ${relevantMessages.length} relevant message(s) about "${args.query}", but couldn't generate a summary. Please check the sources below.`,
 				sources: relevantMessages.slice(0, 3).map((m) => ({
-					id: m._id,
+					id: m.id,
 					text: m.text,
 					channelId: m.channelId,
 				})),
