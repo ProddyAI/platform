@@ -70,11 +70,13 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		console.log('[Chatbot Assistant] Processing message:', {
-			workspaceId,
-			memberId,
-			messageLength: message.length,
-		});
+		// Verify authentication when memberId is provided
+		if (memberId && !isAuthenticatedNextjs()) {
+			return NextResponse.json(
+				{ error: 'Authentication required when specifying memberId' },
+				{ status: 401 }
+			);
+		}
 
 		// Check if Composio integration is available and relevant
 		let useComposio = false;
@@ -94,23 +96,11 @@ export async function POST(req: NextRequest) {
 		const needsLinear = /\b(linear|linear\s+(issue|ticket)|in\s+linear|on\s+linear|my\s+linear)\b/i.test(queryLower);
 		const needsExternalTools = needsGmail || needsGithub || needsSlack || needsNotion || needsClickup || needsLinear;
 
-		console.log('[Chatbot Assistant] Query analysis:', {
-			needsGmail,
-			needsGithub,
-			needsSlack,
-			needsNotion,
-			needsClickup,
-			needsLinear,
-			needsExternalTools,
-		});
-
 		// If external tools are needed and Composio is configured, try to use it
 		if (needsExternalTools && process.env.COMPOSIO_API_KEY) {
 			try {
 				composioClient = createComposioClient();
 				userId = memberId ? `member_${memberId}` : getWorkspaceEntityId(workspaceId);
-				
-				console.log('[Chatbot Assistant] Checking Composio connections for userId:', userId);
 				
 				// Get connected apps
 				const apps = await getAnyConnectedApps(composioClient, workspaceId, userId);
@@ -118,13 +108,9 @@ export async function POST(req: NextRequest) {
 					.filter((app) => app.connected)
 					.map((app) => app.app);
 
-				console.log('[Chatbot Assistant] Connected apps:', connectedApps);
-
 				if (connectedApps.length > 0) {
 					// Get all available tools
 					const allTools = await getAllToolsForApps(composioClient, userId, connectedApps);
-					
-					console.log('[Chatbot Assistant] Total tools available:', allTools.length);
 
 					// Filter tools based on query
 					composioTools = filterToolsForQuery(allTools, message, {
@@ -132,28 +118,18 @@ export async function POST(req: NextRequest) {
 						preferDashboard: true,
 					});
 
-					console.log('[Chatbot Assistant] Filtered tools for query:', composioTools.length);
-
 					if (composioTools.length > 0) {
 						useComposio = true;
 					}
 				}
 			} catch (error) {
-				console.error('[Chatbot Assistant] Composio setup failed:', {
-					error: error instanceof Error ? error.message : String(error),
-					stack: error instanceof Error ? error.stack : undefined,
-					workspaceId,
-					userId,
-				});
-				console.warn('[Chatbot Assistant] Falling back to Convex due to Composio error');
+				// Silently fall back to Convex if Composio fails
 			}
 		}
 
 		// If Composio should be used, handle with OpenAI + Composio tools
 		if (useComposio && composioTools.length > 0 && composioClient) {
 			try {
-				console.log('[Chatbot Assistant] Using OpenAI with Composio tools');
-				
 				const openai = createOpenAIClient();
 				// Reuse the composio client that already has userId context
 				// userId is already set from the previous block

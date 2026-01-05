@@ -149,15 +149,12 @@ export function initializeComposio() {
     // Delete connection
     async deleteConnection(connectionId: string) {
       try {
-        console.log(`[Composio API] Deleting connection: ${connectionId}`);
-        
         // Try different methods to delete the connection
         const result = 
           (await (composioInstance as any).connectedAccounts?.delete?.(connectionId)) ||
           (await (composioInstance as any).connections?.delete?.(connectionId)) ||
           (await (composioInstance as any).connectedAccounts?.remove?.(connectionId));
         
-        console.log(`[Composio API] Connection deleted successfully: ${connectionId}`);
         return result;
       } catch (error) {
         console.error("Error deleting connection:", error);
