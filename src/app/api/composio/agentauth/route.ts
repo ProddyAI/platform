@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
 			}
 
 			// Verify authentication and that the authenticated user owns the provided memberId
-			if (!isAuthenticatedNextjs()) {
+			const isAuthenticated = await isAuthenticatedNextjs();
+			if (!isAuthenticated) {
 				return NextResponse.json(
 					{ error: "Authentication required" },
 					{ status: 401 },
@@ -58,8 +59,8 @@ export async function POST(req: NextRequest) {
 			}
 
 			// Get the authenticated user's information
-			const token = convexAuthNextjsToken();
-			if (token) {
+			const token = await convexAuthNextjsToken();
+			if (token && typeof token === "string") {
 				convex.setAuth(token);
 			}
 
@@ -159,6 +160,57 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "complete") {
+			// Verify ownership: ensure the authenticated user has permission to act on this memberId
+			if (!memberId) {
+				console.error("[AgentAuth] Missing memberId for connection completion");
+				return NextResponse.json(
+					{ error: "Missing memberId" },
+					{ status: 400 },
+				);
+			}
+
+			// Verify authentication and that the authenticated user owns the provided memberId
+			const isAuthenticated = await isAuthenticatedNextjs();
+			if (!isAuthenticated) {
+				return NextResponse.json(
+					{ error: "Authentication required" },
+					{ status: 401 },
+				);
+			}
+
+			// Get the authenticated user's information
+			const token = await convexAuthNextjsToken();
+			if (token && typeof token === "string") {
+				convex.setAuth(token);
+			}
+
+			const currentUser = await convex.query(api.users.current);
+			if (!currentUser) {
+				return NextResponse.json(
+					{ error: "User not found" },
+					{ status: 404 },
+				);
+			}
+
+			// Get the member for this workspace and verify ownership
+			const member = await convex.query(api.members._getMemberById, {
+				memberId: memberId as Id<"members">,
+			});
+
+			if (!member) {
+				return NextResponse.json(
+					{ error: "Member not found" },
+					{ status: 404 },
+				);
+			}
+
+			if (member.userId !== currentUser._id) {
+				return NextResponse.json(
+					{ error: "Unauthorized: Cannot complete connection for another user's member" },
+					{ status: 403 },
+				);
+			}
+
       // Use member-scoped entity ID for user-specific connections
       const entityId = `member_${memberId}`;
       console.log(
