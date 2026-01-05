@@ -98,6 +98,7 @@ export const WorkspaceToolbar = ({
         
         // Only trigger when aiSearchTrigger changes (on Enter key)
         if (aiQuery !== aiSearchTrigger) {
+            setIsSearchingMessages(false);
             return;
         }
         

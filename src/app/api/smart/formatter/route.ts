@@ -83,7 +83,6 @@ Formatted Content:`;
 			const { text } = await generateText({
 				model,
 				prompt,
-				maxTokens: 4000,
 				temperature: 0.3, // Lower temperature for more consistent formatting
 			});
 

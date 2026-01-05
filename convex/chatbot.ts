@@ -148,7 +148,6 @@ async function generateLLMResponse(
 		model: google(modelId),
 		messages,
 		temperature: 0.2,
-		maxTokens: 1024,
 	});
 
 	return text.trim();
