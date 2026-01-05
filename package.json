@@ -52,7 +52,9 @@
   "dependencies": {
     "@ai-sdk/google": "^1.2.22",
     "@ai-sdk/openai": "^2.0.22",
+    "@apm-js-collab/tracing-hooks": "^0.3.1",
     "@auth/core": "^0.34.2",
+    "@babel/runtime": "^7.28.4",
     "@blocknote/core": "^0.33.0",
     "@blocknote/mantine": "^0.33.0",
     "@blocknote/react": "^0.33.0",

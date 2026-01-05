@@ -127,7 +127,7 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
-          <CheckSquare className="h-5 w-5 text-primary" />
+          <CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
           <h3 className="font-medium">Your Tasks</h3>
           {!isEditMode && sortedTasks.length > 0 && (
             <Badge variant="default" className="ml-2">
@@ -139,10 +139,10 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
           controls
         ) : (
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
-            className='border-2'
+            className='bg-primary/90 hover:bg-primary'
           >
             View all
           </Button>
@@ -150,14 +150,14 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
       </div>
 
       {sortedTasks.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2">
+        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
           <div className="space-y-2 p-4">
             {sortedTasks.map((task) => (
               <Card
                 key={task._id}
-                className={`overflow-hidden border-2 ${task.completed ? 'bg-muted/20' : ''}`}
+                className={`overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))] ${task.completed ? 'bg-muted/20' : ''}`}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-4 dark:bg-[hsl(var(--card))]">
                   <div className="flex items-start gap-3">
                     <Button
                       variant="ghost"
@@ -198,7 +198,7 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-xs text-primary flex-shrink-0"
+                      className="h-7 px-3 text-xs text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300 flex-shrink-0"
                       onClick={() => handleViewTask(task._id)}
                     >
                       View
@@ -218,9 +218,9 @@ export const TasksWidget = ({ workspaceId, isEditMode, controls }: TasksWidgetPr
           </p>
           <div className="flex gap-2 mt-4">
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              className='border-2'
+              className='bg-primary/90 hover:bg-primary'
               onClick={() => router.push(`/workspace/${workspaceId}/tasks?action=create`)}
             >
               Create Task

@@ -114,7 +114,7 @@ export const MentionsWidget = ({ workspaceId, isEditMode, controls }: MentionsWi
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2"> 
         <div className="flex items-center gap-2">
-          <AtSign className="h-5 w-5 text-primary" />
+          <AtSign className="h-5 w-5 text-primary dark:text-purple-400" />
           <h3 className="font-medium">Mentions</h3>
           {!isEditMode && counts && counts.total > 0 && (
             <Badge variant="default" className="ml-2">
@@ -126,7 +126,7 @@ export const MentionsWidget = ({ workspaceId, isEditMode, controls }: MentionsWi
           controls
         ) : (
           counts && counts.total > 0 && (
-            <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} className="border-2">
+            <Button variant="default" size="sm" onClick={handleMarkAllAsRead} className="bg-primary/90 hover:bg-primary">
               <CheckCircle className="mr-2 h-4 w-4" />
               Mark all as read
             </Button>
@@ -135,11 +135,11 @@ export const MentionsWidget = ({ workspaceId, isEditMode, controls }: MentionsWi
       </div>
 
       {mentions && mentions.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2">
+        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
           <div className="space-y-2 p-4">
             {mentions.map((mention) => (
-              <Card key={mention.id} className="overflow-hidden border-2">
-                <CardContent className="p-3">
+              <Card key={mention.id} className="overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]">
+                <CardContent className="p-3 dark:bg-[hsl(var(--card))]">
                   <div className="flex items-start gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
@@ -186,7 +186,7 @@ export const MentionsWidget = ({ workspaceId, isEditMode, controls }: MentionsWi
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="mt-2 w-full justify-start text-primary"
+                        className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
                         onClick={() => handleViewMention(mention)}
                       >
                         View mention

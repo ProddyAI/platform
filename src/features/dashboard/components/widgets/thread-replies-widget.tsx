@@ -110,7 +110,7 @@ export const ThreadRepliesWidget = ({ workspaceId, isEditMode, controls }: Threa
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
-          <MessageSquareText className="h-5 w-5 text-primary" />
+          <MessageSquareText className="h-5 w-5 text-primary dark:text-purple-400" />
           <h3 className="font-medium">Thread Replies</h3>
           {!isEditMode && threadMessages.length > 0 && (
             <Badge variant="default" className="ml-2">
@@ -122,10 +122,10 @@ export const ThreadRepliesWidget = ({ workspaceId, isEditMode, controls }: Threa
           controls
         ) : (
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
-            className="border-2"
+            className="bg-primary/90 hover:bg-primary"
           >
             View All
           </Button>
@@ -133,11 +133,11 @@ export const ThreadRepliesWidget = ({ workspaceId, isEditMode, controls }: Threa
       </div>
 
       {threadMessages && threadMessages.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2">
+        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
           <div className="space-y-2 p-4">
             {threadMessages.map((thread) => (
-              <Card key={thread.message._id.toString()} className="overflow-hidden border-2">
-                <CardContent className="p-3">
+              <Card key={thread.message._id.toString()} className="overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]">
+                <CardContent className="p-3 dark:bg-[hsl(var(--card))]">
                   <div className="flex items-start gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
@@ -189,7 +189,7 @@ export const ThreadRepliesWidget = ({ workspaceId, isEditMode, controls }: Threa
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="mt-2 w-full justify-start text-primary"
+                        className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
                         onClick={() => handleViewThread(thread)}
                       >
                         View thread
