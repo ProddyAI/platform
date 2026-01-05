@@ -14,6 +14,7 @@ import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { WorkspaceToolbar } from '../toolbar';
 import { Id } from '@/../convex/_generated/dataModel';
+import { useTrackActivity } from '@/features/reports/hooks/use-track-activity';
 
 // Define types for calendar events
 interface CalendarEventUser {
@@ -89,6 +90,13 @@ const CalendarPage = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const workspaceId = useWorkspaceId();
+  
+  // Track user activity and time spent on calendar page
+  useTrackActivity({
+    workspaceId,
+    activityType: 'calendar_view',
+  });
+  
   const { data: events, isLoading } = useGetCalendarEvents({
     workspaceId,
     month: getMonth(currentDate),

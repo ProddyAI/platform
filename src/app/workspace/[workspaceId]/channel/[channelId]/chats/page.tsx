@@ -7,10 +7,20 @@ import { useGetChannel } from '@/features/channels/api/use-get-channel';
 import { useGetMessages } from '@/features/messages/api/use-get-messages';
 import { useChannelId } from '@/hooks/use-channel-id';
 import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useWorkspaceId } from '@/hooks/use-workspace-id';
+import { useTrackActivity } from '@/features/reports/hooks/use-track-activity';
 
 const ChannelChatPage = () => {
     // Always call hooks at the top level, never conditionally
     const channelId = useChannelId();
+    const workspaceId = useWorkspaceId();
+    
+    // Track user activity and time spent in this channel
+    useTrackActivity({
+        workspaceId,
+        channelId,
+        activityType: 'channel_view',
+    });
 
     // Pass the channelId to useGetMessages - the hook will handle undefined values
     const { results, status, loadMore } = useGetMessages({

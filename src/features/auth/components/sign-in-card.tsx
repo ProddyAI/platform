@@ -106,7 +106,7 @@ export const SignInCard = ({ setState, isStandalone = false }: SignInCardProps) 
           </Button>
         </div>
 
-        <p className="text-center text-xs text-primary">
+        <p className="text-center text-xs text-muted-foreground">
           Don&apos;t have an account?{' '}
           {isStandalone ? (
             <Link

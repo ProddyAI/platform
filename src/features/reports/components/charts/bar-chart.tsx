@@ -88,7 +88,7 @@ export const BarChart = ({
               <div
                 className={cn(
                   "w-full rounded-t-md transition-all duration-300",
-                  item.color || "bg-secondary",
+                  !item.color && "bg-secondary",
                   isHovered ? "opacity-80" : "opacity-100",
                   animate && "animate-in fade-in-50 slide-in-from-bottom-3",
                   onBarClick && "cursor-pointer"
@@ -96,6 +96,7 @@ export const BarChart = ({
                 style={{
                   height: `${percentage}%`,
                   transitionDelay: animate ? `${index * 50}ms` : '0ms',
+                  backgroundColor: item.color || undefined,
                 }}
               />
 

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { WorkspaceToolbar } from '../toolbar';
+import { useTrackActivity } from '@/features/reports/hooks/use-track-activity';
 
 import { useGetTaskCategories } from '@/features/tasks/api/use-get-task-categories';
 import { useGetTasks } from '@/features/tasks/api/use-get-tasks';
@@ -23,6 +24,12 @@ const TasksPage = () => {
   useDocumentTitle('Tasks');
 
   const workspaceId = useWorkspaceId();
+  
+  // Track user activity and time spent on tasks page
+  useTrackActivity({
+    workspaceId,
+    activityType: 'tasks_view',
+  });
   const { data: tasks, isLoading } = useGetTasks({ workspaceId });
   const { data: categories, isLoading: categoriesLoading } = useGetTaskCategories({ workspaceId });
 

@@ -114,9 +114,9 @@ export const PerformanceMetricsDashboard = ({ workspaceId, timeRange = '7d' }: P
     if (!taskData) return [];
 
     return [
-      { label: 'High', value: taskData.priorityCounts.high, color: 'bg-red-500' },
-      { label: 'Medium', value: taskData.priorityCounts.medium, color: 'bg-yellow-500' },
-      { label: 'Low', value: taskData.priorityCounts.low, color: 'bg-green-500' },
+      { label: 'High', value: taskData.priorityCounts.high, color: '#0ea5e9' },
+      { label: 'Medium', value: taskData.priorityCounts.medium, color: '#38bdf8' },
+      { label: 'Low', value: taskData.priorityCounts.low, color: '#7dd3fc' },
     ].filter(item => item.value > 0);
   }, [taskData]);
 
@@ -125,11 +125,11 @@ export const PerformanceMetricsDashboard = ({ workspaceId, timeRange = '7d' }: P
     if (!taskData) return [];
 
     return [
-      { label: 'Completed', value: taskData.statusCounts.completed, color: 'bg-green-500' },
-      { label: 'In Progress', value: taskData.statusCounts.in_progress, color: 'bg-blue-500' },
-      { label: 'Not Started', value: taskData.statusCounts.not_started, color: 'bg-gray-300' },
-      { label: 'On Hold', value: taskData.statusCounts.on_hold, color: 'bg-yellow-500' },
-      { label: 'Cancelled', value: taskData.statusCounts.cancelled, color: 'bg-red-500' },
+      { label: 'Completed', value: taskData.statusCounts.completed, color: '#0ea5e9' },
+      { label: 'In Progress', value: taskData.statusCounts.in_progress, color: '#38bdf8' },
+      { label: 'Not Started', value: taskData.statusCounts.not_started, color: '#7dd3fc' },
+      { label: 'On Hold', value: taskData.statusCounts.on_hold, color: '#bae6fd' },
+      { label: 'Cancelled', value: taskData.statusCounts.cancelled, color: '#e0f2fe' },
     ].filter(item => item.value > 0);
   }, [taskData]);
 
@@ -300,11 +300,11 @@ export const PerformanceMetricsDashboard = ({ workspaceId, timeRange = '7d' }: P
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 min-h-0">
-                <div className="h-[320px] max-h-[320px] flex items-center justify-center overflow-auto">
+                <div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
                   {taskStatusData.length > 0 ? (
                     <PieChart
                       data={taskStatusData}
-                      size={180}
+                      size={380}
                       formatValue={(value) => `${value} tasks`}
                     />
                   ) : (

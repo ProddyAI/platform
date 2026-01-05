@@ -9,12 +9,19 @@ import { Loader, LayoutDashboard } from 'lucide-react';
 import { WorkspaceToolbar } from '../toolbar';
 import { Button } from '@/components/ui/button';
 import { useMemo } from 'react';
+import { useTrackActivity } from '@/features/reports/hooks/use-track-activity';
 
 const DashboardPage = () => {
   // Set document title
   useDocumentTitle('Dashboard');
 
   const workspaceId = useWorkspaceId();
+  
+  // Track user activity and time spent on dashboard
+  useTrackActivity({
+    workspaceId,
+    activityType: 'dashboard_view',
+  });
 
   // Get current member to check permissions
   const { data: member, isLoading: memberLoading } = useCurrentMember({
