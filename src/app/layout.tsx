@@ -75,8 +75,8 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
                 <ModalProvider />
                 <TidioChat />
                 <Formbricks />
-                {/* <ClarityTracking />
-                <ApolloTracking /> */}
+                {/* <ClarityTracking /> */}
+                <ApolloTracking />
                 {children}
               </UsetifulProvider>
             </JotaiProvider>
