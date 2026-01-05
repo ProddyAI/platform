@@ -54,6 +54,31 @@ CONVEX_DEPLOYMENT=dev:<deployment-name> # team: <team-name>, project: <project-n
 # convex public url
 NEXT_PUBLIC_CONVEX_URL="https://<deployment-name>.convex.cloud"
 
+# Composio API Key for external integrations
+COMPOSIO_API_KEY=your-composio-api-key
+
+# Integration Auth Config IDs from Composio
+# Auth config ID for GitHub integration (e.g., ac_abc123)
+NEXT_PUBLIC_GITHUB_AUTH_CONFIG_ID=your-github-auth-config-id
+
+# Auth config ID for Gmail integration (e.g., ac_xyz789)
+NEXT_PUBLIC_GMAIL_AUTH_CONFIG_ID=your-gmail-auth-config-id
+
+# Auth config ID for Slack integration (e.g., ac_def456)
+NEXT_PUBLIC_SLACK_AUTH_CONFIG_ID=your-slack-auth-config-id
+
+# Auth config ID for Notion integration (e.g., ac_ghi789)
+NEXT_PUBLIC_NOTION_AUTH_CONFIG_ID=your-notion-auth-config-id
+
+# Auth config ID for ClickUp integration (e.g., ac_jkl012)
+NEXT_PUBLIC_CLICKUP_AUTH_CONFIG_ID=your-clickup-auth-config-id
+
+# Auth config ID for Linear integration (e.g., ac_mno345)
+NEXT_PUBLIC_LINEAR_AUTH_CONFIG_ID=your-linear-auth-config-id
+
+# OpenAI API Key for AI assistant features
+OPENAI_API_KEY=your-openai-api-key
+
 ```
 
 5. Convex Deployment

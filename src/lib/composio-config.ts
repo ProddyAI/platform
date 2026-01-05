@@ -891,22 +891,28 @@ export function filterToolsForQuery(
 
   let filteredTools = allTools;
 
-  // Filter by app if specific app is mentioned
-  if (needsGithub && !needsGmail && !needsSlack && !needsNotion && !needsClickup && !needsLinear) {
-    filteredTools = allTools.filter((tool) => tool.app === "github");
-  } else if (needsGmail && !needsGithub && !needsSlack && !needsNotion && !needsClickup && !needsLinear) {
-    filteredTools = allTools.filter((tool) => tool.app === "gmail");
-  } else if (needsSlack && !needsGithub && !needsGmail && !needsNotion && !needsClickup && !needsLinear) {
-    filteredTools = allTools.filter((tool) => tool.app === "slack");
-  } else if (needsNotion && !needsGithub && !needsGmail && !needsSlack && !needsClickup && !needsLinear) {
-    filteredTools = allTools.filter((tool) => tool.app === "notion");
-  } else if (needsClickup && !needsGithub && !needsGmail && !needsSlack && !needsNotion && !needsLinear) {
-    filteredTools = allTools.filter((tool) => tool.app === "clickup");
-  } else if (needsLinear && !needsGithub && !needsGmail && !needsSlack && !needsNotion && !needsClickup) {
-    filteredTools = allTools.filter((tool) => tool.app === "linear");
-  }
+	// Filter by app if specific app is mentioned - using map-based approach for maintainability
+	const appRequests: Record<string, boolean> = {
+		github: needsGithub,
+		gmail: needsGmail,
+		slack: needsSlack,
+		notion: needsNotion,
+		clickup: needsClickup,
+		linear: needsLinear,
+	};
 
-  // Score and sort tools
+	// Determine which apps are requested
+	const requestedApps = Object.entries(appRequests)
+		.filter(([_, isRequested]) => isRequested)
+		.map(([app, _]) => app);
+
+	// If exactly one app is requested, filter tools to that app
+	if (requestedApps.length === 1) {
+		const targetApp = requestedApps[0];
+		filteredTools = allTools.filter((tool) => tool.app?.toLowerCase() === targetApp);
+		console.log(`[Tool Filter] Filtering to ${targetApp}: ${filteredTools.length} tools`);
+	}
+	// Otherwise, use all tools (multi-app or no specific app)
   const scoredTools = filteredTools.map((tool) => {
     let score = 0;
     const toolName = tool.name.toLowerCase();

@@ -84,13 +84,14 @@ export async function POST(req: NextRequest) {
 		let userId: string = ''; // Composio uses userId as entity identifier
 		
 		// Detect if query needs external tools (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)
+		// Tightened patterns to require explicit app names or contextual phrases to reduce false positives
 		const queryLower = message.toLowerCase();
-		const needsGmail = /\b(email|gmail|send|mail|inbox|draft)\b/i.test(queryLower);
-		const needsGithub = /\b(github|repo|repository|issue|pull request|pr|commit|branch)\b/i.test(queryLower);
-		const needsSlack = /\b(slack|channel|message|dm|conversation|workspace|team)\b/i.test(queryLower);
-		const needsNotion = /\b(notion|page|database|block|note|doc|document)\b/i.test(queryLower);
-		const needsClickup = /\b(clickup|task|project|list|folder|space|goal|time tracking|checklist)\b/i.test(queryLower);
-		const needsLinear = /\b(linear|issue|ticket|bug|feature|cycle|sprint)\b/i.test(queryLower);
+		const needsGmail = /\b(gmail|send\s+email|email\s+to|in\s+gmail|my\s+inbox|draft\s+email)\b/i.test(queryLower);
+		const needsGithub = /\b(github|github\s+(repo|issue|pr|commit)|in\s+github|on\s+github)\b/i.test(queryLower);
+		const needsSlack = /\b(slack|slack\s+(message|channel)|in\s+slack|on\s+slack|send\s+to\s+slack)\b/i.test(queryLower);
+		const needsNotion = /\b(notion|notion\s+(page|database)|in\s+notion|on\s+notion|my\s+notion)\b/i.test(queryLower);
+		const needsClickup = /\b(clickup|clickup\s+(task|project)|in\s+clickup|on\s+clickup|my\s+clickup)\b/i.test(queryLower);
+		const needsLinear = /\b(linear|linear\s+(issue|ticket)|in\s+linear|on\s+linear|my\s+linear)\b/i.test(queryLower);
 		const needsExternalTools = needsGmail || needsGithub || needsSlack || needsNotion || needsClickup || needsLinear;
 
 		console.log('[Chatbot Assistant] Query analysis:', {
@@ -138,7 +139,13 @@ export async function POST(req: NextRequest) {
 					}
 				}
 			} catch (error) {
-				console.warn('[Chatbot Assistant] Composio setup failed, falling back to Convex:', error);
+				console.error('[Chatbot Assistant] Composio setup failed:', {
+					error: error instanceof Error ? error.message : String(error),
+					stack: error instanceof Error ? error.stack : undefined,
+					workspaceId,
+					userId,
+				});
+				console.warn('[Chatbot Assistant] Falling back to Convex due to Composio error');
 			}
 		}
 
@@ -152,16 +159,26 @@ export async function POST(req: NextRequest) {
 				// userId is already set from the previous block
 
 				// Build messages array
+				// Sanitize conversation history to prevent system prompt injection
+				const sanitizedHistory = (conversationHistory || [])
+					.filter((msg: any) => {
+						// Only allow 'user' and 'assistant' roles, block 'system' and unknown roles
+						const allowedRoles = ['user', 'assistant'];
+						return msg && allowedRoles.includes(msg.role) && typeof msg.content === 'string';
+					})
+					.map((msg: any) => ({
+						role: msg.role as 'user' | 'assistant',
+						// Strip control characters and normalize content
+						content: msg.content.replace(/[\x00-\x1F\x7F]/g, '').trim(),
+					}));
+
 				const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
 					{
 						role: 'system',
 						content: `You are Proddy AI, an intelligent workspace assistant with access to ${connectedApps.join(', ')} integrations. Help the user accomplish their tasks using these tools when appropriate. For workspace-related queries (messages, tasks, notes), acknowledge that you can help but may need to access workspace data. ${workspaceContext || ''}`,
 					},
-					// Add conversation history
-					...(conversationHistory || []).map((msg: any) => ({
-						role: msg.role as 'user' | 'assistant' | 'system',
-						content: msg.content,
-					})),
+					// Add sanitized conversation history
+					...sanitizedHistory,
 					{
 						role: 'user',
 						content: message,

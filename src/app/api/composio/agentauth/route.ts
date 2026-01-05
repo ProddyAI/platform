@@ -36,7 +36,24 @@ export async function POST(req: NextRequest) {
     const { apiClient } = initializeComposio();
 
     if (action === "authorize") {
-      // Use member-scoped entity ID for user-specific connections
+			// Verify ownership: ensure the authenticated user has permission to act on this memberId
+			if (!memberId) {
+				console.error("[AgentAuth] Missing memberId for authorization");
+				return NextResponse.json(
+					{ error: "Missing memberId" },
+					{ status: 400 },
+				);
+			}
+
+			// TODO: Add authentication check here to verify the request comes from an authorized session
+			// that owns or has permission to act on the provided memberId.
+			// Example:
+			// const session = await getSession(req);
+			// const member = await convex.query(api.members.get, { memberId });
+			// if (!session || member.userId !== session.userId) {
+			//   return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+			// }
+
       const entityId = `member_${memberId}`;
       console.log(
         `[AgentAuth] Authorizing member ${memberId} (entityId: ${entityId}) for ${toolkit}`,
