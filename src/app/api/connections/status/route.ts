@@ -6,6 +6,13 @@ import {
   type AvailableApp,
 } from "@/lib/composio-config";
 
+/**
+ * Handles GET requests to report connected apps and total tool count for a workspace or a specific member.
+ *
+ * @returns On success (200): a JSON object containing `success: true`, `connected` (array of connected apps), `totalTools` (number of tools across connected apps), `workspaceId`, optional `memberId`, `entityId` (either `member_<id>` or `workspace_<id>`), and `timestamp` (ISO string).
+ * On client error (400): a JSON object `{ error: "workspaceId required" }` when `workspaceId` is missing.
+ * On server error (500): a JSON object `{ success: false, error, connected: [], totalTools: 0 }` describing the failure.
+ */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

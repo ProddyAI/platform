@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/../convex/_generated/api';
 import type { Id } from '@/../convex/_generated/dataModel';
@@ -18,6 +18,12 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Create a Convex HTTP client configured from the NEXT_PUBLIC_CONVEX_URL environment variable.
+ *
+ * @returns A ConvexHttpClient initialized with the URL from `NEXT_PUBLIC_CONVEX_URL`.
+ * @throws Error if `NEXT_PUBLIC_CONVEX_URL` is not set.
+ */
 function createConvexClient(): ConvexHttpClient {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
 		throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
@@ -25,7 +31,12 @@ function createConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 }
 
-// Initialize OpenAI client
+/**
+ * Create an OpenAI client configured from the `OPENAI_API_KEY` environment variable.
+ *
+ * @returns An `OpenAI` client instance authenticated with `process.env.OPENAI_API_KEY`.
+ * @throws Error if `OPENAI_API_KEY` is not defined in the environment.
+ */
 function createOpenAIClient(): OpenAI {
 	if (!process.env.OPENAI_API_KEY) {
 		throw new Error('OPENAI_API_KEY environment variable is required');
@@ -35,6 +46,22 @@ function createOpenAIClient(): OpenAI {
 	});
 }
 
+/**
+ * Handle POST requests for the workspace chatbot assistant, routing user queries to either
+ * the OpenAI+Composio tool-enabled path (when external integrations are needed and available)
+ * or the Convex (Gemini) assistant as a fallback.
+ *
+ * The handler validates the incoming payload, attempts to propagate Convex auth from the
+ * request, detects whether external tools are required based on the user's message, and
+ * conditionally invokes Composio-enabled OpenAI completions (executing any tool calls) or
+ * calls the Convex assistant. Responses are returned as JSON describing the assistant output,
+ * any executed tool results, and metadata about sources/actions.
+ *
+ * @returns A JSON object describing the outcome:
+ * - On success: { success: true, response: string, sources: Array, actions: Array, toolResults: Array, assistantType: string, composioToolsUsed: boolean, connectedApps?: Array }
+ * - On client error (missing fields): { error: string } with status 400
+ * - On server error: { success: false, error: string } with status 500
+ */
 export async function POST(req: NextRequest) {
 	try {
 		const convex = createConvexClient();
