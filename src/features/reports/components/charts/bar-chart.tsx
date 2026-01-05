@@ -85,20 +85,29 @@ export const BarChart = ({
 
 	const maxValue = Math.max(...data.map((item) => item.value));
 
-	return (
-		<div
-			className={cn("w-full h-full relative overflow-hidden", className)}
-			ref={containerRef}
-		>
-			<div
-				className="flex items-end space-x-2 relative w-full"
-				style={{
-					height: `${maxHeight ? Math.min(height, maxHeight) : height}px`,
-				}}
-			>
-				{data.map((item, index) => {
-					const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
-					const isHovered = hoveredIndex === index;
+          return (
+            <div
+              key={index}
+              data-bar-index={index}
+              className="relative flex flex-col items-center flex-1 group"
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              onClick={() => onBarClick?.(item.label, item.value, index)}
+            >
+              <div
+                className={cn(
+                  "w-full rounded-t-md transition-all duration-300",
+                  !item.color && "bg-secondary",
+                  isHovered ? "opacity-80" : "opacity-100",
+                  animate && "animate-in fade-in-50 slide-in-from-bottom-3",
+                  onBarClick && "cursor-pointer"
+                )}
+                style={{
+                  height: `${percentage}%`,
+                  transitionDelay: animate ? `${index * 50}ms` : '0ms',
+                  backgroundColor: item.color || undefined,
+                }}
+              />
 
 					return (
 						<div

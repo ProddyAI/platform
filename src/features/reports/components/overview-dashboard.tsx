@@ -174,11 +174,11 @@ export const OverviewDashboard = ({
 				? Math.round((taskData.completedTasks / taskData.totalTasks) * 100)
 				: 0;
 
-		return [
-			{ label: "Completed", value: completionRate, color: "bg-green-500" },
-			{ label: "Remaining", value: 100 - completionRate, color: "bg-gray-300" },
-		];
-	}, [taskData]);
+    return [
+      { label: 'Completed', value: completionRate, color: '#1e40af' },
+      { label: 'Remaining', value: 100 - completionRate, color: '#60a5fa' }
+    ];
+  }, [taskData]);
 
 	if (isLoading) {
 		return (
@@ -402,103 +402,80 @@ export const OverviewDashboard = ({
 					</CardContent>
 				</Card>
 
-				{/* Task Completion Card */}
-				<Card className="flex flex-col">
-					<CardHeader className="pb-4 flex-shrink-0">
-						<CardTitle className="flex items-center gap-2">
-							<CheckSquare className="h-5 w-5 text-secondary" />
-							Task Completion
-						</CardTitle>
-						<CardDescription>
-							Overall task completion rate and progress
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="flex-1 flex flex-col p-6 pt-0 min-h-0">
-						{taskCompletionData.length > 0 && taskData ? (
-							<div className="flex-1 flex flex-col items-center justify-center h-[400px] max-h-[400px] overflow-auto space-y-6">
-								{/* Pie Chart */}
-								<div className="relative flex-shrink-0">
-									<PieChart
-										data={taskCompletionData}
-										size={200}
-										formatValue={(value) => `${value}%`}
-									/>
-									{/* Center completion percentage */}
-									<div className="absolute inset-0 flex items-center justify-center">
-										<div className="text-center">
-											<div className="text-2xl font-bold text-secondary">
-												{taskData.totalTasks > 0
-													? Math.round(
-															(taskData.completedTasks / taskData.totalTasks) *
-																100
-														)
-													: 0}
-												%
-											</div>
-											<div className="text-xs text-muted-foreground">
-												Complete
-											</div>
-										</div>
-									</div>
-								</div>
+        {/* Task Completion Card */}
+        <Card className="flex flex-col">
+          <CardHeader className="pb-4 flex-shrink-0">
+            <CardTitle className="flex items-center gap-2">
+              <CheckSquare className="h-5 w-5 text-secondary" />
+              Task Completion
+            </CardTitle>
+            <CardDescription>
+              Overall task completion rate and progress
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col p-4 pt-0 pb-4 min-h-0">
+            {taskCompletionData.length > 0 && taskData ? (
+              <div className="flex-1 flex flex-col items-center h-[400px] max-h-[400px] space-y-2 pt-4">
+                {/* Pie Chart */}
+                <div className="relative flex-shrink-0 h-[280px] w-full">
+                  <PieChart
+                    data={taskCompletionData}
+                    formatValue={(value) => `${value}%`}
+                  />
+                </div>
 
-								{/* Task Statistics */}
-								<div className="w-full space-y-4">
-									<div className="grid grid-cols-2 gap-4">
-										<div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-											<div className="text-2xl font-bold text-green-600 dark:text-green-400">
-												{taskData.completedTasks}
-											</div>
-											<div className="text-sm text-green-600/80 dark:text-green-400/80">
-												Completed
-											</div>
-										</div>
-										<div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-											<div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-												{taskData.totalTasks - taskData.completedTasks}
-											</div>
-											<div className="text-sm text-orange-600/80 dark:text-orange-400/80">
-												Remaining
-											</div>
-										</div>
-									</div>
+                {/* Task Statistics */}
+                <div className="w-full space-y-2 px-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="text-xl font-bold text-blue-700 dark:text-blue-400">
+                        {taskData.completedTasks}
+                      </div>
+                      <div className="text-xs text-blue-700/80 dark:text-blue-400/80">
+                        Completed
+                      </div>
+                    </div>
+                    <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-300 dark:border-blue-700">
+                      <div className="text-xl font-bold text-blue-500 dark:text-blue-300">
+                        {taskData.totalTasks - taskData.completedTasks}
+                      </div>
+                      <div className="text-xs text-blue-500/80 dark:text-blue-300/80">
+                        Remaining
+                      </div>
+                    </div>
+                  </div>
 
-									{/* Progress Bar */}
-									<div className="w-full">
-										<div className="flex justify-between text-sm text-muted-foreground mb-2">
-											<span>Progress</span>
-											<span>
-												{taskData.completedTasks}/{taskData.totalTasks} tasks
-											</span>
-										</div>
-										<div className="w-full bg-muted rounded-full h-2">
-											<div
-												className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
-												style={{
-													width: `${taskData.totalTasks > 0 ? (taskData.completedTasks / taskData.totalTasks) * 100 : 0}%`,
-												}}
-											></div>
-										</div>
-									</div>
-								</div>
-							</div>
-						) : (
-							<div className="flex-1 flex items-center justify-center h-[400px]">
-								<div className="text-center p-8 bg-muted/20 rounded-lg w-full">
-									<CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-									<h3 className="text-lg font-medium text-muted-foreground mb-2">
-										No task data available
-									</h3>
-									<p className="text-sm text-muted-foreground/70 max-w-sm mx-auto">
-										Tasks will appear here once they are created in this
-										workspace
-									</p>
-								</div>
-							</div>
-						)}
-					</CardContent>
-				</Card>
-			</div>
-		</div>
-	);
+                  {/* Progress Bar */}
+                  <div className="w-full">
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <span>Progress</span>
+                      <span className="font-medium">{taskData.completedTasks}/{taskData.totalTasks} tasks</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-1.5">
+                      <div
+                        className="bg-gradient-to-r from-blue-700 to-blue-600 h-1.5 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${taskData.totalTasks > 0 ? (taskData.completedTasks / taskData.totalTasks) * 100 : 0}%`
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center h-[400px]">
+                <div className="text-center p-8 bg-muted/20 rounded-lg w-full">
+                  <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No task data available</h3>
+                  <p className="text-sm text-muted-foreground/70 max-w-sm mx-auto">
+                    Tasks will appear here once they are created in this workspace
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 };
