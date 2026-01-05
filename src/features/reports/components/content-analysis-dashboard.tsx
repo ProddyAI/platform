@@ -76,27 +76,27 @@ export const ContentAnalysisDashboard = ({
 
   // Mock data for content types (in a real app, this would come from the backend)
   const contentTypeData = useMemo(() => [
-    { label: 'Text', value: 65, color: '#3b82f6' },
-    { label: 'Images', value: 15, color: '#22c55e' },
-    { label: 'Files', value: 10, color: '#eab308' },
-    { label: 'Links', value: 8, color: '#a855f7' },
-    { label: 'Code', value: 2, color: '#ef4444' },
+    { label: 'Text', value: 65, color: '#a78bfa' },      // Light purple
+    { label: 'Images', value: 15, color: '#8b5cf6' },    // Medium purple
+    { label: 'Files', value: 10, color: '#7c3aed' },     // Purple
+    { label: 'Links', value: 8, color: '#ec4899' },      // Pink
+    { label: 'Code', value: 2, color: '#f472b6' },       // Light pink
   ], []);
 
   // Mock data for message length distribution
   const messageLengthData = useMemo(() => [
-    { label: 'Short (<50 chars)', value: 45, color: '#93c5fd' },
-    { label: 'Medium (50-200 chars)', value: 35, color: '#3b82f6' },
-    { label: 'Long (>200 chars)', value: 20, color: '#1d4ed8' },
+    { label: 'Short (<50 chars)', value: 45, color: '#a5b4fc' },     // Light indigo
+    { label: 'Medium (50-200 chars)', value: 35, color: '#6366f1' }, // Soft indigo
+    { label: 'Long (>200 chars)', value: 20, color: '#4f46e5' },     // Deep indigo
   ], []);
 
   // Mock data for file types
   const fileTypeData = useMemo(() => [
-    { label: 'Images', value: 42, color: '#22c55e' },
-    { label: 'Documents', value: 28, color: '#3b82f6' },
-    { label: 'Spreadsheets', value: 15, color: '#eab308' },
-    { label: 'PDFs', value: 10, color: '#ef4444' },
-    { label: 'Other', value: 5, color: '#6b7280' },
+    { label: 'Images', value: 42, color: '#a78bfa' },      // Light purple
+    { label: 'Documents', value: 28, color: '#8b5cf6' },   // Medium purple
+    { label: 'Spreadsheets', value: 15, color: '#7c3aed' },// Purple
+    { label: 'PDFs', value: 10, color: '#ec4899' },        // Pink
+    { label: 'Other', value: 5, color: '#f472b6' },        // Light pink
   ], []);
 
 	// Mock data for busiest hours

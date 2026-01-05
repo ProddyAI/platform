@@ -1,5 +1,6 @@
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"name": "proddy",
 	"version": "1.0.1",
 	"private": true,
@@ -149,6 +150,8 @@
 		"typescript": "^5.9.3"
 	}
 =======
+=======
+>>>>>>> b334c2f (merge fixes)
   "name": "proddy",
   "version": "1.0.1",
   "private": true,
@@ -158,8 +161,10 @@
     "convex": "convex dev",
     "start": "next start",
     "type": "tsc --noEmit",
+    "type:strict": "tsc --noEmit && next build --no-lint",
     "lint": "eslint . --fix --max-warnings 0",
-    "format": "prettier --write . --config .prettierrc.mjs"
+    "format": "prettier --write . --config .prettierrc.mjs",
+    "check": "bun run type && bun run lint"
   },
   "author": {
     "name": "George Bobby",
@@ -293,6 +298,7 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.25.1",
+    "@biomejs/biome": "2.3.11",
     "@tailwindcss/typography": "^0.5.16",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/node": "^20",
@@ -308,5 +314,4 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
->>>>>>> 607b013 (updates)
 }
