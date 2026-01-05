@@ -1,3 +1,5 @@
+"use client";
+
 import Script from "next/script";
 
 declare global {
@@ -12,10 +14,7 @@ export const ApolloTracking = () => {
     const appId = process.env.NEXT_PUBLIC_APOLLO_APP_ID;
     if (!appId) return null;
 
-    const cacheBuster =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-            ? crypto.randomUUID()
-            : `${Date.now()}`;
+    const cacheBuster = Math.random().toString(36).substring(7);
 
     return (
         <Script
