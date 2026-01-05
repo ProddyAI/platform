@@ -254,7 +254,7 @@ export const PieChart = ({
             
             return (
               <g key={`depth-${segment.index}`}>
-                {sidePaths && sidePaths.map((pathData, idx) => (
+                {sidePaths?.map((pathData, idx) => (
                 <path
                     key={`side-${segment.index}-${idx}`}
                     d={pathData.path}
@@ -290,7 +290,7 @@ export const PieChart = ({
             
             return (
               <g key={`depth-hovered-${segment.index}`}>
-                {sidePaths && sidePaths.map((pathData, idx) => (
+                {sidePaths?.map((pathData, idx) => (
                 <path
                     key={`side-${segment.index}-${idx}`}
                     d={pathData.path}
@@ -311,7 +311,6 @@ export const PieChart = ({
           
           {/* LAYER 3: All top surfaces (non-hovered segments) */}
           {segments.filter(seg => hoveredIndex !== seg.index).map((segment) => {
-            const isHovered = false;
             const ejectAmount = 0;
             
             const midAngleRad = ((segment.startAngle + segment.endAngle) / 2 / 100) * Math.PI * 2 - Math.PI / 2;
@@ -367,7 +366,6 @@ export const PieChart = ({
           
           {/* LAYER 4: Hovered segment's top surface (always on top) */}
           {hoveredIndex !== null && segments.filter(seg => hoveredIndex === seg.index).map((segment) => {
-            const isHovered = true;
             const ejectAmount = HOVER_EJECT;
             
             const midAngleRad = ((segment.startAngle + segment.endAngle) / 2 / 100) * Math.PI * 2 - Math.PI / 2;
