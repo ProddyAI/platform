@@ -104,7 +104,7 @@ export const PieChart = ({
     return `M ${centerX} ${centerY} L ${startX} ${startY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY} Z`;
   };
 
-  const createSidePath = (segment: typeof segments[0], radiusX: number, radiusY: number, centerX: number, centerY: number, depth: number, isHovered: boolean = false) => {
+  const createSidePath = (segment: typeof segments[0], radiusX: number, radiusY: number, centerX: number, centerY: number, depth: number, isHovered = false) => {
     const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
     const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
     
@@ -119,7 +119,7 @@ export const PieChart = ({
     const endX = centerX + radiusX * Math.cos(endAngleRad);
     const endY = centerY + radiusY * Math.sin(endAngleRad);
     
-    let paths = [];
+    const paths = [];
     
     // Outer edge (arc) with smooth gradient
     if (showOuterEdge) {
@@ -173,7 +173,7 @@ export const PieChart = ({
         style={{ 
           width: '90%',
           height: '100%',
-          maxWidth: maxSize || size,
+          maxWidth: maxSize ?? size,
           maxHeight: maxSize || size,
           overflow: 'visible',
           marginLeft: '0',
