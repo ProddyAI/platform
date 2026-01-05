@@ -3,7 +3,7 @@
 import React from 'react';
 import { Activity, Bell, HeartPulse, HelpCircle, Map, Search } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ReactNode, useEffect, useState, useCallback } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAction, useQuery } from 'convex/react';
 import { api } from '@/../convex/_generated/api';
 

@@ -93,9 +93,10 @@ type FilterTypes = {
 // The generated Convex typings for `components.rag` currently omit the optional
 // `order` argument on `chunks.list`, while `@convex-dev/rag` expects it. Cast to
 // `any` to bypass the transient type mismatch without changing runtime behavior.
+// Note: google.textEmbeddingModel returns V1 but RAG expects V2, cast needed for compatibility
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ['workspaceId', 'contentType', 'channelId'],
-	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004'),
+	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004') as any,
 	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
 });
 
@@ -823,7 +824,7 @@ export const searchAllSemantic = action({
 					const contentType = result.metadata?.find((m: any) => m.name === 'contentType')?.value || 'message';
 
 					processedResults.push({
-						_id: result._id as Id<any>,
+						_id: result._id as Id<'messages'> | Id<'notes'> | Id<'tasks'>,
 						_creationTime: Date.now(), // Placeholder
 						type: contentType,
 						text: result.text,
@@ -921,7 +922,6 @@ export const aiSearchMessages = action({
 			const { generateText } = await import('ai');
 			const result = await generateText({
 				model: google('gemini-2.5-flash'),
-				maxTokens: 1000,
 				prompt: `
 Answer the user's question using ONLY the messages below.
 Provide a concise, direct answer based on the relevant information.

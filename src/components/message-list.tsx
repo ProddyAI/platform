@@ -57,11 +57,20 @@ export const MessageList = ({
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
   const highlightedRef = useRef<HTMLDivElement | null>(null);
+  const [hasScrolledToHighlight, setHasScrolledToHighlight] = useState(false);
+  
   useEffect(() => {
-    if (highlightId && highlightedRef.current) {
+    if (highlightId && highlightedRef.current && !hasScrolledToHighlight) {
       highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHasScrolledToHighlight(true);
     }
-  }, [highlightId, data]);
+  }, [highlightId, data, hasScrolledToHighlight]);
+
+  // Reset scroll flag when highlight ID changes
+  useEffect(() => {
+    setHasScrolledToHighlight(false);
+  }, [highlightId]);
+
   const [isRecapModalOpen, setIsRecapModalOpen] = useState(false);
   const [recapData, setRecapData] = useState<{ recap: string; date: string; messageCount: number; isCached?: boolean } | null>(null);
   const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);

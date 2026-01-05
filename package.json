@@ -50,7 +50,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@ai-sdk/google": "^1.2.22",
+    "@ai-sdk/google": "^3.0.2",
     "@ai-sdk/openai": "^2.0.22",
     "@auth/core": "^0.34.2",
     "@blocknote/core": "^0.33.0",
@@ -96,7 +96,7 @@
     "@stream-io/node-sdk": "^0.4.25",
     "@stream-io/video-react-sdk": "^1.18.8",
     "@types/dompurify": "^3.2.0",
-    "ai": "^4.3.19",
+    "ai": "^6.0.6",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
