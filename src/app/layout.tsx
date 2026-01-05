@@ -10,7 +10,9 @@ import { TidioChat } from "@/components/tidio-chat";
 import { Formbricks } from "@/components/formbricks";
 import { UsetifulProvider } from "@/components/usetiful-provider";
 import { ClarityTracking } from "@/components/clarity-tracking";
+import { ApolloTracking } from "@/components/apollo-tracking";
 import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup";
+import { ThemeInitScript } from "@/components/theme-init-script";
 import { siteConfig } from "@/config";
 
 import "./globals.css";
@@ -59,12 +61,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
     <ConvexAuthNextjsServerProvider>
       <html lang="en">
         <head>
-          <script
-            dangerouslySetInnerHTML={{
-              __html:
-                "try{const t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}",
-            }}
-          />
+          <ThemeInitScript />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="mobile-web-app-capable" content="yes" />
           <link rel="apple-touch-icon" href="/logo-nobg.png" />
@@ -79,6 +76,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
                 <TidioChat />
                 <Formbricks />
                 <ClarityTracking />
+                <ApolloTracking />
                 {children}
               </UsetifulProvider>
             </JotaiProvider>
