@@ -420,7 +420,7 @@ export const deleteConnectedAccount = mutation({
         }
 
         // Prevent deletion of legacy/unowned records where memberId is not set
-        if (connectedAccount.memberId === undefined || connectedAccount.memberId === null) {
+        if (!connectedAccount.memberId) {
             throw new Error('Unauthorized: Cannot delete a connected account without an owner');
         }
 

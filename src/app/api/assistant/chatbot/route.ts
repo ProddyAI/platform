@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
 
 			if (member.userId !== currentUser._id) {
 				return NextResponse.json(
-					{ error: 'Unauthorized: Cannot access integrations for another user\'s member' },
+					{ error: "Unauthorized: Cannot access integrations for another user's member" },
 					{ status: 403 }
 				);
 			}
@@ -160,6 +160,7 @@ export async function POST(req: NextRequest) {
 				}
 			} catch (error) {
 				// Composio setup failed, fall back to Convex
+				console.warn('[Chatbot Assistant] Composio initialization failed, using Convex fallback');
 			}
 		}
 
