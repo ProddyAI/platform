@@ -86,7 +86,7 @@ export const getAuthConfigsPublic = query({
             const authConfigs = await ctx.db
                 .query('auth_configs')
                 .withIndex('by_member_id', (q) =>
-                    q.eq('memberId', args.memberId!)
+                    q.eq('memberId', args.memberId)
                 )
                 .collect();
             return authConfigs;
@@ -419,14 +419,62 @@ export const deleteConnectedAccount = mutation({
             throw new Error('Connected account not found');
         }
 
-        // Prevent deletion of legacy/unowned records where memberId is not set
+        // Log legacy records without memberId for visibility
         if (!connectedAccount.memberId) {
-            throw new Error('Unauthorized: Cannot delete a connected account without an owner');
+            console.warn(
+                `Attempted to delete legacy connected account ${args.connectedAccountId} without memberId. ` +
+                'Use adminDeleteConnectedAccount for legacy records.'
+            );
+            throw new Error('Unauthorized: Cannot delete a connected account without an owner. Contact admin.');
         }
 
         if (connectedAccount.memberId !== args.memberId) {
             throw new Error('Unauthorized: Cannot delete another member\'s connection');
         }
+
+        // Delete the connected account from database
+        await ctx.db.delete(args.connectedAccountId);
+    },
+});
+
+// Admin-only mutation to delete legacy connected accounts without memberId
+export const adminDeleteConnectedAccount = mutation({
+    args: {
+        connectedAccountId: v.id('connected_accounts'),
+        workspaceId: v.id('workspaces'),
+    },
+    handler: async (ctx, args) => {
+        // Verify the caller has admin privileges in the workspace
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error('Unauthorized');
+
+        // Get the caller's member record in this workspace
+        const callerMember = await ctx.db
+            .query('members')
+            .withIndex('by_workspace_id_user_id', (q) =>
+                q.eq('workspaceId', args.workspaceId).eq('userId', userId)
+            )
+            .first();
+
+        if (!callerMember || (callerMember.role !== 'admin' && callerMember.role !== 'owner')) {
+            throw new Error('Unauthorized: Admin or owner privileges required');
+        }
+
+        const connectedAccount = await ctx.db.get(args.connectedAccountId);
+        if (!connectedAccount) {
+            throw new Error('Connected account not found');
+        }
+
+        // Verify the connected account belongs to the same workspace
+        if (connectedAccount.workspaceId !== args.workspaceId) {
+            throw new Error('Connected account does not belong to this workspace');
+        }
+
+        // Log the deletion for audit purposes
+        console.log(
+            `Admin ${userId} (member ${callerMember._id}) deleting connected account ${args.connectedAccountId} ` +
+            `(toolkit: ${connectedAccount.toolkit}, has memberId: ${!!connectedAccount.memberId})`
+        );
 
         // Delete the connected account from database
         await ctx.db.delete(args.connectedAccountId);

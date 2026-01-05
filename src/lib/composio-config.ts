@@ -1029,7 +1029,6 @@ function extractKeywordsFromQuery(query: string): string[] {
     "checklist",
     "time",
     "tracking",
-    "issue",
     "ticket",
     "bug",
     "feature",

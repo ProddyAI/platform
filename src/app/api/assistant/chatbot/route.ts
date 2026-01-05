@@ -7,6 +7,7 @@ import {
 	isAuthenticatedNextjs,
 } from '@convex-dev/auth/nextjs/server';
 import OpenAI from 'openai';
+import { Composio } from '@composio/core';
 import {
 	createComposioClient,
 	getWorkspaceEntityId,
@@ -14,6 +15,7 @@ import {
 	getAllToolsForApps,
 	filterToolsForQuery,
 	type AvailableApp,
+	type ComposioTool,
 } from '@/lib/composio-config';
 
 export const dynamic = 'force-dynamic';
@@ -115,10 +117,10 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Check if Composio integration is available and relevant
-		let useComposio = false;
+		let useComposio: boolean = false;
 		let connectedApps: AvailableApp[] = [];
-		let composioTools: any[] = [];
-		let composioClient: any = null; // Store composio client for reuse
+		let composioTools: any[] = []; // Keep as any[] for OpenAI compatibility
+		let composioClient: Composio | null = null; // Store composio client for reuse
 		let userId: string = ''; // Composio uses userId as entity identifier
 		
 		// Detect if query needs external tools (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)
@@ -228,14 +230,27 @@ export async function POST(req: NextRequest) {
 							text: `${call.function?.name || 'Tool'} executed`,
 						}));
 
+						// Build result map indexed by tool call id for safe lookup
+						const resultMap: Record<string, any> = {};
+						toolCalls.forEach((call, idx) => {
+							resultMap[call.id] = toolResults[idx] ?? { success: true };
+						});
+
+						// Log warning if counts differ
+						if (toolCalls.length !== toolResults.length) {
+							console.warn(
+								`[Chatbot Assistant] Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
+							);
+						}
+
 						// Get follow-up response with tool results
 						const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
 							...messages,
 							completion.choices[0].message,
-							...toolCalls.map((call, idx) => ({
+							...toolCalls.map((call) => ({
 								role: 'tool' as const,
 								tool_call_id: call.id,
-								content: JSON.stringify(toolResults[idx] || { success: true }),
+								content: JSON.stringify(resultMap[call.id]),
 							})),
 						];
 

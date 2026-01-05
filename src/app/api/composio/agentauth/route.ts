@@ -16,6 +16,68 @@ const validateAuthConfigFormat = (composioAuthConfigId: string): boolean => {
   return Boolean(composioAuthConfigId && composioAuthConfigId.length > 0);
 };
 
+// Helper function to verify member ownership
+async function verifyMemberOwnership(
+  memberId: string,
+  convexClient: ConvexHttpClient
+): Promise<{ success: true; member: any } | { success: false; response: NextResponse }> {
+  // Verify authentication
+  const isAuthenticated = await isAuthenticatedNextjs();
+  if (!isAuthenticated) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      ),
+    };
+  }
+
+  // Get the authenticated user's information
+  const token = await convexAuthNextjsToken();
+  if (token && typeof token === "string") {
+    convexClient.setAuth(token);
+  }
+
+  const currentUser = await convexClient.query(api.users.current);
+  if (!currentUser) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      ),
+    };
+  }
+
+  // Get the member for this workspace and verify ownership
+  const member = await convexClient.query(api.members._getMemberById, {
+    memberId: memberId as Id<"members">,
+  });
+
+  if (!member) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Member not found" },
+        { status: 404 }
+      ),
+    };
+  }
+
+  if (member.userId !== currentUser._id) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Unauthorized: Cannot act on another user's member" },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return { success: true, member };
+}
+
 // Unified POST endpoint for authorization and completion
 export async function POST(req: NextRequest) {
   try {
@@ -42,46 +104,10 @@ export async function POST(req: NextRequest) {
 				);
 			}
 
-			// Verify authentication and that the authenticated user owns the provided memberId
-			const isAuthenticated = await isAuthenticatedNextjs();
-			if (!isAuthenticated) {
-				return NextResponse.json(
-					{ error: "Authentication required" },
-					{ status: 401 },
-				);
-			}
-
-			// Get the authenticated user's information
-			const token = await convexAuthNextjsToken();
-			if (token && typeof token === "string") {
-				convex.setAuth(token);
-			}
-
-			const currentUser = await convex.query(api.users.current);
-			if (!currentUser) {
-				return NextResponse.json(
-					{ error: "User not found" },
-					{ status: 404 },
-				);
-			}
-
-			// Get the member for this workspace and verify ownership
-			const member = await convex.query(api.members._getMemberById, {
-				memberId: memberId as Id<"members">,
-			});
-
-			if (!member) {
-				return NextResponse.json(
-					{ error: "Member not found" },
-					{ status: 404 },
-				);
-			}
-
-			if (member.userId !== currentUser._id) {
-				return NextResponse.json(
-					{ error: "Unauthorized: Cannot authorize connection for another user's member" },
-					{ status: 403 },
-				);
+			// Verify authentication and member ownership
+			const verifyResult = await verifyMemberOwnership(memberId, convex);
+			if (!verifyResult.success) {
+				return verifyResult.response;
 			}
 
       const entityId = `member_${memberId}`;
@@ -158,46 +184,10 @@ export async function POST(req: NextRequest) {
 				);
 			}
 
-			// Verify authentication and that the authenticated user owns the provided memberId
-			const isAuthenticated = await isAuthenticatedNextjs();
-			if (!isAuthenticated) {
-				return NextResponse.json(
-					{ error: "Authentication required" },
-					{ status: 401 },
-				);
-			}
-
-			// Get the authenticated user's information
-			const token = await convexAuthNextjsToken();
-			if (token && typeof token === "string") {
-				convex.setAuth(token);
-			}
-
-			const currentUser = await convex.query(api.users.current);
-			if (!currentUser) {
-				return NextResponse.json(
-					{ error: "User not found" },
-					{ status: 404 },
-				);
-			}
-
-			// Get the member for this workspace and verify ownership
-			const member = await convex.query(api.members._getMemberById, {
-				memberId: memberId as Id<"members">,
-			});
-
-			if (!member) {
-				return NextResponse.json(
-					{ error: "Member not found" },
-					{ status: 404 },
-				);
-			}
-
-			if (member.userId !== currentUser._id) {
-				return NextResponse.json(
-					{ error: "Unauthorized: Cannot complete connection for another user's member" },
-					{ status: 403 },
-				);
+			// Verify authentication and member ownership
+			const verifyResult = await verifyMemberOwnership(memberId, convex);
+			if (!verifyResult.success) {
+				return verifyResult.response;
 			}
 
       // Use member-scoped entity ID for user-specific connections
@@ -410,6 +400,16 @@ export async function GET(req: NextRequest) {
 
     // Fetch tools for connected toolkit (Step 2 from documentation)
     if (action === "fetch-tools" && workspaceId && toolkit && userId) {
+      // Validate userId format (should be member_{memberId})
+      const memberIdPattern = /^member_[A-Za-z0-9-_]+$/;
+      if (!memberIdPattern.test(userId)) {
+        console.error(`[AgentAuth] Invalid userId format: ${userId}`);
+        return NextResponse.json(
+          { error: "Invalid userId format. Expected format: member_{memberId}" },
+          { status: 400 }
+        );
+      }
+
       // Use member-scoped entity ID for user-specific connections
       const entityId = userId; // userId should be member_{memberId}
 
@@ -465,46 +465,10 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Verify authentication and that the authenticated user owns the provided memberId
-    const isAuthenticated = await isAuthenticatedNextjs();
-    if (!isAuthenticated) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 },
-      );
-    }
-
-    // Get the authenticated user's information
-    const token = await convexAuthNextjsToken();
-    if (token && typeof token === "string") {
-      convex.setAuth(token);
-    }
-
-    const currentUser = await convex.query(api.users.current);
-    if (!currentUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 },
-      );
-    }
-
-    // Get the member for this workspace and verify ownership
-    const member = await convex.query(api.members._getMemberById, {
-      memberId: memberId as Id<"members">,
-    });
-
-    if (!member) {
-      return NextResponse.json(
-        { error: "Member not found" },
-        { status: 404 },
-      );
-    }
-
-    if (member.userId !== currentUser._id) {
-      return NextResponse.json(
-        { error: "Unauthorized: Cannot delete another user's connection" },
-        { status: 403 },
-      );
+    // Verify authentication and member ownership
+    const verifyResult = await verifyMemberOwnership(memberId, convex);
+    if (!verifyResult.success) {
+      return verifyResult.response;
     }
 
     const { apiClient } = initializeComposio();

@@ -144,18 +144,57 @@ export function initializeComposio() {
 
     // Delete connection
     async deleteConnection(connectionId: string) {
+      // Try different methods to delete the connection with proper fallback
+      let result;
+      let lastError;
+
+      // Try first method: connectedAccounts.delete
       try {
-        // Try different methods to delete the connection
-        const result = 
-          (await (composioInstance as any).connectedAccounts?.delete?.(connectionId)) ||
-          (await (composioInstance as any).connections?.delete?.(connectionId)) ||
-          (await (composioInstance as any).connectedAccounts?.remove?.(connectionId));
-        
-        return result;
+        if (typeof (composioInstance as any).connectedAccounts?.delete === 'function') {
+          result = await (composioInstance as any).connectedAccounts.delete(connectionId);
+          if (result !== undefined) {
+            return result;
+          }
+        }
       } catch (error) {
-        console.error("Error deleting connection:", error);
-        throw error;
+        console.warn("deleteConnection: connectedAccounts.delete failed:", error);
+        lastError = error;
       }
+
+      // Try second method: connections.delete
+      try {
+        if (typeof (composioInstance as any).connections?.delete === 'function') {
+          result = await (composioInstance as any).connections.delete(connectionId);
+          if (result !== undefined) {
+            return result;
+          }
+        }
+      } catch (error) {
+        console.warn("deleteConnection: connections.delete failed:", error);
+        lastError = error;
+      }
+
+      // Try third method: connectedAccounts.remove
+      try {
+        if (typeof (composioInstance as any).connectedAccounts?.remove === 'function') {
+          result = await (composioInstance as any).connectedAccounts.remove(connectionId);
+          if (result !== undefined) {
+            return result;
+          }
+        }
+      } catch (error) {
+        console.warn("deleteConnection: connectedAccounts.remove failed:", error);
+        lastError = error;
+      }
+
+      // If all methods failed, throw the last error
+      if (lastError) {
+        console.error("Error deleting connection:", lastError);
+        throw lastError;
+      }
+
+      // If no methods were available or returned undefined
+      return undefined;
     },
   };
 
