@@ -105,7 +105,7 @@ export function getTooltipTextAttrs() {
   return {
     x: 0,
     y: 0.3,
-    textAnchor: 'middle',
-    dominantBaseline: 'middle',
+    textAnchor: 'middle' as const,
+    dominantBaseline: 'middle' as const,
   };
 }

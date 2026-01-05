@@ -8,8 +8,10 @@
     "convex": "convex dev",
     "start": "next start",
     "type": "tsc --noEmit",
+    "type:strict": "tsc --noEmit && next build --no-lint",
     "lint": "eslint . --fix --max-warnings 0",
-    "format": "prettier --write . --config .prettierrc.mjs"
+    "format": "prettier --write . --config .prettierrc.mjs",
+    "check": "bun run type && bun run lint"
   },
   "author": {
     "name": "George Bobby",
