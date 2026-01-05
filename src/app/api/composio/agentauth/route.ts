@@ -3,6 +3,10 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { composio, initializeComposio } from "@/lib/composio";
+import {
+  convexAuthNextjsToken,
+  isAuthenticatedNextjs,
+} from "@convex-dev/auth/nextjs/server";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -298,7 +302,7 @@ export async function GET(req: NextRequest) {
             metadata: {},
             isDisabled: false,
             connectedAt: Date.now(), // Use current time as fallback
-            connectedBy: memberId ? (memberId as Id<"members">) : ("system" as Id<"members">), // Use memberId if available
+            connectedBy: memberId ? (memberId as Id<"members">) : undefined, // Use memberId if available, undefined for system connections
           }));
 
         console.log(
