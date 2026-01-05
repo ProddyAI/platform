@@ -382,7 +382,7 @@ const schema = defineSchema({
 			v.literal('github'),
 			v.literal('gmail'),
 			v.literal('slack'),
-			v.literal('jira'),
+			v.literal('linear'),
 			v.literal('notion'),
 			v.literal('clickup')
 		),

@@ -9,7 +9,7 @@ const SUPPORTED_TOOLKITS = [
     'github',
     'gmail',
     'slack',
-    'jira',
+    'linear',
     'notion',
     'clickup'
 ] as const;
@@ -111,7 +111,7 @@ export const getMyAuthConfigByToolkit = query({
             v.literal('github'),
             v.literal('gmail'),
             v.literal('slack'),
-            v.literal('jira'),
+            v.literal('linear'),
             v.literal('notion'),
             v.literal('clickup')
         ),
@@ -138,7 +138,7 @@ export const getAuthConfigByToolkit = query({
             v.literal('github'),
             v.literal('gmail'),
             v.literal('slack'),
-            v.literal('jira'),
+            v.literal('linear'),
             v.literal('notion'),
             v.literal('clickup')
         ),
@@ -176,7 +176,7 @@ export const storeAuthConfig = mutation({
             v.literal('github'),
             v.literal('gmail'),
             v.literal('slack'),
-            v.literal('jira'),
+            v.literal('linear'),
             v.literal('notion'),
             v.literal('clickup')
         ),

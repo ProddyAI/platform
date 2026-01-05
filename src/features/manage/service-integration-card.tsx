@@ -71,7 +71,7 @@ type CurrentMember = {
 
 interface ServiceIntegrationCardProps {
   workspaceId: Id<"workspaces">;
-  toolkit: "github" | "gmail" | "slack" | "jira" | "notion" | "clickup";
+  toolkit: "github" | "gmail" | "slack" | "linear" | "notion" | "clickup";
   authConfig?: AuthConfig;
   connectedAccount?: ConnectedAccount;
   currentMember: CurrentMember;
@@ -100,12 +100,12 @@ const toolkits = {
     description:
       "Connect to Slack for team communication and notifications with AgentAuth",
   },
-  jira: {
+  linear: {
     icon: Ticket,
     color: "bg-blue-600 hover:bg-blue-700",
-    name: "Jira",
+    name: "Linear",
     description:
-      "Connect to Jira for project management and issue tracking with AgentAuth",
+      "Connect to Linear for issue tracking and project management with AgentAuth",
   },
   notion: {
     icon: FileText,

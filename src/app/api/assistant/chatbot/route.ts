@@ -83,14 +83,15 @@ export async function POST(req: NextRequest) {
 		let composioClient: any = null; // Store composio client for reuse
 		let userId: string = ''; // Composio uses userId as entity identifier
 		
-		// Detect if query needs external tools (Gmail, GitHub, Slack, Notion, or ClickUp)
+		// Detect if query needs external tools (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)
 		const queryLower = message.toLowerCase();
 		const needsGmail = /\b(email|gmail|send|mail|inbox|draft)\b/i.test(queryLower);
 		const needsGithub = /\b(github|repo|repository|issue|pull request|pr|commit|branch)\b/i.test(queryLower);
 		const needsSlack = /\b(slack|channel|message|dm|conversation|workspace|team)\b/i.test(queryLower);
 		const needsNotion = /\b(notion|page|database|block|note|doc|document)\b/i.test(queryLower);
 		const needsClickup = /\b(clickup|task|project|list|folder|space|goal|time tracking|checklist)\b/i.test(queryLower);
-		const needsExternalTools = needsGmail || needsGithub || needsSlack || needsNotion || needsClickup;
+		const needsLinear = /\b(linear|issue|ticket|bug|feature|cycle|sprint)\b/i.test(queryLower);
+		const needsExternalTools = needsGmail || needsGithub || needsSlack || needsNotion || needsClickup || needsLinear;
 
 		console.log('[Chatbot Assistant] Query analysis:', {
 			needsGmail,
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
 			needsSlack,
 			needsNotion,
 			needsClickup,
+			needsLinear,
 			needsExternalTools,
 		});
 

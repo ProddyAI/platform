@@ -608,6 +608,8 @@ Try asking me things like:`;
         return "Notion";
       case "clickup":
         return "ClickUp";
+      case "linear":
+        return "Linear";
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }

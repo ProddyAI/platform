@@ -25,7 +25,7 @@ const SUPPORTED_TOOLKITS = [
   "github",
   "gmail",
   "slack",
-  "jira",
+  "linear",
   "notion",
   "clickup",
 ] as const;
@@ -46,10 +46,10 @@ const toolkits = {
     color: "bg-purple-600",
     name: "Slack",
   },
-  jira: {
+  linear: {
     icon: Ticket,
     color: "bg-blue-600",
-    name: "Jira",
+    name: "Linear",
   },
   notion: {
     icon: FileText,

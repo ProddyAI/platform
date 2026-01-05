@@ -55,6 +55,7 @@ export const AVAILABLE_APPS = {
   SLACK: "SLACK",
   NOTION: "NOTION",
   CLICKUP: "CLICKUP",
+  LINEAR: "LINEAR",
 } as const;
 
 export type AvailableApp = (typeof AVAILABLE_APPS)[keyof typeof AVAILABLE_APPS];
@@ -447,6 +448,37 @@ const DASHBOARD_TOOLS = {
     "CLICKUP_VIEWS_GET_EVERYTHING_LEVEL",
     "CLICKUP_VIEWS_SPACE_VIEWS_GET",
   ],
+  LINEAR: [
+    "LINEAR_CREATE_COMMENT_REACTION",
+    "LINEAR_CREATE_LINEAR_ATTACHMENT",
+    "LINEAR_CREATE_LINEAR_COMMENT",
+    "LINEAR_CREATE_LINEAR_ISSUE",
+    "LINEAR_CREATE_LINEAR_ISSUE_DETAILS",
+    "LINEAR_CREATE_LINEAR_LABEL",
+    "LINEAR_CREATE_LINEAR_PROJECT",
+    "LINEAR_DELETE_LINEAR_ISSUE",
+    "LINEAR_GET_ALL_LINEAR_TEAMS",
+    "LINEAR_GET_ATTACHMENTS",
+    "LINEAR_GET_CURRENT_USER",
+    "LINEAR_GET_CYCLES_BY_TEAM_ID",
+    "LINEAR_GET_LINEAR_ISSUE",
+    "LINEAR_GET_LINEAR_PROJECT",
+    "LINEAR_LIST_ISSUE_DRAFTS",
+    "LINEAR_LIST_ISSUES_BY_TEAM_ID",
+    "LINEAR_LIST_LINEAR_CYCLES",
+    "LINEAR_LIST_LINEAR_ISSUES",
+    "LINEAR_LIST_LINEAR_LABELS",
+    "LINEAR_LIST_LINEAR_PROJECTS",
+    "LINEAR_LIST_LINEAR_STATES",
+    "LINEAR_LIST_LINEAR_TEAMS",
+    "LINEAR_LIST_LINEAR_USERS",
+    "LINEAR_MANAGE_DRAFT",
+    "LINEAR_REMOVE_ISSUE_LABEL",
+    "LINEAR_REMOVE_REACTION",
+    "LINEAR_RUN_QUERY_OR_MUTATION",
+    "LINEAR_UPDATE_ISSUE",
+    "LINEAR_UPDATE_LINEAR_PROJECT",
+  ],
 } as const;
 
 // Tool priority levels for smart filtering
@@ -524,6 +556,20 @@ const TOOL_PRIORITY_MAP: Record<string, number> = {
   CLICKUP_CREATE_GOAL: TOOL_PRIORITIES.HIGH,
   CLICKUP_GET_GOALS: TOOL_PRIORITIES.HIGH,
 
+  // High priority Linear tools (core issue tracking and project management)
+  LINEAR_CREATE_LINEAR_ISSUE: TOOL_PRIORITIES.HIGH,
+  LINEAR_GET_LINEAR_ISSUE: TOOL_PRIORITIES.HIGH,
+  LINEAR_LIST_LINEAR_ISSUES: TOOL_PRIORITIES.HIGH,
+  LINEAR_UPDATE_ISSUE: TOOL_PRIORITIES.HIGH,
+  LINEAR_CREATE_LINEAR_PROJECT: TOOL_PRIORITIES.HIGH,
+  LINEAR_GET_LINEAR_PROJECT: TOOL_PRIORITIES.HIGH,
+  LINEAR_LIST_LINEAR_PROJECTS: TOOL_PRIORITIES.HIGH,
+  LINEAR_GET_ALL_LINEAR_TEAMS: TOOL_PRIORITIES.HIGH,
+  LINEAR_LIST_LINEAR_TEAMS: TOOL_PRIORITIES.HIGH,
+  LINEAR_GET_CURRENT_USER: TOOL_PRIORITIES.HIGH,
+  LINEAR_LIST_LINEAR_STATES: TOOL_PRIORITIES.HIGH,
+  LINEAR_LIST_LINEAR_LABELS: TOOL_PRIORITIES.HIGH,
+
   // Medium priority tools
   GITHUB_ADD_ASSIGNEES_TO_AN_ISSUE: TOOL_PRIORITIES.MEDIUM,
   GITHUB_ADD_LABELS_TO_AN_ISSUE: TOOL_PRIORITIES.MEDIUM,
@@ -556,6 +602,14 @@ const TOOL_PRIORITY_MAP: Record<string, number> = {
   CLICKUP_GET_TIME_ENTRIES_WITHIN_A_DATE_RANGE: TOOL_PRIORITIES.MEDIUM,
   CLICKUP_START_A_TIME_ENTRY: TOOL_PRIORITIES.MEDIUM,
   CLICKUP_STOP_A_TIME_ENTRY: TOOL_PRIORITIES.MEDIUM,
+  LINEAR_CREATE_LINEAR_COMMENT: TOOL_PRIORITIES.MEDIUM,
+  LINEAR_CREATE_LINEAR_ATTACHMENT: TOOL_PRIORITIES.MEDIUM,
+  LINEAR_CREATE_COMMENT_REACTION: TOOL_PRIORITIES.MEDIUM,
+  LINEAR_CREATE_LINEAR_LABEL: TOOL_PRIORITIES.MEDIUM,
+  LINEAR_LIST_ISSUES_BY_TEAM_ID: TOOL_PRIORITIES.MEDIUM,
+  LINEAR_GET_CYCLES_BY_TEAM_ID: TOOL_PRIORITIES.MEDIUM,
+  LINEAR_DELETE_LINEAR_ISSUE: TOOL_PRIORITIES.MEDIUM,
+  LINEAR_REMOVE_ISSUE_LABEL: TOOL_PRIORITIES.MEDIUM,
 };
 
 // App configurations with descriptions and use cases
@@ -611,6 +665,20 @@ export const APP_CONFIGS = {
       "create_goal",
     ],
     authConfigId: process.env.NEXT_PUBLIC_CLICKUP_AUTH_CONFIG_ID,
+  },
+  LINEAR: {
+    name: "Linear",
+    description: "Streamlined issue tracking and project management for modern teams",
+    toolCategories: ["productivity", "project_management", "issue_tracking"],
+    commonActions: [
+      "create_issue",
+      "list_issues",
+      "update_issue",
+      "create_project",
+      "list_projects",
+      "get_teams",
+    ],
+    authConfigId: process.env.NEXT_PUBLIC_LINEAR_AUTH_CONFIG_ID,
   },
 } as const;
 
@@ -817,20 +885,25 @@ export function filterToolsForQuery(
   const needsClickup = allKeywords.some((k) =>
     ["clickup", "task", "project", "list", "folder", "space", "goal", "tracking"].includes(k),
   );
+  const needsLinear = allKeywords.some((k) =>
+    ["linear", "issue", "ticket", "bug", "feature", "cycle", "sprint", "project"].includes(k),
+  );
 
   let filteredTools = allTools;
 
   // Filter by app if specific app is mentioned
-  if (needsGithub && !needsGmail && !needsSlack && !needsNotion && !needsClickup) {
+  if (needsGithub && !needsGmail && !needsSlack && !needsNotion && !needsClickup && !needsLinear) {
     filteredTools = allTools.filter((tool) => tool.app === "github");
-  } else if (needsGmail && !needsGithub && !needsSlack && !needsNotion && !needsClickup) {
+  } else if (needsGmail && !needsGithub && !needsSlack && !needsNotion && !needsClickup && !needsLinear) {
     filteredTools = allTools.filter((tool) => tool.app === "gmail");
-  } else if (needsSlack && !needsGithub && !needsGmail && !needsNotion && !needsClickup) {
+  } else if (needsSlack && !needsGithub && !needsGmail && !needsNotion && !needsClickup && !needsLinear) {
     filteredTools = allTools.filter((tool) => tool.app === "slack");
-  } else if (needsNotion && !needsGithub && !needsGmail && !needsSlack && !needsClickup) {
+  } else if (needsNotion && !needsGithub && !needsGmail && !needsSlack && !needsClickup && !needsLinear) {
     filteredTools = allTools.filter((tool) => tool.app === "notion");
-  } else if (needsClickup && !needsGithub && !needsGmail && !needsSlack && !needsNotion) {
+  } else if (needsClickup && !needsGithub && !needsGmail && !needsSlack && !needsNotion && !needsLinear) {
     filteredTools = allTools.filter((tool) => tool.app === "clickup");
+  } else if (needsLinear && !needsGithub && !needsGmail && !needsSlack && !needsNotion && !needsClickup) {
+    filteredTools = allTools.filter((tool) => tool.app === "linear");
   }
 
   // Score and sort tools
@@ -902,7 +975,7 @@ function extractKeywordsFromQuery(query: string): string[] {
   const words = query.toLowerCase().split(/\s+/);
 
   // Technology keywords
-  const techKeywords = ["github", "gmail", "email", "slack", "notion", "clickup"];
+  const techKeywords = ["github", "gmail", "email", "slack", "notion", "clickup", "linear"];
   // Action keywords
   const actionKeywords = [
     "create",
@@ -950,6 +1023,12 @@ function extractKeywordsFromQuery(query: string): string[] {
     "checklist",
     "time",
     "tracking",
+    "issue",
+    "ticket",
+    "bug",
+    "feature",
+    "cycle",
+    "sprint",
   ];
 
   const allKeywords = [...techKeywords, ...actionKeywords, ...objectKeywords];
