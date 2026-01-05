@@ -49,14 +49,46 @@ export async function POST(req: NextRequest) {
 				);
 			}
 
-			// TODO: Add authentication check here to verify the request comes from an authorized session
-			// that owns or has permission to act on the provided memberId.
-			// Example:
-			// const session = await getSession(req);
-			// const member = await convex.query(api.members.get, { memberId });
-			// if (!session || member.userId !== session.userId) {
-			//   return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-			// }
+			// Verify authentication and that the authenticated user owns the provided memberId
+			if (!isAuthenticatedNextjs()) {
+				return NextResponse.json(
+					{ error: "Authentication required" },
+					{ status: 401 },
+				);
+			}
+
+			// Get the authenticated user's information
+			const token = convexAuthNextjsToken();
+			if (token) {
+				convex.setAuth(token);
+			}
+
+			const currentUser = await convex.query(api.users.current);
+			if (!currentUser) {
+				return NextResponse.json(
+					{ error: "User not found" },
+					{ status: 404 },
+				);
+			}
+
+			// Get the member for this workspace and verify ownership
+			const member = await convex.query(api.members._getMemberById, {
+				memberId: memberId as Id<"members">,
+			});
+
+			if (!member) {
+				return NextResponse.json(
+					{ error: "Member not found" },
+					{ status: 404 },
+				);
+			}
+
+			if (member.userId !== currentUser._id) {
+				return NextResponse.json(
+					{ error: "Unauthorized: Cannot authorize connection for another user's member" },
+					{ status: 403 },
+				);
+			}
 
       const entityId = `member_${memberId}`;
       console.log(
