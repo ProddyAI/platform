@@ -1,6 +1,5 @@
 "use client";
 
-import { useRoom } from "../../../../liveblocks.config";
 import { useChannelParticipants } from "../../../hooks/use-channel-participants";
 import { stringToColor } from "../../../lib/utils";
 import { UserAvatar } from "./user-avatar";
@@ -12,16 +11,9 @@ interface UserInfo {
 }
 
 interface User {
-<<<<<<< HEAD
-  memberId?: string;
-  userId?: string;
-  info?: UserInfo;
-=======
-	connectionId: number;
 	memberId?: string;
 	userId?: string;
 	info?: UserInfo;
->>>>>>> origin/main
 }
 
 interface CurrentUser extends User {
@@ -36,55 +28,15 @@ interface ParticipantsProps {
 }
 
 export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
-<<<<<<< HEAD
-  // Fetch real participants from the database
-  const { participants, currentParticipant, participantCount, isLoading } = useChannelParticipants();
-=======
 	// Fetch real participants from the database
 	const { participants, currentParticipant, participantCount, isLoading } =
 		useChannelParticipants();
-	const _room = useRoom();
->>>>>>> origin/main
 
 	// If still loading, show nothing
 	if (isLoading) return null;
 
 	const hasMoreUsers = participants.length > MAX_SHOWN_OTHER_USERS;
 
-<<<<<<< HEAD
-  return (
-    <div className={`absolute h-12 ${isFullScreen ? 'top-8' : 'top-32'} right-8 bg-white rounded-md p-3 flex items-center shadow-md z-50`}>
-      <div className="flex items-center">
-        {participantCount > 0 && (
-          <span className="text-sm font-medium mr-2">
-            {participantCount} active
-          </span>
-        )}
-        <div className="flex gap-x-2">
-          {participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
-            const userKey = user.userId || user.memberId || user.info?.name || "user";
-            return (
-              <UserAvatar
-                borderColor={stringToColor(userKey)}
-                key={userKey}
-                src={user.info?.picture ?? undefined}
-                name={user.info?.name}
-                fallback={user.info?.name?.[0] || "U"}
-                userId={user.userId || user.info?.name}
-              />
-            );
-          })}
-
-          {currentParticipant && (
-            <UserAvatar
-              borderColor={stringToColor(currentParticipant.userId || currentParticipant.info?.name || "you")}
-              src={currentParticipant.info?.picture ?? undefined}
-              name={`${currentParticipant.info?.name} (You)`}
-              fallback={currentParticipant.info?.name?.[0] || "Y"}
-              userId={currentParticipant.userId || currentParticipant.info?.name}
-            />
-          )}
-=======
 	return (
 		<div
 			className={`absolute h-12 ${isFullScreen ? "top-8" : "top-32"} right-8 bg-white rounded-md p-3 flex items-center shadow-md z-50`}
@@ -97,11 +49,13 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 				)}
 				<div className="flex gap-x-2">
 					{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
+						const userKey =
+							user.userId || user.memberId || user.info?.name || "user";
 						return (
 							<UserAvatar
-								borderColor={connectionIdToColor(user.connectionId)}
-								key={user.connectionId}
-								src={user.info?.picture}
+								borderColor={stringToColor(userKey)}
+								key={userKey}
+								src={user.info?.picture ?? undefined}
 								name={user.info?.name}
 								fallback={user.info?.name?.[0] || "U"}
 								userId={user.userId || user.info?.name}
@@ -111,16 +65,17 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 
 					{currentParticipant && (
 						<UserAvatar
-							borderColor={connectionIdToColor(currentParticipant.connectionId)}
-							src={currentParticipant.info?.picture}
+							borderColor={stringToColor(
+								currentParticipant.userId ||
+									currentParticipant.info?.name ||
+									"you"
+							)}
+							src={currentParticipant.info?.picture ?? undefined}
 							name={`${currentParticipant.info?.name} (You)`}
 							fallback={currentParticipant.info?.name?.[0] || "Y"}
-							userId={
-								currentParticipant.userId || currentParticipant.info?.name
-							}
+							userId={currentParticipant.userId || currentParticipant.info?.name}
 						/>
 					)}
->>>>>>> origin/main
 
 					{hasMoreUsers && (
 						<UserAvatar

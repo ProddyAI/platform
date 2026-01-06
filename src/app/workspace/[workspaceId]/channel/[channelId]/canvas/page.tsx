@@ -1,39 +1,20 @@
 "use client";
 
-<<<<<<< HEAD
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { useChannelId } from '@/hooks/use-channel-id';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '@/../convex/_generated/api';
-import { Id } from '@/../convex/_generated/dataModel';
-import { toast } from 'sonner';
-import { ExcalidrawCanvas } from '@/features/canvas/components/excalidraw-canvas';
-import { LiveblocksRoom, LiveParticipants, LiveSidebar, LiveHeader } from '@/features/live';
-import { useWorkspaceId } from '@/hooks/use-workspace-id';
-import { Loader, PaintBucket } from 'lucide-react';
-import { useCurrentUser } from '@/features/auth/api/use-current-user';
-import { useDocumentTitle } from '@/hooks/use-document-title';
-import { CanvasParticipantsTracker } from '@/features/canvas/components/participants-tracker';
-import { Button } from '@/components/ui/button';
-import { StreamAudioRoom } from '@/features/audio';
-=======
 import { useMutation, useQuery } from "convex/react";
 import { PaintBucket } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { StreamAudioRoom } from "@/features/audio";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
-import { Canvas as CanvasCanvas, CanvasToolbar } from "@/features/canvas";
+import { ExcalidrawCanvas } from "@/features/canvas/components/excalidraw-canvas";
 import { LiveblocksRoom, LiveHeader, LiveSidebar } from "@/features/live";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
->>>>>>> origin/main
 
 // Interface for saved canvas data
 interface SavedCanvas {
@@ -111,36 +92,34 @@ const CanvasPage = () => {
 		return canvasMessages;
 	}, [messages]);
 
-<<<<<<< HEAD
-    // If we were opened from a shared link (e.g. from a canvas message),
-    // auto-select the matching canvas so all clients join the same Liveblocks room.
-    useEffect(() => {
-        const roomIdFromUrl = searchParams?.get('roomId');
-        const canvasIdFromUrl = searchParams?.get('canvasId');
-        const candidate = roomIdFromUrl || canvasIdFromUrl;
+	// If we were opened from a shared link (e.g. from a canvas message),
+	// auto-select the matching canvas so all clients join the same Liveblocks room.
+	useEffect(() => {
+		const roomIdFromUrl = _searchParams?.get("roomId");
+		const canvasIdFromUrl = _searchParams?.get("canvasId");
+		const candidate = roomIdFromUrl || canvasIdFromUrl;
 
-        if (!candidate) return;
-        if (activeCanvasId) return;
+		if (!candidate) return;
+		if (activeCanvasId) return;
 
-        const match = canvasItems.find(
-            (item) => item._id === candidate || item.roomId === candidate || item.savedCanvasId === candidate
-        );
-        if (match) {
-            // We allow setting to roomId as well because activeCanvas lookup supports it.
-            setActiveCanvasId(roomIdFromUrl || match._id);
-        }
-    }, [canvasItems, searchParams, activeCanvasId]);
+		const match = canvasItems.find(
+			(item) =>
+				item._id === candidate ||
+				item.roomId === candidate ||
+				item.savedCanvasId === candidate
+		);
+		if (match) {
+			// We allow setting to roomId as well because activeCanvas lookup supports it.
+			setActiveCanvasId(roomIdFromUrl || match._id);
+		}
+	}, [canvasItems, _searchParams, activeCanvasId]);
 
-    // Get active canvas
-    const activeCanvas = activeCanvasId ? canvasItems.find(item => item._id === activeCanvasId || item.roomId === activeCanvasId) : null;
-=======
 	// Get active canvas
 	const activeCanvas = activeCanvasId
 		? canvasItems.find(
 				(item) => item._id === activeCanvasId || item.roomId === activeCanvasId
 			)
 		: null;
->>>>>>> origin/main
 
 	// Function to toggle full screen
 	const toggleFullScreen = useCallback(() => {
@@ -160,18 +139,16 @@ const CanvasPage = () => {
 			}
 		} else {
 			// Exit full screen
-			if (document.exitFullscreen) {
-				document
-					.exitFullscreen()
-					.then(() => {
-						setIsFullScreen(false);
-					})
-					.catch((err) => {
-						console.error(
-							`Error attempting to exit full-screen mode: ${err.message}`
-						);
-					});
-			}
+			document
+				.exitFullscreen()
+				.then(() => {
+					setIsFullScreen(false);
+				})
+				.catch((err) => {
+					console.error(
+						`Error attempting to exit full-screen mode: ${err.message}`
+					);
+				});
 		}
 	}, []);
 
@@ -404,57 +381,13 @@ const CanvasPage = () => {
 						/>
 					)}
 
-<<<<<<< HEAD
-                    <div className="flex flex-1 overflow-hidden">
-                        <div className="flex-1 relative">
-                            <ExcalidrawCanvas />
-                        </div>
-                    </div>
-                </div>
-                {/* Audio Room Component */}
-                {activeCanvas.roomId && (
-                    <StreamAudioRoom
-                        roomId={activeCanvas.roomId}
-                        workspaceId={workspaceId}
-                        channelId={channelId}
-                        canvasName={activeCanvas.canvasName || 'Canvas Audio Room'}
-                        isFullScreen={isFullScreen}
-                    />
-                )}
-            </div>
-        </LiveblocksRoom>
-    );
-=======
 					<div className="flex flex-1 overflow-hidden">
-						{/* Toolbar - hidden in fullscreen */}
-						{!isFullScreen && <CanvasToolbar />}
-
 						<div className="flex-1 relative">
-							<CanvasCanvas
-								canvasId={channelId}
-								savedCanvasName={activeCanvas.canvasName}
-								toggleFullScreen={toggleFullScreen}
-								isFullScreen={isFullScreen}
-								onTitleChange={(newTitle: string) => {
-									// Update canvas name
-									console.log("Title changed to:", newTitle);
-									// You can implement canvas title update here
-								}}
-								onSave={() => {
-									// Implement canvas save functionality
-									console.log("Save canvas");
-									toast.success("Canvas saved successfully");
-								}}
-								onCreateCanvas={handleCreateCanvas}
-								hasUnsavedChanges={false} // You can track canvas changes here
-								workspaceId={workspaceId as Id<"workspaces">}
-								channelId={channelId as Id<"channels">}
-								createdAt={activeCanvas.createdAt}
-								updatedAt={activeCanvas.updatedAt}
-							/>
+							<ExcalidrawCanvas />
 						</div>
 					</div>
 				</div>
+
 				{/* Audio Room Component */}
 				{activeCanvas.roomId && (
 					<StreamAudioRoom
@@ -468,7 +401,6 @@ const CanvasPage = () => {
 			</div>
 		</LiveblocksRoom>
 	);
->>>>>>> origin/main
 };
 
 export default CanvasPage;

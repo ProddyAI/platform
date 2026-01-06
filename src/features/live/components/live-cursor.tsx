@@ -4,10 +4,6 @@ import { useQuery } from "convex/react";
 import { MousePointer2 } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { api } from "@/../convex/_generated/api";
-<<<<<<< HEAD
-import { generateUserColor } from "@/lib/placeholder-image";
-=======
->>>>>>> origin/main
 import { useOther } from "@/../liveblocks.config";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { connectionIdToColor } from "@/lib/utils";
@@ -32,9 +28,6 @@ export const LiveCursor = memo(
 
 		// Fetch members from Convex database
 		const members = useQuery(api.members.get, { workspaceId });
-
-		// Fetch current user to get their ID
-		const _currentUser = useQuery(api.users.current);
 
 		// Update the user name whenever other or members changes
 		useEffect(() => {
@@ -86,17 +79,9 @@ export const LiveCursor = memo(
 		// Calculate width based on name length
 		const nameWidth = Math.max(userName.length * 12, 60);
 
-<<<<<<< HEAD
-  // Different styling for canvas vs notes
-  const cursorColor = generateUserColor(
-    other.id || other.info?.name || userName || `${connectionId}`,
-  );
-  const isTyping = variant === 'notes' && isEditing;
-=======
 		// Different styling for canvas vs notes
 		const cursorColor = connectionIdToColor(connectionId);
 		const isTyping = variant === "notes" && isEditing;
->>>>>>> origin/main
 
 		return (
 			<foreignObject

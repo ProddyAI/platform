@@ -3,6 +3,7 @@
 .env.local
 /coverage
 /.next/
+/.next-win/
 /out/
 /build
 .DS_Store
@@ -12,6 +13,14 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 .vscode/mcp.json
+
+# Build logs
+build.*.log
+
+# next-pwa generated assets (created during build)
+/public/sw.js*
+/public/workbox-*.js*
+/public/worker-*.js
     
 
 #Ignore vscode AI rules

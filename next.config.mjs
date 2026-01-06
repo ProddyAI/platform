@@ -148,6 +148,9 @@ const baseConfig = withPWA({
 			},
 		],
 	},
+	// On Windows, Next's build trace file writing can fail with EPERM in some environments.
+	// Using a Windows-specific distDir avoids `.next/trace` conflicts while keeping other platforms unchanged.
+	...(process.platform === "win32" ? { distDir: ".next-win" } : {}),
 	eslint: {
 		ignoreDuringBuilds: true,
 	},

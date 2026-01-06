@@ -60,43 +60,39 @@ export const StreamAudioRoom = ({
 		}
 	}, [shouldConnect, isConnected, disconnectFromAudioRoom]);
 
-<<<<<<< HEAD
-  // Allow other parts of the UI (e.g. Excalidraw toolbar) to toggle audio.
-  useEffect(() => {
-    const handleToggle = () => {
-      // If we haven't joined yet, join.
-      if (!shouldConnect && !isConnected) {
-        setShouldConnect(true);
-        return;
-      }
+	// Allow other parts of the UI (e.g. Excalidraw toolbar) to toggle audio.
+	useEffect(() => {
+		const handleToggle = () => {
+			// If we haven't joined yet, join.
+			if (!shouldConnect && !isConnected) {
+				setShouldConnect(true);
+				return;
+			}
 
-      // If we're in the middle of connecting, treat toggle as cancel.
-      if (shouldConnect && !isConnected) {
-        setShouldConnect(false);
-        return;
-      }
+			// If we're in the middle of connecting, treat toggle as cancel.
+			if (shouldConnect && !isConnected) {
+				setShouldConnect(false);
+				return;
+			}
 
-      // If connected, show the leave confirmation.
-      if (isConnected) {
-        setShowLeaveConfirmation(true);
-      }
-    };
+			// If connected, show the leave confirmation.
+			if (isConnected) {
+				setShowLeaveConfirmation(true);
+			}
+		};
 
-    window.addEventListener('proddy:audio-room-toggle', handleToggle as EventListener);
-    return () => {
-      window.removeEventListener('proddy:audio-room-toggle', handleToggle as EventListener);
-    };
-  }, [shouldConnect, isConnected]);
+		window.addEventListener(
+			"proddy:audio-room-toggle",
+			handleToggle as EventListener
+		);
+		return () => {
+			window.removeEventListener(
+				"proddy:audio-room-toggle",
+				handleToggle as EventListener
+			);
+		};
+	}, [shouldConnect, isConnected]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (isConnected) {
-        disconnectFromAudioRoom();
-      }
-    };
-  }, [isConnected, disconnectFromAudioRoom]);
-=======
 	// Cleanup on unmount
 	useEffect(() => {
 		return () => {
@@ -105,7 +101,6 @@ export const StreamAudioRoom = ({
 			}
 		};
 	}, [isConnected, disconnectFromAudioRoom]);
->>>>>>> origin/main
 
 	// Function to join audio room
 	const handleJoinAudio = () => {

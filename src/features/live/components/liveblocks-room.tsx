@@ -1,16 +1,10 @@
 "use client";
 
-<<<<<<< HEAD
-import { ReactNode, useEffect } from "react";
-import { ClientSideSuspense } from "@liveblocks/react";
 import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
-=======
-import { LiveList, LiveMap } from "@liveblocks/client";
 import { ClientSideSuspense } from "@liveblocks/react";
->>>>>>> origin/main
 import { useQuery } from "convex/react";
 import { Loader } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode } from "react";
 import { api } from "@/../convex/_generated/api";
 import { RoomProvider } from "@/../liveblocks.config";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -46,11 +40,6 @@ export const LiveblocksRoom = ({
 		workspaceId ? { workspaceId } : "skip"
 	);
 
-	// Set up user info for Liveblocks authentication
-	useEffect(() => {
-		// User info is set up automatically by Liveblocks
-	}, []);
-
 	// Show loading state while user data is being fetched
 	if (!currentUser || !currentMember) {
 		return (
@@ -60,43 +49,6 @@ export const LiveblocksRoom = ({
 		);
 	}
 
-<<<<<<< HEAD
-    return (
-        // Use the key to force remount when roomId changes
-        <div key={key} className="h-full">
-            <RoomProvider
-                id={normalizedRoomId}
-                initialPresence={{
-                    cursor: null,
-                    selection: [],
-                    pencilDraft: null,
-                    penColor: null,
-                    strokeWidth: 1,
-                    isEditing: false,
-                    lastActivity: Date.now()
-                }}
-                initialStorage={{
-                    layers: new LiveMap(),
-                    layerIds: new LiveList([]),
-                    collaborativeNotes: new LiveMap(),
-                    excalidraw: new LiveObject({
-                        elements: [],
-                        appState: {},
-                        files: {},
-                        version: 1
-                    }),
-                    lastUpdate: Date.now()
-                }}
-            >
-                <ClientSideSuspense fallback={fallback || <div className="flex h-full w-full items-center justify-center">
-                    <Loader className="size-5 animate-spin" />
-                </div>}>
-                    {() => children}
-                </ClientSideSuspense>
-            </RoomProvider>
-        </div>
-    );
-=======
 	return (
 		// Use the key to force remount when roomId changes
 		<div key={key} className="h-full">
@@ -115,6 +67,12 @@ export const LiveblocksRoom = ({
 					layers: new LiveMap(),
 					layerIds: new LiveList([]),
 					collaborativeNotes: new LiveMap(),
+					excalidraw: new LiveObject({
+						elements: [],
+						appState: {},
+						files: {},
+						version: 1,
+					}),
 					lastUpdate: Date.now(),
 				}}
 			>
@@ -132,5 +90,4 @@ export const LiveblocksRoom = ({
 			</RoomProvider>
 		</div>
 	);
->>>>>>> origin/main
 };

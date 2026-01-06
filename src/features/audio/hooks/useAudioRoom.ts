@@ -1,25 +1,10 @@
-<<<<<<< HEAD
-import { useState, useEffect, useCallback } from 'react';
-import { StreamVideoClient } from '@stream-io/video-react-sdk';
-import type { User, Call } from '@stream-io/video-react-sdk';
-import { useQuery } from 'convex/react';
-import { api } from '@/../convex/_generated/api';
-
-// Stream API credentials from environment variables
-const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY ?? '';
-=======
-import {
-	type Call,
-	StreamVideoClient,
-	type User,
-} from "@stream-io/video-react-sdk";
+import { StreamVideoClient, type Call, type User } from "@stream-io/video-react-sdk";
 import { useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 
 // Stream API credentials from environment variables
-const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY || "";
->>>>>>> origin/main
+const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY ?? "";
 
 interface UseAudioRoomProps {
 	roomId: string;
@@ -90,19 +75,13 @@ export const useAudioRoom = ({
 			});
 
 			if (!response.ok) {
-<<<<<<< HEAD
 				const errorData: unknown = await response.json().catch(() => null);
-				console.error('Stream token request failed:', response.status, errorData);
+				console.error("Stream token request failed:", response.status, errorData);
 				const message =
-					typeof (errorData as { error?: unknown } | null)?.error === 'string'
+					typeof (errorData as { error?: unknown } | null)?.error === "string"
 						? (errorData as { error: string }).error
 						: `Failed to get Stream token (${response.status})`;
 				throw new Error(message);
-=======
-				const _errorData = await response.json().catch(() => ({}));
-				console.error("Stream token request failed:", response.status);
-				throw new Error(`Failed to get Stream token: ${response.status}`);
->>>>>>> origin/main
 			}
 
 			const tokenResponse = await response.json();
@@ -118,34 +97,28 @@ export const useAudioRoom = ({
 			setClient(videoClient);
 
 			// Create unique room ID (keeping it under 64 characters)
-			const uniqueRoomId =
-				`audio-${workspaceId.slice(-8)}-${channelId.slice(-8)}-${roomId.slice(-8)}`.substring(
-					0,
-					63
-				);
+			const uniqueRoomId = `audio-${workspaceId.slice(-8)}-${channelId.slice(-8)}-${roomId.slice(-8)}`.substring(
+				0,
+				63
+			);
 
-<<<<<<< HEAD
 			// Create and join the call.
 			// Use a permissive call type so users can publish mic audio by default.
-			const audioCall = videoClient.call('default', uniqueRoomId);
+			const audioCall = videoClient.call("default", uniqueRoomId);
 
 			// For an audio room experience, don't publish camera.
 			try {
 				await audioCall.camera.disable();
 			} catch (err) {
-				console.warn('Failed to disable camera:', err);
+				console.warn("Failed to disable camera:", err);
 			}
 
 			// Ensure microphone is enabled/published.
 			try {
 				await audioCall.microphone.enable();
 			} catch (err) {
-				console.warn('Failed to enable microphone:', err);
+				console.warn("Failed to enable microphone:", err);
 			}
-=======
-			// Create and join the call
-			const audioCall = videoClient.call("audio_room", uniqueRoomId);
->>>>>>> origin/main
 
 			await audioCall.join({
 				create: true,
@@ -164,27 +137,21 @@ export const useAudioRoom = ({
 			try {
 				await audioCall.microphone.enable();
 			} catch (err) {
-				console.warn('Failed to enable microphone after join:', err);
+				console.warn("Failed to enable microphone after join:", err);
 			}
 
 			setCall(audioCall);
 			setIsConnected(true);
 			setIsConnecting(false);
-<<<<<<< HEAD
 		} catch (error: unknown) {
-			console.error('Failed to setup audio room:', error);
+			console.error("Failed to setup audio room:", error);
 			const message =
 				error instanceof Error
 					? error.message
-					: typeof error === 'string'
+					: typeof error === "string"
 						? error
-						: 'Failed to connect to audio room';
+						: "Failed to connect to audio room";
 			setError(message);
-=======
-		} catch (error: any) {
-			console.error("Failed to setup audio room:", error);
-			setError(error.message || "Failed to connect to audio room");
->>>>>>> origin/main
 			setIsConnecting(false);
 		}
 	}, [channelId, canvasName, currentUser, roomId, workspaceId]);
@@ -236,7 +203,6 @@ export const useAudioRoom = ({
 		if (shouldConnect && !isConnected && !isConnecting) {
 			void connectToAudioRoom();
 		}
-<<<<<<< HEAD
 	}, [
 		shouldConnect,
 		roomId,
@@ -246,9 +212,6 @@ export const useAudioRoom = ({
 		isConnecting,
 		connectToAudioRoom,
 	]);
-=======
-	}, [shouldConnect, isConnected, isConnecting, connectToAudioRoom]);
->>>>>>> origin/main
 
 	// Effect to handle disconnection when shouldConnect becomes false
 	useEffect(() => {

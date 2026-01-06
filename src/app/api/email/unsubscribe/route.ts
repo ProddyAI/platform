@@ -7,6 +7,8 @@ import {
 	verifyUnsubscribeSignature,
 } from "@/lib/email-unsubscribe";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
 	try {
 		const { searchParams } = new URL(req.url);
