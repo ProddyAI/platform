@@ -1,19 +1,19 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { v } from 'convex/values';
-import { mutation, query, type QueryCtx } from './_generated/server';
-import { Id } from './_generated/dataModel';
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import { mutation, type QueryCtx, query } from "./_generated/server";
 
 // Helper query to check if a direct message has been read by a specific member
 export const _isDirectMessageRead = query({
 	args: {
-		messageId: v.id('messages'),
-		memberId: v.id('members'),
+		messageId: v.id("messages"),
+		memberId: v.id("members"),
 	},
 	handler: async (ctx, args) => {
 		const existingRead = await ctx.db
-			.query('directReads')
-			.withIndex('by_message_id_member_id', (q) =>
-				q.eq('messageId', args.messageId).eq('memberId', args.memberId)
+			.query("directReads")
+			.withIndex("by_message_id_member_id", (q) =>
+				q.eq("messageId", args.messageId).eq("memberId", args.memberId)
 			)
 			.unique();
 
@@ -24,24 +24,24 @@ export const _isDirectMessageRead = query({
 // Helper function to get a member by workspace and user ID
 const getMember = async (
 	ctx: QueryCtx,
-	workspaceId: Id<'workspaces'>,
-	userId: Id<'users'>
+	workspaceId: Id<"workspaces">,
+	userId: Id<"users">
 ) => {
 	return await ctx.db
-		.query('members')
-		.withIndex('by_workspace_id_user_id', (q) =>
-			q.eq('workspaceId', workspaceId).eq('userId', userId)
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
 		)
 		.unique();
 };
 
 // Helper function to populate user data for a member
-const populateUser = async (ctx: QueryCtx, userId: Id<'users'>) => {
+const populateUser = async (ctx: QueryCtx, userId: Id<"users">) => {
 	return await ctx.db.get(userId);
 };
 
 // Helper function to populate member data
-const populateMember = async (ctx: QueryCtx, memberId: Id<'members'>) => {
+const populateMember = async (ctx: QueryCtx, memberId: Id<"members">) => {
 	const member = await ctx.db.get(memberId);
 	if (!member) return null;
 
@@ -57,7 +57,7 @@ const populateMember = async (ctx: QueryCtx, memberId: Id<'members'>) => {
 // Helper function to get unread direct messages
 const getUnreadDirectMessages = async (
 	ctx: QueryCtx,
-	workspaceId: Id<'workspaces'>
+	workspaceId: Id<"workspaces">
 ) => {
 	try {
 		const userId = await getAuthUserId(ctx);
@@ -69,7 +69,7 @@ const getUnreadDirectMessages = async (
 		const currentMember = await getMember(
 			ctx,
 			workspaceId,
-			userId as Id<'users'>
+			userId as Id<"users">
 		);
 		if (!currentMember) {
 			return [];
@@ -77,12 +77,12 @@ const getUnreadDirectMessages = async (
 
 		// Find all conversations where the current member is involved
 		const conversations = await ctx.db
-			.query('conversations')
-			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', workspaceId))
+			.query("conversations")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.filter((q) =>
 				q.or(
-					q.eq(q.field('memberOneId'), currentMember._id),
-					q.eq(q.field('memberTwoId'), currentMember._id)
+					q.eq(q.field("memberOneId"), currentMember._id),
+					q.eq(q.field("memberTwoId"), currentMember._id)
 				)
 			)
 			.collect();
@@ -103,12 +103,12 @@ const getUnreadDirectMessages = async (
 
 			// Get the most recent message in this conversation that was sent by the other member
 			const recentMessages = await ctx.db
-				.query('messages')
-				.withIndex('by_conversation_id', (q) =>
-					q.eq('conversationId', conversation._id)
+				.query("messages")
+				.withIndex("by_conversation_id", (q) =>
+					q.eq("conversationId", conversation._id)
 				)
-				.filter((q) => q.eq(q.field('memberId'), otherMemberId))
-				.order('desc')
+				.filter((q) => q.eq(q.field("memberId"), otherMemberId))
+				.order("desc")
 				.take(5);
 
 			// Skip if no messages from the other member
@@ -118,9 +118,9 @@ const getUnreadDirectMessages = async (
 			for (const message of recentMessages) {
 				// Check if this message has already been read
 				const isRead = await ctx.db
-					.query('directReads')
-					.withIndex('by_message_id_member_id', (q) =>
-						q.eq('messageId', message._id).eq('memberId', currentMember._id)
+					.query("directReads")
+					.withIndex("by_message_id_member_id", (q) =>
+						q.eq("messageId", message._id).eq("memberId", currentMember._id)
 					)
 					.unique();
 
@@ -128,22 +128,22 @@ const getUnreadDirectMessages = async (
 				if (isRead) continue;
 
 				// Extract message text
-				let messageText = '';
+				let messageText = "";
 				try {
 					// Try to parse as JSON (Quill Delta format)
 					const parsedBody = JSON.parse(message.body);
 					if (parsedBody.ops) {
 						messageText = parsedBody.ops
 							.map((op: any) =>
-								typeof op.insert === 'string' ? op.insert : ''
+								typeof op.insert === "string" ? op.insert : ""
 							)
-							.join('')
+							.join("")
 							.trim();
 					}
-				} catch (e) {
+				} catch (_e) {
 					// Not JSON, use as is (might contain HTML)
 					messageText = message.body
-						.replace(/<[^>]*>/g, '') // Remove HTML tags
+						.replace(/<[^>]*>/g, "") // Remove HTML tags
 						.trim();
 				}
 
@@ -156,13 +156,13 @@ const getUnreadDirectMessages = async (
 					read: false,
 					author: {
 						id: otherMember._id,
-						name: otherMember.user.name || '',
+						name: otherMember.user.name || "",
 						image: otherMember.user.image,
 					},
 					source: {
-						type: 'direct' as 'channel' | 'direct' | 'thread' | 'card',
+						type: "direct" as "channel" | "direct" | "thread" | "card",
 						id: conversation._id,
-						name: otherMember.user.name || 'Direct Message',
+						name: otherMember.user.name || "Direct Message",
 					},
 				});
 			}
@@ -173,7 +173,7 @@ const getUnreadDirectMessages = async (
 
 		return directMessages;
 	} catch (error) {
-		console.error('Error in getUnreadDirectMessages:', error);
+		console.error("Error in getUnreadDirectMessages:", error);
 		return [];
 	}
 };
@@ -181,7 +181,7 @@ const getUnreadDirectMessages = async (
 // Get direct messages received by the current user
 export const getDirectMessagesForCurrentUser = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		includeRead: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
@@ -195,7 +195,7 @@ export const getDirectMessagesForCurrentUser = query({
 			const currentMember = await getMember(
 				ctx,
 				args.workspaceId,
-				userId as Id<'users'>
+				userId as Id<"users">
 			);
 			if (!currentMember) {
 				return [];
@@ -203,14 +203,14 @@ export const getDirectMessagesForCurrentUser = query({
 
 			// Find all conversations where the current member is involved
 			const conversations = await ctx.db
-				.query('conversations')
-				.withIndex('by_workspace_id', (q) =>
-					q.eq('workspaceId', args.workspaceId)
+				.query("conversations")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
 				)
 				.filter((q) =>
 					q.or(
-						q.eq(q.field('memberOneId'), currentMember._id),
-						q.eq(q.field('memberTwoId'), currentMember._id)
+						q.eq(q.field("memberOneId"), currentMember._id),
+						q.eq(q.field("memberTwoId"), currentMember._id)
 					)
 				)
 				.collect();
@@ -231,12 +231,12 @@ export const getDirectMessagesForCurrentUser = query({
 
 				// Get the most recent message in this conversation that was sent by the other member
 				const recentMessages = await ctx.db
-					.query('messages')
-					.withIndex('by_conversation_id', (q) =>
-						q.eq('conversationId', conversation._id)
+					.query("messages")
+					.withIndex("by_conversation_id", (q) =>
+						q.eq("conversationId", conversation._id)
 					)
-					.filter((q) => q.eq(q.field('memberId'), otherMemberId))
-					.order('desc')
+					.filter((q) => q.eq(q.field("memberId"), otherMemberId))
+					.order("desc")
 					.take(5);
 
 				// Skip if no messages from the other member
@@ -246,9 +246,9 @@ export const getDirectMessagesForCurrentUser = query({
 				for (const message of recentMessages) {
 					// Check if this message has already been read
 					const isRead = await ctx.db
-						.query('directReads')
-						.withIndex('by_message_id_member_id', (q) =>
-							q.eq('messageId', message._id).eq('memberId', currentMember._id)
+						.query("directReads")
+						.withIndex("by_message_id_member_id", (q) =>
+							q.eq("messageId", message._id).eq("memberId", currentMember._id)
 						)
 						.unique();
 
@@ -256,22 +256,22 @@ export const getDirectMessagesForCurrentUser = query({
 					if (args.includeRead === false && isRead) continue;
 
 					// Extract message text
-					let messageText = '';
+					let messageText = "";
 					try {
 						// Try to parse as JSON (Quill Delta format)
 						const parsedBody = JSON.parse(message.body);
 						if (parsedBody.ops) {
 							messageText = parsedBody.ops
 								.map((op: any) =>
-									typeof op.insert === 'string' ? op.insert : ''
+									typeof op.insert === "string" ? op.insert : ""
 								)
-								.join('')
+								.join("")
 								.trim();
 						}
-					} catch (e) {
+					} catch (_e) {
 						// Not JSON, use as is (might contain HTML)
 						messageText = message.body
-							.replace(/<[^>]*>/g, '') // Remove HTML tags
+							.replace(/<[^>]*>/g, "") // Remove HTML tags
 							.trim();
 					}
 
@@ -284,13 +284,13 @@ export const getDirectMessagesForCurrentUser = query({
 						read: !!isRead, // Convert to boolean (null/undefined becomes false)
 						author: {
 							id: otherMember._id,
-							name: otherMember.user.name || '',
+							name: otherMember.user.name || "",
 							image: otherMember.user.image,
 						},
 						source: {
-							type: 'direct' as 'channel' | 'direct' | 'thread' | 'card',
+							type: "direct" as "channel" | "direct" | "thread" | "card",
 							id: conversation._id,
-							name: otherMember.user.name || 'Direct Message',
+							name: otherMember.user.name || "Direct Message",
 						},
 					});
 				}
@@ -301,7 +301,7 @@ export const getDirectMessagesForCurrentUser = query({
 
 			return directMessages;
 		} catch (error) {
-			console.error('Error in getDirectMessagesForCurrentUser:', error);
+			console.error("Error in getDirectMessagesForCurrentUser:", error);
 			return [];
 		}
 	},
@@ -310,36 +310,36 @@ export const getDirectMessagesForCurrentUser = query({
 // Mark a direct message as read
 export const markDirectMessageAsRead = mutation({
 	args: {
-		messageId: v.id('messages'),
+		messageId: v.id("messages"),
 	},
 	handler: async (ctx, args) => {
 		try {
 			const userId = await getAuthUserId(ctx);
 			if (!userId) {
-				throw new Error('Unauthorized');
+				throw new Error("Unauthorized");
 			}
 
 			// Get the message
 			const message = await ctx.db.get(args.messageId);
 			if (!message) {
-				throw new Error('Message not found');
+				throw new Error("Message not found");
 			}
 
 			// Get the current member
 			const currentMember = await getMember(
 				ctx,
 				message.workspaceId,
-				userId as Id<'users'>
+				userId as Id<"users">
 			);
 			if (!currentMember) {
-				throw new Error('Member not found');
+				throw new Error("Member not found");
 			}
 
 			// Check if this message is already marked as read
 			const existingRead = await ctx.db
-				.query('directReads')
-				.withIndex('by_message_id_member_id', (q) =>
-					q.eq('messageId', args.messageId).eq('memberId', currentMember._id)
+				.query("directReads")
+				.withIndex("by_message_id_member_id", (q) =>
+					q.eq("messageId", args.messageId).eq("memberId", currentMember._id)
 				)
 				.unique();
 
@@ -349,7 +349,7 @@ export const markDirectMessageAsRead = mutation({
 			}
 
 			// Mark the message as read
-			await ctx.db.insert('directReads', {
+			await ctx.db.insert("directReads", {
 				messageId: args.messageId,
 				memberId: currentMember._id,
 				timestamp: Date.now(),
@@ -357,7 +357,7 @@ export const markDirectMessageAsRead = mutation({
 
 			return { success: true };
 		} catch (error) {
-			console.error('Error in markDirectMessageAsRead:', error);
+			console.error("Error in markDirectMessageAsRead:", error);
 			throw error;
 		}
 	},
@@ -366,35 +366,35 @@ export const markDirectMessageAsRead = mutation({
 // Mark all direct messages as read
 export const markAllDirectMessagesAsRead = mutation({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		try {
 			const userId = await getAuthUserId(ctx);
 			if (!userId) {
-				throw new Error('Unauthorized');
+				throw new Error("Unauthorized");
 			}
 
 			// Get the current member
 			const currentMember = await getMember(
 				ctx,
 				args.workspaceId,
-				userId as Id<'users'>
+				userId as Id<"users">
 			);
 			if (!currentMember) {
-				throw new Error('Member not found');
+				throw new Error("Member not found");
 			}
 
 			// Find all conversations where the current member is involved
 			const conversations = await ctx.db
-				.query('conversations')
-				.withIndex('by_workspace_id', (q) =>
-					q.eq('workspaceId', args.workspaceId)
+				.query("conversations")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
 				)
 				.filter((q) =>
 					q.or(
-						q.eq(q.field('memberOneId'), currentMember._id),
-						q.eq(q.field('memberTwoId'), currentMember._id)
+						q.eq(q.field("memberOneId"), currentMember._id),
+						q.eq(q.field("memberTwoId"), currentMember._id)
 					)
 				)
 				.collect();
@@ -409,26 +409,26 @@ export const markAllDirectMessagesAsRead = mutation({
 
 				// Get all unread messages from the other member
 				const unreadMessages = await ctx.db
-					.query('messages')
-					.withIndex('by_conversation_id', (q) =>
-						q.eq('conversationId', conversation._id)
+					.query("messages")
+					.withIndex("by_conversation_id", (q) =>
+						q.eq("conversationId", conversation._id)
 					)
-					.filter((q) => q.eq(q.field('memberId'), otherMemberId))
+					.filter((q) => q.eq(q.field("memberId"), otherMemberId))
 					.collect();
 
 				// Mark each message as read
 				for (const message of unreadMessages) {
 					// Check if already read
 					const existingRead = await ctx.db
-						.query('directReads')
-						.withIndex('by_message_id_member_id', (q) =>
-							q.eq('messageId', message._id).eq('memberId', currentMember._id)
+						.query("directReads")
+						.withIndex("by_message_id_member_id", (q) =>
+							q.eq("messageId", message._id).eq("memberId", currentMember._id)
 						)
 						.unique();
 
 					// If not already read, mark it as read
 					if (!existingRead) {
-						await ctx.db.insert('directReads', {
+						await ctx.db.insert("directReads", {
 							messageId: message._id,
 							memberId: currentMember._id,
 							timestamp: Date.now(),
@@ -439,7 +439,7 @@ export const markAllDirectMessagesAsRead = mutation({
 
 			return { success: true };
 		} catch (error) {
-			console.error('Error in markAllDirectMessagesAsRead:', error);
+			console.error("Error in markAllDirectMessagesAsRead:", error);
 			throw error;
 		}
 	},
@@ -448,7 +448,7 @@ export const markAllDirectMessagesAsRead = mutation({
 // Get unread direct message count
 export const getUnreadDirectMessageCount = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		try {
@@ -461,7 +461,7 @@ export const getUnreadDirectMessageCount = query({
 			const currentMember = await getMember(
 				ctx,
 				args.workspaceId,
-				userId as Id<'users'>
+				userId as Id<"users">
 			);
 			if (!currentMember) {
 				return { total: 0 };
@@ -479,7 +479,7 @@ export const getUnreadDirectMessageCount = query({
 				direct: directMessages.length,
 			};
 		} catch (error) {
-			console.error('Error in getUnreadDirectMessageCount:', error);
+			console.error("Error in getUnreadDirectMessageCount:", error);
 			return { total: 0 };
 		}
 	},

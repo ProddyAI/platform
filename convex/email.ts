@@ -1,29 +1,26 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { v } from 'convex/values';
-
-import type { Id } from './_generated/dataModel';
+import { v } from "convex/values";
+import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import {
-	type QueryCtx,
 	type ActionCtx,
 	action,
-	query,
-	mutation,
 	internalMutation,
-} from './_generated/server';
-import { api } from './_generated/api';
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 
 // Get weekly digest data for a user across all their workspaces
 export const getUserWeeklyDigest = query({
 	args: {
-		userId: v.id('users'),
+		userId: v.id("users"),
 		startDate: v.number(),
 		endDate: v.number(),
 	},
 	handler: async (ctx, args): Promise<any> => {
 		// Get all workspaces the user is a member of
 		const memberships = await ctx.db
-			.query('members')
-			.withIndex('by_user_id', (q) => q.eq('userId', args.userId))
+			.query("members")
+			.withIndex("by_user_id", (q) => q.eq("userId", args.userId))
 			.collect();
 
 		const workspaceDigests = [];
@@ -77,34 +74,34 @@ async function getWorkspaceWeeklyStats(
 ) {
 	// Get messages count
 	const messages = await ctx.db
-		.query('messages')
-		.withIndex('by_workspace_id', (q: any) =>
-			q.eq('workspaceId', args.workspaceId)
+		.query("messages")
+		.withIndex("by_workspace_id", (q: any) =>
+			q.eq("workspaceId", args.workspaceId)
 		)
 		.filter((q: any) =>
 			q.and(
-				q.gte(q.field('_creationTime'), args.startDate),
-				q.lte(q.field('_creationTime'), args.endDate)
+				q.gte(q.field("_creationTime"), args.startDate),
+				q.lte(q.field("_creationTime"), args.endDate)
 			)
 		)
 		.collect();
 
 	// Get tasks count
 	const tasks = await ctx.db
-		.query('tasks')
-		.withIndex('by_workspace_id', (q: any) =>
-			q.eq('workspaceId', args.workspaceId)
+		.query("tasks")
+		.withIndex("by_workspace_id", (q: any) =>
+			q.eq("workspaceId", args.workspaceId)
 		)
 		.filter((q: any) =>
 			q.and(
-				q.gte(q.field('createdAt'), args.startDate),
-				q.lte(q.field('createdAt'), args.endDate)
+				q.gte(q.field("createdAt"), args.startDate),
+				q.lte(q.field("createdAt"), args.endDate)
 			)
 		)
 		.collect();
 
 	const completedTasks = tasks.filter(
-		(task: any) => task.completed || task.status === 'completed'
+		(task: any) => task.completed || task.status === "completed"
 	);
 
 	// Get active users (users who sent messages)
@@ -123,7 +120,7 @@ async function getWorkspaceWeeklyStats(
 	for (const channelId in channelMessageCounts) {
 		const count = channelMessageCounts[channelId];
 		const channel = await ctx.db.get(channelId as any);
-		if (channel && 'name' in channel && count) {
+		if (channel && "name" in channel && count) {
 			topChannels.push({
 				name: channel.name,
 				messageCount: count,
@@ -137,11 +134,11 @@ async function getWorkspaceWeeklyStats(
 	// Get recent tasks (created or updated this week)
 	const recentTasks = tasks.slice(0, 5).map((task: any) => ({
 		title: task.title,
-		status: task.completed ? 'completed' : task.status || 'not_started',
+		status: task.completed ? "completed" : task.status || "not_started",
 		dueDate: task.dueDate
-			? new Date(task.dueDate).toLocaleDateString('en-US', {
-					month: 'short',
-					day: 'numeric',
+			? new Date(task.dueDate).toLocaleDateString("en-US", {
+					month: "short",
+					day: "numeric",
 				})
 			: undefined,
 	}));
@@ -162,24 +159,24 @@ async function getWorkspaceWeeklyStats(
 export const getUsersForWeeklyDigest = query({
 	args: {
 		dayOfWeek: v.union(
-			v.literal('monday'),
-			v.literal('tuesday'),
-			v.literal('wednesday'),
-			v.literal('thursday'),
-			v.literal('friday'),
-			v.literal('saturday'),
-			v.literal('sunday')
+			v.literal("monday"),
+			v.literal("tuesday"),
+			v.literal("wednesday"),
+			v.literal("thursday"),
+			v.literal("friday"),
+			v.literal("saturday"),
+			v.literal("sunday")
 		),
 	},
 	handler: async (ctx, args): Promise<any> => {
 		// Get all user preferences where weekly digest is enabled for the specified day
 		const preferences = await ctx.db
-			.query('preferences')
+			.query("preferences")
 			.filter((q) =>
 				q.and(
-					q.eq(q.field('settings.notifications.weeklyDigest'), true),
+					q.eq(q.field("settings.notifications.weeklyDigest"), true),
 					q.eq(
-						q.field('settings.notifications.weeklyDigestDay'),
+						q.field("settings.notifications.weeklyDigestDay"),
 						args.dayOfWeek
 					)
 				)
@@ -189,11 +186,11 @@ export const getUsersForWeeklyDigest = query({
 		const users = [];
 		for (const pref of preferences) {
 			const user = await ctx.db.get(pref.userId);
-			if (user && user.email) {
+			if (user?.email) {
 				users.push({
 					userId: pref.userId,
 					email: user.email,
-					name: user.name || 'User',
+					name: user.name || "User",
 				});
 			}
 		}
@@ -223,14 +220,14 @@ const extractMessagePreview = (
 		const parsedBody = JSON.parse(body);
 		if (parsedBody.ops) {
 			return parsedBody.ops
-				.map((op: any) => (typeof op.insert === 'string' ? op.insert : ''))
-				.join('')
+				.map((op: any) => (typeof op.insert === "string" ? op.insert : ""))
+				.join("")
 				.trim();
 		}
-	} catch (e) {
+	} catch (_e) {
 		// Not JSON, use as is (might contain HTML)
 		return body
-			.replace(/<[^>]*>/g, '') // Remove HTML tags
+			.replace(/<[^>]*>/g, "") // Remove HTML tags
 			.trim();
 	}
 
@@ -240,7 +237,7 @@ const extractMessagePreview = (
 // Action to send email notification for direct messages
 export const sendDirectMessageEmail = action({
 	args: {
-		messageId: v.id('messages'),
+		messageId: v.id("messages"),
 	},
 	handler: async (ctx, args): Promise<EmailNotificationResult> => {
 		try {
@@ -249,14 +246,14 @@ export const sendDirectMessageEmail = action({
 				messageId: args.messageId,
 			});
 			if (!message) {
-				console.error('Message not found:', args.messageId);
-				return { success: false, error: 'Message not found' };
+				console.error("Message not found:", args.messageId);
+				return { success: false, error: "Message not found" };
 			}
 
 			// Only process direct messages (messages with conversationId)
 			if (!message.conversationId) {
 				console.log(
-					'Message is not a direct message, skipping email notification'
+					"Message is not a direct message, skipping email notification"
 				);
 				return { success: true, skipped: true };
 			}
@@ -269,8 +266,8 @@ export const sendDirectMessageEmail = action({
 				}
 			);
 			if (!conversation) {
-				console.error('Conversation not found:', message.conversationId);
-				return { success: false, error: 'Conversation not found' };
+				console.error("Conversation not found:", message.conversationId);
+				return { success: false, error: "Conversation not found" };
 			}
 
 			// Get the sender using the existing query
@@ -278,8 +275,8 @@ export const sendDirectMessageEmail = action({
 				memberId: message.memberId,
 			});
 			if (!sender || !sender.user) {
-				console.error('Sender not found:', message.memberId);
-				return { success: false, error: 'Sender not found' };
+				console.error("Sender not found:", message.memberId);
+				return { success: false, error: "Sender not found" };
 			}
 
 			// Find the recipient (the other member in the conversation)
@@ -292,14 +289,14 @@ export const sendDirectMessageEmail = action({
 				memberId: recipientMemberId,
 			});
 			if (!recipient || !recipient.user || !recipient.user.email) {
-				console.log('Recipient has no email, skipping notification');
+				console.log("Recipient has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
 			// Don't send email to the sender
 			if (sender.userId === recipient.userId) {
 				console.log(
-					'Sender and recipient are the same, skipping email notification'
+					"Sender and recipient are the same, skipping email notification"
 				);
 				return { success: true, skipped: true };
 			}
@@ -307,7 +304,7 @@ export const sendDirectMessageEmail = action({
 			// Extract message preview
 			const messagePreview = extractMessagePreview(
 				message.body,
-				'You have a new direct message'
+				"You have a new direct message"
 			);
 
 			// Send the email
@@ -315,31 +312,31 @@ export const sendDirectMessageEmail = action({
 			const workspaceUrl = `${baseUrl}/workspace/${message.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/direct-message`;
 			console.log(
-				'Sending direct message email notification to:',
+				"Sending direct message email notification to:",
 				recipient.user.email
 			);
-			console.log('Using API URL:', apiUrl);
+			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
-					method: 'POST',
+					method: "POST",
 					headers: {
-						'Content-Type': 'application/json',
+						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
 						to: recipient.user.email,
 						userId: recipient.userId,
-						firstName: recipient.user.name || 'User',
-						senderName: sender.user.name || 'A team member',
+						firstName: recipient.user.name || "User",
+						senderName: sender.user.name || "A team member",
 						messagePreview: messagePreview,
 						workspaceUrl: workspaceUrl,
-						workspaceName: 'Proddy',
+						workspaceName: "Proddy",
 					}),
 				});
 
 				if (!response.ok) {
 					const errorData = await response.json();
-					console.error('Email API error:', errorData);
+					console.error("Email API error:", errorData);
 					return {
 						success: false,
 						error: `Email API error: ${response.status} ${response.statusText}`,
@@ -347,20 +344,20 @@ export const sendDirectMessageEmail = action({
 				}
 
 				const result = await response.json();
-				console.log('Direct message email sent successfully:', result);
+				console.log("Direct message email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
-				console.error('Error sending direct message email:', error);
+				console.error("Error sending direct message email:", error);
 				return {
 					success: false,
-					error: error instanceof Error ? error.message : 'Unknown error',
+					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
-			console.error('Error in sendDirectMessageEmail:', error);
+			console.error("Error in sendDirectMessageEmail:", error);
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : 'Unknown error',
+				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
 	},
@@ -369,7 +366,7 @@ export const sendDirectMessageEmail = action({
 // Action to send email notification for mentions
 export const sendMentionEmail = action({
 	args: {
-		mentionId: v.id('mentions'),
+		mentionId: v.id("mentions"),
 	},
 	handler: async (ctx, args): Promise<EmailNotificationResult> => {
 		try {
@@ -378,8 +375,8 @@ export const sendMentionEmail = action({
 				mentionId: args.mentionId,
 			});
 			if (!mention) {
-				console.error('Mention not found:', args.mentionId);
-				return { success: false, error: 'Mention not found' };
+				console.error("Mention not found:", args.mentionId);
+				return { success: false, error: "Mention not found" };
 			}
 
 			// Get the mentioned member
@@ -391,7 +388,7 @@ export const sendMentionEmail = action({
 				!mentionedMember.user ||
 				!mentionedMember.user.email
 			) {
-				console.log('Mentioned user has no email, skipping notification');
+				console.log("Mentioned user has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
@@ -400,20 +397,20 @@ export const sendMentionEmail = action({
 				memberId: mention.mentionerMemberId,
 			});
 			if (!mentioner || !mentioner.user) {
-				console.error('Mentioner not found:', mention.mentionerMemberId);
-				return { success: false, error: 'Mentioner not found' };
+				console.error("Mentioner not found:", mention.mentionerMemberId);
+				return { success: false, error: "Mentioner not found" };
 			}
 
 			// Don't send email to the mentioner themselves
 			if (mentioner.userId === mentionedMember.userId) {
 				console.log(
-					'Mentioner and mentioned user are the same, skipping email notification'
+					"Mentioner and mentioned user are the same, skipping email notification"
 				);
 				return { success: true, skipped: true };
 			}
 
 			// Get the message if it exists
-			let messagePreview = 'You were mentioned in a message';
+			let messagePreview = "You were mentioned in a message";
 			if (mention.messageId) {
 				const message = await ctx.runQuery(api.messages._getMessageById, {
 					messageId: mention.messageId,
@@ -421,13 +418,13 @@ export const sendMentionEmail = action({
 				if (message) {
 					messagePreview = extractMessagePreview(
 						message.body,
-						'You were mentioned in a message'
+						"You were mentioned in a message"
 					);
 				}
 			}
 
 			// Get channel name if it exists
-			let channelName = 'a channel';
+			let channelName = "a channel";
 			if (mention.channelId) {
 				const channel = await ctx.runQuery(api.channels._getChannelById, {
 					channelId: mention.channelId,
@@ -442,32 +439,32 @@ export const sendMentionEmail = action({
 			const workspaceUrl = `${baseUrl}/workspace/${mention.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/mention`;
 			console.log(
-				'Sending mention email notification to:',
+				"Sending mention email notification to:",
 				mentionedMember.user.email
 			);
-			console.log('Using API URL:', apiUrl);
+			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
-					method: 'POST',
+					method: "POST",
 					headers: {
-						'Content-Type': 'application/json',
+						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
 						to: mentionedMember.user.email,
 						userId: mentionedMember.userId,
-						firstName: mentionedMember.user.name || 'User',
-						mentionerName: mentioner.user.name || 'A team member',
+						firstName: mentionedMember.user.name || "User",
+						mentionerName: mentioner.user.name || "A team member",
 						messagePreview: messagePreview,
 						channelName: channelName,
 						workspaceUrl: workspaceUrl,
-						workspaceName: 'Proddy',
+						workspaceName: "Proddy",
 					}),
 				});
 
 				if (!response.ok) {
 					const errorData = await response.json();
-					console.error('Email API error:', errorData);
+					console.error("Email API error:", errorData);
 					return {
 						success: false,
 						error: `Email API error: ${response.status} ${response.statusText}`,
@@ -475,20 +472,20 @@ export const sendMentionEmail = action({
 				}
 
 				const result = await response.json();
-				console.log('Mention email sent successfully:', result);
+				console.log("Mention email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
-				console.error('Error sending mention email:', error);
+				console.error("Error sending mention email:", error);
 				return {
 					success: false,
-					error: error instanceof Error ? error.message : 'Unknown error',
+					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
-			console.error('Error in sendMentionEmail:', error);
+			console.error("Error in sendMentionEmail:", error);
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : 'Unknown error',
+				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
 	},
@@ -497,8 +494,8 @@ export const sendMentionEmail = action({
 // Action to send email notification for thread replies
 export const sendThreadReplyEmail = action({
 	args: {
-		messageId: v.id('messages'),
-		parentMessageId: v.id('messages'),
+		messageId: v.id("messages"),
+		parentMessageId: v.id("messages"),
 	},
 	handler: async (ctx, args): Promise<EmailNotificationResult> => {
 		try {
@@ -507,8 +504,8 @@ export const sendThreadReplyEmail = action({
 				messageId: args.messageId,
 			});
 			if (!replyMessage) {
-				console.error('Reply message not found:', args.messageId);
-				return { success: false, error: 'Reply message not found' };
+				console.error("Reply message not found:", args.messageId);
+				return { success: false, error: "Reply message not found" };
 			}
 
 			// Get the parent message
@@ -516,8 +513,8 @@ export const sendThreadReplyEmail = action({
 				messageId: args.parentMessageId,
 			});
 			if (!parentMessage) {
-				console.error('Parent message not found:', args.parentMessageId);
-				return { success: false, error: 'Parent message not found' };
+				console.error("Parent message not found:", args.parentMessageId);
+				return { success: false, error: "Parent message not found" };
 			}
 
 			// Get the original author (parent message author)
@@ -529,7 +526,7 @@ export const sendThreadReplyEmail = action({
 				!originalAuthor.user ||
 				!originalAuthor.user.email
 			) {
-				console.log('Original author has no email, skipping notification');
+				console.log("Original author has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
@@ -538,14 +535,14 @@ export const sendThreadReplyEmail = action({
 				memberId: replyMessage.memberId,
 			});
 			if (!replier || !replier.user) {
-				console.error('Replier not found:', replyMessage.memberId);
-				return { success: false, error: 'Replier not found' };
+				console.error("Replier not found:", replyMessage.memberId);
+				return { success: false, error: "Replier not found" };
 			}
 
 			// Don't send email if the replier is the same as the original author
 			if (replier.userId === originalAuthor.userId) {
 				console.log(
-					'Replier and original author are the same, skipping email notification'
+					"Replier and original author are the same, skipping email notification"
 				);
 				return { success: true, skipped: true };
 			}
@@ -553,15 +550,15 @@ export const sendThreadReplyEmail = action({
 			// Extract message previews
 			const originalMessagePreview = extractMessagePreview(
 				parentMessage.body,
-				'Original message'
+				"Original message"
 			);
 			const replyMessagePreview = extractMessagePreview(
 				replyMessage.body,
-				'Reply message'
+				"Reply message"
 			);
 
 			// Get channel name if it exists
-			let channelName = 'a channel';
+			let channelName = "a channel";
 			if (replyMessage.channelId) {
 				const channel = await ctx.runQuery(api.channels._getChannelById, {
 					channelId: replyMessage.channelId,
@@ -576,33 +573,33 @@ export const sendThreadReplyEmail = action({
 			const workspaceUrl = `${baseUrl}/workspace/${replyMessage.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/thread-reply`;
 			console.log(
-				'Sending thread reply email notification to:',
+				"Sending thread reply email notification to:",
 				originalAuthor.user.email
 			);
-			console.log('Using API URL:', apiUrl);
+			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
-					method: 'POST',
+					method: "POST",
 					headers: {
-						'Content-Type': 'application/json',
+						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
 						to: originalAuthor.user.email,
 						userId: originalAuthor.userId,
-						firstName: originalAuthor.user.name || 'User',
-						replierName: replier.user.name || 'A team member',
+						firstName: originalAuthor.user.name || "User",
+						replierName: replier.user.name || "A team member",
 						originalMessagePreview: originalMessagePreview,
 						replyMessagePreview: replyMessagePreview,
 						channelName: channelName,
 						workspaceUrl: workspaceUrl,
-						workspaceName: 'Proddy',
+						workspaceName: "Proddy",
 					}),
 				});
 
 				if (!response.ok) {
 					const errorData = await response.json();
-					console.error('Email API error:', errorData);
+					console.error("Email API error:", errorData);
 					return {
 						success: false,
 						error: `Email API error: ${response.status} ${response.statusText}`,
@@ -610,20 +607,20 @@ export const sendThreadReplyEmail = action({
 				}
 
 				const result = await response.json();
-				console.log('Thread reply email sent successfully:', result);
+				console.log("Thread reply email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
-				console.error('Error sending thread reply email:', error);
+				console.error("Error sending thread reply email:", error);
 				return {
 					success: false,
-					error: error instanceof Error ? error.message : 'Unknown error',
+					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
-			console.error('Error in sendThreadReplyEmail:', error);
+			console.error("Error in sendThreadReplyEmail:", error);
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : 'Unknown error',
+				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
 	},
@@ -669,13 +666,13 @@ export const sendWeeklyDigestEmails = action({
 			// Get users who have weekly digest enabled for this day
 			const users = await ctx.runQuery(api.email.getUsersForWeeklyDigest, {
 				dayOfWeek: args.dayOfWeek as
-					| 'monday'
-					| 'tuesday'
-					| 'wednesday'
-					| 'thursday'
-					| 'friday'
-					| 'saturday'
-					| 'sunday',
+					| "monday"
+					| "tuesday"
+					| "wednesday"
+					| "thursday"
+					| "friday"
+					| "saturday"
+					| "sunday",
 			});
 
 			console.log(
@@ -718,14 +715,14 @@ export const sendWeeklyDigestEmails = action({
 						const emailResponse = await fetch(
 							`${process.env.SITE_URL}/api/email/weekly-digest`,
 							{
-								method: 'POST',
+								method: "POST",
 								headers: {
-									'Content-Type': 'application/json',
+									"Content-Type": "application/json",
 								},
 								body: JSON.stringify({
 									to: user.email,
 									userId: user.userId,
-									firstName: user.name.split(' ')[0],
+									firstName: user.name.split(" ")[0],
 									weekRange,
 									workspaces: digestData.workspaces,
 									totalStats: digestData.totalStats,
@@ -743,7 +740,7 @@ export const sendWeeklyDigestEmails = action({
 						});
 
 						console.log(
-							`Weekly digest email ${emailResponse.ok ? 'sent' : 'failed'} for user ${user.email}`
+							`Weekly digest email ${emailResponse.ok ? "sent" : "failed"} for user ${user.email}`
 						);
 					} else {
 						results.push({
@@ -751,7 +748,7 @@ export const sendWeeklyDigestEmails = action({
 							email: user.email,
 							success: true,
 							skipped: true,
-							reason: 'No activity',
+							reason: "No activity",
 						});
 						console.log(
 							`Skipped weekly digest for ${user.email} - no activity`
@@ -766,7 +763,7 @@ export const sendWeeklyDigestEmails = action({
 						userId: user.userId,
 						email: user.email,
 						success: false,
-						error: error instanceof Error ? error.message : 'Unknown error',
+						error: error instanceof Error ? error.message : "Unknown error",
 					});
 				}
 			}
@@ -777,10 +774,10 @@ export const sendWeeklyDigestEmails = action({
 				results,
 			};
 		} catch (error) {
-			console.error('Error in sendWeeklyDigestEmails:', error);
+			console.error("Error in sendWeeklyDigestEmails:", error);
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : 'Unknown error',
+				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
 	},
@@ -796,9 +793,9 @@ function getWeekRange(): string {
 	endOfWeek.setDate(startOfWeek.getDate() + 6); // End of week (Saturday)
 
 	const formatDate = (date: Date) => {
-		return date.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
+		return date.toLocaleDateString("en-US", {
+			month: "short",
+			day: "numeric",
 		});
 	};
 
@@ -812,11 +809,11 @@ async function getUsersForWeeklyDigestInternal(
 ) {
 	// Get all user preferences where weekly digest is enabled for the specified day
 	const preferences = await ctx.db
-		.query('preferences')
+		.query("preferences")
 		.filter((q) =>
 			q.and(
-				q.eq(q.field('settings.notifications.weeklyDigest'), true),
-				q.eq(q.field('settings.notifications.weeklyDigestDay'), dayOfWeek)
+				q.eq(q.field("settings.notifications.weeklyDigest"), true),
+				q.eq(q.field("settings.notifications.weeklyDigestDay"), dayOfWeek)
 			)
 		)
 		.collect();
@@ -824,11 +821,11 @@ async function getUsersForWeeklyDigestInternal(
 	const users = [];
 	for (const pref of preferences) {
 		const user = await ctx.db.get(pref.userId);
-		if (user && user.email) {
+		if (user?.email) {
 			users.push({
 				userId: pref.userId,
 				email: user.email,
-				name: user.name || 'User',
+				name: user.name || "User",
 			});
 		}
 	}
@@ -847,8 +844,8 @@ async function getUserWeeklyDigestInternal(
 ) {
 	// Get all workspaces the user is a member of
 	const memberships = await ctx.db
-		.query('members')
-		.withIndex('by_user_id', (q: any) => q.eq('userId', args.userId))
+		.query("members")
+		.withIndex("by_user_id", (q: any) => q.eq("userId", args.userId))
 		.collect();
 
 	const workspaceDigests = [];
@@ -894,13 +891,13 @@ async function getUserWeeklyDigestInternal(
 export const sendWeeklyDigests = internalMutation({
 	args: {
 		dayOfWeek: v.union(
-			v.literal('monday'),
-			v.literal('tuesday'),
-			v.literal('wednesday'),
-			v.literal('thursday'),
-			v.literal('friday'),
-			v.literal('saturday'),
-			v.literal('sunday')
+			v.literal("monday"),
+			v.literal("tuesday"),
+			v.literal("wednesday"),
+			v.literal("thursday"),
+			v.literal("friday"),
+			v.literal("saturday"),
+			v.literal("sunday")
 		),
 	},
 	handler: async (ctx, args) => {
@@ -919,7 +916,7 @@ export const sendWeeklyDigests = internalMutation({
 		weekEnd.setDate(weekStart.getDate() + 6);
 		weekEnd.setHours(23, 59, 59, 999);
 
-		const weekRange = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+		const weekRange = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
 		// Get users who should receive digest today
 		const users = await getUsersForWeeklyDigestInternal(ctx, args.dayOfWeek);
@@ -944,13 +941,13 @@ export const sendWeeklyDigests = internalMutation({
 					const emailResponse = await fetch(
 						`${process.env.SITE_URL}/api/email/weekly-digest`,
 						{
-							method: 'POST',
+							method: "POST",
 							headers: {
-								'Content-Type': 'application/json',
+								"Content-Type": "application/json",
 							},
 							body: JSON.stringify({
 								to: user.email,
-								firstName: user.name.split(' ')[0],
+								firstName: user.name.split(" ")[0],
 								weekRange,
 								workspaces: digestData.workspaces,
 								totalStats: digestData.totalStats,
@@ -972,7 +969,7 @@ export const sendWeeklyDigests = internalMutation({
 						email: user.email,
 						success: true,
 						skipped: true,
-						reason: 'No activity this week',
+						reason: "No activity this week",
 					});
 				}
 			} catch (error) {
@@ -980,7 +977,7 @@ export const sendWeeklyDigests = internalMutation({
 					userId: user.userId,
 					email: user.email,
 					success: false,
-					error: error instanceof Error ? error.message : 'Unknown error',
+					error: error instanceof Error ? error.message : "Unknown error",
 				});
 			}
 		}
@@ -1002,10 +999,10 @@ type CardDetails = {
 	priority?: string;
 	listName: string;
 	channelName: string;
-	channelId: Id<'channels'>;
-	workspaceId: Id<'workspaces'>;
-	listId: Id<'lists'>;
-	_id: Id<'cards'>;
+	channelId: Id<"channels">;
+	workspaceId: Id<"workspaces">;
+	listId: Id<"lists">;
+	_id: Id<"cards">;
 	_creationTime: number;
 	[key: string]: any; // For other properties from the card
 };
@@ -1013,9 +1010,9 @@ type CardDetails = {
 // Action to send email notification for card assignment
 export const sendCardAssignmentEmail = action({
 	args: {
-		assigneeId: v.id('members'),
-		cardId: v.id('cards'),
-		assignerId: v.id('members'),
+		assigneeId: v.id("members"),
+		cardId: v.id("cards"),
+		assignerId: v.id("members"),
 	},
 	handler: async (
 		ctx: ActionCtx,
@@ -1024,15 +1021,15 @@ export const sendCardAssignmentEmail = action({
 			cardId,
 			assignerId,
 		}: {
-			assigneeId: Id<'members'>;
-			cardId: Id<'cards'>;
-			assignerId: Id<'members'>;
+			assigneeId: Id<"members">;
+			cardId: Id<"cards">;
+			assignerId: Id<"members">;
 		}
 	): Promise<EmailNotificationResult> => {
 		try {
 			// Get the card details
 			console.log(
-				'Getting card details for email notification, cardId:',
+				"Getting card details for email notification, cardId:",
 				cardId
 			);
 			const card: CardDetails | null = await ctx.runQuery(
@@ -1040,17 +1037,17 @@ export const sendCardAssignmentEmail = action({
 				{ cardId }
 			);
 			if (!card) {
-				console.error('Card not found for email notification:', cardId);
-				return { success: false, error: 'Card not found' };
+				console.error("Card not found for email notification:", cardId);
+				return { success: false, error: "Card not found" };
 			}
-			console.log('Card details retrieved:', {
+			console.log("Card details retrieved:", {
 				title: card.title,
 				listName: card.listName,
 				channelName: card.channelName,
 			});
 
 			// Get the assignee's email and name
-			console.log('Getting assignee email and name, assigneeId:', assigneeId);
+			console.log("Getting assignee email and name, assigneeId:", assigneeId);
 			const assigneeEmail: string | null = await ctx.runQuery(
 				api.board._getMemberEmail,
 				{
@@ -1058,7 +1055,7 @@ export const sendCardAssignmentEmail = action({
 				}
 			);
 			if (!assigneeEmail) {
-				console.log('Assignee has no email, skipping notification');
+				console.log("Assignee has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
@@ -1068,53 +1065,53 @@ export const sendCardAssignmentEmail = action({
 					memberId: assigneeId,
 				}
 			);
-			console.log('Assignee email:', assigneeEmail);
-			console.log('Assignee name:', assigneeName);
+			console.log("Assignee email:", assigneeEmail);
+			console.log("Assignee name:", assigneeName);
 
 			// Get the assigner's name
-			console.log('Getting assigner name, assignerId:', assignerId);
+			console.log("Getting assigner name, assignerId:", assignerId);
 			const assignerName: string | null = await ctx.runQuery(
 				api.board._getMemberName,
 				{
 					memberId: assignerId,
 				}
 			);
-			console.log('Assigner name:', assignerName);
+			console.log("Assigner name:", assignerName);
 
 			// Send the email
 			// Make sure we're using the correct URL format for the API endpoint
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${card.workspaceId}/channel/${card.channelId}/board`;
 			const apiUrl = `${baseUrl}/api/email/assignee`;
-			console.log('Sending email notification to:', assigneeEmail);
-			console.log('Using API URL:', apiUrl);
+			console.log("Sending email notification to:", assigneeEmail);
+			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
-					method: 'POST',
+					method: "POST",
 					headers: {
-						'Content-Type': 'application/json',
+						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
 						to: assigneeEmail,
 						userId: assigneeId,
-						firstName: assigneeName || 'User',
-						type: 'card_assignment',
+						firstName: assigneeName || "User",
+						type: "card_assignment",
 						cardTitle: card.title,
 						cardDescription: card.description,
 						dueDate: card.dueDate,
 						priority: card.priority,
 						listName: card.listName,
 						channelName: card.channelName,
-						assignedBy: assignerName || 'A team member',
+						assignedBy: assignerName || "A team member",
 						workspaceUrl,
-						workspaceName: 'Proddy',
+						workspaceName: "Proddy",
 					}),
 				});
 
 				if (!response.ok) {
 					const errorData = await response.json();
-					console.error('Email API error:', errorData);
+					console.error("Email API error:", errorData);
 					return {
 						success: false,
 						error: `Email API error: ${response.status} ${response.statusText}`,
@@ -1122,20 +1119,20 @@ export const sendCardAssignmentEmail = action({
 				}
 
 				const result = await response.json();
-				console.log('Card assignment email sent successfully:', result);
+				console.log("Card assignment email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
-				console.error('Error sending card assignment email:', error);
+				console.error("Error sending card assignment email:", error);
 				return {
 					success: false,
-					error: error instanceof Error ? error.message : 'Unknown error',
+					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
-			console.error('Error in sendCardAssignmentEmail:', error);
+			console.error("Error in sendCardAssignmentEmail:", error);
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : 'Unknown error',
+				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
 	},

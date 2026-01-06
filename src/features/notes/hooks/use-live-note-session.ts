@@ -1,15 +1,15 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '@/../convex/_generated/api';
-import { Id } from '@/../convex/_generated/dataModel';
-import { useOthers, useSelf } from '@/../liveblocks.config';
-import { toast } from 'sonner';
+import { useMutation } from "convex/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { useOthers, useSelf } from "@/../liveblocks.config";
 
 interface UseLiveNoteSessionOptions {
-	noteId: Id<'notes'>;
+	noteId: Id<"notes">;
 	noteTitle: string;
-	workspaceId: Id<'workspaces'>;
-	channelId: Id<'channels'>;
+	workspaceId: Id<"workspaces">;
+	channelId: Id<"channels">;
 	autoAnnounce?: boolean;
 }
 
@@ -36,12 +36,15 @@ export const useLiveNoteSession = ({
 	const createMessage = useMutation(api.messages.create);
 
 	// Get all participants (including self) - memoized to prevent infinite loops
-	const participants = useMemo(() => [
-		...(self && self.id ? [self.id] : []),
-		...others
-			.map((other) => other.id)
-			.filter((id): id is string => typeof id === 'string'),
-	], [self, others]);
+	const participants = useMemo(
+		() => [
+			...(self?.id ? [self.id] : []),
+			...others
+				.map((other) => other.id)
+				.filter((id): id is string => typeof id === "string"),
+		],
+		[self, others]
+	);
 
 	// Check if this is a live session (more than one participant actively editing)
 	useEffect(() => {
@@ -75,7 +78,15 @@ export const useLiveNoteSession = ({
 				setHasAnnounced(false);
 			}
 		}
-	}, [participants, others, self, isLiveSession, autoAnnounce, hasAnnounced]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		participants,
+		others,
+		self,
+		isLiveSession,
+		autoAnnounce,
+		hasAnnounced,
+	]);
 
 	const startLiveSession = useCallback(async () => {
 		try {
@@ -86,10 +97,10 @@ export const useLiveNoteSession = ({
 			}
 
 			setIsLiveSession(true);
-			toast.success('Live note session started');
+			toast.success("Live note session started");
 		} catch (error) {
-			console.error('Failed to start live session:', error);
-			toast.error('Failed to start live session');
+			console.error("Failed to start live session:", error);
+			toast.error("Failed to start live session");
 		}
 	}, [self]);
 
@@ -97,10 +108,10 @@ export const useLiveNoteSession = ({
 		try {
 			setIsLiveSession(false);
 			setHasAnnounced(false);
-			toast.success('Live note session ended');
+			toast.success("Live note session ended");
 		} catch (error) {
-			console.error('Failed to end live session:', error);
-			toast.error('Failed to end live session');
+			console.error("Failed to end live session:", error);
+			toast.error("Failed to end live session");
 		}
 	}, []);
 
@@ -108,20 +119,23 @@ export const useLiveNoteSession = ({
 		try {
 			if (!workspaceId || !channelId) {
 				console.warn(
-					'Cannot announce live session: missing workspace or channel ID'
+					"Cannot announce live session: missing workspace or channel ID"
 				);
 				return;
 			}
 
 			// Don't announce for dummy note IDs
-			if (noteId.toString().includes('dummy') || noteId === 'kn7cvx952gp794j4vzvxxqqgk57k9yhh') {
-				console.log('Skipping announcement for dummy note ID');
+			if (
+				noteId.toString().includes("dummy") ||
+				noteId === "kn7cvx952gp794j4vzvxxqqgk57k9yhh"
+			) {
+				console.log("Skipping announcement for dummy note ID");
 				return;
 			}
 
 			// Create a message announcing the live session
 			const messageData = {
-				type: 'note-live',
+				type: "note-live",
 				noteId: noteId,
 				noteTitle: noteTitle,
 				participants: participants,
@@ -133,10 +147,10 @@ export const useLiveNoteSession = ({
 				body: JSON.stringify(messageData),
 			});
 
-			toast.success('Live note session announced in chat');
+			toast.success("Live note session announced in chat");
 		} catch (error) {
-			console.error('Failed to announce live session:', error);
-			toast.error('Failed to announce live session');
+			console.error("Failed to announce live session:", error);
+			toast.error("Failed to announce live session");
 		}
 	}, [noteId, noteTitle, participants, workspaceId, channelId, createMessage]);
 

@@ -2,5 +2,5 @@
 // add @sentry/nextjs and re-enable initialization here.
 
 export const onRouterTransitionStart = (..._args: unknown[]) => {
-  // no-op
+	// no-op
 };

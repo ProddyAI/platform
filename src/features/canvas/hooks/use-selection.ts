@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import { useMutation } from '../../../../liveblocks.config';
-import { CanvasMode, Point, Side, XYWH } from '../types/canvas';
+import { useCallback } from "react";
+import { useMutation } from "../../../../liveblocks.config";
 import {
 	findIntersectingLayersWithRectangle,
 	resizeBounds,
-} from '../../../lib/utils';
+} from "../../../lib/utils";
+import { CanvasMode, type Point, type Side, type XYWH } from "../types/canvas";
 
 const MULTISELECTION_THRESHOLD = 2;
 
@@ -25,7 +25,7 @@ export function useSelection(
 	const updateSelectionNet = useMutation(
 		({ storage, setMyPresence }, current: Point, origin: Point) => {
 			try {
-				const layersMap = storage.get('layers');
+				const layersMap = storage.get("layers");
 
 				if (!layersMap) return;
 
@@ -44,7 +44,7 @@ export function useSelection(
 
 				setMyPresence({ selection: ids });
 			} catch (error) {
-				console.error('Error updating selection net:', error);
+				console.error("Error updating selection net:", error);
 			}
 		},
 		[layerIds, setCanvasState]
@@ -85,9 +85,9 @@ export function useSelection(
 					height: Math.max(bounds.height, minHeight),
 				};
 
-				const liveLayers = storage.get('layers');
+				const liveLayers = storage.get("layers");
 
-				if (!liveLayers || typeof liveLayers.get !== 'function') return;
+				if (!liveLayers || typeof liveLayers.get !== "function") return;
 
 				const layerId = self.presence.selection[0];
 				if (!layerId) return;
@@ -97,10 +97,10 @@ export function useSelection(
 				if (layer) {
 					layer.update(newBounds);
 
-					storage.set('lastUpdate', Date.now());
+					storage.set("lastUpdate", Date.now());
 				}
 			} catch (error) {
-				console.error('Error resizing layer:', error);
+				console.error("Error resizing layer:", error);
 			}
 		},
 		[canvasState]
@@ -129,9 +129,9 @@ export function useSelection(
 					y: point.y - canvasState.current.y,
 				};
 
-				const liveLayers = storage.get('layers');
+				const liveLayers = storage.get("layers");
 
-				if (!liveLayers || typeof liveLayers.get !== 'function') return;
+				if (!liveLayers || typeof liveLayers.get !== "function") return;
 
 				for (const id of self.presence.selection) {
 					const layer = liveLayers.get(id);
@@ -140,16 +140,16 @@ export function useSelection(
 						try {
 							let currentX, currentY;
 
-							if (typeof layer.toObject === 'function') {
+							if (typeof layer.toObject === "function") {
 								const layerData = layer.toObject();
 								currentX = layerData.x;
 								currentY = layerData.y;
-							} else if (typeof layer.get === 'function') {
-								currentX = layer.get('x');
-								currentY = layer.get('y');
+							} else if (typeof layer.get === "function") {
+								currentX = layer.get("x");
+								currentY = layer.get("y");
 							} else {
 								console.warn(
-									'Using direct property access on layer - this may cause type errors'
+									"Using direct property access on layer - this may cause type errors"
 								);
 								const layerAny = layer as any;
 								currentX = layerAny.x;
@@ -157,10 +157,10 @@ export function useSelection(
 							}
 
 							if (
-								typeof currentX !== 'number' ||
-								typeof currentY !== 'number'
+								typeof currentX !== "number" ||
+								typeof currentY !== "number"
 							) {
-								console.warn('Invalid layer position', { currentX, currentY });
+								console.warn("Invalid layer position", { currentX, currentY });
 								continue;
 							}
 
@@ -169,7 +169,7 @@ export function useSelection(
 								y: currentY + offset.y,
 							});
 						} catch (error) {
-							console.error('Error updating layer position:', error);
+							console.error("Error updating layer position:", error);
 						}
 					}
 				}
@@ -179,9 +179,9 @@ export function useSelection(
 					current: point,
 				});
 
-				storage.set('lastUpdate', Date.now());
+				storage.set("lastUpdate", Date.now());
 			} catch (error) {
-				console.error('Error translating layers:', error);
+				console.error("Error translating layers:", error);
 			}
 		},
 		[canvasState, setCanvasState]

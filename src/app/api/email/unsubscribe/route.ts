@@ -1,29 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from "next/server";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { updateNotificationPreferencesServer } from "@/lib/email-preferences-server";
 import {
-	verifyUnsubscribeSignature,
-	getEmailTypeName,
 	type EmailType,
-} from '@/lib/email-unsubscribe';
-import { updateNotificationPreferencesServer } from '@/lib/email-preferences-server';
-import { type Id } from '@/../convex/_generated/dataModel';
+	getEmailTypeName,
+	verifyUnsubscribeSignature,
+} from "@/lib/email-unsubscribe";
 
 export async function GET(req: NextRequest) {
 	try {
 		const { searchParams } = new URL(req.url);
-		const userId = searchParams.get('userId');
-		const emailType = searchParams.get('emailType') as EmailType;
-		const timestamp = searchParams.get('timestamp');
-		const signature = searchParams.get('signature');
+		const userId = searchParams.get("userId");
+		const emailType = searchParams.get("emailType") as EmailType;
+		const timestamp = searchParams.get("timestamp");
+		const signature = searchParams.get("signature");
 
 		// Validate required parameters
 		if (!userId || !emailType || !timestamp || !signature) {
 			return new NextResponse(
 				generateErrorPage(
-					'Invalid unsubscribe link. Missing required parameters.'
+					"Invalid unsubscribe link. Missing required parameters."
 				),
 				{
 					status: 400,
-					headers: { 'Content-Type': 'text/html' },
+					headers: { "Content-Type": "text/html" },
 				}
 			);
 		}
@@ -37,17 +37,17 @@ export async function GET(req: NextRequest) {
 		);
 		if (!verification.valid) {
 			return new NextResponse(
-				generateErrorPage(verification.error || 'Invalid unsubscribe link.'),
+				generateErrorPage(verification.error || "Invalid unsubscribe link."),
 				{
 					status: 400,
-					headers: { 'Content-Type': 'text/html' },
+					headers: { "Content-Type": "text/html" },
 				}
 			);
 		}
 
 		// Update the notification preference using the server-side utility
 		const success = await updateNotificationPreferencesServer(
-			userId as Id<'users'>,
+			userId as Id<"users">,
 			emailType,
 			false
 		);
@@ -55,11 +55,11 @@ export async function GET(req: NextRequest) {
 		if (!success) {
 			return new NextResponse(
 				generateErrorPage(
-					'Failed to update your email preferences. Please try again.'
+					"Failed to update your email preferences. Please try again."
 				),
 				{
 					status: 500,
-					headers: { 'Content-Type': 'text/html' },
+					headers: { "Content-Type": "text/html" },
 				}
 			);
 		}
@@ -68,17 +68,17 @@ export async function GET(req: NextRequest) {
 		const emailTypeName = getEmailTypeName(emailType);
 		return new NextResponse(generateSuccessPage(emailTypeName), {
 			status: 200,
-			headers: { 'Content-Type': 'text/html' },
+			headers: { "Content-Type": "text/html" },
 		});
 	} catch (error) {
-		console.error('Unsubscribe error:', error);
+		console.error("Unsubscribe error:", error);
 		return new NextResponse(
 			generateErrorPage(
-				'An error occurred while processing your unsubscribe request.'
+				"An error occurred while processing your unsubscribe request."
 			),
 			{
 				status: 500,
-				headers: { 'Content-Type': 'text/html' },
+				headers: { "Content-Type": "text/html" },
 			}
 		);
 	}
@@ -176,10 +176,10 @@ function generateSuccessPage(emailTypeName: string): string {
         <p>You will no longer receive these types of email notifications from Proddy.</p>
         
         <div style="margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://proddy.tech'}" class="button">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://proddy.tech"}" class="button">
             Return to Proddy
           </a>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://proddy.tech'}/settings/notifications" class="button button-secondary">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://proddy.tech"}/settings/notifications" class="button button-secondary">
             Manage Email Preferences
           </a>
         </div>
@@ -273,7 +273,7 @@ function generateErrorPage(errorMessage: string): string {
         <p>Please contact support if you continue to experience issues.</p>
         
         <div style="margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://proddy.tech'}" class="button">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://proddy.tech"}" class="button">
             Return to Proddy
           </a>
         </div>

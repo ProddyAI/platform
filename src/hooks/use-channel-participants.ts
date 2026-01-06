@@ -1,22 +1,19 @@
-'use client';
+"use client";
 
-import { useQuery } from 'convex/react';
-import { useEffect, useState } from 'react';
-
-import { api } from '../../convex/_generated/api';
-import type { Id } from '../../convex/_generated/dataModel';
-import { useChannelId } from './use-channel-id';
-import { useWorkspaceId } from './use-workspace-id';
-import { useWorkspacePresence } from '@/features/presence/hooks/use-workspace-presence';
-import { getUserImageUrl } from '@/lib/placeholder-image';
-
-import { useOthers, useSelf, useRoom } from '../../liveblocks.config';
+import { useQuery } from "convex/react";
+import { useEffect, useState } from "react";
+import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-presence";
+import { getUserImageUrl } from "@/lib/placeholder-image";
+import { api } from "../../convex/_generated/api";
+import { useOthers, useRoom, useSelf } from "../../liveblocks.config";
+import { useChannelId } from "./use-channel-id";
+import { useWorkspaceId } from "./use-workspace-id";
 
 export const useChannelParticipants = () => {
 	// Get channel and workspace IDs from the URL
-	const channelId = useChannelId();
+	const _channelId = useChannelId();
 	const workspaceId = useWorkspaceId();
-	const room = useRoom();
+	const _room = useRoom();
 
 	// State to track actual participants count
 	const [participantCount, setParticipantCount] = useState(0);
@@ -51,9 +48,9 @@ export const useChannelParticipants = () => {
 		const count = others.length + (self ? 1 : 0);
 
 		// Ensure we have a valid number
-		const validCount = isNaN(count) ? 0 : count;
+		const validCount = Number.isNaN(count) ? 0 : count;
 		setParticipantCount(validCount);
-	}, [others, self, room.id]);
+	}, [others, self]);
 
 	if (isLoading) {
 		return {
@@ -69,8 +66,8 @@ export const useChannelParticipants = () => {
 	if (presenceState) {
 		for (const presence of presenceState) {
 			statusMap[presence.userId as string] = presence.online
-				? 'online'
-				: 'offline';
+				? "online"
+				: "offline";
 		}
 	}
 
@@ -82,8 +79,8 @@ export const useChannelParticipants = () => {
 		// Check if info exists and has an id property of type string
 		if (
 			other.info &&
-			'id' in other.info &&
-			typeof (other.info as any).id === 'string'
+			"id" in other.info &&
+			typeof (other.info as any).id === "string"
 		) {
 			// Safe to access as we've verified it exists
 			canvasParticipantIds.add((other.info as any).id);
@@ -93,8 +90,8 @@ export const useChannelParticipants = () => {
 	// Add current user if they're in the canvas - fixed type safety issues
 	if (
 		self?.info &&
-		'id' in self.info &&
-		typeof (self.info as any).id === 'string'
+		"id" in self.info &&
+		typeof (self.info as any).id === "string"
 	) {
 		canvasParticipantIds.add((self.info as any).id);
 	}
@@ -102,27 +99,27 @@ export const useChannelParticipants = () => {
 	// Map Liveblocks connection IDs to user IDs for accurate tracking
 	const connectionToUserIdMap = new Map<number, string>();
 	others.forEach((other) => {
-		if (other.info && 'id' in other.info && typeof other.info.id === 'string') {
+		if (other.info && "id" in other.info && typeof other.info.id === "string") {
 			connectionToUserIdMap.set(other.connectionId, other.info.id);
 		}
 	});
 
 	// Filter for online members who are in the canvas
-	const canvasMembers =
+	const _canvasMembers =
 		members?.filter(
 			(member) =>
-				statusMap[member.user._id] === 'online' &&
+				statusMap[member.user._id] === "online" &&
 				canvasParticipantIds.has(member.user._id)
 		) || [];
 
 	// Format participants with their user info
 	const participants = others.map((other) => {
 		const userId =
-			'id' in (other.info || {}) ? (other.info as { id: string }).id : null;
+			"id" in (other.info || {}) ? (other.info as { id: string }).id : null;
 		let member = userId ? userMap.get(userId) : null;
 
 		// If no exact match by ID, try to find a partial match
-		if (!member && userId && typeof userId === 'string' && members) {
+		if (!member && userId && typeof userId === "string" && members) {
 			const matchingMember = members.find(
 				(m) => m.user._id.includes(userId) || userId.includes(m.user._id)
 			);
@@ -166,10 +163,10 @@ export const useChannelParticipants = () => {
 						// Find the current member in the members list to get their name
 						name:
 							members?.find((m) => m._id === currentMember._id)?.user?.name ||
-							'You',
+							"You",
 						picture: getUserImageUrl(
 							members?.find((m) => m._id === currentMember._id)?.user?.name ||
-								'You',
+								"You",
 							members?.find((m) => m._id === currentMember._id)?.user?.image,
 							currentMember.userId
 						),

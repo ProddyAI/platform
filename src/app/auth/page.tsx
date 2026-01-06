@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
+import { useEffect } from "react";
 
 const AuthPage = () => {
-  useEffect(() => {
-    redirect('/signin');
-  }, []);
+	useEffect(() => {
+		redirect("/signin");
+	}, []);
 
-  return null;
+	return null;
 };
 
 export default AuthPage;

@@ -1,10 +1,15 @@
-'use client';
+"use client";
 
-import { nanoid } from 'nanoid';
-import { useMutation } from '../../../../liveblocks.config';
-import { Camera, Color, LayerType, Point, MermaidLayer } from '../types/canvas';
-import { LiveMap, LiveList, LiveObject } from '@liveblocks/client';
-import { penPointsToPathLayer } from '../../../lib/utils';
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
+import { nanoid } from "nanoid";
+import { useMutation } from "../../../../liveblocks.config";
+import { penPointsToPathLayer } from "../../../lib/utils";
+import {
+	type Color,
+	LayerType,
+	type MermaidLayer,
+	type Point,
+} from "../types/canvas";
 
 const MAX_LAYERS = 100;
 
@@ -21,17 +26,17 @@ export function useLayerOperations(lastUsedColor: Color) {
 			position: Point
 		) => {
 			try {
-				let liveLayers = storage.get('layers');
-				let liveLayerIds = storage.get('layerIds');
+				let liveLayers = storage.get("layers");
+				let liveLayerIds = storage.get("layerIds");
 
-				if (!liveLayers || typeof liveLayers.set !== 'function') {
+				if (!liveLayers || typeof liveLayers.set !== "function") {
 					liveLayers = new LiveMap<string, LiveObject<any>>();
-					storage.set('layers', liveLayers);
+					storage.set("layers", liveLayers);
 				}
 
-				if (!liveLayerIds || typeof liveLayerIds.push !== 'function') {
+				if (!liveLayerIds || typeof liveLayerIds.push !== "function") {
 					liveLayerIds = new LiveList<string>([]);
-					storage.set('layerIds', liveLayerIds);
+					storage.set("layerIds", liveLayerIds);
 				}
 
 				// Check if we've reached the maximum number of layers
@@ -54,7 +59,7 @@ export function useLayerOperations(lastUsedColor: Color) {
 						height: 50, // Initial height
 						width: 100, // Initial width
 						fill: lastUsedColor,
-						value: '',
+						value: "",
 					};
 				} else if (layerType === LayerType.Note) {
 					layerData = {
@@ -64,7 +69,7 @@ export function useLayerOperations(lastUsedColor: Color) {
 						height: 100,
 						width: 200, // Notes are wider by default
 						fill: lastUsedColor,
-						value: '',
+						value: "",
 					};
 				} else if (layerType === LayerType.Mermaid) {
 					layerData = {
@@ -74,7 +79,8 @@ export function useLayerOperations(lastUsedColor: Color) {
 						height: 300,
 						width: 400, // Mermaid diagrams are larger by default
 						fill: lastUsedColor,
-						mermaidCode: 'flowchart TD\n    A([Start]) --> B[Process]\n    B --> C([End])',
+						mermaidCode:
+							"flowchart TD\n    A([Start]) --> B[Process]\n    B --> C([End])",
 					};
 				} else {
 					layerData = {
@@ -93,10 +99,10 @@ export function useLayerOperations(lastUsedColor: Color) {
 				liveLayerIds.push(layerId);
 
 				// Force a storage update to ensure changes are synchronized
-				storage.set('lastUpdate', Date.now());
+				storage.set("lastUpdate", Date.now());
 
 				setMyPresence({ selection: [layerId] }, { addToHistory: true });
-			} catch (error) {}
+			} catch (_error) {}
 		},
 		[lastUsedColor]
 	);
@@ -113,18 +119,18 @@ export function useLayerOperations(lastUsedColor: Color) {
 
 			try {
 				// Get the storage objects
-				let liveLayers = storage.get('layers');
-				let liveLayerIds = storage.get('layerIds');
+				let liveLayers = storage.get("layers");
+				let liveLayerIds = storage.get("layerIds");
 
 				// Initialize storage if needed
-				if (!liveLayers || typeof liveLayers.set !== 'function') {
+				if (!liveLayers || typeof liveLayers.set !== "function") {
 					liveLayers = new LiveMap<string, LiveObject<any>>();
-					storage.set('layers', liveLayers);
+					storage.set("layers", liveLayers);
 				}
 
-				if (!liveLayerIds || typeof liveLayerIds.push !== 'function') {
+				if (!liveLayerIds || typeof liveLayerIds.push !== "function") {
 					liveLayerIds = new LiveList<string>([]);
-					storage.set('layerIds', liveLayerIds);
+					storage.set("layerIds", liveLayerIds);
 				}
 
 				// Check if we've reached the maximum number of layers
@@ -148,11 +154,11 @@ export function useLayerOperations(lastUsedColor: Color) {
 				liveLayers.set(id, liveObject);
 
 				// Force a storage update to ensure changes are synchronized
-				storage.set('lastUpdate', Date.now());
+				storage.set("lastUpdate", Date.now());
 
 				// Clear the pencil draft after successfully adding the path
 				setMyPresence({ pencilDraft: null });
-			} catch (error) {
+			} catch (_error) {
 				setMyPresence({ pencilDraft: null });
 			}
 		},
@@ -165,11 +171,11 @@ export function useLayerOperations(lastUsedColor: Color) {
 
 		try {
 			// Get the storage objects
-			const liveLayers = storage.get('layers');
-			const liveLayerIds = storage.get('layerIds');
+			const liveLayers = storage.get("layers");
+			const liveLayerIds = storage.get("layerIds");
 
 			// Check if we have valid LiveMap and LiveList objects
-			if (!liveLayers || typeof liveLayers.delete !== 'function') return;
+			if (!liveLayers || typeof liveLayers.delete !== "function") return;
 			if (!liveLayerIds) return;
 
 			// Check if the layer exists before trying to delete it
@@ -183,70 +189,70 @@ export function useLayerOperations(lastUsedColor: Color) {
 			const layerIdsArray = Array.from(liveLayerIds);
 			const index = layerIdsArray.indexOf(layerId);
 
-			if (index !== -1 && typeof liveLayerIds.delete === 'function') {
+			if (index !== -1 && typeof liveLayerIds.delete === "function") {
 				liveLayerIds.delete(index);
 			}
 
 			// Force a storage update to ensure changes are synchronized
-			storage.set('lastUpdate', Date.now());
-		} catch (error) {}
+			storage.set("lastUpdate", Date.now());
+		} catch (_error) {}
 	}, []);
 
-// Insert a Mermaid diagram with custom code
-const insertMermaidLayer = useMutation(
-	({ storage, setMyPresence }, mermaidCode: string, position: Point) => {
-		try {
-			// Get the storage objects
-			let liveLayers = storage.get('layers');
-			let liveLayerIds = storage.get('layerIds');
+	// Insert a Mermaid diagram with custom code
+	const insertMermaidLayer = useMutation(
+		({ storage, setMyPresence }, mermaidCode: string, position: Point) => {
+			try {
+				// Get the storage objects
+				let liveLayers = storage.get("layers");
+				let liveLayerIds = storage.get("layerIds");
 
-			// Initialize storage if needed
-			if (!liveLayers || typeof liveLayers.set !== 'function') {
-				liveLayers = new LiveMap<string, LiveObject<any>>();
-				storage.set('layers', liveLayers);
+				// Initialize storage if needed
+				if (!liveLayers || typeof liveLayers.set !== "function") {
+					liveLayers = new LiveMap<string, LiveObject<any>>();
+					storage.set("layers", liveLayers);
+				}
+
+				if (!liveLayerIds || typeof liveLayerIds.push !== "function") {
+					liveLayerIds = new LiveList<string>([]);
+					storage.set("layerIds", liveLayerIds);
+				}
+
+				// Check layer limit
+				if (liveLayerIds.length >= MAX_LAYERS) {
+					console.warn("Maximum number of layers reached");
+					return;
+				}
+
+				const layerId = nanoid();
+
+				const layerData: MermaidLayer = {
+					type: LayerType.Mermaid,
+					x: position.x - 200, // Center the diagram
+					y: position.y - 150,
+					height: 300,
+					width: 400,
+					fill: lastUsedColor,
+					mermaidCode: mermaidCode,
+				};
+
+				// Create a LiveObject and set it in the map
+				const liveObject = new LiveObject(layerData);
+				liveLayers.set(layerId, liveObject);
+				liveLayerIds.push(layerId);
+
+				// Force a storage update to ensure changes are synchronized
+				storage.set("lastUpdate", Date.now());
+
+				setMyPresence({ selection: [layerId] }, { addToHistory: true });
+
+				return layerId;
+			} catch (error) {
+				console.error("Error inserting Mermaid layer:", error);
+				return null;
 			}
-
-			if (!liveLayerIds || typeof liveLayerIds.push !== 'function') {
-				liveLayerIds = new LiveList<string>([]);
-				storage.set('layerIds', liveLayerIds);
-			}
-
-			// Check layer limit
-			if (liveLayerIds.length >= MAX_LAYERS) {
-				console.warn('Maximum number of layers reached');
-				return;
-			}
-
-			const layerId = nanoid();
-
-			const layerData: MermaidLayer = {
-				type: LayerType.Mermaid,
-				x: position.x - 200, // Center the diagram
-				y: position.y - 150,
-				height: 300,
-				width: 400,
-				fill: lastUsedColor,
-				mermaidCode: mermaidCode,
-			};
-
-			// Create a LiveObject and set it in the map
-			const liveObject = new LiveObject(layerData);
-			liveLayers.set(layerId, liveObject);
-			liveLayerIds.push(layerId);
-
-			// Force a storage update to ensure changes are synchronized
-			storage.set('lastUpdate', Date.now());
-
-			setMyPresence({ selection: [layerId] }, { addToHistory: true });
-
-			return layerId;
-		} catch (error) {
-			console.error('Error inserting Mermaid layer:', error);
-			return null;
-		}
-	},
-	[lastUsedColor]
-);
+		},
+		[lastUsedColor]
+	);
 
 	return {
 		insertLayer,

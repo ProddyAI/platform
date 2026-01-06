@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-import { CreateChannelModal } from '@/features/channels/components/create-channel-modal';
-import { CreateWorkspaceModal } from '@/features/workspaces/components/create-workspace-modal';
+import { CreateChannelModal } from "@/features/channels/components/create-channel-modal";
+import { CreateWorkspaceModal } from "@/features/workspaces/components/create-workspace-modal";
 
 export const ModalProvider = () => {
-  const [isMounted, setIsMounted] = useState(false);
+	const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+	useEffect(() => {
+		setIsMounted(true);
+	}, []);
 
-  if (!isMounted) return;
+	if (!isMounted) return;
 
-  return (
-    <>
-      <CreateChannelModal />
-      <CreateWorkspaceModal />
-    </>
-  );
+	return (
+		<>
+			<CreateChannelModal />
+			<CreateWorkspaceModal />
+		</>
+	);
 };

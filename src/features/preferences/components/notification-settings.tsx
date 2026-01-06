@@ -1,16 +1,39 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Bell, BellOff, Mail, MessageSquare, UserPlus, Calendar, Shield, Volume2, VolumeX } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useUserPreferences, useNotificationPreferences } from '../api/use-user-preferences';
+import {
+	Bell,
+	BellOff,
+	Calendar,
+	Mail,
+	MessageSquare,
+	Shield,
+	UserPlus,
+	Volume2,
+	VolumeX,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import {
+	useNotificationPreferences,
+	useUserPreferences,
+} from "../api/use-user-preferences";
 
 export const NotificationSettings = () => {
 	const { updateSettings } = useUserPreferences();
@@ -21,7 +44,8 @@ export const NotificationSettings = () => {
 	// Calculate if all notifications are enabled
 	useEffect(() => {
 		if (notifications) {
-			const allEnabled = notifications.mentions &&
+			const allEnabled =
+				notifications.mentions &&
 				notifications.assignee &&
 				notifications.threadReply &&
 				notifications.directMessage;
@@ -83,7 +107,9 @@ export const NotificationSettings = () => {
 						<Bell className="h-5 w-5" />
 						Notification Settings
 					</CardTitle>
-					<CardDescription>Loading your notification preferences...</CardDescription>
+					<CardDescription>
+						Loading your notification preferences...
+					</CardDescription>
 				</CardHeader>
 			</Card>
 		);
@@ -91,37 +117,38 @@ export const NotificationSettings = () => {
 
 	const notificationTypes = [
 		{
-			key: 'mentions',
-			title: 'Mentions',
-			description: 'Get notified when someone mentions you in a message',
+			key: "mentions",
+			title: "Mentions",
+			description: "Get notified when someone mentions you in a message",
 			icon: MessageSquare,
 			enabled: notifications?.mentions ?? true,
 		},
 		{
-			key: 'assignee',
-			title: 'Task Assignments',
-			description: 'Get notified when you are assigned to a task or card',
+			key: "assignee",
+			title: "Task Assignments",
+			description: "Get notified when you are assigned to a task or card",
 			icon: UserPlus,
 			enabled: notifications?.assignee ?? true,
 		},
 		{
-			key: 'threadReply',
-			title: 'Thread Replies',
-			description: 'Get notified when someone replies to a thread you participated in',
+			key: "threadReply",
+			title: "Thread Replies",
+			description:
+				"Get notified when someone replies to a thread you participated in",
 			icon: MessageSquare,
 			enabled: notifications?.threadReply ?? true,
 		},
 		{
-			key: 'directMessage',
-			title: 'Direct Messages',
-			description: 'Get notified when you receive a direct message',
+			key: "directMessage",
+			title: "Direct Messages",
+			description: "Get notified when you receive a direct message",
 			icon: Mail,
 			enabled: notifications?.directMessage ?? true,
 		},
 	];
 
 	const weeklyDigestEnabled = notifications?.weeklyDigest ?? false;
-	const weeklyDigestDay = notifications?.weeklyDigestDay ?? 'monday';
+	const weeklyDigestDay = notifications?.weeklyDigestDay ?? "monday";
 
 	return (
 		<div className="space-y-6">
@@ -153,9 +180,8 @@ export const NotificationSettings = () => {
 							</Label>
 							<p className="text-sm text-muted-foreground">
 								{allNotificationsEnabled
-									? 'You will receive all instant notifications'
-									: 'All instant notifications are disabled'
-								}
+									? "You will receive all instant notifications"
+									: "All instant notifications are disabled"}
 							</p>
 						</div>
 						<Switch
@@ -170,7 +196,9 @@ export const NotificationSettings = () => {
 						<Alert className="mt-4">
 							<BellOff className="h-4 w-4" />
 							<AlertDescription>
-								All instant notifications are currently disabled. You can still enable individual notifications below or use the master toggle above.
+								All instant notifications are currently disabled. You can still
+								enable individual notifications below or use the master toggle
+								above.
 							</AlertDescription>
 						</Alert>
 					)}
@@ -204,11 +232,15 @@ export const NotificationSettings = () => {
 								</div>
 								<Switch
 									checked={notification.enabled}
-									onCheckedChange={(enabled) => handleNotificationToggle(notification.key, enabled)}
+									onCheckedChange={(enabled) =>
+										handleNotificationToggle(notification.key, enabled)
+									}
 									disabled={isUpdating}
 								/>
 							</div>
-							{index < notificationTypes.length - 1 && <Separator className="mt-4" />}
+							{index < notificationTypes.length - 1 && (
+								<Separator className="mt-4" />
+							)}
 						</div>
 					))}
 
@@ -228,7 +260,9 @@ export const NotificationSettings = () => {
 							</div>
 							<Switch
 								checked={weeklyDigestEnabled}
-								onCheckedChange={(enabled) => handleNotificationToggle('weeklyDigest', enabled)}
+								onCheckedChange={(enabled) =>
+									handleNotificationToggle("weeklyDigest", enabled)
+								}
 								disabled={isUpdating}
 							/>
 						</div>
@@ -272,8 +306,9 @@ export const NotificationSettings = () => {
 									Email Notifications
 								</h4>
 								<p className="text-sm text-blue-700 dark:text-blue-300">
-									These settings control email notifications only. You can still receive in-app notifications
-									regardless of these settings. Unsubscribe links are included in all emails.
+									These settings control email notifications only. You can still
+									receive in-app notifications regardless of these settings.
+									Unsubscribe links are included in all emails.
 								</p>
 							</div>
 						</div>

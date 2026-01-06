@@ -1,5 +1,5 @@
-import { cronJobs } from 'convex/server';
-import { internal } from './_generated/api';
+import { cronJobs } from "convex/server";
+import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
@@ -8,58 +8,58 @@ const crons = cronJobs();
 
 // Send weekly digests every Monday at 9:00 AM UTC
 crons.weekly(
-	'weekly-digest-monday',
-	{ dayOfWeek: 'monday', hourUTC: 9, minuteUTC: 0 },
+	"weekly-digest-monday",
+	{ dayOfWeek: "monday", hourUTC: 9, minuteUTC: 0 },
 	internal.email.sendWeeklyDigests,
-	{ dayOfWeek: 'monday' }
+	{ dayOfWeek: "monday" }
 );
 
 // Send weekly digests every Tuesday at 9:00 AM UTC
 crons.weekly(
-	'weekly-digest-tuesday',
-	{ dayOfWeek: 'tuesday', hourUTC: 9, minuteUTC: 0 },
+	"weekly-digest-tuesday",
+	{ dayOfWeek: "tuesday", hourUTC: 9, minuteUTC: 0 },
 	internal.email.sendWeeklyDigests,
-	{ dayOfWeek: 'tuesday' }
+	{ dayOfWeek: "tuesday" }
 );
 
 // Send weekly digests every Wednesday at 9:00 AM UTC
 crons.weekly(
-	'weekly-digest-wednesday',
-	{ dayOfWeek: 'wednesday', hourUTC: 9, minuteUTC: 0 },
+	"weekly-digest-wednesday",
+	{ dayOfWeek: "wednesday", hourUTC: 9, minuteUTC: 0 },
 	internal.email.sendWeeklyDigests,
-	{ dayOfWeek: 'wednesday' }
+	{ dayOfWeek: "wednesday" }
 );
 
 // Send weekly digests every Thursday at 9:00 AM UTC
 crons.weekly(
-	'weekly-digest-thursday',
-	{ dayOfWeek: 'thursday', hourUTC: 9, minuteUTC: 0 },
+	"weekly-digest-thursday",
+	{ dayOfWeek: "thursday", hourUTC: 9, minuteUTC: 0 },
 	internal.email.sendWeeklyDigests,
-	{ dayOfWeek: 'thursday' }
+	{ dayOfWeek: "thursday" }
 );
 
 // Send weekly digests every Friday at 9:00 AM UTC
 crons.weekly(
-	'weekly-digest-friday',
-	{ dayOfWeek: 'friday', hourUTC: 9, minuteUTC: 0 },
+	"weekly-digest-friday",
+	{ dayOfWeek: "friday", hourUTC: 9, minuteUTC: 0 },
 	internal.email.sendWeeklyDigests,
-	{ dayOfWeek: 'friday' }
+	{ dayOfWeek: "friday" }
 );
 
 // Send weekly digests every Saturday at 9:00 AM UTC
 crons.weekly(
-	'weekly-digest-saturday',
-	{ dayOfWeek: 'saturday', hourUTC: 9, minuteUTC: 0 },
+	"weekly-digest-saturday",
+	{ dayOfWeek: "saturday", hourUTC: 9, minuteUTC: 0 },
 	internal.email.sendWeeklyDigests,
-	{ dayOfWeek: 'saturday' }
+	{ dayOfWeek: "saturday" }
 );
 
 // Send weekly digests every Sunday at 9:00 AM UTC
 crons.weekly(
-	'weekly-digest-sunday',
-	{ dayOfWeek: 'sunday', hourUTC: 9, minuteUTC: 0 },
+	"weekly-digest-sunday",
+	{ dayOfWeek: "sunday", hourUTC: 9, minuteUTC: 0 },
 	internal.email.sendWeeklyDigests,
-	{ dayOfWeek: 'sunday' }
+	{ dayOfWeek: "sunday" }
 );
 
 export default crons;

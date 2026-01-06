@@ -1,12 +1,12 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { v } from 'convex/values';
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
 
-import type { Id } from './_generated/dataModel';
-import { mutation, query } from './_generated/server';
+import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
 
 export type ExpandedSections = Record<string, boolean>;
 
-export type WidgetSize = 'small' | 'medium' | 'large';
+export type WidgetSize = "small" | "medium" | "large";
 
 export type DashboardWidget = {
 	id: string;
@@ -24,30 +24,30 @@ export type WorkspacePreference = {
 
 export const updateLastActiveWorkspace = mutation({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) {
-			throw new Error('Unauthorized');
+			throw new Error("Unauthorized");
 		}
 
 		const member = await ctx.db
-			.query('members')
-			.withIndex('by_workspace_id_user_id', (q) =>
-				q.eq('workspaceId', args.workspaceId).eq('userId', userId)
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
 			)
 			.unique();
 
 		if (!member) {
-			throw new Error('User is not a member of this workspace');
+			throw new Error("User is not a member of this workspace");
 		}
 
 		// Check if user preferences already exist
 		const existingPrefs = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		const timestamp = Date.now();
@@ -60,7 +60,7 @@ export const updateLastActiveWorkspace = mutation({
 			});
 		} else {
 			// Create new preferences
-			await ctx.db.insert('preferences', {
+			await ctx.db.insert("preferences", {
 				userId,
 				lastActiveWorkspaceId: args.workspaceId,
 				lastActiveTimestamp: timestamp,
@@ -85,8 +85,8 @@ export const getLastActiveWorkspace = query({
 
 		// Get user preferences
 		const userPrefs = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		if (!userPrefs || !userPrefs.lastActiveWorkspaceId) {
@@ -94,7 +94,7 @@ export const getLastActiveWorkspace = query({
 		}
 
 		// Verify the workspace still exists and the user is still a member
-		const workspaceId = userPrefs.lastActiveWorkspaceId as Id<'workspaces'>;
+		const workspaceId = userPrefs.lastActiveWorkspaceId as Id<"workspaces">;
 
 		const workspace = await ctx.db.get(workspaceId);
 		if (!workspace) {
@@ -103,9 +103,9 @@ export const getLastActiveWorkspace = query({
 
 		// Check if the user is still a member of this workspace
 		const member = await ctx.db
-			.query('members')
-			.withIndex('by_workspace_id_user_id', (q) =>
-				q.eq('workspaceId', workspaceId).eq('userId', userId)
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("userId", userId)
 			)
 			.unique();
 
@@ -130,8 +130,8 @@ export const getUserPreferences = query({
 		}
 
 		return await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 	},
 });
@@ -154,13 +154,13 @@ export const updateUserPreferences = mutation({
 						weeklyDigest: v.optional(v.boolean()),
 						weeklyDigestDay: v.optional(
 							v.union(
-								v.literal('monday'),
-								v.literal('tuesday'),
-								v.literal('wednesday'),
-								v.literal('thursday'),
-								v.literal('friday'),
-								v.literal('saturday'),
-								v.literal('sunday')
+								v.literal("monday"),
+								v.literal("tuesday"),
+								v.literal("wednesday"),
+								v.literal("thursday"),
+								v.literal("friday"),
+								v.literal("saturday"),
+								v.literal("sunday")
 							)
 						),
 					})
@@ -172,13 +172,13 @@ export const updateUserPreferences = mutation({
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) {
-			throw new Error('Unauthorized');
+			throw new Error("Unauthorized");
 		}
 
 		// Check if user preferences already exist
 		const existingPrefs = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		if (existingPrefs) {
@@ -191,7 +191,7 @@ export const updateUserPreferences = mutation({
 			});
 		} else {
 			// Create new preferences
-			await ctx.db.insert('preferences', {
+			await ctx.db.insert("preferences", {
 				userId,
 				settings: args.settings,
 			});
@@ -211,8 +211,8 @@ export const isStatusTrackingEnabled = query({
 		if (!userId) return false;
 
 		const preferences = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		// Default to true if no preference is set
@@ -230,8 +230,8 @@ export const getNotificationPreferences = query({
 		if (!userId) return null;
 
 		const preferences = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		const notifications = preferences?.settings?.notifications;
@@ -243,7 +243,7 @@ export const getNotificationPreferences = query({
 			threadReply: notifications?.threadReply ?? true,
 			directMessage: notifications?.directMessage ?? true,
 			weeklyDigest: notifications?.weeklyDigest ?? false,
-			weeklyDigestDay: notifications?.weeklyDigestDay ?? 'monday',
+			weeklyDigestDay: notifications?.weeklyDigestDay ?? "monday",
 		};
 	},
 });
@@ -253,7 +253,7 @@ export const getNotificationPreferences = query({
  */
 export const getWorkspacePreferences = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -264,8 +264,8 @@ export const getWorkspacePreferences = query({
 
 		// Get user preferences
 		const userPrefs = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		if (!userPrefs || !userPrefs.workspacePreferences) {
@@ -287,10 +287,10 @@ export const getWorkspacePreferences = query({
 export const fixNotificationsSchema = mutation({
 	args: {},
 	handler: async (ctx) => {
-		console.log('Starting migration to fix preferences notifications...');
+		console.log("Starting migration to fix preferences notifications...");
 
 		// Get all preferences documents
-		const allPreferences = await ctx.db.query('preferences').collect();
+		const allPreferences = await ctx.db.query("preferences").collect();
 
 		let fixedCount = 0;
 		let skippedCount = 0;
@@ -313,8 +313,8 @@ export const fixNotificationsSchema = mutation({
 						assignee: true,
 						threadReply: true,
 						directMessage: true,
-						weeklyDigest: notifications === true ? true : false, // Preserve the original boolean intent
-						weeklyDigestDay: 'monday' as const,
+						weeklyDigest: notifications === true, // Preserve the original boolean intent
+						weeklyDigestDay: "monday" as const,
 					},
 				};
 
@@ -349,11 +349,11 @@ export const checkNotificationsSchema = mutation({
 	args: {},
 	handler: async (ctx) => {
 		// Get all preferences documents to check the current state
-		const allPreferences = await ctx.db.query('preferences').collect();
+		const allPreferences = await ctx.db.query("preferences").collect();
 
 		console.log(`Found ${allPreferences.length} preferences documents`);
 
-		let problematicDocs = [];
+		const problematicDocs = [];
 		let validDocs = 0;
 
 		for (const pref of allPreferences) {
@@ -365,7 +365,7 @@ export const checkNotificationsSchema = mutation({
 					userId: pref.userId,
 					notificationsValue: notifications,
 				});
-			} else if (notifications && typeof notifications === 'object') {
+			} else if (notifications && typeof notifications === "object") {
 				validDocs++;
 			}
 		}
@@ -390,7 +390,7 @@ export const checkNotificationsSchema = mutation({
  */
 export const updateWorkspacePreferences = mutation({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		preferences: v.object({
 			sidebarCollapsed: v.optional(v.boolean()),
 			expandedSections: v.optional(v.record(v.string(), v.boolean())),
@@ -401,7 +401,11 @@ export const updateWorkspacePreferences = mutation({
 						title: v.string(),
 						description: v.string(),
 						visible: v.boolean(),
-				size: v.union(v.literal('small'), v.literal('medium'), v.literal('large')),
+						size: v.union(
+							v.literal("small"),
+							v.literal("medium"),
+							v.literal("large")
+						),
 					})
 				)
 			),
@@ -411,13 +415,13 @@ export const updateWorkspacePreferences = mutation({
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) {
-			throw new Error('Unauthorized');
+			throw new Error("Unauthorized");
 		}
 
 		// Check if user preferences already exist
 		const existingPrefs = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		// Convert workspaceId to string for use as a key in the record
@@ -442,7 +446,7 @@ export const updateWorkspacePreferences = mutation({
 			});
 		} else {
 			// Create new preferences with workspace preferences
-			await ctx.db.insert('preferences', {
+			await ctx.db.insert("preferences", {
 				userId,
 				workspacePreferences: {
 					[workspaceIdStr]: args.preferences,
@@ -459,20 +463,20 @@ export const updateWorkspacePreferences = mutation({
  */
 export const updateSidebarCollapsed = mutation({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		isCollapsed: v.boolean(),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) {
-			throw new Error('Unauthorized');
+			throw new Error("Unauthorized");
 		}
 
 		// Check if user preferences already exist
 		const existingPrefs = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		// Convert workspaceId to string for use as a key in the record
@@ -500,7 +504,7 @@ export const updateSidebarCollapsed = mutation({
 			});
 		} else {
 			// Create new preferences with workspace preferences
-			await ctx.db.insert('preferences', {
+			await ctx.db.insert("preferences", {
 				userId,
 				workspacePreferences: {
 					[workspaceIdStr]: {
@@ -519,14 +523,18 @@ export const updateSidebarCollapsed = mutation({
  */
 export const updateDashboardWidgets = mutation({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		dashboardWidgets: v.array(
 			v.object({
 				id: v.string(),
 				title: v.string(),
 				description: v.string(),
 				visible: v.boolean(),
-				size: v.union(v.literal('small'), v.literal('medium'), v.literal('large')),
+				size: v.union(
+					v.literal("small"),
+					v.literal("medium"),
+					v.literal("large")
+				),
 			})
 		),
 	},
@@ -534,13 +542,13 @@ export const updateDashboardWidgets = mutation({
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) {
-			throw new Error('Unauthorized');
+			throw new Error("Unauthorized");
 		}
 
 		// Check if user preferences already exist
 		const existingPrefs = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		// Convert workspaceId to string for use as a key in the record
@@ -568,7 +576,7 @@ export const updateDashboardWidgets = mutation({
 			});
 		} else {
 			// Create new preferences with workspace preferences
-			await ctx.db.insert('preferences', {
+			await ctx.db.insert("preferences", {
 				userId,
 				workspacePreferences: {
 					[workspaceIdStr]: {
@@ -588,21 +596,21 @@ export const updateDashboardWidgets = mutation({
  */
 export const updateNotificationPreferencesByUserId = mutation({
 	args: {
-		userId: v.id('users'),
+		userId: v.id("users"),
 		notificationKey: v.union(
-			v.literal('mentions'),
-			v.literal('assignee'),
-			v.literal('threadReply'),
-			v.literal('directMessage'),
-			v.literal('weeklyDigest')
+			v.literal("mentions"),
+			v.literal("assignee"),
+			v.literal("threadReply"),
+			v.literal("directMessage"),
+			v.literal("weeklyDigest")
 		),
 		enabled: v.boolean(),
 	},
 	handler: async (ctx, args) => {
 		// Check if user preferences already exist
 		const existingPrefs = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', args.userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", args.userId))
 			.unique();
 
 		if (existingPrefs) {
@@ -613,7 +621,7 @@ export const updateNotificationPreferencesByUserId = mutation({
 				threadReply: true,
 				directMessage: true,
 				weeklyDigest: false,
-				weeklyDigestDay: 'monday' as const,
+				weeklyDigestDay: "monday" as const,
 			};
 
 			// Update the specific notification preference
@@ -637,11 +645,11 @@ export const updateNotificationPreferencesByUserId = mutation({
 				threadReply: true,
 				directMessage: true,
 				weeklyDigest: false,
-				weeklyDigestDay: 'monday' as const,
+				weeklyDigestDay: "monday" as const,
 				[args.notificationKey]: args.enabled,
 			};
 
-			await ctx.db.insert('preferences', {
+			await ctx.db.insert("preferences", {
 				userId: args.userId,
 				settings: {
 					notifications,
@@ -658,12 +666,12 @@ export const updateNotificationPreferencesByUserId = mutation({
  */
 export const getNotificationPreferencesByUserId = query({
 	args: {
-		userId: v.id('users'),
+		userId: v.id("users"),
 	},
 	handler: async (ctx, args) => {
 		const preferences = await ctx.db
-			.query('preferences')
-			.withIndex('by_user_id', (q) => q.eq('userId', args.userId))
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", args.userId))
 			.unique();
 
 		const notifications = preferences?.settings?.notifications;
@@ -675,7 +683,7 @@ export const getNotificationPreferencesByUserId = query({
 			threadReply: notifications?.threadReply ?? true,
 			directMessage: notifications?.directMessage ?? true,
 			weeklyDigest: notifications?.weeklyDigest ?? false,
-			weeklyDigestDay: notifications?.weeklyDigestDay ?? 'monday',
+			weeklyDigestDay: notifications?.weeklyDigestDay ?? "monday",
 		};
 	},
 });
