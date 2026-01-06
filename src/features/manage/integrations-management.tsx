@@ -25,7 +25,7 @@ const SUPPORTED_TOOLKITS = [
   "github",
   "gmail",
   "slack",
-  "jira",
+  "linear",
   "notion",
   "clickup",
 ] as const;
@@ -46,10 +46,10 @@ const toolkits = {
     color: "bg-purple-600",
     name: "Slack",
   },
-  jira: {
+  linear: {
     icon: Ticket,
     color: "bg-blue-600",
-    name: "Jira",
+    name: "Linear",
   },
   notion: {
     icon: FileText,
@@ -125,8 +125,9 @@ export const IntegrationsManagement = ({
       setIsLoading(true);
 
       // Fetch auth configs and connected accounts using unified AgentAuth endpoint
+      // Now with memberId to get user-specific integrations
       const response = await fetch(
-        `/api/composio/agentauth?action=fetch-data&workspaceId=${workspaceId}`,
+        `/api/composio/agentauth?action=fetch-data&workspaceId=${workspaceId}&memberId=${currentMember._id}`,
       );
 
       if (response.ok) {
@@ -145,12 +146,12 @@ export const IntegrationsManagement = ({
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, currentMember._id]);
 
   const handleConnectionComplete = useCallback(
     async (toolkit: string, userId?: string) => {
       try {
-        // Complete connection using AgentAuth with workspace-scoped entity ID
+        // Complete connection using AgentAuth with member-scoped entity ID
         const response = await fetch("/api/composio/agentauth", {
           method: "POST",
           headers: {
@@ -158,7 +159,7 @@ export const IntegrationsManagement = ({
           },
           body: JSON.stringify({
             action: "complete",
-            userId: userId || `workspace_${workspaceId}`, // Use workspace entity ID
+            userId: userId || `member_${currentMember._id}`, // Use member entity ID
             toolkit,
             workspaceId,
             memberId: currentMember._id,
@@ -179,7 +180,7 @@ export const IntegrationsManagement = ({
         toast.error("Failed to complete connection setup");
       }
     },
-    [workspaceId, currentMember._id, fetchData], // Removed currentMember.userId since we now use workspace entity ID
+    [workspaceId, currentMember._id, fetchData],
   );
 
   // Check if user just returned from OAuth (AgentAuth callback)
@@ -238,12 +239,12 @@ export const IntegrationsManagement = ({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold tracking-tight">
-          Service Integrations
+          My Integrations
         </h3>
         <p className="text-sm text-muted-foreground">
-          Connect your workspace to external services using Composio's unified
+          Connect your personal accounts to external services using Composio's unified
           AgentAuth system for AI-powered automation and enhanced productivity
-          features.
+          features. These connections are unique to you and not shared with other workspace members.
         </p>
       </div>
 

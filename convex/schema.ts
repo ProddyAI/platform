@@ -375,14 +375,15 @@ const schema = defineSchema({
 		.index('by_member_id', ['memberId'])
 		.index('by_workspace_id_member_id', ['workspaceId', 'memberId']),
 
-	// Composio v3 Auth Configs (formerly integrations)
+	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({
 		workspaceId: v.id('workspaces'),
+		memberId: v.optional(v.id('members')), // Optional in schema for backward compatibility; new records should include this at the application level
 		toolkit: v.union(
 			v.literal('github'),
 			v.literal('gmail'),
 			v.literal('slack'),
-			v.literal('jira'),
+			v.literal('linear'),
 			v.literal('notion'),
 			v.literal('clickup')
 		),
@@ -403,13 +404,16 @@ const schema = defineSchema({
 		createdBy: v.id('members'),
 	})
 		.index('by_workspace_id', ['workspaceId'])
-		.index('by_workspace_toolkit', ['workspaceId', 'toolkit']),
+		.index('by_member_id', ['memberId']) // Query by member
+		.index('by_member_toolkit', ['memberId', 'toolkit']) // Query member's specific toolkit
+		.index('by_workspace_toolkit', ['workspaceId', 'toolkit']), // Keep for backward compatibility
 
-	// Composio v3 Connected Accounts
+	// Composio v3 Connected Accounts - Now user-specific
 	connected_accounts: defineTable({
 		workspaceId: v.id('workspaces'),
+		memberId: v.optional(v.id('members')), // Optional in schema for backward compatibility; new records should include this at the application level
 		authConfigId: v.id('auth_configs'),
-		userId: v.string(), // User identifier for Composio
+		userId: v.string(), // User identifier for Composio (now member-specific)
 		composioAccountId: v.string(), // Composio's connected account ID
 		toolkit: v.string(), // Toolkit name
 		status: v.union(
@@ -428,8 +432,10 @@ const schema = defineSchema({
 		connectedBy: v.id('members'),
 	})
 		.index('by_workspace_id', ['workspaceId'])
+		.index('by_member_id', ['memberId']) // Query by member
 		.index('by_auth_config', ['authConfigId'])
-		.index('by_user_id', ['userId']),
+		.index('by_member_toolkit', ['memberId', 'toolkit']) // Query member's specific toolkit connection
+		.index('by_user_id', ['userId']), // Keep for backward compatibility
 
 	// MCP Servers for AI Agents
 	mcp_servers: defineTable({

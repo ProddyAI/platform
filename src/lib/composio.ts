@@ -45,7 +45,13 @@ export const composio = new Composio({
 
 export default composio;
 
-// Initialize function that returns both composio instance and API client wrapper
+/**
+ * Initialize and return the shared Composio instance along with a convenience API client for managing connections, tools, and connection status.
+ *
+ * The returned `apiClient` exposes: `createConnection(userId, appName)`, `getConnections(userId)`, `getConnectionStatus(connectionId)`, `getTools(entityId, appNames)`, and `deleteConnection(connectionId)`.
+ *
+ * @returns An object containing `composio` (the shared Composio instance) and `apiClient` (a wrapper providing connection and tool management methods)
+ */
 export function initializeComposio() {
   if (!process.env.COMPOSIO_API_KEY) {
     throw new Error("COMPOSIO_API_KEY environment variable is required");
@@ -71,10 +77,6 @@ export function initializeComposio() {
             `Auth config ID not found for ${appName}. Please check your environment variables. Available apps: ${Object.keys(APP_CONFIGS).join(", ")}`,
           );
         }
-
-        console.log(
-          `[Composio API] Creating connection for ${appName} with auth config ID: ${authConfigId}`,
-        );
 
         // Try to initiate connection using auth config ID
         const connection = await (
@@ -146,12 +148,57 @@ export function initializeComposio() {
 
     // Delete connection
     async deleteConnection(connectionId: string) {
+      // Try different methods to delete the connection with proper fallback
+      let result;
+      let lastError;
+
+      // Try first method: connectedAccounts.delete
       try {
-        
+        if (typeof (composioInstance as any).connectedAccounts?.delete === 'function') {
+          result = await (composioInstance as any).connectedAccounts.delete(connectionId);
+          if (result !== undefined) {
+            return result;
+          }
+        }
       } catch (error) {
-        console.error("Error deleting connection:", error);
-        throw error;
+        console.warn("deleteConnection: connectedAccounts.delete failed:", error);
+        lastError = error;
       }
+
+      // Try second method: connections.delete
+      try {
+        if (typeof (composioInstance as any).connections?.delete === 'function') {
+          result = await (composioInstance as any).connections.delete(connectionId);
+          if (result !== undefined) {
+            return result;
+          }
+        }
+      } catch (error) {
+        console.warn("deleteConnection: connections.delete failed:", error);
+        lastError = error;
+      }
+
+      // Try third method: connectedAccounts.remove
+      try {
+        if (typeof (composioInstance as any).connectedAccounts?.remove === 'function') {
+          result = await (composioInstance as any).connectedAccounts.remove(connectionId);
+          if (result !== undefined) {
+            return result;
+          }
+        }
+      } catch (error) {
+        console.warn("deleteConnection: connectedAccounts.remove failed:", error);
+        lastError = error;
+      }
+
+      // If all methods failed, throw the last error
+      if (lastError) {
+        console.error("Error deleting connection:", lastError);
+        throw lastError;
+      }
+
+      // If no methods were available or returned undefined
+      return undefined;
     },
   };
 

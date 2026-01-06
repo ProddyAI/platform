@@ -300,8 +300,9 @@ Try asking me things like:`;
   useEffect(() => {
     const checkIntegrations = async () => {
       try {
+        // Pass memberId to get user-specific integrations
         const response = await fetch(
-          `/api/connections/status?workspaceId=${workspaceId}`,
+          `/api/connections/status?workspaceId=${workspaceId}&memberId=${member._id}`,
         );
         if (response.ok) {
           const data = await response.json();
@@ -319,10 +320,10 @@ Try asking me things like:`;
       }
     };
 
-    if (workspaceId) {
+    if (workspaceId && member?._id) {
       checkIntegrations();
     }
-  }, [workspaceId]);
+  }, [workspaceId, member]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -391,6 +392,7 @@ Try asking me things like:`;
           workspaceContext,
           workspaceId,
           conversationHistory,
+          memberId: member?._id, // Pass member ID for user-specific integrations
         }),
       });
 
@@ -594,6 +596,20 @@ Try asking me things like:`;
       case "event":
       case "calendar-event":
         return "Calendar Event";
+      case "tool":
+        return "Integration Tool";
+      case "github":
+        return "GitHub";
+      case "gmail":
+        return "Gmail";
+      case "slack":
+        return "Slack";
+      case "notion":
+        return "Notion";
+      case "clickup":
+        return "ClickUp";
+      case "linear":
+        return "Linear";
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
