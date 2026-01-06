@@ -23,6 +23,12 @@ const DashboardPage = () => {
     activityType: 'dashboard_view',
   });
 
+  // Get current member to check permissions
+  const { data: member, isLoading: memberLoading } = useCurrentMember({
+    workspaceId,
+    activityType: 'dashboard_view',
+  });
+
 	// Get current member to check permissions
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
 		workspaceId,
