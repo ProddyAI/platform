@@ -1,0 +1,172 @@
+$ node --max-old-space-size=8192 ./node_modules/next/dist/bin/next build
+  ▲ Next.js 14.2.35
+  - Environments: .env.local, .env
+  - Experiments (use with caution):
+    · instrumentationHook
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Custom worker found: C:\internship\proddy\proddy-platform\worker\index.js
+> [PWA] Build custom worker: C:\internship\proddy\proddy-platform\public\worker-3am0IX7dhChakc3DRzING.js
+> [PWA] Auto register service worker with: C:\internship\proddy\proddy-platform\node_modules\next-pwa\register.js
+> [PWA] Service worker: C:\internship\proddy\proddy-platform\public\sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+Browserslist: caniuse-lite is outdated. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ⚠ Compiled with warnings
+
+/_next/static/chunks/795d4814-53ea68603ef4df2c.js.map is 2.39 MB, and won't be precached. Configure maximumFileSizeToCacheInBytes to change this limit.
+
+/_next/static/chunks/30a37ab2-5297f52d910f2cd9.js.map is 5.54 MB, and won't be precached. Configure maximumFileSizeToCacheInBytes to change this limit.
+
+/_next/static/chunks/f97e080b.6da3991e9455aa7f.js.map is 5.97 MB, and won't be precached. Configure maximumFileSizeToCacheInBytes to change this limit.
+
+/_next/static/chunks/964ecbae.4b9050b7be8e5074.js.map is 2.69 MB, and won't be precached. Configure maximumFileSizeToCacheInBytes to change this limit.
+
+/_next/static/chunks/94ca1967.63be5dc7b1890ad9.js.map is 2.69 MB, and won't be precached. Configure maximumFileSizeToCacheInBytes to change this limit.
+
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+Resend API Key exists: true
+Masked API Key: re_9...VEUA
+Direct Message Email API - Resend API Key exists: true
+Direct Message Email API - Masked API Key: re_9...VEUA
+Mention Email API - Resend API Key exists: true
+Mention Email API - Masked API Key: re_9...VEUA
+Thread Reply Email API - Resend API Key exists: true
+Thread Reply Email API - Masked API Key: re_9...VEUA
+Weekly Digest Email API - Resend API Key exists: true
+Weekly Digest Email API - Masked API Key: re_9...VEUA
+2026-01-06T19:07:07.478Z - 🚀 Upgrade available! Your composio-core version (0.1.48) is behind. Latest version: 0.3.4.
+2026-01-06T19:07:07.544Z - 🚀 Upgrade available! Your composio-core version (0.1.48) is behind. Latest version: 0.3.4.
+2026-01-06T19:07:07.557Z - 🚀 Upgrade available! Your composio-core version (0.1.48) is behind. Latest version: 0.3.4.
+   Generating static pages (0/49) ...
+Direct Message Email API - Resend API Key exists: true
+Direct Message Email API - Masked API Key: re_9...VEUA
+[Connections Status] Error: B [Error]: Dynamic server usage: Route /api/connections/status couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\internship\proddy\proddy-platform\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\internship\proddy\proddy-platform\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at p (C:\internship\proddy\proddy-platform\.next\server\app\api\connections\status\route.js:1:10495)
+    at C:\internship\proddy\proddy-platform\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\internship\proddy\proddy-platform\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\internship\proddy\proddy-platform\node_modules\@opentelemetry\api\build\src\context\NoopContextManager.js:25:19)
+    at ContextAPI.with (C:\internship\proddy\proddy-platform\node_modules\@opentelemetry\api\build\src\api\context.js:60:46)
+    at NoopTracer.startActiveSpan (C:\internship\proddy\proddy-platform\node_modules\@opentelemetry\api\build\src\trace\NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (C:\internship\proddy\proddy-platform\node_modules\@opentelemetry\api\build\src\trace\ProxyTracer.js:36:24)
+    at C:\internship\proddy\proddy-platform\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/connections/status couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Unsubscribe error: B [Error]: Dynamic server usage: Route /api/email/unsubscribe couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\internship\proddy\proddy-platform\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\internship\proddy\proddy-platform\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at p (C:\internship\proddy\proddy-platform\.next\server\app\api\email\unsubscribe\route.js:1:10150)
+    at C:\internship\proddy\proddy-platform\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\internship\proddy\proddy-platform\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\internship\proddy\proddy-platform\node_modules\@opentelemetry\api\build\src\context\NoopContextManager.js:25:19)
+    at ContextAPI.with (C:\internship\proddy\proddy-platform\node_modules\@opentelemetry\api\build\src\api\context.js:60:46)
+    at NoopTracer.startActiveSpan (C:\internship\proddy\proddy-platform\node_modules\@opentelemetry\api\build\src\trace\NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (C:\internship\proddy\proddy-platform\node_modules\@opentelemetry\api\build\src\trace\ProxyTracer.js:36:24)
+    at C:\internship\proddy\proddy-platform\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/email/unsubscribe couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Resend API Key exists: true
+Masked API Key: re_9...VEUA
+Thread Reply Email API - Resend API Key exists: true
+Thread Reply Email API - Masked API Key: re_9...VEUA
+   Generating static pages (12/49) 
+Mention Email API - Resend API Key exists: true
+Mention Email API - Masked API Key: re_9...VEUA
+   Generating static pages (24/49) 
+2026-01-06T19:07:20.887Z - 🚀 Upgrade available! Your composio-core version (0.1.48) is behind. Latest version: 0.3.4.
+2026-01-06T19:07:21.183Z - 🚀 Upgrade available! Your composio-core version (0.1.48) is behind. Latest version: 0.3.4.
+2026-01-06T19:07:21.540Z - 🚀 Upgrade available! Your composio-core version (0.1.48) is behind. Latest version: 0.3.4.
+   Generating static pages (36/49) 
+ ✓ Generating static pages (49/49)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                              Size     First Load JS
+┌ ƒ /                                                    319 B            91 kB
+├ ƒ /_not-found                                          1.03 kB        91.7 kB
+├ ƒ /about                                               4.31 kB         182 kB
+├ ƒ /api/assistant                                       0 B                0 B
+├ ƒ /api/assistant/chatbot                               0 B                0 B
+├ ƒ /api/composio                                        0 B                0 B
+├ ƒ /api/composio/agentauth                              0 B                0 B
+├ ƒ /api/composio/tools                                  0 B                0 B
+├ ƒ /api/connections/complete                            0 B                0 B
+├ ƒ /api/connections/delete                              0 B                0 B
+├ ƒ /api/connections/initiate                            0 B                0 B
+├ ƒ /api/connections/status                              0 B                0 B
+├ ƒ /api/email/assignee                                  0 B                0 B
+├ ƒ /api/email/direct-message                            0 B                0 B
+├ ƒ /api/email/mention                                   0 B                0 B
+├ ƒ /api/email/thread-reply                              0 B                0 B
+├ ƒ /api/email/unsubscribe                               0 B                0 B
+├ ƒ /api/email/weekly-digest                             0 B                0 B
+├ ƒ /api/liveblocks/auth                                 0 B                0 B
+├ ƒ /api/liveblocks/delete                               0 B                0 B
+├ ƒ /api/smart/dailyrecap                                0 B                0 B
+├ ƒ /api/smart/diagram                                   0 B                0 B
+├ ƒ /api/smart/flowchart                                 0 B                0 B
+├ ƒ /api/smart/formatter                                 0 B                0 B
+├ ƒ /api/smart/suggestions                               0 B                0 B
+├ ƒ /api/smart/summarize                                 0 B                0 B
+├ ƒ /api/stream                                          0 B                0 B
+├ ƒ /assistant                                           11.3 kB         194 kB
+├ ƒ /auth                                                534 B          91.2 kB
+├ ƒ /contact                                             5.83 kB         213 kB
+├ ƒ /debug/stream                                        3.64 kB         102 kB
+├ ƒ /features                                            7.18 kB         195 kB
+├ ƒ /home                                                10.5 kB         192 kB
+├ ƒ /join/[workspaceId]                                  6.45 kB         150 kB
+├ ƒ /mockup                                              5.57 kB         104 kB
+├ ƒ /mockup/board                                        4.93 kB         184 kB
+├ ƒ /mockup/calendar                                     5.08 kB         156 kB
+├ ƒ /mockup/canvas                                       1.14 kB         212 kB
+├ ƒ /mockup/chats                                        2.44 kB         214 kB
+├ ƒ /mockup/dashboard                                    7.87 kB         118 kB
+├ ƒ /mockup/notes                                        1.2 kB          213 kB
+├ ƒ /offline                                             2.57 kB         116 kB
+├ ƒ /pricing                                             4.93 kB         182 kB
+├ ƒ /privacy                                             4.31 kB         182 kB
+├ ƒ /signin                                              1.55 kB         136 kB
+├ ƒ /signup                                              2.55 kB         137 kB
+├ ƒ /terms                                               4.59 kB         182 kB
+├ ƒ /why-proddy                                          4.9 kB          182 kB
+├ ƒ /workspace                                           1.64 kB         117 kB
+├ ƒ /workspace/[workspaceId]                             809 B           113 kB
+├ ƒ /workspace/[workspaceId]/assistant                   27.9 kB         307 kB
+├ ƒ /workspace/[workspaceId]/calendar                    66.2 kB         310 kB
+├ ƒ /workspace/[workspaceId]/channel/[channelId]         1.4 kB           92 kB
+├ ƒ /workspace/[workspaceId]/channel/[channelId]/board   17.1 kB         241 kB
+├ ƒ /workspace/[workspaceId]/channel/[channelId]/canvas  8.71 kB         383 kB
+├ ƒ /workspace/[workspaceId]/channel/[channelId]/chats   15.4 kB         513 kB
+├ ƒ /workspace/[workspaceId]/channel/[channelId]/notes   290 kB          667 kB
+├ ƒ /workspace/[workspaceId]/dashboard                   9.17 kB         275 kB
+├ ƒ /workspace/[workspaceId]/manage                      11.2 kB         325 kB
+├ ƒ /workspace/[workspaceId]/member/[memberId]           25 kB           585 kB
+├ ƒ /workspace/[workspaceId]/outbox                      3.05 kB         247 kB
+├ ƒ /workspace/[workspaceId]/reports                     16.3 kB         374 kB
+├ ƒ /workspace/[workspaceId]/tasks                       9.66 kB         256 kB
+└ ƒ /workspace/[workspaceId]/threads                     2.94 kB         247 kB
++ First Load JS shared by all                            90.6 kB
+  ├ chunks/2117-13f8dbf6ed3a9642.js                      32.1 kB
+  ├ chunks/fd9d1056-3cc9ef63876bba40.js                  53.8 kB
+  └ other shared chunks (total)                          4.81 kB
+
+
+ƒ Middleware                                             96 kB
+
+ƒ  (Dynamic)  server-rendered on demand
+
