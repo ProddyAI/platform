@@ -198,6 +198,8 @@ export const WorkspaceToolbar = ({
                             setIsSearchingMessages(false);
                             setAiError(null);
                             setAiSummary(null);
+                            setAiSearchTrigger('');
+                            setSearchQuery('');
                         }
                     }}
                 >

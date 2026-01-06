@@ -64,7 +64,7 @@ export const MessageList = ({
       highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setHasScrolledToHighlight(true);
     }
-  }, [highlightId, data, hasScrolledToHighlight]);
+  }, [highlightId, hasScrolledToHighlight]);
 
   // Reset scroll flag when highlight ID changes
   useEffect(() => {
@@ -205,7 +205,7 @@ export const MessageList = ({
                 new Date(prevMessage._creationTime)
               ) < TIME_THRESHOLD;
 
-            const isHighlighted = highlightId && message._id === (highlightId as Id<'messages'>);
+            const isHighlighted = highlightId && message._id === highlightId;
             
             const messageElement = (
               <Message
