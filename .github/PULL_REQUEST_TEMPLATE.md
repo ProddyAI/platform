@@ -26,13 +26,13 @@
 - [ ] Performed a proper self-review of my own code
 - [ ] My changes generate no new warnings or errors
 - [ ] All the AI slop has been removed using `/deslop`
-- [ ] CodeRabbitAI comments has been implemented
-
-### Code Formatting
-
-- [ ] I have run `bun run type` and ensured type safety
-- [ ] I have run `bun run lint` and passed eslint checks
-- [ ] I have run `bun run format` and formatted code
+- [ ] I have ran `bun run type` and ensured type safety
+- [ ] I have ran `bun run check` and passed biome checks
+- [ ] All **CodeRabbitAI** review comments have been resolved
+- [ ] All **Copilot** review comments have been resolved
+- [ ] All **Sentry** feedback and error suggestions have been addressed
+- [ ] All **DeepSource** static analysis comments have been resolved
+- [ ] All **Vercel** build and deployment comments have been addressed
 
 ### Performance & Security
 

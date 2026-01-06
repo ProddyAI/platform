@@ -1,8 +1,8 @@
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
-import { format } from 'date-fns';
-import * as dotenv from 'dotenv';
-import { NextRequest, NextResponse } from 'next/server';
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
+import { format } from "date-fns";
+import * as dotenv from "dotenv";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Load environment variables
 dotenv.config();
@@ -18,7 +18,7 @@ interface MessageData {
 const extractionCache = new Map<string, string>();
 
 function extractTextFromRichText(body: string): string {
-	if (typeof body !== 'string') {
+	if (typeof body !== "string") {
 		return String(body);
 	}
 
@@ -30,33 +30,41 @@ function extractTextFromRichText(body: string): string {
 	const trimmedBody = body.trim();
 	let result = body;
 
-	if (trimmedBody.startsWith('{') && trimmedBody.endsWith('}')) {
+	if (trimmedBody.startsWith("{") && trimmedBody.endsWith("}")) {
 		try {
 			const parsed = JSON.parse(trimmedBody);
 
 			// Check if this is a special message type (canvas, note, etc.)
-			if (parsed && typeof parsed === 'object') {
-				if (parsed.type === 'canvas' || parsed.type === 'canvas-live' || parsed.type === 'canvas-export') {
-					result = `📐 Canvas: ${parsed.canvasName || 'Untitled Canvas'}`;
-				} else if (parsed.type === 'note' || parsed.type === 'note-live' || parsed.type === 'note-export') {
-					result = `📝 Note: ${parsed.noteTitle || 'Untitled Note'}`;
+			if (parsed && typeof parsed === "object") {
+				if (
+					parsed.type === "canvas" ||
+					parsed.type === "canvas-live" ||
+					parsed.type === "canvas-export"
+				) {
+					result = `📐 Canvas: ${parsed.canvasName || "Untitled Canvas"}`;
+				} else if (
+					parsed.type === "note" ||
+					parsed.type === "note-live" ||
+					parsed.type === "note-export"
+				) {
+					result = `📝 Note: ${parsed.noteTitle || "Untitled Note"}`;
 				} else if (parsed && Array.isArray(parsed.ops)) {
 					// Handle Quill Delta format
 					const textParts: string[] = [];
 
 					for (const op of parsed.ops) {
-						if (op && typeof op.insert === 'string') {
+						if (op && typeof op.insert === "string") {
 							textParts.push(op.insert);
 						}
 					}
 
 					result = textParts
-						.join('')
-						.replace(/\\n|\\N|\n/g, ' ')
+						.join("")
+						.replace(/\\n|\\N|\n/g, " ")
 						.trim();
 				}
 			}
-		} catch (error) {
+		} catch (_error) {
 			// If parsing fails, just use the original body
 		}
 	}
@@ -100,9 +108,9 @@ function pruneCache() {
 export async function POST(req: NextRequest) {
 	try {
 		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error('Missing GOOGLE_GENERATIVE_AI_API_KEY');
+			console.error("Missing GOOGLE_GENERATIVE_AI_API_KEY");
 			return NextResponse.json(
-				{ error: 'API key not configured' },
+				{ error: "API key not configured" },
 				{ status: 500 }
 			);
 		}
@@ -111,9 +119,9 @@ export async function POST(req: NextRequest) {
 		try {
 			requestData = await req.json();
 		} catch (parseError) {
-			console.error('Error parsing JSON:', parseError);
+			console.error("Error parsing JSON:", parseError);
 			return NextResponse.json(
-				{ error: 'Invalid JSON in request' },
+				{ error: "Invalid JSON in request" },
 				{ status: 400 }
 			);
 		}
@@ -121,22 +129,22 @@ export async function POST(req: NextRequest) {
 		const { messages, date, channelName } = requestData;
 
 		if (!messages || !Array.isArray(messages)) {
-			console.error('Invalid messages format:', messages);
+			console.error("Invalid messages format:", messages);
 			return NextResponse.json(
-				{ error: 'Invalid messages format' },
+				{ error: "Invalid messages format" },
 				{ status: 400 }
 			);
 		}
 
 		if (messages.length === 0) {
 			return NextResponse.json(
-				{ error: 'No messages to recap' },
+				{ error: "No messages to recap" },
 				{ status: 400 }
 			);
 		}
 
 		if (!date) {
-			return NextResponse.json({ error: 'Date is required' }, { status: 400 });
+			return NextResponse.json({ error: "Date is required" }, { status: 400 });
 		}
 
 		// Limit the number of messages to prevent overloading the AI model
@@ -164,25 +172,25 @@ export async function POST(req: NextRequest) {
 			.map((msg: MessageData) => {
 				try {
 					const plainText = extractTextFromRichText(msg.body);
-					const timestamp = format(new Date(msg.creationTime), 'h:mm a');
+					const timestamp = format(new Date(msg.creationTime), "h:mm a");
 					return `[${timestamp}] ${msg.authorName}: ${plainText}`;
-				} catch (error) {
-					return '';
+				} catch (_error) {
+					return "";
 				}
 			})
 			.filter(Boolean)
-			.join('\n');
+			.join("\n");
 
 		try {
 			const { text } = await generateText({
-				model: google('gemini-2.5-flash'),
+				model: google("gemini-2.5-flash"),
 				messages: [
 					{
-						role: 'system',
+						role: "system",
 						content: `You are an expert daily conversation recap tool that creates comprehensive, well-structured summaries of chat conversations.
 
 Your task is to create a detailed daily recap of the conversation for the date: ${date}.
-${channelName ? `This conversation took place in the channel: ${channelName}.` : ''}
+${channelName ? `This conversation took place in the channel: ${channelName}.` : ""}
 
 Guidelines:
 - Format your response in Markdown with clear section headings
@@ -203,7 +211,7 @@ Guidelines:
 Your recap should be comprehensive but well-organized, making it easy for someone who missed the day's conversation to quickly understand what happened.`,
 					},
 					{
-						role: 'user',
+						role: "user",
 						content: `Here are all the messages from ${date}:\n\n${chatHistory}\n\nPlease provide a comprehensive daily recap.`,
 					},
 				],
@@ -220,7 +228,7 @@ Your recap should be comprehensive but well-organized, making it easy for someon
 			pruneCache();
 
 			return NextResponse.json({ recap: text, date });
-		} catch (aiError) {
+		} catch (_aiError) {
 			// More efficient fallback with markdown formatting
 			const fallbackRecap =
 				limitedMessages.length > 5
@@ -230,23 +238,23 @@ Your recap should be comprehensive but well-organized, making it easy for someon
 								const plainText = extractTextFromRichText(msg.body);
 								const formattedTime = format(
 									new Date(msg.creationTime),
-									'h:mm a'
+									"h:mm a"
 								);
 								return `**${msg.authorName}** (${formattedTime}):\n> ${plainText}`;
 							})
-							.join('\n\n')}`;
+							.join("\n\n")}`;
 
 			return NextResponse.json({
 				recap: fallbackRecap,
 				date,
-				note: 'AI recap generation failed',
+				note: "AI recap generation failed",
 			});
 		}
 	} catch (error) {
 		return NextResponse.json(
 			{
-				error: 'Internal server error',
-				details: error instanceof Error ? error.message : 'Unknown error',
+				error: "Internal server error",
+				details: error instanceof Error ? error.message : "Unknown error",
 			},
 			{ status: 500 }
 		);

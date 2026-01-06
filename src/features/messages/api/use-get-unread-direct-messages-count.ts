@@ -1,20 +1,22 @@
-import { useQuery } from 'convex/react';
+import { useQuery } from "convex/react";
 
-import { api } from '@/../convex/_generated/api';
-import { useWorkspaceId } from '@/hooks/use-workspace-id';
+import { api } from "@/../convex/_generated/api";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 export const useGetUnreadDirectMessagesCount = () => {
-  const workspaceId = useWorkspaceId();
+	const workspaceId = useWorkspaceId();
 
-  const result = useQuery(
-    api.direct.getUnreadDirectMessageCount,
-    workspaceId ? {
-      workspaceId
-    } : "skip"
-  );
+	const result = useQuery(
+		api.direct.getUnreadDirectMessageCount,
+		workspaceId
+			? {
+					workspaceId,
+				}
+			: "skip"
+	);
 
-  const isLoading = result === undefined;
-  const counts = result || { total: 0, direct: 0 };
+	const isLoading = result === undefined;
+	const counts = result || { total: 0, direct: 0 };
 
-  return { counts, isLoading };
+	return { counts, isLoading };
 };

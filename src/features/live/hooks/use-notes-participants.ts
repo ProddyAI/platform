@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useQuery } from 'convex/react';
-import { useEffect, useState } from 'react';
+import { useQuery } from "convex/react";
+import { useEffect, useState } from "react";
 
-import { api } from '@/../convex/_generated/api';
-import { useWorkspaceId } from '@/hooks/use-workspace-id';
-import { useOthers, useSelf, useRoom } from '@/../liveblocks.config';
-import { getUserImageUrl } from '@/lib/placeholder-image';
+import { api } from "@/../convex/_generated/api";
+import { useOthers, useRoom, useSelf } from "@/../liveblocks.config";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { getUserImageUrl } from "@/lib/placeholder-image";
 
 export const useNotesParticipants = () => {
 	// Get workspace ID from the URL
 	const workspaceId = useWorkspaceId();
-	const room = useRoom();
+	const _room = useRoom();
 
 	// State to track actual participants count
 	const [participantCount, setParticipantCount] = useState(0);
@@ -34,7 +34,7 @@ export const useNotesParticipants = () => {
 		// Count is others plus self (if present)
 		const count = others.length + (self ? 1 : 0);
 		setParticipantCount(count);
-	}, [others, self, room.id]);
+	}, [others, self]);
 
 	if (isLoading) {
 		return {
@@ -64,16 +64,16 @@ export const useNotesParticipants = () => {
 		if (userId && members) {
 			// Try exact match first - this is the most reliable approach
 			const exactMatch = members.find((m) => m.user._id === userId);
-			if (exactMatch && exactMatch.user) {
+			if (exactMatch?.user) {
 				member = exactMatch;
 				userName = exactMatch.user.name;
 				userPicture = exactMatch.user.image;
-			} else if (typeof userId === 'string') {
+			} else if (typeof userId === "string") {
 				// Try partial match if exact match fails
 				const partialMatch = members.find(
 					(m) => m.user._id.includes(userId) || userId.includes(m.user._id)
 				);
-				if (partialMatch && partialMatch.user) {
+				if (partialMatch?.user) {
 					member = partialMatch;
 					userName = partialMatch.user.name;
 					userPicture = partialMatch.user.image;
@@ -93,7 +93,7 @@ export const useNotesParticipants = () => {
 		}
 
 		// Generate avatar fallback
-		const avatarFallback = userName ? userName[0].toUpperCase() : 'U';
+		const _avatarFallback = userName ? userName[0].toUpperCase() : "U";
 		// Use null instead of external placeholder URL - let the Avatar component handle fallbacks
 		const fallbackPicture = null;
 
@@ -121,12 +121,12 @@ export const useNotesParticipants = () => {
 							members?.find((m) => m._id === currentMember._id)?.user?.name ||
 							members?.find((m) => m.userId === currentMember.userId)?.user
 								?.name ||
-							'You',
+							"You",
 						picture: getUserImageUrl(
 							members?.find((m) => m._id === currentMember._id)?.user?.name ||
 								members?.find((m) => m.userId === currentMember.userId)?.user
 									?.name ||
-								'You',
+								"You",
 							members?.find((m) => m._id === currentMember._id)?.user?.image ||
 								members?.find((m) => m.userId === currentMember.userId)?.user
 									?.image,

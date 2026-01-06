@@ -1,14 +1,14 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 import {
 	type Camera,
 	type Color,
 	type Layer,
-	type Point,
-	type XYWH,
-	type Side,
 	LayerType,
-} from '../features/canvas/types/canvas';
+	type Point,
+	type Side,
+	type XYWH,
+} from "../features/canvas/types/canvas";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -20,16 +20,16 @@ export function colorToCSS(color: Color) {
 
 export function connectionIdToColor(connectionId: number): string {
 	const colors = [
-		'#FF5733', // Red
-		'#33FF57', // Green
-		'#3357FF', // Blue
-		'#FF33A8', // Pink
-		'#33FFF5', // Cyan
-		'#FFD133', // Yellow
-		'#9E33FF', // Purple
-		'#FF8333', // Orange
-		'#33FFBD', // Mint
-		'#FF3333', // Bright Red
+		"#FF5733", // Red
+		"#33FF57", // Green
+		"#3357FF", // Blue
+		"#FF33A8", // Pink
+		"#33FFF5", // Cyan
+		"#FFD133", // Yellow
+		"#9E33FF", // Purple
+		"#FF8333", // Orange
+		"#33FFBD", // Mint
+		"#FF3333", // Bright Red
 	];
 
 	return colors[connectionId % colors.length];
@@ -37,22 +37,22 @@ export function connectionIdToColor(connectionId: number): string {
 
 export function stringToColor(input: string): string {
 	const colors = [
-		'#FF5733', // Red
-		'#33FF57', // Green
-		'#3357FF', // Blue
-		'#FF33A8', // Pink
-		'#33FFF5', // Cyan
-		'#FFD133', // Yellow
-		'#9E33FF', // Purple
-		'#FF8333', // Orange
-		'#33FFBD', // Mint
-		'#FF3333', // Bright Red
+		"#FF5733", // Red
+		"#33FF57", // Green
+		"#3357FF", // Blue
+		"#FF33A8", // Pink
+		"#33FFF5", // Cyan
+		"#FFD133", // Yellow
+		"#9E33FF", // Purple
+		"#FF8333", // Orange
+		"#33FFBD", // Mint
+		"#FF3333", // Bright Red
 	];
 
 	// Generate hash from string (similar to tag color generation)
 	let hash = 0;
 	for (let i = 0; i < input.length; i++) {
-		hash = ((hash << 5) - hash) + input.charCodeAt(i);
+		hash = (hash << 5) - hash + input.charCodeAt(i);
 		hash = hash & hash; // Convert to 32-bit integer
 	}
 
@@ -97,11 +97,11 @@ export function findIntersectingLayersWithRectangle(
 
 		try {
 			// Try to get properties using get method first (for LiveObjects)
-			if (typeof layer.get === 'function') {
-				layerX = layer.get('x');
-				layerY = layer.get('y');
-				layerWidth = layer.get('width');
-				layerHeight = layer.get('height');
+			if (typeof layer.get === "function") {
+				layerX = layer.get("x");
+				layerY = layer.get("y");
+				layerWidth = layer.get("width");
+				layerHeight = layer.get("height");
 			} else {
 				// Fall back to direct property access
 				layerX = layer.x;
@@ -110,7 +110,7 @@ export function findIntersectingLayersWithRectangle(
 				layerHeight = layer.height;
 			}
 		} catch (error) {
-			console.error('Error accessing layer properties:', error);
+			console.error("Error accessing layer properties:", error);
 			return false;
 		}
 
@@ -161,10 +161,10 @@ export function findLayerAtPoint(
 
 		// Use a larger tolerance for path layers
 		const effectiveTolerance =
-			layer.type === 'path' ? tolerance * 2 : tolerance;
+			layer.type === "path" ? tolerance * 2 : tolerance;
 
 		// For path layers, we need special handling
-		if (layer.type === 'path' && layer.points) {
+		if (layer.type === "path" && layer.points) {
 			// Simple bounding box check first for efficiency
 			if (
 				point.x >= layer.x - effectiveTolerance &&
@@ -199,7 +199,7 @@ export function penPointsToPathLayer(
 	strokeWidth?: number
 ): Layer {
 	if (points.length < 2) {
-		throw new Error('Cannot create path with less than 2 points');
+		throw new Error("Cannot create path with less than 2 points");
 	}
 
 	let minX = Number.POSITIVE_INFINITY;
@@ -258,28 +258,28 @@ export function pointerEventToCanvasPoint(
 export function resizeBounds(bounds: XYWH, corner: Side, point: Point): XYWH {
 	const result = { ...bounds };
 
-	if (corner === 'top' || corner === 'top-left' || corner === 'top-right') {
+	if (corner === "top" || corner === "top-left" || corner === "top-right") {
 		result.height = bounds.height - (point.y - bounds.y);
 		result.y = point.y;
 	}
 
 	if (
-		corner === 'bottom' ||
-		corner === 'bottom-left' ||
-		corner === 'bottom-right'
+		corner === "bottom" ||
+		corner === "bottom-left" ||
+		corner === "bottom-right"
 	) {
 		result.height = point.y - bounds.y;
 	}
 
-	if (corner === 'left' || corner === 'top-left' || corner === 'bottom-left') {
+	if (corner === "left" || corner === "top-left" || corner === "bottom-left") {
 		result.width = bounds.width - (point.x - bounds.x);
 		result.x = point.x;
 	}
 
 	if (
-		corner === 'right' ||
-		corner === 'top-right' ||
-		corner === 'bottom-right'
+		corner === "right" ||
+		corner === "top-right" ||
+		corner === "bottom-right"
 	) {
 		result.width = point.x - bounds.x;
 	}
@@ -295,14 +295,14 @@ export function getContrastingTextColor(color: Color): string {
 	const luminance = (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) / 255;
 
 	// Use white text for dark backgrounds, black text for light backgrounds
-	return luminance > 0.5 ? '#000000' : '#ffffff';
+	return luminance > 0.5 ? "#000000" : "#ffffff";
 }
 
 /**
  * Converts stroke points to SVG path
  */
 export function getSvgPathFromStroke(stroke: number[][]): string {
-	if (!stroke.length) return '';
+	if (!stroke.length) return "";
 
 	const d = stroke.reduce(
 		(acc, [x0, y0], i, arr) => {
@@ -310,9 +310,9 @@ export function getSvgPathFromStroke(stroke: number[][]): string {
 			acc.push(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
 			return acc;
 		},
-		['M', ...stroke[0], 'Q']
+		["M", ...stroke[0], "Q"]
 	);
 
-	d.push('Z');
-	return d.join(' ');
+	d.push("Z");
+	return d.join(" ");
 }

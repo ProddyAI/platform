@@ -1,14 +1,12 @@
-import { useQuery, useMutation } from 'convex/react';
-import { useCallback } from 'react';
-import { toast } from 'sonner';
+import { useMutation, useQuery } from "convex/react";
+import { useCallback } from "react";
+import { toast } from "sonner";
 
-import { api } from '@/../convex/_generated/api';
+import { api } from "@/../convex/_generated/api";
 
 export const useUserPreferences = () => {
 	const data = useQuery(api.preferences.getUserPreferences);
-	const updatePreferences = useMutation(
-		api.preferences.updateUserPreferences
-	);
+	const updatePreferences = useMutation(api.preferences.updateUserPreferences);
 
 	const updateSettings = useCallback(
 		async (settings: {
@@ -21,21 +19,21 @@ export const useUserPreferences = () => {
 				directMessage?: boolean;
 				weeklyDigest?: boolean;
 				weeklyDigestDay?:
-					| 'monday'
-					| 'tuesday'
-					| 'wednesday'
-					| 'thursday'
-					| 'friday'
-					| 'saturday'
-					| 'sunday';
+					| "monday"
+					| "tuesday"
+					| "wednesday"
+					| "thursday"
+					| "friday"
+					| "saturday"
+					| "sunday";
 			};
 		}) => {
 			try {
 				await updatePreferences({ settings });
-				toast.success('Preferences updated successfully');
+				toast.success("Preferences updated successfully");
 			} catch (error) {
-				console.error('Failed to update preferences:', error);
-				toast.error('Failed to update preferences');
+				console.error("Failed to update preferences:", error);
+				toast.error("Failed to update preferences");
 			}
 		},
 		[updatePreferences]

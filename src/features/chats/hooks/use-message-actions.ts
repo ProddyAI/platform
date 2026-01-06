@@ -1,35 +1,35 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
-import { useUpdateMessage } from '@/features/messages/api/use-update-message';
-import { useRemoveMessage } from '@/features/messages/api/use-remove-message';
-import { useToggleReaction } from '@/features/reactions/api/use-toggle-reaction';
-import { useCreateTaskFromMessage } from '@/features/tasks/api/use-create-task-from-message';
-import { useConfirm } from '@/hooks/use-confirm';
-import { usePanel } from '@/hooks/use-panel';
-import { useWorkspaceId } from '@/hooks/use-workspace-id';
-import { useMessageSelection } from '@/features/smart/contexts/message-selection-context';
-import { extractTextFromBody } from '../utils/message-utils';
-import type { Id } from '../../../../convex/_generated/dataModel';
-import type { TaskModalState } from '../types/message';
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
+import { useRemoveMessage } from "@/features/messages/api/use-remove-message";
+import { useUpdateMessage } from "@/features/messages/api/use-update-message";
+import { useToggleReaction } from "@/features/reactions/api/use-toggle-reaction";
+import { useMessageSelection } from "@/features/smart/contexts/message-selection-context";
+import { useCreateTaskFromMessage } from "@/features/tasks/api/use-create-task-from-message";
+import { useConfirm } from "@/hooks/use-confirm";
+import { usePanel } from "@/hooks/use-panel";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import type { TaskModalState } from "../types/message";
+import { extractTextFromBody } from "../utils/message-utils";
 
 interface UseMessageActionsProps {
-	messageId: Id<'messages'>;
+	messageId: Id<"messages">;
 	body: string;
 	authorName?: string;
-	setEditingId: (id: Id<'messages'> | null) => void;
+	setEditingId: (id: Id<"messages"> | null) => void;
 }
 
 export const useMessageActions = ({
 	messageId,
 	body,
-	authorName = 'Member',
+	authorName = "Member",
 	setEditingId,
 }: UseMessageActionsProps) => {
 	const [ConfirmDialog, confirm] = useConfirm(
-		'Delete message',
-		'Are you sure you want to delete this message? This cannot be undone.'
+		"Delete message",
+		"Are you sure you want to delete this message? This cannot be undone."
 	);
 	const { parentMessageId, onOpenMessage, onOpenProfile, onClose } = usePanel();
 	const { isMessageSelected, toggleMessageSelection } = useMessageSelection();
@@ -46,9 +46,9 @@ export const useMessageActions = ({
 	// Task modal state
 	const [taskModal, setTaskModal] = useState<TaskModalState>({
 		show: false,
-		title: '',
-		content: '',
-		dueDate: '',
+		title: "",
+		content: "",
+		dueDate: "",
 	});
 
 	const isPending =
@@ -61,11 +61,11 @@ export const useMessageActions = ({
 				{ id: messageId, body },
 				{
 					onSuccess: () => {
-						toast.success('Message updated.');
+						toast.success("Message updated.");
 						setEditingId(null);
 					},
 					onError: () => {
-						toast.error('Failed to update message.');
+						toast.error("Failed to update message.");
 					},
 				}
 			);
@@ -82,12 +82,12 @@ export const useMessageActions = ({
 			{ id: messageId },
 			{
 				onSuccess: () => {
-					toast.success('Message deleted.');
+					toast.success("Message deleted.");
 
 					if (parentMessageId === messageId) onClose();
 				},
 				onError: () => {
-					toast.error('Failed to delete message.');
+					toast.error("Failed to delete message.");
 				},
 			}
 		);
@@ -99,7 +99,7 @@ export const useMessageActions = ({
 				{ messageId, value },
 				{
 					onError: () => {
-						toast.error('Failed to toggle reaction.');
+						toast.error("Failed to toggle reaction.");
 					},
 				}
 			);
@@ -113,13 +113,13 @@ export const useMessageActions = ({
 			show: true,
 			title: `Task from ${authorName}`,
 			content: messageText,
-			dueDate: '',
+			dueDate: "",
 		});
 	}, [body, authorName]);
 
 	const handleCreateTask = useCallback(async () => {
 		if (!taskModal.title.trim()) {
-			toast.error('Please enter a task title');
+			toast.error("Please enter a task title");
 			return;
 		}
 
@@ -131,46 +131,46 @@ export const useMessageActions = ({
 				dueDate: taskModal.dueDate
 					? new Date(taskModal.dueDate).getTime()
 					: undefined,
-				priority: 'medium', // Default priority
+				priority: "medium", // Default priority
 			});
 
-			toast.success('Task created successfully');
+			toast.success("Task created successfully");
 			setTaskModal({
 				show: false,
-				title: '',
-				content: '',
-				dueDate: '',
+				title: "",
+				content: "",
+				dueDate: "",
 			});
 		} catch (error) {
-			console.error('Failed to create task:', error);
-			toast.error('Failed to create task');
+			console.error("Failed to create task:", error);
+			toast.error("Failed to create task");
 		}
 	}, [taskModal, messageId, workspaceId, createTaskFromMessage]);
 
 	const handleContextMenuAction = useCallback(
 		(action: string) => {
 			switch (action) {
-				case 'select':
+				case "select":
 					toggleMessageSelection(messageId);
 					break;
-				case 'copy':
+				case "copy":
 					navigator.clipboard.writeText(extractTextFromBody(body));
-					toast.success('Message copied to clipboard');
+					toast.success("Message copied to clipboard");
 					break;
-				case 'summarize':
+				case "summarize":
 					// The summarize functionality is handled by the SummarizeButton component
 					// This action just triggers the summarize process for selected messages
 					break;
-				case 'addToTask':
+				case "addToTask":
 					handleAddToTask();
 					break;
-				case 'edit':
+				case "edit":
 					setEditingId(messageId);
 					break;
-				case 'delete':
+				case "delete":
 					handleDelete();
 					break;
-				case 'reply':
+				case "reply":
 					onOpenMessage(messageId);
 					break;
 				default:

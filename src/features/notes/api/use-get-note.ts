@@ -1,26 +1,26 @@
-import { useQuery } from 'convex/react';
-import { useMemo, useState, useEffect } from 'react';
+import { useQuery } from "convex/react";
+import { useEffect, useMemo, useState } from "react";
 
-import { api } from '@/../convex/_generated/api';
-import type { Id } from '@/../convex/_generated/dataModel';
-import type { Note } from '../types';
-import { useWorkspaceId } from '@/hooks/use-workspace-id';
-import { useChannelId } from '@/hooks/use-channel-id';
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { useChannelId } from "@/hooks/use-channel-id";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import type { Note } from "../types";
 
-export const useGetNote = (noteId?: Id<'notes'>) => {
+export const useGetNote = (noteId?: Id<"notes">) => {
 	// Check if the noteId is a temporary ID (starts with "temp-")
-	const isTempId = noteId ? noteId.toString().startsWith('temp-') : false;
+	const isTempId = noteId ? noteId.toString().startsWith("temp-") : false;
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
 	const member = useQuery(
 		api.members.current,
-		workspaceId ? { workspaceId } : 'skip'
+		workspaceId ? { workspaceId } : "skip"
 	);
 
 	// Only query Convex if we have a valid (non-temporary) ID
 	const note = useQuery(
 		api.notes.getById,
-		noteId && !isTempId ? { noteId } : 'skip'
+		noteId && !isTempId ? { noteId } : "skip"
 	);
 
 	// For temporary notes, we'll use local state
@@ -34,11 +34,11 @@ export const useGetNote = (noteId?: Id<'notes'>) => {
 			setTempNote({
 				_id: noteId,
 				_creationTime: now,
-				title: 'Untitled',
-				content: JSON.stringify({ ops: [{ insert: '\n' }] }),
+				title: "Untitled",
+				content: JSON.stringify({ ops: [{ insert: "\n" }] }),
 				memberId: member._id,
-				workspaceId: workspaceId as Id<'workspaces'>,
-				channelId: channelId as Id<'channels'>,
+				workspaceId: workspaceId as Id<"workspaces">,
+				channelId: channelId as Id<"channels">,
 				coverImage: undefined,
 				icon: undefined,
 				createdAt: now,

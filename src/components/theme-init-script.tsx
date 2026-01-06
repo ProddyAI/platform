@@ -1,8 +1,8 @@
 import Script from "next/script";
 
 export const ThemeInitScript = () => (
-    <Script id="theme-init" strategy="beforeInteractive">
-        {`
+	<Script id="theme-init" strategy="beforeInteractive">
+		{`
       try {
         const theme = localStorage.getItem('theme');
         if (theme === 'dark') {
@@ -12,5 +12,5 @@ export const ThemeInitScript = () => (
         }
       } catch (e) {}
     `}
-    </Script>
+	</Script>
 );

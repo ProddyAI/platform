@@ -7,7 +7,7 @@ export interface PasswordRequirement {
 
 export interface PasswordStrength {
 	score: number; // 0-4
-	label: 'Very Weak' | 'Weak' | 'Fair' | 'Good' | 'Strong';
+	label: "Very Weak" | "Weak" | "Fair" | "Good" | "Strong";
 	color: string;
 }
 
@@ -16,23 +16,23 @@ export const getPasswordRequirements = (
 ): PasswordRequirement[] => {
 	return [
 		{
-			label: 'At least 8 characters',
+			label: "At least 8 characters",
 			met: password.length >= 8,
 		},
 		{
-			label: 'Contains uppercase letter (A-Z)',
+			label: "Contains uppercase letter (A-Z)",
 			met: /[A-Z]/.test(password),
 		},
 		{
-			label: 'Contains lowercase letter (a-z)',
+			label: "Contains lowercase letter (a-z)",
 			met: /[a-z]/.test(password),
 		},
 		{
-			label: 'Contains number (0-9)',
+			label: "Contains number (0-9)",
 			met: /\d/.test(password),
 		},
 		{
-			label: 'Contains special character (@.#$!%*?&)',
+			label: "Contains special character (@.#$!%*?&)",
 			met: /[@.#$!%*?&]/.test(password),
 		},
 	];
@@ -42,7 +42,7 @@ export const calculatePasswordStrength = (
 	password: string
 ): PasswordStrength => {
 	if (!password) {
-		return { score: 0, label: 'Very Weak', color: 'bg-gray-300' };
+		return { score: 0, label: "Very Weak", color: "bg-gray-300" };
 	}
 
 	const requirements = getPasswordRequirements(password);
@@ -57,11 +57,11 @@ export const calculatePasswordStrength = (
 	const score = Math.min(4, Math.floor(metCount + bonusPoints));
 
 	const strengthMap: Record<number, PasswordStrength> = {
-		0: { score: 0, label: 'Very Weak', color: 'bg-red-500' },
-		1: { score: 1, label: 'Weak', color: 'bg-orange-500' },
-		2: { score: 2, label: 'Fair', color: 'bg-yellow-500' },
-		3: { score: 3, label: 'Good', color: 'bg-blue-500' },
-		4: { score: 4, label: 'Strong', color: 'bg-green-500' },
+		0: { score: 0, label: "Very Weak", color: "bg-red-500" },
+		1: { score: 1, label: "Weak", color: "bg-orange-500" },
+		2: { score: 2, label: "Fair", color: "bg-yellow-500" },
+		3: { score: 3, label: "Good", color: "bg-blue-500" },
+		4: { score: 4, label: "Strong", color: "bg-green-500" },
 	};
 
 	return strengthMap[score];

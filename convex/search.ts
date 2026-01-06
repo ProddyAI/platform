@@ -1,10 +1,9 @@
-import { action, query } from './_generated/server';
-import { v } from 'convex/values';
-import { api } from './_generated/api';
-import { Id } from './_generated/dataModel';
-import { components } from './_generated/api';
-import { RAG } from '@convex-dev/rag';
-import { google } from '@ai-sdk/google';
+import { google } from "@ai-sdk/google";
+import { RAG } from "@convex-dev/rag";
+import { v } from "convex/values";
+import { api, components } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { action, query } from "./_generated/server";
 
 // Define result types (maintaining compatibility with existing API)
 type SearchResult = {
@@ -12,34 +11,34 @@ type SearchResult = {
 	_creationTime: number;
 	type: string;
 	text: string;
-	workspaceId: Id<'workspaces'>;
+	workspaceId: Id<"workspaces">;
 	[key: string]: any;
 };
 
 type MessageResult = SearchResult & {
-	type: 'message';
-	channelId?: Id<'channels'>;
-	memberId: Id<'members'>;
+	type: "message";
+	channelId?: Id<"channels">;
+	memberId: Id<"members">;
 };
 
 type TaskResult = SearchResult & {
-	type: 'task';
+	type: "task";
 	status: string;
 	completed: boolean;
-	userId: Id<'users'>;
+	userId: Id<"users">;
 };
 
 type NoteResult = SearchResult & {
-	type: 'note';
-	channelId: Id<'channels'>;
-	memberId: Id<'members'>;
+	type: "note";
+	channelId: Id<"channels">;
+	memberId: Id<"members">;
 };
 
 type CardResult = SearchResult & {
-	type: 'card';
-	listId: Id<'lists'>;
+	type: "card";
+	listId: Id<"lists">;
 	listName: string;
-	channelId?: Id<'channels'>;
+	channelId?: Id<"channels">;
 	channelName?: string;
 };
 
@@ -59,7 +58,7 @@ type CardResult = SearchResult & {
  * extractTextFromRichText('<p>Hello</p>') // Returns: "Hello"
  */
 function extractTextFromRichText(body: string): string {
-	if (typeof body !== 'string') {
+	if (typeof body !== "string") {
 		return String(body);
 	}
 
@@ -68,14 +67,14 @@ function extractTextFromRichText(body: string): string {
 		const parsedBody = JSON.parse(body);
 		if (parsedBody.ops) {
 			return parsedBody.ops
-				.map((op: any) => (typeof op.insert === 'string' ? op.insert : ''))
-				.join('')
+				.map((op: any) => (typeof op.insert === "string" ? op.insert : ""))
+				.join("")
 				.trim();
 		}
-	} catch (e) {
+	} catch (_e) {
 		// Not JSON, use as is (might contain HTML)
 		return body
-			.replace(/<[^>]*>/g, '') // Remove HTML tags
+			.replace(/<[^>]*>/g, "") // Remove HTML tags
 			.trim();
 	}
 
@@ -94,66 +93,75 @@ type FilterTypes = {
 // `order` argument on `chunks.list`, while `@convex-dev/rag` expects it. Cast to
 // `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
+<<<<<<< HEAD
 	filterNames: ['workspaceId', 'contentType', 'channelId'],
 	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004') as any,
+=======
+	filterNames: ["workspaceId", "contentType", "channelId"],
+	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004"),
+>>>>>>> origin/main
 	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
 });
 
-const NO_CHANNEL_FILTER_VALUE = '__none__';
+const NO_CHANNEL_FILTER_VALUE = "__none__";
 
 // Index content for RAG search
 export const indexContent = action({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		contentId: v.string(),
 		contentType: v.union(
-			v.literal('message'),
-			v.literal('task'),
-			v.literal('note'),
-			v.literal('card')
+			v.literal("message"),
+			v.literal("task"),
+			v.literal("note"),
+			v.literal("card")
 		),
 		text: v.string(),
 		metadata: v.any(),
 	},
 	handler: async (ctx, args) => {
-		console.log(`Indexing ${args.contentType} ${args.contentId} for workspace ${args.workspaceId}`);
+		console.log(
+			`Indexing ${args.contentType} ${args.contentId} for workspace ${args.workspaceId}`
+		);
 		console.log(`Text to index: "${args.text.substring(0, 100)}..."`);
 
 		// Skip indexing if text is empty or too short
 		if (!args.text || args.text.trim().length < 3) {
-			console.log('Skipping indexing: text too short');
+			console.log("Skipping indexing: text too short");
 			return;
 		}
 
 		// Check if Gemini API key is configured for embeddings
 		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error('GOOGLE_GENERATIVE_AI_API_KEY not configured, skipping content indexing');
+			console.error(
+				"GOOGLE_GENERATIVE_AI_API_KEY not configured, skipping content indexing"
+			);
 			return;
 		}
 
 		try {
 			const channelIdFilterValue = (() => {
 				const metadata = args.metadata as unknown;
-				if (!metadata || typeof metadata !== 'object') {
+				if (!metadata || typeof metadata !== "object") {
 					return NO_CHANNEL_FILTER_VALUE;
 				}
 				const maybeChannelId = (metadata as { channelId?: unknown }).channelId;
-				if (typeof maybeChannelId === 'string' && maybeChannelId.length > 0) {
+				if (typeof maybeChannelId === "string" && maybeChannelId.length > 0) {
 					return maybeChannelId;
 				}
 				return NO_CHANNEL_FILTER_VALUE;
 			})();
 
 			const filterValues: Array<{
-				name: 'workspaceId' | 'contentType' | 'channelId';
+				name: "workspaceId" | "contentType" | "channelId";
 				value: string;
 			}> = [
-				{ name: 'workspaceId', value: args.workspaceId as string },
-				{ name: 'contentType', value: args.contentType },
-				{ name: 'channelId', value: channelIdFilterValue },
+				{ name: "workspaceId", value: args.workspaceId as string },
+				{ name: "contentType", value: args.contentType },
+				{ name: "channelId", value: channelIdFilterValue },
 			];
 
-			console.log('Filter values:', filterValues);
+			console.log("Filter values:", filterValues);
 
 			const result = await rag.add(ctx, {
 				namespace: args.workspaceId,
@@ -162,11 +170,14 @@ export const indexContent = action({
 				filterValues,
 			});
 
-			console.log('RAG add result:', result);
+			console.log("RAG add result:", result);
 			console.log(`Successfully indexed ${args.contentType} ${args.contentId}`);
 		} catch (error) {
-			console.error(`Content indexing error for ${args.contentType} ${args.contentId}:`, error);
-			console.error('Error details:', JSON.stringify(error, null, 2));
+			console.error(
+				`Content indexing error for ${args.contentType} ${args.contentId}:`,
+				error
+			);
+			console.error("Error details:", JSON.stringify(error, null, 2));
 			// Re-throw the error so we can see what's happening
 			throw error;
 		}
@@ -176,24 +187,24 @@ export const indexContent = action({
 // Semantic search using RAG
 export const semanticSearch = action({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		query: v.string(),
 		contentType: v.optional(
 			v.union(
-				v.literal('message'),
-				v.literal('task'),
-				v.literal('note'),
-				v.literal('card')
+				v.literal("message"),
+				v.literal("task"),
+				v.literal("note"),
+				v.literal("card")
 			)
 		),
-		channelId: v.optional(v.id('channels')),
+		channelId: v.optional(v.id("channels")),
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
 		// Check if Gemini API key is configured for embeddings
 		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
 			console.warn(
-				'GOOGLE_GENERATIVE_AI_API_KEY not configured, falling back to empty results'
+				"GOOGLE_GENERATIVE_AI_API_KEY not configured, falling back to empty results"
 			);
 			return [];
 		}
@@ -203,17 +214,17 @@ export const semanticSearch = action({
 		try {
 			// Create filters for workspace isolation and content type filtering
 			const filters: Array<
-				| { name: 'workspaceId'; value: string }
-				| { name: 'contentType'; value: string }
-				| { name: 'channelId'; value: string }
-			> = [{ name: 'workspaceId', value: args.workspaceId as string }];
+				| { name: "workspaceId"; value: string }
+				| { name: "contentType"; value: string }
+				| { name: "channelId"; value: string }
+			> = [{ name: "workspaceId", value: args.workspaceId as string }];
 
 			if (args.contentType) {
-				filters.push({ name: 'contentType', value: args.contentType });
+				filters.push({ name: "contentType", value: args.contentType });
 			}
 
 			if (args.channelId) {
-				filters.push({ name: 'channelId', value: args.channelId as string });
+				filters.push({ name: "channelId", value: args.channelId as string });
 			}
 
 			const { results } = await rag.search(ctx, {
@@ -226,12 +237,12 @@ export const semanticSearch = action({
 
 			return results.map((result: any) => ({
 				_id: result.entryId,
-				text: result.content.map((c: any) => c.text).join(' '),
+				text: result.content.map((c: any) => c.text).join(" "),
 				score: result.score,
 				metadata: result.filterValues,
 			}));
 		} catch (error) {
-			console.error('RAG search error:', error);
+			console.error("RAG search error:", error);
 			// Fall back to empty results if RAG fails
 			return [];
 		}
@@ -241,8 +252,8 @@ export const semanticSearch = action({
 // Search messages in a workspace (maintaining API compatibility)
 export const searchMessages = query({
 	args: {
-		workspaceId: v.id('workspaces'),
-		channelId: v.optional(v.id('channels')),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
 		query: v.string(),
 		limit: v.optional(v.number()),
 	},
@@ -251,16 +262,16 @@ export const searchMessages = query({
 
 		// Fallback to basic text search (RAG search will be called separately from actions)
 		let messagesQuery = ctx.db
-			.query('messages')
-			.withIndex('by_workspace_id', (q) =>
-				q.eq('workspaceId', args.workspaceId)
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
 			);
 
 		if (args.channelId) {
 			messagesQuery = ctx.db
-				.query('messages')
-				.withIndex('by_channel_id', (q) => q.eq('channelId', args.channelId))
-				.filter((q) => q.eq(q.field('workspaceId'), args.workspaceId));
+				.query("messages")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", args.channelId))
+				.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId));
 		}
 
 		const messages = await messagesQuery.take(limit * 3); // Take more to filter
@@ -276,7 +287,7 @@ export const searchMessages = query({
 		return filteredMessages.map((message) => ({
 			_id: message._id,
 			_creationTime: message._creationTime,
-			type: 'message',
+			type: "message",
 			text: extractTextFromRichText(message.body),
 			channelId: message.channelId,
 			memberId: message.memberId,
@@ -288,7 +299,7 @@ export const searchMessages = query({
 // Search tasks in a workspace (maintaining API compatibility)
 export const searchTasks = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		query: v.string(),
 		limit: v.optional(v.number()),
 	},
@@ -297,9 +308,9 @@ export const searchTasks = query({
 
 		// Fallback to basic text search (RAG search will be called separately from actions)
 		const tasks = await ctx.db
-			.query('tasks')
-			.withIndex('by_workspace_id', (q) =>
-				q.eq('workspaceId', args.workspaceId)
+			.query("tasks")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
 			)
 			.take(limit * 3); // Take more to filter
 
@@ -307,7 +318,7 @@ export const searchTasks = query({
 		const filteredTasks = tasks
 			.filter((task) => {
 				const text = (
-					task.title + (task.description ? `: ${task.description}` : '')
+					task.title + (task.description ? `: ${task.description}` : "")
 				).toLowerCase();
 				return text.includes(args.query.toLowerCase());
 			})
@@ -316,9 +327,9 @@ export const searchTasks = query({
 		return filteredTasks.map((task) => ({
 			_id: task._id,
 			_creationTime: task._creationTime,
-			type: 'task',
-			text: task.title + (task.description ? `: ${task.description}` : ''),
-			status: task.status || 'not_started',
+			type: "task",
+			text: task.title + (task.description ? `: ${task.description}` : ""),
+			status: task.status || "not_started",
 			completed: task.completed,
 			workspaceId: task.workspaceId,
 			userId: task.userId,
@@ -329,8 +340,8 @@ export const searchTasks = query({
 // Search notes in a workspace (maintaining API compatibility)
 export const searchNotes = query({
 	args: {
-		workspaceId: v.id('workspaces'),
-		channelId: v.optional(v.id('channels')),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
 		query: v.string(),
 		limit: v.optional(v.number()),
 	},
@@ -339,16 +350,16 @@ export const searchNotes = query({
 
 		// Fallback to basic text search (RAG search will be called separately from actions)
 		let notesQuery = ctx.db
-			.query('notes')
-			.withIndex('by_workspace_id', (q) =>
-				q.eq('workspaceId', args.workspaceId)
+			.query("notes")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
 			);
 
 		if (args.channelId) {
 			notesQuery = ctx.db
-				.query('notes')
-				.withIndex('by_workspace_id_channel_id', (q) =>
-					q.eq('workspaceId', args.workspaceId).eq('channelId', args.channelId!)
+				.query("notes")
+				.withIndex("by_workspace_id_channel_id", (q) =>
+					q.eq("workspaceId", args.workspaceId).eq("channelId", args.channelId!)
 				);
 		}
 
@@ -359,7 +370,7 @@ export const searchNotes = query({
 			.filter((note) => {
 				const text = (
 					note.title +
-					': ' +
+					": " +
 					extractTextFromRichText(note.content)
 				).toLowerCase();
 				return text.includes(args.query.toLowerCase());
@@ -369,8 +380,8 @@ export const searchNotes = query({
 		return filteredNotes.map((note) => ({
 			_id: note._id,
 			_creationTime: note._creationTime,
-			type: 'note',
-			text: note.title + ': ' + extractTextFromRichText(note.content),
+			type: "note",
+			text: `${note.title}: ${extractTextFromRichText(note.content)}`,
 			channelId: note.channelId,
 			memberId: note.memberId,
 			workspaceId: note.workspaceId,
@@ -381,7 +392,7 @@ export const searchNotes = query({
 // Search cards in a workspace (maintaining API compatibility)
 export const searchCards = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		query: v.string(),
 		limit: v.optional(v.number()),
 	},
@@ -391,9 +402,9 @@ export const searchCards = query({
 		// Fallback to basic text search (RAG search will be called separately from actions)
 		// First, get all channels in the workspace
 		const channels = await ctx.db
-			.query('channels')
-			.withIndex('by_workspace_id', (q) =>
-				q.eq('workspaceId', args.workspaceId)
+			.query("channels")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
 			)
 			.collect();
 
@@ -403,8 +414,8 @@ export const searchCards = query({
 		const lists = await Promise.all(
 			channelIds.map((channelId) =>
 				ctx.db
-					.query('lists')
-					.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
+					.query("lists")
+					.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
 					.collect()
 			)
 		).then((results) => results.flat());
@@ -415,8 +426,8 @@ export const searchCards = query({
 		const cards = await Promise.all(
 			listIds.map((listId) =>
 				ctx.db
-					.query('cards')
-					.withIndex('by_list_id', (q) => q.eq('listId', listId))
+					.query("cards")
+					.withIndex("by_list_id", (q) => q.eq("listId", listId))
 					.take(Math.ceil(limit / listIds.length))
 			)
 		).then((results) => results.flat().slice(0, limit * 3));
@@ -425,7 +436,7 @@ export const searchCards = query({
 		const filteredCards = cards
 			.filter((card) => {
 				const text = (
-					card.title + (card.description ? `: ${card.description}` : '')
+					card.title + (card.description ? `: ${card.description}` : "")
 				).toLowerCase();
 				return text.includes(args.query.toLowerCase());
 			})
@@ -442,12 +453,12 @@ export const searchCards = query({
 				return {
 					_id: card._id,
 					_creationTime: card._creationTime,
-					type: 'card',
-					text: card.title + (card.description ? `: ${card.description}` : ''),
+					type: "card",
+					text: card.title + (card.description ? `: ${card.description}` : ""),
 					listId: card.listId,
-					listName: list?.title || 'Unknown List',
+					listName: list?.title || "Unknown List",
 					channelId: channel?._id,
-					channelName: channel?.name || 'Unknown Channel',
+					channelName: channel?.name || "Unknown Channel",
 					workspaceId: args.workspaceId,
 				};
 			})
@@ -458,8 +469,8 @@ export const searchCards = query({
 // Comprehensive search across all content types (maintaining API compatibility)
 export const searchAll = query({
 	args: {
-		workspaceId: v.id('workspaces'),
-		channelId: v.optional(v.id('channels')),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
 		query: v.string(),
 		limit: v.optional(v.number()),
 	},
@@ -505,7 +516,7 @@ export const searchAll = query({
 // Auto-indexing functions for new content
 export const autoIndexMessage = action({
 	args: {
-		messageId: v.id('messages'),
+		messageId: v.id("messages"),
 	},
 	handler: async (ctx, args) => {
 		const message = await ctx.runQuery(api.messages.getById, {
@@ -515,7 +526,7 @@ export const autoIndexMessage = action({
 			await ctx.runAction(api.search.indexContent, {
 				workspaceId: message.workspaceId,
 				contentId: message._id,
-				contentType: 'message',
+				contentType: "message",
 				text: extractTextFromRichText(message.body),
 				metadata: {
 					channelId: message.channelId,
@@ -529,7 +540,7 @@ export const autoIndexMessage = action({
 
 export const autoIndexNote = action({
 	args: {
-		noteId: v.id('notes'),
+		noteId: v.id("notes"),
 	},
 	handler: async (ctx, args) => {
 		const note = await ctx.runQuery(api.notes.getById, { noteId: args.noteId });
@@ -537,8 +548,8 @@ export const autoIndexNote = action({
 			await ctx.runAction(api.search.indexContent, {
 				workspaceId: note.workspaceId,
 				contentId: note._id,
-				contentType: 'note',
-				text: note.title + ': ' + extractTextFromRichText(note.content),
+				contentType: "note",
+				text: `${note.title}: ${extractTextFromRichText(note.content)}`,
 				metadata: {
 					channelId: note.channelId,
 					memberId: note.memberId,
@@ -550,14 +561,14 @@ export const autoIndexNote = action({
 
 // Helper queries for auto-indexing
 export const getTaskForIndexing = query({
-	args: { taskId: v.id('tasks') },
+	args: { taskId: v.id("tasks") },
 	handler: async (ctx, args) => {
 		return await ctx.db.get(args.taskId);
 	},
 });
 
 export const getCardForIndexing = query({
-	args: { cardId: v.id('cards') },
+	args: { cardId: v.id("cards") },
 	handler: async (ctx, args) => {
 		const card = await ctx.db.get(args.cardId);
 		if (!card) return null;
@@ -579,7 +590,7 @@ export const getCardForIndexing = query({
 // Auto-indexing actions using queries
 export const autoIndexTask = action({
 	args: {
-		taskId: v.id('tasks'),
+		taskId: v.id("tasks"),
 	},
 	handler: async (ctx, args) => {
 		const task = await ctx.runQuery(api.search.getTaskForIndexing, {
@@ -589,8 +600,8 @@ export const autoIndexTask = action({
 			await ctx.runAction(api.search.indexContent, {
 				workspaceId: task.workspaceId,
 				contentId: task._id,
-				contentType: 'task',
-				text: task.title + (task.description ? `: ${task.description}` : ''),
+				contentType: "task",
+				text: task.title + (task.description ? `: ${task.description}` : ""),
 				metadata: {
 					userId: task.userId,
 					status: task.status,
@@ -603,7 +614,7 @@ export const autoIndexTask = action({
 
 export const autoIndexCard = action({
 	args: {
-		cardId: v.id('cards'),
+		cardId: v.id("cards"),
 	},
 	handler: async (ctx, args) => {
 		const result = await ctx.runQuery(api.search.getCardForIndexing, {
@@ -614,8 +625,8 @@ export const autoIndexCard = action({
 			await ctx.runAction(api.search.indexContent, {
 				workspaceId: channel.workspaceId,
 				contentId: card._id,
-				contentType: 'card',
-				text: card.title + (card.description ? `: ${card.description}` : ''),
+				contentType: "card",
+				text: card.title + (card.description ? `: ${card.description}` : ""),
 				metadata: {
 					listId: card.listId,
 					channelId: list.channelId,
@@ -638,43 +649,54 @@ export const autoIndexCard = action({
  */
 export const getWorkspaceMessages = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
 		const limit = args.limit || 100;
 		return await ctx.db
+<<<<<<< HEAD
 			.query('messages')
 			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
 			.order('desc')
+=======
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+>>>>>>> origin/main
 			.take(limit);
 	},
 });
 
 export const getWorkspaceNotes = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
 		const limit = args.limit || 100;
 		return await ctx.db
-			.query('notes')
-			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
+			.query("notes")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.take(limit);
 	},
 });
 
 export const getWorkspaceTasks = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
 		const limit = args.limit || 100;
 		return await ctx.db
-			.query('tasks')
-			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
+			.query("tasks")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.take(limit);
 	},
 });
@@ -682,10 +704,13 @@ export const getWorkspaceTasks = query({
 // Bulk indexing function for existing content
 export const bulkIndexWorkspace = action({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		limit: v.optional(v.number()),
 	},
-	handler: async (ctx, args): Promise<{
+	handler: async (
+		ctx,
+		args
+	): Promise<{
 		success: boolean;
 		indexed: {
 			messages: number;
@@ -694,14 +719,19 @@ export const bulkIndexWorkspace = action({
 		};
 	}> => {
 		const limit = args.limit || 100;
-		console.log(`Starting bulk indexing for workspace ${args.workspaceId} with limit ${limit}`);
+		console.log(
+			`Starting bulk indexing for workspace ${args.workspaceId} with limit ${limit}`
+		);
 
 		try {
 			// Index messages
-			const messages: any[] = await ctx.runQuery(api.search.getWorkspaceMessages, {
-				workspaceId: args.workspaceId,
-				limit,
-			});
+			const messages: any[] = await ctx.runQuery(
+				api.search.getWorkspaceMessages,
+				{
+					workspaceId: args.workspaceId,
+					limit,
+				}
+			);
 
 			console.log(`Found ${messages.length} messages to index`);
 
@@ -710,7 +740,7 @@ export const bulkIndexWorkspace = action({
 					await ctx.runAction(api.search.indexContent, {
 						workspaceId: message.workspaceId,
 						contentId: message._id,
-						contentType: 'message',
+						contentType: "message",
 						text: extractTextFromRichText(message.body),
 						metadata: {
 							channelId: message.channelId,
@@ -737,8 +767,8 @@ export const bulkIndexWorkspace = action({
 					await ctx.runAction(api.search.indexContent, {
 						workspaceId: note.workspaceId,
 						contentId: note._id,
-						contentType: 'note',
-						text: note.title + ': ' + extractTextFromRichText(note.content),
+						contentType: "note",
+						text: `${note.title}: ${extractTextFromRichText(note.content)}`,
 						metadata: {
 							channelId: note.channelId,
 							memberId: note.memberId,
@@ -763,8 +793,9 @@ export const bulkIndexWorkspace = action({
 					await ctx.runAction(api.search.indexContent, {
 						workspaceId: task.workspaceId,
 						contentId: task._id,
-						contentType: 'task',
-						text: task.title + (task.description ? `: ${task.description}` : ''),
+						contentType: "task",
+						text:
+							task.title + (task.description ? `: ${task.description}` : ""),
 						metadata: {
 							userId: task.userId,
 							status: task.status,
@@ -777,7 +808,7 @@ export const bulkIndexWorkspace = action({
 				}
 			}
 
-			console.log('Bulk indexing completed successfully');
+			console.log("Bulk indexing completed successfully");
 			return {
 				success: true,
 				indexed: {
@@ -787,7 +818,7 @@ export const bulkIndexWorkspace = action({
 				},
 			};
 		} catch (error) {
-			console.error('Bulk indexing failed:', error);
+			console.error("Bulk indexing failed:", error);
 			throw error;
 		}
 	},
@@ -796,8 +827,8 @@ export const bulkIndexWorkspace = action({
 // Main semantic search action for chatbot integration
 export const searchAllSemantic = action({
 	args: {
-		workspaceId: v.id('workspaces'),
-		channelId: v.optional(v.id('channels')),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
 		query: v.string(),
 		limit: v.optional(v.number()),
 	},
@@ -820,7 +851,9 @@ export const searchAllSemantic = action({
 				try {
 					// For now, create a simplified result from the semantic search
 					// The result._id is the RAG entry ID, but we can use the text and metadata
-					const contentType = result.metadata?.find((m: any) => m.name === 'contentType')?.value || 'message';
+					const contentType =
+						result.metadata?.find((m: any) => m.name === "contentType")
+							?.value || "message";
 
 					processedResults.push({
 						_id: result._id as Id<'messages'> | Id<'notes'> | Id<'tasks'>,
@@ -832,8 +865,7 @@ export const searchAllSemantic = action({
 					});
 				} catch (error) {
 					// Skip invalid results
-					console.error('Error processing semantic result:', error);
-					continue;
+					console.error("Error processing semantic result:", error);
 				}
 			}
 
