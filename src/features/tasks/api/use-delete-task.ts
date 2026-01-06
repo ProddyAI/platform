@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useMutation } from 'convex/react';
+import { useMutation } from "convex/react";
 
-import { api } from '@/../convex/_generated/api';
+import { api } from "@/../convex/_generated/api";
 
 export const useDeleteTask = () => {
-  const deleteTask = useMutation(api.tasks.deleteTask);
+	const deleteTask = useMutation(api.tasks.deleteTask);
 
-  return deleteTask;
+	return deleteTask;
 };

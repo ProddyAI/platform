@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
 	CanvasMode,
-	CanvasState,
-	Color,
-	LayerType,
-	Point,
-	Side,
-	XYWH,
-} from '../types/canvas';
+	type CanvasState,
+	type Color,
+	type LayerType,
+	type Point,
+	type Side,
+	type XYWH,
+} from "../types/canvas";
 
 export function useCanvasState(initialColor: Color = { r: 0, g: 0, b: 0 }) {
 	const [canvasState, setCanvasState] = useState<CanvasState>({

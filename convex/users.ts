@@ -1,7 +1,7 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { v } from 'convex/values';
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
 
-import { query, mutation } from './_generated/server';
+import { mutation, query } from "./_generated/server";
 
 export const current = query({
 	args: {},
@@ -13,21 +13,22 @@ export const current = query({
 		const user = await ctx.db.get(userId);
 		if (!user) return null;
 
-		let imageUrl: string | undefined = undefined;
+		let imageUrl: string | undefined;
 		if (user.image) {
-			if (user.image.startsWith('http')) {
+			if (user.image.startsWith("http")) {
 				imageUrl = user.image;
 			} else {
 				imageUrl = (await ctx.storage.getUrl(user.image)) || undefined;
 			}
 		}
 
-		let bannerUrl: string | undefined = undefined;
+		let bannerUrl: string | undefined;
 		if ((user as any).banner) {
-			if ((user as any).banner.startsWith('http')) {
+			if ((user as any).banner.startsWith("http")) {
 				bannerUrl = (user as any).banner;
 			} else {
-				bannerUrl = (await ctx.storage.getUrl((user as any).banner)) || undefined;
+				bannerUrl =
+					(await ctx.storage.getUrl((user as any).banner)) || undefined;
 			}
 		}
 
@@ -41,7 +42,7 @@ export const current = query({
 
 export const getUserById = query({
 	args: {
-		id: v.id('users'),
+		id: v.id("users"),
 	},
 	handler: async (ctx, args) => {
 		// Get the authenticated user ID
@@ -57,10 +58,10 @@ export const getUserById = query({
 
 		// Get image URL if user has an image
 		// Check if it's a storage ID or external URL
-		let imageUrl: string | undefined = undefined;
+		let imageUrl: string | undefined;
 		if (user.image) {
 			// If it starts with http, it's an external URL (from OAuth providers)
-			if (user.image.startsWith('http')) {
+			if (user.image.startsWith("http")) {
 				imageUrl = user.image;
 			} else {
 				// Otherwise, it's a Convex storage ID
@@ -69,12 +70,13 @@ export const getUserById = query({
 		}
 
 		// Get banner URL if user has a banner
-		let bannerUrl: string | undefined = undefined;
+		let bannerUrl: string | undefined;
 		if ((user as any).banner) {
-			if ((user as any).banner.startsWith('http')) {
+			if ((user as any).banner.startsWith("http")) {
 				bannerUrl = (user as any).banner;
 			} else {
-				bannerUrl = (await ctx.storage.getUrl((user as any).banner)) || undefined;
+				bannerUrl =
+					(await ctx.storage.getUrl((user as any).banner)) || undefined;
 			}
 		}
 
@@ -97,21 +99,21 @@ export const updateProfile = mutation({
 		location: v.optional(v.string()),
 		website: v.optional(v.string()),
 		phone: v.optional(v.string()),
-		image: v.optional(v.id('_storage')),
-		banner: v.optional(v.union(v.id('_storage'), v.null())),
+		image: v.optional(v.id("_storage")),
+		banner: v.optional(v.union(v.id("_storage"), v.null())),
 		removeBanner: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) {
-			throw new Error('Unauthorized');
+			throw new Error("Unauthorized");
 		}
 
 		// Get current user to verify it exists
 		const currentUser = await ctx.db.get(userId);
 		if (!currentUser) {
-			throw new Error('User not found');
+			throw new Error("User not found");
 		}
 
 		// Prepare update data, filtering out undefined values

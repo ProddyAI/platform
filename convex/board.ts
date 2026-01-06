@@ -1,24 +1,24 @@
-import { mutation, query } from './_generated/server';
-import { v } from 'convex/values';
-import type { MutationCtx, QueryCtx } from './_generated/server';
-import type { Id } from './_generated/dataModel';
-import { getUserEmailFromMemberId, getUserNameFromMemberId } from './utils';
-import { api } from './_generated/api';
+import { v } from "convex/values";
+import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
+import { getUserEmailFromMemberId, getUserNameFromMemberId } from "./utils";
 
 // LISTS
 export const createList = mutation({
-	args: { channelId: v.id('channels'), title: v.string(), order: v.number() },
+	args: { channelId: v.id("channels"), title: v.string(), order: v.number() },
 	handler: async (
 		ctx: MutationCtx,
-		args: { channelId: Id<'channels'>; title: string; order: number }
+		args: { channelId: Id<"channels">; title: string; order: number }
 	) => {
-		return await ctx.db.insert('lists', args);
+		return await ctx.db.insert("lists", args);
 	},
 });
 
 export const updateList = mutation({
 	args: {
-		listId: v.id('lists'),
+		listId: v.id("lists"),
 		title: v.optional(v.string()),
 		order: v.optional(v.number()),
 	},
@@ -27,19 +27,19 @@ export const updateList = mutation({
 		{
 			listId,
 			...updates
-		}: { listId: Id<'lists'>; title?: string; order?: number }
+		}: { listId: Id<"lists">; title?: string; order?: number }
 	) => {
 		return await ctx.db.patch(listId, updates);
 	},
 });
 
 export const deleteList = mutation({
-	args: { listId: v.id('lists') },
-	handler: async (ctx: MutationCtx, { listId }: { listId: Id<'lists'> }) => {
+	args: { listId: v.id("lists") },
+	handler: async (ctx: MutationCtx, { listId }: { listId: Id<"lists"> }) => {
 		// Delete all cards in the list
 		const cards = await ctx.db
-			.query('cards')
-			.withIndex('by_list_id', (q) => q.eq('listId', listId))
+			.query("cards")
+			.withIndex("by_list_id", (q) => q.eq("listId", listId))
 			.collect();
 		for (const card of cards) {
 			await ctx.db.delete(card._id);
@@ -51,11 +51,11 @@ export const deleteList = mutation({
 
 export const reorderLists = mutation({
 	args: {
-		listOrders: v.array(v.object({ listId: v.id('lists'), order: v.number() })),
+		listOrders: v.array(v.object({ listId: v.id("lists"), order: v.number() })),
 	},
 	handler: async (
 		ctx: MutationCtx,
-		{ listOrders }: { listOrders: { listId: Id<'lists'>; order: number }[] }
+		{ listOrders }: { listOrders: { listId: Id<"lists">; order: number }[] }
 	) => {
 		for (const { listId, order } of listOrders) {
 			await ctx.db.patch(listId, { order });
@@ -67,68 +67,68 @@ export const reorderLists = mutation({
 // CARDS
 export const createCard = mutation({
 	args: {
-		listId: v.id('lists'),
+		listId: v.id("lists"),
 		title: v.string(),
 		description: v.optional(v.string()),
 		order: v.number(),
 		labels: v.optional(v.array(v.string())),
 		priority: v.optional(
 			v.union(
-				v.literal('lowest'),
-				v.literal('low'),
-				v.literal('medium'),
-				v.literal('high'),
-				v.literal('highest')
+				v.literal("lowest"),
+				v.literal("low"),
+				v.literal("medium"),
+				v.literal("high"),
+				v.literal("highest")
 			)
 		),
 		dueDate: v.optional(v.number()),
-		assignees: v.optional(v.array(v.id('members'))),
+		assignees: v.optional(v.array(v.id("members"))),
 	},
 	handler: async (
 		ctx: MutationCtx,
 		args: {
-			listId: Id<'lists'>;
+			listId: Id<"lists">;
 			title: string;
 			description?: string;
 			order: number;
 			labels?: string[];
-			priority?: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
+			priority?: "lowest" | "low" | "medium" | "high" | "highest";
 			dueDate?: number;
-			assignees?: Id<'members'>[];
+			assignees?: Id<"members">[];
 		}
 	) => {
 		// Get the list to find the channel and workspace
 		const list = await ctx.db.get(args.listId);
-		if (!list) throw new Error('List not found');
+		if (!list) throw new Error("List not found");
 
 		const channel = await ctx.db.get(list.channelId);
-		if (!channel) throw new Error('Channel not found');
+		if (!channel) throw new Error("Channel not found");
 
 		// Insert the card
-		const cardId = await ctx.db.insert('cards', args);
+		const cardId = await ctx.db.insert("cards", args);
 
 		// Create mentions for assignees if any
 		if (args.assignees && args.assignees.length > 0) {
 			try {
 				// Get the current user/member who is creating the card
 				const auth = await ctx.auth.getUserIdentity();
-				if (!auth) throw new Error('Not authenticated');
+				if (!auth) throw new Error("Not authenticated");
 
-				const userId = auth.subject.split('|')[0] as Id<'users'>;
+				const userId = auth.subject.split("|")[0] as Id<"users">;
 
 				const creator = await ctx.db
-					.query('members')
-					.withIndex('by_workspace_id_user_id', (q) =>
-						q.eq('workspaceId', channel.workspaceId).eq('userId', userId)
+					.query("members")
+					.withIndex("by_workspace_id_user_id", (q) =>
+						q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
 					)
 					.unique();
 
-				if (!creator) throw new Error('Creator not found');
+				if (!creator) throw new Error("Creator not found");
 
 				// Create a mention for each assignee
 				for (const assigneeId of args.assignees) {
 					// Create a mention
-					await ctx.db.insert('mentions', {
+					await ctx.db.insert("mentions", {
 						mentionedMemberId: assigneeId,
 						mentionerMemberId: creator._id,
 						workspaceId: channel.workspaceId,
@@ -147,7 +147,7 @@ export const createCard = mutation({
 					});
 				}
 			} catch (error) {
-				console.error('Error creating mentions for card assignees:', error);
+				console.error("Error creating mentions for card assignees:", error);
 				// Don't throw the error, as we still want to return the card ID
 			}
 		}
@@ -163,23 +163,23 @@ export const createCard = mutation({
 
 export const updateCard = mutation({
 	args: {
-		cardId: v.id('cards'),
+		cardId: v.id("cards"),
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
 		order: v.optional(v.number()),
-		listId: v.optional(v.id('lists')),
+		listId: v.optional(v.id("lists")),
 		labels: v.optional(v.array(v.string())),
 		priority: v.optional(
 			v.union(
-				v.literal('lowest'),
-				v.literal('low'),
-				v.literal('medium'),
-				v.literal('high'),
-				v.literal('highest')
+				v.literal("lowest"),
+				v.literal("low"),
+				v.literal("medium"),
+				v.literal("high"),
+				v.literal("highest")
 			)
 		),
 		dueDate: v.optional(v.number()),
-		assignees: v.optional(v.array(v.id('members'))),
+		assignees: v.optional(v.array(v.id("members"))),
 	},
 	handler: async (
 		ctx: MutationCtx,
@@ -187,27 +187,27 @@ export const updateCard = mutation({
 			cardId,
 			...updates
 		}: {
-			cardId: Id<'cards'>;
+			cardId: Id<"cards">;
 			title?: string;
 			description?: string;
 			order?: number;
-			listId?: Id<'lists'>;
+			listId?: Id<"lists">;
 			labels?: string[];
-			priority?: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
+			priority?: "lowest" | "low" | "medium" | "high" | "highest";
 			dueDate?: number;
-			assignees?: Id<'members'>[];
+			assignees?: Id<"members">[];
 		}
 	) => {
 		// Get the current card to check for changes in assignees
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error('Card not found');
+		if (!card) throw new Error("Card not found");
 
 		// Get the list to find the channel and workspace
 		const list = await ctx.db.get(updates.listId || card.listId);
-		if (!list) throw new Error('List not found');
+		if (!list) throw new Error("List not found");
 
 		const channel = await ctx.db.get(list.channelId);
-		if (!channel) throw new Error('Channel not found');
+		if (!channel) throw new Error("Channel not found");
 
 		// Update the card
 		await ctx.db.patch(cardId, updates);
@@ -217,18 +217,18 @@ export const updateCard = mutation({
 			try {
 				// Get the current user/member who is updating the card
 				const auth = await ctx.auth.getUserIdentity();
-				if (!auth) throw new Error('Not authenticated');
+				if (!auth) throw new Error("Not authenticated");
 
-				const userId = auth.subject.split('|')[0] as Id<'users'>;
+				const userId = auth.subject.split("|")[0] as Id<"users">;
 
 				const updater = await ctx.db
-					.query('members')
-					.withIndex('by_workspace_id_user_id', (q) =>
-						q.eq('workspaceId', channel.workspaceId).eq('userId', userId)
+					.query("members")
+					.withIndex("by_workspace_id_user_id", (q) =>
+						q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
 					)
 					.unique();
 
-				if (!updater) throw new Error('Updater not found');
+				if (!updater) throw new Error("Updater not found");
 
 				// Find new assignees (those in updates.assignees but not in card.assignees)
 				const currentAssignees = card.assignees || [];
@@ -239,7 +239,7 @@ export const updateCard = mutation({
 				// Create mentions for new assignees
 				for (const assigneeId of newAssignees) {
 					// Create a mention
-					await ctx.db.insert('mentions', {
+					await ctx.db.insert("mentions", {
 						mentionedMemberId: assigneeId,
 						mentionerMemberId: updater._id,
 						workspaceId: channel.workspaceId,
@@ -258,7 +258,7 @@ export const updateCard = mutation({
 					});
 				}
 			} catch (error) {
-				console.error('Error creating mentions for card assignees:', error);
+				console.error("Error creating mentions for card assignees:", error);
 				// Don't throw the error, as we still want to return the card ID
 			}
 		}
@@ -273,21 +273,21 @@ export const updateCard = mutation({
 });
 
 export const deleteCard = mutation({
-	args: { cardId: v.id('cards') },
-	handler: async (ctx: MutationCtx, { cardId }: { cardId: Id<'cards'> }) => {
+	args: { cardId: v.id("cards") },
+	handler: async (ctx: MutationCtx, { cardId }: { cardId: Id<"cards"> }) => {
 		return await ctx.db.delete(cardId);
 	},
 });
 
 export const moveCard = mutation({
-	args: { cardId: v.id('cards'), toListId: v.id('lists'), order: v.number() },
+	args: { cardId: v.id("cards"), toListId: v.id("lists"), order: v.number() },
 	handler: async (
 		ctx: MutationCtx,
 		{
 			cardId,
 			toListId,
 			order,
-		}: { cardId: Id<'cards'>; toListId: Id<'lists'>; order: number }
+		}: { cardId: Id<"cards">; toListId: Id<"lists">; order: number }
 	) => {
 		return await ctx.db.patch(cardId, { listId: toListId, order });
 	},
@@ -295,9 +295,9 @@ export const moveCard = mutation({
 
 export const updateCardInGantt = mutation({
 	args: {
-		cardId: v.id('cards'),
+		cardId: v.id("cards"),
 		dueDate: v.number(),
-		listId: v.optional(v.id('lists')),
+		listId: v.optional(v.id("lists")),
 	},
 	handler: async (
 		ctx: MutationCtx,
@@ -305,7 +305,7 @@ export const updateCardInGantt = mutation({
 			cardId,
 			dueDate,
 			listId,
-		}: { cardId: Id<'cards'>; dueDate: number; listId?: Id<'lists'> }
+		}: { cardId: Id<"cards">; dueDate: number; listId?: Id<"lists"> }
 	) => {
 		const updates: any = { dueDate };
 
@@ -314,8 +314,8 @@ export const updateCardInGantt = mutation({
 
 			// If we're changing the list, put the card at the end of the new list
 			const cards = await ctx.db
-				.query('cards')
-				.withIndex('by_list_id', (q) => q.eq('listId', listId))
+				.query("cards")
+				.withIndex("by_list_id", (q) => q.eq("listId", listId))
 				.collect();
 
 			updates.order = cards.length;
@@ -327,41 +327,41 @@ export const updateCardInGantt = mutation({
 
 // QUERIES
 export const getLists = query({
-	args: { channelId: v.id('channels') },
+	args: { channelId: v.id("channels") },
 	handler: async (
 		ctx: QueryCtx,
-		{ channelId }: { channelId: Id<'channels'> }
+		{ channelId }: { channelId: Id<"channels"> }
 	) => {
 		return await ctx.db
-			.query('lists')
-			.withIndex('by_channel_id_order', (q) => q.eq('channelId', channelId))
+			.query("lists")
+			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
 			.collect();
 	},
 });
 
 export const getCards = query({
-	args: { listId: v.id('lists') },
-	handler: async (ctx: QueryCtx, { listId }: { listId: Id<'lists'> }) => {
+	args: { listId: v.id("lists") },
+	handler: async (ctx: QueryCtx, { listId }: { listId: Id<"lists"> }) => {
 		return await ctx.db
-			.query('cards')
-			.withIndex('by_list_id', (q) => q.eq('listId', listId))
-			.order('asc')
+			.query("cards")
+			.withIndex("by_list_id", (q) => q.eq("listId", listId))
+			.order("asc")
 			.collect();
 	},
 });
 
 export const getAllCardsForChannel = query({
-	args: { channelId: v.id('channels') },
+	args: { channelId: v.id("channels") },
 	handler: async (ctx, { channelId }) => {
 		const lists = await ctx.db
-			.query('lists')
-			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
+			.query("lists")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
 			.collect();
 		const allCards = [];
 		for (const list of lists) {
 			const cards = await ctx.db
-				.query('cards')
-				.withIndex('by_list_id', (q) => q.eq('listId', list._id))
+				.query("cards")
+				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
 				.collect();
 			allCards.push(...cards);
 		}
@@ -370,18 +370,18 @@ export const getAllCardsForChannel = query({
 });
 
 export const getUniqueLabels = query({
-	args: { channelId: v.id('channels') },
+	args: { channelId: v.id("channels") },
 	handler: async (ctx, { channelId }) => {
 		const lists = await ctx.db
-			.query('lists')
-			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
+			.query("lists")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
 			.collect();
 		const allLabels = new Set<string>();
 
 		for (const list of lists) {
 			const cards = await ctx.db
-				.query('cards')
-				.withIndex('by_list_id', (q) => q.eq('listId', list._id))
+				.query("cards")
+				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
 				.collect();
 
 			// Collect all labels
@@ -399,12 +399,12 @@ export const getUniqueLabels = query({
 });
 
 export const getCardsWithDueDate = query({
-	args: { workspaceId: v.id('workspaces') },
+	args: { workspaceId: v.id("workspaces") },
 	handler: async (ctx, { workspaceId }) => {
 		// Get all channels in the workspace
 		const channels = await ctx.db
-			.query('channels')
-			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', workspaceId))
+			.query("channels")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.collect();
 
 		const cardsWithDueDate = [];
@@ -412,15 +412,15 @@ export const getCardsWithDueDate = query({
 		// For each channel, get all lists and cards
 		for (const channel of channels) {
 			const lists = await ctx.db
-				.query('lists')
-				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
+				.query("lists")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
 				.collect();
 
 			for (const list of lists) {
 				const cards = await ctx.db
-					.query('cards')
-					.withIndex('by_list_id', (q) => q.eq('listId', list._id))
-					.filter((q) => q.neq(q.field('dueDate'), undefined))
+					.query("cards")
+					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+					.filter((q) => q.neq(q.field("dueDate"), undefined))
 					.collect();
 
 				// Add channel and list info to each card
@@ -441,7 +441,7 @@ export const getCardsWithDueDate = query({
 
 // Get members for a channel's workspace (for assignee selection)
 export const getMembersForChannel = query({
-	args: { channelId: v.id('channels') },
+	args: { channelId: v.id("channels") },
 	handler: async (ctx, { channelId }) => {
 		// First get the channel to find its workspace
 		const channel = await ctx.db.get(channelId);
@@ -451,8 +451,8 @@ export const getMembersForChannel = query({
 
 		// Get all members in the workspace
 		const members = await ctx.db
-			.query('members')
-			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', workspaceId))
+			.query("members")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.collect();
 
 		// Populate user data for each member
@@ -478,7 +478,7 @@ export const getMembersForChannel = query({
 
 // Helper query to get card details for email
 export const _getCardDetails = query({
-	args: { cardId: v.id('cards') },
+	args: { cardId: v.id("cards") },
 	handler: async (ctx, { cardId }) => {
 		const card = await ctx.db.get(cardId);
 		if (!card) return null;
@@ -503,7 +503,7 @@ export const _getCardDetails = query({
 
 // Helper query to get member email
 export const _getMemberEmail = query({
-	args: { memberId: v.id('members') },
+	args: { memberId: v.id("members") },
 	handler: async (ctx, { memberId }) => {
 		return await getUserEmailFromMemberId(ctx, memberId);
 	},
@@ -512,14 +512,14 @@ export const _getMemberEmail = query({
 // Query to get all cards assigned to a specific member across all channels in a workspace
 export const getAssignedCards = query({
 	args: {
-		workspaceId: v.id('workspaces'),
-		memberId: v.id('members'),
+		workspaceId: v.id("workspaces"),
+		memberId: v.id("members"),
 	},
 	handler: async (ctx, { workspaceId, memberId }) => {
 		// Get all channels in the workspace
 		const channels = await ctx.db
-			.query('channels')
-			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', workspaceId))
+			.query("channels")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.collect();
 
 		const assignedCards = [];
@@ -527,15 +527,15 @@ export const getAssignedCards = query({
 		// For each channel, get all lists and cards
 		for (const channel of channels) {
 			const lists = await ctx.db
-				.query('lists')
-				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
+				.query("lists")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
 				.collect();
 
 			for (const list of lists) {
 				// Get all cards in the list
 				const cards = await ctx.db
-					.query('cards')
-					.withIndex('by_list_id', (q) => q.eq('listId', list._id))
+					.query("cards")
+					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
 					.collect();
 
 				// Filter cards that have the member as an assignee
@@ -564,7 +564,7 @@ export const getAssignedCards = query({
 
 // Helper query to get member name
 export const _getMemberName = query({
-	args: { memberId: v.id('members') },
+	args: { memberId: v.id("members") },
 	handler: async (ctx, { memberId }) => {
 		return await getUserNameFromMemberId(ctx, memberId);
 	},

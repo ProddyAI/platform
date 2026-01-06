@@ -1,34 +1,30 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { v } from 'convex/values';
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
 
-import type { Id } from './_generated/dataModel';
-import {
-	type QueryCtx,
-	mutation,
-	query,
-} from './_generated/server';
+import type { Id } from "./_generated/dataModel";
+import { mutation, type QueryCtx, query } from "./_generated/server";
 
 // Helper function to get a member by workspace and user ID
 const getMember = async (
 	ctx: QueryCtx,
-	workspaceId: Id<'workspaces'>,
-	userId: Id<'users'>
+	workspaceId: Id<"workspaces">,
+	userId: Id<"users">
 ) => {
 	return await ctx.db
-		.query('members')
-		.withIndex('by_workspace_id_user_id', (q) =>
-			q.eq('workspaceId', workspaceId).eq('userId', userId)
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
 		)
 		.unique();
 };
 
 // Helper function to populate user data for a member
-const populateUser = async (ctx: QueryCtx, userId: Id<'users'>) => {
+const populateUser = async (ctx: QueryCtx, userId: Id<"users">) => {
 	return await ctx.db.get(userId);
 };
 
 // Helper function to populate member data
-const populateMember = async (ctx: QueryCtx, memberId: Id<'members'>) => {
+const populateMember = async (ctx: QueryCtx, memberId: Id<"members">) => {
 	const member = await ctx.db.get(memberId);
 	if (!member) return null;
 
@@ -42,85 +38,85 @@ const populateMember = async (ctx: QueryCtx, memberId: Id<'members'>) => {
 };
 
 // Helper function to get channel data
-const getChannel = async (ctx: QueryCtx, channelId: Id<'channels'>) => {
+const getChannel = async (ctx: QueryCtx, channelId: Id<"channels">) => {
 	return await ctx.db.get(channelId);
 };
 
 // Helper function to get conversation data
 const getConversation = async (
 	ctx: QueryCtx,
-	conversationId: Id<'conversations'>
+	conversationId: Id<"conversations">
 ) => {
 	return await ctx.db.get(conversationId);
 };
 
 // Helper function to get message data
-const getMessage = async (ctx: QueryCtx, messageId: Id<'messages'>) => {
+const getMessage = async (ctx: QueryCtx, messageId: Id<"messages">) => {
 	return await ctx.db.get(messageId);
 };
 
 // Get all mentions for the current user in a workspace
 export const getMentionsForCurrentUser = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		includeRead: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		try {
-			console.log('getMentionsForCurrentUser - Starting query with args:', {
+			console.log("getMentionsForCurrentUser - Starting query with args:", {
 				workspaceId: args.workspaceId,
 				includeRead: args.includeRead,
 			});
 
 			const userId = await getAuthUserId(ctx);
 			if (!userId) {
-				console.log('getMentionsForCurrentUser - No userId found');
+				console.log("getMentionsForCurrentUser - No userId found");
 				return [];
 			}
-			console.log('getMentionsForCurrentUser - userId:', userId);
+			console.log("getMentionsForCurrentUser - userId:", userId);
 
 			// Get the current member
 			const currentMember = await getMember(
 				ctx,
 				args.workspaceId,
-				userId as Id<'users'>
+				userId as Id<"users">
 			);
 			if (!currentMember) {
 				console.log(
-					'getMentionsForCurrentUser - No currentMember found for userId:',
+					"getMentionsForCurrentUser - No currentMember found for userId:",
 					userId
 				);
 				return [];
 			}
 
 			console.log(
-				'getMentionsForCurrentUser - currentMember:',
+				"getMentionsForCurrentUser - currentMember:",
 				currentMember._id
 			);
 
 			// Query mentions for the current member
 			let mentionsQuery = ctx.db
-				.query('mentions')
-				.withIndex('by_workspace_id_mentioned_member_id', (q) =>
+				.query("mentions")
+				.withIndex("by_workspace_id_mentioned_member_id", (q) =>
 					q
-						.eq('workspaceId', args.workspaceId)
-						.eq('mentionedMemberId', currentMember._id)
+						.eq("workspaceId", args.workspaceId)
+						.eq("mentionedMemberId", currentMember._id)
 				);
 
 			// Filter by read status if specified
 			if (args.includeRead === false) {
 				mentionsQuery = ctx.db
-					.query('mentions')
-					.withIndex('by_workspace_id_mentioned_member_id_read', (q) =>
+					.query("mentions")
+					.withIndex("by_workspace_id_mentioned_member_id_read", (q) =>
 						q
-							.eq('workspaceId', args.workspaceId)
-							.eq('mentionedMemberId', currentMember._id)
-							.eq('read', false)
+							.eq("workspaceId", args.workspaceId)
+							.eq("mentionedMemberId", currentMember._id)
+							.eq("read", false)
 					);
 			}
 
 			// Get mentions and sort by creation time (newest first)
-			const mentions = await mentionsQuery.order('desc').collect();
+			const mentions = await mentionsQuery.order("desc").collect();
 
 			// Process mentions to include all necessary data
 			const processedMentions = [];
@@ -133,14 +129,14 @@ export const getMentionsForCurrentUser = query({
 				}
 
 				// Determine the source type and get source data
-				let sourceType = 'channel';
-				let sourceName = '';
-				let sourceId = '';
-				let messageText = '';
+				let sourceType = "channel";
+				let sourceName = "";
+				let sourceId = "";
+				let messageText = "";
 
 				// Handle card assignment mentions
 				if (mention.cardId) {
-					sourceType = 'card';
+					sourceType = "card";
 					const card = await ctx.db.get(mention.cardId);
 
 					if (card) {
@@ -154,15 +150,15 @@ export const getMentionsForCurrentUser = query({
 								messageText = `You were assigned to card "${mention.cardTitle || card.title}"`;
 							}
 						} else {
-							sourceName = 'Board';
-							sourceId = mention.channelId || '';
+							sourceName = "Board";
+							sourceId = mention.channelId || "";
 							messageText = `You were assigned to card "${mention.cardTitle || card.title}"`;
 						}
 					} else {
 						// Card was deleted but we still have the title
-						sourceName = 'Board';
-						sourceId = mention.channelId || '';
-						messageText = `You were assigned to card "${mention.cardTitle || 'Unknown'}" (deleted)`;
+						sourceName = "Board";
+						sourceId = mention.channelId || "";
+						messageText = `You were assigned to card "${mention.cardTitle || "Unknown"}" (deleted)`;
 					}
 				}
 				// Handle message mentions
@@ -171,14 +167,14 @@ export const getMentionsForCurrentUser = query({
 					if (!message) continue;
 
 					if (mention.channelId) {
-						sourceType = 'channel';
+						sourceType = "channel";
 						const channel = await getChannel(ctx, mention.channelId);
 						if (channel) {
 							sourceName = channel.name;
 							sourceId = channel._id;
 						}
 					} else if (mention.conversationId) {
-						sourceType = 'direct';
+						sourceType = "direct";
 						const conversation = await getConversation(
 							ctx,
 							mention.conversationId
@@ -191,20 +187,20 @@ export const getMentionsForCurrentUser = query({
 									: conversation.memberOneId;
 
 							const otherMember = await populateMember(ctx, otherMemberId);
-							if (otherMember && otherMember.user.name) {
+							if (otherMember?.user.name) {
 								sourceName = otherMember.user.name;
 								sourceId = otherMemberId;
 							}
 						}
 					} else if (mention.parentMessageId) {
-						sourceType = 'thread';
+						sourceType = "thread";
 						const parentMessage = await getMessage(
 							ctx,
 							mention.parentMessageId
 						);
 						if (parentMessage) {
 							sourceId = parentMessage._id;
-							sourceName = 'Thread';
+							sourceName = "Thread";
 						}
 					}
 
@@ -215,15 +211,15 @@ export const getMentionsForCurrentUser = query({
 						if (parsedBody.ops) {
 							messageText = parsedBody.ops
 								.map((op: any) =>
-									typeof op.insert === 'string' ? op.insert : ''
+									typeof op.insert === "string" ? op.insert : ""
 								)
-								.join('')
+								.join("")
 								.trim();
 						}
-					} catch (e) {
+					} catch (_e) {
 						// Not JSON, use as is (might contain HTML)
 						messageText = message.body
-							.replace(/<[^>]*>/g, '') // Remove HTML tags
+							.replace(/<[^>]*>/g, "") // Remove HTML tags
 							.trim();
 					}
 				}
@@ -238,11 +234,11 @@ export const getMentionsForCurrentUser = query({
 					read: mention.read,
 					author: {
 						id: mentioner._id,
-						name: mentioner.user.name || '',
+						name: mentioner.user.name || "",
 						image: mentioner.user.image,
 					},
 					source: {
-						type: sourceType as 'channel' | 'direct' | 'thread' | 'card',
+						type: sourceType as "channel" | "direct" | "thread" | "card",
 						id: sourceId,
 						name: sourceName,
 					},
@@ -253,7 +249,7 @@ export const getMentionsForCurrentUser = query({
 			}
 			return processedMentions;
 		} catch (error) {
-			console.error('Error in getMentionsForCurrentUser:', error);
+			console.error("Error in getMentionsForCurrentUser:", error);
 			return [];
 		}
 	},
@@ -262,102 +258,94 @@ export const getMentionsForCurrentUser = query({
 // Mark a mention as read or unread
 export const markMentionAsRead = mutation({
 	args: {
-		mentionId: v.id('mentions'),
+		mentionId: v.id("mentions"),
 		status: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
-		try {
-			const userId = await getAuthUserId(ctx);
-			if (!userId) {
-				throw new Error('Unauthorized');
-			}
-
-			const mention = await ctx.db.get(args.mentionId);
-			if (!mention) {
-				throw new Error('Mention not found');
-			}
-
-			// Get the current member
-			const currentMember = await getMember(
-				ctx,
-				mention.workspaceId,
-				userId as Id<'users'>
-			);
-			if (!currentMember) {
-				throw new Error('Member not found');
-			}
-
-			// Verify that the mention belongs to the current user
-			if (mention.mentionedMemberId !== currentMember._id) {
-				throw new Error('Unauthorized to change read status of this mention');
-			}
-
-			// If status is provided, use it; otherwise, mark as read
-			const newStatus = args.status !== undefined ? args.status : true;
-
-			// Update the mention
-			await ctx.db.patch(args.mentionId, {
-				read: newStatus,
-			});
-
-			return { success: true, read: newStatus };
-		} catch (error) {
-			throw error;
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
 		}
+
+		const mention = await ctx.db.get(args.mentionId);
+		if (!mention) {
+			throw new Error("Mention not found");
+		}
+
+		// Get the current member
+		const currentMember = await getMember(
+			ctx,
+			mention.workspaceId,
+			userId as Id<"users">
+		);
+		if (!currentMember) {
+			throw new Error("Member not found");
+		}
+
+		// Verify that the mention belongs to the current user
+		if (mention.mentionedMemberId !== currentMember._id) {
+			throw new Error("Unauthorized to change read status of this mention");
+		}
+
+		// If status is provided, use it; otherwise, mark as read
+		const newStatus = args.status !== undefined ? args.status : true;
+
+		// Update the mention
+		await ctx.db.patch(args.mentionId, {
+			read: newStatus,
+		});
+
+		return { success: true, read: newStatus };
 	},
 });
 
 // Mark all mentions as read for the current user in a workspace
 export const markAllMentionsAsRead = mutation({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
-		try {
-			const userId = await getAuthUserId(ctx);
-			if (!userId) {
-				throw new Error('Unauthorized');
-			}
-
-			// Get the current member
-			const currentMember = await getMember(
-				ctx,
-				args.workspaceId,
-				userId as Id<'users'>
-			);
-			if (!currentMember) {
-				throw new Error('Member not found');
-			}
-
-			// Get all unread mentions for the current user
-			const unreadMentions = await ctx.db
-				.query('mentions')
-				.withIndex('by_workspace_id_mentioned_member_id_read', (q) =>
-					q
-						.eq('workspaceId', args.workspaceId)
-						.eq('mentionedMemberId', currentMember._id)
-						.eq('read', false)
-				)
-				.collect();
-
-			// Update all mentions to be read
-			for (const mention of unreadMentions) {
-				await ctx.db.patch(mention._id, {
-					read: true,
-				});
-			}
-
-			return { success: true, count: unreadMentions.length };
-		} catch (error) {
-			throw error;
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
 		}
+
+		// Get the current member
+		const currentMember = await getMember(
+			ctx,
+			args.workspaceId,
+			userId as Id<"users">
+		);
+		if (!currentMember) {
+			throw new Error("Member not found");
+		}
+
+		// Get all unread mentions for the current user
+		const unreadMentions = await ctx.db
+			.query("mentions")
+			.withIndex("by_workspace_id_mentioned_member_id_read", (q) =>
+				q
+					.eq("workspaceId", args.workspaceId)
+					.eq("mentionedMemberId", currentMember._id)
+					.eq("read", false)
+			)
+			.collect();
+
+		// Update all mentions to be read
+		for (const mention of unreadMentions) {
+			await ctx.db.patch(mention._id, {
+				read: true,
+			});
+		}
+
+		return { success: true, count: unreadMentions.length };
 	},
 });
 
 // Get processed mentions
 export const getProcessedMentions = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		try {
@@ -370,7 +358,7 @@ export const getProcessedMentions = query({
 			const currentMember = await getMember(
 				ctx,
 				args.workspaceId,
-				userId as Id<'users'>
+				userId as Id<"users">
 			);
 			if (!currentMember) {
 				return [];
@@ -378,11 +366,11 @@ export const getProcessedMentions = query({
 
 			// Get all mentions for the current member
 			const mentions = await ctx.db
-				.query('mentions')
-				.withIndex('by_workspace_id_mentioned_member_id', (q) =>
+				.query("mentions")
+				.withIndex("by_workspace_id_mentioned_member_id", (q) =>
 					q
-						.eq('workspaceId', args.workspaceId)
-						.eq('mentionedMemberId', currentMember._id)
+						.eq("workspaceId", args.workspaceId)
+						.eq("mentionedMemberId", currentMember._id)
 				)
 				.collect();
 
@@ -394,14 +382,14 @@ export const getProcessedMentions = query({
 				if (!mentioner) continue;
 
 				// Determine the source type and get source data
-				let sourceType = 'channel';
-				let sourceName = '';
-				let sourceId = '';
-				let messageText = '';
+				let sourceType = "channel";
+				let sourceName = "";
+				let sourceId = "";
+				let messageText = "";
 
 				// Handle card assignment mentions
 				if (mention.cardId) {
-					sourceType = 'card';
+					sourceType = "card";
 					const card = await ctx.db.get(mention.cardId);
 
 					if (card) {
@@ -415,32 +403,32 @@ export const getProcessedMentions = query({
 								messageText = `You were assigned to card "${mention.cardTitle || card.title}"`;
 							}
 						} else {
-							sourceName = 'Board';
-							sourceId = mention.channelId || '';
+							sourceName = "Board";
+							sourceId = mention.channelId || "";
 							messageText = `You were assigned to card "${mention.cardTitle || card.title}"`;
 						}
 					} else {
 						// Card was deleted but we still have the title
-						sourceName = 'Board';
-						sourceId = mention.channelId || '';
-						messageText = `You were assigned to card "${mention.cardTitle || 'Unknown'}" (deleted)`;
+						sourceName = "Board";
+						sourceId = mention.channelId || "";
+						messageText = `You were assigned to card "${mention.cardTitle || "Unknown"}" (deleted)`;
 					}
 				}
 				// Handle message mentions
 				else if (mention.messageId) {
 					const message = await getMessage(ctx, mention.messageId);
 					if (!message) {
-						messageText = 'Message not found';
+						messageText = "Message not found";
 					} else {
 						if (mention.channelId) {
-							sourceType = 'channel';
+							sourceType = "channel";
 							const channel = await getChannel(ctx, mention.channelId);
 							if (channel) {
 								sourceName = channel.name;
 								sourceId = channel._id;
 							}
 						} else if (mention.conversationId) {
-							sourceType = 'direct';
+							sourceType = "direct";
 							const conversation = await getConversation(
 								ctx,
 								mention.conversationId
@@ -453,20 +441,20 @@ export const getProcessedMentions = query({
 										: conversation.memberOneId;
 
 								const otherMember = await populateMember(ctx, otherMemberId);
-								if (otherMember && otherMember.user.name) {
+								if (otherMember?.user.name) {
 									sourceName = otherMember.user.name;
 									sourceId = otherMemberId;
 								}
 							}
 						} else if (mention.parentMessageId) {
-							sourceType = 'thread';
+							sourceType = "thread";
 							const parentMessage = await getMessage(
 								ctx,
 								mention.parentMessageId
 							);
 							if (parentMessage) {
 								sourceId = parentMessage._id;
-								sourceName = 'Thread';
+								sourceName = "Thread";
 							}
 						}
 
@@ -477,21 +465,21 @@ export const getProcessedMentions = query({
 							if (parsedBody.ops) {
 								messageText = parsedBody.ops
 									.map((op: any) =>
-										typeof op.insert === 'string' ? op.insert : ''
+										typeof op.insert === "string" ? op.insert : ""
 									)
-									.join('')
+									.join("")
 									.trim();
 							}
-						} catch (e) {
+						} catch (_e) {
 							// Not JSON, use as is (might contain HTML)
 							messageText = message.body
-								.replace(/<[^>]*>/g, '') // Remove HTML tags
+								.replace(/<[^>]*>/g, "") // Remove HTML tags
 								.trim();
 						}
 					}
 				} else {
 					// If no message or card, use a default text
-					messageText = 'You were mentioned';
+					messageText = "You were mentioned";
 				}
 
 				// Create a processed mention with actual content
@@ -504,13 +492,13 @@ export const getProcessedMentions = query({
 					read: mention.read,
 					author: {
 						id: mentioner._id,
-						name: mentioner.user.name || '',
+						name: mentioner.user.name || "",
 						image: mentioner.user.image,
 					},
 					source: {
-						type: sourceType as 'channel' | 'direct' | 'thread' | 'card',
-						id: sourceId || mention.channelId || '',
-						name: sourceName || 'Channel',
+						type: sourceType as "channel" | "direct" | "thread" | "card",
+						id: sourceId || mention.channelId || "",
+						name: sourceName || "Channel",
 					},
 				};
 
@@ -518,7 +506,7 @@ export const getProcessedMentions = query({
 			}
 
 			return processedMentions;
-		} catch (error) {
+		} catch (_error) {
 			return [];
 		}
 	},
@@ -527,7 +515,7 @@ export const getProcessedMentions = query({
 // Get all mentions in the workspace
 export const getAllMentions = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		try {
@@ -538,14 +526,14 @@ export const getAllMentions = query({
 
 			// Get all mentions for the workspace
 			const mentions = await ctx.db
-				.query('mentions')
-				.withIndex('by_workspace_id', (q) =>
-					q.eq('workspaceId', args.workspaceId)
+				.query("mentions")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
 				)
 				.collect();
 
 			return mentions;
-		} catch (error) {
+		} catch (_error) {
 			return [];
 		}
 	},
@@ -556,7 +544,7 @@ export const getAllMentions = query({
 // Helper query to get a mention by ID (for internal use)
 export const _getMentionById = query({
 	args: {
-		mentionId: v.id('mentions'),
+		mentionId: v.id("mentions"),
 	},
 	handler: async (ctx, args) => {
 		return await ctx.db.get(args.mentionId);

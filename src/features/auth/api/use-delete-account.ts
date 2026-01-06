@@ -1,7 +1,7 @@
-import { useMutation } from 'convex/react';
+import { useMutation } from "convex/react";
 
-import { api } from '@/../convex/_generated/api';
+import { api } from "@/../convex/_generated/api";
 
 export const useDeleteAccount = () => {
-  return useMutation(api.auth.deleteAccount);
+	return useMutation(api.auth.deleteAccount);
 };

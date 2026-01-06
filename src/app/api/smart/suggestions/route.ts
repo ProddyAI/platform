@@ -1,7 +1,7 @@
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
-import * as dotenv from 'dotenv';
-import { NextRequest, NextResponse } from 'next/server';
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
+import * as dotenv from "dotenv";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Load environment variables
 dotenv.config();
@@ -17,7 +17,7 @@ interface MessageData {
 const extractionCache = new Map<string, string>();
 
 function extractTextFromRichText(body: string): string {
-	if (typeof body !== 'string') {
+	if (typeof body !== "string") {
 		return String(body);
 	}
 
@@ -29,7 +29,7 @@ function extractTextFromRichText(body: string): string {
 	const trimmedBody = body.trim();
 	let result = body;
 
-	if (trimmedBody.startsWith('{') && trimmedBody.endsWith('}')) {
+	if (trimmedBody.startsWith("{") && trimmedBody.endsWith("}")) {
 		try {
 			const parsed = JSON.parse(trimmedBody);
 
@@ -38,26 +38,26 @@ function extractTextFromRichText(body: string): string {
 				const textParts: string[] = [];
 
 				for (const op of parsed.ops) {
-					if (op && typeof op.insert === 'string') {
+					if (op && typeof op.insert === "string") {
 						textParts.push(op.insert);
 					}
 				}
 
 				result = textParts
-					.join('')
-					.replace(/\\n|\\N|\n/g, ' ')
+					.join("")
+					.replace(/\\n|\\N|\n/g, " ")
 					.trim();
 			} else {
 				console.log(
-					'extractTextFromRichText - No ops array found in parsed JSON'
+					"extractTextFromRichText - No ops array found in parsed JSON"
 				);
 			}
 		} catch (error) {
-			console.log('extractTextFromRichText - JSON parsing failed:', error);
+			console.log("extractTextFromRichText - JSON parsing failed:", error);
 			// If parsing fails, just use the original body
 		}
 	} else {
-		console.log('extractTextFromRichText - Not JSON format, using as is');
+		console.log("extractTextFromRichText - Not JSON format, using as is");
 	}
 
 	// Store in cache for future use
@@ -81,9 +81,9 @@ function generateCacheKey(
 	const messagesKey = messages
 		.slice(-5) // Only use the last 5 messages for the cache key to avoid too much specificity
 		.map((msg) => `${msg.id.substring(0, 8)}:${msg.authorName.substring(0, 5)}`)
-		.join('|');
+		.join("|");
 
-	return `${contextName || 'unknown'}-${messagesKey}`;
+	return `${contextName || "unknown"}-${messagesKey}`;
 }
 
 // Helper function to maintain cache size
@@ -111,9 +111,9 @@ export async function POST(req: NextRequest) {
 	try {
 		// Check for API key
 		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error('Missing GOOGLE_GENERATIVE_AI_API_KEY');
+			console.error("Missing GOOGLE_GENERATIVE_AI_API_KEY");
 			return NextResponse.json(
-				{ error: 'API key not configured' },
+				{ error: "API key not configured" },
 				{ status: 500 }
 			);
 		}
@@ -122,9 +122,9 @@ export async function POST(req: NextRequest) {
 		let requestData;
 		try {
 			requestData = await req.json();
-		} catch (parseError) {
+		} catch (_parseError) {
 			return NextResponse.json(
-				{ error: 'Invalid JSON in request' },
+				{ error: "Invalid JSON in request" },
 				{ status: 400 }
 			);
 		}
@@ -132,12 +132,12 @@ export async function POST(req: NextRequest) {
 		const { messages, channelName } = requestData;
 
 		// Use channelName as the context - this API now only handles channel suggestions
-		const contextName = channelName || 'channel';
+		const contextName = channelName || "channel";
 
 		// Validate messages
 		if (!messages || !Array.isArray(messages)) {
 			return NextResponse.json(
-				{ error: 'Invalid messages format' },
+				{ error: "Invalid messages format" },
 				{ status: 400 }
 			);
 		}
@@ -147,8 +147,8 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({
 				suggestions: [
 					"Let's start a conversation!",
-					'Hello team, how is everyone doing today?',
-					'Any updates on our current projects?',
+					"Hello team, how is everyone doing today?",
+					"Any updates on our current projects?",
 				],
 				cached: false,
 			});
@@ -158,10 +158,10 @@ export async function POST(req: NextRequest) {
 		const validMessages = messages.filter(
 			(msg) =>
 				msg &&
-				typeof msg === 'object' &&
+				typeof msg === "object" &&
 				msg.body !== undefined &&
 				msg.authorName &&
-				typeof msg.authorName === 'string'
+				typeof msg.authorName === "string"
 		);
 
 		if (validMessages.length === 0) {
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
 				suggestions: [
 					"Let's get this conversation started!",
 					"I'm ready to collaborate on this project.",
-					'What are our priorities for today?',
+					"What are our priorities for today?",
 				],
 				cached: false,
 			});
@@ -197,23 +197,23 @@ export async function POST(req: NextRequest) {
 			.map((msg: MessageData) => {
 				try {
 					// Handle both string and object body formats
-					let plainText = '';
-					if (typeof msg.body === 'string') {
+					let plainText = "";
+					if (typeof msg.body === "string") {
 						plainText = extractTextFromRichText(msg.body);
-					} else if (msg.body && typeof msg.body === 'object') {
+					} else if (msg.body && typeof msg.body === "object") {
 						// If body is already an object, convert to string first
 						plainText = extractTextFromRichText(JSON.stringify(msg.body));
 					} else {
-						plainText = String(msg.body || '');
+						plainText = String(msg.body || "");
 					}
 
 					return `${msg.authorName}: ${plainText}`;
-				} catch (error) {
-					return '';
+				} catch (_error) {
+					return "";
 				}
 			})
 			.filter(Boolean)
-			.join('\n');
+			.join("\n");
 
 		// If chat history is too short, return default suggestions
 		if (chatHistory.length < 10) {
@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
 				suggestions: [
 					"Let's start the discussion!",
 					"I'd like to hear more about this topic.",
-					'Could you share more details?',
+					"Could you share more details?",
 				],
 				cached: false,
 			});
@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
 
 		// Count actual messages (not empty lines)
 		const messageCount = chatHistory
-			.split('\n')
+			.split("\n")
 			.filter((line) => line.trim().length > 0).length;
 
 		if (messageCount < 2) {
@@ -260,19 +260,19 @@ Guidelines:
 Example output format:
 Let's discuss this in our next meeting. ||| I've completed the task you assigned. ||| Could you provide more details about the requirements?`;
 
-			const userContent = `Channel name: ${channelName || 'General'}\n\nRecent conversation:\n${chatHistory}\n\nGenerate 3 contextually relevant message suggestions:`;
+			const userContent = `Channel name: ${channelName || "General"}\n\nRecent conversation:\n${chatHistory}\n\nGenerate 3 contextually relevant message suggestions:`;
 
 			let text;
 			try {
 				const response = await generateText({
-					model: google('gemini-2.5-flash'),
+					model: google("gemini-2.5-flash"),
 					messages: [
 						{
-							role: 'system',
+							role: "system",
 							content: prompt,
 						},
 						{
-							role: 'user',
+							role: "user",
 							content: userContent,
 						},
 					],
@@ -283,22 +283,22 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 				text = response.text;
 			} catch (error) {
 				const aiError = error as Error;
-				console.error('Error calling Gemini API:', aiError);
+				console.error("Error calling Gemini API:", aiError);
 				// Return fallback suggestions instead of throwing
 				return NextResponse.json({
 					suggestions: [
 						"Let's discuss this further.",
-						'I have some thoughts on this topic.',
-						'Could we schedule a meeting about this?',
+						"I have some thoughts on this topic.",
+						"Could we schedule a meeting about this?",
 					],
 					cached: false,
-					error: `Gemini API error: ${aiError.message || 'Unknown error'}`,
+					error: `Gemini API error: ${aiError.message || "Unknown error"}`,
 				});
 			}
 
 			// Parse the suggestions from the response
 			const suggestions = text
-				.split('|||')
+				.split("|||")
 				.map((s) => s.trim())
 				.filter(Boolean);
 
@@ -309,8 +309,8 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 					: [
 							...suggestions,
 							"I'll look into this and get back to you.",
-							'Thanks for sharing this information.',
-							'Could we discuss this further in our next meeting?',
+							"Thanks for sharing this information.",
+							"Could we discuss this further in our next meeting?",
 						].slice(0, 3);
 
 			// Cache the result
@@ -326,25 +326,25 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 				suggestions: finalSuggestions,
 				cached: false,
 			});
-		} catch (aiError) {
+		} catch (_aiError) {
 			// Fallback suggestions
 			const fallbackSuggestions = [
 				"I'll look into this and get back to you.",
-				'Thanks for sharing this information.',
-				'Could we discuss this further in our next meeting?',
+				"Thanks for sharing this information.",
+				"Could we discuss this further in our next meeting?",
 			];
 
 			return NextResponse.json({
 				suggestions: fallbackSuggestions,
-				note: 'AI suggestion generation failed',
+				note: "AI suggestion generation failed",
 			});
 		}
 	} catch (error) {
-		console.error('Error in suggestions route:', error);
+		console.error("Error in suggestions route:", error);
 		return NextResponse.json(
 			{
-				error: 'Internal server error',
-				details: error instanceof Error ? error.message : 'Unknown error',
+				error: "Internal server error",
+				details: error instanceof Error ? error.message : "Unknown error",
 			},
 			{ status: 500 }
 		);

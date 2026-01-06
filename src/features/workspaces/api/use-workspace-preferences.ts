@@ -1,17 +1,13 @@
-import { useMutation, useQuery } from 'convex/react';
-import { api } from '@/../convex/_generated/api';
-import type { Id } from '@/../convex/_generated/dataModel';
-import { useEffect, useState } from 'react';
-import {
-	WorkspacePreference,
-	DashboardWidget,
-	WidgetSize,
-} from '../../../../convex/preferences';
+import { useMutation, useQuery } from "convex/react";
+import { useEffect, useState } from "react";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import type { DashboardWidget } from "../../../../convex/preferences";
 
 export const useWorkspacePreferences = ({
 	workspaceId,
 }: {
-	workspaceId: Id<'workspaces'>;
+	workspaceId: Id<"workspaces">;
 }) => {
 	const data = useQuery(api.preferences.getWorkspacePreferences, {
 		workspaceId,
@@ -28,7 +24,7 @@ export const useUpdateWorkspacePreferences = () => {
 export const useSidebarCollapsed = ({
 	workspaceId,
 }: {
-	workspaceId: Id<'workspaces'>;
+	workspaceId: Id<"workspaces">;
 }) => {
 	const [isCollapsed, setIsCollapsedLocal] = useState(false);
 
@@ -57,59 +53,59 @@ export const useSidebarCollapsed = ({
 export const useDashboardWidgets = ({
 	workspaceId,
 }: {
-	workspaceId: Id<'workspaces'>;
+	workspaceId: Id<"workspaces">;
 }) => {
 	type WidgetConfig = DashboardWidget;
 
 	const defaultWidgets: WidgetConfig[] = [
 		{
-			id: 'calendar',
-			title: 'Upcoming Events',
-			description: 'Shows events for the next 7 days',
+			id: "calendar",
+			title: "Upcoming Events",
+			description: "Shows events for the next 7 days",
 			visible: true,
-			size: 'large',
+			size: "large",
 		},
 		{
-			id: 'mentions',
-			title: 'Mentions',
-			description: 'Shows messages where you were mentioned',
+			id: "mentions",
+			title: "Mentions",
+			description: "Shows messages where you were mentioned",
 			visible: true,
-			size: 'small',
+			size: "small",
 		},
 		{
-			id: 'threads',
-			title: 'Thread Replies',
-			description: 'Shows replies to your message threads',
+			id: "threads",
+			title: "Thread Replies",
+			description: "Shows replies to your message threads",
 			visible: true,
-			size: 'small',
+			size: "small",
 		},
 		{
-			id: 'tasks',
-			title: 'Your Tasks',
-			description: 'Shows your assigned tasks',
+			id: "tasks",
+			title: "Your Tasks",
+			description: "Shows your assigned tasks",
 			visible: true,
-			size: 'small',
+			size: "small",
 		},
 		{
-			id: 'cards',
-			title: 'Board Cards',
-			description: 'Shows your assigned board cards',
+			id: "cards",
+			title: "Board Cards",
+			description: "Shows your assigned board cards",
 			visible: true,
-			size: 'small',
+			size: "small",
 		},
 		{
-			id: 'notes',
-			title: 'Recent Notes',
-			description: 'Shows recently updated notes',
+			id: "notes",
+			title: "Recent Notes",
+			description: "Shows recently updated notes",
 			visible: true,
-			size: 'small',
+			size: "small",
 		},
 		{
-			id: 'canvas',
-			title: 'Recent Canvas',
-			description: 'Shows recently updated canvas items',
+			id: "canvas",
+			title: "Recent Canvas",
+			description: "Shows recently updated canvas items",
 			visible: true,
-			size: 'small',
+			size: "small",
 		},
 	];
 
@@ -134,7 +130,7 @@ export const useDashboardWidgets = ({
 			| WidgetConfig[]
 			| ((prev: WidgetConfig[]) => WidgetConfig[])
 	) => {
-		if (typeof newWidgetsOrUpdater === 'function') {
+		if (typeof newWidgetsOrUpdater === "function") {
 			setWidgetsLocal((prev) => {
 				const newWidgets = newWidgetsOrUpdater(prev);
 				updateDashboardWidgets({ workspaceId, dashboardWidgets: newWidgets });

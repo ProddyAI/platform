@@ -1,16 +1,15 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { paginationOptsValidator } from 'convex/server';
-import { v } from 'convex/values';
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator } from "convex/server";
+import { v } from "convex/values";
+import { api } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
+import { mutation, type QueryCtx, query } from "./_generated/server";
 
-import type { Doc, Id } from './_generated/dataModel';
-import { type QueryCtx, mutation, query } from './_generated/server';
-import { api } from './_generated/api';
-
-const populateThread = async (ctx: QueryCtx, messageId: Id<'messages'>) => {
+const populateThread = async (ctx: QueryCtx, messageId: Id<"messages">) => {
 	const messages = await ctx.db
-		.query('messages')
-		.withIndex('by_parent_message_id', (q) =>
-			q.eq('parentMessageId', messageId)
+		.query("messages")
+		.withIndex("by_parent_message_id", (q) =>
+			q.eq("parentMessageId", messageId)
 		)
 		.collect();
 
@@ -19,7 +18,7 @@ const populateThread = async (ctx: QueryCtx, messageId: Id<'messages'>) => {
 			count: 0,
 			image: undefined,
 			timestamp: 0,
-			name: '',
+			name: "",
 		};
 	}
 
@@ -31,7 +30,7 @@ const populateThread = async (ctx: QueryCtx, messageId: Id<'messages'>) => {
 			count: 0,
 			image: undefined,
 			timestamp: 0,
-			name: '',
+			name: "",
 		};
 	}
 
@@ -45,45 +44,45 @@ const populateThread = async (ctx: QueryCtx, messageId: Id<'messages'>) => {
 	};
 };
 
-const populateReactions = (ctx: QueryCtx, messageId: Id<'messages'>) => {
+const populateReactions = (ctx: QueryCtx, messageId: Id<"messages">) => {
 	return ctx.db
-		.query('reactions')
-		.withIndex('by_message_id', (q) => q.eq('messageId', messageId))
+		.query("reactions")
+		.withIndex("by_message_id", (q) => q.eq("messageId", messageId))
 		.collect();
 };
 
-const populateUser = (ctx: QueryCtx, userId: Id<'users'>) => {
+const populateUser = (ctx: QueryCtx, userId: Id<"users">) => {
 	return ctx.db.get(userId);
 };
 
-const populateMember = (ctx: QueryCtx, memberId: Id<'members'>) => {
+const populateMember = (ctx: QueryCtx, memberId: Id<"members">) => {
 	return ctx.db.get(memberId);
 };
 
 const getMember = async (
 	ctx: QueryCtx,
-	workspaceId: Id<'workspaces'>,
-	userId: Id<'users'>
+	workspaceId: Id<"workspaces">,
+	userId: Id<"users">
 ) => {
 	return await ctx.db
-		.query('members')
-		.withIndex('by_workspace_id_user_id', (q) =>
-			q.eq('workspaceId', workspaceId).eq('userId', userId)
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
 		)
 		.unique();
 };
 
 export const get = query({
 	args: {
-		channelId: v.optional(v.id('channels')),
-		conversationId: v.optional(v.id('conversations')),
-		parentMessageId: v.optional(v.id('messages')),
+		channelId: v.optional(v.id("channels")),
+		conversationId: v.optional(v.id("conversations")),
+		parentMessageId: v.optional(v.id("messages")),
 		paginationOpts: paginationOptsValidator,
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
-		if (!userId) throw new Error('Unauthorized.');
+		if (!userId) throw new Error("Unauthorized.");
 
 		let _conversationId = args.conversationId;
 
@@ -91,20 +90,20 @@ export const get = query({
 		if (!args.conversationId && !args.channelId && args.parentMessageId) {
 			const parentMessage = await ctx.db.get(args.parentMessageId);
 
-			if (!parentMessage) throw new Error('Parent message not found.');
+			if (!parentMessage) throw new Error("Parent message not found.");
 
 			_conversationId = parentMessage.conversationId;
 		}
 
 		const results = await ctx.db
-			.query('messages')
-			.withIndex('by_channel_id_parent_message_id_conversation_id', (q) =>
+			.query("messages")
+			.withIndex("by_channel_id_parent_message_id_conversation_id", (q) =>
 				q
-					.eq('channelId', args.channelId)
-					.eq('parentMessageId', args.parentMessageId)
-					.eq('conversationId', _conversationId)
+					.eq("channelId", args.channelId)
+					.eq("parentMessageId", args.parentMessageId)
+					.eq("conversationId", _conversationId)
 			)
-			.order('desc')
+			.order("desc")
 			.paginate(args.paginationOpts);
 
 		return {
@@ -146,9 +145,9 @@ export const get = query({
 
 								return acc;
 							},
-							[] as (Doc<'reactions'> & {
+							[] as (Doc<"reactions"> & {
 								count: number;
-								memberIds: Id<'members'>[];
+								memberIds: Id<"members">[];
 							})[]
 						);
 
@@ -179,7 +178,7 @@ export const get = query({
 // Helper query to get a message by ID (for internal use)
 export const _getMessageById = query({
 	args: {
-		messageId: v.id('messages'),
+		messageId: v.id("messages"),
 	},
 	handler: async (ctx, args) => {
 		return await ctx.db.get(args.messageId);
@@ -188,7 +187,7 @@ export const _getMessageById = query({
 
 export const getById = query({
 	args: {
-		id: v.id('messages'),
+		id: v.id("messages"),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -202,7 +201,7 @@ export const getById = query({
 		const currentMember = await getMember(
 			ctx,
 			message.workspaceId,
-			userId as Id<'users'>
+			userId as Id<"users">
 		);
 
 		if (!currentMember) return null;
@@ -236,9 +235,9 @@ export const getById = query({
 
 				return acc;
 			},
-			[] as (Doc<'reactions'> & {
+			[] as (Doc<"reactions"> & {
 				count: number;
-				memberIds: Id<'members'>[];
+				memberIds: Id<"members">[];
 			})[]
 		);
 
@@ -261,11 +260,11 @@ export const getById = query({
 export const create = mutation({
 	args: {
 		body: v.string(),
-		image: v.optional(v.id('_storage')),
-		workspaceId: v.id('workspaces'),
-		channelId: v.optional(v.id('channels')),
-		conversationId: v.optional(v.id('conversations')),
-		parentMessageId: v.optional(v.id('messages')),
+		image: v.optional(v.id("_storage")),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
+		conversationId: v.optional(v.id("conversations")),
+		parentMessageId: v.optional(v.id("messages")),
 		tags: v.optional(v.array(v.string())),
 		calendarEvent: v.optional(
 			v.object({
@@ -277,15 +276,15 @@ export const create = mutation({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
-		if (!userId) throw new Error('Unauthorized.');
+		if (!userId) throw new Error("Unauthorized.");
 
 		const member = await getMember(
 			ctx,
 			args.workspaceId,
-			userId as Id<'users'>
+			userId as Id<"users">
 		);
 
-		if (!member) throw new Error('Unauthorized.');
+		if (!member) throw new Error("Unauthorized.");
 
 		let _conversationId = args.conversationId;
 
@@ -293,7 +292,7 @@ export const create = mutation({
 		if (!args.conversationId && !args.channelId && args.parentMessageId) {
 			const parentMessage = await ctx.db.get(args.parentMessageId);
 
-			if (!parentMessage) throw new Error('Parent message not found.');
+			if (!parentMessage) throw new Error("Parent message not found.");
 
 			_conversationId = parentMessage.conversationId;
 		}
@@ -302,11 +301,11 @@ export const create = mutation({
 		if (args.channelId) {
 			const channel = await ctx.db.get(args.channelId);
 			if (!channel) {
-				throw new Error('Channel not found.');
+				throw new Error("Channel not found.");
 			}
 		}
 
-		const messageId = await ctx.db.insert('messages', {
+		const messageId = await ctx.db.insert("messages", {
 			memberId: member._id,
 			body: args.body,
 			image: args.image,
@@ -328,13 +327,9 @@ export const create = mutation({
 
 		// If this is a direct message, send an email notification
 		if (args.conversationId) {
-			await ctx.scheduler.runAfter(
-				0,
-				api.email.sendDirectMessageEmail,
-				{
-					messageId,
-				}
-			);
+			await ctx.scheduler.runAfter(0, api.email.sendDirectMessageEmail, {
+				messageId,
+			});
 		}
 
 		// Process mentions in the message (skip for direct messages)
@@ -346,9 +341,9 @@ export const create = mutation({
 		try {
 			// Get all members in the workspace to check for mentions
 			const workspaceMembers = await ctx.db
-				.query('members')
-				.withIndex('by_workspace_id', (q) =>
-					q.eq('workspaceId', args.workspaceId)
+				.query("members")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
 				)
 				.collect();
 
@@ -360,25 +355,25 @@ export const create = mutation({
 			const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
 
 			// Create a map of user ID to user for quick lookup
-			const userMap = new Map(users.filter(Boolean).map((u) => [u!._id, u]));
+			const userMap = new Map(users.filter(Boolean).map((u) => [u?._id, u]));
 
 			// Create a map of member ID to user name for mention detection
 			const memberIdToName = new Map();
 			workspaceMembers.forEach((m) => {
 				const user = userMap.get(m.userId);
-				if (user && user.name) {
+				if (user?.name) {
 					memberIdToName.set(m._id, user.name);
 				}
 			});
 
 			// Check for mentions in the message body
-			const mentionedMemberIds = new Set<Id<'members'>>();
+			const mentionedMemberIds = new Set<Id<"members">>();
 
 			// Check for data-member-id attributes in HTML
 			const memberIdRegex = /data-member-id="([^"]+)"/g;
 			let match;
 			while ((match = memberIdRegex.exec(args.body)) !== null) {
-				const memberId = match[1] as Id<'members'>;
+				const memberId = match[1] as Id<"members">;
 				if (memberMap.has(memberId)) {
 					mentionedMemberIds.add(memberId);
 				}
@@ -390,12 +385,12 @@ export const create = mutation({
 				const parsedBody = JSON.parse(args.body);
 				if (parsedBody.ops) {
 					for (const op of parsedBody.ops) {
-						if (op.insert && typeof op.insert === 'string') {
+						if (op.insert && typeof op.insert === "string") {
 							// Check for data-member-id in HTML
 							const memberIdRegex = /data-member-id="([^"]+)"/g;
 							let match;
 							while ((match = memberIdRegex.exec(op.insert)) !== null) {
-								const memberId = match[1] as Id<'members'>;
+								const memberId = match[1] as Id<"members">;
 								if (memberMap.has(memberId)) {
 									mentionedMemberIds.add(memberId);
 								}
@@ -413,7 +408,7 @@ export const create = mutation({
 						}
 					}
 				}
-			} catch (e) {
+			} catch (_e) {
 				// Not JSON, check for @username mentions in plain text
 				// Use Array.from to convert Map entries to an array for compatibility
 				Array.from(memberIdToName.entries()).forEach(([memberId, name]) => {
@@ -426,7 +421,7 @@ export const create = mutation({
 			// Create mention records for each mentioned member
 			for (const mentionedMemberId of Array.from(mentionedMemberIds)) {
 				// Create the mention record
-				const mentionId = await ctx.db.insert('mentions', {
+				const mentionId = await ctx.db.insert("mentions", {
 					messageId,
 					mentionedMemberId,
 					mentionerMemberId: member._id,
@@ -443,7 +438,7 @@ export const create = mutation({
 					mentionId,
 				});
 			}
-		} catch (error) {
+		} catch (_error) {
 			// Don't throw the error, as we still want to return the message ID
 			// even if mention processing fails
 		}
@@ -459,27 +454,27 @@ export const create = mutation({
 
 export const update = mutation({
 	args: {
-		id: v.id('messages'),
+		id: v.id("messages"),
 		body: v.string(),
 		tags: v.optional(v.array(v.string())),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
-		if (!userId) throw new Error('Unauthorized.');
+		if (!userId) throw new Error("Unauthorized.");
 
 		const message = await ctx.db.get(args.id);
 
-		if (!message) throw new Error('Message not found.');
+		if (!message) throw new Error("Message not found.");
 
 		const member = await getMember(
 			ctx,
 			message.workspaceId,
-			userId as Id<'users'>
+			userId as Id<"users">
 		);
 
 		if (!member || member._id !== message.memberId)
-			throw new Error('Unauthorized.');
+			throw new Error("Unauthorized.");
 
 		const updateData: any = {
 			body: args.body,
@@ -503,25 +498,25 @@ export const update = mutation({
 
 export const remove = mutation({
 	args: {
-		id: v.id('messages'),
+		id: v.id("messages"),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
-		if (!userId) throw new Error('Unauthorized.');
+		if (!userId) throw new Error("Unauthorized.");
 
 		const message = await ctx.db.get(args.id);
 
-		if (!message) throw new Error('Message not found.');
+		if (!message) throw new Error("Message not found.");
 
 		const member = await getMember(
 			ctx,
 			message.workspaceId,
-			userId as Id<'users'>
+			userId as Id<"users">
 		);
 
 		if (!member || member._id !== message.memberId)
-			throw new Error('Unauthorized.');
+			throw new Error("Unauthorized.");
 
 		await ctx.db.delete(args.id);
 
@@ -531,194 +526,190 @@ export const remove = mutation({
 
 export const getUserMessages = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
-		try {
-			const identity = await ctx.auth.getUserIdentity();
-			if (!identity) {
-				throw new Error('Not authenticated');
-			}
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new Error("Not authenticated");
+		}
 
-			const userId = identity.subject;
-			const baseUserId = userId.split('|')[0];
+		const userId = identity.subject;
+		const baseUserId = userId.split("|")[0];
 
-			// Get the current member using the base user ID
-			const currentMember = await ctx.db
-				.query('members')
-				.withIndex('by_workspace_id_user_id', (q) =>
-					q
-						.eq('workspaceId', args.workspaceId)
-						.eq('userId', baseUserId as Id<'users'>)
+		// Get the current member using the base user ID
+		const currentMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q
+					.eq("workspaceId", args.workspaceId)
+					.eq("userId", baseUserId as Id<"users">)
+			)
+			.unique();
+
+		// If no member found, return empty array
+		if (!currentMember) {
+			return [];
+		}
+
+		// Get all messages for the current member in this workspace
+		const messages = await ctx.db
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) => q.eq(q.field("memberId"), currentMember._id))
+			.order("desc")
+			.collect();
+
+		// Get all channels and conversations in one go
+		const [channels, conversations] = await Promise.all([
+			ctx.db
+				.query("channels")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
 				)
-				.unique();
-
-			// If no member found, return empty array
-			if (!currentMember) {
-				return [];
-			}
-
-			// Get all messages for the current member in this workspace
-			const messages = await ctx.db
-				.query('messages')
-				.withIndex('by_workspace_id', (q) =>
-					q.eq('workspaceId', args.workspaceId)
+				.collect(),
+			ctx.db
+				.query("conversations")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
 				)
-				.filter((q) => q.eq(q.field('memberId'), currentMember._id))
-				.order('desc')
-				.collect();
+				.collect(),
+		]);
 
-			// Get all channels and conversations in one go
-			const [channels, conversations] = await Promise.all([
-				ctx.db
-					.query('channels')
-					.withIndex('by_workspace_id', (q) =>
-						q.eq('workspaceId', args.workspaceId)
-					)
-					.collect(),
-				ctx.db
-					.query('conversations')
-					.withIndex('by_workspace_id', (q) =>
-						q.eq('workspaceId', args.workspaceId)
-					)
-					.collect(),
-			]);
+		// Create lookup maps for faster access
+		const channelMap = new Map(
+			channels.map((channel) => [channel._id, channel])
+		);
+		const conversationMap = new Map(
+			conversations.map((conversation) => [conversation._id, conversation])
+		);
 
-			// Create lookup maps for faster access
-			const channelMap = new Map(
-				channels.map((channel) => [channel._id, channel])
-			);
-			const conversationMap = new Map(
-				conversations.map((conversation) => [conversation._id, conversation])
-			);
+		// Get all members and users in one go
+		const memberIds = new Set<Id<"members">>();
+		messages.forEach((message) => memberIds.add(message.memberId));
+		conversations.forEach((conversation) => {
+			memberIds.add(conversation.memberOneId);
+			memberIds.add(conversation.memberTwoId);
+		});
 
-			// Get all members and users in one go
-			const memberIds = new Set<Id<'members'>>();
-			messages.forEach((message) => memberIds.add(message.memberId));
-			conversations.forEach((conversation) => {
-				memberIds.add(conversation.memberOneId);
-				memberIds.add(conversation.memberTwoId);
-			});
+		const members = await Promise.all(
+			Array.from(memberIds).map((id) => ctx.db.get(id))
+		);
+		const memberMap = new Map(
+			members.filter(Boolean).map((member) => [member?._id, member])
+		);
 
-			const members = await Promise.all(
-				Array.from(memberIds).map((id) => ctx.db.get(id))
-			);
-			const memberMap = new Map(
-				members.filter(Boolean).map((member) => [member!._id, member])
-			);
+		const userIds = new Set<Id<"users">>();
+		members.forEach((member) => {
+			if (member?.userId) userIds.add(member.userId);
+		});
 
-			const userIds = new Set<Id<'users'>>();
-			members.forEach((member) => {
-				if (member?.userId) userIds.add(member.userId);
-			});
+		const users = await Promise.all(
+			Array.from(userIds).map((id) => ctx.db.get(id))
+		);
+		const userMap = new Map(
+			users.filter(Boolean).map((user) => [user?._id, user])
+		);
 
-			const users = await Promise.all(
-				Array.from(userIds).map((id) => ctx.db.get(id))
-			);
-			const userMap = new Map(
-				users.filter(Boolean).map((user) => [user!._id, user])
-			);
+		// Get channel and conversation information for each message
+		const messagesWithContext = messages.map((message) => {
+			let context: {
+				name: string;
+				type: "channel" | "conversation" | "unknown";
+				id: Id<"channels"> | Id<"conversations">;
+				memberId?: Id<"members">;
+			} = {
+				name: "Unknown",
+				type: "unknown",
+				id:
+					message.channelId ||
+					message.conversationId ||
+					("" as Id<"channels"> | Id<"conversations">),
+			};
 
-			// Get channel and conversation information for each message
-			const messagesWithContext = messages.map((message) => {
-				let context: {
-					name: string;
-					type: 'channel' | 'conversation' | 'unknown';
-					id: Id<'channels'> | Id<'conversations'>;
-					memberId?: Id<'members'>;
-				} = {
-					name: 'Unknown',
-					type: 'unknown',
-					id:
-						message.channelId ||
-						message.conversationId ||
-						('' as Id<'channels'> | Id<'conversations'>),
-				};
-
-				if (message.channelId) {
-					const channel = channelMap.get(message.channelId);
-					if (channel) {
-						context = {
-							name: channel.name,
-							type: 'channel',
-							id: channel._id,
-						};
-					}
-				} else if (message.conversationId) {
-					const conversation = conversationMap.get(message.conversationId);
-					if (conversation) {
-						const currentMember = memberMap.get(message.memberId);
-						if (currentMember) {
-							const otherMemberId =
-								conversation.memberOneId === currentMember._id
-									? conversation.memberTwoId
-									: conversation.memberOneId;
-							const otherMember = memberMap.get(otherMemberId);
-							if (otherMember) {
-								const otherUser = userMap.get(otherMember.userId);
-								if (otherUser) {
-									context = {
-										name: `Direct Message with ${otherUser.name}`,
-										type: 'conversation',
-										id: conversation._id,
-										memberId: otherMember._id,
-									};
-								}
+			if (message.channelId) {
+				const channel = channelMap.get(message.channelId);
+				if (channel) {
+					context = {
+						name: channel.name,
+						type: "channel",
+						id: channel._id,
+					};
+				}
+			} else if (message.conversationId) {
+				const conversation = conversationMap.get(message.conversationId);
+				if (conversation) {
+					const currentMember = memberMap.get(message.memberId);
+					if (currentMember) {
+						const otherMemberId =
+							conversation.memberOneId === currentMember._id
+								? conversation.memberTwoId
+								: conversation.memberOneId;
+						const otherMember = memberMap.get(otherMemberId);
+						if (otherMember) {
+							const otherUser = userMap.get(otherMember.userId);
+							if (otherUser) {
+								context = {
+									name: `Direct Message with ${otherUser.name}`,
+									type: "conversation",
+									id: conversation._id,
+									memberId: otherMember._id,
+								};
 							}
 						}
 					}
 				}
+			}
 
-				return {
-					...message,
-					context,
-				};
-			});
+			return {
+				...message,
+				context,
+			};
+		});
 
-			return messagesWithContext;
-		} catch (error) {
-			throw error;
-		}
+		return messagesWithContext;
 	},
 });
 
 export const getAllWorkspaceMessages = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		try {
 			const identity = await ctx.auth.getUserIdentity();
 			if (!identity) {
-				throw new Error('Not authenticated');
+				throw new Error("Not authenticated");
 			}
 
 			// Get all messages in the workspace
 			const allMessages = await ctx.db
-				.query('messages')
-				.filter((q) => q.eq(q.field('workspaceId'), args.workspaceId))
+				.query("messages")
+				.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId))
 				.collect();
 
 			console.log(
-				'getAllWorkspaceMessages - total messages:',
+				"getAllWorkspaceMessages - total messages:",
 				allMessages.length
 			);
-			console.log('getAllWorkspaceMessages - messages:', allMessages);
+			console.log("getAllWorkspaceMessages - messages:", allMessages);
 
 			// Get all members in the workspace
 			const members = await ctx.db
-				.query('members')
-				.filter((q) => q.eq(q.field('workspaceId'), args.workspaceId))
+				.query("members")
+				.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId))
 				.collect();
 
-			console.log('getAllWorkspaceMessages - members:', members);
+			console.log("getAllWorkspaceMessages - members:", members);
 
 			return {
 				messages: allMessages,
 				members,
 			};
 		} catch (error) {
-			console.error('getAllWorkspaceMessages - Error:', error);
+			console.error("getAllWorkspaceMessages - Error:", error);
 			throw error;
 		}
 	},
@@ -726,195 +717,191 @@ export const getAllWorkspaceMessages = query({
 
 export const getThreadMessages = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
-		try {
-			const identity = await ctx.auth.getUserIdentity();
-			if (!identity) {
-				throw new Error('Not authenticated');
-			}
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new Error("Not authenticated");
+		}
 
-			const userId = identity.subject;
-			const baseUserId = userId.split('|')[0];
+		const userId = identity.subject;
+		const baseUserId = userId.split("|")[0];
 
-			// Get the current member using the base user ID
-			const currentMember = await ctx.db
-				.query('members')
-				.withIndex('by_workspace_id_user_id', (q) =>
-					q
-						.eq('workspaceId', args.workspaceId)
-						.eq('userId', baseUserId as Id<'users'>)
+		// Get the current member using the base user ID
+		const currentMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q
+					.eq("workspaceId", args.workspaceId)
+					.eq("userId", baseUserId as Id<"users">)
+			)
+			.unique();
+
+		// If no member found, return empty array
+		if (!currentMember) {
+			return [];
+		}
+
+		// Get all thread messages in the workspace
+		const threadMessages = await ctx.db
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) => q.neq(q.field("parentMessageId"), null))
+			.order("desc")
+			.collect();
+
+		// Get all parent messages in one go
+		const parentMessageIds = new Set(
+			threadMessages
+				.map((msg) => msg.parentMessageId)
+				.filter((id): id is Id<"messages"> => id !== null && id !== undefined)
+		);
+
+		if (parentMessageIds.size === 0) {
+			return [];
+		}
+
+		const parentMessages = await Promise.all(
+			Array.from(parentMessageIds).map((id) => ctx.db.get(id))
+		);
+		const parentMessageMap = new Map(
+			parentMessages.filter(Boolean).map((msg) => [msg?._id, msg])
+		);
+
+		// Get all members and users in one go
+		const memberIds = new Set<Id<"members">>();
+		threadMessages.forEach((message) => memberIds.add(message.memberId));
+		parentMessages.forEach((message) => {
+			if (message?.memberId) memberIds.add(message.memberId);
+		});
+
+		const members = await Promise.all(
+			Array.from(memberIds).map((id) => ctx.db.get(id))
+		);
+		const memberMap = new Map(
+			members.filter(Boolean).map((member) => [member?._id, member])
+		);
+
+		const userIds = new Set<Id<"users">>();
+		members.forEach((member) => {
+			if (member?.userId) userIds.add(member.userId);
+		});
+
+		const users = await Promise.all(
+			Array.from(userIds).map((id) => ctx.db.get(id))
+		);
+		const userMap = new Map(
+			users.filter(Boolean).map((user) => [user?._id, user])
+		);
+
+		// Get all channels and conversations in one go
+		const [channels, conversations] = await Promise.all([
+			ctx.db
+				.query("channels")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
 				)
-				.unique();
-
-			// If no member found, return empty array
-			if (!currentMember) {
-				return [];
-			}
-
-			// Get all thread messages in the workspace
-			const threadMessages = await ctx.db
-				.query('messages')
-				.withIndex('by_workspace_id', (q) =>
-					q.eq('workspaceId', args.workspaceId)
+				.collect(),
+			ctx.db
+				.query("conversations")
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", args.workspaceId)
 				)
-				.filter((q) => q.neq(q.field('parentMessageId'), null))
-				.order('desc')
-				.collect();
+				.collect(),
+		]);
 
-			// Get all parent messages in one go
-			const parentMessageIds = new Set(
-				threadMessages
-					.map((msg) => msg.parentMessageId)
-					.filter((id): id is Id<'messages'> => id !== null && id !== undefined)
-			);
+		const channelMap = new Map(
+			channels.map((channel) => [channel._id, channel])
+		);
+		const conversationMap = new Map(
+			conversations.map((conversation) => [conversation._id, conversation])
+		);
 
-			if (parentMessageIds.size === 0) {
-				return [];
-			}
+		// Get thread messages with context
+		const threadsWithContext = threadMessages
+			.map((message) => {
+				if (!message.parentMessageId) return null;
 
-			const parentMessages = await Promise.all(
-				Array.from(parentMessageIds).map((id) => ctx.db.get(id))
-			);
-			const parentMessageMap = new Map(
-				parentMessages.filter(Boolean).map((msg) => [msg!._id, msg])
-			);
+				const parentMessage = parentMessageMap.get(message.parentMessageId);
+				if (!parentMessage) return null;
 
-			// Get all members and users in one go
-			const memberIds = new Set<Id<'members'>>();
-			threadMessages.forEach((message) => memberIds.add(message.memberId));
-			parentMessages.forEach((message) => {
-				if (message?.memberId) memberIds.add(message.memberId);
-			});
+				const parentMember = memberMap.get(parentMessage.memberId);
+				if (!parentMember) return null;
 
-			const members = await Promise.all(
-				Array.from(memberIds).map((id) => ctx.db.get(id))
-			);
-			const memberMap = new Map(
-				members.filter(Boolean).map((member) => [member!._id, member])
-			);
+				const parentUser = userMap.get(parentMember.userId);
+				if (!parentUser) return null;
 
-			const userIds = new Set<Id<'users'>>();
-			members.forEach((member) => {
-				if (member?.userId) userIds.add(member.userId);
-			});
+				const currentMember = memberMap.get(message.memberId);
+				if (!currentMember) return null;
 
-			const users = await Promise.all(
-				Array.from(userIds).map((id) => ctx.db.get(id))
-			);
-			const userMap = new Map(
-				users.filter(Boolean).map((user) => [user!._id, user])
-			);
+				const currentUser = userMap.get(currentMember.userId);
+				if (!currentUser) return null;
 
-			// Get all channels and conversations in one go
-			const [channels, conversations] = await Promise.all([
-				ctx.db
-					.query('channels')
-					.withIndex('by_workspace_id', (q) =>
-						q.eq('workspaceId', args.workspaceId)
-					)
-					.collect(),
-				ctx.db
-					.query('conversations')
-					.withIndex('by_workspace_id', (q) =>
-						q.eq('workspaceId', args.workspaceId)
-					)
-					.collect(),
-			]);
+				let context: {
+					name: string;
+					type: "channel" | "conversation";
+					id: Id<"channels"> | Id<"conversations">;
+					memberId?: Id<"members">;
+				} | null = null;
 
-			const channelMap = new Map(
-				channels.map((channel) => [channel._id, channel])
-			);
-			const conversationMap = new Map(
-				conversations.map((conversation) => [conversation._id, conversation])
-			);
-
-			// Get thread messages with context
-			const threadsWithContext = threadMessages
-				.map((message) => {
-					if (!message.parentMessageId) return null;
-
-					const parentMessage = parentMessageMap.get(message.parentMessageId);
-					if (!parentMessage) return null;
-
-					const parentMember = memberMap.get(parentMessage.memberId);
-					if (!parentMember) return null;
-
-					const parentUser = userMap.get(parentMember.userId);
-					if (!parentUser) return null;
-
-					const currentMember = memberMap.get(message.memberId);
-					if (!currentMember) return null;
-
-					const currentUser = userMap.get(currentMember.userId);
-					if (!currentUser) return null;
-
-					let context: {
-						name: string;
-						type: 'channel' | 'conversation';
-						id: Id<'channels'> | Id<'conversations'>;
-						memberId?: Id<'members'>;
-					} | null = null;
-
-					if (message.channelId) {
-						const channel = channelMap.get(message.channelId);
-						if (channel) {
-							context = {
-								name: channel.name,
-								type: 'channel',
-								id: channel._id,
-							};
-						}
-					} else if (message.conversationId) {
-						const conversation = conversationMap.get(message.conversationId);
-						if (conversation) {
-							const otherMemberId =
-								conversation.memberOneId === currentMember._id
-									? conversation.memberTwoId
-									: conversation.memberOneId;
-							const otherMember = memberMap.get(otherMemberId);
-							if (otherMember) {
-								const otherUser = userMap.get(otherMember.userId);
-								if (otherUser) {
-									context = {
-										name: `Direct Message with ${otherUser.name}`,
-										type: 'conversation',
-										id: conversation._id,
-										memberId: otherMember._id,
-									};
-								}
+				if (message.channelId) {
+					const channel = channelMap.get(message.channelId);
+					if (channel) {
+						context = {
+							name: channel.name,
+							type: "channel",
+							id: channel._id,
+						};
+					}
+				} else if (message.conversationId) {
+					const conversation = conversationMap.get(message.conversationId);
+					if (conversation) {
+						const otherMemberId =
+							conversation.memberOneId === currentMember._id
+								? conversation.memberTwoId
+								: conversation.memberOneId;
+						const otherMember = memberMap.get(otherMemberId);
+						if (otherMember) {
+							const otherUser = userMap.get(otherMember.userId);
+							if (otherUser) {
+								context = {
+									name: `Direct Message with ${otherUser.name}`,
+									type: "conversation",
+									id: conversation._id,
+									memberId: otherMember._id,
+								};
 							}
 						}
 					}
+				}
 
-					// Return null if context couldn't be determined
-					if (!context) {
-						return null;
-					}
+				// Return null if context couldn't be determined
+				if (!context) {
+					return null;
+				}
 
-					return {
-						message,
-						parentMessage,
-						parentUser,
-						currentUser,
-						context,
-					};
-				})
-				.filter(
-					(thread): thread is NonNullable<typeof thread> => thread !== null
-				);
+				return {
+					message,
+					parentMessage,
+					parentUser,
+					currentUser,
+					context,
+				};
+			})
+			.filter(
+				(thread): thread is NonNullable<typeof thread> => thread !== null
+			);
 
-			return threadsWithContext;
-		} catch (error) {
-			throw error;
-		}
+		return threadsWithContext;
 	},
 });
 
 export const getMessageBodies = query({
 	args: {
-		messageIds: v.array(v.id('messages')),
+		messageIds: v.array(v.id("messages")),
 	},
 	handler: async (ctx, args) => {
 		try {
@@ -926,9 +913,9 @@ export const getMessageBodies = query({
 
 			// Fetch all messages in a single batch query
 			const messages = await ctx.db
-				.query('messages')
+				.query("messages")
 				.filter((q) =>
-					q.or(...args.messageIds.map((id) => q.eq(q.field('_id'), id)))
+					q.or(...args.messageIds.map((id) => q.eq(q.field("_id"), id)))
 				)
 				.collect();
 
@@ -939,9 +926,9 @@ export const getMessageBodies = query({
 
 			// Fetch all members in a single batch
 			const members = await ctx.db
-				.query('members')
+				.query("members")
 				.filter((q) =>
-					q.or(...Array.from(memberIds).map((id) => q.eq(q.field('_id'), id)))
+					q.or(...Array.from(memberIds).map((id) => q.eq(q.field("_id"), id)))
 				)
 				.collect();
 
@@ -953,9 +940,9 @@ export const getMessageBodies = query({
 
 			// Fetch all users in a single batch
 			const users = await ctx.db
-				.query('users')
+				.query("users")
 				.filter((q) =>
-					q.or(...Array.from(userIds).map((id) => q.eq(q.field('_id'), id)))
+					q.or(...Array.from(userIds).map((id) => q.eq(q.field("_id"), id)))
 				)
 				.collect();
 
@@ -983,7 +970,7 @@ export const getMessageBodies = query({
 				(msg): msg is NonNullable<typeof msg> => msg !== null
 			);
 		} catch (error) {
-			console.error('Error in getMessageBodies:', error);
+			console.error("Error in getMessageBodies:", error);
 			return [];
 		}
 	},
@@ -991,7 +978,7 @@ export const getMessageBodies = query({
 
 export const getMentionedMessages = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
@@ -1003,11 +990,11 @@ export const getMentionedMessages = query({
 
 			// Get the current member
 			const currentMember = await ctx.db
-				.query('members')
-				.withIndex('by_workspace_id_user_id', (q) =>
+				.query("members")
+				.withIndex("by_workspace_id_user_id", (q) =>
 					q
-						.eq('workspaceId', args.workspaceId)
-						.eq('userId', userId as Id<'users'>)
+						.eq("workspaceId", args.workspaceId)
+						.eq("userId", userId as Id<"users">)
 				)
 				.unique();
 
@@ -1020,13 +1007,13 @@ export const getMentionedMessages = query({
 			// Mentions are the authoritative source of truth; message bodies can be stored
 			// as structured JSON and are not safe to string-match.
 			const mentions = await ctx.db
-				.query('mentions')
-				.withIndex('by_workspace_id_mentioned_member_id', (q) =>
+				.query("mentions")
+				.withIndex("by_workspace_id_mentioned_member_id", (q) =>
 					q
-						.eq('workspaceId', args.workspaceId)
-						.eq('mentionedMemberId', currentMember._id)
+						.eq("workspaceId", args.workspaceId)
+						.eq("mentionedMemberId", currentMember._id)
 				)
-				.order('desc')
+				.order("desc")
 				.take(limit);
 
 			const mentionedMessages: any[] = [];
@@ -1036,7 +1023,7 @@ export const getMentionedMessages = query({
 				new Set(
 					mentions
 						.map((m) => m.messageId)
-						.filter((id): id is Id<'messages'> => Boolean(id))
+						.filter((id): id is Id<"messages"> => Boolean(id))
 				)
 			);
 
@@ -1045,7 +1032,7 @@ export const getMentionedMessages = query({
 			);
 			const messageById = new Map(
 				fetchedMessages
-					.filter((m): m is Doc<'messages'> => Boolean(m))
+					.filter((m): m is Doc<"messages"> => Boolean(m))
 					.map((m) => [m._id, m])
 			);
 
@@ -1096,9 +1083,9 @@ export const getMentionedMessages = query({
 						];
 					},
 					[] as Array<
-						Omit<Doc<'reactions'>, 'memberId'> & {
+						Omit<Doc<"reactions">, "memberId"> & {
 							count: number;
-							memberIds: Id<'members'>[];
+							memberIds: Id<"members">[];
 						}
 					>
 				);
@@ -1113,7 +1100,7 @@ export const getMentionedMessages = query({
 					const channel = await ctx.db.get(message.channelId);
 					if (channel) {
 						context = {
-							type: 'channel',
+							type: "channel",
 							name: channel.name,
 							id: channel._id,
 						};
@@ -1130,7 +1117,7 @@ export const getMentionedMessages = query({
 							const otherUser = await populateUser(ctx, otherMember.userId);
 							if (otherUser) {
 								context = {
-									type: 'conversation',
+									type: "conversation",
 									name: `Direct Message with ${otherUser.name}`,
 									id: conversation._id,
 									memberId: otherMember._id,
@@ -1158,7 +1145,7 @@ export const getMentionedMessages = query({
 
 			return mentionedMessages;
 		} catch (error) {
-			console.error('Error in getMentionedMessages:', error);
+			console.error("Error in getMentionedMessages:", error);
 			return [];
 		}
 	},
@@ -1166,7 +1153,7 @@ export const getMentionedMessages = query({
 
 export const getRecentWorkspaceChannelMessages = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		from: v.number(),
 		to: v.optional(v.number()),
 		limit: v.number(),
@@ -1180,8 +1167,10 @@ export const getRecentWorkspaceChannelMessages = query({
 
 		// Get all channels in the workspace
 		const channels = await ctx.db
-			.query('channels')
-			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
+			.query("channels")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
 		if (channels.length === 0) {
@@ -1198,18 +1187,20 @@ export const getRecentWorkspaceChannelMessages = query({
 		// Fetch messages from each channel
 		for (const channel of channels) {
 			const messages = await ctx.db
-				.query('messages')
-				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
-				.order('desc')
+				.query("messages")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.order("desc")
 				.filter((q) => {
 					if (args.to) {
 						return q.and(
-							q.gte(q.field('_creationTime'), args.from),
-							q.lte(q.field('_creationTime'), args.to)
+							q.gte(q.field("_creationTime"), args.from),
+							q.lte(q.field("_creationTime"), args.to)
 						);
 					}
 					// If from is 0, return all messages (no time filter)
-					return args.from > 0 ? q.gte(q.field('_creationTime'), args.from) : true;
+					return args.from > 0
+						? q.gte(q.field("_creationTime"), args.from)
+						: true;
 				})
 				.take(args.perChannelLimit);
 
@@ -1224,7 +1215,7 @@ export const getRecentWorkspaceChannelMessages = query({
 						const user = await ctx.db.get(member.userId);
 						allMessages.push({
 							channelName: channel.name,
-							authorName: user?.name || 'Unknown',
+							authorName: user?.name || "Unknown",
 							body: message.body,
 							_creationTime: message._creationTime,
 						});
@@ -1247,7 +1238,7 @@ export const getRecentWorkspaceChannelMessages = query({
 
 export const getRecentChannelMessages = query({
 	args: {
-		channelId: v.id('channels'),
+		channelId: v.id("channels"),
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
@@ -1261,9 +1252,9 @@ export const getRecentChannelMessages = query({
 
 			// Query for messages in this specific channel
 			const messages = await ctx.db
-				.query('messages')
-				.withIndex('by_channel_id', (q) => q.eq('channelId', args.channelId))
-				.order('desc') // Most recent first
+				.query("messages")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", args.channelId))
+				.order("desc") // Most recent first
 				.take(limit);
 
 			// Filter out thread replies after fetching
@@ -1282,9 +1273,9 @@ export const getRecentChannelMessages = query({
 
 			// Fetch all members in a single batch
 			const members = await ctx.db
-				.query('members')
+				.query("members")
 				.filter((q) =>
-					q.or(...Array.from(memberIds).map((id) => q.eq(q.field('_id'), id)))
+					q.or(...Array.from(memberIds).map((id) => q.eq(q.field("_id"), id)))
 				)
 				.collect();
 
@@ -1296,9 +1287,9 @@ export const getRecentChannelMessages = query({
 
 			// Fetch all users in a single batch
 			const users = await ctx.db
-				.query('users')
+				.query("users")
 				.filter((q) =>
-					q.or(...Array.from(userIds).map((id) => q.eq(q.field('_id'), id)))
+					q.or(...Array.from(userIds).map((id) => q.eq(q.field("_id"), id)))
 				)
 				.collect();
 
@@ -1330,7 +1321,7 @@ export const getRecentChannelMessages = query({
 
 			return formattedMessages;
 		} catch (error) {
-			console.error('Error in getRecentChannelMessages:', error);
+			console.error("Error in getRecentChannelMessages:", error);
 			return [];
 		}
 	},
@@ -1338,12 +1329,12 @@ export const getRecentChannelMessages = query({
 
 export const getThreadReplyCounts = query({
 	args: {
-		parentMessageIds: v.array(v.id('messages')),
+		parentMessageIds: v.array(v.id("messages")),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
-		if (!userId) throw new Error('Unauthorized.');
+		if (!userId) throw new Error("Unauthorized.");
 
 		try {
 			// If no parent message IDs provided, return empty array
@@ -1351,12 +1342,12 @@ export const getThreadReplyCounts = query({
 
 			// Fetch all replies in a single query using 'or' filter
 			const allReplies = await ctx.db
-				.query('messages')
-				.withIndex('by_parent_message_id')
+				.query("messages")
+				.withIndex("by_parent_message_id")
 				.filter((q) =>
 					q.or(
 						...args.parentMessageIds.map((id) =>
-							q.eq(q.field('parentMessageId'), id)
+							q.eq(q.field("parentMessageId"), id)
 						)
 					)
 				)
@@ -1379,7 +1370,7 @@ export const getThreadReplyCounts = query({
 
 			return counts;
 		} catch (error) {
-			console.error('Error in getThreadReplyCounts:', error);
+			console.error("Error in getThreadReplyCounts:", error);
 			return [];
 		}
 	},

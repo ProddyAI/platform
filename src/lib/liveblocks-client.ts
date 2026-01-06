@@ -1,6 +1,6 @@
 // Define Liveblocks types and client for the application
-import { createClient } from '@liveblocks/client';
-import { createRoomContext } from '@liveblocks/react';
+import { createClient } from "@liveblocks/client";
+import { createRoomContext } from "@liveblocks/react";
 
 // Define the shapes in your whiteboard
 export type Point = {
@@ -21,7 +21,7 @@ export type Stroke = {
 };
 
 export type Shape = {
-	type: 'rectangle' | 'circle' | 'line' | 'arrow';
+	type: "rectangle" | "circle" | "line" | "arrow";
 	x: number;
 	y: number;
 	width?: number;
@@ -52,7 +52,7 @@ export type ActiveUser = {
 
 // Use the API key from your environment variables
 const client = createClient({
-	authEndpoint: '/api/liveblocks/auth',
+	authEndpoint: "/api/liveblocks/auth",
 	throttle: 16,
 });
 
@@ -89,7 +89,7 @@ declare global {
 		};
 
 		// Custom events, for useBroadcastEvent, useEventListener
-		RoomEvent: { type: 'CLEAR_CANVAS' } | { type: 'UNDO' } | { type: 'REDO' };
+		RoomEvent: { type: "CLEAR_CANVAS" } | { type: "UNDO" } | { type: "REDO" };
 
 		// Custom metadata set on threads, for useThreads, useCreateThread, etc.
 		ThreadMetadata: {

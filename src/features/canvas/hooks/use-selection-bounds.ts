@@ -1,10 +1,10 @@
-import { useSelf, useStorage } from '../../../../liveblocks.config';
-import { type XYWH } from '../types/canvas';
+import { useSelf, useStorage } from "../../../../liveblocks.config";
+import type { XYWH } from "../types/canvas";
 
 export const useSelectionBounds = (): XYWH | null => {
 	const selection = useSelf((me) => me.presence.selection);
 
-	const lastUpdate = useStorage((root) => root.lastUpdate);
+	const _lastUpdate = useStorage((root) => root.lastUpdate);
 
 	const selectedLayers = useStorage((root) => {
 		const layers = root.layers;
@@ -12,7 +12,7 @@ export const useSelectionBounds = (): XYWH | null => {
 		const getLayer = (id: string) => {
 			if (!layers) return null;
 
-			if (typeof layers.get === 'function') {
+			if (typeof layers.get === "function") {
 				return layers.get(id);
 			}
 
@@ -20,7 +20,7 @@ export const useSelectionBounds = (): XYWH | null => {
 				return layers.get(id);
 			}
 
-			if (layers && typeof layers === 'object' && id in layers) {
+			if (layers && typeof layers === "object" && id in layers) {
 				return (layers as any)[id];
 			}
 
@@ -48,11 +48,11 @@ export const useSelectionBounds = (): XYWH | null => {
 
 		try {
 			// Try to get properties using get method first (for LiveObjects)
-			if (typeof layer.get === 'function') {
-				x = layer.get('x');
-				y = layer.get('y');
-				width = layer.get('width');
-				height = layer.get('height');
+			if (typeof layer.get === "function") {
+				x = layer.get("x");
+				y = layer.get("y");
+				width = layer.get("width");
+				height = layer.get("height");
 			} else {
 				// Fall back to direct property access
 				x = layer.x;
@@ -63,12 +63,12 @@ export const useSelectionBounds = (): XYWH | null => {
 
 			// Ensure we have valid numbers
 			if (
-				typeof x !== 'number' ||
-				typeof y !== 'number' ||
-				typeof width !== 'number' ||
-				typeof height !== 'number'
+				typeof x !== "number" ||
+				typeof y !== "number" ||
+				typeof width !== "number" ||
+				typeof height !== "number"
 			) {
-				console.warn('Invalid layer dimensions', { x, y, width, height });
+				console.warn("Invalid layer dimensions", { x, y, width, height });
 				continue;
 			}
 
@@ -77,8 +77,7 @@ export const useSelectionBounds = (): XYWH | null => {
 			maxX = Math.max(maxX, x + width);
 			maxY = Math.max(maxY, y + height);
 		} catch (error) {
-			console.error('Error accessing layer properties:', error);
-			continue;
+			console.error("Error accessing layer properties:", error);
 		}
 	}
 

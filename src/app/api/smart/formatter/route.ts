@@ -1,7 +1,7 @@
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
-import * as dotenv from 'dotenv';
-import { NextRequest, NextResponse } from 'next/server';
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
+import * as dotenv from "dotenv";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Load environment variables
 dotenv.config();
@@ -9,9 +9,9 @@ dotenv.config();
 export async function POST(req: NextRequest) {
 	try {
 		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error('Missing GOOGLE_GENERATIVE_AI_API_KEY');
+			console.error("Missing GOOGLE_GENERATIVE_AI_API_KEY");
 			return NextResponse.json(
-				{ error: 'API key not configured' },
+				{ error: "API key not configured" },
 				{ status: 500 }
 			);
 		}
@@ -20,9 +20,9 @@ export async function POST(req: NextRequest) {
 		try {
 			requestData = await req.json();
 		} catch (parseError) {
-			console.error('Error parsing JSON:', parseError);
+			console.error("Error parsing JSON:", parseError);
 			return NextResponse.json(
-				{ error: 'Invalid JSON in request' },
+				{ error: "Invalid JSON in request" },
 				{ status: 400 }
 			);
 		}
@@ -30,20 +30,20 @@ export async function POST(req: NextRequest) {
 		const { content, title } = requestData;
 
 		if (!content) {
-			console.error('Missing content in request');
+			console.error("Missing content in request");
 			return NextResponse.json(
-				{ error: 'Content is required' },
+				{ error: "Content is required" },
 				{ status: 400 }
 			);
 		}
 
 		console.log(
-			'[Smart Formatter] Processing formatting request for content length:',
+			"[Smart Formatter] Processing formatting request for content length:",
 			content.length
 		);
 
 		// Create the Gemini model
-		const model = google('gemini-2.5-flash');
+		const model = google("gemini-2.5-flash");
 
 		// Prepare the formatting prompt
 		const prompt = `You are an expert document formatter and editor. Your task is to improve the formatting, structure, and readability of the provided document while preserving all the original content and meaning.
@@ -74,7 +74,7 @@ Please format the following document by:
    - Do not include explanations or meta-commentary
    - Ensure the output is ready to be inserted directly into a document editor
 
-${title ? `Document Title: ${title}\n\n` : ''}Original Content:
+${title ? `Document Title: ${title}\n\n` : ""}Original Content:
 ${content}
 
 Formatted Content:`;
@@ -87,7 +87,7 @@ Formatted Content:`;
 				temperature: 0.3, // Lower temperature for more consistent formatting
 			});
 
-			console.log('[Smart Formatter] Successfully formatted content');
+			console.log("[Smart Formatter] Successfully formatted content");
 
 			return NextResponse.json({
 				formattedContent: text.trim(),
@@ -95,23 +95,23 @@ Formatted Content:`;
 				formattedLength: text.trim().length,
 			});
 		} catch (aiError) {
-			console.error('[Smart Formatter] AI formatting failed:', aiError);
+			console.error("[Smart Formatter] AI formatting failed:", aiError);
 
 			// Return a fallback response
 			return NextResponse.json(
 				{
-					error: 'Formatting failed',
+					error: "Formatting failed",
 					message:
-						'AI formatting service is temporarily unavailable. Please try again later.',
+						"AI formatting service is temporarily unavailable. Please try again later.",
 					fallback: true,
 				},
 				{ status: 503 }
 			);
 		}
 	} catch (error) {
-		console.error('[Smart Formatter] Unexpected error:', error);
+		console.error("[Smart Formatter] Unexpected error:", error);
 		return NextResponse.json(
-			{ error: 'Internal server error' },
+			{ error: "Internal server error" },
 			{ status: 500 }
 		);
 	}

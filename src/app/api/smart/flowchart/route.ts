@@ -1,7 +1,7 @@
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
-import * as dotenv from 'dotenv';
-import { NextRequest, NextResponse } from 'next/server';
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
+import * as dotenv from "dotenv";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Load environment variables
 dotenv.config();
@@ -9,9 +9,9 @@ dotenv.config();
 export async function POST(req: NextRequest) {
 	try {
 		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error('Missing GOOGLE_GENERATIVE_AI_API_KEY');
+			console.error("Missing GOOGLE_GENERATIVE_AI_API_KEY");
 			return NextResponse.json(
-				{ error: 'API key not configured' },
+				{ error: "API key not configured" },
 				{ status: 500 }
 			);
 		}
@@ -20,9 +20,9 @@ export async function POST(req: NextRequest) {
 		try {
 			requestData = await req.json();
 		} catch (parseError) {
-			console.error('Error parsing JSON:', parseError);
+			console.error("Error parsing JSON:", parseError);
 			return NextResponse.json(
-				{ error: 'Invalid JSON in request' },
+				{ error: "Invalid JSON in request" },
 				{ status: 400 }
 			);
 		}
@@ -30,20 +30,20 @@ export async function POST(req: NextRequest) {
 		const { prompt } = requestData;
 
 		if (!prompt) {
-			console.error('Missing prompt in request');
+			console.error("Missing prompt in request");
 			return NextResponse.json(
-				{ error: 'Prompt is required' },
+				{ error: "Prompt is required" },
 				{ status: 400 }
 			);
 		}
 
 		console.log(
-			'[Smart Flowchart] Processing flowchart request for prompt:',
+			"[Smart Flowchart] Processing flowchart request for prompt:",
 			prompt
 		);
 
 		// Create the Gemini model
-		const model = google('gemini-2.5-flash');
+		const model = google("gemini-2.5-flash");
 
 		// Prepare the flowchart generation prompt
 		const systemPrompt = `You are an expert flowchart designer and Mermaid diagram specialist. Your task is to convert text descriptions into well-structured Mermaid flowchart diagrams.
@@ -98,22 +98,22 @@ Generate the Mermaid flowchart code:`;
 				temperature: 0.3, // Lower temperature for more consistent diagram structure
 			});
 
-			console.log('[Smart Flowchart] Successfully generated flowchart');
+			console.log("[Smart Flowchart] Successfully generated flowchart");
 
 			// Clean up the response to ensure it's valid Mermaid code
 			let mermaidCode = text.trim();
 
 			// Remove any markdown code block wrappers if present
-			mermaidCode = mermaidCode.replace(/^```mermaid\s*\n?/, '');
-			mermaidCode = mermaidCode.replace(/^```\s*\n?/, '');
-			mermaidCode = mermaidCode.replace(/\n?```\s*$/, '');
+			mermaidCode = mermaidCode.replace(/^```mermaid\s*\n?/, "");
+			mermaidCode = mermaidCode.replace(/^```\s*\n?/, "");
+			mermaidCode = mermaidCode.replace(/\n?```\s*$/, "");
 
 			// Ensure it starts with flowchart directive
 			if (
-				!mermaidCode.startsWith('flowchart') &&
-				!mermaidCode.startsWith('graph')
+				!mermaidCode.startsWith("flowchart") &&
+				!mermaidCode.startsWith("graph")
 			) {
-				mermaidCode = 'flowchart TD\n' + mermaidCode;
+				mermaidCode = `flowchart TD\n${mermaidCode}`;
 			}
 
 			return NextResponse.json({
@@ -121,7 +121,7 @@ Generate the Mermaid flowchart code:`;
 				originalPrompt: prompt,
 			});
 		} catch (aiError) {
-			console.error('[Smart Flowchart] AI generation failed:', aiError);
+			console.error("[Smart Flowchart] AI generation failed:", aiError);
 
 			// Return a fallback response with a simple flowchart
 			const fallbackMermaid = `flowchart TD
@@ -135,16 +135,16 @@ Generate the Mermaid flowchart code:`;
 				{
 					mermaidCode: fallbackMermaid,
 					originalPrompt: prompt,
-					error: 'AI generation failed, using fallback diagram',
+					error: "AI generation failed, using fallback diagram",
 					fallback: true,
 				},
 				{ status: 503 }
 			);
 		}
 	} catch (error) {
-		console.error('[Smart Flowchart] Unexpected error:', error);
+		console.error("[Smart Flowchart] Unexpected error:", error);
 		return NextResponse.json(
-			{ error: 'Internal server error' },
+			{ error: "Internal server error" },
 			{ status: 500 }
 		);
 	}

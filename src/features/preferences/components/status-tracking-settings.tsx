@@ -1,11 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Activity, EyeOff } from 'lucide-react';
-
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useUserPreferences } from '../api/use-user-preferences';
+import { Activity, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { useUserPreferences } from "../api/use-user-preferences";
 
 export const StatusTrackingSettings = () => {
 	const { data: preferences, updateSettings, isLoading } = useUserPreferences();
@@ -31,9 +30,7 @@ export const StatusTrackingSettings = () => {
 							<Activity className="h-4 w-4" />
 							Status Tracking
 						</Label>
-						<p className="text-sm text-muted-foreground">
-							Loading...
-						</p>
+						<p className="text-sm text-muted-foreground">Loading...</p>
 					</div>
 					<Switch disabled />
 				</div>
@@ -61,13 +58,14 @@ export const StatusTrackingSettings = () => {
 					disabled={isUpdating}
 				/>
 			</div>
-			
+
 			{!statusTrackingEnabled && (
 				<div className="rounded-lg bg-muted/50 p-3">
 					<div className="flex items-center gap-2 text-sm">
 						<EyeOff className="h-4 w-4 text-muted-foreground" />
 						<span className="text-muted-foreground">
-							Your status will appear as offline to others, and your last seen time won't be updated
+							Your status will appear as offline to others, and your last seen
+							time won't be updated
 						</span>
 					</div>
 				</div>
