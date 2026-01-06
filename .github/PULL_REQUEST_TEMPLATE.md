@@ -21,18 +21,23 @@
 
 [📹 View Recording](https://www.loom.com/share/{your-loom-video-id})
 
-### Code Quality
+### Code Quality (Before opening PR)
 
 - [ ] Performed a proper self-review of my own code
 - [ ] My changes generate no new warnings or errors
 - [ ] All the AI slop has been removed using `/deslop`
-- [ ] CodeRabbitAI comments has been implemented
-
-### Code Formatting
-
 - [ ] I have run `bun run type` and ensured type safety
-- [ ] I have run `bun run lint` and passed eslint checks
-- [ ] I have run `bun run format` and formatted code
+- [ ] I have run `bun run check` and passed eslint checks
+
+### PR Comments Checklist (Post-PR Creation)
+
+- [ ] All **CodeRabbitAI** review comments have been resolved
+- [ ] All **Sentry** feedback and error suggestions have been addressed
+- [ ] All **Codacy** code quality comments have been implemented
+- [ ] All **DeepSource** static analysis comments have been resolved
+- [ ] All **Socket** security and dependency warnings have been addressed
+- [ ] All **GitGuardian** secret scanning alerts have been resolved
+- [ ] All **Vercel** build and deployment comments have been addressed
 
 ### Performance & Security
 
