@@ -45,7 +45,13 @@ export const composio = new Composio({
 
 export default composio;
 
-// Initialize function that returns both composio instance and API client wrapper
+/**
+ * Initialize and return the shared Composio instance along with a convenience API client for managing connections, tools, and connection status.
+ *
+ * The returned `apiClient` exposes: `createConnection(userId, appName)`, `getConnections(userId)`, `getConnectionStatus(connectionId)`, `getTools(entityId, appNames)`, and `deleteConnection(connectionId)`.
+ *
+ * @returns An object containing `composio` (the shared Composio instance) and `apiClient` (a wrapper providing connection and tool management methods)
+ */
 export function initializeComposio() {
   if (!process.env.COMPOSIO_API_KEY) {
     throw new Error("COMPOSIO_API_KEY environment variable is required");
