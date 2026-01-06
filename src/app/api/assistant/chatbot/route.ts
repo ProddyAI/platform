@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/../convex/_generated/api';
 import type { Id } from '@/../convex/_generated/dataModel';
@@ -20,6 +20,12 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Create a Convex HTTP client configured from the NEXT_PUBLIC_CONVEX_URL environment variable.
+ *
+ * @returns A ConvexHttpClient instance pointed at the Convex backend URL from `NEXT_PUBLIC_CONVEX_URL`.
+ * @throws If the `NEXT_PUBLIC_CONVEX_URL` environment variable is not set.
+ */
 function createConvexClient(): ConvexHttpClient {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
 		throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is required');
@@ -27,7 +33,12 @@ function createConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 }
 
-// Initialize OpenAI client
+/**
+ * Create an OpenAI client configured from the `OPENAI_API_KEY` environment variable.
+ *
+ * @returns An `OpenAI` client instance configured with the value of `OPENAI_API_KEY`.
+ * @throws If `OPENAI_API_KEY` is not set in the environment.
+ */
 function createOpenAIClient(): OpenAI {
 	if (!process.env.OPENAI_API_KEY) {
 		throw new Error('OPENAI_API_KEY environment variable is required');
@@ -37,6 +48,28 @@ function createOpenAIClient(): OpenAI {
 	});
 }
 
+/**
+ * Handle chatbot POST requests by routing the user's query through OpenAI+Composio tool integration when applicable, otherwise falling back to the Convex-based assistant.
+ *
+ * This endpoint:
+ * - Validates request payload and optional member-scoped access.
+ * - Detects whether external integrations are needed and, if configured, attempts to use Composio tools together with OpenAI (including executing tool calls and performing follow-up reasoning).
+ * - Falls back to the Convex assistant if Composio/OpenAI path is unavailable or fails.
+ *
+ * @param req - The incoming Next.js request whose JSON body must contain `message` and `workspaceId`, and may include `workspaceContext`, `conversationHistory`, and `memberId`.
+ * @returns A JSON object describing the assistant result:
+ * - `success`: `true` if a response was generated, `false` otherwise.
+ * - On success:
+ *   - `response`: Assistant reply text.
+ *   - `sources`: Array of source badges `{ id, type, text }`.
+ *   - `actions`: Array of suggested actions (may be empty).
+ *   - `toolResults`: Array of executed tool results (empty if none).
+ *   - `assistantType`: `'openai-composio'` when OpenAI+Composio was used, `'convex'` when using the Convex assistant.
+ *   - `composioToolsUsed`: `true` if Composio tools were applied, `false` otherwise.
+ *   - `connectedApps`: Present when OpenAI+Composio path was used and lists connected integrations.
+ * - On failure:
+ *   - `error`: A string describing the failure.
+ */
 export async function POST(req: NextRequest) {
 	try {
 		const convex = createConvexClient();

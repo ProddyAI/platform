@@ -16,7 +16,12 @@ const validateAuthConfigFormat = (composioAuthConfigId: string): boolean => {
   return Boolean(composioAuthConfigId && composioAuthConfigId.length > 0);
 };
 
-// Helper function to verify member ownership
+/**
+ * Verify that the currently authenticated user owns the specified member.
+ *
+ * @param memberId - The ID of the member to verify ownership for
+ * @returns `{ success: true, member }` when the authenticated user owns the member; otherwise `{ success: false, response }` where `response` is a `NextResponse` containing a 401 (unauthenticated), 404 (user or member not found), or 403 (unauthorized) error
+ */
 async function verifyMemberOwnership(
   memberId: string,
   convexClient: ConvexHttpClient
@@ -78,7 +83,16 @@ async function verifyMemberOwnership(
   return { success: true, member };
 }
 
-// Unified POST endpoint for authorization and completion
+/**
+ * Handle POST requests to initiate toolkit authorization or complete a toolkit connection for a member-scoped entity.
+ *
+ * Expects a JSON body with fields: `action` ("authorize" or "complete"), `userId`, `toolkit`, `workspaceId`, and (for member-scoped flows) `memberId`. For `authorize` the handler creates a Composio connection and returns a `redirectUrl` and connection identifier; it also attempts to persist a related auth config. For `complete` the handler retrieves the Composio connection, selects the most relevant connected account for the toolkit, and attempts to store a connected account record.
+ *
+ * @param req - Incoming NextRequest whose JSON body must include `action`, `userId`, `toolkit`, and `workspaceId`. When acting on a specific member, `memberId` is required and must belong to the authenticated user.
+ * @returns On success returns a JSON object with `success: true` and either:
+ *  - for `authorize`: `redirectUrl`, `connectionId`, and `message`, or
+ *  - for `complete`: `connectedAccount` and `message`.
+ * On failure returns a JSON error object `{ error: string }` and an appropriate HTTP status.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -303,7 +317,17 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Get auth configs, connected accounts, tools, or check status (unified GET endpoint)
+/**
+ * Handle GET requests for fetching auth configs and connected accounts, checking connection status, or retrieving tools.
+ *
+ * Supports the following query actions via request URL search params:
+ * - `action=fetch-data` (requires `workspaceId`, optional `memberId`): returns public auth configs and connected accounts for the workspace (optionally filtered by member).
+ * - `action=check-status` (requires `composioAccountId`): returns connection status and account info for the given composio connection ID.
+ * - `action=fetch-tools` (requires `workspaceId`, `toolkit`, `userId` where `userId` must be `member_{memberId}`): returns available tools for the specified entity and toolkit.
+ *
+ * @param req - NextRequest whose URL search params must include `action` and the action-specific params: `workspaceId`, `userId`, `toolkit`, `composioAccountId`, and optional `memberId`.
+ * @returns For `fetch-data`: `{ success: true, authConfigs: Array, connectedAccounts: Array }`. For `check-status`: `{ connected: boolean, status: string, account?: object }`. For `fetch-tools`: `{ success: true, tools: Array, toolkit: string, entityId: string }`. For invalid requests or on errors: JSON error objects with appropriate HTTP status codes.
+ */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -452,7 +476,18 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Disconnect account (unified DELETE endpoint)
+/**
+ * Handle DELETE requests to disconnect a Composio-connected account and remove its corresponding local record.
+ *
+ * Expects a JSON body with `workspaceId`, `composioAccountId`, and `memberId` (required) and `connectedAccountId` (optional).
+ * Verifies that the requester owns the specified member; if verification fails, returns the verification response.
+ * Attempts to delete the connection from Composio (best-effort) and then deletes the local connected account record when
+ * `connectedAccountId` appears to be a stored database ID. Continues with database cleanup even if Composio deletion fails.
+ *
+ * @returns A JSON NextResponse; on success `{ success: true, message: "Account disconnected successfully", composioDeleted: boolean }`.
+ *          On error returns a JSON error object with an appropriate HTTP status (e.g., 400 for missing params, 500 for server errors,
+ *          or the response produced by the member ownership verification).
+ */
 export async function DELETE(req: NextRequest) {
   try {
     const { workspaceId, connectedAccountId, composioAccountId, memberId } =

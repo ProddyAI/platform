@@ -6,6 +6,13 @@ import {
   type AvailableApp,
 } from "@/lib/composio-config";
 
+/**
+ * Handle GET requests to report connected apps and total available tools for a workspace or member.
+ *
+ * Returns a JSON response describing connected apps and the total tool count for the resolved entity (member if `memberId` is provided, otherwise workspace). Requires a `workspaceId` query parameter; an optional `memberId` query parameter narrows the entity to a member. If `workspaceId` is missing the handler responds with HTTP 400 and an error message. On success the payload includes `success`, `connected`, `totalTools`, `workspaceId`, `memberId`, `entityId`, and `timestamp`. On unexpected errors the handler responds with HTTP 500 and a payload containing `success: false`, an `error` message, and empty `connected`/`totalTools`.
+ *
+ * @returns JSON payload describing connection status and tool count for the requested entity.
+ */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
