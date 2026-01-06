@@ -378,7 +378,7 @@ const schema = defineSchema({
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({
 		workspaceId: v.id('workspaces'),
-		memberId: v.optional(v.id('members')), // Optional for backward compatibility, required for new records
+		memberId: v.optional(v.id('members')), // Optional in schema for backward compatibility; new records should include this at the application level
 		toolkit: v.union(
 			v.literal('github'),
 			v.literal('gmail'),
@@ -411,7 +411,7 @@ const schema = defineSchema({
 	// Composio v3 Connected Accounts - Now user-specific
 	connected_accounts: defineTable({
 		workspaceId: v.id('workspaces'),
-		memberId: v.optional(v.id('members')), // Optional for backward compatibility, required for new records
+		memberId: v.optional(v.id('members')), // Optional in schema for backward compatibility; new records should include this at the application level
 		authConfigId: v.id('auth_configs'),
 		userId: v.string(), // User identifier for Composio (now member-specific)
 		composioAccountId: v.string(), // Composio's connected account ID

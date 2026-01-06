@@ -853,6 +853,7 @@ export async function getAllToolsForApps(
  * @param options.preferDashboard - Whether to boost dashboard tools when scoring (default: true).
  * @param options.keywords - Additional keywords to consider alongside those extracted from `query`.
  * @returns An array of the selected tool objects sorted by descending relevance. Each returned tool includes an added `_score` numeric field representing its computed relevance.
+ */
 export function filterToolsForQuery(
   allTools: any[],
   query: string,
@@ -903,28 +904,27 @@ export function filterToolsForQuery(
 
   let filteredTools = allTools;
 
-	// Filter by app if specific app is mentioned - using map-based approach for maintainability
-	const appRequests: Record<string, boolean> = {
-		github: needsGithub,
-		gmail: needsGmail,
-		slack: needsSlack,
-		notion: needsNotion,
-		clickup: needsClickup,
-		linear: needsLinear,
-	};
+  // Filter by app if specific app is mentioned - using map-based approach for maintainability
+  const appRequests: Record<string, boolean> = {
+    github: needsGithub,
+    gmail: needsGmail,
+    slack: needsSlack,
+    notion: needsNotion,
+    clickup: needsClickup,
+    linear: needsLinear,
+  };
 
-	// Determine which apps are requested
-	const requestedApps = Object.entries(appRequests)
-		.filter(([_, isRequested]) => isRequested)
-		.map(([app, _]) => app);
+  // Determine which apps are requested
+  const requestedApps = Object.entries(appRequests)
+    .filter(([_, isRequested]) => isRequested)
+    .map(([app, _]) => app);
 
-	// If exactly one app is requested, filter tools to that app
-	if (requestedApps.length === 1) {
-		const targetApp = requestedApps[0];
-		filteredTools = allTools.filter((tool) => tool.app?.toLowerCase() === targetApp);
-		console.log(`[Tool Filter] Filtering to ${targetApp}: ${filteredTools.length} tools`);
-	}
-	// Otherwise, use all tools (multi-app or no specific app)
+  // If exactly one app is requested, filter tools to that app
+  if (requestedApps.length === 1) {
+    const targetApp = requestedApps[0];
+    filteredTools = allTools.filter((tool) => tool.app?.toLowerCase() === targetApp);
+  }
+  // Otherwise, use all tools (multi-app or no specific app)
   const scoredTools = filteredTools.map((tool) => {
     let score = 0;
     const toolName = tool.name.toLowerCase();
