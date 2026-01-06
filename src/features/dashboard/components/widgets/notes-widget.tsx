@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { useGetNotes } from '@/features/notes/api/use-get-notes';
 import { useGetChannels } from '@/features/channels/api/use-get-channels';
+import { WidgetCard } from '../shared/widget-card';
 
 interface NotesWidgetProps {
   workspaceId: Id<'workspaces'>;
@@ -112,7 +112,6 @@ export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetPr
             variant="default"
             size="sm"
             onClick={handleViewAll}
-            className="bg-primary/90 hover:bg-primary"
           >
             View All
           </Button>
@@ -120,11 +119,10 @@ export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetPr
       </div>
 
       {sortedNotes.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
+        <ScrollArea className="widget-scroll-area">
           <div className="space-y-2 p-4">
             {sortedNotes.map((note) => (
-              <Card key={note._id} className="overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]">
-                <CardContent className="p-3 dark:bg-[hsl(var(--card))]">
+              <WidgetCard key={note._id}>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -189,8 +187,7 @@ export const NotesWidget = ({ workspaceId, isEditMode, controls }: NotesWidgetPr
                       View note
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+              </WidgetCard>
             ))}
           </div>
         </ScrollArea>

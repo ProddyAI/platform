@@ -223,7 +223,7 @@ export const ContentAnalysisDashboard = ({ workspaceId, timeRange = '7d' }: Cont
                     data={messageData.topSenders.map(sender => ({
                       label: sender.name,
                       value: sender.count,
-                      color: 'hsl(var(--secondary))'
+                      color: '#6366f1'
                     }))}
                     formatValue={(value) => `${value} messages`}
                   />

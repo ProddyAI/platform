@@ -1,6 +1,5 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,6 +9,7 @@ import { Id } from '@/../convex/_generated/dataModel';
 import { useRouter } from 'next/navigation';
 import { useGetThreadMessages } from '@/features/messages/api/use-get-thread-messages';
 import { formatDistanceToNow } from 'date-fns';
+import { WidgetCard } from '../shared/widget-card';
 
 interface ThreadRepliesWidgetProps {
   workspaceId: Id<'workspaces'>;
@@ -133,11 +133,10 @@ export const ThreadRepliesWidget = ({ workspaceId, isEditMode, controls }: Threa
       </div>
 
       {threadMessages && threadMessages.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
+        <ScrollArea className="widget-scroll-area">
           <div className="space-y-2 p-4">
             {threadMessages.map((thread) => (
-              <Card key={thread.message._id.toString()} className="overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]">
-                <CardContent className="p-3 dark:bg-[hsl(var(--card))]">
+              <WidgetCard key={thread.message._id.toString()}>
                   <div className="flex items-start gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
@@ -196,8 +195,7 @@ export const ThreadRepliesWidget = ({ workspaceId, isEditMode, controls }: Threa
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+              </WidgetCard>
             ))}
           </div>
         </ScrollArea>

@@ -1,6 +1,5 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +12,7 @@ import { useGetUnreadMentionsCount } from '@/features/messages/api/use-get-unrea
 import { useMarkMentionAsRead } from '@/features/messages/api/use-mark-mention-as-read';
 import { useMarkAllMentionsAsRead } from '@/features/messages/api/use-mark-all-mentions-as-read';
 import { formatDistanceToNow } from 'date-fns';
+import { WidgetCard } from '../shared/widget-card';
 
 interface MentionsWidgetProps {
   workspaceId: Id<'workspaces'>;
@@ -126,7 +126,7 @@ export const MentionsWidget = ({ workspaceId, isEditMode, controls }: MentionsWi
           controls
         ) : (
           counts && counts.total > 0 && (
-            <Button variant="default" size="sm" onClick={handleMarkAllAsRead} className="bg-primary/90 hover:bg-primary">
+            <Button variant="default" size="sm" onClick={handleMarkAllAsRead}>
               <CheckCircle className="mr-2 h-4 w-4" />
               Mark all as read
             </Button>
@@ -135,11 +135,10 @@ export const MentionsWidget = ({ workspaceId, isEditMode, controls }: MentionsWi
       </div>
 
       {mentions && mentions.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
+        <ScrollArea className="widget-scroll-area">
           <div className="space-y-2 p-4">
             {mentions.map((mention) => (
-              <Card key={mention.id} className="overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]">
-                <CardContent className="p-3 dark:bg-[hsl(var(--card))]">
+              <WidgetCard key={mention.id}>
                   <div className="flex items-start gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
@@ -193,8 +192,7 @@ export const MentionsWidget = ({ workspaceId, isEditMode, controls }: MentionsWi
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+              </WidgetCard>
             ))}
           </div>
         </ScrollArea>

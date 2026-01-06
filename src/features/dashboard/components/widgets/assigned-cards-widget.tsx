@@ -1,6 +1,5 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { useGetAssignedCards } from '@/features/board/api/use-get-assigned-cards';
 import { useGetChannels } from '@/features/channels/api/use-get-channels';
+import { WidgetCard } from '../shared/widget-card';
 
 interface AssignedCardsWidgetProps {
   workspaceId: Id<'workspaces'>;
@@ -87,7 +87,6 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
               variant="default"
               size="sm"
               onClick={() => router.push(`/workspace/${workspaceId}/channel/${channels[0]._id}/board`)}
-              className='bg-primary/90 hover:bg-primary'
             >
               View all
             </Button>
@@ -96,15 +95,11 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
       </div>
 
       {sortedCards.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
+        <ScrollArea className="widget-scroll-area">
           <div className="space-y-2 p-4">
             {sortedCards.map((card) => (
-              <Card
-                key={card._id}
-                className="overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]"
-              >
-                <CardContent className="p-3 dark:bg-[hsl(var(--card))]">
-                  <div className="flex items-start gap-3">
+              <WidgetCard key={card._id}>
+                <div className="flex items-start gap-3">
                     <KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400 mt-1" />
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
@@ -141,8 +136,7 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+              </WidgetCard>
             ))}
           </div>
         </ScrollArea>
@@ -159,7 +153,6 @@ export const AssignedCardsWidget = ({ workspaceId, isEditMode, controls }: Assig
                 variant="default"
                 size="sm"
                 onClick={() => router.push(`/workspace/${workspaceId}/channel/${channels[0]._id}/board`)}
-                className='bg-primary/90 hover:bg-primary'
               >
                 View boards
               </Button>

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { createTopPath, createSidePath, DEPTH, HOVER_EJECT, type PieSegment } from './utils/pie-chart-paths';
+import { adjustColor, darkenColor, lightenColor } from './utils/color-utils';
 
 interface PieChartProps {
   data: {
@@ -30,6 +32,15 @@ export const PieChart = ({
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Cleanup hover timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
   
   const handleMouseEnter = useCallback((index: number, event: React.MouseEvent) => {
     if (hoverTimeoutRef.current) {
@@ -77,7 +88,7 @@ export const PieChart = ({
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
   let cumulativePercentage = 0;
-  const segments = data.map((item, index) => {
+  const segments: PieSegment[] = data.map((item, index) => {
     const percentage = (item.value / total) * 100;
     const startAngle = cumulativePercentage;
     cumulativePercentage += percentage;
@@ -92,80 +103,6 @@ export const PieChart = ({
     };
   });
 
-  const DEPTH = 12; // Moderate depth for 3D look
-  const HOVER_EJECT = 12; // Distance to eject out on hover
-
-  const createTopPath = (segment: typeof segments[0], radiusX: number, radiusY: number, centerX: number, centerY: number) => {
-    const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
-    const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
-    
-    const startX = centerX + radiusX * Math.cos(startAngleRad);
-    const startY = centerY + radiusY * Math.sin(startAngleRad);
-    const endX = centerX + radiusX * Math.cos(endAngleRad);
-    const endY = centerY + radiusY * Math.sin(endAngleRad);
-    
-    const largeArcFlag = segment.percentage > 50 ? 1 : 0;
-    
-    return `M ${centerX} ${centerY} L ${startX} ${startY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY} Z`;
-  };
-
-  const createSidePath = (segment: typeof segments[0], radiusX: number, radiusY: number, centerX: number, centerY: number, depth: number, isHovered = false) => {
-    const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
-    const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
-    
-    const midAngle = (startAngleRad + endAngleRad) / 2;
-    // Improved edge visibility - only show edges that are truly visible from the front
-    const showStartEdge = isHovered || Math.sin(startAngleRad) > 0.1;
-    const showEndEdge = isHovered || Math.sin(endAngleRad) > 0.1;
-    const showOuterEdge = isHovered || Math.sin(midAngle) > 0.08;
-    
-    const startX = centerX + radiusX * Math.cos(startAngleRad);
-    const startY = centerY + radiusY * Math.sin(startAngleRad);
-    const endX = centerX + radiusX * Math.cos(endAngleRad);
-    const endY = centerY + radiusY * Math.sin(endAngleRad);
-    
-    const paths = [];
-    
-    // Outer edge (arc) with smooth gradient
-    if (showOuterEdge) {
-      const largeArcFlag = segment.percentage > 50 ? 1 : 0;
-      const outerPath = `M ${startX} ${startY} L ${startX} ${startY + depth} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY + depth} L ${endX} ${endY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 0 ${startX} ${startY} Z`;
-      paths.push({ path: outerPath, type: 'outer' });
-    }
-    
-    // Start edge
-    if (showStartEdge) {
-      const startPath = `M ${centerX} ${centerY} L ${startX} ${startY} L ${startX} ${startY + depth} L ${centerX} ${centerY + depth} Z`;
-      paths.push({ path: startPath, type: 'start' });
-    }
-    
-    // End edge
-    if (showEndEdge) {
-      const endPath = `M ${centerX} ${centerY} L ${endX} ${endY} L ${endX} ${endY + depth} L ${centerX} ${centerY + depth} Z`;
-      paths.push({ path: endPath, type: 'end' });
-    }
-    
-    return paths;
-  };
-
-  const adjustColor = (color: string, amount: number) => {
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    
-    const adjust = (val: number) => Math.max(0, Math.min(255, Math.floor(val * (1 + amount))));
-    
-    const newR = adjust(r);
-    const newG = adjust(g);
-    const newB = adjust(b);
-    
-    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
-  };
-
-  const darkenColor = (color: string, amount: number = 0.35) => adjustColor(color, -amount);
-  const lightenColor = (color: string, amount: number = 0.2) => adjustColor(color, amount);
-
   return (
     <div 
       ref={containerRef}
@@ -179,7 +116,7 @@ export const PieChart = ({
           width: '90%',
           height: '100%',
           maxWidth: maxSize ?? size,
-          maxHeight: maxSize || size,
+          maxHeight: maxSize ?? size,
           overflow: 'visible',
           marginLeft: '0',
         }}
