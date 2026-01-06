@@ -7,7 +7,7 @@
 		"build": "next build",
 		"convex": "convex dev",
 		"start": "next start",
-		"check": "biome check --write .",
+		"check": "biome check --write --unsafe --max-diagnostics 1000 .",
 		"type": "tsc --noEmit && next build --no-lint"
 	},
 	"author": {

@@ -1,7 +1,6 @@
 // Export components from the canvas folder
-import { Canvas } from './components/canvas';
-import { Toolbar } from './components/toolbar';
-
+import { Canvas } from "./components/canvas";
+import { Toolbar } from "./components/toolbar";
 
 // Export renamed components for canvas feature
 export const CanvasCanvas = Canvas;

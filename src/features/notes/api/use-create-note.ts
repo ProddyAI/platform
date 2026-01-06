@@ -1,11 +1,11 @@
-import { useMutation } from 'convex/react';
-import { useCallback, useMemo, useState } from 'react';
+import { useMutation } from "convex/react";
+import { useCallback, useMemo, useState } from "react";
 
-import { api } from '@/../convex/_generated/api';
-import type { Id } from '@/../convex/_generated/dataModel';
-import type { CreateNoteRequest } from '../types/index';
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import type { CreateNoteRequest } from "../types/index";
 
-type ResponseType = Id<'notes'> | null;
+type ResponseType = Id<"notes"> | null;
 
 type Options = {
 	onSuccess?: (data: ResponseType) => void;
@@ -18,25 +18,25 @@ export const useCreateNote = () => {
 	const [data, setData] = useState<ResponseType>(null);
 	const [error, setError] = useState<Error | null>(null);
 	const [status, setStatus] = useState<
-		'success' | 'error' | 'settled' | 'pending' | null
+		"success" | "error" | "settled" | "pending" | null
 	>(null);
 
-	const isPending = useMemo(() => status === 'pending', [status]);
-	const isSuccess = useMemo(() => status === 'success', [status]);
-	const isError = useMemo(() => status === 'error', [status]);
-	const isSettled = useMemo(() => status === 'settled', [status]);
+	const isPending = useMemo(() => status === "pending", [status]);
+	const isSuccess = useMemo(() => status === "success", [status]);
+	const isError = useMemo(() => status === "error", [status]);
+	const isSettled = useMemo(() => status === "settled", [status]);
 
 	const mutation = useMutation(api.notes.create);
 
 	const mutate = useCallback(
 		async (request: CreateNoteRequest, options?: Options) => {
 			try {
-				setStatus('pending');
+				setStatus("pending");
 
 				const response = await mutation(request);
 
 				setData(response);
-				setStatus('success');
+				setStatus("success");
 
 				options?.onSuccess?.(response);
 
@@ -45,7 +45,7 @@ export const useCreateNote = () => {
 				const error = err as Error;
 
 				setError(error);
-				setStatus('error');
+				setStatus("error");
 
 				options?.onError?.(error);
 
@@ -55,7 +55,7 @@ export const useCreateNote = () => {
 
 				return null;
 			} finally {
-				setStatus('settled');
+				setStatus("settled");
 				options?.onSettled?.();
 			}
 		},

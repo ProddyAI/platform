@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { atom, useAtom } from 'jotai';
+import { atom, useAtom } from "jotai";
 
 const createChannelModalAtom = atom(false);
 
 export const useCreateChannelModal = () => {
-  return useAtom(createChannelModalAtom);
+	return useAtom(createChannelModalAtom);
 };

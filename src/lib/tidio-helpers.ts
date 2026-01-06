@@ -1,5 +1,5 @@
-	export const showTidioChat = (): boolean => {
-	if (typeof window === 'undefined') return false;
+export const showTidioChat = (): boolean => {
+	if (typeof window === "undefined") return false;
 
 	if (window.tidioChatApi) {
 		try {
@@ -15,12 +15,12 @@
 			}
 			return true;
 		} catch (error) {
-			console.error('Error toggling Tidio chat:', error);
+			console.error("Error toggling Tidio chat:", error);
 			try {
 				window.tidioChatApi.show();
 				window.tidioChatApi.open();
 				return true;
-			} catch (e) {
+			} catch (_e) {
 				return false;
 			}
 		}
@@ -34,7 +34,7 @@
  * @returns {boolean} True if the chat was successfully hidden, false otherwise
  */
 export const hideTidioChat = (): boolean => {
-	if (typeof window === 'undefined') return false;
+	if (typeof window === "undefined") return false;
 
 	if (window.tidioChatApi) {
 		try {
@@ -50,7 +50,7 @@ export const hideTidioChat = (): boolean => {
 
 			return true;
 		} catch (error) {
-			console.error('Error hiding Tidio chat:', error);
+			console.error("Error hiding Tidio chat:", error);
 			return false;
 		}
 	}

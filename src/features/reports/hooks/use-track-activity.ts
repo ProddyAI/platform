@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '@/../convex/_generated/api';
-import { Id } from '@/../convex/_generated/dataModel';
-import { usePathname } from 'next/navigation';
+import { useMutation } from "convex/react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 
 interface UseTrackActivityProps {
-	workspaceId: Id<'workspaces'> | null;
-	channelId?: Id<'channels'> | null;
+	workspaceId: Id<"workspaces"> | null;
+	channelId?: Id<"channels"> | null;
 	activityType?: string;
 }
 
 export const useTrackActivity = ({
 	workspaceId,
 	channelId,
-	activityType = 'page_view',
+	activityType = "page_view",
 }: UseTrackActivityProps) => {
 	const recordActivity = useMutation(api.analytics.recordUserActivity);
 	const recordChannelSession = useMutation(api.analytics.recordChannelSession);
 	const pathname = usePathname();
-	const sessionIdRef = useRef<Id<'channelSessions'> | null>(null);
+	const sessionIdRef = useRef<Id<"channelSessions"> | null>(null);
 	const startTimeRef = useRef<number>(Date.now());
 	const [isTracking, setIsTracking] = useState(false);
 
@@ -40,7 +40,7 @@ export const useTrackActivity = ({
 				});
 				setIsTracking(true);
 			} catch (error) {
-				console.error('Failed to record activity:', error);
+				console.error("Failed to record activity:", error);
 			}
 		};
 
@@ -56,12 +56,12 @@ export const useTrackActivity = ({
 				const sessionId = await recordChannelSession({
 					workspaceId,
 					channelId,
-					action: 'enter',
+					action: "enter",
 				});
 				sessionIdRef.current = sessionId;
 				startTimeRef.current = Date.now();
 			} catch (error) {
-				console.error('Failed to start channel session:', error);
+				console.error("Failed to start channel session:", error);
 			}
 		};
 
@@ -73,10 +73,10 @@ export const useTrackActivity = ({
 				recordChannelSession({
 					workspaceId,
 					channelId,
-					action: 'exit',
+					action: "exit",
 					sessionId: sessionIdRef.current,
 				}).catch((error) => {
-					console.error('Failed to end channel session:', error);
+					console.error("Failed to end channel session:", error);
 				});
 			}
 		};
@@ -88,22 +88,22 @@ export const useTrackActivity = ({
 
 		// Record time spent when user leaves the page
 		const handleVisibilityChange = async () => {
-			if (document.visibilityState === 'hidden' && isTracking) {
+			if (document.visibilityState === "hidden" && isTracking) {
 				const duration = Date.now() - startTimeRef.current;
 				try {
 					await recordActivity({
 						workspaceId,
 						channelId: channelId || undefined,
-						activityType: 'time_spent',
+						activityType: "time_spent",
 						duration,
 						metadata: {
 							path: pathname,
 						},
 					});
 				} catch (error) {
-					console.error('Failed to record time spent:', error);
+					console.error("Failed to record time spent:", error);
 				}
-			} else if (document.visibilityState === 'visible') {
+			} else if (document.visibilityState === "visible") {
 				// Reset start time when page becomes visible again
 				startTimeRef.current = Date.now();
 			}
@@ -117,24 +117,24 @@ export const useTrackActivity = ({
 					await recordActivity({
 						workspaceId,
 						channelId: channelId || undefined,
-						activityType: 'time_spent',
+						activityType: "time_spent",
 						duration,
 						metadata: {
 							path: pathname,
 						},
 					});
 				} catch (error) {
-					console.error('Failed to record time spent:', error);
+					console.error("Failed to record time spent:", error);
 				}
 			}
 		};
 
-		document.addEventListener('visibilitychange', handleVisibilityChange);
-		window.addEventListener('beforeunload', handleBeforeUnload);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		window.addEventListener("beforeunload", handleBeforeUnload);
 
 		return () => {
-			document.removeEventListener('visibilitychange', handleVisibilityChange);
-			window.removeEventListener('beforeunload', handleBeforeUnload);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+			window.removeEventListener("beforeunload", handleBeforeUnload);
 
 			// Record final time spent when component unmounts
 			if (isTracking) {
@@ -142,13 +142,13 @@ export const useTrackActivity = ({
 				recordActivity({
 					workspaceId,
 					channelId: channelId || undefined,
-					activityType: 'time_spent',
+					activityType: "time_spent",
 					duration,
 					metadata: {
 						path: pathname,
 					},
 				}).catch((error) => {
-					console.error('Failed to record final time spent:', error);
+					console.error("Failed to record final time spent:", error);
 				});
 			}
 		};

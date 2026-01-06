@@ -1,7 +1,12 @@
-import { StreamAudioRoom } from './components/StreamAudioRoom';
-import { NotesAudioControls } from './components/NotesAudioControls';
-import { AudioControlButton } from './components/AudioControlButton';
-import { useAudioRoom } from './hooks/useAudioRoom';
+import { AudioControlButton } from "./components/AudioControlButton";
+import { NotesAudioControls } from "./components/NotesAudioControls";
+import { StreamAudioRoom } from "./components/StreamAudioRoom";
+import { useAudioRoom } from "./hooks/useAudioRoom";
 
 // Export the components and hooks
-export { StreamAudioRoom, NotesAudioControls, AudioControlButton, useAudioRoom };
+export {
+	StreamAudioRoom,
+	NotesAudioControls,
+	AudioControlButton,
+	useAudioRoom,
+};

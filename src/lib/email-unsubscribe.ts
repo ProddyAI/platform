@@ -1,11 +1,11 @@
-import crypto from 'crypto';
+import crypto from "node:crypto";
 
 export type EmailType =
-	| 'mentions'
-	| 'assignee'
-	| 'threadReply'
-	| 'directMessage'
-	| 'weeklyDigest';
+	| "mentions"
+	| "assignee"
+	| "threadReply"
+	| "directMessage"
+	| "weeklyDigest";
 
 function getUnsubscribeSecret(): string {
 	return process.env.NEXT_PUBLIC_EMAIL_UNSUBSCRIBE_SECRET!;
@@ -21,9 +21,9 @@ export function generateUnsubscribeUrl(
 	const data = `${userId}:${emailType}:${timestamp}`;
 
 	const signature = crypto
-		.createHmac('sha256', secret)
+		.createHmac("sha256", secret)
 		.update(data)
-		.digest('hex');
+		.digest("hex");
 
 	const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 	const params = new URLSearchParams({
@@ -49,12 +49,12 @@ export function verifyUnsubscribeSignature(
 		const secret = getUnsubscribeSecret();
 
 		// Check if timestamp is not too old (7 days)
-		const timestampNum = parseInt(timestamp);
+		const timestampNum = parseInt(timestamp, 10);
 		const now = Date.now();
 		const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
 
 		if (now - timestampNum > sevenDaysInMs) {
-			return { valid: false, error: 'Unsubscribe link has expired' };
+			return { valid: false, error: "Unsubscribe link has expired" };
 		}
 
 		// Recreate the data that was signed
@@ -62,23 +62,23 @@ export function verifyUnsubscribeSignature(
 
 		// Generate expected signature
 		const expectedSignature = crypto
-			.createHmac('sha256', secret)
+			.createHmac("sha256", secret)
 			.update(data)
-			.digest('hex');
+			.digest("hex");
 
 		// Compare signatures using timing-safe comparison
 		const isValid = crypto.timingSafeEqual(
-			new Uint8Array(Buffer.from(signature, 'hex')),
-			new Uint8Array(Buffer.from(expectedSignature, 'hex'))
+			new Uint8Array(Buffer.from(signature, "hex")),
+			new Uint8Array(Buffer.from(expectedSignature, "hex"))
 		);
 
 		if (!isValid) {
-			return { valid: false, error: 'Invalid unsubscribe signature' };
+			return { valid: false, error: "Invalid unsubscribe signature" };
 		}
 
 		return { valid: true };
-	} catch (error) {
-		return { valid: false, error: 'Failed to verify unsubscribe signature' };
+	} catch (_error) {
+		return { valid: false, error: "Failed to verify unsubscribe signature" };
 	}
 }
 
@@ -87,11 +87,11 @@ export function verifyUnsubscribeSignature(
  */
 export function getEmailTypeName(emailType: EmailType): string {
 	const names: Record<EmailType, string> = {
-		mentions: 'Mention notifications',
-		assignee: 'Task assignment notifications',
-		threadReply: 'Thread reply notifications',
-		directMessage: 'Direct message notifications',
-		weeklyDigest: 'Weekly digest emails',
+		mentions: "Mention notifications",
+		assignee: "Task assignment notifications",
+		threadReply: "Thread reply notifications",
+		directMessage: "Direct message notifications",
+		weeklyDigest: "Weekly digest emails",
 	};
 
 	return names[emailType] || emailType;
@@ -104,11 +104,11 @@ export function getNotificationKey(
 	emailType: EmailType
 ): keyof NotificationPreferences {
 	const keyMap: Record<EmailType, keyof NotificationPreferences> = {
-		mentions: 'mentions',
-		assignee: 'assignee',
-		threadReply: 'threadReply',
-		directMessage: 'directMessage',
-		weeklyDigest: 'weeklyDigest',
+		mentions: "mentions",
+		assignee: "assignee",
+		threadReply: "threadReply",
+		directMessage: "directMessage",
+		weeklyDigest: "weeklyDigest",
 	};
 
 	return keyMap[emailType];
@@ -122,13 +122,13 @@ export interface NotificationPreferences {
 	directMessage: boolean;
 	weeklyDigest: boolean;
 	weeklyDigestDay:
-		| 'monday'
-		| 'tuesday'
-		| 'wednesday'
-		| 'thursday'
-		| 'friday'
-		| 'saturday'
-		| 'sunday';
+		| "monday"
+		| "tuesday"
+		| "wednesday"
+		| "thursday"
+		| "friday"
+		| "saturday"
+		| "sunday";
 }
 
 /**
@@ -142,7 +142,7 @@ export async function shouldSendEmail(
 ): Promise<boolean> {
 	try {
 		// Import the API here to avoid circular dependencies
-		const { api } = await import('../../convex/_generated/api');
+		const { api } = await import("../../convex/_generated/api");
 
 		// Get user notification preferences
 		const preferences = await convexClient.query(
@@ -154,14 +154,14 @@ export async function shouldSendEmail(
 
 		if (!preferences) {
 			// If no preferences found, default to allowing emails (except weekly digest)
-			return emailType !== 'weeklyDigest';
+			return emailType !== "weeklyDigest";
 		}
 
 		const notificationKey = getNotificationKey(emailType);
 		return preferences[notificationKey] ?? true;
 	} catch (error) {
-		console.error('Error checking email preferences:', error);
+		console.error("Error checking email preferences:", error);
 		// On error, default to allowing emails (except weekly digest) to avoid blocking important notifications
-		return emailType !== 'weeklyDigest';
+		return emailType !== "weeklyDigest";
 	}
 }

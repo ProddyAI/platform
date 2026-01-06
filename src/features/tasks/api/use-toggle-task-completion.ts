@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useMutation } from 'convex/react';
+import { useMutation } from "convex/react";
 
-import { api } from '@/../convex/_generated/api';
+import { api } from "@/../convex/_generated/api";
 
 export const useToggleTaskCompletion = () => {
-  const toggleTaskCompletion = useMutation(api.tasks.toggleTaskCompletion);
+	const toggleTaskCompletion = useMutation(api.tasks.toggleTaskCompletion);
 
-  return toggleTaskCompletion;
+	return toggleTaskCompletion;
 };

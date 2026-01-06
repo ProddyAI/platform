@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+	convexAuthNextjsToken,
+	isAuthenticatedNextjs,
+} from "@convex-dev/auth/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
+import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { composio, initializeComposio } from "@/lib/composio";
-import {
-  convexAuthNextjsToken,
-  isAuthenticatedNextjs,
-} from "@convex-dev/auth/nextjs/server";
+import { initializeComposio } from "@/lib/composio";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 // Validate composioAuthConfigId format
-const validateAuthConfigFormat = (composioAuthConfigId: string): boolean => {
-  // Accept any valid UUID or identifier format from Composio API
-  return Boolean(composioAuthConfigId && composioAuthConfigId.length > 0);
+const _validateAuthConfigFormat = (composioAuthConfigId: string): boolean => {
+	// Accept any valid UUID or identifier format from Composio API
+	return Boolean(composioAuthConfigId && composioAuthConfigId.length > 0);
 };
 
 /**
@@ -23,64 +23,63 @@ const validateAuthConfigFormat = (composioAuthConfigId: string): boolean => {
  * @returns `{ success: true, member }` when the authenticated user owns the member; otherwise `{ success: false, response }` where `response` is a `NextResponse` containing a 401 (unauthenticated), 404 (user or member not found), or 403 (unauthorized) error
  */
 async function verifyMemberOwnership(
-  memberId: string,
-  convexClient: ConvexHttpClient
-): Promise<{ success: true; member: any } | { success: false; response: NextResponse }> {
-  // Verify authentication
-  const isAuthenticated = await isAuthenticatedNextjs();
-  if (!isAuthenticated) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      ),
-    };
-  }
+	memberId: string,
+	convexClient: ConvexHttpClient
+): Promise<
+	{ success: true; member: any } | { success: false; response: NextResponse }
+> {
+	// Verify authentication
+	const isAuthenticated = await isAuthenticatedNextjs();
+	if (!isAuthenticated) {
+		return {
+			success: false,
+			response: NextResponse.json(
+				{ error: "Authentication required" },
+				{ status: 401 }
+			),
+		};
+	}
 
-  // Get the authenticated user's information
-  const token = await convexAuthNextjsToken();
-  if (token && typeof token === "string") {
-    convexClient.setAuth(token);
-  }
+	// Get the authenticated user's information
+	const token = await convexAuthNextjsToken();
+	if (token && typeof token === "string") {
+		convexClient.setAuth(token);
+	}
 
-  const currentUser = await convexClient.query(api.users.current);
-  if (!currentUser) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      ),
-    };
-  }
+	const currentUser = await convexClient.query(api.users.current);
+	if (!currentUser) {
+		return {
+			success: false,
+			response: NextResponse.json({ error: "User not found" }, { status: 404 }),
+		};
+	}
 
-  // Get the member for this workspace and verify ownership
-  const member = await convexClient.query(api.members._getMemberById, {
-    memberId: memberId as Id<"members">,
-  });
+	// Get the member for this workspace and verify ownership
+	const member = await convexClient.query(api.members._getMemberById, {
+		memberId: memberId as Id<"members">,
+	});
 
-  if (!member) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        { error: "Member not found" },
-        { status: 404 }
-      ),
-    };
-  }
+	if (!member) {
+		return {
+			success: false,
+			response: NextResponse.json(
+				{ error: "Member not found" },
+				{ status: 404 }
+			),
+		};
+	}
 
-  if (member.userId !== currentUser._id) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        { error: "Unauthorized: Cannot act on another user's member" },
-        { status: 403 }
-      ),
-    };
-  }
+	if (member.userId !== currentUser._id) {
+		return {
+			success: false,
+			response: NextResponse.json(
+				{ error: "Unauthorized: Cannot act on another user's member" },
+				{ status: 403 }
+			),
+		};
+	}
 
-  return { success: true, member };
+	return { success: true, member };
 }
 
 /**
@@ -329,151 +328,155 @@ export async function POST(req: NextRequest) {
  * @returns For `fetch-data`: `{ success: true, authConfigs: Array, connectedAccounts: Array }`. For `check-status`: `{ connected: boolean, status: string, account?: object }`. For `fetch-tools`: `{ success: true, tools: Array, toolkit: string, entityId: string }`. For invalid requests or on errors: JSON error objects with appropriate HTTP status codes.
  */
 export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const action = searchParams.get("action");
-    const workspaceId = searchParams.get("workspaceId");
-    const userId = searchParams.get("userId");
-    const toolkit = searchParams.get("toolkit");
-    const composioAccountId = searchParams.get("composioAccountId");
+	try {
+		const { searchParams } = new URL(req.url);
+		const action = searchParams.get("action");
+		const workspaceId = searchParams.get("workspaceId");
+		const userId = searchParams.get("userId");
+		const toolkit = searchParams.get("toolkit");
+		const composioAccountId = searchParams.get("composioAccountId");
 
-    const { apiClient } = initializeComposio();
+		const { apiClient } = initializeComposio();
 
-    // Fetch auth configs and connected accounts for workspace
-    if (action === "fetch-data" && workspaceId) {
-      const memberId = searchParams.get("memberId"); // Optional: filter by member
+		// Fetch auth configs and connected accounts for workspace
+		if (action === "fetch-data" && workspaceId) {
+			const memberId = searchParams.get("memberId"); // Optional: filter by member
 
-      try {
-        // Fetch auth configs from database (member-specific if memberId provided)
-        const authConfigs = await convex.query(
-          api.integrations.getAuthConfigsPublic,
-          {
-            workspaceId: workspaceId as Id<"workspaces">,
-            memberId: memberId ? (memberId as Id<"members">) : undefined,
-          },
-        );
+			try {
+				// Fetch auth configs from database (member-specific if memberId provided)
+				const authConfigs = await convex.query(
+					api.integrations.getAuthConfigsPublic,
+					{
+						workspaceId: workspaceId as Id<"workspaces">,
+						memberId: memberId ? (memberId as Id<"members">) : undefined,
+					}
+				);
 
-        // UPDATED: Fetch real connected accounts from Composio using member-specific entity ID
-        const { createComposioClient, getAnyConnectedApps } = await import(
-          "@/lib/composio-config"
-        );
-        const composioClient = createComposioClient();
-        
-        // If memberId is provided, use member-specific entity ID
-        const entityId = memberId ? `member_${memberId}` : undefined;
-        const realConnectedApps = await getAnyConnectedApps(
-          composioClient,
-          workspaceId,
-          entityId, // Pass member-specific entity ID if available
-        );
+				// UPDATED: Fetch real connected accounts from Composio using member-specific entity ID
+				const { createComposioClient, getAnyConnectedApps } = await import(
+					"@/lib/composio-config"
+				);
+				const composioClient = createComposioClient();
 
-        // Transform the real connected apps to match the expected format
-        const connectedAccounts = realConnectedApps
-          .filter((app: any) => app.connected)
-          .map((app: any) => ({
-            _id: app.connectionId, // Use connection ID as _id
-            workspaceId: workspaceId as Id<"workspaces">,
-            memberId: memberId ? (memberId as Id<"members">) : undefined,
-            authConfigId: `auth_${app.app.toLowerCase()}`, // Generate a fake auth config ID
-            userId: app.entityId || (memberId ? `member_${memberId}` : `workspace_${workspaceId}`),
-            composioAccountId: app.connectionId,
-            toolkit: app.app.toLowerCase(), // Convert to lowercase to match expected format
-            status: "ACTIVE", // Since these are filtered as connected
-            metadata: {},
-            isDisabled: false,
-            connectedAt: Date.now(), // Use current time as fallback
-            connectedBy: memberId ? (memberId as Id<"members">) : undefined, // Use memberId if available, undefined for system connections
-          }));
+				// If memberId is provided, use member-specific entity ID
+				const entityId = memberId ? `member_${memberId}` : undefined;
+				const realConnectedApps = await getAnyConnectedApps(
+					composioClient,
+					workspaceId,
+					entityId // Pass member-specific entity ID if available
+				);
 
-        return NextResponse.json({
-          success: true,
-          authConfigs,
-          connectedAccounts,
-        });
-      } catch (convexError) {
-        console.error("[AgentAuth] Error fetching data:", convexError);
-        // Return empty arrays if there's an error
-        return NextResponse.json({
-          success: true,
-          authConfigs: [],
-          connectedAccounts: [],
-        });
-      }
-    }
+				// Transform the real connected apps to match the expected format
+				const connectedAccounts = realConnectedApps
+					.filter((app: any) => app.connected)
+					.map((app: any) => ({
+						_id: app.connectionId, // Use connection ID as _id
+						workspaceId: workspaceId as Id<"workspaces">,
+						memberId: memberId ? (memberId as Id<"members">) : undefined,
+						authConfigId: `auth_${app.app.toLowerCase()}`, // Generate a fake auth config ID
+						userId:
+							app.entityId ||
+							(memberId ? `member_${memberId}` : `workspace_${workspaceId}`),
+						composioAccountId: app.connectionId,
+						toolkit: app.app.toLowerCase(), // Convert to lowercase to match expected format
+						status: "ACTIVE", // Since these are filtered as connected
+						metadata: {},
+						isDisabled: false,
+						connectedAt: Date.now(), // Use current time as fallback
+						connectedBy: memberId ? (memberId as Id<"members">) : undefined, // Use memberId if available, undefined for system connections
+					}));
 
-    // Check connection status
-    if (action === "check-status" && composioAccountId) {
-      try {
-        const connectedAccount =
-          await apiClient.getConnectionStatus(composioAccountId);
+				return NextResponse.json({
+					success: true,
+					authConfigs,
+					connectedAccounts,
+				});
+			} catch (convexError) {
+				console.error("[AgentAuth] Error fetching data:", convexError);
+				// Return empty arrays if there's an error
+				return NextResponse.json({
+					success: true,
+					authConfigs: [],
+					connectedAccounts: [],
+				});
+			}
+		}
 
-        return NextResponse.json({
-          connected: true,
-          status: connectedAccount.status,
-          account: connectedAccount,
-        });
-      } catch (error) {
-        console.error("Status check error:", error);
-        return NextResponse.json({
-          connected: false,
-          status: "NOT_FOUND",
-          error: "Account not found",
-        });
-      }
-    }
+		// Check connection status
+		if (action === "check-status" && composioAccountId) {
+			try {
+				const connectedAccount =
+					await apiClient.getConnectionStatus(composioAccountId);
 
-    // Fetch tools for connected toolkit (Step 2 from documentation)
-    if (action === "fetch-tools" && workspaceId && toolkit && userId) {
-      // Validate userId format (should be member_{memberId})
-      const memberIdPattern = /^member_[A-Za-z0-9-_]+$/;
-      if (!memberIdPattern.test(userId)) {
-        console.error(`[AgentAuth] Invalid userId format: ${userId}`);
-        return NextResponse.json(
-          { error: "Invalid userId format. Expected format: member_{memberId}" },
-          { status: 400 }
-        );
-      }
+				return NextResponse.json({
+					connected: true,
+					status: connectedAccount.status,
+					account: connectedAccount,
+				});
+			} catch (error) {
+				console.error("Status check error:", error);
+				return NextResponse.json({
+					connected: false,
+					status: "NOT_FOUND",
+					error: "Account not found",
+				});
+			}
+		}
 
-      // Use member-scoped entity ID for user-specific connections
-      const entityId = userId; // userId should be member_{memberId}
+		// Fetch tools for connected toolkit (Step 2 from documentation)
+		if (action === "fetch-tools" && workspaceId && toolkit && userId) {
+			// Validate userId format (should be member_{memberId})
+			const memberIdPattern = /^member_[A-Za-z0-9-_]+$/;
+			if (!memberIdPattern.test(userId)) {
+				console.error(`[AgentAuth] Invalid userId format: ${userId}`);
+				return NextResponse.json(
+					{
+						error: "Invalid userId format. Expected format: member_{memberId}",
+					},
+					{ status: 400 }
+				);
+			}
 
-      try {
-        // Use API client to get tools for the workspace entity and toolkit
-        const toolsResponse = await apiClient.getTools(entityId, [toolkit]);
-        const tools = toolsResponse.items || toolsResponse;
+			// Use member-scoped entity ID for user-specific connections
+			const entityId = userId; // userId should be member_{memberId}
 
-        return NextResponse.json({
-          success: true,
-          tools: tools,
-          toolkit,
-          entityId,
-        });
-      } catch (error) {
-        console.error("Tools fetch error:", error);
-        return NextResponse.json(
-          {
-            error: `Failed to fetch tools: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-          { status: 500 },
-        );
-      }
-    }
+			try {
+				// Use API client to get tools for the workspace entity and toolkit
+				const toolsResponse = await apiClient.getTools(entityId, [toolkit]);
+				const tools = toolsResponse.items || toolsResponse;
 
-    // Default response for testing
-    return NextResponse.json(
-      {
-        error: "Invalid action or missing required parameters",
-        receivedAction: action,
-      },
-      { status: 400 },
-    );
-  } catch (error) {
-    console.error("[AgentAuth] GET Error:", error);
-    return NextResponse.json(
-      { error: "AgentAuth GET operation failed" },
-      { status: 500 },
-    );
-  }
+				return NextResponse.json({
+					success: true,
+					tools: tools,
+					toolkit,
+					entityId,
+				});
+			} catch (error) {
+				console.error("Tools fetch error:", error);
+				return NextResponse.json(
+					{
+						error: `Failed to fetch tools: ${error instanceof Error ? error.message : "Unknown error"}`,
+					},
+					{ status: 500 }
+				);
+			}
+		}
+
+		// Default response for testing
+		return NextResponse.json(
+			{
+				error: "Invalid action or missing required parameters",
+				receivedAction: action,
+			},
+			{ status: 400 }
+		);
+	} catch (error) {
+		console.error("[AgentAuth] GET Error:", error);
+		return NextResponse.json(
+			{ error: "AgentAuth GET operation failed" },
+			{ status: 500 }
+		);
+	}
 }
 
 /**
@@ -489,78 +492,84 @@ export async function GET(req: NextRequest) {
  *          or the response produced by the member ownership verification).
  */
 export async function DELETE(req: NextRequest) {
-  try {
-    const { workspaceId, connectedAccountId, composioAccountId, memberId } =
-      await req.json();
+	try {
+		const { workspaceId, connectedAccountId, composioAccountId, memberId } =
+			await req.json();
 
-    if (!workspaceId || !composioAccountId || !memberId) {
-      return NextResponse.json(
-        { error: "workspaceId, composioAccountId, and memberId are required" },
-        { status: 400 },
-      );
-    }
+		if (!workspaceId || !composioAccountId || !memberId) {
+			return NextResponse.json(
+				{ error: "workspaceId, composioAccountId, and memberId are required" },
+				{ status: 400 }
+			);
+		}
 
-    // Verify authentication and member ownership
-    const verifyResult = await verifyMemberOwnership(memberId, convex);
-    if (!verifyResult.success) {
-      return verifyResult.response;
-    }
+		// Verify authentication and member ownership
+		const verifyResult = await verifyMemberOwnership(memberId, convex);
+		if (!verifyResult.success) {
+			return verifyResult.response;
+		}
 
-    const { apiClient } = initializeComposio();
+		const { apiClient } = initializeComposio();
 
-    // First, disconnect from Composio using the API client with member-specific entity ID
-    let composioDeleteSuccess = false;
-    try {
-      await apiClient.deleteConnection(composioAccountId);
-      composioDeleteSuccess = true;
-    } catch (error) {
-      console.error("[AgentAuth DELETE] ✗ Error disconnecting from Composio:", error);
-      console.error("[AgentAuth DELETE] Error details:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      // Continue to delete from database even if Composio delete fails
-    }
+		// First, disconnect from Composio using the API client with member-specific entity ID
+		let composioDeleteSuccess = false;
+		try {
+			await apiClient.deleteConnection(composioAccountId);
+			composioDeleteSuccess = true;
+		} catch (error) {
+			console.error(
+				"[AgentAuth DELETE] ✗ Error disconnecting from Composio:",
+				error
+			);
+			console.error("[AgentAuth DELETE] Error details:", {
+				message: error instanceof Error ? error.message : String(error),
+				stack: error instanceof Error ? error.stack : undefined,
+			});
+			// Continue to delete from database even if Composio delete fails
+		}
 
-    // Delete the connected account record from database (member-specific)
-    if (
-      connectedAccountId &&
-      connectedAccountId.length > 10 &&
-      !connectedAccountId.startsWith("ca_")
-    ) {
-      try {
-        await convex.mutation(api.integrations.deleteConnectedAccount, {
-          connectedAccountId: connectedAccountId as Id<"connected_accounts">,
-          memberId: memberId as Id<"members">,
-        });
-      } catch (error) {
-        console.error("[AgentAuth DELETE] ✗ Error deleting database record:", error);
-        console.error("[AgentAuth DELETE] Database error details:", {
-          message: error instanceof Error ? error.message : String(error),
-          connectedAccountId,
-          memberId,
-        });
-        return NextResponse.json(
-          { error: "Failed to delete connection from database" },
-          { status: 500 },
-        );
-      }
-    }
+		// Delete the connected account record from database (member-specific)
+		if (
+			connectedAccountId &&
+			connectedAccountId.length > 10 &&
+			!connectedAccountId.startsWith("ca_")
+		) {
+			try {
+				await convex.mutation(api.integrations.deleteConnectedAccount, {
+					connectedAccountId: connectedAccountId as Id<"connected_accounts">,
+					memberId: memberId as Id<"members">,
+				});
+			} catch (error) {
+				console.error(
+					"[AgentAuth DELETE] ✗ Error deleting database record:",
+					error
+				);
+				console.error("[AgentAuth DELETE] Database error details:", {
+					message: error instanceof Error ? error.message : String(error),
+					connectedAccountId,
+					memberId,
+				});
+				return NextResponse.json(
+					{ error: "Failed to delete connection from database" },
+					{ status: 500 }
+				);
+			}
+		}
 
-    return NextResponse.json({
-      success: true,
-      message: "Account disconnected successfully",
-      composioDeleted: composioDeleteSuccess,
-    });
-  } catch (error) {
-    console.error("[AgentAuth DELETE] Unexpected error:", error);
-    console.error("[AgentAuth DELETE] Error details:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return NextResponse.json(
-      { error: "Failed to disconnect account" },
-      { status: 500 },
-    );
-  }
+		return NextResponse.json({
+			success: true,
+			message: "Account disconnected successfully",
+			composioDeleted: composioDeleteSuccess,
+		});
+	} catch (error) {
+		console.error("[AgentAuth DELETE] Unexpected error:", error);
+		console.error("[AgentAuth DELETE] Error details:", {
+			message: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
+		return NextResponse.json(
+			{ error: "Failed to disconnect account" },
+			{ status: 500 }
+		);
+	}
 }

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMutation } from 'convex/react';
-import { api } from '@/../convex/_generated/api';
-import { Id } from '@/../convex/_generated/dataModel';
-import { useOthers, useSelf } from '@/../liveblocks.config';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { api } from '@/../convex/_generated/api';
+import type { Id } from '@/../convex/_generated/dataModel';
+import { useOthers, useSelf } from '@/../liveblocks.config';
 
 interface UseLiveNoteSessionOptions {
 	noteId: Id<'notes'>;
@@ -36,12 +36,15 @@ export const useLiveNoteSession = ({
 	const createMessage = useMutation(api.messages.create);
 
 	// Get all participants (including self) - memoized to prevent infinite loops
-	const participants = useMemo(() => [
-		...(self && self.id ? [self.id] : []),
-		...others
-			.map((other) => other.id)
-			.filter((id): id is string => typeof id === 'string'),
-	], [self, others]);
+	const participants = useMemo(
+		() => [
+			...(self?.id ? [self.id] : []),
+			...others
+				.map((other) => other.id)
+				.filter((id): id is string => typeof id === 'string'),
+		],
+		[self, others]
+	);
 
 	// Check if this is a live session (more than one participant actively editing)
 	useEffect(() => {
@@ -75,6 +78,7 @@ export const useLiveNoteSession = ({
 				setHasAnnounced(false);
 			}
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [participants, others, self, isLiveSession, autoAnnounce, hasAnnounced]);
 
 	const startLiveSession = useCallback(async () => {
@@ -114,7 +118,10 @@ export const useLiveNoteSession = ({
 			}
 
 			// Don't announce for dummy note IDs
-			if (noteId.toString().includes('dummy') || noteId === 'kn7cvx952gp794j4vzvxxqqgk57k9yhh') {
+			if (
+				noteId.toString().includes('dummy') ||
+				noteId === 'kn7cvx952gp794j4vzvxxqqgk57k9yhh'
+			) {
 				console.log('Skipping announcement for dummy note ID');
 				return;
 			}

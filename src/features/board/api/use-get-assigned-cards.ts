@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useQuery } from 'convex/react';
-import { useMemo } from 'react';
-import { api } from '@/../convex/_generated/api';
-import type { Id } from '@/../convex/_generated/dataModel';
-import { useCurrentMember } from '@/features/members/api/use-current-member';
+import { useQuery } from "convex/react";
+import { useMemo } from "react";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { useCurrentMember } from "@/features/members/api/use-current-member";
 
 interface UseGetAssignedCardsProps {
-	workspaceId: Id<'workspaces'>;
+	workspaceId: Id<"workspaces">;
 }
 
 export const useGetAssignedCards = ({
@@ -21,7 +21,7 @@ export const useGetAssignedCards = ({
 	// Get all channels in the workspace
 	const channels = useQuery(
 		api.channels.get,
-		workspaceId ? { workspaceId } : 'skip'
+		workspaceId ? { workspaceId } : "skip"
 	);
 	const channelsLoading = channels === undefined;
 
@@ -33,7 +33,7 @@ export const useGetAssignedCards = ({
 					workspaceId,
 					memberId: currentMember._id,
 				}
-			: 'skip'
+			: "skip"
 	);
 
 	const assignedCards = assignedCardsResult;
@@ -50,7 +50,7 @@ export const useGetAssignedCards = ({
 			// Return the card with added channel information
 			return {
 				...card,
-				channelName: channel?.name || 'Unknown Channel',
+				channelName: channel?.name || "Unknown Channel",
 			};
 		});
 	}, [assignedCards, channels]);
