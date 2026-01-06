@@ -24,7 +24,11 @@ const isValidHex = (color: string): boolean => {
 /**
  * Adjusts the brightness of a hex color by a given amount
  * @param color - Hex color string (e.g., '#FF5733', '#fff')
- * @param amount - Amount to adjust (-1 to 1, negative darkens, positive lightens)
+ * @param amount - Amount to adjust (typically -1 to 1, negative darkens, positive lightens)
+ * Note: The wrapper functions darkenColor and lightenColor accept 0 to 1 ranges and convert via negation
+ * Uses different formulas for optimal visual results:
+ * - Lightening (amount > 0): Blends toward white using val + (255 - val) * amount
+ * - Darkening (amount < 0): Multiplies by (1 + amount) to scale toward black
  * @returns Adjusted hex color string
  */
 export const adjustColor = (color: string, amount: number): string => {
@@ -45,7 +49,16 @@ export const adjustColor = (color: string, amount: number): string => {
     return color;
   }
   
-  const adjust = (val: number) => Math.max(0, Math.min(255, Math.floor(val * (1 + amount))));
+  // Use different formulas for lightening vs darkening for better visual results
+  const adjust = (val: number) => {
+    if (amount > 0) {
+      // Lightening: blend toward white (255)
+      return Math.max(0, Math.min(255, Math.floor(val + (255 - val) * amount)));
+    } else {
+      // Darkening: multiplicative scaling toward black
+      return Math.max(0, Math.min(255, Math.floor(val * (1 + amount))));
+    }
+  };
   
   const newR = adjust(r);
   const newG = adjust(g);
@@ -60,7 +73,7 @@ export const adjustColor = (color: string, amount: number): string => {
  * @param amount - Amount to darken (0 to 1, default 0.35)
  * @returns Darkened hex color string
  */
-export const darkenColor = (color: string, amount: number = 0.35): string => 
+export const darkenColor = (color: string, amount = 0.35): string => 
   adjustColor(color, -amount);
 
 /**
@@ -69,5 +82,5 @@ export const darkenColor = (color: string, amount: number = 0.35): string =>
  * @param amount - Amount to lighten (0 to 1, default 0.2)
  * @returns Lightened hex color string
  */
-export const lightenColor = (color: string, amount: number = 0.2): string => 
+export const lightenColor = (color: string, amount = 0.2): string => 
   adjustColor(color, amount);

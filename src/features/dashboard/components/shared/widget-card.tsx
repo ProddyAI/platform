@@ -17,12 +17,12 @@ export const WidgetCard = ({
   return (
     <Card 
       className={cn(
-        "overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]",
+        "overflow-hidden border-2 dark:bg-card dark:border-border",
         className
       )}
       onClick={onClick}
     >
-      <CardContent className={cn("p-3 dark:bg-[hsl(var(--card))]", contentClassName)}>
+      <CardContent className={cn("p-3 dark:bg-card", contentClassName)}>
         {children}
       </CardContent>
     </Card>
