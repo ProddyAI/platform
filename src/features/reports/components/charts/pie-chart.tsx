@@ -21,7 +21,7 @@ interface PieChartProps {
 
 export const PieChart = ({
   data,
-  size,
+  size = 400,
   maxSize,
   showLegend = true,
   className,
