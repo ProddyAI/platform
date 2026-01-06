@@ -53,10 +53,10 @@ export const PerformanceMetricsDashboard = ({
 		api.analytics.getTaskAnalytics,
 		workspaceId
 			? {
-					workspaceId,
-					startDate,
-					endDate,
-				}
+				workspaceId,
+				startDate,
+				endDate,
+			}
 			: "skip"
 	);
 
@@ -65,10 +65,10 @@ export const PerformanceMetricsDashboard = ({
 		api.analytics.getUserActivitySummary,
 		workspaceId
 			? {
-					workspaceId,
-					startDate,
-					endDate,
-				}
+				workspaceId,
+				startDate,
+				endDate,
+			}
 			: "skip"
 	);
 
