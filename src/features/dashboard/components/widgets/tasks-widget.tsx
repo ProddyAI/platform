@@ -1,24 +1,18 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
-import {
-	AlertCircle,
-	CheckCircle2,
-	CheckSquare,
-	Clock,
-	Loader,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
-import type { Id } from "@/../convex/_generated/dataModel";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useGetTaskCategories } from "@/features/tasks/api/use-get-task-categories";
-import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
-import { useUpdateTask } from "@/features/tasks/api/use-update-task";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { CheckSquare, Clock, AlertCircle, CheckCircle2, Loader } from 'lucide-react';
+import { Id } from '@/../convex/_generated/dataModel';
+import { useRouter } from 'next/navigation';
+import { useGetTasks } from '@/features/tasks/api/use-get-tasks';
+import { useGetTaskCategories } from '@/features/tasks/api/use-get-task-categories';
+import { useUpdateTask } from '@/features/tasks/api/use-update-task';
+import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
+import { useState } from 'react';
+import { WidgetCard } from '../shared/widget-card';
 
 interface TasksWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -147,27 +141,26 @@ export const TasksWidget = ({
         {isEditMode ? (
           controls
         ) : (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
-            className='bg-primary/90 hover:bg-primary'
-          >
-            View all
-          </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
+            >
+              View all
+            </Button>
         )}
       </div>
 
       {sortedTasks.length > 0 ? (
-        <ScrollArea className="h-[250px] rounded-md border-2 dark:bg-[hsl(var(--card-accent))]">
+        <ScrollArea className="widget-scroll-area">
           <div className="space-y-2 p-4">
             {sortedTasks.map((task) => (
-              <Card
+              <WidgetCard
                 key={task._id}
-                className={`overflow-hidden border-2 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))] ${task.completed ? 'bg-muted/20' : ''}`}
+                className={task.completed ? 'bg-muted/20' : ''}
+                contentClassName="p-4"
               >
-                <CardContent className="p-4 dark:bg-[hsl(var(--card))]">
-                  <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -213,8 +206,7 @@ export const TasksWidget = ({
                       View
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+              </WidgetCard>
             ))}
           </div>
         </ScrollArea>

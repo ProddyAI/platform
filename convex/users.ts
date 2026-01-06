@@ -13,16 +13,21 @@ export const current = query({
 		const user = await ctx.db.get(userId);
 		if (!user) return null;
 
-		let imageUrl: string | undefined;
+		// Get image URL if user has an image
+		// Check if it's a storage ID or external URL
+		let imageUrl: string | undefined = undefined;
 		if (user.image) {
-			if (user.image.startsWith("http")) {
+			// If it starts with http, it's an external URL (from OAuth providers)
+			if (user.image.startsWith('http')) {
 				imageUrl = user.image;
 			} else {
+				// Otherwise, it's a Convex storage ID
 				imageUrl = (await ctx.storage.getUrl(user.image)) || undefined;
 			}
 		}
 
-		let bannerUrl: string | undefined;
+		// Get banner URL if user has a banner
+		let bannerUrl: string | undefined = undefined;
 		if ((user as any).banner) {
 			if ((user as any).banner.startsWith("http")) {
 				bannerUrl = (user as any).banner;

@@ -688,27 +688,27 @@ const ReportsPage = () => {
                                 {
                                   label: "Completed",
                                   value: taskData.statusCounts.completed,
-                                  color: "#166534",
+                                  color: "#22c55e",
                                 },
                                 {
                                   label: "In Progress",
                                   value: taskData.statusCounts.in_progress,
-                                  color: "#16a34a",
+                                  color: "#3b82f6",
                                 },
                                 {
                                   label: "Not Started",
                                   value: taskData.statusCounts.not_started,
-                                  color: "#22c55e",
+                                  color: "#6b7280",
                                 },
                                 {
                                   label: "On Hold",
                                   value: taskData.statusCounts.on_hold,
-                                  color: "#4ade80",
+                                  color: "#f59e0b",
                                 },
                                 {
                                   label: "Cancelled",
                                   value: taskData.statusCounts.cancelled,
-                                  color: "#86efac",
+                                  color: "#ef4444",
                                 },
                               ].filter((item) => item.value > 0)}
                               size={450}
@@ -733,17 +733,17 @@ const ReportsPage = () => {
                                 {
                                   label: "High",
                                   value: taskData.priorityCounts.high,
-                                  color: "#166534",
+                                  color: "#ef4444",
                                 },
                                 {
                                   label: "Medium",
                                   value: taskData.priorityCounts.medium,
-                                  color: "#22c55e",
+                                  color: "#f59e0b",
                                 },
                                 {
                                   label: "Low",
                                   value: taskData.priorityCounts.low,
-                                  color: "#86efac",
+                                  color: "#22c55e",
                                 },
                               ].filter((item) => item.value > 0)}
                               size={450}
