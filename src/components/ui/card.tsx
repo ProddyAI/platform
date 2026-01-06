@@ -54,7 +54,12 @@ const CardTitle = React.forwardRef(
 ) as <T extends React.ElementType = "h3">(
   props: CardTitleProps<T> & { ref?: React.ForwardedRef<HTMLHeadingElement> }
 ) => React.ReactElement;
-CardTitle.displayName = "CardTitle"
+
+// Set displayName using Object.defineProperty for polymorphic component
+Object.defineProperty(CardTitle, 'displayName', {
+  value: 'CardTitle',
+  writable: false,
+});
 
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,

@@ -23,12 +23,6 @@ const AssistantPage = () => {
     activityType: 'assistant_view',
   });
 
-  // Get current member to check permissions
-  const { data: member, isLoading: memberLoading } = useCurrentMember({
-    workspaceId,
-    activityType: 'assistant_view',
-  });
-
 	// Get current member to check permissions
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
 		workspaceId,
