@@ -125,7 +125,6 @@ export const ThreadRepliesWidget = ({ workspaceId, isEditMode, controls }: Threa
             variant="default"
             size="sm"
             onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
-            className="bg-primary/90 hover:bg-primary"
           >
             View All
           </Button>

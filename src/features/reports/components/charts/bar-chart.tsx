@@ -96,7 +96,7 @@ export const BarChart = ({
                 style={{
                   height: `${percentage}%`,
                   transitionDelay: animate ? `${index * 50}ms` : '0ms',
-                  backgroundColor: item.color || undefined,
+                  backgroundColor: item.color ?? undefined,
                 }}
               />
 

@@ -11,6 +11,11 @@ export interface PieSegment {
 export const DEPTH = 12; // Moderate depth for 3D look
 export const HOVER_EJECT = 12; // Distance to eject out on hover
 
+// Visibility thresholds for 3D edge rendering
+// These control when edges are rendered based on their angle relative to the viewer
+export const EDGE_VISIBILITY_THRESHOLD = 0.1; // For start and end edges
+export const OUTER_EDGE_VISIBILITY_THRESHOLD = 0.08; // For outer arc edge
+
 /**
  * Creates the SVG path for the top (face) of a pie chart segment
  * @param segment - The pie segment data
@@ -59,22 +64,22 @@ export const createSidePath = (
   centerY: number,
   depth: number,
   isHovered = false
-): Array<{ path: string; type: 'outer' | 'start' | 'end' }> => {
+): { path: string; type: 'outer' | 'start' | 'end' }[] => {
   const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
   const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
   
   const midAngle = (startAngleRad + endAngleRad) / 2;
   // Improved edge visibility - only show edges that are truly visible from the front
-  const showStartEdge = isHovered || Math.sin(startAngleRad) > 0.1;
-  const showEndEdge = isHovered || Math.sin(endAngleRad) > 0.1;
-  const showOuterEdge = isHovered || Math.sin(midAngle) > 0.08;
+  const showStartEdge = isHovered || Math.sin(startAngleRad) > EDGE_VISIBILITY_THRESHOLD;
+  const showEndEdge = isHovered || Math.sin(endAngleRad) > EDGE_VISIBILITY_THRESHOLD;
+  const showOuterEdge = isHovered || Math.sin(midAngle) > OUTER_EDGE_VISIBILITY_THRESHOLD;
   
   const startX = centerX + radiusX * Math.cos(startAngleRad);
   const startY = centerY + radiusY * Math.sin(startAngleRad);
   const endX = centerX + radiusX * Math.cos(endAngleRad);
   const endY = centerY + radiusY * Math.sin(endAngleRad);
   
-  const paths: Array<{ path: string; type: 'outer' | 'start' | 'end' }> = [];
+  const paths: { path: string; type: 'outer' | 'start' | 'end' }[] = [];
   
   // Outer edge (arc) with smooth gradient
   if (showOuterEdge) {
