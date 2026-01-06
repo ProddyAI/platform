@@ -624,21 +624,21 @@ export const APP_CONFIGS = {
 			"search_emails",
 			"create_draft",
 		],
-		authConfigId: process.env.NEXT_PUBLIC_GMAIL_AUTH_CONFIG_ID,
+		authConfigId: process.env.GMAIL_AUTH_CONFIG_ID,
 	},
 	GITHUB: {
 		name: "GitHub",
 		description: "Manage repositories, issues, pull requests, and code",
 		toolCategories: ["development", "version_control"],
 		commonActions: ["create_issue", "create_pr", "list_repos", "get_repo_info"],
-		authConfigId: process.env.NEXT_PUBLIC_GITHUB_AUTH_CONFIG_ID,
+		authConfigId: process.env.GITHUB_AUTH_CONFIG_ID,
 	},
 	SLACK: {
 		name: "Slack",
 		description: "Send messages, manage channels, and team communication",
 		toolCategories: ["communication", "team"],
 		commonActions: ["send_message", "list_channels", "get_channel_history"],
-		authConfigId: process.env.NEXT_PUBLIC_SLACK_AUTH_CONFIG_ID,
+		authConfigId: process.env.SLACK_AUTH_CONFIG_ID,
 	},
 	NOTION: {
 		name: "Notion",
@@ -650,7 +650,7 @@ export const APP_CONFIGS = {
 			"create_database",
 			"query_database",
 		],
-		authConfigId: process.env.NEXT_PUBLIC_NOTION_AUTH_CONFIG_ID,
+		authConfigId: process.env.NOTION_AUTH_CONFIG_ID,
 	},
 	CLICKUP: {
 		name: "ClickUp",
@@ -665,7 +665,7 @@ export const APP_CONFIGS = {
 			"track_time",
 			"create_goal",
 		],
-		authConfigId: process.env.NEXT_PUBLIC_CLICKUP_AUTH_CONFIG_ID,
+		authConfigId: process.env.CLICKUP_AUTH_CONFIG_ID,
 	},
 	LINEAR: {
 		name: "Linear",
@@ -680,7 +680,7 @@ export const APP_CONFIGS = {
 			"list_projects",
 			"get_teams",
 		],
-		authConfigId: process.env.NEXT_PUBLIC_LINEAR_AUTH_CONFIG_ID,
+		authConfigId: process.env.LINEAR_AUTH_CONFIG_ID,
 	},
 } as const;
 
