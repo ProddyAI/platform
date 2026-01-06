@@ -277,6 +277,12 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 						},
 					],
 					temperature: 0.7, // Add some randomness
+				});
+
+				text = response.text;
+			} catch (error) {
+				const aiError = error as Error;
+				console.error('Error calling Gemini API:', aiError);
 
 				// Return fallback suggestions instead of throwing
 				return NextResponse.json({
