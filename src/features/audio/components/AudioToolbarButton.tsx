@@ -4,17 +4,16 @@ import { useCallStateHooks, useCall, OwnCapability } from '@stream-io/video-reac
 import { toast } from 'sonner';
 import { AudioControlButton } from './AudioControlButton';
 
-interface AudioToolbarButtonProps { }
-
-export const AudioToolbarButton = ({ }: AudioToolbarButtonProps) => {
+export const AudioToolbarButton = () => {
   const call = useCall();
   const { useMicrophoneState, useHasPermissions } = useCallStateHooks();
-  const { microphone, isMute } = useMicrophoneState();
+  const microphoneState = useMicrophoneState();
   const [micPermissionError, setMicPermissionError] = useState(false);
   const hasAudioPermission = useHasPermissions(OwnCapability.SEND_AUDIO);
 
   // Speaker state (audio output)
-  const [speakerMuted, setSpeakerMuted] = useState(false);
+  // Start muted to satisfy browser autoplay policies; user gesture unmute will call play().
+  const [speakerMuted, setSpeakerMuted] = useState(true);
 
   // Check browser microphone permissions on mount
   useEffect(() => {
@@ -32,7 +31,7 @@ export const AudioToolbarButton = ({ }: AudioToolbarButtonProps) => {
       }
     };
 
-    checkMicrophonePermission();
+    void checkMicrophonePermission();
   }, []);
 
   // Request audio permission if we don't have it
@@ -40,6 +39,10 @@ export const AudioToolbarButton = ({ }: AudioToolbarButtonProps) => {
     if (call && !hasAudioPermission) {
       const requestAudioPermission = async () => {
         try {
+          if (!call.permissionsContext.canRequest(OwnCapability.SEND_AUDIO)) {
+            return;
+          }
+
           await call.requestPermissions({
             permissions: [OwnCapability.SEND_AUDIO],
           });
@@ -48,7 +51,7 @@ export const AudioToolbarButton = ({ }: AudioToolbarButtonProps) => {
         }
       };
 
-      requestAudioPermission();
+      void requestAudioPermission();
     }
   }, [call, hasAudioPermission]);
 
@@ -95,6 +98,11 @@ export const AudioToolbarButton = ({ }: AudioToolbarButtonProps) => {
 
   const toggleMicrophone = async () => {
     try {
+      if (!microphoneState?.microphone) {
+        console.warn('Microphone state not ready yet');
+        return;
+      }
+
       // First check if we have browser permission
       if (micPermissionError) {
         console.error('Microphone access denied');
@@ -104,17 +112,22 @@ export const AudioToolbarButton = ({ }: AudioToolbarButtonProps) => {
       // Then check if we have Stream permission
       if (!hasAudioPermission) {
         // Request permission first
-        await call?.requestPermissions({
-          permissions: [OwnCapability.SEND_AUDIO],
-        });
+        if (call?.permissionsContext.canRequest(OwnCapability.SEND_AUDIO)) {
+          await call.requestPermissions({
+            permissions: [OwnCapability.SEND_AUDIO],
+          });
+        } else {
+          toast.error('You do not have permission to speak in this room');
+          return;
+        }
       }
 
       // Toggle microphone
-      if (isMute) {
-        await microphone.enable();
+      if (microphoneState.isMute) {
+        await microphoneState.microphone.enable();
         console.log('Microphone enabled');
       } else {
-        await microphone.disable();
+        await microphoneState.microphone.disable();
         console.log('Microphone disabled');
       }
     } catch (error) {
@@ -129,13 +142,22 @@ export const AudioToolbarButton = ({ }: AudioToolbarButtonProps) => {
       // Get all audio elements in the DOM that might be playing audio from the call
       const audioElements = document.querySelectorAll('audio');
 
+      const nextMuted = !speakerMuted;
+
       // Toggle mute state for all audio elements
       audioElements.forEach(audio => {
-        audio.muted = !speakerMuted;
+        audio.muted = nextMuted;
+
+        // When unmuting, explicitly call play() to satisfy autoplay restrictions.
+        if (!nextMuted) {
+          void (audio as HTMLAudioElement).play().catch((err) => {
+            console.warn('Audio playback blocked:', err);
+          });
+        }
       });
 
       // Update state
-      setSpeakerMuted(!speakerMuted);
+      setSpeakerMuted(nextMuted);
     } catch (error) {
       console.error('Failed to toggle speaker:', error);
     }
@@ -157,17 +179,17 @@ export const AudioToolbarButton = ({ }: AudioToolbarButtonProps) => {
         <AudioControlButton
           icon={AlertCircle}
           label="Mic Permission Denied"
-          onClick={() => {}}
+          onClick={() => toast.error('Microphone permission denied')}
           variant="mic"
           disabled={true}
         />
       ) : (
         <AudioControlButton
-          icon={isMute ? MicOff : Mic}
-          label={isMute ? 'Unmute to speak' : 'Mute microphone'}
-          onClick={toggleMicrophone}
+          icon={microphoneState?.isMute ? MicOff : Mic}
+          label={microphoneState?.isMute ? 'Unmute to speak' : 'Mute microphone'}
+          onClick={() => void toggleMicrophone()}
           variant="mic"
-          isMuted={isMute}
+          isMuted={microphoneState?.isMute ?? true}
         />
       )}
     </div>

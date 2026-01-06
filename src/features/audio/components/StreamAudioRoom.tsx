@@ -55,6 +55,33 @@ export const StreamAudioRoom = ({ roomId, workspaceId, channelId, canvasName, is
     }
   }, [shouldConnect, isConnected, disconnectFromAudioRoom]);
 
+  // Allow other parts of the UI (e.g. Excalidraw toolbar) to toggle audio.
+  useEffect(() => {
+    const handleToggle = () => {
+      // If we haven't joined yet, join.
+      if (!shouldConnect && !isConnected) {
+        setShouldConnect(true);
+        return;
+      }
+
+      // If we're in the middle of connecting, treat toggle as cancel.
+      if (shouldConnect && !isConnected) {
+        setShouldConnect(false);
+        return;
+      }
+
+      // If connected, show the leave confirmation.
+      if (isConnected) {
+        setShowLeaveConfirmation(true);
+      }
+    };
+
+    window.addEventListener('proddy:audio-room-toggle', handleToggle as EventListener);
+    return () => {
+      window.removeEventListener('proddy:audio-room-toggle', handleToggle as EventListener);
+    };
+  }, [shouldConnect, isConnected]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {

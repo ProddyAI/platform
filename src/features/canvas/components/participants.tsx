@@ -1,10 +1,8 @@
 "use client";
 
 import { useChannelParticipants } from "../../../hooks/use-channel-participants";
-import { connectionIdToColor } from "../../../lib/utils";
+import { stringToColor } from "../../../lib/utils";
 import { UserAvatar } from "./user-avatar";
-import { useRoom } from "../../../../liveblocks.config";
-import { useEffect } from "react";
 
 // Define types for the Liveblocks user data
 interface UserInfo {
@@ -13,7 +11,6 @@ interface UserInfo {
 }
 
 interface User {
-  connectionId: number;
   memberId?: string;
   userId?: string;
   info?: UserInfo;
@@ -33,7 +30,6 @@ interface ParticipantsProps {
 export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
   // Fetch real participants from the database
   const { participants, currentParticipant, participantCount, isLoading } = useChannelParticipants();
-  const room = useRoom();
 
   // If still loading, show nothing
   if (isLoading) return null;
@@ -50,11 +46,12 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
         )}
         <div className="flex gap-x-2">
           {participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
+            const userKey = user.userId || user.memberId || user.info?.name || "user";
             return (
               <UserAvatar
-                borderColor={connectionIdToColor(user.connectionId)}
-                key={user.connectionId}
-                src={user.info?.picture}
+                borderColor={stringToColor(userKey)}
+                key={userKey}
+                src={user.info?.picture ?? undefined}
                 name={user.info?.name}
                 fallback={user.info?.name?.[0] || "U"}
                 userId={user.userId || user.info?.name}
@@ -64,8 +61,8 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 
           {currentParticipant && (
             <UserAvatar
-              borderColor={connectionIdToColor(currentParticipant.connectionId)}
-              src={currentParticipant.info?.picture}
+              borderColor={stringToColor(currentParticipant.userId || currentParticipant.info?.name || "you")}
+              src={currentParticipant.info?.picture ?? undefined}
               name={`${currentParticipant.info?.name} (You)`}
               fallback={currentParticipant.info?.name?.[0] || "Y"}
               userId={currentParticipant.userId || currentParticipant.info?.name}

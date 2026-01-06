@@ -4,7 +4,7 @@ import { MousePointer2 } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
-import { connectionIdToColor } from "@/lib/utils";
+import { generateUserColor } from "@/lib/placeholder-image";
 import { useOther } from "@/../liveblocks.config";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
@@ -82,7 +82,9 @@ export const LiveCursor = memo(({ connectionId, variant = 'canvas' }: LiveCursor
   const nameWidth = Math.max(userName.length * 12, 60);
 
   // Different styling for canvas vs notes
-  const cursorColor = connectionIdToColor(connectionId);
+  const cursorColor = generateUserColor(
+    other.id || other.info?.name || userName || `${connectionId}`,
+  );
   const isTyping = variant === 'notes' && isEditing;
 
   return (

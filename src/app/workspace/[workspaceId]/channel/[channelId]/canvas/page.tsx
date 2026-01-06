@@ -7,10 +7,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/../convex/_generated/api';
 import { Id } from '@/../convex/_generated/dataModel';
 import { toast } from 'sonner';
-import {
-    Canvas as CanvasCanvas,
-    CanvasToolbar
-} from '@/features/canvas';
+import { ExcalidrawCanvas } from '@/features/canvas/components/excalidraw-canvas';
 import { LiveblocksRoom, LiveParticipants, LiveSidebar, LiveHeader } from '@/features/live';
 import { useWorkspaceId } from '@/hooks/use-workspace-id';
 import { Loader, PaintBucket } from 'lucide-react';
@@ -93,6 +90,25 @@ const CanvasPage = () => {
         }
         return canvasMessages;
     }, [messages]);
+
+    // If we were opened from a shared link (e.g. from a canvas message),
+    // auto-select the matching canvas so all clients join the same Liveblocks room.
+    useEffect(() => {
+        const roomIdFromUrl = searchParams?.get('roomId');
+        const canvasIdFromUrl = searchParams?.get('canvasId');
+        const candidate = roomIdFromUrl || canvasIdFromUrl;
+
+        if (!candidate) return;
+        if (activeCanvasId) return;
+
+        const match = canvasItems.find(
+            (item) => item._id === candidate || item.roomId === candidate || item.savedCanvasId === candidate
+        );
+        if (match) {
+            // We allow setting to roomId as well because activeCanvas lookup supports it.
+            setActiveCanvasId(roomIdFromUrl || match._id);
+        }
+    }, [canvasItems, searchParams, activeCanvasId]);
 
     // Get active canvas
     const activeCanvas = activeCanvasId ? canvasItems.find(item => item._id === activeCanvasId || item.roomId === activeCanvasId) : null;
@@ -333,32 +349,8 @@ const CanvasPage = () => {
                     )}
 
                     <div className="flex flex-1 overflow-hidden">
-                        {/* Toolbar - hidden in fullscreen */}
-                        {!isFullScreen && <CanvasToolbar />}
-
                         <div className="flex-1 relative">
-                            <CanvasCanvas
-                                canvasId={channelId}
-                                savedCanvasName={activeCanvas.canvasName}
-                                toggleFullScreen={toggleFullScreen}
-                                isFullScreen={isFullScreen}
-                                onTitleChange={(newTitle: string) => {
-                                    // Update canvas name
-                                    console.log('Title changed to:', newTitle);
-                                    // You can implement canvas title update here
-                                }}
-                                onSave={() => {
-                                    // Implement canvas save functionality
-                                    console.log('Save canvas');
-                                    toast.success("Canvas saved successfully");
-                                }}
-                                onCreateCanvas={handleCreateCanvas}
-                                hasUnsavedChanges={false} // You can track canvas changes here
-                                workspaceId={workspaceId as Id<"workspaces">}
-                                channelId={channelId as Id<"channels">}
-                                createdAt={activeCanvas.createdAt}
-                                updatedAt={activeCanvas.updatedAt}
-                            />
+                            <ExcalidrawCanvas />
                         </div>
                     </div>
                 </div>

@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from "react";
 import { ClientSideSuspense } from "@liveblocks/react";
-import { LiveList, LiveMap } from "@liveblocks/client";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 import { useQuery } from "convex/react";
 
 import { api } from "@/../convex/_generated/api";
@@ -74,6 +74,12 @@ export const LiveblocksRoom = ({
                     layers: new LiveMap(),
                     layerIds: new LiveList([]),
                     collaborativeNotes: new LiveMap(),
+                    excalidraw: new LiveObject({
+                        elements: [],
+                        appState: {},
+                        files: {},
+                        version: 1
+                    }),
                     lastUpdate: Date.now()
                 }}
             >
