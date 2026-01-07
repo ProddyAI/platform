@@ -691,3 +691,14 @@ a.user-mention:hover {
 	padding: 5px;
 	border: 1px solid white;
 }
+
+/* Widget utility classes */
+.widget-scroll-area {
+	height: 250px;
+	border-radius: 0.375rem;
+	border-width: 2px;
+}
+
+.dark .widget-scroll-area {
+	background-color: hsl(var(--card-accent));
+}

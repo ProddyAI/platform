@@ -129,6 +129,7 @@
 		"react-resizable-panels": "^2.1.2",
 		"react-use": "^17.5.1",
 		"react-verification-input": "^4.1.2",
+		"recharts": "^3.6.0",
 		"remark-gfm": "^4.0.1",
 		"resend": "^4.5.1",
 		"sonner": "^1.5.0",
