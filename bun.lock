@@ -52,6 +52,8 @@
         "@types/dompurify": "^3.2.0",
         "ai": "^6.0.6",
         "autoprefixer": "^10.4.21",
+        "baseline-browser-mapping": "^2.9.11",
+        "caniuse-lite": "^1.0.30001762",
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.1",
         "cmdk": "1.0.0",
@@ -1155,6 +1157,8 @@
 
     "base64-js": ["base64-js@1.5.1", "", {}, ""],
 
+    "baseline-browser-mapping": ["baseline-browser-mapping@2.9.11", "", { "bin": { "baseline-browser-mapping": "dist/cli.js" } }, "sha512-Sg0xJUNDU1sJNGdfGWhVHX0kkZ+HWcvmVymJbj6NSgZZmW/8S9Y2HQ5euytnIgakgxN6papOAWiwDo1ctFDcoQ=="],
+
     "batch-processor": ["batch-processor@1.0.0", "", {}, ""],
 
     "big.js": ["big.js@5.2.2", "", {}, ""],
@@ -1183,7 +1187,7 @@
 
     "camelcase-css": ["camelcase-css@2.0.1", "", {}, ""],
 
-    "caniuse-lite": ["caniuse-lite@1.0.30001718", "", {}, ""],
+    "caniuse-lite": ["caniuse-lite@1.0.30001762", "", {}, "sha512-PxZwGNvH7Ak8WX5iXzoK1KPZttBXNPuaOvI2ZYU7NrlM+d9Ov+TUvlLOBNGzVXAntMSMMlJPd+jY6ovrVjSmUw=="],
 
     "canvg": ["canvg@3.0.11", "", { "dependencies": { "@babel/runtime": "^7.12.5", "@types/raf": "^3.4.0", "core-js": "^3.8.3", "raf": "^3.4.1", "regenerator-runtime": "^0.13.7", "rgbcolor": "^1.0.1", "stackblur-canvas": "^2.0.0", "svg-pathdata": "^6.0.3" } }, ""],
 
@@ -3111,11 +3115,15 @@
 
     "arraybuffer.prototype.slice/get-intrinsic": ["get-intrinsic@1.2.4", "", { "dependencies": { "es-errors": "^1.3.0", "function-bind": "^1.1.2", "has-proto": "^1.0.1", "has-symbols": "^1.0.3", "hasown": "^2.0.0" } }, ""],
 
+    "autoprefixer/caniuse-lite": ["caniuse-lite@1.0.30001718", "", {}, ""],
+
     "autoprefixer/picocolors": ["picocolors@1.1.1", "", {}, ""],
 
     "babel-plugin-polyfill-corejs2/@babel/compat-data": ["@babel/compat-data@7.27.2", "", {}, ""],
 
     "babel-plugin-polyfill-corejs2/semver": ["semver@6.3.1", "", { "bin": "bin/semver.js" }, ""],
+
+    "browserslist/caniuse-lite": ["caniuse-lite@1.0.30001718", "", {}, ""],
 
     "call-bind/es-define-property": ["es-define-property@1.0.0", "", { "dependencies": { "get-intrinsic": "^1.2.4" } }, ""],
 
@@ -3210,6 +3218,8 @@
     "mermaid/uuid": ["uuid@11.1.0", "", { "bin": "dist/esm/bin/uuid" }, "sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A=="],
 
     "mlly/pkg-types": ["pkg-types@1.3.1", "", { "dependencies": { "confbox": "^0.1.8", "mlly": "^1.7.4", "pathe": "^2.0.1" } }, "sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ=="],
+
+    "next/caniuse-lite": ["caniuse-lite@1.0.30001718", "", {}, ""],
 
     "next/postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3.3.6", "picocolors": "^1.0.0", "source-map-js": "^1.0.2" } }, ""],
 
