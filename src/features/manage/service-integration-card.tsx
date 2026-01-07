@@ -147,6 +147,12 @@ export const ServiceIntegrationCard = ({
 		setIsConnecting(true);
 
 		try {
+			console.log(`[ServiceCard] Starting authorization for ${toolkit}:`, {
+				workspaceId,
+				memberId: currentMember._id,
+				userId: `member_${currentMember._id}`,
+			});
+
 			// Use AgentAuth to authorize user to toolkit with member-specific entity ID
 			const response = await fetch("/api/composio/agentauth", {
 				method: "POST",
@@ -162,17 +168,45 @@ export const ServiceIntegrationCard = ({
 				}),
 			});
 
+			console.log(`[ServiceCard] API response status:`, response.status);
+
 			if (!response.ok) {
-				throw new Error("Failed to authorize toolkit");
+				let errorDetails;
+				try {
+					errorDetails = await response.json();
+					console.error(`[ServiceCard] API error response:`, errorDetails);
+				} catch (parseError) {
+					const errorText = await response.text();
+					console.error(`[ServiceCard] Failed to parse error response:`, errorText);
+					errorDetails = { error: errorText || `HTTP ${response.status}` };
+				}
+				throw new Error(errorDetails.error || `Failed to authorize toolkit (HTTP ${response.status})`);
 			}
 
 			const result = await response.json();
+			console.log(`[ServiceCard] Authorization successful:`, {
+				hasRedirectUrl: !!result.redirectUrl,
+				connectionId: result.connectionId,
+			});
+
+			if (!result.redirectUrl) {
+				console.error(`[ServiceCard] No redirect URL in response:`, result);
+				throw new Error("No redirect URL received from authorization");
+			}
 
 			// Redirect to service OAuth (AgentAuth handles the full flow)
 			window.location.href = result.redirectUrl;
 		} catch (error) {
-			console.error(`Error authorizing ${toolkit}:`, error);
-			toast.error(`Failed to authorize ${toolkits[toolkit].name}`);
+			console.error(`[ServiceCard] Error authorizing ${toolkit}:`, error);
+			console.error(`[ServiceCard] Error details:`, {
+				message: error instanceof Error ? error.message : String(error),
+				stack: error instanceof Error ? error.stack : undefined,
+			});
+			toast.error(
+				error instanceof Error
+					? error.message
+					: `Failed to authorize ${toolkits[toolkit].name}`
+			);
 			setIsConnecting(false);
 		}
 	};
