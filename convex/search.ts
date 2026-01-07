@@ -94,8 +94,8 @@ type FilterTypes = {
 // `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004"),
-	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
+	textEmbeddingModel: google.textEmbeddingModel("text-embedding-gecko-001"),
+	embeddingDimension: 768, // Gemini text-embedding-gecko-001 uses 768 dimensions
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
