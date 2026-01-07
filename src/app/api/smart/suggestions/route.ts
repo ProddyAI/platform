@@ -282,12 +282,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 				text = response.text;
 			} catch (error) {
 				const aiError = error as Error;
-<<<<<<< HEAD
-				console.error('Error calling Gemini API:', aiError);
-
-=======
 				console.error("Error calling Gemini API:", aiError);
->>>>>>> origin/main
 				// Return fallback suggestions instead of throwing
 				return NextResponse.json({
 					suggestions: [
