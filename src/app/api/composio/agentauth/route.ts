@@ -8,8 +8,6 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { initializeComposio } from "@/lib/composio";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
 // Validate composioAuthConfigId format
 const _validateAuthConfigFormat = (composioAuthConfigId: string): boolean => {
 	// Accept any valid UUID or identifier format from Composio API
@@ -118,7 +116,7 @@ export async function POST(req: NextRequest) {
 			}
 
 			// Verify authentication and member ownership
-			const verifyResult = await verifyMemberOwnership(memberId, convex);
+			const verifyResult = await verifyMemberOwnership(memberId, convexClient);
 			if (!verifyResult.success) {
 				return verifyResult.response;
 			}
@@ -150,7 +148,7 @@ export async function POST(req: NextRequest) {
 
             // Only store auth config if authConfigId is available
             if (toolkitAuthConfigId) {
-              await convex.mutation(api.integrations.storeAuthConfig, {
+              await convexClient.mutation(api.integrations.storeAuthConfig, {
                 workspaceId: workspaceId as Id<"workspaces">,
                 memberId: memberId as Id<"members">,
                 toolkit: toolkit as any,
@@ -198,7 +196,7 @@ export async function POST(req: NextRequest) {
 			}
 
 			// Verify authentication and member ownership
-			const verifyResult = await verifyMemberOwnership(memberId, convex);
+			const verifyResult = await verifyMemberOwnership(memberId, convexClient);
 			if (!verifyResult.success) {
 				return verifyResult.response;
 			}
@@ -243,7 +241,7 @@ export async function POST(req: NextRequest) {
             // Get or create auth config for this toolkit
             let authConfigId;
             try {
-              const existingAuthConfig = await convex.query(
+              const existingAuthConfig = await convexClient.query(
                 api.integrations.getAuthConfigByToolkit,
                 {
                   workspaceId: workspaceId as Id<"workspaces">,
@@ -256,7 +254,7 @@ export async function POST(req: NextRequest) {
             }
 
             if (!authConfigId) {
-              authConfigId = await convex.mutation(
+              authConfigId = await convexClient.mutation(
                 api.integrations.storeAuthConfig,
                 {
                   workspaceId: workspaceId as Id<"workspaces">,
@@ -273,7 +271,7 @@ export async function POST(req: NextRequest) {
 
             // Store connected account
             // Use member-scoped entity ID for user-specific connections
-            await convex.mutation(api.integrations.storeConnectedAccount, {
+            await convexClient.mutation(api.integrations.storeConnectedAccount, {
               workspaceId: workspaceId as Id<"workspaces">,
               memberId: memberId as Id<"members">,
               authConfigId: authConfigId,
@@ -344,7 +342,7 @@ export async function GET(req: NextRequest) {
 
 			try {
 				// Fetch auth configs from database (member-specific if memberId provided)
-				const authConfigs = await convex.query(
+				const authConfigs = await convexClient.query(
 					api.integrations.getAuthConfigsPublic,
 					{
 						workspaceId: workspaceId as Id<"workspaces">,
@@ -504,7 +502,7 @@ export async function DELETE(req: NextRequest) {
 		}
 
 		// Verify authentication and member ownership
-		const verifyResult = await verifyMemberOwnership(memberId, convex);
+		const verifyResult = await verifyMemberOwnership(memberId, convexClient);
 		if (!verifyResult.success) {
 			return verifyResult.response;
 		}
@@ -535,7 +533,7 @@ export async function DELETE(req: NextRequest) {
 			!connectedAccountId.startsWith("ca_")
 		) {
 			try {
-				await convex.mutation(api.integrations.deleteConnectedAccount, {
+				await convexClient.mutation(api.integrations.deleteConnectedAccount, {
 					connectedAccountId: connectedAccountId as Id<"connected_accounts">,
 					memberId: memberId as Id<"members">,
 				});
@@ -572,4 +570,19 @@ export async function DELETE(req: NextRequest) {
 			{ status: 500 }
 		);
 	}
+}
+
+/**
+ * Handle OPTIONS requests for CORS preflight
+ */
+export async function OPTIONS(req: NextRequest) {
+  console.log('[AgentAuth OPTIONS] Preflight request received');
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
