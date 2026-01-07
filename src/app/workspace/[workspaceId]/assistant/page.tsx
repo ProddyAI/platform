@@ -1,20 +1,27 @@
 "use client";
 
-import { Bot, Loader } from "lucide-react";
-import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { useCurrentUser } from "@/features/auth/api/use-current-user";
-import { DashboardChatbot } from "@/features/dashboard/components/dashboard-chatbot";
-import { useCurrentMember } from "@/features/members/api/use-current-member";
-import { useDocumentTitle } from "@/hooks/use-document-title";
-import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../toolbar";
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useWorkspaceId } from '@/hooks/use-workspace-id';
+import { useCurrentMember } from '@/features/members/api/use-current-member';
+import { useCurrentUser } from '@/features/auth/api/use-current-user';
+import { DashboardChatbot } from '@/features/dashboard/components/dashboard-chatbot';
+import { Loader, Bot } from 'lucide-react';
+import { WorkspaceToolbar } from '../toolbar';
+import { Button } from '@/components/ui/button';
+import { useMemo } from 'react';
+import { useTrackActivity } from '@/features/reports/hooks/use-track-activity';
 
 const AssistantPage = () => {
 	// Set document title
 	useDocumentTitle("Proddy AI");
 
-	const workspaceId = useWorkspaceId();
+  const workspaceId = useWorkspaceId();
+  
+  // Track user activity and time spent on assistant page
+  useTrackActivity({
+    workspaceId,
+    activityType: 'assistant_view',
+  });
 
 	// Get current member to check permissions
 	const { data: member, isLoading: memberLoading } = useCurrentMember({

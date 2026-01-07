@@ -122,26 +122,26 @@ export const SignInCard = ({
 					</Button>
 				</div>
 
-				<p className="text-center text-xs text-primary">
-					Don&apos;t have an account?{" "}
-					{isStandalone ? (
-						<Link
-							href="/signup"
-							className="cursor-pointer font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
-						>
-							Sign up
-						</Link>
-					) : (
-						<button
-							disabled={pending}
-							onClick={() => setState?.("signUp")}
-							className="cursor-pointer font-medium text-primary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
-						>
-							Sign up
-						</button>
-					)}
-				</p>
-			</CardContent>
-		</Card>
-	);
+        <p className="text-center text-xs text-muted-foreground">
+          Don&apos;t have an account?{' '}
+          {isStandalone ? (
+            <Link
+              href="/signup"
+              className="cursor-pointer font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+            >
+              Sign up
+            </Link>
+          ) : (
+            <button
+              disabled={pending}
+              onClick={() => setState?.('signUp')}
+              className="cursor-pointer font-medium text-primary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+            >
+              Sign up
+            </button>
+          )}
+        </p>
+      </CardContent>
+    </Card>
+  );
 };
