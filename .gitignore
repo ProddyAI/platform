@@ -12,3 +12,7 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 .vscode/mcp.json
+
+public/sw.js
+public/sw.js.map
+public/worker-*.js
