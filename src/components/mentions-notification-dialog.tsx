@@ -302,36 +302,36 @@ export const MentionsNotificationDialog = ({
 									<div className="flex justify-end mt-1">
 										<button
 											onClick={(e) => {
-												e.preventDefault(); // Prevent navigation
-												e.stopPropagation(); // Prevent event bubbling
-												handleToggleReadStatus(notification);
-											}}
-											className={`flex items-center gap-1.5 text-xs font-medium rounded px-2.5 py-1.5 transition-colors ${
-												notification.read
-													? "text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100"
-													: "text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100"
-											}`}
-										>
-											{notification.read ? (
-												<>
-													<Eye className="size-3.5" />
-													Mark as unread
-												</>
-											) : (
-												<>
-													<CheckCircle2 className="size-3.5" />
-													Mark as read
-												</>
-											)}
-										</button>
-									</div>
-
-									{/* Border separator below the button */}
-									<div className="border-t border-border/10 dark:border-border/30 mt-2"></div>
-								</div>
+									e.preventDefault(); // Prevent navigation
+									e.stopPropagation(); // Prevent event bubbling
+									handleToggleReadStatus(notification);
+								}}
+								className={`flex items-center gap-1.5 text-xs font-medium rounded px-2.5 py-1.5 transition-colors ${
+									notification.read
+										? "text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100"
+										: "text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100"
+								}`}
+								>
+									{notification.read ? (
+										<>
+											<Eye className="size-3.5" />
+											Mark as unread
+										</>
+									) : (
+										<>
+											<CheckCircle2 className="size-3.5" />
+											Mark as read
+										</>
+									)}
+								</button>
 							</div>
-						</Link>
-					);
+
+							{/* Border separator below the button */}
+							<div className="border-t border-border/10 dark:border-border/30 mt-2" />
+						</div>
+						</div>
+					</Link>
+				);
 				})
 			)}
 		</div>

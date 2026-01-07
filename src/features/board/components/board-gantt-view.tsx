@@ -518,17 +518,17 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									{/* Background grid lines */}
 									<div className="absolute inset-0 flex">
 										{timelineDates.map((date, index) => (
-											<div
-												key={index}
-												className={`flex-1 border-r last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5" : index % 2 === 0 ? "bg-gray-50" : ""}`}
-												style={{ minWidth: "60px" }}
-											></div>
-										))}
+																					<div
+																						key={index}
+																						className={`flex-1 border-r last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5" : index % 2 === 0 ? "bg-gray-50" : ""}`}
+																						style={{ minWidth: "60px" }}
+																					/>
+																				))}
 									</div>
 
 									{/* Tasks for this list */}
 									<div className="relative p-2">
-										{tasksByList[list._id]?.map((task: GanttTask) => {
+			{tasksByList[list._id]?.map((task: GanttTask) => {
 											const style = getTaskPosition(task);
 											return (
 												<div
@@ -551,7 +551,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 														<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
 															<div
 																className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority)}`}
-															></div>
+															/>
 															<span className="ml-1 text-xs font-medium truncate">
 																{task.title}
 															</span>
@@ -560,55 +560,55 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 													</div>
 												</div>
 											);
-										})}
+											})}
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
-					))}
+						))}
 
-					{/* Dragging task overlay */}
-					{isDragging && draggingTask && (
-						<div
-							className={`absolute rounded-md border shadow-md ${getPriorityColor(draggingTask.priority).replace("bg-", "bg-opacity-20 border-")}`}
-							style={Object.assign(
-								{
-									backgroundColor: getPriorityColor(draggingTask.priority)
-										.replace("bg-", "")
-										.replace("500", "100")
-										.replace("400", "100"),
-									height: "30px",
-								},
-								getDraggingTaskPosition() || {}
-							)}
-						>
-							<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
-								<div
-									className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(draggingTask.priority)}`}
-								></div>
-								<span className="ml-1 text-xs font-medium truncate">
-									{draggingTask.title}
-								</span>
+						{/* Dragging task overlay */}
+						{isDragging && draggingTask && (
+							<div
+								className={`absolute rounded-md border shadow-md ${getPriorityColor(draggingTask.priority).replace("bg-", "bg-opacity-20 border-")}`}
+								style={Object.assign(
+									{
+										backgroundColor: getPriorityColor(draggingTask.priority)
+											.replace("bg-", "")
+											.replace("500", "100")
+											.replace("400", "100"),
+										height: "30px",
+									},
+									getDraggingTaskPosition() || {}
+								)}
+							>
+								<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
+									<div
+										className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(draggingTask.priority)}`}
+									/>
+									<span className="ml-1 text-xs font-medium truncate">
+										{draggingTask.title}
+									</span>
+								</div>
 							</div>
-						</div>
-					)}
+						)}
+					</div>
 				</div>
-			</div>
 
-			{/* Task Details Sidebar */}
-			{selectedTask && (
-				<div className="absolute right-0 top-0 bottom-0 w-[300px] bg-white border-l shadow-lg overflow-hidden z-20 flex flex-col">
-					{/* Fixed Header */}
-					<div className="flex-shrink-0 p-4 border-b bg-white">
-						<div className="flex items-start gap-3">
-							<h3 className="text-lg font-semibold flex-1 min-w-0 break-words pr-2">
-								{selectedTask.title}
-							</h3>
-							<Button
-								variant="outline"
-								size="sm"
-								className="h-8 w-8 p-0 flex-shrink-0 rounded-full hover:bg-gray-100 border-gray-300"
-								onClick={() => setSelectedTask(null)}
+				{/* Task Details Sidebar */}
+				{selectedTask && (
+					<div className="absolute right-0 top-0 bottom-0 w-[300px] bg-white border-l shadow-lg overflow-hidden z-20 flex flex-col">
+						{/* Fixed Header */}
+						<div className="flex-shrink-0 p-4 border-b bg-white">
+							<div className="flex items-start gap-3">
+								<h3 className="text-lg font-semibold flex-1 min-w-0 break-words pr-2">
+									{selectedTask.title}
+								</h3>
+								<Button
+									variant="outline"
+									size="sm"
+									className="h-8 w-8 p-0 flex-shrink-0 rounded-full hover:bg-gray-100 border-gray-300"
+									onClick={() => setSelectedTask(null)}
 								aria-label="Close task details"
 							>
 								<X className="h-4 w-4" />
@@ -646,7 +646,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									>
 										<div
 											className={`w-2 h-2 rounded-full mr-1 ${getPriorityColor(selectedTask.priority)}`}
-										></div>
+										/>
 										{selectedTask.priority.charAt(0).toUpperCase() +
 											selectedTask.priority.slice(1)}
 									</div>

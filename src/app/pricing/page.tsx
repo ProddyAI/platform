@@ -242,8 +242,8 @@ const PricingPage = () => {
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
 						{/* Decorative elements */}
-						<div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl opacity-70 z-0"></div>
-						<div className="absolute -bottom-10 -right-10 w-40 h-40 bg-secondary/5 rounded-full blur-3xl opacity-70 z-0"></div>
+						<div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl opacity-70 z-0" />
+						<div className="absolute -bottom-10 -right-10 w-40 h-40 bg-secondary/5 rounded-full blur-3xl opacity-70 z-0" />
 
 						{/* Left Column */}
 						<motion.div

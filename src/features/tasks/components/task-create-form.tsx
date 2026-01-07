@@ -108,59 +108,7 @@ export const TaskCreateForm = ({
 				};
 			case "medium":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-yellow-500 mr-2" />,
-					label: "Medium Priority",
-				};
-			case "low":
-				return {
-					icon: <div className="h-3 w-3 rounded-full bg-blue-500 mr-2" />,
-					label: "Low Priority",
-				};
-			default:
-				return {
-					icon: (
-						<div className="h-3 w-3 rounded-full border-2 border-dashed border-gray-300 mr-2" />
-					),
-					label: "Set Priority (optional)",
-				};
-		}
-	};
-
-	if (!isExpanded) {
-		return (
-			<Button
-				onClick={() => setIsExpanded(true)}
-				variant="default"
-				className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group dark:bg-secondary dark:hover:bg-rose-900"
-			>
-				<span className="absolute inset-0 rounded-lg bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-				<span className="absolute right-0 bottom-0 size-16 rounded-full -translate-x-5 translate-y-5 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-				<span className="absolute size-4 rounded-full bg-white/30 animate-ping"></span>
-				<Plus className="h-5 w-5 relative z-10" />
-				<span className="font-semibold text-base relative z-10 dark:group-hover:text-white">
-					Add new task
-				</span>
-			</Button>
-		);
-	}
-
-	const priorityStyles = getPriorityStyles(priority || "");
-
-	return (
-		<form
-			onSubmit={handleSubmit}
-			className="p-6 rounded-xl border shadow-sm bg-white"
-		>
-			<div className="flex justify-between items-center mb-4">
-				{/* <h3 className="font-semibold text-lg text-gray-800">Create a new task</h3> */}
-				<Button
-					type="button"
-					variant="ghost"
-					size="iconSm"
-					onClick={handleCancel}
-					className="h-8 w-8 rounded-full hover:bg-gray-100"
-				>
-					<X className="h-4 w-4" />
+	icon: <div className="h-3 w-3 rounded-full bg-yellow-500 mr-2" />,\n					label: "Medium Priority",\n				};\n			case "low":\n				return {\n					icon: <div className="h-3 w-3 rounded-full bg-blue-500 mr-2" />,\n					label: "Low Priority",\n				};\n			default:\n				return {\n					icon: (\n						<div className="h-3 w-3 rounded-full border-2 border-dashed border-gray-300 mr-2" />\n					),\n					label: "Set Priority (optional)",\n				};\n		}\n};\n\nif (!isExpanded) {\n	return (\n		<Button\n			onClick={() => setIsExpanded(true)}\n			variant="default"\n			className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group dark:bg-secondary dark:hover:bg-rose-900"\n		>\n			<span className="absolute inset-0 rounded-lg bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />\n			<span className="absolute right-0 bottom-0 size-16 rounded-full -translate-x-5 translate-y-5 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />\n			<span className="absolute size-4 rounded-full bg-white/30 animate-ping" />\n			<Plus className="h-5 w-5 relative z-10" />\n			<span className="font-semibold text-base relative z-10 dark:group-hover:text-white">\n				Add new task\n			</span>\n		</Button>\n	);\n}\n\nconst priorityStyles = getPriorityStyles(priority || "");\n\nreturn (\n	<form\n		onSubmit={handleSubmit}\n		className="p-6 rounded-xl border shadow-sm bg-white"\n	>\n		<div className="flex justify-between items-center mb-4">\n			{/* <h3 className="font-semibold text-lg text-gray-800">Create a new task</h3> */}\n			<Button\n				type="button"\n				variant="ghost"\n				size="iconSm"\n				onClick={handleCancel}\n				className="h-8 w-8 rounded-full hover:bg-gray-100"\n			>\n				<X className="h-4 w-4" />
 				</Button>
 			</div>
 

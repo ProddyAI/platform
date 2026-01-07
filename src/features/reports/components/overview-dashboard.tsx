@@ -457,7 +457,7 @@ export const OverviewDashboard = ({
                         style={{
                           width: `${taskData.totalTasks > 0 ? (taskData.completedTasks / taskData.totalTasks) * 100 : 0}%`
                         }}
-                      ></div>
+                      />
                     </div>
                   </div>
                 </div>

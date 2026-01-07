@@ -85,7 +85,7 @@ export const HeroSection = () => {
 						Your Team's{" "}
 						<span className="text-primary relative">
 							Second Brain
-							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full"></span>
+							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
 						</span>
 					</motion.h1>
 
@@ -134,7 +134,7 @@ export const HeroSection = () => {
 									className="w-full h-auto"
 									priority
 								/>
-								<div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-50"></div>
+								<div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-50" />
 							</div>
 						</div>
 

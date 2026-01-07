@@ -289,7 +289,7 @@ export const TaskSidebar = ({
 				{expandedSections.categories &&
 					(categoriesLoading ? (
 						<div className="text-sm text-gray-500 dark:text-gray-400 mt-3 px-2 flex items-center">
-							<div className="h-3 w-3 mr-2 rounded-full border-2 border-t-transparent border-gray-500 dark:border-gray-400 animate-spin"></div>
+							<div className="h-3 w-3 mr-2 rounded-full border-2 border-t-transparent border-gray-500 dark:border-gray-400 animate-spin" />
 							Loading categories...
 						</div>
 					) : categories && categories.length > 0 ? (

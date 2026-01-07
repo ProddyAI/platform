@@ -334,32 +334,32 @@ export const TestChatsInput = ({
 					</div>
 
 					{/* Voice/Send Button */}
-					{message.trim() ? (
-						<Button onClick={handleSend} size="sm" className="flex-shrink-0">
-							<Send className="h-4 w-4" />
-						</Button>
-					) : (
-						<Button
-							variant="ghost"
-							size="sm"
-							className={cn(
-								"flex-shrink-0",
-								isRecording && "bg-red-100 text-red-600"
-							)}
-							onMouseDown={() => setIsRecording(true)}
-							onMouseUp={() => setIsRecording(false)}
-							onMouseLeave={() => setIsRecording(false)}
-						>
-							<Mic className="h-4 w-4" />
-						</Button>
-					)}
+				{message.trim() ? (
+					<Button onClick={handleSend} size="sm" className="flex-shrink-0">
+						<Send className="h-4 w-4" />
+					</Button>
+				) : (
+					<Button
+						variant="ghost"
+						size="sm"
+						className={cn(
+							"flex-shrink-0",
+							isRecording && "bg-red-100 text-red-600"
+						)}
+						onMouseDown={() => setIsRecording(true)}
+						onMouseUp={() => setIsRecording(false)}
+						onMouseLeave={() => setIsRecording(false)}
+					>
+						<Mic className="h-4 w-4" />
+					</Button>
+				)}
 				</div>
 
 				{/* Typing Indicator */}
 				<div className="mt-2 text-xs text-muted-foreground">
 					{isRecording && (
 						<div className="flex items-center gap-1">
-							<div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+							<div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
 							Recording voice message...
 						</div>
 					)}
