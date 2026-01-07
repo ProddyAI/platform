@@ -93,13 +93,8 @@ type FilterTypes = {
 // `order` argument on `chunks.list`, while `@convex-dev/rag` expects it. Cast to
 // `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
-<<<<<<< HEAD
-	filterNames: ['workspaceId', 'contentType', 'channelId'],
-	textEmbeddingModel: google.textEmbeddingModel('text-embedding-004') as any,
-=======
 	filterNames: ["workspaceId", "contentType", "channelId"],
 	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004"),
->>>>>>> origin/main
 	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
 });
 
@@ -655,16 +650,10 @@ export const getWorkspaceMessages = query({
 	handler: async (ctx, args) => {
 		const limit = args.limit || 100;
 		return await ctx.db
-<<<<<<< HEAD
-			.query('messages')
-			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', args.workspaceId))
-			.order('desc')
-=======
 			.query("messages")
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
->>>>>>> origin/main
 			.take(limit);
 	},
 });

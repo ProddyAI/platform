@@ -1,24 +1,3 @@
-<<<<<<< HEAD
-import { useSearchParams } from 'next/navigation';
-import { differenceInMinutes, format, isToday, isYesterday } from 'date-fns';
-import { Loader, Sparkles } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
-
-import { useCurrentMember } from '@/features/members/api/use-current-member';
-import type { GetMessagesReturnType } from '@/features/messages/api/use-get-messages';
-import { useWorkspaceId } from '@/hooks/use-workspace-id';
-import { ContextMenuProvider } from '@/features/chats/contexts/context-menu-context';
-
-import { Id } from '../../convex/_generated/dataModel';
-import { ChannelHero } from './channel-hero';
-import { ConversationHero } from './conversation-hero';
-import { Message } from './message';
-import { DailyRecapModal } from '@/features/smart/components/daily-recap-modal';
-import { Button } from './ui/button';
-import { Hint } from './hint';
-import './message-list-highlight.css';
-=======
 import { differenceInMinutes, format, isToday, isYesterday } from "date-fns";
 import { Loader, Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -34,7 +13,6 @@ import { ConversationHero } from "./conversation-hero";
 import { Hint } from "./hint";
 import { Message } from "./message";
 import { Button } from "./ui/button";
->>>>>>> origin/main
 
 const TIME_THRESHOLD = 15;
 
@@ -70,30 +48,6 @@ export const MessageList = ({
 	isLoadingMore,
 	canLoadMore,
 }: MessageListProps) => {
-<<<<<<< HEAD
-  const [editingId, setEditingId] = useState<Id<'messages'> | null>(null);
-
-  const searchParams = useSearchParams();
-  const highlightId = searchParams.get('highlight');
-  const highlightedRef = useRef<HTMLDivElement | null>(null);
-  const [hasScrolledToHighlight, setHasScrolledToHighlight] = useState(false);
-  
-  useEffect(() => {
-    if (highlightId && highlightedRef.current && !hasScrolledToHighlight) {
-      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setHasScrolledToHighlight(true);
-    }
-  }, [highlightId, hasScrolledToHighlight]);
-
-  // Reset scroll flag when highlight ID changes
-  useEffect(() => {
-    setHasScrolledToHighlight(false);
-  }, [highlightId]);
-
-  const [isRecapModalOpen, setIsRecapModalOpen] = useState(false);
-  const [recapData, setRecapData] = useState<{ recap: string; date: string; messageCount: number; isCached?: boolean } | null>(null);
-  const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);
-=======
 	const [editingId, setEditingId] = useState<Id<"messages"> | null>(null);
 	const [isRecapModalOpen, setIsRecapModalOpen] = useState(false);
 	const [recapData, setRecapData] = useState<{
@@ -103,7 +57,6 @@ export const MessageList = ({
 		isCached?: boolean;
 	} | null>(null);
 	const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);
->>>>>>> origin/main
 
 	const workspaceId = useWorkspaceId();
 
@@ -244,52 +197,6 @@ export const MessageList = ({
 									new Date(prevMessage._creationTime)
 								) < TIME_THRESHOLD;
 
-<<<<<<< HEAD
-            const isHighlighted = highlightId && message._id === highlightId;
-            
-            const messageElement = (
-              <Message
-                key={message._id}
-                id={message._id}
-                memberId={message.memberId}
-                authorImage={message.user.image}
-                authorName={message.user.name}
-                isAuthor={message.memberId === currentMember?._id}
-                reactions={message.reactions}
-                body={message.body}
-                image={message.image}
-                updatedAt={message.updatedAt}
-                createdAt={message._creationTime}
-                threadCount={message.threadCount}
-                threadImage={message.threadImage}
-                threadName={message.threadName}
-                threadTimestamp={message.threadTimestamp}
-                isEditing={editingId === message._id}
-                setEditingId={setEditingId}
-                isCompact={isCompact}
-                hideThreadButton={variant === 'thread'}
-                calendarEvent={message.calendarEvent}
-              />
-            );
-
-            if (isHighlighted) {
-              return (
-                <div
-                  key={message._id}
-                  ref={highlightedRef}
-                  className="animate-highlight-gradient"
-                >
-                  {messageElement}
-                </div>
-              );
-            }
-
-            return messageElement;
-          })}
-
-        </div>
-      ))}
-=======
 							return (
 								<Message
 									key={message._id}
@@ -317,7 +224,6 @@ export const MessageList = ({
 						})}
 					</div>
 				))}
->>>>>>> origin/main
 
 				<div
 					className="h-1"
