@@ -94,7 +94,7 @@ type FilterTypes = {
 // `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: google.embedding("text-embedding-gecko-001"),
+	textEmbeddingModel: google.embedding("text-embedding-gecko-001") as any,
 	embeddingDimension: 768, // Gemini text-embedding-gecko-001 uses 768 dimensions
 });
 
@@ -658,6 +658,77 @@ export const getWorkspaceMessages = query({
 	},
 });
 
+/**
+ * Searches workspace messages by text content with case-insensitive matching.
+ * 
+ * Filters messages based on query string and enriches results with channel information.
+ * Used by both normal search UI and AI search to find relevant messages.
+ * 
+ * @param {Id<'workspaces'>} workspaceId - The workspace to search within
+ * @param {string} query - Text to search for in message bodies (case-insensitive)
+ * @param {number} [limit=20] - Maximum number of results to return (default: 20)
+ * 
+ * @returns {Promise<Array>} Array of search results with message text, channel info, and metadata
+ */
+export const searchWorkspaceMessages = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		query: v.string(),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit || 20;
+		const searchQuery = args.query.toLowerCase().trim();
+		
+		if (!searchQuery) {
+			return [];
+		}
+
+		// Fetch messages from workspace
+		const messages = await ctx.db
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.take(100); // Fetch more to filter from
+
+		// Filter and enrich results
+		const results = [];
+		for (const message of messages) {
+			const messageText = extractTextFromRichText(message.body);
+			
+			// Case-insensitive text matching
+			if (messageText.toLowerCase().includes(searchQuery)) {
+				// Get channel info
+				let channelName = "Unknown Channel";
+				if (message.channelId) {
+					const channel = await ctx.db.get(message.channelId);
+					if (channel) {
+						channelName = channel.name;
+					}
+				}
+
+				results.push({
+					_id: message._id,
+					_creationTime: message._creationTime,
+					text: messageText,
+					channelId: message.channelId,
+					channelName,
+					memberId: message.memberId,
+					workspaceId: message.workspaceId,
+				});
+
+				// Stop if we have enough results
+				if (results.length >= limit) {
+					break;
+				}
+			}
+		}
+
+		return results;
+	},
+});
+
 export const getWorkspaceNotes = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -901,54 +972,31 @@ export const aiSearchMessages = action({
 		args
 	): Promise<{
 		answer: string;
-		sources: { id: Id<'messages'>; text: string; channelId: Id<'channels'> }[];
+		sources: { id: Id<'messages'>; text: string; channelId: Id<'channels'>; channelName: string }[];
 	}> => {
-		const messages = await ctx.runQuery(api.search.getWorkspaceMessages, {
+		// Use the new searchWorkspaceMessages query for better filtering
+		const searchResults = await ctx.runQuery(api.search.searchWorkspaceMessages, {
 			workspaceId: args.workspaceId,
-			limit: 50, // Fetch more to filter from
+			query: args.query,
+			limit: 10, // Get top 10 relevant messages
 		});
 
-		if (messages.length === 0) {
-			return {
-				answer: 'No messages found in this workspace.',
-				sources: [],
-			};
-		}
-
-		// Filter messages that contain query keywords
-		const queryWords = args.query.toLowerCase().split(/\s+/);
-		const relevantMessages = messages
-			.map((m) => {
-				const text = extractTextFromRichText(m.body);
-				return {
-					id: m._id,
-					text,
-					channelId: m.channelId,
-				};
-			})
-			.filter((m) => {
-				const messageText = m.text.toLowerCase();
-				// Message must contain at least one query word
-				return queryWords.some((word) => messageText.includes(word));
-			})
-			.filter((m): m is { id: Id<'messages'>; text: string; channelId: Id<'channels'> } => 
-				m.channelId !== undefined
-			)
-			.slice(0, 5); // Limit to top 5 relevant messages
-
-		if (relevantMessages.length === 0) {
+		if (searchResults.length === 0) {
 			return {
 				answer: 'No messages found matching your query.',
 				sources: [],
 			};
 		}
 
-		const context = relevantMessages.map((m) => m.text).join('\n\n');
+		// Prepare context from search results
+		const context = searchResults
+			.map((result, idx) => `[${idx + 1}] ${result.text}`)
+			.join('\n\n');
 
 		try {
 			const { generateText } = await import('ai');
 			const result = await generateText({
-				model: google('gemini-2.5-flash'),
+				model: google('gemini-2.0-flash-exp'),
 				prompt: `
 Answer the user's question using ONLY the messages below.
 Provide a concise, direct answer based on the relevant information.
@@ -964,21 +1012,23 @@ ${context}
 
 			return {
 				answer: result.text.trim(),
-				sources: relevantMessages.slice(0, 3).map((m) => ({
-					id: m.id,
-					text: m.text,
-					channelId: m.channelId,
+				sources: searchResults.slice(0, 3).map((result) => ({
+					id: result._id,
+					text: result.text,
+					channelId: result.channelId as Id<'channels'>,
+					channelName: result.channelName,
 				})),
 			};
 		} catch (error) {
 			console.error('AI generation error:', error);
-			// Return relevant messages with a fallback answer
+			// Return search results with a fallback answer
 			return {
-				answer: `I found ${relevantMessages.length} relevant message(s) about "${args.query}", but couldn't generate a summary. Please check the sources below.`,
-				sources: relevantMessages.slice(0, 3).map((m) => ({
-					id: m.id,
-					text: m.text,
-					channelId: m.channelId,
+				answer: `I found ${searchResults.length} relevant message(s) about "${args.query}", but couldn't generate a summary. Please check the sources below.`,
+				sources: searchResults.slice(0, 3).map((result) => ({
+					id: result._id,
+					text: result.text,
+					channelId: result.channelId as Id<'channels'>,
+					channelName: result.channelName,
 				})),
 			};
 		}

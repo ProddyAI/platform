@@ -3,12 +3,11 @@
 	"version": "1.0.1",
 	"private": true,
 	"scripts": {
-		"dev": "next dev",
-		"build": "next build",
+		"client": "next dev",
 		"convex": "convex dev",
-		"start": "next start",
-		"check": "biome check --write --unsafe --max-diagnostics 1000 .",
-		"type": "tsc --noEmit && next build --no-lint"
+		"lint": "biome check --write --unsafe --max-diagnostics 1000 .",
+		"type": "tsc --noEmit && next build",
+		"start": "next start"
 	},
 	"author": {
 		"name": "George Bobby",
