@@ -1,6 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
 
 import Link from "next/link";
 
@@ -193,15 +194,17 @@ export const ChannelItem = ({
 }: ChannelItemProps) => {
 	const workspaceId = useWorkspaceId();
 	const channelFallback = label.charAt(0).toLowerCase();
+	const [imageLoadError, setImageLoadError] = useState(false);
 
 	// Determine what to display in the icon area
 	const renderIcon = () => {
-		if (iconImageUrl) {
+		if (iconImageUrl && !imageLoadError) {
 			return (
 				<img
 					src={iconImageUrl}
 					alt={`Channel icon for ${label}`}
 					className="h-full w-full object-cover rounded-full"
+					onError={() => setImageLoadError(true)}
 				/>
 			);
 		}
@@ -216,45 +219,36 @@ export const ChannelItem = ({
 	};
 
 	return (
-		<Button
-			variant="ghost"
-			className={cn(
-				"group py-2 md:py-2.5 flex items-center gap-2 md:gap-3 font-medium h-9 md:h-10 text-sm overflow-hidden rounded-[10px] transition-standard w-full",
-				isActive
-					? "text-secondary-foreground bg-secondary-foreground/20 hover:bg-secondary-foreground/30 shadow-sm"
-					: "text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1",
-				isCollapsed
-					? "justify-center px-1 md:px-2"
-					: "justify-start px-2 md:px-4"
-			)}
-			size="sm"
-			asChild
+		<Link
+			href={`/workspace/${workspaceId}/channel/${id}/chats`}
+			className="w-full"
 		>
-			<Link
-				href={`/workspace/${workspaceId}/channel/${id}/chats`}
-				className="w-full overflow-hidden"
+			<div
+				className={cn(
+					"group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2 md:py-2.5 text-sm font-medium transition-standard",
+					isActive
+						? "bg-secondary-foreground/20 text-secondary-foreground shadow-sm hover:bg-secondary-foreground/30"
+						: "text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1",
+					isCollapsed && "justify-center px-1 md:px-2"
+				)}
 			>
 				{isCollapsed ? (
 					<div className="relative flex-shrink-0">
 						<Hint label={label} side="right" align="center">
-							<div className="relative">
-								<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
-									{renderIcon()}
-								</div>
+							<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
+								{renderIcon()}
 							</div>
 						</Hint>
 					</div>
 				) : (
 					<>
-						<div className="relative mr-2 md:mr-3 flex-shrink-0">
-							<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
-								{renderIcon()}
-							</div>
+						<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden mr-2 md:mr-3 flex-shrink-0">
+							{renderIcon()}
 						</div>
-						<span className="truncate min-w-0 text-sm flex-1">{label}</span>
+						<span className="truncate min-w-0">{label}</span>
 					</>
 				)}
-			</Link>
-		</Button>
+			</div>
+		</Link>
 	);
 };

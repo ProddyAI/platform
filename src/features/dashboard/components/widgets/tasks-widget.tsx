@@ -130,10 +130,10 @@ export const TasksWidget = ({
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
-          <CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
+          <CheckSquare className="h-5 w-5 text-primary widget-title-icon" />
           <h3 className="font-medium">Your Tasks</h3>
           {!isEditMode && sortedTasks.length > 0 && (
-            <Badge variant="default" className="ml-2">
+            <Badge variant="default" className="ml-2 widget-badge">
               {sortedTasks.length}
             </Badge>
           )}
@@ -144,6 +144,7 @@ export const TasksWidget = ({
             <Button
               variant="default"
               size="sm"
+              className="widget-button"
               onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
             >
               View all

@@ -106,10 +106,10 @@ export const NotesWidget = ({
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary dark:text-purple-400" />
+          <FileText className="h-5 w-5 text-primary widget-title-icon" />
           <h3 className="font-medium">Recent Notes</h3>
           {!isEditMode && sortedNotes.length > 0 && (
-            <Badge variant="default" className="ml-2">
+            <Badge variant="default" className="ml-2 widget-badge">
               {sortedNotes.length}
             </Badge>
           )}
@@ -120,6 +120,7 @@ export const NotesWidget = ({
           <Button
             variant="default"
             size="sm"
+            className="widget-button"
             onClick={handleViewAll}
           >
             View All

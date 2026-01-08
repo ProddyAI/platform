@@ -199,48 +199,48 @@ export const MentionsNotificationDialog = ({
 	};
 
 	const renderNotificationsList = (notificationsList: any[]) => (
-		<div className="divide-y max-h-[450px] overflow-y-auto">
+		<div className="divide-y divide-border/20 dark:divide-border/10 max-h-[450px] overflow-y-auto">
 			{notificationsList?.length === 0 ? (
-				<div className="flex h-[250px] w-full flex-col items-center justify-center gap-y-3 bg-gray-50 dark:bg-card">
+				<div className="flex h-[250px] w-full flex-col items-center justify-center gap-y-3 bg-gray-50 dark:bg-gray-900/50">
 					{activeTab === "unread" ? (
 						<>
-							<div className="rounded-full bg-green-100 p-3">
-								<CheckCircle2 className="size-10 text-green-500" />
+							<div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
+								<CheckCircle2 className="size-10 text-green-500 dark:text-green-400" />
 							</div>
-							<h2 className="text-xl font-semibold">All caught up!</h2>
-							<p className="text-sm text-muted-foreground">
+							<h2 className="text-xl font-semibold dark:text-gray-100">All caught up!</h2>
+							<p className="text-sm text-muted-foreground dark:text-gray-400">
 								You have no unread notifications
 							</p>
 						</>
 					) : activeTab === "all" ? (
 						<>
-							<div className="rounded-full bg-blue-100 p-3">
-								<Bell className="size-10 text-blue-500" />
+							<div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
+								<Bell className="size-10 text-blue-500 dark:text-blue-400" />
 							</div>
-							<h2 className="text-xl font-semibold">No notifications yet</h2>
-							<p className="text-sm text-muted-foreground">
+							<h2 className="text-xl font-semibold dark:text-gray-100">No notifications yet</h2>
+							<p className="text-sm text-muted-foreground dark:text-gray-400">
 								When you receive notifications, they will appear here
 							</p>
 						</>
 					) : activeTab === "direct" ? (
 						<>
-							<div className="rounded-full bg-green-100 p-3">
-								<MessageSquare className="size-10 text-green-500" />
+							<div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
+								<MessageSquare className="size-10 text-green-500 dark:text-green-400" />
 							</div>
-							<h2 className="text-xl font-semibold">No direct messages</h2>
-							<p className="text-sm text-muted-foreground">
+							<h2 className="text-xl font-semibold dark:text-gray-100">No direct messages</h2>
+							<p className="text-sm text-muted-foreground dark:text-gray-400">
 								When someone sends you a direct message, it will appear here
 							</p>
 						</>
 					) : (
 						<>
-							<div className="rounded-full bg-gray-100 p-3">
-								<Filter className="size-10 text-gray-500" />
+							<div className="rounded-full bg-gray-100 dark:bg-gray-800 p-3">
+								<Filter className="size-10 text-gray-500 dark:text-gray-400" />
 							</div>
-							<h2 className="text-xl font-semibold">
+							<h2 className="text-xl font-semibold dark:text-gray-100">
 								No {activeTab} notifications
 							</h2>
-							<p className="text-sm text-muted-foreground">
+							<p className="text-sm text-muted-foreground dark:text-gray-400">
 								Try checking other categories
 							</p>
 						</>
@@ -261,30 +261,30 @@ export const MentionsNotificationDialog = ({
 							key={notification.id}
 							href={link}
 							onClick={() => onOpenChange(false)}
-							className={`block p-4 transition-colors hover:bg-gray-50 dark:hover:bg-card-accent ${!notification.read ? "bg-blue-50 dark:bg-blue-900/30" : "dark:bg-card"} relative group`}
+							className={`block p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${!notification.read ? "bg-blue-50 dark:bg-blue-900/20" : "bg-white dark:bg-gray-900"} relative group`}
 						>
 							<div className="flex items-start gap-3">
-								<Avatar className="h-10 w-10 border">
+								<Avatar className="h-10 w-10 border dark:border-gray-700">
 									<AvatarImage src={notification.author.image} />
-									<AvatarFallback className="bg-secondary/10 text-secondary font-medium">
+									<AvatarFallback className="bg-secondary/10 dark:bg-secondary/20 text-secondary dark:text-secondary-foreground font-medium">
 										{notification.author.name.charAt(0)}
 									</AvatarFallback>
 								</Avatar>
 
 								<div className="flex-1 space-y-2">
 									<div className="flex flex-wrap items-center gap-2">
-										<span className="font-semibold">
+										<span className="font-semibold dark:text-gray-100">
 											{notification.author.name}
 										</span>
-										<div className="flex items-center gap-1 text-xs text-muted-foreground">
+										<div className="flex items-center gap-1 text-xs text-muted-foreground dark:text-gray-400">
 											<Clock className="size-3.5" />
 											<span>{formatRelativeTime(notification.timestamp)}</span>
 										</div>
 
 										{/* Source badge - different for direct messages */}
-										<div className="ml-auto flex items-center gap-1.5 rounded-full bg-gray-100 dark:bg-card-accent px-2.5 py-1 text-xs font-medium">
+										<div className="ml-auto flex items-center gap-1.5 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-medium dark:text-gray-300">
 											{isDirect ? (
-												<MessageSquare className="size-4 text-green-500" />
+												<MessageSquare className="size-4 text-green-500 dark:text-green-400" />
 											) : (
 												getSourceIcon(notification.source.type)
 											)}
@@ -294,7 +294,7 @@ export const MentionsNotificationDialog = ({
 										</div>
 									</div>
 
-									<p className="text-sm leading-relaxed mb-3">
+									<p className="text-sm leading-relaxed mb-3 dark:text-gray-300">
 										{notification.text}
 									</p>
 
@@ -308,8 +308,8 @@ export const MentionsNotificationDialog = ({
 											}}
 											className={`flex items-center gap-1.5 text-xs font-medium rounded px-2.5 py-1.5 transition-colors ${
 												notification.read
-													? "text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100"
-													: "text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100"
+													? "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+													: "text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/40"
 											}`}
 										>
 											{notification.read ? (
@@ -327,7 +327,7 @@ export const MentionsNotificationDialog = ({
 									</div>
 
 									{/* Border separator below the button */}
-									<div className="border-t border-border/10 dark:border-border/30 mt-2"></div>
+									<div className="border-t border-border/10 dark:border-gray-700/50 mt-2"></div>
 								</div>
 							</div>
 						</Link>
@@ -339,18 +339,18 @@ export const MentionsNotificationDialog = ({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[550px] p-0 overflow-hidden shadow-lg [&>button]:hidden">
-				<DialogHeader className="p-5 border-b bg-white dark:bg-card dark:border-transparent">
+			<DialogContent className="sm:max-w-[550px] p-0 overflow-hidden shadow-lg [&>button]:hidden dark:bg-gray-900 dark:border-gray-800">
+				<DialogHeader className="p-5 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
 					<div className="flex items-center justify-between">
-						<DialogTitle className="flex items-center gap-2 text-xl">
-							<div className="bg-blue-100 p-1.5 rounded-full">
-								<Bell className="size-5 text-blue-600" />
+						<DialogTitle className="flex items-center gap-2 text-xl dark:text-gray-100">
+							<div className="bg-blue-100 dark:bg-blue-900/40 p-1.5 rounded-full">
+								<Bell className="size-5 text-blue-600 dark:text-blue-400" />
 							</div>
 							<span>Notifications</span>
 							{unreadCounts.all > 0 && (
 								<Badge
 									variant="default"
-									className="ml-2 bg-blue-500 hover:bg-blue-600"
+									className="ml-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
 								>
 									{unreadCounts.all} new
 								</Badge>
@@ -360,7 +360,7 @@ export const MentionsNotificationDialog = ({
 							<Button
 								variant="outline"
 								size="sm"
-								className="text-xs gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+								className="text-xs gap-1.5 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-300"
 								onClick={handleMarkAllAsRead}
 							>
 								<CheckCircle2 className="size-3.5" />
@@ -371,10 +371,10 @@ export const MentionsNotificationDialog = ({
 				</DialogHeader>
 
 				{isLoading ? (
-					<div className="flex h-[300px] w-full items-center justify-center bg-gray-50 dark:bg-card">
+					<div className="flex h-[300px] w-full items-center justify-center bg-gray-50 dark:bg-gray-900/50">
 						<div className="flex flex-col items-center gap-3">
-							<Loader className="size-8 animate-spin text-secondary" />
-							<p className="text-sm text-muted-foreground">
+							<Loader className="size-8 animate-spin text-secondary dark:text-secondary-foreground" />
+							<p className="text-sm text-muted-foreground dark:text-gray-400">
 								Loading your mentions...
 							</p>
 						</div>
@@ -386,11 +386,11 @@ export const MentionsNotificationDialog = ({
 						onValueChange={setActiveTab}
 						className="w-full"
 					>
-						<div className="border-b px-4 py-3 bg-gray-50 dark:bg-card dark:border-border/20">
-							<TabsList className="grid w-full grid-cols-5 p-1 bg-gray-100 rounded-lg dark:bg-card-accent dark:border dark:border-border/10">
+						<div className="border-b px-4 py-3 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+							<TabsList className="grid w-full grid-cols-5 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg dark:border dark:border-gray-700">
 								<TabsTrigger
 									value="all"
-									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40"
+									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-gray-600 dark:text-gray-300 dark:data-[state=active]:text-gray-100"
 								>
 									<div className="flex items-center gap-1.5">
 										<Filter className="size-3.5" />
@@ -408,7 +408,7 @@ export const MentionsNotificationDialog = ({
 
 								<TabsTrigger
 									value="unread"
-									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40"
+									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-gray-600 dark:text-gray-300 dark:data-[state=active]:text-gray-100"
 								>
 									<div className="flex items-center gap-1.5">
 										<Bell className="size-3.5" />
@@ -426,7 +426,7 @@ export const MentionsNotificationDialog = ({
 
 								<TabsTrigger
 									value="channel"
-									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40"
+									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-gray-600 dark:text-gray-300 dark:data-[state=active]:text-gray-100"
 								>
 									<div className="flex items-center gap-1.5">
 										<Hash className="size-3.5 text-blue-500" />
@@ -444,7 +444,7 @@ export const MentionsNotificationDialog = ({
 
 								<TabsTrigger
 									value="direct"
-									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40"
+									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-gray-600 dark:text-gray-300 dark:data-[state=active]:text-gray-100"
 								>
 									<div className="flex items-center gap-1.5">
 										<User className="size-3.5 text-green-500" />
@@ -462,7 +462,7 @@ export const MentionsNotificationDialog = ({
 
 								<TabsTrigger
 									value="card"
-									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-secondary/40"
+									className="relative py-1.5 px-3 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:border data-[state=active]:border-secondary/20 dark:data-[state=active]:border-gray-600 dark:text-gray-300 dark:data-[state=active]:text-gray-100"
 								>
 									<div className="flex items-center gap-1.5">
 										<LayoutGrid className="size-3.5 text-amber-500" />

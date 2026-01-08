@@ -60,15 +60,15 @@ const BoardCard: React.FC<BoardCardProps> = ({
 	const getPriorityColor = () => {
 		switch (card.priority) {
 			case "highest":
-				return "border-l-4 border-l-destructive bg-destructive/5";
+				return "border-l-4 border-l-destructive bg-destructive/5 dark:bg-destructive/10";
 			case "high":
-				return "border-l-4 border-l-orange-500 bg-orange-50";
+				return "border-l-4 border-l-orange-500 bg-orange-50 dark:bg-orange-950/30";
 			case "medium":
-				return "border-l-4 border-l-secondary bg-secondary/5";
+				return "border-l-4 border-l-secondary bg-secondary/5 dark:bg-secondary/10";
 			case "low":
-				return "border-l-4 border-l-blue-400 bg-blue-50";
+				return "border-l-4 border-l-blue-400 bg-blue-50 dark:bg-blue-950/30";
 			case "lowest":
-				return "border-l-4 border-l-secondary/30 bg-secondary/5";
+				return "border-l-4 border-l-secondary/30 bg-secondary/5 dark:bg-secondary/10";
 			default:
 				return "";
 		}
@@ -107,7 +107,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 			{...attributes}
 			{...listeners}
 			className={cn(
-				"bg-white rounded-lg shadow-sm p-3 flex flex-col gap-2 border hover:border-secondary/40 cursor-pointer transition-all duration-200 hover:shadow-md",
+				"bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 flex flex-col gap-2 border dark:border-gray-700 hover:border-secondary/40 dark:hover:border-secondary/60 cursor-pointer transition-all duration-200 hover:shadow-md",
 				getPriorityColor(),
 				isDragging &&
 					"opacity-70 border-dashed border-secondary shadow-lg scale-105"
@@ -115,7 +115,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 		>
 			{/* Card Header */}
 			<div className="flex items-center justify-between">
-				<span className="font-semibold text-sm truncate">{card.title}</span>
+				<span className="font-semibold text-sm truncate dark:text-gray-100">{card.title}</span>
 				<div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
 					<TooltipProvider>
 						<Tooltip>
@@ -146,7 +146,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 
 			{/* Card Description */}
 			{card.description && (
-				<div className="text-xs text-muted-foreground line-clamp-2 bg-muted/30 p-1.5 rounded-sm">
+				<div className="text-xs text-muted-foreground dark:text-gray-400 line-clamp-2 bg-muted/30 dark:bg-gray-700/30 p-1.5 rounded-sm">
 					{card.description}
 				</div>
 			)}
@@ -158,7 +158,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 						<Badge
 							key={i}
 							variant="secondary"
-							className="text-xs px-2 py-0.5 bg-secondary/20 text-secondary-foreground"
+							className="text-xs px-2 py-0.5 bg-secondary/20 dark:bg-secondary/30 text-secondary-foreground dark:text-gray-200"
 						>
 							{label}
 						</Badge>
@@ -167,12 +167,12 @@ const BoardCard: React.FC<BoardCardProps> = ({
 			)}
 
 			{/* Card Footer */}
-			<div className="flex items-center justify-between mt-1 pt-1 border-t border-dashed border-muted">
+			<div className="flex items-center justify-between mt-1 pt-1 border-t border-dashed border-muted dark:border-gray-700">
 				{/* Priority Badge */}
 				{card.priority && (
 					<div className="flex items-center gap-1">
 						{getPriorityIcon()}
-						<span className="text-[10px] text-muted-foreground">
+						<span className="text-[10px] text-muted-foreground dark:text-gray-400">
 							{card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
 						</span>
 					</div>
@@ -183,11 +183,11 @@ const BoardCard: React.FC<BoardCardProps> = ({
 					<div
 						className={cn(
 							"flex items-center gap-1",
-							isOverdue && "text-destructive"
+							isOverdue && "text-destructive dark:text-red-400"
 						)}
 					>
 						<Clock className="w-3 h-3" />
-						<span className="text-[10px]">{formattedDueDate}</span>
+						<span className="text-[10px] dark:text-gray-400">{formattedDueDate}</span>
 					</div>
 				)}
 
@@ -240,7 +240,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 						)}
 					</div>
 				) : (
-					<div className="flex items-center text-muted-foreground">
+					<div className="flex items-center text-muted-foreground dark:text-gray-500">
 						<Users className="h-3.5 w-3.5" />
 					</div>
 				)}

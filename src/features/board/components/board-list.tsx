@@ -109,8 +109,14 @@ const BoardList: React.FC<BoardListProps> = ({
                     background: #cbd5e1;
                     border-radius: 3px;
                 }
+                .dark ::-webkit-scrollbar-thumb {
+                    background: #4b5563;
+                }
                 ::-webkit-scrollbar-thumb:hover {
                     background: #94a3b8;
+                }
+                .dark ::-webkit-scrollbar-thumb:hover {
+                    background: #6b7280;
                 }
             `}</style>
 			<div
@@ -118,23 +124,23 @@ const BoardList: React.FC<BoardListProps> = ({
 				style={style}
 				{...attributes}
 				className={cn(
-					"bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-md flex flex-col border border-gray-200",
+					"bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-md flex flex-col border border-gray-200 dark:border-gray-700",
 					getWidthClass(),
 					isDragging &&
 						"opacity-70 border-2 border-dashed border-secondary shadow-lg"
 				)}
 			>
 				{/* List Header */}
-				<div className="p-3 font-bold border-b flex items-center justify-between bg-white rounded-t-lg">
+				<div className="p-3 font-bold border-b dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-lg dark:text-gray-100">
 					<div className="flex items-center gap-2">
 						<div
-							className="cursor-grab hover:bg-gray-100 p-1 rounded"
+							className="cursor-grab hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded"
 							{...listeners}
 						>
 							<GripVertical className="w-4 h-4 text-muted-foreground" />
 						</div>
 						<span className="truncate">{list.title}</span>
-						<Badge variant="outline" className="ml-1 bg-white">
+						<Badge variant="outline" className="ml-1 bg-white dark:bg-gray-800 dark:border-gray-600">
 							{cards.length}
 						</Badge>
 					</div>
@@ -162,7 +168,7 @@ const BoardList: React.FC<BoardListProps> = ({
 
 				{/* List Stats */}
 				{cards.length > 0 && (
-					<div className="px-3 py-1.5 bg-muted/50 border-b flex items-center justify-between text-[10px] text-muted-foreground">
+					<div className="px-3 py-1.5 bg-muted/50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex items-center justify-between text-[10px] text-muted-foreground">
 						<div className="flex items-center gap-1">
 							<LayoutGrid className="w-3 h-3" />
 							<span>{cards.length} cards</span>
@@ -200,11 +206,11 @@ const BoardList: React.FC<BoardListProps> = ({
 					</div>
 				)}
 
-				{/* Cards Container */}
+				{/* Cards Container - expanded to push Add Card button to bottom */}
 				<div
 					ref={setDroppableRef}
 					className={cn(
-						"transition-colors duration-200",
+						"transition-colors duration-200 flex-1 flex flex-col",
 						isOver
 							? "bg-secondary/10 ring-2 ring-secondary/40"
 							: "bg-transparent"
@@ -214,14 +220,14 @@ const BoardList: React.FC<BoardListProps> = ({
 						items={cards.map((c) => c._id)}
 						strategy={verticalListSortingStrategy}
 					>
-						<div className="p-2 flex flex-col gap-2">
+						<div className="p-2 flex flex-col gap-2 flex-1">
 							{cards.length === 0 && (
 								<div
 									className={cn(
-										"h-16 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground text-sm",
+										"h-16 border-2 border-dashed rounded-md flex items-center justify-center text-muted-foreground dark:text-gray-400 text-sm",
 										isOver
-											? "border-secondary/40 bg-secondary/5"
-											: "border-gray-200"
+											? "border-secondary/40 bg-secondary/5 dark:bg-secondary/10"
+											: "border-gray-200 dark:border-gray-700"
 									)}
 								>
 									{isOver ? "Drop card here" : "No cards yet"}
@@ -237,7 +243,7 @@ const BoardList: React.FC<BoardListProps> = ({
 								/>
 							))}
 							{cards.length > 0 && isOver && (
-								<div className="h-16 border-2 border-dashed border-secondary/40 rounded-md flex items-center justify-center text-secondary/60 mt-2 bg-secondary/5">
+								<div className="h-16 border-2 border-dashed border-secondary/40 rounded-md flex items-center justify-center text-secondary/60 dark:text-secondary/80 mt-2 bg-secondary/5 dark:bg-secondary/10">
 									Drop card here
 								</div>
 							)}
@@ -245,12 +251,12 @@ const BoardList: React.FC<BoardListProps> = ({
 					</SortableContext>
 				</div>
 
-				{/* Add Card Button */}
-				<div className="p-2 bg-white rounded-b-lg border-t">
+				{/* Add Card Button - stays at bottom */}
+				<div className="p-2 bg-white dark:bg-gray-800 rounded-b-lg border-t dark:border-gray-700 mt-auto">
 					<Button
 						size="sm"
 						variant="outline"
-						className="w-full bg-white hover:bg-secondary/5 transition-colors"
+						className="w-full bg-white dark:bg-gray-800 hover:bg-secondary/5 dark:hover:bg-secondary/10 transition-colors dark:border-gray-600"
 						onClick={onAddCard}
 					>
 						<Plus className="w-4 h-4 mr-1" /> Add Card

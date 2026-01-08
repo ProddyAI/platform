@@ -87,9 +87,9 @@ export const MessageContent = ({
 			body.includes('"type":"note-export"'));
 
 	return (
-		<div className={cn("flex flex-col", isAuthor && "items-end")}>
+		<div className={cn("flex flex-col bg-transparent", isAuthor && "items-end")}>
 			<div
-				className={cn("relative group/message", isAuthor && "flex justify-end")}
+				className={cn("relative group/message bg-transparent", isAuthor && "flex justify-end")}
 			>
 				<div
 					className={cn(
@@ -126,8 +126,10 @@ export const MessageContent = ({
 							{updatedAt ? (
 								<span
 									className={cn(
-										"text-xs italic animate-fade-in",
-										isAuthor ? "text-white/70" : "text-muted-foreground"
+										"text-xs italic animate-fade-in bg-transparent",
+										isAuthor 
+											? "text-white/70" 
+											: "text-muted-foreground dark:text-white/80"
 									)}
 								>
 									(edited)

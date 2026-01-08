@@ -81,10 +81,10 @@ export const AssignedCardsWidget = ({
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2">
         <div className="flex items-center gap-2">
-          <KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400" />
+          <KanbanSquare className="h-5 w-5 text-primary widget-title-icon" />
           <h3 className="font-medium">Assigned Cards</h3>
           {!isEditMode && sortedCards.length > 0 && (
-            <Badge variant="default" className="ml-2">
+            <Badge variant="default" className="ml-2 widget-badge">
               {sortedCards.length}
             </Badge>
           )}
@@ -96,6 +96,7 @@ export const AssignedCardsWidget = ({
             <Button
               variant="default"
               size="sm"
+              className="widget-button"
               onClick={() => router.push(`/workspace/${workspaceId}/channel/${channels[0]._id}/board`)}
             >
               View all
@@ -110,7 +111,7 @@ export const AssignedCardsWidget = ({
             {sortedCards.map((card) => (
               <WidgetCard key={card._id}>
                 <div className="flex items-start gap-3">
-                    <KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400 mt-1" />
+                    <KanbanSquare className="h-5 w-5 text-primary widget-title-icon mt-1" />
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
                         <p className="font-medium">

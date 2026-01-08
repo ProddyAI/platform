@@ -142,7 +142,25 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 			case "lowest":
 				return "bg-secondary/50";
 			default:
-				return "bg-gray-300";
+				return "bg-gray-400";
+		}
+	}
+
+	// Get solid background color for task bars
+	function getSolidPriorityColor(priority: string | undefined) {
+		switch (priority) {
+			case "highest":
+				return "#ef4444"; // red-500
+			case "high":
+				return "#f97316"; // orange-500
+			case "medium":
+				return "hsl(var(--secondary))"; // secondary color
+			case "low":
+				return "#60a5fa"; // blue-400
+			case "lowest":
+				return "#a78bfa"; // purple-400
+			default:
+				return "#9ca3af"; // gray-400
 		}
 	}
 
@@ -388,54 +406,54 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	};
 
 	return (
-		<div className="h-full flex flex-col bg-white">
+		<div className="h-full flex flex-col bg-white dark:bg-gray-900">
 			{/* Gantt Chart Controls */}
-			<div className="p-3 border-b flex items-center justify-between bg-gradient-to-r from-secondary/5 to-secondary/5">
-				<div className="text-sm font-medium text-muted-foreground">
+			<div className="p-3 border-b dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-secondary/5 to-secondary/5 dark:from-gray-900 dark:to-gray-900">
+				<div className="text-sm font-medium text-muted-foreground dark:text-gray-400">
 					Showing {tasks.length} tasks with due dates across {lists.length}{" "}
 					lists
 				</div>
 				<div className="flex items-center gap-2">
-					<div className="flex items-center border rounded-md overflow-hidden">
+					<div className="flex items-center border dark:border-gray-700 rounded-md overflow-hidden">
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-8 w-8 p-0 rounded-none"
+							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
 							onClick={goToPreviousWeek}
 						>
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
-						<div className="px-2 text-xs font-medium border-l border-r">
+						<div className="px-2 text-xs font-medium border-l border-r dark:border-gray-700 dark:text-gray-300">
 							{format(currentStartDate, "MMM d")} -{" "}
 							{format(addDays(currentStartDate, zoomLevel - 1), "MMM d, yyyy")}
 						</div>
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-8 w-8 p-0 rounded-none"
+							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
 							onClick={goToNextWeek}
 						>
 							<ArrowRight className="h-4 w-4" />
 						</Button>
 					</div>
 
-					<div className="flex items-center border rounded-md overflow-hidden ml-2">
+					<div className="flex items-center border dark:border-gray-700 rounded-md overflow-hidden ml-2">
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-8 w-8 p-0 rounded-none"
+							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
 							onClick={zoomOut}
 							disabled={zoomLevel >= 28}
 						>
 							<ZoomOut className="h-4 w-4" />
 						</Button>
-						<div className="px-2 text-xs font-medium border-l border-r">
+						<div className="px-2 text-xs font-medium border-l border-r dark:border-gray-700 dark:text-gray-300">
 							{zoomLevel} days
 						</div>
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-8 w-8 p-0 rounded-none"
+							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
 							onClick={zoomIn}
 							disabled={zoomLevel <= 7}
 						>
@@ -446,7 +464,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					<Button
 						variant="outline"
 						size="sm"
-						className="h-8 px-2 flex items-center gap-1"
+						className="h-8 px-2 flex items-center gap-1 dark:bg-gray-800 dark:border-gray-700"
 						onClick={() => setCurrentStartDate(startOfWeek(new Date()))}
 					>
 						<Calendar className="h-3.5 w-3.5" />
@@ -473,24 +491,30 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
             background: #cbd5e1;
             border-radius: 4px;
           }
+          .dark ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+          }
           ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
           }
+          .dark ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+          }
         `}</style>
 				{/* Timeline Header */}
-				<div className="sticky top-0 z-10 bg-white border-b">
+				<div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b dark:border-gray-800">
 					<div className="flex pl-[250px]">
 						{timelineDates.map((date, index) => (
 							<div
 								key={index}
-								className="flex-1 text-center py-2 text-xs font-medium border-r last:border-r-0"
+								className="flex-1 text-center py-2 text-xs font-medium border-r dark:border-gray-800 last:border-r-0"
 								style={{ minWidth: "60px" }}
 							>
-								<div className="text-muted-foreground">
+								<div className="text-muted-foreground dark:text-gray-400">
 									{format(date, "EEE")}
 								</div>
 								<div
-									className={`${isSameDay(date, new Date()) ? "bg-secondary/10 text-secondary rounded-full px-2 py-0.5 inline-block" : ""}`}
+									className={`${isSameDay(date, new Date()) ? "bg-secondary/10 dark:bg-secondary/20 text-secondary dark:text-secondary-foreground rounded-full px-2 py-0.5 inline-block" : "dark:text-gray-300"}`}
 								>
 									{format(date, "d")}
 								</div>
@@ -503,12 +527,12 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				<div className="relative">
 					{/* List rows with tasks */}
 					{lists.map((list) => (
-						<div key={list._id} className="border-b last:border-b-0">
+						<div key={list._id} className="border-b dark:border-gray-800 last:border-b-0">
 							<div className="flex">
 								{/* List name column */}
-								<div className="w-[250px] sticky left-0 bg-white z-10 border-r p-3 flex flex-col justify-center">
-									<div className="font-medium truncate">{list.title}</div>
-									<div className="text-xs text-muted-foreground">
+								<div className="w-[250px] sticky left-0 bg-white dark:bg-gray-900 z-10 border-r dark:border-gray-800 p-3 flex flex-col justify-center">
+									<div className="font-medium truncate dark:text-gray-100">{list.title}</div>
+									<div className="text-xs text-muted-foreground dark:text-gray-400">
 										{tasksByList[list._id]?.length || 0} tasks
 									</div>
 								</div>
@@ -520,7 +544,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 										{timelineDates.map((date, index) => (
 											<div
 												key={index}
-												className={`flex-1 border-r last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5" : index % 2 === 0 ? "bg-gray-50" : ""}`}
+												className={`flex-1 border-r dark:border-gray-800 last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5 dark:bg-secondary/10" : index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800/30" : "dark:bg-gray-900"}`}
 												style={{ minWidth: "60px" }}
 											></div>
 										))}
@@ -537,25 +561,20 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 													style={{ height: "30px" }}
 												>
 													<div
-														className={`absolute top-0 h-full rounded-md border shadow-sm cursor-pointer transition-all hover:shadow-md ${getPriorityColor(task.priority).replace("bg-", "bg-opacity-20 border-")}`}
+														className="absolute top-0 h-full rounded-md border-2 shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]"
 														style={{
 															...style,
-															backgroundColor: getPriorityColor(task.priority)
-																.replace("bg-", "")
-																.replace("500", "100")
-																.replace("400", "100"),
+															backgroundColor: getSolidPriorityColor(task.priority),
+															borderColor: getSolidPriorityColor(task.priority),
 														}}
 														onClick={() => setSelectedTask(task)}
 														onMouseDown={(e) => handleDragStart(e, task)}
 													>
 														<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
-															<div
-																className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority)}`}
-															></div>
-															<span className="ml-1 text-xs font-medium truncate">
+															<span className="text-xs font-semibold truncate text-white drop-shadow-sm">
 																{task.title}
 															</span>
-															<GripHorizontal className="ml-auto h-3 w-3 text-gray-400 opacity-50 hover:opacity-100" />
+															<GripHorizontal className="ml-auto h-3 w-3 text-white/70 opacity-70 hover:opacity-100" />
 														</div>
 													</div>
 												</div>
@@ -570,23 +589,18 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					{/* Dragging task overlay */}
 					{isDragging && draggingTask && (
 						<div
-							className={`absolute rounded-md border shadow-md ${getPriorityColor(draggingTask.priority).replace("bg-", "bg-opacity-20 border-")}`}
+							className="absolute rounded-md border-2 shadow-lg opacity-80"
 							style={Object.assign(
 								{
-									backgroundColor: getPriorityColor(draggingTask.priority)
-										.replace("bg-", "")
-										.replace("500", "100")
-										.replace("400", "100"),
+									backgroundColor: getSolidPriorityColor(draggingTask.priority),
+									borderColor: getSolidPriorityColor(draggingTask.priority),
 									height: "30px",
 								},
 								getDraggingTaskPosition() || {}
 							)}
 						>
 							<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
-								<div
-									className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(draggingTask.priority)}`}
-								></div>
-								<span className="ml-1 text-xs font-medium truncate">
+								<span className="text-xs font-semibold truncate text-white drop-shadow-sm">
 									{draggingTask.title}
 								</span>
 							</div>
@@ -597,40 +611,41 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 
 			{/* Task Details Sidebar */}
 			{selectedTask && (
-				<div className="absolute right-0 top-0 bottom-0 w-[300px] bg-white border-l shadow-lg overflow-hidden z-20 flex flex-col">
+				<div className="fixed right-0 top-[60px] bottom-0 w-[300px] bg-white dark:bg-gray-900 border-l dark:border-gray-800 shadow-lg overflow-hidden z-20 flex flex-col">
 					{/* Fixed Header */}
-					<div className="flex-shrink-0 p-4 border-b bg-white">
-						<div className="flex items-start gap-3">
-							<h3 className="text-lg font-semibold flex-1 min-w-0 break-words pr-2">
-								{selectedTask.title}
-							</h3>
+					<div className="flex-shrink-0 p-4 border-b dark:border-gray-800 bg-white dark:bg-gray-900">
+						<div className="flex items-center justify-between mb-2">
+							<span className="text-xs text-muted-foreground dark:text-gray-400 uppercase tracking-wide">Task Details</span>
 							<Button
-								variant="outline"
+								variant="ghost"
 								size="sm"
-								className="h-8 w-8 p-0 flex-shrink-0 rounded-full hover:bg-gray-100 border-gray-300"
+								className="h-7 w-7 p-0 flex-shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800"
 								onClick={() => setSelectedTask(null)}
 								aria-label="Close task details"
 							>
-								<X className="h-4 w-4" />
+								<X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
 							</Button>
 						</div>
+						<h3 className="text-lg font-semibold dark:text-gray-100">
+							{selectedTask.title}
+						</h3>
 					</div>
 
 					{/* Scrollable Content */}
 					<div className="flex-1 overflow-y-auto p-4">
 						<div className="space-y-4">
 							<div>
-								<div className="text-xs text-muted-foreground mb-1">List</div>
-								<div className="text-sm font-medium">
+								<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">List</div>
+								<div className="text-sm font-medium dark:text-gray-200">
 									{selectedTask.listTitle}
 								</div>
 							</div>
 
 							<div>
-								<div className="text-xs text-muted-foreground mb-1">
+								<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
 									Timeline
 								</div>
-								<div className="text-sm">
+								<div className="text-sm dark:text-gray-200">
 									{format(selectedTask.startDate, "MMM d")} -{" "}
 									{format(selectedTask.endDate, "MMM d, yyyy")}
 								</div>
@@ -638,7 +653,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 
 							{selectedTask.priority && (
 								<div>
-									<div className="text-xs text-muted-foreground mb-1">
+									<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
 										Priority
 									</div>
 									<div
@@ -655,23 +670,23 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 
 							{selectedTask.description && (
 								<div>
-									<div className="text-xs text-muted-foreground mb-1">
+									<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
 										Description
 									</div>
-									<div className="text-sm">{selectedTask.description}</div>
+									<div className="text-sm dark:text-gray-200">{selectedTask.description}</div>
 								</div>
 							)}
 
 							{selectedTask.labels && selectedTask.labels.length > 0 && (
 								<div>
-									<div className="text-xs text-muted-foreground mb-1">
+									<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
 										Labels
 									</div>
 									<div className="flex flex-wrap gap-1">
 										{selectedTask.labels.map((label, index) => (
 											<span
 												key={index}
-												className="px-2 py-0.5 bg-gray-100 text-xs rounded-full"
+												className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 text-xs rounded-full"
 											>
 												{label}
 											</span>
@@ -711,11 +726,11 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 			{/* Empty state */}
 			{tasks.length === 0 && (
 				<div className="flex-1 flex items-center justify-center flex-col p-8">
-					<div className="bg-gray-50 rounded-full p-3 mb-3">
-						<Calendar className="h-6 w-6 text-gray-400" />
+					<div className="bg-gray-50 dark:bg-gray-800 rounded-full p-3 mb-3">
+						<Calendar className="h-6 w-6 text-gray-400 dark:text-gray-500" />
 					</div>
-					<h3 className="text-lg font-medium mb-1">No tasks with due dates</h3>
-					<p className="text-sm text-muted-foreground text-center max-w-md">
+					<h3 className="text-lg font-medium mb-1 dark:text-gray-100">No tasks with due dates</h3>
+					<p className="text-sm text-muted-foreground dark:text-gray-400 text-center max-w-md">
 						Add due dates to your cards to see them in the Gantt chart view.
 					</p>
 				</div>

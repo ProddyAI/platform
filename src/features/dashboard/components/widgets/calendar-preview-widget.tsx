@@ -121,10 +121,10 @@ export const CalendarPreviewWidget = ({
 		<div className="space-y-4">
 			<div className="flex items-center justify-between pr-2">
 				<div className="flex items-center gap-2">
-					<CalendarIcon className="h-5 w-5 text-primary" />
+					<CalendarIcon className="h-5 w-5 text-primary widget-title-icon" />
 					<h3 className="font-medium">Upcoming Events</h3>
 					{!isEditMode && upcomingEvents.length > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge variant="default" className="ml-2 widget-badge">
 							{upcomingEvents.length}
 						</Badge>
 					)}
@@ -136,7 +136,7 @@ export const CalendarPreviewWidget = ({
 						variant="outline"
 						size="sm"
 						onClick={handleViewCalendar}
-						className="border-2"
+						className="border-2 widget-button"
 					>
 						View All
 					</Button>

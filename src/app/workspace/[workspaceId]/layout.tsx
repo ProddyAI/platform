@@ -3,6 +3,7 @@
 import { Loader } from "lucide-react";
 import type { PropsWithChildren } from "react";
 import { useEffect, useState } from "react";
+import Script from "next/script";
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { NavigationListener } from "@/components/navigation-listener";
@@ -68,14 +69,27 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	}, [workspaceId, updateLastActiveWorkspace]);
 
 	return (
-		<MessageSelectionProvider>
-			<WorkspacePresenceTracker workspaceId={workspaceId}>
+		<>
+			<Script id="theme-init" strategy="beforeInteractive">
+				{`
+					try {
+						const theme = localStorage.getItem('theme');
+						if (theme === 'dark') {
+							document.documentElement.classList.add('dark');
+						} else {
+							document.documentElement.classList.remove('dark');
+						}
+					} catch (e) {}
+				`}
+			</Script>
+			<MessageSelectionProvider>
+				<WorkspacePresenceTracker workspaceId={workspaceId}>
 				<div className="h-full flex flex-col">
 					<div className="flex h-full">
 						{/* Fixed-width sidebar with collapse/expand functionality */}
 						<div
 							className={cn(
-								"h-full bg-primary/50 overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+								"h-full bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
 								"transition-all duration-300 ease-in-out flex-shrink-0 relative z-10",
 								isCollapsed ? "w-[70px]" : "w-[280px]"
 							)}
@@ -113,8 +127,9 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<SelectionModal />
 					<NavigationListener />
 				</div>
-			</WorkspacePresenceTracker>
-		</MessageSelectionProvider>
+				</WorkspacePresenceTracker>
+			</MessageSelectionProvider>
+		</>
 	);
 };
 

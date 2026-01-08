@@ -130,10 +130,10 @@ export const MentionsWidget = ({
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pr-2"> 
         <div className="flex items-center gap-2">
-          <AtSign className="h-5 w-5 text-primary dark:text-purple-400" />
+          <AtSign className="h-5 w-5 text-primary widget-title-icon" />
           <h3 className="font-medium">Mentions</h3>
           {!isEditMode && counts && counts.total > 0 && (
-            <Badge variant="default" className="ml-2">
+            <Badge variant="default" className="ml-2 widget-badge">
               {counts.total}
             </Badge>
           )}
@@ -142,7 +142,7 @@ export const MentionsWidget = ({
           controls
         ) : (
           counts && counts.total > 0 && (
-            <Button variant="default" size="sm" onClick={handleMarkAllAsRead}>
+            <Button variant="default" size="sm" className="widget-button" onClick={handleMarkAllAsRead}>
               <CheckCircle className="mr-2 h-4 w-4" />
               Mark all as read
             </Button>
