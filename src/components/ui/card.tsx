@@ -1,96 +1,103 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+	HTMLDivElement,
+	React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
-Card.displayName = "Card"
+	<div
+		ref={ref}
+		className={cn(
+			"rounded-lg border bg-card text-card-foreground shadow-sm",
+			className
+		)}
+		{...props}
+	/>
+));
+Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+	HTMLDivElement,
+	React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
-    {...props}
-  />
-))
-CardHeader.displayName = "CardHeader"
+	<div
+		ref={ref}
+		className={cn("flex flex-col space-y-1.5 p-6", className)}
+		{...props}
+	/>
+));
+CardHeader.displayName = "CardHeader";
 
 type CardTitleProps<T extends React.ElementType = "h3"> = {
-  as?: T;
-  className?: string;
+	as?: T;
+	className?: string;
 } & React.ComponentPropsWithoutRef<T>;
 
 const CardTitle = React.forwardRef(
-  <T extends React.ElementType = "h3">(
-    { as, className, ...props }: CardTitleProps<T>,
-    ref: React.ForwardedRef<HTMLHeadingElement>
-  ) => {
-    const Element = as || "h3";
-    return (
-      <Element
-        ref={ref}
-        className={cn(
-          "text-2xl font-semibold leading-none tracking-tight",
-          className
-        )}
-        {...props}
-      />
-    );
-  }
+	<T extends React.ElementType = "h3">(
+		{ as, className, ...props }: CardTitleProps<T>,
+		ref: React.ForwardedRef<HTMLHeadingElement>
+	) => {
+		const Element = as || "h3";
+		return (
+			<Element
+				ref={ref}
+				className={cn(
+					"text-2xl font-semibold leading-none tracking-tight",
+					className
+				)}
+				{...props}
+			/>
+		);
+	}
 ) as <T extends React.ElementType = "h3">(
-  props: CardTitleProps<T> & { ref?: React.ForwardedRef<HTMLHeadingElement> }
+	props: CardTitleProps<T> & { ref?: React.ForwardedRef<HTMLHeadingElement> }
 ) => React.ReactElement;
 
 // Set displayName using Object.defineProperty for polymorphic component
-Object.defineProperty(CardTitle, 'displayName', {
-  value: 'CardTitle',
-  writable: false,
+Object.defineProperty(CardTitle, "displayName", {
+	value: "CardTitle",
+	writable: false,
 });
 
 const CardDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
+	HTMLParagraphElement,
+	React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-CardDescription.displayName = "CardDescription"
+	<p
+		ref={ref}
+		className={cn("text-sm text-muted-foreground", className)}
+		{...props}
+	/>
+));
+CardDescription.displayName = "CardDescription";
 
 const CardContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+	HTMLDivElement,
+	React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-))
-CardContent.displayName = "CardContent"
+	<div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+));
+CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+	HTMLDivElement,
+	React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
-    {...props}
-  />
-))
-CardFooter.displayName = "CardFooter"
+	<div
+		ref={ref}
+		className={cn("flex items-center p-6 pt-0", className)}
+		{...props}
+	/>
+));
+CardFooter.displayName = "CardFooter";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export {
+	Card,
+	CardHeader,
+	CardFooter,
+	CardTitle,
+	CardDescription,
+	CardContent,
+};

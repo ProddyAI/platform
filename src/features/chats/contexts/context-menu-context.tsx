@@ -46,56 +46,6 @@ export const ContextMenuProvider = ({ children }: ContextMenuProviderProps) => {
 		});
 	}, []);
 
-	// Close context menu when clicking outside or pressing escape
-	useEffect(() => {
-		const handleClickOutside = () => {
-			if (contextMenu.show) {
-				closeContextMenu();
-			}
-		};
-
-		const handleEscape = (e: KeyboardEvent) => {
-			if (e.key === "Escape" && contextMenu.show) {
-				closeContextMenu();
-			}
-		};
-
-		const handleClearContextMenu = () => {
-			closeContextMenu();
-		};
-
-		if (contextMenu.show) {
-			document.addEventListener("click", handleClickOutside);
-			document.addEventListener("keydown", handleEscape);
-		}
-
-		// Always listen for the clear context menu event
-		document.addEventListener("clearContextMenu", handleClearContextMenu);
-
-		return () => {
-			document.removeEventListener("click", handleClickOutside);
-			document.removeEventListener("keydown", handleEscape);
-			document.removeEventListener("clearContextMenu", handleClearContextMenu);
-		};
-	}, [contextMenu.show, closeContextMenu]);
-
-	const openContextMenu = useCallback(
-		(x: number, y: number, messageId?: Id<"messages">) => {
-			// Close any existing context menu first
-			if (contextMenu.show) {
-				closeContextMenu();
-				// Small delay to ensure the previous menu is closed before opening new one
-				setTimeout(() => {
-					openNewContextMenu(x, y, messageId);
-				}, 10);
-			} else {
-				openNewContextMenu(x, y, messageId);
-			}
-		},
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[contextMenu.show, closeContextMenu]
-	);
-
 	const openNewContextMenu = useCallback(
 		(x: number, y: number, messageId?: Id<"messages">) => {
 			// Calculate menu dimensions (approximate)
@@ -143,6 +93,56 @@ export const ContextMenuProvider = ({ children }: ContextMenuProviderProps) => {
 		},
 		[]
 	);
+
+	const openContextMenu = useCallback(
+		(x: number, y: number, messageId?: Id<"messages">) => {
+			// Close any existing context menu first
+			if (contextMenu.show) {
+				closeContextMenu();
+				// Small delay to ensure the previous menu is closed before opening new one
+				setTimeout(() => {
+					openNewContextMenu(x, y, messageId);
+				}, 10);
+			} else {
+				openNewContextMenu(x, y, messageId);
+			}
+		},
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[contextMenu.show, closeContextMenu, openNewContextMenu]
+	);
+
+	// Close context menu when clicking outside or pressing escape
+	useEffect(() => {
+		const handleClickOutside = () => {
+			if (contextMenu.show) {
+				closeContextMenu();
+			}
+		};
+
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && contextMenu.show) {
+				closeContextMenu();
+			}
+		};
+
+		const handleClearContextMenu = () => {
+			closeContextMenu();
+		};
+
+		if (contextMenu.show) {
+			document.addEventListener("click", handleClickOutside);
+			document.addEventListener("keydown", handleEscape);
+		}
+
+		// Always listen for the clear context menu event
+		document.addEventListener("clearContextMenu", handleClearContextMenu);
+
+		return () => {
+			document.removeEventListener("click", handleClickOutside);
+			document.removeEventListener("keydown", handleEscape);
+			document.removeEventListener("clearContextMenu", handleClearContextMenu);
+		};
+	}, [contextMenu.show, closeContextMenu]);
 
 	return (
 		<ContextMenuContext.Provider

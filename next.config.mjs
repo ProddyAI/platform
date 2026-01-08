@@ -148,6 +148,10 @@ const baseConfig = withPWA({
 			},
 		],
 	},
+	env: {
+		// Ensure Convex URL is available in client bundle
+		NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
+	},
 	eslint: {
 		ignoreDuringBuilds: true,
 	},

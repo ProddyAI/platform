@@ -1,11 +1,11 @@
 export interface PieSegment {
-  label: string;
-  value: number;
-  color: string;
-  percentage: number;
-  startAngle: number;
-  endAngle: number;
-  index: number;
+	label: string;
+	value: number;
+	color: string;
+	percentage: number;
+	startAngle: number;
+	endAngle: number;
+	index: number;
 }
 
 export const DEPTH = 12; // Moderate depth for 3D look
@@ -26,23 +26,23 @@ export const OUTER_EDGE_VISIBILITY_THRESHOLD = 0.08; // For outer arc edge
  * @returns SVG path string
  */
 export const createTopPath = (
-  segment: PieSegment,
-  radiusX: number,
-  radiusY: number,
-  centerX: number,
-  centerY: number
+	segment: PieSegment,
+	radiusX: number,
+	radiusY: number,
+	centerX: number,
+	centerY: number
 ): string => {
-  const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
-  const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
-  
-  const startX = centerX + radiusX * Math.cos(startAngleRad);
-  const startY = centerY + radiusY * Math.sin(startAngleRad);
-  const endX = centerX + radiusX * Math.cos(endAngleRad);
-  const endY = centerY + radiusY * Math.sin(endAngleRad);
-  
-  const largeArcFlag = segment.percentage > 50 ? 1 : 0;
-  
-  return `M ${centerX} ${centerY} L ${startX} ${startY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY} Z`;
+	const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
+	const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
+
+	const startX = centerX + radiusX * Math.cos(startAngleRad);
+	const startY = centerY + radiusY * Math.sin(startAngleRad);
+	const endX = centerX + radiusX * Math.cos(endAngleRad);
+	const endY = centerY + radiusY * Math.sin(endAngleRad);
+
+	const largeArcFlag = segment.percentage > 50 ? 1 : 0;
+
+	return `M ${centerX} ${centerY} L ${startX} ${startY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY} Z`;
 };
 
 /**
@@ -57,48 +57,51 @@ export const createTopPath = (
  * @returns Array of path objects with path string and type
  */
 export const createSidePath = (
-  segment: PieSegment,
-  radiusX: number,
-  radiusY: number,
-  centerX: number,
-  centerY: number,
-  depth: number,
-  isHovered = false
-): { path: string; type: 'outer' | 'start' | 'end' }[] => {
-  const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
-  const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
-  
-  const midAngle = (startAngleRad + endAngleRad) / 2;
-  // Improved edge visibility - only show edges that are truly visible from the front
-  const showStartEdge = isHovered || Math.sin(startAngleRad) > EDGE_VISIBILITY_THRESHOLD;
-  const showEndEdge = isHovered || Math.sin(endAngleRad) > EDGE_VISIBILITY_THRESHOLD;
-  const showOuterEdge = isHovered || Math.sin(midAngle) > OUTER_EDGE_VISIBILITY_THRESHOLD;
-  
-  const startX = centerX + radiusX * Math.cos(startAngleRad);
-  const startY = centerY + radiusY * Math.sin(startAngleRad);
-  const endX = centerX + radiusX * Math.cos(endAngleRad);
-  const endY = centerY + radiusY * Math.sin(endAngleRad);
-  
-  const paths: { path: string; type: 'outer' | 'start' | 'end' }[] = [];
-  
-  // Outer edge (arc) with smooth gradient
-  if (showOuterEdge) {
-    const largeArcFlag = segment.percentage > 50 ? 1 : 0;
-    const outerPath = `M ${startX} ${startY} L ${startX} ${startY + depth} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY + depth} L ${endX} ${endY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 0 ${startX} ${startY} Z`;
-    paths.push({ path: outerPath, type: 'outer' });
-  }
-  
-  // Start edge
-  if (showStartEdge) {
-    const startPath = `M ${centerX} ${centerY} L ${startX} ${startY} L ${startX} ${startY + depth} L ${centerX} ${centerY + depth} Z`;
-    paths.push({ path: startPath, type: 'start' });
-  }
-  
-  // End edge
-  if (showEndEdge) {
-    const endPath = `M ${centerX} ${centerY} L ${endX} ${endY} L ${endX} ${endY + depth} L ${centerX} ${centerY + depth} Z`;
-    paths.push({ path: endPath, type: 'end' });
-  }
-  
-  return paths;
+	segment: PieSegment,
+	radiusX: number,
+	radiusY: number,
+	centerX: number,
+	centerY: number,
+	depth: number,
+	isHovered = false
+): { path: string; type: "outer" | "start" | "end" }[] => {
+	const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
+	const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
+
+	const midAngle = (startAngleRad + endAngleRad) / 2;
+	// Improved edge visibility - only show edges that are truly visible from the front
+	const showStartEdge =
+		isHovered || Math.sin(startAngleRad) > EDGE_VISIBILITY_THRESHOLD;
+	const showEndEdge =
+		isHovered || Math.sin(endAngleRad) > EDGE_VISIBILITY_THRESHOLD;
+	const showOuterEdge =
+		isHovered || Math.sin(midAngle) > OUTER_EDGE_VISIBILITY_THRESHOLD;
+
+	const startX = centerX + radiusX * Math.cos(startAngleRad);
+	const startY = centerY + radiusY * Math.sin(startAngleRad);
+	const endX = centerX + radiusX * Math.cos(endAngleRad);
+	const endY = centerY + radiusY * Math.sin(endAngleRad);
+
+	const paths: { path: string; type: "outer" | "start" | "end" }[] = [];
+
+	// Outer edge (arc) with smooth gradient
+	if (showOuterEdge) {
+		const largeArcFlag = segment.percentage > 50 ? 1 : 0;
+		const outerPath = `M ${startX} ${startY} L ${startX} ${startY + depth} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 1 ${endX} ${endY + depth} L ${endX} ${endY} A ${radiusX} ${radiusY} 0 ${largeArcFlag} 0 ${startX} ${startY} Z`;
+		paths.push({ path: outerPath, type: "outer" });
+	}
+
+	// Start edge
+	if (showStartEdge) {
+		const startPath = `M ${centerX} ${centerY} L ${startX} ${startY} L ${startX} ${startY + depth} L ${centerX} ${centerY + depth} Z`;
+		paths.push({ path: startPath, type: "start" });
+	}
+
+	// End edge
+	if (showEndEdge) {
+		const endPath = `M ${centerX} ${centerY} L ${endX} ${endY} L ${endX} ${endY + depth} L ${centerX} ${centerY + depth} Z`;
+		paths.push({ path: endPath, type: "end" });
+	}
+
+	return paths;
 };

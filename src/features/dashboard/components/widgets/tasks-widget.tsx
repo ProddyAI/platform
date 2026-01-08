@@ -1,18 +1,24 @@
 "use client";
 
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CheckSquare, Clock, AlertCircle, CheckCircle2, Loader } from 'lucide-react';
-import { Id } from '@/../convex/_generated/dataModel';
-import { useRouter } from 'next/navigation';
-import { useGetTasks } from '@/features/tasks/api/use-get-tasks';
-import { useGetTaskCategories } from '@/features/tasks/api/use-get-task-categories';
-import { useUpdateTask } from '@/features/tasks/api/use-update-task';
-import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
-import { useState } from 'react';
-import { WidgetCard } from '../shared/widget-card';
+import { formatDistanceToNow } from "date-fns";
+import {
+	AlertCircle,
+	CheckCircle2,
+	CheckSquare,
+	Clock,
+	Loader,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useGetTaskCategories } from "@/features/tasks/api/use-get-task-categories";
+import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
+import { useUpdateTask } from "@/features/tasks/api/use-update-task";
+import { WidgetCard } from "../shared/widget-card";
 
 interface TasksWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -126,109 +132,123 @@ export const TasksWidget = ({
 		);
 	};
 
-  return (
-    <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-2">
-        <div className="flex items-center gap-2">
-          <CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
-          <h3 className="font-medium">Your Tasks</h3>
-          {!isEditMode && sortedTasks.length > 0 && (
-            <Badge variant="default" className="ml-2">
-              {sortedTasks.length}
-            </Badge>
-          )}
-        </div>
-        {isEditMode ? (
-          controls
-        ) : (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
-            >
-              View all
-            </Button>
-        )}
-      </div>
+	return (
+		<div className="space-y-4 pb-4">
+			<div className="flex items-center justify-between pr-2">
+				<div className="flex items-center gap-2">
+					<CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
+					<h3 className="font-medium">Your Tasks</h3>
+					{!isEditMode && sortedTasks.length > 0 && (
+						<Badge variant="default" className="ml-2">
+							{sortedTasks.length}
+						</Badge>
+					)}
+				</div>
+				{isEditMode ? (
+					controls
+				) : (
+					<Button
+						variant="default"
+						size="sm"
+						onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
+					>
+						View all
+					</Button>
+				)}
+			</div>
 
-      {sortedTasks.length > 0 ? (
-        <ScrollArea className="widget-scroll-area">
-          <div className="space-y-2 p-4">
-            {sortedTasks.map((task) => (
-              <WidgetCard
-                key={task._id}
-                className={task.completed ? 'bg-muted/20' : ''}
-                contentClassName="p-4"
-              >
-                <div className="flex items-start gap-3">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 rounded-full flex-shrink-0 mt-0.5"
-                      onClick={() => handleToggleTaskCompletion(task._id, task.completed)}
-                      disabled={updatingTaskId === task._id}
-                    >
-                      {updatingTaskId === task._id ? (
-                        <Loader className="h-4 w-4 animate-spin" />
-                      ) : task.completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
-                      )}
-                    </Button>
-                    <div className="flex-1 space-y-2 min-w-0">
-                      <p className={`font-medium break-words leading-tight ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                        {task.title}
-                      </p>
-                      {getPriorityBadge(task.priority)}
-                      {task.dueDate && (
-                        <div className={`flex items-center text-xs ${new Date(task.dueDate) < new Date() && !task.completed
-                          ? 'text-red-500'
-                          : 'text-muted-foreground'
-                          }`}>
-                          <Clock className="mr-1 h-3 w-3 flex-shrink-0" />
-                          <span>{formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}</span>
-                          {new Date(task.dueDate) < new Date() && !task.completed && (
-                            <AlertCircle className="ml-1 h-3 w-3 flex-shrink-0" />
-                          )}
-                        </div>
-                      )}
-                      <Badge variant="outline" className="border-2 text-xs w-fit">
-                        {getCategoryName(task.categoryId)}
-                      </Badge>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-3 text-xs text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300 flex-shrink-0"
-                      onClick={() => handleViewTask(task._id)}
-                    >
-                      View
-                    </Button>
-                  </div>
-              </WidgetCard>
-            ))}
-          </div>
-        </ScrollArea>
-      ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-          <CheckSquare className="mb-2 h-10 w-10 text-muted-foreground" />
-          <h3 className="text-lg font-medium">No tasks</h3>
-          <p className="text-sm text-muted-foreground">
-            You don't have any tasks created
-          </p>
-          <div className="flex gap-2 mt-4">
-            <Button
-              variant="default"
-              size="sm"
-              className='bg-primary/90 hover:bg-primary'
-              onClick={() => router.push(`/workspace/${workspaceId}/tasks?action=create`)}
-            >
-              Create Task
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+			{sortedTasks.length > 0 ? (
+				<ScrollArea className="widget-scroll-area">
+					<div className="space-y-2 p-4">
+						{sortedTasks.map((task) => (
+							<WidgetCard
+								key={task._id}
+								className={task.completed ? "bg-muted/20" : ""}
+								contentClassName="p-4"
+							>
+								<div className="flex items-start gap-3">
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-6 w-6 rounded-full flex-shrink-0 mt-0.5"
+										onClick={() =>
+											handleToggleTaskCompletion(task._id, task.completed)
+										}
+										disabled={updatingTaskId === task._id}
+									>
+										{updatingTaskId === task._id ? (
+											<Loader className="h-4 w-4 animate-spin" />
+										) : task.completed ? (
+											<CheckCircle2 className="h-5 w-5 text-green-500" />
+										) : (
+											<div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+										)}
+									</Button>
+									<div className="flex-1 space-y-2 min-w-0">
+										<p
+											className={`font-medium break-words leading-tight ${task.completed ? "line-through text-muted-foreground" : ""}`}
+										>
+											{task.title}
+										</p>
+										{getPriorityBadge(task.priority)}
+										{task.dueDate && (
+											<div
+												className={`flex items-center text-xs ${
+													new Date(task.dueDate) < new Date() && !task.completed
+														? "text-red-500"
+														: "text-muted-foreground"
+												}`}
+											>
+												<Clock className="mr-1 h-3 w-3 flex-shrink-0" />
+												<span>
+													{formatDistanceToNow(new Date(task.dueDate), {
+														addSuffix: true,
+													})}
+												</span>
+												{new Date(task.dueDate) < new Date() &&
+													!task.completed && (
+														<AlertCircle className="ml-1 h-3 w-3 flex-shrink-0" />
+													)}
+											</div>
+										)}
+										<Badge variant="outline" className="border-2 text-xs w-fit">
+											{getCategoryName(task.categoryId)}
+										</Badge>
+									</div>
+									<Button
+										variant="ghost"
+										size="sm"
+										className="h-7 px-3 text-xs text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300 flex-shrink-0"
+										onClick={() => handleViewTask(task._id)}
+									>
+										View
+									</Button>
+								</div>
+							</WidgetCard>
+						))}
+					</div>
+				</ScrollArea>
+			) : (
+				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
+					<CheckSquare className="mb-2 h-10 w-10 text-muted-foreground" />
+					<h3 className="text-lg font-medium">No tasks</h3>
+					<p className="text-sm text-muted-foreground">
+						You don't have any tasks created
+					</p>
+					<div className="flex gap-2 mt-4">
+						<Button
+							variant="default"
+							size="sm"
+							className="bg-primary/90 hover:bg-primary"
+							onClick={() =>
+								router.push(`/workspace/${workspaceId}/tasks?action=create`)
+							}
+						>
+							Create Task
+						</Button>
+					</div>
+				</div>
+			)}
+		</div>
+	);
 };
