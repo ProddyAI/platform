@@ -92,6 +92,7 @@ async function verifyMemberOwnership(
  *  - for `authorize`: `redirectUrl`, `connectionId`, and `message`, or
  *  - for `complete`: `connectedAccount` and `message`.
  * On failure returns a JSON error object `{ error: string }` and an appropriate HTTP status.
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
