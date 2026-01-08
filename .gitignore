@@ -13,10 +13,6 @@ npm-debug.log*
 next-env.d.ts
 .vscode/mcp.json
 
-# PWA / build artifacts (IMPORTANT)
 public/sw.js
 public/sw.js.map
 public/worker-*.js
-
-# Ignore vscode AI rules
-.github/instructions/codacy.instructions.md
