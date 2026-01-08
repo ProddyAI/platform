@@ -1,12 +1,16 @@
 "use client";
 
+import { formatDistanceToNow } from "date-fns";
 import {
 	Activity,
 	Bell,
 	HeartPulse,
 	HelpCircle,
-	Map,
+	Loader2,
+	Map as MapIcon,
+	MessageSquare,
 	Search,
+	Sparkles,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
@@ -30,7 +34,9 @@ import { UserButton } from "@/features/auth/components/user-button";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetUnreadMentionsCount } from "@/features/messages/api/use-get-unread-mentions-count";
+import { useAiSearch } from "@/features/workspaces/api/use-ai-search";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
+import { useSearchMessages } from "@/features/workspaces/api/use-search-messages";
 import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -51,10 +57,83 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		"profile" | "notifications"
 	>("profile");
 
+	// Search state
+	const [searchQuery, setSearchQuery] = useState("");
+	const [isAiMode, setIsAiMode] = useState(false);
+	const [aiResults, setAiResults] = useState<{
+		answer: string;
+		sources: Array<{
+			id: Id<"messages">;
+			text: string;
+			channelId: Id<"channels">;
+			channelName: string;
+		}>;
+	} | null>(null);
+	const [isAiLoading, setIsAiLoading] = useState(false);
+
 	const { data: workspace } = useGetWorkspace({ id: workspaceId });
 	const { data: channels } = useGetChannels({ workspaceId });
 	const { data: members } = useGetMembers({ workspaceId });
 	const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
+
+	// Normal search hook
+	const actualQuery = isAiMode ? "" : searchQuery;
+	const { results: searchResults, isLoading: isSearching } = useSearchMessages({
+		workspaceId,
+		query: actualQuery,
+		enabled: !isAiMode && searchQuery.trim().length > 0,
+	});
+
+	// AI search hook
+	const { searchWithAi } = useAiSearch();
+
+	// Handle search input changes
+	const handleSearchChange = (value: string) => {
+		setSearchQuery(value);
+
+		// Detect AI mode
+		if (value.startsWith("/ai ")) {
+			setIsAiMode(true);
+		} else {
+			setIsAiMode(false);
+			setAiResults(null); // Clear AI results when switching to normal mode
+		}
+	};
+
+	// Handle AI search trigger (on Enter key)
+	const handleAiSearch = async () => {
+		if (!isAiMode || !searchQuery.startsWith("/ai ")) return;
+
+		const query = searchQuery.replace("/ai ", "").trim();
+		if (!query) return;
+
+		setIsAiLoading(true);
+		try {
+			const result = await searchWithAi({
+				workspaceId,
+				query,
+			});
+			setAiResults(result);
+		} catch (error) {
+			console.error("AI search error:", error);
+			setAiResults({
+				answer: "Failed to generate AI response. Please try again.",
+				sources: [],
+			});
+		} finally {
+			setIsAiLoading(false);
+		}
+	};
+
+	// Reset search state when dialog closes
+	useEffect(() => {
+		if (!searchOpen) {
+			setSearchQuery("");
+			setIsAiMode(false);
+			setAiResults(null);
+			setIsAiLoading(false);
+		}
+	}, [searchOpen]);
 
 	// Handle URL parameter for opening user settings
 	useEffect(() => {
@@ -82,6 +161,16 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const onMemberClick = (memberId: Id<"members">) => {
 		setSearchOpen(false);
 		router.push(`/workspace/${workspaceId}/member/${memberId}`);
+	};
+
+	const onMessageClick = (
+		messageId: Id<"messages">,
+		channelId: Id<"channels">
+	) => {
+		setSearchOpen(false);
+		router.push(
+			`/workspace/${workspaceId}/channel/${channelId}/chats?highlight=${messageId}`
+		);
 	};
 
 	useEffect(() => {
@@ -118,34 +207,160 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 				<CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
 					<CommandInput
-						placeholder={`Search ${workspace?.name ?? "workspace"}...`}
+						placeholder={
+							isAiMode
+								? "AI Search (press Enter to search)..."
+								: `Search ${workspace?.name ?? "workspace"}... (or type /ai for AI search)`
+						}
+						value={searchQuery}
+						onValueChange={handleSearchChange}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" && isAiMode) {
+								e.preventDefault();
+								handleAiSearch();
+							}
+						}}
 					/>
 					<CommandList>
-						<CommandEmpty>No results found.</CommandEmpty>
+						{/* Loading state */}
+						{(isSearching || isAiLoading) && (
+							<CommandEmpty>
+								<div className="flex items-center justify-center gap-2 py-6">
+									<Loader2 className="size-4 animate-spin" />
+									<span>
+										{isAiLoading ? "Generating AI response..." : "Searching..."}
+									</span>
+								</div>
+							</CommandEmpty>
+						)}
 
-						<CommandGroup heading="Channels">
-							{channels?.map((channel) => (
-								<CommandItem
-									onSelect={() => onChannelClick(channel._id)}
-									key={channel._id}
-								>
-									{channel.name}
-								</CommandItem>
-							))}
-						</CommandGroup>
+						{/* AI Mode Results */}
+						{isAiMode && aiResults && !isAiLoading && (
+							<>
+								<CommandGroup heading="AI Summary">
+									<div className="px-2 py-3 text-sm">
+										<div className="flex items-start gap-2">
+											<Sparkles className="size-4 mt-0.5 text-purple-500 shrink-0" />
+											<p className="text-muted-foreground whitespace-pre-wrap">
+												{aiResults.answer}
+											</p>
+										</div>
+									</div>
+								</CommandGroup>
 
-						<CommandSeparator />
+								{aiResults.sources.length > 0 && (
+									<>
+										<CommandSeparator />
+										<CommandGroup heading="Sources">
+											{aiResults.sources.map((source) => (
+												<CommandItem
+													key={source.id}
+													onSelect={() =>
+														onMessageClick(source.id, source.channelId)
+													}
+												>
+													<MessageSquare className="mr-2 size-4" />
+													<div className="flex flex-col gap-1 flex-1 min-w-0">
+														<span className="text-xs text-muted-foreground">
+															#{source.channelName}
+														</span>
+														<span className="truncate text-sm">
+															{source.text.slice(0, 100)}
+															{source.text.length > 100 ? "..." : ""}
+														</span>
+													</div>
+												</CommandItem>
+											))}
+										</CommandGroup>
+									</>
+								)}
+							</>
+						)}
 
-						<CommandGroup heading="Members">
-							{members?.map((member) => (
-								<CommandItem
-									onSelect={() => onMemberClick(member._id)}
-									key={member._id}
-								>
-									{member.user.name}
-								</CommandItem>
-							))}
-						</CommandGroup>
+						{/* Normal Search Results */}
+						{!isAiMode &&
+							searchQuery &&
+							searchResults.length > 0 &&
+							!isSearching && (
+								<CommandGroup heading="Messages">
+									{searchResults.map((result) => (
+										<CommandItem
+											key={result._id}
+											onSelect={() =>
+												onMessageClick(
+													result._id,
+													result.channelId as Id<"channels">
+												)
+											}
+										>
+											<MessageSquare className="mr-2 size-4" />
+											<div className="flex flex-col gap-1 flex-1 min-w-0">
+												<div className="flex items-center gap-2">
+													<span className="text-xs text-muted-foreground">
+														#{result.channelName}
+													</span>
+													<span className="text-xs text-muted-foreground">
+														{formatDistanceToNow(result._creationTime, {
+															addSuffix: true,
+														})}
+													</span>
+												</div>
+												<span className="truncate text-sm">
+													{result.text.slice(0, 120)}
+													{result.text.length > 120 ? "..." : ""}
+												</span>
+											</div>
+										</CommandItem>
+									))}
+								</CommandGroup>
+							)}
+
+						{/* Empty state for normal search */}
+						{!isAiMode &&
+							searchQuery &&
+							searchResults.length === 0 &&
+							!isSearching && <CommandEmpty>No messages found.</CommandEmpty>}
+
+						{/* AI mode waiting for Enter */}
+						{isAiMode && !aiResults && !isAiLoading && (
+							<CommandEmpty>
+								<div className="flex items-center justify-center gap-2 py-6">
+									<Sparkles className="size-4 text-purple-500" />
+									<span>Press Enter to run AI search</span>
+								</div>
+							</CommandEmpty>
+						)}
+
+						{/* Default state - show channels and members */}
+						{!searchQuery && (
+							<>
+								<CommandEmpty>No results found.</CommandEmpty>
+
+								<CommandGroup heading="Channels">
+									{channels?.map((channel) => (
+										<CommandItem
+											onSelect={() => onChannelClick(channel._id)}
+											key={channel._id}
+										>
+											{channel.name}
+										</CommandItem>
+									))}
+								</CommandGroup>
+
+								<CommandSeparator />
+
+								<CommandGroup heading="Members">
+									{members?.map((member) => (
+										<CommandItem
+											onSelect={() => onMemberClick(member._id)}
+											key={member._id}
+										>
+											{member.user.name}
+										</CommandItem>
+									))}
+								</CommandGroup>
+							</>
+						)}
 					</CommandList>
 				</CommandDialog>
 			</div>
@@ -165,7 +380,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						}}
 					>
 						<div className="relative">
-							<Map className="size-5" />
+							<MapIcon className="size-5" />
 						</div>
 					</Button>
 				</Hint>

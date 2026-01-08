@@ -1,4 +1,5 @@
 import { google } from "@ai-sdk/google";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { api, components } from "./_generated/api";
@@ -44,15 +45,15 @@ type CardResult = SearchResult & {
 
 /**
  * Extracts plain text from rich text message body.
- * 
+ *
  * Handles multiple formats:
  * - Quill Delta JSON format (ops array)
  * - HTML content (strips tags)
  * - Plain text strings
- * 
+ *
  * @param {string} body - The message body in any supported format
  * @returns {string} Plain text content with formatting removed
- * 
+ *
  * @example
  * extractTextFromRichText('{"ops":[{"insert":"Hello"}]}') // Returns: "Hello"
  * extractTextFromRichText('<p>Hello</p>') // Returns: "Hello"
@@ -633,13 +634,13 @@ export const autoIndexCard = action({
 
 /**
  * Retrieves messages from a workspace in descending order (newest first).
- * 
+ *
  * Used by AI search to fetch recent messages for analysis and by bulk indexing
  * operations to populate the search index.
- * 
+ *
  * @param {Id<'workspaces'>} workspaceId - The workspace to fetch messages from
  * @param {number} [limit=100] - Maximum number of messages to return (default: 100)
- * 
+ *
  * @returns {Promise<Array>} Array of message documents ordered by creation time (newest first)
  */
 export const getWorkspaceMessages = query({
@@ -660,14 +661,14 @@ export const getWorkspaceMessages = query({
 
 /**
  * Searches workspace messages by text content with case-insensitive matching.
- * 
+ *
  * Filters messages based on query string and enriches results with channel information.
  * Used by both normal search UI and AI search to find relevant messages.
- * 
+ *
  * @param {Id<'workspaces'>} workspaceId - The workspace to search within
  * @param {string} query - Text to search for in message bodies (case-insensitive)
  * @param {number} [limit=20] - Maximum number of results to return (default: 20)
- * 
+ *
  * @returns {Promise<Array>} Array of search results with message text, channel info, and metadata
  */
 export const searchWorkspaceMessages = query({
@@ -679,24 +680,42 @@ export const searchWorkspaceMessages = query({
 	handler: async (ctx, args) => {
 		const limit = args.limit || 20;
 		const searchQuery = args.query.toLowerCase().trim();
-		
+
 		if (!searchQuery) {
 			return [];
 		}
 
-		// Fetch messages from workspace
+		// Verify user has access to this workspace
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.first();
+
+		if (!member) {
+			throw new Error("User is not a member of this workspace");
+		}
+
+		// Fetch messages from workspace (newest first)
 		const messages = await ctx.db
 			.query("messages")
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
-			.take(100); // Fetch more to filter from
+			.order("desc")
+			.take(200); // Fetch more to filter from
 
 		// Filter and enrich results
 		const results = [];
 		for (const message of messages) {
 			const messageText = extractTextFromRichText(message.body);
-			
+
 			// Case-insensitive text matching
 			if (messageText.toLowerCase().includes(searchQuery)) {
 				// Get channel info
@@ -758,6 +777,95 @@ export const getWorkspaceTasks = query({
 				q.eq("workspaceId", args.workspaceId)
 			)
 			.take(limit);
+	},
+});
+
+/**
+ * Fuzzy/semantic search for workspace messages.
+ *
+ * Falls back to the RAG semantic search to surface related messages when exact
+ * substring matching returns no results. Keeps the result shape aligned with
+ * `searchWorkspaceMessages` so the UI can swap seamlessly.
+ */
+export const fuzzySearchMessages = action({
+	args: {
+		workspaceId: v.id("workspaces"),
+		query: v.string(),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit ?? 20;
+		const searchQuery = args.query.trim();
+
+		if (!searchQuery) {
+			return [];
+		}
+
+		// Verify user access by running query that checks membership
+		// The members.get query already handles auth + membership check
+		const members = await ctx.runQuery(api.members.get, {
+			workspaceId: args.workspaceId,
+		});
+
+		if (!members || members.length === 0) {
+			throw new Error("User is not a member of this workspace");
+		}
+
+		// Semantic search via RAG component
+		const ragResults = await ctx.runAction(api.search.semanticSearch, {
+			workspaceId: args.workspaceId,
+			query: args.query,
+			contentType: "message",
+			limit: limit * 2, // extra to allow dedupe/filtering
+		});
+
+		const seen = new Set<string>();
+		const results: Array<{
+			_id: Id<"messages">;
+			_creationTime: number;
+			text: string;
+			channelId?: Id<"channels">;
+			channelName: string;
+			memberId: Id<"members">;
+			workspaceId: Id<"workspaces">;
+		}> = [];
+
+		for (const rag of ragResults) {
+			if (results.length >= limit) break;
+
+			const message = await ctx.runQuery(api.messages.getById, {
+				id: rag._id as Id<"messages">,
+			});
+
+			if (!message) continue;
+			if (message.workspaceId !== args.workspaceId) continue;
+			if (seen.has(message._id)) continue;
+			seen.add(message._id);
+
+			let channelName = "Direct Message";
+			if (message.channelId) {
+				const channel = await ctx.runQuery(api.channels.getById, {
+					id: message.channelId,
+				});
+				if (channel) {
+					channelName = channel.name;
+				} else {
+					channelName = "Unknown Channel";
+				}
+			}
+
+			results.push({
+				_id: message._id,
+				_creationTime: message._creationTime,
+				text: extractTextFromRichText(message.body),
+				channelId: message.channelId,
+				channelName,
+				memberId: message.memberId,
+				workspaceId: message.workspaceId,
+			});
+		}
+
+		return results;
 	},
 });
 
@@ -916,7 +1024,7 @@ export const searchAllSemantic = action({
 							?.value || "message";
 
 					processedResults.push({
-						_id: result._id as Id<'messages'> | Id<'notes'> | Id<'tasks'>,
+						_id: result._id as Id<"messages"> | Id<"notes"> | Id<"tasks">,
 						_creationTime: Date.now(), // Placeholder
 						type: contentType,
 						text: result.text,
@@ -944,27 +1052,27 @@ export const searchAllSemantic = action({
 
 /**
  * AI-powered message search with natural language understanding.
- * 
- * Searches workspace messages using keyword filtering and generates an AI summary
- * of the most relevant results. Provides direct navigation to source messages.
- * 
+ *
+ * Uses semantic RAG search to find relevant messages and generates an AI summary.
+ * Similar to chatbot implementation but simplified for global search.
+ *
  * @param {Id<'workspaces'>} workspaceId - The workspace to search within
  * @param {string} query - Natural language search query (e.g., "bug reports from last week")
- * 
+ *
  * @returns {Promise<{answer: string, sources: Array}>} Object containing:
  *   - answer: AI-generated summary of the search results
  *   - sources: Array of up to 3 most relevant messages with id, text, and channelId
- * 
+ *
  * @example
- * const result = await aiSearchMessages({ 
- *   workspaceId: "workspace123", 
- *   query: "deployment issues" 
+ * const result = await aiSearchMessages({
+ *   workspaceId: "workspace123",
+ *   query: "deployment issues"
  * });
  * // Returns: { answer: "Summary...", sources: [{id, text, channelId}, ...] }
  */
 export const aiSearchMessages = action({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		query: v.string(),
 	},
 	handler: async (
@@ -972,35 +1080,66 @@ export const aiSearchMessages = action({
 		args
 	): Promise<{
 		answer: string;
-		sources: { id: Id<'messages'>; text: string; channelId: Id<'channels'>; channelName: string }[];
+		sources: {
+			id: Id<"messages">;
+			text: string;
+			channelId: Id<"channels">;
+			channelName: string;
+		}[];
 	}> => {
-		// Use the new searchWorkspaceMessages query for better filtering
-		const searchResults = await ctx.runQuery(api.search.searchWorkspaceMessages, {
-			workspaceId: args.workspaceId,
-			query: args.query,
-			limit: 10, // Get top 10 relevant messages
-		});
-
-		if (searchResults.length === 0) {
-			return {
-				answer: 'No messages found matching your query.',
-				sources: [],
-			};
+		// Try semantic RAG search first (like chatbot does)
+		let ragResults: Array<{ text: string; _id: string }> = [];
+		try {
+			ragResults = await ctx.runAction(api.search.semanticSearch, {
+				workspaceId: args.workspaceId,
+				query: args.query,
+				contentType: "message",
+				limit: 5,
+			});
+		} catch (error) {
+			console.warn(
+				"Semantic search failed, falling back to text search:",
+				error
+			);
 		}
 
-		// Prepare context from search results
-		const context = searchResults
-			.map((result, idx) => `[${idx + 1}] ${result.text}`)
-			.join('\n\n');
+		// Fallback to text search if RAG returns nothing
+		if (ragResults.length === 0) {
+			const textSearchResults = await ctx.runQuery(
+				api.search.searchWorkspaceMessages,
+				{
+					workspaceId: args.workspaceId,
+					query: args.query,
+					limit: 5,
+				}
+			);
+
+			if (textSearchResults.length === 0) {
+				return {
+					answer: "No messages found matching your query.",
+					sources: [],
+				};
+			}
+
+			// Use text search results
+			ragResults = textSearchResults.map((r) => ({
+				text: r.text,
+				_id: r._id,
+			}));
+		}
+
+		// Prepare context for AI
+		const context = ragResults
+			.map((r, idx) => `[${idx + 1}] ${r.text}`)
+			.join("\n\n");
 
 		try {
-			const { generateText } = await import('ai');
+			const { generateText } = await import("ai");
 			const result = await generateText({
-				model: google('gemini-2.0-flash-exp'),
-				prompt: `
-Answer the user's question using ONLY the messages below.
-Provide a concise, direct answer based on the relevant information.
-If the messages don't contain enough information, say so.
+				model: google("gemini-2.0-flash-exp"),
+				prompt: `You are a helpful work assistant. Answer the user's question using ONLY the messages below.
+Provide a concise, direct answer. If the messages don't contain enough information, say so.
+Do NOT output topic/keyword lists or message counts.
 
 Question: ${args.query}
 
@@ -1010,26 +1149,45 @@ ${context}
 				temperature: 0.3,
 			});
 
+			// Get full message details for sources
+			const sourceMessages = await Promise.all(
+				ragResults.slice(0, 3).map(async (r) => {
+					const message = await ctx.runQuery(api.messages.getById, {
+						id: r._id as Id<"messages">,
+					});
+					if (!message) return null;
+
+					let channelName = "Direct Message";
+					if (message.channelId) {
+						const channel = await ctx.runQuery(api.channels.getById, {
+							id: message.channelId,
+						});
+						if (channel) {
+							channelName = channel.name;
+						}
+					}
+
+					return {
+						id: message._id,
+						text: r.text,
+						channelId: message.channelId as Id<"channels">,
+						channelName,
+					};
+				})
+			);
+
 			return {
 				answer: result.text.trim(),
-				sources: searchResults.slice(0, 3).map((result) => ({
-					id: result._id,
-					text: result.text,
-					channelId: result.channelId as Id<'channels'>,
-					channelName: result.channelName,
-				})),
+				sources: sourceMessages.filter(
+					(s): s is NonNullable<typeof s> => s !== null
+				),
 			};
 		} catch (error) {
-			console.error('AI generation error:', error);
+			console.error("AI generation error:", error);
 			// Return search results with a fallback answer
 			return {
-				answer: `I found ${searchResults.length} relevant message(s) about "${args.query}", but couldn't generate a summary. Please check the sources below.`,
-				sources: searchResults.slice(0, 3).map((result) => ({
-					id: result._id,
-					text: result.text,
-					channelId: result.channelId as Id<'channels'>,
-					channelName: result.channelName,
-				})),
+				answer: `I found ${ragResults.length} relevant message(s) about "${args.query}", but couldn't generate a summary. Please check the sources below.`,
+				sources: [],
 			};
 		}
 	},

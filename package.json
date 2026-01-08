@@ -4,6 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "next dev",
+		"next": "next dev",
 		"build": "node scripts/next-build.js build",
 		"convex": "convex dev",
 		"start": "next start",

@@ -4,7 +4,7 @@ import { components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 
 const prosemirrorSync = new ProsemirrorSync<Id<"notes">>({
-  lib: components.prosemirrorSync.lib,
+	lib: components.prosemirrorSync.lib,
 });
 
 export const {

@@ -1,18 +1,18 @@
 "use client";
 
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { AtSign, CheckCircle, Clock, Hash, Loader } from 'lucide-react';
-import { Id } from '@/../convex/_generated/dataModel';
-import { useRouter } from 'next/navigation';
-import { useGetMentionedMessages } from '@/features/messages/api/use-get-mentioned-messages';
-import { useGetUnreadMentionsCount } from '@/features/messages/api/use-get-unread-mentions-count';
-import { useMarkMentionAsRead } from '@/features/messages/api/use-mark-mention-as-read';
-import { useMarkAllMentionsAsRead } from '@/features/messages/api/use-mark-all-mentions-as-read';
-import { formatDistanceToNow } from 'date-fns';
-import { WidgetCard } from '../shared/widget-card';
+import { formatDistanceToNow } from "date-fns";
+import { AtSign, CheckCircle, Clock, Hash, Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useGetMentionedMessages } from "@/features/messages/api/use-get-mentioned-messages";
+import { useGetUnreadMentionsCount } from "@/features/messages/api/use-get-unread-mentions-count";
+import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-mentions-as-read";
+import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
+import { WidgetCard } from "../shared/widget-card";
 
 interface MentionsWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -126,101 +126,112 @@ export const MentionsWidget = ({
 		);
 	}
 
-  return (
-    <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-2"> 
-        <div className="flex items-center gap-2">
-          <AtSign className="h-5 w-5 text-primary dark:text-purple-400" />
-          <h3 className="font-medium">Mentions</h3>
-          {!isEditMode && counts && counts.total > 0 && (
-            <Badge variant="default" className="ml-2">
-              {counts.total}
-            </Badge>
-          )}
-        </div>
-        {isEditMode ? (
-          controls
-        ) : (
-          counts && counts.total > 0 && (
-            <Button variant="default" size="sm" onClick={handleMarkAllAsRead}>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Mark all as read
-            </Button>
-          )
-        )}
-      </div>
+	return (
+		<div className="space-y-4 pb-4">
+			<div className="flex items-center justify-between pr-2">
+				<div className="flex items-center gap-2">
+					<AtSign className="h-5 w-5 text-primary dark:text-purple-400" />
+					<h3 className="font-medium">Mentions</h3>
+					{!isEditMode && counts && counts.total > 0 && (
+						<Badge variant="default" className="ml-2">
+							{counts.total}
+						</Badge>
+					)}
+				</div>
+				{isEditMode
+					? controls
+					: counts &&
+						counts.total > 0 && (
+							<Button variant="default" size="sm" onClick={handleMarkAllAsRead}>
+								<CheckCircle className="mr-2 h-4 w-4" />
+								Mark all as read
+							</Button>
+						)}
+			</div>
 
-      {mentions && mentions.length > 0 ? (
-        <ScrollArea className="widget-scroll-area">
-          <div className="space-y-2 p-4">
-            {mentions.map((mention) => (
-              <WidgetCard key={mention.id}>
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={mention.author.image}
-                        alt={mention.author.name || 'User avatar'}
-                      />
-                      <AvatarFallback>
-                        {mention.author.name ? mention.author.name.charAt(0).toUpperCase() : '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{mention.author.name || 'Unknown User'}</p>
-                          {mention.source.type === 'channel' && (
-                            <Badge variant="outline" className="flex items-center gap-1 border-2">
-                              <Hash className="h-3 w-3" />
-                              {mention.source.name}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <Clock className="mr-1 h-3 w-3" />
-                          {(() => {
-                            try {
-                              // Try to safely format the date
-                              if (mention.timestamp && !isNaN(Number(mention.timestamp))) {
-                                const date = new Date(Number(mention.timestamp));
-                                if (date.toString() !== 'Invalid Date') {
-                                  return formatDistanceToNow(date, { addSuffix: true });
-                                }
-                              }
-                              return 'recently';
-                            } catch (error) {
-                              return 'recently';
-                            }
-                          })()}
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {getMessagePreview(mention.text)}
-                        {mention.text.length > 50 ? '...' : ''}
-                      </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
-                        onClick={() => handleViewMention(mention)}
-                      >
-                        View mention
-                      </Button>
-                    </div>
-                  </div>
-              </WidgetCard>
-            ))}
-          </div>
-        </ScrollArea>
-      ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-          <AtSign className="mb-2 h-10 w-10 text-muted-foreground" />
-          <h3 className="text-lg font-medium">No mentions</h3>
-          <p className="text-sm text-muted-foreground">
-            You haven't been mentioned recently
-          </p>
-        </div>
-      )}
-    </div>
-  );
+			{mentions && mentions.length > 0 ? (
+				<ScrollArea className="widget-scroll-area">
+					<div className="space-y-2 p-4">
+						{mentions.map((mention) => (
+							<WidgetCard key={mention.id}>
+								<div className="flex items-start gap-3">
+									<Avatar className="h-8 w-8">
+										<AvatarImage
+											src={mention.author.image}
+											alt={mention.author.name || "User avatar"}
+										/>
+										<AvatarFallback>
+											{mention.author.name
+												? mention.author.name.charAt(0).toUpperCase()
+												: "?"}
+										</AvatarFallback>
+									</Avatar>
+									<div className="flex-1 space-y-1">
+										<div className="flex items-center justify-between">
+											<div className="flex items-center gap-2">
+												<p className="font-medium">
+													{mention.author.name || "Unknown User"}
+												</p>
+												{mention.source.type === "channel" && (
+													<Badge
+														variant="outline"
+														className="flex items-center gap-1 border-2"
+													>
+														<Hash className="h-3 w-3" />
+														{mention.source.name}
+													</Badge>
+												)}
+											</div>
+											<div className="flex items-center text-xs text-muted-foreground">
+												<Clock className="mr-1 h-3 w-3" />
+												{(() => {
+													try {
+														// Try to safely format the date
+														if (
+															mention.timestamp &&
+															!Number.isNaN(Number(mention.timestamp))
+														) {
+															const date = new Date(Number(mention.timestamp));
+															if (date.toString() !== "Invalid Date") {
+																return formatDistanceToNow(date, {
+																	addSuffix: true,
+																});
+															}
+														}
+														return "recently";
+													} catch (_error) {
+														return "recently";
+													}
+												})()}
+											</div>
+										</div>
+										<p className="text-sm text-muted-foreground">
+											{getMessagePreview(mention.text)}
+											{mention.text.length > 50 ? "..." : ""}
+										</p>
+										<Button
+											variant="ghost"
+											size="sm"
+											className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
+											onClick={() => handleViewMention(mention)}
+										>
+											View mention
+										</Button>
+									</div>
+								</div>
+							</WidgetCard>
+						))}
+					</div>
+				</ScrollArea>
+			) : (
+				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
+					<AtSign className="mb-2 h-10 w-10 text-muted-foreground" />
+					<h3 className="text-lg font-medium">No mentions</h3>
+					<p className="text-sm text-muted-foreground">
+						You haven't been mentioned recently
+					</p>
+				</div>
+			)}
+		</div>
+	);
 };

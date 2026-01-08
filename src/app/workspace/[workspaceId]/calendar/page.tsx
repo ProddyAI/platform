@@ -1,20 +1,19 @@
 "use client";
 
-import { addMonths, getMonth, getYear, subMonths } from 'date-fns';
-import { CalendarIcon, Loader } from 'lucide-react';
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
-
-import Renderer from '@/components/renderer';
-import { Button } from '@/components/ui/button';
-import { useGetCalendarEvents } from '@/features/calendar/api/use-get-calendar-events';
-import { CalendarFilterOptions, EventType } from '@/features/calendar/components/calendar-filter';
-import { CalendarHeader } from '@/features/calendar/components/calendar-header';
-import { useDocumentTitle } from '@/hooks/use-document-title';
-import { useWorkspaceId } from '@/hooks/use-workspace-id';
-import { WorkspaceToolbar } from '../toolbar';
-import { Id } from '@/../convex/_generated/dataModel';
-import { useTrackActivity } from '@/features/reports/hooks/use-track-activity';
+import { addMonths, getMonth, getYear, subMonths } from "date-fns";
+import { CalendarIcon, Loader } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import type { Id } from "@/../convex/_generated/dataModel";
+import Renderer from "@/components/renderer";
+import { Button } from "@/components/ui/button";
+import { useGetCalendarEvents } from "@/features/calendar/api/use-get-calendar-events";
+import type { CalendarFilterOptions } from "@/features/calendar/components/calendar-filter";
+import { CalendarHeader } from "@/features/calendar/components/calendar-header";
+import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
+import { useDocumentTitle } from "@/hooks/use-document-title";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { WorkspaceToolbar } from "../toolbar";
 
 // Define types for calendar events
 interface CalendarEventUser {
@@ -93,20 +92,20 @@ const CalendarPage = () => {
 	// Set document title
 	useDocumentTitle("Calendar");
 
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const workspaceId = useWorkspaceId();
-  
-  // Track user activity and time spent on calendar page
-  useTrackActivity({
-    workspaceId,
-    activityType: 'calendar_view',
-  });
-  
-  const { data: events, isLoading } = useGetCalendarEvents({
-    workspaceId,
-    month: getMonth(currentDate),
-    year: getYear(currentDate),
-  });
+	const [currentDate, setCurrentDate] = useState(new Date());
+	const workspaceId = useWorkspaceId();
+
+	// Track user activity and time spent on calendar page
+	useTrackActivity({
+		workspaceId,
+		activityType: "calendar_view",
+	});
+
+	const { data: events, isLoading } = useGetCalendarEvents({
+		workspaceId,
+		month: getMonth(currentDate),
+		year: getYear(currentDate),
+	});
 
 	// Filter state
 	const [filterOptions, setFilterOptions] = useState<CalendarFilterOptions>({
