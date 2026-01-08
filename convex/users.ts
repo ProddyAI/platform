@@ -15,10 +15,10 @@ export const current = query({
 
 		// Get image URL if user has an image
 		// Check if it's a storage ID or external URL
-		let imageUrl: string | undefined = undefined;
+		let imageUrl: string | undefined;
 		if (user.image) {
 			// If it starts with http, it's an external URL (from OAuth providers)
-			if (user.image.startsWith('http')) {
+			if (user.image.startsWith("http")) {
 				imageUrl = user.image;
 			} else {
 				// Otherwise, it's a Convex storage ID
@@ -27,12 +27,13 @@ export const current = query({
 		}
 
 		// Get banner URL if user has a banner
-		let bannerUrl: string | undefined = undefined;
+		let bannerUrl: string | undefined;
 		if ((user as any).banner) {
-			if ((user as any).banner.startsWith('http')) {
+			if ((user as any).banner.startsWith("http")) {
 				bannerUrl = (user as any).banner;
 			} else {
-				bannerUrl = (await ctx.storage.getUrl((user as any).banner)) || undefined;
+				bannerUrl =
+					(await ctx.storage.getUrl((user as any).banner)) || undefined;
 			}
 		}
 

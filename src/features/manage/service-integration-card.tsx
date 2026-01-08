@@ -175,12 +175,18 @@ export const ServiceIntegrationCard = ({
 				try {
 					errorDetails = await response.json();
 					console.error(`[ServiceCard] API error response:`, errorDetails);
-				} catch (parseError) {
+				} catch (_parseError) {
 					const errorText = await response.text();
-					console.error(`[ServiceCard] Failed to parse error response:`, errorText);
+					console.error(
+						`[ServiceCard] Failed to parse error response:`,
+						errorText
+					);
 					errorDetails = { error: errorText || `HTTP ${response.status}` };
 				}
-				throw new Error(errorDetails.error || `Failed to authorize toolkit (HTTP ${response.status})`);
+				throw new Error(
+					errorDetails.error ||
+						`Failed to authorize toolkit (HTTP ${response.status})`
+				);
 			}
 
 			const result = await response.json();

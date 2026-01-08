@@ -1,15 +1,15 @@
 "use client";
 
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { MessageSquareText, Hash, Clock, Loader } from 'lucide-react';
-import { Id } from '@/../convex/_generated/dataModel';
-import { useRouter } from 'next/navigation';
-import { useGetThreadMessages } from '@/features/messages/api/use-get-thread-messages';
-import { formatDistanceToNow } from 'date-fns';
-import { WidgetCard } from '../shared/widget-card';
+import { formatDistanceToNow } from "date-fns";
+import { Clock, Hash, Loader, MessageSquareText } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useGetThreadMessages } from "@/features/messages/api/use-get-thread-messages";
+import { WidgetCard } from "../shared/widget-card";
 
 interface ThreadRepliesWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -117,108 +117,123 @@ export const ThreadRepliesWidget = ({
 		);
 	}
 
-  return (
-    <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between pr-2">
-        <div className="flex items-center gap-2">
-          <MessageSquareText className="h-5 w-5 text-primary widget-title-icon" />
-          <h3 className="font-medium">Thread Replies</h3>
-          {!isEditMode && threadMessages.length > 0 && (
-            <Badge variant="default" className="ml-2 widget-badge">
-              {threadMessages.length}
-            </Badge>
-          )}
-        </div>
-        {isEditMode ? (
-          controls
-        ) : (
-          <Button
-            variant="default"
-            size="sm"
-            className="widget-button"
-            onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
-          >
-            View All
-          </Button>
-        )}
-      </div>
+	return (
+		<div className="space-y-4 pb-4">
+			<div className="flex items-center justify-between pr-2">
+				<div className="flex items-center gap-2">
+					<MessageSquareText className="h-5 w-5 text-primary dark:text-purple-400" />
+					<h3 className="font-medium">Thread Replies</h3>
+					{!isEditMode && threadMessages.length > 0 && (
+						<Badge variant="default" className="ml-2">
+							{threadMessages.length}
+						</Badge>
+					)}
+				</div>
+				{isEditMode ? (
+					controls
+				) : (
+					<Button
+						variant="default"
+						size="sm"
+						onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
+					>
+						View All
+					</Button>
+				)}
+			</div>
 
-      {threadMessages && threadMessages.length > 0 ? (
-        <ScrollArea className="widget-scroll-area">
-          <div className="space-y-2 p-4">
-            {threadMessages.map((thread) => (
-              <WidgetCard key={thread.message._id.toString()}>
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={thread.currentUser.image}
-                        alt={thread.currentUser.name || 'User avatar'}
-                      />
-                      <AvatarFallback>
-                        {thread.currentUser.name ? thread.currentUser.name.charAt(0).toUpperCase() : '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{thread.currentUser.name || 'Unknown User'}</p>
-                          {thread.context.type === 'channel' && (
-                            <Badge variant="outline" className="flex items-center gap-1 border-2">
-                              <Hash className="h-3 w-3" />
-                              {thread.context.name}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <Clock className="mr-1 h-3 w-3" />
-                          {(() => {
-                            try {
-                              // Try to safely format the date
-                              if (thread.message._creationTime && !isNaN(Number(thread.message._creationTime))) {
-                                const date = new Date(Number(thread.message._creationTime));
-                                if (date.toString() !== 'Invalid Date') {
-                                  return formatDistanceToNow(date, { addSuffix: true });
-                                }
-                              }
-                              return 'recently';
-                            } catch (error) {
-                              return 'recently';
-                            }
-                          })()}
-                        </div>
-                      </div>
-                      <div className="rounded-md bg-muted/30 p-2 text-xs">
-                        <p className="font-medium text-muted-foreground">
-                          Replied to your thread:
-                        </p>
-                        <p className="mt-1">
-                          {getMessagePreview(thread.message.body)}
-                          {thread.message.body.length > 50 ? '...' : ''}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
-                        onClick={() => handleViewThread(thread)}
-                      >
-                        View thread
-                      </Button>
-                    </div>
-                  </div>
-              </WidgetCard>
-            ))}
-          </div>
-        </ScrollArea>
-      ) : (
-        <div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-          <MessageSquareText className="mb-2 h-10 w-10 text-muted-foreground" />
-          <h3 className="text-lg font-medium">No thread replies</h3>
-          <p className="text-sm text-muted-foreground">
-            You don't have any recent thread replies
-          </p>
-        </div>
-      )}
-    </div>
-  );
+			{threadMessages && threadMessages.length > 0 ? (
+				<ScrollArea className="widget-scroll-area">
+					<div className="space-y-2 p-4">
+						{threadMessages.map((thread) => (
+							<WidgetCard key={thread.message._id.toString()}>
+								<div className="flex items-start gap-3">
+									<Avatar className="h-8 w-8">
+										<AvatarImage
+											src={thread.currentUser.image}
+											alt={thread.currentUser.name || "User avatar"}
+										/>
+										<AvatarFallback>
+											{thread.currentUser.name
+												? thread.currentUser.name.charAt(0).toUpperCase()
+												: "?"}
+										</AvatarFallback>
+									</Avatar>
+									<div className="flex-1 space-y-1">
+										<div className="flex items-center justify-between">
+											<div className="flex items-center gap-2">
+												<p className="font-medium">
+													{thread.currentUser.name || "Unknown User"}
+												</p>
+												{thread.context.type === "channel" && (
+													<Badge
+														variant="outline"
+														className="flex items-center gap-1 border-2"
+													>
+														<Hash className="h-3 w-3" />
+														{thread.context.name}
+													</Badge>
+												)}
+											</div>
+											<div className="flex items-center text-xs text-muted-foreground">
+												<Clock className="mr-1 h-3 w-3" />
+												{(() => {
+													try {
+														// Try to safely format the date
+														if (
+															thread.message._creationTime &&
+															!Number.isNaN(
+																Number(thread.message._creationTime)
+															)
+														) {
+															const date = new Date(
+																Number(thread.message._creationTime)
+															);
+															if (date.toString() !== "Invalid Date") {
+																return formatDistanceToNow(date, {
+																	addSuffix: true,
+																});
+															}
+														}
+														return "recently";
+													} catch (_error) {
+														return "recently";
+													}
+												})()}
+											</div>
+										</div>
+										<div className="rounded-md bg-muted/30 p-2 text-xs">
+											<p className="font-medium text-muted-foreground">
+												Replied to your thread:
+											</p>
+											<p className="mt-1">
+												{getMessagePreview(thread.message.body)}
+												{thread.message.body.length > 50 ? "..." : ""}
+											</p>
+										</div>
+										<Button
+											variant="ghost"
+											size="sm"
+											className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
+											onClick={() => handleViewThread(thread)}
+										>
+											View thread
+										</Button>
+									</div>
+								</div>
+							</WidgetCard>
+						))}
+					</div>
+				</ScrollArea>
+			) : (
+				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
+					<MessageSquareText className="mb-2 h-10 w-10 text-muted-foreground" />
+					<h3 className="text-lg font-medium">No thread replies</h3>
+					<p className="text-sm text-muted-foreground">
+						You don't have any recent thread replies
+					</p>
+				</div>
+			)}
+		</div>
+	);
 };

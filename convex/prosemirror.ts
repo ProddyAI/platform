@@ -3,9 +3,9 @@ import { ProsemirrorSync } from "@convex-dev/prosemirror-sync";
 import { components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 
-const prosemirrorSync = new ProsemirrorSync<Id<"notes">>(
-	components.prosemirrorSync
-);
+const prosemirrorSync = new ProsemirrorSync<Id<"notes">>({
+	lib: components.prosemirrorSync.lib,
+});
 
 export const {
 	getSnapshot,

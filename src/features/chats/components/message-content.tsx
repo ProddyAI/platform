@@ -129,7 +129,7 @@ export const MessageContent = ({
 										"text-xs italic animate-fade-in bg-transparent",
 										isAuthor 
 											? "text-white/70" 
-											: "text-muted-foreground dark:text-white/80"
+											: "text-gray-500 dark:text-white/80"
 									)}
 								>
 									(edited)

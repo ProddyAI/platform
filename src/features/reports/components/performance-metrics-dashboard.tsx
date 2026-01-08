@@ -53,10 +53,10 @@ export const PerformanceMetricsDashboard = ({
 		api.analytics.getTaskAnalytics,
 		workspaceId
 			? {
-				workspaceId,
-				startDate,
-				endDate,
-			}
+					workspaceId,
+					startDate,
+					endDate,
+				}
 			: "skip"
 	);
 
@@ -65,10 +65,10 @@ export const PerformanceMetricsDashboard = ({
 		api.analytics.getUserActivitySummary,
 		workspaceId
 			? {
-				workspaceId,
-				startDate,
-				endDate,
-			}
+					workspaceId,
+					startDate,
+					endDate,
+				}
 			: "skip"
 	);
 
@@ -119,25 +119,49 @@ export const PerformanceMetricsDashboard = ({
 	const _taskPriorityData = useMemo(() => {
 		if (!taskData) return [];
 
-    return [
-      { label: 'High', value: taskData.priorityCounts.high, color: '#0ea5e9' },
-      { label: 'Medium', value: taskData.priorityCounts.medium, color: '#38bdf8' },
-      { label: 'Low', value: taskData.priorityCounts.low, color: '#7dd3fc' },
-    ].filter(item => item.value > 0);
-  }, [taskData]);
+		return [
+			{ label: "High", value: taskData.priorityCounts.high, color: "#0ea5e9" },
+			{
+				label: "Medium",
+				value: taskData.priorityCounts.medium,
+				color: "#38bdf8",
+			},
+			{ label: "Low", value: taskData.priorityCounts.low, color: "#7dd3fc" },
+		].filter((item) => item.value > 0);
+	}, [taskData]);
 
 	// Mock data for task status distribution
 	const taskStatusData = useMemo(() => {
 		if (!taskData) return [];
 
-    return [
-      { label: 'Completed', value: taskData.statusCounts.completed, color: '#0ea5e9' },
-      { label: 'In Progress', value: taskData.statusCounts.in_progress, color: '#38bdf8' },
-      { label: 'Not Started', value: taskData.statusCounts.not_started, color: '#7dd3fc' },
-      { label: 'On Hold', value: taskData.statusCounts.on_hold, color: '#bae6fd' },
-      { label: 'Cancelled', value: taskData.statusCounts.cancelled, color: '#e0f2fe' },
-    ].filter(item => item.value > 0);
-  }, [taskData]);
+		return [
+			{
+				label: "Completed",
+				value: taskData.statusCounts.completed,
+				color: "#0ea5e9",
+			},
+			{
+				label: "In Progress",
+				value: taskData.statusCounts.in_progress,
+				color: "#38bdf8",
+			},
+			{
+				label: "Not Started",
+				value: taskData.statusCounts.not_started,
+				color: "#7dd3fc",
+			},
+			{
+				label: "On Hold",
+				value: taskData.statusCounts.on_hold,
+				color: "#bae6fd",
+			},
+			{
+				label: "Cancelled",
+				value: taskData.statusCounts.cancelled,
+				color: "#e0f2fe",
+			},
+		].filter((item) => item.value > 0);
+	}, [taskData]);
 
 	// Mock data for task completion trend
 	const taskCompletionTrend = useMemo(() => {
@@ -354,30 +378,30 @@ export const PerformanceMetricsDashboard = ({
 							</CardContent>
 						</Card>
 
-            <Card className="flex flex-col">
-              <CardHeader>
-                <CardTitle>Task Status Distribution</CardTitle>
-                <CardDescription>
-                  Current status of all tasks
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 min-h-0">
-                <div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
-                  {taskStatusData.length > 0 ? (
-                    <PieChart
-                      data={taskStatusData}
-                      size={380}
-                      formatValue={(value) => `${value} tasks`}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
-                      <p className="text-muted-foreground">No task data available</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+						<Card className="flex flex-col">
+							<CardHeader>
+								<CardTitle>Task Status Distribution</CardTitle>
+								<CardDescription>Current status of all tasks</CardDescription>
+							</CardHeader>
+							<CardContent className="flex-1 min-h-0">
+								<div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
+									{taskStatusData.length > 0 ? (
+										<PieChart
+											data={taskStatusData}
+											size={380}
+											formatValue={(value) => `${value} tasks`}
+										/>
+									) : (
+										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+											<p className="text-muted-foreground">
+												No task data available
+											</p>
+										</div>
+									)}
+								</div>
+							</CardContent>
+						</Card>
+					</div>
 
 					<Card className="flex flex-col">
 						<CardHeader>

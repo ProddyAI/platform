@@ -150,7 +150,9 @@ export const SignUpCard = ({
 
 					<Button
 						disabled={pending}
-						onClick={() => { handleOAuthSignUp("github"); }}
+						onClick={() => {
+							handleOAuthSignUp("github");
+						}}
 						variant="outline"
 						size="lg"
 						className="relative w-full transition-all duration-300 hover:shadow-md group"

@@ -94,27 +94,27 @@ async function verifyMemberOwnership(
  * On failure returns a JSON error object `{ error: string }` and an appropriate HTTP status.
  */
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
+	try {
+		const body = await req.json();
 
-    const { action, userId, toolkit, workspaceId, memberId } = body;
+		const { action, userId, toolkit, workspaceId, memberId } = body;
 
-    if (!userId || !toolkit || !workspaceId) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 },
-      );
-    }
+		if (!userId || !toolkit || !workspaceId) {
+			return NextResponse.json(
+				{ error: "Missing required fields" },
+				{ status: 400 }
+			);
+		}
 
-    const { apiClient } = initializeComposio();
+		const { apiClient } = initializeComposio();
 
-    if (action === "authorize") {
+		if (action === "authorize") {
 			// Verify ownership: ensure the authenticated user has permission to act on this memberId
 			if (!memberId) {
 				console.error("[AgentAuth] Missing memberId for authorization");
 				return NextResponse.json(
 					{ error: "Missing memberId" },
-					{ status: 400 },
+					{ status: 400 }
 				);
 			}
 
@@ -124,77 +124,77 @@ export async function POST(req: NextRequest) {
 				return verifyResult.response;
 			}
 
-      const entityId = `member_${memberId}`;
+			const entityId = `member_${memberId}`;
 
-      try {
-        // Step 1: Create entity and initiate connection using the API client
-        const connection = await apiClient.createConnection(entityId, toolkit);
+			try {
+				// Step 1: Create entity and initiate connection using the API client
+				const connection = await apiClient.createConnection(entityId, toolkit);
 
-        // The API returns a redirectUrl for OAuth
-        const redirectUrl = connection.redirectUrl;
+				// The API returns a redirectUrl for OAuth
+				const redirectUrl = connection.redirectUrl;
 
-        if (!redirectUrl) {
-          console.error("No redirect URL received from Composio:", connection);
-          return NextResponse.json(
-            { error: "No redirect URL received from authorization" },
-            { status: 400 },
-          );
-        }
+				if (!redirectUrl) {
+					console.error("No redirect URL received from Composio:", connection);
+					return NextResponse.json(
+						{ error: "No redirect URL received from authorization" },
+						{ status: 400 }
+					);
+				}
 
-        // Store auth config in database for tracking
-        if (memberId) {
-          try {
-            // Store the auth config linked to this toolkit (persist the real authConfigId)
-            const { APP_CONFIGS } = await import("@/lib/composio-config");
-            const appKey = toolkit.toUpperCase() as keyof typeof APP_CONFIGS;
-            const toolkitAuthConfigId = APP_CONFIGS[appKey]?.authConfigId;
+				// Store auth config in database for tracking
+				if (memberId) {
+					try {
+						// Store the auth config linked to this toolkit (persist the real authConfigId)
+						const { APP_CONFIGS } = await import("@/lib/composio-config");
+						const appKey = toolkit.toUpperCase() as keyof typeof APP_CONFIGS;
+						const toolkitAuthConfigId = APP_CONFIGS[appKey]?.authConfigId;
 
-            // Only store auth config if authConfigId is available
-            if (toolkitAuthConfigId) {
-              await convex.mutation(api.integrations.storeAuthConfig, {
-                workspaceId: workspaceId as Id<"workspaces">,
-                memberId: memberId as Id<"members">,
-                toolkit: toolkit as any,
-                name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
-                type: "use_composio_managed_auth",
-                composioAuthConfigId: toolkitAuthConfigId,
-                isComposioManaged: true,
-                createdBy: memberId as Id<"members">,
-              });
-            } else {
-              console.warn(
-                `[AgentAuth] No auth config ID found for ${toolkit}`,
-              );
-            }
-          } catch (error) {
-            console.warn("Failed to store auth config:", error);
-          }
-        }
+						// Only store auth config if authConfigId is available
+						if (toolkitAuthConfigId) {
+							await convex.mutation(api.integrations.storeAuthConfig, {
+								workspaceId: workspaceId as Id<"workspaces">,
+								memberId: memberId as Id<"members">,
+								toolkit: toolkit as any,
+								name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
+								type: "use_composio_managed_auth",
+								composioAuthConfigId: toolkitAuthConfigId,
+								isComposioManaged: true,
+								createdBy: memberId as Id<"members">,
+							});
+						} else {
+							console.warn(
+								`[AgentAuth] No auth config ID found for ${toolkit}`
+							);
+						}
+					} catch (error) {
+						console.warn("Failed to store auth config:", error);
+					}
+				}
 
-        return NextResponse.json({
-          success: true,
-          redirectUrl,
-          connectionId: connection.connectionId || connection.id,
-          message: `Redirect user to ${toolkit} authorization`,
-        });
-      } catch (error) {
-        console.error("Authorization error:", error);
-        return NextResponse.json(
-          {
-            error: `Failed to authorize toolkit: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-          { status: 400 },
-        );
-      }
-    }
+				return NextResponse.json({
+					success: true,
+					redirectUrl,
+					connectionId: connection.connectionId || connection.id,
+					message: `Redirect user to ${toolkit} authorization`,
+				});
+			} catch (error) {
+				console.error("Authorization error:", error);
+				return NextResponse.json(
+					{
+						error: `Failed to authorize toolkit: ${error instanceof Error ? error.message : "Unknown error"}`,
+					},
+					{ status: 400 }
+				);
+			}
+		}
 
-    if (action === "complete") {
+		if (action === "complete") {
 			// Verify ownership: ensure the authenticated user has permission to act on this memberId
 			if (!memberId) {
 				console.error("[AgentAuth] Missing memberId for connection completion");
 				return NextResponse.json(
 					{ error: "Missing memberId" },
-					{ status: 400 },
+					{ status: 400 }
 				);
 			}
 
@@ -204,117 +204,116 @@ export async function POST(req: NextRequest) {
 				return verifyResult.response;
 			}
 
-      // Use member-scoped entity ID for user-specific connections
-      const entityId = `member_${memberId}`;
+			// Use member-scoped entity ID for user-specific connections
+			const entityId = `member_${memberId}`;
 
-      try {
-        // Step 2: Get connections to verify connection using API client
-        const connectionsResponse = await apiClient.getConnections(entityId);
-        const connectedAccounts = connectionsResponse.items || [];
+			try {
+				// Step 2: Get connections to verify connection using API client
+				const connectionsResponse = await apiClient.getConnections(entityId);
+				const connectedAccounts = connectionsResponse.items || [];
 
-        // Find the most recent connection for this toolkit
-        const normalizedToolkit = String(toolkit ?? "").toLowerCase();
-        const connectedAccount =
-          connectedAccounts.find((account: any) => {
-            // Normalize account fields for comparison
-            const appName = String(account.appName ?? "").toLowerCase();
-            const integrationId = String(
-              account.integrationId ?? "",
-            ).toLowerCase();
-            const slug = String(account.slug ?? "").toLowerCase();
+				// Find the most recent connection for this toolkit
+				const normalizedToolkit = String(toolkit ?? "").toLowerCase();
+				const connectedAccount =
+					connectedAccounts.find((account: any) => {
+						// Normalize account fields for comparison
+						const appName = String(account.appName ?? "").toLowerCase();
+						const integrationId = String(
+							account.integrationId ?? ""
+						).toLowerCase();
+						const slug = String(account.slug ?? "").toLowerCase();
 
-            // Try to match by appName, integrationId, or slug
-            return (
-              appName === normalizedToolkit ||
-              integrationId === normalizedToolkit ||
-              slug === normalizedToolkit
-            );
-          }) || connectedAccounts[0]; // Fallback to most recent if no exact match
+						// Try to match by appName, integrationId, or slug
+						return (
+							appName === normalizedToolkit ||
+							integrationId === normalizedToolkit ||
+							slug === normalizedToolkit
+						);
+					}) || connectedAccounts[0]; // Fallback to most recent if no exact match
 
-        if (!connectedAccount) {
-          return NextResponse.json(
-            { error: "No connected account found" },
-            { status: 404 },
-          );
-        }
+				if (!connectedAccount) {
+					return NextResponse.json(
+						{ error: "No connected account found" },
+						{ status: 404 }
+					);
+				}
 
-        // Store connected account in database
-        if (memberId) {
-          try {
-            // Get or create auth config for this toolkit
-            let authConfigId;
-            try {
-              const existingAuthConfig = await convex.query(
-                api.integrations.getAuthConfigByToolkit,
-                {
-                  workspaceId: workspaceId as Id<"workspaces">,
-                  toolkit: toolkit as any,
-                },
-              );
-              authConfigId = existingAuthConfig?._id;
-            } catch (error) {
-              // Auth config doesn't exist, create it
-            }
+				// Store connected account in database
+				if (memberId) {
+					try {
+						// Get or create auth config for this toolkit
+						let authConfigId;
+						try {
+							const existingAuthConfig = await convex.query(
+								api.integrations.getAuthConfigByToolkit,
+								{
+									workspaceId: workspaceId as Id<"workspaces">,
+									toolkit: toolkit as any,
+								}
+							);
+							authConfigId = existingAuthConfig?._id;
+						} catch (_error) {
+							// Auth config doesn't exist, create it
+						}
 
-            if (!authConfigId) {
-              authConfigId = await convex.mutation(
-                api.integrations.storeAuthConfig,
-                {
-                  workspaceId: workspaceId as Id<"workspaces">,
-                  memberId: memberId as Id<"members">,
-                  toolkit: toolkit as any,
-                  name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
-                  type: "use_composio_managed_auth",
-                  composioAuthConfigId: connectedAccount.id,
-                  isComposioManaged: true,
-                  createdBy: memberId as Id<"members">,
-                },
-              );
-            }
+						if (!authConfigId) {
+							authConfigId = await convex.mutation(
+								api.integrations.storeAuthConfig,
+								{
+									workspaceId: workspaceId as Id<"workspaces">,
+									memberId: memberId as Id<"members">,
+									toolkit: toolkit as any,
+									name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
+									type: "use_composio_managed_auth",
+									composioAuthConfigId: connectedAccount.id,
+									isComposioManaged: true,
+									createdBy: memberId as Id<"members">,
+								}
+							);
+						}
 
-            // Store connected account
-            // Use member-scoped entity ID for user-specific connections
-            await convex.mutation(api.integrations.storeConnectedAccount, {
-              workspaceId: workspaceId as Id<"workspaces">,
-              memberId: memberId as Id<"members">,
-              authConfigId: authConfigId,
-              userId: entityId,
-              composioAccountId: connectedAccount.id,
-              toolkit: toolkit as any, // Toolkit type validation
-              status: "ACTIVE",
-              metadata: connectedAccount,
-              connectedBy: memberId as Id<"members">,
-            });
+						// Store connected account
+						// Use member-scoped entity ID for user-specific connections
+						await convex.mutation(api.integrations.storeConnectedAccount, {
+							workspaceId: workspaceId as Id<"workspaces">,
+							memberId: memberId as Id<"members">,
+							authConfigId: authConfigId,
+							userId: entityId,
+							composioAccountId: connectedAccount.id,
+							toolkit: toolkit as any, // Toolkit type validation
+							status: "ACTIVE",
+							metadata: connectedAccount,
+							connectedBy: memberId as Id<"members">,
+						});
+					} catch (error) {
+						console.warn("Failed to store connected account:", error);
+					}
+				}
 
-          } catch (error) {
-            console.warn("Failed to store connected account:", error);
-          }
-        }
+				return NextResponse.json({
+					success: true,
+					connectedAccount,
+					message: `${toolkit} connected successfully`,
+				});
+			} catch (error) {
+				console.error("Connection completion error:", error);
+				return NextResponse.json(
+					{
+						error: `Failed to complete connection: ${error instanceof Error ? error.message : "Unknown error"}`,
+					},
+					{ status: 500 }
+				);
+			}
+		}
 
-        return NextResponse.json({
-          success: true,
-          connectedAccount,
-          message: `${toolkit} connected successfully`,
-        });
-      } catch (error) {
-        console.error("Connection completion error:", error);
-        return NextResponse.json(
-          {
-            error: `Failed to complete connection: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-          { status: 500 },
-        );
-      }
-    }
-
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error) {
-    console.error("[AgentAuth] Error:", error);
-    return NextResponse.json(
-      { error: "AgentAuth operation failed" },
-      { status: 500 },
-    );
-  }
+		return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+	} catch (error) {
+		console.error("[AgentAuth] Error:", error);
+		return NextResponse.json(
+			{ error: "AgentAuth operation failed" },
+			{ status: 500 }
+		);
+	}
 }
 
 /**
