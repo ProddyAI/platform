@@ -7,16 +7,33 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 interface UseChannelPresenceProps {
-	workspaceId: Id<"workspaces">;
-	channelId: Id<"channels">;
+	workspaceId?: Id<"workspaces">;
+	channelId?: Id<"channels">;
+}
+
+export interface UseChannelPresenceReturn {
+	presenceState: Array<{
+		userId: string;
+		online: boolean;
+		user: {
+			name: string;
+			image?: string;
+		};
+		memberId?: Id<"members">;
+	}>;
+	isOnline: boolean;
+	onlineCount: number;
 }
 
 export const useChannelPresence = ({
 	workspaceId,
 	channelId,
-}: UseChannelPresenceProps) => {
+}: UseChannelPresenceProps): UseChannelPresenceReturn => {
 	const currentUser = useQuery(api.users.current);
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(
+		api.members.get,
+		workspaceId ? { workspaceId } : "skip"
+	);
 
 	const userIdForHook = (currentUser?._id as string | undefined) || "anonymous";
 
@@ -26,7 +43,7 @@ export const useChannelPresence = ({
 			list: api.presence.list,
 			disconnect: api.presence.disconnect,
 		},
-		`channel-${channelId}`,
+		channelId ? `channel-${channelId}` : "channel-unknown",
 		userIdForHook
 	);
 
@@ -35,17 +52,19 @@ export const useChannelPresence = ({
 			const member = members?.find((m) => m.userId === presence.userId);
 			return {
 				...presence,
-				user: member?.user || {
-					name: currentUser?.name || "Anonymous",
-					image: currentUser?.image,
-				},
+				user: member?.user
+					? {
+							name: member.user.name || "Unknown User",
+							...(member.user.image ? { image: member.user.image } : {}),
+						}
+					: { name: "Unknown User" },
 				memberId: member?._id,
 			};
 		}) || [];
 
 	return {
 		presenceState: enrichedPresence,
-		isOnline: (presenceState?.length || 0) > 0,
-		onlineCount: presenceState?.length || 0,
+		isOnline: enrichedPresence.length > 0,
+		onlineCount: enrichedPresence.length,
 	};
 };

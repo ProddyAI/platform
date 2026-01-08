@@ -28,7 +28,7 @@ export function normalizeMermaidCode(input: string): string {
 export async function convertMermaidToExcalidrawScene(
 	mermaidCode: string
 ): Promise<{
-	elements: any[];
+	elements: unknown[];
 	files: unknown;
 }> {
 	// This function is used from client-only flows, but the module can still be
@@ -48,13 +48,37 @@ export async function convertMermaidToExcalidrawScene(
 	]);
 
 	// parseMermaidToExcalidraw returns element skeletons + optional files.
-	const { elements, files } = await (
-		mermaidToExcalidraw as any
-	).parseMermaidToExcalidraw(code, {
-		fontSize: 20,
-	});
+	let elements: unknown[] | undefined;
+	let files: unknown;
+	try {
+		const parserModule = mermaidToExcalidraw as unknown as {
+			parseMermaidToExcalidraw?: (
+				mermaidCode: string,
+				options?: { fontSize?: number }
+			) => Promise<{ elements?: unknown[]; files?: unknown }>;
+		};
+		if (typeof parserModule.parseMermaidToExcalidraw !== "function") {
+			throw new Error("Mermaid parser is not available");
+		}
+		({ elements, files } = await parserModule.parseMermaidToExcalidraw(code, {
+			fontSize: 20,
+		}));
+	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		throw new Error(`Failed to parse Mermaid diagram: ${message}`);
+	}
 
-	const excalidrawElements = (excalidraw as any).convertToExcalidrawElements(
+	const excalidrawModule = excalidraw as unknown as {
+		convertToExcalidrawElements?: (
+			elements: unknown[] | null,
+			options?: { regenerateIds?: boolean }
+		) => unknown[];
+	};
+	if (typeof excalidrawModule.convertToExcalidrawElements !== "function") {
+		throw new Error("Excalidraw converter is not available");
+	}
+
+	const excalidrawElements = excalidrawModule.convertToExcalidrawElements(
 		elements ?? null,
 		{
 			regenerateIds: true,

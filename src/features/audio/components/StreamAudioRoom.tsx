@@ -1,12 +1,11 @@
 import {
 	ParticipantsAudio,
-	SfuModels,
 	StreamCall,
 	StreamVideo,
 	type StreamVideoParticipant,
 	useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { Loader2, Phone, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,22 +35,14 @@ export const StreamAudioRoom = ({
 	const [isLeavingConfirmed, setIsLeavingConfirmed] = useState(false);
 
 	// Use our custom hook to manage the audio room
-	const {
-		client,
-		call,
-		currentUser,
-		isConnecting,
-		isConnected,
-		error,
-		connectToAudioRoom,
-		disconnectFromAudioRoom,
-	} = useAudioRoom({
-		roomId,
-		workspaceId,
-		channelId,
-		canvasName,
-		shouldConnect,
-	});
+	const { client, call, currentUser, isConnecting, isConnected, error } =
+		useAudioRoom({
+			roomId,
+			workspaceId,
+			channelId,
+			canvasName,
+			shouldConnect,
+		});
 
 	// Allow other parts of the UI (e.g. Excalidraw toolbar) to toggle audio.
 	useEffect(() => {
@@ -97,7 +88,7 @@ export const StreamAudioRoom = ({
 	};
 
 	// Function to actually leave audio room after confirmation
-	const confirmLeaveAudio = async () => {
+	const confirmLeaveAudio = useCallback(async () => {
 		if (isLeavingConfirmed) return;
 
 		try {
@@ -116,14 +107,14 @@ export const StreamAudioRoom = ({
 		} finally {
 			setIsLeavingConfirmed(false);
 		}
-	};
+	}, [isLeavingConfirmed]);
 
 	// Function to cancel leave confirmation
-	const cancelLeaveAudio = () => {
+	const cancelLeaveAudio = useCallback(() => {
 		if (!isLeavingConfirmed) {
 			setShowLeaveConfirmation(false);
 		}
-	};
+	}, [isLeavingConfirmed]);
 
 	// Handle keyboard events for confirmation dialog
 	useEffect(() => {
@@ -313,11 +304,7 @@ const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 	const { useParticipants, useLocalParticipant } = useCallStateHooks();
 	const participants = useParticipants();
 	const localParticipant = useLocalParticipant();
-	const [isLeaving, _setIsLeaving] = useState(false);
-
-	// Check if audio is published
-	const _hasAudio = (p: StreamVideoParticipant) =>
-		p.publishedTracks.includes(SfuModels.TrackType.AUDIO);
+	const [isLeaving, setIsLeaving] = useState(false);
 
 	useEffect(() => {
 		if (process.env.NODE_ENV !== "development") return;
@@ -343,7 +330,9 @@ const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 	// Handle leave audio with confirmation
 	const handleLeaveWithConfirmation = () => {
 		if (!onLeaveAudio || isLeaving) return;
+		setIsLeaving(true);
 		onLeaveAudio();
+		queueMicrotask(() => setIsLeaving(false));
 	};
 
 	return (

@@ -10,6 +10,13 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AudioControlButton } from "./AudioControlButton";
 
+function playAudioElement(element: HTMLAudioElement | null) {
+	if (!element) return;
+	void element.play().catch((err) => {
+		console.warn("Audio playback blocked:", err);
+	});
+}
+
 export const AudioToolbarButton = () => {
 	const call = useCall();
 	const { useMicrophoneState, useHasPermissions } = useCallStateHooks();
@@ -30,7 +37,9 @@ export const AudioToolbarButton = () => {
 					audio: true,
 				});
 				setMicPermissionError(false);
-				devices.getTracks().forEach((track) => track.stop());
+				devices.getTracks().forEach((track) => {
+					track.stop();
+				});
 			} catch (error) {
 				console.error("Microphone permission error:", error);
 				setMicPermissionError(true);
@@ -69,9 +78,7 @@ export const AudioToolbarButton = () => {
 
 				// When unmuted, explicitly call play() to satisfy autoplay restrictions.
 				if (!speakerMuted) {
-					void (audio as HTMLAudioElement).play().catch((err) => {
-						console.warn("Audio playback blocked:", err);
-					});
+					playAudioElement(audio as HTMLAudioElement);
 				}
 			});
 		};
@@ -156,9 +163,7 @@ export const AudioToolbarButton = () => {
 
 				// When unmuting, explicitly call play() to satisfy autoplay restrictions.
 				if (!nextMuted) {
-					void (audio as HTMLAudioElement).play().catch((err) => {
-						console.warn("Audio playback blocked:", err);
-					});
+					playAudioElement(audio as HTMLAudioElement);
 				}
 			});
 

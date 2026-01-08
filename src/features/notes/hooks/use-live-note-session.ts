@@ -5,6 +5,8 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useOthers, useSelf } from "@/../liveblocks.config";
 
+const DUMMY_NOTE_ID = "kn7cvx952gp794j4vzvxxqqgk57k9yhh";
+
 interface UseLiveNoteSessionOptions {
 	noteId: Id<"notes">;
 	noteTitle: string;
@@ -48,21 +50,12 @@ export const useLiveNoteSession = ({
 
 	const announceLiveSession = useCallback(async () => {
 		try {
-			if (!workspaceId || !channelId) {
-				console.warn(
-					"Cannot announce live session: missing workspace or channel ID"
-				);
-				return;
-			}
+			if (!workspaceId || !channelId) return;
 
 			// Don't announce for dummy note IDs
-			if (
-				noteId.toString().includes("dummy") ||
-				noteId === "kn7cvx952gp794j4vzvxxqqgk57k9yhh"
-			) {
-				console.log("Skipping announcement for dummy note ID");
+			const noteIdString = noteId.toString();
+			if (noteIdString === DUMMY_NOTE_ID || /^dummy/i.test(noteIdString))
 				return;
-			}
 
 			// Create a message announcing the live session
 			const messageData = {
@@ -79,8 +72,7 @@ export const useLiveNoteSession = ({
 			});
 
 			toast.success("Live note session announced in chat");
-		} catch (error) {
-			console.error("Failed to announce live session:", error);
+		} catch (_error) {
 			toast.error("Failed to announce live session");
 		}
 	}, [noteId, noteTitle, participants, workspaceId, channelId, createMessage]);

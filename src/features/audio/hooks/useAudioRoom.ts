@@ -21,6 +21,10 @@ interface UseAudioRoomProps {
 
 const STREAM_DEVICE_ID_STORAGE_KEY = "proddy:streamDeviceId";
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
 const getOrCreateStreamDeviceId = () => {
 	if (typeof window === "undefined") return "server";
 
@@ -137,8 +141,16 @@ export const useAudioRoom = ({
 					throw new Error(message);
 				}
 
-				const tokenResponse = await response.json();
-				const { token } = tokenResponse;
+				const tokenResponse: unknown = await response.json();
+				const token =
+					isRecord(tokenResponse) && typeof tokenResponse.token === "string"
+						? tokenResponse.token
+						: "";
+				if (!token) {
+					throw new Error(
+						`Missing Stream token in /api/stream response (status ${response.status})`
+					);
+				}
 
 				// Initialize Stream client
 				const videoClient = new StreamVideoClient({

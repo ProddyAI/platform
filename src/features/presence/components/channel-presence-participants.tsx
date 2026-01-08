@@ -2,24 +2,28 @@
 
 import { useMemo } from "react";
 import { Hint } from "@/components/hint";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ParticipantAvatar } from "@/components/participant-avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useChannelPresence } from "@/features/presence/hooks/use-channel-presence";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { generateUserColor } from "@/lib/placeholder-image";
 
 const MAX_SHOWN_USERS = 4;
 
 export const ChannelPresenceParticipants = () => {
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
-
-	const { presenceState } = useChannelPresence({ workspaceId, channelId });
+	const { presenceState } = useChannelPresence({
+		workspaceId,
+		channelId,
+	});
 
 	const onlineUsers = useMemo(
 		() => presenceState.filter((p) => p.online),
 		[presenceState]
 	);
+
+	if (!workspaceId || !channelId) return null;
 
 	if (!onlineUsers.length) return null;
 
@@ -28,22 +32,19 @@ export const ChannelPresenceParticipants = () => {
 
 	return (
 		<div className="flex items-center gap-2">
-			{shown.map((p, index) => {
+			{shown.map((p) => {
 				const name = p.user?.name || "User";
-				const backgroundColor = generateUserColor(p.userId || name);
-				const key = `${p.userId || name}-${p.memberId || index}`;
+				const key = p.memberId || p.userId;
+				if (!key) return null;
 				return (
-					<Hint key={key} label={name} side="bottom">
-						<Avatar className="h-7 w-7 border-2 border-muted">
-							<AvatarImage src={p.user?.image ?? undefined} />
-							<AvatarFallback
-								className="text-xs font-semibold text-white"
-								style={{ backgroundColor }}
-							>
-								{name?.[0] || "U"}
-							</AvatarFallback>
-						</Avatar>
-					</Hint>
+					<ParticipantAvatar
+						key={key}
+						name={name}
+						userId={p.userId}
+						image={p.user?.image}
+						hintLabel={name}
+						side="bottom"
+					/>
 				);
 			})}
 

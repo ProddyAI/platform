@@ -4,22 +4,6 @@ import { useChannelParticipants } from "../../../hooks/use-channel-participants"
 import { stringToColor } from "../../../lib/utils";
 import { UserAvatar } from "./user-avatar";
 
-// Define types for the Liveblocks user data
-interface UserInfo {
-	name?: string;
-	picture?: string;
-}
-
-interface User {
-	memberId?: string;
-	userId?: string;
-	info?: UserInfo;
-}
-
-interface CurrentUser extends User {
-	presence?: any;
-}
-
 // Constants
 const MAX_SHOWN_OTHER_USERS = 2;
 

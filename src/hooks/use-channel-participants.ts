@@ -25,32 +25,31 @@ export const useChannelParticipants = () => {
 
 	const currentUserId = currentMember?.userId;
 
-	if (isLoading) {
-		return {
-			participants: [],
-			currentParticipant: null,
-			participantCount: 0,
-			isLoading: true,
-		};
-	}
-
 	const { participants, participantCount } = useMemo(() => {
+		if (isLoading) {
+			return {
+				participants: [],
+				participantCount: 0,
+			};
+		}
+
 		const online = (presenceState || []).filter((p) => p.online);
 		const seen = new Set<string>();
 
 		const list = online
 			.map((p) => {
-				const userId = p.userId as unknown as string;
+				const userId = typeof p.userId === "string" ? p.userId : null;
 				if (!userId) return null;
 				if (seen.has(userId)) return null;
 				seen.add(userId);
 
 				const name = p.user?.name || "Anonymous";
 				const picture = getUserImageUrl(name, p.user?.image, userId);
+				const memberId = typeof p.memberId === "string" ? p.memberId : null;
 
 				return {
 					userId,
-					memberId: (p.memberId as any) || null,
+					memberId,
 					info: {
 						name,
 						picture,
@@ -72,21 +71,30 @@ export const useChannelParticipants = () => {
 			participants: othersOnly,
 			participantCount: online.length,
 		};
-	}, [presenceState, currentUserId]);
+	}, [presenceState, currentUserId, isLoading]);
+
+	if (isLoading) {
+		return {
+			participants: [],
+			currentParticipant: null,
+			participantCount: 0,
+			isLoading: true,
+		};
+	}
 
 	// Current user info (useful for some callers)
+	const currentMemberEntry = currentMember
+		? members?.find((m) => m._id === currentMember._id)
+		: undefined;
 	const currentParticipant = currentMember
 		? {
 				memberId: currentMember._id,
 				userId: currentMember.userId,
 				info: {
-					name:
-						members?.find((m) => m._id === currentMember._id)?.user?.name ||
-						"You",
+					name: currentMemberEntry?.user?.name || "You",
 					picture: getUserImageUrl(
-						members?.find((m) => m._id === currentMember._id)?.user?.name ||
-							"You",
-						members?.find((m) => m._id === currentMember._id)?.user?.image,
+						currentMemberEntry?.user?.name || "You",
+						currentMemberEntry?.user?.image,
 						currentMember.userId
 					),
 				},

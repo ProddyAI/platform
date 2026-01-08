@@ -16,14 +16,16 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
-// Interface for saved canvas data
-interface SavedCanvas {
-	id: Id<"messages">;
+type CanvasSidebarItem = {
+	_id: Id<"messages">;
+	body: string;
 	canvasName: string;
 	roomId: string;
-	savedCanvasId: string;
-	creationTime: number;
-}
+	savedCanvasId?: string;
+	createdAt: number;
+	updatedAt: number;
+	tags: string[];
+};
 
 const CanvasPage = () => {
 	const channelId = useChannelId();
@@ -66,7 +68,7 @@ const CanvasPage = () => {
 
 	// Parse canvas messages for the sidebar
 	const canvasItems = useMemo(() => {
-		const canvasMessages: any[] = [];
+		const canvasMessages: CanvasSidebarItem[] = [];
 		if (messages?.page) {
 			messages.page.forEach((message) => {
 				try {
@@ -82,7 +84,6 @@ const CanvasPage = () => {
 							updatedAt: message._creationTime,
 							tags: message.tags || body.tags || [],
 						};
-						console.log("Canvas item parsed:", canvasItem);
 						canvasMessages.push(canvasItem);
 					}
 				} catch (_error) {
@@ -288,7 +289,13 @@ const CanvasPage = () => {
 		newTags: string[]
 	) => {
 		try {
-			const canvasData = JSON.parse(activeCanvas.body);
+			const canvasItem = canvasItems.find((item) => item._id === messageId);
+			if (!canvasItem) {
+				toast.error("Canvas not found");
+				return;
+			}
+
+			const canvasData = JSON.parse(canvasItem.body);
 			await updateMessage({
 				id: messageId,
 				body: JSON.stringify({

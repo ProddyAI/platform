@@ -5,14 +5,7 @@ import { DirectMessageTemplate } from "@/features/email/components/direct-messag
 import { shouldSendEmailServer } from "@/lib/email-preferences-server";
 import { generateUnsubscribeUrl } from "@/lib/email-unsubscribe";
 
-// Log the API key (masked for security)
 const apiKey = process.env.RESEND_API_KEY;
-console.log("Direct Message Email API - Resend API Key exists:", !!apiKey);
-if (apiKey) {
-	const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-	console.log("Direct Message Email API - Masked API Key:", maskedKey);
-}
-
 const resend = new Resend(apiKey);
 
 export async function POST(req: NextRequest) {

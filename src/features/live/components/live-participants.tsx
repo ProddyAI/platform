@@ -1,9 +1,9 @@
 "use client";
 
 import { Hint } from "@/components/hint";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ParticipantAvatar } from "@/components/participant-avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useChannelParticipants } from "@/hooks/use-channel-participants";
-import { generateUserColor } from "@/lib/placeholder-image";
 
 // Constants
 const MAX_SHOWN_OTHER_USERS = 3;
@@ -20,8 +20,7 @@ export const LiveParticipants = ({
 	className,
 }: LiveParticipantsProps) => {
 	// Fetch real participants from the database
-	const { participants, currentParticipant, participantCount, isLoading } =
-		useChannelParticipants();
+	const { participants, isLoading } = useChannelParticipants();
 
 	// If still loading, show nothing
 	if (isLoading) return null;
@@ -31,25 +30,22 @@ export const LiveParticipants = ({
 	// Use canvas-style display for both variants when inside LiveHeader
 	// This ensures consistent appearance.
 	return (
-		<div className={`flex items-center gap-2 ${className}`}>
+		<div
+			className={`flex items-center gap-2 ${className}`}
+			data-variant={variant}
+			data-fullscreen={isFullScreen}
+		>
 			{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
-				const backgroundColor = generateUserColor(
-					user.userId || user.info.name || "User"
-				);
 				return (
-					<Hint key={user.userId} label={user.info.name} side="bottom">
-						<div className="relative">
-							<Avatar className="h-7 w-7 border-2 border-muted">
-								<AvatarImage src={user.info.picture ?? undefined} />
-								<AvatarFallback
-									className="text-xs font-semibold text-white"
-									style={{ backgroundColor }}
-								>
-									{user.info.name?.[0] || "U"}
-								</AvatarFallback>
-							</Avatar>
-						</div>
-					</Hint>
+					<div key={user.userId} className="relative">
+						<ParticipantAvatar
+							name={user.info.name}
+							userId={user.userId}
+							image={user.info.picture}
+							hintLabel={user.info.name || "User"}
+							side="bottom"
+						/>
+					</div>
 				);
 			})}
 

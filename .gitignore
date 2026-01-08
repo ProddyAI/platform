@@ -20,7 +20,7 @@
 npm-debug.log*
 *.tsbuildinfo
 .vercel
-bun.lock
+/package-lock.json
 # Logs
 *.log
 build*.log

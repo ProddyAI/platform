@@ -17,6 +17,7 @@
 			"**/*.cjs",
 			"!!**/node_modules",
 			"!!**/.next",
+			"!!**/.next-win",
 			"!!**/dist",
 			"!!**/out",
 			"!!**/convex/_generated",

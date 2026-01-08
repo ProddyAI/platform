@@ -1,5 +1,7 @@
 import {
 	createClient,
+	type Json,
+	type JsonObject,
 	type LiveList,
 	type LiveMap,
 	type LiveObject,
@@ -53,9 +55,10 @@ type CollaborativeNoteData = {
 };
 
 type ExcalidrawSceneData = {
-	elements: any[];
-	appState: Record<string, any>;
-	files: Record<string, any>;
+	// Stored as JSON for Liveblocks (Lson) compatibility.
+	elements: Json[];
+	appState: JsonObject;
+	files: JsonObject;
 	version: number;
 };
 
@@ -87,7 +90,7 @@ type UserMeta = {
 type RoomEvent =
 	| {
 			type: "excalidraw:delta";
-			elements: any[];
+			elements: Json[];
 	  }
 	| {
 			type: "NOTIFICATION";
@@ -96,11 +99,7 @@ type RoomEvent =
 
 // Optionally, when using Comments, ThreadMetadata represents metadata on
 // each thread. Can only contain booleans, strings, and numbers.
-export type ThreadMetadata = {
-	// resolved: boolean;
-	// quote: string;
-	// time: number;
-};
+export type ThreadMetadata = Record<string, never>;
 
 // Room-level hooks, use inside `RoomProvider`
 export const {

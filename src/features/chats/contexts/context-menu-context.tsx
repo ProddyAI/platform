@@ -6,6 +6,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -37,8 +38,15 @@ export const ContextMenuProvider = ({ children }: ContextMenuProviderProps) => {
 		x: 0,
 		y: 0,
 	});
+	const pendingOpenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null
+	);
 
 	const closeContextMenu = useCallback(() => {
+		if (pendingOpenTimeoutRef.current) {
+			clearTimeout(pendingOpenTimeoutRef.current);
+			pendingOpenTimeoutRef.current = null;
+		}
 		setContextMenu({
 			show: false,
 			x: 0,
@@ -96,20 +104,34 @@ export const ContextMenuProvider = ({ children }: ContextMenuProviderProps) => {
 
 	const openContextMenu = useCallback(
 		(x: number, y: number, messageId?: Id<"messages">) => {
+			if (pendingOpenTimeoutRef.current) {
+				clearTimeout(pendingOpenTimeoutRef.current);
+				pendingOpenTimeoutRef.current = null;
+			}
+
 			// Close any existing context menu first
 			if (contextMenu.show) {
 				closeContextMenu();
 				// Small delay to ensure the previous menu is closed before opening new one
-				setTimeout(() => {
+				pendingOpenTimeoutRef.current = setTimeout(() => {
+					pendingOpenTimeoutRef.current = null;
 					openNewContextMenu(x, y, messageId);
 				}, 10);
 			} else {
 				openNewContextMenu(x, y, messageId);
 			}
 		},
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[contextMenu.show, closeContextMenu, openNewContextMenu]
+		[closeContextMenu, contextMenu.show, openNewContextMenu]
 	);
+
+	useEffect(() => {
+		return () => {
+			if (pendingOpenTimeoutRef.current) {
+				clearTimeout(pendingOpenTimeoutRef.current);
+				pendingOpenTimeoutRef.current = null;
+			}
+		};
+	}, []);
 
 	// Close context menu when clicking outside or pressing escape
 	useEffect(() => {

@@ -42,7 +42,7 @@ if (
 // build workers, so we also set the underscore form which is still honored by Node.
 const existingNodeOptions = process.env.NODE_OPTIONS || "";
 const cleanedNodeOptions = existingNodeOptions
-	.replace(/(^|\s)--max[-_]old[-_]space[-_]size=\d+(?=\s|$)/g, "")
+	.replace(/--max[-_]old[-_]space[-_]size=\d+/g, "")
 	.trim();
 process.env.NODE_OPTIONS =
 	`${cleanedNodeOptions} --max_old_space_size=${maxOldSpaceSize}`.trim();
