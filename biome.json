@@ -30,7 +30,7 @@
 		"lineWidth": 80
 	},
 	"linter": {
-		"enabled": false,
+		"enabled": true,
 		"rules": {
 			"recommended": true,
 			"complexity": {
