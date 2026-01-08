@@ -4,7 +4,7 @@ import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 import { ClientSideSuspense } from "@liveblocks/react";
 import { useQuery } from "convex/react";
 import { Loader } from "lucide-react";
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { api } from "@/../convex/_generated/api";
 import { RoomProvider } from "@/../liveblocks.config";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";

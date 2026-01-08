@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { PaintBucket } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -30,6 +30,7 @@ const CanvasPage = () => {
 	const workspaceId = useWorkspaceId();
 	const _searchParams = useSearchParams();
 	const _router = useRouter();
+	const _pathname = usePathname();
 
 	// State - simplified like notes page
 	const [activeCanvasId, setActiveCanvasId] = useState<string | null>(null);
@@ -121,6 +122,22 @@ const CanvasPage = () => {
 			)
 		: null;
 
+	// Keep the URL in sync with the active canvas so sharing/copying the link
+	// reliably opens the same Liveblocks room (and therefore the same Stream call).
+	useEffect(() => {
+		if (!activeCanvas?.roomId) return;
+
+		const currentRoomId = _searchParams?.get("roomId");
+		if (currentRoomId === activeCanvas.roomId) return;
+
+		const nextParams = new URLSearchParams(_searchParams?.toString() ?? "");
+		nextParams.set("roomId", activeCanvas.roomId);
+		// Avoid ambiguity: we treat roomId as the canonical identifier.
+		nextParams.delete("canvasId");
+
+		_router.replace(`${_pathname}?${nextParams.toString()}`);
+	}, [activeCanvas?.roomId, _router, _pathname, _searchParams]);
+
 	// Function to toggle full screen
 	const toggleFullScreen = useCallback(() => {
 		if (!document.fullscreenElement) {
@@ -150,6 +167,19 @@ const CanvasPage = () => {
 					);
 				});
 		}
+	}, []);
+
+	// Listen for fullscreen changes (e.g., when user presses Escape)
+	useEffect(() => {
+		const handleFullscreenChange = () => {
+			// Update state based on actual fullscreen status
+			setIsFullScreen(!!document.fullscreenElement);
+		};
+
+		document.addEventListener("fullscreenchange", handleFullscreenChange);
+		return () => {
+			document.removeEventListener("fullscreenchange", handleFullscreenChange);
+		};
 	}, []);
 
 	// Mutations for updating and creating messages

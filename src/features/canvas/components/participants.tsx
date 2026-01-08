@@ -73,7 +73,9 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 							src={currentParticipant.info?.picture ?? undefined}
 							name={`${currentParticipant.info?.name} (You)`}
 							fallback={currentParticipant.info?.name?.[0] || "Y"}
-							userId={currentParticipant.userId || currentParticipant.info?.name}
+							userId={
+								currentParticipant.userId || currentParticipant.info?.name
+							}
 						/>
 					)}
 

@@ -1,26 +1,32 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 dotenv.config();
 
 export async function POST(req: NextRequest) {
-  try {
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      return NextResponse.json({ error: "API key not configured" }, { status: 500 });
-    }
+	try {
+		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+			return NextResponse.json(
+				{ error: "API key not configured" },
+				{ status: 500 }
+			);
+		}
 
-    const body = await req.json().catch(() => null);
-    const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+		const body = await req.json().catch(() => null);
+		const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
 
-    if (!prompt) {
-      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
-    }
+		if (!prompt) {
+			return NextResponse.json(
+				{ error: "Prompt is required" },
+				{ status: 400 }
+			);
+		}
 
-    const model = google("gemini-2.5-flash");
+		const model = google("gemini-2.5-flash");
 
-    const systemPrompt = `You are a diagram generator.
+		const systemPrompt = `You are a diagram generator.
 
 Given a natural-language description, output ONLY a valid Mermaid diagram definition.
 
@@ -44,29 +50,35 @@ sequenceDiagram
   S-->>U: Success/Failure
 `;
 
-    const fullPrompt = `${systemPrompt}
+		const fullPrompt = `${systemPrompt}
 
 User request:
 ${prompt}
 
 Mermaid:`;
 
-    const { text } = await generateText({
-      model,
-      prompt: fullPrompt,
-      temperature: 0.2,
-      maxTokens: 1200,
-    });
+		const { text } = await generateText({
+			model,
+			prompt: fullPrompt,
+			temperature: 0.2,
+			maxTokens: 1200,
+		});
 
-    const mermaid = (text || "").trim();
+		const mermaid = (text || "").trim();
 
-    if (!mermaid) {
-      return NextResponse.json({ error: "Empty Mermaid response" }, { status: 502 });
-    }
+		if (!mermaid) {
+			return NextResponse.json(
+				{ error: "Empty Mermaid response" },
+				{ status: 502 }
+			);
+		}
 
-    return NextResponse.json({ mermaid });
-  } catch (error) {
-    console.error("[Smart Diagram] Unexpected error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+		return NextResponse.json({ mermaid });
+	} catch (error) {
+		console.error("[Smart Diagram] Unexpected error:", error);
+		return NextResponse.json(
+			{ error: "Internal server error" },
+			{ status: 500 }
+		);
+	}
 }

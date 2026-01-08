@@ -13,6 +13,8 @@ const baseConfig = withPWA({
 	skipWaiting: true,
 	disable: process.env.NODE_ENV === "development",
 	customWorkerDir: "worker",
+	// Avoid Workbox precache warnings and bloated caches by excluding sourcemaps.
+	buildExcludes: [/\.map$/],
 	runtimeCaching: [
 		{
 			urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,

@@ -30,7 +30,12 @@ const client = createClient({
 // and that will automatically be kept in sync. Accessible through the
 // `user.presence` property. Must be JSON-serializable.
 type Presence = {
-	cursor: { x: number; y: number; tool?: "pointer" | "laser"; button?: "up" | "down" } | null;
+	cursor: {
+		x: number;
+		y: number;
+		tool?: "pointer" | "laser";
+		button?: "up" | "down";
+	} | null;
 	selection: string[];
 	pencilDraft: [x: number, y: number, pressure: number][] | null;
 	penColor: Color | null;
@@ -80,14 +85,14 @@ type UserMeta = {
 // Optionally, the type of custom events broadcast and listened to in this
 // room. Use a union for multiple events. Must be JSON-serializable.
 type RoomEvent =
-	{
-		type: 'excalidraw:delta';
-		elements: any[];
-	}
 	| {
-		type: 'NOTIFICATION';
-		message?: string;
-	};
+			type: "excalidraw:delta";
+			elements: any[];
+	  }
+	| {
+			type: "NOTIFICATION";
+			message?: string;
+	  };
 
 // Optionally, when using Comments, ThreadMetadata represents metadata on
 // each thread. Can only contain booleans, strings, and numbers.

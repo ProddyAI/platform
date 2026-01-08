@@ -4,7 +4,8 @@
 process.env.NEXT_IGNORE_INCORRECT_LOCKFILE ||= "1";
 
 const defaultMaxOldSpaceSize = process.platform === "win32" ? "8192" : "4096";
-const maxOldSpaceSize = process.env.NEXT_BUILD_MAX_OLD_SPACE_SIZE || defaultMaxOldSpaceSize;
+const maxOldSpaceSize =
+	process.env.NEXT_BUILD_MAX_OLD_SPACE_SIZE || defaultMaxOldSpaceSize;
 
 // If this wrapper is run without node flags (e.g. `node scripts/next-build.js build`),
 // Next will run in the current process via `require(...)` and can hit Node's default
@@ -16,7 +17,11 @@ if (
 	const { spawnSync } = require("node:child_process");
 	const result = spawnSync(
 		process.execPath,
-		[`--max-old-space-size=${maxOldSpaceSize}`, __filename, ...process.argv.slice(2)],
+		[
+			`--max-old-space-size=${maxOldSpaceSize}`,
+			__filename,
+			...process.argv.slice(2),
+		],
 		{
 			stdio: "inherit",
 			env: {
@@ -39,7 +44,8 @@ const existingNodeOptions = process.env.NODE_OPTIONS || "";
 const cleanedNodeOptions = existingNodeOptions
 	.replace(/(^|\s)--max[-_]old[-_]space[-_]size=\d+(?=\s|$)/g, "")
 	.trim();
-process.env.NODE_OPTIONS = `${cleanedNodeOptions} --max_old_space_size=${maxOldSpaceSize}`.trim();
+process.env.NODE_OPTIONS =
+	`${cleanedNodeOptions} --max_old_space_size=${maxOldSpaceSize}`.trim();
 
 // Next's CLI reads process.argv to decide which command to run.
 require("next/dist/bin/next");

@@ -1,6 +1,10 @@
 "use client";
 
-import { OwnCapability, useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
+import {
+	OwnCapability,
+	useCall,
+	useCallStateHooks,
+} from "@stream-io/video-react-sdk";
 import { AlertCircle, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -14,14 +18,17 @@ export const AudioToolbarButton = () => {
 	const hasAudioPermission = useHasPermissions(OwnCapability.SEND_AUDIO);
 
 	// Speaker state (audio output)
-	// Start muted to satisfy browser autoplay policies; user gesture unmute will call play().
-	const [speakerMuted, setSpeakerMuted] = useState(true);
+	// Default to unmuted so audio works immediately after a user joins.
+	// If autoplay is blocked, we'll attempt play() and log a warning.
+	const [speakerMuted, setSpeakerMuted] = useState(false);
 
 	// Check browser microphone permissions on mount
 	useEffect(() => {
 		const checkMicrophonePermission = async () => {
 			try {
-				const devices = await navigator.mediaDevices.getUserMedia({ audio: true });
+				const devices = await navigator.mediaDevices.getUserMedia({
+					audio: true,
+				});
 				setMicPermissionError(false);
 				devices.getTracks().forEach((track) => track.stop());
 			} catch (error) {
@@ -38,7 +45,8 @@ export const AudioToolbarButton = () => {
 		if (call && !hasAudioPermission) {
 			const requestAudioPermission = async () => {
 				try {
-					if (!call.permissionsContext.canRequest(OwnCapability.SEND_AUDIO)) return;
+					if (!call.permissionsContext.canRequest(OwnCapability.SEND_AUDIO))
+						return;
 					await call.requestPermissions({
 						permissions: [OwnCapability.SEND_AUDIO],
 					});
@@ -58,6 +66,13 @@ export const AudioToolbarButton = () => {
 			const audioElements = document.querySelectorAll("audio");
 			audioElements.forEach((audio) => {
 				audio.muted = speakerMuted;
+
+				// When unmuted, explicitly call play() to satisfy autoplay restrictions.
+				if (!speakerMuted) {
+					void (audio as HTMLAudioElement).play().catch((err) => {
+						console.warn("Audio playback blocked:", err);
+					});
+				}
 			});
 		};
 

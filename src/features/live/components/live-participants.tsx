@@ -1,8 +1,8 @@
 "use client";
 
-import { useChannelParticipants } from "@/hooks/use-channel-participants";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Hint } from "@/components/hint";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useChannelParticipants } from "@/hooks/use-channel-participants";
 import { generateUserColor } from "@/lib/placeholder-image";
 
 // Constants

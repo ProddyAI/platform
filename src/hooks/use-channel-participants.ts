@@ -2,11 +2,10 @@
 
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
-
-import { api } from "../../convex/_generated/api";
-import { useWorkspaceId } from "./use-workspace-id";
 import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-presence";
 import { getUserImageUrl } from "@/lib/placeholder-image";
+import { api } from "../../convex/_generated/api";
+import { useWorkspaceId } from "./use-workspace-id";
 
 export const useChannelParticipants = () => {
 	// Get workspace ID from the URL
@@ -59,10 +58,10 @@ export const useChannelParticipants = () => {
 				};
 			})
 			.filter(Boolean) as Array<{
-				userId: string;
-				memberId: string | null;
-				info: { name: string; picture: string | null };
-			}>;
+			userId: string;
+			memberId: string | null;
+			info: { name: string; picture: string | null };
+		}>;
 
 		// Exclude current user from the "others" list to prevent duplicates.
 		const othersOnly = currentUserId
