@@ -7,7 +7,8 @@
 		"convex": "convex dev",
 		"lint": "biome check --write --unsafe --max-diagnostics 1000 .",
 		"type": "tsc --noEmit && next build",
-		"start": "next start"
+		"start": "next start",
+		"build": "next build"
 	},
 	"author": {
 		"name": "George Bobby",
