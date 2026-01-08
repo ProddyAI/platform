@@ -1,29 +1,37 @@
 "use client";
 
-import { isAfter, isBefore, isToday, startOfDay } from "date-fns";
-import { CheckSquare, Loader, Search } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useGetTaskCategories } from "@/features/tasks/api/use-get-task-categories";
-import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
-import { TaskCreateForm } from "@/features/tasks/components/task-create-form";
-import type { TaskFilterOptions } from "@/features/tasks/components/task-filter";
-import { TaskSidebar } from "@/features/tasks/components/task-sidebar";
-import { TaskToggleView } from "@/features/tasks/components/task-toggle-view";
-import { useDocumentTitle } from "@/hooks/use-document-title";
-import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../toolbar";
+import { isAfter, isBefore, isToday, startOfDay } from 'date-fns';
+import { CheckSquare, Loader, Search } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useWorkspaceId } from '@/hooks/use-workspace-id';
+import { WorkspaceToolbar } from '../toolbar';
+import { useTrackActivity } from '@/features/reports/hooks/use-track-activity';
+
+import { useGetTaskCategories } from '@/features/tasks/api/use-get-task-categories';
+import { useGetTasks } from '@/features/tasks/api/use-get-tasks';
+import { TaskCreateForm } from '@/features/tasks/components/task-create-form';
+import { TaskFilterOptions } from '@/features/tasks/components/task-filter';
+import { TaskSidebar } from '@/features/tasks/components/task-sidebar';
+import { TaskToggleView } from '@/features/tasks/components/task-toggle-view';
 
 const TasksPage = () => {
 	// Set document title
 	useDocumentTitle("Tasks");
 
-	const workspaceId = useWorkspaceId();
-	const { data: tasks, isLoading } = useGetTasks({ workspaceId });
-	const { data: categories, isLoading: categoriesLoading } =
-		useGetTaskCategories({ workspaceId });
+  const workspaceId = useWorkspaceId();
+  
+  // Track user activity and time spent on tasks page
+  useTrackActivity({
+    workspaceId,
+    activityType: 'tasks_view',
+  });
+  const { data: tasks, isLoading } = useGetTasks({ workspaceId });
+  const { data: categories, isLoading: categoriesLoading } = useGetTaskCategories({ workspaceId });
 
 	// Search and filter state
 	const [searchQuery, setSearchQuery] = useState("");

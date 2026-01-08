@@ -42,7 +42,21 @@ type CardResult = SearchResult & {
 	channelName?: string;
 };
 
-// Helper function to extract plain text from message body
+/**
+ * Extracts plain text from rich text message body.
+ * 
+ * Handles multiple formats:
+ * - Quill Delta JSON format (ops array)
+ * - HTML content (strips tags)
+ * - Plain text strings
+ * 
+ * @param {string} body - The message body in any supported format
+ * @returns {string} Plain text content with formatting removed
+ * 
+ * @example
+ * extractTextFromRichText('{"ops":[{"insert":"Hello"}]}') // Returns: "Hello"
+ * extractTextFromRichText('<p>Hello</p>') // Returns: "Hello"
+ */
 function extractTextFromRichText(body: string): string {
 	if (typeof body !== "string") {
 		return String(body);
@@ -80,8 +94,8 @@ type FilterTypes = {
 // `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004"),
-	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
+	textEmbeddingModel: google.embedding("text-embedding-gecko-001") as any,
+	embeddingDimension: 768, // Gemini text-embedding-gecko-001 uses 768 dimensions
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
@@ -617,7 +631,17 @@ export const autoIndexCard = action({
 	},
 });
 
-// Helper queries for bulk indexing
+/**
+ * Retrieves messages from a workspace in descending order (newest first).
+ * 
+ * Used by AI search to fetch recent messages for analysis and by bulk indexing
+ * operations to populate the search index.
+ * 
+ * @param {Id<'workspaces'>} workspaceId - The workspace to fetch messages from
+ * @param {number} [limit=100] - Maximum number of messages to return (default: 100)
+ * 
+ * @returns {Promise<Array>} Array of message documents ordered by creation time (newest first)
+ */
 export const getWorkspaceMessages = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -631,6 +655,77 @@ export const getWorkspaceMessages = query({
 				q.eq("workspaceId", args.workspaceId)
 			)
 			.take(limit);
+	},
+});
+
+/**
+ * Searches workspace messages by text content with case-insensitive matching.
+ * 
+ * Filters messages based on query string and enriches results with channel information.
+ * Used by both normal search UI and AI search to find relevant messages.
+ * 
+ * @param {Id<'workspaces'>} workspaceId - The workspace to search within
+ * @param {string} query - Text to search for in message bodies (case-insensitive)
+ * @param {number} [limit=20] - Maximum number of results to return (default: 20)
+ * 
+ * @returns {Promise<Array>} Array of search results with message text, channel info, and metadata
+ */
+export const searchWorkspaceMessages = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		query: v.string(),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit || 20;
+		const searchQuery = args.query.toLowerCase().trim();
+		
+		if (!searchQuery) {
+			return [];
+		}
+
+		// Fetch messages from workspace
+		const messages = await ctx.db
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.take(100); // Fetch more to filter from
+
+		// Filter and enrich results
+		const results = [];
+		for (const message of messages) {
+			const messageText = extractTextFromRichText(message.body);
+			
+			// Case-insensitive text matching
+			if (messageText.toLowerCase().includes(searchQuery)) {
+				// Get channel info
+				let channelName = "Unknown Channel";
+				if (message.channelId) {
+					const channel = await ctx.db.get(message.channelId);
+					if (channel) {
+						channelName = channel.name;
+					}
+				}
+
+				results.push({
+					_id: message._id,
+					_creationTime: message._creationTime,
+					text: messageText,
+					channelId: message.channelId,
+					channelName,
+					memberId: message.memberId,
+					workspaceId: message.workspaceId,
+				});
+
+				// Stop if we have enough results
+				if (results.length >= limit) {
+					break;
+				}
+			}
+		}
+
+		return results;
 	},
 });
 
@@ -821,7 +916,7 @@ export const searchAllSemantic = action({
 							?.value || "message";
 
 					processedResults.push({
-						_id: result._id as any, // Using RAG entry ID for now
+						_id: result._id as Id<'messages'> | Id<'notes'> | Id<'tasks'>,
 						_creationTime: Date.now(), // Placeholder
 						type: contentType,
 						text: result.text,
@@ -844,5 +939,98 @@ export const searchAllSemantic = action({
 			query: args.query,
 			limit: totalLimit,
 		});
+	},
+});
+
+/**
+ * AI-powered message search with natural language understanding.
+ * 
+ * Searches workspace messages using keyword filtering and generates an AI summary
+ * of the most relevant results. Provides direct navigation to source messages.
+ * 
+ * @param {Id<'workspaces'>} workspaceId - The workspace to search within
+ * @param {string} query - Natural language search query (e.g., "bug reports from last week")
+ * 
+ * @returns {Promise<{answer: string, sources: Array}>} Object containing:
+ *   - answer: AI-generated summary of the search results
+ *   - sources: Array of up to 3 most relevant messages with id, text, and channelId
+ * 
+ * @example
+ * const result = await aiSearchMessages({ 
+ *   workspaceId: "workspace123", 
+ *   query: "deployment issues" 
+ * });
+ * // Returns: { answer: "Summary...", sources: [{id, text, channelId}, ...] }
+ */
+export const aiSearchMessages = action({
+	args: {
+		workspaceId: v.id('workspaces'),
+		query: v.string(),
+	},
+	handler: async (
+		ctx,
+		args
+	): Promise<{
+		answer: string;
+		sources: { id: Id<'messages'>; text: string; channelId: Id<'channels'>; channelName: string }[];
+	}> => {
+		// Use the new searchWorkspaceMessages query for better filtering
+		const searchResults = await ctx.runQuery(api.search.searchWorkspaceMessages, {
+			workspaceId: args.workspaceId,
+			query: args.query,
+			limit: 10, // Get top 10 relevant messages
+		});
+
+		if (searchResults.length === 0) {
+			return {
+				answer: 'No messages found matching your query.',
+				sources: [],
+			};
+		}
+
+		// Prepare context from search results
+		const context = searchResults
+			.map((result, idx) => `[${idx + 1}] ${result.text}`)
+			.join('\n\n');
+
+		try {
+			const { generateText } = await import('ai');
+			const result = await generateText({
+				model: google('gemini-2.0-flash-exp'),
+				prompt: `
+Answer the user's question using ONLY the messages below.
+Provide a concise, direct answer based on the relevant information.
+If the messages don't contain enough information, say so.
+
+Question: ${args.query}
+
+Relevant Messages:
+${context}
+`,
+				temperature: 0.3,
+			});
+
+			return {
+				answer: result.text.trim(),
+				sources: searchResults.slice(0, 3).map((result) => ({
+					id: result._id,
+					text: result.text,
+					channelId: result.channelId as Id<'channels'>,
+					channelName: result.channelName,
+				})),
+			};
+		} catch (error) {
+			console.error('AI generation error:', error);
+			// Return search results with a fallback answer
+			return {
+				answer: `I found ${searchResults.length} relevant message(s) about "${args.query}", but couldn't generate a summary. Please check the sources below.`,
+				sources: searchResults.slice(0, 3).map((result) => ({
+					id: result._id,
+					text: result.text,
+					channelId: result.channelId as Id<'channels'>,
+					channelName: result.channelName,
+				})),
+			};
+		}
 	},
 });

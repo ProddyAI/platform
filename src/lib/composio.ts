@@ -65,18 +65,33 @@ export function initializeComposio() {
 		// Create connection for a user and app
 		async createConnection(userId: string, appName: string) {
 			try {
+				console.log(`[Composio] Creating connection for user ${userId} with app ${appName}`);
+				
 				// Import APP_CONFIGS to get auth config ID
 				const { APP_CONFIGS } = await import("./composio-config");
 
 				// Convert appName to uppercase to match our config keys
 				const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
-				const authConfigId = APP_CONFIGS[appKey]?.authConfigId;
-
-				if (!authConfigId) {
+				const appConfig = APP_CONFIGS[appKey];
+				
+				if (!appConfig) {
+					console.error(`[Composio] App config not found for ${appName}. Available apps:`, Object.keys(APP_CONFIGS));
 					throw new Error(
-						`Auth config ID not found for ${appName}. Please check your environment variables. Available apps: ${Object.keys(APP_CONFIGS).join(", ")}`
+						`App ${appName} not found in configuration. Available apps: ${Object.keys(APP_CONFIGS).join(", ")}`
 					);
 				}
+				
+				const authConfigId = appConfig.authConfigId;
+
+				if (!authConfigId) {
+					const envVarName = `${appKey}_AUTH_CONFIG_ID`;
+					console.error(`[Composio] Missing auth config ID for ${appName}. Environment variable ${envVarName} is not set.`);
+					throw new Error(
+						`Auth config ID not found for ${appName}. Please set the ${envVarName} environment variable in your production environment. Check your Composio dashboard for the auth config ID.`
+					);
+				}
+
+				console.log(`[Composio] Auth config ID found for ${appName}. Initiating connection...`);
 
 				// Try to initiate connection using auth config ID
 				const connection = await (
@@ -84,8 +99,14 @@ export function initializeComposio() {
 				).connectedAccounts?.initiate?.(userId, authConfigId);
 
 				if (!connection) {
-					throw new Error("Failed to create connection - method not available");
+					console.error(`[Composio] Connection initiation failed - no connection object returned`);
+					throw new Error("Failed to create connection - method not available or returned null");
 				}
+
+				console.log(`[Composio] Connection created successfully:`, {
+					hasRedirectUrl: !!(connection.redirectUrl || connection.authUrl),
+					hasConnectionId: !!(connection.id || connection.connectionId),
+				});
 
 				return {
 					redirectUrl: connection.redirectUrl || connection.authUrl,
@@ -93,7 +114,11 @@ export function initializeComposio() {
 					id: connection.id || connection.connectionId,
 				};
 			} catch (error) {
-				console.error("Error creating connection:", error);
+				console.error("[Composio] Error creating connection:", error);
+				console.error("[Composio] Error details:", {
+					message: error instanceof Error ? error.message : String(error),
+					stack: error instanceof Error ? error.stack : undefined,
+				});
 				throw error;
 			}
 		},
