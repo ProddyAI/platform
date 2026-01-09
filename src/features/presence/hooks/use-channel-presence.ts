@@ -62,9 +62,11 @@ export const useChannelPresence = ({
 			};
 		}) || [];
 
+	const effectivePresence = workspaceId && channelId ? enrichedPresence : [];
+
 	return {
-		presenceState: enrichedPresence,
-		isOnline: enrichedPresence.length > 0,
-		onlineCount: enrichedPresence.length,
+		presenceState: effectivePresence,
+		isOnline: effectivePresence.length > 0,
+		onlineCount: effectivePresence.length,
 	};
 };

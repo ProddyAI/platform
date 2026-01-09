@@ -23,8 +23,6 @@ export const ChannelPresenceParticipants = () => {
 		[presenceState]
 	);
 
-	if (!workspaceId || !channelId) return null;
-
 	if (!onlineUsers.length) return null;
 
 	const shown = onlineUsers.slice(0, MAX_SHOWN_USERS);
