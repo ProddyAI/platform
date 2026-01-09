@@ -216,23 +216,23 @@ const ReportsPage = () => {
 					<span className="truncate">Reports</span>
 				</Button>
 			</WorkspaceToolbar>
-			<div className="flex flex-1 flex-col bg-white overflow-hidden">
+			<div className="flex flex-1 flex-col bg-background overflow-hidden">
 				{/* Header with filters */}
-				<div className="border-b border-border/30 bg-white px-4 py-4 flex-shrink-0">
+				<div className="border-b border-border bg-card px-4 py-4 flex-shrink-0">
 					<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<h1 className="text-2xl font-bold tracking-tight">
+							<h1 className="text-2xl font-bold tracking-tight text-foreground">
 								Reports & Analytics
 							</h1>
-							<p className="text-muted-foreground">
+							<p className="text-muted-foreground/90">
 								Track workspace activity and performance metrics
 							</p>
 						</div>
 						<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 							{/* Time Range Filter */}
 							<div className="flex items-center gap-2">
-								<span className="text-sm font-medium">Time Range:</span>
-								<div className="flex rounded-md border border-input overflow-hidden">
+								<span className="text-sm font-medium text-foreground">Time Range:</span>
+								<div className="flex rounded-md border border-input bg-background overflow-hidden">
 									<Button
 										type="button"
 										variant={timeRange === "1d" ? "default" : "ghost"}
@@ -315,14 +315,15 @@ const ReportsPage = () => {
 				</div>
 
 				{/* Main content area */}
-				<div className="flex-1 overflow-auto p-4">
+				<div className="flex-1 overflow-auto p-4 bg-background">
 					<div className="mx-auto max-w-7xl space-y-6">
 						{/* Tabs */}
 						<Tabs defaultValue="overview" className="space-y-6">
-							<TabsList className="grid w-full grid-cols-7 mb-4">
+							<TabsList className="grid w-full grid-cols-7 mb-4 bg-muted/30">
 								<TabsTrigger
 									value="overview"
 									onClick={() => setActiveTab("overview")}
+									className="data-[state=active]:bg-background"
 								>
 									<BarChart className="h-4 w-4 mr-2" />
 									Overview
@@ -330,6 +331,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="users"
 									onClick={() => setActiveTab("users")}
+									className="data-[state=active]:bg-background"
 								>
 									<Users className="h-4 w-4 mr-2" />
 									Users
@@ -337,6 +339,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="channels"
 									onClick={() => setActiveTab("channels")}
+									className="data-[state=active]:bg-background"
 								>
 									<Hash className="h-4 w-4 mr-2" />
 									Channels
@@ -344,6 +347,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="messages"
 									onClick={() => setActiveTab("messages")}
+									className="data-[state=active]:bg-background"
 								>
 									<MessageSquare className="h-4 w-4 mr-2" />
 									Messages
@@ -351,6 +355,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="content"
 									onClick={() => setActiveTab("content")}
+									className="data-[state=active]:bg-background"
 								>
 									<FileText className="h-4 w-4 mr-2" />
 									Content
@@ -358,6 +363,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="performance"
 									onClick={() => setActiveTab("performance")}
+									className="data-[state=active]:bg-background"
 								>
 									<Activity className="h-4 w-4 mr-2" />
 									Performance
@@ -365,6 +371,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="tasks"
 									onClick={() => setActiveTab("tasks")}
+									className="data-[state=active]:bg-background"
 								>
 									<CheckSquare className="h-4 w-4 mr-2" />
 									Tasks
@@ -423,37 +430,37 @@ const ReportsPage = () => {
 									<div className="space-y-6">
 										{/* Message stats */}
 										<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Total Messages
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{messageData?.totalMessages
 																? messageData.totalMessages.toLocaleString()
 																: 0}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														in the selected time period
 													</CardDescription>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Daily Average
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<BarChart className="h-5 w-5 text-secondary mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{messageData.messagesByDate.length > 0
 																? Math.round(
 																		messageData.totalMessages /
@@ -462,26 +469,26 @@ const ReportsPage = () => {
 																: 0}
 														</div>
 													</div>
-													<CardDescription>messages per day</CardDescription>
+													<CardDescription className="text-muted-foreground/80">messages per day</CardDescription>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Top Sender
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<Users className="h-5 w-5 text-secondary mr-2" />
-														<div className="text-xl font-bold truncate">
+														<div className="text-xl font-bold truncate text-foreground">
 															{messageData.topSenders.length > 0
 																? messageData.topSenders[0].name
 																: "No data"}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														{messageData.topSenders.length > 0
 															? `${messageData.topSenders[0].count} messages`
 															: ""}
@@ -595,39 +602,39 @@ const ReportsPage = () => {
 									<div className="space-y-6">
 										{/* Task stats */}
 										<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Total Tasks
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<CheckSquare className="h-5 w-5 text-secondary mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{taskData.totalTasks}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														in the selected time period
 													</CardDescription>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Completed Tasks
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<CheckSquare className="h-5 w-5 text-green-500 mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{taskData.completedTasks}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														{taskData.totalTasks > 0
 															? `${Math.round((taskData.completedTasks / taskData.totalTasks) * 100)}% completion rate`
 															: "0% completion rate"}
@@ -635,39 +642,39 @@ const ReportsPage = () => {
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														In Progress
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<CheckSquare className="h-5 w-5 text-blue-500 mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{taskData.statusCounts.in_progress}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														tasks currently in progress
 													</CardDescription>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														High Priority
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<CheckSquare className="h-5 w-5 text-red-500 mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{taskData.priorityCounts.high}
 														</div>
 													</div>
-													<CardDescription>high priority tasks</CardDescription>
+													<CardDescription className="text-muted-foreground/80">high priority tasks</CardDescription>
 												</CardContent>
 											</Card>
 										</div>

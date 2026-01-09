@@ -319,24 +319,29 @@ export const TaskSidebar = ({
 									}
 									size="sm"
 									className={cn(
-										"w-full justify-start text-sm h-9 rounded-md dark:hover:bg-gray-700/50",
+										"w-full justify-start text-sm h-9 rounded-md",
 										filterOptions.categoryId === category._id
-											? `bg-opacity-10 hover:bg-opacity-20 font-medium`
-											: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300"
+											? `font-medium`
+											: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
 									)}
 									style={
 										filterOptions.categoryId === category._id
 											? {
-													backgroundColor: `${category.color}20`,
+													backgroundColor: `${category.color}30`,
 													color: category.color,
+													borderWidth: '2px',
+													borderColor: category.color,
 												}
 											: {}
 									}
 									onClick={() => onFilterChange({ categoryId: category._id })}
 								>
 									<div
-										className="mr-2 h-3 w-3 rounded-full"
-										style={{ backgroundColor: category.color }}
+										className="mr-2 h-3 w-3 rounded-full border-2"
+										style={{ 
+											backgroundColor: category.color,
+											borderColor: category.color,
+										}}
 									/>
 									{category.name}
 								</Button>

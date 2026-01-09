@@ -233,14 +233,14 @@ const TasksPage = () => {
 								</div>
 								<div className="space-y-4">
 									{filteredTasks.length === 0 ? (
-										<div className="flex flex-col items-center justify-center py-16 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
-											<div className="rounded-full bg-gray-100 p-4">
-												<CheckSquare className="h-8 w-8 text-gray-400" />
+										<div className="flex flex-col items-center justify-center py-16 text-center bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+											<div className="rounded-full bg-gray-100 dark:bg-gray-700 p-4">
+												<CheckSquare className="h-8 w-8 text-gray-400 dark:text-gray-500" />
 											</div>
-											<h3 className="mt-4 text-xl font-semibold">
+											<h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-gray-100">
 												No tasks found
 											</h3>
-											<p className="mt-2 text-gray-500 max-w-md mx-auto">
+											<p className="mt-2 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
 												{searchQuery ||
 												filterOptions.status !== "all" ||
 												filterOptions.priority !== "all" ||

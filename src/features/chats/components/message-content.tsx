@@ -99,7 +99,7 @@ export const MessageContent = ({
 							? "p-0 bg-transparent" // No padding, no background for custom components
 							: cn(
 									"max-w-md px-3 py-2", // Normal styling for regular messages
-									isAuthor ? "bg-primary text-primary-foreground" : "bg-muted"
+									isAuthor ? "bg-primary text-primary-foreground" : "bg-muted dark:bg-gray-800"
 								)
 					)}
 					onContextMenu={onContextMenu}

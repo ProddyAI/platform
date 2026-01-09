@@ -240,6 +240,44 @@
 		color: hsl(var(--card-foreground)) !important;
 	}
 
+	/* Style Quill toolbar buttons in dark mode */
+	.dark .ql-snow .ql-stroke,
+	.dark .ql-stroke {
+		stroke: rgba(255, 255, 255, 0.7) !important;
+	}
+
+	.dark .ql-snow .ql-fill,
+	.dark .ql-fill {
+		fill: rgba(255, 255, 255, 0.7) !important;
+	}
+
+	.dark .ql-snow .ql-picker-label,
+	.dark .ql-picker-label {
+		color: rgba(255, 255, 255, 0.7) !important;
+	}
+
+	/* Hover state for toolbar buttons in dark mode */
+	.dark .ql-snow .ql-toolbar button:hover .ql-stroke,
+	.dark .ql-toolbar button:hover .ql-stroke {
+		stroke: #60a5fa !important;
+	}
+
+	.dark .ql-snow .ql-toolbar button:hover .ql-fill,
+	.dark .ql-toolbar button:hover .ql-fill {
+		fill: #60a5fa !important;
+	}
+
+	/* Active/selected state for toolbar buttons in dark mode */
+	.dark .ql-snow .ql-toolbar button.ql-active .ql-stroke,
+	.dark .ql-toolbar button.ql-active .ql-stroke {
+		stroke: #60a5fa !important;
+	}
+
+	.dark .ql-snow .ql-toolbar button.ql-active .ql-fill,
+	.dark .ql-toolbar button.ql-active .ql-fill {
+		fill: #60a5fa !important;
+	}
+
 	.dark .ql-editor a {
 		color: inherit !important;
 	}
@@ -290,6 +328,10 @@
 	font-weight: 400 !important;
 	font-family: 'Poppins', sans-serif !important;
 	font-size: 14px !important;
+}
+
+.dark .ql-editor {
+	color: #ffffff !important;
 }
 
 .ql-editor a {

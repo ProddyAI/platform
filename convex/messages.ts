@@ -820,8 +820,19 @@ export const getThreadMessages = query({
 			conversations.map((conversation) => [conversation._id, conversation])
 		);
 
-		// Get thread messages with context
-		const threadsWithContext = threadMessages
+		// Group thread messages by parent message ID and get the latest reply for each thread
+		const threadsByParent = new Map<Id<"messages">, typeof threadMessages[0]>();
+		
+		// Iterate through messages in reverse chronological order (already ordered desc)
+		// Keep only the first (most recent) message for each parent
+		for (const message of threadMessages) {
+			if (message.parentMessageId && !threadsByParent.has(message.parentMessageId)) {
+				threadsByParent.set(message.parentMessageId, message);
+			}
+		}
+
+		// Get thread messages with context - now one entry per unique parent message
+		const threadsWithContext = Array.from(threadsByParent.values())
 			.map((message) => {
 				if (!message.parentMessageId) return null;
 

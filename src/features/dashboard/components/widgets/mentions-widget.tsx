@@ -182,7 +182,7 @@ export const MentionsWidget = ({
 													</Badge>
 												)}
 											</div>
-											<div className="flex items-center text-xs text-muted-foreground">
+											<div className="flex items-center text-xs text-red-600 dark:text-red-400 font-medium">
 												<Clock className="mr-1 h-3 w-3" />
 												{(() => {
 													try {

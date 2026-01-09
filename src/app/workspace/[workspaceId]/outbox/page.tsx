@@ -3,6 +3,7 @@
 import { format, formatDistanceToNow } from "date-fns";
 import {
 	Brush,
+	Check,
 	Clock,
 	FileText,
 	Filter,
@@ -14,11 +15,21 @@ import {
 	User,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuLabel,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -61,11 +72,19 @@ export default function OutboxPage() {
 	const messages = useGetUserMessages() as Message[] | undefined;
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeFilter, setActiveFilter] = useState("all");
+	
+	// Filter states
+	const [showTextMessages, setShowTextMessages] = useState(true);
+	const [showCanvasMessages, setShowCanvasMessages] = useState(true);
+	const [showNoteMessages, setShowNoteMessages] = useState(true);
+	
+	// Sort state
+	const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
 
 	const parseMessageBody = (body: string) => {
 		try {
 			const parsed = JSON.parse(body);
-			if (parsed.type === "canvas" || parsed.type === "note") {
+			if (parsed.type === "canvas" || parsed.type === "canvas-live" || parsed.type === "note") {
 				return parsed;
 			}
 			if (parsed.ops?.[0]?.insert) {
@@ -79,7 +98,7 @@ export default function OutboxPage() {
 
 	const getMessageUrl = (message: Message) => {
 		const parsedBody = parseMessageBody(message.body);
-		if (typeof parsedBody === "object" && parsedBody.type === "canvas") {
+		if (typeof parsedBody === "object" && (parsedBody.type === "canvas" || parsedBody.type === "canvas-live")) {
 			return `/workspace/${workspaceId}/channel/${message.context.id}/canvas?roomId=${parsedBody.roomId}`;
 		}
 		if (typeof parsedBody === "object" && parsedBody.type === "note") {
@@ -96,31 +115,57 @@ export default function OutboxPage() {
 		return "#";
 	};
 
-	// Filter messages based on search query and active filter
-	const filteredMessages = messages?.filter((message) => {
-		const parsedBody = parseMessageBody(message.body);
-		const bodyText =
-			typeof parsedBody === "object" && parsedBody !== null
-				? parsedBody.canvasName || parsedBody.noteTitle || ""
-				: parsedBody || "";
+	// Filter and sort messages
+	const filteredAndSortedMessages = useMemo(() => {
+		if (!messages) return undefined;
+		
+		// Filter messages based on search query and active filter
+		let filtered = messages.filter((message) => {
+			const parsedBody = parseMessageBody(message.body);
+			const bodyText =
+				typeof parsedBody === "object" && parsedBody !== null
+					? parsedBody.canvasName || parsedBody.noteTitle || ""
+					: parsedBody || "";
 
-		const matchesSearch =
-			searchQuery === "" ||
-			(typeof bodyText === "string" &&
-				bodyText.toLowerCase().includes(searchQuery.toLowerCase())) ||
-			message.context.name.toLowerCase().includes(searchQuery.toLowerCase());
+			const matchesSearch =
+				searchQuery === "" ||
+				(typeof bodyText === "string" &&
+					bodyText.toLowerCase().includes(searchQuery.toLowerCase())) ||
+				message.context.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-		const matchesFilter =
-			activeFilter === "all" ||
-			(activeFilter === "channels" && message.context.type === "channel") ||
-			(activeFilter === "direct" && message.context.type === "conversation");
+			const matchesFilter =
+				activeFilter === "all" ||
+				(activeFilter === "channels" && message.context.type === "channel") ||
+				(activeFilter === "direct" && message.context.type === "conversation");
 
-		return matchesSearch && matchesFilter;
-	});
+			// Message type filter
+			const messageType = typeof parsedBody === "object" ? parsedBody.type : "text";
+			const matchesTypeFilter =
+				((messageType === "canvas" || messageType === "canvas-live") && showCanvasMessages) ||
+				(messageType === "note" && showNoteMessages) ||
+				(messageType !== "canvas" && messageType !== "canvas-live" && messageType !== "note" && showTextMessages);
+
+			return matchesSearch && matchesFilter && matchesTypeFilter;
+		});
+
+		// Sort messages
+		const sorted = [...filtered].sort((a, b) => {
+			if (sortBy === "newest") {
+				return b._creationTime - a._creationTime;
+			} else if (sortBy === "oldest") {
+				return a._creationTime - b._creationTime;
+			} else if (sortBy === "name") {
+				return a.context.name.localeCompare(b.context.name);
+			}
+			return 0;
+		});
+
+		return sorted;
+	}, [messages, searchQuery, activeFilter, showTextMessages, showCanvasMessages, showNoteMessages, sortBy]);
 
 	// Group messages by date (today, yesterday, this week, earlier)
 	const groupedMessages =
-		filteredMessages?.reduce(
+		filteredAndSortedMessages?.reduce(
 			(groups, message) => {
 				const date = new Date(message._creationTime);
 				const now = new Date();
@@ -183,31 +228,79 @@ export default function OutboxPage() {
 						<div className="flex items-center justify-between mb-4">
 							<h2 className="text-xl font-semibold">Your Messages</h2>
 							<div className="flex items-center gap-2">
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button variant="outline" size="icon" className="h-8 w-8">
-												<Filter className="h-4 w-4" />
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>Filter messages</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
+								<DropdownMenu>
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<DropdownMenuTrigger asChild>
+													<Button variant="outline" size="icon" className="h-8 w-8">
+														<Filter className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+											</TooltipTrigger>
+											<TooltipContent>
+												<p>Filter messages</p>
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+									<DropdownMenuContent align="end" className="w-56">
+										<DropdownMenuLabel>Filter by type</DropdownMenuLabel>
+										<DropdownMenuSeparator />
+										<DropdownMenuCheckboxItem
+											checked={showTextMessages}
+											onCheckedChange={setShowTextMessages}
+										>
+											<FileText className="mr-2 h-4 w-4" />
+											Text Messages
+										</DropdownMenuCheckboxItem>
+										<DropdownMenuCheckboxItem
+											checked={showCanvasMessages}
+											onCheckedChange={setShowCanvasMessages}
+										>
+											<Brush className="mr-2 h-4 w-4" />
+											Canvas Messages
+										</DropdownMenuCheckboxItem>
+										<DropdownMenuCheckboxItem
+											checked={showNoteMessages}
+											onCheckedChange={setShowNoteMessages}
+										>
+											<FileText className="mr-2 h-4 w-4" />
+											Note Messages
+										</DropdownMenuCheckboxItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
 
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button variant="outline" size="icon" className="h-8 w-8">
-												<SortDesc className="h-4 w-4" />
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>Sort messages</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
+								<DropdownMenu>
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<DropdownMenuTrigger asChild>
+													<Button variant="outline" size="icon" className="h-8 w-8">
+														<SortDesc className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+											</TooltipTrigger>
+											<TooltipContent>
+												<p>Sort messages</p>
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+									<DropdownMenuContent align="end" className="w-48">
+										<DropdownMenuLabel>Sort by</DropdownMenuLabel>
+										<DropdownMenuSeparator />
+										<DropdownMenuRadioGroup value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+											<DropdownMenuRadioItem value="newest">
+												Newest First
+											</DropdownMenuRadioItem>
+											<DropdownMenuRadioItem value="oldest">
+												Oldest First
+											</DropdownMenuRadioItem>
+											<DropdownMenuRadioItem value="name">
+												By Name (A-Z)
+											</DropdownMenuRadioItem>
+										</DropdownMenuRadioGroup>
+									</DropdownMenuContent>
+								</DropdownMenu>
 							</div>
 						</div>
 
@@ -249,7 +342,7 @@ export default function OutboxPage() {
 					</div>
 
 					<div className="flex-1 overflow-y-auto p-4">
-						{filteredMessages?.length === 0 ? (
+						{filteredAndSortedMessages?.length === 0 ? (
 							<div className="flex h-full flex-col items-center justify-center gap-y-2">
 								<Search className="size-12 text-muted-foreground" />
 								<h3 className="text-lg font-medium">No matching messages</h3>
@@ -388,16 +481,16 @@ export default function OutboxPage() {
 					<div className="flex-1 space-y-1">
 						{typeof content === "object" ? (
 							<div>
-								{content.type === "canvas" && (
+								{(content.type === "canvas" || content.type === "canvas-live") && (
 									<div className="flex items-center gap-2 text-sm">
 										<Brush className="h-4 w-4 text-muted-foreground" />
-										<span>Canvas: {content.canvasName}</span>
+										<span>Canvas: {content.canvasName || content.roomId?.split('-').slice(1, -1).join('-') || "Untitled Canvas"}</span>
 									</div>
 								)}
 								{content.type === "note" && (
 									<div className="flex items-center gap-2 text-sm">
 										<FileText className="h-4 w-4 text-muted-foreground" />
-										<span>Note: {content.noteTitle}</span>
+										<span>Note: {content.noteTitle || "Untitled Note"}</span>
 									</div>
 								)}
 							</div>

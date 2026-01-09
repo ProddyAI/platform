@@ -203,7 +203,7 @@ export const OverviewDashboard = ({
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h2 className="text-xl font-semibold">Workspace Overview</h2>
+				<h2 className="text-xl font-semibold text-foreground">Workspace Overview</h2>
 			</div>
 
 			{/* Key Metrics with Trends */}
@@ -211,9 +211,9 @@ export const OverviewDashboard = ({
 				<TooltipProvider>
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Card className="cursor-help hover:shadow-md transition-all duration-200 hover:border-secondary/50">
+							<Card className="cursor-help hover:shadow-md transition-all duration-200 hover:border-secondary/50 border-border">
 								<CardHeader className="pb-2">
-									<CardTitle className="text-sm font-medium text-muted-foreground">
+									<CardTitle className="text-sm font-medium text-muted-foreground/90">
 										Active Users
 									</CardTitle>
 								</CardHeader>
@@ -221,7 +221,7 @@ export const OverviewDashboard = ({
 									<div className="flex items-center justify-between">
 										<div className="flex items-center">
 											<Users className="h-5 w-5 text-secondary mr-2" />
-											<div className="text-2xl font-bold">
+											<div className="text-2xl font-bold text-foreground">
 												{activeUsersData?.activeUserCount || 0}
 											</div>
 										</div>
@@ -238,7 +238,7 @@ export const OverviewDashboard = ({
 											</div>
 										)}
 									</div>
-									<CardDescription>
+									<CardDescription className="text-muted-foreground/80">
 										{activeUsersData?.activeUserPercentage || 0}% of{" "}
 										{activeUsersData?.totalMembers || 0} total users
 									</CardDescription>
@@ -267,9 +267,9 @@ export const OverviewDashboard = ({
 					</Tooltip>
 				</TooltipProvider>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Total Messages
 						</CardTitle>
 					</CardHeader>
@@ -277,7 +277,7 @@ export const OverviewDashboard = ({
 						<div className="flex items-center justify-between">
 							<div className="flex items-center">
 								<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-								<div className="text-2xl font-bold">
+								<div className="text-2xl font-bold text-foreground">
 									{overviewData.totalMessages
 										? overviewData.totalMessages.toLocaleString()
 										: 0}
@@ -296,7 +296,7 @@ export const OverviewDashboard = ({
 								</div>
 							)}
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{overviewData.activeUserCount > 0
 								? `${Math.round(overviewData.totalMessages / overviewData.activeUserCount)} per active user`
 								: "No active users"}{" "}
@@ -305,9 +305,9 @@ export const OverviewDashboard = ({
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Tasks Created
 						</CardTitle>
 					</CardHeader>
@@ -315,7 +315,7 @@ export const OverviewDashboard = ({
 						<div className="flex items-center justify-between">
 							<div className="flex items-center">
 								<CheckSquare className="h-5 w-5 text-secondary mr-2" />
-								<div className="text-2xl font-bold">
+								<div className="text-2xl font-bold text-foreground">
 									{overviewData.totalTasks}
 								</div>
 							</div>
@@ -332,7 +332,7 @@ export const OverviewDashboard = ({
 								</div>
 							)}
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{taskData && taskData.completedTasks > 0
 								? `${Math.round((taskData.completedTasks / taskData.totalTasks) * 100)}% completion rate`
 								: "0% completion rate"}
@@ -340,20 +340,20 @@ export const OverviewDashboard = ({
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Active Channels
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center">
 							<Hash className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">
+							<div className="text-2xl font-bold text-foreground">
 								{overviewData.totalChannels}
 							</div>
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{overviewData.totalMessages > 0 && overviewData.totalChannels > 0
 								? `${Math.round(overviewData.totalMessages / overviewData.totalChannels)} messages per channel`
 								: "No messages"}

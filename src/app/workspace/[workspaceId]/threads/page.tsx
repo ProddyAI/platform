@@ -429,9 +429,9 @@ export default function ThreadsPage() {
 						{parsedParentBody.isSpecial ? (
 							<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-3 border border-primary/20">
 								{parsedParentBody.type === "canvas" ? (
-									<PaintBucket className="h-5 w-5 text-primary flex-shrink-0" />
+									<PaintBucket className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
 								) : (
-									<FileText className="h-5 w-5 text-primary flex-shrink-0" />
+									<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
 								)}
 								<span className="font-semibold text-sm truncate">
 									{parsedParentBody.content}
@@ -473,7 +473,7 @@ export default function ThreadsPage() {
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-7 text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
+							className="h-7 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 							onClick={(e) => {
 								e.stopPropagation();
 								handleOpenThread(thread);

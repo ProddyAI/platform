@@ -100,12 +100,26 @@ export const ChannelActivityDashboard = ({
 		(a, b) => b.uniqueVisitors - a.uniqueVisitors
 	);
 
-	// Prepare data for charts
-	const messageCountData = sortedByMessages.map((item) => ({
-		label: item.channel.name,
-		value: item.messageCount,
-		color: "bg-secondary",
-	}));
+	// Prepare data for charts with gradient colors
+	const messageCountData = sortedByMessages.map((item, index) => {
+		// Create a nice gradient of colors for different channels
+		const colors = [
+			"bg-gradient-to-r from-purple-500 to-pink-500",
+			"bg-gradient-to-r from-blue-500 to-cyan-500",
+			"bg-gradient-to-r from-green-500 to-emerald-500",
+			"bg-gradient-to-r from-orange-500 to-amber-500",
+			"bg-gradient-to-r from-red-500 to-rose-500",
+			"bg-gradient-to-r from-indigo-500 to-purple-500",
+			"bg-gradient-to-r from-teal-500 to-green-500",
+			"bg-gradient-to-r from-yellow-500 to-orange-500",
+		];
+		
+		return {
+			label: item.channel.name,
+			value: item.messageCount,
+			color: colors[index % colors.length],
+		};
+	});
 
 	const timeSpentData = sortedByTimeSpent
 		.filter((item) => (item.totalTimeSpent || 0) > 0) // Only show channels with time spent
@@ -127,11 +141,25 @@ export const ChannelActivityDashboard = ({
 			};
 		});
 
-	const visitorsData = sortedByVisitors.map((item) => ({
-		label: item.channel.name,
-		value: item.uniqueVisitors,
-		color: "bg-primary",
-	}));
+	const visitorsData = sortedByVisitors.map((item, index) => {
+		// Use gradient colors for visitor data too
+		const colors = [
+			"bg-gradient-to-r from-blue-600 to-indigo-600",
+			"bg-gradient-to-r from-purple-600 to-pink-600",
+			"bg-gradient-to-r from-cyan-600 to-blue-600",
+			"bg-gradient-to-r from-violet-600 to-purple-600",
+			"bg-gradient-to-r from-fuchsia-600 to-pink-600",
+			"bg-gradient-to-r from-indigo-600 to-blue-600",
+			"bg-gradient-to-r from-blue-600 to-cyan-600",
+			"bg-gradient-to-r from-purple-600 to-violet-600",
+		];
+		
+		return {
+			label: item.channel.name,
+			value: item.uniqueVisitors,
+			color: colors[index % colors.length],
+		};
+	});
 
 	// Prepare data for pie chart
 	const pieData = sortedByMessages.slice(0, 5).map((item, index) => {
@@ -166,76 +194,76 @@ export const ChannelActivityDashboard = ({
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h2 className="text-xl font-semibold">Channel Activity</h2>
+				<h2 className="text-xl font-semibold text-foreground">Channel Activity</h2>
 			</div>
 
 			{/* Stats overview */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Total Channels
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center">
 							<Hash className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">{channelActivity.length}</div>
+							<div className="text-2xl font-bold text-foreground">{channelActivity.length}</div>
 						</div>
-						<CardDescription>Active in the selected period</CardDescription>
+						<CardDescription className="text-muted-foreground/80">Active in the selected period</CardDescription>
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Total Messages
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center">
 							<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">{totalMessages}</div>
+							<div className="text-2xl font-bold text-foreground">{totalMessages}</div>
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{avgMessagesPerChannel.toFixed(1)} per channel
 						</CardDescription>
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Most Active Channel
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center">
 							<Hash className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-xl font-bold truncate">
+							<div className="text-xl font-bold truncate text-foreground">
 								{sortedByMessages[0]?.channel.name || "None"}
 							</div>
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{sortedByMessages[0]?.messageCount || 0} messages
 						</CardDescription>
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Total Time Spent
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center">
 							<Clock className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">
+							<div className="text-2xl font-bold text-foreground">
 								{formatDuration(totalTimeSpent, "short")}
 							</div>
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{formatDuration(avgTimeSpentPerChannel, "short")} per channel
 						</CardDescription>
 					</CardContent>

@@ -124,7 +124,7 @@ export const CalendarPreviewWidget = ({
 					<CalendarIcon className="h-5 w-5 text-primary widget-title-icon" />
 					<h3 className="font-medium">Upcoming Events</h3>
 					{!isEditMode && upcomingEvents.length > 0 && (
-						<Badge variant="default" className="ml-2 widget-badge">
+						<Badge variant="secondary" className="ml-1 h-5 px-2 text-xs font-medium">
 							{upcomingEvents.length}
 						</Badge>
 					)}
@@ -133,10 +133,10 @@ export const CalendarPreviewWidget = ({
 					controls
 				) : (
 					<Button
-						variant="outline"
+						variant="ghost"
 						size="sm"
+						className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewCalendar}
-						className="border-2 widget-button"
 					>
 						View All
 					</Button>
@@ -179,7 +179,7 @@ export const CalendarPreviewWidget = ({
 													<Button
 														variant="ghost"
 														size="sm"
-														className="mt-1 w-full justify-start text-primary"
+														className="mt-1 w-full justify-start text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 														onClick={() => handleViewEvent(event._id)}
 													>
 														View details

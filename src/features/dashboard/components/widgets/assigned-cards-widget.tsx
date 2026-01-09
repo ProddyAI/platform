@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { AlertCircle, Clock, KanbanSquare, Loader } from "lucide-react";
+import { Clock, KanbanSquare, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -78,13 +78,13 @@ export const AssignedCardsWidget = ({
 	}
 
 	return (
-		<div className="space-y-4 pb-4">
-			<div className="flex items-center justify-between pr-2">
+		<div className="space-y-3">
+			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-medium">Assigned Cards</h3>
+					<KanbanSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+					<h3 className="font-semibold text-base">Assigned Cards</h3>
 					{!isEditMode && sortedCards.length > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge variant="secondary" className="ml-1 h-5 px-2 text-xs font-medium">
 							{sortedCards.length}
 						</Badge>
 					)}
@@ -94,8 +94,9 @@ export const AssignedCardsWidget = ({
 					: channels &&
 						channels.length > 0 && (
 							<Button
-								variant="default"
+								variant="ghost"
 								size="sm"
+								className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 								onClick={() =>
 									router.push(
 										`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
@@ -108,75 +109,60 @@ export const AssignedCardsWidget = ({
 			</div>
 
 			{sortedCards.length > 0 ? (
-				<ScrollArea className="widget-scroll-area">
-					<div className="space-y-2 p-4">
+				<ScrollArea className="h-[280px]">
+					<div className="space-y-2 pr-4">
 						{sortedCards.map((card) => (
 							<WidgetCard key={card._id}>
-								<div className="flex items-start gap-3">
-									<KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400 mt-1" />
-									<div className="flex-1 space-y-1">
-										<div className="flex items-center justify-between">
-											<p className="font-medium">{card.title}</p>
-											<div className="flex items-center gap-2">
-												{card.dueDate && (
-													<div
-														className={`flex items-center text-xs ${
-															new Date(card.dueDate) < new Date()
-																? "text-red-500"
-																: "text-muted-foreground"
-														}`}
-													>
-														<Clock className="mr-1 h-3 w-3" />
-														{formatDistanceToNow(new Date(card.dueDate), {
-															addSuffix: true,
-														})}
-														{new Date(card.dueDate) < new Date() && (
-															<AlertCircle className="ml-1 h-3 w-3" />
-														)}
-													</div>
-												)}
-											</div>
-										</div>
-										<div className="flex items-center justify-between">
-											<Badge variant="outline" className="text-xs border-2">
-												{card.channelName || "Unknown Channel"}
-											</Badge>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="h-7 px-3 text-xs text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
-												onClick={() => handleViewCard(card)}
-											>
-												View
-											</Button>
-										</div>
+								<div className="space-y-2">
+									<div className="flex items-start justify-between gap-2">
+										<p className="font-medium text-sm leading-tight flex-1">{card.title}</p>
+										{card.dueDate && (
+											<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
+												<Clock className="h-2.5 w-2.5" />
+												{formatDistanceToNow(new Date(card.dueDate), {
+													addSuffix: true,
+												}).replace('about ', '')}
+											</span>
+										)}
 									</div>
+									<div className="flex items-center gap-2">
+										<Badge variant="outline" className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300">
+											# {card.channelName || "Unknown Channel"}
+										</Badge>
+									</div>
+									<Button
+										variant="ghost"
+										size="sm"
+										className="h-7 px-2 w-full justify-center text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+										onClick={() => handleViewCard(card)}
+									>
+										View
+									</Button>
 								</div>
 							</WidgetCard>
 						))}
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-					<KanbanSquare className="mb-2 h-10 w-10 text-muted-foreground" />
-					<h3 className="text-lg font-medium">No assigned cards</h3>
-					<p className="text-sm text-muted-foreground">
+				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
+					<KanbanSquare className="mb-3 h-12 w-12 text-muted-foreground/40" />
+					<h3 className="text-base font-semibold text-foreground">No assigned cards</h3>
+					<p className="text-sm text-muted-foreground mt-1">
 						You don't have any board cards assigned
 					</p>
 					{channels && channels.length > 0 && (
-						<div className="flex gap-2 mt-4">
-							<Button
-								variant="default"
-								size="sm"
-								onClick={() =>
-									router.push(
-										`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
-									)
-								}
-							>
-								View boards
-							</Button>
-						</div>
+						<Button
+							variant="default"
+							size="sm"
+							className="mt-4 bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700"
+							onClick={() =>
+								router.push(
+									`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
+								)
+							}
+						>
+							View boards
+						</Button>
 					)}
 				</div>
 			)}
