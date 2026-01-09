@@ -5,10 +5,12 @@
 import * as Sentry from "@sentry/nextjs";
 
 const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+const sentryDisabled = process.env.SENTRY_DISABLED === "1";
 
-if (sentryDsn) {
+if (sentryDsn && !sentryDisabled) {
 	Sentry.init({
 		dsn: sentryDsn,
+		enabled: !sentryDisabled,
 
 		// Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
 		tracesSampleRate: 1,
