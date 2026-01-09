@@ -8,13 +8,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 
 const liveblocksSecret = process.env.LIVEBLOCKS_SECRET_KEY;
-if (!liveblocksSecret) {
-	throw new Error("LIVEBLOCKS_SECRET_KEY environment variable is required");
-}
-
-const liveblocks = new Liveblocks({
-	secret: liveblocksSecret,
-});
 
 type LiveblocksAuthRequestBody = {
 	room?: string;
@@ -63,6 +56,19 @@ function getConvexClient(): ConvexHttpClient {
 
 export async function POST(req: NextRequest) {
 	try {
+		if (!liveblocksSecret) {
+			return NextResponse.json(
+				{
+					error: "LIVEBLOCKS_SECRET_KEY environment variable is required",
+				},
+				{ status: 500 }
+			);
+		}
+
+		const liveblocks = new Liveblocks({
+			secret: liveblocksSecret,
+		});
+
 		// Parse the request body
 		const rawBody: unknown = await req.json();
 		const body: LiveblocksAuthRequestBody = isRecord(rawBody)
