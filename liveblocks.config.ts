@@ -99,7 +99,11 @@ type RoomEvent =
 
 // Optionally, when using Comments, ThreadMetadata represents metadata on
 // each thread. Can only contain booleans, strings, and numbers.
-export type ThreadMetadata = Record<string, never>;
+export type ThreadMetadata = {
+	x: number;
+	y: number;
+	resolved: boolean;
+};
 
 // Room-level hooks, use inside `RoomProvider`
 export const {
