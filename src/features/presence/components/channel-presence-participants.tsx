@@ -30,10 +30,11 @@ export const ChannelPresenceParticipants = () => {
 
 	return (
 		<div className="flex items-center gap-2">
-			{shown.map((p) => {
+			{shown
+				.filter((p) => !!(p.memberId || p.userId))
+				.map((p) => {
 				const name = p.user?.name || "User";
 				const key = p.memberId || p.userId;
-				if (!key) return null;
 				return (
 					<ParticipantAvatar
 						key={key}
@@ -44,7 +45,7 @@ export const ChannelPresenceParticipants = () => {
 						side="bottom"
 					/>
 				);
-			})}
+				})}
 
 			{hasMore && (
 				<Hint
