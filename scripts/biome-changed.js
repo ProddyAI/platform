@@ -15,16 +15,46 @@ function run(command, args, options) {
 }
 
 function getChangedFiles(baseRef) {
-	const diff = run("git", [
+	const diffArgs = [
 		"diff",
 		"--name-only",
 		"--diff-filter=ACMRTUXB",
 		`${baseRef}...HEAD`,
-	]);
+	];
+
+	const baseRefCheck = run("git", ["rev-parse", "--verify", `${baseRef}^{commit}`]);
+	if (baseRefCheck.status !== 0) {
+		// Common in shallow CI clones: origin/main isn't present locally.
+		const originPrefix = "origin/";
+		const remotesPrefix = "refs/remotes/origin/";
+		const refName = baseRef.startsWith(originPrefix)
+			? baseRef.slice(originPrefix.length)
+			: baseRef.startsWith(remotesPrefix)
+				? baseRef.slice(remotesPrefix.length)
+				: baseRef;
+
+		const fetch = run("git", ["fetch", "origin", refName, "--depth=1"]);
+		if (fetch.status !== 0) {
+			process.stderr.write(fetch.stderr || "");
+			process.stdout.write(fetch.stdout || "");
+			process.stderr.write(
+				`\n[biome-changed] Base ref '${baseRef}' is missing and could not be fetched. ` +
+					`This often happens in shallow CI clones. ` +
+					`Consider setting CI fetch-depth to 0 (full history) or ensuring '${baseRef}' is fetched.\n`
+			);
+			process.exit(fetch.status ?? 1);
+		}
+	}
+
+	const diff = run("git", diffArgs);
 
 	if (diff.status !== 0) {
 		process.stderr.write(diff.stderr || "");
 		process.stdout.write(diff.stdout || "");
+		process.stderr.write(
+			`\n[biome-changed] Failed to compute changed files using base '${baseRef}'. ` +
+				`If this is running in CI, ensure the base ref exists locally (avoid shallow clones or fetch the base ref).\n`
+		);
 		process.exit(diff.status ?? 1);
 	}
 
