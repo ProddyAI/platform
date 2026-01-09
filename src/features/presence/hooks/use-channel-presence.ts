@@ -36,6 +36,7 @@ export const useChannelPresence = ({
 	);
 
 	const userIdForHook = (currentUser?._id as string | undefined) || "anonymous";
+	const roomId = channelId ? `channel-${channelId}` : `channel-missing-${userIdForHook}`;
 
 	const presenceState = usePresence(
 		{
@@ -43,7 +44,7 @@ export const useChannelPresence = ({
 			list: api.presence.list,
 			disconnect: api.presence.disconnect,
 		},
-		channelId ? `channel-${channelId}` : "channel-unknown",
+		roomId,
 		userIdForHook
 	);
 
