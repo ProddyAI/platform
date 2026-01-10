@@ -48,7 +48,7 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@ai-sdk/google": "^3.0.2",
+		"@ai-sdk/google": "^3.0.6",
 		"@ai-sdk/openai": "^2.0.22",
 		"@auth/core": "^0.34.2",
 		"@blocknote/core": "^0.33.0",
