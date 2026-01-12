@@ -104,9 +104,7 @@ export const indexContent = action({
 
 		// Check if OpenAI API key is configured for embeddings
 		if (!process.env.OPENAI_API_KEY) {
-			console.error(
-				"OPENAI_API_KEY not configured, skipping content indexing"
-			);
+			console.error("OPENAI_API_KEY not configured, skipping content indexing");
 			return;
 		}
 

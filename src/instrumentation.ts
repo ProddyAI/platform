@@ -4,7 +4,7 @@ export async function register() {
 	if (process.env.NEXT_RUNTIME === "nodejs") {
 		await import("../sentry.server.config");
 	}
-	
+
 	// Edge runtime initialization is disabled to prevent native module errors
 	// Middleware runs in Edge Runtime and doesn't support OpenTelemetry
 }
