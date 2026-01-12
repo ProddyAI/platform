@@ -56,9 +56,7 @@ function extractTextFromRichText(body: string): string {
 				.trim();
 		}
 	} catch (_e) {
-		return body
-			.replace(/<[^>]*>/g, "")
-			.trim();
+		return body.replace(/<[^>]*>/g, "").trim();
 	}
 
 	return body.trim();

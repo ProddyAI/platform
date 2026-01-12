@@ -155,6 +155,41 @@ const baseConfig = withPWA({
 	eslint: {
 		ignoreDuringBuilds: true,
 	},
+	webpack: (config, { isServer, nextRuntime }) => {
+		if (isServer) {
+			// Exclude OpenTelemetry packages from bundling for all server-side code
+			if (Array.isArray(config.externals)) {
+				config.externals.push({
+					"@opentelemetry/api": "commonjs @opentelemetry/api",
+					"@opentelemetry/instrumentation":
+						"commonjs @opentelemetry/instrumentation",
+				});
+			} else if (typeof config.externals === 'object') {
+				config.externals = {
+					...config.externals,
+					"@opentelemetry/api": "commonjs @opentelemetry/api",
+					"@opentelemetry/instrumentation":
+						"commonjs @opentelemetry/instrumentation",
+				};
+			}
+		}
+		
+		// For middleware specifically, ensure OpenTelemetry is externalized
+		if (nextRuntime === 'nodejs') {
+			if (!config.externals) {
+				config.externals = [];
+			}
+			if (Array.isArray(config.externals)) {
+				config.externals.push({
+					"@opentelemetry/api": "commonjs @opentelemetry/api",
+					"@opentelemetry/instrumentation":
+						"commonjs @opentelemetry/instrumentation",
+				});
+			}
+		}
+		
+		return config;
+	},
 });
 
 let withSentryConfig = (config) => config;

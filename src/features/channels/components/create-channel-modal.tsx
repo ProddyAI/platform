@@ -2,7 +2,7 @@
 
 import { Smile, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -39,11 +39,26 @@ export const CreateChannelModal = () => {
 	const { mutate, isPending } = useCreateChannel();
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();
 
+	// Cleanup blob URL on unmount to prevent memory leaks
+	useEffect(() => {
+		return () => {
+			if (iconPreview) {
+				URL.revokeObjectURL(iconPreview);
+			}
+		};
+	}, [iconPreview]);
+
 	const handleClose = () => {
 		setName("");
 		setIcon(undefined);
-		setIconImage(null);
-		setIconPreview(null);
+		setIconImage(undefined);
+		// Properly revoke the blob URL before clearing
+		setIconPreview((previousPreview) => {
+			if (previousPreview) {
+				URL.revokeObjectURL(previousPreview);
+			}
+			return undefined;
+		});
 		setOpen(false);
 	};
 
@@ -54,9 +69,14 @@ export const CreateChannelModal = () => {
 
 	const handleEmojiSelect = (emoji: string) => {
 		setIcon(emoji);
-		// Clear image if emoji is selected
-		setIconImage(null);
-		setIconPreview(null);
+		// Clear image if emoji is selected and revoke blob URL
+		setIconImage(undefined);
+		setIconPreview((previousPreview) => {
+			if (previousPreview) {
+				URL.revokeObjectURL(previousPreview);
+			}
+			return undefined;
+		});
 	};
 
 	const handleIconImageUpload = async (
@@ -97,11 +117,17 @@ export const CreateChannelModal = () => {
 				throw new Error("Failed to upload image");
 			}
 
-			const { storageId } = await result.json();
+			const { storageId } = (await result.json()) as {
+				storageId: Id<"_storage">;
+			};
 
-			// Create preview
-			const previewUrl = URL.createObjectURL(file);
-			setIconPreview(previewUrl);
+			// Revoke previous preview URL before creating new one
+			setIconPreview((previousPreview) => {
+				if (previousPreview) {
+					URL.revokeObjectURL(previousPreview);
+				}
+				return URL.createObjectURL(file);
+			});
 			setIconImage(storageId);
 			// Clear emoji if image is selected
 			setIcon(undefined);
@@ -185,23 +211,33 @@ export const CreateChannelModal = () => {
 										onChange={handleIconImageUpload}
 										className="hidden"
 										id="icon-upload"
+										aria-label="Upload channel icon image"
 									/>
-									<div
+									<button
+										type="button"
 										onClick={() =>
 											!isUploading && imageInputRef.current?.click()
 										}
-										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
+										disabled={isUploading}
+										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+										aria-label="Upload channel icon"
 									>
 										{iconPreview || icon ? (
 											<>
 												{iconPreview ? (
 													<img
 														src={iconPreview}
-														alt="Icon preview"
-														className="h-full w-full object-cover"
+														alt="Channel icon preview"
+														className="h-full w-full object-cover rounded-sm"
 													/>
 												) : (
-													<span className="text-4xl">{icon}</span>
+													<span
+														className="text-4xl"
+														role="img"
+														aria-label="Channel emoji icon"
+													>
+														{icon}
+													</span>
 												)}
 												<button
 													type="button"
@@ -215,6 +251,7 @@ export const CreateChannelModal = () => {
 														}
 													}}
 													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+													aria-label="Remove icon"
 												>
 													<X className="h-3.5 w-3.5" />
 												</button>
@@ -227,7 +264,7 @@ export const CreateChannelModal = () => {
 												</span>
 											</div>
 										)}
-									</div>
+									</button>
 									<EmojiPopover
 										onEmojiSelect={handleEmojiSelect}
 										hint="Select emoji icon"
@@ -235,6 +272,7 @@ export const CreateChannelModal = () => {
 										<button
 											type="button"
 											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+											aria-label="Select emoji icon"
 										>
 											<Smile className="h-4 w-4" />
 										</button>
@@ -257,8 +295,7 @@ export const CreateChannelModal = () => {
 										minLength={3}
 										maxLength={20}
 										placeholder="e.g. plan-budget"
-										className="h-10 !leading-[1.5] py-2.5"
-										style={{ lineHeight: "1.5" }}
+										className="h-10"
 									/>
 									<p className="text-xs text-muted-foreground mt-1">
 										Max 5MB for images
