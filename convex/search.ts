@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
@@ -95,8 +95,8 @@ type FilterTypes = {
 // `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: google.textEmbeddingModel("text-embedding-003") as any,
-	embeddingDimension: 768, // Gemini text-embedding-003 uses 768 dimensions
+	textEmbeddingModel: openai.embedding("text-embedding-3-small") as any,
+	embeddingDimension: 1536,
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
@@ -127,10 +127,10 @@ export const indexContent = action({
 			return;
 		}
 
-		// Check if Gemini API key is configured for embeddings
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+		// Check if OpenAI API key is configured for embeddings
+		if (!process.env.OPENAI_API_KEY) {
 			console.error(
-				"GOOGLE_GENERATIVE_AI_API_KEY not configured, skipping content indexing"
+				"OPENAI_API_KEY not configured, skipping content indexing"
 			);
 			return;
 		}
@@ -197,10 +197,10 @@ export const semanticSearch = action({
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
-		// Check if Gemini API key is configured for embeddings
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+		// Check if OpenAI API key is configured for embeddings
+		if (!process.env.OPENAI_API_KEY) {
 			console.warn(
-				"GOOGLE_GENERATIVE_AI_API_KEY not configured, falling back to empty results"
+				"OPENAI_API_KEY not configured, falling back to empty results"
 			);
 			return [];
 		}
@@ -1136,7 +1136,7 @@ export const aiSearchMessages = action({
 		try {
 			const { generateText } = await import("ai");
 			const result = await generateText({
-				model: google("gemini-2.0-flash-exp"),
+				model: openai("gpt-5-mini"),
 				prompt: `You are a helpful work assistant. Answer the user's question using ONLY the messages below.
 Provide a concise, direct answer. If the messages don't contain enough information, say so.
 Do NOT output topic/keyword lists or message counts.
