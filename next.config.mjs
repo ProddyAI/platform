@@ -155,30 +155,9 @@ const baseConfig = withPWA({
 	eslint: {
 		ignoreDuringBuilds: true,
 	},
-	webpack: (config, { isServer, nextRuntime }) => {
+	webpack: (config, { isServer }) => {
 		if (isServer) {
-			// Exclude OpenTelemetry packages from bundling for all server-side code
-			if (Array.isArray(config.externals)) {
-				config.externals.push({
-					"@opentelemetry/api": "commonjs @opentelemetry/api",
-					"@opentelemetry/instrumentation":
-						"commonjs @opentelemetry/instrumentation",
-				});
-			} else if (typeof config.externals === 'object') {
-				config.externals = {
-					...config.externals,
-					"@opentelemetry/api": "commonjs @opentelemetry/api",
-					"@opentelemetry/instrumentation":
-						"commonjs @opentelemetry/instrumentation",
-				};
-			}
-		}
-		
-		// For middleware specifically, ensure OpenTelemetry is externalized
-		if (nextRuntime === 'nodejs') {
-			if (!config.externals) {
-				config.externals = [];
-			}
+			// Exclude OpenTelemetry packages from bundling (only for API routes, not middleware)
 			if (Array.isArray(config.externals)) {
 				config.externals.push({
 					"@opentelemetry/api": "commonjs @opentelemetry/api",
@@ -187,8 +166,11 @@ const baseConfig = withPWA({
 				});
 			}
 		}
-		
 		return config;
+	},
+	// Disable experimental instrumentation to prevent OpenTelemetry issues in middleware
+	experimental: {
+		instrumentationHook: false,
 	},
 });
 
