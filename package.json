@@ -5,7 +5,7 @@
 	"scripts": {
 		"next": "next dev",
 		"convex": "convex dev",
-		"lint": "biome check --write --unsafe --max-diagnostics 1000 .",
+		"lint": "biome check --write --unsafe --max-diagnostics 2000 .",
 		"type": "tsc --noEmit && next build",
 		"start": "next start",
 		"build": "next build"

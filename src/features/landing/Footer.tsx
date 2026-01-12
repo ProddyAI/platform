@@ -98,14 +98,12 @@ export const Footer = () => {
 									</Link>
 								</li>
 								<li>
-									<a
-										href="https://docs.proddy.tech/"
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
+									<Link
+										href="/privacy"
+										className="text-sm text-gray-500 hover:text-primary transition-colors"
 									>
-										Documentation <ExternalLink className="size-3" />
-									</a>
+										Privacy Policy
+									</Link>
 								</li>
 								<li>
 									<button
@@ -145,20 +143,24 @@ export const Footer = () => {
 									</Link>
 								</li>
 								<li>
-									<Link
-										href="/privacy"
-										className="text-sm text-gray-500 hover:text-primary transition-colors"
+									<a
+										href="https://docs.proddy.tech/"
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
 									>
-										Privacy Policy
-									</Link>
+										Help <ExternalLink className="size-3" />
+									</a>
 								</li>
 								<li>
-									<Link
-										href="/terms"
-										className="text-sm text-gray-500 hover:text-primary transition-colors"
+									<a
+										href="https://careers.giighire.com/proddyai"
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
 									>
-										Terms of Service
-									</Link>
+										Careers <ExternalLink className="size-3" />
+									</a>
 								</li>
 							</ul>
 						</div>
