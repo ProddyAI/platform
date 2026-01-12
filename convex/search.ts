@@ -1136,7 +1136,7 @@ export const aiSearchMessages = action({
 		try {
 			const { generateText } = await import("ai");
 			const result = await generateText({
-				model: openai("gpt-5"),
+				model: openai("gpt-5-mini") as any,
 				prompt: `You are a helpful work assistant. Answer the user's question using ONLY the messages below.
 Provide a concise, direct answer. If the messages don't contain enough information, say so.
 Do NOT output topic/keyword lists or message counts.
