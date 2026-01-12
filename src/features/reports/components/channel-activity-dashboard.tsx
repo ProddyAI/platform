@@ -113,7 +113,7 @@ export const ChannelActivityDashboard = ({
 			"bg-gradient-to-r from-teal-500 to-green-500",
 			"bg-gradient-to-r from-yellow-500 to-orange-500",
 		];
-		
+
 		return {
 			label: item.channel.name,
 			value: item.messageCount,
@@ -153,7 +153,7 @@ export const ChannelActivityDashboard = ({
 			"bg-gradient-to-r from-blue-600 to-cyan-600",
 			"bg-gradient-to-r from-purple-600 to-violet-600",
 		];
-		
+
 		return {
 			label: item.channel.name,
 			value: item.uniqueVisitors,
@@ -163,13 +163,13 @@ export const ChannelActivityDashboard = ({
 
 	// Prepare data for pie chart
 	const pieData = sortedByMessages.slice(0, 5).map((item, index) => {
-		// Generate different colors for each segment
+		// Generate different colors for each segment - using actual hex colors
 		const colors = [
-			"bg-chart-1",
-			"bg-chart-2",
-			"bg-chart-3",
-			"bg-chart-4",
-			"bg-chart-5",
+			"#ff8566", // chart-1: coral/orange-red
+			"#00e6b8", // chart-2: cyan/turquoise
+			"#004d99", // chart-3: dark blue
+			"#ffd633", // chart-4: yellow
+			"#ffad33", // chart-5: orange
 		];
 
 		return {
@@ -194,7 +194,9 @@ export const ChannelActivityDashboard = ({
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h2 className="text-xl font-semibold text-foreground">Channel Activity</h2>
+				<h2 className="text-xl font-semibold text-foreground">
+					Channel Activity
+				</h2>
 			</div>
 
 			{/* Stats overview */}
@@ -208,9 +210,13 @@ export const ChannelActivityDashboard = ({
 					<CardContent>
 						<div className="flex items-center">
 							<Hash className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold text-foreground">{channelActivity.length}</div>
+							<div className="text-2xl font-bold text-foreground">
+								{channelActivity.length}
+							</div>
 						</div>
-						<CardDescription className="text-muted-foreground/80">Active in the selected period</CardDescription>
+						<CardDescription className="text-muted-foreground/80">
+							Active in the selected period
+						</CardDescription>
 					</CardContent>
 				</Card>
 
@@ -223,7 +229,9 @@ export const ChannelActivityDashboard = ({
 					<CardContent>
 						<div className="flex items-center">
 							<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold text-foreground">{totalMessages}</div>
+							<div className="text-2xl font-bold text-foreground">
+								{totalMessages}
+							</div>
 						</div>
 						<CardDescription className="text-muted-foreground/80">
 							{avgMessagesPerChannel.toFixed(1)} per channel
@@ -301,7 +309,8 @@ export const ChannelActivityDashboard = ({
 						<div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
 							<PieChart
 								data={pieData}
-								size={180}
+								size={350}
+								maxSize={450}
 								formatValue={(value) => `${value} messages`}
 							/>
 						</div>

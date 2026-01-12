@@ -527,11 +527,16 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				<div className="relative">
 					{/* List rows with tasks */}
 					{lists.map((list) => (
-						<div key={list._id} className="border-b dark:border-gray-800 last:border-b-0">
+						<div
+							key={list._id}
+							className="border-b dark:border-gray-800 last:border-b-0"
+						>
 							<div className="flex">
 								{/* List name column */}
 								<div className="w-[250px] sticky left-0 bg-white dark:bg-gray-900 z-10 border-r dark:border-gray-800 p-3 flex flex-col justify-center">
-									<div className="font-medium truncate dark:text-gray-100">{list.title}</div>
+									<div className="font-medium truncate dark:text-gray-100">
+										{list.title}
+									</div>
 									<div className="text-xs text-muted-foreground dark:text-gray-400">
 										{tasksByList[list._id]?.length || 0} tasks
 									</div>
@@ -564,7 +569,9 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 														className="absolute top-0 h-full rounded-md border-2 shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]"
 														style={{
 															...style,
-															backgroundColor: getSolidPriorityColor(task.priority),
+															backgroundColor: getSolidPriorityColor(
+																task.priority
+															),
 															borderColor: getSolidPriorityColor(task.priority),
 														}}
 														onClick={() => setSelectedTask(task)}
@@ -615,7 +622,9 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					{/* Fixed Header */}
 					<div className="flex-shrink-0 p-4 border-b dark:border-gray-800 bg-white dark:bg-gray-900">
 						<div className="flex items-center justify-between mb-2">
-							<span className="text-xs text-muted-foreground dark:text-gray-400 uppercase tracking-wide">Task Details</span>
+							<span className="text-xs text-muted-foreground dark:text-gray-400 uppercase tracking-wide">
+								Task Details
+							</span>
 							<Button
 								variant="ghost"
 								size="sm"
@@ -635,7 +644,9 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					<div className="flex-1 overflow-y-auto p-4">
 						<div className="space-y-4">
 							<div>
-								<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">List</div>
+								<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
+									List
+								</div>
 								<div className="text-sm font-medium dark:text-gray-200">
 									{selectedTask.listTitle}
 								</div>
@@ -673,7 +684,9 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
 										Description
 									</div>
-									<div className="text-sm dark:text-gray-200">{selectedTask.description}</div>
+									<div className="text-sm dark:text-gray-200">
+										{selectedTask.description}
+									</div>
 								</div>
 							)}
 
@@ -729,7 +742,9 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					<div className="bg-gray-50 dark:bg-gray-800 rounded-full p-3 mb-3">
 						<Calendar className="h-6 w-6 text-gray-400 dark:text-gray-500" />
 					</div>
-					<h3 className="text-lg font-medium mb-1 dark:text-gray-100">No tasks with due dates</h3>
+					<h3 className="text-lg font-medium mb-1 dark:text-gray-100">
+						No tasks with due dates
+					</h3>
 					<p className="text-sm text-muted-foreground dark:text-gray-400 text-center max-w-md">
 						Add due dates to your cards to see them in the Gantt chart view.
 					</p>

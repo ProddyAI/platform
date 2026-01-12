@@ -84,7 +84,10 @@ export const AssignedCardsWidget = ({
 					<KanbanSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
 					<h3 className="font-semibold text-base">Assigned Cards</h3>
 					{!isEditMode && sortedCards.length > 0 && (
-						<Badge variant="secondary" className="ml-1 h-5 px-2 text-xs font-medium">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{sortedCards.length}
 						</Badge>
 					)}
@@ -115,18 +118,23 @@ export const AssignedCardsWidget = ({
 							<WidgetCard key={card._id}>
 								<div className="space-y-2">
 									<div className="flex items-start justify-between gap-2">
-										<p className="font-medium text-sm leading-tight flex-1">{card.title}</p>
+										<p className="font-medium text-sm leading-tight flex-1">
+											{card.title}
+										</p>
 										{card.dueDate && (
 											<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
 												<Clock className="h-2.5 w-2.5" />
 												{formatDistanceToNow(new Date(card.dueDate), {
 													addSuffix: true,
-												}).replace('about ', '')}
+												}).replace("about ", "")}
 											</span>
 										)}
 									</div>
 									<div className="flex items-center gap-2">
-										<Badge variant="outline" className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300">
+										<Badge
+											variant="outline"
+											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
+										>
 											# {card.channelName || "Unknown Channel"}
 										</Badge>
 									</div>
@@ -146,7 +154,9 @@ export const AssignedCardsWidget = ({
 			) : (
 				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
 					<KanbanSquare className="mb-3 h-12 w-12 text-muted-foreground/40" />
-					<h3 className="text-base font-semibold text-foreground">No assigned cards</h3>
+					<h3 className="text-base font-semibold text-foreground">
+						No assigned cards
+					</h3>
 					<p className="text-sm text-muted-foreground mt-1">
 						You don't have any board cards assigned
 					</p>

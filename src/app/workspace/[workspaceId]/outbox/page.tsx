@@ -3,7 +3,6 @@
 import { format, formatDistanceToNow } from "date-fns";
 import {
 	Brush,
-	Check,
 	Clock,
 	FileText,
 	Filter,
@@ -72,19 +71,23 @@ export default function OutboxPage() {
 	const messages = useGetUserMessages() as Message[] | undefined;
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeFilter, setActiveFilter] = useState("all");
-	
+
 	// Filter states
 	const [showTextMessages, setShowTextMessages] = useState(true);
 	const [showCanvasMessages, setShowCanvasMessages] = useState(true);
 	const [showNoteMessages, setShowNoteMessages] = useState(true);
-	
+
 	// Sort state
 	const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
 
 	const parseMessageBody = (body: string) => {
 		try {
 			const parsed = JSON.parse(body);
-			if (parsed.type === "canvas" || parsed.type === "canvas-live" || parsed.type === "note") {
+			if (
+				parsed.type === "canvas" ||
+				parsed.type === "canvas-live" ||
+				parsed.type === "note"
+			) {
 				return parsed;
 			}
 			if (parsed.ops?.[0]?.insert) {
@@ -98,7 +101,10 @@ export default function OutboxPage() {
 
 	const getMessageUrl = (message: Message) => {
 		const parsedBody = parseMessageBody(message.body);
-		if (typeof parsedBody === "object" && (parsedBody.type === "canvas" || parsedBody.type === "canvas-live")) {
+		if (
+			typeof parsedBody === "object" &&
+			(parsedBody.type === "canvas" || parsedBody.type === "canvas-live")
+		) {
 			return `/workspace/${workspaceId}/channel/${message.context.id}/canvas?roomId=${parsedBody.roomId}`;
 		}
 		if (typeof parsedBody === "object" && parsedBody.type === "note") {
@@ -118,9 +124,9 @@ export default function OutboxPage() {
 	// Filter and sort messages
 	const filteredAndSortedMessages = useMemo(() => {
 		if (!messages) return undefined;
-		
+
 		// Filter messages based on search query and active filter
-		let filtered = messages.filter((message) => {
+		const filtered = messages.filter((message) => {
 			const parsedBody = parseMessageBody(message.body);
 			const bodyText =
 				typeof parsedBody === "object" && parsedBody !== null
@@ -139,11 +145,16 @@ export default function OutboxPage() {
 				(activeFilter === "direct" && message.context.type === "conversation");
 
 			// Message type filter
-			const messageType = typeof parsedBody === "object" ? parsedBody.type : "text";
+			const messageType =
+				typeof parsedBody === "object" ? parsedBody.type : "text";
 			const matchesTypeFilter =
-				((messageType === "canvas" || messageType === "canvas-live") && showCanvasMessages) ||
+				((messageType === "canvas" || messageType === "canvas-live") &&
+					showCanvasMessages) ||
 				(messageType === "note" && showNoteMessages) ||
-				(messageType !== "canvas" && messageType !== "canvas-live" && messageType !== "note" && showTextMessages);
+				(messageType !== "canvas" &&
+					messageType !== "canvas-live" &&
+					messageType !== "note" &&
+					showTextMessages);
 
 			return matchesSearch && matchesFilter && matchesTypeFilter;
 		});
@@ -161,7 +172,16 @@ export default function OutboxPage() {
 		});
 
 		return sorted;
-	}, [messages, searchQuery, activeFilter, showTextMessages, showCanvasMessages, showNoteMessages, sortBy]);
+	}, [
+		messages,
+		searchQuery,
+		activeFilter,
+		showTextMessages,
+		showCanvasMessages,
+		showNoteMessages,
+		sortBy,
+		parseMessageBody,
+	]);
 
 	// Group messages by date (today, yesterday, this week, earlier)
 	const groupedMessages =
@@ -233,7 +253,11 @@ export default function OutboxPage() {
 										<Tooltip>
 											<TooltipTrigger asChild>
 												<DropdownMenuTrigger asChild>
-													<Button variant="outline" size="icon" className="h-8 w-8">
+													<Button
+														variant="outline"
+														size="icon"
+														className="h-8 w-8"
+													>
 														<Filter className="h-4 w-4" />
 													</Button>
 												</DropdownMenuTrigger>
@@ -275,7 +299,11 @@ export default function OutboxPage() {
 										<Tooltip>
 											<TooltipTrigger asChild>
 												<DropdownMenuTrigger asChild>
-													<Button variant="outline" size="icon" className="h-8 w-8">
+													<Button
+														variant="outline"
+														size="icon"
+														className="h-8 w-8"
+													>
 														<SortDesc className="h-4 w-4" />
 													</Button>
 												</DropdownMenuTrigger>
@@ -288,7 +316,12 @@ export default function OutboxPage() {
 									<DropdownMenuContent align="end" className="w-48">
 										<DropdownMenuLabel>Sort by</DropdownMenuLabel>
 										<DropdownMenuSeparator />
-										<DropdownMenuRadioGroup value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+										<DropdownMenuRadioGroup
+											value={sortBy}
+											onValueChange={(value) =>
+												setSortBy(value as typeof sortBy)
+											}
+										>
 											<DropdownMenuRadioItem value="newest">
 												Newest First
 											</DropdownMenuRadioItem>
@@ -481,10 +514,16 @@ export default function OutboxPage() {
 					<div className="flex-1 space-y-1">
 						{typeof content === "object" ? (
 							<div>
-								{(content.type === "canvas" || content.type === "canvas-live") && (
+								{(content.type === "canvas" ||
+									content.type === "canvas-live") && (
 									<div className="flex items-center gap-2 text-sm">
 										<Brush className="h-4 w-4 text-muted-foreground" />
-										<span>Canvas: {content.canvasName || content.roomId?.split('-').slice(1, -1).join('-') || "Untitled Canvas"}</span>
+										<span>
+											Canvas:{" "}
+											{content.canvasName ||
+												content.roomId?.split("-").slice(1, -1).join("-") ||
+												"Untitled Canvas"}
+										</span>
 									</div>
 								)}
 								{content.type === "note" && (

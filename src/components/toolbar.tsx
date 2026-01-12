@@ -96,14 +96,23 @@ export const Toolbar = ({
 							variant="ghost"
 							size="iconSm"
 							onClick={() => toggleMessageSelection(messageId as any)}
-							className={isSelected ? "text-blue-500 dark:text-blue-400" : "dark:text-white dark:hover:text-blue-400"}
+							className={
+								isSelected
+									? "text-blue-500 dark:text-blue-400"
+									: "dark:text-white dark:hover:text-blue-400"
+							}
 						>
 							<CheckSquare className="size-4" />
 						</Button>
 					</Hint>
 
 					<EmojiPopover hint="Add reaction" onEmojiSelect={handleReaction}>
-						<Button variant="ghost" size="iconSm" disabled={isPending} className="dark:text-white dark:hover:text-blue-400">
+						<Button
+							variant="ghost"
+							size="iconSm"
+							disabled={isPending}
+							className="dark:text-white dark:hover:text-blue-400"
+						>
 							<Smile className="size-4" />
 						</Button>
 					</EmojiPopover>

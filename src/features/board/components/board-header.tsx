@@ -58,7 +58,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 		if (onSearch) onSearch(value);
 	};
 
-	const handleListNameSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleListNameSearchChange = (
+		e: React.ChangeEvent<HTMLInputElement>
+	) => {
 		const value = e.target.value;
 		setListNameQuery(value);
 		if (onSearchListName) onSearchListName(value);
@@ -87,7 +89,10 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 							<BarChart className="w-4 h-4" />
 							<span>{totalCards} cards</span>
 						</div>
-						<Badge variant="outline" className="bg-white/50 dark:bg-gray-800/50 dark:border-gray-700">
+						<Badge
+							variant="outline"
+							className="bg-white/50 dark:bg-gray-800/50 dark:border-gray-700"
+						>
 							<Clock className="w-3 h-3 mr-1" /> Updated just now
 						</Badge>
 					</div>
@@ -155,9 +160,12 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 							onChange={handleSearchChange}
 						/>
 					</form>
-					
+
 					{view === "kanban" && (
-						<form onSubmit={handleListNameSearch} className="relative w-full sm:w-64">
+						<form
+							onSubmit={handleListNameSearch}
+							className="relative w-full sm:w-64"
+						>
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-500" />
 							<Input
 								placeholder="Search Cards"
@@ -185,7 +193,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 							<LayoutGrid
 								className={cn(
 									"w-4 h-4",
-									view === "kanban" ? "text-secondary dark:text-secondary-foreground" : "text-gray-500 dark:text-gray-400"
+									view === "kanban"
+										? "text-secondary dark:text-secondary-foreground"
+										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
 							<span className="text-xs font-medium">Kanban</span>
@@ -205,7 +215,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 							<Table
 								className={cn(
 									"w-4 h-4",
-									view === "table" ? "text-secondary dark:text-secondary-foreground" : "text-gray-500 dark:text-gray-400"
+									view === "table"
+										? "text-secondary dark:text-secondary-foreground"
+										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
 							<span className="text-xs font-medium">Table</span>
@@ -225,7 +237,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 							<GanttChart
 								className={cn(
 									"w-4 h-4",
-									view === "gantt" ? "text-secondary dark:text-secondary-foreground" : "text-gray-500 dark:text-gray-400"
+									view === "gantt"
+										? "text-secondary dark:text-secondary-foreground"
+										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
 							<span className="text-xs font-medium">Gantt</span>

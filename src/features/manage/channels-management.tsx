@@ -652,7 +652,9 @@ export const ChannelsManagement = ({
 						<DialogHeader>
 							<DialogTitle>Add a channel</DialogTitle>
 							<DialogDescription>
-								Channels are where your team communicates. They're best when organized around a topic. Choose an emoji icon to make your channel easily recognizable.
+								Channels are where your team communicates. They're best when
+								organized around a topic. Choose an emoji icon to make your
+								channel easily recognizable.
 							</DialogDescription>
 						</DialogHeader>
 						<div className="space-y-4 py-4">
@@ -745,7 +747,7 @@ export const ChannelsManagement = ({
 											minLength={3}
 											maxLength={20}
 											className="h-10 !leading-[1.5] py-2.5"
-											style={{ lineHeight: '1.5' }}
+											style={{ lineHeight: "1.5" }}
 										/>
 										<p className="text-xs text-muted-foreground mt-1">
 											Max 5MB for images
@@ -928,7 +930,7 @@ export const ChannelsManagement = ({
 										minLength={3}
 										maxLength={20}
 										className="h-10 !leading-[1.5] py-2.5"
-										style={{ lineHeight: '1.5' }}
+										style={{ lineHeight: "1.5" }}
 									/>
 									<p className="text-xs text-muted-foreground mt-1">
 										Max 5MB for images

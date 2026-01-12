@@ -124,7 +124,10 @@ export const CalendarPreviewWidget = ({
 					<CalendarIcon className="h-5 w-5 text-primary widget-title-icon" />
 					<h3 className="font-medium">Upcoming Events</h3>
 					{!isEditMode && upcomingEvents.length > 0 && (
-						<Badge variant="secondary" className="ml-1 h-5 px-2 text-xs font-medium">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{upcomingEvents.length}
 						</Badge>
 					)}

@@ -207,7 +207,9 @@ export const MentionsNotificationDialog = ({
 							<div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
 								<CheckCircle2 className="size-10 text-green-500 dark:text-green-400" />
 							</div>
-							<h2 className="text-xl font-semibold dark:text-gray-100">All caught up!</h2>
+							<h2 className="text-xl font-semibold dark:text-gray-100">
+								All caught up!
+							</h2>
 							<p className="text-sm text-muted-foreground dark:text-gray-400">
 								You have no unread notifications
 							</p>
@@ -217,7 +219,9 @@ export const MentionsNotificationDialog = ({
 							<div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
 								<Bell className="size-10 text-blue-500 dark:text-blue-400" />
 							</div>
-							<h2 className="text-xl font-semibold dark:text-gray-100">No notifications yet</h2>
+							<h2 className="text-xl font-semibold dark:text-gray-100">
+								No notifications yet
+							</h2>
 							<p className="text-sm text-muted-foreground dark:text-gray-400">
 								When you receive notifications, they will appear here
 							</p>
@@ -227,7 +231,9 @@ export const MentionsNotificationDialog = ({
 							<div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
 								<MessageSquare className="size-10 text-green-500 dark:text-green-400" />
 							</div>
-							<h2 className="text-xl font-semibold dark:text-gray-100">No direct messages</h2>
+							<h2 className="text-xl font-semibold dark:text-gray-100">
+								No direct messages
+							</h2>
 							<p className="text-sm text-muted-foreground dark:text-gray-400">
 								When someone sends you a direct message, it will appear here
 							</p>

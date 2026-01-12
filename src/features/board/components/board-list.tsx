@@ -140,7 +140,10 @@ const BoardList: React.FC<BoardListProps> = ({
 							<GripVertical className="w-4 h-4 text-muted-foreground" />
 						</div>
 						<span className="truncate">{list.title}</span>
-						<Badge variant="outline" className="ml-1 bg-white dark:bg-gray-800 dark:border-gray-600">
+						<Badge
+							variant="outline"
+							className="ml-1 bg-white dark:bg-gray-800 dark:border-gray-600"
+						>
 							{cards.length}
 						</Badge>
 					</div>

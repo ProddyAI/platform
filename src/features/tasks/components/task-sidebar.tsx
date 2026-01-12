@@ -329,7 +329,7 @@ export const TaskSidebar = ({
 											? {
 													backgroundColor: `${category.color}30`,
 													color: category.color,
-													borderWidth: '2px',
+													borderWidth: "2px",
 													borderColor: category.color,
 												}
 											: {}
@@ -338,7 +338,7 @@ export const TaskSidebar = ({
 								>
 									<div
 										className="mr-2 h-3 w-3 rounded-full border-2"
-										style={{ 
+										style={{
 											backgroundColor: category.color,
 											borderColor: category.color,
 										}}

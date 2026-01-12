@@ -243,7 +243,7 @@ export const ContentAnalysisDashboard = ({
 										data={messageData.topSenders.map((sender) => ({
 											label: sender.name,
 											value: sender.count,
-											color: "#6366f1",
+											color: "bg-pink-500",
 										}))}
 										formatValue={(value) => `${value} messages`}
 									/>
@@ -313,7 +313,7 @@ export const ContentAnalysisDashboard = ({
 										messageData?.topSenders?.slice(0, 5).map((sender) => ({
 											label: sender.name,
 											value: Math.round(sender.count * 0.15), // Mock data - in real app would be actual file counts
-											color: "#22c55e",
+											color: "bg-green-500",
 										})) || []
 									}
 									formatValue={(value) => `${value} files`}
@@ -382,11 +382,11 @@ export const ContentAnalysisDashboard = ({
 							<div className="h-[240px] max-h-[240px] overflow-auto">
 								<HorizontalBarChart
 									data={[
-										{ label: "General", value: 5, color: "#22c55e" },
-										{ label: "Marketing", value: 12, color: "#22c55e" },
-										{ label: "Development", value: 8, color: "#22c55e" },
-										{ label: "Design", value: 15, color: "#eab308" },
-										{ label: "Sales", value: 3, color: "#22c55e" },
+										{ label: "General", value: 5, color: "bg-green-500" },
+										{ label: "Marketing", value: 12, color: "bg-green-500" },
+										{ label: "Development", value: 8, color: "bg-green-500" },
+										{ label: "Design", value: 15, color: "bg-yellow-500" },
+										{ label: "Sales", value: 3, color: "bg-green-500" },
 									]}
 									formatValue={(value) => `${value} min`}
 								/>

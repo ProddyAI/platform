@@ -87,9 +87,14 @@ export const MessageContent = ({
 			body.includes('"type":"note-export"'));
 
 	return (
-		<div className={cn("flex flex-col bg-transparent", isAuthor && "items-end")}>
+		<div
+			className={cn("flex flex-col bg-transparent", isAuthor && "items-end")}
+		>
 			<div
-				className={cn("relative group/message bg-transparent", isAuthor && "flex justify-end")}
+				className={cn(
+					"relative group/message bg-transparent",
+					isAuthor && "flex justify-end"
+				)}
 			>
 				<div
 					className={cn(
@@ -99,7 +104,9 @@ export const MessageContent = ({
 							? "p-0 bg-transparent" // No padding, no background for custom components
 							: cn(
 									"max-w-md px-3 py-2", // Normal styling for regular messages
-									isAuthor ? "bg-primary text-primary-foreground" : "bg-muted dark:bg-gray-800"
+									isAuthor
+										? "bg-primary text-primary-foreground"
+										: "bg-muted dark:bg-gray-800"
 								)
 					)}
 					onContextMenu={onContextMenu}
@@ -127,8 +134,8 @@ export const MessageContent = ({
 								<span
 									className={cn(
 										"text-xs italic animate-fade-in bg-transparent",
-										isAuthor 
-											? "text-white/70" 
+										isAuthor
+											? "text-white/70"
 											: "text-gray-500 dark:text-white/80"
 									)}
 								>

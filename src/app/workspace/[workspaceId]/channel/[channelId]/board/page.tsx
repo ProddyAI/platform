@@ -84,11 +84,12 @@ const BoardPage = () => {
 	}, [lists, channelId, createList]);
 
 	// Filter lists based on list name search (only for Kanban view)
-	const filteredLists = lists?.filter((list) => {
-		if (!listNameQuery || view !== "kanban") return true;
-		const query = listNameQuery.toLowerCase();
-		return list.title.toLowerCase().includes(query);
-	}) || [];
+	const filteredLists =
+		lists?.filter((list) => {
+			if (!listNameQuery || view !== "kanban") return true;
+			const query = listNameQuery.toLowerCase();
+			return list.title.toLowerCase().includes(query);
+		}) || [];
 
 	// Filter cards based on search query
 	const filteredCards = allCards.filter((card) => {
@@ -97,22 +98,24 @@ const BoardPage = () => {
 			const query = searchQuery.toLowerCase();
 			const list = lists?.find((l) => l._id === card.listId);
 			const listTitle = list ? list.title : "";
-			
-			const matchesGeneralSearch = 
+
+			const matchesGeneralSearch =
 				card.title.toLowerCase().includes(query) ||
 				card.description?.toLowerCase().includes(query) ||
 				listTitle.toLowerCase().includes(query) ||
-				card.labels?.some((label: string) => label.toLowerCase().includes(query));
-			
+				card.labels?.some((label: string) =>
+					label.toLowerCase().includes(query)
+				);
+
 			if (!matchesGeneralSearch) return false;
 		}
-		
+
 		// Filter cards to only show those from filtered lists (only for Kanban view)
 		if (listNameQuery && view === "kanban") {
 			const cardList = filteredLists.find((l) => l._id === card.listId);
 			if (!cardList) return false;
 		}
-		
+
 		return true;
 	});
 

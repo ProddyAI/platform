@@ -1,9 +1,8 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { useState } from "react";
-
 import Link from "next/link";
+import { useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";

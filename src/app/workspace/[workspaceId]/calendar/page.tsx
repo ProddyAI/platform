@@ -338,14 +338,14 @@ const CalendarPage = () => {
 																			<div className="font-medium">
 																				{event.boardCard.title}
 																			</div>
-																				{event.type === "board-card" &&
-																					"boardCard" in event &&
-																					event.boardCard &&
-																					event.boardCard.description && (
-																						<div className="text-[8px] text-gray-600 dark:text-gray-300 truncate">
-																							{event.boardCard.description}
-																						</div>
-																					)}
+																			{event.type === "board-card" &&
+																				"boardCard" in event &&
+																				event.boardCard &&
+																				event.boardCard.description && (
+																					<div className="text-[8px] text-gray-600 dark:text-gray-300 truncate">
+																						{event.boardCard.description}
+																					</div>
+																				)}
 																		</>
 																	) : event.type === "task" && event.task ? (
 																		<>

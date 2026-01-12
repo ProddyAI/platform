@@ -1,9 +1,9 @@
 "use client";
 
+import { Smile, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Smile, Upload, X } from "lucide-react";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 import { EmojiPopover } from "@/components/emoji-popover";
@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 import { useCreateChannel } from "../api/use-create-channel";
 import { useCreateChannelModal } from "../store/use-create-channel-modal";
@@ -29,7 +29,9 @@ export const CreateChannelModal = () => {
 	const [open, setOpen] = useCreateChannelModal();
 	const [name, setName] = useState("");
 	const [icon, setIcon] = useState<string | undefined>(undefined);
-	const [iconImage, setIconImage] = useState<Id<"_storage"> | undefined>(undefined);
+	const [iconImage, setIconImage] = useState<Id<"_storage"> | undefined>(
+		undefined
+	);
 	const [iconPreview, setIconPreview] = useState<string | undefined>(undefined);
 	const [isUploading, setIsUploading] = useState(false);
 	const imageInputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +81,7 @@ export const CreateChannelModal = () => {
 		try {
 			// Generate upload URL
 			const url = await generateUploadUrl({}, { throwError: true });
-			
+
 			if (!url) {
 				throw new Error("Failed to generate upload URL");
 			}
@@ -96,14 +98,14 @@ export const CreateChannelModal = () => {
 			}
 
 			const { storageId } = await result.json();
-			
+
 			// Create preview
 			const previewUrl = URL.createObjectURL(file);
 			setIconPreview(previewUrl);
 			setIconImage(storageId);
 			// Clear emoji if image is selected
 			setIcon(undefined);
-			
+
 			toast.success("Image uploaded successfully");
 		} catch (error) {
 			console.error("Failed to upload icon image:", error);
@@ -256,7 +258,7 @@ export const CreateChannelModal = () => {
 										maxLength={20}
 										placeholder="e.g. plan-budget"
 										className="h-10 !leading-[1.5] py-2.5"
-										style={{ lineHeight: '1.5' }}
+										style={{ lineHeight: "1.5" }}
 									/>
 									<p className="text-xs text-muted-foreground mt-1">
 										Max 5MB for images

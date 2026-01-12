@@ -124,7 +124,10 @@ export const ThreadRepliesWidget = ({
 					<MessageSquareText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
 					<h3 className="font-semibold text-base">Thread Replies</h3>
 					{!isEditMode && threadMessages.length > 0 && (
-						<Badge variant="secondary" className="ml-1 h-5 px-2 text-xs font-medium">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{threadMessages.length}
 						</Badge>
 					)}
@@ -193,7 +196,7 @@ export const ThreadRepliesWidget = ({
 															if (date.toString() !== "Invalid Date") {
 																return formatDistanceToNow(date, {
 																	addSuffix: true,
-																}).replace('about ', '');
+																}).replace("about ", "");
 															}
 														}
 														return "recently";
@@ -229,7 +232,9 @@ export const ThreadRepliesWidget = ({
 			) : (
 				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
 					<MessageSquareText className="mb-3 h-12 w-12 text-muted-foreground/40" />
-					<h3 className="text-base font-semibold text-foreground">No thread replies</h3>
+					<h3 className="text-base font-semibold text-foreground">
+						No thread replies
+					</h3>
 					<p className="text-sm text-muted-foreground mt-1">
 						You don't have any recent thread replies
 					</p>

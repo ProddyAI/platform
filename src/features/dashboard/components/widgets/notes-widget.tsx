@@ -109,7 +109,10 @@ export const NotesWidget = ({
 					<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
 					<h3 className="font-semibold text-base">Recent Notes</h3>
 					{!isEditMode && sortedNotes.length > 0 && (
-						<Badge variant="secondary" className="ml-1 h-5 px-2 text-xs font-medium">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{sortedNotes.length}
 						</Badge>
 					)}
@@ -117,8 +120,8 @@ export const NotesWidget = ({
 				{isEditMode ? (
 					controls
 				) : (
-					<Button 
-						variant="ghost" 
+					<Button
+						variant="ghost"
 						size="sm"
 						className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewAll}
@@ -135,16 +138,21 @@ export const NotesWidget = ({
 							<WidgetCard key={note._id}>
 								<div className="space-y-2">
 									<div className="flex items-start justify-between gap-2">
-										<h5 className="font-medium text-sm leading-tight flex-1">{note.title}</h5>
+										<h5 className="font-medium text-sm leading-tight flex-1">
+											{note.title}
+										</h5>
 										<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
 											<Clock className="h-2.5 w-2.5" />
 											{formatDistanceToNow(new Date(note.updatedAt), {
 												addSuffix: true,
-											}).replace('about ', '')}
+											}).replace("about ", "")}
 										</span>
 									</div>
 									<div className="flex items-center gap-2">
-										<Badge variant="outline" className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300">
+										<Badge
+											variant="outline"
+											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
+										>
 											# {note.channelName}
 										</Badge>
 									</div>
@@ -218,7 +226,9 @@ export const NotesWidget = ({
 			) : (
 				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
 					<FileText className="mb-3 h-12 w-12 text-muted-foreground/40" />
-					<h3 className="text-base font-semibold text-foreground">No notes found</h3>
+					<h3 className="text-base font-semibold text-foreground">
+						No notes found
+					</h3>
 					<p className="text-sm text-muted-foreground mt-1">
 						Create notes to see them here
 					</p>

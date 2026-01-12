@@ -115,7 +115,9 @@ const BoardCard: React.FC<BoardCardProps> = ({
 		>
 			{/* Card Header */}
 			<div className="flex items-center justify-between">
-				<span className="font-semibold text-sm truncate dark:text-gray-100">{card.title}</span>
+				<span className="font-semibold text-sm truncate dark:text-gray-100">
+					{card.title}
+				</span>
 				<div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
 					<TooltipProvider>
 						<Tooltip>
@@ -187,7 +189,9 @@ const BoardCard: React.FC<BoardCardProps> = ({
 						)}
 					>
 						<Clock className="w-3 h-3" />
-						<span className="text-[10px] dark:text-gray-400">{formattedDueDate}</span>
+						<span className="text-[10px] dark:text-gray-400">
+							{formattedDueDate}
+						</span>
 					</div>
 				)}
 

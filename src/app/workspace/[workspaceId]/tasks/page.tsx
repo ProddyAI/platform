@@ -210,7 +210,7 @@ const TasksPage = () => {
 									placeholder="Search tasks..."
 									value={searchQuery}
 									onChange={(e) => setSearchQuery(e.target.value)}
-									className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--muted))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--muted))]"
+									className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--card-accent))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--card-accent))] dark:focus-visible:ring-pink-400 dark:focus-visible:border-pink-400 dark:focus-visible:ring-offset-0"
 								/>
 								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
 							</div>

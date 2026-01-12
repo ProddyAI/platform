@@ -1,12 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import {
-	CheckCircle2,
-	CheckSquare,
-	Clock,
-	Loader,
-} from "lucide-react";
+import { CheckCircle2, CheckSquare, Clock, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -138,7 +133,10 @@ export const TasksWidget = ({
 					<CheckSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
 					<h3 className="font-semibold text-base">Your Tasks</h3>
 					{!isEditMode && sortedTasks.length > 0 && (
-						<Badge variant="secondary" className="ml-1 h-5 px-2 text-xs font-medium">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{sortedTasks.length}
 						</Badge>
 					)}
@@ -197,7 +195,7 @@ export const TasksWidget = ({
 												<span>
 													{formatDistanceToNow(new Date(task.dueDate), {
 														addSuffix: true,
-													}).replace('about ', '')}
+													}).replace("about ", "")}
 												</span>
 											</div>
 										)}

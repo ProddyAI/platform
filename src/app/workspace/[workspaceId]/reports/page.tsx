@@ -231,7 +231,9 @@ const ReportsPage = () => {
 						<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 							{/* Time Range Filter */}
 							<div className="flex items-center gap-2">
-								<span className="text-sm font-medium text-foreground">Time Range:</span>
+								<span className="text-sm font-medium text-foreground">
+									Time Range:
+								</span>
 								<div className="flex rounded-md border border-input bg-background overflow-hidden">
 									<Button
 										type="button"
@@ -323,7 +325,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="overview"
 									onClick={() => setActiveTab("overview")}
-									className="data-[state=active]:bg-background"
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<BarChart className="h-4 w-4 mr-2" />
 									Overview
@@ -331,7 +333,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="users"
 									onClick={() => setActiveTab("users")}
-									className="data-[state=active]:bg-background"
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<Users className="h-4 w-4 mr-2" />
 									Users
@@ -339,7 +341,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="channels"
 									onClick={() => setActiveTab("channels")}
-									className="data-[state=active]:bg-background"
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<Hash className="h-4 w-4 mr-2" />
 									Channels
@@ -347,7 +349,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="messages"
 									onClick={() => setActiveTab("messages")}
-									className="data-[state=active]:bg-background"
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<MessageSquare className="h-4 w-4 mr-2" />
 									Messages
@@ -355,7 +357,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="content"
 									onClick={() => setActiveTab("content")}
-									className="data-[state=active]:bg-background"
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<FileText className="h-4 w-4 mr-2" />
 									Content
@@ -363,7 +365,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="performance"
 									onClick={() => setActiveTab("performance")}
-									className="data-[state=active]:bg-background"
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<Activity className="h-4 w-4 mr-2" />
 									Performance
@@ -371,7 +373,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="tasks"
 									onClick={() => setActiveTab("tasks")}
-									className="data-[state=active]:bg-background"
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<CheckSquare className="h-4 w-4 mr-2" />
 									Tasks
@@ -469,7 +471,9 @@ const ReportsPage = () => {
 																: 0}
 														</div>
 													</div>
-													<CardDescription className="text-muted-foreground/80">messages per day</CardDescription>
+													<CardDescription className="text-muted-foreground/80">
+														messages per day
+													</CardDescription>
 												</CardContent>
 											</Card>
 
@@ -537,7 +541,7 @@ const ReportsPage = () => {
 															data={messageData.topSenders.map((sender) => ({
 																label: sender.name,
 																value: sender.count,
-																color: "bg-secondary",
+																color: "bg-pink-500",
 															}))}
 															formatValue={(value) => `${value} messages`}
 														/>
@@ -674,7 +678,9 @@ const ReportsPage = () => {
 															{taskData.priorityCounts.high}
 														</div>
 													</div>
-													<CardDescription className="text-muted-foreground/80">high priority tasks</CardDescription>
+													<CardDescription className="text-muted-foreground/80">
+														high priority tasks
+													</CardDescription>
 												</CardContent>
 											</Card>
 										</div>
@@ -767,14 +773,14 @@ const ReportsPage = () => {
 												<CardTitle>Tasks Created Over Time</CardTitle>
 												<CardDescription>Daily task creation</CardDescription>
 											</CardHeader>
-											<CardContent className="h-80">
+											<CardContent className="h-96">
 												{taskData.tasksByDate.length > 0 ? (
 													<LineChartComponent
 														data={taskData.tasksByDate.map((item) => ({
 															label: format(new Date(item.date), "MMM dd"),
 															value: item.count,
 														}))}
-														height={300}
+														height={350}
 														formatValue={(value) => `${value} tasks`}
 													/>
 												) : (
@@ -799,13 +805,16 @@ const ReportsPage = () => {
 													<HorizontalBarChart
 														data={taskData.categoryData.map(
 															(category, index) => {
-																// Generate different colors for each category
+																// Generate different solid colors for each category
 																const colors = [
-																	"bg-secondary",
-																	"bg-secondary",
-																	"bg-primary",
-																	"bg-chart-1",
-																	"bg-chart-2",
+																	"bg-purple-600",
+																	"bg-pink-600",
+																	"bg-blue-600",
+																	"bg-teal-600",
+																	"bg-orange-600",
+																	"bg-green-600",
+																	"bg-indigo-600",
+																	"bg-rose-600",
 																];
 																return {
 																	label: category.name,

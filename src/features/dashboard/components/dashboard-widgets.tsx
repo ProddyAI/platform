@@ -141,7 +141,10 @@ const SortableWidget = ({
 				<Button
 					variant={size === "small" ? "default" : "ghost"}
 					size="sm"
-					className={cn("h-6 w-6 p-0 text-xs", size === "small" && "edit-mode-button")}
+					className={cn(
+						"h-6 w-6 p-0 text-xs",
+						size === "small" && "edit-mode-button"
+					)}
 					onClick={() => onResize("small")}
 				>
 					S
@@ -149,7 +152,10 @@ const SortableWidget = ({
 				<Button
 					variant={size === "medium" ? "default" : "ghost"}
 					size="sm"
-					className={cn("h-6 w-6 p-0 text-xs", size === "medium" && "edit-mode-button")}
+					className={cn(
+						"h-6 w-6 p-0 text-xs",
+						size === "medium" && "edit-mode-button"
+					)}
 					onClick={() => onResize("medium")}
 				>
 					M
@@ -157,7 +163,10 @@ const SortableWidget = ({
 				<Button
 					variant={size === "large" ? "default" : "ghost"}
 					size="sm"
-					className={cn("h-6 w-6 p-0 text-xs", size === "large" && "edit-mode-button")}
+					className={cn(
+						"h-6 w-6 p-0 text-xs",
+						size === "large" && "edit-mode-button"
+					)}
 					onClick={() => onResize("large")}
 				>
 					L
@@ -408,7 +417,10 @@ export const DashboardWidgets = ({
 								variant={isEditMode ? "default" : "ghost"}
 								size="sm"
 								onClick={toggleEditMode}
-								className={cn("h-8 px-3 gap-2", isEditMode && "edit-mode-button")}
+								className={cn(
+									"h-8 px-3 gap-2",
+									isEditMode && "edit-mode-button"
+								)}
 							>
 								{isEditMode ? (
 									<>
