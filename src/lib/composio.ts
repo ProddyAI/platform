@@ -1,4 +1,3 @@
-// Server-only runtime guard
 if (typeof window !== "undefined") {
 	throw new Error(
 		"composio.ts contains server-only code and cannot be imported in the browser. " +
@@ -10,7 +9,6 @@ import { Composio } from "@composio/core";
 import { OpenAIProvider } from "@composio/openai";
 import OpenAI from "openai";
 
-// Validate required environment variables
 if (!process.env.OPENAI_API_KEY) {
 	throw new Error(
 		"OPENAI_API_KEY environment variable is required but not set. " +
@@ -18,18 +16,15 @@ if (!process.env.OPENAI_API_KEY) {
 	);
 }
 
-// Configure timeout (default 30 seconds, configurable via env var)
 const openaiTimeoutMs = process.env.OPENAI_TIMEOUT_MS
 	? parseInt(process.env.OPENAI_TIMEOUT_MS, 10)
 	: 30000;
 
-// Initialize OpenAI client (server-only)
 export const openaiClient = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 	timeout: openaiTimeoutMs,
 });
 
-// Validate Composio API key
 if (!process.env.COMPOSIO_API_KEY) {
 	throw new Error(
 		"COMPOSIO_API_KEY environment variable is required but not set. " +
@@ -37,7 +32,6 @@ if (!process.env.COMPOSIO_API_KEY) {
 	);
 }
 
-// Initialize Composio client with OpenAI provider (server-only)
 export const composio = new Composio({
 	apiKey: process.env.COMPOSIO_API_KEY,
 	provider: new OpenAIProvider(),
@@ -45,34 +39,22 @@ export const composio = new Composio({
 
 export default composio;
 
-/**
- * Initialize and return the shared Composio instance along with a convenience API client for managing connections, tools, and connection status.
- *
- * The returned `apiClient` exposes: `createConnection(userId, appName)`, `getConnections(userId)`, `getConnectionStatus(connectionId)`, `getTools(entityId, appNames)`, and `deleteConnection(connectionId)`.
- *
- * @returns An object containing `composio` (the shared Composio instance) and `apiClient` (a wrapper providing connection and tool management methods)
- */
 export function initializeComposio() {
 	if (!process.env.COMPOSIO_API_KEY) {
 		throw new Error("COMPOSIO_API_KEY environment variable is required");
 	}
 
-	// Use the shared singleton Composio instance instead of creating a new one
 	const composioInstance = composio;
 
-	// Create API client wrapper for common operations
 	const apiClient = {
-		// Create connection for a user and app
 		async createConnection(userId: string, appName: string) {
 			try {
 				console.log(
 					`[Composio] Creating connection for user ${userId} with app ${appName}`
 				);
 
-				// Import APP_CONFIGS to get auth config ID
 				const { APP_CONFIGS } = await import("./composio-config");
 
-				// Convert appName to uppercase to match our config keys
 				const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
 				const appConfig = APP_CONFIGS[appKey];
 
@@ -102,7 +84,6 @@ export function initializeComposio() {
 					`[Composio] Auth config ID found for ${appName}. Initiating connection...`
 				);
 
-				// Try to initiate connection using auth config ID
 				const connection = await (
 					composioInstance as any
 				).connectedAccounts?.initiate?.(userId, authConfigId);
@@ -136,7 +117,6 @@ export function initializeComposio() {
 			}
 		},
 
-		// Get connections for a user
 		async getConnections(userId: string) {
 			try {
 				const connections =

@@ -10,25 +10,16 @@ import { initializeComposio } from "@/lib/composio";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-// Validate composioAuthConfigId format
 const _validateAuthConfigFormat = (composioAuthConfigId: string): boolean => {
-	// Accept any valid UUID or identifier format from Composio API
 	return Boolean(composioAuthConfigId && composioAuthConfigId.length > 0);
 };
 
-/**
- * Verify that the currently authenticated user owns the specified member.
- *
- * @param memberId - The ID of the member to verify ownership for
- * @returns `{ success: true, member }` when the authenticated user owns the member; otherwise `{ success: false, response }` where `response` is a `NextResponse` containing a 401 (unauthenticated), 404 (user or member not found), or 403 (unauthorized) error
- */
 async function verifyMemberOwnership(
 	memberId: string,
 	convexClient: ConvexHttpClient
 ): Promise<
 	{ success: true; member: any } | { success: false; response: NextResponse }
 > {
-	// Verify authentication
 	const isAuthenticated = await isAuthenticatedNextjs();
 	if (!isAuthenticated) {
 		return {
@@ -40,7 +31,6 @@ async function verifyMemberOwnership(
 		};
 	}
 
-	// Get the authenticated user's information
 	const token = await convexAuthNextjsToken();
 	if (token && typeof token === "string") {
 		convexClient.setAuth(token);
@@ -54,7 +44,6 @@ async function verifyMemberOwnership(
 		};
 	}
 
-	// Get the member for this workspace and verify ownership
 	const member = await convexClient.query(api.members._getMemberById, {
 		memberId: memberId as Id<"members">,
 	});
@@ -82,17 +71,6 @@ async function verifyMemberOwnership(
 	return { success: true, member };
 }
 
-/**
- * Handle POST requests to initiate toolkit authorization or complete a toolkit connection for a member-scoped entity.
- *
- * Expects a JSON body with fields: `action` ("authorize" or "complete"), `userId`, `toolkit`, `workspaceId`, and (for member-scoped flows) `memberId`. For `authorize` the handler creates a Composio connection and returns a `redirectUrl` and connection identifier; it also attempts to persist a related auth config. For `complete` the handler retrieves the Composio connection, selects the most relevant connected account for the toolkit, and attempts to store a connected account record.
- *
- * @param req - Incoming NextRequest whose JSON body must include `action`, `userId`, `toolkit`, and `workspaceId`. When acting on a specific member, `memberId` is required and must belong to the authenticated user.
- * @returns On success returns a JSON object with `success: true` and either:
- *  - for `authorize`: `redirectUrl`, `connectionId`, and `message`, or
- *  - for `complete`: `connectedAccount` and `message`.
- * On failure returns a JSON error object `{ error: string }` and an appropriate HTTP status.
- */
 export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json();

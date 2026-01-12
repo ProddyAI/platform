@@ -44,7 +44,6 @@ export const updateLastActiveWorkspace = mutation({
 			throw new Error("User is not a member of this workspace");
 		}
 
-		// Check if user preferences already exist
 		const existingPrefs = await ctx.db
 			.query("preferences")
 			.withIndex("by_user_id", (q) => q.eq("userId", userId))
@@ -53,13 +52,11 @@ export const updateLastActiveWorkspace = mutation({
 		const timestamp = Date.now();
 
 		if (existingPrefs) {
-			// Update existing preferences
 			await ctx.db.patch(existingPrefs._id, {
 				lastActiveWorkspaceId: args.workspaceId,
 				lastActiveTimestamp: timestamp,
 			});
 		} else {
-			// Create new preferences
 			await ctx.db.insert("preferences", {
 				userId,
 				lastActiveWorkspaceId: args.workspaceId,
@@ -71,9 +68,6 @@ export const updateLastActiveWorkspace = mutation({
 	},
 });
 
-/**
- * Get the last active workspace for a user
- */
 export const getLastActiveWorkspace = query({
 	args: {},
 	handler: async (ctx) => {
@@ -83,7 +77,6 @@ export const getLastActiveWorkspace = query({
 			return null;
 		}
 
-		// Get user preferences
 		const userPrefs = await ctx.db
 			.query("preferences")
 			.withIndex("by_user_id", (q) => q.eq("userId", userId))
@@ -93,7 +86,6 @@ export const getLastActiveWorkspace = query({
 			return null;
 		}
 
-		// Verify the workspace still exists and the user is still a member
 		const workspaceId = userPrefs.lastActiveWorkspaceId as Id<"workspaces">;
 
 		const workspace = await ctx.db.get(workspaceId);

@@ -13,20 +13,15 @@ export const current = query({
 		const user = await ctx.db.get(userId);
 		if (!user) return null;
 
-		// Get image URL if user has an image
-		// Check if it's a storage ID or external URL
 		let imageUrl: string | undefined;
 		if (user.image) {
-			// If it starts with http, it's an external URL (from OAuth providers)
 			if (user.image.startsWith("http")) {
 				imageUrl = user.image;
 			} else {
-				// Otherwise, it's a Convex storage ID
 				imageUrl = (await ctx.storage.getUrl(user.image)) || undefined;
 			}
 		}
 
-		// Get banner URL if user has a banner
 		let bannerUrl: string | undefined;
 		if ((user as any).banner) {
 			if ((user as any).banner.startsWith("http")) {
@@ -50,31 +45,23 @@ export const getUserById = query({
 		id: v.id("users"),
 	},
 	handler: async (ctx, args) => {
-		// Get the authenticated user ID
 		const authUserId = await getAuthUserId(ctx);
 
-		// Only allow authenticated users to access user data
 		if (!authUserId) return null;
 
-		// Get the requested user
 		const user = await ctx.db.get(args.id);
 
 		if (!user) return null;
 
-		// Get image URL if user has an image
-		// Check if it's a storage ID or external URL
 		let imageUrl: string | undefined;
 		if (user.image) {
-			// If it starts with http, it's an external URL (from OAuth providers)
 			if (user.image.startsWith("http")) {
 				imageUrl = user.image;
 			} else {
-				// Otherwise, it's a Convex storage ID
 				imageUrl = (await ctx.storage.getUrl(user.image)) || undefined;
 			}
 		}
 
-		// Get banner URL if user has a banner
 		let bannerUrl: string | undefined;
 		if ((user as any).banner) {
 			if ((user as any).banner.startsWith("http")) {
@@ -85,7 +72,6 @@ export const getUserById = query({
 			}
 		}
 
-		// Return the user data with image URL
 		return {
 			...user,
 			image: imageUrl,
@@ -94,9 +80,6 @@ export const getUserById = query({
 	},
 });
 
-/**
- * Update user profile information
- */
 export const updateProfile = mutation({
 	args: {
 		name: v.optional(v.string()),

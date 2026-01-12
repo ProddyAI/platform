@@ -18,12 +18,10 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../toolbar";
 
 const TasksPage = () => {
-	// Set document title
 	useDocumentTitle("Tasks");
 
 	const workspaceId = useWorkspaceId();
 
-	// Track user activity and time spent on tasks page
 	useTrackActivity({
 		workspaceId,
 		activityType: "tasks_view",
@@ -32,7 +30,6 @@ const TasksPage = () => {
 	const { data: categories, isLoading: categoriesLoading } =
 		useGetTaskCategories({ workspaceId });
 
-	// Search and filter state
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filterOptions, setFilterOptions] = useState<TaskFilterOptions>({
 		status: "all",
@@ -45,7 +42,6 @@ const TasksPage = () => {
 		view: "list",
 	});
 
-	// Handle filter changes
 	const handleFilterChange = useCallback(
 		(options: Partial<TaskFilterOptions>) => {
 			setFilterOptions((prev) => ({ ...prev, ...options }));
@@ -53,14 +49,11 @@ const TasksPage = () => {
 		[]
 	);
 
-	// Filter and sort tasks
 	const filteredTasks = useMemo(() => {
 		if (!tasks) return [];
 
-		// Start with all tasks
 		let filtered = [...tasks];
 
-		// Apply search filter
 		if (searchQuery) {
 			const query = searchQuery.toLowerCase();
 			filtered = filtered.filter(
@@ -71,7 +64,6 @@ const TasksPage = () => {
 			);
 		}
 
-		// Apply status filter
 		if (filterOptions.status !== "all") {
 			if (
 				[
@@ -82,34 +74,28 @@ const TasksPage = () => {
 					"cancelled",
 				].includes(filterOptions.status)
 			) {
-				// Filter by specific status
 				filtered = filtered.filter(
 					(task) => task.status === filterOptions.status
 				);
 			} else if (filterOptions.status === "active") {
-				// Filter by active (not completed)
 				filtered = filtered.filter((task) => !task.completed);
 			} else if (filterOptions.status === "completed") {
-				// Filter by completed
 				filtered = filtered.filter((task) => task.completed);
 			}
 		}
 
-		// Apply priority filter
 		if (filterOptions.priority !== "all") {
 			filtered = filtered.filter(
 				(task) => task.priority === filterOptions.priority
 			);
 		}
 
-		// Apply category filter
 		if (filterOptions.categoryId) {
 			filtered = filtered.filter(
 				(task) => task.categoryId === filterOptions.categoryId
 			);
 		}
 
-		// Apply tags filter
 		if (filterOptions.tags && filterOptions.tags.length > 0) {
 			filtered = filtered.filter(
 				(task) =>
@@ -118,7 +104,6 @@ const TasksPage = () => {
 			);
 		}
 
-		// Apply due date filter
 		if (filterOptions.dueDate !== "all") {
 			const today = startOfDay(new Date());
 
@@ -147,7 +132,6 @@ const TasksPage = () => {
 			}
 		}
 
-		// Sort tasks
 		filtered.sort((a, b) => {
 			let comparison = 0;
 
@@ -156,30 +140,26 @@ const TasksPage = () => {
 					comparison = a.createdAt - b.createdAt;
 					break;
 				case "dueDate":
-					// Handle tasks without due dates
 					if (!a.dueDate && !b.dueDate) return 0;
 					if (!a.dueDate) return 1;
 					if (!b.dueDate) return -1;
 					comparison = a.dueDate - b.dueDate;
 					break;
 				case "priority": {
-					// Convert priority to numeric value for sorting
 					const priorityValues = { high: 3, medium: 2, low: 1, undefined: 0 };
 					const aPriority = priorityValues[a.priority || "undefined"];
 					const bPriority = priorityValues[b.priority || "undefined"];
-					comparison = bPriority - aPriority; // Higher priority first
+					comparison = bPriority - aPriority;
 					break;
 				}
 			}
 
-			// Apply sort direction
 			return filterOptions.sortDirection === "asc" ? comparison : -comparison;
 		});
 
 		return filtered;
 	}, [tasks, searchQuery, filterOptions]);
 
-	// Handle task creation success
 	const handleTaskCreated = useCallback(() => {
 		toast.success("Task created successfully", {
 			description: "Your new task has been added to the list",
@@ -199,12 +179,9 @@ const TasksPage = () => {
 				</Button>
 			</WorkspaceToolbar>
 			<div className="flex h-[calc(100%-4rem)] bg-white">
-				{/* Main content */}
 				<div className="flex-1 overflow-y-auto">
 					<div className="max-w-3xl mx-auto px-6 py-8">
-						{/* Header with search */}
 						<div className="mb-8 space-y-4">
-							{/* <h1 className="text-2xl font-bold text-gray-900">Tasks</h1> */}
 							<div className="relative">
 								<Input
 									placeholder="Search tasks..."
@@ -262,7 +239,6 @@ const TasksPage = () => {
 					</div>
 				</div>
 
-				{/* Right sidebar with filters */}
 				<TaskSidebar
 					filterOptions={filterOptions}
 					onFilterChange={handleFilterChange}

@@ -6,7 +6,6 @@ import { api, components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, query } from "./_generated/server";
 
-// Define result types (maintaining compatibility with existing API)
 type SearchResult = {
 	_id: Id<any>;
 	_creationTime: number;
@@ -43,28 +42,12 @@ type CardResult = SearchResult & {
 	channelName?: string;
 };
 
-/**
- * Extracts plain text from rich text message body.
- *
- * Handles multiple formats:
- * - Quill Delta JSON format (ops array)
- * - HTML content (strips tags)
- * - Plain text strings
- *
- * @param {string} body - The message body in any supported format
- * @returns {string} Plain text content with formatting removed
- *
- * @example
- * extractTextFromRichText('{"ops":[{"insert":"Hello"}]}') // Returns: "Hello"
- * extractTextFromRichText('<p>Hello</p>') // Returns: "Hello"
- */
 function extractTextFromRichText(body: string): string {
 	if (typeof body !== "string") {
 		return String(body);
 	}
 
 	try {
-		// Try to parse as JSON (Quill Delta format)
 		const parsedBody = JSON.parse(body);
 		if (parsedBody.ops) {
 			return parsedBody.ops
@@ -73,26 +56,20 @@ function extractTextFromRichText(body: string): string {
 				.trim();
 		}
 	} catch (_e) {
-		// Not JSON, use as is (might contain HTML)
 		return body
-			.replace(/<[^>]*>/g, "") // Remove HTML tags
+			.replace(/<[^>]*>/g, "")
 			.trim();
 	}
 
 	return body.trim();
 }
 
-// Define filter types for workspace isolation and content type filtering
 type FilterTypes = {
 	workspaceId: string;
 	contentType: string;
 	channelId: string;
 };
 
-// Initialize RAG component with workspace and content type filters
-// The generated Convex typings for `components.rag` currently omit the optional
-// `order` argument on `chunks.list`, while `@convex-dev/rag` expects it. Cast to
-// `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
 	textEmbeddingModel: google.textEmbeddingModel("text-embedding-003") as any,
