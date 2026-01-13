@@ -1492,9 +1492,105 @@ export async function getAnyConnectedApps(
 }
 
 /**
+ * Cleans up old connections, keeping only the most recent ACTIVE connection.
+ * Deletes connections in INITIATED, FAILED, EXPIRED status, and older ACTIVE connections.
+ * This ensures only one active connection per user+authConfig.
+ *
+ * @param composio - The Composio instance
+ * @param entityId - The target entity identifier
+ * @param authConfigId - The auth config ID for the app
+ * @param keepConnectionId - Optional connection ID to preserve (the newly created one)
+ */
+async function cleanupOldConnections(
+	composio: Composio,
+	entityId: string,
+	authConfigId: string,
+	keepConnectionId?: string
+) {
+	try {
+		console.log(
+			`[Composio] Cleaning up old connections for entity ${entityId} with auth config ${authConfigId}`
+		);
+
+		// List all connections for this user and auth config
+		const accounts = await composio.connectedAccounts.list({
+			userIds: [entityId],
+			authConfigIds: [authConfigId],
+		});
+
+		const allAccounts = accounts.items || [];
+		console.log(`[Composio] Found ${allAccounts.length} total connections`);
+
+		// Sort by creation date (newest first)
+		const sortedAccounts = [...allAccounts].sort(
+			(a: any, b: any) =>
+				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+		);
+
+		// Determine which connections to delete
+		const accountsToDelete = sortedAccounts.filter((acc: any) => {
+			// Keep the specified connection ID if provided
+			if (keepConnectionId && acc.id === keepConnectionId) {
+				console.log(`[Composio] Keeping new connection: ${acc.id}`);
+				return false;
+			}
+
+			// Delete failed/expired/initiated connections
+			if (
+				acc.status === "INITIATED" ||
+				acc.status === "FAILED" ||
+				acc.status === "EXPIRED"
+			) {
+				return true;
+			}
+
+			// Keep only the newest ACTIVE connection (delete older ones)
+			if (acc.status === "ACTIVE") {
+				const newerActiveExists = sortedAccounts.some(
+					(other: any) =>
+						other.status === "ACTIVE" &&
+						other.id !== acc.id &&
+						new Date(other.createdAt).getTime() >
+							new Date(acc.createdAt).getTime()
+				);
+				return newerActiveExists;
+			}
+
+			return false;
+		});
+
+		console.log(
+			`[Composio] Will delete ${accountsToDelete.length} old connections`
+		);
+
+		// Delete each old connection
+		for (const acc of accountsToDelete) {
+			try {
+				await composio.connectedAccounts.delete(acc.id);
+				console.log(
+					`[Composio] Deleted old connection: ${acc.id} (status: ${acc.status})`
+				);
+			} catch (deleteError) {
+				console.error(
+					`[Composio] Failed to delete connection ${acc.id}:`,
+					deleteError
+				);
+				// Continue with other deletions even if one fails
+			}
+		}
+
+		console.log(`[Composio] Cleanup complete`);
+	} catch (error) {
+		console.error("[Composio] Error during cleanup:", error);
+		// Don't fail the connection process if cleanup fails
+	}
+}
+
+/**
  * Initiates a connection flow for the specified app and entity, returning a redirect URL to complete authentication.
  *
- * Attempts to start a connected account creation using the app's configured auth settings. On success returns the redirect URL and created connection id; on failure returns an error message.
+ * PRODUCTION-SAFE: Uses allowMultiple to permit the new connection, then cleans up old connections afterward.
+ * This ensures the connection succeeds even if old connections exist, then maintains only one active connection.
  *
  * @param entityId - The target entity identifier (e.g., workspace or user) to associate with the connection
  * @param app - The app to connect (one of AVAILABLE_APPS)
@@ -1521,14 +1617,31 @@ export async function initiateAppConnection(
 			`[Composio] Initiating connection for ${app} with auth config ID: ${authConfigId}`
 		);
 
+		// STEP 1: Allow multiple connections during initiation to prevent errors
 		const connection = await composio.connectedAccounts.initiate(
 			entityId,
-			authConfigId, // Use auth config ID instead of app name
+			authConfigId,
 			{
-				allowMultiple: true, // Allow multiple connected accounts per user
+				allowMultiple: true, // Required to allow the new connection even if old ones exist
 				callbackUrl:
 					callbackUrl ||
 					`${process.env.NEXT_PUBLIC_APP_URL}/integrations/callback`,
+			}
+		);
+
+		console.log(
+			`[Composio] Connection initiated successfully: ${connection.id}`
+		);
+
+		// STEP 2: Clean up old connections asynchronously (non-blocking)
+		// This runs in the background to delete old INITIATED/FAILED/EXPIRED connections
+		// and older ACTIVE connections, keeping only the newest one
+		cleanupOldConnections(composio, entityId, authConfigId, connection.id).catch(
+			(error) => {
+				console.error(
+					"[Composio] Background cleanup failed (non-critical):",
+					error
+				);
 			}
 		);
 
