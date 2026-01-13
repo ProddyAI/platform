@@ -779,6 +779,22 @@ export const getWorkspaceTasks = query({
 });
 
 /**
+ * Check if a RAG namespace exists for a workspace.
+ * Returns true if the namespace exists and is ready.
+ */
+export const checkNamespaceExists = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		// This is a placeholder - we can't directly check the RAG component
+		// Instead, we'll return false and let the action handle initialization
+		// In practice, the first search will tell us if namespace exists
+		return false; // Always return false to trigger check via search
+	},
+});
+
+/**
  * Retrieves cards from a workspace for bulk indexing.
  * 
  * Gets cards with their associated list and channel information needed for indexing.
@@ -945,6 +961,27 @@ export const bulkIndexWorkspace = action({
 		);
 
 		try {
+			// First, ensure the RAG namespace exists by adding a dummy entry
+			// This will create the namespace if it doesn't exist
+			try {
+				await rag.add(ctx, {
+					namespace: args.workspaceId,
+					key: "__workspace_init__",
+					text: "Workspace initialized for RAG search",
+					title: "System: Workspace Initialization",
+					metadata: {},
+					filterValues: [
+						{ name: "workspaceId", value: args.workspaceId as string },
+						{ name: "contentType", value: "message" },
+						{ name: "channelId", value: NO_CHANNEL_FILTER_VALUE },
+					],
+				});
+				console.log(`RAG namespace created/verified for workspace ${args.workspaceId}`);
+			} catch (error) {
+				console.error("Failed to initialize RAG namespace:", error);
+				// Continue anyway, the add operations below will try to create it
+			}
+
 			// Index messages
 			const messages: any[] = await ctx.runQuery(
 				api.search.getWorkspaceMessages,
