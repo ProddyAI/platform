@@ -2295,15 +2295,19 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 			// If namespace doesn't exist, trigger indexing for this workspace
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			if (errorMessage.includes("No compatible namespace found")) {
-				console.log(`RAG namespace not found for workspace ${args.workspaceId}, triggering initialization`);
+				console.log(`RAG namespace not found for workspace ${args.workspaceId}, triggering immediate initialization`);
 				
-				// Schedule bulk indexing for this workspace (silent, in background)
+				// Run bulk indexing immediately (can't use scheduler in actions)
 				try {
-					await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+					// Trigger the indexing action directly without waiting
+					ctx.runAction(api.search.bulkIndexWorkspace, {
 						workspaceId: args.workspaceId!,
 						limit: 1000,
+					}).catch((err) => {
+						console.error("Bulk indexing failed:", err);
 					});
 					isIndexing = true;
+					console.log(`Bulk indexing started for workspace ${args.workspaceId}`);
 				} catch (indexError) {
 					console.error("Failed to trigger bulk indexing:", indexError);
 				}
