@@ -2281,6 +2281,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		// Note: We intentionally avoid mining/summarizing raw chat messages here.
 
 		let ragResults: Array<{ text: string }> = [];
+		let isIndexing = false;
 		try {
 			ragResults = await ctx.runAction(
 				api.search.semanticSearch,
@@ -2296,17 +2297,18 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 			if (errorMessage.includes("No compatible namespace found")) {
 				console.log(`RAG namespace not found for workspace ${args.workspaceId}, triggering initialization`);
 				
-				// Schedule bulk indexing for this workspace
+				// Schedule bulk indexing for this workspace (silent, in background)
 				try {
 					await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
 						workspaceId: args.workspaceId!,
 						limit: 1000,
 					});
+					isIndexing = true;
 				} catch (indexError) {
 					console.error("Failed to trigger bulk indexing:", indexError);
 				}
 				
-				// For now, continue without RAG results
+				// Continue without RAG results - will use LLM without context
 				ragResults = [];
 			} else {
 				console.error("RAG search error:", error);
@@ -2318,17 +2320,40 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 			.map((c, i) => `[Doc ${i + 1}] ${c.text ?? ""}`)
 			.join("\n\n");
 
+		// If no RAG context available, provide helpful response without requiring indexed data
+		if (!ragContext) {
+			// Generate a helpful response using LLM without RAG context
+			const generalPrompt = `You are Proddy, a personal work assistant. The user asked: "${args.query}"
+			
+Provide a helpful, friendly response. You can:
+- Explain what you can help with (calendar, tasks, team status, messages, notes, boards)
+- Suggest they ask about specific features
+- Provide general productivity advice if relevant to their question
+
+Keep it brief and actionable.`;
+
+			try {
+				const answer = await generateLLMResponse({
+					prompt: generalPrompt,
+					systemPrompt: DEFAULT_SYSTEM_PROMPT,
+					recentMessages: recentChatMessages,
+				});
+				return { 
+					answer: answer + (isIndexing ? "\n\n💡 *I'm learning about your workspace in the background to provide better answers soon!*" : ""), 
+					sources: [] 
+				};
+			} catch (error) {
+				console.error("LLM generation error:", error);
+				return {
+					answer: "I'm here to help! You can ask me about:\n• Your calendar and meetings\n• Tasks and deadlines\n• Team status updates\n• Messages in channels\n• Notes and boards\n\nWhat would you like to know?",
+					sources: [],
+				};
+			}
+		}
+
 		// Cost-safe: do not include large channel histories in general QA.
 		const combinedContext =
 			`${ragContext ? `KNOWLEDGE BASE:\n${ragContext}` : ""}`.trim();
-
-		if (!combinedContext) {
-			return {
-				answer:
-					"I'm setting up my knowledge base for your workspace. Please try again in a few moments, or ask me about your calendar, tasks, or team status.",
-				sources: [],
-			};
-		}
 
 		const mixedPrompt = `Answer as a personal work assistant using ONLY the provided context.
 
