@@ -252,7 +252,8 @@ export const ExportNoteDialog = ({
 
 				default:
 					throw new Error("Unsupported export format");
-			}
+			git add src/features/notes/components/export-note-dialog.tsx
+}
 
 			// Calculate file size
 			const fileSize = new Blob([exportData]).size;
