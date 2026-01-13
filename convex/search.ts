@@ -1384,3 +1384,28 @@ export const triggerBulkIndexingInternal = internalMutation({
 		return { scheduled: true };
 	},
 });
+
+/**
+ * Auto-initialize RAG namespace for a workspace (called from chatbot).
+ * This mutation can be called from actions to schedule indexing.
+ */
+export const autoInitializeWorkspace = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// No auth check - this is automatic system initialization
+		console.log(`Auto-initializing RAG for workspace ${args.workspaceId}`);
+		
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+		
+		return { scheduled: true };
+	},
+});

@@ -2295,21 +2295,18 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 			// If namespace doesn't exist, trigger indexing for this workspace
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			if (errorMessage.includes("No compatible namespace found")) {
-				console.log(`RAG namespace not found for workspace ${args.workspaceId}, triggering immediate initialization`);
+				console.log(`RAG namespace not found for workspace ${args.workspaceId}, triggering auto-initialization`);
 				
-				// Run bulk indexing immediately (can't use scheduler in actions)
+				// Call mutation to schedule indexing (mutations can use scheduler)
 				try {
-					// Trigger the indexing action directly without waiting
-					ctx.runAction(api.search.bulkIndexWorkspace, {
+					await ctx.runMutation(api.search.autoInitializeWorkspace, {
 						workspaceId: args.workspaceId!,
 						limit: 1000,
-					}).catch((err) => {
-						console.error("Bulk indexing failed:", err);
 					});
 					isIndexing = true;
-					console.log(`Bulk indexing started for workspace ${args.workspaceId}`);
+					console.log(`Auto-initialization triggered for workspace ${args.workspaceId}`);
 				} catch (indexError) {
-					console.error("Failed to trigger bulk indexing:", indexError);
+					console.error("Failed to trigger auto-initialization:", indexError);
 				}
 				
 				// Continue without RAG results - will use LLM without context
