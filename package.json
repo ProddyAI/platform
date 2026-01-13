@@ -69,7 +69,6 @@
 		"@langchain/core": "^0.3.80",
 		"@liveblocks/node": "^2.24.1",
 		"@liveblocks/react": "^2.24.1",
-
 		"@radix-ui/react-alert-dialog": "^1.1.1",
 		"@radix-ui/react-avatar": "^1.1.0",
 		"@radix-ui/react-checkbox": "^1.2.3",
@@ -92,6 +91,7 @@
 		"@stream-io/node-sdk": "^0.4.25",
 		"@stream-io/video-react-sdk": "^1.18.8",
 		"@types/dompurify": "^3.2.0",
+		"@types/minimatch": "^6.0.0",
 		"ai": "^6.0.20",
 		"autoprefixer": "^10.4.21",
 		"baseline-browser-mapping": "^2.9.11",
