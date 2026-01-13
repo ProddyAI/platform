@@ -74,11 +74,15 @@ export const BarChart = ({
 
 	const maxValue = Math.max(...data.map((d) => d.value));
 
+	const chartHeight = maxHeight ?? height;
+	const labelHeight = showLabels ? 32 : 0;
+	const actualBarHeight = chartHeight - labelHeight;
+
 	return (
 		<div
 			ref={containerRef}
 			className={cn("relative flex items-end gap-2", className)}
-			style={{ height: maxHeight ?? height }}
+			style={{ height: chartHeight }}
 		>
 			{data.map((item, index) => {
 				const percentage = (item.value / maxValue) * 100;
@@ -88,7 +92,8 @@ export const BarChart = ({
 					<div
 						key={index}
 						data-bar-index={index}
-						className="relative flex flex-col items-center flex-1 group"
+						className="relative flex flex-col items-center justify-end flex-1 group"
+						style={{ height: chartHeight }}
 						onMouseEnter={() => setHoveredIndex(index)}
 						onMouseLeave={() => setHoveredIndex(null)}
 						onClick={() => onBarClick?.(item.label, item.value, index)}
@@ -96,20 +101,20 @@ export const BarChart = ({
 						<div
 							className={cn(
 								"w-full rounded-t-md transition-all duration-300",
-								item.color ? "" : "bg-secondary",
-								isHovered ? "opacity-80" : "opacity-100",
+								item.color ? "" : "bg-pink-500",
+								isHovered ? "opacity-80 scale-105" : "opacity-100",
 								animate && "animate-in fade-in-50 slide-in-from-bottom-3",
 								onBarClick && "cursor-pointer"
 							)}
 							style={{
-								height: `${percentage}%`,
+								height: `${(percentage / 100) * actualBarHeight}px`,
 								backgroundColor: item.color,
 								transitionDelay: animate ? `${index * 50}ms` : "0ms",
 							}}
 						/>
 
 						{showLabels && (
-							<div className="mt-1 text-xs text-muted-foreground truncate max-w-full px-1">
+							<div className="mt-2 text-xs text-muted-foreground truncate max-w-full px-1 text-center">
 								{item.label}
 							</div>
 						)}

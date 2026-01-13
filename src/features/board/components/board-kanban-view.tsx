@@ -135,7 +135,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	};
 
 	return (
-		<div className="flex flex-wrap overflow-y-auto gap-4 p-4 bg-white h-full">
+		<div className="flex flex-wrap overflow-y-auto gap-4 p-4 bg-white dark:bg-gray-900 h-full">
 			<style jsx>{`
         /* Custom scrollbar styling for better UX
          * Shows styled scrollbars to indicate scrollable content
@@ -149,17 +149,29 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
           background: #f1f5f9;
           border-radius: 4px;
         }
+        .dark ::-webkit-scrollbar-track {
+          background: #1f2937;
+        }
         ::-webkit-scrollbar-thumb {
           background: #cbd5e1;
           border-radius: 4px;
         }
+        .dark ::-webkit-scrollbar-thumb {
+          background: #4b5563;
+        }
         ::-webkit-scrollbar-thumb:hover {
           background: #94a3b8;
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+          background: #6b7280;
         }
         /* Firefox scrollbar styling */
         * {
           scrollbar-width: thin;
           scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        .dark * {
+          scrollbar-color: #4b5563 #1f2937;
         }
       `}</style>
 			<DndContext
@@ -200,8 +212,8 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 						/>
 					)}
 					{activeItem?.type === "list" && (
-						<div className="bg-gray-100 rounded-lg shadow w-72 opacity-80 border-2 border-secondary">
-							<div className="p-3 font-bold border-b">
+						<div className="bg-gray-100 dark:bg-gray-800 rounded-lg shadow w-72 opacity-80 border-2 border-secondary">
+							<div className="p-3 font-bold border-b dark:border-gray-700 dark:text-gray-100">
 								{activeItem.item.title}
 							</div>
 						</div>

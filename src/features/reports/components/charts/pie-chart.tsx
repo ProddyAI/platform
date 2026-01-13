@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { darkenColor, lightenColor } from "./utils/color-utils";
+import { darkenColor } from "./utils/color-utils";
 import {
 	createSidePath,
 	createTopPath,
@@ -107,21 +107,37 @@ export const PieChart = ({
 
 	const total = data.reduce((sum, item) => sum + item.value, 0);
 
-	let cumulativePercentage = 0;
-	const segments: PieSegment[] = data.map((item, index) => {
-		const percentage = (item.value / total) * 100;
-		const startAngle = cumulativePercentage;
-		cumulativePercentage += percentage;
-		const endAngle = cumulativePercentage;
+	// If total is 0, show a single greyed out segment
+	const isAllZero = total === 0;
+	const greyColor = "#9ca3af"; // gray-400
 
-		return {
-			...item,
-			percentage,
-			startAngle,
-			endAngle,
-			index,
-		};
-	});
+	let cumulativePercentage = 0;
+	const segments: PieSegment[] = isAllZero
+		? [
+				{
+					label: "No Data",
+					value: 0,
+					color: greyColor,
+					percentage: 100,
+					startAngle: 0,
+					endAngle: 100,
+					index: 0,
+				},
+			]
+		: data.map((item, index) => {
+				const percentage = (item.value / total) * 100;
+				const startAngle = cumulativePercentage;
+				cumulativePercentage += percentage;
+				const endAngle = cumulativePercentage;
+
+				return {
+					...item,
+					percentage,
+					startAngle,
+					endAngle,
+					index,
+				};
+			});
 
 	return (
 		<div
@@ -145,13 +161,13 @@ export const PieChart = ({
 				}}
 			>
 				<svg
-					viewBox="0 0 140 130"
+					viewBox="0 0 140 145"
 					className="w-full h-full"
 					preserveAspectRatio="xMidYMid meet"
 					style={{ overflow: "visible", isolation: "isolate" }}
 				>
 					<defs>
-						{/* Side gradient for depth - enhanced matte style */}
+						{/* Side - solid darker shade for 3D depth effect */}
 						{segments.map((segment) => (
 							<linearGradient
 								key={`side-gradient-${segment.index}`}
@@ -161,19 +177,18 @@ export const PieChart = ({
 								x2="0%"
 								y2="100%"
 							>
-								<stop offset="0%" stopColor={darkenColor(segment.color, 0.2)} />
 								<stop
-									offset="50%"
-									stopColor={darkenColor(segment.color, 0.35)}
+									offset="0%"
+									stopColor={darkenColor(segment.color, 0.25)}
 								/>
 								<stop
 									offset="100%"
-									stopColor={darkenColor(segment.color, 0.45)}
+									stopColor={darkenColor(segment.color, 0.25)}
 								/>
 							</linearGradient>
 						))}
 
-						{/* Top surface subtle gradient for depth perception */}
+						{/* Top surface with exact color matching legend */}
 						{segments.map((segment) => (
 							<linearGradient
 								key={`top-gradient-${segment.index}`}
@@ -185,9 +200,12 @@ export const PieChart = ({
 							>
 								<stop
 									offset="0%"
-									stopColor={lightenColor(segment.color, 0.05)}
+									stopColor={isAllZero ? greyColor : segment.color}
 								/>
-								<stop offset="100%" stopColor={segment.color} />
+								<stop
+									offset="100%"
+									stopColor={isAllZero ? greyColor : segment.color}
+								/>
 							</linearGradient>
 						))}
 
@@ -243,20 +261,29 @@ export const PieChart = ({
 
 							return (
 								<g key={`depth-${segment.index}`}>
-									{sidePaths?.map((pathData, idx) => (
-										<path
-											key={`side-${segment.index}-${idx}`}
-											d={pathData.path}
-											fill={`url(#sideGradient-${segment.index})`}
-											stroke="none"
-											fillOpacity="1"
-											strokeLinejoin="round"
-											strokeLinecap="round"
-											style={{
-												transition: "all 0.3s ease-out",
-											}}
-										/>
-									))}
+									{sidePaths?.map((pathData, idx) => {
+										// Use lighter shade for outer arc to create proper cylinder effect
+										const fillColor =
+											pathData.type === "outer"
+												? darkenColor(segment.color, 0.3)
+												: darkenColor(segment.color, 0.35);
+
+										return (
+											<path
+												key={`side-${segment.index}-${idx}`}
+												d={pathData.path}
+												fill={fillColor}
+												stroke="rgba(0,0,0,0.1)"
+												strokeWidth="0.5"
+												fillOpacity="1"
+												strokeLinejoin="round"
+												strokeLinecap="round"
+												style={{
+													transition: "all 0.3s ease-out",
+												}}
+											/>
+										);
+									})}
 								</g>
 							);
 						})}
@@ -294,21 +321,30 @@ export const PieChart = ({
 
 								return (
 									<g key={`depth-hovered-${segment.index}`}>
-										{sidePaths?.map((pathData, idx) => (
-											<path
-												key={`side-${segment.index}-${idx}`}
-												d={pathData.path}
-												fill={`url(#sideGradient-${segment.index})`}
-												stroke="none"
-												fillOpacity="1"
-												strokeLinejoin="round"
-												strokeLinecap="round"
-												style={{
-													transition: "all 0.3s ease-out",
-													filter: "brightness(1.15)",
-												}}
-											/>
-										))}
+										{sidePaths?.map((pathData, idx) => {
+											// Use lighter shade for outer arc to create proper cylinder effect
+											const fillColor =
+												pathData.type === "outer"
+													? darkenColor(segment.color, 0.3)
+													: darkenColor(segment.color, 0.35);
+
+											return (
+												<path
+													key={`side-${segment.index}-${idx}`}
+													d={pathData.path}
+													fill={fillColor}
+													stroke="rgba(0,0,0,0.1)"
+													strokeWidth="0.5"
+													fillOpacity="1"
+													strokeLinejoin="round"
+													strokeLinecap="round"
+													style={{
+														transition: "all 0.3s ease-out",
+														filter: "brightness(1.15)",
+													}}
+												/>
+											);
+										})}
 									</g>
 								);
 							})}
@@ -361,24 +397,15 @@ export const PieChart = ({
 								>
 									<path
 										d={topPath}
-										fill={`url(#topGradient-${segment.index})`}
+										fill={segment.color}
 										fillOpacity="1"
-										stroke="rgba(255, 255, 255, 0.2)"
+										stroke={
+											segment.percentage >= 99.9 || hoveredIndex !== null
+												? "none"
+												: "rgba(255, 255, 255, 0.2)"
+										}
 										strokeWidth="0.8"
 										style={{
-											transition: "all 0.3s ease-out",
-											filter: "brightness(1)",
-										}}
-									/>
-
-									<path
-										d={topPath}
-										fill="none"
-										stroke="rgba(255, 255, 255, 0.15)"
-										strokeWidth="1"
-										strokeLinejoin="round"
-										style={{
-											opacity: 0.4,
 											transition: "all 0.3s ease-out",
 										}}
 									/>
@@ -435,26 +462,13 @@ export const PieChart = ({
 									>
 										<path
 											d={topPath}
-											fill={`url(#topGradient-${segment.index})`}
+											fill={segment.color}
 											fillOpacity="1"
-											stroke="rgba(255, 255, 255, 0.2)"
-											strokeWidth="0.8"
+											stroke="none"
 											style={{
 												transition: "all 0.3s ease-out",
 												filter:
-													"brightness(1.15) drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
-											}}
-										/>
-
-										<path
-											d={topPath}
-											fill="none"
-											stroke="rgba(255, 255, 255, 0.15)"
-											strokeWidth="1"
-											strokeLinejoin="round"
-											style={{
-												opacity: 0.6,
-												transition: "all 0.3s ease-out",
+													"brightness(1.1) drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
 											}}
 										/>
 									</g>
@@ -463,8 +477,8 @@ export const PieChart = ({
 				</svg>
 			</div>
 
-			{/* HTML Tooltip - Displayed above all page elements */}
-			{hoveredIndex !== null && tooltipPosition && (
+			{/* HTML Tooltip - Displayed following cursor */}
+			{hoveredIndex !== null && tooltipPosition && !isAllZero && (
 				<div
 					className="fixed pointer-events-none animate-in fade-in duration-200"
 					style={{
@@ -495,7 +509,7 @@ export const PieChart = ({
 			)}
 
 			{/* Compact Legend - Top Right */}
-			{showLegend && (
+			{showLegend && !isAllZero && (
 				<div
 					className="absolute top-2 right-2 flex flex-col gap-1.5 bg-background dark:bg-background rounded-lg p-2.5 border border-border/40 shadow-lg"
 					style={{ zIndex: 1 }}
@@ -563,6 +577,19 @@ export const PieChart = ({
 							</div>
 						);
 					})}
+				</div>
+			)}
+
+			{/* "No Data" message for all-zero case */}
+			{showLegend && isAllZero && (
+				<div
+					className="absolute top-2 right-2 flex items-center gap-2 bg-background dark:bg-background rounded-lg px-3 py-2 border border-border/40 shadow-lg"
+					style={{ zIndex: 1 }}
+				>
+					<div className="w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0" />
+					<div className="text-xs font-medium text-muted-foreground">
+						No Data Available
+					</div>
 				</div>
 			)}
 		</div>

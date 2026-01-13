@@ -141,13 +141,16 @@ export const CanvasWidget = ({
 	}
 
 	return (
-		<div className="space-y-4 pb-4">
-			<div className="flex items-center justify-between pr-2">
+		<div className="space-y-3">
+			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<PenTool className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-medium">Recent Canvas</h3>
+					<PenTool className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+					<h3 className="font-semibold text-base">Recent Canvases</h3>
 					{!isEditMode && sortedCanvasItems.length > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{sortedCanvasItems.length}
 						</Badge>
 					)}
@@ -155,41 +158,49 @@ export const CanvasWidget = ({
 				{isEditMode ? (
 					controls
 				) : (
-					<Button variant="default" size="sm" onClick={handleViewAll}>
+					<Button
+						variant="ghost"
+						size="sm"
+						className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						onClick={handleViewAll}
+					>
 						View All
 					</Button>
 				)}
 			</div>
 
 			{sortedCanvasItems.length > 0 ? (
-				<ScrollArea className="widget-scroll-area">
-					<div className="space-y-2 p-4">
+				<ScrollArea className="h-[280px]">
+					<div className="space-y-2 pr-4">
 						{sortedCanvasItems.map((item) => (
 							<WidgetCard key={item._id}>
-								<div className="space-y-1">
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-2">
-											<h5 className="font-medium">{item.title}</h5>
-										</div>
-										<div className="flex items-center text-xs text-muted-foreground">
-											<Clock className="mr-1 h-3 w-3" />
+								<div className="space-y-2">
+									<div className="flex items-start justify-between gap-2">
+										<h5 className="font-medium text-sm leading-tight flex-1">
+											{item.title}
+										</h5>
+										<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
+											<Clock className="h-2.5 w-2.5" />
 											{formatDistanceToNow(new Date(item.updatedAt), {
 												addSuffix: true,
-											})}
-										</div>
+											}).replace("about ", "")}
+										</span>
 									</div>
-									<Badge variant="outline" className="text-xs border-2">
-										{item.channelName}
-									</Badge>
-									<p className="text-sm text-muted-foreground line-clamp-2">
-										{item.description
-											? item.description.substring(0, 100)
-											: "No description"}
+									<div className="flex items-center gap-2">
+										<Badge
+											variant="outline"
+											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
+										>
+											# {item.channelName}
+										</Badge>
+									</div>
+									<p className="text-xs text-muted-foreground line-clamp-1">
+										{item.description}
 									</p>
 									<Button
 										variant="ghost"
 										size="sm"
-										className="mt-1 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
+										className="h-7 px-2 w-full justify-center text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 										onClick={() =>
 											item.channelId &&
 											handleViewCanvas(item._id, item.channelId, item.roomId)
@@ -203,19 +214,22 @@ export const CanvasWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-					<PenTool className="mb-2 h-10 w-10 text-muted-foreground" />
-					<h3 className="text-lg font-medium">No canvas items found</h3>
-					<p className="text-sm text-muted-foreground">
+				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
+					<PenTool className="mb-3 h-12 w-12 text-muted-foreground/40" />
+					<h3 className="text-base font-semibold text-foreground">
+						No canvas items found
+					</h3>
+					<p className="text-sm text-muted-foreground mt-1">
 						Create a canvas to see it here
 					</p>
 					<Button
 						variant="default"
 						size="sm"
-						className="mt-4 bg-primary/90 hover:bg-primary"
+						className="mt-4 bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700"
 						onClick={handleCreateCanvas}
 					>
-						Create Canvas <Plus className="ml-2 h-3.5 w-3.5" />
+						<Plus className="mr-2 h-4 w-4" />
+						Create Canvas
 					</Button>
 				</div>
 			)}

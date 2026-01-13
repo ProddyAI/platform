@@ -1,13 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import {
-	AlertCircle,
-	CheckCircle2,
-	CheckSquare,
-	Clock,
-	Loader,
-} from "lucide-react";
+import { CheckCircle2, CheckSquare, Clock, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -133,13 +127,16 @@ export const TasksWidget = ({
 	};
 
 	return (
-		<div className="space-y-4 pb-4">
-			<div className="flex items-center justify-between pr-2">
+		<div className="space-y-3">
+			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-medium">Your Tasks</h3>
+					<CheckSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+					<h3 className="font-semibold text-base">Your Tasks</h3>
 					{!isEditMode && sortedTasks.length > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{sortedTasks.length}
 						</Badge>
 					)}
@@ -148,8 +145,9 @@ export const TasksWidget = ({
 					controls
 				) : (
 					<Button
-						variant="default"
+						variant="ghost"
 						size="sm"
+						className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
 					>
 						View all
@@ -158,8 +156,8 @@ export const TasksWidget = ({
 			</div>
 
 			{sortedTasks.length > 0 ? (
-				<ScrollArea className="widget-scroll-area">
-					<div className="space-y-2 p-4">
+				<ScrollArea className="h-[280px]">
+					<div className="space-y-2 pr-4">
 						{sortedTasks.map((task) => (
 							<WidgetCard
 								key={task._id}
@@ -192,23 +190,13 @@ export const TasksWidget = ({
 										</p>
 										{getPriorityBadge(task.priority)}
 										{task.dueDate && (
-											<div
-												className={`flex items-center text-xs ${
-													new Date(task.dueDate) < new Date() && !task.completed
-														? "text-red-500"
-														: "text-muted-foreground"
-												}`}
-											>
-												<Clock className="mr-1 h-3 w-3 flex-shrink-0" />
+											<div className="flex items-center gap-0.5 text-[10px] text-red-600 dark:text-red-400 font-medium">
+												<Clock className="h-2.5 w-2.5 flex-shrink-0" />
 												<span>
 													{formatDistanceToNow(new Date(task.dueDate), {
 														addSuffix: true,
-													})}
+													}).replace("about ", "")}
 												</span>
-												{new Date(task.dueDate) < new Date() &&
-													!task.completed && (
-														<AlertCircle className="ml-1 h-3 w-3 flex-shrink-0" />
-													)}
 											</div>
 										)}
 										<Badge variant="outline" className="border-2 text-xs w-fit">
@@ -218,7 +206,7 @@ export const TasksWidget = ({
 									<Button
 										variant="ghost"
 										size="sm"
-										className="h-7 px-3 text-xs text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300 flex-shrink-0"
+										className="h-7 px-2 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950 flex-shrink-0"
 										onClick={() => handleViewTask(task._id)}
 									>
 										View
@@ -229,24 +217,22 @@ export const TasksWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-					<CheckSquare className="mb-2 h-10 w-10 text-muted-foreground" />
-					<h3 className="text-lg font-medium">No tasks</h3>
-					<p className="text-sm text-muted-foreground">
+				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
+					<CheckSquare className="mb-3 h-12 w-12 text-muted-foreground/40" />
+					<h3 className="text-base font-semibold text-foreground">No tasks</h3>
+					<p className="text-sm text-muted-foreground mt-1">
 						You don't have any tasks created
 					</p>
-					<div className="flex gap-2 mt-4">
-						<Button
-							variant="default"
-							size="sm"
-							className="bg-primary/90 hover:bg-primary"
-							onClick={() =>
-								router.push(`/workspace/${workspaceId}/tasks?action=create`)
-							}
-						>
-							Create Task
-						</Button>
-					</div>
+					<Button
+						variant="default"
+						size="sm"
+						className="mt-4 bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700"
+						onClick={() =>
+							router.push(`/workspace/${workspaceId}/tasks?action=create`)
+						}
+					>
+						Create Task
+					</Button>
 				</div>
 			)}
 		</div>

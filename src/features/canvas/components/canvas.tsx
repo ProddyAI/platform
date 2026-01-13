@@ -416,7 +416,7 @@ export const Canvas = ({
 
 	return (
 		<div className="flex flex-col h-full relative">
-			<main className="flex-1 w-full relative bg-neutral-100 touch-none">
+			<main className="flex-1 w-full relative bg-neutral-100 dark:bg-gray-900 touch-none">
 				<CanvasName savedCanvasName={savedCanvasName} />
 				<TopToolbar
 					canvasState={canvasState}
@@ -477,7 +477,7 @@ export const Canvas = ({
 										x="50%"
 										y="50%"
 										textAnchor="middle"
-										fill="#888"
+										className="fill-gray-500 dark:fill-gray-400"
 										fontSize="14"
 										fontFamily="sans-serif"
 									>
