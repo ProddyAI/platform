@@ -20,6 +20,7 @@ interface BlockNoteNotesEditorProps {
 	channelId: Id<"channels">;
 	toggleFullScreen?: () => void;
 	isFullScreen?: boolean;
+	onEditorReady?: (editor: BlockNoteEditorType) => void;
 }
 
 export const BlockNoteNotesEditor = ({
@@ -33,13 +34,19 @@ export const BlockNoteNotesEditor = ({
 	channelId,
 	toggleFullScreen,
 	isFullScreen = false,
+	onEditorReady,
 }: BlockNoteNotesEditorProps) => {
 	const [isFormatting, setIsFormatting] = useState(false);
 	const editorRef = useRef<BlockNoteEditorType | null>(null);
 
-	const handleEditorReady = useCallback((editor: BlockNoteEditorType) => {
-		editorRef.current = editor;
-	}, []);
+	const handleEditorReady = useCallback(
+  		(editor: BlockNoteEditorType) => {
+    		editorRef.current = editor;
+    		onEditorReady?.(editor);
+  		},
+  		[onEditorReady]
+	);
+
 
 	const handleFormatNote = async () => {
 		if (!editorRef.current) {
