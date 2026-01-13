@@ -4,7 +4,7 @@ import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { api, components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, mutation, query } from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 
 // Define result types (maintaining compatibility with existing API)
 type SearchResult = {
@@ -1314,6 +1314,28 @@ export const triggerBulkIndexing = mutation({
 			throw new Error("User is not a member of this workspace");
 		}
 
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+		
+		return { scheduled: true };
+	},
+});
+
+/**
+ * Internal version of triggerBulkIndexing that can be called without authentication.
+ * Use this for admin tasks or initialization scripts.
+ */
+export const triggerBulkIndexingInternal = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
 		// Schedule the bulk indexing action
 		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
 			workspaceId: args.workspaceId,
