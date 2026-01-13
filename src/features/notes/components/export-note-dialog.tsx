@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -159,14 +160,35 @@ export const ExportNoteDialog = ({
 		}
 	};
 
-	const convertToPDF = (note: Note): string => {
-		// For now, return a data URL placeholder
-		// In a real implementation, you'd use a library like puppeteer or jsPDF
-		const htmlContent = convertToHTML(note);
+	const convertToPDF = async (note: Note): Promise<ArrayBuffer> => {
+		const html = convertToHTML(note);
 
-		// This is a placeholder - in production you'd generate actual PDF
-		return `data:text/html;base64,${btoa(htmlContent)}`;
+		const container = document.createElement("div");
+		container.innerHTML = html;
+		container.style.width = "800px";
+		container.style.padding = "24px";
+		container.style.fontFamily = "Inter, sans-serif";
+
+		document.body.appendChild(container);
+
+		const pdf = new jsPDF({
+			orientation: "p",
+			unit: "pt",
+			format: "a4",
+		});
+
+		await pdf.html(container, {
+			x: 40,
+			y: 40,
+			width: 515,
+			windowWidth: 800,
+		});
+
+		document.body.removeChild(container);
+
+		return pdf.output("arraybuffer");
 	};
+
 
 	const formatFileSize = (bytes: number): string => {
 		if (bytes === 0) return "0 Bytes";
@@ -183,6 +205,10 @@ export const ExportNoteDialog = ({
 		try {
 			if (!channelId || !workspaceId || !note) {
 				toast.error("Cannot export note: missing required data");
+				return;
+			}
+			if (exportFormat === "pdf") {
+				toast.error("PDF export is only supported for system download");
 				return;
 			}
 
@@ -222,12 +248,6 @@ export const ExportNoteDialog = ({
 					);
 					_contentType = "application/json";
 					fileExtension = "json";
-					break;
-
-				case "pdf":
-					exportData = convertToPDF(note);
-					_contentType = "application/pdf";
-					fileExtension = "pdf";
 					break;
 
 				default:
@@ -271,98 +291,110 @@ export const ExportNoteDialog = ({
 
 	// Export to system (download file)
 	const handleExportToSystem = async () => {
-		try {
-			if (!note) {
-				toast.error("Cannot export note: missing note data");
+	try {
+		if (!note) {
+			toast.error("Cannot export note: missing note data");
+			return;
+		}
+
+		setIsExporting(true);
+
+		// Generate export data client-side
+		let exportData: string | undefined;
+		let contentType: string;
+		let fileExtension: string;
+		let downloadUrl: string;
+
+		switch (exportFormat) {
+			case "markdown":
+				exportData = convertToMarkdown(note);
+				contentType = "text/markdown";
+				fileExtension = "md";
+				break;
+
+			case "html":
+				exportData = convertToHTML(note);
+				contentType = "text/html";
+				fileExtension = "html";
+				break;
+
+			case "json":
+				exportData = JSON.stringify(
+					{
+						id: note._id,
+						title: note.title,
+						content: note.content,
+						tags: note.tags,
+						createdAt: note.createdAt,
+						updatedAt: note.updatedAt,
+						exportedAt: new Date().toISOString(),
+					},
+					null,
+					2
+				);
+				contentType = "application/json";
+				fileExtension = "json";
+				break;
+
+			case "pdf": {
+				const pdfBytes = await convertToPDF(note);
+
+				const blob = new Blob([pdfBytes], {
+					type: "application/pdf",
+				});
+
+				const fileName = `${note.title}.pdf`;
+				downloadUrl = URL.createObjectURL(blob);
+
+				const a = document.createElement("a");
+				a.href = downloadUrl;
+				a.download = fileName;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+
+				URL.revokeObjectURL(downloadUrl);
+
+				toast.success("Note exported as PDF");
+				onClose();
 				return;
 			}
 
-			setIsExporting(true);
-
-			// Generate export data client-side
-			let exportData: string;
-			let contentType: string;
-			let fileExtension: string;
-
-			switch (exportFormat) {
-				case "markdown":
-					exportData = convertToMarkdown(note);
-					contentType = "text/markdown";
-					fileExtension = "md";
-					break;
-
-				case "html":
-					exportData = convertToHTML(note);
-					contentType = "text/html";
-					fileExtension = "html";
-					break;
-
-				case "json":
-					exportData = JSON.stringify(
-						{
-							id: note._id,
-							title: note.title,
-							content: note.content,
-							tags: note.tags,
-							createdAt: note.createdAt,
-							updatedAt: note.updatedAt,
-							exportedAt: new Date().toISOString(),
-						},
-						null,
-						2
-					);
-					contentType = "application/json";
-					fileExtension = "json";
-					break;
-
-				case "pdf":
-					exportData = convertToPDF(note);
-					contentType = "application/pdf";
-					fileExtension = "pdf";
-					break;
-
-				default:
-					throw new Error("Unsupported export format");
-			}
-
-			const fileName = `${note.title}.${fileExtension}`;
-
-			// Create download link
-			let downloadUrl: string;
-
-			if (exportFormat === "pdf" && exportData.startsWith("data:")) {
-				// Handle data URLs (like PDF)
-				downloadUrl = exportData;
-			} else {
-				// Handle text-based exports
-				const blob = new Blob([exportData], {
-					type: contentType,
-				});
-				downloadUrl = URL.createObjectURL(blob);
-			}
-
-			// Create and trigger download
-			const a = document.createElement("a");
-			a.href = downloadUrl;
-			a.download = fileName;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-
-			// Clean up object URL if created
-			if (!exportData.startsWith("data:")) {
-				URL.revokeObjectURL(downloadUrl);
-			}
-
-			toast.success(`Note exported as ${exportFormat.toUpperCase()}`);
-			onClose();
-		} catch (error) {
-			console.error("Export error:", error);
-			toast.error("Failed to export note");
-		} finally {
-			setIsExporting(false);
+			default:
+				throw new Error("Unsupported export format");
 		}
-	};
+
+		if (!exportData) {
+			throw new Error("Export data was not generated");
+		}
+
+		const fileName = `${note.title}.${fileExtension}`;
+
+		const blob = new Blob([exportData], {
+			type: contentType,
+		});
+
+		downloadUrl = URL.createObjectURL(blob);
+
+		const a = document.createElement("a");
+		a.href = downloadUrl;
+		a.download = fileName;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+
+		URL.revokeObjectURL(downloadUrl);
+
+		toast.success(`Note exported as ${exportFormat.toUpperCase()}`);
+		onClose();
+	} catch (error) {
+		console.error("Export error:", error);
+		toast.error("Failed to export note");
+	} finally {
+		setIsExporting(false);
+	}
+};
+
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
