@@ -4,7 +4,7 @@ import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { api, components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
 
 // Define result types (maintaining compatibility with existing API)
 type SearchResult = {
@@ -779,6 +779,60 @@ export const getWorkspaceTasks = query({
 });
 
 /**
+ * Retrieves cards from a workspace for bulk indexing.
+ * 
+ * Gets cards with their associated list and channel information needed for indexing.
+ */
+export const getWorkspaceCards = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit || 100;
+		
+		// Get all channels in the workspace
+		const channels = await ctx.db
+			.query("channels")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+		
+		const channelIds = channels.map(c => c._id);
+		const cardsWithInfo: Array<{
+			card: any;
+			list: any;
+			channel: any;
+		}> = [];
+		
+		// For each channel, get its lists and cards
+		for (const channel of channels) {
+			const lists = await ctx.db
+				.query("lists")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.collect();
+			
+			for (const list of lists) {
+				const cards = await ctx.db
+					.query("cards")
+					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+					.take(Math.ceil(limit / channelIds.length));
+				
+				for (const card of cards) {
+					cardsWithInfo.push({ card, list, channel });
+					if (cardsWithInfo.length >= limit) break;
+				}
+				if (cardsWithInfo.length >= limit) break;
+			}
+			if (cardsWithInfo.length >= limit) break;
+		}
+		
+		return cardsWithInfo;
+	},
+});
+
+/**
  * Fuzzy/semantic search for workspace messages.
  *
  * Falls back to the RAG semantic search to surface related messages when exact
@@ -882,6 +936,7 @@ export const bulkIndexWorkspace = action({
 			messages: number;
 			notes: number;
 			tasks: number;
+			cards: number;
 		};
 	}> => {
 		const limit = args.limit || 100;
@@ -974,6 +1029,33 @@ export const bulkIndexWorkspace = action({
 				}
 			}
 
+			// Index cards
+			const cardsWithInfo: any[] = await ctx.runQuery(api.search.getWorkspaceCards, {
+				workspaceId: args.workspaceId,
+				limit,
+			});
+
+			console.log(`Found ${cardsWithInfo.length} cards to index`);
+
+			for (const cardInfo of cardsWithInfo) {
+				try {
+					const { card, list, channel } = cardInfo;
+					await ctx.runAction(api.search.indexContent, {
+						workspaceId: channel.workspaceId,
+						contentId: card._id,
+						contentType: "card",
+						text: card.title + (card.description ? `: ${card.description}` : ""),
+						metadata: {
+							listId: card.listId,
+							channelId: list.channelId,
+						},
+					});
+					console.log(`Indexed card: ${card._id}`);
+				} catch (error) {
+					console.error(`Failed to index card ${cardInfo.card._id}:`, error);
+				}
+			}
+
 			console.log("Bulk indexing completed successfully");
 			return {
 				success: true,
@@ -981,6 +1063,7 @@ export const bulkIndexWorkspace = action({
 					messages: messages.length,
 					notes: notes.length,
 					tasks: tasks.length,
+					cards: cardsWithInfo.length,
 				},
 			};
 		} catch (error) {
@@ -1188,5 +1271,57 @@ ${context}
 				sources: [],
 			};
 		}
+	},
+});
+
+/**
+ * Triggers bulk indexing of workspace content into RAG system.
+ * 
+ * This mutation schedules the bulkIndexWorkspace action to populate the RAG index
+ * with existing workspace content (messages, notes, tasks, cards).
+ * 
+ * Use this to:
+ * - Initialize RAG for a new workspace
+ * - Re-index content after RAG configuration changes
+ * - Fix missing content in RAG index
+ * 
+ * @param {Id<'workspaces'>} workspaceId - The workspace to index
+ * @param {number} [limit] - Optional limit on items per type (default: 1000)
+ * 
+ * @returns {Promise<{scheduled: boolean}>} Confirmation that indexing was scheduled
+ */
+export const triggerBulkIndexing = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// Verify user has access to this workspace
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		// Check if user is a member of the workspace
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.first();
+
+		if (!member) {
+			throw new Error("User is not a member of this workspace");
+		}
+
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+		
+		return { scheduled: true };
 	},
 });

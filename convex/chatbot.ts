@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
@@ -120,15 +120,14 @@ async function generateLLMResponse(opts: {
 	systemPrompt?: string;
 	recentMessages?: ReadonlyArray<ChatMessage>;
 }): Promise<string> {
-	const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+	const apiKey = process.env.OPENAI_API_KEY;
 	if (!apiKey) {
-		throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is required");
+		throw new Error("OPENAI_API_KEY is required. Please configure the OpenAI API key in your environment variables.");
 	}
 
 	const modelId =
-		process.env.GOOGLE_GENERATIVE_AI_MODEL ||
-		process.env.GEMINI_MODEL ||
-		"gemini-1.5-flash-8b";
+		process.env.OPENAI_MODEL ||
+		"gpt-4o-mini";
 
 	const system = (opts.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT).trim();
 	const userPrompt = String(opts.prompt ?? "").trim();
@@ -148,13 +147,19 @@ async function generateLLMResponse(opts: {
 		{ role: "user", content: userPrompt },
 	];
 
-	const { text } = await generateText({
-		model: google(modelId),
-		messages,
-		temperature: 0.2,
-	});
+	try {
+		const { text } = await generateText({
+			model: openai(modelId) as any,
+			messages: messages as any,
+			temperature: 0.2,
+		});
 
-	return text.trim();
+		return text.trim();
+	} catch (error) {
+		console.error("OpenAI API error:", error);
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		throw new Error(`AI generation failed: ${errorMessage}`);
+	}
 }
 
 type AssistantIntent = {
@@ -2320,13 +2325,34 @@ Context:\n${combinedContext}`;
 			});
 			const sources = [...(ragResults.length ? ["Knowledge Base"] : [])];
 			return { answer, sources };
-		} catch {
-			// Best-effort assistant response without quoting docs.
-			const lines: string[] = [];
-
-			lines.push("• [Unable to generate detailed answer at this time]");
+		} catch (error) {
+			// Log the actual error for debugging
+			console.error("LLM generation error in chatbot:", error);
+			
+			// Provide more specific error message
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			
+			if (errorMessage.includes("OPENAI_API_KEY")) {
+				return {
+					answer: "AI service is not configured. Please contact your administrator to set up the OpenAI API key.",
+					sources: [],
+				};
+			}
+			
+			if (errorMessage.includes("rate limit") || errorMessage.includes("quota")) {
+				return {
+					answer: "AI service is temporarily unavailable due to rate limits. Please try again in a moment.",
+					sources: [],
+				};
+			}
+			
+			// Generic fallback with context info
+			const contextInfo = ragResults.length > 0 
+				? `I found ${ragResults.length} relevant document(s), but couldn't generate a summary.`
+				: "I couldn't find relevant information to answer your question.";
+			
 			return {
-				answer: lines.join("\n"),
+				answer: `Unable to generate a response at this time. ${contextInfo}\n\nError: ${errorMessage.substring(0, 150)}`,
 				sources: [],
 			};
 		}
