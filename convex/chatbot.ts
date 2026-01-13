@@ -2280,14 +2280,39 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		// ---------------------------------------------------------------------
 		// Note: We intentionally avoid mining/summarizing raw chat messages here.
 
-		const ragResults: Array<{ text: string }> = await ctx.runAction(
-			api.search.semanticSearch,
-			{
-				workspaceId: args.workspaceId!,
-				query: args.query,
-				limit: 3,
+		let ragResults: Array<{ text: string }> = [];
+		try {
+			ragResults = await ctx.runAction(
+				api.search.semanticSearch,
+				{
+					workspaceId: args.workspaceId!,
+					query: args.query,
+					limit: 3,
+				}
+			);
+		} catch (error) {
+			// If namespace doesn't exist, trigger indexing for this workspace
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			if (errorMessage.includes("No compatible namespace found")) {
+				console.log(`RAG namespace not found for workspace ${args.workspaceId}, triggering initialization`);
+				
+				// Schedule bulk indexing for this workspace
+				try {
+					await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+						workspaceId: args.workspaceId!,
+						limit: 1000,
+					});
+				} catch (indexError) {
+					console.error("Failed to trigger bulk indexing:", indexError);
+				}
+				
+				// For now, continue without RAG results
+				ragResults = [];
+			} else {
+				console.error("RAG search error:", error);
+				ragResults = [];
 			}
-		);
+		}
 
 		const ragContext = ragResults
 			.map((c, i) => `[Doc ${i + 1}] ${c.text ?? ""}`)
@@ -2300,7 +2325,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		if (!combinedContext) {
 			return {
 				answer:
-					"I don't have enough information (no documents or recent messages found).",
+					"I'm setting up my knowledge base for your workspace. Please try again in a few moments, or ask me about your calendar, tasks, or team status.",
 				sources: [],
 			};
 		}
