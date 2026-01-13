@@ -51,7 +51,7 @@ export const LiveParticipants = ({
 								className="h-7 w-7 border-2"
 								style={{ borderColor: connectionIdToColor(user.connectionId) }}
 							>
-								<AvatarImage src={user.info.picture} />
+								<AvatarImage src={user.info.picture || undefined} />
 								<AvatarFallback
 									className="text-xs font-semibold text-white"
 									style={{ backgroundColor }}
@@ -80,7 +80,7 @@ export const LiveParticipants = ({
 								),
 							}}
 						>
-							<AvatarImage src={currentParticipant.info.picture} />
+							<AvatarImage src={currentParticipant.info.picture || undefined} />
 							<AvatarFallback
 								className="text-xs font-semibold text-white"
 								style={{

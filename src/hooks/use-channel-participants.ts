@@ -114,40 +114,16 @@ export const useChannelParticipants = () => {
 
 	// Format participants with their user info
 	const participants = others.map((other) => {
-		const userId =
-			"id" in (other.info || {}) ? (other.info as { id: string }).id : null;
-		let member = userId ? userMap.get(userId) : null;
-
-		// If no exact match by ID, try to find a partial match
-		if (!member && userId && typeof userId === "string" && members) {
-			const matchingMember = members.find(
-				(m) => m.user._id.includes(userId) || userId.includes(m.user._id)
-			);
-
-			if (matchingMember) {
-				member = matchingMember;
-			}
-		}
-
-		// If still no match and we have members, try to assign a member based on connection ID
-		if (!member && members && members.length > 0) {
-			// Use modulo to cycle through available members
-			const memberByIndex = members[other.connectionId % members.length];
-			if (memberByIndex) {
-				member = memberByIndex;
-			}
-		}
+		const userId = other.id;
+		const member = members?.find((m) => m.userId === userId);
 
 		return {
 			connectionId: other.connectionId,
 			memberId: member?._id || null,
 			userId: userId || null,
 			info: {
-				name:
-					member?.user?.name ||
-					other.info?.name ||
-					`User ${other.connectionId}`,
-				picture: member?.user?.image || other.info?.picture || null, // Let Avatar component handle fallbacks instead of external URLs
+				name: member?.user?.name || `User ${other.connectionId}`,
+				picture: member?.user?.image || null,
 			},
 		};
 	});
