@@ -64,42 +64,43 @@ export function initializeComposio() {
 	const apiClient = {
 		// Create connection for a user and app
 		async createConnection(userId: string, appName: string) {
-			try {
-				console.log(
-					`[Composio] Creating connection for user ${userId} with app ${appName}`
+			console.log(
+				`[Composio] Creating connection for user ${userId} with app ${appName}`
+			);
+
+			// Import APP_CONFIGS to get auth config ID
+			const { APP_CONFIGS } = await import("./composio-config");
+
+			// Convert appName to uppercase to match our config keys
+			const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
+			const appConfig = APP_CONFIGS[appKey];
+
+			if (!appConfig) {
+				console.error(
+					`[Composio] App config not found for ${appName}. Available apps:`,
+					Object.keys(APP_CONFIGS)
 				);
+				throw new Error(
+					`App ${appName} not found in configuration. Available apps: ${Object.keys(APP_CONFIGS).join(", ")}`
+				);
+			}
 
-				// Import APP_CONFIGS to get auth config ID
-				const { APP_CONFIGS } = await import("./composio-config");
+			const authConfigId = appConfig.authConfigId;
 
-				// Convert appName to uppercase to match our config keys
-				const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
-				const appConfig = APP_CONFIGS[appKey];
-
-				if (!appConfig) {
-					console.error(
-						`[Composio] App config not found for ${appName}. Available apps:`,
-						Object.keys(APP_CONFIGS)
-					);
-					throw new Error(
-						`App ${appName} not found in configuration. Available apps: ${Object.keys(APP_CONFIGS).join(", ")}`
-					);
-				}
-
-				const authConfigId = appConfig.authConfigId;
-
-				if (!authConfigId) {
-					const envVarName = `${appKey}_AUTH_CONFIG_ID`;
+			if (!authConfigId) {
+				const envVarName = `${appKey}_AUTH_CONFIG_ID`;
 				throw new Error(
 					`Auth config ID not found for ${appName}. Please set ${envVarName}`
 				);
 			}
 
-			const connection = await (
-				composioInstance as any
-			).connectedAccounts?.initiate?.(userId, authConfigId, {
-				allowMultiple: true,
-			});
+			const connection = await composioInstance.connectedAccounts?.initiate?.(
+				userId,
+				authConfigId,
+				{
+					allowMultiple: true,
+				}
+			);
 
 			if (!connection) {
 				throw new Error("Failed to create connection");
@@ -107,45 +108,47 @@ export function initializeComposio() {
 
 			// Clean up old connections in background
 			const { cleanupOldConnections } = await import("./composio-config");
-			const connectionId = connection.id || connection.connectionId;
+			const connectionId = (connection as unknown as any).id || (connection as unknown as any).connectionId;
 			if (connectionId) {
 				cleanupOldConnections(
 					composioInstance,
 					userId,
 					authConfigId,
 					connectionId
-				).catch(() => {});
+				).catch((err) => {
+					console.warn(
+						`Failed to cleanup old connections for userId=${userId}, authConfigId=${authConfigId}, connectionId=${connectionId}:`,
+						err
+					);
+				});
 			}
 
 			return {
-				redirectUrl: connection.redirectUrl || connection.authUrl,
-				connectionId: connection.id || connection.connectionId,
-				id: connection.id || connection.connectionId,
+				redirectUrl: (connection as unknown as any).redirectUrl || (connection as unknown as any).authUrl,
+				connectionId: (connection as unknown as any).id || (connection as unknown as any).connectionId,
+				id: (connection as unknown as any).id || (connection as unknown as any).connectionId,
 			};
-		} catch (error) {
-			throw error;
-		}
-	},
+		},
 
-	// Get connections for a user
-	async getConnections(userId: string) {
-		return (
-			(await (composioInstance as any).connectedAccounts?.list?.({
-				userIds: [userId],
-			})) ||
-			(await (composioInstance as any).connections?.list?.({
-				entityId: userId,
-			}))
-		);
-	},
+		// Get connections for a user
+		async getConnections(userId: string) {
+			return (
+				(await composioInstance.connectedAccounts?.list?.({
+					userIds: [userId],
+				})) ||
+				(await (composioInstance as unknown as any).connections?.list?.({
+					entityId: userId,
+				}))
+			);
+		},
 
-	// Get connection status
-	async getConnectionStatus(connectionId: string) {
-		return (
-			(await (composioInstance as any).connectedAccounts?.get?.(connectionId)) ||
-			(await (composioInstance as any).connections?.get?.(connectionId))
-		);
-	},
+		// Get connection status
+		async getConnectionStatus(connectionId: string) {
+			return (
+				(await composioInstance.connectedAccounts?.get?.(connectionId)) ||
+				(await (composioInstance as unknown as any).connections?.get?.(connectionId))
+			);
+		},
 
 	// Get tools for entity and apps
 	async getTools(entityId: string, appNames: string[]) {

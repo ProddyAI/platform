@@ -1552,13 +1552,17 @@ export async function cleanupOldConnections(
 					return true;
 				}
 				// Otherwise keep only the newest ACTIVE
-				const newerActiveExists = sortedAccounts.some(
-					(other) =>
-						other.status === "ACTIVE" &&
-						other.id !== acc.id &&
-						new Date(other.createdAt).getTime() >
-							new Date(acc.createdAt).getTime()
-				);
+				const newerActiveExists = sortedAccounts.some((other) => {
+					if (other.status !== "ACTIVE" || other.id === acc.id) {
+						return false;
+					}
+					// Handle invalid dates by coercing to sentinel value
+					const otherTs = new Date(other.createdAt).getTime();
+					const accTs = new Date(acc.createdAt).getTime();
+					const safeOtherTs = isNaN(otherTs) ? -Infinity : otherTs;
+					const safeAccTs = isNaN(accTs) ? -Infinity : accTs;
+					return safeOtherTs > safeAccTs;
+				});
 				return newerActiveExists;
 			}
 
@@ -1570,11 +1574,23 @@ export async function cleanupOldConnections(
 			try {
 				await composio.connectedAccounts.delete(acc.id);
 			} catch (deleteError) {
-				// Continue with other deletions even if one fails
+				// Log deletion failure but continue with other deletions
+				const logMessage = `Failed to delete connection ${acc.id}: ${deleteError}`;
+				if (typeof logger !== "undefined" && logger?.warn) {
+					logger.warn(logMessage);
+				} else {
+					console.warn(logMessage);
+				}
 			}
 		}
 	} catch (error) {
-		// Don't fail the connection process if cleanup fails
+		// Log cleanup failure but don't fail the connection process
+		const logMessage = `Connected accounts cleanup failed: ${error}`;
+		if (typeof logger !== "undefined" && logger?.error) {
+			logger.error(logMessage);
+		} else {
+			console.error(logMessage);
+		}
 	}
 }
 
