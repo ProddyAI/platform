@@ -1516,9 +1516,17 @@ export async function cleanupOldConnections(
 		const allAccounts = accounts.items || [];
 
 		// Sort by creation date (newest first)
+		// Handle missing or invalid createdAt values by treating them as oldest
 		const sortedAccounts: ComposioConnection[] = [...allAccounts].sort(
-			(a, b) =>
-				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+			(a, b) => {
+				const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+				const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+				// Return 0 if both are invalid to maintain stable sort
+				if (isNaN(timeA) && isNaN(timeB)) return 0;
+				if (isNaN(timeA)) return 1; // a is older (move to end)
+				if (isNaN(timeB)) return -1; // b is older (move to end)
+				return timeB - timeA; // Newest first
+			}
 		);
 
 		// Determine which connections to delete

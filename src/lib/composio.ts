@@ -129,34 +129,22 @@ export function initializeComposio() {
 
 	// Get connections for a user
 	async getConnections(userId: string) {
-		try {
-			const connections =
-				(await (composioInstance as any).connectedAccounts?.list?.({
-					userIds: [userId],
-				})) ||
-				(await (composioInstance as any).connections?.list?.({
-					entityId: userId,
-				}));
-
-			return connections;
-		} catch (error) {
-			throw error;
-		}
+		return (
+			(await (composioInstance as any).connectedAccounts?.list?.({
+				userIds: [userId],
+			})) ||
+			(await (composioInstance as any).connections?.list?.({
+				entityId: userId,
+			}))
+		);
 	},
 
 	// Get connection status
 	async getConnectionStatus(connectionId: string) {
-		try {
-			const connection =
-				(await (composioInstance as any).connectedAccounts?.get?.(
-					connectionId
-				)) ||
-				(await (composioInstance as any).connections?.get?.(connectionId));
-
-			return connection;
-		} catch (error) {
-			throw error;
-		}
+		return (
+			(await (composioInstance as any).connectedAccounts?.get?.(connectionId)) ||
+			(await (composioInstance as any).connections?.get?.(connectionId))
+		);
 	},
 
 	// Get tools for entity and apps
