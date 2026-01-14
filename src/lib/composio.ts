@@ -60,94 +60,6 @@ export function initializeComposio() {
 	// Use the shared singleton Composio instance instead of creating a new one
 	const composioInstance = composio;
 
-	/**
-	 * Cleans up old connections, keeping only the most recent ACTIVE connection.
-	 * Deletes connections in INITIATED, FAILED, EXPIRED status, and older ACTIVE connections.
-	 */
-	async function cleanupOldConnections(
-		userId: string,
-		authConfigId: string,
-		keepConnectionId?: string
-	) {
-		try {
-			console.log(
-				`[Composio] Cleaning up old connections for user ${userId} with auth config ${authConfigId}`
-			);
-
-			// List all connections for this user and auth config
-			const accounts = await (composioInstance as any).connectedAccounts?.list?.({
-				userIds: [userId],
-				authConfigIds: [authConfigId],
-			});
-
-			const allAccounts = accounts?.items || [];
-			console.log(`[Composio] Found ${allAccounts.length} total connections`);
-
-			// Sort by creation date (newest first)
-			const sortedAccounts = [...allAccounts].sort(
-				(a: any, b: any) =>
-					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-			);
-
-			// Determine which connections to delete
-			const accountsToDelete = sortedAccounts.filter((acc: any) => {
-				// Keep the specified connection ID if provided
-				if (keepConnectionId && acc.id === keepConnectionId) {
-					console.log(`[Composio] Keeping new connection: ${acc.id}`);
-					return false;
-				}
-
-				// Delete failed/expired/initiated connections
-				if (
-					acc.status === "INITIATED" ||
-					acc.status === "FAILED" ||
-					acc.status === "EXPIRED"
-				) {
-					return true;
-				}
-
-				// Keep only the newest ACTIVE connection (delete older ones)
-				if (acc.status === "ACTIVE") {
-					const newerActiveExists = sortedAccounts.some(
-						(other: any) =>
-							other.status === "ACTIVE" &&
-							other.id !== acc.id &&
-							new Date(other.createdAt).getTime() >
-								new Date(acc.createdAt).getTime()
-					);
-					return newerActiveExists;
-				}
-
-				return false;
-			});
-
-			console.log(
-				`[Composio] Will delete ${accountsToDelete.length} old connections`
-			);
-
-			// Delete each old connection
-			for (const acc of accountsToDelete) {
-				try {
-					await (composioInstance as any).connectedAccounts?.delete?.(acc.id);
-					console.log(
-						`[Composio] Deleted old connection: ${acc.id} (status: ${acc.status})`
-					);
-				} catch (deleteError) {
-					console.error(
-						`[Composio] Failed to delete connection ${acc.id}:`,
-						deleteError
-					);
-					// Continue with other deletions even if one fails
-				}
-			}
-
-			console.log(`[Composio] Cleanup complete`);
-		} catch (error) {
-			console.error("[Composio] Error during cleanup:", error);
-			// Don't fail the connection process if cleanup fails
-		}
-	}
-
 	// Create API client wrapper for common operations
 	const apiClient = {
 		// Create connection for a user and app
@@ -178,104 +90,77 @@ export function initializeComposio() {
 
 				if (!authConfigId) {
 					const envVarName = `${appKey}_AUTH_CONFIG_ID`;
-					console.error(
-						`[Composio] Missing auth config ID for ${appName}. Environment variable ${envVarName} is not set.`
-					);
-					throw new Error(
-						`Auth config ID not found for ${appName}. Please set the ${envVarName} environment variable in your production environment. Check your Composio dashboard for the auth config ID.`
-					);
-				}
-
-				console.log(
-					`[Composio] Auth config ID found for ${appName}. Initiating connection...`
+				throw new Error(
+					`Auth config ID not found for ${appName}. Please set ${envVarName}`
 				);
+			}
 
-			// STEP 1: Allow multiple connections during initiation to prevent errors
-			// Try to initiate connection using auth config ID with allowMultiple flag
 			const connection = await (
 				composioInstance as any
 			).connectedAccounts?.initiate?.(userId, authConfigId, {
-				allowMultiple: true, // Required to allow new connection even if old ones exist
+				allowMultiple: true,
 			});
 
-				if (!connection) {
-					console.error(
-						`[Composio] Connection initiation failed - no connection object returned`
-					);
-					throw new Error(
-						"Failed to create connection - method not available or returned null"
-					);
-				}
-
-				console.log(`[Composio] Connection created successfully:`, {
-					hasRedirectUrl: !!(connection.redirectUrl || connection.authUrl),
-					hasConnectionId: !!(connection.id || connection.connectionId),
-				});
-
-				// STEP 2: Clean up old connections asynchronously (non-blocking)
-				const connectionId = connection.id || connection.connectionId;
-				if (connectionId) {
-					cleanupOldConnections(userId, authConfigId, connectionId).catch(
-						(error) => {
-							console.error(
-								"[Composio] Background cleanup failed (non-critical):",
-								error
-							);
-						}
-					);
-				}
-
-				return {
-					redirectUrl: connection.redirectUrl || connection.authUrl,
-					connectionId: connection.id || connection.connectionId,
-					id: connection.id || connection.connectionId,
-				};
-			} catch (error) {
-				console.error("[Composio] Error creating connection:", error);
-				console.error("[Composio] Error details:", {
-					message: error instanceof Error ? error.message : String(error),
-					stack: error instanceof Error ? error.stack : undefined,
-				});
-				throw error;
+			if (!connection) {
+				throw new Error("Failed to create connection");
 			}
-		},
 
-		// Get connections for a user
-		async getConnections(userId: string) {
-			try {
-				const connections =
-					(await (composioInstance as any).connectedAccounts?.list?.({
-						userIds: [userId],
-					})) ||
-					(await (composioInstance as any).connections?.list?.({
-						entityId: userId,
-					}));
-
-				return connections;
-			} catch (error) {
-				console.error("Error getting connections:", error);
-				throw error;
+			// Clean up old connections in background
+			const { cleanupOldConnections } = await import("./composio-config");
+			const connectionId = connection.id || connection.connectionId;
+			if (connectionId) {
+				cleanupOldConnections(
+					composioInstance,
+					userId,
+					authConfigId,
+					connectionId
+				).catch(() => {});
 			}
-		},
 
-		// Get connection status
-		async getConnectionStatus(connectionId: string) {
-			try {
-				const connection =
-					(await (composioInstance as any).connectedAccounts?.get?.(
-						connectionId
-					)) ||
-					(await (composioInstance as any).connections?.get?.(connectionId));
+			return {
+				redirectUrl: connection.redirectUrl || connection.authUrl,
+				connectionId: connection.id || connection.connectionId,
+				id: connection.id || connection.connectionId,
+			};
+		} catch (error) {
+			throw error;
+		}
+	},
 
-				return connection;
-			} catch (error) {
-				console.error("Error getting connection status:", error);
-				throw error;
-			}
-		},
+	// Get connections for a user
+	async getConnections(userId: string) {
+		try {
+			const connections =
+				(await (composioInstance as any).connectedAccounts?.list?.({
+					userIds: [userId],
+				})) ||
+				(await (composioInstance as any).connections?.list?.({
+					entityId: userId,
+				}));
 
-		// Get tools for entity and apps
-		async getTools(entityId: string, appNames: string[]) {
+			return connections;
+		} catch (error) {
+			throw error;
+		}
+	},
+
+	// Get connection status
+	async getConnectionStatus(connectionId: string) {
+		try {
+			const connection =
+				(await (composioInstance as any).connectedAccounts?.get?.(
+					connectionId
+				)) ||
+				(await (composioInstance as any).connections?.get?.(connectionId));
+
+			return connection;
+		} catch (error) {
+			throw error;
+		}
+	},
+
+	// Get tools for entity and apps
+	async getTools(entityId: string, appNames: string[]) {
 			try {
 				const tools = await composioInstance.tools.get(entityId, {
 					appNames: appNames,
