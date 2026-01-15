@@ -61,7 +61,7 @@ export const MembersManagement = ({
 	currentMember,
 }: MembersManagementProps) => {
 	const { data: members, isLoading } = useGetMembers({ workspaceId });
-	const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
+	const { data: workspace } = useGetWorkspace({
 		id: workspaceId,
 	});
 	const [selectedMemberId, setSelectedMemberId] =

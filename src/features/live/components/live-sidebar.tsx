@@ -276,7 +276,7 @@ export const LiveSidebar = ({
 							{filteredItems.map((item) => (
 								<div
 									key={item._id}
-									onClick={() => handleItemClick(item)}
+									role="presentation"
 									onMouseEnter={() => setHoveredItemId(item._id)}
 									onMouseLeave={() => {
 										// Don't hide if dropdown is open for this item
@@ -285,13 +285,19 @@ export const LiveSidebar = ({
 										}
 									}}
 									className={cn(
-										"p-3 rounded-lg cursor-pointer transition-colors group",
+										"relative p-3 rounded-lg cursor-pointer transition-colors group",
 										selectedItemId === item._id
 											? "bg-primary/10 border border-primary/20 dark:bg-primary/30 dark:border-primary/40"
 											: "hover:bg-muted/50 dark:hover:bg-muted/70"
 									)}
 								>
-									<div className="flex items-start justify-between gap-2">
+									<button
+										type="button"
+										className="absolute inset-0 rounded-lg"
+										aria-label={`Open ${getItemTitle(item)}`}
+										onClick={() => handleItemClick(item)}
+									/>
+									<div className="relative z-10 flex items-start justify-between gap-2">
 										<div className="flex-1 min-w-0">
 											{renamingItemId === item._id ? (
 												<Input
@@ -317,9 +323,9 @@ export const LiveSidebar = ({
 
 											{item.tags && item.tags.length > 0 && (
 												<div className="flex flex-wrap gap-1 mt-2">
-													{item.tags.slice(0, 3).map((tag, index) => (
+													{item.tags.slice(0, 3).map((tag) => (
 														<Badge
-															key={index}
+															key={`${item._id}-tag-${tag}`}
 															variant="secondary"
 															className="text-xs"
 														>

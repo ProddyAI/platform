@@ -67,10 +67,7 @@ export const SummaryModal = ({
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-			<div
-				className="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900"
-				onClick={(e) => e.stopPropagation()}
-			>
+			<div className="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900">
 				{/* Header */}
 				<div className="mb-4">
 					<div className="flex items-center justify-between">
@@ -84,6 +81,7 @@ export const SummaryModal = ({
 							</span>
 						</h2>
 						<button
+							type="button"
 							onClick={onClose}
 							className="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800"
 						>

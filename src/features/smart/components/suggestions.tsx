@@ -179,9 +179,9 @@ export const Suggestions = ({
 			</div>
 			<div className="flex flex-wrap gap-2">
 				{suggestions.length > 0 ? (
-					suggestions.map((suggestion, index) => (
+					suggestions.map((suggestion) => (
 						<Button
-							key={index}
+							key={suggestion}
 							variant="outline"
 							size="sm"
 							className="h-auto rounded-full border-primary/20 bg-primary/5 px-3 py-1 text-xs text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-foreground"

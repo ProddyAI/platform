@@ -20,8 +20,7 @@ export const LiveParticipants = ({
 	className,
 }: LiveParticipantsProps) => {
 	// Fetch real participants from the database
-	const { participants, currentParticipant, participantCount, isLoading } =
-		useChannelParticipants();
+	const { participants, isLoading } = useChannelParticipants();
 
 	// If still loading, show nothing
 	if (isLoading) return null;

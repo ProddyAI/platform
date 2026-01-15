@@ -171,9 +171,9 @@ export const ServiceIntegrationCard = ({
 			console.log(`[ServiceCard] API response status:`, response.status);
 
 			if (!response.ok) {
-				let errorDetails;
+				let errorDetails: { error?: string } = {};
 				try {
-					errorDetails = await response.json();
+					errorDetails = (await response.json()) as { error?: string };
 					console.error(`[ServiceCard] API error response:`, errorDetails);
 				} catch (_parseError) {
 					const errorText = await response.text();

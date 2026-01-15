@@ -156,6 +156,7 @@ export const TaskItem = ({
 		>
 			<div className="flex items-start gap-4">
 				<button
+					type="button"
 					onClick={handleToggleCompletion}
 					className="mt-0.5 flex-shrink-0 focus:outline-none group/checkbox"
 					aria-label={completed ? "Mark as incomplete" : "Mark as complete"}

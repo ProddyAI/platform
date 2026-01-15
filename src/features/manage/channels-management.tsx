@@ -675,49 +675,55 @@ export const ChannelsManagement = ({
 											className="hidden"
 											id="new-icon-upload"
 										/>
-										<div
-											onClick={() =>
-												!isUploadingNew && newImageInputRef.current?.click()
-											}
-											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
-										>
-											{newChannelIconPreview || newChannelIcon ? (
-												<>
-													{newChannelIconPreview ? (
-														<img
-															src={newChannelIconPreview}
-															alt="Icon preview"
-															className="h-full w-full object-cover"
-														/>
-													) : (
-														<span className="text-4xl">{newChannelIcon}</span>
-													)}
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															if (
-																newChannelIconPreview ||
-																newChannelIconImage
-															) {
-																clearNewIconImage();
-															}
-															if (newChannelIcon) {
-																setNewChannelIcon(undefined);
-															}
-														}}
-														className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-													>
-														<X className="h-3.5 w-3.5" />
-													</button>
-												</>
-											) : (
-												<div className="flex flex-col items-center gap-1">
-													<Upload className="h-6 w-6 text-gray-400" />
-													<span className="text-xs text-gray-500 text-center">
-														{isUploadingNew ? "Uploading..." : "Upload"}
-													</span>
-												</div>
-											)}
+										<div className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all">
+											<button
+												type="button"
+												className="absolute inset-0 rounded-md"
+												aria-label="Upload channel icon"
+												onClick={() =>
+													!isUploadingNew && newImageInputRef.current?.click()
+												}
+											/>
+											<div className="relative z-10 flex h-full w-full items-center justify-center">
+												{newChannelIconPreview || newChannelIcon ? (
+													<>
+														{newChannelIconPreview ? (
+															<img
+																src={newChannelIconPreview}
+																alt="Icon preview"
+																className="h-full w-full object-cover"
+															/>
+														) : (
+															<span className="text-4xl">{newChannelIcon}</span>
+														)}
+														<button
+															type="button"
+															onClick={(e) => {
+																e.stopPropagation();
+																if (
+																	newChannelIconPreview ||
+																	newChannelIconImage
+																) {
+																	clearNewIconImage();
+																}
+																if (newChannelIcon) {
+																	setNewChannelIcon(undefined);
+																}
+															}}
+															className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+														>
+															<X className="h-3.5 w-3.5" />
+														</button>
+													</>
+												) : (
+													<div className="flex flex-col items-center gap-1">
+														<Upload className="h-6 w-6 text-gray-400" />
+														<span className="text-xs text-gray-500 text-center">
+															{isUploadingNew ? "Uploading..." : "Upload"}
+														</span>
+													</div>
+												)}
+											</div>
 										</div>
 										<EmojiPopover
 											onEmojiSelect={handleNewChannelEmojiSelect}
@@ -859,49 +865,55 @@ export const ChannelsManagement = ({
 										className="hidden"
 										id="edit-icon-upload"
 									/>
-									<div
-										onClick={() =>
-											!isUploadingEdit && editImageInputRef.current?.click()
-										}
-										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
-									>
-										{editChannelIconPreview || editChannelIcon ? (
-											<>
-												{editChannelIconPreview ? (
-													<img
-														src={editChannelIconPreview}
-														alt="Icon preview"
-														className="h-full w-full object-cover"
-													/>
-												) : (
-													<span className="text-4xl">{editChannelIcon}</span>
-												)}
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														if (
-															editChannelIconPreview ||
-															editChannelIconImage
-														) {
-															clearEditIconImage();
-														}
-														if (editChannelIcon) {
-															setEditChannelIcon(undefined);
-														}
-													}}
-													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-												>
-													<X className="h-3.5 w-3.5" />
-												</button>
-											</>
-										) : (
-											<div className="flex flex-col items-center gap-1">
-												<Upload className="h-6 w-6 text-gray-400" />
-												<span className="text-xs text-gray-500 text-center">
-													{isUploadingEdit ? "Uploading..." : "Upload"}
-												</span>
-											</div>
-										)}
+									<div className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all">
+										<button
+											type="button"
+											className="absolute inset-0 rounded-md"
+											aria-label="Upload channel icon"
+											onClick={() =>
+												!isUploadingEdit && editImageInputRef.current?.click()
+											}
+										/>
+										<div className="relative z-10 flex h-full w-full items-center justify-center">
+											{editChannelIconPreview || editChannelIcon ? (
+												<>
+													{editChannelIconPreview ? (
+														<img
+															src={editChannelIconPreview}
+															alt="Icon preview"
+															className="h-full w-full object-cover"
+														/>
+													) : (
+														<span className="text-4xl">{editChannelIcon}</span>
+													)}
+													<button
+														type="button"
+														onClick={(e) => {
+															e.stopPropagation();
+															if (
+																editChannelIconPreview ||
+																editChannelIconImage
+															) {
+																clearEditIconImage();
+															}
+															if (editChannelIcon) {
+																setEditChannelIcon(undefined);
+															}
+														}}
+														className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+													>
+														<X className="h-3.5 w-3.5" />
+													</button>
+												</>
+											) : (
+												<div className="flex flex-col items-center gap-1">
+													<Upload className="h-6 w-6 text-gray-400" />
+													<span className="text-xs text-gray-500 text-center">
+														{isUploadingEdit ? "Uploading..." : "Upload"}
+													</span>
+												</div>
+											)}
+										</div>
 									</div>
 									<EmojiPopover
 										onEmojiSelect={handleEditChannelEmojiSelect}

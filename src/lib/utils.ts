@@ -93,24 +93,35 @@ export function findIntersectingLayersWithRectangle(
 		if (!layer) return false;
 
 		// Get layer properties safely
-		let layerX, layerY, layerWidth, layerHeight;
+		let layerX: number | null = null;
+		let layerY: number | null = null;
+		let layerWidth: number | null = null;
+		let layerHeight: number | null = null;
 
 		try {
 			// Try to get properties using get method first (for LiveObjects)
-			if (typeof layer.get === "function") {
-				layerX = layer.get("x");
-				layerY = layer.get("y");
-				layerWidth = layer.get("width");
-				layerHeight = layer.get("height");
-			} else {
-				// Fall back to direct property access
-				layerX = layer.x;
-				layerY = layer.y;
-				layerWidth = layer.width;
-				layerHeight = layer.height;
-			}
+			const xValue = typeof layer.get === "function" ? layer.get("x") : layer.x;
+			const yValue = typeof layer.get === "function" ? layer.get("y") : layer.y;
+			const widthValue =
+				typeof layer.get === "function" ? layer.get("width") : layer.width;
+			const heightValue =
+				typeof layer.get === "function" ? layer.get("height") : layer.height;
+
+			layerX = typeof xValue === "number" ? xValue : null;
+			layerY = typeof yValue === "number" ? yValue : null;
+			layerWidth = typeof widthValue === "number" ? widthValue : null;
+			layerHeight = typeof heightValue === "number" ? heightValue : null;
 		} catch (error) {
 			console.error("Error accessing layer properties:", error);
+			return false;
+		}
+
+		if (
+			layerX === null ||
+			layerY === null ||
+			layerWidth === null ||
+			layerHeight === null
+		) {
 			return false;
 		}
 

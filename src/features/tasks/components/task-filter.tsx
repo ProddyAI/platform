@@ -83,6 +83,7 @@ export const TaskFilter = ({
 					stroke="currentColor"
 					strokeWidth={2}
 				>
+					<title>Search</title>
 					<path
 						strokeLinecap="round"
 						strokeLinejoin="round"

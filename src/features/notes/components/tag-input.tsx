@@ -90,6 +90,7 @@ export const TagInput = ({
 				>
 					<span>{tag}</span>
 					<button
+						type="button"
 						onClick={() => removeTag(tag)}
 						className="hover:bg-black/10 rounded-full p-0.5 transition-colors"
 					>
