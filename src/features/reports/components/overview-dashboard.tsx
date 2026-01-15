@@ -175,8 +175,8 @@ export const OverviewDashboard = ({
 				: 0;
 
 		return [
-			{ label: "Completed", value: completionRate, color: "bg-green-500" },
-			{ label: "Remaining", value: 100 - completionRate, color: "bg-gray-300" },
+			{ label: "Completed", value: completionRate, color: "#1e40af" },
+			{ label: "Remaining", value: 100 - completionRate, color: "#60a5fa" },
 		];
 	}, [taskData]);
 
@@ -203,7 +203,9 @@ export const OverviewDashboard = ({
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h2 className="text-xl font-semibold">Workspace Overview</h2>
+				<h2 className="text-xl font-semibold text-foreground">
+					Workspace Overview
+				</h2>
 			</div>
 
 			{/* Key Metrics with Trends */}
@@ -211,9 +213,9 @@ export const OverviewDashboard = ({
 				<TooltipProvider>
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Card className="cursor-help hover:shadow-md transition-all duration-200 hover:border-secondary/50">
+							<Card className="cursor-help hover:shadow-md transition-all duration-200 hover:border-secondary/50 border-border">
 								<CardHeader className="pb-2">
-									<CardTitle className="text-sm font-medium text-muted-foreground">
+									<CardTitle className="text-sm font-medium text-muted-foreground/90">
 										Active Users
 									</CardTitle>
 								</CardHeader>
@@ -221,7 +223,7 @@ export const OverviewDashboard = ({
 									<div className="flex items-center justify-between">
 										<div className="flex items-center">
 											<Users className="h-5 w-5 text-secondary mr-2" />
-											<div className="text-2xl font-bold">
+											<div className="text-2xl font-bold text-foreground">
 												{activeUsersData?.activeUserCount || 0}
 											</div>
 										</div>
@@ -238,7 +240,7 @@ export const OverviewDashboard = ({
 											</div>
 										)}
 									</div>
-									<CardDescription>
+									<CardDescription className="text-muted-foreground/80">
 										{activeUsersData?.activeUserPercentage || 0}% of{" "}
 										{activeUsersData?.totalMembers || 0} total users
 									</CardDescription>
@@ -267,9 +269,9 @@ export const OverviewDashboard = ({
 					</Tooltip>
 				</TooltipProvider>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Total Messages
 						</CardTitle>
 					</CardHeader>
@@ -277,7 +279,7 @@ export const OverviewDashboard = ({
 						<div className="flex items-center justify-between">
 							<div className="flex items-center">
 								<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-								<div className="text-2xl font-bold">
+								<div className="text-2xl font-bold text-foreground">
 									{overviewData.totalMessages
 										? overviewData.totalMessages.toLocaleString()
 										: 0}
@@ -296,7 +298,7 @@ export const OverviewDashboard = ({
 								</div>
 							)}
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{overviewData.activeUserCount > 0
 								? `${Math.round(overviewData.totalMessages / overviewData.activeUserCount)} per active user`
 								: "No active users"}{" "}
@@ -305,9 +307,9 @@ export const OverviewDashboard = ({
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Tasks Created
 						</CardTitle>
 					</CardHeader>
@@ -315,7 +317,7 @@ export const OverviewDashboard = ({
 						<div className="flex items-center justify-between">
 							<div className="flex items-center">
 								<CheckSquare className="h-5 w-5 text-secondary mr-2" />
-								<div className="text-2xl font-bold">
+								<div className="text-2xl font-bold text-foreground">
 									{overviewData.totalTasks}
 								</div>
 							</div>
@@ -332,7 +334,7 @@ export const OverviewDashboard = ({
 								</div>
 							)}
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{taskData && taskData.completedTasks > 0
 								? `${Math.round((taskData.completedTasks / taskData.totalTasks) * 100)}% completion rate`
 								: "0% completion rate"}
@@ -340,20 +342,20 @@ export const OverviewDashboard = ({
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-border">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
+						<CardTitle className="text-sm font-medium text-muted-foreground/90">
 							Active Channels
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center">
 							<Hash className="h-5 w-5 text-secondary mr-2" />
-							<div className="text-2xl font-bold">
+							<div className="text-2xl font-bold text-foreground">
 								{overviewData.totalChannels}
 							</div>
 						</div>
-						<CardDescription>
+						<CardDescription className="text-muted-foreground/80">
 							{overviewData.totalMessages > 0 && overviewData.totalChannels > 0
 								? `${Math.round(overviewData.totalMessages / overviewData.totalChannels)} messages per channel`
 								: "No messages"}
@@ -413,51 +415,33 @@ export const OverviewDashboard = ({
 							Overall task completion rate and progress
 						</CardDescription>
 					</CardHeader>
-					<CardContent className="flex-1 flex flex-col p-6 pt-0 min-h-0">
+					<CardContent className="flex-1 flex flex-col p-4 pt-0 pb-4 min-h-0">
 						{taskCompletionData.length > 0 && taskData ? (
-							<div className="flex-1 flex flex-col items-center justify-center h-[400px] max-h-[400px] overflow-auto space-y-6">
+							<div className="flex-1 flex flex-col items-center h-[400px] max-h-[400px] space-y-2 pt-4">
 								{/* Pie Chart */}
-								<div className="relative flex-shrink-0">
+								<div className="relative flex-shrink-0 h-[280px] w-full">
 									<PieChart
 										data={taskCompletionData}
-										size={200}
 										formatValue={(value) => `${value}%`}
 									/>
-									{/* Center completion percentage */}
-									<div className="absolute inset-0 flex items-center justify-center">
-										<div className="text-center">
-											<div className="text-2xl font-bold text-secondary">
-												{taskData.totalTasks > 0
-													? Math.round(
-															(taskData.completedTasks / taskData.totalTasks) *
-																100
-														)
-													: 0}
-												%
-											</div>
-											<div className="text-xs text-muted-foreground">
-												Complete
-											</div>
-										</div>
-									</div>
 								</div>
 
 								{/* Task Statistics */}
-								<div className="w-full space-y-4">
-									<div className="grid grid-cols-2 gap-4">
-										<div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-											<div className="text-2xl font-bold text-green-600 dark:text-green-400">
+								<div className="w-full space-y-2 px-2">
+									<div className="grid grid-cols-2 gap-2">
+										<div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+											<div className="text-xl font-bold text-blue-700 dark:text-blue-400">
 												{taskData.completedTasks}
 											</div>
-											<div className="text-sm text-green-600/80 dark:text-green-400/80">
+											<div className="text-xs text-blue-700/80 dark:text-blue-400/80">
 												Completed
 											</div>
 										</div>
-										<div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-											<div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+										<div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-300 dark:border-blue-700">
+											<div className="text-xl font-bold text-blue-500 dark:text-blue-300">
 												{taskData.totalTasks - taskData.completedTasks}
 											</div>
-											<div className="text-sm text-orange-600/80 dark:text-orange-400/80">
+											<div className="text-xs text-blue-500/80 dark:text-blue-300/80">
 												Remaining
 											</div>
 										</div>
@@ -465,15 +449,15 @@ export const OverviewDashboard = ({
 
 									{/* Progress Bar */}
 									<div className="w-full">
-										<div className="flex justify-between text-sm text-muted-foreground mb-2">
+										<div className="flex justify-between text-xs text-muted-foreground mb-1">
 											<span>Progress</span>
-											<span>
+											<span className="font-medium">
 												{taskData.completedTasks}/{taskData.totalTasks} tasks
 											</span>
 										</div>
-										<div className="w-full bg-muted rounded-full h-2">
+										<div className="w-full bg-muted rounded-full h-1.5">
 											<div
-												className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
+												className="bg-gradient-to-r from-blue-700 to-blue-600 h-1.5 rounded-full transition-all duration-500"
 												style={{
 													width: `${taskData.totalTasks > 0 ? (taskData.completedTasks / taskData.totalTasks) * 100 : 0}%`,
 												}}

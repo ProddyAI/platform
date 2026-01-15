@@ -650,10 +650,11 @@ export const ChannelsManagement = ({
 					</DialogTrigger>
 					<DialogContent>
 						<DialogHeader>
-							<DialogTitle>Create Channel</DialogTitle>
+							<DialogTitle>Add a channel</DialogTitle>
 							<DialogDescription>
-								Add a new channel to your workspace. Choose an emoji icon to
-								make your channel easily recognizable.
+								Channels are where your team communicates. They're best when
+								organized around a topic. Choose an emoji icon to make your
+								channel easily recognizable.
 							</DialogDescription>
 						</DialogHeader>
 						<div className="space-y-4 py-4">
@@ -678,7 +679,7 @@ export const ChannelsManagement = ({
 											onClick={() =>
 												!isUploadingNew && newImageInputRef.current?.click()
 											}
-											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all overflow-hidden"
+											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 										>
 											{newChannelIconPreview || newChannelIcon ? (
 												<>
@@ -694,13 +695,17 @@ export const ChannelsManagement = ({
 													<button
 														onClick={(e) => {
 															e.stopPropagation();
-															if (newChannelIconPreview) {
+															if (
+																newChannelIconPreview ||
+																newChannelIconImage
+															) {
 																clearNewIconImage();
-															} else {
+															}
+															if (newChannelIcon) {
 																setNewChannelIcon(undefined);
 															}
 														}}
-														className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-10"
+														className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 													>
 														<X className="h-3.5 w-3.5" />
 													</button>
@@ -720,7 +725,7 @@ export const ChannelsManagement = ({
 										>
 											<button
 												type="button"
-												className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-10"
+												className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 											>
 												<Smile className="h-4 w-4" />
 											</button>
@@ -737,10 +742,12 @@ export const ChannelsManagement = ({
 											id="name"
 											value={newChannelName}
 											onChange={(e) => setNewChannelName(e.target.value)}
-											placeholder="e.g. marketing"
+											placeholder="e.g. plan-budget"
 											required
 											minLength={3}
 											maxLength={20}
+											className="h-10 !leading-[1.5] py-2.5"
+											style={{ lineHeight: "1.5" }}
 										/>
 										<p className="text-xs text-muted-foreground mt-1">
 											Max 5MB for images
@@ -856,7 +863,7 @@ export const ChannelsManagement = ({
 										onClick={() =>
 											!isUploadingEdit && editImageInputRef.current?.click()
 										}
-										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all overflow-hidden"
+										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 									>
 										{editChannelIconPreview || editChannelIcon ? (
 											<>
@@ -882,7 +889,7 @@ export const ChannelsManagement = ({
 															setEditChannelIcon(undefined);
 														}
 													}}
-													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-10"
+													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 												>
 													<X className="h-3.5 w-3.5" />
 												</button>
@@ -902,7 +909,7 @@ export const ChannelsManagement = ({
 									>
 										<button
 											type="button"
-											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-10"
+											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 										>
 											<Smile className="h-4 w-4" />
 										</button>
@@ -922,6 +929,8 @@ export const ChannelsManagement = ({
 										required
 										minLength={3}
 										maxLength={20}
+										className="h-10 !leading-[1.5] py-2.5"
+										style={{ lineHeight: "1.5" }}
 									/>
 									<p className="text-xs text-muted-foreground mt-1">
 										Max 5MB for images

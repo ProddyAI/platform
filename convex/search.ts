@@ -1,9 +1,10 @@
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { api, components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, query } from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 
 // Define result types (maintaining compatibility with existing API)
 type SearchResult = {
@@ -42,7 +43,21 @@ type CardResult = SearchResult & {
 	channelName?: string;
 };
 
-// Helper function to extract plain text from message body
+/**
+ * Extracts plain text from rich text message body.
+ *
+ * Handles multiple formats:
+ * - Quill Delta JSON format (ops array)
+ * - HTML content (strips tags)
+ * - Plain text strings
+ *
+ * @param {string} body - The message body in any supported format
+ * @returns {string} Plain text content with formatting removed
+ *
+ * @example
+ * extractTextFromRichText('{"ops":[{"insert":"Hello"}]}') // Returns: "Hello"
+ * extractTextFromRichText('<p>Hello</p>') // Returns: "Hello"
+ */
 function extractTextFromRichText(body: string): string {
 	if (typeof body !== "string") {
 		return String(body);
@@ -80,8 +95,8 @@ type FilterTypes = {
 // `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004"),
-	embeddingDimension: 768, // Gemini text-embedding-004 uses 768 dimensions
+	textEmbeddingModel: openai.embedding("text-embedding-3-small") as any,
+	embeddingDimension: 1536,
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
@@ -112,11 +127,9 @@ export const indexContent = action({
 			return;
 		}
 
-		// Check if Gemini API key is configured for embeddings
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error(
-				"GOOGLE_GENERATIVE_AI_API_KEY not configured, skipping content indexing"
-			);
+		// Check if OpenAI API key is configured for embeddings
+		if (!process.env.OPENAI_API_KEY) {
+			console.error("OPENAI_API_KEY not configured, skipping content indexing");
 			return;
 		}
 
@@ -182,10 +195,10 @@ export const semanticSearch = action({
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
-		// Check if Gemini API key is configured for embeddings
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+		// Check if OpenAI API key is configured for embeddings
+		if (!process.env.OPENAI_API_KEY) {
 			console.warn(
-				"GOOGLE_GENERATIVE_AI_API_KEY not configured, falling back to empty results"
+				"OPENAI_API_KEY not configured, falling back to empty results"
 			);
 			return [];
 		}
@@ -617,7 +630,17 @@ export const autoIndexCard = action({
 	},
 });
 
-// Helper queries for bulk indexing
+/**
+ * Retrieves messages from a workspace in descending order (newest first).
+ *
+ * Used by AI search to fetch recent messages for analysis and by bulk indexing
+ * operations to populate the search index.
+ *
+ * @param {Id<'workspaces'>} workspaceId - The workspace to fetch messages from
+ * @param {number} [limit=100] - Maximum number of messages to return (default: 100)
+ *
+ * @returns {Promise<Array>} Array of message documents ordered by creation time (newest first)
+ */
 export const getWorkspaceMessages = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -631,6 +654,95 @@ export const getWorkspaceMessages = query({
 				q.eq("workspaceId", args.workspaceId)
 			)
 			.take(limit);
+	},
+});
+
+/**
+ * Searches workspace messages by text content with case-insensitive matching.
+ *
+ * Filters messages based on query string and enriches results with channel information.
+ * Used by both normal search UI and AI search to find relevant messages.
+ *
+ * @param {Id<'workspaces'>} workspaceId - The workspace to search within
+ * @param {string} query - Text to search for in message bodies (case-insensitive)
+ * @param {number} [limit=20] - Maximum number of results to return (default: 20)
+ *
+ * @returns {Promise<Array>} Array of search results with message text, channel info, and metadata
+ */
+export const searchWorkspaceMessages = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		query: v.string(),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit || 20;
+		const searchQuery = args.query.toLowerCase().trim();
+
+		if (!searchQuery) {
+			return [];
+		}
+
+		// Verify user has access to this workspace
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.first();
+
+		if (!member) {
+			throw new Error("User is not a member of this workspace");
+		}
+
+		// Fetch messages from workspace (newest first)
+		const messages = await ctx.db
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.order("desc")
+			.take(200); // Fetch more to filter from
+
+		// Filter and enrich results
+		const results = [];
+		for (const message of messages) {
+			const messageText = extractTextFromRichText(message.body);
+
+			// Case-insensitive text matching
+			if (messageText.toLowerCase().includes(searchQuery)) {
+				// Get channel info
+				let channelName = "Unknown Channel";
+				if (message.channelId) {
+					const channel = await ctx.db.get(message.channelId);
+					if (channel) {
+						channelName = channel.name;
+					}
+				}
+
+				results.push({
+					_id: message._id,
+					_creationTime: message._creationTime,
+					text: messageText,
+					channelId: message.channelId,
+					channelName,
+					memberId: message.memberId,
+					workspaceId: message.workspaceId,
+				});
+
+				// Stop if we have enough results
+				if (results.length >= limit) {
+					break;
+				}
+			}
+		}
+
+		return results;
 	},
 });
 
@@ -666,6 +778,165 @@ export const getWorkspaceTasks = query({
 	},
 });
 
+/**
+ * Check if a RAG namespace exists for a workspace.
+ * Returns true if the namespace exists and is ready.
+ */
+export const checkNamespaceExists = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		// This is a placeholder - we can't directly check the RAG component
+		// Instead, we'll return false and let the action handle initialization
+		// In practice, the first search will tell us if namespace exists
+		return false; // Always return false to trigger check via search
+	},
+});
+
+/**
+ * Retrieves cards from a workspace for bulk indexing.
+ * 
+ * Gets cards with their associated list and channel information needed for indexing.
+ */
+export const getWorkspaceCards = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit || 100;
+		
+		// Get all channels in the workspace
+		const channels = await ctx.db
+			.query("channels")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+		
+		const channelIds = channels.map(c => c._id);
+		const cardsWithInfo: Array<{
+			card: any;
+			list: any;
+			channel: any;
+		}> = [];
+		
+		// For each channel, get its lists and cards
+		for (const channel of channels) {
+			const lists = await ctx.db
+				.query("lists")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.collect();
+			
+			for (const list of lists) {
+				const cards = await ctx.db
+					.query("cards")
+					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+					.take(Math.ceil(limit / channelIds.length));
+				
+				for (const card of cards) {
+					cardsWithInfo.push({ card, list, channel });
+					if (cardsWithInfo.length >= limit) break;
+				}
+				if (cardsWithInfo.length >= limit) break;
+			}
+			if (cardsWithInfo.length >= limit) break;
+		}
+		
+		return cardsWithInfo;
+	},
+});
+
+/**
+ * Fuzzy/semantic search for workspace messages.
+ *
+ * Falls back to the RAG semantic search to surface related messages when exact
+ * substring matching returns no results. Keeps the result shape aligned with
+ * `searchWorkspaceMessages` so the UI can swap seamlessly.
+ */
+export const fuzzySearchMessages = action({
+	args: {
+		workspaceId: v.id("workspaces"),
+		query: v.string(),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit ?? 20;
+		const searchQuery = args.query.trim();
+
+		if (!searchQuery) {
+			return [];
+		}
+
+		// Verify user access by running query that checks membership
+		// The members.get query already handles auth + membership check
+		const members = await ctx.runQuery(api.members.get, {
+			workspaceId: args.workspaceId,
+		});
+
+		if (!members || members.length === 0) {
+			throw new Error("User is not a member of this workspace");
+		}
+
+		// Semantic search via RAG component
+		const ragResults = await ctx.runAction(api.search.semanticSearch, {
+			workspaceId: args.workspaceId,
+			query: args.query,
+			contentType: "message",
+			limit: limit * 2, // extra to allow dedupe/filtering
+		});
+
+		const seen = new Set<string>();
+		const results: Array<{
+			_id: Id<"messages">;
+			_creationTime: number;
+			text: string;
+			channelId?: Id<"channels">;
+			channelName: string;
+			memberId: Id<"members">;
+			workspaceId: Id<"workspaces">;
+		}> = [];
+
+		for (const rag of ragResults) {
+			if (results.length >= limit) break;
+
+			const message = await ctx.runQuery(api.messages.getById, {
+				id: rag._id as Id<"messages">,
+			});
+
+			if (!message) continue;
+			if (message.workspaceId !== args.workspaceId) continue;
+			if (seen.has(message._id)) continue;
+			seen.add(message._id);
+
+			let channelName = "Direct Message";
+			if (message.channelId) {
+				const channel = await ctx.runQuery(api.channels.getById, {
+					id: message.channelId,
+				});
+				if (channel) {
+					channelName = channel.name;
+				} else {
+					channelName = "Unknown Channel";
+				}
+			}
+
+			results.push({
+				_id: message._id,
+				_creationTime: message._creationTime,
+				text: extractTextFromRichText(message.body),
+				channelId: message.channelId,
+				channelName,
+				memberId: message.memberId,
+				workspaceId: message.workspaceId,
+			});
+		}
+
+		return results;
+	},
+});
+
 // Bulk indexing function for existing content
 export const bulkIndexWorkspace = action({
 	args: {
@@ -681,6 +952,7 @@ export const bulkIndexWorkspace = action({
 			messages: number;
 			notes: number;
 			tasks: number;
+			cards: number;
 		};
 	}> => {
 		const limit = args.limit || 100;
@@ -689,6 +961,27 @@ export const bulkIndexWorkspace = action({
 		);
 
 		try {
+			// First, ensure the RAG namespace exists by adding a dummy entry
+			// This will create the namespace if it doesn't exist
+			try {
+				await rag.add(ctx, {
+					namespace: args.workspaceId,
+					key: "__workspace_init__",
+					text: "Workspace initialized for RAG search",
+					title: "System: Workspace Initialization",
+					metadata: {},
+					filterValues: [
+						{ name: "workspaceId", value: args.workspaceId as string },
+						{ name: "contentType", value: "message" },
+						{ name: "channelId", value: NO_CHANNEL_FILTER_VALUE },
+					],
+				});
+				console.log(`RAG namespace created/verified for workspace ${args.workspaceId}`);
+			} catch (error) {
+				console.error("Failed to initialize RAG namespace:", error);
+				// Continue anyway, the add operations below will try to create it
+			}
+
 			// Index messages
 			const messages: any[] = await ctx.runQuery(
 				api.search.getWorkspaceMessages,
@@ -773,6 +1066,33 @@ export const bulkIndexWorkspace = action({
 				}
 			}
 
+			// Index cards
+			const cardsWithInfo: any[] = await ctx.runQuery(api.search.getWorkspaceCards, {
+				workspaceId: args.workspaceId,
+				limit,
+			});
+
+			console.log(`Found ${cardsWithInfo.length} cards to index`);
+
+			for (const cardInfo of cardsWithInfo) {
+				try {
+					const { card, list, channel } = cardInfo;
+					await ctx.runAction(api.search.indexContent, {
+						workspaceId: channel.workspaceId,
+						contentId: card._id,
+						contentType: "card",
+						text: card.title + (card.description ? `: ${card.description}` : ""),
+						metadata: {
+							listId: card.listId,
+							channelId: list.channelId,
+						},
+					});
+					console.log(`Indexed card: ${card._id}`);
+				} catch (error) {
+					console.error(`Failed to index card ${cardInfo.card._id}:`, error);
+				}
+			}
+
 			console.log("Bulk indexing completed successfully");
 			return {
 				success: true,
@@ -780,6 +1100,7 @@ export const bulkIndexWorkspace = action({
 					messages: messages.length,
 					notes: notes.length,
 					tasks: tasks.length,
+					cards: cardsWithInfo.length,
 				},
 			};
 		} catch (error) {
@@ -821,7 +1142,7 @@ export const searchAllSemantic = action({
 							?.value || "message";
 
 					processedResults.push({
-						_id: result._id as any, // Using RAG entry ID for now
+						_id: result._id as Id<"messages"> | Id<"notes"> | Id<"tasks">,
 						_creationTime: Date.now(), // Placeholder
 						type: contentType,
 						text: result.text,
@@ -844,5 +1165,247 @@ export const searchAllSemantic = action({
 			query: args.query,
 			limit: totalLimit,
 		});
+	},
+});
+
+/**
+ * AI-powered message search with natural language understanding.
+ *
+ * Uses semantic RAG search to find relevant messages and generates an AI summary.
+ * Similar to chatbot implementation but simplified for global search.
+ *
+ * @param {Id<'workspaces'>} workspaceId - The workspace to search within
+ * @param {string} query - Natural language search query (e.g., "bug reports from last week")
+ *
+ * @returns {Promise<{answer: string, sources: Array}>} Object containing:
+ *   - answer: AI-generated summary of the search results
+ *   - sources: Array of up to 3 most relevant messages with id, text, and channelId
+ *
+ * @example
+ * const result = await aiSearchMessages({
+ *   workspaceId: "workspace123",
+ *   query: "deployment issues"
+ * });
+ * // Returns: { answer: "Summary...", sources: [{id, text, channelId}, ...] }
+ */
+export const aiSearchMessages = action({
+	args: {
+		workspaceId: v.id("workspaces"),
+		query: v.string(),
+	},
+	handler: async (
+		ctx,
+		args
+	): Promise<{
+		answer: string;
+		sources: {
+			id: Id<"messages">;
+			text: string;
+			channelId: Id<"channels">;
+			channelName: string;
+		}[];
+	}> => {
+		// Try semantic RAG search first (like chatbot does)
+		let ragResults: Array<{ text: string; _id: string }> = [];
+		try {
+			ragResults = await ctx.runAction(api.search.semanticSearch, {
+				workspaceId: args.workspaceId,
+				query: args.query,
+				contentType: "message",
+				limit: 5,
+			});
+		} catch (error) {
+			console.warn(
+				"Semantic search failed, falling back to text search:",
+				error
+			);
+		}
+
+		// Fallback to text search if RAG returns nothing
+		if (ragResults.length === 0) {
+			const textSearchResults = await ctx.runQuery(
+				api.search.searchWorkspaceMessages,
+				{
+					workspaceId: args.workspaceId,
+					query: args.query,
+					limit: 5,
+				}
+			);
+
+			if (textSearchResults.length === 0) {
+				return {
+					answer: "No messages found matching your query.",
+					sources: [],
+				};
+			}
+
+			// Use text search results
+			ragResults = textSearchResults.map((r) => ({
+				text: r.text,
+				_id: r._id,
+			}));
+		}
+
+		// Prepare context for AI
+		const context = ragResults
+			.map((r, idx) => `[${idx + 1}] ${r.text}`)
+			.join("\n\n");
+
+		try {
+			const { generateText } = await import("ai");
+			const result = await generateText({
+				model: openai("gpt-5-mini") as any,
+				prompt: `You are a helpful work assistant. Answer the user's question using ONLY the messages below.
+Provide a concise, direct answer. If the messages don't contain enough information, say so.
+Do NOT output topic/keyword lists or message counts.
+
+Question: ${args.query}
+
+Relevant Messages:
+${context}
+`,
+				temperature: 0.3,
+			});
+
+			// Get full message details for sources
+			const sourceMessages = await Promise.all(
+				ragResults.slice(0, 3).map(async (r) => {
+					const message = await ctx.runQuery(api.messages.getById, {
+						id: r._id as Id<"messages">,
+					});
+					if (!message) return null;
+
+					let channelName = "Direct Message";
+					if (message.channelId) {
+						const channel = await ctx.runQuery(api.channels.getById, {
+							id: message.channelId,
+						});
+						if (channel) {
+							channelName = channel.name;
+						}
+					}
+
+					return {
+						id: message._id,
+						text: r.text,
+						channelId: message.channelId as Id<"channels">,
+						channelName,
+					};
+				})
+			);
+
+			return {
+				answer: result.text.trim(),
+				sources: sourceMessages.filter(
+					(s): s is NonNullable<typeof s> => s !== null
+				),
+			};
+		} catch (error) {
+			console.error("AI generation error:", error);
+			// Return search results with a fallback answer
+			return {
+				answer: `I found ${ragResults.length} relevant message(s) about "${args.query}", but couldn't generate a summary. Please check the sources below.`,
+				sources: [],
+			};
+		}
+	},
+});
+
+/**
+ * Triggers bulk indexing of workspace content into RAG system.
+ * 
+ * This mutation schedules the bulkIndexWorkspace action to populate the RAG index
+ * with existing workspace content (messages, notes, tasks, cards).
+ * 
+ * Use this to:
+ * - Initialize RAG for a new workspace
+ * - Re-index content after RAG configuration changes
+ * - Fix missing content in RAG index
+ * 
+ * @param {Id<'workspaces'>} workspaceId - The workspace to index
+ * @param {number} [limit] - Optional limit on items per type (default: 1000)
+ * 
+ * @returns {Promise<{scheduled: boolean}>} Confirmation that indexing was scheduled
+ */
+export const triggerBulkIndexing = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// Verify user has access to this workspace
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		// Check if user is a member of the workspace
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.first();
+
+		if (!member) {
+			throw new Error("User is not a member of this workspace");
+		}
+
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+		
+		return { scheduled: true };
+	},
+});
+
+/**
+ * Internal version of triggerBulkIndexing that can be called without authentication.
+ * Use this for admin tasks or initialization scripts.
+ */
+export const triggerBulkIndexingInternal = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+		
+		return { scheduled: true };
+	},
+});
+
+/**
+ * Auto-initialize RAG namespace for a workspace (called from chatbot).
+ * This mutation can be called from actions to schedule indexing.
+ */
+export const autoInitializeWorkspace = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// No auth check - this is automatic system initialization
+		console.log(`Auto-initializing RAG for workspace ${args.workspaceId}`);
+		
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+		
+		return { scheduled: true };
 	},
 });

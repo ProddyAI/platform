@@ -82,26 +82,26 @@ export const TaskItem = ({
 	const getPriorityTextColor = (priority?: "low" | "medium" | "high") => {
 		switch (priority) {
 			case "high":
-				return "text-red-700";
+				return "text-red-700 dark:text-red-400";
 			case "medium":
-				return "text-amber-700";
+				return "text-amber-700 dark:text-amber-400";
 			case "low":
-				return "text-blue-700";
+				return "text-blue-700 dark:text-blue-400";
 			default:
-				return "text-gray-700";
+				return "text-gray-700 dark:text-gray-400";
 		}
 	};
 
 	const getPriorityBgColor = (priority?: "low" | "medium" | "high") => {
 		switch (priority) {
 			case "high":
-				return "bg-red-100";
+				return "bg-red-100 dark:bg-red-900/30";
 			case "medium":
-				return "bg-amber-100";
+				return "bg-amber-100 dark:bg-amber-900/30";
 			case "low":
-				return "bg-blue-100";
+				return "bg-blue-100 dark:bg-blue-900/30";
 			default:
-				return "bg-gray-100";
+				return "bg-gray-100 dark:bg-gray-800";
 		}
 	};
 
@@ -231,11 +231,11 @@ export const TaskItem = ({
 						{category && (
 							<Badge
 								variant="outline"
-								className="text-xs font-medium px-2 py-0.5 rounded-full"
+								className="text-xs font-medium px-2 py-0.5 rounded-full border-2"
 								style={{
 									borderColor: category.color,
 									color: category.color,
-									backgroundColor: `${category.color}10`,
+									backgroundColor: `${category.color}15`,
 								}}
 							>
 								{category.name}
@@ -267,8 +267,8 @@ export const TaskItem = ({
 								className={cn(
 									"flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full",
 									new Date(dueDate) < new Date() && !completed
-										? "text-red-700 bg-red-100 font-medium"
-										: "text-gray-700 bg-gray-100"
+										? "text-red-700 bg-red-100 font-medium dark:text-red-400 dark:bg-red-900/30"
+										: "text-gray-700 bg-gray-100 dark:text-gray-400 dark:bg-gray-800"
 								)}
 							>
 								<Clock className="h-3 w-3" />

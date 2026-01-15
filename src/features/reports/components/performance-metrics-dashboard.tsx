@@ -107,7 +107,7 @@ export const PerformanceMetricsDashboard = ({
 				return {
 					label: user.member?.user?.name || "Unknown",
 					value: taskValue,
-					color: "bg-secondary",
+					color: "bg-pink-500",
 					completionRate: completionRate,
 				};
 			})
@@ -120,21 +120,13 @@ export const PerformanceMetricsDashboard = ({
 		if (!taskData) return [];
 
 		return [
-			{
-				label: "High",
-				value: taskData.priorityCounts.high,
-				color: "bg-red-500",
-			},
+			{ label: "High", value: taskData.priorityCounts.high, color: "#ec4899" },
 			{
 				label: "Medium",
 				value: taskData.priorityCounts.medium,
-				color: "bg-yellow-500",
+				color: "#f472b6",
 			},
-			{
-				label: "Low",
-				value: taskData.priorityCounts.low,
-				color: "bg-green-500",
-			},
+			{ label: "Low", value: taskData.priorityCounts.low, color: "#fb7185" },
 		].filter((item) => item.value > 0);
 	}, [taskData]);
 
@@ -146,27 +138,27 @@ export const PerformanceMetricsDashboard = ({
 			{
 				label: "Completed",
 				value: taskData.statusCounts.completed,
-				color: "bg-green-500",
+				color: "#22c55e",
 			},
 			{
 				label: "In Progress",
 				value: taskData.statusCounts.in_progress,
-				color: "bg-blue-500",
+				color: "#3b82f6",
 			},
 			{
 				label: "Not Started",
 				value: taskData.statusCounts.not_started,
-				color: "bg-gray-300",
+				color: "#a855f7",
 			},
 			{
 				label: "On Hold",
 				value: taskData.statusCounts.on_hold,
-				color: "bg-yellow-500",
+				color: "#eab308",
 			},
 			{
 				label: "Cancelled",
 				value: taskData.statusCounts.cancelled,
-				color: "bg-red-500",
+				color: "#ef4444",
 			},
 		].filter((item) => item.value > 0);
 	}, [taskData]);
@@ -277,7 +269,7 @@ export const PerformanceMetricsDashboard = ({
 									</div>
 									<Progress value={taskCompletionRate} className="h-2" />
 								</div>
-								<CardDescription className="mt-2">
+								<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
 									{taskData?.completedTasks || 0} of {taskData?.totalTasks || 0}{" "}
 									tasks completed
 								</CardDescription>
@@ -317,7 +309,7 @@ export const PerformanceMetricsDashboard = ({
 										className="h-2"
 									/>
 								</div>
-								<CardDescription className="mt-2">
+								<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
 									Target: 2 days per task
 								</CardDescription>
 							</CardContent>
@@ -353,7 +345,7 @@ export const PerformanceMetricsDashboard = ({
 									</div>
 									<Progress value={onTimeCompletionRate} className="h-2" />
 								</div>
-								<CardDescription className="mt-2">
+								<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
 									Tasks completed before deadline
 								</CardDescription>
 							</CardContent>
@@ -392,11 +384,11 @@ export const PerformanceMetricsDashboard = ({
 								<CardDescription>Current status of all tasks</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
-								<div className="h-[320px] max-h-[320px] flex items-center justify-center overflow-auto">
+								<div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
 									{taskStatusData.length > 0 ? (
 										<PieChart
 											data={taskStatusData}
-											size={180}
+											size={380}
 											formatValue={(value) => `${value} tasks`}
 										/>
 									) : (

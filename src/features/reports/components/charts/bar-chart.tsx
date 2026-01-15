@@ -45,29 +45,18 @@ export const BarChart = ({
 		}
 
 		const container = containerRef.current;
-		if (!container) {
-			setTooltipPos(null);
-			return;
-		}
+		if (!container) return;
 
 		const hoveredElement = container.querySelector(
 			`[data-bar-index="${hoveredIndex}"]`
-		) as HTMLElement;
+		) as HTMLElement | null;
 
-		if (!hoveredElement) {
-			setTooltipPos(null);
-			return;
-		}
+		if (!hoveredElement) return;
 
 		const containerRect = container.getBoundingClientRect();
-		const pos = calculateDomTooltipPosition(
-			hoveredElement,
-			containerRect,
-			50,
-			24,
-			-30
+		setTooltipPos(
+			calculateDomTooltipPosition(hoveredElement, containerRect, 50, 24, -30)
 		);
-		setTooltipPos(pos);
 	}, [hoveredIndex]);
 
 	if (!data || data.length === 0) {
@@ -83,67 +72,67 @@ export const BarChart = ({
 		);
 	}
 
-	const maxValue = Math.max(...data.map((item) => item.value));
+	const maxValue = Math.max(...data.map((d) => d.value));
+
+	const chartHeight = maxHeight ?? height;
+	const labelHeight = showLabels ? 32 : 0;
+	const actualBarHeight = chartHeight - labelHeight;
 
 	return (
 		<div
-			className={cn("w-full h-full relative overflow-hidden", className)}
 			ref={containerRef}
+			className={cn("relative flex items-end gap-2", className)}
+			style={{ height: chartHeight }}
 		>
-			<div
-				className="flex items-end space-x-2 relative w-full"
-				style={{
-					height: `${maxHeight ? Math.min(height, maxHeight) : height}px`,
-				}}
-			>
-				{data.map((item, index) => {
-					const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
-					const isHovered = hoveredIndex === index;
+			{data.map((item, index) => {
+				const percentage = (item.value / maxValue) * 100;
+				const isHovered = hoveredIndex === index;
 
-					return (
-						<div
-							key={index}
-							data-bar-index={index}
-							className="relative flex flex-col items-center flex-1 group"
-							onMouseEnter={() => setHoveredIndex(index)}
-							onMouseLeave={() => setHoveredIndex(null)}
-							onClick={() => onBarClick?.(item.label, item.value, index)}
-						>
-							<div
-								className={cn(
-									"w-full rounded-t-md transition-all duration-300",
-									item.color || "bg-secondary",
-									isHovered ? "opacity-80" : "opacity-100",
-									animate && "animate-in fade-in-50 slide-in-from-bottom-3",
-									onBarClick && "cursor-pointer"
-								)}
-								style={{
-									height: `${percentage}%`,
-									transitionDelay: animate ? `${index * 50}ms` : "0ms",
-								}}
-							/>
-
-							{showLabels && (
-								<div className="mt-1 text-xs text-muted-foreground truncate max-w-full px-1">
-									{item.label}
-								</div>
-							)}
-						</div>
-					);
-				})}
-
-				{showValues && hoveredIndex !== null && tooltipPos && (
+				return (
 					<div
-						className="absolute bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
-						style={{
-							top: tooltipPos.top,
-							left: tooltipPos.left,
-						}}
+						key={index}
+						data-bar-index={index}
+						className="relative flex flex-col items-center justify-end flex-1 group"
+						style={{ height: chartHeight }}
+						onMouseEnter={() => setHoveredIndex(index)}
+						onMouseLeave={() => setHoveredIndex(null)}
+						onClick={() => onBarClick?.(item.label, item.value, index)}
 					>
-						{formatValue(data[hoveredIndex].value)}
+						<div
+							className={cn(
+								"w-full rounded-t-md transition-all duration-300",
+								item.color ? "" : "bg-pink-500",
+								isHovered ? "opacity-80 scale-105" : "opacity-100",
+								animate && "animate-in fade-in-50 slide-in-from-bottom-3",
+								onBarClick && "cursor-pointer"
+							)}
+							style={{
+								height: `${(percentage / 100) * actualBarHeight}px`,
+								backgroundColor: item.color,
+								transitionDelay: animate ? `${index * 50}ms` : "0ms",
+							}}
+						/>
+
+						{showLabels && (
+							<div className="mt-2 text-xs text-muted-foreground truncate max-w-full px-1 text-center">
+								{item.label}
+							</div>
+						)}
 					</div>
-				)}
-			</div>
+				);
+			})}
+
+			{showValues && hoveredIndex !== null && tooltipPos && (
+				<div
+					className="absolute bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
+					style={{
+						top: tooltipPos.top,
+						left: tooltipPos.left,
+					}}
+				>
+					{formatValue(data[hoveredIndex].value)}
+				</div>
+			)}
 		</div>
 	);
 };
