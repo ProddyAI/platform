@@ -63,12 +63,12 @@ export const CalendarFilter = ({
 							"flex items-center gap-1.5 border rounded-md transition-all",
 							filterOptions.eventTypes.length > 0 &&
 								filterOptions.eventTypes.length < 3
-								? "bg-gray-100 border-gray-300"
-								: "bg-white"
+								? "bg-gray-100 border-gray-300 dark:bg-gray-800 dark:border-gray-600"
+								: "bg-white dark:bg-gray-900"
 						)}
 					>
-						<Filter className="h-4 w-4" />
-						<span>Filter</span>
+						<Filter className="h-4 w-4 dark:text-gray-300" />
+						<span className="dark:text-gray-200">Filter</span>
 						{filterOptions.eventTypes.length > 0 &&
 							filterOptions.eventTypes.length < 3 && (
 								<div className="flex ml-1 gap-1">
@@ -87,11 +87,11 @@ export const CalendarFilter = ({
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-64">
 					<DropdownMenuLabel className="flex items-center justify-between">
-						<span>Event Types</span>
+						<span className="dark:text-gray-200">Event Types</span>
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-7 text-xs px-2"
+							className="h-7 text-xs px-2 dark:text-gray-300 dark:hover:bg-gray-700"
 							onClick={() =>
 								onFilterChange({
 									eventTypes:
@@ -109,10 +109,10 @@ export const CalendarFilter = ({
 					<div className="p-2 space-y-3">
 						<div className="flex items-center justify-between space-x-2">
 							<div className="flex items-center space-x-2">
-								<MessageSquare className="h-4 w-4 text-blue-500" />
+								<MessageSquare className="h-4 w-4 text-blue-500 dark:text-blue-400" />
 								<Label
 									htmlFor="message-events"
-									className="cursor-pointer text-blue-700"
+									className="cursor-pointer text-blue-700 dark:text-blue-400"
 								>
 									Message Events
 								</Label>
@@ -127,10 +127,10 @@ export const CalendarFilter = ({
 
 						<div className="flex items-center justify-between space-x-2">
 							<div className="flex items-center space-x-2">
-								<LayoutGrid className="h-4 w-4 text-purple-500" />
+								<LayoutGrid className="h-4 w-4 text-purple-500 dark:text-purple-400" />
 								<Label
 									htmlFor="board-card-events"
-									className="cursor-pointer text-purple-700"
+									className="cursor-pointer text-purple-700 dark:text-purple-400"
 								>
 									Board Assignments
 								</Label>
@@ -145,10 +145,10 @@ export const CalendarFilter = ({
 
 						<div className="flex items-center justify-between space-x-2">
 							<div className="flex items-center space-x-2">
-								<CheckSquare className="h-4 w-4 text-green-500" />
+								<CheckSquare className="h-4 w-4 text-green-500 dark:text-green-400" />
 								<Label
 									htmlFor="task-events"
-									className="cursor-pointer text-green-700"
+									className="cursor-pointer text-green-700 dark:text-green-400"
 								>
 									My Tasks
 								</Label>

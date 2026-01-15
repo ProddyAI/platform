@@ -216,23 +216,25 @@ const ReportsPage = () => {
 					<span className="truncate">Reports</span>
 				</Button>
 			</WorkspaceToolbar>
-			<div className="flex flex-1 flex-col bg-white overflow-hidden">
+			<div className="flex flex-1 flex-col bg-background overflow-hidden">
 				{/* Header with filters */}
-				<div className="border-b border-border/30 bg-white px-4 py-4 flex-shrink-0">
+				<div className="border-b border-border bg-card px-4 py-4 flex-shrink-0">
 					<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<h1 className="text-2xl font-bold tracking-tight">
+							<h1 className="text-2xl font-bold tracking-tight text-foreground">
 								Reports & Analytics
 							</h1>
-							<p className="text-muted-foreground">
+							<p className="text-muted-foreground/90">
 								Track workspace activity and performance metrics
 							</p>
 						</div>
 						<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 							{/* Time Range Filter */}
 							<div className="flex items-center gap-2">
-								<span className="text-sm font-medium">Time Range:</span>
-								<div className="flex rounded-md border border-input overflow-hidden">
+								<span className="text-sm font-medium text-foreground">
+									Time Range:
+								</span>
+								<div className="flex rounded-md border border-input bg-background overflow-hidden">
 									<Button
 										type="button"
 										variant={timeRange === "1d" ? "default" : "ghost"}
@@ -315,14 +317,15 @@ const ReportsPage = () => {
 				</div>
 
 				{/* Main content area */}
-				<div className="flex-1 overflow-auto p-4">
+				<div className="flex-1 overflow-auto p-4 bg-background">
 					<div className="mx-auto max-w-7xl space-y-6">
 						{/* Tabs */}
 						<Tabs defaultValue="overview" className="space-y-6">
-							<TabsList className="grid w-full grid-cols-7 mb-4">
+							<TabsList className="grid w-full grid-cols-7 mb-4 bg-muted/30">
 								<TabsTrigger
 									value="overview"
 									onClick={() => setActiveTab("overview")}
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<BarChart className="h-4 w-4 mr-2" />
 									Overview
@@ -330,6 +333,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="users"
 									onClick={() => setActiveTab("users")}
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<Users className="h-4 w-4 mr-2" />
 									Users
@@ -337,6 +341,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="channels"
 									onClick={() => setActiveTab("channels")}
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<Hash className="h-4 w-4 mr-2" />
 									Channels
@@ -344,6 +349,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="messages"
 									onClick={() => setActiveTab("messages")}
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<MessageSquare className="h-4 w-4 mr-2" />
 									Messages
@@ -351,6 +357,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="content"
 									onClick={() => setActiveTab("content")}
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<FileText className="h-4 w-4 mr-2" />
 									Content
@@ -358,6 +365,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="performance"
 									onClick={() => setActiveTab("performance")}
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<Activity className="h-4 w-4 mr-2" />
 									Performance
@@ -365,6 +373,7 @@ const ReportsPage = () => {
 								<TabsTrigger
 									value="tasks"
 									onClick={() => setActiveTab("tasks")}
+									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
 								>
 									<CheckSquare className="h-4 w-4 mr-2" />
 									Tasks
@@ -423,37 +432,37 @@ const ReportsPage = () => {
 									<div className="space-y-6">
 										{/* Message stats */}
 										<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Total Messages
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<MessageSquare className="h-5 w-5 text-secondary mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{messageData?.totalMessages
 																? messageData.totalMessages.toLocaleString()
 																: 0}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														in the selected time period
 													</CardDescription>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Daily Average
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<BarChart className="h-5 w-5 text-secondary mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{messageData.messagesByDate.length > 0
 																? Math.round(
 																		messageData.totalMessages /
@@ -462,26 +471,28 @@ const ReportsPage = () => {
 																: 0}
 														</div>
 													</div>
-													<CardDescription>messages per day</CardDescription>
+													<CardDescription className="text-muted-foreground/80">
+														messages per day
+													</CardDescription>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Top Sender
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<Users className="h-5 w-5 text-secondary mr-2" />
-														<div className="text-xl font-bold truncate">
+														<div className="text-xl font-bold truncate text-foreground">
 															{messageData.topSenders.length > 0
 																? messageData.topSenders[0].name
 																: "No data"}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														{messageData.topSenders.length > 0
 															? `${messageData.topSenders[0].count} messages`
 															: ""}
@@ -530,7 +541,7 @@ const ReportsPage = () => {
 															data={messageData.topSenders.map((sender) => ({
 																label: sender.name,
 																value: sender.count,
-																color: "bg-secondary",
+																color: "bg-pink-500",
 															}))}
 															formatValue={(value) => `${value} messages`}
 														/>
@@ -595,39 +606,39 @@ const ReportsPage = () => {
 									<div className="space-y-6">
 										{/* Task stats */}
 										<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Total Tasks
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<CheckSquare className="h-5 w-5 text-secondary mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{taskData.totalTasks}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														in the selected time period
 													</CardDescription>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														Completed Tasks
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<CheckSquare className="h-5 w-5 text-green-500 mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{taskData.completedTasks}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														{taskData.totalTasks > 0
 															? `${Math.round((taskData.completedTasks / taskData.totalTasks) * 100)}% completion rate`
 															: "0% completion rate"}
@@ -635,116 +646,124 @@ const ReportsPage = () => {
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														In Progress
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<CheckSquare className="h-5 w-5 text-blue-500 mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{taskData.statusCounts.in_progress}
 														</div>
 													</div>
-													<CardDescription>
+													<CardDescription className="text-muted-foreground/80">
 														tasks currently in progress
 													</CardDescription>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="border-border">
 												<CardHeader className="pb-2">
-													<CardTitle className="text-sm font-medium text-muted-foreground">
+													<CardTitle className="text-sm font-medium text-muted-foreground/90">
 														High Priority
 													</CardTitle>
 												</CardHeader>
 												<CardContent>
 													<div className="flex items-center">
 														<CheckSquare className="h-5 w-5 text-red-500 mr-2" />
-														<div className="text-2xl font-bold">
+														<div className="text-2xl font-bold text-foreground">
 															{taskData.priorityCounts.high}
 														</div>
 													</div>
-													<CardDescription>high priority tasks</CardDescription>
+													<CardDescription className="text-muted-foreground/80">
+														high priority tasks
+													</CardDescription>
 												</CardContent>
 											</Card>
 										</div>
 
 										{/* Task charts */}
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-											<Card>
+											<Card className="flex flex-col">
 												<CardHeader>
 													<CardTitle>Task Status Distribution</CardTitle>
 													<CardDescription>
 														Tasks by current status
 													</CardDescription>
 												</CardHeader>
-												<CardContent>
-													<PieChartComponent
-														data={[
-															{
-																label: "Completed",
-																value: taskData.statusCounts.completed,
-																color: "bg-green-500",
-															},
-															{
-																label: "In Progress",
-																value: taskData.statusCounts.in_progress,
-																color: "bg-blue-500",
-															},
-															{
-																label: "Not Started",
-																value: taskData.statusCounts.not_started,
-																color: "bg-gray-300",
-															},
-															{
-																label: "On Hold",
-																value: taskData.statusCounts.on_hold,
-																color: "bg-yellow-500",
-															},
-															{
-																label: "Cancelled",
-																value: taskData.statusCounts.cancelled,
-																color: "bg-red-500",
-															},
-														].filter((item) => item.value > 0)}
-														size={180}
-														formatValue={(value) => `${value} tasks`}
-													/>
+												<CardContent className="flex-1 min-h-0 p-4">
+													<div className="h-[450px] w-full overflow-visible">
+														<PieChartComponent
+															data={[
+																{
+																	label: "Completed",
+																	value: taskData.statusCounts.completed,
+																	color: "#22c55e",
+																},
+																{
+																	label: "In Progress",
+																	value: taskData.statusCounts.in_progress,
+																	color: "#3b82f6",
+																},
+																{
+																	label: "Not Started",
+																	value: taskData.statusCounts.not_started,
+																	color: "#6b7280",
+																},
+																{
+																	label: "On Hold",
+																	value: taskData.statusCounts.on_hold,
+																	color: "#f59e0b",
+																},
+																{
+																	label: "Cancelled",
+																	value: taskData.statusCounts.cancelled,
+																	color: "#ef4444",
+																},
+															].filter((item) => item.value > 0)}
+															size={450}
+															maxSize={500}
+															formatValue={(value) => `${value} tasks`}
+														/>
+													</div>
 												</CardContent>
 											</Card>
 
-											<Card>
+											<Card className="flex flex-col">
 												<CardHeader>
 													<CardTitle>Task Priority Distribution</CardTitle>
 													<CardDescription>
 														Tasks by priority level
 													</CardDescription>
 												</CardHeader>
-												<CardContent>
-													<PieChartComponent
-														data={[
-															{
-																label: "High",
-																value: taskData.priorityCounts.high,
-																color: "bg-red-500",
-															},
-															{
-																label: "Medium",
-																value: taskData.priorityCounts.medium,
-																color: "bg-yellow-500",
-															},
-															{
-																label: "Low",
-																value: taskData.priorityCounts.low,
-																color: "bg-green-500",
-															},
-														].filter((item) => item.value > 0)}
-														size={180}
-														formatValue={(value) => `${value} tasks`}
-													/>
+												<CardContent className="flex-1 min-h-0 p-4">
+													<div className="h-[450px] w-full overflow-visible">
+														<PieChartComponent
+															data={[
+																{
+																	label: "High",
+																	value: taskData.priorityCounts.high,
+																	color: "#ef4444",
+																},
+																{
+																	label: "Medium",
+																	value: taskData.priorityCounts.medium,
+																	color: "#f59e0b",
+																},
+																{
+																	label: "Low",
+																	value: taskData.priorityCounts.low,
+																	color: "#22c55e",
+																},
+															].filter((item) => item.value > 0)}
+															size={450}
+															maxSize={500}
+															formatValue={(value) => `${value} tasks`}
+														/>
+													</div>
 												</CardContent>
 											</Card>
 										</div>
@@ -754,14 +773,14 @@ const ReportsPage = () => {
 												<CardTitle>Tasks Created Over Time</CardTitle>
 												<CardDescription>Daily task creation</CardDescription>
 											</CardHeader>
-											<CardContent className="h-80">
+											<CardContent className="h-96">
 												{taskData.tasksByDate.length > 0 ? (
 													<LineChartComponent
 														data={taskData.tasksByDate.map((item) => ({
 															label: format(new Date(item.date), "MMM dd"),
 															value: item.count,
 														}))}
-														height={300}
+														height={350}
 														formatValue={(value) => `${value} tasks`}
 													/>
 												) : (
@@ -786,13 +805,16 @@ const ReportsPage = () => {
 													<HorizontalBarChart
 														data={taskData.categoryData.map(
 															(category, index) => {
-																// Generate different colors for each category
+																// Generate different solid colors for each category
 																const colors = [
-																	"bg-secondary",
-																	"bg-secondary",
-																	"bg-primary",
-																	"bg-chart-1",
-																	"bg-chart-2",
+																	"bg-purple-600",
+																	"bg-pink-600",
+																	"bg-blue-600",
+																	"bg-teal-600",
+																	"bg-orange-600",
+																	"bg-green-600",
+																	"bg-indigo-600",
+																	"bg-rose-600",
 																];
 																return {
 																	label: category.name,

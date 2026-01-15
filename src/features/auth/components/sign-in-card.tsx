@@ -122,7 +122,7 @@ export const SignInCard = ({
 					</Button>
 				</div>
 
-				<p className="text-center text-xs text-primary">
+				<p className="text-center text-xs text-muted-foreground">
 					Don&apos;t have an account?{" "}
 					{isStandalone ? (
 						<Link

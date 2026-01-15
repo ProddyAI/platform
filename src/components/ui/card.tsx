@@ -9,7 +9,7 @@ const Card = React.forwardRef<
 	<div
 		ref={ref}
 		className={cn(
-			"rounded-[10px] border bg-card text-card-foreground shadow-md hover:shadow-lg transition-standard",
+			"rounded-lg border bg-card text-card-foreground shadow-sm",
 			className
 		)}
 		{...props}
@@ -29,20 +29,37 @@ const CardHeader = React.forwardRef<
 ));
 CardHeader.displayName = "CardHeader";
 
-const CardTitle = React.forwardRef<
-	HTMLParagraphElement,
-	React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-	<h3
-		ref={ref}
-		className={cn(
-			"text-2xl font-semibold leading-none tracking-tight",
-			className
-		)}
-		{...props}
-	/>
-));
-CardTitle.displayName = "CardTitle";
+type CardTitleProps<T extends React.ElementType = "h3"> = {
+	as?: T;
+	className?: string;
+} & React.ComponentPropsWithoutRef<T>;
+
+const CardTitle = React.forwardRef(
+	<T extends React.ElementType = "h3">(
+		{ as, className, ...props }: CardTitleProps<T>,
+		ref: React.ForwardedRef<HTMLHeadingElement>
+	) => {
+		const Element = as || "h3";
+		return (
+			<Element
+				ref={ref}
+				className={cn(
+					"text-2xl font-semibold leading-none tracking-tight",
+					className
+				)}
+				{...props}
+			/>
+		);
+	}
+) as <T extends React.ElementType = "h3">(
+	props: CardTitleProps<T> & { ref?: React.ForwardedRef<HTMLHeadingElement> }
+) => React.ReactElement;
+
+// Set displayName using Object.defineProperty for polymorphic component
+Object.defineProperty(CardTitle, "displayName", {
+	value: "CardTitle",
+	writable: false,
+});
 
 const CardDescription = React.forwardRef<
 	HTMLParagraphElement,

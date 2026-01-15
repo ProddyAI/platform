@@ -77,11 +77,11 @@ export const ContentAnalysisDashboard = ({
 	// Mock data for content types (in a real app, this would come from the backend)
 	const contentTypeData = useMemo(
 		() => [
-			{ label: "Text", value: 65, color: "bg-blue-500" },
-			{ label: "Images", value: 15, color: "bg-green-500" },
-			{ label: "Files", value: 10, color: "bg-yellow-500" },
-			{ label: "Links", value: 8, color: "bg-purple-500" },
-			{ label: "Code", value: 2, color: "bg-red-500" },
+			{ label: "Text", value: 65, color: "#a78bfa" }, // Light purple
+			{ label: "Images", value: 15, color: "#8b5cf6" }, // Medium purple
+			{ label: "Files", value: 10, color: "#7c3aed" }, // Purple
+			{ label: "Links", value: 8, color: "#ec4899" }, // Pink
+			{ label: "Code", value: 2, color: "#f472b6" }, // Light pink
 		],
 		[]
 	);
@@ -89,9 +89,9 @@ export const ContentAnalysisDashboard = ({
 	// Mock data for message length distribution
 	const messageLengthData = useMemo(
 		() => [
-			{ label: "Short (<50 chars)", value: 45, color: "bg-blue-300" },
-			{ label: "Medium (50-200 chars)", value: 35, color: "bg-blue-500" },
-			{ label: "Long (>200 chars)", value: 20, color: "bg-blue-700" },
+			{ label: "Short (<50 chars)", value: 45, color: "#a5b4fc" }, // Light indigo
+			{ label: "Medium (50-200 chars)", value: 35, color: "#6366f1" }, // Soft indigo
+			{ label: "Long (>200 chars)", value: 20, color: "#4f46e5" }, // Deep indigo
 		],
 		[]
 	);
@@ -99,11 +99,11 @@ export const ContentAnalysisDashboard = ({
 	// Mock data for file types
 	const fileTypeData = useMemo(
 		() => [
-			{ label: "Images", value: 42, color: "bg-green-500" },
-			{ label: "Documents", value: 28, color: "bg-blue-500" },
-			{ label: "Spreadsheets", value: 15, color: "bg-yellow-500" },
-			{ label: "PDFs", value: 10, color: "bg-red-500" },
-			{ label: "Other", value: 5, color: "bg-gray-500" },
+			{ label: "Images", value: 42, color: "#a78bfa" }, // Light purple
+			{ label: "Documents", value: 28, color: "#8b5cf6" }, // Medium purple
+			{ label: "Spreadsheets", value: 15, color: "#7c3aed" }, // Purple
+			{ label: "PDFs", value: 10, color: "#ec4899" }, // Pink
+			{ label: "Other", value: 5, color: "#f472b6" }, // Light pink
 		],
 		[]
 	);
@@ -204,10 +204,9 @@ export const ContentAnalysisDashboard = ({
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
-								<div className="h-[320px] max-h-[320px] flex items-center justify-center overflow-auto">
+								<div className="h-[320px] max-h-[320px]">
 									<PieChart
 										data={contentTypeData}
-										size={180}
 										formatValue={(value) => `${value}%`}
 									/>
 								</div>
@@ -244,7 +243,7 @@ export const ContentAnalysisDashboard = ({
 										data={messageData.topSenders.map((sender) => ({
 											label: sender.name,
 											value: sender.count,
-											color: "bg-secondary",
+											color: "bg-pink-500",
 										}))}
 										formatValue={(value) => `${value} messages`}
 									/>
@@ -269,10 +268,9 @@ export const ContentAnalysisDashboard = ({
 								<CardDescription>Distribution of files by type</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
-								<div className="h-[320px] max-h-[320px] flex items-center justify-center overflow-auto">
+								<div className="h-[320px] max-h-[320px]">
 									<PieChart
 										data={fileTypeData}
-										size={180}
 										formatValue={(value) => `${value}%`}
 									/>
 								</div>

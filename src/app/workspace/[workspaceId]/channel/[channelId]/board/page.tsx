@@ -32,6 +32,8 @@ const BoardPage = () => {
 	// Set document title based on channel name
 	useDocumentTitle(channel ? `Board - ${channel.name}` : "Board");
 	const [view, setView] = useState<"kanban" | "table" | "gantt">("kanban");
+	const [searchQuery, setSearchQuery] = useState("");
+	const [listNameQuery, setListNameQuery] = useState("");
 
 	// Modal state
 	const [addListOpen, setAddListOpen] = useState(false);
@@ -81,9 +83,45 @@ const BoardPage = () => {
 		}
 	}, [lists, channelId, createList]);
 
-	// Group cards by list
+	// Filter lists based on list name search (only for Kanban view)
+	const filteredLists =
+		lists?.filter((list) => {
+			if (!listNameQuery || view !== "kanban") return true;
+			const query = listNameQuery.toLowerCase();
+			return list.title.toLowerCase().includes(query);
+		}) || [];
+
+	// Filter cards based on search query
+	const filteredCards = allCards.filter((card) => {
+		// General search filter
+		if (searchQuery) {
+			const query = searchQuery.toLowerCase();
+			const list = lists?.find((l) => l._id === card.listId);
+			const listTitle = list ? list.title : "";
+
+			const matchesGeneralSearch =
+				card.title.toLowerCase().includes(query) ||
+				card.description?.toLowerCase().includes(query) ||
+				listTitle.toLowerCase().includes(query) ||
+				card.labels?.some((label: string) =>
+					label.toLowerCase().includes(query)
+				);
+
+			if (!matchesGeneralSearch) return false;
+		}
+
+		// Filter cards to only show those from filtered lists (only for Kanban view)
+		if (listNameQuery && view === "kanban") {
+			const cardList = filteredLists.find((l) => l._id === card.listId);
+			if (!cardList) return false;
+		}
+
+		return true;
+	});
+
+	// Group filtered cards by list
 	const cardsByList: Record<string, any[]> = {};
-	allCards.forEach((card) => {
+	filteredCards.forEach((card) => {
 		if (!cardsByList[card.listId]) cardsByList[card.listId] = [];
 		cardsByList[card.listId].push(card);
 	});
@@ -288,20 +326,21 @@ const BoardPage = () => {
 	if (!lists) return <div className="p-4">Loading board...</div>;
 
 	return (
-		<div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+		<div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 overflow-hidden">
 			<BoardHeader
 				totalCards={allCards.length}
 				listsCount={lists?.length || 0}
 				view={view}
 				setView={setView}
 				onAddList={() => setAddListOpen(true)}
-				onSearch={(query) => console.log("Search:", query)}
+				onSearch={setSearchQuery}
+				onSearchListName={setListNameQuery}
 			/>
 
 			<div className="flex-1 overflow-auto">
 				{view === "kanban" && (
 					<BoardKanbanView
-						lists={lists}
+						lists={filteredLists}
 						cardsByList={cardsByList}
 						onEditList={(list) => {
 							setListToEdit(list);
@@ -337,7 +376,7 @@ const BoardPage = () => {
 				{view === "table" && (
 					<BoardTableView
 						lists={lists}
-						allCards={allCards}
+						allCards={filteredCards}
 						onEditCard={(card) => {
 							setEditCardOpen({ card });
 							setCardTitle(card.title);

@@ -216,7 +216,6 @@ Your recap should be comprehensive but well-organized, making it easy for someon
 					},
 				],
 				temperature: 0.2, // Lower temperature for more consistent output
-				maxTokens: 1500, // Allow for longer recaps
 			});
 
 			// Cache the result

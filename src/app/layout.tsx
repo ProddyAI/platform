@@ -8,7 +8,6 @@ import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup
 import { Formbricks } from "@/components/formbricks";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
-import { ThemeInitScript } from "@/components/theme-init-script";
 import { TidioChat } from "@/components/tidio-chat";
 import { Toaster } from "@/components/ui/sonner";
 import { UsetifulProvider } from "@/components/usetiful-provider";
@@ -61,7 +60,6 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		<ConvexAuthNextjsServerProvider>
 			<html lang="en">
 				<head>
-					<ThemeInitScript />
 					<meta name="apple-mobile-web-app-capable" content="yes" />
 					<meta name="mobile-web-app-capable" content="yes" />
 					<link rel="apple-touch-icon" href="/logo-nobg.png" />

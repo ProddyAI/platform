@@ -309,7 +309,7 @@ const CanvasPage = () => {
 		return (
 			<div
 				ref={pageContainerRef}
-				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white" : ""}`}
+				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900" : ""}`}
 			>
 				{/* Canvas Sidebar - always show even when no canvas selected */}
 				{!isFullScreen && (
@@ -328,7 +328,7 @@ const CanvasPage = () => {
 					/>
 				)}
 
-				<div className="flex-1 flex flex-col items-center justify-center gap-y-6 bg-white">
+				<div className="flex-1 flex flex-col items-center justify-center gap-y-6 bg-white dark:bg-gray-900">
 					<PaintBucket className="size-16 text-secondary" />
 					<h2 className="text-2xl font-semibold">Canvas</h2>
 					<p className="text-sm text-muted-foreground mb-2">
@@ -360,7 +360,7 @@ const CanvasPage = () => {
 		<LiveblocksRoom roomId={activeCanvas.roomId} roomType="canvas">
 			<div
 				ref={pageContainerRef}
-				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white" : ""}`}
+				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900" : ""}`}
 			>
 				{!isFullScreen && (
 					<LiveSidebar

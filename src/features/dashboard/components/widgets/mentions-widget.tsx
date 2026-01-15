@@ -7,12 +7,12 @@ import type { Id } from "@/../convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetMentionedMessages } from "@/features/messages/api/use-get-mentioned-messages";
 import { useGetUnreadMentionsCount } from "@/features/messages/api/use-get-unread-mentions-count";
 import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-mentions-as-read";
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
+import { WidgetCard } from "../shared/widget-card";
 
 interface MentionsWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -130,7 +130,7 @@ export const MentionsWidget = ({
 		<div className="space-y-4 pb-4">
 			<div className="flex items-center justify-between pr-2">
 				<div className="flex items-center gap-2">
-					<AtSign className="h-5 w-5 text-primary" />
+					<AtSign className="h-5 w-5 text-primary dark:text-purple-400" />
 					<h3 className="font-medium">Mentions</h3>
 					{!isEditMode && counts && counts.total > 0 && (
 						<Badge variant="default" className="ml-2">
@@ -142,12 +142,7 @@ export const MentionsWidget = ({
 					? controls
 					: counts &&
 						counts.total > 0 && (
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleMarkAllAsRead}
-								className="border-2"
-							>
+							<Button variant="default" size="sm" onClick={handleMarkAllAsRead}>
 								<CheckCircle className="mr-2 h-4 w-4" />
 								Mark all as read
 							</Button>
@@ -155,80 +150,76 @@ export const MentionsWidget = ({
 			</div>
 
 			{mentions && mentions.length > 0 ? (
-				<ScrollArea className="h-[250px] rounded-md border-2">
+				<ScrollArea className="widget-scroll-area">
 					<div className="space-y-2 p-4">
 						{mentions.map((mention) => (
-							<Card key={mention.id} className="overflow-hidden border-2">
-								<CardContent className="p-3">
-									<div className="flex items-start gap-3">
-										<Avatar className="h-8 w-8">
-											<AvatarImage
-												src={mention.author.image}
-												alt={mention.author.name || "User avatar"}
-											/>
-											<AvatarFallback>
-												{mention.author.name
-													? mention.author.name.charAt(0).toUpperCase()
-													: "?"}
-											</AvatarFallback>
-										</Avatar>
-										<div className="flex-1 space-y-1">
-											<div className="flex items-center justify-between">
-												<div className="flex items-center gap-2">
-													<p className="font-medium">
-														{mention.author.name || "Unknown User"}
-													</p>
-													{mention.source.type === "channel" && (
-														<Badge
-															variant="outline"
-															className="flex items-center gap-1 border-2"
-														>
-															<Hash className="h-3 w-3" />
-															{mention.source.name}
-														</Badge>
-													)}
-												</div>
-												<div className="flex items-center text-xs text-muted-foreground">
-													<Clock className="mr-1 h-3 w-3" />
-													{(() => {
-														try {
-															// Try to safely format the date
-															if (
-																mention.timestamp &&
-																!Number.isNaN(Number(mention.timestamp))
-															) {
-																const date = new Date(
-																	Number(mention.timestamp)
-																);
-																if (date.toString() !== "Invalid Date") {
-																	return formatDistanceToNow(date, {
-																		addSuffix: true,
-																	});
-																}
-															}
-															return "recently";
-														} catch (_error) {
-															return "recently";
-														}
-													})()}
-												</div>
+							<WidgetCard key={mention.id}>
+								<div className="flex items-start gap-3">
+									<Avatar className="h-8 w-8">
+										<AvatarImage
+											src={mention.author.image}
+											alt={mention.author.name || "User avatar"}
+										/>
+										<AvatarFallback>
+											{mention.author.name
+												? mention.author.name.charAt(0).toUpperCase()
+												: "?"}
+										</AvatarFallback>
+									</Avatar>
+									<div className="flex-1 space-y-1">
+										<div className="flex items-center justify-between">
+											<div className="flex items-center gap-2">
+												<p className="font-medium">
+													{mention.author.name || "Unknown User"}
+												</p>
+												{mention.source.type === "channel" && (
+													<Badge
+														variant="outline"
+														className="flex items-center gap-1 border-2"
+													>
+														<Hash className="h-3 w-3" />
+														{mention.source.name}
+													</Badge>
+												)}
 											</div>
-											<p className="text-sm text-muted-foreground">
-												{getMessagePreview(mention.text)}
-												{mention.text.length > 50 ? "..." : ""}
-											</p>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="mt-2 w-full justify-start text-primary"
-												onClick={() => handleViewMention(mention)}
-											>
-												View mention
-											</Button>
+											<div className="flex items-center text-xs text-red-600 dark:text-red-400 font-medium">
+												<Clock className="mr-1 h-3 w-3" />
+												{(() => {
+													try {
+														// Try to safely format the date
+														if (
+															mention.timestamp &&
+															!Number.isNaN(Number(mention.timestamp))
+														) {
+															const date = new Date(Number(mention.timestamp));
+															if (date.toString() !== "Invalid Date") {
+																return formatDistanceToNow(date, {
+																	addSuffix: true,
+																});
+															}
+														}
+														return "recently";
+													} catch (_error) {
+														return "recently";
+													}
+												})()}
+											</div>
 										</div>
+										<p className="text-sm text-muted-foreground">
+											{getMessagePreview(mention.text)}
+											{mention.text.length > 50 ? "..." : ""}
+										</p>
+										<Button
+											variant="ghost"
+											size="sm"
+											className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
+											onClick={() => handleViewMention(mention)}
+										>
+											View mention
+										</Button>
 									</div>
-								</CardContent>
-							</Card>
+								</div>
+							</WidgetCard>
 						))}
 					</div>
 				</ScrollArea>

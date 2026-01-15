@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
 import { DashboardWidgets } from "@/features/dashboard/components/dashboard-widgets";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
+import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../toolbar";
@@ -15,6 +16,12 @@ const DashboardPage = () => {
 	useDocumentTitle("Dashboard");
 
 	const workspaceId = useWorkspaceId();
+
+	// Track user activity and time spent on dashboard
+	useTrackActivity({
+		workspaceId,
+		activityType: "dashboard_view",
+	});
 
 	// Get current member to check permissions
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
