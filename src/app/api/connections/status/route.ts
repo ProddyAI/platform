@@ -6,6 +6,8 @@ import {
 	getAnyConnectedApps,
 } from "@/lib/composio-config";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Handle GET requests to report connected apps and total available tools for a workspace or member.
  *

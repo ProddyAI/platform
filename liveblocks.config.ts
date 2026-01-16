@@ -30,7 +30,12 @@ const client = createClient({
 // and that will automatically be kept in sync. Accessible through the
 // `user.presence` property. Must be JSON-serializable.
 type Presence = {
-	cursor: { x: number; y: number } | null;
+	cursor: {
+		x: number;
+		y: number;
+		tool?: "pointer" | "laser";
+		button?: "up" | "down";
+	} | null;
 	selection: string[];
 	pencilDraft: [x: number, y: number, pressure: number][] | null;
 	penColor: Color | null;
@@ -47,6 +52,13 @@ type CollaborativeNoteData = {
 	lastModifiedBy: string;
 };
 
+type ExcalidrawSceneData = {
+	elements: any[];
+	appState: Record<string, any>;
+	files: Record<string, any>;
+	version: number;
+};
+
 // Optionally, Storage represents the shared document that persists in the
 // Room, even after all users leave. Fields under Storage typically are
 // LiveList, LiveMap, LiveObject instances, for which updates are
@@ -55,6 +67,7 @@ type Storage = {
 	layers: LiveMap<string, LiveObject<Layer>>;
 	layerIds: LiveList<string>;
 	collaborativeNotes: LiveMap<string, LiveObject<CollaborativeNoteData>>;
+	excalidraw?: LiveObject<ExcalidrawSceneData>;
 	lastUpdate?: number; // Timestamp to force storage updates
 };
 
@@ -71,10 +84,15 @@ type UserMeta = {
 
 // Optionally, the type of custom events broadcast and listened to in this
 // room. Use a union for multiple events. Must be JSON-serializable.
-type RoomEvent = {
-	// type: "NOTIFICATION",
-	// ...
-};
+type RoomEvent =
+	| {
+			type: "excalidraw:delta";
+			elements: any[];
+	  }
+	| {
+			type: "NOTIFICATION";
+			message?: string;
+	  };
 
 // Optionally, when using Comments, ThreadMetadata represents metadata on
 // each thread. Can only contain booleans, strings, and numbers.

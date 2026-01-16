@@ -1,11 +1,9 @@
 "use client";
 
-import { useRoom } from "@/../liveblocks.config";
 import { Hint } from "@/components/hint";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChannelParticipants } from "@/hooks/use-channel-participants";
 import { generateUserColor } from "@/lib/placeholder-image";
-import { connectionIdToColor } from "@/lib/utils";
 
 // Constants
 const MAX_SHOWN_OTHER_USERS = 3;
@@ -24,7 +22,6 @@ export const LiveParticipants = ({
 	// Fetch real participants from the database
 	const { participants, currentParticipant, participantCount, isLoading } =
 		useChannelParticipants();
-	const _room = useRoom();
 
 	// If still loading, show nothing
 	if (isLoading) return null;
@@ -32,7 +29,7 @@ export const LiveParticipants = ({
 	const hasMoreUsers = participants.length > MAX_SHOWN_OTHER_USERS;
 
 	// Use canvas-style display for both variants when inside LiveHeader
-	// This ensures consistent appearance and uses Liveblocks connection colors
+	// This ensures consistent appearance.
 	return (
 		<div className={`flex items-center gap-2 ${className}`}>
 			{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
@@ -40,18 +37,10 @@ export const LiveParticipants = ({
 					user.userId || user.info.name || "User"
 				);
 				return (
-					<Hint key={user.connectionId} label={user.info.name} side="bottom">
-						<div
-							className="relative"
-							style={{
-								borderColor: connectionIdToColor(user.connectionId),
-							}}
-						>
-							<Avatar
-								className="h-7 w-7 border-2"
-								style={{ borderColor: connectionIdToColor(user.connectionId) }}
-							>
-								<AvatarImage src={user.info.picture} />
+					<Hint key={user.userId} label={user.info.name} side="bottom">
+						<div className="relative">
+							<Avatar className="h-7 w-7 border-2 border-muted">
+								<AvatarImage src={user.info.picture ?? undefined} />
 								<AvatarFallback
 									className="text-xs font-semibold text-white"
 									style={{ backgroundColor }}
@@ -63,40 +52,6 @@ export const LiveParticipants = ({
 					</Hint>
 				);
 			})}
-
-			{currentParticipant && (
-				<Hint label={`${currentParticipant.info.name} (You)`} side="bottom">
-					<div
-						className="relative"
-						style={{
-							borderColor: connectionIdToColor(currentParticipant.connectionId),
-						}}
-					>
-						<Avatar
-							className="h-7 w-7 border-2"
-							style={{
-								borderColor: connectionIdToColor(
-									currentParticipant.connectionId
-								),
-							}}
-						>
-							<AvatarImage src={currentParticipant.info.picture} />
-							<AvatarFallback
-								className="text-xs font-semibold text-white"
-								style={{
-									backgroundColor: generateUserColor(
-										currentParticipant.userId ||
-											currentParticipant.info.name ||
-											"You"
-									),
-								}}
-							>
-								{currentParticipant.info.name?.[0] || "Y"}
-							</AvatarFallback>
-						</Avatar>
-					</div>
-				</Hint>
-			)}
 
 			{hasMoreUsers && (
 				<Hint
