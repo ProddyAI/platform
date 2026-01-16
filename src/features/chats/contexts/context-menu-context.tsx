@@ -46,42 +46,6 @@ export const ContextMenuProvider = ({ children }: ContextMenuProviderProps) => {
 		});
 	}, []);
 
-<<<<<<< HEAD
-	// Close context menu when clicking outside or pressing escape
-	useEffect(() => {
-		const handleClickOutside = () => {
-			if (contextMenu.show) {
-				closeContextMenu();
-			}
-		};
-
-		const handleEscape = (e: KeyboardEvent) => {
-			if (e.key === "Escape" && contextMenu.show) {
-				closeContextMenu();
-			}
-		};
-
-		const handleClearContextMenu = () => {
-			closeContextMenu();
-		};
-
-		if (contextMenu.show) {
-			document.addEventListener("click", handleClickOutside);
-			document.addEventListener("keydown", handleEscape);
-		}
-
-		// Always listen for the clear context menu event
-		document.addEventListener("clearContextMenu", handleClearContextMenu);
-
-		return () => {
-			document.removeEventListener("click", handleClickOutside);
-			document.removeEventListener("keydown", handleEscape);
-			document.removeEventListener("clearContextMenu", handleClearContextMenu);
-		};
-	}, [contextMenu.show, closeContextMenu]);
-
-=======
->>>>>>> 2ff6ffdafa0c555a30d5f4453a5c08e3073a8979
 	const openNewContextMenu = useCallback(
 		(x: number, y: number, messageId?: Id<"messages">) => {
 			// Calculate menu dimensions (approximate)

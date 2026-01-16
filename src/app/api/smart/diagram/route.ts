@@ -61,7 +61,7 @@ Mermaid:`;
 			model,
 			prompt: fullPrompt,
 			temperature: 0.2,
-			maxTokens: 1200,
+			maxOutputTokens: 1200,
 		});
 
 		const mermaid = (text || "").trim();
