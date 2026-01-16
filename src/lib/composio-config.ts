@@ -19,7 +19,14 @@ export interface ComposioTool {
 
 export interface ComposioConnection {
 	id: string;
-	status: "INITIALIZING" | "INITIATED" | "ACTIVE" | "FAILED" | "EXPIRED" | "INACTIVE" | string;
+	status:
+		| "INITIALIZING"
+		| "INITIATED"
+		| "ACTIVE"
+		| "FAILED"
+		| "EXPIRED"
+		| "INACTIVE"
+		| string;
 	toolkit?: {
 		slug?: string;
 	};
@@ -1522,9 +1529,9 @@ export async function cleanupOldConnections(
 				const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
 				const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
 				// Return 0 if both are invalid to maintain stable sort
-				if (isNaN(timeA) && isNaN(timeB)) return 0;
-				if (isNaN(timeA)) return 1; // a is older (move to end)
-				if (isNaN(timeB)) return -1; // b is older (move to end)
+				if (Number.isNaN(timeA) && Number.isNaN(timeB)) return 0;
+				if (Number.isNaN(timeA)) return 1; // a is older (move to end)
+				if (Number.isNaN(timeB)) return -1; // b is older (move to end)
 				return timeB - timeA; // Newest first
 			}
 		);
@@ -1559,8 +1566,8 @@ export async function cleanupOldConnections(
 					// Handle invalid dates by coercing to sentinel value
 					const otherTs = new Date(other.createdAt).getTime();
 					const accTs = new Date(acc.createdAt).getTime();
-					const safeOtherTs = isNaN(otherTs) ? -Infinity : otherTs;
-					const safeAccTs = isNaN(accTs) ? -Infinity : accTs;
+					const safeOtherTs = Number.isNaN(otherTs) ? -Infinity : otherTs;
+					const safeAccTs = Number.isNaN(accTs) ? -Infinity : accTs;
 					return safeOtherTs > safeAccTs;
 				});
 				return newerActiveExists;
@@ -1576,7 +1583,7 @@ export async function cleanupOldConnections(
 			} catch (deleteError) {
 				// Log deletion failure but continue with other deletions
 				const logMessage = `Failed to delete connection ${acc.id}: ${deleteError}`;
-				if (typeof logger !== "undefined" && logger?.warn) {
+				if (logger?.warn) {
 					logger.warn(logMessage);
 				} else {
 					console.warn(logMessage);
@@ -1586,7 +1593,7 @@ export async function cleanupOldConnections(
 	} catch (error) {
 		// Log cleanup failure but don't fail the connection process
 		const logMessage = `Connected accounts cleanup failed: ${error}`;
-		if (typeof logger !== "undefined" && logger?.error) {
+		if (logger?.error) {
 			logger.error(logMessage);
 		} else {
 			console.error(logMessage);
@@ -1631,9 +1638,12 @@ export async function initiateAppConnection(
 		);
 
 		// Clean up old connections in background
-		cleanupOldConnections(composio, entityId, authConfigId, connection.id).catch(
-			() => {}
-		);
+		cleanupOldConnections(
+			composio,
+			entityId,
+			authConfigId,
+			connection.id
+		).catch(() => {});
 
 		return {
 			success: true,

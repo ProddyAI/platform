@@ -168,6 +168,15 @@ bunx convex env set AUTH_GITHUB_SECRET your-github-client-secret
 
 [![React JS](https://skillicons.dev/icons?i=react 'React JS')](https://react.dev/ 'React JS') [![Next JS](https://skillicons.dev/icons?i=next 'Next JS')](https://nextjs.org/ 'Next JS') [![Typescript](https://skillicons.dev/icons?i=ts 'Typescript')](https://www.typescriptlang.org/ 'Typescript') [![Tailwind CSS](https://skillicons.dev/icons?i=tailwind 'Tailwind CSS')](https://tailwindcss.com/ 'Tailwind CSS') [![Vercel](https://skillicons.dev/icons?i=vercel 'Vercel')](https://vercel.app/ 'Vercel')
 
+## :hammer: Code Quality
+
+This project uses **[Biome](https://biomejs.dev/)** as the unified formatter and linter. Biome handles both code formatting and linting, eliminating conflicts from multiple tools:
+
+- **Linting**: `npm run lint` - Lints and auto-fixes code issues
+- **Formatting**: `npm run format` - Formats code according to project standards
+
+Configuration is managed in `biome.json`. Both tools run as part of the development workflow and are checked in pull requests.
+
 ## :raised_hands: Contribute
 
 You might encounter some bugs while using this app. You are more than welcome to contribute. Just submit changes via pull request and I will review them before merging. Make sure you follow community guidelines.

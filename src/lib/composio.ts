@@ -108,7 +108,9 @@ export function initializeComposio() {
 
 			// Clean up old connections in background
 			const { cleanupOldConnections } = await import("./composio-config");
-			const connectionId = (connection as unknown as any).id || (connection as unknown as any).connectionId;
+			const connectionId =
+				(connection as unknown as any).id ||
+				(connection as unknown as any).connectionId;
 			if (connectionId) {
 				cleanupOldConnections(
 					composioInstance,
@@ -124,9 +126,15 @@ export function initializeComposio() {
 			}
 
 			return {
-				redirectUrl: (connection as unknown as any).redirectUrl || (connection as unknown as any).authUrl,
-				connectionId: (connection as unknown as any).id || (connection as unknown as any).connectionId,
-				id: (connection as unknown as any).id || (connection as unknown as any).connectionId,
+				redirectUrl:
+					(connection as unknown as any).redirectUrl ||
+					(connection as unknown as any).authUrl,
+				connectionId:
+					(connection as unknown as any).id ||
+					(connection as unknown as any).connectionId,
+				id:
+					(connection as unknown as any).id ||
+					(connection as unknown as any).connectionId,
 			};
 		},
 
@@ -146,12 +154,14 @@ export function initializeComposio() {
 		async getConnectionStatus(connectionId: string) {
 			return (
 				(await composioInstance.connectedAccounts?.get?.(connectionId)) ||
-				(await (composioInstance as unknown as any).connections?.get?.(connectionId))
+				(await (composioInstance as unknown as any).connections?.get?.(
+					connectionId
+				))
 			);
 		},
 
-	// Get tools for entity and apps
-	async getTools(entityId: string, appNames: string[]) {
+		// Get tools for entity and apps
+		async getTools(entityId: string, appNames: string[]) {
 			try {
 				const tools = await composioInstance.tools.get(entityId, {
 					appNames: appNames,

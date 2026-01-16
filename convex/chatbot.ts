@@ -122,12 +122,12 @@ async function generateLLMResponse(opts: {
 }): Promise<string> {
 	const apiKey = process.env.OPENAI_API_KEY;
 	if (!apiKey) {
-		throw new Error("OPENAI_API_KEY is required. Please configure the OpenAI API key in your environment variables.");
+		throw new Error(
+			"OPENAI_API_KEY is required. Please configure the OpenAI API key in your environment variables."
+		);
 	}
 
-	const modelId =
-		process.env.OPENAI_MODEL ||
-		"gpt-4o-mini";
+	const modelId = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 	const system = (opts.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT).trim();
 	const userPrompt = String(opts.prompt ?? "").trim();
@@ -2283,20 +2283,20 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		let ragResults: Array<{ text: string }> = [];
 		let isIndexing = false;
 		try {
-			ragResults = await ctx.runAction(
-				api.search.semanticSearch,
-				{
-					workspaceId: args.workspaceId!,
-					query: args.query,
-					limit: 3,
-				}
-			);
+			ragResults = await ctx.runAction(api.search.semanticSearch, {
+				workspaceId: args.workspaceId!,
+				query: args.query,
+				limit: 3,
+			});
 		} catch (error) {
 			// If namespace doesn't exist, trigger indexing for this workspace
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
 			if (errorMessage.includes("No compatible namespace found")) {
-				console.log(`RAG namespace not found for workspace ${args.workspaceId}, triggering auto-initialization`);
-				
+				console.log(
+					`RAG namespace not found for workspace ${args.workspaceId}, triggering auto-initialization`
+				);
+
 				// Call mutation to schedule indexing (mutations can use scheduler)
 				try {
 					await ctx.runMutation(api.search.autoInitializeWorkspace, {
@@ -2304,11 +2304,13 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 						limit: 1000,
 					});
 					isIndexing = true;
-					console.log(`Auto-initialization triggered for workspace ${args.workspaceId}`);
+					console.log(
+						`Auto-initialization triggered for workspace ${args.workspaceId}`
+					);
 				} catch (indexError) {
 					console.error("Failed to trigger auto-initialization:", indexError);
 				}
-				
+
 				// Continue without RAG results - will use LLM without context
 				ragResults = [];
 			} else {
@@ -2339,14 +2341,19 @@ Keep it brief and actionable.`;
 					systemPrompt: DEFAULT_SYSTEM_PROMPT,
 					recentMessages: recentChatMessages,
 				});
-				return { 
-					answer: answer + (isIndexing ? "\n\n💡 *I'm learning about your workspace in the background to provide better answers soon!*" : ""), 
-					sources: [] 
+				return {
+					answer:
+						answer +
+						(isIndexing
+							? "\n\n💡 *I'm learning about your workspace in the background to provide better answers soon!*"
+							: ""),
+					sources: [],
 				};
 			} catch (error) {
 				console.error("LLM generation error:", error);
 				return {
-					answer: "I'm here to help! You can ask me about:\n• Your calendar and meetings\n• Tasks and deadlines\n• Team status updates\n• Messages in channels\n• Notes and boards\n\nWhat would you like to know?",
+					answer:
+						"I'm here to help! You can ask me about:\n• Your calendar and meetings\n• Tasks and deadlines\n• Team status updates\n• Messages in channels\n• Notes and boards\n\nWhat would you like to know?",
 					sources: [],
 				};
 			}
@@ -2379,29 +2386,36 @@ Context:\n${combinedContext}`;
 		} catch (error) {
 			// Log the actual error for debugging
 			console.error("LLM generation error in chatbot:", error);
-			
+
 			// Provide more specific error message
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+
 			if (errorMessage.includes("OPENAI_API_KEY")) {
 				return {
-					answer: "AI service is not configured. Please contact your administrator to set up the OpenAI API key.",
+					answer:
+						"AI service is not configured. Please contact your administrator to set up the OpenAI API key.",
 					sources: [],
 				};
 			}
-			
-			if (errorMessage.includes("rate limit") || errorMessage.includes("quota")) {
+
+			if (
+				errorMessage.includes("rate limit") ||
+				errorMessage.includes("quota")
+			) {
 				return {
-					answer: "AI service is temporarily unavailable due to rate limits. Please try again in a moment.",
+					answer:
+						"AI service is temporarily unavailable due to rate limits. Please try again in a moment.",
 					sources: [],
 				};
 			}
-			
+
 			// Generic fallback with context info
-			const contextInfo = ragResults.length > 0 
-				? `I found ${ragResults.length} relevant document(s), but couldn't generate a summary.`
-				: "I couldn't find relevant information to answer your question.";
-			
+			const contextInfo =
+				ragResults.length > 0
+					? `I found ${ragResults.length} relevant document(s), but couldn't generate a summary.`
+					: "I couldn't find relevant information to answer your question.";
+
 			return {
 				answer: `Unable to generate a response at this time. ${contextInfo}\n\nError: ${errorMessage.substring(0, 150)}`,
 				sources: [],
