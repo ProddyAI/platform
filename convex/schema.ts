@@ -481,7 +481,7 @@ const schema = defineSchema({
 		hash: v.string(), // token from email link
 		used: v.boolean(), // one-time use
 		expiresAt: v.number(), // auto-expiry
-		createdAt: v.number(), // when the invite was created
+		createdAt: v.optional(v.number()), // when the invite was created (optional for backward compatibility)
 		invitedBy: v.optional(v.id("members")), // who sent the invite (optional for backward compatibility; new records should set this)
 	})
 		.index("by_hash", ["hash"])

@@ -27,6 +27,7 @@ import type * as notes from "../notes.js";
 import type * as preferences from "../preferences.js";
 import type * as presence from "../presence.js";
 import type * as prosemirror from "../prosemirror.js";
+import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
 import type * as search from "../search.js";
 import type * as tasks from "../tasks.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   preferences: typeof preferences;
   presence: typeof presence;
   prosemirror: typeof prosemirror;
+  rateLimit: typeof rateLimit;
   reactions: typeof reactions;
   search: typeof search;
   tasks: typeof tasks;
