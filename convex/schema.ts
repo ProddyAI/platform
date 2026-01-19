@@ -473,6 +473,17 @@ const schema = defineSchema({
 		.index("by_message_id", ["messageId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_message_id", ["workspaceId", "messageId"]),
+
+	// Workspace invites for email-based workspace invitations
+	workspaceInvites: defineTable({
+		workspaceId: v.id("workspaces"), // which workspace
+		email: v.string(), // who the invite is for
+		hash: v.string(), // token from email link
+		used: v.boolean(), // one-time use
+		expiresAt: v.number(), // auto-expiry
+	})
+		.index("by_hash", ["hash"])
+		.index("by_workspace", ["workspaceId"]),
 });
 
 export default schema;

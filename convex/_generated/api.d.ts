@@ -34,6 +34,7 @@ import type * as threadTitles from "../threadTitles.js";
 import type * as upload from "../upload.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
+import type * as workspaceInvites from "../workspaceInvites.js";
 import type * as workspaces from "../workspaces.js";
 
 import type {
@@ -69,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   upload: typeof upload;
   users: typeof users;
   utils: typeof utils;
+  workspaceInvites: typeof workspaceInvites;
   workspaces: typeof workspaces;
 }>;
 

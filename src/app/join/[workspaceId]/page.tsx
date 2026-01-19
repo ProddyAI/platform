@@ -19,7 +19,10 @@ const JoinWorkspaceIdPage = () => {
 	const searchParams = useSearchParams();
 	const workspaceId = useWorkspaceId();
 	const codeFromUrl = searchParams.get("code");
+	const inviteHash = searchParams.get("invite");
 	const [code, setCode] = useState(codeFromUrl || "");
+	const [inviteLoading, setInviteLoading] = useState(false);
+	const [inviteError, setInviteError] = useState<string | null>(null);
 
 	const { mutate, isPending } = useJoin();
 	const { data, isLoading } = useGetWorkspaceInfo({ id: workspaceId });
@@ -29,6 +32,41 @@ const JoinWorkspaceIdPage = () => {
 	useEffect(() => {
 		if (isMember) router.push(`/workspace/${workspaceId}`);
 	}, [isMember, router, workspaceId]);
+
+	// Handle email invite verification
+	useEffect(() => {
+		if (!inviteHash || isLoading || isMember || inviteLoading) return;
+
+		const verifyInvite = async () => {
+			setInviteLoading(true);
+			setInviteError(null);
+
+			try {
+				const response = await fetch("/api/invite/verify", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ workspaceId, invite: inviteHash }),
+				});
+
+				const data = await response.json();
+
+				if (data.success) {
+					toast.success("Workspace joined successfully!");
+					router.push(`/workspace/${workspaceId}`);
+				} else {
+					setInviteError(data.error || "Failed to verify invite");
+					toast.error(data.error || "Failed to verify invite");
+				}
+			} catch (error) {
+				setInviteError("Failed to verify invite");
+				toast.error("Failed to verify invite");
+			} finally {
+				setInviteLoading(false);
+			}
+		};
+
+		verifyInvite();
+	}, [inviteHash, isLoading, isMember, inviteLoading, workspaceId, router]);
 
 	const handleComplete = (value: string) => {
 		mutate(
@@ -58,7 +96,7 @@ const JoinWorkspaceIdPage = () => {
 		}
 	}, [codeFromUrl, isLoading, isMember, handleComplete, isPending]);
 
-	if (isLoading || isMember) {
+	if (isLoading || isMember || inviteLoading) {
 		return (
 			<div className="flex h-full items-center justify-center">
 				<Loader className="size-6 animate-spin text-muted-foreground" />
@@ -66,6 +104,33 @@ const JoinWorkspaceIdPage = () => {
 		);
 	}
 
+	// Show error state for email invite flow
+	if (inviteHash && inviteError) {
+		return (
+			<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-white p-8 shadow-md">
+				<Image src="/logo-nobg.png" alt="Logo" width={60} height={60} />
+
+				<div className="flex max-w-md flex-col items-center justify-center gap-y-4">
+					<div className="flex flex-col items-center justify-center gap-y-2">
+						<h1 className="text-2xl font-bold">Invite Error</h1>
+						<p className="text-md text-center text-destructive">
+							{inviteError}
+						</p>
+					</div>
+				</div>
+
+				<div className="flex gap-x-4">
+					<Button size="lg" variant="outline" asChild>
+						<Link href="/home">
+							<Undo2 className="mr-2 size-4" /> Back to home
+						</Link>
+					</Button>
+				</div>
+			</div>
+		);
+	}
+
+	// Show join code input (default flow)
 	return (
 		<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-white p-8 shadow-md">
 			<Image src="/logo-nobg.png" alt="Logo" width={60} height={60} />

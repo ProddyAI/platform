@@ -73,6 +73,12 @@ export const MembersManagement = ({
 	const [inviteOpen, setInviteOpen] = useState(false);
 	const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
+	// Email invite state
+	const [email, setEmail] = useState("");
+	const [inviteLoading, setInviteLoading] = useState(false);
+	const [inviteError, setInviteError] = useState<string | null>(null);
+	const [inviteSuccess, setInviteSuccess] = useState(false);
+
 	const updateMember = useUpdateMember();
 	const removeMember = useRemoveMember();
 	const newJoinCode = useNewJoinCode();
@@ -168,6 +174,43 @@ export const MembersManagement = ({
 		toast.success("Join link copied to clipboard");
 	};
 
+	const sendInvite = async () => {
+		setInviteError(null);
+		setInviteSuccess(false);
+
+		if (!email || !email.includes("@")) {
+			setInviteError("Enter a valid email address");
+			return;
+		}
+
+		try {
+			setInviteLoading(true);
+			const res = await fetch("/api/invite", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					workspaceId,
+					email,
+				}),
+			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+				throw new Error(data.error || "Failed to send invite");
+			}
+
+			setInviteSuccess(true);
+			setEmail("");
+			toast.success("Invite sent successfully");
+		} catch (err: any) {
+			setInviteError(err.message);
+			toast.error(err.message || "Failed to send invite");
+		} finally {
+			setInviteLoading(false);
+		}
+	};
+
 	const getRoleBadgeColor = (role: string) => {
 		switch (role) {
 			case "owner":
@@ -207,72 +250,119 @@ export const MembersManagement = ({
 				</div>
 
 				{(isOwner || isAdmin) && workspace && (
-					<div className="p-4 bg-muted/50 rounded-lg">
-						<div className="grid gap-2">
-							<Label htmlFor="joinCode">Workspace Join Code</Label>
-							<div className="flex items-center gap-2">
-								<div className="relative flex-1">
+					<>
+						{/* Email Invite Section */}
+						<div className="p-4 bg-muted/50 rounded-lg border">
+							<div className="grid gap-2">
+								<Label htmlFor="emailInvite" className="text-sm font-semibold">
+									Invite by Email
+								</Label>
+								<div className="flex gap-2">
 									<Input
-										id="joinCode"
-										value={showJoinCode ? workspace.joinCode : "••••••"}
-										readOnly
-										className="flex-1 pr-10"
+										id="emailInvite"
+										type="email"
+										value={email}
+										onChange={(e) => setEmail(e.target.value)}
+										placeholder="name@example.com"
+										className="flex-1"
+										disabled={inviteLoading}
+										onKeyDown={(e) => {
+											if (e.key === "Enter") {
+												sendInvite();
+											}
+										}}
 									/>
 									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										className="absolute right-0 top-0 h-full px-3 py-2"
-										onClick={() => setShowJoinCode(!showJoinCode)}
+										onClick={sendInvite}
+										disabled={inviteLoading}
+										className="min-w-[120px]"
 									>
-										{showJoinCode ? (
-											<EyeOff className="h-4 w-4" />
+										{inviteLoading ? "Sending..." : "Send Invite"}
+									</Button>
+								</div>
+								{inviteError && (
+									<p className="text-sm text-destructive">{inviteError}</p>
+								)}
+								{inviteSuccess && (
+									<p className="text-sm text-green-600">
+										Invite sent successfully
+									</p>
+								)}
+								<p className="text-xs text-muted-foreground">
+									Send an email invitation with a secure link to join the
+									workspace
+								</p>
+							</div>
+						</div>
+
+						{/* Join Code Section */}
+						<div className="p-4 bg-muted/50 rounded-lg">
+							<div className="grid gap-2">
+								<Label htmlFor="joinCode">Workspace Join Code</Label>
+								<div className="flex items-center gap-2">
+									<div className="relative flex-1">
+										<Input
+											id="joinCode"
+											value={showJoinCode ? workspace.joinCode : "••••••"}
+											readOnly
+											className="flex-1 pr-10"
+										/>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											className="absolute right-0 top-0 h-full px-3 py-2"
+											onClick={() => setShowJoinCode(!showJoinCode)}
+										>
+											{showJoinCode ? (
+												<EyeOff className="h-4 w-4" />
+											) : (
+												<Eye className="h-4 w-4" />
+											)}
+										</Button>
+									</div>
+									<div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={handleCopyJoinCode}
+										className="gap-1.5 h-8 px-2.5"
+									>
+										<Copy className="h-3.5 w-3.5" />
+										<span className="hidden sm:inline text-xs italic font-medium">
+											Copy Code
+										</span>
+									</Button>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={handleCopyJoinLink}
+										className="gap-1.5 h-8 px-2.5"
+									>
+										<Link2 className="h-3.5 w-3.5" />
+										<span className="hidden sm:inline text-xs italic font-medium">
+											Copy Link
+										</span>
+									</Button>
+									<div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
+									<Button
+										variant="outline"
+										onClick={handleGenerateNewCode}
+										disabled={isGeneratingCode}
+									>
+										{isGeneratingCode ? (
+											<RefreshCw className="h-4 w-4 animate-spin" />
 										) : (
-											<Eye className="h-4 w-4" />
+											<RefreshCw className="h-4 w-4" />
 										)}
 									</Button>
 								</div>
-								<div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={handleCopyJoinCode}
-									className="gap-1.5 h-8 px-2.5"
-								>
-									<Copy className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline text-xs italic font-medium">
-										Copy Code
-									</span>
-								</Button>
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={handleCopyJoinLink}
-									className="gap-1.5 h-8 px-2.5"
-								>
-									<Link2 className="h-3.5 w-3.5" />
-									<span className="hidden sm:inline text-xs italic font-medium">
-										Copy Link
-									</span>
-								</Button>
-								<div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
-								<Button
-									variant="outline"
-									onClick={handleGenerateNewCode}
-									disabled={isGeneratingCode}
-								>
-									{isGeneratingCode ? (
-										<RefreshCw className="h-4 w-4 animate-spin" />
-									) : (
-										<RefreshCw className="h-4 w-4" />
-									)}
-								</Button>
+								<p className="text-xs text-muted-foreground">
+									Share this code with others to invite them to your workspace
+								</p>
 							</div>
-							<p className="text-xs text-muted-foreground">
-								Share this code with others to invite them to your workspace
-							</p>
 						</div>
-					</div>
+					</>
 				)}
 
 				<Separator />

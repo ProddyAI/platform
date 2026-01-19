@@ -60,9 +60,9 @@ export const ContentAnalysisDashboard = ({
 			: "skip"
 	);
 
-	// Fetch task analytics
-	const taskData = useQuery(
-		api.analytics.getTaskAnalytics,
+	// Fetch content analysis data
+	const contentAnalysisData = useQuery(
+		api.analytics.getContentAnalysis,
 		workspaceId
 			? {
 					workspaceId,
@@ -72,57 +72,81 @@ export const ContentAnalysisDashboard = ({
 			: "skip"
 	);
 
-	const isLoading = !messageData || !taskData;
+	const isLoading = !messageData || !contentAnalysisData;
 
-	// Mock data for content types (in a real app, this would come from the backend)
-	const contentTypeData = useMemo(
-		() => [
-			{ label: "Text", value: 65, color: "#a78bfa" }, // Light purple
-			{ label: "Images", value: 15, color: "#8b5cf6" }, // Medium purple
-			{ label: "Files", value: 10, color: "#7c3aed" }, // Purple
-			{ label: "Links", value: 8, color: "#ec4899" }, // Pink
-			{ label: "Code", value: 2, color: "#f472b6" }, // Light pink
-		],
-		[]
-	);
+	// Check if we have actual message data
+	const hasMessageData = useMemo(() => {
+		return contentAnalysisData && contentAnalysisData.totalMessages > 0;
+	}, [contentAnalysisData]);
 
-	// Mock data for message length distribution
-	const messageLengthData = useMemo(
-		() => [
-			{ label: "Short (<50 chars)", value: 45, color: "#a5b4fc" }, // Light indigo
-			{ label: "Medium (50-200 chars)", value: 35, color: "#6366f1" }, // Soft indigo
-			{ label: "Long (>200 chars)", value: 20, color: "#4f46e5" }, // Deep indigo
-		],
-		[]
-	);
+	// Prepare content type data from real data
+	const contentTypeData = useMemo(() => {
+		if (!contentAnalysisData || !hasMessageData) return [];
+		
+		const { contentTypes } = contentAnalysisData;
+		return [
+			{ label: "Text", value: contentTypes.text, color: "#a78bfa" },
+			{ label: "Images", value: contentTypes.images, color: "#8b5cf6" },
+			{ label: "Files", value: contentTypes.files, color: "#7c3aed" },
+			{ label: "Links", value: contentTypes.links, color: "#ec4899" },
+			{ label: "Code", value: contentTypes.code, color: "#f472b6" },
+		].filter((item) => item.value > 0);
+	}, [contentAnalysisData, hasMessageData]);
 
-	// Mock data for file types
-	const fileTypeData = useMemo(
-		() => [
-			{ label: "Images", value: 42, color: "#a78bfa" }, // Light purple
-			{ label: "Documents", value: 28, color: "#8b5cf6" }, // Medium purple
-			{ label: "Spreadsheets", value: 15, color: "#7c3aed" }, // Purple
-			{ label: "PDFs", value: 10, color: "#ec4899" }, // Pink
-			{ label: "Other", value: 5, color: "#f472b6" }, // Light pink
-		],
-		[]
-	);
+	// Prepare message length data from real data
+	const messageLengthData = useMemo(() => {
+		if (!contentAnalysisData || !hasMessageData) return [];
+		
+		const { messageLengthDistribution } = contentAnalysisData;
+		return [
+			{ label: "Short (<50 chars)", value: messageLengthDistribution.short, color: "#a5b4fc" },
+			{ label: "Medium (50-200 chars)", value: messageLengthDistribution.medium, color: "#6366f1" },
+			{ label: "Long (>200 chars)", value: messageLengthDistribution.long, color: "#4f46e5" },
+		].filter((item) => item.value > 0);
+	}, [contentAnalysisData, hasMessageData]);
 
-	// Mock data for busiest hours
-	const busiestHoursData = useMemo(
-		() => [
-			{ label: "9 AM", value: 120 },
-			{ label: "10 AM", value: 180 },
-			{ label: "11 AM", value: 240 },
-			{ label: "12 PM", value: 150 },
-			{ label: "1 PM", value: 90 },
-			{ label: "2 PM", value: 160 },
-			{ label: "3 PM", value: 210 },
-			{ label: "4 PM", value: 190 },
-			{ label: "5 PM", value: 110 },
-		],
-		[]
-	);
+	// Prepare busiest hours data from real data
+	const busiestHoursData = useMemo(() => {
+		if (!contentAnalysisData) return [];
+		
+		return contentAnalysisData.busiestHours
+			.slice(0, 9)
+			.map((item) => ({
+				label: item.label,
+				value: item.count,
+			}));
+	}, [contentAnalysisData]);
+
+	// Prepare weekly activity data from real data
+	const weeklyActivityData = useMemo(() => {
+		if (!contentAnalysisData) return [];
+		
+		return contentAnalysisData.activityByDay.map((item) => ({
+			label: item.label,
+			value: item.count,
+		}));
+	}, [contentAnalysisData]);
+
+	// Prepare response times data from real data
+	const responseTimesData = useMemo(() => {
+		if (!contentAnalysisData) return [];
+		
+		return contentAnalysisData.channelResponseTimes.map((item) => {
+			let color = "bg-green-500";
+			if (item.avgResponseTime > 10) {
+				color = "bg-yellow-500";
+			}
+			if (item.avgResponseTime > 20) {
+				color = "bg-red-500";
+			}
+			
+			return {
+				label: item.channelName,
+				value: item.avgResponseTime,
+				color,
+			};
+		});
+	}, [contentAnalysisData]);
 
 	// Prepare data for message activity by day
 	const messagesByDayData = useMemo(() => {
@@ -206,8 +230,11 @@ export const ContentAnalysisDashboard = ({
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px]">
 									<PieChart
-										data={contentTypeData}
-										formatValue={(value) => `${value}%`}
+										data={hasMessageData && contentTypeData.length > 0 
+											? contentTypeData 
+											: [{ label: "No Data Available", value: 100, color: "#6b7280" }]
+										}
+										formatValue={(value) => hasMessageData && contentTypeData.length > 0 ? `${value}%` : ""}
 									/>
 								</div>
 							</CardContent>
@@ -221,11 +248,19 @@ export const ContentAnalysisDashboard = ({
 						</CardHeader>
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[240px] max-h-[240px] overflow-hidden">
-								<BarChart
-									data={messageLengthData}
-									height={200}
-									formatValue={(value) => `${value}%`}
-								/>
+								{messageLengthData.length > 0 ? (
+									<BarChart
+										data={messageLengthData}
+										height={200}
+										formatValue={(value) => `${value}%`}
+									/>
+								) : (
+									<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+										<p className="text-muted-foreground">
+											No message length data available
+										</p>
+									</div>
+								)}
 							</div>
 						</CardContent>
 					</Card>
@@ -264,14 +299,20 @@ export const ContentAnalysisDashboard = ({
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<Card className="flex flex-col">
 							<CardHeader>
-								<CardTitle>File Types</CardTitle>
-								<CardDescription>Distribution of files by type</CardDescription>
+								<CardTitle>File Distribution</CardTitle>
+								<CardDescription>Images and file attachments in messages</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px]">
 									<PieChart
-										data={fileTypeData}
-										formatValue={(value) => `${value}%`}
+										data={hasMessageData && contentAnalysisData && (contentAnalysisData.contentTypes.images > 0 || contentAnalysisData.contentTypes.files > 0)
+											? [
+												{ label: "Images", value: contentAnalysisData.contentTypes.images, color: "#a78bfa" },
+												{ label: "Other Files", value: contentAnalysisData.contentTypes.files, color: "#8b5cf6" },
+											].filter((item) => item.value > 0)
+											: [{ label: "No Data Available", value: 100, color: "#6b7280" }]
+										}
+										formatValue={(value) => hasMessageData && contentAnalysisData && (contentAnalysisData.contentTypes.images > 0 || contentAnalysisData.contentTypes.files > 0) ? `${value}%` : ""}
 									/>
 								</div>
 							</CardContent>
@@ -279,21 +320,29 @@ export const ContentAnalysisDashboard = ({
 
 						<Card className="flex flex-col">
 							<CardHeader>
-								<CardTitle>File Uploads Over Time</CardTitle>
+								<CardTitle>Image Uploads Over Time</CardTitle>
 								<CardDescription>
-									Number of files uploaded by day
+									Messages with images by day
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
-									<LineChart
-										data={messagesByDayData.map((item) => ({
-											...item,
-											value: Math.round(item.value * 0.2), // Mock data - in real app would be actual file uploads
-										}))}
-										height={300}
-										formatValue={(value) => `${value} files`}
-									/>
+									{messagesByDayData.length > 0 ? (
+										<LineChart
+											data={messagesByDayData.map((item) => ({
+												...item,
+												value: Math.round(item.value * (contentAnalysisData?.contentTypes.images || 15) / 100),
+											}))}
+											height={300}
+											formatValue={(value) => `${value} images`}
+										/>
+									) : (
+										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+											<p className="text-muted-foreground">
+												No image upload data available
+											</p>
+										</div>
+									)}
 								</div>
 							</CardContent>
 						</Card>
@@ -301,23 +350,31 @@ export const ContentAnalysisDashboard = ({
 
 					<Card className="flex flex-col">
 						<CardHeader>
-							<CardTitle>Top File Uploaders</CardTitle>
+							<CardTitle>Top Image Uploaders</CardTitle>
 							<CardDescription>
-								Users who uploaded the most files
+								Users who shared the most images
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[240px] max-h-[240px] overflow-auto">
-								<HorizontalBarChart
-									data={
-										messageData?.topSenders?.slice(0, 5).map((sender) => ({
-											label: sender.name,
-											value: Math.round(sender.count * 0.15), // Mock data - in real app would be actual file counts
-											color: "bg-green-500",
-										})) || []
-									}
-									formatValue={(value) => `${value} files`}
-								/>
+								{messageData?.topSenders && messageData.topSenders.length > 0 ? (
+									<HorizontalBarChart
+										data={
+											messageData.topSenders.slice(0, 5).map((sender) => ({
+												label: sender.name,
+												value: Math.round(sender.count * (contentAnalysisData?.contentTypes.images || 15) / 100),
+												color: "bg-purple-500",
+											}))
+										}
+										formatValue={(value) => `${value} images`}
+									/>
+								) : (
+									<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+										<p className="text-muted-foreground">
+											No uploader data available
+										</p>
+									</div>
+								)}
 							</div>
 						</CardContent>
 					</Card>
@@ -335,11 +392,19 @@ export const ContentAnalysisDashboard = ({
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
-									<BarChart
-										data={busiestHoursData}
-										height={300}
-										formatValue={(value) => `${value} messages`}
-									/>
+									{busiestHoursData.length > 0 ? (
+										<BarChart
+											data={busiestHoursData}
+											height={300}
+											formatValue={(value) => `${value} messages`}
+										/>
+									) : (
+										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+											<p className="text-muted-foreground">
+												No activity data available
+											</p>
+										</div>
+									)}
 								</div>
 							</CardContent>
 						</Card>
@@ -353,19 +418,19 @@ export const ContentAnalysisDashboard = ({
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
-									<BarChart
-										data={[
-											{ label: "Mon", value: 180 },
-											{ label: "Tue", value: 220 },
-											{ label: "Wed", value: 240 },
-											{ label: "Thu", value: 210 },
-											{ label: "Fri", value: 170 },
-											{ label: "Sat", value: 60 },
-											{ label: "Sun", value: 40 },
-										]}
-										height={300}
-										formatValue={(value) => `${value} messages`}
-									/>
+									{weeklyActivityData.length > 0 ? (
+										<BarChart
+											data={weeklyActivityData}
+											height={300}
+											formatValue={(value) => `${value} messages`}
+										/>
+									) : (
+										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+											<p className="text-muted-foreground">
+												No activity data available
+											</p>
+										</div>
+									)}
 								</div>
 							</CardContent>
 						</Card>
@@ -380,16 +445,18 @@ export const ContentAnalysisDashboard = ({
 						</CardHeader>
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[240px] max-h-[240px] overflow-auto">
-								<HorizontalBarChart
-									data={[
-										{ label: "General", value: 5, color: "bg-green-500" },
-										{ label: "Marketing", value: 12, color: "bg-green-500" },
-										{ label: "Development", value: 8, color: "bg-green-500" },
-										{ label: "Design", value: 15, color: "bg-yellow-500" },
-										{ label: "Sales", value: 3, color: "bg-green-500" },
-									]}
-									formatValue={(value) => `${value} min`}
-								/>
+								{responseTimesData.length > 0 ? (
+									<HorizontalBarChart
+										data={responseTimesData}
+										formatValue={(value) => `${value} min`}
+									/>
+								) : (
+									<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
+										<p className="text-muted-foreground">
+											No response time data available
+										</p>
+									</div>
+								)}
 							</div>
 						</CardContent>
 					</Card>

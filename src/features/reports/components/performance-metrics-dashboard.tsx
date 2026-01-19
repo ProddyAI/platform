@@ -74,6 +74,16 @@ export const PerformanceMetricsDashboard = ({
 
 	const isLoading = !taskData || !userActivityData;
 
+	// Check if we have actual task data
+	const hasTaskData = useMemo(() => {
+		return taskData && taskData.totalTasks > 0;
+	}, [taskData]);
+
+	// Check if we have actual user activity data
+	const hasUserData = useMemo(() => {
+		return userActivityData && userActivityData.length > 0;
+	}, [userActivityData]);
+
 	// Calculate task completion rate
 	const taskCompletionRate = useMemo(() => {
 		if (!taskData || taskData.totalTasks === 0) return 0;
@@ -82,17 +92,19 @@ export const PerformanceMetricsDashboard = ({
 
 	// Calculate average task completion time (mock data - would come from backend)
 	const avgCompletionTime = useMemo(() => {
+		if (!hasTaskData) return null;
 		return 2.5; // days
-	}, []);
+	}, [hasTaskData]);
 
 	// Calculate on-time completion rate (mock data - would come from backend)
 	const onTimeCompletionRate = useMemo(() => {
+		if (!hasTaskData) return null;
 		return 78; // percent
-	}, []);
+	}, [hasTaskData]);
 
 	// Calculate task distribution by assignee (creator in this case)
 	const tasksByAssignee = useMemo(() => {
-		if (!userActivityData || !taskData) return [];
+		if (!userActivityData || !taskData || !hasTaskData || !hasUserData) return [];
 
 		// Generate mock data since we don't have real task assignment data
 		return userActivityData
@@ -113,7 +125,7 @@ export const PerformanceMetricsDashboard = ({
 			})
 			.sort((a, b) => b.value - a.value)
 			.slice(0, 5);
-	}, [userActivityData, taskData]);
+	}, [userActivityData, taskData, hasTaskData, hasUserData]);
 
 	// Mock data for task priority distribution
 	const _taskPriorityData = useMemo(() => {
@@ -132,7 +144,7 @@ export const PerformanceMetricsDashboard = ({
 
 	// Mock data for task status distribution
 	const taskStatusData = useMemo(() => {
-		if (!taskData) return [];
+		if (!taskData || !hasTaskData) return [];
 
 		return [
 			{
@@ -161,21 +173,21 @@ export const PerformanceMetricsDashboard = ({
 				color: "#ef4444",
 			},
 		].filter((item) => item.value > 0);
-	}, [taskData]);
+	}, [taskData, hasTaskData]);
 
 	// Mock data for task completion trend
 	const taskCompletionTrend = useMemo(() => {
-		if (!taskData || !taskData.tasksByDate) return [];
+		if (!taskData || !taskData.tasksByDate || !hasTaskData) return [];
 
 		return taskData.tasksByDate.map((item) => ({
 			label: format(new Date(item.date), "MMM dd"),
 			value: Math.round(item.count * 0.7), // Mock data - in real app would be actual completed tasks
 		}));
-	}, [taskData]);
+	}, [taskData, hasTaskData]);
 
 	// User performance metrics
 	const userPerformanceData = useMemo(() => {
-		if (!userActivityData) return [];
+		if (!userActivityData || !hasUserData) return [];
 
 		return userActivityData
 			.filter((user) => {
@@ -202,7 +214,7 @@ export const PerformanceMetricsDashboard = ({
 			})
 			.sort((a, b) => b.activityScore - a.activityScore)
 			.slice(0, 5);
-	}, [userActivityData]);
+	}, [userActivityData, hasUserData]);
 
 	if (isLoading) {
 		return (
@@ -239,115 +251,172 @@ export const PerformanceMetricsDashboard = ({
 				<TabsContent value="tasks" className="space-y-4">
 					{/* Key metrics */}
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<Card>
+						<Card className={!hasTaskData ? "opacity-50" : ""}>
 							<CardHeader className="pb-2">
 								<CardTitle className="text-sm font-medium text-muted-foreground">
 									Task Completion Rate
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<div className="space-y-2">
-									<div className="flex items-center justify-between">
-										<div className="text-2xl font-bold">
-											{taskCompletionRate}%
+								{hasTaskData ? (
+									<>
+										<div className="space-y-2">
+											<div className="flex items-center justify-between">
+												<div className="text-2xl font-bold">
+													{taskCompletionRate}%
+												</div>
+												<Badge
+													variant={
+														taskCompletionRate >= 70
+															? "success"
+															: taskCompletionRate >= 50
+																? "warning"
+																: "destructive"
+													}
+												>
+													{taskCompletionRate >= 70
+														? "Good"
+														: taskCompletionRate >= 50
+															? "Average"
+															: "Needs Improvement"}
+												</Badge>
+											</div>
+											<Progress value={taskCompletionRate} className="h-2" />
 										</div>
-										<Badge
-											variant={
-												taskCompletionRate >= 70
-													? "success"
-													: taskCompletionRate >= 50
-														? "warning"
-														: "destructive"
-											}
-										>
-											{taskCompletionRate >= 70
-												? "Good"
-												: taskCompletionRate >= 50
-													? "Average"
-													: "Needs Improvement"}
-										</Badge>
+										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
+											{taskData?.completedTasks || 0} of {taskData?.totalTasks || 0}{" "}
+											tasks completed
+										</CardDescription>
+									</>
+								) : (
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div className="text-2xl font-bold text-muted-foreground/40">
+												0%
+											</div>
+											<Badge variant="secondary" className="opacity-50">
+												Needs Improvement
+											</Badge>
+										</div>
+										<Progress value={0} className="h-2 opacity-30" />
+										<CardDescription className="mt-2 text-muted-foreground/60">
+											0 of 0 tasks completed
+										</CardDescription>
 									</div>
-									<Progress value={taskCompletionRate} className="h-2" />
-								</div>
-								<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
-									{taskData?.completedTasks || 0} of {taskData?.totalTasks || 0}{" "}
-									tasks completed
-								</CardDescription>
+								)}
 							</CardContent>
 						</Card>
 
-						<Card>
+						<Card className={!hasTaskData ? "opacity-50" : ""}>
 							<CardHeader className="pb-2">
 								<CardTitle className="text-sm font-medium text-muted-foreground">
 									Avg. Completion Time
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<div className="space-y-2">
-									<div className="flex items-center justify-between">
-										<div className="text-2xl font-bold">
-											{avgCompletionTime} days
+								{hasTaskData && avgCompletionTime ? (
+									<>
+										<div className="space-y-2">
+											<div className="flex items-center justify-between">
+												<div className="text-2xl font-bold">
+													{avgCompletionTime} days
+												</div>
+												<Badge
+													variant={
+														avgCompletionTime <= 2
+															? "success"
+															: avgCompletionTime <= 4
+																? "warning"
+																: "destructive"
+													}
+												>
+													{avgCompletionTime <= 2
+														? "Fast"
+														: avgCompletionTime <= 4
+															? "Average"
+															: "Slow"}
+												</Badge>
+											</div>
+											<Progress
+												value={100 - avgCompletionTime * 10}
+												className="h-2"
+											/>
 										</div>
-										<Badge
-											variant={
-												avgCompletionTime <= 2
-													? "success"
-													: avgCompletionTime <= 4
-														? "warning"
-														: "destructive"
-											}
-										>
-											{avgCompletionTime <= 2
-												? "Fast"
-												: avgCompletionTime <= 4
-													? "Average"
-													: "Slow"}
-										</Badge>
+										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
+											Target: 2 days per task
+										</CardDescription>
+									</>
+								) : (
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div className="text-2xl font-bold text-muted-foreground/40">
+												2.5 days
+											</div>
+											<Badge variant="secondary" className="opacity-50">
+												Average
+											</Badge>
+										</div>
+										<Progress value={0} className="h-2 opacity-30" />
+										<CardDescription className="mt-2 text-muted-foreground/60">
+											Target: 2 days per task
+										</CardDescription>
 									</div>
-									<Progress
-										value={100 - avgCompletionTime * 10}
-										className="h-2"
-									/>
-								</div>
-								<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
-									Target: 2 days per task
-								</CardDescription>
+								)}
 							</CardContent>
 						</Card>
 
-						<Card>
+						<Card className={!hasTaskData ? "opacity-50" : ""}>
 							<CardHeader className="pb-2">
 								<CardTitle className="text-sm font-medium text-muted-foreground">
 									On-Time Completion
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<div className="space-y-2">
-									<div className="flex items-center justify-between">
-										<div className="text-2xl font-bold">
-											{onTimeCompletionRate}%
+								{hasTaskData && onTimeCompletionRate ? (
+									<>
+										<div className="space-y-2">
+											<div className="flex items-center justify-between">
+												<div className="text-2xl font-bold">
+													{onTimeCompletionRate}%
+												</div>
+												<Badge
+													variant={
+														onTimeCompletionRate >= 80
+															? "success"
+															: onTimeCompletionRate >= 60
+																? "warning"
+																: "destructive"
+													}
+												>
+													{onTimeCompletionRate >= 80
+														? "Good"
+														: onTimeCompletionRate >= 60
+															? "Average"
+															: "Needs Improvement"}
+												</Badge>
+											</div>
+											<Progress value={onTimeCompletionRate} className="h-2" />
 										</div>
-										<Badge
-											variant={
-												onTimeCompletionRate >= 80
-													? "success"
-													: onTimeCompletionRate >= 60
-														? "warning"
-														: "destructive"
-											}
-										>
-											{onTimeCompletionRate >= 80
-												? "Good"
-												: onTimeCompletionRate >= 60
-													? "Average"
-													: "Needs Improvement"}
-										</Badge>
+										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
+											Tasks completed before deadline
+										</CardDescription>
+									</>
+								) : (
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div className="text-2xl font-bold text-muted-foreground/40">
+												78%
+											</div>
+											<Badge variant="secondary" className="opacity-50">
+												Average
+											</Badge>
+										</div>
+										<Progress value={0} className="h-2 opacity-30" />
+										<CardDescription className="mt-2 text-muted-foreground/60">
+											Tasks completed before deadline
+										</CardDescription>
 									</div>
-									<Progress value={onTimeCompletionRate} className="h-2" />
-								</div>
-								<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
-									Tasks completed before deadline
-								</CardDescription>
+								)}
 							</CardContent>
 						</Card>
 					</div>
@@ -361,16 +430,22 @@ export const PerformanceMetricsDashboard = ({
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
-									{taskCompletionTrend.length > 0 ? (
+									{hasTaskData && taskCompletionTrend.length > 0 ? (
 										<LineChart
 											data={taskCompletionTrend}
 											height={300}
 											formatValue={(value) => `${value} tasks`}
 										/>
 									) : (
-										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
-											<p className="text-muted-foreground">
+										<div className="flex flex-col items-center justify-center h-full bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
+											<div className="w-32 h-32 rounded-full bg-muted/30 mb-4 flex items-center justify-center">
+												<CheckSquare className="h-12 w-12 text-muted-foreground/40" />
+											</div>
+											<p className="text-muted-foreground/60 text-sm">
 												No task data available
+											</p>
+											<p className="text-muted-foreground/40 text-xs mt-1">
+												Create tasks to see completion trends
 											</p>
 										</div>
 									)}
@@ -385,19 +460,14 @@ export const PerformanceMetricsDashboard = ({
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
-									{taskStatusData.length > 0 ? (
-										<PieChart
-											data={taskStatusData}
-											size={380}
-											formatValue={(value) => `${value} tasks`}
-										/>
-									) : (
-										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
-											<p className="text-muted-foreground">
-												No task data available
-											</p>
-										</div>
-									)}
+									<PieChart
+										data={hasTaskData && taskStatusData.length > 0
+											? taskStatusData
+											: [{ label: "No Data Available", value: 100, color: "#6b7280" }]
+										}
+										size={380}
+										formatValue={(value) => hasTaskData && taskStatusData.length > 0 ? `${value} tasks` : ""}
+									/>
 								</div>
 							</CardContent>
 						</Card>
@@ -412,7 +482,7 @@ export const PerformanceMetricsDashboard = ({
 						</CardHeader>
 						<CardContent className="flex-1 min-h-0">
 							<div className="max-h-[300px] overflow-auto">
-								{tasksByAssignee.length > 0 ? (
+								{hasTaskData && hasUserData && tasksByAssignee.length > 0 ? (
 									<div className="space-y-4">
 										{tasksByAssignee.map((user, index) => (
 											<div key={index} className="space-y-2">
@@ -435,9 +505,13 @@ export const PerformanceMetricsDashboard = ({
 										))}
 									</div>
 								) : (
-									<div className="flex items-center justify-center h-40 bg-muted/20 rounded-md">
-										<p className="text-muted-foreground">
+									<div className="flex flex-col items-center justify-center h-40 bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
+										<Users className="h-10 w-10 text-muted-foreground/40 mb-2" />
+										<p className="text-muted-foreground/60 text-sm">
 											No assignee data available
+										</p>
+										<p className="text-muted-foreground/40 text-xs mt-1">
+											Create and assign tasks to see distribution
 										</p>
 									</div>
 								)}

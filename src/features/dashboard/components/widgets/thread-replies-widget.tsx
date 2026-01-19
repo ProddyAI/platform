@@ -121,7 +121,7 @@ export const ThreadRepliesWidget = ({
 		<div className="space-y-3">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<MessageSquareText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+					<MessageSquareText className="h-5 w-5 text-primary dark:text-purple-400" />
 					<h3 className="font-semibold text-base">Thread Replies</h3>
 					{!isEditMode && threadMessages.length > 0 && (
 						<Badge
@@ -138,7 +138,7 @@ export const ThreadRepliesWidget = ({
 					<Button
 						variant="ghost"
 						size="sm"
-						className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
 					>
 						View All
@@ -218,7 +218,7 @@ export const ThreadRepliesWidget = ({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 											onClick={() => handleViewThread(thread)}
 										>
 											View thread

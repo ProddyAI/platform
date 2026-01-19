@@ -81,7 +81,7 @@ export const AssignedCardsWidget = ({
 		<div className="space-y-3">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<KanbanSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+					<KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400" />
 					<h3 className="font-semibold text-base">Assigned Cards</h3>
 					{!isEditMode && sortedCards.length > 0 && (
 						<Badge
@@ -99,7 +99,7 @@ export const AssignedCardsWidget = ({
 							<Button
 								variant="ghost"
 								size="sm"
-								className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+								className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 								onClick={() =>
 									router.push(
 										`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
@@ -141,7 +141,7 @@ export const AssignedCardsWidget = ({
 									<Button
 										variant="ghost"
 										size="sm"
-										className="h-7 px-2 w-full justify-center text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 										onClick={() => handleViewCard(card)}
 									>
 										View
@@ -164,7 +164,7 @@ export const AssignedCardsWidget = ({
 						<Button
 							variant="default"
 							size="sm"
-							className="mt-4 bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700"
+							className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 							onClick={() =>
 								router.push(
 									`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
