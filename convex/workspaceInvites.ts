@@ -1,14 +1,88 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
-/**
- * Get the joinCode for a workspace
- */
+export const getInviteDetails = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized. User must be authenticated.");
+		}
+
+		const currentMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!currentMember) {
+			throw new Error("Unauthorized. User is not a member of this workspace.");
+		}
+
+		if (currentMember.role !== "admin" && currentMember.role !== "owner") {
+			throw new Error("Unauthorized. Only admins and owners can send invites.");
+		}
+
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) {
+			throw new Error("Workspace not found");
+		}
+
+		const sender = await ctx.db.get(userId);
+		if (!sender) {
+			throw new Error("User not found");
+		}
+
+		let senderImageUrl: string | undefined;
+		if (sender.image) {
+			if (sender.image.startsWith("http")) {
+				senderImageUrl = sender.image;
+			} else {
+				const url = await ctx.storage.getUrl(sender.image as any);
+				senderImageUrl = url ?? undefined;
+			}
+		}
+
+		return {
+			workspaceName: workspace.name,
+			senderName: sender.name,
+			senderEmail: sender.email,
+			senderImage: senderImageUrl,
+		};
+	},
+});
+
 export const getWorkspaceJoinCode = query({
 	args: {
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized. User must be authenticated.");
+		}
+
+		const currentMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!currentMember) {
+			throw new Error("Unauthorized. User is not a member of this workspace.");
+		}
+
+		if (currentMember.role !== "admin" && currentMember.role !== "owner") {
+			throw new Error(
+				"Unauthorized. Only admins and owners can access the join code."
+			);
+		}
+
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) {
 			throw new Error("Workspace not found");
@@ -17,9 +91,6 @@ export const getWorkspaceJoinCode = query({
 	},
 });
 
-/**
- * Insert a new email-based workspace invite
- */
 export const insertInvite = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -28,19 +99,40 @@ export const insertInvite = mutation({
 		expiresAt: v.number(),
 	},
 	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized. User must be authenticated.");
+		}
+
+		const currentMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!currentMember) {
+			throw new Error("Unauthorized. User is not a member of this workspace.");
+		}
+
+		if (currentMember.role !== "admin" && currentMember.role !== "owner") {
+			throw new Error(
+				"Unauthorized. Only admins and owners can send workspace invites."
+			);
+		}
+
 		return await ctx.db.insert("workspaceInvites", {
 			workspaceId: args.workspaceId,
 			email: args.email,
 			hash: args.hash,
 			used: false,
 			expiresAt: args.expiresAt,
+			createdAt: Date.now(),
+			invitedBy: currentMember._id,
 		});
 	},
 });
 
-/**
- * Fetch an invite by its hash
- */
 export const getInviteByHash = query({
 	args: {
 		hash: v.string(),
@@ -53,9 +145,6 @@ export const getInviteByHash = query({
 	},
 });
 
-/**
- * Consume an invite and add user to workspace
- */
 export const consumeInvite = mutation({
 	args: {
 		inviteId: v.id("workspaceInvites"),
@@ -73,10 +162,19 @@ export const consumeInvite = mutation({
 			throw new Error("Invite expired");
 		}
 
-		// Mark invite as used
 		await ctx.db.patch(args.inviteId, { used: true });
 
-		// Add user to workspace (member role)
+		const existingMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", invite.workspaceId).eq("userId", args.userId)
+			)
+			.unique();
+
+		if (existingMember) {
+			return { success: true, message: "User already a member" };
+		}
+
 		await ctx.db.insert("members", {
 			workspaceId: invite.workspaceId,
 			userId: args.userId,

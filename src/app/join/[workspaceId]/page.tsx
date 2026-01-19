@@ -4,7 +4,7 @@ import { Loader, Undo2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import VerificationInput from "react-verification-input";
 import { toast } from "sonner";
 
@@ -23,6 +23,7 @@ const JoinWorkspaceIdPage = () => {
 	const [code, setCode] = useState(codeFromUrl || "");
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [inviteError, setInviteError] = useState<string | null>(null);
+	const verificationAttemptedRef = useRef(false);
 
 	const { mutate, isPending } = useJoin();
 	const { data, isLoading } = useGetWorkspaceInfo({ id: workspaceId });
@@ -35,9 +36,16 @@ const JoinWorkspaceIdPage = () => {
 
 	// Handle email invite verification
 	useEffect(() => {
-		if (!inviteHash || isLoading || isMember || inviteLoading) return;
+		if (
+			!inviteHash ||
+			isLoading ||
+			isMember ||
+			verificationAttemptedRef.current
+		)
+			return;
 
 		const verifyInvite = async () => {
+			verificationAttemptedRef.current = true;
 			setInviteLoading(true);
 			setInviteError(null);
 
@@ -66,7 +74,7 @@ const JoinWorkspaceIdPage = () => {
 		};
 
 		verifyInvite();
-	}, [inviteHash, isLoading, isMember, inviteLoading, workspaceId, router]);
+	}, [inviteHash, isLoading, isMember, workspaceId, router]);
 
 	const handleComplete = (value: string) => {
 		mutate(

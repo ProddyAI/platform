@@ -156,7 +156,10 @@ export const MembersManagement = ({
 		setInviteError(null);
 		setInviteSuccess(false);
 
-		if (!email || !email.includes("@")) {
+		// Email validation regex
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+		if (!email || !emailRegex.test(email.trim())) {
 			setInviteError("Enter a valid email address");
 			return;
 		}

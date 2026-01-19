@@ -481,9 +481,30 @@ const schema = defineSchema({
 		hash: v.string(), // token from email link
 		used: v.boolean(), // one-time use
 		expiresAt: v.number(), // auto-expiry
+		createdAt: v.number(), // when the invite was created
+		invitedBy: v.optional(v.id("members")), // who sent the invite (optional for backward compatibility; new records should set this)
 	})
 		.index("by_hash", ["hash"])
 		.index("by_workspace", ["workspaceId"]),
+
+	// Rate limiting for invites and other actions
+	rateLimits: defineTable({
+		userId: v.id("users"),
+		workspaceId: v.id("workspaces"),
+		email: v.optional(v.string()), // For email-specific rate limits
+		type: v.union(
+			v.literal("user_invite"),
+			v.literal("workspace_invite"),
+			v.literal("email_invite")
+		),
+		expiresAt: v.number(), // When this rate limit entry expires
+		createdAt: v.number(),
+	})
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_email", ["email"])
+		.index("by_type", ["type"])
+		.index("by_expires_at", ["expiresAt"]),
 });
 
 export default schema;

@@ -113,6 +113,11 @@ export const getUserActivitySummary = query({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
+
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
 		const startDate = args.startDate || endDate - 30 * 24 * 60 * 60 * 1000;
@@ -225,6 +230,11 @@ export const getActiveUsersCount = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 7 days if dates not provided
 		const endDate = args.endDate || Date.now();
@@ -376,6 +386,11 @@ export const getWorkspaceOverview = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
@@ -618,6 +633,11 @@ export const getChannelActivitySummary = query({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
+
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
 		const startDate = args.startDate || endDate - 30 * 24 * 60 * 60 * 1000;
@@ -704,6 +724,11 @@ export const getMessageAnalytics = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
@@ -794,6 +819,11 @@ export const getTaskAnalytics = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
@@ -916,6 +946,11 @@ export const getContentAnalysis = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
