@@ -122,8 +122,8 @@ export const useChannelParticipants = () => {
 			memberId: member?._id || null,
 			userId: userId || null,
 			info: {
-				name: member?.user?.name || `User ${other.connectionId}`,
-				picture: member?.user?.image || null,
+				name: member?.user?.name ?? "Loading…",
+    			picture: member?.user?.image ?? null,
 			},
 		};
 	});

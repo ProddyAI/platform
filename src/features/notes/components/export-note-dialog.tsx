@@ -71,25 +71,47 @@ export const ExportNoteDialog = ({
 		return markdown;
 	};
 
-	const convertBlockToMarkdown = (block: any): string => {
-		if (!block || !block.type) return "";
+	const extractTextFromBlock = (block: any): string => {
+	if (!block?.content || !Array.isArray(block.content)) return "";
 
-		switch (block.type) {
-			case "paragraph":
-				return `${block.content || ""}\n\n`;
-			case "heading": {
-				const level = block.props?.level || 1;
-				const hashes = "#".repeat(level);
-				return `${hashes} ${block.content || ""}\n\n`;
-			}
-			case "bulletListItem":
-				return `- ${block.content || ""}\n`;
-			case "numberedListItem":
-				return `1. ${block.content || ""}\n`;
-			default:
-				return `${block.content || ""}\n\n`;
+	return block.content
+		.map((item: any) => item.text || "")
+		.join("");
+};
+
+	const convertBlockToMarkdown = (block: any): string => {
+	if (!block || !block.type) return "";
+
+	switch (block.type) {
+		case "paragraph": {
+			const text = extractTextFromBlock(block);
+			return `${text}\n\n`;
 		}
-	};
+
+		case "heading": {
+			const level = block.props?.level || 1;
+			const hashes = "#".repeat(level);
+			const text = extractTextFromBlock(block);
+			return `${hashes} ${text}\n\n`;
+		}
+
+		case "bulletListItem": {
+			const text = extractTextFromBlock(block);
+			return `- ${text}\n`;
+		}
+
+		case "numberedListItem": {
+			const text = extractTextFromBlock(block);
+			return `1. ${text}\n`;
+		}
+
+		default: {
+			const text = extractTextFromBlock(block);
+			return `${text}\n\n`;
+		}
+	}
+};
+
 
 	const convertToHTML = (note: Note): string => {
 		let html = `<!DOCTYPE html>
@@ -142,23 +164,37 @@ export const ExportNoteDialog = ({
 	};
 
 	const convertBlockToHTML = (block: any): string => {
-		if (!block || !block.type) return "";
+	if (!block || !block.type) return "";
 
-		switch (block.type) {
-			case "paragraph":
-				return `<p>${block.content || ""}</p>`;
-			case "heading": {
-				const level = block.props?.level || 1;
-				return `<h${level}>${block.content || ""}</h${level}>`;
-			}
-			case "bulletListItem":
-				return `<li>${block.content || ""}</li>`;
-			case "numberedListItem":
-				return `<li>${block.content || ""}</li>`;
-			default:
-				return `<p>${block.content || ""}</p>`;
+	switch (block.type) {
+		case "paragraph": {
+			const text = extractTextFromBlock(block);
+			return `<p>${text}</p>`;
 		}
-	};
+
+		case "heading": {
+			const level = block.props?.level || 1;
+			const text = extractTextFromBlock(block);
+			return `<h${level}>${text}</h${level}>`;
+		}
+
+		case "bulletListItem": {
+			const text = extractTextFromBlock(block);
+			return `<li>${text}</li>`;
+		}
+
+		case "numberedListItem": {
+			const text = extractTextFromBlock(block);
+			return `<li>${text}</li>`;
+		}
+
+		default: {
+			const text = extractTextFromBlock(block);
+			return `<p>${text}</p>`;
+		}
+	}
+};
+
 
 	const convertToPDF = async (note: Note): Promise<ArrayBuffer> => {
 		const html = convertToHTML(note);
@@ -346,14 +382,17 @@ export const ExportNoteDialog = ({
 				const fileName = `${note.title}.pdf`;
 				downloadUrl = URL.createObjectURL(blob);
 
-				const a = document.createElement("a");
-				a.href = downloadUrl;
-				a.download = fileName;
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
+				try {
+					const a = document.createElement("a");
+					a.href = downloadUrl;
+					a.download = fileName;
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+				} finally {
+					URL.revokeObjectURL(downloadUrl);
+				}
 
-				URL.revokeObjectURL(downloadUrl);
 
 				toast.success("Note exported as PDF");
 				onClose();
