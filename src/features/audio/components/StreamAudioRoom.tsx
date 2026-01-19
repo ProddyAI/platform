@@ -53,21 +53,38 @@ export const StreamAudioRoom = ({
 		shouldConnect,
 	});
 
-	// Cleanup effect to handle disconnection when shouldConnect becomes false
+	// Allow other parts of the UI (e.g. Excalidraw toolbar) to toggle audio.
 	useEffect(() => {
-		if (!shouldConnect && isConnected) {
-			disconnectFromAudioRoom();
-		}
-	}, [shouldConnect, isConnected, disconnectFromAudioRoom]);
+		const handleToggle = () => {
+			// If we haven't joined yet, join.
+			if (!shouldConnect && !isConnected) {
+				setShouldConnect(true);
+				return;
+			}
 
-	// Cleanup on unmount
-	useEffect(() => {
-		return () => {
+			// If we're in the middle of connecting, treat toggle as cancel.
+			if (shouldConnect && !isConnected) {
+				setShouldConnect(false);
+				return;
+			}
+
+			// If connected, show the leave confirmation.
 			if (isConnected) {
-				disconnectFromAudioRoom();
+				setShowLeaveConfirmation(true);
 			}
 		};
-	}, [isConnected, disconnectFromAudioRoom]);
+
+		window.addEventListener(
+			"proddy:audio-room-toggle",
+			handleToggle as EventListener
+		);
+		return () => {
+			window.removeEventListener(
+				"proddy:audio-room-toggle",
+				handleToggle as EventListener
+			);
+		};
+	}, [shouldConnect, isConnected]);
 
 	// Function to join audio room
 	const handleJoinAudio = () => {
@@ -86,11 +103,8 @@ export const StreamAudioRoom = ({
 		try {
 			setIsLeavingConfirmed(true);
 
-			// First set shouldConnect to false to prevent reconnection
+			// Set shouldConnect to false; the hook will handle disconnection.
 			setShouldConnect(false);
-
-			// Then disconnect from the audio room
-			await disconnectFromAudioRoom();
 
 			// Hide confirmation dialog
 			setShowLeaveConfirmation(false);
@@ -298,12 +312,33 @@ interface AudioRoomUIProps {
 const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 	const { useParticipants, useLocalParticipant } = useCallStateHooks();
 	const participants = useParticipants();
-	const _localParticipant = useLocalParticipant();
+	const localParticipant = useLocalParticipant();
 	const [isLeaving, _setIsLeaving] = useState(false);
 
 	// Check if audio is published
 	const _hasAudio = (p: StreamVideoParticipant) =>
 		p.publishedTracks.includes(SfuModels.TrackType.AUDIO);
+
+	useEffect(() => {
+		if (process.env.NODE_ENV !== "development") return;
+
+		const summarize = (p: StreamVideoParticipant) => {
+			const userId = (p as unknown as { userId?: string }).userId ?? "unknown";
+			return {
+				userId,
+				sessionId: (p as unknown as { sessionId?: string }).sessionId,
+				publishedTracks: p.publishedTracks,
+			};
+		};
+
+		console.log("Stream audio participants", {
+			count: participants.length,
+			localUserId:
+				(localParticipant as unknown as { userId?: string })?.userId ??
+				"unknown",
+			participants: participants.map(summarize),
+		});
+	}, [participants, localParticipant]);
 
 	// Handle leave audio with confirmation
 	const handleLeaveWithConfirmation = () => {

@@ -786,7 +786,7 @@ export const checkNamespaceExists = query({
 	args: {
 		workspaceId: v.id("workspaces"),
 	},
-	handler: async (ctx, args) => {
+	handler: async (_ctx, _args) => {
 		// This is a placeholder - we can't directly check the RAG component
 		// Instead, we'll return false and let the action handle initialization
 		// In practice, the first search will tell us if namespace exists
@@ -796,7 +796,7 @@ export const checkNamespaceExists = query({
 
 /**
  * Retrieves cards from a workspace for bulk indexing.
- * 
+ *
  * Gets cards with their associated list and channel information needed for indexing.
  */
 export const getWorkspaceCards = query({
@@ -806,7 +806,7 @@ export const getWorkspaceCards = query({
 	},
 	handler: async (ctx, args) => {
 		const limit = args.limit || 100;
-		
+
 		// Get all channels in the workspace
 		const channels = await ctx.db
 			.query("channels")
@@ -814,27 +814,27 @@ export const getWorkspaceCards = query({
 				q.eq("workspaceId", args.workspaceId)
 			)
 			.collect();
-		
-		const channelIds = channels.map(c => c._id);
+
+		const channelIds = channels.map((c) => c._id);
 		const cardsWithInfo: Array<{
 			card: any;
 			list: any;
 			channel: any;
 		}> = [];
-		
+
 		// For each channel, get its lists and cards
 		for (const channel of channels) {
 			const lists = await ctx.db
 				.query("lists")
 				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
 				.collect();
-			
+
 			for (const list of lists) {
 				const cards = await ctx.db
 					.query("cards")
 					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
 					.take(Math.ceil(limit / channelIds.length));
-				
+
 				for (const card of cards) {
 					cardsWithInfo.push({ card, list, channel });
 					if (cardsWithInfo.length >= limit) break;
@@ -843,7 +843,7 @@ export const getWorkspaceCards = query({
 			}
 			if (cardsWithInfo.length >= limit) break;
 		}
-		
+
 		return cardsWithInfo;
 	},
 });
@@ -976,7 +976,9 @@ export const bulkIndexWorkspace = action({
 						{ name: "channelId", value: NO_CHANNEL_FILTER_VALUE },
 					],
 				});
-				console.log(`RAG namespace created/verified for workspace ${args.workspaceId}`);
+				console.log(
+					`RAG namespace created/verified for workspace ${args.workspaceId}`
+				);
 			} catch (error) {
 				console.error("Failed to initialize RAG namespace:", error);
 				// Continue anyway, the add operations below will try to create it
@@ -1067,10 +1069,13 @@ export const bulkIndexWorkspace = action({
 			}
 
 			// Index cards
-			const cardsWithInfo: any[] = await ctx.runQuery(api.search.getWorkspaceCards, {
-				workspaceId: args.workspaceId,
-				limit,
-			});
+			const cardsWithInfo: any[] = await ctx.runQuery(
+				api.search.getWorkspaceCards,
+				{
+					workspaceId: args.workspaceId,
+					limit,
+				}
+			);
 
 			console.log(`Found ${cardsWithInfo.length} cards to index`);
 
@@ -1081,7 +1086,8 @@ export const bulkIndexWorkspace = action({
 						workspaceId: channel.workspaceId,
 						contentId: card._id,
 						contentType: "card",
-						text: card.title + (card.description ? `: ${card.description}` : ""),
+						text:
+							card.title + (card.description ? `: ${card.description}` : ""),
 						metadata: {
 							listId: card.listId,
 							channelId: list.channelId,
@@ -1313,18 +1319,18 @@ ${context}
 
 /**
  * Triggers bulk indexing of workspace content into RAG system.
- * 
+ *
  * This mutation schedules the bulkIndexWorkspace action to populate the RAG index
  * with existing workspace content (messages, notes, tasks, cards).
- * 
+ *
  * Use this to:
  * - Initialize RAG for a new workspace
  * - Re-index content after RAG configuration changes
  * - Fix missing content in RAG index
- * 
+ *
  * @param {Id<'workspaces'>} workspaceId - The workspace to index
  * @param {number} [limit] - Optional limit on items per type (default: 1000)
- * 
+ *
  * @returns {Promise<{scheduled: boolean}>} Confirmation that indexing was scheduled
  */
 export const triggerBulkIndexing = mutation({
@@ -1358,7 +1364,7 @@ export const triggerBulkIndexing = mutation({
 		});
 
 		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
-		
+
 		return { scheduled: true };
 	},
 });
@@ -1380,7 +1386,7 @@ export const triggerBulkIndexingInternal = internalMutation({
 		});
 
 		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
-		
+
 		return { scheduled: true };
 	},
 });
@@ -1397,7 +1403,7 @@ export const autoInitializeWorkspace = mutation({
 	handler: async (ctx, args) => {
 		// No auth check - this is automatic system initialization
 		console.log(`Auto-initializing RAG for workspace ${args.workspaceId}`);
-		
+
 		// Schedule the bulk indexing action
 		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
 			workspaceId: args.workspaceId,
@@ -1405,7 +1411,7 @@ export const autoInitializeWorkspace = mutation({
 		});
 
 		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
-		
+
 		return { scheduled: true };
 	},
 });

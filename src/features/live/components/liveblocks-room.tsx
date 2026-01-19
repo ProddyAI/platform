@@ -1,10 +1,10 @@
 "use client";
 
-import { LiveList, LiveMap } from "@liveblocks/client";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 import { ClientSideSuspense } from "@liveblocks/react";
 import { useQuery } from "convex/react";
 import { Loader } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
+import type { ReactNode } from "react";
 import { api } from "@/../convex/_generated/api";
 import { RoomProvider } from "@/../liveblocks.config";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -40,11 +40,6 @@ export const LiveblocksRoom = ({
 		workspaceId ? { workspaceId } : "skip"
 	);
 
-	// Set up user info for Liveblocks authentication
-	useEffect(() => {
-		// User info is set up automatically by Liveblocks
-	}, []);
-
 	// Show loading state while user data is being fetched
 	if (!currentUser || !currentMember) {
 		return (
@@ -72,6 +67,12 @@ export const LiveblocksRoom = ({
 					layers: new LiveMap(),
 					layerIds: new LiveList([]),
 					collaborativeNotes: new LiveMap(),
+					excalidraw: new LiveObject({
+						elements: [],
+						appState: {},
+						files: {},
+						version: 1,
+					}),
 					lastUpdate: Date.now(),
 				}}
 			>
