@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import crypto from "crypto";
+import crypto from "node:crypto";
 import {
 	convexAuthNextjsToken,
 	isAuthenticatedNextjs,
 } from "@convex-dev/auth/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
-import { fetchQuery, fetchMutation } from "convex/nextjs";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
+import { NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -27,10 +27,7 @@ export async function POST(req: Request) {
 		// 1. Verify authentication
 		const isAuthenticated = await isAuthenticatedNextjs();
 		if (!isAuthenticated) {
-			return NextResponse.json(
-				{ error: "Not authenticated" },
-				{ status: 401 }
-			);
+			return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 		}
 
 		// 2. Get logged-in user

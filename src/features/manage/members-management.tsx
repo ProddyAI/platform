@@ -1,20 +1,9 @@
 "use client";
 
-import {
-	Copy,
-	Eye,
-	EyeOff,
-	Link2,
-	RefreshCw,
-	Shield,
-	Trash2,
-	UserCog,
-	UserPlus,
-} from "lucide-react";
+import { RefreshCw, Shield, Trash2, UserCog } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
-import { InviteModal } from "@/app/workspace/[workspaceId]/invitation";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -45,6 +34,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useRemoveMember } from "@/features/members/api/use-remove-member";
 import { useUpdateMember } from "@/features/members/api/use-update-member";
@@ -69,8 +64,6 @@ export const MembersManagement = ({
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [isRemoving, setIsRemoving] = useState(false);
 	const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
-	const [showJoinCode, setShowJoinCode] = useState(false);
-	const [inviteOpen, setInviteOpen] = useState(false);
 	const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
 	// Email invite state
@@ -159,21 +152,6 @@ export const MembersManagement = ({
 		}
 	};
 
-	const handleCopyJoinCode = () => {
-		if (!workspace) return;
-
-		navigator.clipboard.writeText(workspace.joinCode);
-		toast.success("Join code copied to clipboard");
-	};
-
-	const handleCopyJoinLink = () => {
-		if (!workspace) return;
-
-		const joinLink = `${window.location.origin}/join/${workspaceId}`;
-		navigator.clipboard.writeText(joinLink);
-		toast.success("Join link copied to clipboard");
-	};
-
 	const sendInvite = async () => {
 		setInviteError(null);
 		setInviteSuccess(false);
@@ -223,15 +201,7 @@ export const MembersManagement = ({
 	};
 
 	return (
-		<>
-			{workspace && (
-				<InviteModal
-					open={inviteOpen}
-					setOpen={setInviteOpen}
-					name={workspace.name}
-					joinCode={workspace.joinCode}
-				/>
-			)}
+		<TooltipProvider>
 			<div className="space-y-6">
 				<div className="flex justify-between items-center">
 					<div>
@@ -240,13 +210,6 @@ export const MembersManagement = ({
 							Manage the members in your workspace and their roles
 						</p>
 					</div>
-
-					{(isOwner || isAdmin) && (
-						<Button onClick={() => setInviteOpen(true)} className="ml-auto">
-							<UserPlus className="mr-2 h-4 w-4" />
-							Invite People
-						</Button>
-					)}
 				</div>
 
 				{(isOwner || isAdmin) && workspace && (
@@ -272,6 +235,24 @@ export const MembersManagement = ({
 											}
 										}}
 									/>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												variant="outline"
+												onClick={handleGenerateNewCode}
+												disabled={isGeneratingCode}
+											>
+												{isGeneratingCode ? (
+													<RefreshCw className="h-4 w-4 animate-spin" />
+												) : (
+													<RefreshCw className="h-4 w-4" />
+												)}
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>Refresh Code</p>
+										</TooltipContent>
+									</Tooltip>
 									<Button
 										onClick={sendInvite}
 										disabled={inviteLoading}
@@ -291,74 +272,6 @@ export const MembersManagement = ({
 								<p className="text-xs text-muted-foreground">
 									Send an email invitation with a secure link to join the
 									workspace
-								</p>
-							</div>
-						</div>
-
-						{/* Join Code Section */}
-						<div className="p-4 bg-muted/50 rounded-lg">
-							<div className="grid gap-2">
-								<Label htmlFor="joinCode">Workspace Join Code</Label>
-								<div className="flex items-center gap-2">
-									<div className="relative flex-1">
-										<Input
-											id="joinCode"
-											value={showJoinCode ? workspace.joinCode : "••••••"}
-											readOnly
-											className="flex-1 pr-10"
-										/>
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											className="absolute right-0 top-0 h-full px-3 py-2"
-											onClick={() => setShowJoinCode(!showJoinCode)}
-										>
-											{showJoinCode ? (
-												<EyeOff className="h-4 w-4" />
-											) : (
-												<Eye className="h-4 w-4" />
-											)}
-										</Button>
-									</div>
-									<div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={handleCopyJoinCode}
-										className="gap-1.5 h-8 px-2.5"
-									>
-										<Copy className="h-3.5 w-3.5" />
-										<span className="hidden sm:inline text-xs italic font-medium">
-											Copy Code
-										</span>
-									</Button>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={handleCopyJoinLink}
-										className="gap-1.5 h-8 px-2.5"
-									>
-										<Link2 className="h-3.5 w-3.5" />
-										<span className="hidden sm:inline text-xs italic font-medium">
-											Copy Link
-										</span>
-									</Button>
-									<div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
-									<Button
-										variant="outline"
-										onClick={handleGenerateNewCode}
-										disabled={isGeneratingCode}
-									>
-										{isGeneratingCode ? (
-											<RefreshCw className="h-4 w-4 animate-spin" />
-										) : (
-											<RefreshCw className="h-4 w-4" />
-										)}
-									</Button>
-								</div>
-								<p className="text-xs text-muted-foreground">
-									Share this code with others to invite them to your workspace
 								</p>
 							</div>
 						</div>
@@ -518,6 +431,6 @@ export const MembersManagement = ({
 					</AlertDialogContent>
 				</AlertDialog>
 			</div>
-		</>
+		</TooltipProvider>
 	);
 };

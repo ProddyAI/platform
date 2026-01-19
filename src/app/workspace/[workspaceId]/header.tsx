@@ -68,12 +68,12 @@ export const WorkspaceHeader = ({
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							{isCollapsed ? (
-							<Hint label={workspace.name} side="right" align="center">
-								<Button
-									variant="ghost"
-									className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
-									size="icon"
-								>
+								<Hint label={workspace.name} side="right" align="center">
+									<Button
+										variant="ghost"
+										className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
+										size="icon"
+									>
 										<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
 											{workspace.name.charAt(0).toUpperCase()}
 										</div>
@@ -121,19 +121,19 @@ export const WorkspaceHeader = ({
 
 							{isAdmin && (
 								<>
-							<DropdownMenuSeparator />
+									<DropdownMenuSeparator />
 
-							<DropdownMenuItem
-								className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
-								onClick={() => setInviteOpen(true)}
-							>
-								<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
-									<Plus className="size-3.5 text-secondary transition-transform duration-200 group-hover:scale-125" />
-								</div>
-								<span className="font-medium">
-									Invite to {workspace.name}
-								</span>
-							</DropdownMenuItem>
+									<DropdownMenuItem
+										className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
+										onClick={() => setInviteOpen(true)}
+									>
+										<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
+											<Plus className="size-3.5 text-secondary transition-transform duration-200 group-hover:scale-125" />
+										</div>
+										<span className="font-medium">
+											Invite to {workspace.name}
+										</span>
+									</DropdownMenuItem>
 								</>
 							)}
 

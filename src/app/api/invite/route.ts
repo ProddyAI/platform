@@ -1,8 +1,8 @@
+import crypto from "node:crypto";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { Resend } from "resend";
 import { api } from "@/../convex/_generated/api";
-import { fetchQuery, fetchMutation } from "convex/nextjs";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

@@ -104,7 +104,8 @@ export const PerformanceMetricsDashboard = ({
 
 	// Calculate task distribution by assignee (creator in this case)
 	const tasksByAssignee = useMemo(() => {
-		if (!userActivityData || !taskData || !hasTaskData || !hasUserData) return [];
+		if (!userActivityData || !taskData || !hasTaskData || !hasUserData)
+			return [];
 
 		// Generate mock data since we don't have real task assignment data
 		return userActivityData
@@ -284,8 +285,8 @@ export const PerformanceMetricsDashboard = ({
 											<Progress value={taskCompletionRate} className="h-2" />
 										</div>
 										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
-											{taskData?.completedTasks || 0} of {taskData?.totalTasks || 0}{" "}
-											tasks completed
+											{taskData?.completedTasks || 0} of{" "}
+											{taskData?.totalTasks || 0} tasks completed
 										</CardDescription>
 									</>
 								) : (
@@ -461,12 +462,23 @@ export const PerformanceMetricsDashboard = ({
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
 									<PieChart
-										data={hasTaskData && taskStatusData.length > 0
-											? taskStatusData
-											: [{ label: "No Data Available", value: 100, color: "#6b7280" }]
+										data={
+											hasTaskData && taskStatusData.length > 0
+												? taskStatusData
+												: [
+														{
+															label: "No Data Available",
+															value: 100,
+															color: "#6b7280",
+														},
+													]
 										}
 										size={380}
-										formatValue={(value) => hasTaskData && taskStatusData.length > 0 ? `${value} tasks` : ""}
+										formatValue={(value) =>
+											hasTaskData && taskStatusData.length > 0
+												? `${value} tasks`
+												: ""
+										}
 									/>
 								</div>
 							</CardContent>

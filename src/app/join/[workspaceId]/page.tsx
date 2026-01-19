@@ -57,7 +57,7 @@ const JoinWorkspaceIdPage = () => {
 					setInviteError(data.error || "Failed to verify invite");
 					toast.error(data.error || "Failed to verify invite");
 				}
-			} catch (error) {
+			} catch (_error) {
 				setInviteError("Failed to verify invite");
 				toast.error("Failed to verify invite");
 			} finally {

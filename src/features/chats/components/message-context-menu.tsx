@@ -33,7 +33,9 @@ export const MessageContextMenu = ({
 		closeContextMenu();
 	};
 
-	const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+	const isDark =
+		typeof window !== "undefined" &&
+		document.documentElement.classList.contains("dark");
 
 	return (
 		<div
@@ -42,7 +44,7 @@ export const MessageContextMenu = ({
 				left: `${contextMenu.x}px`,
 				top: `${contextMenu.y}px`,
 				pointerEvents: "auto",
-				backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+				backgroundColor: isDark ? "#1a1a1a" : "#ffffff",
 			}}
 			onClick={(e) => e.stopPropagation()}
 		>

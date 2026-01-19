@@ -999,35 +999,54 @@ export const getContentAnalysis = query({
 
 			// Count activity by day of week
 			const dayOfWeek = date.getDay();
-			activityByDayOfWeek[dayOfWeek] = (activityByDayOfWeek[dayOfWeek] || 0) + 1;
+			activityByDayOfWeek[dayOfWeek] =
+				(activityByDayOfWeek[dayOfWeek] || 0) + 1;
 		});
 
 		// Calculate percentages for content types
 		const totalMessages = messages.length;
 		const contentTypes = {
-			text: totalMessages > 0 ? Math.round((textCount / totalMessages) * 100) : 0,
-			images: totalMessages > 0 ? Math.round((imageCount / totalMessages) * 100) : 0,
-			links: totalMessages > 0 ? Math.round((linkCount / totalMessages) * 100) : 0,
-			code: totalMessages > 0 ? Math.round((codeCount / totalMessages) * 100) : 0,
+			text:
+				totalMessages > 0 ? Math.round((textCount / totalMessages) * 100) : 0,
+			images:
+				totalMessages > 0 ? Math.round((imageCount / totalMessages) * 100) : 0,
+			links:
+				totalMessages > 0 ? Math.round((linkCount / totalMessages) * 100) : 0,
+			code:
+				totalMessages > 0 ? Math.round((codeCount / totalMessages) * 100) : 0,
 		};
 
 		// Ensure content types add up close to 100% by adding "files" category
-		const currentTotal = contentTypes.text + contentTypes.images + contentTypes.links + contentTypes.code;
+		const currentTotal =
+			contentTypes.text +
+			contentTypes.images +
+			contentTypes.links +
+			contentTypes.code;
 		const filesPercentage = Math.max(0, 100 - currentTotal);
 
 		// Calculate percentages for message lengths
 		const messageLengthDistribution = {
-			short: totalMessages > 0 ? Math.round((shortMessages / totalMessages) * 100) : 0,
-			medium: totalMessages > 0 ? Math.round((mediumMessages / totalMessages) * 100) : 0,
-			long: totalMessages > 0 ? Math.round((longMessages / totalMessages) * 100) : 0,
+			short:
+				totalMessages > 0
+					? Math.round((shortMessages / totalMessages) * 100)
+					: 0,
+			medium:
+				totalMessages > 0
+					? Math.round((mediumMessages / totalMessages) * 100)
+					: 0,
+			long:
+				totalMessages > 0
+					? Math.round((longMessages / totalMessages) * 100)
+					: 0,
 		};
 
 		// Convert hour activity to array format
 		const busiestHours = Object.entries(activityByHour)
 			.map(([hour, count]) => {
-				const hourNum = Number.parseInt(hour);
+				const hourNum = Number.parseInt(hour, 10);
 				const period = hourNum >= 12 ? "PM" : "AM";
-				const displayHour = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
+				const displayHour =
+					hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
 				return {
 					hour: hourNum,
 					label: `${displayHour} ${period}`,
@@ -1041,8 +1060,8 @@ export const getContentAnalysis = query({
 		const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 		const activityByDay = Object.entries(activityByDayOfWeek)
 			.map(([day, count]) => ({
-				day: Number.parseInt(day),
-				label: dayNames[Number.parseInt(day)],
+				day: Number.parseInt(day, 10),
+				label: dayNames[Number.parseInt(day, 10)],
 				count,
 			}))
 			.sort((a, b) => a.day - b.day);
@@ -1060,20 +1079,24 @@ export const getContentAnalysis = query({
 				const channelMessages = messages.filter(
 					(msg) => msg.channelId === channel._id
 				);
-				
+
 				// Calculate average response time (simplified - time between messages)
 				let totalResponseTime = 0;
 				let responseCount = 0;
 
 				for (let i = 1; i < channelMessages.length; i++) {
-					const timeDiff = channelMessages[i]._creationTime - channelMessages[i - 1]._creationTime;
-					if (timeDiff < 3600000) { // Only count if within 1 hour
+					const timeDiff =
+						channelMessages[i]._creationTime -
+						channelMessages[i - 1]._creationTime;
+					if (timeDiff < 3600000) {
+						// Only count if within 1 hour
 						totalResponseTime += timeDiff;
 						responseCount++;
 					}
 				}
 
-				const avgResponseTimeMs = responseCount > 0 ? totalResponseTime / responseCount : 0;
+				const avgResponseTimeMs =
+					responseCount > 0 ? totalResponseTime / responseCount : 0;
 				const avgResponseTimeMin = Math.round(avgResponseTimeMs / 60000); // Convert to minutes
 
 				return {
@@ -1094,7 +1117,9 @@ export const getContentAnalysis = query({
 			messageLengthDistribution,
 			busiestHours,
 			activityByDay,
-			channelResponseTimes: channelResponseTimes.filter((c) => c.avgResponseTime > 0),
+			channelResponseTimes: channelResponseTimes.filter(
+				(c) => c.avgResponseTime > 0
+			),
 			totalMessages,
 		};
 	},

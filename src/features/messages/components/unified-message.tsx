@@ -148,7 +148,9 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 										{participantNames.length === 1 ? "is" : "are"} in session
 									</span>
 								) : (
-									<span className="dark:!text-gray-100">Session in progress</span>
+									<span className="dark:!text-gray-100">
+										Session in progress
+									</span>
 								)}
 							</div>
 						)}

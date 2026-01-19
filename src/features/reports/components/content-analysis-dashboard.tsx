@@ -82,7 +82,7 @@ export const ContentAnalysisDashboard = ({
 	// Prepare content type data from real data
 	const contentTypeData = useMemo(() => {
 		if (!contentAnalysisData || !hasMessageData) return [];
-		
+
 		const { contentTypes } = contentAnalysisData;
 		return [
 			{ label: "Text", value: contentTypes.text, color: "#a78bfa" },
@@ -96,31 +96,41 @@ export const ContentAnalysisDashboard = ({
 	// Prepare message length data from real data
 	const messageLengthData = useMemo(() => {
 		if (!contentAnalysisData || !hasMessageData) return [];
-		
+
 		const { messageLengthDistribution } = contentAnalysisData;
 		return [
-			{ label: "Short (<50 chars)", value: messageLengthDistribution.short, color: "#a5b4fc" },
-			{ label: "Medium (50-200 chars)", value: messageLengthDistribution.medium, color: "#6366f1" },
-			{ label: "Long (>200 chars)", value: messageLengthDistribution.long, color: "#4f46e5" },
+			{
+				label: "Short (<50 chars)",
+				value: messageLengthDistribution.short,
+				color: "#a5b4fc",
+			},
+			{
+				label: "Medium (50-200 chars)",
+				value: messageLengthDistribution.medium,
+				color: "#6366f1",
+			},
+			{
+				label: "Long (>200 chars)",
+				value: messageLengthDistribution.long,
+				color: "#4f46e5",
+			},
 		].filter((item) => item.value > 0);
 	}, [contentAnalysisData, hasMessageData]);
 
 	// Prepare busiest hours data from real data
 	const busiestHoursData = useMemo(() => {
 		if (!contentAnalysisData) return [];
-		
-		return contentAnalysisData.busiestHours
-			.slice(0, 9)
-			.map((item) => ({
-				label: item.label,
-				value: item.count,
-			}));
+
+		return contentAnalysisData.busiestHours.slice(0, 9).map((item) => ({
+			label: item.label,
+			value: item.count,
+		}));
 	}, [contentAnalysisData]);
 
 	// Prepare weekly activity data from real data
 	const weeklyActivityData = useMemo(() => {
 		if (!contentAnalysisData) return [];
-		
+
 		return contentAnalysisData.activityByDay.map((item) => ({
 			label: item.label,
 			value: item.count,
@@ -130,7 +140,7 @@ export const ContentAnalysisDashboard = ({
 	// Prepare response times data from real data
 	const responseTimesData = useMemo(() => {
 		if (!contentAnalysisData) return [];
-		
+
 		return contentAnalysisData.channelResponseTimes.map((item) => {
 			let color = "bg-green-500";
 			if (item.avgResponseTime > 10) {
@@ -139,7 +149,7 @@ export const ContentAnalysisDashboard = ({
 			if (item.avgResponseTime > 20) {
 				color = "bg-red-500";
 			}
-			
+
 			return {
 				label: item.channelName,
 				value: item.avgResponseTime,
@@ -230,11 +240,22 @@ export const ContentAnalysisDashboard = ({
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px]">
 									<PieChart
-										data={hasMessageData && contentTypeData.length > 0 
-											? contentTypeData 
-											: [{ label: "No Data Available", value: 100, color: "#6b7280" }]
+										data={
+											hasMessageData && contentTypeData.length > 0
+												? contentTypeData
+												: [
+														{
+															label: "No Data Available",
+															value: 100,
+															color: "#6b7280",
+														},
+													]
 										}
-										formatValue={(value) => hasMessageData && contentTypeData.length > 0 ? `${value}%` : ""}
+										formatValue={(value) =>
+											hasMessageData && contentTypeData.length > 0
+												? `${value}%`
+												: ""
+										}
 									/>
 								</div>
 							</CardContent>
@@ -300,19 +321,46 @@ export const ContentAnalysisDashboard = ({
 						<Card className="flex flex-col">
 							<CardHeader>
 								<CardTitle>File Distribution</CardTitle>
-								<CardDescription>Images and file attachments in messages</CardDescription>
+								<CardDescription>
+									Images and file attachments in messages
+								</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px]">
 									<PieChart
-										data={hasMessageData && contentAnalysisData && (contentAnalysisData.contentTypes.images > 0 || contentAnalysisData.contentTypes.files > 0)
-											? [
-												{ label: "Images", value: contentAnalysisData.contentTypes.images, color: "#a78bfa" },
-												{ label: "Other Files", value: contentAnalysisData.contentTypes.files, color: "#8b5cf6" },
-											].filter((item) => item.value > 0)
-											: [{ label: "No Data Available", value: 100, color: "#6b7280" }]
+										data={
+											hasMessageData &&
+											contentAnalysisData &&
+											(contentAnalysisData.contentTypes.images > 0 ||
+												contentAnalysisData.contentTypes.files > 0)
+												? [
+														{
+															label: "Images",
+															value: contentAnalysisData.contentTypes.images,
+															color: "#a78bfa",
+														},
+														{
+															label: "Other Files",
+															value: contentAnalysisData.contentTypes.files,
+															color: "#8b5cf6",
+														},
+													].filter((item) => item.value > 0)
+												: [
+														{
+															label: "No Data Available",
+															value: 100,
+															color: "#6b7280",
+														},
+													]
 										}
-										formatValue={(value) => hasMessageData && contentAnalysisData && (contentAnalysisData.contentTypes.images > 0 || contentAnalysisData.contentTypes.files > 0) ? `${value}%` : ""}
+										formatValue={(value) =>
+											hasMessageData &&
+											contentAnalysisData &&
+											(contentAnalysisData.contentTypes.images > 0 ||
+												contentAnalysisData.contentTypes.files > 0)
+												? `${value}%`
+												: ""
+										}
 									/>
 								</div>
 							</CardContent>
@@ -321,9 +369,7 @@ export const ContentAnalysisDashboard = ({
 						<Card className="flex flex-col">
 							<CardHeader>
 								<CardTitle>Image Uploads Over Time</CardTitle>
-								<CardDescription>
-									Messages with images by day
-								</CardDescription>
+								<CardDescription>Messages with images by day</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
@@ -331,7 +377,11 @@ export const ContentAnalysisDashboard = ({
 										<LineChart
 											data={messagesByDayData.map((item) => ({
 												...item,
-												value: Math.round(item.value * (contentAnalysisData?.contentTypes.images || 15) / 100),
+												value: Math.round(
+													(item.value *
+														(contentAnalysisData?.contentTypes.images || 15)) /
+														100
+												),
 											}))}
 											height={300}
 											formatValue={(value) => `${value} images`}
@@ -357,15 +407,18 @@ export const ContentAnalysisDashboard = ({
 						</CardHeader>
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[240px] max-h-[240px] overflow-auto">
-								{messageData?.topSenders && messageData.topSenders.length > 0 ? (
+								{messageData?.topSenders &&
+								messageData.topSenders.length > 0 ? (
 									<HorizontalBarChart
-										data={
-											messageData.topSenders.slice(0, 5).map((sender) => ({
-												label: sender.name,
-												value: Math.round(sender.count * (contentAnalysisData?.contentTypes.images || 15) / 100),
-												color: "bg-purple-500",
-											}))
-										}
+										data={messageData.topSenders.slice(0, 5).map((sender) => ({
+											label: sender.name,
+											value: Math.round(
+												(sender.count *
+													(contentAnalysisData?.contentTypes.images || 15)) /
+													100
+											),
+											color: "bg-purple-500",
+										}))}
 										formatValue={(value) => `${value} images`}
 									/>
 								) : (
