@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 
 /**
  * Rate limit configurations
@@ -157,7 +157,7 @@ export const recordRateLimit = mutation({
 /**
  * Clean up expired rate limit entries (called by cron job)
  */
-export const cleanupExpiredLimits = mutation({
+export const cleanupExpiredLimits = internalMutation({
 	args: {},
 	handler: async (ctx) => {
 		const now = Date.now();
@@ -174,6 +174,3 @@ export const cleanupExpiredLimits = mutation({
 		return { deleted: expiredLimits.length };
 	},
 });
-
-// Export as internal function for cron jobs
-export { cleanupExpiredLimits as default };
