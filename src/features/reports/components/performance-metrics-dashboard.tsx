@@ -315,7 +315,7 @@ export const PerformanceMetricsDashboard = ({
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								{hasTaskData && avgCompletionTime ? (
+								{hasTaskData && avgCompletionTime != null ? (
 									<>
 										<div className="space-y-2">
 											<div className="flex items-center justify-between">
@@ -373,7 +373,7 @@ export const PerformanceMetricsDashboard = ({
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								{hasTaskData && onTimeCompletionRate ? (
+								{hasTaskData && onTimeCompletionRate != null ? (
 									<>
 										<div className="space-y-2">
 											<div className="flex items-center justify-between">

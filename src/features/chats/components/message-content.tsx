@@ -116,7 +116,13 @@ export const MessageContent = ({
 							<Editor
 								onSubmit={onUpdate}
 								disabled={isPending}
-								defaultValue={JSON.parse(body)}
+								defaultValue={(() => {
+									try {
+										return JSON.parse(body);
+									} catch {
+										return "";
+									}
+								})()}
 								onCancel={onCancel}
 								variant="update"
 							/>

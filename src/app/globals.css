@@ -756,36 +756,14 @@ a.user-mention:hover {
 	border: 1px solid white;
 }
 
-/* Usetiful badge customization - use secondary color in light mode only */
-/* Target various possible Usetiful badge class patterns */
-.usetiful-notification-badge,
-[class*="usetiful"] [class*="badge"],
-[class*="usetiful"] [class*="notification"],
-[class*="usf-"] [class*="badge"],
-[class*="usf-"] [class*="notification"],
-#usetiful-widget [class*="badge"],
-#usetiful-widget [class*="notification"],
-[id*="usetiful"] [class*="badge"],
-[id*="usetiful"] [class*="notification"],
-[data-usetiful] [class*="badge"],
-[data-usetiful] [class*="notification"] {
-	background-color: hsl(var(--secondary)) !important;
+/* Usetiful badge customization - scoped to specific Usetiful widget elements */
+/* Apply custom badge color only in light mode using specific targeting */
+#usetiful-widget .usetiful-notification-badge,
+#usetiful-widget .usf-notification-badge {
+	background-color: hsl(var(--secondary));
 }
 
-/* Dark mode - keep the default badge colors unchanged */
-.dark .usetiful-notification-badge,
-.dark [class*="usetiful"] [class*="badge"],
-.dark [class*="usetiful"] [class*="notification"],
-.dark [class*="usf-"] [class*="badge"],
-.dark [class*="usf-"] [class*="notification"],
-.dark #usetiful-widget [class*="badge"],
-.dark #usetiful-widget [class*="notification"],
-.dark [id*="usetiful"] [class*="badge"],
-.dark [id*="usetiful"] [class*="notification"],
-.dark [data-usetiful] [class*="badge"],
-.dark [data-usetiful] [class*="notification"] {
-	background-color: unset !important;
-}
+/* Dark mode inherits Usetiful's default theme - no override needed */
 
 /* Widget utility classes */
 .widget-scroll-area {

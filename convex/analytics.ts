@@ -975,46 +975,47 @@ export const getContentAnalysis = query({
 		let imageCount = 0;
 		let linkCount = 0;
 		let codeCount = 0;
-
+		let fileCount = 0;
+	
 		// Message length categories
 		let shortMessages = 0; // <50 chars
 		let mediumMessages = 0; // 50-200 chars
 		let longMessages = 0; // >200 chars
-
+	
 		// Activity by hour (0-23)
 		const activityByHour: Record<number, number> = {};
 		for (let i = 0; i < 24; i++) {
 			activityByHour[i] = 0;
 		}
-
+	
 		// Activity by day of week (0-6, Sunday-Saturday)
 		const activityByDayOfWeek: Record<number, number> = {};
 		for (let i = 0; i < 7; i++) {
 			activityByDayOfWeek[i] = 0;
 		}
-
+	
 		messages.forEach((message) => {
-			// Count content types
+			// Count content types with mutually exclusive categorization
 			const body = message.body || "";
-
-			// Text is always present
-			textCount++;
-
-			// Check for images
-			if (message.image) {
-				imageCount++;
-			}
-
-			// Check for links (simple URL detection)
+	
+			// Regex patterns for detection
 			const urlRegex = /(https?:\/\/[^\s]+)/g;
-			if (urlRegex.test(body)) {
-				linkCount++;
-			}
-
-			// Check for code blocks (markdown code blocks or inline code)
 			const codeBlockRegex = /```[\s\S]*?```|`[^`]+`/g;
-			if (codeBlockRegex.test(body)) {
+	
+			// Categorize message by primary content type (mutually exclusive)
+			if (message.image) {
+				// Priority 1: Image attachments
+				imageCount++;
+				fileCount++; // Images are also files
+			} else if (urlRegex.test(body)) {
+				// Priority 2: Messages with links
+				linkCount++;
+			} else if (codeBlockRegex.test(body)) {
+				// Priority 3: Messages with code blocks
 				codeCount++;
+			} else {
+				// Priority 4: Plain text messages
+				textCount++;
 			}
 
 			// Categorize message length
@@ -1049,15 +1050,9 @@ export const getContentAnalysis = query({
 				totalMessages > 0 ? Math.round((linkCount / totalMessages) * 100) : 0,
 			code:
 				totalMessages > 0 ? Math.round((codeCount / totalMessages) * 100) : 0,
+			files:
+				totalMessages > 0 ? Math.round((fileCount / totalMessages) * 100) : 0,
 		};
-
-		// Ensure content types add up close to 100% by adding "files" category
-		const currentTotal =
-			contentTypes.text +
-			contentTypes.images +
-			contentTypes.links +
-			contentTypes.code;
-		const filesPercentage = Math.max(0, 100 - currentTotal);
 
 		// Calculate percentages for message lengths
 		const messageLengthDistribution = {
@@ -1111,9 +1106,9 @@ export const getContentAnalysis = query({
 
 		const channelResponseTimes = await Promise.all(
 			channels.slice(0, 5).map(async (channel) => {
-				const channelMessages = messages.filter(
-					(msg) => msg.channelId === channel._id
-				);
+				const channelMessages = messages
+					.filter((msg) => msg.channelId === channel._id)
+					.sort((a, b) => a._creationTime - b._creationTime);
 
 				// Calculate average response time (simplified - time between messages)
 				let totalResponseTime = 0;
@@ -1145,7 +1140,7 @@ export const getContentAnalysis = query({
 			contentTypes: {
 				text: contentTypes.text,
 				images: contentTypes.images,
-				files: filesPercentage,
+				files: contentTypes.files,
 				links: contentTypes.links,
 				code: contentTypes.code,
 			},

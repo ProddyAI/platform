@@ -373,7 +373,8 @@ export const ContentAnalysisDashboard = ({
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
-									{messagesByDayData.length > 0 ? (
+									{messagesByDayData.length > 0 &&
+									(contentAnalysisData?.contentTypes.images ?? 0) > 0 ? (
 										<LineChart
 											data={messagesByDayData.map((item) => ({
 												...item,
@@ -408,7 +409,8 @@ export const ContentAnalysisDashboard = ({
 						<CardContent className="flex-1 min-h-0">
 							<div className="h-[240px] max-h-[240px] overflow-auto">
 								{messageData?.topSenders &&
-								messageData.topSenders.length > 0 ? (
+								messageData.topSenders.length > 0 &&
+								(contentAnalysisData?.contentTypes.images ?? 0) > 0 ? (
 									<HorizontalBarChart
 										data={messageData.topSenders.slice(0, 5).map((sender) => ({
 											label: sender.name,

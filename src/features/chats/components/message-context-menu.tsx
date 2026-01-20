@@ -33,18 +33,13 @@ export const MessageContextMenu = ({
 		closeContextMenu();
 	};
 
-	const isDark =
-		typeof window !== "undefined" &&
-		document.documentElement.classList.contains("dark");
-
 	return (
 		<div
-			className="context-menu fixed border border-gray-200 dark:border-gray-600 rounded-lg shadow-2xl z-[9999999] min-w-[180px] overflow-hidden"
+			className="context-menu fixed border border-gray-200 dark:border-gray-600 rounded-lg shadow-2xl z-[9999999] min-w-[180px] overflow-hidden bg-white dark:bg-[#1a1a1a]"
 			style={{
 				left: `${contextMenu.x}px`,
 				top: `${contextMenu.y}px`,
 				pointerEvents: "auto",
-				backgroundColor: isDark ? "#1a1a1a" : "#ffffff",
 			}}
 			onClick={(e) => e.stopPropagation()}
 		>

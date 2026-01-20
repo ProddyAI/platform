@@ -20,7 +20,124 @@ const RATE_LIMITS = {
 };
 
 /**
+ * Atomically validate and record rate limit in a single transaction
+ * This prevents TOCTOU race conditions by checking and inserting in the same mutation
+ */
+export const validateAndRecordRateLimit = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		email: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		const now = Date.now();
+		const normalizedEmail = args.email.toLowerCase();
+
+		// Check user rate limit
+		const userLimits = await ctx.db
+			.query("rateLimits")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("type"), "user_invite"),
+					q.gt(q.field("expiresAt"), now)
+				)
+			)
+			.take(RATE_LIMITS.USER_INVITES_PER_HOUR);
+
+		if (userLimits.length >= RATE_LIMITS.USER_INVITES_PER_HOUR) {
+			const oldestExpiry = Math.min(...userLimits.map((l) => l.expiresAt));
+			const minutesRemaining = Math.ceil((oldestExpiry - now) / 1000 / 60);
+			return {
+				allowed: false,
+				reason: `Rate limit exceeded. You can send more invites in ${minutesRemaining} minute${minutesRemaining !== 1 ? "s" : ""}.`,
+			};
+		}
+
+		// Check workspace rate limit
+		const workspaceLimits = await ctx.db
+			.query("rateLimits")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("type"), "workspace_invite"),
+					q.gt(q.field("expiresAt"), now)
+				)
+			)
+			.take(RATE_LIMITS.WORKSPACE_INVITES_PER_HOUR);
+
+		if (workspaceLimits.length >= RATE_LIMITS.WORKSPACE_INVITES_PER_HOUR) {
+			const oldestExpiry = Math.min(...workspaceLimits.map((l) => l.expiresAt));
+			const minutesRemaining = Math.ceil((oldestExpiry - now) / 1000 / 60);
+			return {
+				allowed: false,
+				reason: `Workspace rate limit exceeded. Try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? "s" : ""}.`,
+			};
+		}
+
+		// Check email rate limit (prevent spam to same recipient)
+		const emailLimits = await ctx.db
+			.query("rateLimits")
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("type"), "email_invite"),
+					q.gt(q.field("expiresAt"), now)
+				)
+			)
+			.take(RATE_LIMITS.EMAIL_INVITES_PER_DAY);
+
+		if (emailLimits.length >= RATE_LIMITS.EMAIL_INVITES_PER_DAY) {
+			const oldestExpiry = Math.min(...emailLimits.map((l) => l.expiresAt));
+			const hoursRemaining = Math.ceil((oldestExpiry - now) / 1000 / 60 / 60);
+			return {
+				allowed: false,
+				reason: `This email address has received too many invites. Try again in ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`,
+			};
+		}
+
+		// All checks passed - atomically record the rate limit entries
+		// Record user rate limit
+		await ctx.db.insert("rateLimits", {
+			userId,
+			workspaceId: args.workspaceId,
+			type: "user_invite",
+			expiresAt: now + RATE_LIMITS.USER_WINDOW_MS,
+			createdAt: now,
+		});
+
+		// Record workspace rate limit
+		await ctx.db.insert("rateLimits", {
+			userId,
+			workspaceId: args.workspaceId,
+			type: "workspace_invite",
+			expiresAt: now + RATE_LIMITS.WORKSPACE_WINDOW_MS,
+			createdAt: now,
+		});
+
+		// Record email rate limit
+		await ctx.db.insert("rateLimits", {
+			userId,
+			workspaceId: args.workspaceId,
+			email: normalizedEmail,
+			type: "email_invite",
+			expiresAt: now + RATE_LIMITS.EMAIL_WINDOW_MS,
+			createdAt: now,
+		});
+
+		return { allowed: true };
+	},
+});
+
+/**
  * Check if a user/workspace/email has exceeded rate limits
+ * @deprecated Use validateAndRecordRateLimit instead to avoid TOCTOU race conditions
  */
 export const checkRateLimit = query({
 	args: {
@@ -46,7 +163,7 @@ export const checkRateLimit = query({
 					q.gt(q.field("expiresAt"), now)
 				)
 			)
-			.collect();
+			.take(RATE_LIMITS.USER_INVITES_PER_HOUR);
 
 		if (userLimits.length >= RATE_LIMITS.USER_INVITES_PER_HOUR) {
 			const oldestExpiry = Math.min(...userLimits.map((l) => l.expiresAt));
@@ -69,7 +186,7 @@ export const checkRateLimit = query({
 					q.gt(q.field("expiresAt"), now)
 				)
 			)
-			.collect();
+			.take(RATE_LIMITS.WORKSPACE_INVITES_PER_HOUR);
 
 		if (workspaceLimits.length >= RATE_LIMITS.WORKSPACE_INVITES_PER_HOUR) {
 			const oldestExpiry = Math.min(...workspaceLimits.map((l) => l.expiresAt));
@@ -90,7 +207,7 @@ export const checkRateLimit = query({
 					q.gt(q.field("expiresAt"), now)
 				)
 			)
-			.collect();
+			.take(RATE_LIMITS.EMAIL_INVITES_PER_DAY);
 
 		if (emailLimits.length >= RATE_LIMITS.EMAIL_INVITES_PER_DAY) {
 			const oldestExpiry = Math.min(...emailLimits.map((l) => l.expiresAt));
@@ -107,6 +224,7 @@ export const checkRateLimit = query({
 
 /**
  * Record a rate limit entry after sending an invite
+ * @deprecated Use validateAndRecordRateLimit instead to avoid TOCTOU race conditions
  */
 export const recordRateLimit = mutation({
 	args: {
@@ -164,7 +282,7 @@ export const cleanupExpiredLimits = internalMutation({
 
 		const expiredLimits = await ctx.db
 			.query("rateLimits")
-			.filter((q) => q.lt(q.field("expiresAt"), now))
+			.withIndex("by_expires_at", (q) => q.lt("expiresAt", now))
 			.collect();
 
 		for (const limit of expiredLimits) {

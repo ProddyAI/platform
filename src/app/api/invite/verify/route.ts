@@ -33,10 +33,14 @@ export async function POST(req: Request) {
 		// 2. Get logged-in user
 		const convex = createConvexClient();
 		const token = await convexAuthNextjsToken();
-		if (token && typeof token === "string") {
-			convex.setAuth(token);
+		if (!token || typeof token !== "string") {
+			return NextResponse.json(
+				{ error: "Invalid authentication token" },
+				{ status: 401 }
+			);
 		}
-
+		convex.setAuth(token);
+	
 		const currentUser = await convex.query(api.users.current);
 		if (!currentUser || !currentUser.email) {
 			return NextResponse.json(
