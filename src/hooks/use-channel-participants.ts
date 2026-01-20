@@ -114,19 +114,24 @@ export const useChannelParticipants = () => {
 
 	// Format participants with their user info
 	const participants = others.map((other) => {
-		const userId = other.id;
+		const userId =
+			other.info && "id" in other.info && typeof other.info.id === "string"
+			? other.info.id
+			: null;
+
 		const member = members?.find((m) => m.userId === userId);
 
 		return {
 			connectionId: other.connectionId,
 			memberId: member?._id || null,
-			userId: userId || null,
+			userId,
 			info: {
-				name: member?.user?.name ?? "Loading…",
-    			picture: member?.user?.image ?? null,
+			name: member?.user?.name ?? "Loading…",
+			picture: member?.user?.image ?? null,
 			},
 		};
 	});
+
 
 	// Get current participant
 	const currentParticipant =

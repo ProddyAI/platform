@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useUpdateMyPresence } from "@/../liveblocks.config";
+import { useOthers } from "@/../liveblocks.config";
 
 interface BlockNoteEditorProps {
 	noteId: Id<"notes">;
@@ -23,66 +24,127 @@ export const BlockNoteEditor = ({
 	onEditorReady,
 }: BlockNoteEditorProps) => {
 	const updateMyPresence = useUpdateMyPresence();
+	const others = useOthers();
 
 	const sync = useBlockNoteSync(api.prosemirror, noteId, {
 		snapshotDebounceMs: 1000,
 	});
 
 	// Update presence when editor changes
-	useEffect(() => {
+		useEffect(() => {
 		if (sync.editor) {
 			const editor = sync.editor;
 
-			// Notify parent component that editor is ready
+			const getEditorDom = (): HTMLElement | null => {
+				try {
+					const tiptapEditor = (editor as any)?._tiptapEditor;
+					return tiptapEditor?.view?.dom || null;
+				} catch {
+					return null;
+				}
+			};
+
+			const getCursorCoords = (): { x: number; y: number } | null => {
+				try {
+					const tiptapEditor = (editor as any)?._tiptapEditor;
+					const view = tiptapEditor?.view;
+					const state = tiptapEditor?.state;
+
+					if (!view || !state) return null;
+					const { from } = state.selection;
+					const coords = view.coordsAtPos(from);
+					const editorRect = view.dom.getBoundingClientRect();
+
+					return {
+						x: coords.left - editorRect.left,
+						y: coords.top - editorRect.top,
+					};
+				} catch {
+					return null;
+				}
+			};
+
+			const handleFocus = () => {
+				const cursor = getCursorCoords();
+				updateMyPresence({
+					isEditing: true,
+					lastActivity: Date.now(),
+					cursor,
+				});
+			};
+
+			const dom = getEditorDom();
+			dom?.addEventListener("focus", handleFocus);
+			dom?.addEventListener("click", handleFocus);
+
 			if (onEditorReady) {
 				onEditorReady(editor);
 			}
 
-			// Throttle presence updates to prevent excessive calls
 			let presenceUpdateTimeout: NodeJS.Timeout | null = null;
 
-			// Listen for editor changes to update presence
 			const handleChange = () => {
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
 				}
+				const cursor = getCursorCoords();
 				presenceUpdateTimeout = setTimeout(() => {
 					updateMyPresence({
 						isEditing: true,
 						lastActivity: Date.now(),
+						cursor,
 					});
-				}, 100); // Throttle to max 10 updates per second
+				}, 100);
 			};
 
-			// Listen for selection changes
 			const handleSelectionChange = () => {
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
 				}
+				const cursor = getCursorCoords();
+
 				presenceUpdateTimeout = setTimeout(() => {
 					updateMyPresence({
 						isEditing: false,
 						lastActivity: Date.now(),
+						cursor,
 					});
-				}, 100); // Throttle to max 10 updates per second
+				}, 100);
 			};
+
+			const interval = setInterval(() => {
+			const cursor = getCursorCoords();
+			if (!cursor) return;
+
+			updateMyPresence({
+				lastActivity: Date.now(),
+				cursor,
+			});
+			}, 300);
+
 
 			editor.onEditorContentChange(handleChange);
 			editor.onEditorSelectionChange(handleSelectionChange);
 
 			return () => {
-				// Clear timeout on cleanup
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
 				}
-				// Cleanup listeners if needed
+				  clearInterval(interval);
+
+				const dom = getEditorDom();
+				dom?.removeEventListener("focus", handleFocus);
+				dom?.removeEventListener("click", handleFocus);
+
 				updateMyPresence({
 					isEditing: false,
 					lastActivity: Date.now(),
+					cursor: null,
 				});
 			};
 		}
 	}, [sync.editor, updateMyPresence, onEditorReady]);
+
 
 	if (sync.isLoading) {
 		return (
@@ -105,13 +167,55 @@ export const BlockNoteEditor = ({
 		);
 	}
 
-	return (
-		<div className={className} style={{ height: "100%", overflow: "hidden" }}>
-			<BlockNoteView
-				editor={sync.editor}
-				theme="light"
-				style={{ height: "100%" }}
+	const remoteCursors = others
+	.filter((user) => user.presence?.cursor)
+	.map((user) => {
+		const cursor = user.presence!.cursor!;
+		return (
+		<div
+			key={user.connectionId}
+			style={{
+				position: "absolute",
+				left: cursor.x,
+				top: cursor.y,
+				width: 8,
+				height: 8,
+				borderRadius: "50%",
+				backgroundColor: `hsl(${(user.connectionId * 47) % 360} 70% 50%)`,
+				zIndex: 50,
+				pointerEvents: "none",
+				}}
 			/>
+		);
+  	});
+
+
+	return (
+	<div
+		className={className}
+		style={{
+		height: "100%",
+		overflow: "hidden",
+		position: "relative",
+		}}
+	>
+		{remoteCursors}
+
+		<div
+		id="blocknote-scroll-container"
+		style={{
+			height: "100%",
+			overflow: "auto",
+			position: "relative",
+		}}
+		>
+		<BlockNoteView
+			editor={sync.editor}
+			theme="light"
+			style={{ height: "100%" }}
+		/>
 		</div>
+	</div>
 	);
+
 };
