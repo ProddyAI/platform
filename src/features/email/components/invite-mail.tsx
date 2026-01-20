@@ -180,5 +180,3 @@ const footer = {
 	textAlign: "center" as const,
 	marginTop: "30px",
 };
-
-export default InviteMailTemplate;

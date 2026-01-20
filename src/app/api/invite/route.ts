@@ -11,7 +11,7 @@ import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
 import { InviteMailTemplate } from "@/features/email/components/invite-mail";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend | null = null;
 
 export async function POST(req: Request) {
 	try {
@@ -38,7 +38,19 @@ export async function POST(req: Request) {
 			throw new Error("NEXT_PUBLIC_APP_URL environment variable is required");
 		}
 
-		const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+		if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+			throw new Error(
+				"NEXT_PUBLIC_CONVEX_URL environment variable is required"
+			);
+		}
+
+		if (!process.env.RESEND_API_KEY) {
+			throw new Error("RESEND_API_KEY environment variable is required");
+		}
+
+		resend ??= new Resend(process.env.RESEND_API_KEY);
+
+		const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 		convex.setAuth(token);
 
 		const { workspaceId, email } = await req.json();

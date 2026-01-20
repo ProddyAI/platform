@@ -78,6 +78,13 @@ export async function POST(req: Request) {
 			throw new Error("INVITE_SECRET environment variable is required");
 		}
 
+		if (!joinCode) {
+			return NextResponse.json(
+				{ error: "Workspace not found or has no join code" },
+				{ status: 404 }
+			);
+		}
+
 		const raw = `${joinCode}:${email}:${process.env.INVITE_SECRET}`;
 		const expectedHash = crypto.createHash("sha256").update(raw).digest("hex");
 

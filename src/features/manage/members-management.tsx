@@ -228,7 +228,10 @@ export const MembersManagement = ({
 										id="emailInvite"
 										type="email"
 										value={email}
-										onChange={(e) => setEmail(e.target.value)}
+										onChange={(e) => {
+											setEmail(e.target.value);
+											setInviteSuccess(false);
+										}}
 										placeholder="name@example.com"
 										className="flex-1"
 										disabled={inviteLoading}
