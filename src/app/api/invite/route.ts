@@ -4,7 +4,6 @@ import {
 	isAuthenticatedNextjs,
 } from "@convex-dev/auth/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
-import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
@@ -12,6 +11,13 @@ import { api } from "@/../convex/_generated/api";
 import { InviteMailTemplate } from "@/features/email/components/invite-mail";
 
 let resend: Resend | null = null;
+
+const createConvexClient = () => {
+	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
+	}
+	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+};
 
 export async function POST(req: Request) {
 	try {
@@ -22,13 +28,16 @@ export async function POST(req: Request) {
 			);
 		}
 
+		// Get auth token and setup authenticated Convex client
+		const convex = createConvexClient();
 		const token = await convexAuthNextjsToken();
-		if (!token) {
+		if (!token || typeof token !== "string") {
 			return NextResponse.json(
 				{ error: "Invalid authentication token" },
 				{ status: 401 }
 			);
 		}
+		convex.setAuth(token);
 
 		if (!process.env.INVITE_SECRET) {
 			throw new Error("INVITE_SECRET environment variable is required");
@@ -38,20 +47,11 @@ export async function POST(req: Request) {
 			throw new Error("NEXT_PUBLIC_APP_URL environment variable is required");
 		}
 
-		if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-			throw new Error(
-				"NEXT_PUBLIC_CONVEX_URL environment variable is required"
-			);
-		}
-
 		if (!process.env.RESEND_API_KEY) {
 			throw new Error("RESEND_API_KEY environment variable is required");
 		}
 
 		resend ??= new Resend(process.env.RESEND_API_KEY);
-
-		const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
-		convex.setAuth(token);
 
 		const { workspaceId, email } = await req.json();
 
@@ -89,14 +89,14 @@ export async function POST(req: Request) {
 		}
 
 		const [inviteDetails, joinCode] = await Promise.all([
-			fetchQuery(api.workspaceInvites.getInviteDetails, { workspaceId }),
-			fetchQuery(api.workspaceInvites.getWorkspaceJoinCode, { workspaceId }),
+			convex.query(api.workspaceInvites.getInviteDetails, { workspaceId }),
+			convex.query(api.workspaceInvites.getWorkspaceJoinCode, { workspaceId }),
 		]);
 
 		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.INVITE_SECRET}`;
 		const hash = crypto.createHash("sha256").update(raw).digest("hex");
 
-		await fetchMutation(api.workspaceInvites.insertInvite, {
+		await convex.mutation(api.workspaceInvites.insertInvite, {
 			workspaceId,
 			email: email.toLowerCase(),
 			hash,

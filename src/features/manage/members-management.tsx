@@ -218,7 +218,7 @@ export const MembersManagement = ({
 				{(isOwner || isAdmin) && workspace && (
 					<>
 						{/* Email Invite Section */}
-						<div className="p-4 bg-muted/50 rounded-lg border">
+						<div className="p-4 bg-muted/30 dark:bg-muted/50 rounded-lg border border-border/50 dark:border-border">
 							<div className="grid gap-2">
 								<Label htmlFor="emailInvite" className="text-sm font-semibold">
 									Invite by Email
@@ -241,6 +241,25 @@ export const MembersManagement = ({
 											}
 										}}
 									/>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Button
+												variant="outline"
+												size="icon"
+												onClick={handleGenerateNewCode}
+												disabled={isGeneratingCode}
+											>
+												{isGeneratingCode ? (
+													<RefreshCw className="h-4 w-4 animate-spin" />
+												) : (
+													<RefreshCw className="h-4 w-4" />
+												)}
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>Refresh Code</p>
+										</TooltipContent>
+									</Tooltip>
 									<Button
 										onClick={sendInvite}
 										disabled={inviteLoading}
@@ -261,41 +280,6 @@ export const MembersManagement = ({
 									Send an email invitation with a secure link to join the
 									workspace
 								</p>
-							</div>
-						</div>
-
-						{/* Workspace Join Code Section */}
-						<div className="p-4 bg-muted/50 rounded-lg border">
-							<div className="grid gap-2">
-								<Label className="text-sm font-semibold">
-									Workspace Join Code
-								</Label>
-								<div className="flex items-center gap-2">
-									<p className="text-sm text-muted-foreground flex-1">
-										Generate a new join code to invalidate existing invite links
-									</p>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												variant="outline"
-												onClick={handleGenerateNewCode}
-												disabled={isGeneratingCode}
-											>
-												{isGeneratingCode ? (
-													<RefreshCw className="h-4 w-4 animate-spin" />
-												) : (
-													<RefreshCw className="h-4 w-4" />
-												)}
-												<span className="ml-2 hidden sm:inline">
-													Refresh Code
-												</span>
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>Generate new join code</p>
-										</TooltipContent>
-									</Tooltip>
-								</div>
 							</div>
 						</div>
 					</>
