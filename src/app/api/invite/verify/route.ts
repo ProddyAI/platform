@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 			);
 		}
 		convex.setAuth(token);
-	
+
 		const currentUser = await convex.query(api.users.current);
 		if (!currentUser || !currentUser.email) {
 			return NextResponse.json(

@@ -80,7 +80,7 @@ export async function POST(req: Request) {
 			fetchQuery(api.workspaceInvites.getInviteDetails, { workspaceId }),
 			fetchQuery(api.workspaceInvites.getWorkspaceJoinCode, { workspaceId }),
 		]);
-	
+
 		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.INVITE_SECRET}`;
 		const hash = crypto.createHash("sha256").update(raw).digest("hex");
 

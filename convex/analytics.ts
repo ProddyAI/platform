@@ -976,32 +976,32 @@ export const getContentAnalysis = query({
 		let linkCount = 0;
 		let codeCount = 0;
 		let fileCount = 0;
-	
+
 		// Message length categories
 		let shortMessages = 0; // <50 chars
 		let mediumMessages = 0; // 50-200 chars
 		let longMessages = 0; // >200 chars
-	
+
 		// Activity by hour (0-23)
 		const activityByHour: Record<number, number> = {};
 		for (let i = 0; i < 24; i++) {
 			activityByHour[i] = 0;
 		}
-	
+
 		// Activity by day of week (0-6, Sunday-Saturday)
 		const activityByDayOfWeek: Record<number, number> = {};
 		for (let i = 0; i < 7; i++) {
 			activityByDayOfWeek[i] = 0;
 		}
-	
+
 		messages.forEach((message) => {
 			// Count content types with mutually exclusive categorization
 			const body = message.body || "";
-	
+
 			// Regex patterns for detection
 			const urlRegex = /(https?:\/\/[^\s]+)/g;
 			const codeBlockRegex = /```[\s\S]*?```|`[^`]+`/g;
-	
+
 			// Categorize message by primary content type (mutually exclusive)
 			if (message.image) {
 				// Priority 1: Image attachments

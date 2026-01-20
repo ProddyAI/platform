@@ -283,7 +283,9 @@ export const MembersManagement = ({
 												) : (
 													<RefreshCw className="h-4 w-4" />
 												)}
-												<span className="ml-2 hidden sm:inline">Refresh Code</span>
+												<span className="ml-2 hidden sm:inline">
+													Refresh Code
+												</span>
 											</Button>
 										</TooltipTrigger>
 										<TooltipContent>

@@ -20,12 +20,9 @@ interface InviteMailTemplateProps {
 	inviteLink: string;
 }
 
-export const InviteMailTemplate: React.FC<Readonly<InviteMailTemplateProps>> = ({
-	senderName,
-	senderEmail,
-	workspaceName,
-	inviteLink,
-}) => {
+export const InviteMailTemplate: React.FC<
+	Readonly<InviteMailTemplateProps>
+> = ({ senderName, senderEmail, workspaceName, inviteLink }) => {
 	const previewText = `You've been invited to join ${workspaceName}`;
 
 	return (
@@ -41,7 +38,9 @@ export const InviteMailTemplate: React.FC<Readonly<InviteMailTemplateProps>> = (
 						alt="Proddy"
 						style={logo}
 					/>
-					<Heading style={heading}>You've been invited to join a workspace</Heading>
+					<Heading style={heading}>
+						You've been invited to join a workspace
+					</Heading>
 					<Section style={section}>
 						<Text style={text}>
 							<strong>{senderName}</strong> ({senderEmail}) has invited you to
@@ -72,9 +71,8 @@ export const InviteMailTemplate: React.FC<Readonly<InviteMailTemplateProps>> = (
 
 					<Section style={warningContainer}>
 						<Text style={warningText}>
-							<strong>⚠️ Security Notice:</strong> Only accept this invite if
-							you trust the sender. Never share your login credentials with
-							anyone.
+							<strong>⚠️ Security Notice:</strong> Only accept this invite if you
+							trust the sender. Never share your login credentials with anyone.
 						</Text>
 					</Section>
 
