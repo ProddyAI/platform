@@ -756,6 +756,15 @@ a.user-mention:hover {
 	border: 1px solid white;
 }
 
+/* Usetiful badge customization - scoped to specific Usetiful widget elements */
+/* Apply custom badge color only in light mode using specific targeting */
+#usetiful-widget .usetiful-notification-badge,
+#usetiful-widget .usf-notification-badge {
+	background-color: hsl(var(--secondary));
+}
+
+/* Dark mode inherits Usetiful's default theme - no override needed */
+
 /* Widget utility classes */
 .widget-scroll-area {
 	height: 250px;

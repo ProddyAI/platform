@@ -130,7 +130,7 @@ export const TasksWidget = ({
 		<div className="space-y-3">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<CheckSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+					<CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
 					<h3 className="font-semibold text-base">Your Tasks</h3>
 					{!isEditMode && sortedTasks.length > 0 && (
 						<Badge
@@ -147,7 +147,7 @@ export const TasksWidget = ({
 					<Button
 						variant="ghost"
 						size="sm"
-						className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
 					>
 						View all
@@ -206,7 +206,7 @@ export const TasksWidget = ({
 									<Button
 										variant="ghost"
 										size="sm"
-										className="h-7 px-2 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950 flex-shrink-0"
+										className="h-7 px-2 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950 flex-shrink-0"
 										onClick={() => handleViewTask(task._id)}
 									>
 										View
@@ -226,7 +226,7 @@ export const TasksWidget = ({
 					<Button
 						variant="default"
 						size="sm"
-						className="mt-4 bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700"
+						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 						onClick={() =>
 							router.push(`/workspace/${workspaceId}/tasks?action=create`)
 						}

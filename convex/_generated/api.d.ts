@@ -27,6 +27,7 @@ import type * as notes from "../notes.js";
 import type * as preferences from "../preferences.js";
 import type * as presence from "../presence.js";
 import type * as prosemirror from "../prosemirror.js";
+import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
 import type * as search from "../search.js";
 import type * as tasks from "../tasks.js";
@@ -34,6 +35,7 @@ import type * as threadTitles from "../threadTitles.js";
 import type * as upload from "../upload.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
+import type * as workspaceInvites from "../workspaceInvites.js";
 import type * as workspaces from "../workspaces.js";
 
 import type {
@@ -62,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   preferences: typeof preferences;
   presence: typeof presence;
   prosemirror: typeof prosemirror;
+  rateLimit: typeof rateLimit;
   reactions: typeof reactions;
   search: typeof search;
   tasks: typeof tasks;
@@ -69,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   upload: typeof upload;
   users: typeof users;
   utils: typeof utils;
+  workspaceInvites: typeof workspaceInvites;
   workspaces: typeof workspaces;
 }>;
 

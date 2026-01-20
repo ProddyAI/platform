@@ -121,7 +121,7 @@ export const CalendarPreviewWidget = ({
 		<div className="space-y-4">
 			<div className="flex items-center justify-between pr-2">
 				<div className="flex items-center gap-2">
-					<CalendarIcon className="h-5 w-5 text-primary widget-title-icon" />
+					<CalendarIcon className="h-5 w-5 text-primary dark:text-purple-400" />
 					<h3 className="font-medium">Upcoming Events</h3>
 					{!isEditMode && upcomingEvents.length > 0 && (
 						<Badge
@@ -138,7 +138,7 @@ export const CalendarPreviewWidget = ({
 					<Button
 						variant="ghost"
 						size="sm"
-						className="h-8 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewCalendar}
 					>
 						View All
@@ -182,7 +182,7 @@ export const CalendarPreviewWidget = ({
 													<Button
 														variant="ghost"
 														size="sm"
-														className="mt-1 w-full justify-start text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+														className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 														onClick={() => handleViewEvent(event._id)}
 													>
 														View details
@@ -208,9 +208,9 @@ export const CalendarPreviewWidget = ({
 						Schedule events to see them here
 					</p>
 					<Button
-						variant="outline"
+						variant="default"
 						size="sm"
-						className="mt-4 border-2"
+						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 						onClick={handleViewCalendar}
 					>
 						View Calendar <ArrowRight className="ml-2 h-3.5 w-3.5" />

@@ -62,4 +62,11 @@ crons.weekly(
 	{ dayOfWeek: "sunday" }
 );
 
+// Clean up expired rate limit entries every hour
+crons.hourly(
+	"cleanup-expired-rate-limits",
+	{ minuteUTC: 0 }, // Run at the top of every hour
+	internal.rateLimit.cleanupExpiredLimits
+);
+
 export default crons;

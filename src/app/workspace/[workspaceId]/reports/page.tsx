@@ -697,36 +697,50 @@ const ReportsPage = () => {
 												<CardContent className="flex-1 min-h-0 p-4">
 													<div className="h-[450px] w-full overflow-visible">
 														<PieChartComponent
-															data={[
-																{
-																	label: "Completed",
-																	value: taskData.statusCounts.completed,
-																	color: "#22c55e",
-																},
-																{
-																	label: "In Progress",
-																	value: taskData.statusCounts.in_progress,
-																	color: "#3b82f6",
-																},
-																{
-																	label: "Not Started",
-																	value: taskData.statusCounts.not_started,
-																	color: "#6b7280",
-																},
-																{
-																	label: "On Hold",
-																	value: taskData.statusCounts.on_hold,
-																	color: "#f59e0b",
-																},
-																{
-																	label: "Cancelled",
-																	value: taskData.statusCounts.cancelled,
-																	color: "#ef4444",
-																},
-															].filter((item) => item.value > 0)}
+															data={
+																taskData.totalTasks > 0
+																	? [
+																			{
+																				label: "Completed",
+																				value: taskData.statusCounts.completed,
+																				color: "#22c55e",
+																			},
+																			{
+																				label: "In Progress",
+																				value:
+																					taskData.statusCounts.in_progress,
+																				color: "#3b82f6",
+																			},
+																			{
+																				label: "Not Started",
+																				value:
+																					taskData.statusCounts.not_started,
+																				color: "#6b7280",
+																			},
+																			{
+																				label: "On Hold",
+																				value: taskData.statusCounts.on_hold,
+																				color: "#f59e0b",
+																			},
+																			{
+																				label: "Cancelled",
+																				value: taskData.statusCounts.cancelled,
+																				color: "#ef4444",
+																			},
+																		].filter((item) => item.value > 0)
+																	: [
+																			{
+																				label: "No Data Available",
+																				value: 100,
+																				color: "#6b7280",
+																			},
+																		]
+															}
 															size={450}
 															maxSize={500}
-															formatValue={(value) => `${value} tasks`}
+															formatValue={(value) =>
+																taskData.totalTasks > 0 ? `${value} tasks` : ""
+															}
 														/>
 													</div>
 												</CardContent>
@@ -742,26 +756,38 @@ const ReportsPage = () => {
 												<CardContent className="flex-1 min-h-0 p-4">
 													<div className="h-[450px] w-full overflow-visible">
 														<PieChartComponent
-															data={[
-																{
-																	label: "High",
-																	value: taskData.priorityCounts.high,
-																	color: "#ef4444",
-																},
-																{
-																	label: "Medium",
-																	value: taskData.priorityCounts.medium,
-																	color: "#f59e0b",
-																},
-																{
-																	label: "Low",
-																	value: taskData.priorityCounts.low,
-																	color: "#22c55e",
-																},
-															].filter((item) => item.value > 0)}
+															data={
+																taskData.totalTasks > 0
+																	? [
+																			{
+																				label: "High",
+																				value: taskData.priorityCounts.high,
+																				color: "#ef4444",
+																			},
+																			{
+																				label: "Medium",
+																				value: taskData.priorityCounts.medium,
+																				color: "#f59e0b",
+																			},
+																			{
+																				label: "Low",
+																				value: taskData.priorityCounts.low,
+																				color: "#22c55e",
+																			},
+																		].filter((item) => item.value > 0)
+																	: [
+																			{
+																				label: "No Data Available",
+																				value: 100,
+																				color: "#6b7280",
+																			},
+																		]
+															}
 															size={450}
 															maxSize={500}
-															formatValue={(value) => `${value} tasks`}
+															formatValue={(value) =>
+																taskData.totalTasks > 0 ? `${value} tasks` : ""
+															}
 														/>
 													</div>
 												</CardContent>
