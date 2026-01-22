@@ -9,6 +9,12 @@ import type { Id } from "@/../convex/_generated/dataModel";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+} from "docx";
+import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
@@ -32,85 +38,27 @@ export const ExportNoteDialog = ({
 	onClose,
 	note,
 }: ExportNoteDialogProps) => {
-	const [exportFormat, setExportFormat] = useState<
-		"pdf" | "markdown" | "html" | "json"
-	>("markdown");
+	const [exportFormat, setExportFormat] = useState<"pdf" | "word">("pdf"); 
 	const [isExporting, setIsExporting] = useState(false);
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
 	const createMessage = useMutation(api.messages.create);
 
-	// Client-side conversion functions (moved from API route)
-	const convertToMarkdown = (note: Note): string => {
-		let markdown = `# ${note.title}\n\n`;
-
-		if (note.tags && note.tags.length > 0) {
-			markdown += `**Tags:** ${note.tags.join(", ")}\n\n`;
-		}
-
-		markdown += `**Created:** ${new Date(note.createdAt).toLocaleDateString()}\n`;
-		markdown += `**Updated:** ${new Date(note.updatedAt).toLocaleDateString()}\n\n`;
-		markdown += "---\n\n";
-
-		// Convert BlockNote content to markdown
-		if (note.content) {
-			try {
-				const content = JSON.parse(note.content);
-				if (Array.isArray(content)) {
-					content.forEach((block: any) => {
-						markdown += convertBlockToMarkdown(block);
-					});
-				} else {
-					markdown += note.content;
-				}
-			} catch {
-				markdown += note.content;
-			}
-		}
-
-		return markdown;
-	};
-
 	const extractTextFromBlock = (block: any): string => {
-	if (!block?.content || !Array.isArray(block.content)) return "";
+		if (!block?.content) return "";
 
-	return block.content
-		.map((item: any) => item.text || "")
-		.join("");
-};
-
-	const convertBlockToMarkdown = (block: any): string => {
-	if (!block || !block.type) return "";
-
-	switch (block.type) {
-		case "paragraph": {
-			const text = extractTextFromBlock(block);
-			return `${text}\n\n`;
+		if (Array.isArray(block.content)) {
+			return block.content
+			.map((item: any) => {
+				if (item.text) return item.text;
+				if (item.content) return extractTextFromBlock(item);
+				return "";
+			})
+			.join("");
 		}
 
-		case "heading": {
-			const level = block.props?.level || 1;
-			const hashes = "#".repeat(level);
-			const text = extractTextFromBlock(block);
-			return `${hashes} ${text}\n\n`;
-		}
-
-		case "bulletListItem": {
-			const text = extractTextFromBlock(block);
-			return `- ${text}\n`;
-		}
-
-		case "numberedListItem": {
-			const text = extractTextFromBlock(block);
-			return `1. ${text}\n`;
-		}
-
-		default: {
-			const text = extractTextFromBlock(block);
-			return `${text}\n\n`;
-		}
-	}
-};
+		return "";
+	};
 
 
 	const convertToHTML = (note: Note): string => {
@@ -145,14 +93,39 @@ export const ExportNoteDialog = ({
 			try {
 				const content = JSON.parse(note.content);
 				if (Array.isArray(content)) {
-					content.forEach((block: any) => {
+					let i = 0;
+
+					while (i < content.length) {
+						const block = content[i];
+
+						if (block.type === "bulletListItem") {
+							html += "<ul>";
+							while (i < content.length && content[i].type === "bulletListItem") {
+								html += convertBlockToHTML(content[i]);
+								i++;
+							}
+							html += "</ul>";
+							continue;
+						}
+
+						if (block.type === "numberedListItem") {
+							html += "<ol>";
+							while (i < content.length && content[i].type === "numberedListItem") {
+								html += convertBlockToHTML(content[i]);
+								i++;
+							}
+							html += "</ol>";
+							continue;
+						}
+
 						html += convertBlockToHTML(block);
-					});
+						i++;
+					}
 				} else {
-					html += `<p>${note.content}</p>`;
+					html += "<p>[Unsupported content format]</p>";
 				}
 			} catch {
-				html += `<p>${note.content}</p>`;
+				html += "<p>[Failed to parse note content]</p>";
 			}
 		}
 
@@ -212,118 +185,229 @@ export const ExportNoteDialog = ({
 			unit: "pt",
 			format: "a4",
 		});
+		try{
 
-		await pdf.html(container, {
-			x: 40,
-			y: 40,
-			width: 515,
-			windowWidth: 800,
-		});
+			await pdf.html(container, {
+				x: 40,
+				y: 40,
+				width: 515,
+				windowWidth: 800,
+			});
+		} finally {
 
-		document.body.removeChild(container);
+			document.body.removeChild(container);
+		}
 
 		return pdf.output("arraybuffer");
 	};
 
+	const convertToWord = async (note: Note): Promise<Blob> => {
+		let blocks: any[] = [];
 
-	const formatFileSize = (bytes: number): string => {
-		if (bytes === 0) return "0 Bytes";
+		try {
+			const parsed = JSON.parse(note.content);
+			if (Array.isArray(parsed)) {
+			blocks = parsed;
+			}
+		} catch {
+			throw new Error("Failed to parse note content");
+		}
 
-		const k = 1024;
-		const sizes = ["Bytes", "KB", "MB", "GB"];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		const paragraphs: Paragraph[] = [];
+		let numberedListCounter = 0;
+		let inNumberedList = false;
 
-		return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
+		// Title
+		paragraphs.push(
+			new Paragraph({
+			children: [
+				new TextRun({
+				text: note.title,
+				bold: true,
+				size: 32,
+				}),
+			],
+			spacing: { after: 300 },
+			})
+		);
+
+		// Meta
+		paragraphs.push(
+			new Paragraph({
+			children: [
+				new TextRun({
+				text: `Created: ${new Date(note.createdAt).toLocaleDateString()}`,
+				italics: true,
+				}),
+			],
+			})
+		);
+
+		paragraphs.push(
+			new Paragraph({
+			children: [
+				new TextRun({
+				text: `Updated: ${new Date(note.updatedAt).toLocaleDateString()}`,
+				italics: true,
+				}),
+			],
+			spacing: { after: 400 },
+			})
+		);
+
+		// Content
+		for (const block of blocks) {
+			const text = extractTextFromBlock(block);
+
+			if (!text) continue;
+
+			if (block.type === "heading") {
+			const level = block.props?.level ?? 1;
+
+			paragraphs.push(
+				new Paragraph({
+				children: [
+					new TextRun({
+					text,
+					bold: true,
+					size: 28 - level * 2,
+					}),
+				],
+				spacing: { before: 300, after: 200 },
+				})
+			);
+
+			continue;
+			}
+
+			if (block.type === "bulletListItem") {
+			paragraphs.push(
+				new Paragraph({
+				text,
+				bullet: { level: 0 },
+				})
+			);
+			continue;
+			}
+
+			if (block.type === "numberedListItem") {
+				if (!inNumberedList) {
+					numberedListCounter++;
+					inNumberedList = true;
+				}
+
+				const listRef = `numbered-list-${numberedListCounter}`;
+
+				paragraphs.push(
+					new Paragraph({
+					text,
+					numbering: {
+						reference: listRef,
+						level: 0,
+					},
+					})
+				);
+				continue;
+			}
+			
+			inNumberedList = false;
+
+			// Paragraph / default
+			paragraphs.push(
+			new Paragraph({
+				children: [
+				new TextRun({
+					text,
+				}),
+				],
+				spacing: { before: 100, after: 200 },
+			})
+			);
+		}
+
+		const doc = new Document({
+			numbering: {
+			config: [
+				{
+				reference: "numbered-list",
+				levels: [
+					{
+					level: 0,
+					format: "decimal",
+					text: "%1.",
+					alignment: "left",
+					},
+				],
+				},
+			],
+			},
+			sections: [
+			{
+				properties: {},
+				children: paragraphs,
+			},
+			],
+		});
+
+		const blob = await Packer.toBlob(doc);
+		return blob;
 	};
 
 	// Export to chat (save as a message in the channel)
 	const handleExportToChat = async () => {
 		try {
-			if (!channelId || !workspaceId || !note) {
-				toast.error("Cannot export note: missing required data");
-				return;
-			}
-			if (exportFormat === "pdf") {
-				toast.error("PDF export is only supported for system download");
+			if (exportFormat !== "word") {
+				toast.error("Only Word export can be shared in chat");
 				return;
 			}
 
-			setIsExporting(true);
-
-			// Generate export data client-side
-			let exportData: string;
-			let _contentType: string;
-			let fileExtension: string;
-
-			switch (exportFormat) {
-				case "markdown":
-					exportData = convertToMarkdown(note);
-					_contentType = "text/markdown";
-					fileExtension = "md";
-					break;
-
-				case "html":
-					exportData = convertToHTML(note);
-					_contentType = "text/html";
-					fileExtension = "html";
-					break;
-
-				case "json":
-					exportData = JSON.stringify(
-						{
-							id: note._id,
-							title: note.title,
-							content: note.content,
-							tags: note.tags,
-							createdAt: note.createdAt,
-							updatedAt: note.updatedAt,
-							exportedAt: new Date().toISOString(),
-						},
-						null,
-						2
-					);
-					_contentType = "application/json";
-					fileExtension = "json";
-					break;
-
-				default:
-					throw new Error("Unsupported export format");
+			if (!note) {
+				toast.error("No note to export");
+				return;
 			}
 
-			// Calculate file size
-			const fileSize = new Blob([exportData]).size;
-			const fileSizeFormatted = formatFileSize(fileSize);
+			// Convert note to Word
+			const wordBlob = await convertToWord(note);
 
-			// Prepare the message data
+			// Convert blob → base64 for chat transport
+			const arrayBuffer = await wordBlob.arrayBuffer();
+			const base64 = btoa(
+				new Uint8Array(arrayBuffer).reduce(
+					(data, byte) => data + String.fromCharCode(byte),
+					""
+				)
+			);
+
 			const messageData = {
 				type: "note-export",
 				noteId: note._id,
 				noteTitle: note.title,
-				exportFormat: exportFormat,
+				exportFormat: "word",
 				exportTime: new Date().toISOString(),
-				exportData: exportData,
-				fileSize: fileSizeFormatted,
-				fileName: `${note.title}.${fileExtension}`,
+				exportData: base64,
+				fileName: `${note.title}.docx`,
 			};
+			
+			if (!workspaceId || !channelId) {
+				toast.error("Cannot share: missing workspace or channel");
+				return;
+			}
 
-			// Create a message in the channel with the note export
 			await createMessage({
-				workspaceId: workspaceId,
+				workspaceId,
 				channelId: channelId as Id<"channels">,
 				body: JSON.stringify(messageData),
 			});
 
-			toast.success(
-				`Note exported as ${exportFormat.toUpperCase()} and shared in chat`
-			);
+			toast.success("Note exported as Word and shared in chat");
 			onClose();
 		} catch (error) {
-			console.error("Export error:", error);
-			toast.error("Failed to export note");
-		} finally {
-			setIsExporting(false);
+			console.error("Export to chat failed:", error);
+			toast.error("Failed to share note in chat");
 		}
 	};
+
+
 
 	// Export to system (download file)
 	const handleExportToSystem = async () => {
@@ -342,35 +426,26 @@ export const ExportNoteDialog = ({
 		let downloadUrl: string;
 
 		switch (exportFormat) {
-			case "markdown":
-				exportData = convertToMarkdown(note);
-				contentType = "text/markdown";
-				fileExtension = "md";
-				break;
+			case "word": {
+				const wordBlob = await convertToWord(note);
 
-			case "html":
-				exportData = convertToHTML(note);
-				contentType = "text/html";
-				fileExtension = "html";
-				break;
+				const fileName = `${note.title}.docx`;
+				const downloadUrl = URL.createObjectURL(wordBlob);
 
-			case "json":
-				exportData = JSON.stringify(
-					{
-						id: note._id,
-						title: note.title,
-						content: note.content,
-						tags: note.tags,
-						createdAt: note.createdAt,
-						updatedAt: note.updatedAt,
-						exportedAt: new Date().toISOString(),
-					},
-					null,
-					2
-				);
-				contentType = "application/json";
-				fileExtension = "json";
-				break;
+				const a = document.createElement("a");
+				a.href = downloadUrl;
+				a.download = fileName;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+
+				URL.revokeObjectURL(downloadUrl);
+
+				toast.success("Note exported as Word");
+				onClose();
+				return;
+			}
+
 
 			case "pdf": {
 				const pdfBytes = await convertToPDF(note);
@@ -403,29 +478,6 @@ export const ExportNoteDialog = ({
 				throw new Error("Unsupported export format");
 		}
 
-		if (!exportData) {
-			throw new Error("Export data was not generated");
-		}
-
-		const fileName = `${note.title}.${fileExtension}`;
-
-		const blob = new Blob([exportData], {
-			type: contentType,
-		});
-
-		downloadUrl = URL.createObjectURL(blob);
-
-		const a = document.createElement("a");
-		a.href = downloadUrl;
-		a.download = fileName;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-
-		URL.revokeObjectURL(downloadUrl);
-
-		toast.success(`Note exported as ${exportFormat.toUpperCase()}`);
-		onClose();
 	} catch (error) {
 		console.error("Export error:", error);
 		toast.error("Failed to export note");
@@ -452,32 +504,16 @@ export const ExportNoteDialog = ({
 
 					<TabsContent value="format" className="space-y-4">
 						<div className="grid grid-cols-2 gap-3">
-							<Button
-								variant={exportFormat === "markdown" ? "default" : "outline"}
-								onClick={() => setExportFormat("markdown")}
-								className="h-20 flex flex-col items-center justify-center"
-							>
-								<span className="text-lg mb-1">📝</span>
-								<span className="text-xs">Markdown</span>
-							</Button>
 
 							<Button
-								variant={exportFormat === "html" ? "default" : "outline"}
-								onClick={() => setExportFormat("html")}
+								variant={exportFormat === "word" ? "default" : "outline"}
+								onClick={() => setExportFormat("word")}
 								className="h-20 flex flex-col items-center justify-center"
 							>
 								<span className="text-lg mb-1">🌐</span>
-								<span className="text-xs">HTML</span>
+								<span className="text-xs">Word</span>
 							</Button>
 
-							<Button
-								variant={exportFormat === "json" ? "default" : "outline"}
-								onClick={() => setExportFormat("json")}
-								className="h-20 flex flex-col items-center justify-center"
-							>
-								<span className="text-lg mb-1">📋</span>
-								<span className="text-xs">JSON</span>
-							</Button>
 
 							<Button
 								variant={exportFormat === "pdf" ? "default" : "outline"}
@@ -495,12 +531,13 @@ export const ExportNoteDialog = ({
 					<Button
 						variant="outline"
 						onClick={handleExportToChat}
-						disabled={isExporting}
+						disabled={isExporting || exportFormat !== "word"}
 						className="flex items-center"
 					>
 						<MessageSquare className="h-4 w-4 mr-2" />
 						Share in Chat
 					</Button>
+
 
 					<Button
 						onClick={handleExportToSystem}
