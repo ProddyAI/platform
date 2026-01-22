@@ -191,9 +191,7 @@ const FeaturesPage = () => {
 						priority
 					/>
 				</div>
-				<div
-					className={`absolute bottom-0 left-0 w-full h-1 ${accentClass}`}
-				></div>
+				<div className={`absolute bottom-0 left-0 w-full h-1 ${accentClass}`} />
 			</div>
 		);
 	};
@@ -304,102 +302,102 @@ const FeaturesPage = () => {
 			<section
 				className="pt-24 pb-12 md:pt-32 md:pb-16 bg-gradient-to-b from-white via-gray-50/50 to-gray-50 relative overflow-hidden"
 				ref={heroRef}
-				id="hero"
+			    id="hero"
 			>
-				<div className="absolute inset-0 overflow-hidden">
-					<div className="absolute -top-[30%] -right-[10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-3xl" />
-					<div className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-secondary/5 blur-3xl" />
-				</div>
+			    <div className="absolute inset-0 overflow-hidden">
+			        <div className="absolute -top-[30%] -right-[10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-3xl" />
+			        <div className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-secondary/5 blur-3xl" />
+			    </div>
 
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
-					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-						<div className="text-left lg:pr-6">
-							<motion.div
-								className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-4"
-								{...fadeInAnimation}
-							>
-								MODULAR PRODUCTIVITY SUITE
-							</motion.div>
+			    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
+			        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+			            <div className="text-left lg:pr-6">
+			                <motion.div
+			                    className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-4"
+			                    {...fadeInAnimation}
+			                >
+			                    MODULAR PRODUCTIVITY SUITE
+			                </motion.div>
 
-							<motion.h1
-								className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4"
-								{...fadeInAnimation}
-								transition={{ duration: 0.5, delay: 0.1 }}
-							>
-								Powerful{" "}
-								<span className="text-primary relative">
-									Features
-									<span className="absolute bottom-2 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full"></span>
-								</span>{" "}
-								for Every Need
-							</motion.h1>
+			                <motion.h1
+			                    className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4"
+			                    {...fadeInAnimation}
+			                    transition={{ duration: 0.5, delay: 0.1 }}
+			                >
+			                    Powerful{" "}
+			                    <span className="text-primary relative">
+			                        Features
+			                        <span className="absolute bottom-2 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
+			                    </span>{" "}
+			                    for Every Need
+			                </motion.h1>
 
-							<motion.p
-								className="text-lg md:text-xl text-gray-600 mb-6"
-								{...fadeInAnimation}
-								transition={{ duration: 0.5, delay: 0.2 }}
-							>
-								Proddy's modular design built for teams of all sizes - starting
-								from college projects to scaling startups.
-							</motion.p>
+			                <motion.p
+			                    className="text-lg md:text-xl text-gray-600 mb-6"
+			                    {...fadeInAnimation}
+			                    transition={{ duration: 0.5, delay: 0.2 }}
+			                >
+			                    Proddy's modular design built for teams of all sizes - starting
+			                    from college projects to scaling startups.
+			                </motion.p>
 
-							<motion.div
-								className="flex flex-wrap gap-4 mb-6"
-								{...fadeInAnimation}
-								transition={{ duration: 0.5, delay: 0.3 }}
-							>
-								<Link href="#features-tabs">
-									<Button
-										size="lg"
-										className="gap-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 bg-primary hover:bg-primary/90 px-6 py-2 text-base"
-									>
-										Explore Features <ArrowRight className="size-4" />
-									</Button>
-								</Link>
-								<Link href="/signup">
-									<Button
-										size="lg"
-										variant="outline"
-										className="gap-2 rounded-full border-gray-300 hover:border-primary/50 px-6 py-2 text-base"
-									>
-										Get Started
-									</Button>
-								</Link>
-							</motion.div>
-						</div>
+			                <motion.div
+			                    className="flex flex-wrap gap-4 mb-6"
+			                    {...fadeInAnimation}
+			                    transition={{ duration: 0.5, delay: 0.3 }}
+			                >
+			                    <Link href="#features-tabs">
+			                        <Button
+			                            size="lg"
+			                            className="gap-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 bg-primary hover:bg-primary/90 px-6 py-2 text-base"
+			                        >
+			                            Explore Features <ArrowRight className="size-4" />
+			                        </Button>
+			                    </Link>
+			                    <Link href="/signup">
+			                        <Button
+			                            size="lg"
+			                            variant="outline"
+			                            className="gap-2 rounded-full border-gray-300 hover:border-primary/50 px-6 py-2 text-base"
+			                        >
+			                            Get Started
+			                        </Button>
+			                    </Link>
+			                </motion.div>
+			            </div>
 
-						<motion.div
-							className="relative h-[300px] md:h-[350px] rounded-2xl overflow-hidden shadow-xl border border-gray-100"
-							initial={{ opacity: 0, x: 50 }}
-							animate={{ opacity: 1, x: 0 }}
-							transition={{ duration: 0.7, delay: 0.4 }}
-						>
-							<div className="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-transparent z-10"></div>
-							<div className="absolute inset-0">
-								<div className="grid grid-cols-2 gap-3 p-4 w-full h-full">
-									<div className="flex flex-col gap-3 h-full">
-										<div className="h-1/2">
-											<HeroFeatureImage
-												src="/messages.png"
-												alt="Messaging feature"
-												bgColor="bg-blue-50"
-											/>
-										</div>
-										<div className="h-1/2">
-											<HeroFeatureImage
-												src="/tasks.png"
-												alt="Tasks feature"
-												bgColor="bg-green-50"
-											/>
-										</div>
-									</div>
-									<div className="flex flex-col gap-3 h-full">
-										<div className="h-1/2">
-											<HeroFeatureImage
-												src="/calender.png"
-												alt="Calendar feature"
-												bgColor="bg-purple-50"
-											/>
+			            <motion.div
+			                className="relative h-[300px] md:h-[350px] rounded-2xl overflow-hidden shadow-xl border border-gray-100"
+			                initial={{ opacity: 0, x: 50 }}
+			                animate={{ opacity: 1, x: 0 }}
+			                transition={{ duration: 0.7, delay: 0.4 }}
+			            >
+			                <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-transparent z-10" />
+			                <div className="absolute inset-0">
+			                    <div className="grid grid-cols-2 gap-3 p-4 w-full h-full">
+			                        <div className="flex flex-col gap-3 h-full">
+			                            <div className="h-1/2">
+			                                <HeroFeatureImage
+			                                    src="/messages.png"
+			                                    alt="Messaging feature"
+			                                    bgColor="bg-blue-50"
+			                                />
+			                            </div>
+			                            <div className="h-1/2">
+			                                <HeroFeatureImage
+			                                    src="/tasks.png"
+			                                    alt="Tasks feature"
+			                                    bgColor="bg-green-50"
+			                                />
+			                            </div>
+			                        </div>
+			                        <div className="flex flex-col gap-3 h-full">
+			                            <div className="h-1/2">
+			                                <HeroFeatureImage
+			                                    src="/calender.png"
+			                                    alt="Calendar feature"
+			                                    bgColor="bg-purple-50"
+			                                />
 										</div>
 										<div className="h-1/2">
 											<HeroFeatureImage

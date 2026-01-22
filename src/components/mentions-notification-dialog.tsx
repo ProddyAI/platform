@@ -308,57 +308,57 @@ export const MentionsNotificationDialog = ({
 									<div className="flex justify-end mt-1">
 										<button
 											onClick={(e) => {
-												e.preventDefault(); // Prevent navigation
-												e.stopPropagation(); // Prevent event bubbling
-												handleToggleReadStatus(notification);
-											}}
-											className={`flex items-center gap-1.5 text-xs font-medium rounded px-2.5 py-1.5 transition-colors ${
-												notification.read
-													? "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40"
-													: "text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/40"
-											}`}
-										>
-											{notification.read ? (
-												<>
-													<Eye className="size-3.5" />
-													Mark as unread
-												</>
-											) : (
-												<>
-													<CheckCircle2 className="size-3.5" />
-													Mark as read
-												</>
-											)}
-										</button>
-									</div>
+	                                            e.preventDefault(); // Prevent navigation
+	                                            e.stopPropagation(); // Prevent event bubbling
+	                                            handleToggleReadStatus(notification);
+	                                        }}
+	                                        className={`flex items-center gap-1.5 text-xs font-medium rounded px-2.5 py-1.5 transition-colors ${
+	                                            notification.read
+	                                                ? "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+	                                                : "text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/40"
+	                                        }`}
+	                                    >
+	                                        {notification.read ? (
+	                                            <>
+	                                                <Eye className="size-3.5" />
+	                                                Mark as unread
+	                                            </>
+	                                        ) : (
+	                                            <>
+	                                                <CheckCircle2 className="size-3.5" />
+	                                                Mark as read
+	                                            </>
+	                                        )}
+	                                    </button>
+	                                </div>
 
-									{/* Border separator below the button */}
-									<div className="border-t border-border/10 dark:border-gray-700/50 mt-2"></div>
-								</div>
-							</div>
-						</Link>
-					);
-				})
-			)}
-		</div>
+	                                {/* Border separator below the button */}
+	                                <div className="border-t border-border/10 dark:border-gray-700/50 mt-2" />
+	                            </div>
+	                        </div>
+	                    </Link>
+	                );
+	            })
+	        )}
+	    </div>
 	);
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[550px] p-0 overflow-hidden shadow-lg [&>button]:hidden dark:bg-gray-900 dark:border-gray-800">
-				<DialogHeader className="p-5 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-					<div className="flex items-center justify-between">
-						<DialogTitle className="flex items-center gap-2 text-xl dark:text-gray-100">
-							<div className="bg-blue-100 dark:bg-blue-900/40 p-1.5 rounded-full">
-								<Bell className="size-5 text-blue-600 dark:text-blue-400" />
-							</div>
-							<span>Notifications</span>
-							{unreadCounts.all > 0 && (
-								<Badge
-									variant="default"
-									className="ml-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-								>
-									{unreadCounts.all} new
+	    <Dialog open={open} onOpenChange={onOpenChange}>
+	        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden shadow-lg [&>button]:hidden dark:bg-gray-900 dark:border-gray-800">
+	            <DialogHeader className="p-5 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+	                <div className="flex items-center justify-between">
+	                    <DialogTitle className="flex items-center gap-2 text-xl dark:text-gray-100">
+	                        <div className="bg-blue-100 dark:bg-blue-900/40 p-1.5 rounded-full">
+	                            <Bell className="size-5 text-blue-600 dark:text-blue-400" />
+	                        </div>
+	                        <span>Notifications</span>
+	                        {unreadCounts.all > 0 && (
+	                            <Badge
+	                                variant="default"
+	                                className="ml-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+	                            >
+	                                {unreadCounts.all} new
 								</Badge>
 							)}
 						</DialogTitle>

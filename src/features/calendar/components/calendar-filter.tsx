@@ -63,8 +63,8 @@ export const CalendarFilter = ({
 							"flex items-center gap-1.5 border rounded-md transition-all",
 							filterOptions.eventTypes.length > 0 &&
 								filterOptions.eventTypes.length < 3
-								? "bg-gray-100 border-gray-300 dark:bg-gray-800 dark:border-gray-600"
-								: "bg-white dark:bg-gray-900"
+									? "bg-gray-100 border-gray-300 dark:bg-gray-800 dark:border-gray-600"
+									: "bg-white dark:bg-gray-900"
 						)}
 					>
 						<Filter className="h-4 w-4 dark:text-gray-300" />
@@ -73,13 +73,13 @@ export const CalendarFilter = ({
 							filterOptions.eventTypes.length < 3 && (
 								<div className="flex ml-1 gap-1">
 									{filterOptions.eventTypes.includes("message") && (
-										<div className="w-2 h-2 rounded-full bg-blue-500"></div>
+										<div className="w-2 h-2 rounded-full bg-blue-500" />
 									)}
 									{filterOptions.eventTypes.includes("board-card") && (
-										<div className="w-2 h-2 rounded-full bg-purple-500"></div>
+										<div className="w-2 h-2 rounded-full bg-purple-500" />
 									)}
 									{filterOptions.eventTypes.includes("task") && (
-										<div className="w-2 h-2 rounded-full bg-green-500"></div>
+										<div className="w-2 h-2 rounded-full bg-green-500" />
 									)}
 								</div>
 							)}
@@ -98,7 +98,7 @@ export const CalendarFilter = ({
 										allTypesSelected || noTypesSelected
 											? []
 											: ["message", "board-card", "task"],
-								})
+								}),
 							}
 						>
 							{allTypesSelected || noTypesSelected ? "Clear All" : "Select All"}

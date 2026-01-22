@@ -62,7 +62,7 @@ export const HeroSection = () => {
 						Just Ask,{" "}
 						<span className="text-primary relative">
 							Proddy Knows
-							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full"></span>
+							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
 						</span>
 					</motion.h1>
 
@@ -87,7 +87,7 @@ export const HeroSection = () => {
 								size="lg"
 								variant="outline"
 								className="gap-2 rounded-full bg-white border-slate-300 text-slate-700 hover:bg-slate-100 px-6 py-2"
-							>
+						
 								Learn More
 							</Button>
 						</Link>
@@ -228,44 +228,43 @@ export const HeroSection = () => {
 												<br />• Review completed stories from last sprint
 												<br />• Plan capacity for upcoming sprint
 												<br />• Discuss mobile app delays
-												<br />
-												<br />
-												<span className="font-semibold">Attendees:</span> Your
-												team + Product Manager Lisa
-												<br />
-												<span className="font-semibold">Prep needed:</span>{" "}
-												Review velocity metrics and blocker analysis
-											</p>
-										</div>
+											<br />
+											<br />
+											<span className="font-semibold">Attendees:</span> Your
+											team + Product Manager Lisa
+											<br />
+											<span className="font-semibold">Prep needed:</span>{" "}
+											Review velocity metrics and blocker analysis
+										</p>
 									</div>
+								</div>
 
-									{/* User Message */}
-									<div className="flex justify-end">
-										<div className="bg-primary/10 text-gray-800 rounded-lg rounded-tr-none p-3 max-w-[80%]">
-											<p>
-												Show me a summary of the #engineering-alerts channel
-											</p>
-										</div>
+								{/* User Message */}
+								<div className="flex justify-end">
+									<div className="bg-primary/10 text-gray-800 rounded-lg rounded-tr-none p-3 max-w-[80%]">
+										<p>
+											Show me a summary of the #engineering-alerts channel
+										</p>
 									</div>
+								</div>
 
-									{/* Typing Indicator */}
-									<div className="flex">
-										<div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 max-w-[80%]">
-											<div className="flex items-center gap-2">
-												<div className="flex space-x-1">
-													<div
-														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
-														style={{ animationDelay: "0ms" }}
-													></div>
-													<div
-														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
-														style={{ animationDelay: "150ms" }}
-													></div>
-													<div
-														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
-														style={{ animationDelay: "300ms" }}
-													></div>
-												</div>
+								{/* Typing Indicator */}
+								<div className="flex">
+									<div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 max-w-[80%]">
+										<div className="flex items-center gap-2">
+											<div className="flex space-x-1">
+												<div
+													className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
+													style={{ animationDelay: "0ms" }}
+												/>
+												<div
+													className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
+													style={{ animationDelay: "150ms" }}
+												/>
+												<div
+													className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
+													style={{ animationDelay: "300ms" }}
+												/>
 											</div>
 										</div>
 									</div>
