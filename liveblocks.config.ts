@@ -10,11 +10,45 @@ import type { Color, Layer } from "./src/features/canvas/types/canvas";
 
 const client = createClient({
 	throttle: 16,
-	authEndpoint: "/api/liveblocks/auth",
-	async resolveUsers() {
-		// Used only for Comments and Notifications. Return a list of user information
-		// This info is used in comments, mentions etc.
-		return [];
+	authEndpoint: async (room) => {
+		// This function is called by Liveblocks to authenticate
+		// We need to pass the current user info from the client
+		const response = await fetch("/api/liveblocks/auth", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				room,
+				// These will be set by the RoomProvider from window context
+				...(window as any).__liveblocksUserInfo,
+			}),
+		});
+		return await response.json();
+	},
+	async resolveUsers({ userIds }) {
+		// Fetch user information from our API
+		try {
+			const response = await fetch("/api/liveblocks/users", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ userIds }),
+			});
+
+			if (!response.ok) {
+				console.error("Failed to resolve users:", response.statusText);
+				return [];
+			}
+
+			const users = await response.json();
+			
+			// Return users in the same order as userIds
+			return userIds.map((userId) => {
+				const user = users[userId];
+				return user ? { name: user.name, avatar: user.avatar } : undefined;
+			});
+		} catch (error) {
+			console.error("Error resolving users:", error);
+			return [];
+		}
 	},
 	async resolveMentionSuggestions() {
 		// Used only for Comments. Return a list of userIds that match text.
@@ -62,10 +96,11 @@ type Storage = {
 // provided by your own custom auth back end (if used). Useful for data that
 // will not change during a session, like a user's name or avatar.
 type UserMeta = {
-	id?: string;
-	info?: {
-		name?: string;
+	id: string; // Make id required
+	info: {
+		name: string; // Make name required
 		picture?: string;
+		memberId?: string;
 	};
 };
 

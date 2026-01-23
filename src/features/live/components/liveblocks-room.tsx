@@ -41,9 +41,18 @@ export const LiveblocksRoom = ({
 	);
 
 	// Set up user info for Liveblocks authentication
+	// Set up user info for Liveblocks authentication
 	useEffect(() => {
-		// User info is set up automatically by Liveblocks
-	}, []);
+		if (currentUser && currentMember) {
+			// Store user info globally so authEndpoint can access it
+			(window as any).__liveblocksUserInfo = {
+				userId: currentUser._id,
+				memberId: currentMember._id,
+				userName: currentUser.name,
+				userAvatar: currentUser.image,
+			};
+		}
+	}, [currentUser, currentMember]);
 
 	// Show loading state while user data is being fetched
 	if (!currentUser || !currentMember) {
