@@ -1,8 +1,9 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation } from "convex/react";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { Mail, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +13,11 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { OTPInputCustom } from "@/components/ui/otp-input-custom";
+import {
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 interface OTPVerificationCardProps {
 	email: string;
@@ -31,6 +36,9 @@ export const OTPVerificationCard = ({
 	const { signIn } = useAuthActions();
 	const [otp, setOtp] = useState("");
 	const [error, setError] = useState("");
+	const [errorType, setErrorType] = useState<"expired" | "invalid" | "general">(
+		"general"
+	);
 	const [pending, setPending] = useState(false);
 	const [resendCooldown, setResendCooldown] = useState(60);
 	const [canResend, setCanResend] = useState(false);
@@ -49,14 +57,16 @@ export const OTPVerificationCard = ({
 		}
 	}, [resendCooldown]);
 
-	const handleVerify = async () => {
+	const handleVerify = useCallback(async () => {
 		if (otp.length !== 6) {
 			setError("Please enter a 6-digit code");
+			setErrorType("general");
 			return;
 		}
 
 		setPending(true);
 		setError("");
+		setErrorType("general");
 
 		try {
 			// First verify the OTP
@@ -72,15 +82,47 @@ export const OTPVerificationCard = ({
 				router.push("/signin?verified=true");
 			}
 		} catch (err) {
+			// Show user-friendly error messages with appropriate type
 			if (err instanceof Error) {
-				setError(err.message);
+				const errorMessage = err.message.toLowerCase();
+				if (errorMessage.includes("expired")) {
+					setError("Code has expired. Please request a new one.");
+					setErrorType("expired");
+				} else if (
+					errorMessage.includes("invalid") ||
+					errorMessage.includes("incorrect") ||
+					errorMessage.includes("otp")
+				) {
+					setError("Incorrect verification code. Please try again.");
+					setErrorType("invalid");
+				} else if (errorMessage.includes("too many")) {
+					setError("Too many failed attempts. Please request a new code.");
+					setErrorType("expired");
+				} else {
+					setError("Verification failed. Please try again.");
+					setErrorType("general");
+				}
 			} else {
-				setError("Failed to verify OTP. Please try again.");
+				setError("Verification failed. Please try again.");
+				setErrorType("general");
 			}
+			// Clear the OTP input on error for better UX
+			setOtp("");
 		} finally {
 			setPending(false);
 		}
-	};
+	}, [otp, email, name, password, verifyOTP, signIn, router]);
+
+	// Auto-submit when OTP is complete (mobile only)
+	useEffect(() => {
+		if (otp.length === 6 && !pending) {
+			// Check if device is mobile (screen width < 768px)
+			const isMobile = window.matchMedia("(max-width: 768px)").matches;
+			if (isMobile) {
+				handleVerify();
+			}
+		}
+	}, [otp, handleVerify, pending]);
 
 	const handleResend = async () => {
 		if (!canResend) return;
@@ -122,7 +164,9 @@ export const OTPVerificationCard = ({
 				<div className="mb-6 flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
 					<Mail className="w-8 h-8 text-primary" />
 				</div>
-				<CardTitle className="text-2xl font-semibold">Check your email</CardTitle>
+				<CardTitle className="text-2xl font-semibold">
+					Check your email
+				</CardTitle>
 				<CardDescription className="mt-2">
 					Enter the verification code sent to
 					<br />
@@ -131,23 +175,59 @@ export const OTPVerificationCard = ({
 			</CardHeader>
 
 			{!!error && (
-				<div className="mb-6 flex items-center gap-x-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
-					<TriangleAlert className="size-4" />
+				<div
+					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm border ${
+						errorType === "expired"
+							? "bg-orange-50 border-orange-200 text-orange-700"
+							: "bg-red-50 border-red-200 text-red-600"
+					}`}
+				>
+					<TriangleAlert className="size-4 flex-shrink-0" />
 					<p>{error}</p>
 				</div>
 			)}
 
 			<CardContent className="space-y-6 px-0 pb-0">
 				<div className="flex justify-center">
-					<OTPInputCustom
-						length={6}
+					<InputOTP
+						maxLength={6}
 						value={otp}
 						onChange={(value) => {
 							setOtp(value);
 							setError("");
+							setErrorType("general");
 						}}
 						disabled={pending}
-					/>
+						pattern={REGEXP_ONLY_DIGITS}
+						autoFocus
+					>
+						<InputOTPGroup className="gap-2">
+							<InputOTPSlot
+								index={0}
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
+							/>
+							<InputOTPSlot
+								index={1}
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
+							/>
+							<InputOTPSlot
+								index={2}
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
+							/>
+							<InputOTPSlot
+								index={3}
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
+							/>
+							<InputOTPSlot
+								index={4}
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
+							/>
+							<InputOTPSlot
+								index={5}
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
+							/>
+						</InputOTPGroup>
+					</InputOTP>
 				</div>
 
 				<Button

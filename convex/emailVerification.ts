@@ -23,9 +23,7 @@ export const generateOTP = mutation({
 			.collect();
 
 		if (recentOTPs.length >= 3) {
-			throw new Error(
-				"Too many OTP requests. Please try again after an hour."
-			);
+			throw new Error("Too many OTP requests. Please try again after an hour.");
 		}
 
 		// Delete any existing unverified OTPs for this email
@@ -87,9 +85,7 @@ export const verifyOTP = mutation({
 		// Check attempt limit
 		if (otpRecord.attempts >= 5) {
 			await ctx.db.delete(otpRecord._id);
-			throw new Error(
-				"Too many failed attempts. Please request a new OTP."
-			);
+			throw new Error("Too many failed attempts. Please request a new OTP.");
 		}
 
 		// Verify OTP

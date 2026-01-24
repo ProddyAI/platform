@@ -1,6 +1,7 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
+import Script from "next/script";
 import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/apollo-tracking";
 import { ClarityTracking } from "@/components/clarity-tracking";
@@ -65,6 +66,14 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<link rel="apple-touch-icon" href="/logo-nobg.png" />
 				</head>
 				<body className={`${poppins.variable} antialiased font-sans`}>
+					<Script id="force-light-mode" strategy="beforeInteractive">
+						{`
+							(function() {
+								// Force light mode on public pages (remove dark class if set from workspace)
+								document.documentElement.classList.remove('dark');
+							})();
+						`}
+					</Script>
 					<ConvexClientProvider>
 						<JotaiProvider>
 							<UsetifulProvider>

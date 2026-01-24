@@ -80,7 +80,7 @@ export const SignUpCard = ({
 
 			// Store email and password for after verification
 			setPendingEmail(email);
-			
+
 			// Show OTP verification screen
 			setShowOTPVerification(true);
 		} catch (err) {

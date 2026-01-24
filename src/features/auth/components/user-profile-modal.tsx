@@ -380,7 +380,7 @@ export const UserProfileModal = ({
 			await deleteAccount();
 			toast.success("Account deleted successfully");
 			await signOut();
-			router.replace("/");
+			router.replace("/home");
 		} catch (error) {
 			console.error("Failed to delete account:", error);
 			toast.error("Failed to delete account. Please try again.");
@@ -399,7 +399,7 @@ export const UserProfileModal = ({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden">
-				<div className="flex h-full overflow-hidden">
+				<div className="flex h-full overflow-hidden overflow-x-hidden">
 					{/* Left Panel - Profile Overview with banner */}
 					<div className={leftPanelClass} style={leftPanelStyle}>
 						{hasBanner && (
@@ -437,10 +437,10 @@ export const UserProfileModal = ({
 						)}
 
 						<div className="flex flex-col items-center justify-center text-center h-full relative z-10">
-							<div className="w-full max-w-xs bg-white/70 dark:bg-white/5 backdrop-blur-md rounded-2xl p-6 shadow-lg">
+							<div className="w-full max-w-xs bg-white/70 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/20 dark:border-slate-700/50">
 								<div className="space-y-4 flex-1 flex flex-col items-center justify-center">
 									<div className="relative">
-										<Avatar className="size-24 ring-4 ring-background shadow-lg">
+										<Avatar className="size-24 ring-4 ring-white dark:ring-slate-700 shadow-lg">
 											<AvatarImage
 												src={
 													avatarPreview ||
@@ -589,19 +589,19 @@ export const UserProfileModal = ({
 					</div>
 
 					{/* Right Panel - Content */}
-					<div className="flex-1 flex flex-col">
+					<div className="flex-1 flex flex-col overflow-hidden">
 						<DialogHeader className="px-6 py-4 border-b flex-shrink-0">
 							<DialogTitle className="text-2xl font-semibold">
 								{isEditMode ? "Account Settings" : "Profile"}
 							</DialogTitle>
 						</DialogHeader>
 
-						<div className="flex-1 overflow-y-auto min-w-0">
+						<div className="flex-1 overflow-y-auto overflow-x-hidden">
 							{isEditMode ? (
-								<div className="h-full flex flex-col">
+								<div className="h-full flex flex-col overflow-hidden">
 									<Tabs
 										defaultValue={defaultTab}
-										className="w-full h-full flex flex-col"
+										className="w-full h-full flex flex-col overflow-hidden"
 									>
 										<TabsList className="grid w-full grid-cols-2 mx-6 mt-4 flex-shrink-0">
 											<TabsTrigger value="profile" className="gap-2">
@@ -616,7 +616,7 @@ export const UserProfileModal = ({
 
 										<TabsContent
 											value="profile"
-											className="flex-1 overflow-y-auto min-w-0 px-6"
+											className="flex-1 overflow-y-auto overflow-x-hidden px-6"
 											data-state="active"
 										>
 											<div className="py-6 space-y-6 max-w-none">
@@ -877,7 +877,7 @@ export const UserProfileModal = ({
 
 										<TabsContent
 											value="notifications"
-											className="flex-1 overflow-y-auto min-w-0 px-6"
+											className="flex-1 overflow-y-auto overflow-x-hidden px-6"
 											data-state="inactive"
 										>
 											<div className="py-6">
@@ -887,7 +887,7 @@ export const UserProfileModal = ({
 									</Tabs>
 								</div>
 							) : (
-								<div className="p-6 h-full overflow-y-auto min-w-0">
+								<div className="p-6 h-full overflow-y-auto overflow-x-hidden">
 									<Card>
 										<CardHeader>
 											<CardTitle>Contact Information</CardTitle>
@@ -994,8 +994,7 @@ export const UserProfileModal = ({
 							variant="destructive"
 							onClick={handleDeleteAccount}
 							disabled={
-								isDeleting ||
-								confirmText.trim().toLowerCase() !== "delete my account"
+								isDeleting || confirmText.trim().toLowerCase() !== "delete"
 							}
 						>
 							{isDeleting ? (
