@@ -78,7 +78,10 @@ export const SignUpCard = ({
 				throw new Error(data.error || "Failed to send OTP");
 			}
 
-			// Store email and password for after verification
+			// Store credentials securely in sessionStorage (not in component state)
+			// This prevents exposure in React DevTools
+			sessionStorage.setItem("signup_name", name);
+			sessionStorage.setItem("signup_password", password);
 			setPendingEmail(email);
 
 			// Show OTP verification screen
@@ -99,9 +102,12 @@ export const SignUpCard = ({
 		return (
 			<OTPVerificationCard
 				email={pendingEmail}
-				name={name}
-				password={password}
-				onBack={() => setShowOTPVerification(false)}
+				onBack={() => {
+					// Clear sessionStorage when going back
+					sessionStorage.removeItem("signup_name");
+					sessionStorage.removeItem("signup_password");
+					setShowOTPVerification(false);
+				}}
 			/>
 		);
 	}

@@ -380,7 +380,7 @@ export const UserProfileModal = ({
 			await deleteAccount();
 			toast.success("Account deleted successfully");
 			await signOut();
-			router.replace("/home");
+			router.replace("/");
 		} catch (error) {
 			console.error("Failed to delete account:", error);
 			toast.error("Failed to delete account. Please try again.");
@@ -399,7 +399,7 @@ export const UserProfileModal = ({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden">
-				<div className="flex h-full overflow-hidden overflow-x-hidden">
+				<div className="flex h-full overflow-hidden">
 					{/* Left Panel - Profile Overview with banner */}
 					<div className={leftPanelClass} style={leftPanelStyle}>
 						{hasBanner && (
@@ -596,7 +596,7 @@ export const UserProfileModal = ({
 							</DialogTitle>
 						</DialogHeader>
 
-						<div className="flex-1 overflow-y-auto overflow-x-hidden">
+						<div className="flex-1 overflow-y-auto min-w-0">
 							{isEditMode ? (
 								<div className="h-full flex flex-col overflow-hidden">
 									<Tabs
@@ -616,7 +616,7 @@ export const UserProfileModal = ({
 
 										<TabsContent
 											value="profile"
-											className="flex-1 overflow-y-auto overflow-x-hidden px-6"
+											className="flex-1 overflow-y-auto min-w-0 px-6"
 											data-state="active"
 										>
 											<div className="py-6 space-y-6 max-w-none">
@@ -877,7 +877,7 @@ export const UserProfileModal = ({
 
 										<TabsContent
 											value="notifications"
-											className="flex-1 overflow-y-auto overflow-x-hidden px-6"
+											className="flex-1 overflow-y-auto min-w-0 px-6"
 											data-state="inactive"
 										>
 											<div className="py-6">
@@ -887,7 +887,7 @@ export const UserProfileModal = ({
 									</Tabs>
 								</div>
 							) : (
-								<div className="p-6 h-full overflow-y-auto overflow-x-hidden">
+								<div className="p-6 h-full overflow-y-auto min-w-0">
 									<Card>
 										<CardHeader>
 											<CardTitle>Contact Information</CardTitle>
@@ -962,12 +962,14 @@ export const UserProfileModal = ({
 					<div className="mt-4">
 						<Label htmlFor="confirm-delete" className="text-sm font-medium">
 							Type{" "}
-							<span className="font-semibold text-destructive">DELETE</span> to
-							confirm
+							<span className="font-semibold text-destructive">
+								delete my account
+							</span>{" "}
+							to confirm
 						</Label>
 						<Input
 							id="confirm-delete"
-							placeholder="Type DELETE to confirm"
+							placeholder="Type 'delete my account' to confirm"
 							value={confirmText}
 							onChange={(e) => setConfirmText(e.target.value)}
 							disabled={isDeleting}
@@ -994,7 +996,8 @@ export const UserProfileModal = ({
 							variant="destructive"
 							onClick={handleDeleteAccount}
 							disabled={
-								isDeleting || confirmText.trim().toLowerCase() !== "delete"
+								isDeleting ||
+								confirmText.trim().toLowerCase() !== "delete my account"
 							}
 						>
 							{isDeleting ? (

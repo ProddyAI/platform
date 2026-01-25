@@ -1,11 +1,7 @@
 {
 	"compilerOptions": {
 		"target": "es2017",
-		"lib": [
-			"dom",
-			"dom.iterable",
-			"esnext"
-		],
+		"lib": ["dom", "dom.iterable", "esnext"],
 		"noImplicitAny": true,
 		"strictNullChecks": true,
 		"allowJs": true,
@@ -25,9 +21,7 @@
 			}
 		],
 		"paths": {
-			"@/*": [
-				"./src/*"
-			]
+			"@/*": ["./src/*"]
 		}
 	},
 	"include": [
@@ -39,7 +33,5 @@
 		// "src/features/canvas/types/**/*.d.ts"
 		".next-win/types/**/*.ts"
 	],
-	"exclude": [
-		"node_modules"
-	]
+	"exclude": ["node_modules"]
 }

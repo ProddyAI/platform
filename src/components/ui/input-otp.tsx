@@ -6,20 +6,34 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+// Context to provide input ref to InputOTPSlot components
+const InputOTPRefContext = React.createContext<
+	React.RefObject<HTMLInputElement> | undefined
+>(undefined);
+
 const InputOTP = React.forwardRef<
 	React.ElementRef<typeof OTPInput>,
 	React.ComponentPropsWithoutRef<typeof OTPInput>
->(({ className, containerClassName, ...props }, ref) => (
-	<OTPInput
-		ref={ref}
-		containerClassName={cn(
-			"flex items-center gap-2 has-[:disabled]:opacity-50",
-			containerClassName
-		)}
-		className={cn("disabled:cursor-not-allowed", className)}
-		{...props}
-	/>
-));
+>(({ className, containerClassName, ...props }, ref) => {
+	const inputRef = React.useRef<HTMLInputElement>(null);
+
+	// Merge refs if external ref is provided
+	React.useImperativeHandle(ref, () => inputRef.current as any);
+
+	return (
+		<InputOTPRefContext.Provider value={inputRef}>
+			<OTPInput
+				ref={inputRef}
+				containerClassName={cn(
+					"flex items-center gap-2 has-[:disabled]:opacity-50",
+					containerClassName
+				)}
+				className={cn("disabled:cursor-not-allowed", className)}
+				{...props}
+			/>
+		</InputOTPRefContext.Provider>
+	);
+});
 InputOTP.displayName = "InputOTP";
 
 const InputOTPGroup = React.forwardRef<
@@ -35,6 +49,7 @@ const InputOTPSlot = React.forwardRef<
 	React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
 	const inputOTPContext = React.useContext(OTPInputContext);
+	const inputRef = React.useContext(InputOTPRefContext);
 	const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index];
 
 	return (
@@ -46,14 +61,11 @@ const InputOTPSlot = React.forwardRef<
 				className
 			)}
 			onClick={() => {
-				// Find the actual input element and focus it, then set selection to this index
-				const inputElement = document.querySelector(
-					'input[type="text"][autocomplete="one-time-code"]'
-				) as HTMLInputElement;
-				if (inputElement) {
-					inputElement.focus();
+				// Use ref to access the input element directly
+				if (inputRef?.current) {
+					inputRef.current.focus();
 					// Set cursor position to this slot
-					inputElement.setSelectionRange(index, index);
+					inputRef.current.setSelectionRange(index, index);
 				}
 			}}
 			{...props}

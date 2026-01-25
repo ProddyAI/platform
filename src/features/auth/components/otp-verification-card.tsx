@@ -21,15 +21,11 @@ import {
 
 interface OTPVerificationCardProps {
 	email: string;
-	name?: string;
-	password?: string;
 	onBack?: () => void;
 }
 
 export const OTPVerificationCard = ({
 	email,
-	name,
-	password,
 	onBack,
 }: OTPVerificationCardProps) => {
 	const router = useRouter();
@@ -42,8 +38,24 @@ export const OTPVerificationCard = ({
 	const [pending, setPending] = useState(false);
 	const [resendCooldown, setResendCooldown] = useState(60);
 	const [canResend, setCanResend] = useState(false);
+	const [isMobile, setIsMobile] = useState(false);
 
 	const verifyOTP = useMutation(api.emailVerification.verifyOTP);
+
+	// Track mobile state with resize listener
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+		};
+
+		// Initial check
+		checkMobile();
+
+		// Add resize listener
+		window.addEventListener("resize", checkMobile);
+
+		return () => window.removeEventListener("resize", checkMobile);
+	}, []);
 
 	// Cooldown timer for resend
 	useEffect(() => {
@@ -72,11 +84,20 @@ export const OTPVerificationCard = ({
 			// First verify the OTP
 			await verifyOTP({ email, otp });
 
+			// Retrieve credentials from sessionStorage
+			const name = sessionStorage.getItem("signup_name");
+			const password = sessionStorage.getItem("signup_password");
+
 			// If name and password provided, create the account
 			if (name && password) {
 				await signIn("password", { name, email, password, flow: "signUp" });
-				// Account created and logged in, redirect with success
-				router.push("/signin?verified=true");
+
+				// Clear sensitive data from sessionStorage
+				sessionStorage.removeItem("signup_name");
+				sessionStorage.removeItem("signup_password");
+
+				// Account created and logged in, redirect to the authenticated area
+				router.push("/");
 			} else {
 				// Just email verification (for future use cases)
 				router.push("/signin?verified=true");
@@ -111,18 +132,14 @@ export const OTPVerificationCard = ({
 		} finally {
 			setPending(false);
 		}
-	}, [otp, email, name, password, verifyOTP, signIn, router]);
+	}, [otp, email, verifyOTP, signIn, router]);
 
 	// Auto-submit when OTP is complete (mobile only)
 	useEffect(() => {
-		if (otp.length === 6 && !pending) {
-			// Check if device is mobile (screen width < 768px)
-			const isMobile = window.matchMedia("(max-width: 768px)").matches;
-			if (isMobile) {
-				handleVerify();
-			}
+		if (otp.length === 6 && !pending && isMobile) {
+			handleVerify();
 		}
-	}, [otp, handleVerify, pending]);
+	}, [otp, handleVerify, pending, isMobile]);
 
 	const handleResend = async () => {
 		if (!canResend) return;

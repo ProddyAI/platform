@@ -69,8 +69,15 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<Script id="force-light-mode" strategy="beforeInteractive">
 						{`
 							(function() {
-								// Force light mode on public pages (remove dark class if set from workspace)
-								document.documentElement.classList.remove('dark');
+								// Force light mode only on public pages (e.g. /signin, /signup, /home)
+								if (typeof window === 'undefined') return;
+								
+								var publicPaths = ['/', '/home', '/signin', '/signup'];
+								var path = window.location && window.location.pathname ? window.location.pathname : '';
+								
+								if (publicPaths.indexOf(path) !== -1) {
+									document.documentElement.classList.remove('dark');
+								}
 							})();
 						`}
 					</Script>

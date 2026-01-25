@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
 import { OTPVerificationMail } from "@/features/email/components/otp-verification-mail";
+import { logger } from "@/lib/logger";
 
 let resend: Resend | null = null;
 
@@ -14,14 +15,19 @@ const createConvexClient = () => {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 };
 
-export async function POST(req: Request) {
-	try {
-		if (!process.env.RESEND_API_KEY) {
+const getResend = () => {
+	if (!resend) {
+		const resendApiKey = process.env.RESEND_API_KEY;
+		if (!resendApiKey) {
 			throw new Error("RESEND_API_KEY environment variable is required");
 		}
+		resend = new Resend(resendApiKey);
+	}
+	return resend;
+};
 
-		resend ??= new Resend(process.env.RESEND_API_KEY);
-
+export async function POST(req: Request) {
+	try {
 		const { email } = await req.json();
 
 		if (!email) {
@@ -39,11 +45,15 @@ export async function POST(req: Request) {
 		}
 
 		const convex = createConvexClient();
+		const resendClient = getResend();
 
-		// Generate OTP
-		const result = await convex.mutation(api.emailVerification.generateOTP, {
-			email: email.toLowerCase(),
-		});
+		// Generate OTP in Convex (secure - OTP only returned internally)
+		const result = await convex.action(
+			api.emailVerification.generateOTPForEmail,
+			{
+				email: email.toLowerCase(),
+			}
+		);
 
 		if (!result.success || !result.otp) {
 			return NextResponse.json(
@@ -52,27 +62,41 @@ export async function POST(req: Request) {
 			);
 		}
 
-		// Create the OTP email template
+		// Send email using React Email template
 		const emailTemplate = OTPVerificationMail({
 			email: email.toLowerCase(),
 			otp: result.otp,
 		});
 
-		// Send email
-		await resend.emails.send({
+		await resendClient.emails.send({
 			from: "Proddy <no-reply@proddy.tech>",
-			to: email,
+			to: email.toLowerCase(),
 			subject: "Verify your email - Proddy",
 			react: emailTemplate,
 		});
 
 		return NextResponse.json({ success: true });
 	} catch (err) {
-		console.error("OTP send error:", err);
+		// Log error without sensitive information
+		logger.error("OTP send failed", {
+			error: err instanceof Error ? err.message : "Unknown error",
+		});
 
 		// Handle specific error messages
 		if (err instanceof Error) {
-			return NextResponse.json({ error: err.message }, { status: 400 });
+			const message = err.message || "Failed to send OTP";
+			const lowerMessage = message.toLowerCase();
+
+			// Map rate limiting errors to 429 Too Many Requests
+			if (
+				lowerMessage.includes("rate limit") ||
+				lowerMessage.includes("too many requests")
+			) {
+				return NextResponse.json({ error: message }, { status: 429 });
+			}
+
+			// Default to internal server error for other unexpected errors
+			return NextResponse.json({ error: message }, { status: 500 });
 		}
 
 		return NextResponse.json({ error: "Failed to send OTP" }, { status: 500 });
