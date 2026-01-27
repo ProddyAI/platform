@@ -6,7 +6,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
 import { Loader } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useUpdateMyPresence } from "@/../liveblocks.config";
@@ -37,6 +37,8 @@ export const BlockNoteEditor = ({
 
 			const getEditorDom = (): HTMLElement | null => {
 				try {
+					// NOTE: Accessing internal TipTap editor - may break on BlockNote updates
+					// Fallback uses internal _tiptapEditor — pinned to @blocknote/core@0.33.0
 					const tiptapEditor = (editor as any)?._tiptapEditor;
 					return tiptapEditor?.view?.dom || null;
 				} catch {
@@ -46,6 +48,8 @@ export const BlockNoteEditor = ({
 
 			const getCursorCoords = (): { x: number; y: number } | null => {
 				try {
+					// NOTE: Accessing internal TipTap editor - may break on BlockNote updates
+					// Fallback uses internal _tiptapEditor — pinned to @blocknote/core@0.33.0
 					const tiptapEditor = (editor as any)?._tiptapEditor;
 					const view = tiptapEditor?.view;
 					const state = tiptapEditor?.state;
@@ -87,8 +91,8 @@ export const BlockNoteEditor = ({
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
 				}
-				const cursor = getCursorCoords();
 				presenceUpdateTimeout = setTimeout(() => {
+					const cursor = getCursorCoords();
 					updateMyPresence({
 						isEditing: true,
 						lastActivity: Date.now(),
@@ -101,9 +105,8 @@ export const BlockNoteEditor = ({
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
 				}
-				const cursor = getCursorCoords();
-
 				presenceUpdateTimeout = setTimeout(() => {
+					const cursor = getCursorCoords();
 					updateMyPresence({
 						isEditing: false,
 						lastActivity: Date.now(),
@@ -112,14 +115,20 @@ export const BlockNoteEditor = ({
 				}, 100);
 			};
 
-			const interval = setInterval(() => {
-			const cursor = getCursorCoords();
-			if (!cursor) return;
+			let lastCursor: { x: number; y: number } | null = null;
 
-			updateMyPresence({
-				lastActivity: Date.now(),
-				cursor,
-			});
+			const interval = setInterval(() => {
+				const cursor = getCursorCoords();
+				if (!cursor) return;
+
+				// Only update if cursor position changed
+				if (lastCursor?.x === cursor.x && lastCursor?.y === cursor.y) return;
+				lastCursor = cursor;
+
+				updateMyPresence({
+					lastActivity: Date.now(),
+					cursor,
+				});
 			}, 300);
 
 
@@ -167,55 +176,63 @@ export const BlockNoteEditor = ({
 		);
 	}
 
-	const remoteCursors = others
-	.filter((user) => user.presence?.cursor)
-	.map((user) => {
-		const cursor = user.presence!.cursor!;
-		return (
-		<div
-			key={user.connectionId}
-			style={{
-				position: "absolute",
-				left: cursor.x,
-				top: cursor.y,
-				width: 8,
-				height: 8,
-				borderRadius: "50%",
-				backgroundColor: `hsl(${(user.connectionId * 47) % 360} 70% 50%)`,
-				zIndex: 50,
-				pointerEvents: "none",
-				}}
-			/>
-		);
-  	});
+	const [scrollTop, setScrollTop] = useState(0);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+	// Attach scroll event to update scrollTop
+	useEffect(() => {
+		const scrollContainer = scrollContainerRef.current;
+		if (!scrollContainer) return;
+		const handleScroll = () => setScrollTop(scrollContainer.scrollTop);
+		scrollContainer.addEventListener("scroll", handleScroll);
+		return () => scrollContainer.removeEventListener("scroll", handleScroll);
+	}, []);
+
+	const remoteCursors = others
+		.filter((user) => user.presence?.cursor)
+		.map((user) => {
+			const cursor = user.presence!.cursor!;
+			return (
+				<div
+					key={user.connectionId}
+					style={{
+						position: "absolute",
+						left: cursor.x,
+						top: cursor.y - scrollTop,
+						width: 8,
+						height: 8,
+						borderRadius: "50%",
+						backgroundColor: `hsl(${(user.connectionId * 47) % 360} 70% 50%)`,
+						zIndex: 50,
+						pointerEvents: "none",
+					}}
+				/>
+			);
+		});
 
 	return (
-	<div
-		className={className}
-		style={{
-		height: "100%",
-		overflow: "hidden",
-		position: "relative",
-		}}
-	>
-		{remoteCursors}
-
 		<div
-		id="blocknote-scroll-container"
-		style={{
-			height: "100%",
-			overflow: "auto",
-			position: "relative",
-		}}
+			className={className}
+			style={{
+				height: "100%",
+				overflow: "hidden",
+				position: "relative",
+			}}
 		>
-		<BlockNoteView
-			editor={sync.editor}
-			theme="light"
-			style={{ height: "100%" }}
-		/>
+			{remoteCursors}
+
+			<div
+				id="blocknote-scroll-container"
+				ref={scrollContainerRef}
+				className="h-full overflow-auto relative"
+			>
+				<BlockNoteView
+					editor={sync.editor}
+					theme="light"
+					style={{ height: "100%" }}
+				/>
+			</div>
 		</div>
-	</div>
 	);
 
 };

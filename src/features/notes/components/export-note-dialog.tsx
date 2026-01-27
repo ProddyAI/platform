@@ -44,17 +44,27 @@ export const ExportNoteDialog = ({
 	const channelId = useChannelId();
 	const createMessage = useMutation(api.messages.create);
 
+	// Escape HTML entities to prevent XSS and HTML breakage
+	const escapeHtml = (text: string): string => {
+		return text
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#039;");
+	};
+
 	const extractTextFromBlock = (block: any): string => {
 		if (!block?.content) return "";
 
 		if (Array.isArray(block.content)) {
 			return block.content
-			.map((item: any) => {
-				if (item.text) return item.text;
-				if (item.content) return extractTextFromBlock(item);
-				return "";
-			})
-			.join("");
+				.map((item: any) => {
+					if (item.text) return escapeHtml(item.text);
+					if (item.content) return extractTextFromBlock(item);
+					return "";
+				})
+				.join("");
 		}
 
 		return "";
@@ -137,36 +147,37 @@ export const ExportNoteDialog = ({
 	};
 
 	const convertBlockToHTML = (block: any): string => {
-	if (!block || !block.type) return "";
+		if (!block || !block.type) return "";
 
-	switch (block.type) {
-		case "paragraph": {
-			const text = extractTextFromBlock(block);
-			return `<p>${text}</p>`;
-		}
+		switch (block.type) {
+			case "paragraph": {
+				const text = extractTextFromBlock(block);
+				return `<p>${text}</p>`;
+			}
 
-		case "heading": {
-			const level = block.props?.level || 1;
-			const text = extractTextFromBlock(block);
-			return `<h${level}>${text}</h${level}>`;
-		}
+			case "heading": {
+				const level = block.props?.level || 1;
+				const text = extractTextFromBlock(block);
+				return `<h${level}>${text}</h${level}>`;
+			}
 
-		case "bulletListItem": {
-			const text = extractTextFromBlock(block);
-			return `<li>${text}</li>`;
-		}
+			case "bulletListItem": {
+				const text = extractTextFromBlock(block);
+				return `<li>${text}</li>`;
+			}
 
-		case "numberedListItem": {
-			const text = extractTextFromBlock(block);
-			return `<li>${text}</li>`;
-		}
+			case "numberedListItem": {
+				const text = extractTextFromBlock(block);
+				return `<li>${text}</li>`;
+			}
 
-		default: {
-			const text = extractTextFromBlock(block);
-			return `<p>${text}</p>`;
+			default: {
+				const text = extractTextFromBlock(block);
+				return `<p>${text}</p>`;
+			}
 		}
-	}
-};
+	};
+
 
 
 	const convertToPDF = async (note: Note): Promise<ArrayBuffer> => {
@@ -178,14 +189,15 @@ export const ExportNoteDialog = ({
 		container.style.padding = "24px";
 		container.style.fontFamily = "Inter, sans-serif";
 
-		document.body.appendChild(container);
+		let pdf;
+		try {
+			document.body.appendChild(container);
 
-		const pdf = new jsPDF({
-			orientation: "p",
-			unit: "pt",
-			format: "a4",
-		});
-		try{
+			pdf = new jsPDF({
+				orientation: "p",
+				unit: "pt",
+				format: "a4",
+			});
 
 			await pdf.html(container, {
 				x: 40,
@@ -193,12 +205,12 @@ export const ExportNoteDialog = ({
 				width: 515,
 				windowWidth: 800,
 			});
+			return pdf.output("arraybuffer");
 		} finally {
-
-			document.body.removeChild(container);
+			if (container.parentNode) {
+				container.parentNode.removeChild(container);
+			}
 		}
-
-		return pdf.output("arraybuffer");
 	};
 
 	const convertToWord = async (note: Note): Promise<Blob> => {
@@ -291,26 +303,17 @@ export const ExportNoteDialog = ({
 			}
 
 			if (block.type === "numberedListItem") {
-				if (!inNumberedList) {
-					numberedListCounter++;
-					inNumberedList = true;
-				}
-
-				const listRef = `numbered-list-${numberedListCounter}`;
-
 				paragraphs.push(
 					new Paragraph({
-					text,
-					numbering: {
-						reference: listRef,
-						level: 0,
-					},
+						text,
+						numbering: {
+							reference: "numbered-list",
+							level: 0,
+						},
 					})
 				);
 				continue;
 			}
-			
-			inNumberedList = false;
 
 			// Paragraph / default
 			paragraphs.push(
@@ -371,12 +374,13 @@ export const ExportNoteDialog = ({
 
 			// Convert blob → base64 for chat transport
 			const arrayBuffer = await wordBlob.arrayBuffer();
-			const base64 = btoa(
-				new Uint8Array(arrayBuffer).reduce(
-					(data, byte) => data + String.fromCharCode(byte),
-					""
-				)
-			);
+			const uint8Array = new Uint8Array(arrayBuffer);
+			let binary = "";
+			const chunkSize = 8192;
+			for (let i = 0; i < uint8Array.length; i += chunkSize){
+				binary += String.fromCharCode(...uint8Array.slice(i, i + chunkSize));
+			}
+			const base64 = btoa(binary);
 
 			const messageData = {
 				type: "note-export",
@@ -420,9 +424,6 @@ export const ExportNoteDialog = ({
 		setIsExporting(true);
 
 		// Generate export data client-side
-		let exportData: string | undefined;
-		let contentType: string;
-		let fileExtension: string;
 		let downloadUrl: string;
 
 		switch (exportFormat) {

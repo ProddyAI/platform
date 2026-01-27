@@ -35,7 +35,7 @@ const client = createClient({
 
 			if (!response.ok) {
 				console.error("Failed to resolve users:", response.statusText);
-				return [];
+				return userIds.map(() => undefined);
 			}
 
 			const users = await response.json();
@@ -45,10 +45,10 @@ const client = createClient({
 				const user = users[userId];
 				return user ? { name: user.name, avatar: user.avatar } : undefined;
 			});
-		} catch (error) {
-			console.error("Error resolving users:", error);
-			return [];
-		}
+			} catch (error) {
+				console.error("Error resolving users:", error);
+				return userIds.map(() => undefined);
+			}
 	},
 	async resolveMentionSuggestions() {
 		// Used only for Comments. Return a list of userIds that match text.

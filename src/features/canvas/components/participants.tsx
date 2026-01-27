@@ -67,8 +67,8 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 					{currentParticipant && (
 						<UserAvatar
 							borderColor={connectionIdToColor(currentParticipant.connectionId)}
-							src={currentParticipant.info?.picture}
-							name={`${currentParticipant.info?.name} (You)`}
+							src={currentParticipant.info?.picture || undefined}
+							name={`${currentParticipant.info?.name || "You"} (You)`}
 							fallback={currentParticipant.info?.name?.[0] || "Y"}
 							userId={
 								currentParticipant.userId || currentParticipant.info?.name
