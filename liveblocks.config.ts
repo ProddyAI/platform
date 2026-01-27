@@ -22,6 +22,13 @@ const client = createClient({
 				...(window as any).__liveblocksUserInfo,
 			}),
 		});
+		if (response.status === 401 || response.status === 403) {
+			const reason = await response.text().catch(() => "");
+			return { error: "forbidden", reason: reason || "Not authorized" };
+		}
+		if (!response.ok) {
+			throw new Error(`Auth failed: ${response.status}`);
+		}
 		return await response.json();
 	},
 	async resolveUsers({ userIds }) {
@@ -43,7 +50,7 @@ const client = createClient({
 			// Return users in the same order as userIds
 			return userIds.map((userId) => {
 				const user = users[userId];
-				return user ? { name: user.name, avatar: user.avatar } : undefined;
+				return user ? { name: user.name, picture: user.avatar } : undefined;
 			});
 			} catch (error) {
 				console.error("Error resolving users:", error);

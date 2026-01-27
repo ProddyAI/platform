@@ -6,6 +6,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
 import { Loader } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -25,6 +26,19 @@ export const BlockNoteEditor = ({
 }: BlockNoteEditorProps) => {
 	const updateMyPresence = useUpdateMyPresence();
 	const others = useOthers();
+
+	// Hooks for scroll tracking
+	const [scrollTop, setScrollTop] = useState(0);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+	// Attach scroll event to update scrollTop 
+	useEffect(() => {
+		const scrollContainer = scrollContainerRef.current;
+		if (!scrollContainer) return;
+		const handleScroll = () => setScrollTop(scrollContainer.scrollTop);
+		scrollContainer.addEventListener("scroll", handleScroll);
+		return () => scrollContainer.removeEventListener("scroll", handleScroll);
+	}, []);
 
 	const sync = useBlockNoteSync(api.prosemirror, noteId, {
 		snapshotDebounceMs: 1000,
@@ -176,17 +190,7 @@ export const BlockNoteEditor = ({
 		);
 	}
 
-	const [scrollTop, setScrollTop] = useState(0);
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-	// Attach scroll event to update scrollTop
-	useEffect(() => {
-		const scrollContainer = scrollContainerRef.current;
-		if (!scrollContainer) return;
-		const handleScroll = () => setScrollTop(scrollContainer.scrollTop);
-		scrollContainer.addEventListener("scroll", handleScroll);
-		return () => scrollContainer.removeEventListener("scroll", handleScroll);
-	}, []);
 
 	const remoteCursors = others
 		.filter((user) => user.presence?.cursor)
@@ -211,14 +215,9 @@ export const BlockNoteEditor = ({
 		});
 
 	return (
-		<div
-			className={className}
-			style={{
-				height: "100%",
-				overflow: "hidden",
-				position: "relative",
-			}}
-		>
+		   <div
+			   className={cn("h-full overflow-hidden relative", className)}
+		   >
 			{remoteCursors}
 
 			<div

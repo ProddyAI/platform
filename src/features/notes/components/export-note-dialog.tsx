@@ -54,14 +54,15 @@ export const ExportNoteDialog = ({
 			.replace(/'/g, "&#039;");
 	};
 
-	const extractTextFromBlock = (block: any): string => {
+	// Extract text from a block, optionally escaping for HTML
+	const extractTextFromBlock = (block: any, escape = false): string => {
 		if (!block?.content) return "";
 
 		if (Array.isArray(block.content)) {
 			return block.content
 				.map((item: any) => {
-					if (item.text) return escapeHtml(item.text);
-					if (item.content) return extractTextFromBlock(item);
+					if (item.text) return escape ? escapeHtml(item.text) : item.text;
+					if (item.content) return extractTextFromBlock(item, escape);
 					return "";
 				})
 				.join("");
@@ -151,28 +152,28 @@ export const ExportNoteDialog = ({
 
 		switch (block.type) {
 			case "paragraph": {
-				const text = extractTextFromBlock(block);
+				const text = extractTextFromBlock(block, true);
 				return `<p>${text}</p>`;
 			}
 
 			case "heading": {
 				const level = block.props?.level || 1;
-				const text = extractTextFromBlock(block);
+				const text = extractTextFromBlock(block, true);
 				return `<h${level}>${text}</h${level}>`;
 			}
 
 			case "bulletListItem": {
-				const text = extractTextFromBlock(block);
+				const text = extractTextFromBlock(block, true);
 				return `<li>${text}</li>`;
 			}
 
 			case "numberedListItem": {
-				const text = extractTextFromBlock(block);
+				const text = extractTextFromBlock(block, true);
 				return `<li>${text}</li>`;
 			}
 
 			default: {
-				const text = extractTextFromBlock(block);
+				const text = extractTextFromBlock(block, true);
 				return `<p>${text}</p>`;
 			}
 		}
@@ -269,7 +270,7 @@ export const ExportNoteDialog = ({
 
 		// Content
 		for (const block of blocks) {
-			const text = extractTextFromBlock(block);
+			const text = extractTextFromBlock(block, false);
 
 			if (!text) continue;
 

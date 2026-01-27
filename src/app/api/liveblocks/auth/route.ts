@@ -28,17 +28,57 @@ export async function POST(req: NextRequest) {
 			return new NextResponse("Missing or unauthenticated user", { status: 401 });
 		}
 
-		// Optionally, check room membership (e.g., workspace or channel membership)
+
+		// Authorization: check membership for workspace-*, canvas-*, and note-* rooms
 		let isAllowed = true;
 		let memberId = null;
 		const workspaceMatch = /^workspace-(.+)$/.exec(room);
+		const canvasMatch = /^canvas-(.+)$/.exec(room);
+		const noteMatch = /^note-(.+)$/.exec(room);
+
 		if (workspaceMatch) {
+			// Workspace room: check direct membership
 			const workspaceId = workspaceMatch[1] as Id<"workspaces">;
 			const member = await fetchQuery(api.members.current, { workspaceId });
 			if (!member || member.userId !== user._id) {
 				isAllowed = false;
 			} else {
 				memberId = member._id;
+			}
+		} else if (canvasMatch) {
+			// Canvas room: resolve workspaceId via channelId in the canvasId
+			// Canvas roomId format: canvas-{channelId}-{timestamp}
+			const canvasIdParts = canvasMatch[1].split("-");
+			const channelId = canvasIdParts[0] as Id<"channels">;
+			// Fetch channel to get workspaceId
+			const channel = await fetchQuery(api.channels.getById, { id: channelId });
+			if (channel && channel.workspaceId) {
+				const workspaceId = channel.workspaceId as Id<"workspaces">;
+				const member = await fetchQuery(api.members.current, { workspaceId });
+				if (!member || member.userId !== user._id) {
+					isAllowed = false;
+				} else {
+					memberId = member._id;
+				}
+			} else {
+				isAllowed = false;
+			}
+		} else if (noteMatch) {
+			// Note room: resolve workspaceId via noteId
+			// Note roomId format: note-{noteId}
+			const noteId = noteMatch[1] as Id<"notes">;
+			// Fetch note to get workspaceId
+			const note = await fetchQuery(api.notes.getById, { noteId });
+			if (note && note.workspaceId) {
+				const workspaceId = note.workspaceId as Id<"workspaces">;
+				const member = await fetchQuery(api.members.current, { workspaceId });
+				if (!member || member.userId !== user._id) {
+					isAllowed = false;
+				} else {
+					memberId = member._id;
+				}
+			} else {
+				isAllowed = false;
 			}
 		}
 
@@ -61,7 +101,7 @@ export async function POST(req: NextRequest) {
 			userInfo: finalUserInfo,
 		});
 
-		// Grant minimal required permission (FULL_ACCESS only if needed)
+		// Grant FULL_ACCESS for collaborative editing capabilities
 		session.allow(room, session.FULL_ACCESS);
 
 		const { status, body: responseBody } = await session.authorize();
