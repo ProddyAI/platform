@@ -397,7 +397,7 @@ export const ExportNoteDialog = ({
 			}
 
 			await createMessage({
-				workspaceId,
+				workspaceId: workspaceId as Id<"workspaces">,
 				channelId: channelId as Id<"channels">,
 				body: JSON.stringify(messageData),
 			});

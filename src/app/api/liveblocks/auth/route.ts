@@ -1,11 +1,16 @@
+
 import { Liveblocks } from "@liveblocks/node";
 import { type NextRequest, NextResponse } from "next/server";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
+const LIVEBLOCKS_SECRET_KEY = process.env.LIVEBLOCKS_SECRET_KEY;
+if (!LIVEBLOCKS_SECRET_KEY) {
+	throw new Error("LIVEBLOCKS_SECRET_KEY environment variable is not set");
+}
 const liveblocks = new Liveblocks({
-	secret: process.env.LIVEBLOCKS_SECRET_KEY!,
+	secret: LIVEBLOCKS_SECRET_KEY,
 });
 
 export async function POST(req: NextRequest) {
@@ -47,16 +52,18 @@ export async function POST(req: NextRequest) {
 		} else if (canvasMatch) {
 			// Canvas room: resolve workspaceId via channelId in the canvasId
 			// Canvas roomId format: canvas-{channelId}-{timestamp}
-			const canvasIdParts = canvasMatch[1].split("-");
-			const channelId = canvasIdParts[0] as Id<"channels">;
-			// Fetch channel to get workspaceId
-			const channel = await fetchQuery(api.channels.getById, { id: channelId });
-			if (channel && channel.workspaceId) {
-				const workspaceId = channel.workspaceId as Id<"workspaces">;
-				const member = await fetchQuery(api.members.current, { workspaceId });
-				if (member && member.userId === user._id) {
-					isAllowed = true;
-					memberId = member._id;
+			const channelTimestampMatch = /^(.+?)-(\d+)$/.exec(canvasMatch[1]);
+			const channelId = channelTimestampMatch?.[1] as Id<"channels">;
+			if (channelId) {
+				// Fetch channel to get workspaceId
+				const channel = await fetchQuery(api.channels.getById, { id: channelId });
+				if (channel && channel.workspaceId) {
+					const workspaceId = channel.workspaceId as Id<"workspaces">;
+					const member = await fetchQuery(api.members.current, { workspaceId });
+					if (member && member.userId === user._id) {
+						isAllowed = true;
+						memberId = member._id;
+					}
 				}
 			}
 		} else if (noteMatch) {
@@ -100,7 +107,11 @@ export async function POST(req: NextRequest) {
 		const { status, body: responseBody } = await session.authorize();
 		return new Response(responseBody, { status });
 	} catch (error) {
-		console.error("Liveblocks auth error", { hasError: !!error });
+		console.error("Liveblocks auth error:", error);
+		console.error("Liveblocks auth error", {
+			message: error instanceof Error ? error.message : String(error),
+			name: error instanceof Error ? error.name : undefined,
+		});
 		return new NextResponse("Internal Server Error", { status: 500 });
 	}
 }

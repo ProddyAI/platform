@@ -45,7 +45,7 @@ export const BlockNoteEditor = ({
 	});
 
 	// Update presence when editor changes
-		useEffect(() => {
+	useEffect(() => {
 		if (sync.editor) {
 			const editor = sync.editor;
 
@@ -221,7 +221,6 @@ export const BlockNoteEditor = ({
 			{remoteCursors}
 
 			<div
-				id="blocknote-scroll-container"
 				ref={scrollContainerRef}
 				className="h-full overflow-auto relative"
 			>
