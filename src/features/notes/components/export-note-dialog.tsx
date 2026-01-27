@@ -227,8 +227,6 @@ export const ExportNoteDialog = ({
 		}
 
 		const paragraphs: Paragraph[] = [];
-		let numberedListCounter = 0;
-		let inNumberedList = false;
 
 		// Title
 		paragraphs.push(

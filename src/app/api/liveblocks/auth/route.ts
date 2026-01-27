@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
 
 		// Authorization: check membership for workspace-*, canvas-*, and note-* rooms
-		let isAllowed = true;
+		let isAllowed = false;
 		let memberId = null;
 		const workspaceMatch = /^workspace-(.+)$/.exec(room);
 		const canvasMatch = /^canvas-(.+)$/.exec(room);
@@ -40,9 +40,8 @@ export async function POST(req: NextRequest) {
 			// Workspace room: check direct membership
 			const workspaceId = workspaceMatch[1] as Id<"workspaces">;
 			const member = await fetchQuery(api.members.current, { workspaceId });
-			if (!member || member.userId !== user._id) {
-				isAllowed = false;
-			} else {
+			if (member && member.userId === user._id) {
+				isAllowed = true;
 				memberId = member._id;
 			}
 		} else if (canvasMatch) {
@@ -55,13 +54,10 @@ export async function POST(req: NextRequest) {
 			if (channel && channel.workspaceId) {
 				const workspaceId = channel.workspaceId as Id<"workspaces">;
 				const member = await fetchQuery(api.members.current, { workspaceId });
-				if (!member || member.userId !== user._id) {
-					isAllowed = false;
-				} else {
+				if (member && member.userId === user._id) {
+					isAllowed = true;
 					memberId = member._id;
 				}
-			} else {
-				isAllowed = false;
 			}
 		} else if (noteMatch) {
 			// Note room: resolve workspaceId via noteId
@@ -72,13 +68,10 @@ export async function POST(req: NextRequest) {
 			if (note && note.workspaceId) {
 				const workspaceId = note.workspaceId as Id<"workspaces">;
 				const member = await fetchQuery(api.members.current, { workspaceId });
-				if (!member || member.userId !== user._id) {
-					isAllowed = false;
-				} else {
+				if (member && member.userId === user._id) {
+					isAllowed = true;
 					memberId = member._id;
 				}
-			} else {
-				isAllowed = false;
 			}
 		}
 

@@ -153,7 +153,7 @@ export const BlockNoteEditor = ({
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
 				}
-				  clearInterval(interval);
+				clearInterval(interval);
 
 				const dom = getEditorDom();
 				dom?.removeEventListener("focus", handleFocus);

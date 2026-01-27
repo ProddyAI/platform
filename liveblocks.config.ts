@@ -52,10 +52,10 @@ const client = createClient({
 				const user = users[userId];
 				return user ? { name: user.name, picture: user.avatar } : undefined;
 			});
-			} catch (error) {
-				console.error("Error resolving users:", error);
-				return userIds.map(() => undefined);
-			}
+		} catch (error) {
+			console.error("Error resolving users:", error);
+			return userIds.map(() => undefined);
+		}
 	},
 	async resolveMentionSuggestions() {
 		// Used only for Comments. Return a list of userIds that match text.
