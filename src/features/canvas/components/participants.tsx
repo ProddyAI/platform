@@ -57,7 +57,7 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 								borderColor={connectionIdToColor(user.connectionId)}
 								key={user.connectionId}
 								src={user.info?.picture || undefined}
-								name={user.info?.name}
+								name={user.info?.name || ""}
 								fallback={user.info?.name?.[0] || "U"}
 								userId={user.userId || user.info?.name}
 							/>
