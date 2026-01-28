@@ -11,7 +11,7 @@
 }
 
 .sidebar-scrollbar::-webkit-scrollbar-track {
-  background: rgba(74, 13, 104, 0.5); /* Darker purple for track */
+  background: transparent; /* Match sidebar background */
 }
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb {
@@ -26,7 +26,7 @@
 /* For Firefox */
 .sidebar-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(74, 13, 104, 0.5);
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 @layer base {
@@ -159,9 +159,16 @@
 	}
 
 	/* Prevent dark-mode from changing normal chat bubbles (non-author) — keep them light */
-	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer:not(.bg-primary) {
+	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer:not(.bg-primary),
+	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer.bg-muted {
 		background-color: hsl(210 40% 95%) !important; /* slightly lighter for visibility */
 		color: hsl(222.2 84% 4.9%) !important; /* dark text for contrast */
+	}
+
+	/* Ensure text inside non-author messages stays dark */
+	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer:not(.bg-primary) *,
+	.dark .messages-scrollbar .rounded-lg.text-sm.cursor-pointer.bg-muted * {
+		color: hsl(222.2 84% 4.9%) !important;
 	}
 
 /* Calendar header: darken month pill and filter bar in dark mode to use the accent token */
@@ -203,11 +210,26 @@
     box-shadow: none !important;
   }
 
-	/* Quill editor (snow) surfaces */
-	.dark .ql-container,
-	.dark .ql-editor {
+	/* Quill editor (snow) surfaces - only apply to editors outside message bubbles */
+	.dark .ql-container:not(.messages-scrollbar *),
+	.dark .ql-editor:not(.messages-scrollbar *) {
 		background-color: hsl(var(--card)) !important;
 		color: hsl(var(--card-foreground)) !important;
+	}
+
+	/* Keep message bubble content styling unchanged in dark mode */
+	.dark .messages-scrollbar .ql-editor,
+	.dark .messages-scrollbar .ql-renderer {
+		background-color: transparent !important;
+		color: inherit !important;
+	}
+
+	/* Ensure author message bubbles (bg-primary) keep white text in dark mode */
+	.dark .messages-scrollbar .bg-primary .ql-editor,
+	.dark .messages-scrollbar .bg-primary .ql-editor *,
+	.dark .messages-scrollbar .bg-primary .ql-renderer,
+	.dark .messages-scrollbar .bg-primary .ql-renderer * {
+		color: white !important;
 	}
 
 	/* Darken the Quill toolbar (bold/italic/list/etc) in dark mode */
@@ -216,6 +238,44 @@
 		background-color: hsl(var(--card-accent)) !important;
 		border-color: hsl(var(--border)) !important;
 		color: hsl(var(--card-foreground)) !important;
+	}
+
+	/* Style Quill toolbar buttons in dark mode */
+	.dark .ql-snow .ql-stroke,
+	.dark .ql-stroke {
+		stroke: rgba(255, 255, 255, 0.7) !important;
+	}
+
+	.dark .ql-snow .ql-fill,
+	.dark .ql-fill {
+		fill: rgba(255, 255, 255, 0.7) !important;
+	}
+
+	.dark .ql-snow .ql-picker-label,
+	.dark .ql-picker-label {
+		color: rgba(255, 255, 255, 0.7) !important;
+	}
+
+	/* Hover state for toolbar buttons in dark mode */
+	.dark .ql-snow .ql-toolbar button:hover .ql-stroke,
+	.dark .ql-toolbar button:hover .ql-stroke {
+		stroke: #60a5fa !important;
+	}
+
+	.dark .ql-snow .ql-toolbar button:hover .ql-fill,
+	.dark .ql-toolbar button:hover .ql-fill {
+		fill: #60a5fa !important;
+	}
+
+	/* Active/selected state for toolbar buttons in dark mode */
+	.dark .ql-snow .ql-toolbar button.ql-active .ql-stroke,
+	.dark .ql-toolbar button.ql-active .ql-stroke {
+		stroke: #60a5fa !important;
+	}
+
+	.dark .ql-snow .ql-toolbar button.ql-active .ql-fill,
+	.dark .ql-toolbar button.ql-active .ql-fill {
+		fill: #60a5fa !important;
 	}
 
 	.dark .ql-editor a {
@@ -268,6 +328,10 @@
 	font-weight: 400 !important;
 	font-family: 'Poppins', sans-serif !important;
 	font-size: 14px !important;
+}
+
+.dark .ql-editor {
+	color: #ffffff !important;
 }
 
 .ql-editor a {
@@ -692,6 +756,15 @@ a.user-mention:hover {
 	border: 1px solid white;
 }
 
+/* Usetiful badge customization - scoped to specific Usetiful widget elements */
+/* Apply custom badge color only in light mode using specific targeting */
+#usetiful-widget .usetiful-notification-badge,
+#usetiful-widget .usf-notification-badge {
+	background-color: hsl(var(--secondary));
+}
+
+/* Dark mode inherits Usetiful's default theme - no override needed */
+
 /* Widget utility classes */
 .widget-scroll-area {
 	height: 250px;
@@ -701,4 +774,103 @@ a.user-mention:hover {
 
 .dark .widget-scroll-area {
 	background-color: hsl(var(--card-accent));
+}
+
+/* Subtle pink styling for widget badges and buttons in dark mode */
+.dark .widget-badge {
+	background-color: rgba(236, 72, 153, 0.15) !important;
+	color: rgba(236, 72, 153, 0.95) !important;
+	border: 1.5px solid rgba(236, 72, 153, 0.4) !important;
+	box-shadow: 0 0 8px rgba(236, 72, 153, 0.1) !important;
+}
+
+.dark .widget-button {
+	background-color: rgba(236, 72, 153, 0.15) !important;
+	color: rgba(236, 72, 153, 0.95) !important;
+	border: 1px solid rgba(236, 72, 153, 0.3) !important;
+	transition: all 0.2s ease-in-out !important;
+}
+
+.dark .widget-button:hover {
+	background-color: rgba(236, 72, 153, 0.3) !important;
+	color: rgba(255, 255, 255, 0.98) !important;
+	border-color: rgba(236, 72, 153, 0.5) !important;
+	box-shadow: 0 0 12px rgba(236, 72, 153, 0.2) !important;
+	transform: translateY(-1px) !important;
+}
+
+/* Widget title icons in dark mode - subtle purple/pink tint */
+.dark .widget-title-icon {
+	color: rgba(216, 180, 254, 0.9) !important;
+}
+
+/* Edit mode buttons styling for dark mode */
+.dark .edit-mode-button {
+	background-color: rgba(236, 72, 153, 0.15) !important;
+	color: rgba(236, 72, 153, 0.95) !important;
+	border: 1px solid rgba(236, 72, 153, 0.3) !important;
+	transition: all 0.2s ease-in-out !important;
+}
+
+.dark .edit-mode-button:hover {
+	background-color: rgba(236, 72, 153, 0.3) !important;
+	color: rgba(255, 255, 255, 0.98) !important;
+	border-color: rgba(236, 72, 153, 0.5) !important;
+	box-shadow: 0 0 12px rgba(236, 72, 153, 0.2) !important;
+}
+
+.dark .edit-mode-button[data-state="active"],
+.dark .edit-mode-button[aria-selected="true"] {
+	background-color: rgba(236, 72, 153, 0.25) !important;
+	color: rgba(255, 255, 255, 0.98) !important;
+	border-color: rgba(236, 72, 153, 0.45) !important;
+}
+
+/* Chat send button styling for dark mode */
+.dark .chat-send-button {
+	background-color: rgba(236, 72, 153, 0.2) !important;
+	color: rgba(236, 72, 153, 0.95) !important;
+	border: 1px solid rgba(236, 72, 153, 0.35) !important;
+	transition: all 0.2s ease-in-out !important;
+}
+
+.dark .chat-send-button:hover:not(:disabled) {
+	background-color: rgba(236, 72, 153, 0.35) !important;
+	color: rgba(255, 255, 255, 0.98) !important;
+	border-color: rgba(236, 72, 153, 0.55) !important;
+	box-shadow: 0 0 16px rgba(236, 72, 153, 0.25) !important;
+	transform: translateY(-1px) scale(1.05) !important;
+}
+
+.dark .chat-send-button:disabled {
+	background-color: rgba(236, 72, 153, 0.08) !important;
+	color: rgba(236, 72, 153, 0.4) !important;
+	border-color: rgba(236, 72, 153, 0.15) !important;
+	opacity: 0.5 !important;
+}
+
+/* General button styling for dark mode - subtle pink instead of bright pink */
+.dark button[class*="bg-secondary"],
+.dark .bg-secondary {
+	background-color: rgba(236, 72, 153, 0.15) !important;
+	color: rgba(236, 72, 153, 0.95) !important;
+	border: 1px solid rgba(236, 72, 153, 0.3) !important;
+	transition: all 0.2s ease-in-out !important;
+}
+
+.dark button[class*="bg-secondary"]:hover:not(:disabled),
+.dark .bg-secondary:hover:not(:disabled) {
+	background-color: rgba(236, 72, 153, 0.25) !important;
+	color: rgba(255, 255, 255, 0.98) !important;
+	border-color: rgba(236, 72, 153, 0.5) !important;
+	box-shadow: 0 0 12px rgba(236, 72, 153, 0.2) !important;
+	transform: translateY(-1px) !important;
+}
+
+.dark button[class*="bg-secondary"]:disabled,
+.dark .bg-secondary:disabled {
+	background-color: rgba(236, 72, 153, 0.08) !important;
+	color: rgba(236, 72, 153, 0.4) !important;
+	border-color: rgba(236, 72, 153, 0.15) !important;
+	opacity: 0.5 !important;
 }

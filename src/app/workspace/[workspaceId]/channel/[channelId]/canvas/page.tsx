@@ -2,15 +2,15 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { PaintBucket } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { StreamAudioRoom } from "@/features/audio";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
-import { Canvas as CanvasCanvas, CanvasToolbar } from "@/features/canvas";
+import { ExcalidrawCanvas } from "@/features/canvas/components/excalidraw-canvas";
 import { LiveblocksRoom, LiveHeader, LiveSidebar } from "@/features/live";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -30,6 +30,7 @@ const CanvasPage = () => {
 	const workspaceId = useWorkspaceId();
 	const _searchParams = useSearchParams();
 	const _router = useRouter();
+	const _pathname = usePathname();
 
 	// State - simplified like notes page
 	const [activeCanvasId, setActiveCanvasId] = useState<string | null>(null);
@@ -92,12 +93,50 @@ const CanvasPage = () => {
 		return canvasMessages;
 	}, [messages]);
 
+	// If we were opened from a shared link (e.g. from a canvas message),
+	// auto-select the matching canvas so all clients join the same Liveblocks room.
+	useEffect(() => {
+		const roomIdFromUrl = _searchParams?.get("roomId");
+		const canvasIdFromUrl = _searchParams?.get("canvasId");
+		const candidate = roomIdFromUrl || canvasIdFromUrl;
+
+		if (!candidate) return;
+		if (activeCanvasId) return;
+
+		const match = canvasItems.find(
+			(item) =>
+				item._id === candidate ||
+				item.roomId === candidate ||
+				item.savedCanvasId === candidate
+		);
+		if (match) {
+			// We allow setting to roomId as well because activeCanvas lookup supports it.
+			setActiveCanvasId(roomIdFromUrl || match._id);
+		}
+	}, [canvasItems, _searchParams, activeCanvasId]);
+
 	// Get active canvas
 	const activeCanvas = activeCanvasId
 		? canvasItems.find(
 				(item) => item._id === activeCanvasId || item.roomId === activeCanvasId
 			)
 		: null;
+
+	// Keep the URL in sync with the active canvas so sharing/copying the link
+	// reliably opens the same Liveblocks room (and therefore the same Stream call).
+	useEffect(() => {
+		if (!activeCanvas?.roomId) return;
+
+		const currentRoomId = _searchParams?.get("roomId");
+		if (currentRoomId === activeCanvas.roomId) return;
+
+		const nextParams = new URLSearchParams(_searchParams?.toString() ?? "");
+		nextParams.set("roomId", activeCanvas.roomId);
+		// Avoid ambiguity: we treat roomId as the canonical identifier.
+		nextParams.delete("canvasId");
+
+		_router.replace(`${_pathname}?${nextParams.toString()}`);
+	}, [activeCanvas?.roomId, _router, _pathname, _searchParams]);
 
 	// Function to toggle full screen
 	const toggleFullScreen = useCallback(() => {
@@ -117,19 +156,30 @@ const CanvasPage = () => {
 			}
 		} else {
 			// Exit full screen
-			if (document.exitFullscreen) {
-				document
-					.exitFullscreen()
-					.then(() => {
-						setIsFullScreen(false);
-					})
-					.catch((err) => {
-						console.error(
-							`Error attempting to exit full-screen mode: ${err.message}`
-						);
-					});
-			}
+			document
+				.exitFullscreen()
+				.then(() => {
+					setIsFullScreen(false);
+				})
+				.catch((err) => {
+					console.error(
+						`Error attempting to exit full-screen mode: ${err.message}`
+					);
+				});
 		}
+	}, []);
+
+	// Listen for fullscreen changes (e.g., when user presses Escape)
+	useEffect(() => {
+		const handleFullscreenChange = () => {
+			// Update state based on actual fullscreen status
+			setIsFullScreen(!!document.fullscreenElement);
+		};
+
+		document.addEventListener("fullscreenchange", handleFullscreenChange);
+		return () => {
+			document.removeEventListener("fullscreenchange", handleFullscreenChange);
+		};
 	}, []);
 
 	// Mutations for updating and creating messages
@@ -259,7 +309,7 @@ const CanvasPage = () => {
 		return (
 			<div
 				ref={pageContainerRef}
-				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white" : ""}`}
+				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900" : ""}`}
 			>
 				{/* Canvas Sidebar - always show even when no canvas selected */}
 				{!isFullScreen && (
@@ -278,7 +328,7 @@ const CanvasPage = () => {
 					/>
 				)}
 
-				<div className="flex-1 flex flex-col items-center justify-center gap-y-6 bg-white">
+				<div className="flex-1 flex flex-col items-center justify-center gap-y-6 bg-white dark:bg-gray-900">
 					<PaintBucket className="size-16 text-secondary" />
 					<h2 className="text-2xl font-semibold">Canvas</h2>
 					<p className="text-sm text-muted-foreground mb-2">
@@ -310,7 +360,7 @@ const CanvasPage = () => {
 		<LiveblocksRoom roomId={activeCanvas.roomId} roomType="canvas">
 			<div
 				ref={pageContainerRef}
-				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white" : ""}`}
+				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900" : ""}`}
 			>
 				{!isFullScreen && (
 					<LiveSidebar
@@ -362,35 +412,12 @@ const CanvasPage = () => {
 					)}
 
 					<div className="flex flex-1 overflow-hidden">
-						{/* Toolbar - hidden in fullscreen */}
-						{!isFullScreen && <CanvasToolbar />}
-
 						<div className="flex-1 relative">
-							<CanvasCanvas
-								canvasId={channelId}
-								savedCanvasName={activeCanvas.canvasName}
-								toggleFullScreen={toggleFullScreen}
-								isFullScreen={isFullScreen}
-								onTitleChange={(newTitle: string) => {
-									// Update canvas name
-									console.log("Title changed to:", newTitle);
-									// You can implement canvas title update here
-								}}
-								onSave={() => {
-									// Implement canvas save functionality
-									console.log("Save canvas");
-									toast.success("Canvas saved successfully");
-								}}
-								onCreateCanvas={handleCreateCanvas}
-								hasUnsavedChanges={false} // You can track canvas changes here
-								workspaceId={workspaceId as Id<"workspaces">}
-								channelId={channelId as Id<"channels">}
-								createdAt={activeCanvas.createdAt}
-								updatedAt={activeCanvas.updatedAt}
-							/>
+							<ExcalidrawCanvas />
 						</div>
 					</div>
 				</div>
+
 				{/* Audio Room Component */}
 				{activeCanvas.roomId && (
 					<StreamAudioRoom

@@ -1,11 +1,9 @@
 "use client";
 
-import { useRoom } from "@/../liveblocks.config";
 import { Hint } from "@/components/hint";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChannelParticipants } from "@/hooks/use-channel-participants";
 import { generateUserColor } from "@/lib/placeholder-image";
-import { connectionIdToColor } from "@/lib/utils";
 
 // Constants
 const MAX_SHOWN_OTHER_USERS = 3;
@@ -24,32 +22,25 @@ export const LiveParticipants = ({
 	// Fetch real participants from the database
 	const { participants, currentParticipant, participantCount, isLoading } =
 		useChannelParticipants();
-	const _room = useRoom();
 
 	// If still loading, show nothing
 	if (isLoading) return null;
 
 	const hasMoreUsers = participants.length > MAX_SHOWN_OTHER_USERS;
 
-	// Use canvas-style display for both variants when inside LiveHeader
-	// This ensures consistent appearance and uses Liveblocks connection colors
 	return (
 		<div className={`flex items-center gap-2 ${className}`}>
-			{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
-				const backgroundColor = generateUserColor(
-					user.userId || user.info.name || "User"
-				);
+			{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user, idx) => {
+				const userKey = user.userId || user.memberId || `user-${idx}`;
+				const backgroundColor = generateUserColor(userKey);
+				const borderColor = generateUserColor(userKey);
+
 				return (
-					<Hint key={user.connectionId} label={user.info.name} side="bottom">
-						<div
-							className="relative"
-							style={{
-								borderColor: connectionIdToColor(user.connectionId),
-							}}
-						>
+					<Hint key={userKey} label={user.info.name || "Unknown User"} side="bottom">
+						<div className="relative">
 							<Avatar
 								className="h-7 w-7 border-2"
-								style={{ borderColor: connectionIdToColor(user.connectionId) }}
+								style={{ borderColor }}
 							>
 								<AvatarImage src={user.info.picture || undefined} />
 								<AvatarFallback
@@ -66,17 +57,12 @@ export const LiveParticipants = ({
 
 			{currentParticipant && (
 				<Hint label={`${currentParticipant.info.name} (You)`} side="bottom">
-					<div
-						className="relative"
-						style={{
-							borderColor: connectionIdToColor(currentParticipant.connectionId),
-						}}
-					>
+					<div className="relative">
 						<Avatar
 							className="h-7 w-7 border-2"
 							style={{
-								borderColor: connectionIdToColor(
-									currentParticipant.connectionId
+								borderColor: generateUserColor(
+									currentParticipant.userId || "you"
 								),
 							}}
 						>
@@ -85,9 +71,7 @@ export const LiveParticipants = ({
 								className="text-xs font-semibold text-white"
 								style={{
 									backgroundColor: generateUserColor(
-										currentParticipant.userId ||
-											currentParticipant.info.name ||
-											"You"
+										currentParticipant.userId || "you"
 									),
 								}}
 							>

@@ -78,7 +78,7 @@ interface ServiceIntegrationCardProps {
 const toolkits = {
 	github: {
 		icon: FaGithub,
-		color: "bg-gray-900 hover:bg-gray-800",
+		color: "bg-slate-700 hover:bg-slate-600",
 		name: "GitHub",
 		description:
 			"Connect to GitHub for repository management and issue tracking with AgentAuth",
@@ -106,7 +106,7 @@ const toolkits = {
 	},
 	notion: {
 		icon: FileText,
-		color: "bg-gray-800 hover:bg-gray-700",
+		color: "bg-zinc-700 hover:bg-zinc-600",
 		name: "Notion",
 		description:
 			"Connect to Notion for document management and collaboration with AgentAuth",

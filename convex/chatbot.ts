@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
@@ -120,15 +120,14 @@ async function generateLLMResponse(opts: {
 	systemPrompt?: string;
 	recentMessages?: ReadonlyArray<ChatMessage>;
 }): Promise<string> {
-	const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+	const apiKey = process.env.OPENAI_API_KEY;
 	if (!apiKey) {
-		throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is required");
+		throw new Error(
+			"OPENAI_API_KEY is required. Please configure the OpenAI API key in your environment variables."
+		);
 	}
 
-	const modelId =
-		process.env.GOOGLE_GENERATIVE_AI_MODEL ||
-		process.env.GEMINI_MODEL ||
-		"gemini-1.5-flash-8b";
+	const modelId = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 	const system = (opts.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT).trim();
 	const userPrompt = String(opts.prompt ?? "").trim();
@@ -148,13 +147,19 @@ async function generateLLMResponse(opts: {
 		{ role: "user", content: userPrompt },
 	];
 
-	const { text } = await generateText({
-		model: google(modelId),
-		messages,
-		temperature: 0.2,
-	});
+	try {
+		const { text } = await generateText({
+			model: openai(modelId) as any,
+			messages: messages as any,
+			temperature: 0.2,
+		});
 
-	return text.trim();
+		return text.trim();
+	} catch (error) {
+		console.error("OpenAI API error:", error);
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		throw new Error(`AI generation failed: ${errorMessage}`);
+	}
 }
 
 type AssistantIntent = {
@@ -2275,30 +2280,88 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		// ---------------------------------------------------------------------
 		// Note: We intentionally avoid mining/summarizing raw chat messages here.
 
-		const ragResults: Array<{ text: string }> = await ctx.runAction(
-			api.search.semanticSearch,
-			{
+		let ragResults: Array<{ text: string }> = [];
+		let isIndexing = false;
+		try {
+			ragResults = await ctx.runAction(api.search.semanticSearch, {
 				workspaceId: args.workspaceId!,
 				query: args.query,
 				limit: 3,
+			});
+		} catch (error) {
+			// If namespace doesn't exist, trigger indexing for this workspace
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			if (errorMessage.includes("No compatible namespace found")) {
+				console.log(
+					`RAG namespace not found for workspace ${args.workspaceId}, triggering auto-initialization`
+				);
+
+				// Call mutation to schedule indexing (mutations can use scheduler)
+				try {
+					await ctx.runMutation(api.search.autoInitializeWorkspace, {
+						workspaceId: args.workspaceId!,
+						limit: 1000,
+					});
+					isIndexing = true;
+					console.log(
+						`Auto-initialization triggered for workspace ${args.workspaceId}`
+					);
+				} catch (indexError) {
+					console.error("Failed to trigger auto-initialization:", indexError);
+				}
+
+				// Continue without RAG results - will use LLM without context
+				ragResults = [];
+			} else {
+				console.error("RAG search error:", error);
+				ragResults = [];
 			}
-		);
+		}
 
 		const ragContext = ragResults
 			.map((c, i) => `[Doc ${i + 1}] ${c.text ?? ""}`)
 			.join("\n\n");
 
+		// If no RAG context available, provide helpful response without requiring indexed data
+		if (!ragContext) {
+			// Generate a helpful response using LLM without RAG context
+			const generalPrompt = `You are Proddy, a personal work assistant. The user asked: "${args.query}"
+			
+Provide a helpful, friendly response. You can:
+- Explain what you can help with (calendar, tasks, team status, messages, notes, boards)
+- Suggest they ask about specific features
+- Provide general productivity advice if relevant to their question
+
+Keep it brief and actionable.`;
+
+			try {
+				const answer = await generateLLMResponse({
+					prompt: generalPrompt,
+					systemPrompt: DEFAULT_SYSTEM_PROMPT,
+					recentMessages: recentChatMessages,
+				});
+				return {
+					answer:
+						answer +
+						(isIndexing
+							? "\n\n💡 *I'm learning about your workspace in the background to provide better answers soon!*"
+							: ""),
+					sources: [],
+				};
+			} catch (error) {
+				console.error("LLM generation error:", error);
+				return {
+					answer:
+						"I'm here to help! You can ask me about:\n• Your calendar and meetings\n• Tasks and deadlines\n• Team status updates\n• Messages in channels\n• Notes and boards\n\nWhat would you like to know?",
+					sources: [],
+				};
+			}
+		}
+
 		// Cost-safe: do not include large channel histories in general QA.
 		const combinedContext =
 			`${ragContext ? `KNOWLEDGE BASE:\n${ragContext}` : ""}`.trim();
-
-		if (!combinedContext) {
-			return {
-				answer:
-					"I don't have enough information (no documents or recent messages found).",
-				sources: [],
-			};
-		}
 
 		const mixedPrompt = `Answer as a personal work assistant using ONLY the provided context.
 
@@ -2320,13 +2383,41 @@ Context:\n${combinedContext}`;
 			});
 			const sources = [...(ragResults.length ? ["Knowledge Base"] : [])];
 			return { answer, sources };
-		} catch {
-			// Best-effort assistant response without quoting docs.
-			const lines: string[] = [];
+		} catch (error) {
+			// Log the actual error for debugging
+			console.error("LLM generation error in chatbot:", error);
 
-			lines.push("• [Unable to generate detailed answer at this time]");
+			// Provide more specific error message
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+
+			if (errorMessage.includes("OPENAI_API_KEY")) {
+				return {
+					answer:
+						"AI service is not configured. Please contact your administrator to set up the OpenAI API key.",
+					sources: [],
+				};
+			}
+
+			if (
+				errorMessage.includes("rate limit") ||
+				errorMessage.includes("quota")
+			) {
+				return {
+					answer:
+						"AI service is temporarily unavailable due to rate limits. Please try again in a moment.",
+					sources: [],
+				};
+			}
+
+			// Generic fallback with context info
+			const contextInfo =
+				ragResults.length > 0
+					? `I found ${ragResults.length} relevant document(s), but couldn't generate a summary.`
+					: "I couldn't find relevant information to answer your question.";
+
 			return {
-				answer: lines.join("\n"),
+				answer: `Unable to generate a response at this time. ${contextInfo}\n\nError: ${errorMessage.substring(0, 150)}`,
 				sources: [],
 			};
 		}

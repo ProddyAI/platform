@@ -90,20 +90,29 @@ export const Toolbar = ({
 			/>
 
 			<div className="absolute right-5 top-0">
-				<div className="rounded-md border bg-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+				<div className="rounded-md border bg-white dark:bg-gray-800 dark:border-gray-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
 					<Hint label={isSelected ? "Deselect message" : "Select message"}>
 						<Button
 							variant="ghost"
 							size="iconSm"
 							onClick={() => toggleMessageSelection(messageId as any)}
-							className={isSelected ? "text-blue-500" : ""}
+							className={
+								isSelected
+									? "text-blue-500 dark:text-blue-400"
+									: "dark:text-white dark:hover:text-blue-400"
+							}
 						>
 							<CheckSquare className="size-4" />
 						</Button>
 					</Hint>
 
 					<EmojiPopover hint="Add reaction" onEmojiSelect={handleReaction}>
-						<Button variant="ghost" size="iconSm" disabled={isPending}>
+						<Button
+							variant="ghost"
+							size="iconSm"
+							disabled={isPending}
+							className="dark:text-white dark:hover:text-blue-400"
+						>
 							<Smile className="size-4" />
 						</Button>
 					</EmojiPopover>
@@ -114,7 +123,7 @@ export const Toolbar = ({
 							size="iconSm"
 							disabled={isPending}
 							onClick={() => setIsAddToTaskModalOpen(true)}
-							className="text-secondary hover:bg-secondary/10"
+							className="text-secondary hover:bg-secondary/10 dark:text-white dark:hover:text-blue-400"
 						>
 							<ListTodo className="size-4" />
 						</Button>
@@ -127,6 +136,7 @@ export const Toolbar = ({
 								variant="ghost"
 								size="iconSm"
 								disabled={isPending}
+								className="dark:text-white dark:hover:text-blue-400"
 							>
 								<MessageSquareText className="size-4" />
 							</Button>
@@ -140,6 +150,7 @@ export const Toolbar = ({
 								variant="ghost"
 								size="iconSm"
 								disabled={isPending}
+								className="dark:text-white dark:hover:text-blue-400"
 							>
 								<Pencil className="size-4" />
 							</Button>
@@ -153,6 +164,7 @@ export const Toolbar = ({
 								variant="ghost"
 								size="iconSm"
 								disabled={isPending}
+								className="dark:text-white dark:hover:text-blue-400"
 							>
 								<Trash className="size-4" />
 							</Button>

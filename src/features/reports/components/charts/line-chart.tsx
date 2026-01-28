@@ -133,9 +133,11 @@ export const LineChart = ({
 	const range = maxValue - minValue;
 
 	// Add padding to the top and bottom
-	const paddingFactor = 0.1;
+	// Use a more generous padding for better visualization
+	const paddingFactor = 0.2;
 	const adjustedMaxValue = maxValue + range * paddingFactor;
-	const adjustedMinValue = Math.max(0, minValue - range * paddingFactor);
+	// Always start from 0 for better context
+	const adjustedMinValue = 0;
 	const adjustedRange = adjustedMaxValue - adjustedMinValue;
 
 	// Create points for the line with internal margins
@@ -185,7 +187,7 @@ export const LineChart = ({
 				<svg
 					viewBox="0 0 100 100"
 					className="w-full h-full"
-					preserveAspectRatio="none"
+					preserveAspectRatio="xMidYMid meet"
 				>
 					{/* Grid lines */}
 					{showGrid && (
@@ -217,12 +219,12 @@ export const LineChart = ({
 					)}
 
 					{/* Area under the line */}
-					<path d={areaPath} className="fill-secondary/10" />
+					<path d={areaPath} className="fill-secondary/20" />
 
 					{/* Line */}
 					<path
 						d={linePath}
-						className={cn("fill-none stroke-1", lineColor)}
+						className={cn("fill-none stroke-[2]", lineColor)}
 						strokeLinecap="round"
 						strokeLinejoin="round"
 					/>
@@ -238,10 +240,10 @@ export const LineChart = ({
 										data-point-index={point.index}
 										cx={point.x}
 										cy={point.y}
-										r={isHovered ? "2.5" : "1.5"}
+										r={isHovered ? "3" : "2"}
 										className={cn(
 											"stroke-white transition-all duration-200",
-											isHovered ? "stroke-[3]" : "stroke-2",
+											isHovered ? "stroke-[3.5]" : "stroke-[2.5]",
 											pointColor,
 											onPointClick && "cursor-pointer"
 										)}

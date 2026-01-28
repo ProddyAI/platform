@@ -310,10 +310,10 @@ const CalendarPage = () => {
 																key={event._id}
 																className={`block rounded-sm p-1 text-[10px] leading-tight transition-colors ${
 																	event.type === "board-card"
-																		? "bg-purple-100 hover:bg-purple-200 border-l-2 border-purple-500"
+																		? "bg-purple-100 hover:bg-purple-200 border-l-2 border-purple-500 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:border-purple-400 dark:text-purple-100"
 																		: event.type === "task"
-																			? "bg-green-100 hover:bg-green-200 border-l-2 border-green-500"
-																			: "bg-blue-100 hover:bg-blue-200 border-l-2 border-blue-500"
+																			? "bg-green-100 hover:bg-green-200 border-l-2 border-green-500 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:border-green-400 dark:text-green-100"
+																			: "bg-blue-100 hover:bg-blue-200 border-l-2 border-blue-500 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100"
 																}`}
 																title={
 																	event.type === "board-card" && event.boardCard
@@ -342,7 +342,7 @@ const CalendarPage = () => {
 																				"boardCard" in event &&
 																				event.boardCard &&
 																				event.boardCard.description && (
-																					<div className="text-[8px] text-muted-foreground truncate">
+																					<div className="text-[8px] text-gray-600 dark:text-gray-300 truncate">
 																						{event.boardCard.description}
 																					</div>
 																				)}
@@ -350,12 +350,12 @@ const CalendarPage = () => {
 																	) : event.type === "task" && event.task ? (
 																		<>
 																			<div
-																				className={`font-medium ${event.task.completed ? "line-through text-muted-foreground" : ""}`}
+																				className={`font-medium ${event.task.completed ? "line-through text-gray-500 dark:text-gray-400" : ""}`}
 																			>
 																				{event.task.title}
 																			</div>
 																			{event.task.description && (
-																				<div className="text-[8px] text-muted-foreground truncate">
+																				<div className="text-[8px] text-gray-600 dark:text-gray-300 truncate">
 																					{event.task.description}
 																				</div>
 																			)}
@@ -371,7 +371,7 @@ const CalendarPage = () => {
 																		"Event"
 																	)}
 																</div>
-																<div className="text-[8px] text-muted-foreground flex items-center justify-between">
+																<div className="text-[8px] text-gray-600 dark:text-gray-400 flex items-center justify-between">
 																	<span>
 																		{event.type === "board-card" ? (
 																			<>
@@ -397,11 +397,11 @@ const CalendarPage = () => {
 																			<span
 																				className={`text-[8px] px-1 rounded ${
 																					event.boardCard.priority === "high"
-																						? "bg-purple-200 text-purple-700"
+																						? "bg-purple-200 text-purple-700 dark:bg-purple-800 dark:text-purple-200"
 																						: event.boardCard.priority ===
 																								"medium"
-																							? "bg-purple-100 text-purple-600"
-																							: "bg-purple-50 text-purple-500"
+																							? "bg-purple-100 text-purple-600 dark:bg-purple-700 dark:text-purple-200"
+																							: "bg-purple-50 text-purple-500 dark:bg-purple-600 dark:text-purple-200"
 																				}`}
 																			>
 																				{event.boardCard.priority}
@@ -412,10 +412,10 @@ const CalendarPage = () => {
 																			<span
 																				className={`text-[8px] px-1 rounded ${
 																					event.task.priority === "high"
-																						? "bg-green-200 text-green-700"
+																						? "bg-green-200 text-green-700 dark:bg-green-800 dark:text-green-200"
 																						: event.task.priority === "medium"
-																							? "bg-green-100 text-green-600"
-																							: "bg-green-50 text-green-500"
+																							? "bg-green-100 text-green-600 dark:bg-green-700 dark:text-green-200"
+																							: "bg-green-50 text-green-500 dark:bg-green-600 dark:text-green-200"
 																				}`}
 																			>
 																				{event.task.priority}
@@ -423,7 +423,7 @@ const CalendarPage = () => {
 																		)}
 																	{event.type === "task" &&
 																		event.task?.completed && (
-																			<span className="text-[8px] px-1 rounded bg-green-200 text-green-700 font-medium">
+																			<span className="text-[8px] px-1 rounded bg-green-200 text-green-700 font-medium dark:bg-green-800 dark:text-green-200">
 																				Completed
 																			</span>
 																		)}

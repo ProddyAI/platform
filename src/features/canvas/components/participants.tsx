@@ -1,24 +1,8 @@
 "use client";
 
 import { useChannelParticipants } from "../../../hooks/use-channel-participants";
-import { connectionIdToColor } from "../../../lib/utils";
+import { stringToColor } from "../../../lib/utils";
 import { UserAvatar } from "./user-avatar";
-
-// Define types for the Liveblocks user data
-interface UserInfo {
-	name?: string;
-	picture?: string;
-}
-
-interface User {
-	memberId?: string;
-	userId?: string;
-	info?: UserInfo;
-}
-
-interface CurrentUser extends User {
-	presence?: any;
-}
 
 // Constants
 const MAX_SHOWN_OTHER_USERS = 2;
@@ -49,35 +33,28 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 				)}
 				<div className="flex gap-x-2">
 					{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user, idx) => {
-						const userKey =
-							user.userId ||
-							user.memberId ||
-							user.info?.name ||
-							(user.connectionId !== undefined
-								? `conn-${user.connectionId}`
-								: `user-${idx}`);
+						const userKey = user.userId || user.memberId || `user-${idx}`;
 						return (
 							<UserAvatar
-								borderColor={connectionIdToColor(user.connectionId)}
+								borderColor={stringToColor(userKey)}
 								key={userKey}
 								src={user.info?.picture ?? undefined}
-								name={user.info?.name || ""}
+								name={user.info?.name || "Unknown User"}
 								fallback={user.info?.name?.[0] || "U"}
-								userId={user.userId || user.info?.name}
+								userId={user.userId || undefined}
 							/>
 						);
 					})}
 
 					{currentParticipant && (
 						<UserAvatar
-							  borderColor={connectionIdToColor(currentParticipant.connectionId)}
-							key={currentParticipant.userId || currentParticipant.info?.name || "you"}
+							borderColor={stringToColor(
+								currentParticipant.userId || "you"
+							)}
 							src={currentParticipant.info?.picture ?? undefined}
-							name={`${currentParticipant.info?.name || "You"} (You)`}
+							name={`${currentParticipant.info?.name} (You)`}
 							fallback={currentParticipant.info?.name?.[0] || "Y"}
-							userId={
-								currentParticipant.userId || currentParticipant.info?.name
-							}
+							userId={currentParticipant.userId || undefined}
 						/>
 					)}
 

@@ -182,7 +182,7 @@ export const MentionsWidget = ({
 													</Badge>
 												)}
 											</div>
-											<div className="flex items-center text-xs text-muted-foreground">
+											<div className="flex items-center text-xs text-red-600 dark:text-red-400 font-medium">
 												<Clock className="mr-1 h-3 w-3" />
 												{(() => {
 													try {
@@ -212,7 +212,7 @@ export const MentionsWidget = ({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
+											className="mt-2 h-8 px-3 w-auto justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 											onClick={() => handleViewMention(mention)}
 										>
 											View mention
