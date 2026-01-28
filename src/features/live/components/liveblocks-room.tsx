@@ -41,7 +41,6 @@ export const LiveblocksRoom = ({
 	);
 
 	// Set up user info for Liveblocks authentication
-	// Set up user info for Liveblocks authentication
 	useEffect(() => {
 		if (currentUser && currentMember) {
 			window.__liveblocksUserInfo = {

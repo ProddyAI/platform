@@ -24,14 +24,13 @@ export async function POST(req: NextRequest) {
 
 		// Derive user info from server-side session (Convex)
 		const user = await fetchQuery(api.users.current, {});
-		if (!user || !user._id || !user.name) {
-			console.error("Liveblocks auth: missing or unauthenticated user", {
-				hasUser: !!user,
-				hasId: !!user?._id,
-				hasName: !!user?.name,
-			});
-			return new NextResponse("Missing or unauthenticated user", { status: 401 });
+		if (!user || !user._id) {
+			console.error("Liveblocks auth: missing or unauthenticated user");
+			return new NextResponse("Unauthorized", { status: 401 });
 		}
+
+		// Fallback for missing name
+		const userName = user.name || user.email || "Anonymous User";
 
 
 		// Authorization: check membership for workspace-*, canvas-*, and note-* rooms
@@ -53,8 +52,8 @@ export async function POST(req: NextRequest) {
 			// Canvas room: resolve workspaceId via channelId in the canvasId
 			// Canvas roomId format: canvas-{channelId}-{timestamp}
 			const channelTimestampMatch = /^(.+?)-(\d+)$/.exec(canvasMatch[1]);
-			const channelId = channelTimestampMatch?.[1] as Id<"channels">;
-			if (channelId) {
+			if (channelTimestampMatch) {
+				const channelId = channelTimestampMatch[1] as Id<"channels">;
 				// Fetch channel to get workspaceId
 				const channel = await fetchQuery(api.channels.getById, { id: channelId });
 				if (channel && channel.workspaceId) {
@@ -92,7 +91,7 @@ export async function POST(req: NextRequest) {
 
 		const finalUserInfo = {
 			id: user._id,
-			name: user.name,
+			name: userName,
 			picture: user.image || null,
 			memberId,
 		};
@@ -107,7 +106,6 @@ export async function POST(req: NextRequest) {
 		const { status, body: responseBody } = await session.authorize();
 		return new Response(responseBody, { status });
 	} catch (error) {
-		console.error("Liveblocks auth error:", error);
 		console.error("Liveblocks auth error", {
 			message: error instanceof Error ? error.message : String(error),
 			name: error instanceof Error ? error.name : undefined,

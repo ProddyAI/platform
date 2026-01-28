@@ -31,18 +31,20 @@ export const BlockNoteEditor = ({
 	const [scrollTop, setScrollTop] = useState(0);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-	// Attach scroll event to update scrollTop 
-	useEffect(() => {
-		const scrollContainer = scrollContainerRef.current;
-		if (!scrollContainer) return;
-		const handleScroll = () => setScrollTop(scrollContainer.scrollTop);
-		scrollContainer.addEventListener("scroll", handleScroll);
-		return () => scrollContainer.removeEventListener("scroll", handleScroll);
-	}, []);
-
 	const sync = useBlockNoteSync(api.prosemirror, noteId, {
 		snapshotDebounceMs: 1000,
 	});
+
+	// Attach scroll event to update scrollTop, after editor/scroll container is ready
+	useEffect(() => {
+		const scrollContainer = scrollContainerRef.current;
+		if (!sync.editor || !scrollContainer) return;
+		const handleScroll = () => setScrollTop(scrollContainer.scrollTop);
+		scrollContainer.addEventListener("scroll", handleScroll);
+		return () => {
+			scrollContainer.removeEventListener("scroll", handleScroll);
+		};
+	}, [sync.editor]);
 
 	// Update presence when editor changes
 	useEffect(() => {
@@ -73,9 +75,14 @@ export const BlockNoteEditor = ({
 					const coords = view.coordsAtPos(from);
 					const editorRect = view.dom.getBoundingClientRect();
 
+					// Add scroll offsets for document-relative positioning
+					const scrollContainer = scrollContainerRef.current;
+					const scrollTop = scrollContainer?.scrollTop ?? window.scrollY ?? window.pageYOffset ?? 0;
+					const scrollLeft = scrollContainer?.scrollLeft ?? window.scrollX ?? window.pageXOffset ?? 0;
+
 					return {
-						x: coords.left - editorRect.left,
-						y: coords.top - editorRect.top,
+						x: coords.left - editorRect.left + scrollLeft,
+						y: coords.top - editorRect.top + scrollTop,
 					};
 				} catch {
 					return null;

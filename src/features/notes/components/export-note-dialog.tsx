@@ -215,13 +215,13 @@ export const ExportNoteDialog = ({
 	};
 
 	const convertToWord = async (note: Note): Promise<Blob> => {
-		let blocks: any[] = [];
-
+		let blocks: any[];
 		try {
 			const parsed = JSON.parse(note.content);
-			if (Array.isArray(parsed)) {
-			blocks = parsed;
+			if (!Array.isArray(parsed)) {
+				throw new Error("Failed to parse note content");
 			}
+			blocks = parsed;
 		} catch {
 			throw new Error("Failed to parse note content");
 		}
@@ -368,6 +368,8 @@ export const ExportNoteDialog = ({
 				return;
 			}
 
+			setIsExporting(true);
+
 			// Convert note to Word
 			const wordBlob = await convertToWord(note);
 
@@ -390,7 +392,7 @@ export const ExportNoteDialog = ({
 				exportData: base64,
 				fileName: `${note.title}.docx`,
 			};
-			
+
 			if (!workspaceId || !channelId) {
 				toast.error("Cannot share: missing workspace or channel");
 				return;
@@ -407,6 +409,8 @@ export const ExportNoteDialog = ({
 		} catch (error) {
 			console.error("Export to chat failed:", error);
 			toast.error("Failed to share note in chat");
+		} finally {
+			setIsExporting(false);
 		}
 	};
 

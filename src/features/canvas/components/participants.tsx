@@ -50,9 +50,14 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 					</span>
 				)}
 				<div className="flex gap-x-2">
-					{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
+					{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user, idx) => {
 						const userKey =
-							user.userId || user.memberId || user.info?.name || "user";
+							user.userId ||
+							user.memberId ||
+							user.info?.name ||
+							(user.connectionId !== undefined
+								? `conn-${user.connectionId}`
+								: `user-${idx}`);
 						return (
 							<UserAvatar
 								borderColor={connectionIdToColor(user.connectionId)}
