@@ -131,27 +131,48 @@ const NotesPage = () => {
 
 	// Wrap the entire notes UI in LiveblocksRoom for Liveblocks presence
 	return (
-		<LiveblocksRoom
-			roomId={`note-${activeNote?._id || channelId}`}
-			roomType="note"
-		>
-			<NotesContent
-				workspaceId={workspaceId}
-				channelId={channelId}
-				activeNoteId={activeNoteId}
-				activeNote={activeNote || null}
-				notes={notes}
-				isFullScreen={isFullScreen}
-				setIsFullScreen={setIsFullScreen}
-				showExportDialog={showExportDialog}
-				setShowExportDialog={setShowExportDialog}
-				pageContainerRef={pageContainerRef}
-				onNoteSelect={handleNoteSelect}
-				onCreateNote={handleCreateNote}
-				onDeleteNote={handleDeleteNote}
-				onUpdateNote={handleNoteUpdate}
-			/>
-		</LiveblocksRoom>
+		<>
+			{activeNote?._id ? (
+				<LiveblocksRoom
+					roomId={`note-${activeNote._id}`}
+					roomType="note"
+				>
+					<NotesContent
+						workspaceId={workspaceId}
+						channelId={channelId}
+						activeNoteId={activeNoteId}
+						activeNote={activeNote || null}
+						notes={notes}
+						isFullScreen={isFullScreen}
+						setIsFullScreen={setIsFullScreen}
+						showExportDialog={showExportDialog}
+						setShowExportDialog={setShowExportDialog}
+						pageContainerRef={pageContainerRef}
+						onNoteSelect={handleNoteSelect}
+						onCreateNote={handleCreateNote}
+						onDeleteNote={handleDeleteNote}
+						onUpdateNote={handleNoteUpdate}
+					/>
+				</LiveblocksRoom>
+			) : (
+				<NotesContent
+					workspaceId={workspaceId}
+					channelId={channelId}
+					activeNoteId={activeNoteId}
+					activeNote={activeNote || null}
+					notes={notes}
+					isFullScreen={isFullScreen}
+					setIsFullScreen={setIsFullScreen}
+					showExportDialog={showExportDialog}
+					setShowExportDialog={setShowExportDialog}
+					pageContainerRef={pageContainerRef}
+					onNoteSelect={handleNoteSelect}
+					onCreateNote={handleCreateNote}
+					onDeleteNote={handleDeleteNote}
+					onUpdateNote={handleNoteUpdate}
+				/>
+			)}
+		</>
 	);
 };
 
