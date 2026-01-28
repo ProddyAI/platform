@@ -166,6 +166,7 @@ export const BlockNoteEditor = ({
 				const dom = getEditorDom();
 				dom?.removeEventListener("focus", handleFocus);
 				dom?.removeEventListener("click", handleFocus);
+				// No unsubscribe needed for editor event handlers
 
 				updateMyPresence({
 					isEditing: false,

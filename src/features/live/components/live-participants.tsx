@@ -55,37 +55,34 @@ export const LiveParticipants = ({
 			})}
 
 			{currentParticipant && (
-				<Hint
-					label={
-						currentParticipant.info.name
-							? `${currentParticipant.info.name} (You)`
-							: "You"
-					}
-					side="bottom"
-				>
-					<div className="relative">
-						<Avatar
-							className="h-7 w-7 border-2"
-							style={{
-								borderColor: generateUserColor(
-									currentParticipant.userId || "you"
-								),
-							}}
+				(() => {
+					const currentUserColor = generateUserColor(currentParticipant.userId || "you");
+					return (
+						<Hint
+							label={
+								currentParticipant.info.name
+									? `${currentParticipant.info.name} (You)`
+									: "You"
+							}
+							side="bottom"
 						>
-							<AvatarImage src={currentParticipant.info.picture || undefined} />
-							<AvatarFallback
-								className="text-xs font-semibold text-white"
-								style={{
-									backgroundColor: generateUserColor(
-										currentParticipant.userId || "you"
-									),
-								}}
-							>
-								{currentParticipant.info.name?.[0] || "Y"}
-							</AvatarFallback>
-						</Avatar>
-					</div>
-				</Hint>
+							<div className="relative">
+								<Avatar
+									className="h-7 w-7 border-2"
+									style={{ borderColor: currentUserColor }}
+								>
+									<AvatarImage src={currentParticipant.info.picture || undefined} />
+									<AvatarFallback
+										className="text-xs font-semibold text-white"
+										style={{ backgroundColor: currentUserColor }}
+									>
+										{currentParticipant.info.name?.[0] || "Y"}
+									</AvatarFallback>
+								</Avatar>
+							</div>
+						</Hint>
+					);
+				})()
 			)}
 
 			{hasMoreUsers && (

@@ -51,15 +51,23 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 					})}
 
 					{currentParticipant && (
-						<UserAvatar
-							borderColor={stringToColor(
-								currentParticipant.userId || "you"
-							)}
-							src={currentParticipant.info?.picture ?? undefined}
-							name={`${currentParticipant.info?.name} (You)`}
-							fallback={currentParticipant.info?.name?.[0] || "Y"}
-							userId={currentParticipant.userId || undefined}
-						/>
+						(() => {
+							const displayName =
+								currentParticipant.info?.name && currentParticipant.info?.name !== "You"
+									? `${currentParticipant.info.name} (You)`
+									: "You";
+							return (
+								<UserAvatar
+									borderColor={stringToColor(
+										currentParticipant.userId || "you"
+									)}
+									src={currentParticipant.info?.picture ?? undefined}
+									name={displayName}
+									fallback={displayName[0] || "Y"}
+									userId={currentParticipant.userId || undefined}
+								/>
+							);
+						})()
 					)}
 
 					{hasMoreUsers && (
