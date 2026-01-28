@@ -18,6 +18,7 @@ import type * as conversations from "../conversations.js";
 import type * as crons from "../crons.js";
 import type * as direct from "../direct.js";
 import type * as email from "../email.js";
+import type * as emailVerification from "../emailVerification.js";
 import type * as http from "../http.js";
 import type * as integrations from "../integrations.js";
 import type * as members from "../members.js";
@@ -27,6 +28,7 @@ import type * as notes from "../notes.js";
 import type * as preferences from "../preferences.js";
 import type * as presence from "../presence.js";
 import type * as prosemirror from "../prosemirror.js";
+import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
 import type * as search from "../search.js";
 import type * as tasks from "../tasks.js";
@@ -34,6 +36,7 @@ import type * as threadTitles from "../threadTitles.js";
 import type * as upload from "../upload.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
+import type * as workspaceInvites from "../workspaceInvites.js";
 import type * as workspaces from "../workspaces.js";
 
 import type {
@@ -53,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   direct: typeof direct;
   email: typeof email;
+  emailVerification: typeof emailVerification;
   http: typeof http;
   integrations: typeof integrations;
   members: typeof members;
@@ -62,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   preferences: typeof preferences;
   presence: typeof presence;
   prosemirror: typeof prosemirror;
+  rateLimit: typeof rateLimit;
   reactions: typeof reactions;
   search: typeof search;
   tasks: typeof tasks;
@@ -69,6 +74,7 @@ declare const fullApi: ApiFromModules<{
   upload: typeof upload;
   users: typeof users;
   utils: typeof utils;
+  workspaceInvites: typeof workspaceInvites;
   workspaces: typeof workspaces;
 }>;
 

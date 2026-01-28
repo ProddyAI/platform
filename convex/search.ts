@@ -1,10 +1,10 @@
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { api, components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, query } from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 
 // Define result types (maintaining compatibility with existing API)
 type SearchResult = {
@@ -95,8 +95,8 @@ type FilterTypes = {
 // `any` to bypass the transient type mismatch without changing runtime behavior.
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: google.textEmbeddingModel("text-embedding-003") as any,
-	embeddingDimension: 768, // Gemini text-embedding-003 uses 768 dimensions
+	textEmbeddingModel: openai.embedding("text-embedding-3-small") as any,
+	embeddingDimension: 1536,
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
@@ -127,11 +127,9 @@ export const indexContent = action({
 			return;
 		}
 
-		// Check if Gemini API key is configured for embeddings
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error(
-				"GOOGLE_GENERATIVE_AI_API_KEY not configured, skipping content indexing"
-			);
+		// Check if OpenAI API key is configured for embeddings
+		if (!process.env.OPENAI_API_KEY) {
+			console.error("OPENAI_API_KEY not configured, skipping content indexing");
 			return;
 		}
 
@@ -197,10 +195,10 @@ export const semanticSearch = action({
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
-		// Check if Gemini API key is configured for embeddings
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+		// Check if OpenAI API key is configured for embeddings
+		if (!process.env.OPENAI_API_KEY) {
 			console.warn(
-				"GOOGLE_GENERATIVE_AI_API_KEY not configured, falling back to empty results"
+				"OPENAI_API_KEY not configured, falling back to empty results"
 			);
 			return [];
 		}
@@ -781,6 +779,76 @@ export const getWorkspaceTasks = query({
 });
 
 /**
+ * Check if a RAG namespace exists for a workspace.
+ * Returns true if the namespace exists and is ready.
+ */
+export const checkNamespaceExists = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (_ctx, _args) => {
+		// This is a placeholder - we can't directly check the RAG component
+		// Instead, we'll return false and let the action handle initialization
+		// In practice, the first search will tell us if namespace exists
+		return false; // Always return false to trigger check via search
+	},
+});
+
+/**
+ * Retrieves cards from a workspace for bulk indexing.
+ *
+ * Gets cards with their associated list and channel information needed for indexing.
+ */
+export const getWorkspaceCards = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit || 100;
+
+		// Get all channels in the workspace
+		const channels = await ctx.db
+			.query("channels")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+
+		const channelIds = channels.map((c) => c._id);
+		const cardsWithInfo: Array<{
+			card: any;
+			list: any;
+			channel: any;
+		}> = [];
+
+		// For each channel, get its lists and cards
+		for (const channel of channels) {
+			const lists = await ctx.db
+				.query("lists")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.collect();
+
+			for (const list of lists) {
+				const cards = await ctx.db
+					.query("cards")
+					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+					.take(Math.ceil(limit / channelIds.length));
+
+				for (const card of cards) {
+					cardsWithInfo.push({ card, list, channel });
+					if (cardsWithInfo.length >= limit) break;
+				}
+				if (cardsWithInfo.length >= limit) break;
+			}
+			if (cardsWithInfo.length >= limit) break;
+		}
+
+		return cardsWithInfo;
+	},
+});
+
+/**
  * Fuzzy/semantic search for workspace messages.
  *
  * Falls back to the RAG semantic search to surface related messages when exact
@@ -884,6 +952,7 @@ export const bulkIndexWorkspace = action({
 			messages: number;
 			notes: number;
 			tasks: number;
+			cards: number;
 		};
 	}> => {
 		const limit = args.limit || 100;
@@ -892,6 +961,29 @@ export const bulkIndexWorkspace = action({
 		);
 
 		try {
+			// First, ensure the RAG namespace exists by adding a dummy entry
+			// This will create the namespace if it doesn't exist
+			try {
+				await rag.add(ctx, {
+					namespace: args.workspaceId,
+					key: "__workspace_init__",
+					text: "Workspace initialized for RAG search",
+					title: "System: Workspace Initialization",
+					metadata: {},
+					filterValues: [
+						{ name: "workspaceId", value: args.workspaceId as string },
+						{ name: "contentType", value: "message" },
+						{ name: "channelId", value: NO_CHANNEL_FILTER_VALUE },
+					],
+				});
+				console.log(
+					`RAG namespace created/verified for workspace ${args.workspaceId}`
+				);
+			} catch (error) {
+				console.error("Failed to initialize RAG namespace:", error);
+				// Continue anyway, the add operations below will try to create it
+			}
+
 			// Index messages
 			const messages: any[] = await ctx.runQuery(
 				api.search.getWorkspaceMessages,
@@ -976,6 +1068,37 @@ export const bulkIndexWorkspace = action({
 				}
 			}
 
+			// Index cards
+			const cardsWithInfo: any[] = await ctx.runQuery(
+				api.search.getWorkspaceCards,
+				{
+					workspaceId: args.workspaceId,
+					limit,
+				}
+			);
+
+			console.log(`Found ${cardsWithInfo.length} cards to index`);
+
+			for (const cardInfo of cardsWithInfo) {
+				try {
+					const { card, list, channel } = cardInfo;
+					await ctx.runAction(api.search.indexContent, {
+						workspaceId: channel.workspaceId,
+						contentId: card._id,
+						contentType: "card",
+						text:
+							card.title + (card.description ? `: ${card.description}` : ""),
+						metadata: {
+							listId: card.listId,
+							channelId: list.channelId,
+						},
+					});
+					console.log(`Indexed card: ${card._id}`);
+				} catch (error) {
+					console.error(`Failed to index card ${cardInfo.card._id}:`, error);
+				}
+			}
+
 			console.log("Bulk indexing completed successfully");
 			return {
 				success: true,
@@ -983,6 +1106,7 @@ export const bulkIndexWorkspace = action({
 					messages: messages.length,
 					notes: notes.length,
 					tasks: tasks.length,
+					cards: cardsWithInfo.length,
 				},
 			};
 		} catch (error) {
@@ -1136,7 +1260,7 @@ export const aiSearchMessages = action({
 		try {
 			const { generateText } = await import("ai");
 			const result = await generateText({
-				model: google("gemini-2.0-flash-exp"),
+				model: openai("gpt-5-mini") as any,
 				prompt: `You are a helpful work assistant. Answer the user's question using ONLY the messages below.
 Provide a concise, direct answer. If the messages don't contain enough information, say so.
 Do NOT output topic/keyword lists or message counts.
@@ -1190,5 +1314,104 @@ ${context}
 				sources: [],
 			};
 		}
+	},
+});
+
+/**
+ * Triggers bulk indexing of workspace content into RAG system.
+ *
+ * This mutation schedules the bulkIndexWorkspace action to populate the RAG index
+ * with existing workspace content (messages, notes, tasks, cards).
+ *
+ * Use this to:
+ * - Initialize RAG for a new workspace
+ * - Re-index content after RAG configuration changes
+ * - Fix missing content in RAG index
+ *
+ * @param {Id<'workspaces'>} workspaceId - The workspace to index
+ * @param {number} [limit] - Optional limit on items per type (default: 1000)
+ *
+ * @returns {Promise<{scheduled: boolean}>} Confirmation that indexing was scheduled
+ */
+export const triggerBulkIndexing = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// Verify user has access to this workspace
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		// Check if user is a member of the workspace
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.first();
+
+		if (!member) {
+			throw new Error("User is not a member of this workspace");
+		}
+
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+
+		return { scheduled: true };
+	},
+});
+
+/**
+ * Internal version of triggerBulkIndexing that can be called without authentication.
+ * Use this for admin tasks or initialization scripts.
+ */
+export const triggerBulkIndexingInternal = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+
+		return { scheduled: true };
+	},
+});
+
+/**
+ * Auto-initialize RAG namespace for a workspace (called from chatbot).
+ * This mutation can be called from actions to schedule indexing.
+ */
+export const autoInitializeWorkspace = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// No auth check - this is automatic system initialization
+		console.log(`Auto-initializing RAG for workspace ${args.workspaceId}`);
+
+		// Schedule the bulk indexing action
+		await ctx.scheduler.runAfter(0, api.search.bulkIndexWorkspace, {
+			workspaceId: args.workspaceId,
+			limit: args.limit || 1000,
+		});
+
+		console.log(`Scheduled bulk indexing for workspace ${args.workspaceId}`);
+
+		return { scheduled: true };
 	},
 });

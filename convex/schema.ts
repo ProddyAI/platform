@@ -20,6 +20,18 @@ const schema = defineSchema({
 		website: v.optional(v.string()),
 	}).index("email", ["email"]),
 
+	// Email OTP verifications
+	emailVerifications: defineTable({
+		email: v.string(),
+		otp: v.string(),
+		expiresAt: v.number(),
+		verified: v.boolean(),
+		attempts: v.number(),
+		createdAt: v.number(),
+	})
+		.index("by_email", ["email"])
+		.index("by_expiry", ["expiresAt"]),
+
 	workspaces: defineTable({
 		name: v.string(),
 		userId: v.id("users"),
@@ -473,6 +485,38 @@ const schema = defineSchema({
 		.index("by_message_id", ["messageId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_message_id", ["workspaceId", "messageId"]),
+
+	// Workspace invites for email-based workspace invitations
+	workspaceInvites: defineTable({
+		workspaceId: v.id("workspaces"), // which workspace
+		email: v.string(), // who the invite is for
+		hash: v.string(), // token from email link
+		used: v.boolean(), // one-time use
+		expiresAt: v.number(), // auto-expiry
+		createdAt: v.optional(v.number()), // when the invite was created (optional for backward compatibility)
+		invitedBy: v.optional(v.id("members")), // who sent the invite (optional for backward compatibility; new records should set this)
+	})
+		.index("by_hash", ["hash"])
+		.index("by_workspace", ["workspaceId"]),
+
+	// Rate limiting for invites and other actions
+	rateLimits: defineTable({
+		userId: v.id("users"),
+		workspaceId: v.id("workspaces"),
+		email: v.optional(v.string()), // For email-specific rate limits
+		type: v.union(
+			v.literal("user_invite"),
+			v.literal("workspace_invite"),
+			v.literal("email_invite")
+		),
+		expiresAt: v.number(), // When this rate limit entry expires
+		createdAt: v.number(),
+	})
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_email", ["email"])
+		.index("by_type", ["type"])
+		.index("by_expires_at", ["expiresAt"]),
 });
 
 export default schema;

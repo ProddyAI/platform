@@ -1,42 +1,139 @@
-
+import {
+	convexAuthNextjsToken,
+	isAuthenticatedNextjs,
+} from "@convex-dev/auth/nextjs/server";
 import { Liveblocks } from "@liveblocks/node";
+import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
-import { fetchQuery } from "convex/nextjs";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
-const LIVEBLOCKS_SECRET_KEY = process.env.LIVEBLOCKS_SECRET_KEY;
-if (!LIVEBLOCKS_SECRET_KEY) {
-	throw new Error("LIVEBLOCKS_SECRET_KEY environment variable is not set");
+// Environment variable validation
+const liveblocksSecret = process.env.LIVEBLOCKS_SECRET_KEY;
+if (!liveblocksSecret) {
+	throw new Error("LIVEBLOCKS_SECRET_KEY environment variable is required");
 }
+
 const liveblocks = new Liveblocks({
-	secret: LIVEBLOCKS_SECRET_KEY,
+	secret: liveblocksSecret,
 });
+
+type LiveblocksAuthRequestBody = {
+	room?: string;
+	userId?: string;
+	memberId?: string;
+	userName?: string;
+	userAvatar?: string | null;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function readString(
+	obj: Record<string, unknown>,
+	key: string
+): string | undefined {
+	const value = obj[key];
+	return typeof value === "string" ? value : undefined;
+}
+
+function readNullableString(
+	obj: Record<string, unknown>,
+	key: string
+): string | null | undefined {
+	const value = obj[key];
+	if (value === null) return null;
+	return typeof value === "string" ? value : undefined;
+}
+
+let cachedConvexClient: ConvexHttpClient | null = null;
+
+function getConvexClient(): ConvexHttpClient {
+	if (!cachedConvexClient) {
+		if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+			throw new Error(
+				"NEXT_PUBLIC_CONVEX_URL environment variable is required"
+			);
+		}
+		cachedConvexClient = new ConvexHttpClient(
+			process.env.NEXT_PUBLIC_CONVEX_URL
+		);
+	}
+	return cachedConvexClient;
+}
 
 export async function POST(req: NextRequest) {
 	try {
-		const body = await req.json();
-		const { room } = body;
+		// Parse the request body
+		const rawBody: unknown = await req.json();
+		const body: LiveblocksAuthRequestBody = isRecord(rawBody)
+			? {
+					room: readString(rawBody, "room"),
+					userId: readString(rawBody, "userId"),
+					memberId: readString(rawBody, "memberId"),
+					userName: readString(rawBody, "userName"),
+					userAvatar: readNullableString(rawBody, "userAvatar"),
+				}
+			: {};
+
+		const room = body.room;
 
 		if (!room) {
 			return new NextResponse("Room ID is required", { status: 400 });
 		}
 
-		// Derive user info from server-side session (Convex)
-		const user = await fetchQuery(api.users.current, {});
-		if (!user || !user._id || !user.name) {
-			console.error("Liveblocks auth: missing or unauthenticated user", {
-				hasUser: !!user,
-				hasId: !!user?._id,
-				hasName: !!user?.name,
-			});
-			return new NextResponse("Missing or unauthenticated user", { status: 401 });
+		const convex = getConvexClient();
+
+		// Pass auth through to Convex so we can read the current user
+		try {
+			const token = convexAuthNextjsToken();
+			if (token) {
+				convex.setAuth(token);
+			} else if (isAuthenticatedNextjs()) {
+				console.warn(
+					"[Liveblocks Auth] Authenticated session but no Convex token found"
+				);
+			}
+		} catch (err) {
+			if (isAuthenticatedNextjs()) {
+				console.warn(
+					"[Liveblocks Auth] Failed to read Convex auth token from request",
+					err
+				);
+			}
 		}
 
+		// Fetch current user from Convex
+		let currentUser: { _id: string; name?: string; image?: string } | null = null;
+		try {
+			const maybeUser: unknown = await convex.query(api.users.current, {});
+			if (isRecord(maybeUser) && typeof maybeUser._id === "string") {
+				const name = maybeUser.name;
+				const image = maybeUser.image;
+				currentUser = {
+					_id: maybeUser._id,
+					...(typeof name === "string" ? { name } : {}),
+					...(typeof image === "string" ? { image } : {}),
+				};
+			} else {
+				currentUser = null;
+			}
+		} catch (err) {
+			console.warn("[Liveblocks Auth] Failed to fetch current user", err);
+			currentUser = null;
+		}
+
+		// Require authenticated user
+		if (!currentUser || !currentUser._id || !currentUser.name) {
+			console.error("Liveblocks auth: missing or unauthenticated user");
+			return new NextResponse("Unauthorized", { status: 401 });
+		}
 
 		// Authorization: check membership for workspace-*, canvas-*, and note-* rooms
 		let isAllowed = false;
-		let memberId = null;
+		let memberId: string | null = null;
+
 		const workspaceMatch = /^workspace-(.+)$/.exec(room);
 		const canvasMatch = /^canvas-(.+)$/.exec(room);
 		const noteMatch = /^note-(.+)$/.exec(room);
@@ -44,25 +141,24 @@ export async function POST(req: NextRequest) {
 		if (workspaceMatch) {
 			// Workspace room: check direct membership
 			const workspaceId = workspaceMatch[1] as Id<"workspaces">;
-			const member = await fetchQuery(api.members.current, { workspaceId });
-			if (member && member.userId === user._id) {
+			const member: unknown = await convex.query(api.members.current, { workspaceId });
+			if (isRecord(member) && member.userId === currentUser._id) {
 				isAllowed = true;
-				memberId = member._id;
+				memberId = typeof member._id === "string" ? member._id : null;
 			}
 		} else if (canvasMatch) {
-			// Canvas room: resolve workspaceId via channelId in the canvasId
+			// Canvas room: resolve workspaceId via channelId
 			// Canvas roomId format: canvas-{channelId}-{timestamp}
 			const channelTimestampMatch = /^(.+?)-(\d+)$/.exec(canvasMatch[1]);
-			const channelId = channelTimestampMatch?.[1] as Id<"channels">;
+			const channelId = channelTimestampMatch?.[1] as Id<"channels"> | undefined;
 			if (channelId) {
-				// Fetch channel to get workspaceId
-				const channel = await fetchQuery(api.channels.getById, { id: channelId });
-				if (channel && channel.workspaceId) {
+				const channel: unknown = await convex.query(api.channels.getById, { id: channelId });
+				if (isRecord(channel) && typeof channel.workspaceId === "string") {
 					const workspaceId = channel.workspaceId as Id<"workspaces">;
-					const member = await fetchQuery(api.members.current, { workspaceId });
-					if (member && member.userId === user._id) {
+					const member: unknown = await convex.query(api.members.current, { workspaceId });
+					if (isRecord(member) && member.userId === currentUser._id) {
 						isAllowed = true;
-						memberId = member._id;
+						memberId = typeof member._id === "string" ? member._id : null;
 					}
 				}
 			}
@@ -70,44 +166,44 @@ export async function POST(req: NextRequest) {
 			// Note room: resolve workspaceId via noteId
 			// Note roomId format: note-{noteId}
 			const noteId = noteMatch[1] as Id<"notes">;
-			// Fetch note to get workspaceId
-			const note = await fetchQuery(api.notes.getById, { noteId });
-			if (note && note.workspaceId) {
+			const note: unknown = await convex.query(api.notes.getById, { noteId });
+			if (isRecord(note) && typeof note.workspaceId === "string") {
 				const workspaceId = note.workspaceId as Id<"workspaces">;
-				const member = await fetchQuery(api.members.current, { workspaceId });
-				if (member && member.userId === user._id) {
+				const member: unknown = await convex.query(api.members.current, { workspaceId });
+				if (isRecord(member) && member.userId === currentUser._id) {
 					isAllowed = true;
-					memberId = member._id;
+					memberId = typeof member._id === "string" ? member._id : null;
 				}
 			}
 		}
 
 		if (!isAllowed) {
 			console.error("Liveblocks auth: user not allowed in room", {
-				userId: user._id,
+				userId: currentUser._id,
 				room,
 			});
-			return new NextResponse("Not allowed in this room", { status: 403 });
+			return new NextResponse("Forbidden", { status: 403 });
 		}
 
-		const finalUserInfo = {
-			id: user._id,
-			name: user.name,
-			picture: user.image || null,
+		// Prepare user info for Liveblocks session
+		const userInfo = {
+			id: currentUser._id,
+			name: currentUser.name,
+			picture: currentUser.image || null,
 			memberId,
 		};
 
-		const session = liveblocks.prepareSession(user._id, {
-			userInfo: finalUserInfo,
+		// Create Liveblocks session with real user identity
+		const session = liveblocks.prepareSession(currentUser._id, {
+			userInfo,
 		});
 
-		// Grant FULL_ACCESS for collaborative editing capabilities
+		// Grant full access for collaborative editing
 		session.allow(room, session.FULL_ACCESS);
 
 		const { status, body: responseBody } = await session.authorize();
 		return new Response(responseBody, { status });
 	} catch (error) {
-		console.error("Liveblocks auth error:", error);
 		console.error("Liveblocks auth error", {
 			message: error instanceof Error ? error.message : String(error),
 			name: error instanceof Error ? error.name : undefined,

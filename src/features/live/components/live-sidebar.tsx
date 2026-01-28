@@ -287,8 +287,8 @@ export const LiveSidebar = ({
 									className={cn(
 										"p-3 rounded-lg cursor-pointer transition-colors group",
 										selectedItemId === item._id
-											? "bg-primary/10 border border-primary/20"
-											: "hover:bg-muted/50"
+											? "bg-primary/10 border border-primary/20 dark:bg-primary/30 dark:border-primary/40"
+											: "hover:bg-muted/50 dark:hover:bg-muted/70"
 									)}
 								>
 									<div className="flex items-start justify-between gap-2">

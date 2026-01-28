@@ -71,7 +71,7 @@ export const WorkspaceHeader = ({
 								<Hint label={workspace.name} side="right" align="center">
 									<Button
 										variant="ghost"
-										className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-secondary-foreground/10 transition-standard"
+										className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
 										size="icon"
 									>
 										<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
@@ -82,7 +82,7 @@ export const WorkspaceHeader = ({
 							) : (
 								<Button
 									variant="ghost"
-									className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-secondary-foreground/10 transition-standard"
+									className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
 									size="lg"
 								>
 									<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
@@ -106,7 +106,7 @@ export const WorkspaceHeader = ({
 							align="start"
 							className="w-64 p-2"
 						>
-							<DropdownMenuItem className="cursor-pointer capitalize rounded-[8px] p-3 mb-1 hover:bg-accent/20">
+							<DropdownMenuItem className="cursor-pointer capitalize rounded-[8px] p-3 mb-1 hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground">
 								<div className="relative mr-3 flex size-10 items-center justify-center overflow-hidden rounded-[10px] bg-secondary text-xl font-semibold text-secondary-foreground shadow-md">
 									{workspace.name.charAt(0).toUpperCase()}
 								</div>
@@ -124,7 +124,7 @@ export const WorkspaceHeader = ({
 									<DropdownMenuSeparator />
 
 									<DropdownMenuItem
-										className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-accent/20"
+										className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
 										onClick={() => setInviteOpen(true)}
 									>
 										<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
@@ -139,7 +139,7 @@ export const WorkspaceHeader = ({
 
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
-								className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-accent/20"
+								className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
 								onClick={() => setSwitchOpen(true)} // updated here
 							>
 								<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">

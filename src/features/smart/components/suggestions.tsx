@@ -155,7 +155,7 @@ export const Suggestions = ({
 		<div className="mb-2 flex flex-col space-y-2 rounded-md border border-border/30 bg-muted/20 p-2">
 			<div className="flex items-center">
 				<div className="flex items-center gap-1 text-xs text-muted-foreground">
-					<Sparkles className="size-3 text-primary" />
+					<Sparkles className="size-3 text-violet-500" />
 					<span>{getContextLabel()}</span>
 				</div>
 				<div className="ml-auto">

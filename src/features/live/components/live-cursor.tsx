@@ -29,9 +29,6 @@ export const LiveCursor = memo(
 		// Fetch members from Convex database
 		const members = useQuery(api.members.get, { workspaceId });
 
-		// Fetch current user to get their ID
-		const _currentUser = useQuery(api.users.current);
-
 		// Update the user name whenever other or members changes
 		useEffect(() => {
 			// Skip if we don't have cursor data

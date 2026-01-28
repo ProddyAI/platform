@@ -603,7 +603,7 @@ const Editor = ({
 
 			<div
 				className={cn(
-					"flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition focus-within:border-slate-300 focus-within:shadow-sm",
+					"flex flex-col overflow-hidden rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 transition focus-within:border-slate-300 dark:focus-within:border-gray-600 focus-within:shadow-sm",
 					disabled && "opacity-50"
 				)}
 			>

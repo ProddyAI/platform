@@ -1,11 +1,9 @@
 "use client";
 
-import { useRoom } from "@/../liveblocks.config";
 import { Hint } from "@/components/hint";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChannelParticipants } from "@/hooks/use-channel-participants";
 import { generateUserColor } from "@/lib/placeholder-image";
-import { connectionIdToColor } from "@/lib/utils";
 
 // Constants
 const MAX_SHOWN_OTHER_USERS = 3;
@@ -24,7 +22,6 @@ export const LiveParticipants = ({
 	// Fetch real participants from the database
 	const { participants, currentParticipant, participantCount, isLoading } =
 		useChannelParticipants();
-	const _room = useRoom();
 
 	// If still loading, show nothing
 	if (isLoading) return null;
@@ -32,7 +29,7 @@ export const LiveParticipants = ({
 	const hasMoreUsers = participants.length > MAX_SHOWN_OTHER_USERS;
 
 	// Use canvas-style display for both variants when inside LiveHeader
-	// This ensures consistent appearance and uses Liveblocks connection colors
+	// This ensures consistent appearance.
 	return (
 		<div className={`flex items-center gap-2 ${className}`}>
 			{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {

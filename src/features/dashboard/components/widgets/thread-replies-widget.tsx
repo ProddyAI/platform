@@ -118,13 +118,16 @@ export const ThreadRepliesWidget = ({
 	}
 
 	return (
-		<div className="space-y-4 pb-4">
-			<div className="flex items-center justify-between pr-2">
+		<div className="space-y-3">
+			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<MessageSquareText className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-medium">Thread Replies</h3>
+					<h3 className="font-semibold text-base">Thread Replies</h3>
 					{!isEditMode && threadMessages.length > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{threadMessages.length}
 						</Badge>
 					)}
@@ -133,8 +136,9 @@ export const ThreadRepliesWidget = ({
 					controls
 				) : (
 					<Button
-						variant="default"
+						variant="ghost"
 						size="sm"
+						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
 					>
 						View All
@@ -143,8 +147,8 @@ export const ThreadRepliesWidget = ({
 			</div>
 
 			{threadMessages && threadMessages.length > 0 ? (
-				<ScrollArea className="widget-scroll-area">
-					<div className="space-y-2 p-4">
+				<ScrollArea className="h-[280px]">
+					<div className="space-y-2 pr-4">
 						{threadMessages.map((thread) => (
 							<WidgetCard key={thread.message._id.toString()}>
 								<div className="flex items-start gap-3">
@@ -175,8 +179,8 @@ export const ThreadRepliesWidget = ({
 													</Badge>
 												)}
 											</div>
-											<div className="flex items-center text-xs text-muted-foreground">
-												<Clock className="mr-1 h-3 w-3" />
+											<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
+												<Clock className="h-2.5 w-2.5" />
 												{(() => {
 													try {
 														// Try to safely format the date
@@ -192,7 +196,7 @@ export const ThreadRepliesWidget = ({
 															if (date.toString() !== "Invalid Date") {
 																return formatDistanceToNow(date, {
 																	addSuffix: true,
-																});
+																}).replace("about ", "");
 															}
 														}
 														return "recently";
@@ -200,7 +204,7 @@ export const ThreadRepliesWidget = ({
 														return "recently";
 													}
 												})()}
-											</div>
+											</span>
 										</div>
 										<div className="rounded-md bg-muted/30 p-2 text-xs">
 											<p className="font-medium text-muted-foreground">
@@ -214,7 +218,7 @@ export const ThreadRepliesWidget = ({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="mt-2 h-8 px-3 w-auto justify-start text-primary dark:text-purple-400 hover:bg-purple-500/10 hover:text-purple-600 hover:dark:bg-purple-400/10 hover:dark:text-purple-300"
+											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 											onClick={() => handleViewThread(thread)}
 										>
 											View thread
@@ -226,10 +230,12 @@ export const ThreadRepliesWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-					<MessageSquareText className="mb-2 h-10 w-10 text-muted-foreground" />
-					<h3 className="text-lg font-medium">No thread replies</h3>
-					<p className="text-sm text-muted-foreground">
+				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
+					<MessageSquareText className="mb-3 h-12 w-12 text-muted-foreground/40" />
+					<h3 className="text-base font-semibold text-foreground">
+						No thread replies
+					</h3>
+					<p className="text-sm text-muted-foreground mt-1">
 						You don't have any recent thread replies
 					</p>
 				</div>

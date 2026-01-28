@@ -929,6 +929,7 @@ Try asking me things like:`;
 						onClick={handleSendMessage}
 						disabled={isLoading || !input.trim()}
 						size="icon"
+						className="chat-send-button"
 					>
 						<Send className="h-4 w-4" />
 					</Button>

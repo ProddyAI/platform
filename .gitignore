@@ -1,17 +1,29 @@
+# Ignore custom build script
+scripts/next-build.js
 /node_modules
 /.pnp
+.env
 .env.local
 /coverage
 /.next/
+/.next-win/
 /out/
 /build
 .DS_Store
 *.pem
 npm-debug.log*
+package-lock.json
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+.vscode/mcp.json
+# Build logs
+build.*.log
 
-public/sw.js
-public/sw.js.map
-public/worker-*.js
+# next-pwa generated assets (created during build)
+/public/sw.js*
+/public/workbox-*.js*
+/public/worker-*.js
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md

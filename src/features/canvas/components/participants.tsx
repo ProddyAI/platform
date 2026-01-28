@@ -1,10 +1,8 @@
 "use client";
 
 import { useChannelParticipants } from "../../../hooks/use-channel-participants";
-import { connectionIdToColor } from "../../../lib/utils";
+import { stringToColor } from "../../../lib/utils";
 import { UserAvatar } from "./user-avatar";
-
-// Define types for the Liveblocks user data
 
 // Define types for the Liveblocks user data
 interface UserInfo {
@@ -55,7 +53,7 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 							user.userId || user.memberId || user.info?.name || "user";
 						return (
 							<UserAvatar
-								borderColor={connectionIdToColor(user.connectionId)}
+								borderColor={stringToColor(userKey)}
 								key={userKey}
 								src={user.info?.picture ?? undefined}
 								name={user.info?.name || ""}
@@ -67,10 +65,13 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 
 					{currentParticipant && (
 						<UserAvatar
-							  borderColor={connectionIdToColor(currentParticipant.connectionId)}
-							key={currentParticipant.userId || currentParticipant.info?.name || "you"}
+							borderColor={stringToColor(
+								currentParticipant.userId ||
+									currentParticipant.info?.name ||
+									"you"
+							)}
 							src={currentParticipant.info?.picture ?? undefined}
-							name={`${currentParticipant.info?.name || "You"} (You)`}
+							name={`${currentParticipant.info?.name} (You)`}
 							fallback={currentParticipant.info?.name?.[0] || "Y"}
 							userId={
 								currentParticipant.userId || currentParticipant.info?.name

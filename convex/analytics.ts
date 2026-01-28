@@ -113,6 +113,11 @@ export const getUserActivitySummary = query({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
+
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
 		const startDate = args.startDate || endDate - 30 * 24 * 60 * 60 * 1000;
@@ -225,6 +230,11 @@ export const getActiveUsersCount = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 7 days if dates not provided
 		const endDate = args.endDate || Date.now();
@@ -376,6 +386,11 @@ export const getWorkspaceOverview = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
@@ -618,6 +633,11 @@ export const getChannelActivitySummary = query({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
+
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
 		const startDate = args.startDate || endDate - 30 * 24 * 60 * 60 * 1000;
@@ -704,6 +724,11 @@ export const getMessageAnalytics = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
@@ -794,6 +819,11 @@ export const getTaskAnalytics = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
 
 		// Default to last 30 days if dates not provided
 		const endDate = args.endDate || Date.now();
@@ -902,6 +932,225 @@ export const getTaskAnalytics = query({
 			priorityCounts,
 			tasksByDate,
 			categoryData,
+		};
+	},
+});
+
+// Get content analysis data
+export const getContentAnalysis = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		startDate: v.optional(v.number()),
+		endDate: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized. Not a member of this workspace.");
+
+		// Default to last 30 days if dates not provided
+		const endDate = args.endDate || Date.now();
+		const startDate = args.startDate || endDate - 30 * 24 * 60 * 60 * 1000;
+
+		// Get all messages in the workspace within the date range
+		const messages = await ctx.db
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) =>
+				q.and(
+					q.gte(q.field("_creationTime"), startDate),
+					q.lte(q.field("_creationTime"), endDate)
+				)
+			)
+			.collect();
+
+		// Analyze content types
+		let textCount = 0;
+		let imageCount = 0;
+		let linkCount = 0;
+		let codeCount = 0;
+		let fileCount = 0;
+
+		// Message length categories
+		let shortMessages = 0; // <50 chars
+		let mediumMessages = 0; // 50-200 chars
+		let longMessages = 0; // >200 chars
+
+		// Activity by hour (0-23)
+		const activityByHour: Record<number, number> = {};
+		for (let i = 0; i < 24; i++) {
+			activityByHour[i] = 0;
+		}
+
+		// Activity by day of week (0-6, Sunday-Saturday)
+		const activityByDayOfWeek: Record<number, number> = {};
+		for (let i = 0; i < 7; i++) {
+			activityByDayOfWeek[i] = 0;
+		}
+
+		messages.forEach((message) => {
+			// Count content types with mutually exclusive categorization
+			const body = message.body || "";
+
+			// Regex patterns for detection
+			const urlRegex = /(https?:\/\/[^\s]+)/g;
+			const codeBlockRegex = /```[\s\S]*?```|`[^`]+`/g;
+
+			// Categorize message by primary content type (mutually exclusive)
+			if (message.image) {
+				// Priority 1: Image attachments
+				imageCount++;
+				fileCount++; // Images are also files
+			} else if (urlRegex.test(body)) {
+				// Priority 2: Messages with links
+				linkCount++;
+			} else if (codeBlockRegex.test(body)) {
+				// Priority 3: Messages with code blocks
+				codeCount++;
+			} else {
+				// Priority 4: Plain text messages
+				textCount++;
+			}
+
+			// Categorize message length
+			const length = body.length;
+			if (length < 50) {
+				shortMessages++;
+			} else if (length <= 200) {
+				mediumMessages++;
+			} else {
+				longMessages++;
+			}
+
+			// Count activity by hour
+			const date = new Date(message._creationTime);
+			const hour = date.getHours();
+			activityByHour[hour] = (activityByHour[hour] || 0) + 1;
+
+			// Count activity by day of week
+			const dayOfWeek = date.getDay();
+			activityByDayOfWeek[dayOfWeek] =
+				(activityByDayOfWeek[dayOfWeek] || 0) + 1;
+		});
+
+		// Calculate percentages for content types
+		const totalMessages = messages.length;
+		const contentTypes = {
+			text:
+				totalMessages > 0 ? Math.round((textCount / totalMessages) * 100) : 0,
+			images:
+				totalMessages > 0 ? Math.round((imageCount / totalMessages) * 100) : 0,
+			links:
+				totalMessages > 0 ? Math.round((linkCount / totalMessages) * 100) : 0,
+			code:
+				totalMessages > 0 ? Math.round((codeCount / totalMessages) * 100) : 0,
+			files:
+				totalMessages > 0 ? Math.round((fileCount / totalMessages) * 100) : 0,
+		};
+
+		// Calculate percentages for message lengths
+		const messageLengthDistribution = {
+			short:
+				totalMessages > 0
+					? Math.round((shortMessages / totalMessages) * 100)
+					: 0,
+			medium:
+				totalMessages > 0
+					? Math.round((mediumMessages / totalMessages) * 100)
+					: 0,
+			long:
+				totalMessages > 0
+					? Math.round((longMessages / totalMessages) * 100)
+					: 0,
+		};
+
+		// Convert hour activity to array format
+		const busiestHours = Object.entries(activityByHour)
+			.map(([hour, count]) => {
+				const hourNum = Number.parseInt(hour, 10);
+				const period = hourNum >= 12 ? "PM" : "AM";
+				const displayHour =
+					hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
+				return {
+					hour: hourNum,
+					label: `${displayHour} ${period}`,
+					count,
+				};
+			})
+			.filter((item) => item.count > 0)
+			.sort((a, b) => b.count - a.count);
+
+		// Convert day of week activity to array format
+		const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+		const activityByDay = Object.entries(activityByDayOfWeek)
+			.map(([day, count]) => ({
+				day: Number.parseInt(day, 10),
+				label: dayNames[Number.parseInt(day, 10)],
+				count,
+			}))
+			.sort((a, b) => a.day - b.day);
+
+		// Get channel response times (mock for now, would need more complex logic)
+		const channels = await ctx.db
+			.query("channels")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+
+		const channelResponseTimes = await Promise.all(
+			channels.slice(0, 5).map(async (channel) => {
+				const channelMessages = messages
+					.filter((msg) => msg.channelId === channel._id)
+					.sort((a, b) => a._creationTime - b._creationTime);
+
+				// Calculate average response time (simplified - time between messages)
+				let totalResponseTime = 0;
+				let responseCount = 0;
+
+				for (let i = 1; i < channelMessages.length; i++) {
+					const timeDiff =
+						channelMessages[i]._creationTime -
+						channelMessages[i - 1]._creationTime;
+					if (timeDiff < 3600000) {
+						// Only count if within 1 hour
+						totalResponseTime += timeDiff;
+						responseCount++;
+					}
+				}
+
+				const avgResponseTimeMs =
+					responseCount > 0 ? totalResponseTime / responseCount : 0;
+				const avgResponseTimeMin = Math.round(avgResponseTimeMs / 60000); // Convert to minutes
+
+				return {
+					channelName: channel.name,
+					avgResponseTime: avgResponseTimeMin,
+				};
+			})
+		);
+
+		return {
+			contentTypes: {
+				text: contentTypes.text,
+				images: contentTypes.images,
+				files: contentTypes.files,
+				links: contentTypes.links,
+				code: contentTypes.code,
+			},
+			messageLengthDistribution,
+			busiestHours,
+			activityByDay,
+			channelResponseTimes: channelResponseTimes.filter(
+				(c) => c.avgResponseTime > 0
+			),
+			totalMessages,
 		};
 	},
 });

@@ -121,10 +121,13 @@ export const CalendarPreviewWidget = ({
 		<div className="space-y-4">
 			<div className="flex items-center justify-between pr-2">
 				<div className="flex items-center gap-2">
-					<CalendarIcon className="h-5 w-5 text-primary" />
+					<CalendarIcon className="h-5 w-5 text-primary dark:text-purple-400" />
 					<h3 className="font-medium">Upcoming Events</h3>
 					{!isEditMode && upcomingEvents.length > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge
+							variant="secondary"
+							className="ml-1 h-5 px-2 text-xs font-medium"
+						>
 							{upcomingEvents.length}
 						</Badge>
 					)}
@@ -133,10 +136,10 @@ export const CalendarPreviewWidget = ({
 					controls
 				) : (
 					<Button
-						variant="outline"
+						variant="ghost"
 						size="sm"
+						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewCalendar}
-						className="border-2"
 					>
 						View All
 					</Button>
@@ -179,7 +182,7 @@ export const CalendarPreviewWidget = ({
 													<Button
 														variant="ghost"
 														size="sm"
-														className="mt-1 w-full justify-start text-primary"
+														className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 														onClick={() => handleViewEvent(event._id)}
 													>
 														View details
@@ -205,9 +208,9 @@ export const CalendarPreviewWidget = ({
 						Schedule events to see them here
 					</p>
 					<Button
-						variant="outline"
+						variant="default"
 						size="sm"
-						className="mt-4 border-2"
+						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 						onClick={handleViewCalendar}
 					>
 						View Calendar <ArrowRight className="ml-2 h-3.5 w-3.5" />

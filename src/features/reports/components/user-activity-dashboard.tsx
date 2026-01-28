@@ -109,7 +109,7 @@ export const UserActivityDashboard = ({
 	const messageCountData = sortedByMessages.slice(0, 10).map((item) => ({
 		label: item.member?.user?.name || "Unknown",
 		value: item.messageCount,
-		color: "bg-secondary",
+		color: "bg-pink-500",
 	}));
 
 	const timeSpentData = sortedByTimeSpent
