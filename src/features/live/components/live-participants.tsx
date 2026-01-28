@@ -32,20 +32,19 @@ export const LiveParticipants = ({
 		<div className={`flex items-center gap-2 ${className}`}>
 			{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user, idx) => {
 				const userKey = user.userId || user.memberId || `user-${idx}`;
-				const backgroundColor = generateUserColor(userKey);
-				const borderColor = generateUserColor(userKey);
+				const userColor = generateUserColor(userKey);
 
 				return (
 					<Hint key={userKey} label={user.info.name || "Unknown User"} side="bottom">
 						<div className="relative">
 							<Avatar
 								className="h-7 w-7 border-2"
-								style={{ borderColor }}
+								style={{ borderColor: userColor }}
 							>
 								<AvatarImage src={user.info.picture || undefined} />
 								<AvatarFallback
 									className="text-xs font-semibold text-white"
-									style={{ backgroundColor }}
+									style={{ backgroundColor: userColor }}
 								>
 									{user.info.name?.[0] || "U"}
 								</AvatarFallback>
@@ -56,7 +55,14 @@ export const LiveParticipants = ({
 			})}
 
 			{currentParticipant && (
-				<Hint label={`${currentParticipant.info.name} (You)`} side="bottom">
+				<Hint
+					label={
+						currentParticipant.info.name
+							? `${currentParticipant.info.name} (You)`
+							: "You"
+					}
+					side="bottom"
+				>
 					<div className="relative">
 						<Avatar
 							className="h-7 w-7 border-2"

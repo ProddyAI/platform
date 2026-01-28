@@ -38,8 +38,9 @@ export const BlockNoteEditor = ({
 	// Attach scroll event to update scrollTop, after editor/scroll container is ready
 	useEffect(() => {
 		const scrollContainer = scrollContainerRef.current;
-		if (!sync.editor || !scrollContainer) return;
+		if (!scrollContainer || !sync.editor) return;
 		const handleScroll = () => setScrollTop(scrollContainer.scrollTop);
+		handleScroll(); // initialize scrollTop on mount
 		scrollContainer.addEventListener("scroll", handleScroll);
 		return () => {
 			scrollContainer.removeEventListener("scroll", handleScroll);

@@ -43,6 +43,8 @@ export const useChannelParticipants = () => {
 				const userId = p.userId as unknown as string;
 				if (!userId) return null;
 				if (seen.has(userId)) return null;
+				// Exclude the current user from participants
+				if (userId === currentMember?.userId || userId === currentUserId) return null;
 				seen.add(userId);
 
 				const member = members?.find((m) => m.userId === userId);

@@ -125,10 +125,13 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Require authenticated user
-		if (!currentUser || !currentUser._id || !currentUser.name) {
+		if (!currentUser || !currentUser._id) {
 			console.error("Liveblocks auth: missing or unauthenticated user");
 			return new NextResponse("Unauthorized", { status: 401 });
 		}
+
+		// Fallback for missing name
+		const userName = currentUser.name || (currentUser as any).email || "Anonymous User";
 
 		// Authorization: check membership for workspace-*, canvas-*, and note-* rooms
 		let isAllowed = false;
@@ -150,8 +153,8 @@ export async function POST(req: NextRequest) {
 			// Canvas room: resolve workspaceId via channelId
 			// Canvas roomId format: canvas-{channelId}-{timestamp}
 			const channelTimestampMatch = /^(.+?)-(\d+)$/.exec(canvasMatch[1]);
-			const channelId = channelTimestampMatch?.[1] as Id<"channels"> | undefined;
-			if (channelId) {
+			if (channelTimestampMatch && channelTimestampMatch[1]) {
+				const channelId = channelTimestampMatch[1] as Id<"channels">;
 				const channel: unknown = await convex.query(api.channels.getById, { id: channelId });
 				if (isRecord(channel) && typeof channel.workspaceId === "string") {
 					const workspaceId = channel.workspaceId as Id<"workspaces">;
@@ -188,7 +191,7 @@ export async function POST(req: NextRequest) {
 		// Prepare user info for Liveblocks session
 		const userInfo = {
 			id: currentUser._id,
-			name: currentUser.name,
+			name: userName,
 			picture: currentUser.image || null,
 			memberId,
 		};

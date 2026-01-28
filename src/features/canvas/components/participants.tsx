@@ -33,7 +33,11 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 				)}
 				<div className="flex gap-x-2">
 					{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user, idx) => {
-						const userKey = user.userId || user.memberId || `user-${idx}`;
+						const userKey =
+							user.userId ||
+							user.memberId ||
+							user.info?.name ||
+							`user-${idx}`;
 						return (
 							<UserAvatar
 								borderColor={stringToColor(userKey)}

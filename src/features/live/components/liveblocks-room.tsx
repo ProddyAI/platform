@@ -44,10 +44,10 @@ export const LiveblocksRoom = ({
 	useEffect(() => {
 		if (currentUser && currentMember) {
 			window.__liveblocksUserInfo = {
-				userId: currentUser._id || "",
-				memberId: currentMember._id || "",
-				userName: currentUser.name || "",
-				userAvatar: currentUser.image,
+				userId: currentUser._id,
+				memberId: currentMember._id,
+				userName: currentUser.name ?? "",
+				userAvatar: currentUser.image ?? "",
 			};
 		}
 		return () => {
