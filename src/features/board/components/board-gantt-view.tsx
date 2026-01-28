@@ -551,7 +551,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 												key={index}
 												className={`flex-1 border-r dark:border-gray-800 last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5 dark:bg-secondary/10" : index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800/30" : "dark:bg-gray-900"}`}
 												style={{ minWidth: "60px" }}
-											></div>
+											/>
 										))}
 									</div>
 
@@ -672,7 +672,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									>
 										<div
 											className={`w-2 h-2 rounded-full mr-1 ${getPriorityColor(selectedTask.priority)}`}
-										></div>
+										/>
 										{selectedTask.priority.charAt(0).toUpperCase() +
 											selectedTask.priority.slice(1)}
 									</div>

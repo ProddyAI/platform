@@ -401,7 +401,7 @@ export const TestDashboardWidgets = () => {
 					<ScrollArea className="h-[200px]">
 						<div className="space-y-3">
 							<div className="flex items-start gap-3 p-3 rounded-lg border border-red-200 bg-red-50">
-								<div className="w-3 h-3 rounded-full bg-red-500 mt-1.5"></div>
+								<div className="w-3 h-3 rounded-full bg-red-500 mt-1.5" />
 								<div className="flex-1">
 									<div className="font-medium text-sm">
 										Implement Payment API Integration
@@ -421,7 +421,7 @@ export const TestDashboardWidgets = () => {
 							</div>
 
 							<div className="flex items-start gap-3 p-3 rounded-lg border border-orange-200 bg-orange-50">
-								<div className="w-3 h-3 rounded-full bg-orange-500 mt-1.5"></div>
+								<div className="w-3 h-3 rounded-full bg-orange-500 mt-1.5" />
 								<div className="flex-1">
 									<div className="font-medium text-sm">
 										User Authentication System
@@ -441,7 +441,7 @@ export const TestDashboardWidgets = () => {
 							</div>
 
 							<div className="flex items-start gap-3 p-3 rounded-lg border border-red-200 bg-red-50">
-								<div className="w-3 h-3 rounded-full bg-red-500 mt-1.5"></div>
+								<div className="w-3 h-3 rounded-full bg-red-500 mt-1.5" />
 								<div className="flex-1">
 									<div className="font-medium text-sm">
 										Security Audit Report
@@ -477,7 +477,7 @@ export const TestDashboardWidgets = () => {
 					<ScrollArea className="h-[200px]">
 						<div className="space-y-3">
 							<div className="flex items-start gap-3 p-3 rounded-lg border">
-								<div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5"></div>
+								<div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5" />
 								<div className="flex-1">
 									<div className="font-medium text-sm">
 										Sprint Planning Notes
@@ -493,7 +493,7 @@ export const TestDashboardWidgets = () => {
 							</div>
 
 							<div className="flex items-start gap-3 p-3 rounded-lg border">
-								<div className="w-3 h-3 rounded-full bg-green-500 mt-1.5"></div>
+								<div className="w-3 h-3 rounded-full bg-green-500 mt-1.5" />
 								<div className="flex-1">
 									<div className="font-medium text-sm">
 										API Integration Checklist
@@ -508,7 +508,7 @@ export const TestDashboardWidgets = () => {
 							</div>
 
 							<div className="flex items-start gap-3 p-3 rounded-lg border">
-								<div className="w-3 h-3 rounded-full bg-purple-500 mt-1.5"></div>
+								<div className="w-3 h-3 rounded-full bg-purple-500 mt-1.5" />
 								<div className="flex-1">
 									<div className="font-medium text-sm">
 										Incident Response Playbook
@@ -537,15 +537,15 @@ export const TestDashboardWidgets = () => {
 						</div>
 						<div className="flex items-center gap-4 text-sm text-muted-foreground">
 							<div className="flex items-center gap-1">
-								<div className="w-2 h-2 rounded-full bg-green-500"></div>
+								<div className="w-2 h-2 rounded-full bg-green-500" />
 								<span>2 Online</span>
 							</div>
 							<div className="flex items-center gap-1">
-								<div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+								<div className="w-2 h-2 rounded-full bg-yellow-500" />
 								<span>2 Away</span>
 							</div>
 							<div className="flex items-center gap-1">
-								<div className="w-2 h-2 rounded-full bg-gray-400"></div>
+								<div className="w-2 h-2 rounded-full bg-gray-400" />
 								<span>2 Offline</span>
 							</div>
 						</div>
@@ -557,7 +557,7 @@ export const TestDashboardWidgets = () => {
 							{/* Online Members */}
 							<div className="space-y-3">
 								<h4 className="text-sm font-medium text-green-600 flex items-center gap-2">
-									<div className="w-2 h-2 rounded-full bg-green-500"></div>
+									<div className="w-2 h-2 rounded-full bg-green-500" />
 									Online (2)
 								</h4>
 
@@ -607,7 +607,7 @@ export const TestDashboardWidgets = () => {
 							{/* Away/Busy Members */}
 							<div className="space-y-3">
 								<h4 className="text-sm font-medium text-yellow-600 flex items-center gap-2">
-									<div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+									<div className="w-2 h-2 rounded-full bg-yellow-500" />
 									Away (2)
 								</h4>
 
@@ -657,7 +657,7 @@ export const TestDashboardWidgets = () => {
 							{/* Offline Members */}
 							<div className="space-y-3">
 								<h4 className="text-sm font-medium text-gray-600 flex items-center gap-2">
-									<div className="w-2 h-2 rounded-full bg-gray-400"></div>
+									<div className="w-2 h-2 rounded-full bg-gray-400" />
 									Offline (2)
 								</h4>
 

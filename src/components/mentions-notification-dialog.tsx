@@ -333,7 +333,7 @@ export const MentionsNotificationDialog = ({
 									</div>
 
 									{/* Border separator below the button */}
-									<div className="border-t border-border/10 dark:border-gray-700/50 mt-2"></div>
+									<div className="border-t border-border/10 dark:border-gray-700/50 mt-2" />
 								</div>
 							</div>
 						</Link>

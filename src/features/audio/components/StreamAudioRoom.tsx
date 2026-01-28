@@ -265,7 +265,7 @@ export const StreamAudioRoom = ({
 				</StreamVideo>
 			) : (
 				// Render an empty div when not ready
-				<div className="hidden"></div>
+				<div className="hidden" />
 			)}
 
 			{/* Leave Confirmation Dialog */}

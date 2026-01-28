@@ -95,7 +95,7 @@ export const UseCasesSection = () => {
 						How Teams Use{" "}
 						<span className="text-primary relative">
 							Proddy AI
-							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full"></span>
+							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
 						</span>
 					</motion.h2>
 					<motion.p

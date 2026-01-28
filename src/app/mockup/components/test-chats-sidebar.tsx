@@ -200,7 +200,7 @@ export const TestChatsSidebar = ({
 										</AvatarFallback>
 									</Avatar>
 									{chat.type === "direct" && chat.isOnline && (
-										<div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-background rounded-full"></div>
+										<div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
 									)}
 								</div>
 
