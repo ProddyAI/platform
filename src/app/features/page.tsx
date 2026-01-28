@@ -191,9 +191,7 @@ const FeaturesPage = () => {
 						priority
 					/>
 				</div>
-				<div
-					className={`absolute bottom-0 left-0 w-full h-1 ${accentClass}`}
-				></div>
+				<div className={`absolute bottom-0 left-0 w-full h-1 ${accentClass}`} />
 			</div>
 		);
 	};
@@ -329,7 +327,7 @@ const FeaturesPage = () => {
 								Powerful{" "}
 								<span className="text-primary relative">
 									Features
-									<span className="absolute bottom-2 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full"></span>
+									<span className="absolute bottom-2 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
 								</span>{" "}
 								for Every Need
 							</motion.h1>
@@ -374,7 +372,7 @@ const FeaturesPage = () => {
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.7, delay: 0.4 }}
 						>
-							<div className="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-transparent z-10"></div>
+							<div className="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-transparent z-10" />
 							<div className="absolute inset-0">
 								<div className="grid grid-cols-2 gap-3 p-4 w-full h-full">
 									<div className="flex flex-col gap-3 h-full">

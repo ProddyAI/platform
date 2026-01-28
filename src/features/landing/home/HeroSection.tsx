@@ -75,7 +75,7 @@ export const HeroSection = () => {
 						Your Teams's{" "}
 						<span className="text-primary relative">
 							Second Brain
-							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full"></span>
+							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
 						</span>
 					</motion.h1>
 

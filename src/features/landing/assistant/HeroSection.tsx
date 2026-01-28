@@ -62,7 +62,7 @@ export const HeroSection = () => {
 						Just Ask,{" "}
 						<span className="text-primary relative">
 							Proddy Knows
-							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full"></span>
+							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
 						</span>
 					</motion.h1>
 
@@ -256,15 +256,15 @@ export const HeroSection = () => {
 													<div
 														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
 														style={{ animationDelay: "0ms" }}
-													></div>
+													/>
 													<div
 														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
 														style={{ animationDelay: "150ms" }}
-													></div>
+													/>
 													<div
 														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
 														style={{ animationDelay: "300ms" }}
-													></div>
+													/>
 												</div>
 											</div>
 										</div>

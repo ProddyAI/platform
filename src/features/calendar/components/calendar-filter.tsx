@@ -73,13 +73,13 @@ export const CalendarFilter = ({
 							filterOptions.eventTypes.length < 3 && (
 								<div className="flex ml-1 gap-1">
 									{filterOptions.eventTypes.includes("message") && (
-										<div className="w-2 h-2 rounded-full bg-blue-500"></div>
+										<div className="w-2 h-2 rounded-full bg-blue-500" />
 									)}
 									{filterOptions.eventTypes.includes("board-card") && (
-										<div className="w-2 h-2 rounded-full bg-purple-500"></div>
+										<div className="w-2 h-2 rounded-full bg-purple-500" />
 									)}
 									{filterOptions.eventTypes.includes("task") && (
-										<div className="w-2 h-2 rounded-full bg-green-500"></div>
+										<div className="w-2 h-2 rounded-full bg-green-500" />
 									)}
 								</div>
 							)}

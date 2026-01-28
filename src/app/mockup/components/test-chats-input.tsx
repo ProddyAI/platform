@@ -359,7 +359,7 @@ export const TestChatsInput = ({
 				<div className="mt-2 text-xs text-muted-foreground">
 					{isRecording && (
 						<div className="flex items-center gap-1">
-							<div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+							<div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
 							Recording voice message...
 						</div>
 					)}

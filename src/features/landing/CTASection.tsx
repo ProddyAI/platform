@@ -47,7 +47,7 @@ export const CTASection = () => {
 						Start Building with{" "}
 						<span className="text-primary relative">
 							Proddy Today
-							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full"></span>
+							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
 						</span>
 					</motion.h2>
 
