@@ -266,7 +266,7 @@ export const Header = () => {
 						</Link>
 
 						<Link
-							href="https://proddy.canny.io/"
+							href={process.env.NEXT_PUBLIC_ROADMAP_URL!}
 							target="_blank"
 							rel="noopener noreferrer"
 							className={cn(
@@ -403,7 +403,7 @@ export const Header = () => {
 								</Link>
 
 								<Link
-									href="https://proddy.canny.io/"
+									href={process.env.NEXT_PUBLIC_ROADMAP_URL!}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="flex items-center gap-1 text-base font-medium text-gray-700 hover:text-primary transition-colors"

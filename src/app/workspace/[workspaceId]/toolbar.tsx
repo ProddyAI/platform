@@ -375,7 +375,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						className="text-white relative hover:bg-white/15 transition-colors"
 						onClick={() => {
 							// Open roadmap page in a new tab
-							const roadmapUrl = "https://proddy.canny.io/";
+						const roadmapUrl = process.env.NEXT_PUBLIC_ROADMAP_URL!;
 							window.open(roadmapUrl, "_blank", "noopener,noreferrer");
 						}}
 					>
@@ -393,7 +393,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						className="text-white relative hover:bg-white/15 transition-colors"
 						onClick={() => {
 							// Open documentation in a new tab
-							const docsUrl = "https://docs.proddy.tech/";
+						const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL!;
 							window.open(docsUrl, "_blank", "noopener,noreferrer");
 						}}
 					>
@@ -428,7 +428,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						className="text-white relative hover:bg-white/15 transition-colors"
 						onClick={() => {
 							// Open status page in a new tab
-							const statusPageUrl = "https://status.proddy.tech/";
+						const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_URL!;
 							window.open(statusPageUrl, "_blank", "noopener,noreferrer");
 						}}
 					>

@@ -124,7 +124,7 @@ export const Footer = () => {
 							<ul className="space-y-3">
 								<li>
 									<Link
-										href="https://status.proddy.tech/"
+										href={process.env.NEXT_PUBLIC_STATUS_URL!}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
@@ -134,7 +134,7 @@ export const Footer = () => {
 								</li>
 								<li>
 									<Link
-										href="https://proddy.canny.io/"
+										href={process.env.NEXT_PUBLIC_ROADMAP_URL!}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
@@ -144,7 +144,7 @@ export const Footer = () => {
 								</li>
 								<li>
 									<a
-										href="https://docs.proddy.tech/"
+										href={process.env.NEXT_PUBLIC_DOCS_URL!}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
@@ -154,7 +154,7 @@ export const Footer = () => {
 								</li>
 								<li>
 									<a
-										href="https://careers.giighire.com/proddyai"
+										href={process.env.NEXT_PUBLIC_CAREERS_URL!}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
