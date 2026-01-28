@@ -18,6 +18,7 @@ import type * as conversations from "../conversations.js";
 import type * as crons from "../crons.js";
 import type * as direct from "../direct.js";
 import type * as email from "../email.js";
+import type * as emailVerification from "../emailVerification.js";
 import type * as http from "../http.js";
 import type * as integrations from "../integrations.js";
 import type * as members from "../members.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   direct: typeof direct;
   email: typeof email;
+  emailVerification: typeof emailVerification;
   http: typeof http;
   integrations: typeof integrations;
   members: typeof members;

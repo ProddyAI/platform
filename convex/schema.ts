@@ -20,6 +20,18 @@ const schema = defineSchema({
 		website: v.optional(v.string()),
 	}).index("email", ["email"]),
 
+	// Email OTP verifications
+	emailVerifications: defineTable({
+		email: v.string(),
+		otp: v.string(),
+		expiresAt: v.number(),
+		verified: v.boolean(),
+		attempts: v.number(),
+		createdAt: v.number(),
+	})
+		.index("by_email", ["email"])
+		.index("by_expiry", ["expiresAt"]),
+
 	workspaces: defineTable({
 		name: v.string(),
 		userId: v.id("users"),

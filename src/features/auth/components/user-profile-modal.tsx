@@ -437,10 +437,10 @@ export const UserProfileModal = ({
 						)}
 
 						<div className="flex flex-col items-center justify-center text-center h-full relative z-10">
-							<div className="w-full max-w-xs bg-white/70 dark:bg-white/5 backdrop-blur-md rounded-2xl p-6 shadow-lg">
+							<div className="w-full max-w-xs bg-white/70 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/20 dark:border-slate-700/50">
 								<div className="space-y-4 flex-1 flex flex-col items-center justify-center">
 									<div className="relative">
-										<Avatar className="size-24 ring-4 ring-background shadow-lg">
+										<Avatar className="size-24 ring-4 ring-white dark:ring-slate-700 shadow-lg">
 											<AvatarImage
 												src={
 													avatarPreview ||
@@ -589,7 +589,7 @@ export const UserProfileModal = ({
 					</div>
 
 					{/* Right Panel - Content */}
-					<div className="flex-1 flex flex-col">
+					<div className="flex-1 flex flex-col overflow-hidden">
 						<DialogHeader className="px-6 py-4 border-b flex-shrink-0">
 							<DialogTitle className="text-2xl font-semibold">
 								{isEditMode ? "Account Settings" : "Profile"}
@@ -598,10 +598,10 @@ export const UserProfileModal = ({
 
 						<div className="flex-1 overflow-y-auto min-w-0">
 							{isEditMode ? (
-								<div className="h-full flex flex-col">
+								<div className="h-full flex flex-col overflow-hidden">
 									<Tabs
 										defaultValue={defaultTab}
-										className="w-full h-full flex flex-col"
+										className="w-full h-full flex flex-col overflow-hidden"
 									>
 										<TabsList className="grid w-full grid-cols-2 mx-6 mt-4 flex-shrink-0">
 											<TabsTrigger value="profile" className="gap-2">
@@ -962,12 +962,14 @@ export const UserProfileModal = ({
 					<div className="mt-4">
 						<Label htmlFor="confirm-delete" className="text-sm font-medium">
 							Type{" "}
-							<span className="font-semibold text-destructive">DELETE</span> to
-							confirm
+							<span className="font-semibold text-destructive">
+								delete my account
+							</span>{" "}
+							to confirm
 						</Label>
 						<Input
 							id="confirm-delete"
-							placeholder="Type DELETE to confirm"
+							placeholder="Type 'delete my account' to confirm"
 							value={confirmText}
 							onChange={(e) => setConfirmText(e.target.value)}
 							disabled={isDeleting}

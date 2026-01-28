@@ -31,7 +31,8 @@ const PricingPage = () => {
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
-							Free for everyone during <span className="text-primary">beta</span>
+							Free for everyone during{" "}
+							<span className="text-primary">beta</span>
 						</motion.h1>
 						<motion.p
 							className="text-xl text-gray-600 max-w-3xl mx-auto mb-10"
@@ -39,8 +40,8 @@ const PricingPage = () => {
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.2 }}
 						>
-							All features are unlocked while we’re in beta. Pricing below
-							shows planned tiers and limits for launch.
+							All features are unlocked while we’re in beta. Pricing below shows
+							planned tiers and limits for launch.
 						</motion.p>
 					</div>
 				</div>
@@ -63,7 +64,8 @@ const PricingPage = () => {
 								<span className="text-gray-500 ml-2">/user/month</span>
 							</div>
 							<p className="text-gray-600 mb-6">
-								Core tasks, notes, and messaging for individuals and small teams.
+								Core tasks, notes, and messaging for individuals and small
+								teams.
 							</p>
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
@@ -80,7 +82,9 @@ const PricingPage = () => {
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Basic AI summaries (5 / month)</span>
+									<span className="text-gray-700">
+										Basic AI summaries (5 / month)
+									</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -105,7 +109,9 @@ const PricingPage = () => {
 							<div className="mb-6">
 								<span className="text-4xl font-bold">$5</span>
 								<span className="text-gray-500 ml-2">/user/month</span>
-								<span className="text-xs text-gray-500 ml-2">billed annually</span>
+								<span className="text-xs text-gray-500 ml-2">
+									billed annually
+								</span>
 							</div>
 							<p className="text-gray-600 mb-6">
 								Everything in Free, plus team workspaces and more storage.
@@ -113,11 +119,15 @@ const PricingPage = () => {
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Unlimited tasks & projects</span>
+									<span className="text-gray-700">
+										Unlimited tasks & projects
+									</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">10–20 GB storage per user</span>
+									<span className="text-gray-700">
+										10–20 GB storage per user
+									</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -125,7 +135,9 @@ const PricingPage = () => {
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Basic AI summaries (20 / month)</span>
+									<span className="text-gray-700">
+										Basic AI summaries (20 / month)
+									</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -148,7 +160,9 @@ const PricingPage = () => {
 							<div className="mb-6">
 								<span className="text-4xl font-bold">$12</span>
 								<span className="text-gray-500 ml-2">/user/month</span>
-								<span className="text-xs text-gray-500 ml-2">billed annually</span>
+								<span className="text-xs text-gray-500 ml-2">
+									billed annually
+								</span>
 							</div>
 							<p className="text-gray-600 mb-6">
 								Advanced AI and security controls for growing teams.
@@ -164,7 +178,9 @@ const PricingPage = () => {
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Unlimited GPT-4 summaries & Q&A</span>
+									<span className="text-gray-700">
+										Unlimited GPT-4 summaries & Q&A
+									</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -172,7 +188,9 @@ const PricingPage = () => {
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">SAML SSO + granular permissions</span>
+									<span className="text-gray-700">
+										SAML SSO + granular permissions
+									</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -202,7 +220,9 @@ const PricingPage = () => {
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Unlimited teams & workspaces</span>
+									<span className="text-gray-700">
+										Unlimited teams & workspaces
+									</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -210,11 +230,15 @@ const PricingPage = () => {
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Data residency & custom SLAs</span>
+									<span className="text-gray-700">
+										Data residency & custom SLAs
+									</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Dedicated account management</span>
+									<span className="text-gray-700">
+										Dedicated account management
+									</span>
 								</li>
 							</ul>
 							<Link href="/contact">
@@ -230,9 +254,12 @@ const PricingPage = () => {
 			<section id="comparison" className="py-16 bg-white">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="mb-10">
-						<h2 className="text-3xl font-semibold text-gray-900">Full feature comparison</h2>
+						<h2 className="text-3xl font-semibold text-gray-900">
+							Full feature comparison
+						</h2>
 						<p className="text-gray-600 mt-3">
-							A detailed breakdown by category, with limits and availability per tier.
+							A detailed breakdown by category, with limits and availability per
+							tier.
 						</p>
 					</div>
 					<div className="space-y-8">
@@ -244,29 +271,39 @@ const PricingPage = () => {
 										<th className="py-4 px-4 text-left font-medium">Free</th>
 										<th className="py-4 px-4 text-left font-medium">Starter</th>
 										<th className="py-4 px-4 text-left font-medium">Pro</th>
-										<th className="py-4 px-4 text-left font-medium">Enterprise</th>
+										<th className="py-4 px-4 text-left font-medium">
+											Enterprise
+										</th>
 									</tr>
 								</thead>
 								<tbody className="text-gray-700">
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Task & Messaging Integration</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Task & Messaging Integration
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Add chat messages to tasks/calendar</td>
+										<td className="py-3 px-4">
+											Add chat messages to tasks/calendar
+										</td>
 										<td className="py-3 px-4">Limited</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Convert chats into tasks (with context)</td>
+										<td className="py-3 px-4">
+											Convert chats into tasks (with context)
+										</td>
 										<td className="py-3 px-4">Limited</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">AI summarization of chats/tasks</td>
+										<td className="py-3 px-4">
+											AI summarization of chats/tasks
+										</td>
 										<td className="py-3 px-4">Basic (5 / month)</td>
 										<td className="py-3 px-4">Standard (20 / month)</td>
 										<td className="py-3 px-4">Unlimited (GPT-4)</td>
@@ -281,7 +318,9 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>AI-Powered Collaboration</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											AI-Powered Collaboration
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
 										<td className="py-3 px-4">AI notes & diagramming</td>
@@ -291,14 +330,18 @@ const PricingPage = () => {
 										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Contextual AI assistant (workspace Q&A)</td>
+										<td className="py-3 px-4">
+											Contextual AI assistant (workspace Q&A)
+										</td>
 										<td className="py-3 px-4">Basic bots</td>
 										<td className="py-3 px-4">Standard models</td>
 										<td className="py-3 px-4">GPT-4 quality</td>
 										<td className="py-3 px-4">Custom agents</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">AI workflows (create issues, emails, tasks)</td>
+										<td className="py-3 px-4">
+											AI workflows (create issues, emails, tasks)
+										</td>
 										<td className="py-3 px-4">✕</td>
 										<td className="py-3 px-4">Basic (email only)</td>
 										<td className="py-3 px-4">Advanced</td>
@@ -306,10 +349,14 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Audio & Video Enhancements</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Audio & Video Enhancements
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">In-app audio calls (Notes & Canvas)</td>
+										<td className="py-3 px-4">
+											In-app audio calls (Notes & Canvas)
+										</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
@@ -331,7 +378,9 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Smart Summaries & Dashboards</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Smart Summaries & Dashboards
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
 										<td className="py-3 px-4">Weekly activity digest</td>
@@ -363,10 +412,14 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Views & Layouts</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Views & Layouts
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Kanban / Table / Calendar views</td>
+										<td className="py-3 px-4">
+											Kanban / Table / Calendar views
+										</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
@@ -380,14 +433,18 @@ const PricingPage = () => {
 										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Unified calendar (tasks/notes/events)</td>
+										<td className="py-3 px-4">
+											Unified calendar (tasks/notes/events)
+										</td>
 										<td className="py-3 px-4">Tasks only</td>
 										<td className="py-3 px-4">Tasks + calendar</td>
 										<td className="py-3 px-4">All items</td>
 										<td className="py-3 px-4">All items</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Workspace switching / invite code</td>
+										<td className="py-3 px-4">
+											Workspace switching / invite code
+										</td>
 										<td className="py-3 px-4">✕</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
@@ -395,7 +452,9 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Canvas & Notes</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Canvas & Notes
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
 										<td className="py-3 px-4">Free-form Canvas (whiteboard)</td>
@@ -405,7 +464,9 @@ const PricingPage = () => {
 										<td className="py-3 px-4">PNG/PDF export</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Real-time collaborative editing</td>
+										<td className="py-3 px-4">
+											Real-time collaborative editing
+										</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
@@ -427,10 +488,14 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Integrations & Automations</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Integrations & Automations
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Third-party integrations (GitHub, Jira, Slack)</td>
+										<td className="py-3 px-4">
+											Third-party integrations (GitHub, Jira, Slack)
+										</td>
 										<td className="py-3 px-4">Up to 2</td>
 										<td className="py-3 px-4">Up to 5–10</td>
 										<td className="py-3 px-4">Unlimited</td>
@@ -444,7 +509,9 @@ const PricingPage = () => {
 										<td className="py-3 px-4">All workflows</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Shared email/chat (Gmail/Slack)</td>
+										<td className="py-3 px-4">
+											Shared email/chat (Gmail/Slack)
+										</td>
 										<td className="py-3 px-4">Read-only</td>
 										<td className="py-3 px-4">Standard</td>
 										<td className="py-3 px-4">Full</td>
@@ -452,7 +519,9 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Productivity & Mobility</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Productivity & Mobility
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
 										<td className="py-3 px-4">PWA / mobile access</td>
@@ -469,7 +538,9 @@ const PricingPage = () => {
 										<td className="py-3 px-4">Full</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Real-time updates across devices</td>
+										<td className="py-3 px-4">
+											Real-time updates across devices
+										</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
@@ -477,7 +548,9 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Calendar & Scheduling</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Calendar & Scheduling
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
 										<td className="py-3 px-4">Unified calendar integrations</td>
@@ -495,7 +568,9 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Limits & Capacities</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Limits & Capacities
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
 										<td className="py-3 px-4">Workspaces / Projects</td>
@@ -527,10 +602,14 @@ const PricingPage = () => {
 									</tr>
 
 									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={5}>Security & Admin (additional)</td>
+										<td className="py-3 px-4 font-semibold" colSpan={5}>
+											Security & Admin (additional)
+										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Role-based access & permissions</td>
+										<td className="py-3 px-4">
+											Role-based access & permissions
+										</td>
 										<td className="py-3 px-4">Basic roles</td>
 										<td className="py-3 px-4">Admin + Contributor</td>
 										<td className="py-3 px-4">Granular</td>
@@ -544,7 +623,9 @@ const PricingPage = () => {
 										<td className="py-3 px-4">Enterprise-grade</td>
 									</tr>
 									<tr>
-										<td className="py-3 px-4">Data residency & retention controls</td>
+										<td className="py-3 px-4">
+											Data residency & retention controls
+										</td>
 										<td className="py-3 px-4">✕</td>
 										<td className="py-3 px-4">✕</td>
 										<td className="py-3 px-4">Optional</td>
@@ -556,8 +637,6 @@ const PricingPage = () => {
 					</div>
 				</div>
 			</section>
-
-
 
 			{/* CTA Section */}
 			<CTASection />

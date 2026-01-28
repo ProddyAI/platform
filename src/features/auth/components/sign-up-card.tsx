@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 
 import type { SignInFlow } from "../types";
 import { isPasswordValid } from "../utils/password-validation";
+import { OTPVerificationCard } from "./otp-verification-card";
 import { PasswordStrengthIndicator } from "./password-strength-indicator";
 
 interface SignUpCardProps {
@@ -36,13 +37,15 @@ export const SignUpCard = ({
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [error, setError] = useState("");
 	const [pending, setPending] = useState(false);
+	const [showOTPVerification, setShowOTPVerification] = useState(false);
+	const [pendingEmail, setPendingEmail] = useState("");
 
 	const handleOAuthSignUp = (value: "github" | "google") => {
 		setPending(true);
 		signIn(value).finally(() => setPending(false));
 	};
 
-	const handleSignUp = (e: React.FormEvent<HTMLFormElement>) => {
+	const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
 		const validateEmail = (email: string) => {
@@ -60,12 +63,54 @@ export const SignUpCard = ({
 
 		setPending(true);
 		setError("");
-		signIn("password", { name, email, password, flow: "signUp" })
-			.catch(() => {
+
+		try {
+			// Send OTP to email
+			const response = await fetch("/api/otp/send", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email }),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || "Failed to send OTP");
+			}
+
+			// Store credentials securely in sessionStorage (not in component state)
+			// This prevents exposure in React DevTools
+			sessionStorage.setItem("signup_name", name);
+			sessionStorage.setItem("signup_password", password);
+			setPendingEmail(email);
+
+			// Show OTP verification screen
+			setShowOTPVerification(true);
+		} catch (err) {
+			if (err instanceof Error) {
+				setError(err.message);
+			} else {
 				setError("Something went wrong!");
-			})
-			.finally(() => setPending(false));
+			}
+		} finally {
+			setPending(false);
+		}
 	};
+
+	// Show OTP verification screen if needed
+	if (showOTPVerification) {
+		return (
+			<OTPVerificationCard
+				email={pendingEmail}
+				onBack={() => {
+					// Clear sessionStorage when going back
+					sessionStorage.removeItem("signup_name");
+					sessionStorage.removeItem("signup_password");
+					setShowOTPVerification(false);
+				}}
+			/>
+		);
+	}
 
 	return (
 		<Card className="size-full p-8 shadow-xl border-opacity-30 backdrop-blur-sm animate-slide-up rounded-[10px]">

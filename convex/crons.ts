@@ -69,4 +69,11 @@ crons.hourly(
 	internal.rateLimit.cleanupExpiredLimits
 );
 
+// Clean up expired OTP entries every hour
+crons.hourly(
+	"cleanup-expired-otps",
+	{ minuteUTC: 15 }, // Run 15 minutes past every hour
+	internal.emailVerification.cleanupExpiredOTPs
+);
+
 export default crons;
