@@ -171,7 +171,7 @@ export const createTask = mutation({
 		});
 
 		// Schedule RAG indexing for the new task
-		await ctx.scheduler.runAfter(0, api.search.autoIndexTask, {
+		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexTask, {
 			taskId,
 		});
 
@@ -243,7 +243,7 @@ export const updateTask = mutation({
 		});
 
 		// Schedule RAG re-indexing for the updated task
-		await ctx.scheduler.runAfter(0, api.search.autoIndexTask, {
+		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexTask, {
 			taskId: id,
 		});
 
@@ -546,7 +546,7 @@ export const createTaskFromMessage = mutation({
 		});
 
 		// Schedule RAG indexing for the new task
-		await ctx.scheduler.runAfter(0, api.search.autoIndexTask, {
+		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexTask, {
 			taskId,
 		});
 

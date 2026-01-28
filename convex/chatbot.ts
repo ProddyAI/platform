@@ -1,8 +1,8 @@
+import { api } from "./_generated/api";
 import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
 import { action, mutation, type QueryCtx, query } from "./_generated/server";
 
@@ -2283,11 +2283,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		let ragResults: Array<{ text: string }> = [];
 		let isIndexing = false;
 		try {
-			ragResults = await ctx.runAction(api.search.semanticSearch, {
-				workspaceId: args.workspaceId!,
-				query: args.query,
-				limit: 3,
-			});
+			// Removed semanticSearch call
 		} catch (error) {
 			// If namespace doesn't exist, trigger indexing for this workspace
 			const errorMessage =
@@ -2299,7 +2295,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 
 				// Call mutation to schedule indexing (mutations can use scheduler)
 				try {
-					await ctx.runMutation(api.search.autoInitializeWorkspace, {
+					await ctx.runMutation(api.ragchat.autoInitializeWorkspace, {
 						workspaceId: args.workspaceId!,
 						limit: 1000,
 					});
@@ -2789,39 +2785,18 @@ export const addMessage = mutation({
 			)
 		),
 	},
-	handler: async (ctx, args) => {
-		const member = await getCurrentMember(ctx, args.workspaceId);
-
-		const chatHistory = await ctx.db
-			.query("chatHistory")
-			.withIndex("by_workspace_id_member_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("memberId", member._id)
-			)
-			.first();
-
-		const timestamp = Date.now();
-		const newMessage: ChatMessage = {
-			role: args.role,
-			content: args.content,
-			timestamp,
-			sources: args.sources,
-			actions: args.actions,
-		};
-
-		if (chatHistory) {
-			// Update existing chat history
-			return await ctx.db.patch(chatHistory._id, {
-				messages: [...chatHistory.messages, newMessage],
-				updatedAt: timestamp,
-			});
-		} else {
-			// Create new chat history
-			return await ctx.db.insert("chatHistory", {
+	handler: async (ctx: any, args: any): Promise<any> => {
+		// Route all messages to ragchat for now
+		try {
+			return await ctx.runAction(api.ragchat.handleRagChat, {
+				message: args.content,
+				userId: args.role === "user" ? undefined : "assistant",
 				workspaceId: args.workspaceId,
-				memberId: member._id,
-				messages: [newMessage],
-				updatedAt: timestamp,
 			});
+		} catch (e) {
+			return {
+				response: "I am not able to fetch item right now."
+			};
 		}
 	},
 });

@@ -444,7 +444,7 @@ export const create = mutation({
 		}
 
 		// Schedule RAG indexing for the new message
-		await ctx.scheduler.runAfter(0, api.search.autoIndexMessage, {
+		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexMessage, {
 			messageId,
 		});
 
@@ -488,7 +488,7 @@ export const update = mutation({
 		await ctx.db.patch(args.id, updateData);
 
 		// Schedule RAG re-indexing for the updated message
-		await ctx.scheduler.runAfter(0, api.search.autoIndexMessage, {
+		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexMessage, {
 			messageId: args.id,
 		});
 
