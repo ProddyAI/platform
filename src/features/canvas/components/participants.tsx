@@ -5,8 +5,6 @@ import { connectionIdToColor } from "../../../lib/utils";
 import { UserAvatar } from "./user-avatar";
 
 // Define types for the Liveblocks user data
-
-// Define types for the Liveblocks user data
 interface UserInfo {
 	name?: string;
 	picture?: string;
