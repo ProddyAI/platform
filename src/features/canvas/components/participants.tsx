@@ -36,8 +36,7 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 						const userKey =
 							user.userId ||
 							user.memberId ||
-							user.info?.name ||
-							`user-${idx}`;
+							(user.info?.name ? `${user.info.name}-${idx}` : `user-${idx}`);
 						return (
 							<UserAvatar
 								borderColor={stringToColor(userKey)}
@@ -45,7 +44,7 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 								src={user.info?.picture ?? undefined}
 								name={user.info?.name || "Unknown User"}
 								fallback={user.info?.name?.[0] || "U"}
-								userId={user.userId || undefined}
+								userId={user.userId || user.memberId || userKey}
 							/>
 						);
 					})}
