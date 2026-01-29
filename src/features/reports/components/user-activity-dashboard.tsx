@@ -117,8 +117,7 @@ export const UserActivityDashboard = ({
 		.slice(0, 10)
 		.map((item) => {
 			const timeValue = item.totalTimeSpent || 0;
-			// Color code based on time spent (in seconds)
-			// Green: > 1 hour, Yellow: 15min - 1 hour, Blue: < 15min
+
 			const color =
 				timeValue > ONE_HOUR_IN_SECONDS
 					? "bg-green-500"

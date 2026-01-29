@@ -57,8 +57,6 @@ export const NotesRoom = ({ children, noteId, fallback }: NotesRoomProps) => {
 		);
 	}
 
-	// Set up query parameters with user and member IDs
-	// These will be passed to the liveblocks/auth endpoint
 	const authParams = new URLSearchParams();
 	if (currentUser?._id) authParams.set("userId", currentUser._id);
 	if (currentMember?._id) authParams.set("memberId", currentMember._id);

@@ -12,6 +12,8 @@ const _isPublicPage = createRouteMatcher([
 	"/home",
 	"/signin",
 	"/signup",
+	"/forgot-password",
+	"/reset-password",
 	"/about",
 	"/contact",
 	"/privacy",
@@ -35,7 +37,7 @@ export default convexAuthNextjsMiddleware((req) => {
 		return nextjsMiddlewareRedirect(req, "/signin");
 	}
 
-	// If trying to access auth pages while already logged in
+
 	if (
 		(req.nextUrl.pathname === "/auth" ||
 			req.nextUrl.pathname === "/signin" ||
@@ -57,7 +59,6 @@ export default convexAuthNextjsMiddleware((req) => {
 });
 
 export const config = {
-	// The following matcher runs middleware on all routes
-	// except static assets.
+
 	matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
 };

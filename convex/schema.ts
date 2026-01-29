@@ -517,6 +517,18 @@ const schema = defineSchema({
 		.index("by_email", ["email"])
 		.index("by_type", ["type"])
 		.index("by_expires_at", ["expiresAt"]),
+
+	// Password reset tokens
+	passwordResetTokens: defineTable({
+		email: v.string(),
+		token: v.string(), // Hashed token for security
+		expiresAt: v.number(),
+		used: v.boolean(),
+		createdAt: v.number(),
+	})
+		.index("by_email", ["email"])
+		.index("by_token", ["token"])
+		.index("by_expiry", ["expiresAt"]),
 });
 
 export default schema;

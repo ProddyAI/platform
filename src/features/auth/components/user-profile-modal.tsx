@@ -47,6 +47,7 @@ import { StatusTrackingSettings } from "@/features/preferences/components/status
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useCurrentUser } from "../api/use-current-user";
 import { useDeleteAccount } from "../api/use-delete-account";
+import { PasswordChangeForm } from "./password-change-form";
 
 interface UserProfileModalProps {
 	open: boolean;
@@ -835,6 +836,9 @@ export const UserProfileModal = ({
 																<StatusTrackingSettings />
 															</CardContent>
 														</Card>
+
+														{/* Password Change Form */}
+														<PasswordChangeForm />
 
 														<Card className="border-destructive/50">
 															<CardHeader>

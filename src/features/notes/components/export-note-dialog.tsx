@@ -160,8 +160,7 @@ export const ExportNoteDialog = ({
 	};
 
 	const convertToPDF = (note: Note): string => {
-		// For now, return a data URL placeholder
-		// In a real implementation, you'd use a library like puppeteer or jsPDF
+
 		const htmlContent = convertToHTML(note);
 
 		// This is a placeholder - in production you'd generate actual PDF

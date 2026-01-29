@@ -125,8 +125,7 @@ export const ChannelActivityDashboard = ({
 		.filter((item) => (item.totalTimeSpent || 0) > 0) // Only show channels with time spent
 		.map((item) => {
 			const timeValue = item.totalTimeSpent || 0;
-			// Color code based on time spent (in seconds)
-			// Green: > 2 hours, Yellow: 30min - 2 hours, Blue: < 30min
+
 			const color =
 				timeValue > TWO_HOURS_IN_SECONDS
 					? "bg-green-500"

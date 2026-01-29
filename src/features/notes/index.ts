@@ -1,6 +1,4 @@
-// Notes components
 
-// Notes API hooks
 export { useCreateNote } from "./api/use-create-note";
 export { useDeleteNote } from "./api/use-delete-note";
 export { useGetNote } from "./api/use-get-note";

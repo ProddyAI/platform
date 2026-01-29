@@ -86,6 +86,15 @@ export const SignInCard = ({
 						required
 					/>
 
+					<div className="flex justify-end">
+						<Link
+							href="/forgot-password"
+							className="text-xs text-muted-foreground hover:text-secondary transition-colors"
+						>
+							Forgot Password?
+						</Link>
+					</div>
+
 					<Button
 						type="submit"
 						className="bg-primary w-full transition-standard hover:shadow-lg hover:bg-primary/90"

@@ -11,8 +11,6 @@ export interface PieSegment {
 export const DEPTH = 12; // Moderate depth for 3D look
 export const HOVER_EJECT = 12; // Distance to eject out on hover
 
-// Visibility thresholds for 3D edge rendering
-// These control when edges are rendered based on their angle relative to the viewer
 export const EDGE_VISIBILITY_THRESHOLD = 0.1; // For start and end edges
 export const OUTER_EDGE_VISIBILITY_THRESHOLD = 0.08; // For outer arc edge
 
@@ -80,8 +78,7 @@ export const createSidePath = (
 
 	// Handle full circle case (100% or very close to it)
 	if (segment.percentage >= 99.9) {
-		// For a complete cylinder, draw the visible back portion (from right side, going down and around to left side)
-		// This creates the wrap-around depth effect
+
 
 		// Right side point (0°, which is at 3 o'clock position after -90° offset)
 		const rightX = centerX + radiusX;
@@ -95,8 +92,7 @@ export const createSidePath = (
 		const leftX = centerX - radiusX;
 		const leftY = centerY;
 
-		// Draw the back visible portion: right → bottom → left (clockwise on back)
-		// This shows the cylinder depth wrapping around
+
 		const backPath = `M ${rightX} ${rightY} A ${radiusX} ${radiusY} 0 0 1 ${bottomX} ${bottomY} A ${radiusX} ${radiusY} 0 0 1 ${leftX} ${leftY} L ${leftX} ${leftY + depth} A ${radiusX} ${radiusY} 0 0 0 ${bottomX} ${bottomY + depth} A ${radiusX} ${radiusY} 0 0 0 ${rightX} ${rightY + depth} Z`;
 		paths.push({ path: backPath, type: "outer" });
 
