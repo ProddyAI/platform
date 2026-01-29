@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 			resetLink,
 		});
 
-		const { data, error } = await resendClient.emails.send({
+		const { error } = await resendClient.emails.send({
 			from: "Proddy <noreply@proddy.tech>",
 			to: normalizedEmail,
 			subject: "Reset Your Password - Proddy",

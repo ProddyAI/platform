@@ -6,6 +6,100 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 // Character set for token generation
 const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+// Common/compromised passwords to reject
+const COMMON_PASSWORDS = [
+	"password",
+	"123456",
+	"12345678",
+	"qwerty",
+	"abc123",
+	"monkey",
+	"letmein",
+	"trustno1",
+	"dragon",
+	"baseball",
+	"iloveyou",
+	"master",
+	"sunshine",
+	"ashley",
+	"bailey",
+	"passw0rd",
+	"shadow",
+	"123123",
+	"654321",
+	"superman",
+	"qazwsx",
+	"michael",
+	"football",
+	"password1",
+	"admin",
+	"welcome",
+	"login",
+	"princess",
+	"solo",
+	"starwars",
+];
+
+/**
+ * Validate password strength according to security policy.
+ * 
+ * Password Requirements:
+ * - Minimum 8 characters
+ * - At least one uppercase letter (A-Z)
+ * - At least one lowercase letter (a-z)
+ * - At least one number (0-9)
+ * - At least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)
+ * - Not in the list of common/compromised passwords
+ * 
+ * @param password - The password to validate
+ * @throws Error with descriptive message if password fails validation
+ */
+function validatePassword(password: string): void {
+	// Check minimum length
+	if (password.length < 8) {
+		throw new Error("Password must be at least 8 characters long");
+	}
+
+	// Check for uppercase letter
+	if (!/[A-Z]/.test(password)) {
+		throw new Error("Password must contain at least one uppercase letter");
+	}
+
+	// Check for lowercase letter
+	if (!/[a-z]/.test(password)) {
+		throw new Error("Password must contain at least one lowercase letter");
+	}
+
+	// Check for number
+	if (!/[0-9]/.test(password)) {
+		throw new Error("Password must contain at least one number");
+	}
+
+	// Check for special character
+	if (!/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)) {
+		throw new Error(
+			"Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)"
+		);
+	}
+
+	// Check against common passwords (case-insensitive)
+	const lowerPassword = password.toLowerCase();
+	if (COMMON_PASSWORDS.includes(lowerPassword)) {
+		throw new Error(
+			"This password is too common. Please choose a more secure password"
+		);
+	}
+
+	// Check for sequential characters (e.g., "12345", "abcde")
+	if (/(?:0123|1234|2345|3456|4567|5678|6789|7890)/.test(password)) {
+		throw new Error("Password cannot contain sequential numbers");
+	}
+
+	if (/(?:abcd|bcde|cdef|defg|efgh|fghi|ghij|hijk|ijkl|jklm|klmn|lmno|mnop|nopq|opqr|pqrs|qrst|rstu|stuv|tuvw|uvwx|vwxy|wxyz)/i.test(password)) {
+		throw new Error("Password cannot contain sequential letters");
+	}
+}
+
 /**
  * Generate a cryptographically secure random token for password resets.
  * Uses crypto.getRandomValues() instead of Math.random() for true randomness.
@@ -144,6 +238,9 @@ export const changePassword = mutation({
 			if (passwordAccount.secret !== hashedCurrentPassword) {
 				throw new Error("Current password is incorrect");
 			}
+
+			// Validate new password strength before hashing
+			validatePassword(args.newPassword);
 
 			// Hash and update the new password
 			const hashedNewPassword = await hashPassword(args.newPassword);
@@ -360,6 +457,9 @@ export const resetPassword = mutation({
 		if (!passwordAccount) {
 			throw new Error("Password authentication not found");
 		}
+
+		// Validate new password strength before hashing
+		validatePassword(args.newPassword);
 
 		// Hash the new password
 		const hashedPassword = await hashPassword(args.newPassword);
