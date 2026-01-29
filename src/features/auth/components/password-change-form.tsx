@@ -88,20 +88,20 @@ export const PasswordChangeForm = () => {
 	};
 
 	return (
-		<Card className="border-gray-700 bg-[#262626]">
+		<Card className="bg-muted/50 border-border">
 			<CardHeader>
 				<div className="flex items-center gap-2">
 					<Lock className="h-5 w-5 text-purple-500" />
-					<CardTitle className="text-white">Change Password</CardTitle>
+					<CardTitle>Change Password</CardTitle>
 				</div>
-				<CardDescription className="text-gray-400">
+				<CardDescription>
 					Update your password to keep your account secure
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor="current-password" className="text-gray-300">
+						<Label htmlFor="current-password">
 							Current Password
 						</Label>
 						<Input
@@ -110,13 +110,12 @@ export const PasswordChangeForm = () => {
 							value={currentPassword}
 							onChange={(e) => setCurrentPassword(e.target.value)}
 							disabled={isSubmitting}
-							className="bg-[#2a2a2a] border-gray-600 text-white"
 							placeholder="Enter current password"
 						/>
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="new-password" className="text-gray-300">
+						<Label htmlFor="new-password">
 							New Password
 						</Label>
 						<Input
@@ -125,7 +124,6 @@ export const PasswordChangeForm = () => {
 							value={newPassword}
 							onChange={(e) => setNewPassword(e.target.value)}
 							disabled={isSubmitting}
-							className="bg-[#2a2a2a] border-gray-600 text-white"
 							placeholder="Enter new password"
 						/>
 						{newPassword && (
@@ -137,7 +135,7 @@ export const PasswordChangeForm = () => {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="confirm-password" className="text-gray-300">
+						<Label htmlFor="confirm-password">
 							Confirm Password
 						</Label>
 						<Input
@@ -146,11 +144,10 @@ export const PasswordChangeForm = () => {
 							value={confirmPassword}
 							onChange={(e) => setConfirmPassword(e.target.value)}
 							disabled={isSubmitting}
-							className="bg-[#2a2a2a] border-gray-600 text-white"
 							placeholder="Confirm new password"
 						/>
 						{confirmPassword && newPassword !== confirmPassword && (
-							<p className="text-sm text-red-500">Passwords do not match</p>
+							<p className="text-sm text-destructive">Passwords do not match</p>
 						)}
 					</div>
 

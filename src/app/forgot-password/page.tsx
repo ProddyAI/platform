@@ -66,7 +66,7 @@ const ForgotPasswordPage = () => {
 					setEmailSent(true);
 					toast.success("Password reset link sent to your email");
 				} else {
-					toast.error("Failed to send reset email. Please try again.");
+					toast.error("Failed to send reset email. Please Try again.");
 				}
 			}
 		} catch (error) {
@@ -135,7 +135,7 @@ const ForgotPasswordPage = () => {
 										onClick={() => setEmailSent(false)}
 										className="text-secondary hover:underline font-medium"
 									>
-										try again
+										Try again
 									</button>
 								</p>
 							</div>
