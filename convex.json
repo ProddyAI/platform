@@ -1,5 +1,8 @@
 {
-	"node": {
-		"externalPackages": ["@opentelemetry/api", "@opentelemetry/instrumentation"]
-	}
+  "node": {
+    "externalPackages": [
+      "@opentelemetry/api",
+      "@opentelemetry/instrumentation"
+    ]
+  }
 }
