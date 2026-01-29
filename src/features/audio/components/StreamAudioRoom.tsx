@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { Loader2, Phone, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAudioRoom } from "../"; // Import from index to get the new implementation
+import { useAudioRoom } from ".."; // Import from index to get the new implementation
 import { AudioControlButton } from "./AudioControlButton";
 import { AudioToolbarButton } from "./AudioToolbarButton";
 

@@ -14,8 +14,6 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-type NotesAudioControlsProps = {};
-
 // Inner component that uses Stream hooks - only rendered when call is available
 const AudioControlsInner = () => {
 	const call = useCall();
@@ -161,7 +159,7 @@ const AudioControlsInner = () => {
 };
 
 // Outer component that checks for call availability
-export const NotesAudioControls = ({}: NotesAudioControlsProps) => {
+export const NotesAudioControls = () => {
 	const call = useCall();
 
 	// Don't render if no call is available
