@@ -3,7 +3,7 @@
 import { useMutation } from "convex/react";
 import { ArrowLeft, Mail } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
+const COOLDOWN_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
+
 const ForgotPasswordPage = () => {
 	useDocumentTitle("Forgot Password");
 
@@ -28,6 +30,32 @@ const ForgotPasswordPage = () => {
 	const [email, setEmail] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [emailSent, setEmailSent] = useState(false);
+	const [lastSentTimestamp, setLastSentTimestamp] = useState<number | null>(
+		null
+	);
+	const [remainingCooldown, setRemainingCooldown] = useState(0);
+
+	// Handle cooldown timer
+	useEffect(() => {
+		if (!lastSentTimestamp) return;
+
+		const updateCooldown = () => {
+			const now = Date.now();
+			const elapsed = now - lastSentTimestamp;
+			const remaining = Math.max(0, COOLDOWN_DURATION - elapsed);
+
+			setRemainingCooldown(remaining);
+
+			if (remaining === 0) {
+				setLastSentTimestamp(null);
+			}
+		};
+
+		updateCooldown();
+		const interval = setInterval(updateCooldown, 1000);
+
+		return () => clearInterval(interval);
+	}, [lastSentTimestamp]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -64,6 +92,7 @@ const ForgotPasswordPage = () => {
 
 				if (response.ok) {
 					setEmailSent(true);
+					setLastSentTimestamp(Date.now());
 					toast.success("Password reset link sent to your email");
 				} else {
 					toast.error("Failed to send reset email. Please Try again.");
@@ -75,6 +104,26 @@ const ForgotPasswordPage = () => {
 		} finally {
 			setIsSubmitting(false);
 		}
+	};
+
+	const handleTryAgain = () => {
+		if (remainingCooldown > 0) {
+			const seconds = Math.ceil(remainingCooldown / 1000);
+			const minutes = Math.floor(seconds / 60);
+			const remainingSeconds = seconds % 60;
+			toast.error(
+				`Please wait ${minutes}:${remainingSeconds.toString().padStart(2, "0")} before trying again`
+			);
+			return;
+		}
+		setEmailSent(false);
+	};
+
+	const formatCooldownTime = () => {
+		const seconds = Math.ceil(remainingCooldown / 1000);
+		const minutes = Math.floor(seconds / 60);
+		const remainingSeconds = seconds % 60;
+		return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 	};
 
 	return (
@@ -132,10 +181,17 @@ const ForgotPasswordPage = () => {
 									Didn't receive the email? Check your spam folder or{" "}
 									<button
 										type="button"
-										onClick={() => setEmailSent(false)}
-										className="text-secondary hover:underline font-medium"
+										onClick={handleTryAgain}
+										disabled={remainingCooldown > 0}
+										className={`font-medium transition-colors ${
+											remainingCooldown > 0
+												? "text-muted-foreground cursor-not-allowed"
+												: "text-secondary hover:underline"
+										}`}
 									>
-										Try again
+										{remainingCooldown > 0
+											? `Try again (${formatCooldownTime()})`
+											: "Try again"}
 									</button>
 								</p>
 							</div>
