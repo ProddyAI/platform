@@ -17,7 +17,7 @@ export const useSearchMessages = ({
 	const [debouncedQuery, setDebouncedQuery] = useState(query);
 	const [fuzzyResults, setFuzzyResults] = useState<any[]>([]);
 	const [isFuzzyLoading, setIsFuzzyLoading] = useState(false);
-	const fuzzySearch = useAction(api.search.fuzzySearchMessages);
+	// const fuzzySearch = useAction(api.search.fuzzySearchMessages); // Not implemented
 
 	// Debounce the search query by 300ms
 	useEffect(() => {
@@ -36,48 +36,31 @@ export const useSearchMessages = ({
 	// Only run the query if enabled and we have a search query
 	const shouldQuery = enabled && debouncedQuery.trim().length > 0;
 
-	const results = useQuery(
-		api.search.searchWorkspaceMessages,
-		shouldQuery
-			? {
-					workspaceId,
-					query: debouncedQuery,
-					limit: 20,
-				}
-			: "skip"
-	);
+	// const results = useQuery(
+	//   api.search.searchWorkspaceMessages,
+	//   shouldQuery
+	//     ? {
+	//         workspaceId,
+	//         query: debouncedQuery,
+	//         limit: 20,
+	//       }
+	//     : "skip"
+	// );
+	const results: any[] = [];
 
 	// Trigger fuzzy (semantic) search when exact search returns no results
+
+	// No fuzzy search or workspace search implemented. Always return empty results.
 	useEffect(() => {
-		if (!shouldQuery) return;
-		if (results === undefined) return; // still loading
-		if (results.length > 0) return; // we already have exact matches
-
-		let cancelled = false;
-		setIsFuzzyLoading(true);
-		fuzzySearch({
-			workspaceId,
-			query: debouncedQuery,
-			limit: 20,
-		})
-			.then((res) => {
-				if (!cancelled) setFuzzyResults(res ?? []);
-			})
-			.catch(() => {
-				if (!cancelled) setFuzzyResults([]);
-			})
-			.finally(() => {
-				if (!cancelled) setIsFuzzyLoading(false);
-			});
-
-		return () => {
-			cancelled = true;
-		};
-	}, [shouldQuery, results, fuzzySearch, workspaceId, debouncedQuery]);
+		if (shouldQuery) {
+			// eslint-disable-next-line no-console
+			console.warn('Search functionality is not implemented: fuzzySearchMessages and searchWorkspaceMessages are missing.');
+		}
+	}, [shouldQuery]);
 
 	return {
-		results: results && results.length > 0 ? results : fuzzyResults,
-		isLoading: (results === undefined && shouldQuery) || isFuzzyLoading,
+		results: [],
+		isLoading: false,
 		debouncedQuery,
 	};
 };

@@ -15,6 +15,7 @@ import type * as calendar from "../calendar.js";
 import type * as channels from "../channels.js";
 import type * as chatbot from "../chatbot.js";
 import type * as chatbotQueries from "../chatbotQueries.js";
+import type * as composioActions from "../composioActions.js";
 import type * as conversations from "../conversations.js";
 import type * as crons from "../crons.js";
 import type * as direct from "../direct.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   channels: typeof channels;
   chatbot: typeof chatbot;
   chatbotQueries: typeof chatbotQueries;
+  composioActions: typeof composioActions;
   conversations: typeof conversations;
   crons: typeof crons;
   direct: typeof direct;
