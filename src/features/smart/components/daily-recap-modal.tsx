@@ -193,7 +193,7 @@ export const DailyRecapModal = ({
 					);
 				}
 				// Check if it's a bullet point
-				else if (line.match(/^- (.+)$/)) {
+				else if (/^- (.+)$/.test(line)) {
 					const text = line.replace(/^- /, "");
 					paragraphs.push(
 						new Paragraph({

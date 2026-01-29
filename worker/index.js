@@ -76,7 +76,6 @@ self.addEventListener("fetch", (event) => {
 		event.respondWith(
 			fetch(event.request).catch(() => caches.match(offlineFallbackPage))
 		);
-		return;
 	}
 
 	// For other requests, use the default strategy from workbox
