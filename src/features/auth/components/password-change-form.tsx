@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useMutation } from "convex/react";
 import { Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
+import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Card,
 	CardContent,
@@ -13,12 +15,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { PasswordStrengthIndicator } from "./password-strength-indicator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { isPasswordValid } from "../utils/password-validation";
-import { useMutation } from "convex/react";
-import { api } from "@/../convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useRouter } from "next/navigation";
+import { PasswordStrengthIndicator } from "./password-strength-indicator";
 
 export const PasswordChangeForm = () => {
 	const router = useRouter();
@@ -64,7 +64,7 @@ export const PasswordChangeForm = () => {
 
 			if (result.success) {
 				toast.success("Password changed successfully");
-				
+
 				// Clear form
 				setCurrentPassword("");
 				setNewPassword("");
@@ -101,9 +101,7 @@ export const PasswordChangeForm = () => {
 			<CardContent>
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor="current-password">
-							Current Password
-						</Label>
+						<Label htmlFor="current-password">Current Password</Label>
 						<Input
 							id="current-password"
 							type="password"
@@ -115,9 +113,7 @@ export const PasswordChangeForm = () => {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="new-password">
-							New Password
-						</Label>
+						<Label htmlFor="new-password">New Password</Label>
 						<Input
 							id="new-password"
 							type="password"
@@ -135,9 +131,7 @@ export const PasswordChangeForm = () => {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="confirm-password">
-							Confirm Password
-						</Label>
+						<Label htmlFor="confirm-password">Confirm Password</Label>
 						<Input
 							id="confirm-password"
 							type="password"

@@ -160,7 +160,6 @@ export const ExportNoteDialog = ({
 	};
 
 	const convertToPDF = (note: Note): string => {
-
 		const htmlContent = convertToHTML(note);
 
 		// This is a placeholder - in production you'd generate actual PDF

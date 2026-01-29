@@ -1,15 +1,12 @@
-import { PasswordResetMail } from "@/features/email/components/password-reset-mail";
 import { type NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { PasswordResetMail } from "@/features/email/components/password-reset-mail";
 
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
 const MAX_REQUESTS = 3; // Max 3 reset requests per hour per email
 
 // In-memory rate limiting (in production, use Redis or database)
-const rateLimitStore = new Map<
-	string,
-	{ count: number; resetAt: number }
->();
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
 let resend: Resend | null = null;
 
@@ -45,8 +42,7 @@ export async function POST(request: NextRequest) {
 				if (rateLimit.count >= MAX_REQUESTS) {
 					return NextResponse.json(
 						{
-							error:
-								"Too many reset requests. Please try again later.",
+							error: "Too many reset requests. Please try again later.",
 						},
 						{ status: 429 }
 					);

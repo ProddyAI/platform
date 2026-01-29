@@ -78,8 +78,6 @@ export const createSidePath = (
 
 	// Handle full circle case (100% or very close to it)
 	if (segment.percentage >= 99.9) {
-
-
 		// Right side point (0°, which is at 3 o'clock position after -90° offset)
 		const rightX = centerX + radiusX;
 		const rightY = centerY;
@@ -91,7 +89,6 @@ export const createSidePath = (
 		// Left side point (180°)
 		const leftX = centerX - radiusX;
 		const leftY = centerY;
-
 
 		const backPath = `M ${rightX} ${rightY} A ${radiusX} ${radiusY} 0 0 1 ${bottomX} ${bottomY} A ${radiusX} ${radiusY} 0 0 1 ${leftX} ${leftY} L ${leftX} ${leftY + depth} A ${radiusX} ${radiusY} 0 0 0 ${bottomX} ${bottomY + depth} A ${radiusX} ${radiusY} 0 0 0 ${rightX} ${rightY + depth} Z`;
 		paths.push({ path: backPath, type: "outer" });

@@ -21,7 +21,7 @@ export const changePassword = mutation({
 		currentPassword: v.string(),
 		newPassword: v.string(),
 	},
-	handler: async (ctx, args) => {
+	handler: async (ctx, _args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) {
 			throw new Error("Not authenticated");
@@ -51,15 +51,14 @@ export const changePassword = mutation({
 			if (!passwordAccount.secret) {
 				throw new Error("Current password is incorrect");
 			}
-			await ctx.db.patch(passwordAccount._id, {
-			});
+			await ctx.db.patch(passwordAccount._id, {});
 			return {
 				success: true,
 				requiresReauth: true,
 				message:
 					"Password updated successfully. Please sign in again with your new password.",
 			};
-		} catch (error) {
+		} catch (_error) {
 			throw new Error("Current password is incorrect");
 		}
 	},
@@ -79,7 +78,8 @@ export const requestPasswordReset = mutation({
 		if (!user) {
 			return {
 				success: true,
-				message: "If an account exists with this email, a reset link will be sent.",
+				message:
+					"If an account exists with this email, a reset link will be sent.",
 			};
 		}
 
@@ -95,7 +95,8 @@ export const requestPasswordReset = mutation({
 		if (!hasPasswordAuth) {
 			return {
 				success: true,
-				message: "If an account exists with this email, a reset link will be sent.",
+				message:
+					"If an account exists with this email, a reset link will be sent.",
 			};
 		}
 		const token = generateToken();
@@ -122,7 +123,8 @@ export const requestPasswordReset = mutation({
 			success: true,
 			token,
 			email,
-			message: "If an account exists with this email, a reset link will be sent.",
+			message:
+				"If an account exists with this email, a reset link will be sent.",
 		};
 	},
 });

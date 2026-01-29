@@ -37,7 +37,6 @@ export default convexAuthNextjsMiddleware((req) => {
 		return nextjsMiddlewareRedirect(req, "/signin");
 	}
 
-
 	if (
 		(req.nextUrl.pathname === "/auth" ||
 			req.nextUrl.pathname === "/signin" ||
@@ -59,6 +58,5 @@ export default convexAuthNextjsMiddleware((req) => {
 });
 
 export const config = {
-
 	matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
 };

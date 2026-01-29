@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { Lock, Loader2 } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { Loader2, Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -14,11 +16,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useDocumentTitle } from "@/hooks/use-document-title";
 import { PasswordStrengthIndicator } from "@/features/auth/components/password-strength-indicator";
 import { isPasswordValid } from "@/features/auth/utils/password-validation";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/../convex/_generated/api";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 const ResetPasswordContent = () => {
 	useDocumentTitle("Reset Password");
@@ -87,7 +87,7 @@ const ResetPasswordContent = () => {
 			if (result.success) {
 				toast.success("Password reset successfully!");
 				toast.info("Please sign in with your new password");
-				
+
 				// Redirect to sign in page
 				setTimeout(() => {
 					router.push("/signin");
@@ -123,7 +123,8 @@ const ResetPasswordContent = () => {
 					<CardHeader className="px-0 pt-0">
 						<CardTitle className="text-red-600">Invalid Reset Link</CardTitle>
 						<CardDescription>
-							{verifyToken.message || "This password reset link is invalid or has expired."}
+							{verifyToken.message ||
+								"This password reset link is invalid or has expired."}
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="px-0 pb-0">
@@ -187,9 +188,7 @@ const ResetPasswordContent = () => {
 									required
 								/>
 								{confirmPassword && newPassword !== confirmPassword && (
-									<p className="text-sm text-red-500">
-										Passwords do not match
-									</p>
+									<p className="text-sm text-red-500">Passwords do not match</p>
 								)}
 							</div>
 

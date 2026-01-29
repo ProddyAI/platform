@@ -18,9 +18,10 @@ interface PasswordResetMailProps {
 	resetLink: string;
 }
 
-export const PasswordResetMail: React.FC<
-	Readonly<PasswordResetMailProps>
-> = ({ email, resetLink }) => {
+export const PasswordResetMail: React.FC<Readonly<PasswordResetMailProps>> = ({
+	email,
+	resetLink,
+}) => {
 	const previewText = "Reset your Proddy password";
 
 	return (

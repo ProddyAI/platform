@@ -111,7 +111,6 @@ export const PerformanceMetricsDashboard = ({
 		return userActivityData
 			.filter((user) => user.member?.user?._id) // Only users with IDs
 			.map((user) => {
-
 				const _messageCount = user.messageCount || 0;
 				const taskValue = Math.floor(5 + Math.random() * 10);
 				const completionRate = 0.4 + Math.random() * 0.5; // Random completion rate between 40-90%

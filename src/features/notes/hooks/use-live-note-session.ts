@@ -132,7 +132,6 @@ export const useLiveNoteSession = ({
 		try {
 			// Update presence to indicate active editing
 			if (self) {
-
 			}
 
 			setIsLiveSession(true);

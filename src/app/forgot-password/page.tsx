@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Mail, ArrowLeft } from "lucide-react";
+import { useMutation } from "convex/react";
+import { ArrowLeft, Mail } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { toast } from "sonner";
+import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -15,8 +17,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDocumentTitle } from "@/hooks/use-document-title";
-import { useMutation } from "convex/react";
-import { api } from "@/../convex/_generated/api";
 
 const ForgotPasswordPage = () => {
 	useDocumentTitle("Forgot Password");
@@ -123,8 +123,8 @@ const ForgotPasswordPage = () => {
 								<div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-800">
 									<p className="font-medium mb-1">Email Sent Successfully!</p>
 									<p>
-										We've sent a password reset link to <strong>{email}</strong>.
-										Please check your inbox and follow the instructions.
+										We've sent a password reset link to <strong>{email}</strong>
+										. Please check your inbox and follow the instructions.
 									</p>
 								</div>
 

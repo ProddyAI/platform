@@ -218,7 +218,6 @@ export const ServiceIntegrationCard = ({
 	};
 
 	const _handleConnect = async () => {
-
 		await handleCreateAuthConfig();
 	};
 
