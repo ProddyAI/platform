@@ -54,39 +54,20 @@ async function hashToken(token: string): Promise<string> {
 /**
  * Hash a password using PBKDF2 with 100,000 iterations and SHA-256.
  *
- * ⚠️ CRITICAL COMPATIBILITY WARNING ⚠️
+ * ✅ COMPATIBILITY NOTE
  *
- * This custom hashPassword function is INCOMPATIBLE with @convex-dev/auth's Password provider,
- * which uses Lucia's scrypt algorithm. This creates a critical security issue:
+ * This function uses PBKDF2 hashing which is also configured in the
+ * @convex-dev/auth Password provider (see convex/auth.ts).
  *
- * - New passwords created via @convex-dev/auth signup will use scrypt
- * - changePassword() and resetPassword() in this file verify with PBKDF2
- * - This mismatch will cause authentication failures
+ * The CustomPassword provider in convex/auth.ts has been configured with
+ * custom crypto functions (hashSecret and verifySecret) that use the same
+ * PBKDF2 algorithm, ensuring compatibility across all password operations:
+ * - Signup (via @convex-dev/auth)
+ * - changePassword() (this file)
+ * - resetPassword() (this file)
  *
- * RECOMMENDED FIXES (choose ONE):
- *
- * Option 1 (Recommended): Remove this function and rely on @convex-dev/auth's built-in hashing:
- *   - Delete hashPassword() function
- *   - Remove hashing from changePassword() and resetPassword()
- *   - Let @convex-dev/auth handle all password operations
- *
- * Option 2: Configure @convex-dev/auth to use matching crypto in convex/auth.ts:
- *   import { Password } from "@convex-dev/auth/providers/Password";
- *
- *   const CustomPassword = Password({
- *     profile(params) { ... },
- *     crypto: {
- *       hashSecret: async (secret) => {
- *         // Use the PBKDF2 implementation from hashPassword()
- *       },
- *       verifySecret: async (secret, hash) => {
- *         // Verify using PBKDF2
- *       }
- *     }
- *   });
- *
- * Until fixed, changePassword() and resetPassword() will NOT work correctly
- * for accounts created through @convex-dev/auth's standard signup flow.
+ * ⚠️ WARNING: If you modify this hashing implementation, you MUST update
+ * the corresponding crypto functions in convex/auth.ts to match.
  *
  * @param password - The plain text password to hash
  * @returns Base64-encoded hash of the password
