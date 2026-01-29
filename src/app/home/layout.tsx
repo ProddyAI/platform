@@ -7,23 +7,10 @@ const HomeLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		// Force light mode
 		document.documentElement.classList.remove("dark");
 
-		// Store original setItem
-		const originalSetItem = localStorage.setItem.bind(localStorage);
-
-		// Override localStorage.setItem to prevent theme changes on /home
-		localStorage.setItem = (key: string, value: string) => {
-			if (key === "theme" && window.location.pathname === "/home") {
-				// Prevent setting theme on /home page
-				return;
-			}
-			return originalSetItem(key, value);
-		};
-
 		// Set up observer to enforce light mode
+		// Since this layout only mounts for /home route, no pathname check needed
 		const observer = new MutationObserver(() => {
-			if (window.location.pathname === "/home") {
-				document.documentElement.classList.remove("dark");
-			}
+			document.documentElement.classList.remove("dark");
 		});
 
 		observer.observe(document.documentElement, {
@@ -31,11 +18,8 @@ const HomeLayout = ({ children }: Readonly<PropsWithChildren>) => {
 			attributeFilter: ["class"],
 		});
 
-		// Cleanup function - restores original behavior when component unmounts
+		// Cleanup function
 		return () => {
-			// Restore original localStorage.setItem
-			localStorage.setItem = originalSetItem;
-
 			// Disconnect observer
 			observer.disconnect();
 		};

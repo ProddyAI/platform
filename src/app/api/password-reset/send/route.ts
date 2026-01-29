@@ -58,6 +58,9 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: "Email is required" }, { status: 400 });
 		}
 
+		// Normalize email to lowercase for consistency
+		const normalizedEmail = email.toLowerCase().trim();
+
 		// Initialize Convex client
 		const convex = createConvexClient();
 
@@ -65,7 +68,7 @@ export async function POST(request: NextRequest) {
 		const rateLimitCheck = await convex.mutation(
 			api.rateLimit.validatePasswordResetRateLimit,
 			{
-				email: email.toLowerCase().trim(),
+				email: normalizedEmail,
 			}
 		);
 
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
 		const result = await convex.action(
 			api.passwordManagement.generatePasswordResetToken,
 			{
-				email: email.toLowerCase().trim(),
+				email: normalizedEmail,
 			}
 		);
 
@@ -101,14 +104,15 @@ export async function POST(request: NextRequest) {
 		// Send email
 		const resendClient = getResend();
 
+		// Use normalized email for template and recipient
 		const emailTemplate = PasswordResetMail({
-			email,
+			email: normalizedEmail,
 			resetLink,
 		});
 
 		const { data, error } = await resendClient.emails.send({
 			from: "Proddy <noreply@proddy.tech>",
-			to: email,
+			to: normalizedEmail,
 			subject: "Reset Your Password - Proddy",
 			react: emailTemplate,
 		});
@@ -121,10 +125,10 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
+		// Only return non-sensitive information to the client
 		return NextResponse.json({
 			success: true,
 			message: "Password reset email sent successfully",
-			data,
 		});
 	} catch (error) {
 		console.error("Password reset email error:", error);

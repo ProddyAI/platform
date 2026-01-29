@@ -14,13 +14,21 @@ const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
  */
 function generateToken(): string {
 	const length = 32;
-	const randomBytes = new Uint8Array(length);
-	crypto.getRandomValues(randomBytes);
-
 	let token = "";
-	for (let i = 0; i < length; i++) {
-		const index = randomBytes[i] % chars.length;
-		token += chars.charAt(index);
+	const maxValidByte = Math.floor(256 / chars.length) * chars.length;
+
+	// Use rejection sampling to avoid modulo bias
+	while (token.length < length) {
+		const randomBytes = new Uint8Array(length - token.length);
+		crypto.getRandomValues(randomBytes);
+
+		for (let i = 0; i < randomBytes.length && token.length < length; i++) {
+			const byte = randomBytes[i];
+			// Only accept bytes that don't introduce bias
+			if (byte < maxValidByte) {
+				token += chars.charAt(byte % chars.length);
+			}
+		}
 	}
 	return token;
 }
@@ -46,11 +54,39 @@ async function hashToken(token: string): Promise<string> {
 /**
  * Hash a password using PBKDF2 with 100,000 iterations and SHA-256.
  *
- * IMPORTANT: This hashing mechanism must match the one used by
- * @convex-dev/auth Password provider to ensure compatibility.
+ * ⚠️ CRITICAL COMPATIBILITY WARNING ⚠️
  *
- * Note: Currently uses a static salt for compatibility with existing passwords.
- * In a future migration, consider using per-user dynamic salts for improved security.
+ * This custom hashPassword function is INCOMPATIBLE with @convex-dev/auth's Password provider,
+ * which uses Lucia's scrypt algorithm. This creates a critical security issue:
+ *
+ * - New passwords created via @convex-dev/auth signup will use scrypt
+ * - changePassword() and resetPassword() in this file verify with PBKDF2
+ * - This mismatch will cause authentication failures
+ *
+ * RECOMMENDED FIXES (choose ONE):
+ *
+ * Option 1 (Recommended): Remove this function and rely on @convex-dev/auth's built-in hashing:
+ *   - Delete hashPassword() function
+ *   - Remove hashing from changePassword() and resetPassword()
+ *   - Let @convex-dev/auth handle all password operations
+ *
+ * Option 2: Configure @convex-dev/auth to use matching crypto in convex/auth.ts:
+ *   import { Password } from "@convex-dev/auth/providers/Password";
+ *
+ *   const CustomPassword = Password({
+ *     profile(params) { ... },
+ *     crypto: {
+ *       hashSecret: async (secret) => {
+ *         // Use the PBKDF2 implementation from hashPassword()
+ *       },
+ *       verifySecret: async (secret, hash) => {
+ *         // Verify using PBKDF2
+ *       }
+ *     }
+ *   });
+ *
+ * Until fixed, changePassword() and resetPassword() will NOT work correctly
+ * for accounts created through @convex-dev/auth's standard signup flow.
  *
  * @param password - The plain text password to hash
  * @returns Base64-encoded hash of the password
@@ -192,6 +228,7 @@ export const generatePasswordResetTokenInternal = internalMutation({
 
 		const token = generateToken();
 		const hashedToken = await hashToken(token);
+
 		const existingTokens = await ctx.db
 			.query("passwordResetTokens")
 			.withIndex("by_email", (q) => q.eq("email", email))
@@ -201,6 +238,7 @@ export const generatePasswordResetTokenInternal = internalMutation({
 		for (const existingToken of existingTokens) {
 			await ctx.db.delete(existingToken._id);
 		}
+
 		const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
 		await ctx.db.insert("passwordResetTokens", {
 			email,
@@ -350,14 +388,15 @@ export const resetPassword = mutation({
 			secret: hashedPassword,
 		});
 
-		// Mark the reset token as used
-		await ctx.db.patch(resetToken._id, { used: true });
-
 		// Invalidate existing sessions by updating the user record
 		// This forces re-authentication
 		await ctx.db.patch(user._id, {
 			emailVerificationTime: Date.now(),
 		});
+
+		// Mark the reset token as used ONLY after all operations succeed
+		// This ensures the token remains valid if any operation fails
+		await ctx.db.patch(resetToken._id, { used: true });
 
 		return {
 			success: true,

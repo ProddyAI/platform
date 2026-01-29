@@ -23,6 +23,14 @@ export const ThemeToggle = () => {
 	useEffect(() => {
 		if (!theme) return;
 		try {
+			// Don't apply theme changes on /home route (it's locked to light mode)
+			if (
+				typeof window !== "undefined" &&
+				window.location.pathname === "/home"
+			) {
+				return;
+			}
+
 			if (theme === "dark") {
 				document.documentElement.classList.add("dark");
 			} else {

@@ -1,11 +1,9 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
 import { Loader2, Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -16,6 +14,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	useResetPassword,
+	useVerifyResetToken,
+} from "@/features/auth/api/use-password-reset";
 import { PasswordStrengthIndicator } from "@/features/auth/components/password-strength-indicator";
 import { isPasswordValid } from "@/features/auth/utils/password-validation";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -27,16 +29,17 @@ const ResetPasswordContent = () => {
 	const searchParams = useSearchParams();
 	const token = searchParams.get("token");
 
-	const verifyToken = useQuery(
-		api.passwordManagement.verifyResetToken,
-		token ? { token } : "skip"
-	);
-	const resetPassword = useMutation(api.passwordManagement.resetPassword);
-
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [resetSuccessful, setResetSuccessful] = useState(false);
 
+	// Use existing hooks instead of direct useQuery/useMutation
+	// Skip verification after successful reset to prevent "already used" message during redirect
+	const verifyToken = useVerifyResetToken(resetSuccessful ? null : token);
+	const { resetPassword } = useResetPassword();
+
+	// Handle redirect when token is missing (must be at top level, not conditional)
 	useEffect(() => {
 		if (!token) {
 			toast.error("Invalid reset link");
@@ -52,6 +55,18 @@ const ResetPasswordContent = () => {
 			}, 2000);
 		}
 	}, [verifyToken, router]);
+
+	// Early return if token is missing - prevent flash of content
+	if (!token) {
+		return (
+			<div className="flex h-full items-center justify-center bg-primary">
+				<div className="flex flex-col items-center gap-4 text-white">
+					<Loader2 className="h-8 w-8 animate-spin" />
+					<p className="text-lg">Redirecting...</p>
+				</div>
+			</div>
+		);
+	}
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -79,12 +94,12 @@ const ResetPasswordContent = () => {
 		setIsSubmitting(true);
 
 		try {
-			const result = await resetPassword({
-				token,
-				newPassword,
-			});
+			const result = await resetPassword(token, newPassword);
 
 			if (result.success) {
+				// Mark as successful to stop verification query from running
+				setResetSuccessful(true);
+
 				toast.success("Password reset successfully!");
 				toast.info("Please sign in with your new password");
 
@@ -102,6 +117,19 @@ const ResetPasswordContent = () => {
 			setIsSubmitting(false);
 		}
 	};
+
+	// Show success message during redirect after successful reset
+	if (resetSuccessful) {
+		return (
+			<div className="flex h-full items-center justify-center bg-primary">
+				<div className="flex flex-col items-center gap-4 text-white">
+					<Loader2 className="h-8 w-8 animate-spin" />
+					<p className="text-lg">Password reset successful!</p>
+					<p className="text-sm">Redirecting to sign in...</p>
+				</div>
+			</div>
+		);
+	}
 
 	// Show loading while verifying token
 	if (!verifyToken) {

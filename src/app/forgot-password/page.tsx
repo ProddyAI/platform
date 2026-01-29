@@ -86,8 +86,11 @@ const ForgotPasswordPage = () => {
 			if (response.ok && result.success) {
 				// Always show success message regardless of whether email was sent
 				// This prevents attackers from knowing if an email exists in the system
+				const now = Date.now();
 				setEmailSent(true);
-				setLastSentTimestamp(Date.now());
+				setLastSentTimestamp(now);
+				// Initialize cooldown immediately to prevent fast "Try again" bypass
+				setRemainingCooldown(COOLDOWN_DURATION);
 				toast.success(
 					"If an account exists with this email, a password reset link will be sent"
 				);
