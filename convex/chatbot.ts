@@ -1,10 +1,14 @@
+"use node";
+
 import { api } from "./_generated/api";
 import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
 import type { Id, TableNames } from "./_generated/dataModel";
-import { action, mutation, type QueryCtx, query } from "./_generated/server";
+import { action } from "./_generated/server";
+import OpenAI from "openai";
+import { Composio } from "@composio/core";
 
 // Define types for chat messages and responses
 type Source = {
@@ -57,6 +61,552 @@ const DEFAULT_SYSTEM_PROMPT = [
 	'Do NOT output topic/keyword summaries of chat messages. Never write "topics" or any message counts.',
 	'If you do not know the answer, respond with "I do not have that information."',
 ].join(" ");
+
+// Composio App Keywords Configuration
+const COMPOSIO_KEYWORDS = {
+	GMAIL: [
+		"send email",
+		"compose mail",
+		"draft email",
+		"write mail",
+		"email someone",
+		"send message",
+		"mail user",
+		"reply mail",
+		"reply all",
+		"forward mail",
+		"read inbox",
+		"check emails",
+		"fetch emails",
+		"get unread mails",
+		"latest emails",
+		"recent mails",
+		"open mail",
+		"email summary",
+		"search mail",
+		"find email",
+		"mail from",
+		"emails with attachment",
+		"emails by subject",
+		"filter inbox",
+		"starred emails",
+		"mark as read",
+		"mark unread",
+		"archive mail",
+		"delete mail",
+		"move to folder",
+		"apply label",
+		"remove label",
+		"spam mail",
+		"trash mail",
+		"email attachment",
+		"download attachment",
+		"attach file",
+		"upload attachment",
+		"send pdf",
+		"send document",
+		"email",
+		"mail",
+		"inbox",
+		"compose",
+		"gmail",
+	],
+	GITHUB: [
+		"create repo",
+		"delete repository",
+		"fork repo",
+		"clone repo",
+		"repository details",
+		"repo info",
+		"list repositories",
+		"commit code",
+		"push changes",
+		"pull changes",
+		"update file",
+		"edit file",
+		"add file",
+		"delete file",
+		"commit message",
+		"create issue",
+		"close issue",
+		"reopen issue",
+		"assign issue",
+		"label issue",
+		"comment issue",
+		"issue status",
+		"create pull request",
+		"merge PR",
+		"close PR",
+		"review PR",
+		"approve PR",
+		"request changes",
+		"create branch",
+		"delete branch",
+		"switch branch",
+		"list branches",
+		"github workflow",
+		"CI/CD",
+		"actions pipeline",
+		"run workflow",
+		"repo automation",
+		"version control",
+		"github",
+		"repo",
+		"pr",
+		"issue",
+		"commit",
+		"branch",
+	],
+	SLACK: [
+		"send message",
+		"post message",
+		"slack message",
+		"dm user",
+		"direct message",
+		"broadcast message",
+		"reply thread",
+		"create channel",
+		"join channel",
+		"leave channel",
+		"list channels",
+		"channel members",
+		"archive channel",
+		"mention user",
+		"tag user",
+		"slack user info",
+		"user status",
+		"active users",
+		"upload file",
+		"share file",
+		"attach file",
+		"download slack file",
+		"notify team",
+		"slack alert",
+		"reminder",
+		"ping team",
+		"slack",
+		"slack channel",
+	],
+	NOTION: [
+		"create page",
+		"update page",
+		"delete page",
+		"duplicate page",
+		"page content",
+		"notion doc",
+		"documentation",
+		"create database",
+		"add record",
+		"update record",
+		"delete record",
+		"query database",
+		"database row",
+		"notion table",
+		"add block",
+		"update block",
+		"delete block",
+		"paragraph block",
+		"heading block",
+		"checklist block",
+		"toggle block",
+		"search notion",
+		"find page",
+		"get content",
+		"read document",
+		"page summary",
+		"workspace",
+		"teamspace",
+		"notes",
+		"knowledge base",
+		"wiki",
+		"notion",
+		"notion page",
+		"notion database",
+	],
+	CLICKUP: [
+		"create task",
+		"update task",
+		"delete task",
+		"assign task",
+		"task status",
+		"mark complete",
+		"reopen task",
+		"create project",
+		"list projects",
+		"create list",
+		"move task",
+		"task priority",
+		"set due date",
+		"update deadline",
+		"overdue tasks",
+		"upcoming tasks",
+		"add comment",
+		"reply comment",
+		"task discussion",
+		"task progress",
+		"time tracking",
+		"workload",
+		"productivity",
+		"clickup",
+		"clickup task",
+		"clickup project",
+	],
+	LINEAR: [
+		"create issue",
+		"close issue",
+		"update issue",
+		"assign issue",
+		"issue status",
+		"create project",
+		"list projects",
+		"get teams",
+		"linear issue",
+		"linear ticket",
+		"linear project",
+		"issue tracking",
+		"linear",
+	],
+	LINEAD: [
+		"create campaign",
+		"update campaign",
+		"pause campaign",
+		"resume campaign",
+		"delete campaign",
+		"create ad",
+		"update ad",
+		"ad creative",
+		"ad copy",
+		"ad headline",
+		"audience targeting",
+		"job title targeting",
+		"company targeting",
+		"location targeting",
+		"demographic targeting",
+		"ad budget",
+		"bidding",
+		"CPC",
+		"CPM",
+		"impressions",
+		"clicks",
+		"conversions",
+		"CTR",
+		"ad performance",
+		"campaign analytics",
+		"insights",
+		"reporting",
+		"linkedin ads",
+		"linead",
+	],
+};
+
+// Generic Composio trigger words
+const GENERIC_COMPOSIO_KEYWORDS = [
+	"integrate",
+	"connect app",
+	"automation",
+	"workflow",
+	"trigger action",
+	"sync data",
+	"third party",
+	"external app",
+	"perform action",
+	"api call",
+	"tool execution",
+	"app command",
+	"background task",
+	"run operation",
+];
+
+// High-confidence intent combinations
+const HIGH_CONFIDENCE_PATTERNS = [
+	{ pattern: /send\s+email\s+to/i, app: "GMAIL", confidence: 200 },
+	{ pattern: /create\s+github\s+issue/i, app: "GITHUB", confidence: 200 },
+	{ pattern: /post\s+slack\s+message/i, app: "SLACK", confidence: 200 },
+	{ pattern: /add\s+notion\s+page/i, app: "NOTION", confidence: 200 },
+	{ pattern: /update\s+clickup\s+task/i, app: "CLICKUP", confidence: 200 },
+	{ pattern: /create\s+linkedin\s+ad/i, app: "LINEAD", confidence: 200 },
+	{ pattern: /fetch\s+emails/i, app: "GMAIL", confidence: 150 },
+	{ pattern: /assign\s+task\s+to/i, app: "CLICKUP", confidence: 150 },
+	{ pattern: /notify\s+team/i, app: "SLACK", confidence: 150 },
+	{ pattern: /update\s+repo/i, app: "GITHUB", confidence: 150 },
+	{ pattern: /email\s+to\s+/i, app: "GMAIL", confidence: 180 },
+	{ pattern: /mail\s+to\s+/i, app: "GMAIL", confidence: 180 },
+];
+
+type ComposioIntent = {
+	app: string;
+	confidence: number;
+	keywords: string[];
+};
+
+/**
+ * Detect if a query should be routed to Composio based on keyword matching
+ */
+function detectComposioIntent(query: string): ComposioIntent | null {
+	const lowerQuery = query.toLowerCase();
+
+	// Check high-confidence patterns first
+	for (const { pattern, app, confidence } of HIGH_CONFIDENCE_PATTERNS) {
+		if (pattern.test(query)) {
+			return { app, confidence, keywords: [pattern.source] };
+		}
+	}
+
+	// Check app-specific keywords
+	let bestMatch: ComposioIntent | null = null;
+
+	for (const [app, keywords] of Object.entries(COMPOSIO_KEYWORDS)) {
+		const matchedKeywords: string[] = [];
+		let score = 0;
+
+		for (const keyword of keywords) {
+			if (lowerQuery.includes(keyword.toLowerCase())) {
+				matchedKeywords.push(keyword);
+				score += 100;
+			}
+		}
+
+		// Check generic Composio keywords for this app
+		for (const keyword of GENERIC_COMPOSIO_KEYWORDS) {
+			if (lowerQuery.includes(keyword.toLowerCase())) {
+				score += 50;
+				matchedKeywords.push(keyword);
+			}
+		}
+
+		if (score > 0 && (!bestMatch || score > bestMatch.confidence)) {
+			bestMatch = { app, confidence: score, keywords: matchedKeywords };
+		}
+	}
+
+	// Return if confidence threshold met (at least 1 keyword match = 100)
+	if (bestMatch && bestMatch.confidence >= 100) {
+		return bestMatch;
+	}
+
+	return null;
+}
+
+/**
+ * Execute a Composio action directly using the SDK
+ */
+async function executeComposioAction(
+	entityId: string,
+	appNames: string[],
+	message: string
+): Promise<{
+	success: boolean;
+	response?: string;
+	error?: string;
+	toolCalls?: any[];
+	toolResults?: any[];
+}> {
+	try {
+		// Validate environment variables
+		if (!process.env.COMPOSIO_API_KEY) {
+			return {
+				success: false,
+				error: "COMPOSIO_API_KEY is not configured",
+			};
+		}
+
+		if (!process.env.OPENAI_API_KEY) {
+			return {
+				success: false,
+				error: "OPENAI_API_KEY is not configured",
+			};
+		}
+
+		console.log("[Composio] Initializing clients for:", { entityId, appNames });
+
+		// Initialize Composio client
+		const composio = new Composio({
+			apiKey: process.env.COMPOSIO_API_KEY,
+		});
+
+		// Initialize OpenAI client
+		const openaiClient = new OpenAI({
+			apiKey: process.env.OPENAI_API_KEY,
+		});
+
+		// Get tools for the specified apps
+		let tools: any[] = [];
+		for (const appName of appNames) {
+			try {
+				const appTools = await composio.tools.get(entityId, {
+					appNames: [appName],
+				} as any);
+				
+				if (Array.isArray(appTools)) {
+					tools.push(...appTools);
+				} else if (appTools) {
+					tools.push(appTools);
+				}
+			} catch (error) {
+				console.warn(`[Composio] No tools found for app ${appName}:`, error);
+			}
+		}
+
+		console.log("[Composio] Retrieved", tools.length, "tools");
+
+		if (tools.length === 0) {
+			return {
+				success: false,
+				error: `No tools available for ${appNames.join(", ")}. Please connect the app first.`,
+			};
+		}
+
+		// Convert Composio tools to OpenAI format
+		const openaiTools = tools.map((tool: any) => ({
+			type: "function" as const,
+			function: {
+				name: tool.name || tool.slug,
+				description: tool.description,
+				parameters: tool.parameters || tool.schema || {},
+			},
+		}));
+
+		// Create OpenAI completion with tools
+		const completion = await openaiClient.chat.completions.create({
+			model: "gpt-4o-mini",
+			tools: openaiTools,
+			messages: [
+				{
+					role: "system",
+					content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
+				},
+				{
+					role: "user",
+					content: message,
+				},
+			],
+			temperature: 0.7,
+			max_tokens: 1000,
+		});
+
+		let responseText =
+			completion.choices[0]?.message?.content || "No response generated";
+		const toolResults: any[] = [];
+
+		// Execute any tool calls with Composio
+		if (
+			completion.choices[0]?.message?.tool_calls &&
+			completion.choices[0].message.tool_calls.length > 0
+		) {
+			console.log(
+				"[Composio] Executing",
+				completion.choices[0].message.tool_calls.length,
+				"tool calls"
+			);
+
+			for (const toolCall of completion.choices[0].message.tool_calls) {
+				if (toolCall.type === "function") {
+					try {
+						// Execute the tool with Composio (entity is already bound from tools.get)
+						const actionParams = JSON.parse(toolCall.function.arguments);
+						const result = await composio.tools.execute(
+							toolCall.function.name,
+							actionParams
+						);
+
+						console.log(`[Composio] Tool ${toolCall.function.name} executed successfully`);
+
+						toolResults.push({
+							toolCallId: toolCall.id,
+							result: result,
+							toolName: toolCall.function.name,
+						});
+					} catch (error) {
+						console.error(`[Composio] Tool execution error for ${toolCall.function.name}:`, error);
+						
+						const errorMessage = error instanceof Error ? error.message : "Unknown error";
+						
+						// Check if it's a connection error
+						if (
+							errorMessage.includes("not connected") ||
+							errorMessage.includes("No connected account") ||
+							errorMessage.includes("401") ||
+							errorMessage.includes("403")
+						) {
+							return {
+								success: false,
+								error: "not_connected",
+							};
+						}
+
+						toolResults.push({
+							toolCallId: toolCall.id,
+							error: errorMessage,
+							toolName: toolCall.function.name,
+						});
+					}
+				}
+			}
+
+			// If we have tool results, create a follow-up completion
+			if (toolResults.length > 0) {
+				const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+					{
+						role: "system",
+						content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
+					},
+					{
+						role: "user",
+						content: message,
+					},
+					completion.choices[0].message,
+					...toolResults.map((result) => ({
+						role: "tool" as const,
+						tool_call_id: result.toolCallId,
+						content: result.error
+							? `Error: ${result.error}`
+							: JSON.stringify(result.result),
+					})),
+				];
+
+				const followUpCompletion = await openaiClient.chat.completions.create({
+					model: "gpt-4o-mini",
+					messages: followUpMessages,
+					temperature: 0.7,
+					max_tokens: 1000,
+				});
+
+				responseText =
+					followUpCompletion.choices[0]?.message?.content || responseText;
+			}
+		}
+
+		return {
+			success: true,
+			response: responseText,
+			toolCalls: completion.choices[0]?.message?.tool_calls,
+			toolResults,
+		};
+	} catch (error) {
+		console.error("[executeComposioAction] Error:", error);
+		
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		
+		// Check if it's a connection/auth error
+		if (
+			errorMessage.includes("not connected") ||
+			errorMessage.includes("No connected account") ||
+			errorMessage.includes("401") ||
+			errorMessage.includes("403") ||
+			errorMessage.includes("No auth configs found")
+		) {
+			return {
+				success: false,
+				error: "not_connected",
+			};
+		}
+		
+		return {
+			success: false,
+			error: errorMessage,
+		};
+	}
+}
 
 function normalizeChannelName(name: string) {
 	return name.trim().toLowerCase().replace(/\s+/g, "-");
@@ -1011,7 +1561,7 @@ export const askAssistant = action({
 
 		const recentChatMessages = await (async (): Promise<ChatMessage[]> => {
 			try {
-				const history = await ctx.runQuery(api.chatbot.getChatHistory, {
+				const history = await ctx.runQuery(api.chatbotQueries.getChatHistory, {
 					workspaceId,
 				});
 				return history.messages.slice(-3);
@@ -1027,6 +1577,114 @@ export const askAssistant = action({
 			type: "calendar",
 			url: `/workspace/${workspaceId}/calendar`,
 		});
+
+		// ---------------------------------------------------------------------
+		// COMPOSIO INTENT DETECTION & ROUTING
+		// ---------------------------------------------------------------------
+		const composioIntent = detectComposioIntent(args.query);
+
+		if (composioIntent) {
+			console.log("[Composio] Intent detected:", composioIntent);
+
+			// Get current member for entity ID
+			let memberId: Id<"members">;
+			try {
+				const member = await ctx.runQuery(api.members.current, {
+					workspaceId,
+				});
+				if (!member?._id) {
+					return {
+						answer:
+							"I couldn't verify your workspace membership. Please make sure you're signed in and have access to this workspace.",
+						sources: [],
+					};
+				}
+				memberId = member._id;
+			} catch (error) {
+				console.error("[Composio] Error getting member:", error);
+				return {
+					answer:
+						"I couldn't verify your workspace membership. Please make sure you're signed in.",
+					sources: [],
+				};
+			}
+
+			// Construct member-scoped entity ID
+			const entityId = `member_${memberId}`;
+			const appNames = [composioIntent.app];
+
+			console.log("[Composio] Executing with:", { entityId, appNames });
+
+			// Execute Composio action
+			const composioResult = await executeComposioAction(
+				entityId,
+				appNames,
+				args.query
+			);
+
+			if (composioResult.success && composioResult.response) {
+				// Success - return the response from Composio
+				const appName =
+					composioIntent.app.charAt(0) +
+					composioIntent.app.slice(1).toLowerCase();
+				return {
+					answer: composioResult.response,
+					sources: [],
+					actions: [
+						{
+							label: `Powered by ${appName}`,
+							type: "integration",
+							url: `/workspace/${workspaceId}/settings/integrations`,
+						},
+					],
+				};
+			}
+
+			// Handle errors - check if it's a connection issue
+			const errorMsg = composioResult.error || "Unknown error";
+			const isConnectionError =
+				errorMsg === "not_connected" ||
+				errorMsg.includes("401") ||
+				errorMsg.includes("403") ||
+				errorMsg.includes("not connected") ||
+				errorMsg.includes("unauthorized") ||
+				errorMsg.includes("No connected account") ||
+				errorMsg.includes("No auth configs found") ||
+				errorMsg.includes("No tools found");
+
+			if (isConnectionError) {
+				const appName =
+					composioIntent.app.charAt(0) +
+					composioIntent.app.slice(1).toLowerCase();
+				return {
+					answer: `I can help you with ${appName}, but you need to connect your ${appName} account first. Please connect ${appName} in your workspace integrations.`,
+					sources: [],
+					actions: [
+						{
+							label: `Connect ${appName}`,
+							type: "integration",
+							url: `/workspace/${workspaceId}/settings/integrations`,
+						},
+					],
+				};
+			}
+
+			// Other errors - provide helpful message
+			const appName =
+				composioIntent.app.charAt(0) +
+				composioIntent.app.slice(1).toLowerCase();
+			return {
+				answer: `I encountered an issue while trying to help with ${appName}: ${errorMsg}. Please try again or check your integration settings.`,
+				sources: [],
+				actions: [
+					{
+						label: "View Integrations",
+						type: "integration",
+						url: `/workspace/${workspaceId}/settings/integrations`,
+					},
+				],
+			};
+		}
 
 		// Intent-first routing (no LLM call).
 		const intent = extractIntent(args.query);
@@ -1492,7 +2150,7 @@ Updates:\n${context}`;
 				if (intent.mode === "calendar_next_week") {
 					const range = getNextWeekRange(now);
 					const events = await ctx.runQuery(
-						api.chatbot.getMyCalendarEventsInRange,
+						api.chatbotQueries.getMyCalendarEventsInRange,
 						{
 							workspaceId,
 							from: range.from,
@@ -1537,7 +2195,7 @@ Updates:\n${context}`;
 
 				if (intent.mode === "calendar_today") {
 					const events = await ctx.runQuery(
-						api.chatbot.getMyCalendarEventsInRange,
+						api.chatbotQueries.getMyCalendarEventsInRange,
 						{
 							workspaceId,
 							from: todayFrom,
@@ -1559,7 +2217,7 @@ Updates:\n${context}`;
 
 				if (intent.mode === "calendar_tomorrow") {
 					const events = await ctx.runQuery(
-						api.chatbot.getMyCalendarEventsInRange,
+						api.chatbotQueries.getMyCalendarEventsInRange,
 						{
 							workspaceId,
 							from: tomorrowFrom,
@@ -1583,12 +2241,12 @@ Updates:\n${context}`;
 				if (intent.mode === "calendar") {
 					// Match the example style: show Today + Tomorrow.
 					const [todayEvents, tomorrowEvents] = await Promise.all([
-						ctx.runQuery(api.chatbot.getMyCalendarEventsInRange, {
+						ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
 							workspaceId,
 							from: todayFrom,
 							to: todayTo,
 						}),
-						ctx.runQuery(api.chatbot.getMyCalendarEventsInRange, {
+						ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
 							workspaceId,
 							from: tomorrowFrom,
 							to: tomorrowTo,
@@ -1646,7 +2304,7 @@ Updates:\n${context}`;
 				}
 
 				if (intent.mode === "tasks_today") {
-					const tasks = await ctx.runQuery(api.chatbot.getMyTasksInRange, {
+					const tasks = await ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
 						workspaceId,
 						from: todayFrom,
 						to: todayTo,
@@ -1673,7 +2331,7 @@ Updates:\n${context}`;
 				}
 
 				if (intent.mode === "tasks_tomorrow") {
-					const tasks = await ctx.runQuery(api.chatbot.getMyTasksInRange, {
+					const tasks = await ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
 						workspaceId,
 						from: tomorrowFrom,
 						to: tomorrowTo,
@@ -1701,7 +2359,7 @@ Updates:\n${context}`;
 
 				if (intent.mode === "tasks") {
 					// Show upcoming/incomplete tasks (cost-safe, no model).
-					const tasks = await ctx.runQuery(api.chatbot.getMyUpcomingTasks, {
+					const tasks = await ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
 						workspaceId,
 						limit: 25,
 					});
@@ -1731,18 +2389,18 @@ Updates:\n${context}`;
 						assignedCards,
 						mentioned,
 					] = await Promise.all([
-						ctx.runQuery(api.chatbot.getMyCalendarEventsInRange, {
+						ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
 							workspaceId,
 							from: todayFrom,
 							to: todayTo,
 						}),
-						ctx.runQuery(api.chatbot.getMyTasksInRange, {
+						ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
 							workspaceId,
 							from: todayFrom,
 							to: todayTo,
 							onlyIncomplete: true,
 						}),
-						ctx.runQuery(api.chatbot.getMyUpcomingTasks, {
+						ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
 							workspaceId,
 							limit: 25,
 						}),
@@ -1818,18 +2476,18 @@ Updates:\n${context}`;
 						assignedCards,
 						mentioned,
 					] = await Promise.all([
-						ctx.runQuery(api.chatbot.getMyCalendarEventsInRange, {
+						ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
 							workspaceId,
 							from: tomorrowFrom,
 							to: tomorrowTo,
 						}),
-						ctx.runQuery(api.chatbot.getMyTasksInRange, {
+						ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
 							workspaceId,
 							from: tomorrowFrom,
 							to: tomorrowTo,
 							onlyIncomplete: true,
 						}),
-						ctx.runQuery(api.chatbot.getMyUpcomingTasks, {
+						ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
 							workspaceId,
 							limit: 25,
 						}),
@@ -2107,18 +2765,18 @@ ${channelBlocks}`;
 
 			const [events, tasksDueToday, upcomingTasks, assignedCards, mentioned] =
 				await Promise.all([
-					ctx.runQuery(api.chatbot.getMyCalendarEventsInRange, {
+					ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
 						workspaceId,
 						from: todayFrom,
 						to: todayTo,
 					}),
-					ctx.runQuery(api.chatbot.getMyTasksInRange, {
+					ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
 						workspaceId,
 						from: todayFrom,
 						to: todayTo,
 						onlyIncomplete: true,
 					}),
-					ctx.runQuery(api.chatbot.getMyUpcomingTasks, {
+					ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
 						workspaceId,
 						limit: 25,
 					}),
@@ -2421,423 +3079,9 @@ Context:\n${combinedContext}`;
 });
 
 // -----------------------------
-// User-scoped assistant queries
+// DEPRECATED ACTION
 // -----------------------------
-
-export const getMyTasksInRange = query({
-	args: {
-		workspaceId: v.id("workspaces"),
-		from: v.number(),
-		to: v.number(),
-		onlyIncomplete: v.optional(v.boolean()),
-	},
-	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) return [];
-
-		// Ensure membership (privacy).
-		await getCurrentMember(ctx, args.workspaceId);
-
-		const tasks = await ctx.db
-			.query("tasks")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
-			)
-			.filter((q) =>
-				q.and(
-					q.neq(q.field("dueDate"), undefined),
-					q.gte(q.field("dueDate"), args.from),
-					q.lte(q.field("dueDate"), args.to)
-				)
-			)
-			.collect();
-
-		const filtered = args.onlyIncomplete
-			? tasks.filter((t) => !t.completed && t.status !== "completed")
-			: tasks;
-
-		// Return only minimal fields.
-		return filtered
-			.map((t) => ({
-				_id: t._id,
-				title: t.title,
-				dueDate: t.dueDate,
-				priority: t.priority,
-				status: t.status,
-				completed: t.completed,
-			}))
-			.sort(
-				(a, b) =>
-					(a.dueDate ?? Number.MAX_SAFE_INTEGER) -
-					(b.dueDate ?? Number.MAX_SAFE_INTEGER)
-			)
-			.slice(0, 40);
-	},
-});
-
-export const getMyUpcomingTasks = query({
-	args: {
-		workspaceId: v.id("workspaces"),
-		limit: v.optional(v.number()),
-	},
-	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) return [];
-		await getCurrentMember(ctx, args.workspaceId);
-
-		const tasks = await ctx.db
-			.query("tasks")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
-			)
-			.filter((q) => q.neq(q.field("status"), "completed"))
-			.collect();
-
-		return tasks
-			.filter((t) => !t.completed && t.status !== "completed")
-			.map((t) => ({
-				_id: t._id,
-				title: t.title,
-				dueDate: t.dueDate,
-				priority: t.priority,
-				status: t.status,
-			}))
-			.sort(
-				(a, b) =>
-					(a.dueDate ?? Number.MAX_SAFE_INTEGER) -
-					(b.dueDate ?? Number.MAX_SAFE_INTEGER)
-			)
-			.slice(0, args.limit ?? 25);
-	},
-});
-
-export const getMyCalendarEventsInRange = query({
-	args: {
-		workspaceId: v.id("workspaces"),
-		from: v.number(),
-		to: v.number(),
-	},
-	handler: async (ctx, args) => {
-		const member = await getCurrentMember(ctx, args.workspaceId);
-
-		// Strict: only the current member's events.
-		const events = await ctx.db
-			.query("events")
-			.withIndex("by_member_id", (q) => q.eq("memberId", member._id))
-			.filter((q) =>
-				q.and(
-					q.eq(q.field("workspaceId"), args.workspaceId),
-					q.gte(q.field("date"), args.from),
-					q.lte(q.field("date"), args.to)
-				)
-			)
-			.collect();
-
-		return events
-			.map((e) => ({
-				_id: e._id,
-				title: e.title,
-				date: e.date,
-				time: e.time,
-			}))
-			.sort((a, b) => a.date - b.date)
-			.slice(0, 40);
-	},
-});
-
-export const getMyAssignedCardsInRange = query({
-	args: {
-		workspaceId: v.id("workspaces"),
-		from: v.number(),
-		to: v.number(),
-		limit: v.optional(v.number()),
-	},
-	handler: async (ctx, args) => {
-		const member = await getCurrentMember(ctx, args.workspaceId);
-
-		const mentions = await ctx.db
-			.query("mentions")
-			.withIndex("by_workspace_id_mentioned_member_id", (q) =>
-				q
-					.eq("workspaceId", args.workspaceId)
-					.eq("mentionedMemberId", member._id)
-			)
-			.filter((q) => q.neq(q.field("cardId"), undefined))
-			.order("desc")
-			.take(200);
-
-		const uniqueCardMentions: Array<{
-			cardId: Id<"cards">;
-			channelId?: Id<"channels">;
-			cardTitle?: string;
-		}> = [];
-		const seen = new Set<string>();
-		for (const m of mentions) {
-			if (!m.cardId) continue;
-			const key = String(m.cardId);
-			if (seen.has(key)) continue;
-			seen.add(key);
-			uniqueCardMentions.push({
-				cardId: m.cardId as Id<"cards">,
-				channelId: m.channelId as Id<"channels"> | undefined,
-				cardTitle: m.cardTitle,
-			});
-			if (uniqueCardMentions.length >= (args.limit ?? 20)) break;
-		}
-
-		const cards = await Promise.all(
-			uniqueCardMentions.map(async (m) => {
-				const card = await ctx.db.get(m.cardId);
-				return { mention: m, card };
-			})
-		);
-
-		const channelIds = Array.from(
-			new Set(
-				cards
-					.map((c) => c.mention.channelId)
-					.filter(Boolean)
-					.map((id) => String(id))
-			)
-		);
-		const channels = await Promise.all(
-			channelIds.map(async (id) => ctx.db.get(id as Id<"channels">))
-		);
-		const channelMap = new Map(
-			channels.filter(Boolean).map((c) => [String(c?._id), c!])
-		);
-
-		const inRange = cards
-			.map(({ mention, card }) => {
-				if (!card?.dueDate) return null;
-				if (card.dueDate < args.from || card.dueDate > args.to) return null;
-				const channelName = mention.channelId
-					? channelMap.get(String(mention.channelId))?.name
-					: undefined;
-				return {
-					_id: card._id,
-					title: String(card.title ?? mention.cardTitle ?? "Untitled card"),
-					dueDate: card.dueDate,
-					priority: normalizePriority(card.priority),
-					boardName: channelName ? `#${channelName}` : "Board",
-				};
-			})
-			.filter(isDefined);
-
-		return inRange
-			.sort((a, b) => a.dueDate - b.dueDate)
-			.slice(0, args.limit ?? 20);
-	},
-});
-
-export const getMyBoardsSummary = query({
-	args: {
-		workspaceId: v.id("workspaces"),
-	},
-	handler: async (ctx, args) => {
-		const member = await getCurrentMember(ctx, args.workspaceId);
-
-		const mentions = await ctx.db
-			.query("mentions")
-			.withIndex("by_workspace_id_mentioned_member_id", (q) =>
-				q
-					.eq("workspaceId", args.workspaceId)
-					.eq("mentionedMemberId", member._id)
-			)
-			.filter((q) => q.neq(q.field("cardId"), undefined))
-			.order("desc")
-			.take(300);
-
-		const byChannel = new Map<
-			string,
-			{
-				channelId: Id<"channels">;
-				count: number;
-				hasOverdueOrToday: boolean;
-				hasUpcoming: boolean;
-			}
-		>();
-		const now = new Date();
-		const _todayStart = startOfDayMs(now);
-		const todayEnd = endOfDayMs(now);
-		const upcomingEnd = todayEnd + 7 * 24 * 60 * 60 * 1000;
-
-		for (const m of mentions) {
-			if (!m.channelId) continue;
-			const key = String(m.channelId);
-			const entry = byChannel.get(key) ?? {
-				channelId: m.channelId as Id<"channels">,
-				count: 0,
-				hasOverdueOrToday: false,
-				hasUpcoming: false,
-			};
-			entry.count += 1;
-			byChannel.set(key, entry);
-		}
-
-		// Fetch channel docs (no N+1: only unique channels).
-		const channelDocs = await Promise.all(
-			Array.from(byChannel.values()).map(async (b) => ctx.db.get(b.channelId))
-		);
-		const channelNameById = new Map(
-			channelDocs.filter(Boolean).map((c) => [String(c?._id), c?.name])
-		);
-
-		// Light signal for urgency: sample a small set of recent mentioned cards to detect due dates.
-		const sampleMentions = mentions
-			.filter((m) => Boolean(m.cardId))
-			.slice(0, 25);
-		const sampleCards = await Promise.all(
-			sampleMentions.map(async (m) => ({
-				m,
-				c: await ctx.db.get(m.cardId as Id<"cards">),
-			}))
-		);
-		for (const { m, c } of sampleCards) {
-			if (!m.channelId || !c?.dueDate) continue;
-			const entry = byChannel.get(String(m.channelId));
-			if (!entry) continue;
-			if (c.dueDate <= todayEnd) entry.hasOverdueOrToday = true;
-			else if (c.dueDate <= upcomingEnd) entry.hasUpcoming = true;
-		}
-
-		return Array.from(byChannel.entries())
-			.map(([id, b]) => ({
-				id,
-				name: `#${channelNameById.get(id) ?? "unknown"}`,
-				assignedCards: b.count,
-				hasOverdueOrToday: b.hasOverdueOrToday,
-				hasUpcoming: b.hasUpcoming,
-			}))
-			.sort((a, b) => b.assignedCards - a.assignedCards)
-			.slice(0, 30);
-	},
-});
-
-// Get the current member for a workspace
-async function getCurrentMember(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
-	const userId = await getAuthUserId(ctx);
-	if (!userId) throw new Error("Unauthorized");
-
-	const member = await ctx.db
-		.query("members")
-		.withIndex("by_workspace_id_user_id", (q) =>
-			q.eq("workspaceId", workspaceId).eq("userId", userId)
-		)
-		.unique();
-
-	if (!member) throw new Error("Not a member of this workspace");
-	return member;
-}
-
-// Get chat history for the current user in a workspace
-export const getChatHistory = query({
-	args: {
-		workspaceId: v.id("workspaces"),
-	},
-	handler: async (ctx, args): Promise<ChatHistory> => {
-		const member = await getCurrentMember(ctx, args.workspaceId);
-
-		const chatHistory = await ctx.db
-			.query("chatHistory")
-			.withIndex("by_workspace_id_member_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("memberId", member._id)
-			)
-			.first();
-
-		if (!chatHistory) {
-			// Return empty history if none exists
-			return {
-				messages: [],
-			};
-		}
-
-		return {
-			messages: chatHistory.messages,
-		};
-	},
-});
-
-// Add a message to chat history
-export const addMessage = mutation({
-	args: {
-		workspaceId: v.id("workspaces"),
-		content: v.string(),
-		role: v.union(v.literal("user"), v.literal("assistant")),
-		sources: v.optional(
-			v.array(
-				v.object({
-					id: v.string(),
-					type: v.string(),
-					text: v.string(),
-				})
-			)
-		),
-		actions: v.optional(
-			v.array(
-				v.object({
-					label: v.string(),
-					type: v.string(),
-					url: v.string(),
-					noteId: v.optional(v.string()),
-					channelId: v.optional(v.string()),
-				})
-			)
-		),
-	},
-	handler: async (ctx: any, args: any): Promise<any> => {
-		// Route all messages to ragchat for now
-		try {
-			return await ctx.runAction(api.ragchat.handleRagChat, {
-				message: args.content,
-				userId: args.role === "user" ? undefined : "assistant",
-				workspaceId: args.workspaceId,
-			});
-		} catch (e) {
-			return {
-				response: "I am not able to fetch item right now."
-			};
-		}
-	},
-});
-
-// Clear chat history
-export const clearChatHistory = mutation({
-	args: {
-		workspaceId: v.id("workspaces"),
-	},
-	handler: async (ctx, args) => {
-		const member = await getCurrentMember(ctx, args.workspaceId);
-
-		const chatHistory = await ctx.db
-			.query("chatHistory")
-			.withIndex("by_workspace_id_member_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("memberId", member._id)
-			)
-			.first();
-
-		if (chatHistory) {
-			// Reset to just the welcome message
-			const timestamp = Date.now();
-			return await ctx.db.patch(chatHistory._id, {
-				messages: [
-					{
-						role: "assistant",
-						content:
-							"Hello! I'm your workspace assistant. How can I help you today?",
-						timestamp,
-					},
-				],
-				updatedAt: timestamp,
-			});
-		}
-
-		// If no history exists, do nothing
-		return null;
-	},
-});
-
-// DEPRECATED: This function is no longer used.
+// This function is no longer used.
 // All chat functionality has been moved to the main assistant router.
 // This is kept for backward compatibility but should not be called.
 export const generateResponse = action({

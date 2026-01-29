@@ -188,11 +188,11 @@ export const DashboardChatbot = ({
 	const workspace = useQuery(api.workspaces.getById, { id: workspaceId });
 
 	// Get chat history from Convex
-	const chatHistory = useQuery(api.chatbot.getChatHistory, { workspaceId });
+	const chatHistory = useQuery(api.chatbotQueries.getChatHistory, { workspaceId });
 
 	// Convex mutations
-	const clearChatHistoryMutation = useMutation(api.chatbot.clearChatHistory);
-	const addMessageMutation = useMutation(api.chatbot.addMessage);
+	const clearChatHistoryMutation = useMutation(api.chatbotQueries.clearChatHistory);
+	const addMessageMutation = useMutation(api.chatbotQueries.addMessage);
 
 	// Initialize messages from chat history
 	useEffect(() => {
