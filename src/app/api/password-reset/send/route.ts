@@ -1,14 +1,17 @@
+import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { api } from "@/../convex/_generated/api";
 import { PasswordResetMail } from "@/features/email/components/password-reset-mail";
 
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
-const MAX_REQUESTS = 3; // Max 3 reset requests per hour per email
-
-// In-memory rate limiting (in production, use Redis or database)
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
-
 let resend: Resend | null = null;
+
+const createConvexClient = () => {
+	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
+	}
+	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+};
 
 const getResend = () => {
 	if (!resend) {
@@ -21,50 +24,79 @@ const getResend = () => {
 	return resend;
 };
 
+/**
+ * Password Reset Email Endpoint
+ *
+ * SECURITY: This endpoint only accepts email input from the client.
+ * Token generation happens entirely server-side via Convex mutation to prevent:
+ * - Token spoofing (client cannot provide arbitrary tokens for any email)
+ * - Account enumeration attacks (always returns success regardless of account existence)
+ * - Rate limit bypass (server-side rate limiting cannot be circumvented)
+ *
+ * Flow:
+ * 1. Client sends email only
+ * 2. Server validates rate limits
+ * 3. Server generates token via Convex (token never exposed to client)
+ * 4. Server sends email with reset link
+ * 5. Client receives generic success message
+ */
 export async function POST(request: NextRequest) {
 	try {
-		const body = await request.json();
-		const { email, token } = body;
+		// Validate required environment variables
+		if (!process.env.NEXT_PUBLIC_APP_URL) {
+			throw new Error("NEXT_PUBLIC_APP_URL environment variable is required");
+		}
 
-		if (!email || !token) {
+		if (!process.env.RESEND_API_KEY) {
+			throw new Error("RESEND_API_KEY environment variable is required");
+		}
+
+		const body = await request.json();
+		const { email } = body;
+
+		if (!email) {
+			return NextResponse.json({ error: "Email is required" }, { status: 400 });
+		}
+
+		// Initialize Convex client
+		const convex = createConvexClient();
+
+		// Validate and record rate limit using Convex
+		const rateLimitCheck = await convex.mutation(
+			api.rateLimit.validatePasswordResetRateLimit,
+			{
+				email: email.toLowerCase().trim(),
+			}
+		);
+
+		if (!rateLimitCheck.allowed) {
 			return NextResponse.json(
-				{ error: "Email and token are required" },
-				{ status: 400 }
+				{ error: rateLimitCheck.reason },
+				{ status: 429 }
 			);
 		}
 
-		// Rate limiting
-		const now = Date.now();
-		const rateLimit = rateLimitStore.get(email);
-
-		if (rateLimit) {
-			if (now < rateLimit.resetAt) {
-				if (rateLimit.count >= MAX_REQUESTS) {
-					return NextResponse.json(
-						{
-							error: "Too many reset requests. Please try again later.",
-						},
-						{ status: 429 }
-					);
-				}
-				rateLimit.count++;
-			} else {
-				// Reset the rate limit window
-				rateLimitStore.set(email, {
-					count: 1,
-					resetAt: now + RATE_LIMIT_WINDOW,
-				});
+		// Generate token server-side via Convex action
+		// This ensures the token is never exposed to the client
+		const result = await convex.action(
+			api.passwordManagement.generatePasswordResetToken,
+			{
+				email: email.toLowerCase().trim(),
 			}
-		} else {
-			rateLimitStore.set(email, {
-				count: 1,
-				resetAt: now + RATE_LIMIT_WINDOW,
+		);
+
+		// If no token was generated (user doesn't exist or doesn't use password auth),
+		// still return success to prevent account enumeration
+		if (!result.token) {
+			return NextResponse.json({
+				success: true,
+				message:
+					"If an account exists with this email, a reset link will be sent.",
 			});
 		}
 
-		// Generate reset link
-		const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-		const resetLink = `${baseUrl}/reset-password?token=${token}`;
+		// Generate reset link with the server-generated token
+		const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${result.token}`;
 
 		// Send email
 		const resendClient = getResend();

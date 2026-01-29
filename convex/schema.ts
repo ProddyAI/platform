@@ -501,13 +501,14 @@ const schema = defineSchema({
 
 	// Rate limiting for invites and other actions
 	rateLimits: defineTable({
-		userId: v.id("users"),
-		workspaceId: v.id("workspaces"),
+		userId: v.optional(v.id("users")), // Optional for unauthenticated rate limiting (e.g., password reset)
+		workspaceId: v.optional(v.id("workspaces")), // Optional for unauthenticated rate limiting
 		email: v.optional(v.string()), // For email-specific rate limits
 		type: v.union(
 			v.literal("user_invite"),
 			v.literal("workspace_invite"),
-			v.literal("email_invite")
+			v.literal("email_invite"),
+			v.literal("password_reset") // For password reset rate limiting
 		),
 		expiresAt: v.number(), // When this rate limit entry expires
 		createdAt: v.number(),

@@ -1,11 +1,9 @@
 "use client";
 
-import { useMutation } from "convex/react";
 import { ArrowLeft, Mail } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -22,10 +20,6 @@ const COOLDOWN_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
 
 const ForgotPasswordPage = () => {
 	useDocumentTitle("Forgot Password");
-
-	const requestPasswordReset = useMutation(
-		api.passwordManagement.requestPasswordReset
-	);
 
 	const [email, setEmail] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,28 +69,35 @@ const ForgotPasswordPage = () => {
 		setIsSubmitting(true);
 
 		try {
-			const result = await requestPasswordReset({ email });
+			// Call the API route directly - token generation happens server-side
+			// This prevents token exposure to the client and eliminates spoofing risk
+			const response = await fetch("/api/password-reset/send", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					email: email.toLowerCase().trim(),
+				}),
+			});
 
-			if (result.success) {
-				// Send email via API route
-				const response = await fetch("/api/password-reset/send", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						email: result.email,
-						token: result.token,
-					}),
-				});
+			const result = await response.json();
 
-				if (response.ok) {
-					setEmailSent(true);
-					setLastSentTimestamp(Date.now());
-					toast.success("Password reset link sent to your email");
-				} else {
-					toast.error("Failed to send reset email. Please Try again.");
-				}
+			if (response.ok && result.success) {
+				// Always show success message regardless of whether email was sent
+				// This prevents attackers from knowing if an email exists in the system
+				setEmailSent(true);
+				setLastSentTimestamp(Date.now());
+				toast.success(
+					"If an account exists with this email, a password reset link will be sent"
+				);
+			} else if (response.status === 429) {
+				// Handle rate limiting
+				toast.error(
+					result.error || "Too many requests. Please try again later."
+				);
+			} else {
+				throw new Error(result.error || "Failed to send reset email");
 			}
 		} catch (error) {
 			console.error("Password reset request error:", error);
