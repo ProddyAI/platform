@@ -42,7 +42,7 @@ const COMMON_PASSWORDS = [
 
 /**
  * Validate password strength according to security policy.
- * 
+ *
  * Password Requirements:
  * - Minimum 8 characters
  * - At least one uppercase letter (A-Z)
@@ -50,7 +50,7 @@ const COMMON_PASSWORDS = [
  * - At least one number (0-9)
  * - At least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)
  * - Not in the list of common/compromised passwords
- * 
+ *
  * @param password - The password to validate
  * @throws Error with descriptive message if password fails validation
  */
@@ -95,7 +95,11 @@ function validatePassword(password: string): void {
 		throw new Error("Password cannot contain sequential numbers");
 	}
 
-	if (/(?:abcd|bcde|cdef|defg|efgh|fghi|ghij|hijk|ijkl|jklm|klmn|lmno|mnop|nopq|opqr|pqrs|qrst|rstu|stuv|tuvw|uvwx|vwxy|wxyz)/i.test(password)) {
+	if (
+		/(?:abcd|bcde|cdef|defg|efgh|fghi|ghij|hijk|ijkl|jklm|klmn|lmno|mnop|nopq|opqr|pqrs|qrst|rstu|stuv|tuvw|uvwx|vwxy|wxyz)/i.test(
+			password
+		)
+	) {
 		throw new Error("Password cannot contain sequential letters");
 	}
 }
