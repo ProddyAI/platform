@@ -417,13 +417,69 @@ export const addMessage = mutation({
 		),
 	},
 	handler: async (ctx: any, args: any): Promise<any> => {
-		// Route all messages to ragchat for now
 		try {
-			return await ctx.runAction(api.ragchat.handleRagChat, {
+			const member = await getCurrentMember(ctx, args.workspaceId);
+			const timestamp = Date.now();
+			// Persist user message
+			let chatHistory = await ctx.db
+				.query("chatHistory")
+				.withIndex("by_workspace_id_member_id", (q: any) =>
+					q.eq("workspaceId", args.workspaceId).eq("memberId", member._id)
+				)
+				.first();
+
+			const userMessage = {
+				role: "user",
+				content: args.content,
+				timestamp,
+				sources: args.sources ?? [],
+				actions: args.actions ?? [],
+			};
+
+			if (chatHistory) {
+				await ctx.db.patch(chatHistory._id, {
+					messages: [...chatHistory.messages, userMessage],
+					updatedAt: timestamp,
+				});
+			} else {
+				await ctx.db.insert("chatHistory", {
+					workspaceId: args.workspaceId,
+					memberId: member._id,
+					messages: [userMessage],
+					updatedAt: timestamp,
+				});
+			}
+
+			// Call ragchat for assistant response
+			const ragResponse = await ctx.runAction(api.ragchat.handleRagChat, {
 				message: args.content,
 				userId: args.role === "user" ? undefined : "assistant",
 				workspaceId: args.workspaceId,
 			});
+
+			// Persist assistant response
+			const assistantMessage = {
+				role: "assistant",
+				content: ragResponse.response ?? "",
+				timestamp: Date.now(),
+				sources: ragResponse.sources ?? [],
+				actions: ragResponse.actions ?? [],
+			};
+
+			chatHistory = await ctx.db
+				.query("chatHistory")
+				.withIndex("by_workspace_id_member_id", (q: any) =>
+					q.eq("workspaceId", args.workspaceId).eq("memberId", member._id)
+				)
+				.first();
+			if (chatHistory) {
+				await ctx.db.patch(chatHistory._id, {
+					messages: [...chatHistory.messages, assistantMessage],
+					updatedAt: Date.now(),
+				});
+			}
+
+			return ragResponse;
 		} catch (e) {
 			return {
 				response: "I am not able to fetch item right now.",
