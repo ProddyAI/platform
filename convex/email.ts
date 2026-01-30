@@ -118,7 +118,7 @@ async function getWorkspaceWeeklyStats(
 
 	const topChannels = [];
 	for (const channelId in channelMessageCounts) {
-		if (Object.prototype.hasOwnProperty.call(channelMessageCounts, channelId)) {
+		if (Object.hasOwn(channelMessageCounts, channelId)) {
 			const count = channelMessageCounts[channelId];
 			const channel = await ctx.db.get(channelId as any);
 			if (channel && "name" in channel && count) {

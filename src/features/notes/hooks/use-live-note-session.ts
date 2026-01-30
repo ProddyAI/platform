@@ -132,8 +132,6 @@ export const useLiveNoteSession = ({
 		try {
 			// Update presence to indicate active editing
 			if (self) {
-				// This would be handled by the Liveblocks presence system
-				// The presence is automatically updated when user interacts with the editor
 			}
 
 			setIsLiveSession(true);

@@ -200,7 +200,8 @@ export class PDFExporter {
 				12
 			);
 			this.addSubtitle(
-			`Time Range: ${PDFExporter.getTimeRangeLabel(data.timeRange)}`,)
+				`Time Range: ${PDFExporter.getTimeRangeLabel(data.timeRange)}`
+			);
 			if (data.overview) {
 				this.addTitle("Overview", 16);
 				this.addSpace(10);

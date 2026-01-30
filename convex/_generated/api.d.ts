@@ -25,6 +25,7 @@ import type * as members from "../members.js";
 import type * as mentions from "../mentions.js";
 import type * as messages from "../messages.js";
 import type * as notes from "../notes.js";
+import type * as passwordManagement from "../passwordManagement.js";
 import type * as preferences from "../preferences.js";
 import type * as presence from "../presence.js";
 import type * as prosemirror from "../prosemirror.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   mentions: typeof mentions;
   messages: typeof messages;
   notes: typeof notes;
+  passwordManagement: typeof passwordManagement;
   preferences: typeof preferences;
   presence: typeof presence;
   prosemirror: typeof prosemirror;

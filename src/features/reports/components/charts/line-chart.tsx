@@ -38,8 +38,6 @@ export const LineChart = ({
 		left: string;
 	} | null>(null);
 
-	// Calculate tooltip position based on hovered point
-	// Note: This effect relies on the containerRef being attached to the outer div
 	// containing the SVG chart. The SVG must be a direct child with data-point-index attributes.
 	useEffect(() => {
 		if (hoveredIndex === null) {
@@ -132,8 +130,6 @@ export const LineChart = ({
 	const minValue = Math.min(...data.map((item) => item.value));
 	const range = maxValue - minValue;
 
-	// Add padding to the top and bottom
-	// Use a more generous padding for better visualization
 	const paddingFactor = 0.2;
 	const adjustedMaxValue = maxValue + range * paddingFactor;
 	// Always start from 0 for better context

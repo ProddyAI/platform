@@ -218,8 +218,6 @@ export const ServiceIntegrationCard = ({
 	};
 
 	const _handleConnect = async () => {
-		// With AgentAuth, we don't need a separate auth config step
-		// The authorization and connection happen in one flow
 		await handleCreateAuthConfig();
 	};
 
