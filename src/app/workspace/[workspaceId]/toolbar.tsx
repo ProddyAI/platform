@@ -15,6 +15,16 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
+// import type { Id } from "@/../convex/_generated/dataModel"; // Removed duplicate import if present
+// Explicit type for search results
+interface SearchResult {
+	_id: Id<"messages">;
+	channelId: Id<"channels">;
+	channelName: string;
+	_creationTime: number;
+	text: string;
+}
+
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { MentionsNotificationDialog } from "@/components/mentions-notification-dialog";
@@ -34,7 +44,6 @@ import { UserButton } from "@/features/auth/components/user-button";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetUnreadMentionsCount } from "@/features/messages/api/use-get-unread-mentions-count";
-import { useAiSearch } from "@/features/workspaces/api/use-ai-search";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useSearchMessages } from "@/features/workspaces/api/use-search-messages";
 import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
@@ -82,10 +91,10 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		workspaceId,
 		query: actualQuery,
 		enabled: !isAiMode && searchQuery.trim().length > 0,
-	});
+	}) as { results: SearchResult[]; isLoading: boolean };
 
 	// AI search hook
-	const { searchWithAi } = useAiSearch();
+
 
 	// Handle search input changes
 	const handleSearchChange = (value: string) => {
@@ -100,30 +109,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		}
 	};
 
-	// Handle AI search trigger (on Enter key)
-	const handleAiSearch = async () => {
-		if (!isAiMode || !searchQuery.startsWith("/ai ")) return;
-
-		const query = searchQuery.replace("/ai ", "").trim();
-		if (!query) return;
-
-		setIsAiLoading(true);
-		try {
-			const result = await searchWithAi({
-				workspaceId,
-				query,
-			});
-			setAiResults(result);
-		} catch (error) {
-			console.error("AI search error:", error);
-			setAiResults({
-				answer: "Failed to generate AI response. Please try again.",
-				sources: [],
-			});
-		} finally {
-			setIsAiLoading(false);
-		}
-	};
+	
 
 	// Reset search state when dialog closes
 	useEffect(() => {
@@ -217,7 +203,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						onKeyDown={(e) => {
 							if (e.key === "Enter" && isAiMode) {
 								e.preventDefault();
-								handleAiSearch();
+								
 							}
 						}}
 					/>
@@ -283,16 +269,16 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 							searchResults.length > 0 &&
 							!isSearching && (
 								<CommandGroup heading="Messages">
-									{searchResults.map((result) => (
-										<CommandItem
-											key={result._id}
-											onSelect={() =>
-												onMessageClick(
-													result._id,
-													result.channelId as Id<"channels">
-												)
-											}
-										>
+									   {searchResults.map((result: SearchResult) => (
+										   <CommandItem
+											   key={result._id}
+											   onSelect={() =>
+												   onMessageClick(
+													   result._id as Id<"messages">,
+													   result.channelId as Id<"channels">
+												   )
+											   }
+										   >
 											<MessageSquare className="mr-2 size-4" />
 											<div className="flex flex-col gap-1 flex-1 min-w-0">
 												<div className="flex items-center gap-2">
