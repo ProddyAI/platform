@@ -430,7 +430,7 @@ async function executeComposioAction(
 		});
 
 		// Get tools for the specified apps
-		let tools: any[] = [];
+		const tools: any[] = [];
 		for (const appName of appNames) {
 			try {
 				const appTools = await composio.tools.get(entityId, {
