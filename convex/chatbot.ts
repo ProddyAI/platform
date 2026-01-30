@@ -502,11 +502,14 @@ async function executeComposioAction(
 			for (const toolCall of completion.choices[0].message.tool_calls) {
 				if (toolCall.type === "function") {
 					try {
-						// Execute the tool with Composio (entity is already bound from tools.get)
+
 						const actionParams = JSON.parse(toolCall.function.arguments);
 						const result = await composio.tools.execute(
 							toolCall.function.name,
-							actionParams
+							{
+								userId: entityId,
+								arguments: actionParams
+							}
 						);
 
 						console.log(`[Composio] Tool ${toolCall.function.name} executed successfully`);
