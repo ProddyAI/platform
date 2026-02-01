@@ -1,15 +1,17 @@
-import { google } from "@ai-sdk/google";
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
 
 // Load environment variables
 dotenv.config();
-
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY || '',
+});
 export async function POST(req: NextRequest) {
 	try {
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error("Missing GOOGLE_GENERATIVE_AI_API_KEY");
+		if (!process.env.OPENROUTER_API_KEY) {
+			console.error("Missing OPENROUTER_API_KEY");
 			return NextResponse.json(
 				{ error: "API key not configured" },
 				{ status: 500 }
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
 		);
 
 		// Create the Gemini model
-		const model = google("gemini-2.5-flash");
+		const model = openrouter("google/gemini-2.5-flash");
 
 		// Prepare the formatting prompt
 		const prompt = `You are an expert document formatter and editor. Your task is to improve the formatting, structure, and readability of the provided document while preserving all the original content and meaning.

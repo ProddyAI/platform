@@ -1,10 +1,14 @@
-import { google } from "@ai-sdk/google";
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
 
 // Load environment variables
 dotenv.config();
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY || '',
+});
 
 interface MessageData {
 	id: string;
@@ -110,8 +114,8 @@ function pruneCache() {
 export async function POST(req: NextRequest) {
 	try {
 		// Check for API key
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			console.error("Missing GOOGLE_GENERATIVE_AI_API_KEY");
+		if (!process.env.OPENROUTER_API_KEY) {
+			console.error("Missing OPENROUTER_API_KEY");
 			return NextResponse.json(
 				{ error: "API key not configured" },
 				{ status: 500 }
@@ -265,7 +269,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 			let text;
 			try {
 				const response = await generateText({
-					model: google("gemini-2.5-flash"),
+					model: openrouter("google/gemini-2.5-flash"),
 					messages: [
 						{
 							role: "system",

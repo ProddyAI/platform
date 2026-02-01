@@ -1,8 +1,8 @@
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { format } from "date-fns";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 // Load environment variables
 dotenv.config();
@@ -13,6 +13,10 @@ interface MessageData {
 	authorName: string;
 	creationTime: number;
 }
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY || '',
+});
 
 // More efficient text extraction with memoization
 const extractionCache = new Map<string, string>();
@@ -183,7 +187,7 @@ export async function POST(req: NextRequest) {
 
 		try {
 			const { text } = await generateText({
-				model: google("gemini-2.5-flash"),
+				model: openrouter("google/gemini-2.5-flash"),
 				messages: [
 					{
 						role: "system",

@@ -1,6 +1,6 @@
 "use node";
 
-import { openai } from "@ai-sdk/openai";
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { Composio } from "@composio/core";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
@@ -52,6 +52,10 @@ type LLMMessage = {
 	role: "system" | "user" | "assistant";
 	content: string;
 };
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY || '',
+});
 
 const DEFAULT_SYSTEM_PROMPT = [
 	"You are Proddy, a personal work assistant for a team workspace.",
@@ -722,14 +726,12 @@ async function generateLLMResponse(opts: {
 	systemPrompt?: string;
 	recentMessages?: ReadonlyArray<ChatMessage>;
 }): Promise<string> {
-	const apiKey = process.env.OPENAI_API_KEY;
+	const apiKey = process.env.OPENROUTER_API_KEY;
 	if (!apiKey) {
 		throw new Error(
-			"OPENAI_API_KEY is required. Please configure the OpenAI API key in your environment variables."
+			"OPENROUTER_API_KEY is required. Please configure the OpenRouter API key in your environment variables."
 		);
 	}
-
-	const modelId = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 	const system = (opts.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT).trim();
 	const userPrompt = String(opts.prompt ?? "").trim();
@@ -751,7 +753,7 @@ async function generateLLMResponse(opts: {
 
 	try {
 		const { text } = await generateText({
-			model: openai(modelId) as any,
+			model: openrouter("openai/gpt-4o-mini") as any,
 			messages: messages as any,
 			temperature: 0.2,
 		});
