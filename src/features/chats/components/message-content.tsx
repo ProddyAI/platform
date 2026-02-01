@@ -114,8 +114,6 @@ export const MessageContent = ({
 					>
 						{isEditing ? (
 							<Editor
-								onSubmit={onUpdate}
-								disabled={isPending}
 								defaultValue={(() => {
 									try {
 										return JSON.parse(body);
@@ -123,7 +121,9 @@ export const MessageContent = ({
 										return "";
 									}
 								})()}
+								disabled={isPending}
 								onCancel={onCancel}
+								onSubmit={onUpdate}
 								variant="update"
 							/>
 						) : (
@@ -134,7 +134,7 @@ export const MessageContent = ({
 										"text-white [&_.ql-editor]:text-white [&_.ql-editor_*]:text-white [&_p]:text-white [&_span]:text-white [&_div]:text-white [&_strong]:text-white [&_em]:text-white [&_u]:text-white [&_s]:text-white [&_a]:text-white [&_li]:text-white [&_ol]:text-white [&_ul]:text-white [&_blockquote]:text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_h4]:text-white [&_h5]:text-white [&_h6]:text-white"
 								)}
 							>
-								<Renderer value={body} calendarEvent={calendarEvent} />
+								<Renderer calendarEvent={calendarEvent} value={body} />
 								<Thumbnail url={image} />
 
 								{calendarEvent && (
@@ -176,8 +176,8 @@ export const MessageContent = ({
 				count={threadCount}
 				image={threadImage}
 				name={threadName}
-				timestamp={threadTimestamp}
 				onClick={() => onOpenMessage(id)}
+				timestamp={threadTimestamp}
 			/>
 		</div>
 	);

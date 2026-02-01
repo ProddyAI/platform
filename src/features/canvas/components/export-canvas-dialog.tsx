@@ -627,7 +627,7 @@ export const ExportCanvasDialog = ({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={handleClose}>
+		<Dialog onOpenChange={handleClose} open={open}>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Export Canvas</DialogTitle>
@@ -641,39 +641,39 @@ export const ExportCanvasDialog = ({
 					onValueChange={(value) => setExportType(value as "chat" | "system")}
 				>
 					<TabsList className="grid w-full grid-cols-2">
-						<TabsTrigger value="chat" className="flex items-center gap-2">
+						<TabsTrigger className="flex items-center gap-2" value="chat">
 							<MessageSquare className="h-4 w-4" />
 							Export to Chat
 						</TabsTrigger>
-						<TabsTrigger value="system" className="flex items-center gap-2">
+						<TabsTrigger className="flex items-center gap-2" value="system">
 							<Download className="h-4 w-4" />
 							Download
 						</TabsTrigger>
 					</TabsList>
 
-					<TabsContent value="chat" className="mt-4">
+					<TabsContent className="mt-4" value="chat">
 						<div className="space-y-4">
 							<div className="flex flex-col space-y-2">
 								<h3 className="text-sm font-medium">Format</h3>
 								<div className="flex space-x-2">
 									<Button
-										variant={exportFormat === "png" ? "default" : "outline"}
-										size="sm"
 										onClick={() => setExportFormat("png")}
+										size="sm"
+										variant={exportFormat === "png" ? "default" : "outline"}
 									>
 										PNG
 									</Button>
 									<Button
-										variant={exportFormat === "svg" ? "default" : "outline"}
-										size="sm"
 										onClick={() => setExportFormat("svg")}
+										size="sm"
+										variant={exportFormat === "svg" ? "default" : "outline"}
 									>
 										SVG
 									</Button>
 									<Button
-										variant={exportFormat === "json" ? "default" : "outline"}
-										size="sm"
 										onClick={() => setExportFormat("json")}
+										size="sm"
+										variant={exportFormat === "json" ? "default" : "outline"}
 									>
 										JSON
 									</Button>
@@ -682,29 +682,29 @@ export const ExportCanvasDialog = ({
 						</div>
 					</TabsContent>
 
-					<TabsContent value="system" className="mt-4">
+					<TabsContent className="mt-4" value="system">
 						<div className="space-y-4">
 							<div className="flex flex-col space-y-2">
 								<h3 className="text-sm font-medium">Format</h3>
 								<div className="flex space-x-2">
 									<Button
-										variant={exportFormat === "png" ? "default" : "outline"}
-										size="sm"
 										onClick={() => setExportFormat("png")}
+										size="sm"
+										variant={exportFormat === "png" ? "default" : "outline"}
 									>
 										PNG
 									</Button>
 									<Button
-										variant={exportFormat === "svg" ? "default" : "outline"}
-										size="sm"
 										onClick={() => setExportFormat("svg")}
+										size="sm"
+										variant={exportFormat === "svg" ? "default" : "outline"}
 									>
 										SVG
 									</Button>
 									<Button
-										variant={exportFormat === "json" ? "default" : "outline"}
-										size="sm"
 										onClick={() => setExportFormat("json")}
+										size="sm"
+										variant={exportFormat === "json" ? "default" : "outline"}
 									>
 										JSON
 									</Button>
@@ -716,19 +716,19 @@ export const ExportCanvasDialog = ({
 
 				<DialogFooter className="mt-6">
 					<Button
+						disabled={isExporting}
+						onClick={handleClose}
 						type="button"
 						variant="outline"
-						onClick={handleClose}
-						disabled={isExporting}
 					>
 						Cancel
 					</Button>
 					<Button
-						type="button"
 						disabled={isExporting}
 						onClick={
 							exportType === "chat" ? handleExportToChat : handleExportToSystem
 						}
+						type="button"
 					>
 						{isExporting
 							? "Exporting..."

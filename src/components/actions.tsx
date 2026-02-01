@@ -45,10 +45,10 @@ export const Actions = ({
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
 			<DropdownMenuContent
-				side={side}
-				sideOffset={sideOffset}
 				className="w-60"
 				onClick={(e) => e.stopPropagation()}
+				side={side}
+				sideOffset={sideOffset}
 			>
 				<DropdownMenuItem onClick={() => onOpen(id, title)}>
 					<Trash className="h-4 w-4 mr-2" />

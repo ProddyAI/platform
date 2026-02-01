@@ -118,10 +118,10 @@ export const WorkspaceManagement = ({
 	return (
 		<>
 			<InviteModal
+				joinCode={workspace.joinCode}
+				name={workspace.name}
 				open={inviteOpen}
 				setOpen={setInviteOpen}
-				name={workspace.name}
-				joinCode={workspace.joinCode}
 			/>
 			<div className="space-y-6">
 				{/* Workspace Overview */}
@@ -204,12 +204,12 @@ export const WorkspaceManagement = ({
 						<Label htmlFor="name">Workspace Name</Label>
 						<div className="flex items-center gap-2">
 							<Input
-								id="name"
-								value={name}
-								onChange={(e) => setName(e.target.value)}
 								className="flex-1"
+								id="name"
+								onChange={(e) => setName(e.target.value)}
+								value={name}
 							/>
-							<Button onClick={handleUpdateName} disabled={isUpdating}>
+							<Button disabled={isUpdating} onClick={handleUpdateName}>
 								{isUpdating ? (
 									<>
 										<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -233,7 +233,7 @@ export const WorkspaceManagement = ({
 								<div>
 									<AlertDialog>
 										<AlertDialogTrigger asChild>
-											<Button variant="destructive" className="w-full">
+											<Button className="w-full" variant="destructive">
 												<Trash2 className="mr-2 h-4 w-4" />
 												Delete Workspace
 											</Button>
@@ -252,9 +252,9 @@ export const WorkspaceManagement = ({
 											<AlertDialogFooter>
 												<AlertDialogCancel>Cancel</AlertDialogCancel>
 												<AlertDialogAction
-													onClick={handleDeleteWorkspace}
 													className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 													disabled={isDeleting}
+													onClick={handleDeleteWorkspace}
 												>
 													{isDeleting ? "Deleting..." : "Delete"}
 												</AlertDialogAction>

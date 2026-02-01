@@ -138,20 +138,20 @@ export const TestBoardKanbanView = ({
 	return (
 		<div className="flex h-full overflow-x-auto p-4 gap-4">
 			{lists.map((list) => (
-				<div key={list._id} className="flex-shrink-0 w-80">
+				<div className="flex-shrink-0 w-80" key={list._id}>
 					<Card className="h-full flex flex-col">
 						<CardHeader className="pb-3">
 							<div className="flex items-center justify-between">
 								<CardTitle className="text-lg flex items-center gap-2">
 									{list.title}
-									<Badge variant="secondary" className="text-xs">
+									<Badge className="text-xs" variant="secondary">
 										{cardsByList[list._id]?.length || 0}
 									</Badge>
 								</CardTitle>
 								<Button
-									variant="ghost"
-									size="sm"
 									onClick={() => onAddCard(list._id)}
+									size="sm"
+									variant="ghost"
 								>
 									<Plus className="h-4 w-4" />
 								</Button>
@@ -170,8 +170,8 @@ export const TestBoardKanbanView = ({
 									) : (
 										cardsByList[list._id]?.map((card) => (
 											<Card
-												key={card._id}
 												className={`cursor-pointer transition-all hover:shadow-md ${getPriorityColor(card.priority)}`}
+												key={card._id}
 												onClick={() => onEditCard(card)}
 											>
 												<CardContent className="p-4">
@@ -183,10 +183,10 @@ export const TestBoardKanbanView = ({
 														<DropdownMenu>
 															<DropdownMenuTrigger asChild>
 																<Button
-																	variant="ghost"
-																	size="sm"
 																	className="h-6 w-6 p-0"
 																	onClick={(e) => e.stopPropagation()}
+																	size="sm"
+																	variant="ghost"
 																>
 																	<MoreHorizontal className="h-4 w-4" />
 																</Button>
@@ -209,8 +209,8 @@ export const TestBoardKanbanView = ({
 																</DropdownMenuItem>
 																<DropdownMenuSeparator />
 																<DropdownMenuItem
-																	onClick={() => onDeleteCard(card._id)}
 																	className="text-destructive"
+																	onClick={() => onDeleteCard(card._id)}
 																>
 																	Delete Card
 																</DropdownMenuItem>
@@ -230,15 +230,15 @@ export const TestBoardKanbanView = ({
 														<div className="flex flex-wrap gap-1 mb-3">
 															{card.labels.slice(0, 3).map((label: string) => (
 																<Badge
+																	className="text-xs"
 																	key={label}
 																	variant="outline"
-																	className="text-xs"
 																>
 																	{label}
 																</Badge>
 															))}
 															{card.labels.length > 3 && (
-																<Badge variant="outline" className="text-xs">
+																<Badge className="text-xs" variant="outline">
 																	+{card.labels.length - 3}
 																</Badge>
 															)}
@@ -270,8 +270,8 @@ export const TestBoardKanbanView = ({
 													{/* Priority and Assignees */}
 													<div className="flex items-center justify-between">
 														<Badge
-															variant={getPriorityBadgeVariant(card.priority)}
 															className="text-xs capitalize"
+															variant={getPriorityBadgeVariant(card.priority)}
 														>
 															{card.priority === "highest" && (
 																<AlertTriangle className="h-3 w-3 mr-1" />
@@ -285,8 +285,8 @@ export const TestBoardKanbanView = ({
 																	.slice(0, 3)
 																	.map((assigneeId: string) => (
 																		<Avatar
-																			key={assigneeId}
 																			className="h-6 w-6 border-2 border-white"
+																			key={assigneeId}
 																		>
 																			<AvatarFallback className="text-xs">
 																				{getMemberInitials(assigneeId)}
@@ -310,9 +310,9 @@ export const TestBoardKanbanView = ({
 
 									{/* Add Card Button */}
 									<Button
-										variant="ghost"
 										className="w-full justify-start text-muted-foreground hover:text-foreground"
 										onClick={() => onAddCard(list._id)}
+										variant="ghost"
 									>
 										<Plus className="h-4 w-4 mr-2" />
 										Add a card

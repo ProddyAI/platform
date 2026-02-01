@@ -132,18 +132,18 @@ export const CanvasSidebar = ({
 		return (
 			<div className="w-16 border-r bg-muted/30 flex flex-col items-center py-4">
 				<Button
-					variant="ghost"
-					size="sm"
-					onClick={onToggleCollapse}
 					className="mb-4"
+					onClick={onToggleCollapse}
+					size="sm"
+					variant="ghost"
 				>
 					<ChevronRight className="h-4 w-4" />
 				</Button>
 				<Button
-					variant="ghost"
-					size="sm"
-					onClick={onCreateCanvas}
 					className="mb-2"
+					onClick={onCreateCanvas}
+					size="sm"
+					variant="ghost"
 				>
 					<Plus className="h-4 w-4" />
 				</Button>
@@ -157,7 +157,7 @@ export const CanvasSidebar = ({
 			<div className="flex items-center justify-between p-4 border-b">
 				<h2 className="font-semibold text-lg">Canvases</h2>
 				<div className="flex items-center gap-2">
-					<Button variant="ghost" size="sm" onClick={onToggleCollapse}>
+					<Button onClick={onToggleCollapse} size="sm" variant="ghost">
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
 				</div>
@@ -169,10 +169,10 @@ export const CanvasSidebar = ({
 					<div className="relative flex-1">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
+							className="pl-9"
+							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="Search canvases..."
 							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-9"
 						/>
 					</div>
 					<Button onClick={onCreateCanvas} size="sm">
@@ -197,8 +197,8 @@ export const CanvasSidebar = ({
 						<div className="space-y-2">
 							{filteredCanvases.map((canvas) => (
 								<div
-									key={canvas._id}
 									className="relative group"
+									key={canvas._id}
 									onMouseEnter={() => setHoveredCanvasId(canvas._id)}
 									onMouseLeave={() => {
 										// Don't hide if dropdown is open for this canvas
@@ -208,6 +208,12 @@ export const CanvasSidebar = ({
 									}}
 								>
 									<button
+										className={cn(
+											"w-full text-left p-3 rounded-lg border transition-all duration-200 hover:shadow-sm",
+											selectedCanvasId === canvas.savedCanvasId
+												? "bg-primary/10 border-primary/20 shadow-sm"
+												: "bg-white border-border hover:bg-muted/50"
+										)}
 										onClick={() =>
 											onCanvasSelect(
 												canvas.savedCanvasId || canvas._id,
@@ -215,12 +221,6 @@ export const CanvasSidebar = ({
 												canvas.canvasName!
 											)
 										}
-										className={cn(
-											"w-full text-left p-3 rounded-lg border transition-all duration-200 hover:shadow-sm",
-											selectedCanvasId === canvas.savedCanvasId
-												? "bg-primary/10 border-primary/20 shadow-sm"
-												: "bg-white border-border hover:bg-muted/50"
-										)}
 									>
 										<div className="flex items-start justify-between">
 											<div className="flex-1 min-w-0">
@@ -250,9 +250,9 @@ export const CanvasSidebar = ({
 											>
 												<DropdownMenuTrigger asChild>
 													<Button
-														variant="ghost"
-														size="sm"
 														className="h-6 w-6 p-0 bg-white/80 hover:bg-white"
+														size="sm"
+														variant="ghost"
 													>
 														<MoreHorizontal className="h-3 w-3" />
 													</Button>

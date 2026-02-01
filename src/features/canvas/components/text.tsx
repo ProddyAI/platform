@@ -370,15 +370,15 @@ export const Text = ({
 
 	return (
 		<foreignObject
-			x={x}
-			y={y}
-			width={width}
+			data-selected={isSelected ? "true" : "false"}
 			height={height}
 			style={{
 				outline: selectionColor ? `1px solid ${selectionColor}` : "none",
 				pointerEvents: "auto", // Ensure pointer events are enabled
 			}}
-			data-selected={isSelected ? "true" : "false"} // Add data attribute for debugging
+			width={width}
+			x={x}
+			y={y} // Add data attribute for debugging
 		>
 			<div
 				className="w-full h-full"
@@ -389,14 +389,16 @@ export const Text = ({
 				}}
 			>
 				<ContentEditable
-					innerRef={setContentRef}
-					html={value || "Text"}
-					onChange={handleContentChange}
-					onPaste={handlePaste}
-					disabled={!isEditing}
+					aria-label={isEditing ? "Editable text" : "Text element"}
 					className={cn(
 						"h-full w-full flex items-center justify-center text-center drop-shadow-md outline-none"
 					)}
+					disabled={!isEditing}
+					html={value || "Text"}
+					innerRef={setContentRef}
+					onChange={handleContentChange}
+					onPaste={handlePaste}
+					role={isEditing ? "textbox" : "presentation"}
 					style={{
 						fontSize: calculateFontSize(width, height),
 						color: fill ? colorToCSS(fill) : "#000",
@@ -407,8 +409,6 @@ export const Text = ({
 						lineHeight: "1.2", // Improve readability
 						padding: "4px", // Add some padding for better text display
 					}}
-					aria-label={isEditing ? "Editable text" : "Text element"}
-					role={isEditing ? "textbox" : "presentation"}
 				/>
 			</div>
 		</foreignObject>

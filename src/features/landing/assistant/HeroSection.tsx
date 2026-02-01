@@ -21,8 +21,8 @@ export const HeroSection = () => {
 
 	return (
 		<section
-			ref={heroRef}
 			className="relative w-full pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden bg-gradient-to-b from-white via-gray-50/50 to-gray-50"
+			ref={heroRef}
 		>
 			{/* Background decorative elements */}
 			<div className="absolute inset-0 overflow-hidden">
@@ -32,18 +32,18 @@ export const HeroSection = () => {
 
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-6xl">
 				<motion.div
+					animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
 					className="flex flex-col items-center text-center"
 					initial={{ opacity: 0, y: 20 }}
-					animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
 					transition={{ duration: 0.5 }}
 				>
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5, delay: 0.1 }}
 						className="mb-4"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.1 }}
 					>
 						<span className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full bg-primary/10 text-primary">
 							<Sparkles className="mr-1 h-3.5 w-3.5" />
@@ -52,12 +52,12 @@ export const HeroSection = () => {
 					</motion.div>
 
 					<motion.h1
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5, delay: 0.2 }}
 						className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 mb-4 max-w-4xl"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.2 }}
 					>
 						Just Ask,{" "}
 						<span className="text-primary relative">
@@ -67,26 +67,26 @@ export const HeroSection = () => {
 					</motion.h1>
 
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5, delay: 0.4 }}
 						className="flex flex-col sm:flex-row gap-4 justify-center mt-5 "
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.4 }}
 					>
 						<Link href="/signup">
 							<Button
-								size="lg"
 								className="gap-2 rounded-full text-white bg-primary hover:bg-primary/90 px-6 py-2 shadow-md"
+								size="lg"
 							>
 								Try Proddy AI <ArrowRight className="size-4" />
 							</Button>
 						</Link>
 						<Link href="#features">
 							<Button
+								className="gap-2 rounded-full bg-white border-slate-300 text-slate-700 hover:bg-slate-100 px-6 py-2"
 								size="lg"
 								variant="outline"
-								className="gap-2 rounded-full bg-white border-slate-300 text-slate-700 hover:bg-slate-100 px-6 py-2"
 							>
 								Learn More
 							</Button>
@@ -100,10 +100,10 @@ export const HeroSection = () => {
 				<div className="w-full px-6 md:px-12 lg:px-16 xl:px-20">
 					<div className="grid grid-cols-1 lg:grid-cols-[35fr_65fr] gap-8 lg:gap-12 xl:gap-16 items-center">
 						<motion.div
-							initial={{ opacity: 0, x: -20 }}
 							animate={
 								isHeroInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }
 							}
+							initial={{ opacity: 0, x: -20 }}
 							transition={{ duration: 0.5, delay: 0.5 }}
 						>
 							<Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-0">
@@ -166,12 +166,12 @@ export const HeroSection = () => {
 						</motion.div>
 
 						<motion.div
-							initial={{ opacity: 0, x: 20 }}
 							animate={
 								isHeroInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }
 							}
-							transition={{ duration: 0.5, delay: 0.7 }}
 							className="relative"
+							initial={{ opacity: 0, x: 20 }}
+							transition={{ duration: 0.5, delay: 0.7 }}
 						>
 							<div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
 								<div className="p-4 bg-primary/10 border-b border-gray-200">
@@ -273,14 +273,14 @@ export const HeroSection = () => {
 								<div className="p-4 border-t border-gray-200 bg-white">
 									<div className="flex gap-2">
 										<input
-											type="text"
-											placeholder="Ask a question about your workspace..."
 											className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
 											disabled
+											placeholder="Ask a question about your workspace..."
+											type="text"
 										/>
 										<Button
-											size="sm"
 											className="bg-primary hover:bg-primary/90"
+											size="sm"
 										>
 											<Send className="h-4 w-4" />
 										</Button>

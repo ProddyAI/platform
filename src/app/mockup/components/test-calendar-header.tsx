@@ -61,10 +61,10 @@ export const TestCalendarHeader = ({
 				<div className="flex items-center gap-3">
 					{/* Month Navigation */}
 					<div className="flex items-center gap-1">
-						<Button variant="outline" size="sm" onClick={onPreviousMonth}>
+						<Button onClick={onPreviousMonth} size="sm" variant="outline">
 							<ChevronLeft className="h-4 w-4" />
 						</Button>
-						<Button variant="outline" size="sm" onClick={onNextMonth}>
+						<Button onClick={onNextMonth} size="sm" variant="outline">
 							<ChevronRight className="h-4 w-4" />
 						</Button>
 					</div>
@@ -72,11 +72,11 @@ export const TestCalendarHeader = ({
 					{/* Event Type Filter */}
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant="outline" size="sm">
+							<Button size="sm" variant="outline">
 								<Filter className="h-4 w-4 mr-2" />
 								Filter Events
 								{Object.values(filterOptions).filter((v) => !v).length > 0 && (
-									<Badge variant="secondary" className="ml-2 text-xs">
+									<Badge className="ml-2 text-xs" variant="secondary">
 										{Object.values(filterOptions).filter((v) => v).length}/5
 									</Badge>
 								)}
@@ -150,8 +150,6 @@ export const TestCalendarHeader = ({
 
 							<div className="flex gap-2 p-2">
 								<Button
-									variant="outline"
-									size="sm"
 									className="flex-1"
 									onClick={() => {
 										onFilterChange({
@@ -162,12 +160,12 @@ export const TestCalendarHeader = ({
 											social: true,
 										});
 									}}
+									size="sm"
+									variant="outline"
 								>
 									Select All
 								</Button>
 								<Button
-									variant="outline"
-									size="sm"
 									className="flex-1"
 									onClick={() => {
 										onFilterChange({
@@ -178,6 +176,8 @@ export const TestCalendarHeader = ({
 											social: false,
 										});
 									}}
+									size="sm"
+									variant="outline"
 								>
 									Clear All
 								</Button>
@@ -188,16 +188,16 @@ export const TestCalendarHeader = ({
 					{/* View Options */}
 					<div className="flex items-center gap-1 border rounded-md">
 						<Button
-							variant="ghost"
-							size="sm"
 							className="bg-muted text-foreground"
+							size="sm"
+							variant="ghost"
 						>
 							Month
 						</Button>
-						<Button variant="ghost" size="sm" className="text-muted-foreground">
+						<Button className="text-muted-foreground" size="sm" variant="ghost">
 							Week
 						</Button>
-						<Button variant="ghost" size="sm" className="text-muted-foreground">
+						<Button className="text-muted-foreground" size="sm" variant="ghost">
 							Day
 						</Button>
 					</div>

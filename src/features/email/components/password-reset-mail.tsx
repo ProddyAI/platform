@@ -31,11 +31,11 @@ export const PasswordResetMail: React.FC<Readonly<PasswordResetMailProps>> = ({
 			<Body style={main}>
 				<Container style={container}>
 					<Img
-						src="https://proddy.tech/logo-nobg.png"
-						width="40"
-						height="40"
 						alt="Proddy"
+						height="40"
+						src="https://proddy.tech/logo-nobg.png"
 						style={logo}
+						width="40"
 					/>
 					<Heading style={heading}>Reset Your Password</Heading>
 					<Section style={section}>
@@ -45,7 +45,7 @@ export const PasswordResetMail: React.FC<Readonly<PasswordResetMailProps>> = ({
 							it.
 						</Text>
 
-						<Button style={button} href={resetLink}>
+						<Button href={resetLink} style={button}>
 							Reset Password
 						</Button>
 

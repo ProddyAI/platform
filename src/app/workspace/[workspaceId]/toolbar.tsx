@@ -4,26 +4,19 @@ import { formatDistanceToNow } from "date-fns";
 import {
 	Activity,
 	Bell,
+	Calendar,
+	CheckSquare,
+	FileText,
 	HeartPulse,
 	HelpCircle,
+	LayoutList,
 	Loader2,
 	Map as MapIcon,
 	MessageSquare,
 	Search,
-	Sparkles,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
-
-// import type { Id } from "@/../convex/_generated/dataModel"; // Removed duplicate import if present
-// Explicit type for search results
-interface SearchResult {
-	_id: Id<"messages">;
-	channelId: Id<"channels">;
-	channelName: string;
-	_creationTime: number;
-	text: string;
-}
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
@@ -68,56 +61,22 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
-	const [isAiMode, setIsAiMode] = useState(false);
-	const [aiResults, setAiResults] = useState<{
-		answer: string;
-		sources: Array<{
-			id: Id<"messages">;
-			text: string;
-			channelId: Id<"channels">;
-			channelName: string;
-		}>;
-	} | null>(null);
-	const [isAiLoading, setIsAiLoading] = useState(false);
 
 	const { data: workspace } = useGetWorkspace({ id: workspaceId });
 	const { data: channels } = useGetChannels({ workspaceId });
 	const { data: members } = useGetMembers({ workspaceId });
 	const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
 
-	// Normal search hook
-	const actualQuery = isAiMode ? "" : searchQuery;
 	const { results: searchResults, isLoading: isSearching } = useSearchMessages({
 		workspaceId,
-		query: actualQuery,
-		enabled: !isAiMode && searchQuery.trim().length > 0,
-	}) as { results: SearchResult[]; isLoading: boolean };
-
-	// AI search hook
-
-
-	// Handle search input changes
-	const handleSearchChange = (value: string) => {
-		setSearchQuery(value);
-
-		// Detect AI mode
-		if (value.startsWith("/ai ")) {
-			setIsAiMode(true);
-		} else {
-			setIsAiMode(false);
-			setAiResults(null); // Clear AI results when switching to normal mode
-		}
-	};
-
-	
+		query: searchQuery,
+		enabled: searchQuery.trim().length > 0,
+	});
 
 	// Reset search state when dialog closes
 	useEffect(() => {
 		if (!searchOpen) {
 			setSearchQuery("");
-			setIsAiMode(false);
-			setAiResults(null);
-			setIsAiLoading(false);
 		}
 	}, [searchOpen]);
 
@@ -151,12 +110,16 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 	const onMessageClick = (
 		messageId: Id<"messages">,
-		channelId: Id<"channels">
+		channelId: Id<"channels"> | undefined
 	) => {
 		setSearchOpen(false);
-		router.push(
-			`/workspace/${workspaceId}/channel/${channelId}/chats?highlight=${messageId}`
-		);
+		if (channelId) {
+			router.push(
+				`/workspace/${workspaceId}/channel/${channelId}/chats?highlight=${messageId}`
+			);
+		} else {
+			router.push(`/workspace/${workspaceId}/threads`);
+		}
 	};
 
 	useEffect(() => {
@@ -178,9 +141,9 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 			{/* Middle section - Search */}
 			<div className="min-w-[280px] max-w-[642px] shrink grow-[2] px-4">
 				<Button
+					className="h-9 w-full justify-start bg-white/10 px-3 hover:bg-white/20 transition-standard border border-white/10 rounded-[10px]"
 					onClick={() => setSearchOpen(true)}
 					size="sm"
-					className="h-9 w-full justify-start bg-white/10 px-3 hover:bg-white/20 transition-standard border border-white/10 rounded-[10px]"
 				>
 					<Search className="mr-2 size-4 text-white" />
 					<span className="text-xs text-white">
@@ -191,95 +154,36 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					</kbd>
 				</Button>
 
-				<CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+				<CommandDialog onOpenChange={setSearchOpen} open={searchOpen}>
 					<CommandInput
-						placeholder={
-							isAiMode
-								? "AI Search (press Enter to search)..."
-								: `Search ${workspace?.name ?? "workspace"}... (or type /ai for AI search)`
-						}
+						onValueChange={setSearchQuery}
+						placeholder={`Search ${workspace?.name ?? "workspace"}...`}
 						value={searchQuery}
-						onValueChange={handleSearchChange}
-						onKeyDown={(e) => {
-							if (e.key === "Enter" && isAiMode) {
-								e.preventDefault();
-								
-							}
-						}}
 					/>
 					<CommandList>
 						{/* Loading state */}
-						{(isSearching || isAiLoading) && (
+						{isSearching && (
 							<CommandEmpty>
 								<div className="flex items-center justify-center gap-2 py-6">
 									<Loader2 className="size-4 animate-spin" />
-									<span>
-										{isAiLoading ? "Generating AI response..." : "Searching..."}
-									</span>
+									<span>Searching...</span>
 								</div>
 							</CommandEmpty>
 						)}
 
-						{/* AI Mode Results */}
-						{isAiMode && aiResults && !isAiLoading && (
-							<>
-								<CommandGroup heading="AI Summary">
-									<div className="px-2 py-3 text-sm">
-										<div className="flex items-start gap-2">
-											<Sparkles className="size-4 mt-0.5 text-purple-500 shrink-0" />
-											<p className="text-muted-foreground whitespace-pre-wrap">
-												{aiResults.answer}
-											</p>
-										</div>
-									</div>
-								</CommandGroup>
-
-								{aiResults.sources.length > 0 && (
-									<>
-										<CommandSeparator />
-										<CommandGroup heading="Sources">
-											{aiResults.sources.map((source) => (
-												<CommandItem
-													key={source.id}
-													onSelect={() =>
-														onMessageClick(source.id, source.channelId)
-													}
-												>
-													<MessageSquare className="mr-2 size-4" />
-													<div className="flex flex-col gap-1 flex-1 min-w-0">
-														<span className="text-xs text-muted-foreground">
-															#{source.channelName}
-														</span>
-														<span className="truncate text-sm">
-															{source.text.slice(0, 100)}
-															{source.text.length > 100 ? "..." : ""}
-														</span>
-													</div>
-												</CommandItem>
-											))}
-										</CommandGroup>
-									</>
-								)}
-							</>
-						)}
-
-						{/* Normal Search Results */}
-						{!isAiMode &&
-							searchQuery &&
-							searchResults.length > 0 &&
+						{/* Search Results - Messages */}
+						{searchQuery &&
+							searchResults.messages?.length > 0 &&
 							!isSearching && (
 								<CommandGroup heading="Messages">
-									   {searchResults.map((result: SearchResult) => (
-										   <CommandItem
-											   key={result._id}
-											   onSelect={() =>
-												   onMessageClick(
-													   result._id as Id<"messages">,
-													   result.channelId as Id<"channels">
-												   )
-											   }
-										   >
-											<MessageSquare className="mr-2 size-4" />
+									{searchResults.messages.map((result) => (
+										<CommandItem
+											key={result._id}
+											onSelect={() =>
+												onMessageClick(result._id, result.channelId)
+											}
+										>
+											<MessageSquare className="mr-2 size-4 shrink-0" />
 											<div className="flex flex-col gap-1 flex-1 min-w-0">
 												<div className="flex items-center gap-2">
 													<span className="text-xs text-muted-foreground">
@@ -301,21 +205,97 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 								</CommandGroup>
 							)}
 
-						{/* Empty state for normal search */}
-						{!isAiMode &&
-							searchQuery &&
-							searchResults.length === 0 &&
-							!isSearching && <CommandEmpty>No messages found.</CommandEmpty>}
-
-						{/* AI mode waiting for Enter */}
-						{isAiMode && !aiResults && !isAiLoading && (
-							<CommandEmpty>
-								<div className="flex items-center justify-center gap-2 py-6">
-									<Sparkles className="size-4 text-purple-500" />
-									<span>Press Enter to run AI search</span>
-								</div>
-							</CommandEmpty>
+						{/* Normal Search Results - Notes */}
+						{searchQuery && searchResults.notes?.length > 0 && !isSearching && (
+							<CommandGroup heading="Notes">
+								{searchResults.notes.map((note) => (
+									<CommandItem
+										key={note._id}
+										onSelect={() => {
+											setSearchOpen(false);
+											router.push(
+												`/workspace/${workspaceId}/channel/${note.channelId}/notes/${note._id}`
+											);
+										}}
+									>
+										<FileText className="mr-2 size-4 shrink-0" />
+										<span className="truncate">{note.title}</span>
+									</CommandItem>
+								))}
+							</CommandGroup>
 						)}
+
+						{/* Search Results - Tasks */}
+						{searchQuery && searchResults.tasks?.length > 0 && !isSearching && (
+							<CommandGroup heading="Tasks">
+								{searchResults.tasks.map((task) => (
+									<CommandItem
+										key={task._id}
+										onSelect={() => {
+											setSearchOpen(false);
+											router.push(`/workspace/${workspaceId}/tasks`);
+										}}
+									>
+										<CheckSquare className="mr-2 size-4 shrink-0" />
+										<span className="truncate">{task.title}</span>
+									</CommandItem>
+								))}
+							</CommandGroup>
+						)}
+
+						{/* Search Results - Cards */}
+						{searchQuery && searchResults.cards?.length > 0 && !isSearching && (
+							<CommandGroup heading="Cards">
+								{searchResults.cards.map((card) => (
+									<CommandItem
+										key={card._id}
+										onSelect={() => {
+											setSearchOpen(false);
+											router.push(
+												`/workspace/${workspaceId}/channel/${card.channelId}/board`
+											);
+										}}
+									>
+										<LayoutList className="mr-2 size-4 shrink-0" />
+										<span className="truncate">{card.title}</span>
+									</CommandItem>
+								))}
+							</CommandGroup>
+						)}
+
+						{/* Search Results - Calendar Events */}
+						{searchQuery &&
+							searchResults.events?.length > 0 &&
+							!isSearching && (
+								<CommandGroup heading="Calendar">
+									{searchResults.events.map((event) => (
+										<CommandItem
+											key={event._id}
+											onSelect={() => {
+												setSearchOpen(false);
+												router.push(`/workspace/${workspaceId}/calendar`);
+											}}
+										>
+											<Calendar className="mr-2 size-4 shrink-0" />
+											<span className="truncate">{event.title}</span>
+											{event.time && (
+												<span className="text-xs text-muted-foreground ml-1">
+													{event.time}
+												</span>
+											)}
+										</CommandItem>
+									))}
+								</CommandGroup>
+							)}
+
+						{/* Empty state for search */}
+						{searchQuery &&
+							searchResults.messages?.length === 0 &&
+							searchResults.notes?.length === 0 &&
+							searchResults.tasks?.length === 0 &&
+							searchResults.cards?.length === 0 &&
+							searchResults.events?.length === 0 &&
+							!isSearching && <CommandEmpty>No results found.</CommandEmpty>}
 
 						{/* Default state - show channels and members */}
 						{!searchQuery && (
@@ -325,8 +305,8 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 								<CommandGroup heading="Channels">
 									{channels?.map((channel) => (
 										<CommandItem
-											onSelect={() => onChannelClick(channel._id)}
 											key={channel._id}
+											onSelect={() => onChannelClick(channel._id)}
 										>
 											{channel.name}
 										</CommandItem>
@@ -338,8 +318,8 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 								<CommandGroup heading="Members">
 									{members?.map((member) => (
 										<CommandItem
-											onSelect={() => onMemberClick(member._id)}
 											key={member._id}
+											onSelect={() => onMemberClick(member._id)}
 										>
 											{member.user.name}
 										</CommandItem>
@@ -356,14 +336,14 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				{/* Roadmap Button */}
 				<Hint label="Roadmap & Feedback" side="bottom">
 					<Button
-						variant="ghost"
-						size="iconSm"
 						className="text-white relative hover:bg-white/15 transition-colors"
 						onClick={() => {
 							// Open roadmap page in a new tab
 							const roadmapUrl = process.env.NEXT_PUBLIC_ROADMAP_URL!;
 							window.open(roadmapUrl, "_blank", "noopener,noreferrer");
 						}}
+						size="iconSm"
+						variant="ghost"
 					>
 						<div className="relative">
 							<MapIcon className="size-5" />
@@ -374,14 +354,14 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				{/* Documentation Button */}
 				<Hint label="Documentation" side="bottom">
 					<Button
-						variant="ghost"
-						size="iconSm"
 						className="text-white relative hover:bg-white/15 transition-colors"
 						onClick={() => {
 							// Open documentation in a new tab
 							const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL!;
 							window.open(docsUrl, "_blank", "noopener,noreferrer");
 						}}
+						size="iconSm"
+						variant="ghost"
 					>
 						<div className="relative">
 							<HelpCircle className="size-5" />
@@ -392,13 +372,13 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				{/* Chat Support Button */}
 				<Hint label="Chat Support" side="bottom">
 					<Button
-						variant="ghost"
-						size="iconSm"
 						className="text-white relative hover:bg-white/15 transition-colors"
 						onClick={() => {
 							// Show Tidio chat widget
 							showTidioChat();
 						}}
+						size="iconSm"
+						variant="ghost"
 					>
 						<div className="relative">
 							<HeartPulse className="size-5" />
@@ -409,14 +389,14 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				{/* Status Page Button */}
 				<Hint label="System Status" side="bottom">
 					<Button
-						variant="ghost"
-						size="iconSm"
 						className="text-white relative hover:bg-white/15 transition-colors"
 						onClick={() => {
 							// Open status page in a new tab
 							const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_URL!;
 							window.open(statusPageUrl, "_blank", "noopener,noreferrer");
 						}}
+						size="iconSm"
+						variant="ghost"
 					>
 						<div className="relative">
 							<Activity className="size-5" />
@@ -427,17 +407,17 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				{/* Notifications Button */}
 				<Hint label="Notifications" side="bottom">
 					<Button
-						variant="ghost"
-						size="iconSm"
 						className="text-white relative hover:bg-white/15 transition-colors"
 						onClick={() => setNotificationsOpen(true)}
+						size="iconSm"
+						variant="ghost"
 					>
 						<div className="relative">
 							<Bell className="size-5" />
 							{!isLoadingMentions && counts && counts.total > 0 && (
 								<Badge
-									variant="default"
 									className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-red-500 border border-white shadow-sm"
+									variant="default"
 								>
 									{counts.total}
 								</Badge>
@@ -448,15 +428,15 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 				{/* Notification Dialog */}
 				<MentionsNotificationDialog
-					open={notificationsOpen}
 					onOpenChange={setNotificationsOpen}
+					open={notificationsOpen}
 				/>
 
 				<ThemeToggle />
 
 				<UserButton
-					forceOpenSettings={forceOpenUserSettings}
 					defaultTab={userSettingsTab}
+					forceOpenSettings={forceOpenUserSettings}
 					onSettingsClose={handleUserSettingsClose}
 				/>
 			</div>

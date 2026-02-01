@@ -148,8 +148,8 @@ export const CanvasWidget = ({
 					<h3 className="font-semibold text-base">Recent Canvases</h3>
 					{!isEditMode && sortedCanvasItems.length > 0 && (
 						<Badge
-							variant="secondary"
 							className="ml-1 h-5 px-2 text-xs font-medium"
+							variant="secondary"
 						>
 							{sortedCanvasItems.length}
 						</Badge>
@@ -159,10 +159,10 @@ export const CanvasWidget = ({
 					controls
 				) : (
 					<Button
-						variant="ghost"
-						size="sm"
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewAll}
+						size="sm"
+						variant="ghost"
 					>
 						View All
 					</Button>
@@ -188,8 +188,8 @@ export const CanvasWidget = ({
 									</div>
 									<div className="flex items-center gap-2">
 										<Badge
-											variant="outline"
 											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
+											variant="outline"
 										>
 											# {item.channelName}
 										</Badge>
@@ -198,13 +198,13 @@ export const CanvasWidget = ({
 										{item.description}
 									</p>
 									<Button
-										variant="ghost"
-										size="sm"
 										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 										onClick={() =>
 											item.channelId &&
 											handleViewCanvas(item._id, item.channelId, item.roomId)
 										}
+										size="sm"
+										variant="ghost"
 									>
 										View canvas
 									</Button>
@@ -223,10 +223,10 @@ export const CanvasWidget = ({
 						Create a canvas to see it here
 					</p>
 					<Button
-						variant="default"
-						size="sm"
 						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 						onClick={handleCreateCanvas}
+						size="sm"
+						variant="default"
 					>
 						<Plus className="mr-2 h-4 w-4" />
 						Create Canvas

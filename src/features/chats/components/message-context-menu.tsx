@@ -36,12 +36,12 @@ export const MessageContextMenu = ({
 	return (
 		<div
 			className="context-menu fixed border border-gray-200 dark:border-gray-600 rounded-lg shadow-2xl z-[9999999] min-w-[180px] overflow-hidden bg-white dark:bg-[#1a1a1a]"
+			onClick={(e) => e.stopPropagation()}
 			style={{
 				left: `${contextMenu.x}px`,
 				top: `${contextMenu.y}px`,
 				pointerEvents: "auto",
 			}}
-			onClick={(e) => e.stopPropagation()}
 		>
 			{/* Message Actions Section */}
 			<div>

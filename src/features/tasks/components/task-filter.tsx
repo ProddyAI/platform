@@ -70,30 +70,30 @@ export const TaskFilter = ({
 		<div className="flex flex-col sm:flex-row gap-3 w-full mt-3">
 			<div className="relative flex-1">
 				<Input
+					className="pl-10"
+					onChange={(e) => onSearchChange(e.target.value)}
 					placeholder="Search tasks..."
 					value={searchQuery}
-					onChange={(e) => onSearchChange(e.target.value)}
-					className="pl-10"
 				/>
 				<svg
-					xmlns="http://www.w3.org/2000/svg"
 					className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
 					fill="none"
-					viewBox="0 0 24 24"
 					stroke="currentColor"
 					strokeWidth={2}
+					viewBox="0 0 24 24"
+					xmlns="http://www.w3.org/2000/svg"
 				>
 					<path
+						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
 						strokeLinecap="round"
 						strokeLinejoin="round"
-						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
 					/>
 				</svg>
 			</div>
 			<div className="flex gap-2">
-				<DropdownMenu open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+				<DropdownMenu onOpenChange={setIsFiltersOpen} open={isFiltersOpen}>
 					<DropdownMenuTrigger asChild>
-						<Button variant="outline" className="flex items-center gap-1.5">
+						<Button className="flex items-center gap-1.5" variant="outline">
 							<Filter className="h-4 w-4" />
 							<span>Filter</span>
 							{activeFiltersCount > 0 && (
@@ -112,24 +112,24 @@ export const TaskFilter = ({
 								Status
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
-								value={filterOptions.status}
 								onValueChange={(value) =>
 									onFilterChange({ status: value as any })
 								}
+								value={filterOptions.status}
 							>
-								<DropdownMenuRadioItem value="all" className="cursor-pointer">
+								<DropdownMenuRadioItem className="cursor-pointer" value="all">
 									All
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
-									value="active"
 									className="cursor-pointer"
+									value="active"
 								>
 									<Circle className="mr-2 h-4 w-4" />
 									Active
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
-									value="completed"
 									className="cursor-pointer"
+									value="completed"
 								>
 									<CheckCircle2 className="mr-2 h-4 w-4" />
 									Completed
@@ -144,26 +144,26 @@ export const TaskFilter = ({
 								Priority
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
-								value={filterOptions.priority}
 								onValueChange={(value) =>
 									onFilterChange({ priority: value as any })
 								}
+								value={filterOptions.priority}
 							>
-								<DropdownMenuRadioItem value="all" className="cursor-pointer">
+								<DropdownMenuRadioItem className="cursor-pointer" value="all">
 									All
 								</DropdownMenuRadioItem>
-								<DropdownMenuRadioItem value="high" className="cursor-pointer">
+								<DropdownMenuRadioItem className="cursor-pointer" value="high">
 									<div className="mr-2 h-3 w-3 rounded-full bg-red-500" />
 									High
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
-									value="medium"
 									className="cursor-pointer"
+									value="medium"
 								>
 									<div className="mr-2 h-3 w-3 rounded-full bg-yellow-500" />
 									Medium
 								</DropdownMenuRadioItem>
-								<DropdownMenuRadioItem value="low" className="cursor-pointer">
+								<DropdownMenuRadioItem className="cursor-pointer" value="low">
 									<div className="mr-2 h-3 w-3 rounded-full bg-blue-500" />
 									Low
 								</DropdownMenuRadioItem>
@@ -177,35 +177,35 @@ export const TaskFilter = ({
 								Due Date
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
-								value={filterOptions.dueDate}
 								onValueChange={(value) =>
 									onFilterChange({ dueDate: value as any })
 								}
+								value={filterOptions.dueDate}
 							>
-								<DropdownMenuRadioItem value="all" className="cursor-pointer">
+								<DropdownMenuRadioItem className="cursor-pointer" value="all">
 									All
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
-									value="overdue"
 									className="cursor-pointer"
+									value="overdue"
 								>
 									<Clock className="mr-2 h-4 w-4 text-red-500" />
 									Overdue
 								</DropdownMenuRadioItem>
-								<DropdownMenuRadioItem value="today" className="cursor-pointer">
+								<DropdownMenuRadioItem className="cursor-pointer" value="today">
 									<Clock className="mr-2 h-4 w-4 text-yellow-500" />
 									Today
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
-									value="upcoming"
 									className="cursor-pointer"
+									value="upcoming"
 								>
 									<Clock className="mr-2 h-4 w-4 text-blue-500" />
 									Upcoming
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
-									value="no-date"
 									className="cursor-pointer"
+									value="no-date"
 								>
 									<Clock className="mr-2 h-4 w-4 text-gray-400" />
 									No due date
@@ -216,8 +216,6 @@ export const TaskFilter = ({
 						<DropdownMenuSeparator />
 
 						<Button
-							variant="ghost"
-							size="sm"
 							className="w-full justify-center text-xs"
 							onClick={() =>
 								onFilterChange({
@@ -226,6 +224,8 @@ export const TaskFilter = ({
 									dueDate: "all",
 								})
 							}
+							size="sm"
+							variant="ghost"
 						>
 							Reset Filters
 						</Button>
@@ -234,7 +234,7 @@ export const TaskFilter = ({
 
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<Button variant="outline" className="flex items-center gap-1.5">
+						<Button className="flex items-center gap-1.5" variant="outline">
 							{filterOptions.sortDirection === "asc" ? (
 								<SortAsc className="h-4 w-4" />
 							) : (
@@ -252,26 +252,26 @@ export const TaskFilter = ({
 								Sort By
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
-								value={filterOptions.sortBy}
 								onValueChange={(value) =>
 									onFilterChange({ sortBy: value as any })
 								}
+								value={filterOptions.sortBy}
 							>
 								<DropdownMenuRadioItem
-									value="created"
 									className="cursor-pointer"
+									value="created"
 								>
 									Date Created
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
-									value="dueDate"
 									className="cursor-pointer"
+									value="dueDate"
 								>
 									Due Date
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
-									value="priority"
 									className="cursor-pointer"
+									value="priority"
 								>
 									Priority
 								</DropdownMenuRadioItem>
@@ -285,16 +285,16 @@ export const TaskFilter = ({
 								Direction
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
-								value={filterOptions.sortDirection}
 								onValueChange={(value) =>
 									onFilterChange({ sortDirection: value as any })
 								}
+								value={filterOptions.sortDirection}
 							>
-								<DropdownMenuRadioItem value="asc" className="cursor-pointer">
+								<DropdownMenuRadioItem className="cursor-pointer" value="asc">
 									<SortAsc className="mr-2 h-4 w-4" />
 									Ascending
 								</DropdownMenuRadioItem>
-								<DropdownMenuRadioItem value="desc" className="cursor-pointer">
+								<DropdownMenuRadioItem className="cursor-pointer" value="desc">
 									<SortDesc className="mr-2 h-4 w-4" />
 									Descending
 								</DropdownMenuRadioItem>

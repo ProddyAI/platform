@@ -129,9 +129,9 @@ export const TaskCreateForm = ({
 	if (!isExpanded) {
 		return (
 			<Button
+				className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group dark:bg-secondary dark:hover:bg-rose-900"
 				onClick={() => setIsExpanded(true)}
 				variant="default"
-				className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group dark:bg-secondary dark:hover:bg-rose-900"
 			>
 				<span className="absolute inset-0 rounded-lg bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
 				<span className="absolute right-0 bottom-0 size-16 rounded-full -translate-x-5 translate-y-5 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -148,17 +148,17 @@ export const TaskCreateForm = ({
 
 	return (
 		<form
-			onSubmit={handleSubmit}
 			className="p-6 rounded-xl border shadow-sm bg-white"
+			onSubmit={handleSubmit}
 		>
 			<div className="flex justify-between items-center mb-4">
 				{/* <h3 className="font-semibold text-lg text-gray-800">Create a new task</h3> */}
 				<Button
+					className="h-8 w-8 rounded-full hover:bg-gray-100"
+					onClick={handleCancel}
+					size="iconSm"
 					type="button"
 					variant="ghost"
-					size="iconSm"
-					onClick={handleCancel}
-					className="h-8 w-8 rounded-full hover:bg-gray-100"
 				>
 					<X className="h-4 w-4" />
 				</Button>
@@ -166,19 +166,19 @@ export const TaskCreateForm = ({
 
 			<div className="space-y-4">
 				<Input
-					placeholder="Task title"
-					value={title}
-					onChange={(e) => setTitle(e.target.value)}
-					className="text-base font-medium border-gray-300 focus-visible:ring-secondary"
 					autoFocus
+					className="text-base font-medium border-gray-300 focus-visible:ring-secondary"
+					onChange={(e) => setTitle(e.target.value)}
+					placeholder="Task title"
 					required
+					value={title}
 				/>
 
 				<Textarea
+					className="min-h-[100px] resize-none border-gray-300 focus-visible:ring-secondary text-gray-700"
+					onChange={(e) => setDescription(e.target.value)}
 					placeholder="Description (optional)"
 					value={description}
-					onChange={(e) => setDescription(e.target.value)}
-					className="min-h-[100px] resize-none border-gray-300 focus-visible:ring-secondary text-gray-700"
 				/>
 
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -186,12 +186,12 @@ export const TaskCreateForm = ({
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-									type="button"
-									variant="outline"
 									className={cn(
 										"w-full justify-start text-left font-normal border-gray-300",
 										!dueDate ? "text-gray-500" : "text-gray-800"
 									)}
+									type="button"
+									variant="outline"
 								>
 									<CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
 									{dueDate ? (
@@ -201,22 +201,22 @@ export const TaskCreateForm = ({
 									)}
 								</Button>
 							</PopoverTrigger>
-							<PopoverContent className="w-auto p-0" align="start">
+							<PopoverContent align="start" className="w-auto p-0">
 								<Calendar
-									mode="single"
-									selected={dueDate}
-									onSelect={setDueDate}
-									initialFocus
 									className="border rounded-md shadow-md"
+									initialFocus
+									mode="single"
+									onSelect={setDueDate}
+									selected={dueDate}
 								/>
 								{dueDate && (
 									<div className="p-2 border-t flex justify-end">
 										<Button
+											className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
+											onClick={() => setDueDate(undefined)}
+											size="sm"
 											type="button"
 											variant="ghost"
-											size="sm"
-											onClick={() => setDueDate(undefined)}
-											className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
 										>
 											Clear date
 										</Button>
@@ -228,8 +228,8 @@ export const TaskCreateForm = ({
 
 					<div>
 						<Select
-							value={priority}
 							onValueChange={(value: any) => setPriority(value)}
+							value={priority}
 						>
 							<SelectTrigger className="border-gray-300">
 								<SelectValue placeholder="Set Priority (optional)">
@@ -268,27 +268,27 @@ export const TaskCreateForm = ({
 						Category (optional)
 					</label>
 					<TaskCategorySelector
-						workspaceId={workspaceId}
-						value={categoryId}
 						onChange={setCategoryId}
+						value={categoryId}
+						workspaceId={workspaceId}
 					/>
 				</div>
 			</div>
 
 			<div className="flex justify-end gap-3 pt-5 mt-4 border-t">
 				<Button
+					className="border-gray-300"
+					disabled={isSubmitting}
+					onClick={handleCancel}
 					type="button"
 					variant="outline"
-					onClick={handleCancel}
-					disabled={isSubmitting}
-					className="border-gray-300"
 				>
 					Cancel
 				</Button>
 				<Button
-					type="submit"
-					disabled={!title.trim() || isSubmitting}
 					className="bg-secondary hover:bg-secondary-600"
+					disabled={!title.trim() || isSubmitting}
+					type="submit"
 				>
 					{isSubmitting ? "Creating..." : "Create Task"}
 				</Button>

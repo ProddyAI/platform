@@ -204,17 +204,17 @@ export const Mermaid = ({
 		return (
 			<>
 				<foreignObject
-					x={x}
-					y={y}
-					width={width}
+					className="shadow-md drop-shadow-xl cursor-pointer"
 					height={height}
-					onPointerDown={(e) => onPointerDown(e, id)}
 					onDoubleClick={handleDoubleClick}
+					onPointerDown={(e) => onPointerDown(e, id)}
 					style={{
 						outline: selectionColor ? `1px solid ${selectionColor}` : "none",
 						backgroundColor: fill ? colorToCSS(fill) : "#f9f9f9",
 					}}
-					className="shadow-md drop-shadow-xl cursor-pointer"
+					width={width}
+					x={x}
+					y={y}
 				>
 					<div
 						className="h-full w-full flex items-center justify-center bg-gray-100 border border-gray-300 rounded"
@@ -228,10 +228,10 @@ export const Mermaid = ({
 
 				{/* Edit Dialog */}
 				<MermaidEditDialog
-					open={isEditDialogOpen}
-					onOpenChange={setIsEditDialogOpen}
 					mermaidCode={mermaidCode}
+					onOpenChange={setIsEditDialogOpen}
 					onSave={handleSaveMermaidCode}
+					open={isEditDialogOpen}
 				/>
 			</>
 		);
@@ -241,17 +241,17 @@ export const Mermaid = ({
 		return (
 			<>
 				<foreignObject
-					x={x}
-					y={y}
-					width={width}
+					className="shadow-md drop-shadow-xl cursor-pointer"
 					height={height}
-					onPointerDown={(e) => onPointerDown(e, id)}
 					onDoubleClick={handleDoubleClick}
+					onPointerDown={(e) => onPointerDown(e, id)}
 					style={{
 						outline: selectionColor ? `1px solid ${selectionColor}` : "none",
 						backgroundColor: fill ? colorToCSS(fill) : "#f9f9f9",
 					}}
-					className="shadow-md drop-shadow-xl cursor-pointer"
+					width={width}
+					x={x}
+					y={y}
 				>
 					<div
 						className="h-full w-full flex items-center justify-center bg-gray-100 border border-gray-300 rounded"
@@ -266,10 +266,10 @@ export const Mermaid = ({
 
 				{/* Edit Dialog */}
 				<MermaidEditDialog
-					open={isEditDialogOpen}
-					onOpenChange={setIsEditDialogOpen}
 					mermaidCode={mermaidCode}
+					onOpenChange={setIsEditDialogOpen}
 					onSave={handleSaveMermaidCode}
+					open={isEditDialogOpen}
 				/>
 			</>
 		);
@@ -279,17 +279,17 @@ export const Mermaid = ({
 		return (
 			<>
 				<foreignObject
-					x={x}
-					y={y}
-					width={width}
+					className="shadow-md drop-shadow-xl cursor-pointer"
 					height={height}
-					onPointerDown={(e) => onPointerDown(e, id)}
 					onDoubleClick={handleDoubleClick}
+					onPointerDown={(e) => onPointerDown(e, id)}
 					style={{
 						outline: selectionColor ? `1px solid ${selectionColor}` : "none",
 						backgroundColor: fill ? colorToCSS(fill) : "#fee2e2",
 					}}
-					className="shadow-md drop-shadow-xl cursor-pointer"
+					width={width}
+					x={x}
+					y={y}
 				>
 					<div
 						className="h-full w-full flex items-center justify-center bg-red-50 border border-red-300 rounded text-red-600"
@@ -304,10 +304,10 @@ export const Mermaid = ({
 
 				{/* Edit Dialog */}
 				<MermaidEditDialog
-					open={isEditDialogOpen}
-					onOpenChange={setIsEditDialogOpen}
 					mermaidCode={mermaidCode}
+					onOpenChange={setIsEditDialogOpen}
 					onSave={handleSaveMermaidCode}
+					open={isEditDialogOpen}
 				/>
 			</>
 		);
@@ -316,21 +316,21 @@ export const Mermaid = ({
 	return (
 		<>
 			<foreignObject
-				x={x}
-				y={y}
-				width={width}
+				className="shadow-md drop-shadow-xl cursor-pointer"
 				height={height}
-				onPointerDown={(e) => onPointerDown(e, id)}
 				onDoubleClick={handleDoubleClick}
+				onPointerDown={(e) => onPointerDown(e, id)}
 				style={{
 					outline: selectionColor ? `1px solid ${selectionColor}` : "none",
 					backgroundColor: fill ? colorToCSS(fill) : "white",
 				}}
-				className="shadow-md drop-shadow-xl cursor-pointer"
+				width={width}
+				x={x}
+				y={y}
 			>
 				<div
-					ref={containerRef}
 					className="h-full w-full overflow-hidden rounded border border-gray-200 bg-white"
+					ref={containerRef}
 					style={{
 						display: "flex",
 						alignItems: "center",
@@ -340,8 +340,8 @@ export const Mermaid = ({
 				>
 					{renderedSvg && (
 						<div
-							ref={svgContainerRef}
 							className="w-full h-full flex items-center justify-center"
+							ref={svgContainerRef}
 							style={{
 								maxWidth: "100%",
 								maxHeight: "100%",
@@ -353,10 +353,10 @@ export const Mermaid = ({
 
 			{/* Edit Dialog */}
 			<MermaidEditDialog
-				open={isEditDialogOpen}
-				onOpenChange={setIsEditDialogOpen}
 				mermaidCode={mermaidCode}
+				onOpenChange={setIsEditDialogOpen}
 				onSave={handleSaveMermaidCode}
+				open={isEditDialogOpen}
 			/>
 		</>
 	);

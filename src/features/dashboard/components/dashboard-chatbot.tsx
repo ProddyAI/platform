@@ -188,10 +188,14 @@ export const DashboardChatbot = ({
 	const workspace = useQuery(api.workspaces.getById, { id: workspaceId });
 
 	// Get chat history from Convex
-	const chatHistory = useQuery(api.chatbotQueries.getChatHistory, { workspaceId });
+	const chatHistory = useQuery(api.chatbotQueries.getChatHistory, {
+		workspaceId,
+	});
 
 	// Convex mutations
-	const clearChatHistoryMutation = useMutation(api.chatbotQueries.clearChatHistory);
+	const clearChatHistoryMutation = useMutation(
+		api.chatbotQueries.clearChatHistory
+	);
 	const addMessageMutation = useMutation(api.chatbotQueries.addMessage);
 
 	// Initialize messages from chat history
@@ -334,7 +338,7 @@ Try asking me things like:`;
 		}
 	}, [workspaceId, member]);
 
-	// Scroll to bottom when messages change
+	// Scroll to bottom when messages change (e.g. after sending or receiving)
 	useEffect(() => {
 		if (scrollAreaRef.current) {
 			const scrollContainer = scrollAreaRef.current.querySelector(
@@ -429,34 +433,43 @@ Try asking me things like:`;
 
 			console.log("Received response from assistant");
 
-			// Save user message to Convex
-			await addMessageMutation({
-				workspaceId,
-				content: userQuery,
-				role: "user",
-			});
-
-			// Save assistant response to Convex
-			await addMessageMutation({
-				workspaceId,
-				content: result.response,
-				role: "assistant",
-				sources: result.sources,
-				actions: result.actions,
-			});
-
-			// Add assistant response to UI
+			// Add assistant response to UI immediately so the user sees it
 			const assistantMessage: Message = {
 				id: (Date.now() + 1).toString(),
 				content: result.response,
 				sender: "assistant",
-				role: "assistant", // Add role property
+				role: "assistant",
 				timestamp: new Date(),
 				sources: result.sources,
 				actions: result.actions,
 			};
-
 			setMessages((prev) => [...prev, assistantMessage]);
+
+			// Persist to Convex after UI update (so UI is not blocked by save)
+			try {
+				await addMessageMutation({
+					workspaceId,
+					content: userQuery,
+					role: "user",
+				});
+				await addMessageMutation({
+					workspaceId,
+					content: result.response,
+					role: "assistant",
+					sources: result.sources,
+					actions: result.actions,
+				});
+			} catch (persistError) {
+				console.warn(
+					"[Dashboard Chatbot] Failed to persist messages:",
+					persistError
+				);
+				toast({
+					title: "Chat saved locally",
+					description: "Response may not sync to other devices.",
+					variant: "default",
+				});
+			}
 		} catch (error) {
 			console.error("Error in chatbot:", error);
 
@@ -638,7 +651,7 @@ Try asking me things like:`;
 			<div className="flex flex-wrap gap-1.5 mt-3 mb-1">
 				<Popover>
 					<PopoverTrigger asChild>
-						<Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+						<Button className="h-6 px-2 text-xs" size="sm" variant="outline">
 							<Info className="h-3 w-3 mr-1" />
 							Sources ({sources.length})
 						</Button>
@@ -651,8 +664,8 @@ Try asking me things like:`;
 							<div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
 								{sources.map((source, index) => (
 									<div
-										key={index}
 										className="text-xs p-2 bg-muted/50 rounded border"
+										key={index}
 									>
 										<div className="font-semibold text-primary mb-1">
 											{getSourceTypeDisplay(source.type)}
@@ -668,7 +681,7 @@ Try asking me things like:`;
 				</Popover>
 
 				{Object.entries(sourcesByType).map(([type, count]) => (
-					<Badge key={type} variant="outline" className="text-xs px-2 py-0.5">
+					<Badge className="text-xs px-2 py-0.5" key={type} variant="outline">
 						{getSourceTypeDisplay(type)}: {count}
 					</Badge>
 				))}
@@ -700,9 +713,9 @@ Try asking me things like:`;
 									<Popover>
 										<PopoverTrigger asChild>
 											<Button
-												variant="ghost"
-												size="sm"
 												className="h-6 px-2 text-xs hover:bg-green-50 dark:hover:bg-green-950"
+												size="sm"
+												variant="ghost"
 											>
 												<Zap className="h-3 w-3 mr-1 text-green-600" />
 												<span className="text-green-700 dark:text-green-300">
@@ -719,8 +732,8 @@ Try asking me things like:`;
 												<div className="space-y-2">
 													{integrationStatus.connected.map((app: any) => (
 														<div
-															key={app.app}
 															className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border"
+															key={app.app}
 														>
 															{app.app === "GITHUB" && (
 																<Github className="h-4 w-4 text-gray-800 dark:text-gray-200" />
@@ -751,7 +764,7 @@ Try asking me things like:`;
 										</PopoverContent>
 									</Popover>
 								) : (
-									<Badge variant="outline" className="text-xs px-2 py-0.5">
+									<Badge className="text-xs px-2 py-0.5" variant="outline">
 										No integrations
 									</Badge>
 								)}
@@ -759,10 +772,10 @@ Try asking me things like:`;
 						</div>
 					</div>
 					<Button
-						variant="ghost"
-						size="sm"
-						onClick={clearConversation}
 						className="text-xs text-muted-foreground hover:text-destructive border border-gray-300"
+						onClick={clearConversation}
+						size="sm"
+						variant="ghost"
 					>
 						<Trash2 className="h-3.5 w-3.5 mr-1.5" />
 						Clear chat
@@ -774,10 +787,10 @@ Try asking me things like:`;
 					<div className="flex flex-col gap-4 py-4 pb-10">
 						{messages.map((message) => (
 							<div
-								key={message.id}
 								className={`flex ${
 									message.sender === "user" ? "justify-end" : "justify-start"
 								}`}
+								key={message.id}
 							>
 								<div
 									className={`max-w-[80%] rounded-lg px-4 py-3 ${
@@ -791,20 +804,19 @@ Try asking me things like:`;
 									) : (
 										<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300 prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
 											<ReactMarkdown
-												remarkPlugins={[remarkGfm]}
 												components={{
 													// Custom link component to handle internal links
 													a: ({ href, children, ...props }) => (
 														<a
-															href={href}
 															className="text-primary hover:text-primary/80 underline"
-															target={
-																href?.startsWith("http") ? "_blank" : "_self"
-															}
+															href={href}
 															rel={
 																href?.startsWith("http")
 																	? "noopener noreferrer"
 																	: undefined
+															}
+															target={
+																href?.startsWith("http") ? "_blank" : "_self"
 															}
 															{...props}
 														>
@@ -830,6 +842,7 @@ Try asking me things like:`;
 														</pre>
 													),
 												}}
+												remarkPlugins={[remarkGfm]}
 											>
 												{message.content}
 											</ReactMarkdown>
@@ -840,11 +853,11 @@ Try asking me things like:`;
 										<div className="flex flex-wrap gap-2 mt-3">
 											{message.actions.map((action, index) => (
 												<Button
-													key={index}
-													variant="outline"
-													size="sm"
-													onClick={() => handleNavigation(action)}
 													className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
+													key={index}
+													onClick={() => handleNavigation(action)}
+													size="sm"
+													variant="outline"
 												>
 													{getActionIcon(action.type)}
 													<span className="ml-1.5">{action.label}</span>
@@ -884,16 +897,16 @@ Try asking me things like:`;
 					<div ref={autocompleteRef}>
 						{activeAutocomplete === "channel" ? (
 							<ChannelPicker
-								open={autocompleteOpen}
 								onClose={closeAutocomplete}
 								onSelect={handleChannelInsert}
+								open={autocompleteOpen}
 								searchQuery={autocompleteQuery}
 							/>
 						) : (
 							<MentionPicker
-								open={autocompleteOpen}
 								onClose={closeAutocomplete}
 								onSelect={handleMentionInsert}
+								open={autocompleteOpen}
 								searchQuery={autocompleteQuery}
 							/>
 						)}
@@ -902,9 +915,8 @@ Try asking me things like:`;
 
 				<div className="flex w-full items-center gap-2">
 					<Input
-						ref={inputRef}
-						placeholder="Ask a question about your workspace..."
-						value={input}
+						className="flex-1"
+						disabled={isLoading}
 						onChange={(e) => {
 							const next = e.target.value;
 							const cursor = e.target.selectionStart ?? next.length;
@@ -922,14 +934,15 @@ Try asking me things like:`;
 							}
 						}}
 						onKeyDown={handleKeyDown}
-						disabled={isLoading}
-						className="flex-1"
+						placeholder="Ask a question about your workspace..."
+						ref={inputRef}
+						value={input}
 					/>
 					<Button
-						onClick={handleSendMessage}
-						disabled={isLoading || !input.trim()}
-						size="icon"
 						className="chat-send-button"
+						disabled={isLoading || !input.trim()}
+						onClick={handleSendMessage}
+						size="icon"
 					>
 						<Send className="h-4 w-4" />
 					</Button>

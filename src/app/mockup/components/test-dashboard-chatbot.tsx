@@ -255,10 +255,10 @@ export const TestDashboardChatbot = () => {
 						</div>
 					</div>
 					<Button
-						variant="ghost"
-						size="sm"
-						onClick={clearConversation}
 						className="text-xs text-muted-foreground hover:text-destructive border border-gray-300"
+						onClick={clearConversation}
+						size="sm"
+						variant="ghost"
 					>
 						<Trash2 className="h-3.5 w-3.5 mr-1.5" />
 						Clear chat
@@ -270,8 +270,8 @@ export const TestDashboardChatbot = () => {
 					<div className="space-y-4 py-4">
 						{messages.map((message) => (
 							<div
-								key={message.id}
 								className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+								key={message.id}
 							>
 								<div
 									className={`max-w-[80%] rounded-lg px-3 py-2 ${
@@ -291,11 +291,11 @@ export const TestDashboardChatbot = () => {
 											<div className="mt-3 flex flex-wrap gap-2">
 												{message.actions.map((action, index) => (
 													<Button
-														key={index}
-														variant="outline"
-														size="sm"
-														onClick={action.action}
 														className="flex items-center gap-2 text-xs"
+														key={index}
+														onClick={action.action}
+														size="sm"
+														variant="outline"
 													>
 														{action.icon}
 														{action.label}
@@ -317,14 +317,14 @@ export const TestDashboardChatbot = () => {
 				</ScrollArea>
 			</CardContent>
 			<div className="border-t p-4">
-				<form onSubmit={handleSubmit} className="flex gap-2">
+				<form className="flex gap-2" onSubmit={handleSubmit}>
 					<Input
-						value={input}
+						className="flex-1"
 						onChange={(e) => setInput(e.target.value)}
 						placeholder="Ask me about your day, tasks, or meetings..."
-						className="flex-1"
+						value={input}
 					/>
-					<Button type="submit" size="sm" disabled={!input.trim()}>
+					<Button disabled={!input.trim()} size="sm" type="submit">
 						<Send className="h-4 w-4" />
 					</Button>
 				</form>

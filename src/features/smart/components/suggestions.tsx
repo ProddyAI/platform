@@ -160,11 +160,11 @@ export const Suggestions = ({
 				</div>
 				<div className="ml-auto">
 					<Button
-						variant="ghost"
-						size="sm"
 						className="h-6 px-2 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary"
-						onClick={refreshSuggestions}
 						disabled={isLoading}
+						onClick={refreshSuggestions}
+						size="sm"
+						variant="ghost"
 					>
 						{isLoading ? (
 							<>
@@ -181,11 +181,11 @@ export const Suggestions = ({
 				{suggestions.length > 0 ? (
 					suggestions.map((suggestion, index) => (
 						<Button
-							key={index}
-							variant="outline"
-							size="sm"
 							className="h-auto rounded-full border-primary/20 bg-primary/5 px-3 py-1 text-xs text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-foreground"
+							key={index}
 							onClick={() => onSelectSuggestion(suggestion)}
+							size="sm"
+							variant="outline"
 						>
 							{suggestion}
 						</Button>

@@ -182,7 +182,7 @@ export const CreateChannelModal = () => {
 	};
 
 	return (
-		<Dialog open={open || isPending} onOpenChange={handleClose}>
+		<Dialog onOpenChange={handleClose} open={open || isPending}>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Add a channel</DialogTitle>
@@ -193,7 +193,7 @@ export const CreateChannelModal = () => {
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className="space-y-4">
+				<form className="space-y-4" onSubmit={handleSubmit}>
 					<div className="space-y-4 py-4">
 						<div className="flex flex-col gap-2">
 							<div className="flex items-center justify-between">
@@ -205,42 +205,43 @@ export const CreateChannelModal = () => {
 							<div className="flex items-center gap-3">
 								<div className="flex-shrink-0 relative">
 									<input
-										ref={imageInputRef}
-										type="file"
 										accept="image/*"
-										onChange={handleIconImageUpload}
+										aria-label="Upload channel icon image"
 										className="hidden"
 										id="icon-upload"
-										aria-label="Upload channel icon image"
+										onChange={handleIconImageUpload}
+										ref={imageInputRef}
+										type="file"
 									/>
 									<button
-										type="button"
+										aria-label="Upload channel icon"
+										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+										disabled={isUploading}
 										onClick={() =>
 											!isUploading && imageInputRef.current?.click()
 										}
-										disabled={isUploading}
-										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
-										aria-label="Upload channel icon"
+										type="button"
 									>
 										{iconPreview || icon ? (
 											<>
 												{iconPreview ? (
 													<img
-														src={iconPreview}
 														alt="Channel icon preview"
 														className="h-full w-full object-cover rounded-sm"
+														src={iconPreview}
 													/>
 												) : (
 													<span
+														aria-label="Channel emoji icon"
 														className="text-4xl"
 														role="img"
-														aria-label="Channel emoji icon"
 													>
 														{icon}
 													</span>
 												)}
 												<button
-													type="button"
+													aria-label="Remove icon"
+													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 													onClick={(e) => {
 														e.stopPropagation();
 														if (iconPreview || iconImage) {
@@ -250,8 +251,7 @@ export const CreateChannelModal = () => {
 															setIcon(undefined);
 														}
 													}}
-													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-													aria-label="Remove icon"
+													type="button"
 												>
 													<X className="h-3.5 w-3.5" />
 												</button>
@@ -266,13 +266,13 @@ export const CreateChannelModal = () => {
 										)}
 									</button>
 									<EmojiPopover
-										onEmojiSelect={handleEmojiSelect}
 										hint="Select emoji icon"
+										onEmojiSelect={handleEmojiSelect}
 									>
 										<button
-											type="button"
-											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 											aria-label="Select emoji icon"
+											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+											type="button"
 										>
 											<Smile className="h-4 w-4" />
 										</button>
@@ -280,22 +280,22 @@ export const CreateChannelModal = () => {
 								</div>
 								<div className="flex-1">
 									<Label
-										htmlFor="name"
 										className="text-sm font-medium mb-1 block"
+										htmlFor="name"
 									>
 										Channel Name
 									</Label>
 									<Input
-										id="name"
-										value={name}
-										onChange={handleChange}
-										disabled={isPending}
-										required
 										autoFocus
-										minLength={3}
-										maxLength={20}
-										placeholder="e.g. plan-budget"
 										className="h-10"
+										disabled={isPending}
+										id="name"
+										maxLength={20}
+										minLength={3}
+										onChange={handleChange}
+										placeholder="e.g. plan-budget"
+										required
+										value={name}
 									/>
 									<p className="text-xs text-muted-foreground mt-1">
 										Max 5MB for images

@@ -194,24 +194,24 @@ export const NotesContent = ({
 
 	return (
 		<div
-			ref={pageContainerRef}
 			className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white" : "flex-col"}`}
+			ref={pageContainerRef}
 		>
 			<div className="flex flex-1 overflow-hidden">
 				{/* Enhanced Sidebar with categories - hidden in fullscreen */}
 				{!isFullScreen && (
 					<LiveSidebar
-						type="notes"
-						items={memoizedItems}
-						selectedItemId={activeNoteId}
-						onItemSelect={handleItemSelect}
+						channelId={channelId}
 						collapsed={sidebarCollapsed}
-						onToggleCollapse={memoizedToggleCollapse}
+						items={memoizedItems}
 						onCreateItem={onCreateNote}
 						onDeleteItem={handleDeleteItem}
+						onItemSelect={handleItemSelect}
 						onRenameItem={handleRenameItem}
+						onToggleCollapse={memoizedToggleCollapse}
+						selectedItemId={activeNoteId}
+						type="notes"
 						workspaceId={workspaceId}
-						channelId={channelId}
 					/>
 				)}
 
@@ -219,36 +219,36 @@ export const NotesContent = ({
 				<div className="flex-1 flex flex-col overflow-hidden dark:bg-[hsl(var(--card-accent))]">
 					{/* Live Header - always visible */}
 					<LiveHeader
-						type="notes"
-						title={isTyping ? localTitle : activeNote?.title || "Untitled Note"}
-						onTitleChange={handleNoteTitleChange}
-						onSave={handleSave}
+						createdAt={activeNote?.createdAt}
 						hasUnsavedChanges={hasUnsavedChanges}
 						isFullScreen={isFullScreen}
-						toggleFullScreen={memoizedToggleFullScreen}
 						onExport={memoizedOnExport}
-						tags={activeNote?.tags || []}
+						onSave={handleSave}
 						onTagsChange={memoizedOnTagsChange}
-						createdAt={activeNote?.createdAt}
-						updatedAt={activeNote?.updatedAt}
-						showTags={true}
+						onTitleChange={handleNoteTitleChange}
 						showFullScreenToggle={true}
+						showTags={true}
+						tags={activeNote?.tags || []}
+						title={isTyping ? localTitle : activeNote?.title || "Untitled Note"}
+						toggleFullScreen={memoizedToggleFullScreen}
+						type="notes"
+						updatedAt={activeNote?.updatedAt}
 					/>
 
 					{/* Notes Editor */}
 					<div className="flex-1 overflow-hidden">
 						{memoizedNote && activeNoteId ? (
 							<BlockNoteNotesEditor
+								channelId={channelId}
+								isFullScreen={isFullScreen}
+								isLoading={isTyping || hasUnsavedChanges}
 								note={memoizedNote}
-								onUpdate={memoizedOnUpdate}
-								onTitleChange={handleNoteTitleChange}
 								onContentChange={handleNoteContentChange}
 								onSaveNote={handleSave}
-								isLoading={isTyping || hasUnsavedChanges}
-								workspaceId={workspaceId}
-								channelId={channelId}
+								onTitleChange={handleNoteTitleChange}
+								onUpdate={memoizedOnUpdate}
 								toggleFullScreen={memoizedToggleFullScreen}
-								isFullScreen={isFullScreen}
+								workspaceId={workspaceId}
 							/>
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground">
@@ -261,13 +261,13 @@ export const NotesContent = ({
 										Select a note from the sidebar or create a new one
 									</div>
 									<Button
+										className="gap-2"
 										onClick={() => {
 											onCreateNote().catch((error) => {
 												console.error("Failed to create note:", error);
 												toast.error("Failed to create note");
 											});
 										}}
-										className="gap-2"
 									>
 										<Plus className="h-4 w-4" />
 										Create Note
@@ -282,11 +282,11 @@ export const NotesContent = ({
 			{/* Audio Room Component */}
 			{activeNote && (
 				<StreamAudioRoom
+					canvasName={activeNote.title || "Notes Audio Room"}
+					channelId={channelId}
+					isFullScreen={isFullScreen}
 					roomId={activeNote._id}
 					workspaceId={workspaceId}
-					channelId={channelId}
-					canvasName={activeNote.title || "Notes Audio Room"}
-					isFullScreen={isFullScreen}
 				/>
 			)}
 
@@ -294,8 +294,8 @@ export const NotesContent = ({
 			{activeNote && (
 				<ExportNoteDialog
 					isOpen={showExportDialog}
-					onClose={() => setShowExportDialog(false)}
 					note={activeNote}
+					onClose={() => setShowExportDialog(false)}
 				/>
 			)}
 		</div>

@@ -68,7 +68,7 @@ export const SaveCanvasDialog = ({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={handleClose}>
+		<Dialog onOpenChange={handleClose} open={open}>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Save Canvas</DialogTitle>
@@ -78,26 +78,26 @@ export const SaveCanvasDialog = ({
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className="space-y-4">
+				<form className="space-y-4" onSubmit={handleSubmit}>
 					<Input
-						value={fileName}
-						onChange={(e) => setFileName(e.target.value)}
-						disabled={isSaving}
-						required
 						autoFocus
+						disabled={isSaving}
+						onChange={(e) => setFileName(e.target.value)}
 						placeholder="Canvas name"
+						required
+						value={fileName}
 					/>
 
 					<DialogFooter>
 						<Button
+							disabled={isSaving}
+							onClick={handleClose}
 							type="button"
 							variant="outline"
-							onClick={handleClose}
-							disabled={isSaving}
 						>
 							Cancel
 						</Button>
-						<Button type="submit" disabled={isSaving || !fileName.trim()}>
+						<Button disabled={isSaving || !fileName.trim()} type="submit">
 							{isSaving ? "Saving..." : "Save"}
 						</Button>
 					</DialogFooter>

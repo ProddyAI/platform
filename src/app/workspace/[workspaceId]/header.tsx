@@ -52,10 +52,10 @@ export const WorkspaceHeader = ({
 	return (
 		<>
 			<InviteModal
+				joinCode={workspace.joinCode}
+				name={workspace.name}
 				open={inviteOpen}
 				setOpen={setInviteOpen}
-				name={workspace.name}
-				joinCode={workspace.joinCode}
 			/>
 
 			<div
@@ -68,11 +68,11 @@ export const WorkspaceHeader = ({
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							{isCollapsed ? (
-								<Hint label={workspace.name} side="right" align="center">
+								<Hint align="center" label={workspace.name} side="right">
 									<Button
-										variant="ghost"
 										className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
 										size="icon"
+										variant="ghost"
 									>
 										<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
 											{workspace.name.charAt(0).toUpperCase()}
@@ -81,9 +81,9 @@ export const WorkspaceHeader = ({
 								</Hint>
 							) : (
 								<Button
-									variant="ghost"
 									className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
 									size="lg"
+									variant="ghost"
 								>
 									<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
 										{workspace.name.charAt(0).toUpperCase()}
@@ -102,9 +102,9 @@ export const WorkspaceHeader = ({
 						</DropdownMenuTrigger>
 
 						<DropdownMenuContent
-							side="bottom"
 							align="start"
 							className="w-64 p-2"
+							side="bottom"
 						>
 							<DropdownMenuItem className="cursor-pointer capitalize rounded-[8px] p-3 mb-1 hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground">
 								<div className="relative mr-3 flex size-10 items-center justify-center overflow-hidden rounded-[10px] bg-secondary text-xl font-semibold text-secondary-foreground shadow-md">
@@ -150,7 +150,7 @@ export const WorkspaceHeader = ({
 						</DropdownMenuContent>
 					</DropdownMenu>
 
-					<Dialog open={switchOpen} onOpenChange={setSwitchOpen}>
+					<Dialog onOpenChange={setSwitchOpen} open={switchOpen}>
 						{" "}
 						{/* updated here */}
 						<DialogContent className="overflow-hidden p-0 rounded-[12px] border-0 shadow-xl">
@@ -166,9 +166,9 @@ export const WorkspaceHeader = ({
 							<div className="flex flex-col gap-y-3 p-5">
 								{workspaces?.map((item) => (
 									<button
+										className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border bg-card px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group"
 										key={item._id}
 										onClick={() => onWorkspaceClick(item._id)}
-										className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border bg-card px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group"
 									>
 										<div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg">
 											{item.name.charAt(0).toUpperCase()}
@@ -192,11 +192,11 @@ export const WorkspaceHeader = ({
 								))}
 
 								<button
+									className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border border-dashed bg-card/50 px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group mt-2"
 									onClick={() => {
 										setSwitchOpen(false); // updated here
 										setCreateOpen(true);
 									}}
-									className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border border-dashed bg-card/50 px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group mt-2"
 								>
 									<div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg">
 										<Plus className="size-5 transition-transform duration-200 group-hover:scale-125" />

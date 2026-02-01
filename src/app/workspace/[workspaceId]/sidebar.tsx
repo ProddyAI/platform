@@ -75,7 +75,7 @@ const DroppableItem = ({
 			>
 				{isCollapsed ? (
 					<div className="relative flex-shrink-0">
-						<Hint label={label} side="right" align="center">
+						<Hint align="center" label={label} side="right">
 							<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
 						</Hint>
 					</div>
@@ -94,15 +94,15 @@ const DroppableItem = ({
 						/>
 
 						{onNew && (
-							<Hint label={hint} side="top" align="center">
+							<Hint align="center" label={hint} side="top">
 								<Button
+									className="h-7 w-7 flex-shrink-0 p-0 text-secondary-foreground/80 opacity-0 transition-all group-hover:opacity-100 rounded-[8px] hover:bg-secondary-foreground/10"
 									onClick={(e) => {
 										e.stopPropagation();
 										onNew();
 									}}
-									variant="ghost"
 									size="sm"
-									className="h-7 w-7 flex-shrink-0 p-0 text-secondary-foreground/80 opacity-0 transition-all group-hover:opacity-100 rounded-[8px] hover:bg-secondary-foreground/10"
+									variant="ghost"
 								>
 									<PlusIcon className="size-4 transition-transform duration-200 hover:scale-110" />
 								</Button>
@@ -206,33 +206,33 @@ export const WorkspaceSidebar = ({
 			{/* Workspace Header */}
 			<div className="flex-shrink-0">
 				<WorkspaceHeader
-					workspace={workspace}
 					isAdmin={member.role === "admin"}
 					isCollapsed={isCollapsed}
+					workspace={workspace}
 				/>
 			</div>
 
 			{/* Dashboard Link */}
 			<div className="mt-4 px-2 md:px-4">
 				<SidebarItem
-					label="Dashboard"
+					href={`/workspace/${workspaceId}/dashboard`}
 					icon={LayoutDashboard}
 					id="dashboard"
-					href={`/workspace/${workspaceId}/dashboard`}
 					isActive={pathname.includes("/dashboard")}
 					isCollapsed={isCollapsed}
+					label="Dashboard"
 				/>
 			</div>
 
 			{/* Proddy AI Link */}
 			<div className="mt-2 px-2 md:px-4">
 				<SidebarItem
-					label="Proddy AI"
+					href={`/workspace/${workspaceId}/assistant`}
 					icon={Bot}
 					id="assistant"
-					href={`/workspace/${workspaceId}/assistant`}
 					isActive={pathname.includes("/assistant")}
 					isCollapsed={isCollapsed}
+					label="Proddy AI"
 				/>
 			</div>
 
@@ -240,22 +240,22 @@ export const WorkspaceSidebar = ({
 			{channels && channels.length > 0 && (
 				<div className="mt-2">
 					<DroppableItem
-						label="Channels"
 						hint="Channels"
 						icon={Hash}
 						isCollapsed={isCollapsed}
 						isExpanded={expandedSections.Channels}
+						label="Channels"
 						onToggle={handleSectionToggle}
 					>
 						{channels.map((item) => (
 							<ChannelItem
-								key={item._id}
-								id={item._id}
-								label={item.name}
 								icon={item.icon}
 								iconImageUrl={item.iconImageUrl}
+								id={item._id}
 								isActive={channelId === item._id}
 								isCollapsed={isCollapsed}
+								key={item._id}
+								label={item.name}
 							/>
 						))}
 
@@ -272,7 +272,7 @@ export const WorkspaceSidebar = ({
 							>
 								{isCollapsed ? (
 									<div className="relative flex-shrink-0">
-										<Hint label="New Channel" side="right" align="center">
+										<Hint align="center" label="New Channel" side="right">
 											<div className="flex items-center justify-center">
 												<PlusIcon className="size-4 text-secondary-foreground/80" />
 											</div>
@@ -294,21 +294,21 @@ export const WorkspaceSidebar = ({
 			{members && members.length > 0 && (
 				<div className="mt-2">
 					<DroppableItem
-						label="Members"
 						hint="Members"
 						icon={Users}
 						isCollapsed={isCollapsed}
 						isExpanded={expandedSections.Members}
+						label="Members"
 						onToggle={handleSectionToggle}
 					>
 						{members.map((item) => (
 							<MemberItem
-								key={item._id}
 								id={item._id}
-								label={item.user.name}
 								image={item.user.image}
 								isActive={item._id === memberId}
 								isCollapsed={isCollapsed}
+								key={item._id}
+								label={item.user.name}
 							/>
 						))}
 					</DroppableItem>
@@ -321,54 +321,54 @@ export const WorkspaceSidebar = ({
 			{/* Static Items */}
 			<div className="flex flex-col gap-2 px-4">
 				<SidebarItem
-					label="Outbox"
+					href={`/workspace/${workspaceId}/outbox`}
 					icon={SendHorizonal}
 					id="outbox"
-					href={`/workspace/${workspaceId}/outbox`}
 					isActive={pathname.includes("/outbox")}
 					isCollapsed={isCollapsed}
+					label="Outbox"
 				/>
 				<SidebarItem
-					label="Threads"
+					href={`/workspace/${workspaceId}/threads`}
 					icon={MessageSquareText}
 					id="threads"
-					href={`/workspace/${workspaceId}/threads`}
 					isActive={pathname.includes("/threads")}
 					isCollapsed={isCollapsed}
+					label="Threads"
 				/>
 				<SidebarItem
-					label="Tasks"
+					href={`/workspace/${workspaceId}/tasks`}
 					icon={CheckSquare}
 					id="tasks"
-					href={`/workspace/${workspaceId}/tasks`}
 					isActive={pathname.includes("/tasks")}
 					isCollapsed={isCollapsed}
+					label="Tasks"
 				/>
 				<SidebarItem
-					label="Calendar"
+					href={`/workspace/${workspaceId}/calendar`}
 					icon={CalendarIcon}
 					id="calendar"
-					href={`/workspace/${workspaceId}/calendar`}
 					isActive={pathname.includes("/calendar")}
 					isCollapsed={isCollapsed}
+					label="Calendar"
 				/>
 				{(member.role === "admin" || member.role === "owner") && (
 					<SidebarItem
-						label="Reports"
+						href={`/workspace/${workspaceId}/reports`}
 						icon={BarChart}
 						id="reports"
-						href={`/workspace/${workspaceId}/reports`}
 						isActive={pathname.includes("/reports")}
 						isCollapsed={isCollapsed}
+						label="Reports"
 					/>
 				)}
 				<SidebarItem
-					label="Manage"
+					href={`/workspace/${workspaceId}/manage`}
 					icon={Settings}
 					id="manage"
-					href={`/workspace/${workspaceId}/manage`}
 					isActive={pathname.includes("/manage")}
 					isCollapsed={isCollapsed}
+					label="Manage"
 				/>
 			</div>
 
@@ -379,10 +379,10 @@ export const WorkspaceSidebar = ({
 					side="right"
 				>
 					<Button
-						onClick={() => setIsCollapsed(!isCollapsed)}
-						variant="ghost"
-						size="sm"
 						className="h-8 w-8 rounded-full p-0 flex items-center justify-center hover:bg-secondary-foreground/10"
+						onClick={() => setIsCollapsed(!isCollapsed)}
+						size="sm"
+						variant="ghost"
 					>
 						{isCollapsed ? (
 							<PanelLeftOpen className="size-4 text-secondary-foreground/80" />

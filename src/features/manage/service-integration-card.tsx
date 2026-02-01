@@ -358,11 +358,11 @@ export const ServiceIntegrationCard = ({
 
 						<div className="flex gap-2">
 							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleRefresh}
-								disabled={isConnecting}
 								className="bg-blue-100 border-blue-200 text-blue-700 hover:bg-blue-200 hover:border-blue-300"
+								disabled={isConnecting}
+								onClick={handleRefresh}
+								size="sm"
+								variant="outline"
 							>
 								{isConnecting ? (
 									<>
@@ -378,11 +378,11 @@ export const ServiceIntegrationCard = ({
 							</Button>
 
 							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleDisconnect}
-								disabled={isDisconnecting}
 								className="bg-red-100 border-red-200 text-red-700 hover:bg-red-200 hover:border-red-300"
+								disabled={isDisconnecting}
+								onClick={handleDisconnect}
+								size="sm"
+								variant="outline"
 							>
 								{isDisconnecting ? (
 									<>
@@ -401,9 +401,9 @@ export const ServiceIntegrationCard = ({
 				) : (
 					<div className="space-y-3">
 						<Button
-							onClick={handleCreateAuthConfig}
-							disabled={isConnecting}
 							className={`w-full ${toolkits[toolkit].color} text-white`}
+							disabled={isConnecting}
+							onClick={handleCreateAuthConfig}
 						>
 							{isConnecting ? (
 								<>

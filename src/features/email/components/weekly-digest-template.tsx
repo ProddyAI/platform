@@ -68,11 +68,11 @@ export const WeeklyDigestTemplate: React.FC<
 			<Body style={main}>
 				<Container style={container}>
 					<Img
-						src="https://proddy.tech/logo-nobg.png"
-						width="40"
-						height="40"
 						alt="Proddy"
+						height="40"
+						src="https://proddy.tech/logo-nobg.png"
 						style={logo}
+						width="40"
 					/>
 					<Heading style={heading}>Your Weekly Digest</Heading>
 
@@ -151,7 +151,7 @@ export const WeeklyDigestTemplate: React.FC<
 								)}
 
 								<Section style={buttonContainer}>
-									<Button style={button} href={workspace.workspaceUrl}>
+									<Button href={workspace.workspaceUrl} style={button}>
 										View {workspace.workspaceName}
 									</Button>
 								</Section>

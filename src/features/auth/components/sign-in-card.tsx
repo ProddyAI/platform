@@ -67,39 +67,39 @@ export const SignInCard = ({
 			)}
 
 			<CardContent className="space-y-5 px-0 pb-0">
-				<form onSubmit={handleSignIn} className="space-y-2.5">
+				<form className="space-y-2.5" onSubmit={handleSignIn}>
 					<Input
 						disabled={pending}
-						value={email}
 						onChange={(e) => setEmail(e.target.value)}
 						placeholder="Email"
-						type="email"
 						required
+						type="email"
+						value={email}
 					/>
 
 					<Input
 						disabled={pending}
-						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						placeholder="Password"
-						type="password"
 						required
+						type="password"
+						value={password}
 					/>
 
 					<div className="flex justify-end">
 						<Link
-							href="/forgot-password"
 							className="text-xs text-muted-foreground hover:text-secondary transition-colors"
+							href="/forgot-password"
 						>
 							Forgot Password?
 						</Link>
 					</div>
 
 					<Button
-						type="submit"
 						className="bg-primary w-full transition-standard hover:shadow-lg hover:bg-primary/90"
-						size="lg"
 						disabled={pending}
+						size="lg"
+						type="submit"
 					>
 						Continue
 					</Button>
@@ -109,22 +109,22 @@ export const SignInCard = ({
 
 				<div className="flex flex-col gap-y-2.5">
 					<Button
+						className="relative w-full transition-standard hover:shadow-md group rounded-[10px]"
 						disabled={pending}
 						onClick={() => handleOAuthSignIn("google")}
-						variant="outline"
 						size="lg"
-						className="relative w-full transition-standard hover:shadow-md group rounded-[10px]"
+						variant="outline"
 					>
 						<FcGoogle className="absolute left-2.5 top-3 size-5 transition-transform duration-200 group-hover:scale-110" />
 						Continue with Google
 					</Button>
 
 					<Button
+						className="relative w-full transition-standard hover:shadow-md group rounded-[10px]"
 						disabled={pending}
 						onClick={() => handleOAuthSignIn("github")}
-						variant="outline"
 						size="lg"
-						className="relative w-full transition-standard hover:shadow-md group rounded-[10px]"
+						variant="outline"
 					>
 						<FaGithub className="absolute left-2.5 top-3 size-5 transition-transform duration-200 group-hover:scale-110" />
 						Continue with GitHub
@@ -135,16 +135,16 @@ export const SignInCard = ({
 					Don&apos;t have an account?{" "}
 					{isStandalone ? (
 						<Link
-							href="/signup"
 							className="cursor-pointer font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+							href="/signup"
 						>
 							Sign up
 						</Link>
 					) : (
 						<button
+							className="cursor-pointer font-medium text-primary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
 							disabled={pending}
 							onClick={() => setState?.("signUp")}
-							className="cursor-pointer font-medium text-primary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
 						>
 							Sign up
 						</button>

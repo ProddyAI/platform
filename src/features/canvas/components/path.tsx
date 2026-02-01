@@ -35,16 +35,16 @@ export const Path = ({
 	return (
 		<path
 			className="drop-shadow-md"
-			onPointerDown={onPointerDown}
 			d={pathData}
+			fill={fill}
+			onPointerDown={onPointerDown}
+			stroke={stroke}
+			strokeWidth={1}
 			style={{
 				transform: `translate(${x}px, ${y}px)`,
 			}}
 			x={0}
 			y={0}
-			fill={fill}
-			stroke={stroke}
-			strokeWidth={1}
 		/>
 	);
 };

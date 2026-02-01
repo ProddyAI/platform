@@ -57,23 +57,23 @@ export const Note = ({
 
 	return (
 		<foreignObject
-			x={x}
-			y={y}
-			width={width}
+			className="shadow-md drop-shadow-xl"
 			height={height}
 			onPointerDown={(e) => onPointerDown(e, id)}
 			style={{
 				outline: selectionColor ? `1px solid ${selectionColor}` : "none",
 				backgroundColor: fill ? colorToCSS(fill) : "#000",
 			}}
-			className="shadow-md drop-shadow-xl"
+			width={width}
+			x={x}
+			y={y}
 		>
 			<ContentEditable
-				html={value || "Text"}
-				onChange={handleContentChange}
 				className={cn(
 					"h-full w-full flex items-center justify-center text-center outline-none"
 				)}
+				html={value || "Text"}
+				onChange={handleContentChange}
 				style={{
 					fontSize: calculateFontSize(width, height),
 					color: fill ? getContrastingTextColor(fill) : "#000",

@@ -97,7 +97,7 @@ export const TeamStatusWidget = ({
 					<Users className="h-5 w-5 text-primary" />
 					<h3 className="font-medium">Team Status</h3>
 					{!isEditMode && onlineCount > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge className="ml-2" variant="default">
 							{onlineCount} online
 						</Badge>
 					)}
@@ -108,14 +108,14 @@ export const TeamStatusWidget = ({
 				<ScrollArea className="h-[250px] rounded-md border-2">
 					<div className="space-y-2 p-4">
 						{teamMembers.map((teamMember) => (
-							<Card key={teamMember._id} className="overflow-hidden border-2">
+							<Card className="overflow-hidden border-2" key={teamMember._id}>
 								<CardContent className="p-3">
 									<div className="flex items-start gap-3">
 										<div className="relative">
 											<Avatar className="h-8 w-8">
 												<AvatarImage
-													src={teamMember.user?.image}
 													alt={teamMember.user?.name ?? "User avatar"}
+													src={teamMember.user?.image}
 												/>
 												<AvatarFallback>
 													{teamMember.user?.name
@@ -137,7 +137,7 @@ export const TeamStatusWidget = ({
 													<p className="font-medium">
 														{teamMember.user?.name ?? "Unknown User"}
 													</p>
-													<Badge variant="outline" className="border-2 text-xs">
+													<Badge className="border-2 text-xs" variant="outline">
 														{teamMember.role}
 													</Badge>
 												</div>
@@ -156,10 +156,10 @@ export const TeamStatusWidget = ({
 												</p>
 											)}
 											<Button
-												variant="ghost"
-												size="sm"
 												className="mt-1 w-full justify-start text-primary"
 												onClick={() => handleStartChat(teamMember.userId)}
+												size="sm"
+												variant="ghost"
 											>
 												<MessageSquare className="mr-2 h-3.5 w-3.5" />
 												Message

@@ -47,19 +47,19 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "User not found" }, { status: 401 });
 		}
 
-		// Verify user is a member of the workspace
-		const members = await convex.query(api.members.get, {
+		// Get current user's member in this workspace (so we store the connection under the connecting user)
+		const currentMember = await convex.query(api.members.current, {
 			workspaceId: workspaceId as Id<"workspaces">,
 		});
 
-		if (!members || members.length === 0) {
+		if (!currentMember?._id) {
 			return NextResponse.json(
 				{ error: "Access denied: Not a member of this workspace" },
 				{ status: 403 }
 			);
 		}
 
-		const memberId = members[0]._id;
+		const memberId = currentMember._id;
 
 		console.log(
 			`[Connection Complete] Completing ${app} connection for workspace ${workspaceId}`
@@ -125,9 +125,10 @@ export async function POST(req: NextRequest) {
 				});
 			}
 
-			// Store connected account
+			// Store connected account (with memberId so Convex chatbot and status can find it for this member)
 			await convex.mutation(api.integrations.storeConnectedAccount, {
 				workspaceId: workspaceId as Id<"workspaces">,
+				memberId: memberId as Id<"members">,
 				authConfigId: authConfigId,
 				userId: entityId,
 				composioAccountId: connectedAccount.id,

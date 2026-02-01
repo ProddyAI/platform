@@ -134,12 +134,12 @@ export const SelectionTools = memo(
 
 				<div className="flex flex-col gap-y-0.5">
 					<Hint label="Bring to front">
-						<Button onClick={moveToFront} variant="ghost" size="icon">
+						<Button onClick={moveToFront} size="icon" variant="ghost">
 							<BringToFront />
 						</Button>
 					</Hint>
 					<Hint label="Bring to back" side="bottom">
-						<Button onClick={moveToBack} variant="ghost" size="icon">
+						<Button onClick={moveToBack} size="icon" variant="ghost">
 							<SendToBack />
 						</Button>
 					</Hint>
@@ -147,7 +147,7 @@ export const SelectionTools = memo(
 
 				<div className="flex items-center pl-2 ml-2 border-l border-neutral-200">
 					<Hint label="Delete">
-						<Button variant="ghost" size="icon" onClick={deleteLayers}>
+						<Button onClick={deleteLayers} size="icon" variant="ghost">
 							<Trash2 />
 						</Button>
 					</Hint>

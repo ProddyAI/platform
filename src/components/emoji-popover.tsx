@@ -38,11 +38,11 @@ export const EmojiPopover = ({
 
 	return (
 		<TooltipProvider>
-			<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+			<Popover onOpenChange={setPopoverOpen} open={popoverOpen}>
 				<Tooltip
-					open={tooltipOpen}
-					onOpenChange={setTooltipOpen}
 					delayDuration={50}
+					onOpenChange={setTooltipOpen}
+					open={tooltipOpen}
 				>
 					<PopoverTrigger asChild>
 						<TooltipTrigger asChild>{children}</TooltipTrigger>

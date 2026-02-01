@@ -52,11 +52,11 @@ export const HorizontalBarChart = ({
 
 					return (
 						<div
-							key={index}
 							className="space-y-1"
+							key={index}
+							onClick={() => onBarClick?.(item.label, item.value, index)}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
-							onClick={() => onBarClick?.(item.label, item.value, index)}
 						>
 							<div className="flex justify-between items-center">
 								<span className="text-sm truncate">{item.label}</span>

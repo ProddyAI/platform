@@ -162,8 +162,8 @@ export const TestLiveCursors = ({
 		<div className="fixed inset-0 pointer-events-none z-50">
 			{cursors.map((cursor) => (
 				<div
-					key={cursor.id}
 					className="absolute"
+					key={cursor.id}
 					style={{
 						transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)`,
 						zIndex: 9999,

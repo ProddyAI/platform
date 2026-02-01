@@ -211,9 +211,9 @@ export default function ThreadsPage() {
 		<>
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 					size="sm"
+					variant="ghost"
 				>
 					<MessageSquareText className="mr-2 size-5" />
 					<span className="truncate">Threads</span>
@@ -245,31 +245,31 @@ export default function ThreadsPage() {
 							<div className="relative flex-1">
 								<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 								<Input
-									type="search"
-									placeholder="Search threads..."
 									className="pl-8"
-									value={searchQuery}
 									onChange={(e) => setSearchQuery(e.target.value)}
+									placeholder="Search threads..."
+									type="search"
+									value={searchQuery}
 								/>
 							</div>
 
-							<Tabs defaultValue="all" className="w-[300px]">
+							<Tabs className="w-[300px]" defaultValue="all">
 								<TabsList className="grid w-full grid-cols-3">
 									<TabsTrigger
-										value="all"
 										onClick={() => setActiveFilter("all")}
+										value="all"
 									>
 										All
 									</TabsTrigger>
 									<TabsTrigger
-										value="channels"
 										onClick={() => setActiveFilter("channels")}
+										value="channels"
 									>
 										Channels
 									</TabsTrigger>
 									<TabsTrigger
-										value="direct"
 										onClick={() => setActiveFilter("direct")}
+										value="direct"
 									>
 										Direct
 									</TabsTrigger>
@@ -377,8 +377,8 @@ export default function ThreadsPage() {
 
 		return (
 			<Card
-				key={thread.message._id}
 				className="group hover:shadow-md transition-all duration-200 cursor-pointer border-2"
+				key={thread.message._id}
 				onClick={() => handleOpenThread(thread)}
 			>
 				<CardContent className="p-4">
@@ -396,12 +396,12 @@ export default function ThreadsPage() {
 										{thread.parentUser.name}
 									</span>
 									<Badge
-										variant="outline"
 										className={`rounded-full text-xs flex-shrink-0 ${
 											thread.context.type === "channel"
 												? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
 												: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300"
 										}`}
+										variant="outline"
 									>
 										{thread.context.type === "channel" ? (
 											<span className="flex items-center gap-1">
@@ -471,13 +471,13 @@ export default function ThreadsPage() {
 							</span>
 						</div>
 						<Button
-							variant="ghost"
-							size="sm"
 							className="h-7 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 							onClick={(e) => {
 								e.stopPropagation();
 								handleOpenThread(thread);
 							}}
+							size="sm"
+							variant="ghost"
 						>
 							Open
 						</Button>

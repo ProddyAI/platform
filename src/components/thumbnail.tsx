@@ -11,15 +11,15 @@ export const Thumbnail = ({ url }: ThumbnailProps) => {
 		<Dialog>
 			<DialogTrigger>
 				<div className="relative my-2 max-w-[360px] cursor-zoom-in overflow-hidden rounded-lg border">
-					<img src={url} className="size-full rounded-md object-cover" />
+					<img className="size-full rounded-md object-cover" src={url} />
 				</div>
 			</DialogTrigger>
 
 			<DialogContent
-				isThumbnail
 				className="max-w-[800px] border-none bg-transparent p-0 shadow-none"
+				isThumbnail
 			>
-				<img src={url} className="size-full rounded-md object-cover" />
+				<img className="size-full rounded-md object-cover" src={url} />
 			</DialogContent>
 		</Dialog>
 	);

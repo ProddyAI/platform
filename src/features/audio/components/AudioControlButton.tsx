@@ -46,12 +46,12 @@ export const AudioControlButton = ({
 
 	return (
 		<Button
-			onClick={onClick}
-			disabled={disabled}
-			variant="ghost"
-			size={variant === "action" ? "default" : "icon"}
 			className={cn(getButtonStyles(), className)}
+			disabled={disabled}
+			onClick={onClick}
+			size={variant === "action" ? "default" : "icon"}
 			title={label}
+			variant="ghost"
 		>
 			<Icon className={cn(variant === "action" ? "h-5 w-5" : "h-5 w-5")} />
 			{variant === "action" && <span className="text-sm">{label}</span>}

@@ -130,14 +130,14 @@ export const TaskItem = ({
 		return (
 			<TaskEditForm
 				id={id}
-				workspaceId={workspaceId}
-				initialTitle={title}
+				initialCategoryId={categoryId}
 				initialDescription={description}
 				initialDueDate={dueDate ? new Date(dueDate) : undefined}
 				initialPriority={priority}
-				initialCategoryId={categoryId}
+				initialTitle={title}
 				onCancel={() => setIsEditing(false)}
 				onSave={() => setIsEditing(false)}
+				workspaceId={workspaceId}
 			/>
 		);
 	}
@@ -156,9 +156,9 @@ export const TaskItem = ({
 		>
 			<div className="flex items-start gap-4">
 				<button
-					onClick={handleToggleCompletion}
-					className="mt-0.5 flex-shrink-0 focus:outline-none group/checkbox"
 					aria-label={completed ? "Mark as incomplete" : "Mark as complete"}
+					className="mt-0.5 flex-shrink-0 focus:outline-none group/checkbox"
+					onClick={handleToggleCompletion}
 				>
 					{getStatusIcon(completed)}
 				</button>
@@ -179,10 +179,10 @@ export const TaskItem = ({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
-											variant="ghost"
-											size="iconSm"
-											onClick={() => setIsEditing(true)}
 											className="h-8 w-8 rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+											onClick={() => setIsEditing(true)}
+											size="iconSm"
+											variant="ghost"
 										>
 											<Edit className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
 										</Button>
@@ -196,11 +196,11 @@ export const TaskItem = ({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
-											variant="ghost"
-											size="iconSm"
-											onClick={handleDelete}
-											disabled={isDeleting}
 											className="h-8 w-8 rounded-full bg-gray-50 hover:bg-red-100 text-gray-600 hover:text-red-600 dark:bg-gray-800 dark:hover:bg-red-900/30 dark:text-gray-400 dark:hover:text-red-400"
+											disabled={isDeleting}
+											onClick={handleDelete}
+											size="iconSm"
+											variant="ghost"
 										>
 											<Trash className="h-3.5 w-3.5" />
 										</Button>
@@ -230,13 +230,13 @@ export const TaskItem = ({
 						{/* Category badge */}
 						{category && (
 							<Badge
-								variant="outline"
 								className="text-xs font-medium px-2 py-0.5 rounded-full border-2"
 								style={{
 									borderColor: category.color,
 									color: category.color,
 									backgroundColor: `${category.color}15`,
 								}}
+								variant="outline"
 							>
 								{category.name}
 							</Badge>

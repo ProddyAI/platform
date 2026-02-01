@@ -187,9 +187,9 @@ const TestCalendarPage = () => {
 			<div className="border-b bg-primary p-4">
 				<div className="flex items-center justify-between">
 					<Button
-						variant="ghost"
 						className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 						size="sm"
+						variant="ghost"
 					>
 						<CalendarIcon className="mr-2 size-5" />
 						<span className="truncate">Calendar</span>
@@ -203,10 +203,6 @@ const TestCalendarPage = () => {
 				{/* Specific Calendar Header */}
 				<TestCalendarHeader
 					currentDate={currentDate}
-					onPreviousMonth={handlePreviousMonth}
-					onNextMonth={handleNextMonth}
-					filterOptions={filterOptions}
-					onFilterChange={setFilterOptions}
 					eventCounts={{
 						total: allCurrentMonthEvents.length,
 						meeting: allCurrentMonthEvents.filter((e) => e.type === "meeting")
@@ -219,6 +215,10 @@ const TestCalendarPage = () => {
 						social: allCurrentMonthEvents.filter((e) => e.type === "social")
 							.length,
 					}}
+					filterOptions={filterOptions}
+					onFilterChange={setFilterOptions}
+					onNextMonth={handleNextMonth}
+					onPreviousMonth={handlePreviousMonth}
 				/>
 
 				<div className="flex-1 overflow-auto p-4">
@@ -234,8 +234,7 @@ const TestCalendarPage = () => {
 									</span>
 								</div>
 								<Button
-									variant="outline"
-									size="sm"
+									className="text-blue-600 border-blue-300 hover:bg-blue-100"
 									onClick={() =>
 										setFilterOptions({
 											meeting: true,
@@ -245,7 +244,8 @@ const TestCalendarPage = () => {
 											social: true,
 										})
 									}
-									className="text-blue-600 border-blue-300 hover:bg-blue-100"
+									size="sm"
+									variant="outline"
 								>
 									Clear Filters
 								</Button>
@@ -253,12 +253,12 @@ const TestCalendarPage = () => {
 							<div className="mt-2 flex flex-wrap gap-2">
 								{Object.entries(filterOptions).map(([type, enabled]) => (
 									<Badge
-										key={type}
-										variant={enabled ? "default" : "secondary"}
 										className={cn(
 											"text-xs capitalize",
 											!enabled && "opacity-50"
 										)}
+										key={type}
+										variant={enabled ? "default" : "secondary"}
 									>
 										{type}: {enabled ? "On" : "Off"}
 									</Badge>
@@ -274,8 +274,8 @@ const TestCalendarPage = () => {
 							<div className="grid grid-cols-7 gap-px border-b bg-muted text-center">
 								{weekdays.map((day) => (
 									<div
-										key={day}
 										className="bg-background p-2 text-xs font-medium text-muted-foreground"
+										key={day}
 									>
 										{day}
 									</div>
@@ -286,12 +286,12 @@ const TestCalendarPage = () => {
 							<div className="grid h-[calc(100%-1rem)] grid-cols-7 grid-rows-6 gap-px bg-muted">
 								{weeks.flat().map((dayObj, index) => (
 									<div
-										key={index}
 										className={`relative bg-background p-1 ${
 											dayObj.isCurrentMonth
 												? ""
 												: "text-muted-foreground opacity-50"
 										}`}
+										key={index}
 									>
 										{dayObj.day && (
 											<>
@@ -320,9 +320,9 @@ const TestCalendarPage = () => {
 															)
 															.map((event) => (
 																<button
+																	className={`block rounded-sm p-1 text-[10px] leading-tight transition-colors text-left ${getEventTypeColor(event.type)} hover:opacity-80`}
 																	key={event.id}
 																	onClick={() => handleEventClick(event)}
-																	className={`block rounded-sm p-1 text-[10px] leading-tight transition-colors text-left ${getEventTypeColor(event.type)} hover:opacity-80`}
 																	title={`${event.title} - ${format(event.date, "h:mm a")} (Click to view related tasks)`}
 																>
 																	<div className="flex items-center gap-1">
@@ -595,9 +595,9 @@ const TestCalendarPage = () => {
 									</div>
 								</div>
 								<Button
-									variant="ghost"
-									size="sm"
 									onClick={() => setSelectedEvent(null)}
+									size="sm"
+									variant="ghost"
 								>
 									×
 								</Button>
@@ -646,13 +646,13 @@ const TestCalendarPage = () => {
 							{/* Action Buttons */}
 							<div className="flex gap-2 pt-2">
 								<Button
-									variant="outline"
-									onClick={() => setSelectedEvent(null)}
 									className="flex-1"
+									onClick={() => setSelectedEvent(null)}
+									variant="outline"
 								>
 									Close
 								</Button>
-								<Button onClick={handleViewOnBoard} className="flex-1">
+								<Button className="flex-1" onClick={handleViewOnBoard}>
 									View on Board
 								</Button>
 							</div>

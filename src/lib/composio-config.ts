@@ -1404,15 +1404,26 @@ export async function getAnyConnectedApps(
 		// Use provided entityId or fall back to workspace-scoped entity ID
 		const targetEntityId = entityId || `workspace_${workspaceId}`;
 
+		// When checking for a member, also include workspace-level connections:
+		// connections created from the manage page are stored under workspace_<workspaceId>,
+		// so we must query both to show "connected" for that member.
+		const entityIdsToCheck =
+			targetEntityId.startsWith("member_") && workspaceId
+				? [targetEntityId, `workspace_${workspaceId}`]
+				: [targetEntityId];
+
 		console.log(
-			`[Composio] Checking connections for entity: ${targetEntityId}`
+			`[Composio] Checking connections for entity: ${targetEntityId}` +
+				(entityIdsToCheck.length > 1
+					? ` (including workspace_${workspaceId})`
+					: "")
 		);
 
-		// Get entity-specific connections
+		// Get entity-specific connections (member and/or workspace)
 		let entityConnections: ComposioConnection[] = [];
 		try {
 			const entityConnectionsResponse = await composio.connectedAccounts.list({
-				userIds: [targetEntityId],
+				userIds: entityIdsToCheck,
 			});
 			entityConnections = entityConnectionsResponse.items || [];
 			console.log(

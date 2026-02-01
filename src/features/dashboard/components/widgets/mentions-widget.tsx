@@ -133,7 +133,7 @@ export const MentionsWidget = ({
 					<AtSign className="h-5 w-5 text-primary dark:text-purple-400" />
 					<h3 className="font-medium">Mentions</h3>
 					{!isEditMode && counts && counts.total > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge className="ml-2" variant="default">
 							{counts.total}
 						</Badge>
 					)}
@@ -142,7 +142,7 @@ export const MentionsWidget = ({
 					? controls
 					: counts &&
 						counts.total > 0 && (
-							<Button variant="default" size="sm" onClick={handleMarkAllAsRead}>
+							<Button onClick={handleMarkAllAsRead} size="sm" variant="default">
 								<CheckCircle className="mr-2 h-4 w-4" />
 								Mark all as read
 							</Button>
@@ -157,8 +157,8 @@ export const MentionsWidget = ({
 								<div className="flex items-start gap-3">
 									<Avatar className="h-8 w-8">
 										<AvatarImage
-											src={mention.author.image}
 											alt={mention.author.name || "User avatar"}
+											src={mention.author.image}
 										/>
 										<AvatarFallback>
 											{mention.author.name
@@ -174,8 +174,8 @@ export const MentionsWidget = ({
 												</p>
 												{mention.source.type === "channel" && (
 													<Badge
-														variant="outline"
 														className="flex items-center gap-1 border-2"
+														variant="outline"
 													>
 														<Hash className="h-3 w-3" />
 														{mention.source.name}
@@ -210,10 +210,10 @@ export const MentionsWidget = ({
 											{mention.text.length > 50 ? "..." : ""}
 										</p>
 										<Button
-											variant="ghost"
-											size="sm"
 											className="mt-2 h-8 px-3 w-auto justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 											onClick={() => handleViewMention(mention)}
+											size="sm"
+											variant="ghost"
 										>
 											View mention
 										</Button>

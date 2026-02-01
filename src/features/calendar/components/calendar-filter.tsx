@@ -55,10 +55,9 @@ export const CalendarFilter = ({
 
 	return (
 		<div className="flex items-center gap-2">
-			<DropdownMenu open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+			<DropdownMenu onOpenChange={setIsFiltersOpen} open={isFiltersOpen}>
 				<DropdownMenuTrigger asChild>
 					<Button
-						variant="outline"
 						className={cn(
 							"flex items-center gap-1.5 border rounded-md transition-all",
 							filterOptions.eventTypes.length > 0 &&
@@ -66,6 +65,7 @@ export const CalendarFilter = ({
 								? "bg-gray-100 border-gray-300 dark:bg-gray-800 dark:border-gray-600"
 								: "bg-white dark:bg-gray-900"
 						)}
+						variant="outline"
 					>
 						<Filter className="h-4 w-4 dark:text-gray-300" />
 						<span className="dark:text-gray-200">Filter</span>
@@ -89,8 +89,6 @@ export const CalendarFilter = ({
 					<DropdownMenuLabel className="flex items-center justify-between">
 						<span className="dark:text-gray-200">Event Types</span>
 						<Button
-							variant="ghost"
-							size="sm"
 							className="h-7 text-xs px-2 dark:text-gray-300 dark:hover:bg-gray-700"
 							onClick={() =>
 								onFilterChange({
@@ -100,6 +98,8 @@ export const CalendarFilter = ({
 											: ["message", "board-card", "task"],
 								})
 							}
+							size="sm"
+							variant="ghost"
 						>
 							{allTypesSelected || noTypesSelected ? "Clear All" : "Select All"}
 						</Button>
@@ -111,17 +111,17 @@ export const CalendarFilter = ({
 							<div className="flex items-center space-x-2">
 								<MessageSquare className="h-4 w-4 text-blue-500 dark:text-blue-400" />
 								<Label
-									htmlFor="message-events"
 									className="cursor-pointer text-blue-700 dark:text-blue-400"
+									htmlFor="message-events"
 								>
 									Message Events
 								</Label>
 							</div>
 							<Switch
-								id="message-events"
 								checked={isEventTypeSelected("message")}
-								onCheckedChange={() => toggleEventType("message")}
 								className="data-[state=checked]:bg-blue-500"
+								id="message-events"
+								onCheckedChange={() => toggleEventType("message")}
 							/>
 						</div>
 
@@ -129,17 +129,17 @@ export const CalendarFilter = ({
 							<div className="flex items-center space-x-2">
 								<LayoutGrid className="h-4 w-4 text-purple-500 dark:text-purple-400" />
 								<Label
-									htmlFor="board-card-events"
 									className="cursor-pointer text-purple-700 dark:text-purple-400"
+									htmlFor="board-card-events"
 								>
 									Board Assignments
 								</Label>
 							</div>
 							<Switch
-								id="board-card-events"
 								checked={isEventTypeSelected("board-card")}
-								onCheckedChange={() => toggleEventType("board-card")}
 								className="data-[state=checked]:bg-purple-500"
+								id="board-card-events"
+								onCheckedChange={() => toggleEventType("board-card")}
 							/>
 						</div>
 
@@ -147,17 +147,17 @@ export const CalendarFilter = ({
 							<div className="flex items-center space-x-2">
 								<CheckSquare className="h-4 w-4 text-green-500 dark:text-green-400" />
 								<Label
-									htmlFor="task-events"
 									className="cursor-pointer text-green-700 dark:text-green-400"
+									htmlFor="task-events"
 								>
 									My Tasks
 								</Label>
 							</div>
 							<Switch
-								id="task-events"
 								checked={isEventTypeSelected("task")}
-								onCheckedChange={() => toggleEventType("task")}
 								className="data-[state=checked]:bg-green-500"
+								id="task-events"
+								onCheckedChange={() => toggleEventType("task")}
 							/>
 						</div>
 					</div>

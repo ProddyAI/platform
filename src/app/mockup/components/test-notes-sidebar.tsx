@@ -59,7 +59,7 @@ export const TestNotesSidebar = ({
 	if (collapsed) {
 		return (
 			<div className="w-12 border-r bg-muted/30 flex flex-col items-center py-4 gap-2">
-				<Button variant="ghost" size="sm" onClick={onCreateNote}>
+				<Button onClick={onCreateNote} size="sm" variant="ghost">
 					<Plus className="h-4 w-4" />
 				</Button>
 				<div className="text-xs text-muted-foreground transform -rotate-90 whitespace-nowrap mt-8">
@@ -77,10 +77,10 @@ export const TestNotesSidebar = ({
 					<div className="relative flex-1">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
+							className="pl-9"
+							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="Search notes..."
 							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-9"
 						/>
 					</div>
 					<Button onClick={onCreateNote} size="sm">
@@ -91,20 +91,20 @@ export const TestNotesSidebar = ({
 				{/* Folder Filter */}
 				<div className="flex gap-1 flex-wrap">
 					<Button
-						variant={selectedFolder === null ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setSelectedFolder(null)}
 						className="text-xs h-7"
+						onClick={() => setSelectedFolder(null)}
+						size="sm"
+						variant={selectedFolder === null ? "default" : "ghost"}
 					>
 						All
 					</Button>
 					{folders.map((folder) => (
 						<Button
-							key={folder}
-							variant={selectedFolder === folder ? "default" : "ghost"}
-							size="sm"
-							onClick={() => setSelectedFolder(folder)}
 							className="text-xs h-7"
+							key={folder}
+							onClick={() => setSelectedFolder(folder)}
+							size="sm"
+							variant={selectedFolder === folder ? "default" : "ghost"}
 						>
 							<Folder className="h-3 w-3 mr-1" />
 							{folder}
@@ -119,7 +119,7 @@ export const TestNotesSidebar = ({
 					{Object.entries(notesByFolder).map(
 						([folder, folderNotes]) =>
 							folderNotes.length > 0 && (
-								<div key={folder} className="mb-4">
+								<div className="mb-4" key={folder}>
 									{!selectedFolder && (
 										<div className="flex items-center gap-2 px-2 py-1 text-xs font-medium text-muted-foreground mb-2">
 											<Folder className="h-3 w-3" />
@@ -130,14 +130,14 @@ export const TestNotesSidebar = ({
 									<div className="space-y-1">
 										{folderNotes.map((note) => (
 											<button
-												key={note.id}
-												onClick={() => onNoteSelect(note.id)}
 												className={cn(
 													"w-full text-left p-3 rounded-lg border transition-colors",
 													selectedNoteId === note.id
 														? "bg-primary/10 border-primary/20"
 														: "bg-background hover:bg-muted/50 border-transparent"
 												)}
+												key={note.id}
+												onClick={() => onNoteSelect(note.id)}
 											>
 												<div className="flex items-start justify-between gap-2 mb-2">
 													<div className="flex items-center gap-2 min-w-0 flex-1">
@@ -166,15 +166,15 @@ export const TestNotesSidebar = ({
 													<div className="flex gap-1">
 														{note.tags.slice(0, 2).map((tag) => (
 															<Badge
+																className="text-xs"
 																key={tag}
 																variant="secondary"
-																className="text-xs"
 															>
 																{tag}
 															</Badge>
 														))}
 														{note.tags.length > 2 && (
-															<Badge variant="secondary" className="text-xs">
+															<Badge className="text-xs" variant="secondary">
 																+{note.tags.length - 2}
 															</Badge>
 														)}

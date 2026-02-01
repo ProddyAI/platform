@@ -12,7 +12,7 @@ export const CTASection = () => {
 	const isCtaInView = useInView(ctaRef, { once: true, margin: "-100px 0px" });
 
 	return (
-		<section ref={ctaRef} className="py-20 bg-white relative overflow-hidden">
+		<section className="py-20 bg-white relative overflow-hidden" ref={ctaRef}>
 			{/* Background decorative elements */}
 			<div className="absolute inset-0 overflow-hidden">
 				<div className="absolute top-[20%] -right-[5%] w-[25%] h-[25%] rounded-full bg-primary/5 blur-3xl" />
@@ -21,16 +21,16 @@ export const CTASection = () => {
 
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-4xl">
 				<motion.div
+					animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
 					className="text-center"
 					initial={{ opacity: 0, y: 20 }}
-					animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
 					transition={{ duration: 0.5 }}
 				>
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.1 }}
 						className="mb-4"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.1 }}
 					>
 						<span className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full bg-primary/10 text-primary">
 							<Sparkles className="mr-1 h-3.5 w-3.5" />
@@ -39,10 +39,10 @@ export const CTASection = () => {
 					</motion.div>
 
 					<motion.h2
-						initial={{ opacity: 0, y: 20 }}
 						animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.2 }}
 						className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 mb-4"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.2 }}
 					>
 						Start Building with{" "}
 						<span className="text-primary relative">
@@ -52,10 +52,10 @@ export const CTASection = () => {
 					</motion.h2>
 
 					<motion.p
-						initial={{ opacity: 0, y: 20 }}
 						animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.3 }}
 						className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.3 }}
 					>
 						Join teams already using Proddy to streamline their workflow and
 						boost productivity. Get started for free during our public beta and
@@ -63,24 +63,24 @@ export const CTASection = () => {
 					</motion.p>
 
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.4 }}
 						className="flex flex-col sm:flex-row gap-4 justify-center"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.4 }}
 					>
 						<Link href="/signup">
 							<Button
-								size="lg"
 								className="gap-2 rounded-full text-white bg-primary hover:bg-primary/90 px-8 py-3 shadow-md text-base"
+								size="lg"
 							>
 								Get Started Free <ArrowRight className="size-4" />
 							</Button>
 						</Link>
 						<Link href="/pricing">
 							<Button
+								className="gap-2 rounded-full bg-white border-slate-300 text-slate-700 hover:bg-slate-100 px-8 py-3 text-base"
 								size="lg"
 								variant="outline"
-								className="gap-2 rounded-full bg-white border-slate-300 text-slate-700 hover:bg-slate-100 px-8 py-3 text-base"
 							>
 								Learn More
 							</Button>
@@ -88,10 +88,10 @@ export const CTASection = () => {
 					</motion.div>
 
 					<motion.p
-						initial={{ opacity: 0, y: 20 }}
 						animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.5 }}
 						className="text-sm text-gray-500 mt-6"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.5 }}
 					>
 						No credit card required • Free during public beta • Full platform
 						access

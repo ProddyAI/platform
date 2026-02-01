@@ -110,8 +110,8 @@ export const NotesWidget = ({
 					<h3 className="font-semibold text-base">Recent Notes</h3>
 					{!isEditMode && sortedNotes.length > 0 && (
 						<Badge
-							variant="secondary"
 							className="ml-1 h-5 px-2 text-xs font-medium"
+							variant="secondary"
 						>
 							{sortedNotes.length}
 						</Badge>
@@ -121,10 +121,10 @@ export const NotesWidget = ({
 					controls
 				) : (
 					<Button
-						variant="ghost"
-						size="sm"
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewAll}
+						size="sm"
+						variant="ghost"
 					>
 						View All
 					</Button>
@@ -150,8 +150,8 @@ export const NotesWidget = ({
 									</div>
 									<div className="flex items-center gap-2">
 										<Badge
-											variant="outline"
 											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
+											variant="outline"
 										>
 											# {note.channelName}
 										</Badge>
@@ -211,10 +211,10 @@ export const NotesWidget = ({
 										})()}
 									</p>
 									<Button
-										variant="ghost"
-										size="sm"
 										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 										onClick={() => handleViewNote(note._id, note.channelId)}
+										size="sm"
+										variant="ghost"
 									>
 										View note
 									</Button>
@@ -233,10 +233,10 @@ export const NotesWidget = ({
 						Create notes to see them here
 					</p>
 					<Button
-						variant="default"
-						size="sm"
 						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 						onClick={handleCreateNote}
+						size="sm"
+						variant="default"
 					>
 						<Plus className="mr-2 h-4 w-4" />
 						Create Note

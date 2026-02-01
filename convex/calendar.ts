@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
+import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, type QueryCtx, query } from "./_generated/server";
 
@@ -60,7 +61,34 @@ export const createCalendarEvent = mutation({
 			workspaceId: args.workspaceId,
 		});
 
+		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexCalendarEvent, {
+			eventId: calendarEventId,
+		});
+
 		return calendarEventId;
+	},
+});
+
+export const getEventById = query({
+	args: { eventId: v.id("events") },
+	handler: async (ctx, args) => {
+		return await ctx.db.get(args.eventId);
+	},
+});
+
+export const getWorkspaceEvents = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit ?? 100;
+		return await ctx.db
+			.query("events")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.take(limit);
 	},
 });
 

@@ -175,7 +175,7 @@ export const TestBoardModals = ({
 	return (
 		<>
 			{/* Edit Card Modal */}
-			<Dialog open={isCardModalOpen} onOpenChange={onCardModalClose}>
+			<Dialog onOpenChange={onCardModalClose} open={isCardModalOpen}>
 				<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">
@@ -191,11 +191,11 @@ export const TestBoardModals = ({
 								<Label htmlFor="title">Title</Label>
 								<Input
 									id="title"
-									value={editingCard.title}
 									onChange={(e) =>
 										setEditingCard({ ...editingCard, title: e.target.value })
 									}
 									placeholder="Card title"
+									value={editingCard.title}
 								/>
 							</div>
 
@@ -204,7 +204,6 @@ export const TestBoardModals = ({
 								<Label htmlFor="description">Description</Label>
 								<Textarea
 									id="description"
-									value={editingCard.description || ""}
 									onChange={(e) =>
 										setEditingCard({
 											...editingCard,
@@ -213,6 +212,7 @@ export const TestBoardModals = ({
 									}
 									placeholder="Add a description..."
 									rows={4}
+									value={editingCard.description || ""}
 								/>
 							</div>
 
@@ -221,10 +221,10 @@ export const TestBoardModals = ({
 								<div className="space-y-2">
 									<Label htmlFor="priority">Priority</Label>
 									<Select
-										value={editingCard.priority}
 										onValueChange={(value) =>
 											setEditingCard({ ...editingCard, priority: value })
 										}
+										value={editingCard.priority}
 									>
 										<SelectTrigger>
 											<SelectValue />
@@ -253,14 +253,14 @@ export const TestBoardModals = ({
 									<Label htmlFor="dueDate">Due Date</Label>
 									<Input
 										id="dueDate"
-										type="date"
-										value={editingCard.dueDate}
 										onChange={(e) =>
 											setEditingCard({
 												...editingCard,
 												dueDate: e.target.value,
 											})
 										}
+										type="date"
+										value={editingCard.dueDate}
 									/>
 								</div>
 							</div>
@@ -271,15 +271,15 @@ export const TestBoardModals = ({
 								<div className="flex flex-wrap gap-2">
 									{members.map((member) => (
 										<Button
+											className="flex items-center gap-2"
 											key={member._id}
+											onClick={() => toggleAssignee(member._id, true)}
+											size="sm"
 											variant={
 												editingCard.assignees?.includes(member._id)
 													? "default"
 													: "outline"
 											}
-											size="sm"
-											onClick={() => toggleAssignee(member._id, true)}
-											className="flex items-center gap-2"
 										>
 											<Avatar className="h-4 w-4">
 												<AvatarFallback className="text-xs">
@@ -302,13 +302,13 @@ export const TestBoardModals = ({
 									{PREDEFINED_LABELS.map((label) => (
 										<Button
 											key={label}
+											onClick={() => toggleLabel(label, true)}
+											size="sm"
 											variant={
 												editingCard.labels?.includes(label)
 													? "default"
 													: "outline"
 											}
-											size="sm"
-											onClick={() => toggleLabel(label, true)}
 										>
 											{label}
 										</Button>
@@ -319,15 +319,15 @@ export const TestBoardModals = ({
 							{/* Actions */}
 							<div className="flex justify-between gap-2">
 								<Button
-									onClick={handleViewNotes}
 									className="flex items-center gap-2"
+									onClick={handleViewNotes}
 									size="default"
 								>
 									<FileText className="h-4 w-4" />
 									View Notes
 								</Button>
 								<div className="flex gap-2">
-									<Button variant="outline" onClick={onCardModalClose}>
+									<Button onClick={onCardModalClose} variant="outline">
 										Cancel
 									</Button>
 									<Button onClick={handleSaveCard}>Save Changes</Button>
@@ -339,7 +339,7 @@ export const TestBoardModals = ({
 			</Dialog>
 
 			{/* Add Card Modal */}
-			<Dialog open={isAddCardModalOpen} onOpenChange={onAddCardModalClose}>
+			<Dialog onOpenChange={onAddCardModalClose} open={isAddCardModalOpen}>
 				<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">
@@ -359,11 +359,11 @@ export const TestBoardModals = ({
 							<Label htmlFor="newTitle">Title</Label>
 							<Input
 								id="newTitle"
-								value={newCard.title}
 								onChange={(e) =>
 									setNewCard({ ...newCard, title: e.target.value })
 								}
 								placeholder="Card title"
+								value={newCard.title}
 							/>
 						</div>
 
@@ -372,12 +372,12 @@ export const TestBoardModals = ({
 							<Label htmlFor="newDescription">Description</Label>
 							<Textarea
 								id="newDescription"
-								value={newCard.description}
 								onChange={(e) =>
 									setNewCard({ ...newCard, description: e.target.value })
 								}
 								placeholder="Add a description..."
 								rows={4}
+								value={newCard.description}
 							/>
 						</div>
 
@@ -386,10 +386,10 @@ export const TestBoardModals = ({
 							<div className="space-y-2">
 								<Label htmlFor="newPriority">Priority</Label>
 								<Select
-									value={newCard.priority}
 									onValueChange={(value) =>
 										setNewCard({ ...newCard, priority: value })
 									}
+									value={newCard.priority}
 								>
 									<SelectTrigger>
 										<SelectValue />
@@ -418,11 +418,11 @@ export const TestBoardModals = ({
 								<Label htmlFor="newDueDate">Due Date</Label>
 								<Input
 									id="newDueDate"
-									type="date"
-									value={newCard.dueDate}
 									onChange={(e) =>
 										setNewCard({ ...newCard, dueDate: e.target.value })
 									}
+									type="date"
+									value={newCard.dueDate}
 								/>
 							</div>
 						</div>
@@ -433,15 +433,15 @@ export const TestBoardModals = ({
 							<div className="flex flex-wrap gap-2">
 								{members.map((member) => (
 									<Button
+										className="flex items-center gap-2"
 										key={member._id}
+										onClick={() => toggleAssignee(member._id)}
+										size="sm"
 										variant={
 											newCard.assignees.includes(member._id)
 												? "default"
 												: "outline"
 										}
-										size="sm"
-										onClick={() => toggleAssignee(member._id)}
-										className="flex items-center gap-2"
 									>
 										<Avatar className="h-4 w-4">
 											<AvatarFallback className="text-xs">
@@ -464,11 +464,11 @@ export const TestBoardModals = ({
 								{PREDEFINED_LABELS.map((label) => (
 									<Button
 										key={label}
+										onClick={() => toggleLabel(label)}
+										size="sm"
 										variant={
 											newCard.labels.includes(label) ? "default" : "outline"
 										}
-										size="sm"
-										onClick={() => toggleLabel(label)}
 									>
 										{label}
 									</Button>
@@ -478,12 +478,12 @@ export const TestBoardModals = ({
 
 						{/* Actions */}
 						<div className="flex justify-end gap-2">
-							<Button variant="outline" onClick={onAddCardModalClose}>
+							<Button onClick={onAddCardModalClose} variant="outline">
 								Cancel
 							</Button>
 							<Button
-								onClick={handleCreateCard}
 								disabled={!newCard.title.trim()}
+								onClick={handleCreateCard}
 							>
 								Create Card
 							</Button>

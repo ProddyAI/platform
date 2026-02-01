@@ -103,10 +103,10 @@ const AudioControlsInner = () => {
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							onClick={toggleSpeaker}
-							variant="ghost"
-							size="sm"
 							className="h-8 w-8 p-0 relative"
+							onClick={toggleSpeaker}
+							size="sm"
+							variant="ghost"
 						>
 							{speakerMuted ? (
 								<VolumeX className="h-4 w-4 text-red-500" />
@@ -127,11 +127,11 @@ const AudioControlsInner = () => {
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							onClick={micPermissionError ? undefined : toggleMicrophone}
-							variant="ghost"
-							size="sm"
 							className="h-8 w-8 p-0 relative"
 							disabled={micPermissionError}
+							onClick={micPermissionError ? undefined : toggleMicrophone}
+							size="sm"
+							variant="ghost"
 						>
 							{micPermissionError ? (
 								<AlertCircle className="h-4 w-4 text-red-500" />

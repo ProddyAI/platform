@@ -139,35 +139,35 @@ const SortableWidget = ({
 			{/* Size Toggle Buttons */}
 			<div className="flex items-center gap-1 bg-background/80 backdrop-blur-sm border border-border rounded-md shadow-sm p-0.5">
 				<Button
-					variant={size === "small" ? "default" : "ghost"}
-					size="sm"
 					className={cn(
 						"h-6 w-6 p-0 text-xs",
 						size === "small" && "edit-mode-button"
 					)}
 					onClick={() => onResize("small")}
+					size="sm"
+					variant={size === "small" ? "default" : "ghost"}
 				>
 					S
 				</Button>
 				<Button
-					variant={size === "medium" ? "default" : "ghost"}
-					size="sm"
 					className={cn(
 						"h-6 w-6 p-0 text-xs",
 						size === "medium" && "edit-mode-button"
 					)}
 					onClick={() => onResize("medium")}
+					size="sm"
+					variant={size === "medium" ? "default" : "ghost"}
 				>
 					M
 				</Button>
 				<Button
-					variant={size === "large" ? "default" : "ghost"}
-					size="sm"
 					className={cn(
 						"h-6 w-6 p-0 text-xs",
 						size === "large" && "edit-mode-button"
 					)}
 					onClick={() => onResize("large")}
+					size="sm"
+					variant={size === "large" ? "default" : "ghost"}
 				>
 					L
 				</Button>
@@ -175,10 +175,10 @@ const SortableWidget = ({
 
 			{/* Delete Button */}
 			<Button
-				variant="ghost"
-				size="sm"
 				className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
 				onClick={onDelete}
+				size="sm"
+				variant="ghost"
 			>
 				<X className="h-4 w-4" />
 			</Button>
@@ -196,14 +196,14 @@ const SortableWidget = ({
 
 	return (
 		<div
-			ref={setNodeRef}
-			style={style}
 			className={cn(
 				"relative group",
 				gridSizeClasses[size],
 				"h-auto",
 				isDragging ? "z-10" : ""
 			)}
+			ref={setNodeRef}
+			style={style}
 		>
 			{cloneElement(children as ReactElement, { controls })}
 		</div>
@@ -330,58 +330,58 @@ export const DashboardWidgets = ({
 				case "mentions":
 					return (
 						<MentionsWidget
-							workspaceId={workspaceId}
-							member={member}
 							isEditMode={isEditMode}
+							member={member}
+							workspaceId={workspaceId}
 						/>
 					);
 				case "threads":
 					return (
 						<ThreadRepliesWidget
-							workspaceId={workspaceId}
-							member={member}
 							isEditMode={isEditMode}
+							member={member}
+							workspaceId={workspaceId}
 						/>
 					);
 				case "tasks":
 					return (
 						<TasksWidget
-							workspaceId={workspaceId}
-							member={member}
 							isEditMode={isEditMode}
+							member={member}
+							workspaceId={workspaceId}
 						/>
 					);
 				case "cards":
 					return (
 						<AssignedCardsWidget
-							workspaceId={workspaceId}
-							member={member}
 							isEditMode={isEditMode}
+							member={member}
+							workspaceId={workspaceId}
 						/>
 					);
 				case "calendar":
 					return (
 						<CalendarPreviewWidget
-							workspaceId={workspaceId}
-							member={member}
 							isEditMode={isEditMode}
+							member={member}
+							workspaceId={workspaceId}
 						/>
 					);
 				case "notes":
 					return (
 						<NotesWidget
-							workspaceId={workspaceId}
-							member={member}
 							isEditMode={isEditMode}
+							member={member}
+							workspaceId={workspaceId}
 						/>
 					);
 
 				case "canvas":
 					return (
 						<CanvasWidget
-							workspaceId={workspaceId}
-							member={member}
 							isEditMode={isEditMode}
+							member={member}
+							workspaceId={workspaceId}
 						/>
 					);
 				default:
@@ -401,11 +401,11 @@ export const DashboardWidgets = ({
 							{/* Add Card Button - Only visible in edit mode */}
 							{isEditMode && (
 								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => setIsAddDialogOpen(true)}
 									className="h-8 px-3 gap-2"
 									disabled={availableWidgetsToAdd.length === 0}
+									onClick={() => setIsAddDialogOpen(true)}
+									size="sm"
+									variant="outline"
 								>
 									<Plus className="h-4 w-4" />
 									<span className="hidden sm:inline">Add Card</span>
@@ -414,13 +414,13 @@ export const DashboardWidgets = ({
 
 							{/* Edit Mode Toggle */}
 							<Button
-								variant={isEditMode ? "default" : "ghost"}
-								size="sm"
-								onClick={toggleEditMode}
 								className={cn(
 									"h-8 px-3 gap-2",
 									isEditMode && "edit-mode-button"
 								)}
+								onClick={toggleEditMode}
+								size="sm"
+								variant={isEditMode ? "default" : "ghost"}
 							>
 								{isEditMode ? (
 									<>
@@ -449,10 +449,10 @@ export const DashboardWidgets = ({
 						)}
 
 						<DndContext
-							sensors={sensors}
 							collisionDetection={closestCenter}
-							onDragStart={handleDragStart}
 							onDragEnd={handleDragEnd}
+							onDragStart={handleDragStart}
+							sensors={sensors}
 						>
 							<SortableContext
 								items={widgets.map((w) => w.id)}
@@ -462,14 +462,14 @@ export const DashboardWidgets = ({
 								<div className="grid grid-cols-1 md:grid-cols-12 gap-4 pb-4">
 									{widgets.map((widget) => (
 										<SortableWidget
-											key={widget.id}
 											id={widget.id}
-											size={widget.size}
 											isEditMode={isEditMode}
+											key={widget.id}
 											onDelete={() => handleDeleteWidget(widget.id)}
 											onResize={(newSize) =>
 												updateWidgetSize(widget.id, newSize)
 											}
+											size={widget.size}
 										>
 											{renderWidget(widget.id)}
 										</SortableWidget>
@@ -501,7 +501,7 @@ export const DashboardWidgets = ({
 			</Card>
 
 			{/* Add Widget Dialog */}
-			<Dialog open={isAddDialogOpen} onOpenChange={handleDialogOpenChange}>
+			<Dialog onOpenChange={handleDialogOpenChange} open={isAddDialogOpen}>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
 						<DialogTitle>Add Dashboard Cards</DialogTitle>
@@ -522,14 +522,14 @@ export const DashboardWidgets = ({
 									const isSelected = selectedWidgets.includes(widget.id);
 									return (
 										<button
-											key={widget.id}
-											onClick={() => toggleWidgetSelection(widget.id)}
 											className={cn(
 												"flex items-start gap-4 p-4 rounded-lg border transition-all text-left",
 												isSelected
 													? "bg-primary/10 border-primary hover:bg-primary/15"
 													: "border-border hover:bg-muted/50 hover:border-primary/50"
 											)}
+											key={widget.id}
+											onClick={() => toggleWidgetSelection(widget.id)}
 										>
 											<div className="flex-1">
 												<h4 className="font-medium mb-1">{widget.title}</h4>
@@ -562,9 +562,9 @@ export const DashboardWidgets = ({
 								{selectedWidgets.length !== 1 ? "s" : ""} selected
 							</p>
 							<Button
-								onClick={handleAddSelectedWidgets}
-								disabled={selectedWidgets.length === 0}
 								className="edit-mode-button"
+								disabled={selectedWidgets.length === 0}
+								onClick={handleAddSelectedWidgets}
 							>
 								Done
 							</Button>

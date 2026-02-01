@@ -15,7 +15,7 @@ interface LabelProps
 
 const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
 	({ className, ...props }, ref) => (
-		<label ref={ref} className={cn(labelVariants(), className)} {...props} />
+		<label className={cn(labelVariants(), className)} ref={ref} {...props} />
 	)
 );
 Label.displayName = "Label";

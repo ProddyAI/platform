@@ -141,8 +141,8 @@ const BoardList: React.FC<BoardListProps> = ({
 						</div>
 						<span className="truncate">{list.title}</span>
 						<Badge
-							variant="outline"
 							className="ml-1 bg-white dark:bg-gray-800 dark:border-gray-600"
+							variant="outline"
 						>
 							{cards.length}
 						</Badge>
@@ -159,8 +159,8 @@ const BoardList: React.FC<BoardListProps> = ({
 									<Pencil className="w-3.5 h-3.5 mr-2" /> Edit List
 								</DropdownMenuItem>
 								<DropdownMenuItem
-									onClick={onDeleteList}
 									className="text-destructive"
+									onClick={onDeleteList}
 								>
 									<Trash className="w-3.5 h-3.5 mr-2" /> Delete List
 								</DropdownMenuItem>
@@ -179,8 +179,8 @@ const BoardList: React.FC<BoardListProps> = ({
 						<div className="flex gap-1 flex-wrap">
 							{priorityCounts.highest > 0 && (
 								<Badge
-									variant="destructive"
 									className="text-[9px] px-1 py-0 h-4"
+									variant="destructive"
 								>
 									{priorityCounts.highest} high+
 								</Badge>
@@ -191,7 +191,7 @@ const BoardList: React.FC<BoardListProps> = ({
 								</Badge>
 							)}
 							{priorityCounts.medium > 0 && (
-								<Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
+								<Badge className="text-[9px] px-1 py-0 h-4" variant="secondary">
 									{priorityCounts.medium} med
 								</Badge>
 							)}
@@ -211,13 +211,13 @@ const BoardList: React.FC<BoardListProps> = ({
 
 				{/* Cards Container - expanded to push Add Card button to bottom */}
 				<div
-					ref={setDroppableRef}
 					className={cn(
 						"transition-colors duration-200 flex-1 flex flex-col",
 						isOver
 							? "bg-secondary/10 ring-2 ring-secondary/40"
 							: "bg-transparent"
 					)}
+					ref={setDroppableRef}
 				>
 					<SortableContext
 						items={cards.map((c) => c._id)}
@@ -238,11 +238,11 @@ const BoardList: React.FC<BoardListProps> = ({
 							)}
 							{cards.map((card) => (
 								<BoardCard
-									key={card._id}
-									card={card}
-									onEdit={() => onEditCard(card)}
-									onDelete={() => onDeleteCard(card._id)}
 									assigneeData={assigneeData}
+									card={card}
+									key={card._id}
+									onDelete={() => onDeleteCard(card._id)}
+									onEdit={() => onEditCard(card)}
 								/>
 							))}
 							{cards.length > 0 && isOver && (
@@ -257,10 +257,10 @@ const BoardList: React.FC<BoardListProps> = ({
 				{/* Add Card Button - stays at bottom */}
 				<div className="p-2 bg-white dark:bg-gray-800 rounded-b-lg border-t dark:border-gray-700 mt-auto">
 					<Button
-						size="sm"
-						variant="outline"
 						className="w-full bg-white dark:bg-gray-800 hover:bg-secondary/5 dark:hover:bg-secondary/10 transition-colors dark:border-gray-600"
 						onClick={onAddCard}
+						size="sm"
+						variant="outline"
 					>
 						<Plus className="w-4 h-4 mr-1" /> Add Card
 					</Button>

@@ -122,7 +122,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<Button size="iconSm" variant="ghost" onClick={onEdit}>
+								<Button onClick={onEdit} size="iconSm" variant="ghost">
 									<Pencil className="w-3.5 h-3.5" />
 								</Button>
 							</TooltipTrigger>
@@ -134,7 +134,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<Button size="iconSm" variant="ghost" onClick={onDelete}>
+								<Button onClick={onDelete} size="iconSm" variant="ghost">
 									<Trash className="w-3.5 h-3.5" />
 								</Button>
 							</TooltipTrigger>
@@ -158,9 +158,9 @@ const BoardCard: React.FC<BoardCardProps> = ({
 				<div className="flex flex-wrap gap-1">
 					{card.labels.map((label: string, i: number) => (
 						<Badge
+							className="text-xs px-2 py-0.5 bg-secondary/20 dark:bg-secondary/30 text-secondary-foreground dark:text-gray-200"
 							key={i}
 							variant="secondary"
-							className="text-xs px-2 py-0.5 bg-secondary/20 dark:bg-secondary/30 text-secondary-foreground dark:text-gray-200"
 						>
 							{label}
 						</Badge>
@@ -210,8 +210,8 @@ const BoardCard: React.FC<BoardCardProps> = ({
 											<TooltipTrigger asChild>
 												<Avatar className="h-5 w-5 border border-background">
 													<AvatarImage
-														src={assignee?.image}
 														alt={assignee?.name}
+														src={assignee?.image}
 													/>
 													<AvatarFallback className="text-[10px]">
 														{fallback}

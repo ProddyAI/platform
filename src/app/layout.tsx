@@ -61,9 +61,9 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		<ConvexAuthNextjsServerProvider>
 			<html lang="en">
 				<head>
-					<meta name="apple-mobile-web-app-capable" content="yes" />
-					<meta name="mobile-web-app-capable" content="yes" />
-					<link rel="apple-touch-icon" href="/logo-nobg.png" />
+					<meta content="yes" name="apple-mobile-web-app-capable" />
+					<meta content="yes" name="mobile-web-app-capable" />
+					<link href="/logo-nobg.png" rel="apple-touch-icon" />
 				</head>
 				<body className={`${poppins.variable} antialiased font-sans`}>
 					<Script id="force-light-mode" strategy="beforeInteractive">
@@ -85,7 +85,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 						<JotaiProvider>
 							<UsetifulProvider>
 								<DevServiceWorkerCleanup />
-								<Toaster theme="light" richColors closeButton />
+								<Toaster closeButton richColors theme="light" />
 								<ModalProvider />
 								<TidioChat />
 								<Formbricks />

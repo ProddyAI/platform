@@ -148,25 +148,25 @@ const ForgotPasswordPage = () => {
 
 					<CardContent className="space-y-5 px-0 pb-0">
 						{!emailSent ? (
-							<form onSubmit={handleSubmit} className="space-y-4">
+							<form className="space-y-4" onSubmit={handleSubmit}>
 								<div className="space-y-2">
 									<Label htmlFor="email">Email Address</Label>
 									<Input
-										id="email"
-										type="email"
-										value={email}
-										onChange={(e) => setEmail(e.target.value)}
 										disabled={isSubmitting}
+										id="email"
+										onChange={(e) => setEmail(e.target.value)}
 										placeholder="Enter your email"
 										required
+										type="email"
+										value={email}
 									/>
 								</div>
 
 								<Button
-									type="submit"
 									className="bg-primary w-full transition-standard hover:shadow-lg hover:bg-primary/90"
-									size="lg"
 									disabled={isSubmitting}
+									size="lg"
+									type="submit"
 								>
 									{isSubmitting ? "Sending..." : "Send Reset Link"}
 								</Button>
@@ -184,14 +184,14 @@ const ForgotPasswordPage = () => {
 								<p className="text-sm text-muted-foreground text-center">
 									Didn't receive the email? Check your spam folder or{" "}
 									<button
-										type="button"
-										onClick={handleTryAgain}
-										disabled={remainingCooldown > 0}
 										className={`font-medium transition-colors ${
 											remainingCooldown > 0
 												? "text-muted-foreground cursor-not-allowed"
 												: "text-secondary hover:underline"
 										}`}
+										disabled={remainingCooldown > 0}
+										onClick={handleTryAgain}
+										type="button"
 									>
 										{remainingCooldown > 0
 											? `Try again (${formatCooldownTime()})`
@@ -203,8 +203,8 @@ const ForgotPasswordPage = () => {
 
 						<div className="pt-4">
 							<Link
-								href="/signin"
 								className="flex items-center gap-2 text-sm text-muted-foreground hover:text-secondary transition-colors justify-center"
+								href="/signin"
 							>
 								<ArrowLeft className="h-4 w-4" />
 								Back to Sign In

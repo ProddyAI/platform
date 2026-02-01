@@ -105,23 +105,23 @@ const TestBoardPage = () => {
 	return (
 		<div className="flex h-full flex-col">
 			<TestBoardHeader
-				view={view}
-				onViewChange={setView}
 				cardCount={cards.length}
 				listCount={lists.length}
+				onViewChange={setView}
+				view={view}
 			/>
 
 			<div className="flex-1 overflow-hidden">
 				{view === "kanban" && (
 					<TestBoardKanbanView
-						lists={lists}
 						cardsByList={cardsByList}
-						members={DEMO_MEMBERS}
-						onEditCard={handleEditCard}
-						onDeleteCard={handleDeleteCard}
-						onAddCard={handleAddCard}
-						onMoveCard={moveCardToNextList}
 						handleDragEnd={handleDragEnd}
+						lists={lists}
+						members={DEMO_MEMBERS}
+						onAddCard={handleAddCard}
+						onDeleteCard={handleDeleteCard}
+						onEditCard={handleEditCard}
+						onMoveCard={moveCardToNextList}
 					/>
 				)}
 
@@ -139,22 +139,22 @@ const TestBoardPage = () => {
 			</div>
 
 			<TestBoardModals
-				selectedCard={selectedCard}
-				isCardModalOpen={isCardModalOpen}
-				onCardModalClose={() => {
-					setIsCardModalOpen(false);
-					setSelectedCard(null);
-				}}
-				onSaveCard={handleSaveCard}
 				isAddCardModalOpen={isAddCardModalOpen}
+				isCardModalOpen={isCardModalOpen}
+				lists={lists}
+				members={DEMO_MEMBERS}
 				onAddCardModalClose={() => {
 					setIsAddCardModalOpen(false);
 					setSelectedListId(null);
 				}}
+				onCardModalClose={() => {
+					setIsCardModalOpen(false);
+					setSelectedCard(null);
+				}}
 				onCreateCard={handleCreateCard}
-				members={DEMO_MEMBERS}
+				onSaveCard={handleSaveCard}
+				selectedCard={selectedCard}
 				selectedListId={selectedListId}
-				lists={lists}
 			/>
 
 			{/* Live Cursors */}

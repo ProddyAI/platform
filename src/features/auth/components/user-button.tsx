@@ -78,10 +78,10 @@ export const UserButton = ({
 					</Avatar>
 				</DropdownMenuTrigger>
 
-				<DropdownMenuContent align="center" side="bottom" className="w-60">
+				<DropdownMenuContent align="center" className="w-60" side="bottom">
 					<DropdownMenuItem
-						onClick={() => setSettingsOpen(true)}
 						className="h-10"
+						onClick={() => setSettingsOpen(true)}
 					>
 						<Settings className="mr-2 size-4" />
 						Account Settings
@@ -89,7 +89,7 @@ export const UserButton = ({
 
 					<DropdownMenuSeparator />
 
-					<DropdownMenuItem onClick={handleSignOut} className="h-10">
+					<DropdownMenuItem className="h-10" onClick={handleSignOut}>
 						<LogOut className="mr-2 size-4" />
 						Log out
 					</DropdownMenuItem>
@@ -99,13 +99,13 @@ export const UserButton = ({
 			{/* Account Settings Modal */}
 			{data && (
 				<UserProfileModal
-					open={settingsOpen}
-					onOpenChange={handleSettingsClose}
-					name={name}
+					defaultTab={defaultTab}
 					email={email}
 					image={image || undefined}
 					mode="edit"
-					defaultTab={defaultTab}
+					name={name}
+					onOpenChange={handleSettingsClose}
+					open={settingsOpen}
 				/>
 			)}
 		</>

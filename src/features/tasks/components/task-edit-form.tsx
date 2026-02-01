@@ -86,23 +86,23 @@ export const TaskEditForm = ({
 
 	return (
 		<form
-			onSubmit={handleSubmit}
 			className="p-4 rounded-lg border border-secondary/30 shadow-md bg-white"
+			onSubmit={handleSubmit}
 		>
 			<div className="space-y-3">
 				<Input
-					placeholder="Task title"
-					value={title}
-					onChange={(e) => setTitle(e.target.value)}
-					className="font-medium"
 					autoFocus
+					className="font-medium"
+					onChange={(e) => setTitle(e.target.value)}
+					placeholder="Task title"
 					required
+					value={title}
 				/>
 				<Textarea
+					className="min-h-[80px] resize-none"
+					onChange={(e) => setDescription(e.target.value)}
 					placeholder="Description (optional)"
 					value={description}
-					onChange={(e) => setDescription(e.target.value)}
-					className="min-h-[80px] resize-none"
 				/>
 
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -110,12 +110,12 @@ export const TaskEditForm = ({
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-									type="button"
-									variant="outline"
 									className={cn(
 										"w-full justify-start text-left font-normal",
 										!dueDate && "text-muted-foreground"
 									)}
+									type="button"
+									variant="outline"
 								>
 									<CalendarIcon className="mr-2 h-4 w-4" />
 									{dueDate ? (
@@ -125,12 +125,12 @@ export const TaskEditForm = ({
 									)}
 								</Button>
 							</PopoverTrigger>
-							<PopoverContent className="w-auto p-0" align="start">
+							<PopoverContent align="start" className="w-auto p-0">
 								<Calendar
-									mode="single"
-									selected={dueDate}
-									onSelect={setDueDate}
 									initialFocus
+									mode="single"
+									onSelect={setDueDate}
+									selected={dueDate}
 								/>
 							</PopoverContent>
 						</Popover>
@@ -138,8 +138,8 @@ export const TaskEditForm = ({
 
 					<div>
 						<Select
-							value={priority}
 							onValueChange={(value: any) => setPriority(value)}
+							value={priority}
 						>
 							<SelectTrigger>
 								<SelectValue placeholder="Priority (optional)" />
@@ -158,23 +158,23 @@ export const TaskEditForm = ({
 						Category (optional)
 					</label>
 					<TaskCategorySelector
-						workspaceId={workspaceId}
-						value={categoryId}
 						onChange={setCategoryId}
+						value={categoryId}
+						workspaceId={workspaceId}
 					/>
 				</div>
 			</div>
 
 			<div className="flex justify-end gap-2 pt-4 mt-2 border-t">
 				<Button
+					disabled={isSubmitting}
+					onClick={onCancel}
 					type="button"
 					variant="outline"
-					onClick={onCancel}
-					disabled={isSubmitting}
 				>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={!title.trim() || isSubmitting}>
+				<Button disabled={!title.trim() || isSubmitting} type="submit">
 					Save
 				</Button>
 			</div>

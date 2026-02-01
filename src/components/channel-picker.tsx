@@ -104,10 +104,10 @@ export const ChannelPicker = ({
 					<div className="space-y-1">
 						{filteredChannels.map((channel) => (
 							<Button
-								key={channel._id}
-								variant="ghost"
 								className="w-full justify-start px-2 py-1.5 h-auto hover:bg-gray-100"
+								key={channel._id}
 								onClick={() => handleSelect(channel._id, channel.name)}
+								variant="ghost"
 							>
 								<div className="flex items-center gap-2">
 									<span className="text-sm text-muted-foreground">#</span>
@@ -123,12 +123,12 @@ export const ChannelPicker = ({
 				<div className="relative">
 					<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
 					<Input
-						ref={searchInputRef}
-						placeholder="Search channels..."
-						className="pl-8"
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
 						autoFocus
+						className="pl-8"
+						onChange={(e) => setSearchTerm(e.target.value)}
+						placeholder="Search channels..."
+						ref={searchInputRef}
+						value={searchTerm}
 					/>
 				</div>
 			</div>

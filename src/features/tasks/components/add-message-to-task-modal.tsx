@@ -109,7 +109,7 @@ export const AddMessageToTaskModal = ({
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={handleClose}>
+		<Dialog onOpenChange={handleClose} open={isOpen}>
 			<DialogContent className="sm:max-w-[550px]">
 				<form onSubmit={handleSubmit}>
 					<DialogHeader>
@@ -138,16 +138,16 @@ export const AddMessageToTaskModal = ({
 
 					<div className="mt-4 space-y-4">
 						<div className="space-y-2">
-							<label htmlFor="title" className="text-sm font-medium">
+							<label className="text-sm font-medium" htmlFor="title">
 								Task Title
 							</label>
 							<Input
+								className="w-full"
 								id="title"
-								value={title}
 								onChange={(e) => setTitle(e.target.value)}
 								placeholder="Enter task title"
-								className="w-full"
 								required
+								value={title}
 							/>
 						</div>
 
@@ -156,11 +156,11 @@ export const AddMessageToTaskModal = ({
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button
-										variant="outline"
 										className={cn(
 											"w-full justify-start text-left font-normal",
 											!dueDate && "text-muted-foreground"
 										)}
+										variant="outline"
 									>
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{dueDate ? (
@@ -172,10 +172,10 @@ export const AddMessageToTaskModal = ({
 								</PopoverTrigger>
 								<PopoverContent className="w-auto p-0">
 									<Calendar
-										mode="single"
-										selected={dueDate}
-										onSelect={setDueDate}
 										initialFocus
+										mode="single"
+										onSelect={setDueDate}
+										selected={dueDate}
 									/>
 								</PopoverContent>
 							</Popover>
@@ -184,8 +184,8 @@ export const AddMessageToTaskModal = ({
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Priority</label>
 							<Select
-								value={priority}
 								onValueChange={(value: any) => setPriority(value)}
+								value={priority}
 							>
 								<SelectTrigger>
 									<SelectValue placeholder="Select priority" />
@@ -201,9 +201,9 @@ export const AddMessageToTaskModal = ({
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Category</label>
 							<TaskCategorySelector
-								workspaceId={workspaceId}
-								value={categoryId}
 								onChange={setCategoryId}
+								value={categoryId}
+								workspaceId={workspaceId}
 							/>
 						</div>
 					</div>
@@ -211,14 +211,14 @@ export const AddMessageToTaskModal = ({
 					<DialogFooter className="mt-6">
 						<div className="flex gap-2">
 							<Button
+								disabled={isSubmitting}
+								onClick={handleClose}
 								type="button"
 								variant="outline"
-								onClick={handleClose}
-								disabled={isSubmitting}
 							>
 								Cancel
 							</Button>
-							<Button type="submit" disabled={isSubmitting}>
+							<Button disabled={isSubmitting} type="submit">
 								{isSubmitting ? "Adding..." : "Add Task"}
 							</Button>
 						</div>

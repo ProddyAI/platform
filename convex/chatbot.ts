@@ -1,14 +1,14 @@
 "use node";
 
-import { api } from "./_generated/api";
 import { openai } from "@ai-sdk/openai";
+import { Composio } from "@composio/core";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
+import OpenAI from "openai";
+import { api } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
 import { action } from "./_generated/server";
-import OpenAI from "openai";
-import { Composio } from "@composio/core";
 
 // Define types for chat messages and responses
 type Source = {
@@ -388,12 +388,15 @@ function detectComposioIntent(query: string): ComposioIntent | null {
 }
 
 /**
- * Execute a Composio action directly using the SDK
+ * Execute a Composio action directly using the SDK.
+ * Resolves auth config IDs from the member's connected accounts so tools.get uses valid authConfigIds.
  */
 async function executeComposioAction(
+	ctx: { runQuery: (query: any, args: any) => Promise<any> },
 	entityId: string,
 	appNames: string[],
-	message: string
+	message: string,
+	workspaceId: Id<"workspaces">
 ): Promise<{
 	success: boolean;
 	response?: string;
@@ -429,19 +432,58 @@ async function executeComposioAction(
 			apiKey: process.env.OPENAI_API_KEY,
 		});
 
-		// Get tools for the specified apps
+		// Resolve auth config IDs from member's or workspace's connected accounts (Composio requires authConfigIds, not appNames)
 		const tools: any[] = [];
 		for (const appName of appNames) {
+			const toolkit = appName.toLowerCase();
 			try {
-				const appTools = await composio.tools.get(entityId, {
-					appNames: [appName],
-				} as any);
-				
-				if (Array.isArray(appTools)) {
-					tools.push(...appTools);
-				} else if (appTools) {
-					tools.push(appTools);
+				let connectedAccount = await ctx.runQuery(
+					api.integrations.getMyConnectedAccountByToolkit,
+					{ workspaceId, toolkit }
+				);
+				// Fallback: workspace-level connections (e.g. stored without memberId from manage page)
+				if (!connectedAccount || connectedAccount.status !== "ACTIVE") {
+					connectedAccount = await ctx.runQuery(
+						api.integrations.getWorkspaceConnectedAccountByToolkit,
+						{ workspaceId, toolkit }
+					);
 				}
+				if (!connectedAccount || connectedAccount.status !== "ACTIVE") {
+					console.warn(
+						`[Composio] No active connected account for ${appName} (toolkit: ${toolkit})`
+					);
+					continue;
+				}
+
+				const authConfig = await ctx.runQuery(
+					api.integrations.getAuthConfigById,
+					{ authConfigId: connectedAccount.authConfigId }
+				);
+				if (!authConfig?.composioAuthConfigId) {
+					console.warn(`[Composio] No Composio auth config ID for ${appName}`);
+					continue;
+				}
+
+				// Use the connection's entityId: Composio links connections to an entity (e.g. workspace_xxx).
+				// tools.get must use that same entityId or Composio returns no tools.
+				const entityIdForTools =
+					connectedAccount.userId && connectedAccount.userId.length > 0
+						? connectedAccount.userId
+						: entityId;
+
+				const appTools = await composio.tools.get(entityIdForTools, {
+					authConfigIds: [authConfig.composioAuthConfigId],
+					limit: 100,
+				});
+
+				const toolsArray = Array.isArray(appTools)
+					? appTools
+					: typeof appTools === "object" && appTools !== null
+						? Object.values(appTools)
+						: appTools
+							? [appTools]
+							: [];
+				tools.push(...toolsArray);
 			} catch (error) {
 				console.warn(`[Composio] No tools found for app ${appName}:`, error);
 			}
@@ -456,13 +498,14 @@ async function executeComposioAction(
 			};
 		}
 
-		// Convert Composio tools to OpenAI format
+		// Convert Composio tools to OpenAI format (align with composio-config shape)
 		const openaiTools = tools.map((tool: any) => ({
 			type: "function" as const,
 			function: {
-				name: tool.name || tool.slug,
-				description: tool.description,
-				parameters: tool.parameters || tool.schema || {},
+				name: tool.function?.name || tool.name || tool.slug,
+				description: tool.function?.description || tool.description,
+				parameters:
+					tool.parameters ?? tool.schema ?? tool.function?.parameters ?? {},
 			},
 		}));
 
@@ -502,17 +545,18 @@ async function executeComposioAction(
 			for (const toolCall of completion.choices[0].message.tool_calls) {
 				if (toolCall.type === "function") {
 					try {
-
 						const actionParams = JSON.parse(toolCall.function.arguments);
 						const result = await composio.tools.execute(
 							toolCall.function.name,
 							{
 								userId: entityId,
-								arguments: actionParams
+								arguments: actionParams,
 							}
 						);
 
-						console.log(`[Composio] Tool ${toolCall.function.name} executed successfully`);
+						console.log(
+							`[Composio] Tool ${toolCall.function.name} executed successfully`
+						);
 
 						toolResults.push({
 							toolCallId: toolCall.id,
@@ -520,10 +564,14 @@ async function executeComposioAction(
 							toolName: toolCall.function.name,
 						});
 					} catch (error) {
-						console.error(`[Composio] Tool execution error for ${toolCall.function.name}:`, error);
-						
-						const errorMessage = error instanceof Error ? error.message : "Unknown error";
-						
+						console.error(
+							`[Composio] Tool execution error for ${toolCall.function.name}:`,
+							error
+						);
+
+						const errorMessage =
+							error instanceof Error ? error.message : "Unknown error";
+
 						// Check if it's a connection error
 						if (
 							errorMessage.includes("not connected") ||
@@ -587,9 +635,10 @@ async function executeComposioAction(
 		};
 	} catch (error) {
 		console.error("[executeComposioAction] Error:", error);
-		
-		const errorMessage = error instanceof Error ? error.message : "Unknown error";
-		
+
+		const errorMessage =
+			error instanceof Error ? error.message : "Unknown error";
+
 		// Check if it's a connection/auth error
 		if (
 			errorMessage.includes("not connected") ||
@@ -603,7 +652,7 @@ async function executeComposioAction(
 				error: "not_connected",
 			};
 		}
-		
+
 		return {
 			success: false,
 			error: errorMessage,
@@ -1502,7 +1551,7 @@ function shortDate(ms: number) {
 
 type Priority = "lowest" | "low" | "medium" | "high" | "highest";
 
-function isDefined<T>(value: T | null | undefined): value is T {
+function _isDefined<T>(value: T | null | undefined): value is T {
 	return value !== null && value !== undefined;
 }
 
@@ -1618,11 +1667,13 @@ export const askAssistant = action({
 
 			console.log("[Composio] Executing with:", { entityId, appNames });
 
-			// Execute Composio action
+			// Execute Composio action (pass ctx and workspaceId to resolve authConfigIds from connected accounts)
 			const composioResult = await executeComposioAction(
+				ctx,
 				entityId,
 				appNames,
-				args.query
+				args.query,
+				workspaceId
 			);
 
 			if (composioResult.success && composioResult.response) {
@@ -2307,12 +2358,15 @@ Updates:\n${context}`;
 				}
 
 				if (intent.mode === "tasks_today") {
-					const tasks = await ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
-						workspaceId,
-						from: todayFrom,
-						to: todayTo,
-						onlyIncomplete: true,
-					});
+					const tasks = await ctx.runQuery(
+						api.chatbotQueries.getMyTasksInRange,
+						{
+							workspaceId,
+							from: todayFrom,
+							to: todayTo,
+							onlyIncomplete: true,
+						}
+					);
 
 					const groups = emptyPriorityGroup();
 					for (const t of tasks) {
@@ -2334,12 +2388,15 @@ Updates:\n${context}`;
 				}
 
 				if (intent.mode === "tasks_tomorrow") {
-					const tasks = await ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
-						workspaceId,
-						from: tomorrowFrom,
-						to: tomorrowTo,
-						onlyIncomplete: true,
-					});
+					const tasks = await ctx.runQuery(
+						api.chatbotQueries.getMyTasksInRange,
+						{
+							workspaceId,
+							from: tomorrowFrom,
+							to: tomorrowTo,
+							onlyIncomplete: true,
+						}
+					);
 
 					const groups = emptyPriorityGroup();
 					for (const t of tasks) {
@@ -2362,10 +2419,13 @@ Updates:\n${context}`;
 
 				if (intent.mode === "tasks") {
 					// Show upcoming/incomplete tasks (cost-safe, no model).
-					const tasks = await ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
-						workspaceId,
-						limit: 25,
-					});
+					const tasks = await ctx.runQuery(
+						api.chatbotQueries.getMyUpcomingTasks,
+						{
+							workspaceId,
+							limit: 25,
+						}
+					);
 					const groups = emptyPriorityGroup();
 					for (const t of tasks) {
 						const bucket = bucketByDueDate({
@@ -2937,38 +2997,35 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		}
 
 		// ---------------------------------------------------------------------
-		// 4. FALLBACK → KNOWLEDGE BASE (RAG)
+		// 4. FALLBACK → KNOWLEDGE BASE (RAG) – used by assistant/chatbot only
 		// ---------------------------------------------------------------------
-		// Note: We intentionally avoid mining/summarizing raw chat messages here.
-
 		let ragResults: Array<{ text: string }> = [];
 		let isIndexing = false;
 		try {
-			// Removed semanticSearch call
+			const ragResponse = await ctx.runAction(api.ragchat.semanticSearch, {
+				workspaceId: args.workspaceId!,
+				userId: args.userId,
+				query: args.query,
+				limit: 5,
+			});
+			ragResults = ragResponse.results.map(
+				(r: { content: Array<{ text: string }> }) => ({
+					text: r.content.map((c) => c.text).join("\n"),
+				})
+			);
 		} catch (error) {
-			// If namespace doesn't exist, trigger indexing for this workspace
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 			if (errorMessage.includes("No compatible namespace found")) {
-				console.log(
-					`RAG namespace not found for workspace ${args.workspaceId}, triggering auto-initialization`
-				);
-
-				// Call mutation to schedule indexing (mutations can use scheduler)
 				try {
 					await ctx.runMutation(api.ragchat.autoInitializeWorkspace, {
 						workspaceId: args.workspaceId!,
 						limit: 1000,
 					});
 					isIndexing = true;
-					console.log(
-						`Auto-initialization triggered for workspace ${args.workspaceId}`
-					);
-				} catch (indexError) {
-					console.error("Failed to trigger auto-initialization:", indexError);
+				} catch {
+					// Ignore
 				}
-
-				// Continue without RAG results - will use LLM without context
 				ragResults = [];
 			} else {
 				console.error("RAG search error:", error);
@@ -2980,11 +3037,9 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 			.map((c, i) => `[Doc ${i + 1}] ${c.text ?? ""}`)
 			.join("\n\n");
 
-		// If no RAG context available, provide helpful response without requiring indexed data
 		if (!ragContext) {
-			// Generate a helpful response using LLM without RAG context
 			const generalPrompt = `You are Proddy, a personal work assistant. The user asked: "${args.query}"
-			
+
 Provide a helpful, friendly response. You can:
 - Explain what you can help with (calendar, tasks, team status, messages, notes, boards)
 - Suggest they ask about specific features
@@ -3016,10 +3071,7 @@ Keep it brief and actionable.`;
 			}
 		}
 
-		// Cost-safe: do not include large channel histories in general QA.
-		const combinedContext =
-			`${ragContext ? `KNOWLEDGE BASE:\n${ragContext}` : ""}`.trim();
-
+		const combinedContext = `KNOWLEDGE BASE:\n${ragContext}`.trim();
 		const mixedPrompt = `Answer as a personal work assistant using ONLY the provided context.
 
 Rules:
@@ -3038,16 +3090,12 @@ Context:\n${combinedContext}`;
 				systemPrompt: "",
 				recentMessages: recentChatMessages,
 			});
-			const sources = [...(ragResults.length ? ["Knowledge Base"] : [])];
+			const sources = [...(ragResults.length > 0 ? ["Knowledge Base"] : [])];
 			return { answer, sources };
 		} catch (error) {
-			// Log the actual error for debugging
 			console.error("LLM generation error in chatbot:", error);
-
-			// Provide more specific error message
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
-
 			if (errorMessage.includes("OPENAI_API_KEY")) {
 				return {
 					answer:
@@ -3055,7 +3103,6 @@ Context:\n${combinedContext}`;
 					sources: [],
 				};
 			}
-
 			if (
 				errorMessage.includes("rate limit") ||
 				errorMessage.includes("quota")
@@ -3066,13 +3113,10 @@ Context:\n${combinedContext}`;
 					sources: [],
 				};
 			}
-
-			// Generic fallback with context info
 			const contextInfo =
 				ragResults.length > 0
 					? `I found ${ragResults.length} relevant document(s), but couldn't generate a summary.`
 					: "I couldn't find relevant information to answer your question.";
-
 			return {
 				answer: `Unable to generate a response at this time. ${contextInfo}\n\nError: ${errorMessage.substring(0, 150)}`,
 				sources: [],

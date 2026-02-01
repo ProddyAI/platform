@@ -36,7 +36,7 @@ export const TaskCreationModal = ({
 	onCreateTask,
 }: TaskCreationModalProps) => {
 	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
+		<Dialog onOpenChange={onClose} open={isOpen}>
 			<DialogContent className="max-w-md">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
@@ -49,32 +49,32 @@ export const TaskCreationModal = ({
 						<Label htmlFor="task-title">Task Title</Label>
 						<Input
 							id="task-title"
-							value={taskTitle}
 							onChange={(e) => onTaskTitleChange(e.target.value)}
 							placeholder="Enter task title..."
+							value={taskTitle}
 						/>
 					</div>
 					<div>
 						<Label htmlFor="task-content">Task Description</Label>
 						<Textarea
 							id="task-content"
-							value={taskContent}
 							onChange={(e) => onTaskContentChange(e.target.value)}
 							placeholder="Task description..."
 							rows={3}
+							value={taskContent}
 						/>
 					</div>
 					<div>
 						<Label htmlFor="task-due-date">Due Date (Optional)</Label>
 						<Input
 							id="task-due-date"
+							onChange={(e) => onTaskDueDateChange(e.target.value)}
 							type="date"
 							value={taskDueDate}
-							onChange={(e) => onTaskDueDateChange(e.target.value)}
 						/>
 					</div>
 					<div className="flex justify-end gap-2">
-						<Button variant="outline" onClick={onClose}>
+						<Button onClick={onClose} variant="outline">
 							Cancel
 						</Button>
 						<Button onClick={onCreateTask}>Create Task</Button>

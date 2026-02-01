@@ -63,7 +63,7 @@ export const MermaidEditDialog = ({
 	const isCodeValid = code.trim().length > 0;
 
 	return (
-		<Dialog open={open} onOpenChange={handleOpenChange}>
+		<Dialog onOpenChange={handleOpenChange} open={open}>
 			<DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
 				<DialogHeader>
 					<DialogTitle>Edit Mermaid Diagram</DialogTitle>
@@ -77,12 +77,12 @@ export const MermaidEditDialog = ({
 					<div className="space-y-2">
 						<Label htmlFor="mermaid-code">Mermaid Code</Label>
 						<Textarea
+							className="min-h-[300px] font-mono text-sm resize-none"
 							id="mermaid-code"
-							value={code}
 							onChange={(e) => setCode(e.target.value)}
 							placeholder="Enter your Mermaid diagram code here..."
-							className="min-h-[300px] font-mono text-sm resize-none"
 							style={{ fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace' }}
+							value={code}
 						/>
 					</div>
 
@@ -108,10 +108,10 @@ export const MermaidEditDialog = ({
 				</div>
 
 				<DialogFooter className="flex-shrink-0">
-					<Button variant="outline" onClick={handleCancel} disabled={isSaving}>
+					<Button disabled={isSaving} onClick={handleCancel} variant="outline">
 						Cancel
 					</Button>
-					<Button onClick={handleSave} disabled={!isCodeValid || isSaving}>
+					<Button disabled={!isCodeValid || isSaving} onClick={handleSave}>
 						{isSaving ? "Saving..." : "Save"}
 					</Button>
 				</DialogFooter>

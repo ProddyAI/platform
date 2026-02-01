@@ -80,8 +80,8 @@ export const BarChart = ({
 
 	return (
 		<div
-			ref={containerRef}
 			className={cn("relative flex items-end gap-2", className)}
+			ref={containerRef}
 			style={{ height: chartHeight }}
 		>
 			{data.map((item, index) => {
@@ -90,13 +90,13 @@ export const BarChart = ({
 
 				return (
 					<div
-						key={index}
-						data-bar-index={index}
 						className="relative flex flex-col items-center justify-end flex-1 group"
-						style={{ height: chartHeight }}
+						data-bar-index={index}
+						key={index}
+						onClick={() => onBarClick?.(item.label, item.value, index)}
 						onMouseEnter={() => setHoveredIndex(index)}
 						onMouseLeave={() => setHoveredIndex(null)}
-						onClick={() => onBarClick?.(item.label, item.value, index)}
+						style={{ height: chartHeight }}
 					>
 						<div
 							className={cn(

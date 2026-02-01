@@ -165,21 +165,21 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 			<ConfirmDialog />
 
 			<WorkspaceToolbar>
-				<Dialog open={channelDialogOpen} onOpenChange={setChannelDialogOpen}>
+				<Dialog onOpenChange={setChannelDialogOpen} open={channelDialogOpen}>
 					<DialogTrigger asChild>
 						<Button
-							variant="ghost"
 							className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 							size="sm"
+							variant="ghost"
 						>
 							<div className="flex items-center">
 								{channel.iconImageUrl && !imageLoadError ? (
 									<div className="mr-2 h-5 w-5 rounded-full overflow-hidden">
 										<img
-											src={channel.iconImageUrl}
 											alt={`Channel icon for ${channel.name}`}
 											className="h-full w-full object-cover"
 											onError={() => setImageLoadError(true)}
+											src={channel.iconImageUrl}
 										/>
 									</div>
 								) : channel.icon ? (
@@ -203,10 +203,10 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 								{channel.iconImageUrl && !imageLoadError ? (
 									<div className="mr-2 h-6 w-6 rounded-full overflow-hidden">
 										<img
-											src={channel.iconImageUrl}
 											alt={`Channel icon for ${channel.name}`}
 											className="h-full w-full object-cover"
 											onError={() => setImageLoadError(true)}
+											src={channel.iconImageUrl}
 										/>
 									</div>
 								) : channel.icon ? (
@@ -230,13 +230,13 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 							{/* Admin-only dialog for editing both name and icon */}
 							{member?.role === "admin" && (
 								<Dialog
-									open={editOpen || isUpdatingChannel}
 									onOpenChange={handleEditOpen}
+									open={editOpen || isUpdatingChannel}
 								>
 									<DialogTrigger asChild>
 										<button
-											disabled={isUpdatingChannel}
 											className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+											disabled={isUpdatingChannel}
 										>
 											<div className="flex w-full items-center justify-between">
 												<p className="text-sm font-semibold">
@@ -251,10 +251,10 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 												<div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
 													{channel.iconImageUrl && !imageLoadError ? (
 														<img
-															src={channel.iconImageUrl}
 															alt={`Channel icon for ${channel.name}`}
 															className="h-full w-full object-cover"
 															onError={() => setImageLoadError(true)}
+															src={channel.iconImageUrl}
 														/>
 													) : channel.icon ? (
 														<span className="text-xl">{channel.icon}</span>
@@ -283,8 +283,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 							)}
 
 							<Dialog
-								open={iconEditOpen || (isUpdatingChannel && !editOpen)}
 								onOpenChange={handleIconEditOpen}
+								open={iconEditOpen || (isUpdatingChannel && !editOpen)}
 							>
 								<DialogTrigger asChild>
 									<button className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50">
@@ -299,10 +299,10 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 											<div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
 												{channel.iconImageUrl && !imageLoadError ? (
 													<img
-														src={channel.iconImageUrl}
 														alt={`Channel icon for ${channel.name}`}
 														className="h-full w-full object-cover"
 														onError={() => setImageLoadError(true)}
+														src={channel.iconImageUrl}
 													/>
 												) : channel.icon ? (
 													<span className="text-xl">{channel.icon}</span>
@@ -336,7 +336,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 										</DialogDescription>
 									</DialogHeader>
 
-									<form onSubmit={handleIconSubmit} className="space-y-4">
+									<form className="space-y-4" onSubmit={handleIconSubmit}>
 										<div className="space-y-4">
 											<div className="flex flex-col gap-2">
 												<div className="flex items-center justify-between">
@@ -350,8 +350,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 												<div className="flex items-center justify-center">
 													<div className="flex-shrink-0">
 														<EmojiPopover
-															onEmojiSelect={handleEmojiSelect}
 															hint="Select channel icon"
+															onEmojiSelect={handleEmojiSelect}
 														>
 															<div className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-100 hover:bg-gray-200 hover:border-gray-400 transition-all">
 																{icon ? (
@@ -375,7 +375,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 										<DialogFooter>
 											<DialogClose asChild>
-												<Button variant="outline" disabled={isUpdatingChannel}>
+												<Button disabled={isUpdatingChannel} variant="outline">
 													Cancel
 												</Button>
 											</DialogClose>
@@ -390,8 +390,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 							{/* Admin-only dialog for editing both name and icon */}
 							<Dialog
-								open={editOpen || isUpdatingChannel}
 								onOpenChange={handleEditOpen}
+								open={editOpen || isUpdatingChannel}
 							>
 								<DialogContent>
 									<DialogHeader>
@@ -404,7 +404,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 										</VisuallyHidden.Root>
 									</DialogHeader>
 
-									<form onSubmit={handleSubmit} className="space-y-4">
+									<form className="space-y-4" onSubmit={handleSubmit}>
 										<div className="space-y-4">
 											<div className="flex flex-col gap-2">
 												<div className="flex items-center justify-between">
@@ -418,8 +418,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 												<div className="flex items-center gap-3">
 													<div className="flex-shrink-0">
 														<EmojiPopover
-															onEmojiSelect={handleEmojiSelect}
 															hint="Select channel icon"
+															onEmojiSelect={handleEmojiSelect}
 														>
 															<div className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-100 hover:bg-gray-200 hover:border-gray-400 transition-all">
 																{icon ? (
@@ -442,14 +442,14 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 															Channel Name
 														</label>
 														<Input
-															value={value}
-															disabled={isUpdatingChannel}
-															onChange={handleChange}
-															required
 															autoFocus
-															minLength={3}
+															disabled={isUpdatingChannel}
 															maxLength={20}
+															minLength={3}
+															onChange={handleChange}
 															placeholder="e.g. plan-budget"
+															required
+															value={value}
 														/>
 													</div>
 												</div>
@@ -458,7 +458,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 										<DialogFooter>
 											<DialogClose asChild>
-												<Button variant="outline" disabled={isUpdatingChannel}>
+												<Button disabled={isUpdatingChannel} variant="outline">
 													Cancel
 												</Button>
 											</DialogClose>
@@ -473,9 +473,9 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 							{member?.role === "admin" && (
 								<button
-									onClick={handleDelete}
-									disabled={isRemovingChannel}
 									className="flex cursor-pointer items-center gap-x-2 rounded-lg border bg-white px-5 py-4 text-rose-600 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+									disabled={isRemovingChannel}
+									onClick={handleDelete}
 								>
 									<Trash className="size-4" />
 									<p className="text-sm font-semibold">Delete channel</p>

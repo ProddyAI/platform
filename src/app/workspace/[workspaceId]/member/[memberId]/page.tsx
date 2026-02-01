@@ -93,10 +93,10 @@ const MemberIdPage = () => {
 		<div className="flex h-full flex-col">
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
-					size="sm"
 					onClick={() => onOpenProfile(memberId)}
+					size="sm"
+					variant="ghost"
 				>
 					<Avatar className="mr-3 size-7">
 						<AvatarImage src={member?.user.image} />
@@ -108,19 +108,19 @@ const MemberIdPage = () => {
 			</WorkspaceToolbar>
 
 			<MessageList
-				data={results}
-				variant="conversation"
-				memberName={member?.user.name}
-				memberImage={member?.user.image}
-				loadMore={loadMore}
 				canLoadMore={status === "CanLoadMore"}
+				data={results}
 				isLoadingMore={status === "LoadingMore"}
+				loadMore={loadMore}
+				memberImage={member?.user.image}
+				memberName={member?.user.name}
+				variant="conversation"
 			/>
 
 			<ChatInput
-				placeholder={`Message ${member?.user.name}`}
 				conversationId={conversationId}
 				memberName={member?.user.name}
+				placeholder={`Message ${member?.user.name}`}
 			/>
 		</div>
 	);

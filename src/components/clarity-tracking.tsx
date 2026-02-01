@@ -7,8 +7,8 @@ export const ClarityTracking = () => {
 	return (
 		<Script
 			id="clarity-tracking"
-			strategy="afterInteractive"
 			src={`https://www.clarity.ms/tag/${projectId}`}
+			strategy="afterInteractive"
 		/>
 	);
 };

@@ -96,9 +96,9 @@ const TestCanvasPage = () => {
 			<div className="border-b bg-primary p-4">
 				<div className="flex items-center justify-between">
 					<Button
-						variant="ghost"
 						className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 						size="sm"
+						variant="ghost"
 					>
 						<Palette className="mr-2 size-5" />
 						<span className="truncate">Canvas</span>
@@ -110,30 +110,30 @@ const TestCanvasPage = () => {
 
 			{/* Specific Canvas Header */}
 			<TestCanvasHeader
-				zoom={zoom}
-				onZoomChange={handleZoomChange}
 				itemCount={canvasItems.length}
+				onZoomChange={handleZoomChange}
+				zoom={zoom}
 			/>
 
 			<div className="flex flex-1 overflow-hidden">
 				<TestCanvasToolbar
-					selectedTool={selectedTool}
+					onItemDelete={handleItemDelete}
+					onItemUpdate={handleItemUpdate}
 					onToolSelect={handleToolSelect}
 					selectedItem={canvasItems.find((item) => item.id === selectedItemId)}
-					onItemUpdate={handleItemUpdate}
-					onItemDelete={handleItemDelete}
+					selectedTool={selectedTool}
 				/>
 
 				<div className="flex-1 overflow-hidden">
 					<TestCanvasBoard
 						items={canvasItems}
-						selectedTool={selectedTool}
-						selectedItemId={selectedItemId}
-						zoom={zoom}
-						onItemSelect={setSelectedItemId}
-						onItemUpdate={handleItemUpdate}
 						onItemCreate={handleItemCreate}
 						onItemDelete={handleItemDelete}
+						onItemSelect={setSelectedItemId}
+						onItemUpdate={handleItemUpdate}
+						selectedItemId={selectedItemId}
+						selectedTool={selectedTool}
+						zoom={zoom}
 					/>
 				</div>
 

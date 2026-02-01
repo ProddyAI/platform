@@ -41,12 +41,12 @@ export const TestNotesHeader = ({
 								<Tag className="h-3 w-3 text-muted-foreground" />
 								<div className="flex gap-1">
 									{selectedNote.tags.slice(0, 2).map((tag) => (
-										<Badge key={tag} variant="outline" className="text-xs">
+										<Badge className="text-xs" key={tag} variant="outline">
 											{tag}
 										</Badge>
 									))}
 									{selectedNote.tags.length > 2 && (
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											+{selectedNote.tags.length - 2}
 										</Badge>
 									)}
@@ -73,7 +73,7 @@ export const TestNotesHeader = ({
 				{/* Right side - Actions */}
 				<div className="flex items-center gap-2">
 					{selectedNote?.isShared && (
-						<Button variant="ghost" size="sm">
+						<Button size="sm" variant="ghost">
 							<Share className="h-4 w-4 mr-2" />
 							Share
 						</Button>

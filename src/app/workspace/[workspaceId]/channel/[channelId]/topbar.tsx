@@ -57,13 +57,13 @@ const Topbar = () => {
 
 					return (
 						<Link
-							key={tab.href}
-							href={tab.href}
 							className={cn(
 								"flex h-full items-center justify-center gap-x-2 border-b-2 border-transparent px-2 sm:px-4 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-muted/30 hover:text-foreground opacity-100 visible flex-1 min-w-0",
 								tab.active &&
 									"border-secondary text-secondary hover:bg-secondary/5"
 							)}
+							href={tab.href}
+							key={tab.href}
 						>
 							<Icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
 							<span className="ml-2 text-xs md:text-sm opacity-100">

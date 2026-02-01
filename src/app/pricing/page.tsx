@@ -18,26 +18,26 @@ const PricingPage = () => {
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center">
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.5 }}
 							className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary mb-4"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5 }}
 						>
 							BETA PRICING
 						</motion.div>
 						<motion.h1
+							animate={{ opacity: 1, y: 0 }}
 							className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6"
 							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
 							Free for everyone during{" "}
 							<span className="text-primary">beta</span>
 						</motion.h1>
 						<motion.p
+							animate={{ opacity: 1, y: 0 }}
 							className="text-xl text-gray-600 max-w-3xl mx-auto mb-10"
 							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.2 }}
 						>
 							All features are unlocked while we’re in beta. Pricing below shows
@@ -53,10 +53,10 @@ const PricingPage = () => {
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
 						{/* Free Plan */}
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.5, delay: 0.3 }}
 							className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 relative"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5, delay: 0.3 }}
 						>
 							<h3 className="text-lg font-semibold mb-2">Free</h3>
 							<div className="mb-6">
@@ -100,10 +100,10 @@ const PricingPage = () => {
 
 						{/* Starter Plan */}
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.5, delay: 0.4 }}
 							className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 relative"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<h3 className="text-lg font-semibold mb-2">Starter</h3>
 							<div className="mb-6">
@@ -144,17 +144,17 @@ const PricingPage = () => {
 									<span className="text-gray-700">Group calls up to 720p</span>
 								</li>
 							</ul>
-							<Button disabled variant="outline" className="w-full">
+							<Button className="w-full" disabled variant="outline">
 								Available after beta
 							</Button>
 						</motion.div>
 
 						{/* Pro Plan */}
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.5, delay: 0.5 }}
 							className="bg-white rounded-xl shadow-sm p-8 border border-primary/20 relative ring-1 ring-primary/20"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5, delay: 0.5 }}
 						>
 							<h3 className="text-lg font-semibold mb-2">Pro</h3>
 							<div className="mb-6">
@@ -197,17 +197,17 @@ const PricingPage = () => {
 									<span className="text-gray-700">Priority support</span>
 								</li>
 							</ul>
-							<Button disabled className="w-full">
+							<Button className="w-full" disabled>
 								Available after beta
 							</Button>
 						</motion.div>
 
 						{/* Enterprise Plan */}
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.5, delay: 0.6 }}
 							className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 relative"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5, delay: 0.6 }}
 						>
 							<h3 className="text-lg font-semibold mb-2">Enterprise</h3>
 							<div className="mb-6">
@@ -242,7 +242,7 @@ const PricingPage = () => {
 								</li>
 							</ul>
 							<Link href="/contact">
-								<Button variant="outline" className="w-full">
+								<Button className="w-full" variant="outline">
 									Contact Sales
 								</Button>
 							</Link>
@@ -251,7 +251,7 @@ const PricingPage = () => {
 				</div>
 			</section>
 
-			<section id="comparison" className="py-16 bg-white">
+			<section className="py-16 bg-white" id="comparison">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="mb-10">
 						<h2 className="text-3xl font-semibold text-gray-900">

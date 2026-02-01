@@ -29,11 +29,11 @@ export const OTPVerificationMail: React.FC<
 			<Body style={main}>
 				<Container style={container}>
 					<Img
-						src="https://proddy.tech/logo-nobg.png"
-						width="40"
-						height="40"
 						alt="Proddy"
+						height="40"
+						src="https://proddy.tech/logo-nobg.png"
 						style={logo}
+						width="40"
 					/>
 					<Heading style={heading}>Verify Your Email Address</Heading>
 					<Section style={section}>

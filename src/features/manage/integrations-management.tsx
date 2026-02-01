@@ -272,13 +272,13 @@ export const IntegrationsManagement = ({
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{SUPPORTED_TOOLKITS.map((toolkit) => (
 						<ServiceIntegrationCard
-							key={`${toolkit}-${refreshKey}`}
-							workspaceId={workspaceId}
-							toolkit={toolkit}
 							authConfig={authConfigsByToolkit[toolkit]}
 							connectedAccount={connectedAccountsByToolkit[toolkit]}
 							currentMember={currentMember}
+							key={`${toolkit}-${refreshKey}`}
 							onConnectionChange={handleConnectionChange}
+							toolkit={toolkit}
+							workspaceId={workspaceId}
 						/>
 					))}
 				</div>

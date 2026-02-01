@@ -141,11 +141,11 @@ export const PieChart = ({
 
 	return (
 		<div
-			ref={containerRef}
 			className={cn(
 				"relative w-full h-full flex items-start justify-start pt-4 pl-4",
 				className
 			)}
+			ref={containerRef}
 			style={{ overflow: "visible" }}
 		>
 			{/* Pie Chart Container - Positioned to the left and top */}
@@ -161,20 +161,20 @@ export const PieChart = ({
 				}}
 			>
 				<svg
-					viewBox="0 0 140 145"
 					className="w-full h-full"
 					preserveAspectRatio="xMidYMid meet"
 					style={{ overflow: "visible", isolation: "isolate" }}
+					viewBox="0 0 140 145"
 				>
 					<defs>
 						{/* Side - solid darker shade for 3D depth effect */}
 						{segments.map((segment) => (
 							<linearGradient
-								key={`side-gradient-${segment.index}`}
 								id={`sideGradient-${segment.index}`}
+								key={`side-gradient-${segment.index}`}
 								x1="0%"
-								y1="0%"
 								x2="0%"
+								y1="0%"
 								y2="100%"
 							>
 								<stop
@@ -191,11 +191,11 @@ export const PieChart = ({
 						{/* Top surface with exact color matching legend */}
 						{segments.map((segment) => (
 							<linearGradient
-								key={`top-gradient-${segment.index}`}
 								id={`topGradient-${segment.index}`}
+								key={`top-gradient-${segment.index}`}
 								x1="0%"
-								y1="0%"
 								x2="0%"
+								y1="0%"
 								y2="100%"
 							>
 								<stop
@@ -211,16 +211,16 @@ export const PieChart = ({
 
 						{/* Drop shadow filter for tooltip */}
 						<filter
+							height="200%"
 							id="tooltip-shadow"
+							width="200%"
 							x="-50%"
 							y="-50%"
-							width="200%"
-							height="200%"
 						>
 							<feGaussianBlur in="SourceAlpha" stdDeviation="2" />
 							<feOffset dx="0" dy="2" result="offsetblur" />
 							<feComponentTransfer>
-								<feFuncA type="linear" slope="0.3" />
+								<feFuncA slope="0.3" type="linear" />
 							</feComponentTransfer>
 							<feMerge>
 								<feMergeNode />
@@ -270,14 +270,14 @@ export const PieChart = ({
 
 										return (
 											<path
-												key={`side-${segment.index}-${idx}`}
 												d={pathData.path}
 												fill={fillColor}
-												stroke="rgba(0,0,0,0.1)"
-												strokeWidth="0.5"
 												fillOpacity="1"
-												strokeLinejoin="round"
+												key={`side-${segment.index}-${idx}`}
+												stroke="rgba(0,0,0,0.1)"
 												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth="0.5"
 												style={{
 													transition: "all 0.3s ease-out",
 												}}
@@ -330,14 +330,14 @@ export const PieChart = ({
 
 											return (
 												<path
-													key={`side-${segment.index}-${idx}`}
 													d={pathData.path}
 													fill={fillColor}
-													stroke="rgba(0,0,0,0.1)"
-													strokeWidth="0.5"
 													fillOpacity="1"
-													strokeLinejoin="round"
+													key={`side-${segment.index}-${idx}`}
+													stroke="rgba(0,0,0,0.1)"
 													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth="0.5"
 													style={{
 														transition: "all 0.3s ease-out",
 														filter: "brightness(1.15)",
@@ -378,14 +378,11 @@ export const PieChart = ({
 
 							return (
 								<g
-									key={`top-${segment.index}`}
 									className={cn(
 										"transition-all duration-300 ease-out",
 										onSegmentClick && "cursor-pointer"
 									)}
-									onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
-									onMouseLeave={handleMouseLeave}
-									onMouseMove={handleMouseMove}
+									key={`top-${segment.index}`}
 									onClick={() =>
 										onSegmentClick?.(
 											segment.label,
@@ -393,6 +390,9 @@ export const PieChart = ({
 											segment.index
 										)
 									}
+									onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
+									onMouseLeave={handleMouseLeave}
+									onMouseMove={handleMouseMove}
 									style={{ pointerEvents: "all" }}
 								>
 									<path
@@ -443,14 +443,11 @@ export const PieChart = ({
 
 								return (
 									<g
-										key={`top-hovered-${segment.index}`}
 										className={cn(
 											"transition-all duration-300 ease-out",
 											onSegmentClick && "cursor-pointer"
 										)}
-										onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
-										onMouseLeave={handleMouseLeave}
-										onMouseMove={handleMouseMove}
+										key={`top-hovered-${segment.index}`}
 										onClick={() =>
 											onSegmentClick?.(
 												segment.label,
@@ -458,6 +455,9 @@ export const PieChart = ({
 												segment.index
 											)
 										}
+										onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
+										onMouseLeave={handleMouseLeave}
+										onMouseMove={handleMouseMove}
 										style={{ pointerEvents: "all" }}
 									>
 										<path
@@ -519,18 +519,18 @@ export const PieChart = ({
 
 						return (
 							<div
-								key={segment.index}
 								className={cn(
 									"flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all duration-300",
 									isHovered && "bg-muted/50 scale-105",
 									onSegmentClick && "cursor-pointer"
 								)}
-								onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
-								onMouseLeave={handleMouseLeave}
-								onMouseMove={handleMouseMove}
+								key={segment.index}
 								onClick={() =>
 									onSegmentClick?.(segment.label, segment.value, segment.index)
 								}
+								onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
+								onMouseLeave={handleMouseLeave}
+								onMouseMove={handleMouseMove}
 								style={{
 									boxShadow: isHovered
 										? `0 0 0 1px ${segment.color}40`

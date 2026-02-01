@@ -54,10 +54,10 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 						return (
 							<UserAvatar
 								borderColor={stringToColor(userKey)}
-								key={userKey}
-								src={user.info?.picture ?? undefined}
-								name={user.info?.name}
 								fallback={user.info?.name?.[0] || "U"}
+								key={userKey}
+								name={user.info?.name}
+								src={user.info?.picture ?? undefined}
 								userId={user.userId || user.info?.name}
 							/>
 						);
@@ -70,9 +70,9 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 									currentParticipant.info?.name ||
 									"you"
 							)}
-							src={currentParticipant.info?.picture ?? undefined}
-							name={`${currentParticipant.info?.name} (You)`}
 							fallback={currentParticipant.info?.name?.[0] || "Y"}
+							name={`${currentParticipant.info?.name} (You)`}
+							src={currentParticipant.info?.picture ?? undefined}
 							userId={
 								currentParticipant.userId || currentParticipant.info?.name
 							}
@@ -81,8 +81,8 @@ export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
 
 					{hasMoreUsers && (
 						<UserAvatar
-							name={`${participants.length - MAX_SHOWN_OTHER_USERS} more`}
 							fallback={`+${participants.length - MAX_SHOWN_OTHER_USERS}`}
+							name={`${participants.length - MAX_SHOWN_OTHER_USERS} more`}
 						/>
 					)}
 				</div>
@@ -96,8 +96,8 @@ export const ParticipantsSkeleton = ({
 }: ParticipantsProps = {}) => {
 	return (
 		<div
-			className={`w-[100px] absolute h-12 ${isFullScreen ? "top-8" : "top-32"} right-8 bg-white rounded-md p-3 flex items-center shadow-md z-50`}
 			aria-hidden
+			className={`w-[100px] absolute h-12 ${isFullScreen ? "top-8" : "top-32"} right-8 bg-white rounded-md p-3 flex items-center shadow-md z-50`}
 		/>
 	);
 };

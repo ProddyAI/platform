@@ -26,8 +26,8 @@ const Cursors = ({ variant }: { variant: "canvas" | "notes" }) => {
 		<>
 			{ids.map((connectionId) => (
 				<LiveCursor
-					key={connectionId}
 					connectionId={connectionId}
+					key={connectionId}
 					variant={variant}
 				/>
 			))}
@@ -79,10 +79,10 @@ const DrawingPaths = () => {
 					return (
 						<g key={key}>
 							<Path
+								fill={other.penColor ? colorToCSS(other.penColor) : "#000"}
+								points={other.pencilDraft}
 								x={0}
 								y={0}
-								points={other.pencilDraft}
-								fill={other.penColor ? colorToCSS(other.penColor) : "#000"}
 							/>
 						</g>
 					);

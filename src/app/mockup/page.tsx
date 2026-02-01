@@ -206,13 +206,13 @@ const MockupPage = () => {
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
 								<Input
+									className="pl-10 w-64"
+									onChange={(e) => setSearchQuery(e.target.value)}
 									placeholder="Search mockups..."
 									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									className="pl-10 w-64"
 								/>
 							</div>
-							<Badge variant="outline" className="flex items-center gap-1">
+							<Badge className="flex items-center gap-1" variant="outline">
 								<Users className="h-3 w-3" />
 								{testPages.length} Mockups
 							</Badge>
@@ -272,8 +272,8 @@ const MockupPage = () => {
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{filteredPages.map((page) => (
 						<Card
-							key={page.id}
 							className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 shadow-md hover:scale-105 overflow-hidden"
+							key={page.id}
 							onClick={() => handlePageClick(page.route)}
 						>
 							{/* Gradient Header */}
@@ -305,9 +305,9 @@ const MockupPage = () => {
 									<div className="flex flex-wrap gap-2">
 										{page.features.map((feature, index) => (
 											<Badge
+												className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-100"
 												key={index}
 												variant="secondary"
-												className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-100"
 											>
 												{feature}
 											</Badge>

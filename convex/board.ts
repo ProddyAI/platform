@@ -152,11 +152,6 @@ export const createCard = mutation({
 			}
 		}
 
-		// Schedule RAG indexing for the new card
-		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexCard, {
-			cardId,
-		});
-
 		return cardId;
 	},
 });
@@ -263,7 +258,6 @@ export const updateCard = mutation({
 			}
 		}
 
-		// Schedule RAG re-indexing for the updated card
 		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexCard, {
 			cardId,
 		});

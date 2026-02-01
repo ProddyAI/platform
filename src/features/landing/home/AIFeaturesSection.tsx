@@ -28,29 +28,29 @@ const FeatureCard = ({
 
 	return (
 		<motion.div
-			ref={cardRef}
-			initial={{ opacity: 0, y: 30 }}
 			animate={isCardInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-			transition={{ duration: 0.6, delay: delay * 0.1 }}
-			onMouseEnter={onHover}
-			onMouseLeave={onLeave}
 			className={`
         group bg-white rounded-2xl shadow-lg hover:shadow-xl overflow-hidden cursor-pointer
         transition-all duration-500 ease-in-out
         ${isExpanded ? "flex-[3]" : "flex-1"}
         mb-6 lg:mb-0
       `}
+			initial={{ opacity: 0, y: 30 }}
+			onMouseEnter={onHover}
+			onMouseLeave={onLeave}
+			ref={cardRef}
+			transition={{ duration: 0.6, delay: delay * 0.1 }}
 		>
 			{/* Mobile Layout - Always show full content */}
 			<div className="lg:hidden">
 				{/* Image */}
 				<div className="relative h-48 bg-gray-50 overflow-hidden rounded-t-2xl">
 					<Image
-						src={imageSrc}
 						alt={title}
-						fill
 						className="object-cover object-center w-full h-full"
+						fill
 						sizes="(max-width: 1024px) 100vw, 25vw"
+						src={imageSrc}
 					/>
 				</div>
 
@@ -71,11 +71,11 @@ const FeatureCard = ({
 				{/* Image Section - Full container fill */}
 				<div className="relative bg-gray-50 overflow-hidden rounded-t-2xl h-64">
 					<Image
-						src={imageSrc}
 						alt={title}
-						fill
 						className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+						fill
 						sizes="(max-width: 1024px) 100vw, 25vw"
+						src={imageSrc}
 						style={{
 							width: "100%",
 							height: "100%",
@@ -166,8 +166,8 @@ export const AIFeaturesSection = () => {
 
 	return (
 		<section
-			ref={sectionRef}
 			className="py-16 md:py-24 bg-white relative overflow-hidden"
+			ref={sectionRef}
 		>
 			{/* Background decorative elements */}
 			<div className="absolute inset-0 overflow-hidden">
@@ -179,22 +179,22 @@ export const AIFeaturesSection = () => {
 				{/* Section Header */}
 				<div className="text-center mb-12">
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isSectionInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5 }}
 						className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full bg-primary/10 text-primary mb-4"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5 }}
 					>
 						AI-POWERED FEATURES
 					</motion.div>
 					<motion.h2
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isSectionInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5, delay: 0.1 }}
 						className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 mb-4"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.1 }}
 					>
 						Smart Tools That <span className="text-primary">Amplify</span> Your
 						Productivity
@@ -205,14 +205,14 @@ export const AIFeaturesSection = () => {
 				<div className="flex flex-col lg:flex-row gap-6 lg:gap-4">
 					{features.map((feature, index) => (
 						<FeatureCard
-							key={feature.title}
-							title={feature.title}
+							delay={index + 3}
 							description={feature.description}
 							imageSrc={feature.imageSrc}
-							delay={index + 3}
 							isExpanded={expandedCard === index}
+							key={feature.title}
 							onHover={() => handleCardHover(index)}
 							onLeave={handleCardLeave}
+							title={feature.title}
 						/>
 					))}
 				</div>

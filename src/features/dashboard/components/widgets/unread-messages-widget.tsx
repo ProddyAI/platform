@@ -107,17 +107,17 @@ export const UnreadMessagesWidget = ({
 					<MessageSquare className="h-5 w-5 text-primary" />
 					<h3 className="font-medium">Unread Direct Messages</h3>
 					{!isEditMode && counts && counts.total > 0 && (
-						<Badge variant="default" className="ml-2">
+						<Badge className="ml-2" variant="default">
 							{counts.total}
 						</Badge>
 					)}
 				</div>
 				{!isEditMode && counts && counts.total > 0 && (
 					<Button
-						variant="outline"
-						size="sm"
-						onClick={handleMarkAllAsRead}
 						className="border-2"
+						onClick={handleMarkAllAsRead}
+						size="sm"
+						variant="outline"
 					>
 						<CheckCircle className="mr-2 h-4 w-4" />
 						Mark all as read
@@ -130,15 +130,15 @@ export const UnreadMessagesWidget = ({
 					<div className="space-y-2 p-4">
 						{messages.map((message) => (
 							<Card
-								key={message.id.toString()}
 								className="overflow-hidden border-2"
+								key={message.id.toString()}
 							>
 								<CardContent className="p-3">
 									<div className="flex items-start gap-3">
 										<Avatar className="h-8 w-8">
 											<AvatarImage
-												src={message.author.image}
 												alt={message.author.name || "User avatar"}
+												src={message.author.image}
 											/>
 											<AvatarFallback>
 												{message.author.name
@@ -181,10 +181,10 @@ export const UnreadMessagesWidget = ({
 												{message.text.length > 50 ? "..." : ""}
 											</p>
 											<Button
-												variant="ghost"
-												size="sm"
 												className="mt-2 w-full justify-start text-primary"
 												onClick={() => handleViewMessage(message)}
+												size="sm"
+												variant="ghost"
 											>
 												View conversation
 											</Button>

@@ -50,7 +50,7 @@ export const CreateWorkspaceModal = () => {
 	};
 
 	return (
-		<Dialog open={open || isPending} onOpenChange={handleClose}>
+		<Dialog onOpenChange={handleClose} open={open || isPending}>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Add a workspace</DialogTitle>
@@ -59,16 +59,16 @@ export const CreateWorkspaceModal = () => {
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className="space-y-4">
+				<form className="space-y-4" onSubmit={handleSubmit}>
 					<Input
-						disabled={isPending}
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						required
 						autoFocus
-						minLength={3}
+						disabled={isPending}
 						maxLength={20}
+						minLength={3}
+						onChange={(e) => setName(e.target.value)}
 						placeholder="Workspace name e.g 'Work', 'Personal', 'Home'"
+						required
+						value={name}
 					/>
 
 					<div className="flex justify-end">

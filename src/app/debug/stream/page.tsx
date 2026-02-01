@@ -131,9 +131,9 @@ export default function StreamDebugPage() {
 				</CardHeader>
 				<CardContent>
 					<Button
-						onClick={checkCredentials}
-						disabled={loading}
 						className="mb-4"
+						disabled={loading}
+						onClick={checkCredentials}
 					>
 						{loading ? "Checking..." : "Check Server Credentials"}
 					</Button>
@@ -209,9 +209,9 @@ export default function StreamDebugPage() {
 				</CardHeader>
 				<CardContent>
 					<Button
-						onClick={testTokenGeneration}
-						disabled={loading}
 						className="mb-4"
+						disabled={loading}
+						onClick={testTokenGeneration}
 					>
 						{loading ? "Testing..." : "Test Token Generation"}
 					</Button>

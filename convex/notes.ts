@@ -51,7 +51,6 @@ export const create = mutation({
 		// Create the prosemirror document for collaborative editing
 		await prosemirrorSync.create(ctx, noteId, { type: "doc", content: [] });
 
-		// Schedule RAG indexing for the new note
 		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexNote, {
 			noteId,
 		});
@@ -262,7 +261,6 @@ export const update = mutation({
 
 		const updatedNote = await ctx.db.patch(args.id, updateObj);
 
-		// Schedule RAG re-indexing for the updated note
 		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexNote, {
 			noteId: args.id,
 		});

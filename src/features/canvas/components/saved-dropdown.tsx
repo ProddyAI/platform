@@ -149,7 +149,7 @@ export const SavedCanvasesDropdown = () => {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" size="icon" className="h-6 w-6">
+				<Button className="h-6 w-6" size="icon" variant="ghost">
 					<FolderOpen className="h-3.5 w-3.5" />
 				</Button>
 			</DropdownMenuTrigger>
@@ -160,12 +160,12 @@ export const SavedCanvasesDropdown = () => {
 					</div>
 				) : savedCanvases.length > 0 ? (
 					savedCanvases.map((canvas) => (
-						<div key={canvas.id} className="flex flex-col">
+						<div className="flex flex-col" key={canvas.id}>
 							<DropdownMenuItem
+								className="cursor-pointer"
 								onClick={() =>
 									handleOpenCanvas(canvas.roomId, canvas.canvasName)
 								}
-								className="cursor-pointer"
 							>
 								<div className="flex items-center justify-between w-full">
 									<div className="flex items-center gap-2">
@@ -175,6 +175,7 @@ export const SavedCanvasesDropdown = () => {
 								</div>
 							</DropdownMenuItem>
 							<DropdownMenuItem
+								className="cursor-pointer text-red-500 hover:text-red-700 hover:bg-red-100"
 								onClick={(e) => {
 									e.stopPropagation();
 									handleDeleteCanvas(
@@ -183,7 +184,6 @@ export const SavedCanvasesDropdown = () => {
 										canvas.canvasName
 									);
 								}}
-								className="cursor-pointer text-red-500 hover:text-red-700 hover:bg-red-100"
 							>
 								<div className="flex items-center gap-2">
 									<Trash2 className="h-4 w-4" />
