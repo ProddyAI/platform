@@ -37,8 +37,8 @@ const PUBLIC_ROUTES = [
 	"/why-proddy",
 	"/assistant",
 	"/mockup",
-	"/signup",
-	"/signin",
+	"/auth/signup",
+	"/auth/signin",
 	"/auth",
 	"/", // Root path
 ];

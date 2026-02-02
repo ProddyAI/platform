@@ -89,7 +89,7 @@ export const SignInCard = ({
 					<div className="flex justify-end">
 						<Link
 							className="text-xs text-muted-foreground hover:text-secondary transition-colors"
-							href="/forgot-password"
+							href="/auth/forgot-password"
 						>
 							Forgot Password?
 						</Link>
@@ -136,7 +136,7 @@ export const SignInCard = ({
 					{isStandalone ? (
 						<Link
 							className="cursor-pointer font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
-							href="/signup"
+							href="/auth/signup"
 						>
 							Sign up
 						</Link>

@@ -354,7 +354,7 @@ const FeaturesPage = () => {
 										Explore Features <ArrowRight className="size-4" />
 									</Button>
 								</Link>
-								<Link href="/signup">
+								<Link href="/auth/signup">
 									<Button
 										className="gap-2 rounded-full border-gray-300 hover:border-primary/50 px-6 py-2 text-base"
 										size="lg"

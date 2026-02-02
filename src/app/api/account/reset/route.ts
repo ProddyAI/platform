@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Generate reset link with the server-generated token
-		const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${result.token}`;
+		const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${result.token}`;
 
 		// Send email
 		const resendClient = getResend();

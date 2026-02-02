@@ -43,7 +43,7 @@ const ResetPasswordContent = () => {
 	useEffect(() => {
 		if (!token) {
 			toast.error("Invalid reset link");
-			router.push("/forgot-password");
+			router.push("/auth/forgot-password");
 		}
 	}, [token, router]);
 
@@ -51,7 +51,7 @@ const ResetPasswordContent = () => {
 		if (verifyToken && !verifyToken.valid) {
 			toast.error(verifyToken.message || "Invalid or expired reset link");
 			setTimeout(() => {
-				router.push("/forgot-password");
+				router.push("/auth/forgot-password");
 			}, 2000);
 		}
 	}, [verifyToken, router]);
@@ -105,7 +105,7 @@ const ResetPasswordContent = () => {
 
 				// Redirect to sign in page
 				setTimeout(() => {
-					router.push("/signin");
+					router.push("/auth/signin");
 				}, 1500);
 			}
 		} catch (error) {
@@ -158,7 +158,7 @@ const ResetPasswordContent = () => {
 					<CardContent className="px-0 pb-0">
 						<Button
 							className="w-full bg-primary hover:bg-primary/90"
-							onClick={() => router.push("/forgot-password")}
+							onClick={() => router.push("/auth/forgot-password")}
 						>
 							Request New Reset Link
 						</Button>

@@ -50,7 +50,7 @@ const JoinWorkspaceIdPage = () => {
 			setInviteError(null);
 
 			try {
-				const response = await fetch("/api/invite/verify", {
+				const response = await fetch("/api/account/invite/verify", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ workspaceId, invite: inviteHash }),

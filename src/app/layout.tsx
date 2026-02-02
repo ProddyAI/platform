@@ -3,15 +3,14 @@ import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import Script from "next/script";
 import type { PropsWithChildren } from "react";
-import { ApolloTracking } from "@/components/apollo-tracking";
-import { ClarityTracking } from "@/components/clarity-tracking";
-import { DevServiceWorkerCleanup } from "@/components/dev-service-worker-cleanup";
-import { Formbricks } from "@/components/formbricks";
+import { ApolloTracking } from "@/components/3pc/apollo-tracking";
+import { ClarityTracking } from "@/components/3pc/clarity-tracking";
+import { Formbricks } from "@/components/3pc/formbricks";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
-import { TidioChat } from "@/components/tidio-chat";
+import { TidioChat } from "@/components/3pc/tidio-chat";
 import { Toaster } from "@/components/ui/sonner";
-import { UsetifulProvider } from "@/components/usetiful-provider";
+import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
 import { siteConfig } from "@/config";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
 
@@ -69,10 +68,10 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<Script id="force-light-mode" strategy="beforeInteractive">
 						{`
 							(function() {
-								// Force light mode only on public pages (e.g. /signin, /signup, /home)
+								// Force light mode only on public pages (e.g. /auth/signin, /auth/signup, /home)
 								if (typeof window === 'undefined') return;
 								
-								var publicPaths = ['/', '/home', '/signin', '/signup'];
+								var publicPaths = ['/', '/home', '/auth/signin', '/auth/signup', '/auth/forgot-password', '/auth/reset-password'];
 								var path = window.location && window.location.pathname ? window.location.pathname : '';
 								
 								if (publicPaths.indexOf(path) !== -1) {
@@ -84,7 +83,6 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<ConvexClientProvider>
 						<JotaiProvider>
 							<UsetifulProvider>
-								<DevServiceWorkerCleanup />
 								<Toaster closeButton richColors theme="light" />
 								<ModalProvider />
 								<TidioChat />
