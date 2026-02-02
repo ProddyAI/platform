@@ -71,7 +71,7 @@ const ForgotPasswordPage = () => {
 		try {
 			// Call the API route directly - token generation happens server-side
 			// This prevents token exposure to the client and eliminates spoofing risk
-			const response = await fetch("/api/password-reset/send", {
+			const response = await fetch("/api/account/reset", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -184,11 +184,10 @@ const ForgotPasswordPage = () => {
 								<p className="text-sm text-muted-foreground text-center">
 									Didn't receive the email? Check your spam folder or{" "}
 									<button
-										className={`font-medium transition-colors ${
-											remainingCooldown > 0
+										className={`font-medium transition-colors ${remainingCooldown > 0
 												? "text-muted-foreground cursor-not-allowed"
 												: "text-secondary hover:underline"
-										}`}
+											}`}
 										disabled={remainingCooldown > 0}
 										onClick={handleTryAgain}
 										type="button"
