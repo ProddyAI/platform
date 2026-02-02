@@ -422,7 +422,7 @@ export const ExcalidrawCanvas = () => {
 		}
 	};
 
-	const openAiFormatSidebar = () => {
+	const collapsableSidebar = () => {
 		const api = excalidrawApiRef.current;
 		if (!api) return;
 		api.toggleSidebar({ name: "ai-format", force: true });
@@ -661,13 +661,13 @@ export const ExcalidrawCanvas = () => {
 		const newElements =
 			restoreElements && convertToExcalidrawElements
 				? restoreElements(
-						convertToExcalidrawElements([
-							shadowSkeleton,
-							rectSkeleton,
-							textSkeleton,
-						]) as any,
-						null
-					)
+					convertToExcalidrawElements([
+						shadowSkeleton,
+						rectSkeleton,
+						textSkeleton,
+					]) as any,
+					null
+				)
 				: ([shadowSkeleton, rectSkeleton, textSkeleton] as any[]);
 		const existing = api.getSceneElements() as any[];
 
@@ -831,8 +831,8 @@ export const ExcalidrawCanvas = () => {
 								const parentId = getStickyNoteParentId(selectedShadow);
 								const parentNote = parentId
 									? elementsArray.find(
-											(el) => el?.id === parentId && isStickyNoteElement(el)
-										)
+										(el) => el?.id === parentId && isStickyNoteElement(el)
+									)
 									: null;
 								if (parentNote) {
 									const api = excalidrawApiRef.current;
@@ -1056,7 +1056,7 @@ export const ExcalidrawCanvas = () => {
 										<button
 											aria-label="AI Format"
 											className="ToolIcon ToolIcon_type_button"
-											onClick={openAiFormatSidebar}
+											onClick={collapsableSidebar}
 											title="AI Format"
 											type="button"
 										>
@@ -1086,32 +1086,32 @@ export const ExcalidrawCanvas = () => {
 					{/* Sticky Note + AI Format: toolbar buttons (inside tool palette) */}
 					{toolbarPortalTarget
 						? createPortal(
-								<>
-									<button
-										aria-label="Sticky Note"
-										className="ToolIcon ToolIcon_type_button"
-										onClick={insertStickyNote}
-										title="Sticky Note (N)"
-										type="button"
-									>
-										<div aria-hidden className="ToolIcon__icon">
-											<span style={{ fontSize: 16, lineHeight: 1 }}>🗒</span>
-										</div>
-									</button>
-									<button
-										aria-label="AI Format"
-										className="ToolIcon ToolIcon_type_button"
-										onClick={openAiFormatSidebar}
-										title="AI Format"
-										type="button"
-									>
-										<div aria-hidden className="ToolIcon__icon">
-											<span style={{ fontSize: 16, lineHeight: 1 }}>✨</span>
-										</div>
-									</button>
-								</>,
-								toolbarPortalTarget
-							)
+							<>
+								<button
+									aria-label="Sticky Note"
+									className="ToolIcon ToolIcon_type_button"
+									onClick={insertStickyNote}
+									title="Sticky Note (N)"
+									type="button"
+								>
+									<div aria-hidden className="ToolIcon__icon">
+										<span style={{ fontSize: 16, lineHeight: 1 }}>🗒</span>
+									</div>
+								</button>
+								<button
+									aria-label="AI Format"
+									className="ToolIcon ToolIcon_type_button"
+									onClick={collapsableSidebar}
+									title="AI Format"
+									type="button"
+								>
+									<div aria-hidden className="ToolIcon__icon">
+										<span style={{ fontSize: 16, lineHeight: 1 }}>✨</span>
+									</div>
+								</button>
+							</>,
+							toolbarPortalTarget
+						)
 						: null}
 
 					{ExcalidrawSidebar ? (
@@ -1142,8 +1142,8 @@ export const ExcalidrawCanvas = () => {
 
 						const point =
 							cursor?.viewport &&
-							typeof cursor.viewport.x === "number" &&
-							typeof cursor.viewport.y === "number"
+								typeof cursor.viewport.x === "number" &&
+								typeof cursor.viewport.y === "number"
 								? { x: cursor.viewport.x, y: cursor.viewport.y }
 								: typeof cursor.x === "number" && typeof cursor.y === "number"
 									? { x: cursor.x, y: cursor.y }
