@@ -422,7 +422,7 @@ export const ExcalidrawCanvas = () => {
 		}
 	};
 
-	const collapsableSidebar = () => {
+	const collapsibleSidebar = () => {
 		const api = excalidrawApiRef.current;
 		if (!api) return;
 		api.toggleSidebar({ name: "ai-format", force: true });
@@ -1056,7 +1056,7 @@ export const ExcalidrawCanvas = () => {
 										<button
 											aria-label="AI Format"
 											className="ToolIcon ToolIcon_type_button"
-											onClick={collapsableSidebar}
+											onClick={collapsibleSidebar}
 											title="AI Format"
 											type="button"
 										>
@@ -1101,7 +1101,7 @@ export const ExcalidrawCanvas = () => {
 								<button
 									aria-label="AI Format"
 									className="ToolIcon ToolIcon_type_button"
-									onClick={collapsableSidebar}
+									onClick={collapsibleSidebar}
 									title="AI Format"
 									type="button"
 								>

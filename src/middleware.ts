@@ -13,7 +13,7 @@ const _isPublicPage = createRouteMatcher([
 	"/auth/signin",
 	"/auth/signup",
 	"/auth/forgot-password",
-	"/auth/eset-password",
+	"/auth/reset-password",
 	"/about",
 	"/contact",
 	"/privacy",

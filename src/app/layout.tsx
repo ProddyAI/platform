@@ -71,7 +71,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 								// Force light mode only on public pages (e.g. /auth/signin, /auth/signup, /home)
 								if (typeof window === 'undefined') return;
 								
-								var publicPaths = ['/', '/home', '/auth/signin', '/auth/signup'];
+								var publicPaths = ['/', '/home', '/auth/signin', '/auth/signup', '/auth/forgot-password', '/auth/reset-password'];
 								var path = window.location && window.location.pathname ? window.location.pathname : '';
 								
 								if (publicPaths.indexOf(path) !== -1) {
