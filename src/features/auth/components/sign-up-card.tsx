@@ -66,7 +66,7 @@ export const SignUpCard = ({
 
 		try {
 			// Send OTP to email
-			const response = await fetch("/api/otp/send", {
+			const response = await fetch("/api/account/otp", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ email }),
