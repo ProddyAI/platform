@@ -20,7 +20,7 @@ import { type ReactNode, useEffect, useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
-import { MentionsNotificationDialog } from "@/components/mentions-notification";
+import { MentionsNotificationDialog } from "@/components/mentions-notification-dialog";
 import ThemeToggle from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
