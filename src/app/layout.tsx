@@ -68,10 +68,10 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<Script id="force-light-mode" strategy="beforeInteractive">
 						{`
 							(function() {
-								// Force light mode only on public pages (e.g. /signin, /signup, /home)
+								// Force light mode only on public pages (e.g. /auth/signin, /auth/signup, /home)
 								if (typeof window === 'undefined') return;
 								
-								var publicPaths = ['/', '/home', '/signin', '/signup'];
+								var publicPaths = ['/', '/home', '/auth/signin', '/auth/signup'];
 								var path = window.location && window.location.pathname ? window.location.pathname : '';
 								
 								if (publicPaths.indexOf(path) !== -1) {

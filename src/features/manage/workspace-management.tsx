@@ -94,7 +94,7 @@ export const WorkspaceManagement = ({
 	};
 
 	const _handleCopyJoinCode = () => {
-		const joinLink = `${window.location.origin}/join/${workspace._id}?code=${workspace.joinCode}`;
+		const joinLink = `${window.location.origin}/auth/join/${workspace._id}?code=${workspace.joinCode}`;
 		navigator.clipboard.writeText(joinLink);
 		toast.success("Join link copied to clipboard");
 	};

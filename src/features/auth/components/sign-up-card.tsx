@@ -212,7 +212,7 @@ export const SignUpCard = ({
 					{isStandalone ? (
 						<Link
 							className="text-secondary cursor-pointer font-medium hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
-							href="/signin"
+							href="/auth/signin"
 						>
 							Sign in
 						</Link>

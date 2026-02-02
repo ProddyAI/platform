@@ -74,7 +74,7 @@ export const PasswordChangeForm = () => {
 				if (result.requiresReauth) {
 					toast.info("Please sign in with your new password");
 					await signOut();
-					router.push("/signin");
+					router.push("/auth/signin");
 				}
 			}
 		} catch (error) {

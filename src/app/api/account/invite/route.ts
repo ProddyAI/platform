@@ -103,7 +103,7 @@ export async function POST(req: Request) {
 			expiresAt: Date.now() + 1000 * 60 * 60 * 48, // 48 hours
 		});
 
-		const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/join/${workspaceId}?invite=${hash}`;
+		const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/join/${workspaceId}?invite=${hash}`;
 
 		// Create the invite email template
 		const emailTemplate = InviteMailTemplate({

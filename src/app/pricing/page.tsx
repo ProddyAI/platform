@@ -91,7 +91,7 @@ const PricingPage = () => {
 									<span className="text-gray-700">1:1 voice calls only</span>
 								</li>
 							</ul>
-							<Link href="/signup">
+							<Link href="/auth/signup">
 								<Button className="w-full">
 									Get Started <ArrowRight className="ml-2 h-4 w-4" />
 								</Button>

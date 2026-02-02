@@ -58,7 +58,7 @@ export const InviteModal = ({
 	};
 
 	const handleCopyLink = () => {
-		const inviteLink = `${window.location.origin}/join/${workspaceId}`;
+		const inviteLink = `${window.location.origin}/auth/join/${workspaceId}`;
 
 		navigator.clipboard
 			.writeText(inviteLink)

@@ -10,10 +10,10 @@ const _isPublicPage = createRouteMatcher([
 	"/auth",
 	"/",
 	"/home",
-	"/signin",
-	"/signup",
-	"/forgot-password",
-	"/reset-password",
+	"/auth/signin",
+	"/auth/signup",
+	"/auth/forgot-password",
+	"/auth/eset-password",
 	"/about",
 	"/contact",
 	"/privacy",
@@ -28,19 +28,19 @@ const _isPublicPage = createRouteMatcher([
 const isAuthenticatedOnlyPage = createRouteMatcher([
 	"/workspace",
 	"/workspace/*",
-	"/join/:workspaceId",
+	"/auth/join/:workspaceId",
 ]);
 
 export default convexAuthNextjsMiddleware((req) => {
 	// If trying to access authenticated-only pages without being logged in
 	if (isAuthenticatedOnlyPage(req) && !isAuthenticatedNextjs()) {
-		return nextjsMiddlewareRedirect(req, "/signin");
+		return nextjsMiddlewareRedirect(req, "/auth/signin");
 	}
 
 	if (
 		(req.nextUrl.pathname === "/auth" ||
-			req.nextUrl.pathname === "/signin" ||
-			req.nextUrl.pathname === "/signup") &&
+			req.nextUrl.pathname === "/auth/signin" ||
+			req.nextUrl.pathname === "/auth/signup") &&
 		isAuthenticatedNextjs()
 	) {
 		return nextjsMiddlewareRedirect(req, "/workspace");

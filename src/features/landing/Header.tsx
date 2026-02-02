@@ -298,7 +298,7 @@ export const Header = () => {
 							</Link>
 						) : (
 							<>
-								<Link href="/signin">
+								<Link href="/auth/signin">
 									<Button
 										className="rounded-full border-gray-300 hover:border-primary/50 hover:text-primary"
 										variant="outline"
@@ -306,7 +306,7 @@ export const Header = () => {
 										Sign In
 									</Button>
 								</Link>
-								<Link href="/signup">
+								<Link href="/auth/signup">
 									<Button
 										className={cn(
 											"rounded-full transition-all duration-300",
@@ -422,12 +422,12 @@ export const Header = () => {
 									</Link>
 								) : (
 									<>
-										<Link href="/signin" onClick={() => setIsMenuOpen(false)}>
+										<Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
 											<Button className="w-full rounded-full" variant="outline">
 												Sign In
 											</Button>
 										</Link>
-										<Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+										<Link href="/auth/signup" onClick={() => setIsMenuOpen(false)}>
 											<Button className="w-full rounded-full">
 												Get Started
 											</Button>

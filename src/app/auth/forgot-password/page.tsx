@@ -185,8 +185,8 @@ const ForgotPasswordPage = () => {
 									Didn't receive the email? Check your spam folder or{" "}
 									<button
 										className={`font-medium transition-colors ${remainingCooldown > 0
-												? "text-muted-foreground cursor-not-allowed"
-												: "text-secondary hover:underline"
+											? "text-muted-foreground cursor-not-allowed"
+											: "text-secondary hover:underline"
 											}`}
 										disabled={remainingCooldown > 0}
 										onClick={handleTryAgain}
@@ -203,7 +203,7 @@ const ForgotPasswordPage = () => {
 						<div className="pt-4">
 							<Link
 								className="flex items-center gap-2 text-sm text-muted-foreground hover:text-secondary transition-colors justify-center"
-								href="/signin"
+								href="/auth/signin"
 							>
 								<ArrowLeft className="h-4 w-4" />
 								Back to Sign In
