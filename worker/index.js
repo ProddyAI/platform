@@ -1,5 +1,7 @@
 // This file contains custom service worker code that will be injected into the generated service worker
 
+/* global clients */
+
 // Disable workbox logging in production
 self.__WB_DISABLE_DEV_LOGS = true;
 
