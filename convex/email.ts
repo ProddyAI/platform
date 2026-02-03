@@ -252,9 +252,6 @@ export const sendDirectMessageEmail = action({
 
 			// Only process direct messages (messages with conversationId)
 			if (!message.conversationId) {
-				console.log(
-					"Message is not a direct message, skipping email notification"
-				);
 				return { success: true, skipped: true };
 			}
 
@@ -289,15 +286,11 @@ export const sendDirectMessageEmail = action({
 				memberId: recipientMemberId,
 			});
 			if (!recipient || !recipient.user || !recipient.user.email) {
-				console.log("Recipient has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
 			// Don't send email to the sender
 			if (sender.userId === recipient.userId) {
-				console.log(
-					"Sender and recipient are the same, skipping email notification"
-				);
 				return { success: true, skipped: true };
 			}
 
@@ -311,11 +304,6 @@ export const sendDirectMessageEmail = action({
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${message.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/direct-message`;
-			console.log(
-				"Sending direct message email notification to:",
-				recipient.user.email
-			);
-			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
@@ -344,7 +332,6 @@ export const sendDirectMessageEmail = action({
 				}
 
 				const result = await response.json();
-				console.log("Direct message email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending direct message email:", error);
@@ -388,7 +375,6 @@ export const sendMentionEmail = action({
 				!mentionedMember.user ||
 				!mentionedMember.user.email
 			) {
-				console.log("Mentioned user has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
@@ -403,9 +389,6 @@ export const sendMentionEmail = action({
 
 			// Don't send email to the mentioner themselves
 			if (mentioner.userId === mentionedMember.userId) {
-				console.log(
-					"Mentioner and mentioned user are the same, skipping email notification"
-				);
 				return { success: true, skipped: true };
 			}
 
@@ -438,12 +421,6 @@ export const sendMentionEmail = action({
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${mention.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/mention`;
-			console.log(
-				"Sending mention email notification to:",
-				mentionedMember.user.email
-			);
-			console.log("Using API URL:", apiUrl);
-
 			try {
 				const response: Response = await fetch(apiUrl, {
 					method: "POST",
@@ -472,7 +449,6 @@ export const sendMentionEmail = action({
 				}
 
 				const result = await response.json();
-				console.log("Mention email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending mention email:", error);
@@ -526,7 +502,6 @@ export const sendThreadReplyEmail = action({
 				!originalAuthor.user ||
 				!originalAuthor.user.email
 			) {
-				console.log("Original author has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
@@ -541,9 +516,6 @@ export const sendThreadReplyEmail = action({
 
 			// Don't send email if the replier is the same as the original author
 			if (replier.userId === originalAuthor.userId) {
-				console.log(
-					"Replier and original author are the same, skipping email notification"
-				);
 				return { success: true, skipped: true };
 			}
 
@@ -572,12 +544,6 @@ export const sendThreadReplyEmail = action({
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${replyMessage.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/thread-reply`;
-			console.log(
-				"Sending thread reply email notification to:",
-				originalAuthor.user.email
-			);
-			console.log("Using API URL:", apiUrl);
-
 			try {
 				const response: Response = await fetch(apiUrl, {
 					method: "POST",
@@ -607,7 +573,6 @@ export const sendThreadReplyEmail = action({
 				}
 
 				const result = await response.json();
-				console.log("Thread reply email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending thread reply email:", error);
@@ -675,9 +640,6 @@ export const sendWeeklyDigestEmails = action({
 					| "sunday",
 			});
 
-			console.log(
-				`Found ${users.length} users for weekly digest on ${args.dayOfWeek}`
-			);
 
 			const results = [];
 			const weekRange = getWeekRange();
@@ -739,9 +701,7 @@ export const sendWeeklyDigestEmails = action({
 							result: emailResult,
 						});
 
-						console.log(
-							`Weekly digest email ${emailResponse.ok ? "sent" : "failed"} for user ${user.email}`
-						);
+
 					} else {
 						results.push({
 							userId: user.userId,
@@ -749,10 +709,7 @@ export const sendWeeklyDigestEmails = action({
 							success: true,
 							skipped: true,
 							reason: "No activity",
-						});
-						console.log(
-							`Skipped weekly digest for ${user.email} - no activity`
-						);
+						});	
 					}
 				} catch (error) {
 					console.error(
@@ -1028,10 +985,6 @@ export const sendCardAssignmentEmail = action({
 	): Promise<EmailNotificationResult> => {
 		try {
 			// Get the card details
-			console.log(
-				"Getting card details for email notification, cardId:",
-				cardId
-			);
 			const card: CardDetails | null = await ctx.runQuery(
 				api.board._getCardDetails,
 				{ cardId }
@@ -1040,14 +993,7 @@ export const sendCardAssignmentEmail = action({
 				console.error("Card not found for email notification:", cardId);
 				return { success: false, error: "Card not found" };
 			}
-			console.log("Card details retrieved:", {
-				title: card.title,
-				listName: card.listName,
-				channelName: card.channelName,
-			});
-
 			// Get the assignee's email and name
-			console.log("Getting assignee email and name, assigneeId:", assigneeId);
 			const assigneeEmail: string | null = await ctx.runQuery(
 				api.board._getMemberEmail,
 				{
@@ -1055,7 +1001,6 @@ export const sendCardAssignmentEmail = action({
 				}
 			);
 			if (!assigneeEmail) {
-				console.log("Assignee has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
@@ -1065,26 +1010,20 @@ export const sendCardAssignmentEmail = action({
 					memberId: assigneeId,
 				}
 			);
-			console.log("Assignee email:", assigneeEmail);
-			console.log("Assignee name:", assigneeName);
 
 			// Get the assigner's name
-			console.log("Getting assigner name, assignerId:", assignerId);
 			const assignerName: string | null = await ctx.runQuery(
 				api.board._getMemberName,
 				{
 					memberId: assignerId,
 				}
 			);
-			console.log("Assigner name:", assignerName);
 
 			// Send the email
 			// Make sure we're using the correct URL format for the API endpoint
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${card.workspaceId}/channel/${card.channelId}/board`;
 			const apiUrl = `${baseUrl}/api/email/assignee`;
-			console.log("Sending email notification to:", assigneeEmail);
-			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
@@ -1119,7 +1058,6 @@ export const sendCardAssignmentEmail = action({
 				}
 
 				const result = await response.json();
-				console.log("Card assignment email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending card assignment email:", error);

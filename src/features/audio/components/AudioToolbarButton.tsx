@@ -134,10 +134,8 @@ export const AudioToolbarButton = () => {
 
 			if (isMute) {
 				await microphone.enable();
-				console.log("Microphone enabled");
 			} else {
 				await microphone.disable();
-				console.log("Microphone disabled");
 			}
 		} catch (error) {
 			console.error("Failed to toggle microphone:", error);

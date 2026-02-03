@@ -88,9 +88,6 @@ export const normalizeExistingEmails = mutation({
 				if (normalizedEmail !== user.email) {
 					await ctx.db.patch(user._id, { email: normalizedEmail });
 					normalizedCount++;
-					console.log(
-						`Normalized email for user ${user._id}: ${user.email} -> ${normalizedEmail}`
-					);
 				}
 			}
 		}
@@ -117,9 +114,6 @@ export const cleanupOrphanedAuthAccounts = mutation({
 					// User doesn't exist, delete the orphaned auth account
 					await ctx.db.delete(authAccount._id);
 					cleanedCount++;
-					console.log(
-						`Deleted orphaned auth account for user ${authAccount.userId}`
-					);
 				}
 			} catch (_e) {
 				// User doesn't exist, delete the orphaned auth account
@@ -146,7 +140,6 @@ export const deleteAccount = mutation({
 		try {
 			// Get the user ID
 			const userId = await getAuthUserId(ctx);
-			console.log("Deleting account for user ID:", userId);
 
 			if (!userId) {
 				return { success: true, message: "No user found to delete" };
@@ -170,9 +163,6 @@ export const deleteAccount = mutation({
 					.collect(),
 			]);
 
-			console.log(
-				`Found ${ownedWorkspaces.length} owned workspaces, ${userMembers.length} memberships`
-			);
 
 			// Helper function to safely delete a document
 			const safeDelete = async (id: any) => {
@@ -194,7 +184,6 @@ export const deleteAccount = mutation({
 			// Step 2: Delete data from owned workspaces
 			for (const workspace of ownedWorkspaces) {
 				const workspaceId = workspace._id;
-				console.log(`Deleting workspace: ${workspaceId}`);
 
 				try {
 					// Get all workspace-related data in parallel
@@ -579,7 +568,6 @@ export const deleteAccount = mutation({
 
 			// Step 5: Delete the user account
 			await safeDelete(userId);
-			console.log("Account deletion completed successfully");
 
 			return { success: true };
 		} catch (error) {

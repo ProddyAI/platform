@@ -123,14 +123,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		setActiveId(null);
 		setOverId(null);
 
-		// Log the drag event for debugging
-		console.log("Drag end event:", {
-			active: event.active,
-			over: event.over,
-			activeData: event.active.data.current,
-			overData: event.over?.data.current,
-		});
-
 		handleDragEnd(event);
 	};
 

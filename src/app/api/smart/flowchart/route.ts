@@ -37,11 +37,6 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		console.log(
-			"[Smart Flowchart] Processing flowchart request for prompt:",
-			prompt
-		);
-
 		// Create the Gemini model
 		const model = google("gemini-2.5-flash");
 
@@ -97,7 +92,6 @@ Generate the Mermaid flowchart code:`;
 				temperature: 0.3, // Lower temperature for more consistent diagram structure
 			});
 
-			console.log("[Smart Flowchart] Successfully generated flowchart");
 
 			// Clean up the response to ensure it's valid Mermaid code
 			let mermaidCode = text.trim();

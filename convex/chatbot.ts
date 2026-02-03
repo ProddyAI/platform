@@ -2293,10 +2293,6 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 			if (errorMessage.includes("No compatible namespace found")) {
-				console.log(
-					`RAG namespace not found for workspace ${args.workspaceId}, triggering auto-initialization`
-				);
-
 				// Call mutation to schedule indexing (mutations can use scheduler)
 				try {
 					await ctx.runMutation(api.search.autoInitializeWorkspace, {
@@ -2304,9 +2300,6 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 						limit: 1000,
 					});
 					isIndexing = true;
-					console.log(
-						`Auto-initialization triggered for workspace ${args.workspaceId}`
-					);
 				} catch (indexError) {
 					console.error("Failed to trigger auto-initialization:", indexError);
 				}

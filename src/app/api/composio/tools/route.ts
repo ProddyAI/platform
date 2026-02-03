@@ -27,8 +27,6 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		console.log("[Composio Tools] Getting tools for:", { entityId, appNames });
-
 		const composio = createComposioClient();
 
 		// Get tools for the specified apps using the Composio SDK
@@ -51,8 +49,6 @@ export async function POST(req: NextRequest) {
 			console.error("Error fetching tools:", error);
 			tools = [];
 		}
-
-		console.log("[Composio Tools] Retrieved", tools.length, "tools");
 
 		// Convert Composio tools to OpenAI format
 		const openaiTools = tools.map((tool: any) => ({
@@ -91,11 +87,6 @@ export async function POST(req: NextRequest) {
 			completion.choices[0]?.message?.tool_calls &&
 			completion.choices[0].message.tool_calls.length > 0
 		) {
-			console.log(
-				"[Composio Tools] Executing",
-				completion.choices[0].message.tool_calls.length,
-				"tool calls"
-			);
 
 			for (const toolCall of completion.choices[0].message.tool_calls) {
 				if (toolCall.type === "function") {
@@ -186,11 +177,6 @@ export async function GET(req: NextRequest) {
 				{ status: 400 }
 			);
 		}
-
-		console.log("[Composio Tools] Getting available tools for:", {
-			entityId,
-			appNames,
-		});
 
 		const composio = createComposioClient();
 

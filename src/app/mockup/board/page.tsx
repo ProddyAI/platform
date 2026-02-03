@@ -59,7 +59,6 @@ const TestBoardPage = () => {
 
 	const handleDeleteCard = (cardId: string) => {
 		setCards((prev) => prev.filter((card) => card._id !== cardId));
-		console.log("Card deleted successfully");
 	};
 
 	const handleSaveCard = (updatedCard: any) => {
@@ -84,7 +83,6 @@ const TestBoardPage = () => {
 	};
 
 	const handleDragEnd = (event: any) => {
-		console.log("Drag ended:", event);
 	};
 
 	const moveCardToNextList = (cardId: string) => {

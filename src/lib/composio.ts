@@ -64,9 +64,6 @@ export function initializeComposio() {
 	const apiClient = {
 		// Create connection for a user and app
 		async createConnection(userId: string, appName: string) {
-			console.log(
-				`[Composio] Creating connection for user ${userId} with app ${appName}`
-			);
 
 			// Import APP_CONFIGS to get auth config ID
 			const { APP_CONFIGS } = await import("./composio-config");

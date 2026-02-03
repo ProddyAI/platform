@@ -60,7 +60,6 @@ export const useLiveNoteSession = ({
 				noteId.toString().includes("dummy") ||
 				noteId === "kn7cvx952gp794j4vzvxxqqgk57k9yhh"
 			) {
-				console.log("Skipping announcement for dummy note ID");
 				return;
 			}
 

@@ -153,11 +153,6 @@ export const TestChatsInput = ({
 
 	const handleTaskCreate = () => {
 		// Here you would typically save the task to your backend
-		console.log("Creating task:", {
-			title: taskTitle,
-			content: taskContent,
-			dueDate: taskDueDate,
-		});
 
 		// Send the original message without the !
 		const messageWithoutExclamation = message.replace("!", "").trim();

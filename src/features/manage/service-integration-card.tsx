@@ -147,11 +147,6 @@ export const ServiceIntegrationCard = ({
 		setIsConnecting(true);
 
 		try {
-			console.log(`[ServiceCard] Starting authorization for ${toolkit}:`, {
-				workspaceId,
-				memberId: currentMember._id,
-				userId: `member_${currentMember._id}`,
-			});
 
 			// Use AgentAuth to authorize user to toolkit with member-specific entity ID
 			const response = await fetch("/api/composio/agentauth", {
@@ -167,8 +162,6 @@ export const ServiceIntegrationCard = ({
 					memberId: currentMember._id,
 				}),
 			});
-
-			console.log(`[ServiceCard] API response status:`, response.status);
 
 			if (!response.ok) {
 				let errorDetails;
@@ -190,10 +183,6 @@ export const ServiceIntegrationCard = ({
 			}
 
 			const result = await response.json();
-			console.log(`[ServiceCard] Authorization successful:`, {
-				hasRedirectUrl: !!result.redirectUrl,
-				connectionId: result.connectionId,
-			});
 
 			if (!result.redirectUrl) {
 				console.error(`[ServiceCard] No redirect URL in response:`, result);
@@ -229,13 +218,6 @@ export const ServiceIntegrationCard = ({
 			return;
 		}
 
-		console.log(`[ServiceCard] Disconnecting ${toolkit}:`, {
-			connectedAccountId: connectedAccount._id,
-			composioAccountId: connectedAccount.composioAccountId,
-			memberId: currentMember._id,
-			workspaceId,
-		});
-
 		setIsDisconnecting(true);
 
 		try {
@@ -262,7 +244,6 @@ export const ServiceIntegrationCard = ({
 			}
 
 			const result = await response.json();
-			console.log(`[ServiceCard] Disconnect successful:`, result);
 
 			toast.success(`${toolkits[toolkit].name} disconnected successfully`);
 			onConnectionChange?.();

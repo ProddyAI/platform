@@ -89,12 +89,6 @@ export const TestChatsMessages = ({
 
 	const handleTaskCreate = () => {
 		// Here you would typically save the task to your backend
-		console.log("Creating task from message:", {
-			title: taskTitle,
-			content: taskContent,
-			dueDate: taskDueDate,
-			originalMessage: selectedMessage,
-		});
 
 		// Reset states
 		setShowTaskModal(false);
@@ -106,7 +100,6 @@ export const TestChatsMessages = ({
 
 	const handleDeleteMessage = (messageId: string) => {
 		// Here you would typically delete the message from your backend
-		console.log("Deleting message:", messageId);
 	};
 
 	const handleContextMenu = (e: React.MouseEvent, message: ChatMessage) => {
@@ -137,7 +130,6 @@ export const TestChatsMessages = ({
 				handleDeleteMessage(contextMenu.message.id);
 				break;
 			default:
-				console.log(`Action: ${action} for message:`, contextMenu.message.id);
 		}
 		handleCloseContextMenu();
 	};

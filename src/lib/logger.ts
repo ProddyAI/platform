@@ -8,7 +8,6 @@ export const logger = {
 
 	info: (message: string, ...args: unknown[]) => {
 		if (process.env.NODE_ENV === "development") {
-			console.log(`[INFO] ${message}`, ...args);
 		}
 	},
 

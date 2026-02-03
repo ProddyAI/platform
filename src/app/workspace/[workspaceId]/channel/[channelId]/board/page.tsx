@@ -198,18 +198,11 @@ const BoardPage = () => {
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!active || !over) {
-			console.log("No active or over element");
 			return;
 		}
 
 		// Log the drag event for debugging
-		console.log("Drag end event:", {
-			activeId: active.id,
-			overId: over.id,
-			activeType: active.data.current?.type,
-			overType: over.data.current?.type,
-			overData: over.data.current,
-		});
+
 
 		// Get data from the dragged item
 		const activeType = active.data.current?.type;
@@ -220,8 +213,6 @@ const BoardPage = () => {
 			const newIndex = lists.findIndex((l) => l._id === over.id);
 
 			if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-				console.log(`Moving list from position ${oldIndex} to ${newIndex}`);
-
 				// Create a new array with the reordered lists
 				const reorderedLists = arrayMove([...lists], oldIndex, newIndex);
 
@@ -231,12 +222,9 @@ const BoardPage = () => {
 					order: idx,
 				}));
 
-				console.log("New list order:", newOrder);
-
 				// Call the mutation to update the database
 				try {
 					await reorderLists({ listOrders: newOrder });
-					console.log("Lists reordered successfully");
 				} catch (error) {
 					console.error("Error reordering lists:", error);
 				}
@@ -265,12 +253,10 @@ const BoardPage = () => {
 			// Check if dropped on a droppable area (list container)
 			if (overId.startsWith("droppable-")) {
 				toListId = overId.replace("droppable-", "") as Id<"lists">;
-				console.log("Dropped on droppable area:", toListId);
 			}
 			// Check if dropped on a list
 			else if (over.data.current?.type === "list") {
 				toListId = over.data.current.listId || (over.id as Id<"lists">);
-				console.log("Dropped on list:", toListId);
 			}
 			// Check if dropped on a card
 			else if (over.data.current?.type === "card") {
@@ -280,13 +266,10 @@ const BoardPage = () => {
 					const cards = cardsByList[list._id] || [];
 					if (cards.some((c) => c._id === overCardId)) {
 						toListId = list._id;
-						console.log("Dropped on card in list:", toListId);
 						break;
 					}
 				}
 			}
-
-			console.log("Move card:", { cardId, fromListId, toListId });
 
 			if (fromListId && toListId) {
 				// Calculate the new order
@@ -304,15 +287,12 @@ const BoardPage = () => {
 					newOrder = targetCards.length;
 				}
 
-				console.log("Moving card to position:", newOrder);
-
 				try {
 					await moveCard({
 						cardId,
 						toListId,
 						order: newOrder,
 					});
-					console.log("Card moved successfully");
 				} catch (error) {
 					console.error("Error moving card:", error);
 				}

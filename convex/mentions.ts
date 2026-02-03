@@ -63,17 +63,10 @@ export const getMentionsForCurrentUser = query({
 	},
 	handler: async (ctx, args) => {
 		try {
-			console.log("getMentionsForCurrentUser - Starting query with args:", {
-				workspaceId: args.workspaceId,
-				includeRead: args.includeRead,
-			});
-
 			const userId = await getAuthUserId(ctx);
 			if (!userId) {
-				console.log("getMentionsForCurrentUser - No userId found");
 				return [];
 			}
-			console.log("getMentionsForCurrentUser - userId:", userId);
 
 			// Get the current member
 			const currentMember = await getMember(
@@ -82,17 +75,9 @@ export const getMentionsForCurrentUser = query({
 				userId as Id<"users">
 			);
 			if (!currentMember) {
-				console.log(
-					"getMentionsForCurrentUser - No currentMember found for userId:",
-					userId
-				);
 				return [];
 			}
 
-			console.log(
-				"getMentionsForCurrentUser - currentMember:",
-				currentMember._id
-			);
 
 			// Query mentions for the current member
 			let mentionsQuery = ctx.db

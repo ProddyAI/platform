@@ -82,7 +82,6 @@ const CanvasPage = () => {
 							updatedAt: message._creationTime,
 							tags: message.tags || body.tags || [],
 						};
-						console.log("Canvas item parsed:", canvasItem);
 						canvasMessages.push(canvasItem);
 					}
 				} catch (_error) {
@@ -385,8 +384,6 @@ const CanvasPage = () => {
 							type="canvas"
 							title={activeCanvas.canvasName}
 							onTitleChange={(newTitle) => {
-								// Update canvas name
-								console.log("Title changed to:", newTitle);
 								// You can implement canvas title update here
 							}}
 							onCreateItem={handleCreateCanvas}
@@ -396,7 +393,6 @@ const CanvasPage = () => {
 							createdAt={activeCanvas.createdAt}
 							updatedAt={activeCanvas.updatedAt}
 							onSave={() => {
-								console.log("Save canvas");
 								// Implement canvas save functionality
 							}}
 							hasUnsavedChanges={false} // You can track canvas changes here
@@ -404,7 +400,6 @@ const CanvasPage = () => {
 							lastSaved={activeCanvas.updatedAt}
 							tags={activeCanvas.tags || []}
 							onTagsChange={(newTags) => {
-								console.log("Canvas tags changing:", newTags);
 								handleUpdateCanvasTags(activeCanvas._id, newTags);
 							}}
 							showTags={true}
