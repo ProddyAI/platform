@@ -154,7 +154,11 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					</kbd>
 				</Button>
 
-				<CommandDialog onOpenChange={setSearchOpen} open={searchOpen}>
+				<CommandDialog
+					onOpenChange={setSearchOpen}
+					open={searchOpen}
+					shouldFilter={false}
+				>
 					<CommandInput
 						onValueChange={setSearchQuery}
 						placeholder={`Search ${workspace?.name ?? "workspace"}...`}
