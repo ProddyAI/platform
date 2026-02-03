@@ -85,32 +85,6 @@ export const useSearchMessages = ({
 			: "skip"
 	) as SearchAllResult | undefined;
 
-	useEffect(() => {
-		console.log("[useSearchMessages] query state", {
-			workspaceId,
-			query,
-			debouncedQuery,
-			enabled,
-			shouldQuery,
-			hasTextResults:
-				textResults !== undefined &&
-				(textResults.messages.length > 0 ||
-					textResults.notes.length > 0 ||
-					textResults.tasks.length > 0 ||
-					textResults.cards.length > 0 ||
-					textResults.events.length > 0),
-			counts: textResults
-				? {
-					messages: textResults.messages.length,
-					notes: textResults.notes.length,
-					tasks: textResults.tasks.length,
-					cards: textResults.cards.length,
-					events: textResults.events.length,
-				}
-				: null,
-		});
-	}, [workspaceId, query, debouncedQuery, enabled, shouldQuery, textResults]);
-
 	const hasTextResults =
 		textResults &&
 		(textResults.messages.length > 0 ||

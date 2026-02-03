@@ -73,27 +73,6 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		enabled: searchQuery.trim().length > 0,
 	});
 
-	useEffect(() => {
-		if (!searchOpen) return;
-		const messageCount = searchResults.messages?.length ?? 0;
-		const noteCount = searchResults.notes?.length ?? 0;
-		const taskCount = searchResults.tasks?.length ?? 0;
-		const cardCount = searchResults.cards?.length ?? 0;
-		const eventCount = searchResults.events?.length ?? 0;
-		console.log("[WorkspaceToolbar] search state", {
-			searchOpen,
-			searchQuery,
-			isSearching,
-			counts: {
-				messages: messageCount,
-				notes: noteCount,
-				tasks: taskCount,
-				cards: cardCount,
-				events: eventCount,
-			},
-		});
-	}, [searchOpen, searchQuery, isSearching, searchResults]);
-
 	// Reset search state when dialog closes
 	useEffect(() => {
 		if (!searchOpen) {
