@@ -108,8 +108,7 @@ export const HeroSection = () => {
 										src="https://app.supademo.com/embed/cmb4xp1ch2omwppkpndluqnku?embed_v=2"
 										loading="lazy"
 										title="Proddy Interactive Demo"
-										allow="fullscreen https://app.supademo.com clipboard-write"
-										style={{
+										allow="fullscreen https://app.supademo.com clipboard-write"									sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"										style={{
 											position: "absolute",
 											top: 0,
 											left: 0,
