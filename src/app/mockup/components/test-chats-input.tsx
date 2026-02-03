@@ -185,7 +185,9 @@ export const TestChatsInput = ({
 
 	const adjustTextareaHeight = () => {
 		if (textareaRef.current) {
+			// Reset height to auto first to allow shrinking
 			textareaRef.current.style.height = "auto";
+			// Then set to content height (max 120px)
 			textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
 		}
 	};
