@@ -59,9 +59,9 @@ const AssistantPage = () => {
 		<div className="flex h-full flex-col">
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 					size="sm"
+					variant="ghost"
 				>
 					<Bot className="mr-2 size-5" />
 					<span className="truncate">Proddy AI</span>
@@ -70,7 +70,7 @@ const AssistantPage = () => {
 			<div className="flex flex-1 overflow-hidden p-4 md:p-6">
 				<div className="flex w-full flex-col">
 					{/* Full-width Proddy AI Chatbot */}
-					<DashboardChatbot workspaceId={workspaceId} member={enhancedMember} />
+					<DashboardChatbot member={enhancedMember} workspaceId={workspaceId} />
 				</div>
 			</div>
 		</div>

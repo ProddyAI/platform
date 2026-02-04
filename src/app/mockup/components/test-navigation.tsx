@@ -44,14 +44,14 @@ export const TestNavigation = ({
 
 					return (
 						<Button
-							key={item.name}
-							variant={active ? "default" : "ghost"}
-							size="sm"
-							onClick={() => router.push(item.path)}
 							className={cn(
 								"text-white hover:bg-white/10 transition-standard",
 								active && "bg-white/20"
 							)}
+							key={item.name}
+							onClick={() => router.push(item.path)}
+							size="sm"
+							variant={active ? "default" : "ghost"}
 						>
 							<Icon className="h-4 w-4 mr-2" />
 							{item.name}
@@ -70,14 +70,14 @@ export const TestNavigation = ({
 
 				return (
 					<Button
-						key={item.name}
-						variant={active ? "default" : "ghost"}
-						size="sm"
-						onClick={() => router.push(item.path)}
 						className={cn(
 							"text-white hover:bg-white/10 transition-standard",
 							active && "bg-white/20"
 						)}
+						key={item.name}
+						onClick={() => router.push(item.path)}
+						size="sm"
+						variant={active ? "default" : "ghost"}
 					>
 						<Icon className="h-4 w-4 mr-2" />
 						{item.name}

@@ -217,11 +217,11 @@ export const TestChatsInput = ({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<button
-											onClick={() => handleSmartReply(reply)}
 											className={cn(
 												"px-3 py-1.5 rounded-full text-sm border transition-colors hover:scale-105",
 												getConfidenceColor(reply.confidence)
 											)}
+											onClick={() => handleSmartReply(reply)}
 										>
 											{reply.text}
 										</button>
@@ -255,10 +255,10 @@ export const TestChatsInput = ({
 						</div>
 						{onCancelReply && (
 							<Button
-								variant="ghost"
-								size="sm"
-								onClick={onCancelReply}
 								className="h-6 w-6 p-0"
+								onClick={onCancelReply}
+								size="sm"
+								variant="ghost"
 							>
 								×
 							</Button>
@@ -271,20 +271,20 @@ export const TestChatsInput = ({
 			<div className="p-4">
 				<div className="flex items-end gap-2">
 					{/* Attachment Button */}
-					<Button variant="ghost" size="sm" className="flex-shrink-0">
+					<Button className="flex-shrink-0" size="sm" variant="ghost">
 						<Paperclip className="h-4 w-4" />
 					</Button>
 
 					{/* Text Input */}
 					<div className="flex-1 relative">
 						<Textarea
-							ref={textareaRef}
-							value={message}
+							className="min-h-[40px] max-h-[120px] resize-none pr-12"
 							onChange={handleMessageChange}
 							onKeyDown={handleKeyPress}
 							placeholder={placeholder}
-							className="min-h-[40px] max-h-[120px] resize-none pr-12"
+							ref={textareaRef}
 							rows={1}
+							value={message}
 						/>
 
 						{/* Mentions Dropdown */}
@@ -295,9 +295,9 @@ export const TestChatsInput = ({
 								</div>
 								{filteredMembers.map((member) => (
 									<button
+										className="w-full flex items-center gap-3 p-3 hover:bg-muted transition-colors text-left"
 										key={member._id}
 										onClick={() => handleMentionSelect(member)}
-										className="w-full flex items-center gap-3 p-3 hover:bg-muted transition-colors text-left"
 									>
 										<Avatar className="h-8 w-8">
 											<AvatarFallback className="text-xs">
@@ -322,9 +322,9 @@ export const TestChatsInput = ({
 
 						{/* Emoji Button */}
 						<Button
-							variant="ghost"
-							size="sm"
 							className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+							size="sm"
+							variant="ghost"
 						>
 							<Smile className="h-4 w-4" />
 						</Button>
@@ -332,20 +332,20 @@ export const TestChatsInput = ({
 
 					{/* Voice/Send Button */}
 					{message.trim() ? (
-						<Button onClick={handleSend} size="sm" className="flex-shrink-0">
+						<Button className="flex-shrink-0" onClick={handleSend} size="sm">
 							<Send className="h-4 w-4" />
 						</Button>
 					) : (
 						<Button
-							variant="ghost"
-							size="sm"
 							className={cn(
 								"flex-shrink-0",
 								isRecording && "bg-red-100 text-red-600"
 							)}
 							onMouseDown={() => setIsRecording(true)}
-							onMouseUp={() => setIsRecording(false)}
 							onMouseLeave={() => setIsRecording(false)}
+							onMouseUp={() => setIsRecording(false)}
+							size="sm"
+							variant="ghost"
 						>
 							<Mic className="h-4 w-4" />
 						</Button>
@@ -364,7 +364,7 @@ export const TestChatsInput = ({
 			</div>
 
 			{/* Task Creation Modal */}
-			<Dialog open={showTaskModal} onOpenChange={setShowTaskModal}>
+			<Dialog onOpenChange={setShowTaskModal} open={showTaskModal}>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">
@@ -378,21 +378,21 @@ export const TestChatsInput = ({
 							<Label htmlFor="taskTitle">Task Title</Label>
 							<Input
 								id="taskTitle"
-								value={taskTitle}
 								onChange={(e) => setTaskTitle(e.target.value)}
 								placeholder="Enter task title..."
+								value={taskTitle}
 							/>
 						</div>
 
 						<div className="space-y-2">
 							<Label htmlFor="taskContent">Task Description</Label>
 							<Textarea
+								className="resize-none"
 								id="taskContent"
-								value={taskContent}
 								onChange={(e) => setTaskContent(e.target.value)}
 								placeholder="Task description..."
 								rows={3}
-								className="resize-none"
+								value={taskContent}
 							/>
 						</div>
 
@@ -400,14 +400,14 @@ export const TestChatsInput = ({
 							<Label htmlFor="taskDueDate">Due Date (Optional)</Label>
 							<Input
 								id="taskDueDate"
+								onChange={(e) => setTaskDueDate(e.target.value)}
 								type="date"
 								value={taskDueDate}
-								onChange={(e) => setTaskDueDate(e.target.value)}
 							/>
 						</div>
 
 						<div className="flex justify-end gap-2">
-							<Button variant="outline" onClick={() => setShowTaskModal(false)}>
+							<Button onClick={() => setShowTaskModal(false)} variant="outline">
 								Cancel
 							</Button>
 							<Button onClick={handleTaskCreate}>Create Task</Button>

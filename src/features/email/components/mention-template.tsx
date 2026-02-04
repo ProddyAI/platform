@@ -42,11 +42,11 @@ export const MentionTemplate: React.FC<Readonly<MentionTemplateProps>> = ({
 			<Body style={main}>
 				<Container style={container}>
 					<Img
-						src="https://proddy.tech/logo-nobg.png"
-						width="40"
-						height="40"
 						alt="Proddy"
+						height="40"
+						src="https://proddy.tech/logo-nobg.png"
 						style={logo}
+						width="40"
 					/>
 					<Heading style={heading}>You were mentioned</Heading>
 					<Section style={section}>
@@ -61,6 +61,7 @@ export const MentionTemplate: React.FC<Readonly<MentionTemplateProps>> = ({
 
 						<Section style={buttonContainer}>
 							<Button
+								href={workspaceUrl}
 								style={{
 									...button,
 									paddingLeft: "20px",
@@ -68,7 +69,6 @@ export const MentionTemplate: React.FC<Readonly<MentionTemplateProps>> = ({
 									paddingTop: "12px",
 									paddingBottom: "12px",
 								}}
-								href={workspaceUrl}
 							>
 								View Message
 							</Button>

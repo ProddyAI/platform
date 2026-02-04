@@ -87,7 +87,13 @@ const Editor = ({
 	} | null>(null);
 	const mentionPickerRef = useRef<HTMLDivElement>(null);
 
-	// No need for custom module registration with our simpler approach
+	// Refs for TEXT_CHANGE handler so it sees latest values without being in effect deps (which would remount editor on @/#/!)
+	const lastKeyWasExclamationRef = useRef(false);
+	const activeAutocompleteRef = useRef<"mention" | "channel" | null>(null);
+	const mentionPickerOpenRef = useRef(false);
+	lastKeyWasExclamationRef.current = lastKeyWasExclamation;
+	activeAutocompleteRef.current = activeAutocomplete;
+	mentionPickerOpenRef.current = mentionPickerOpen;
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const imageElementRef = useRef<HTMLInputElement>(null);
@@ -97,6 +103,8 @@ const Editor = ({
 	const placeholderRef = useRef(placeholder);
 	const defaultValueRef = useRef(defaultValue);
 	const disabledRef = useRef(disabled);
+	const disableMentionsRef = useRef(disableMentions);
+	disableMentionsRef.current = disableMentions;
 
 	useLayoutEffect(() => {
 		submitRef.current = onSubmit;
@@ -197,8 +205,13 @@ const Editor = ({
 			const plainText = newText.replace(/\n+$/, "");
 			setText(newText);
 
+			const currentLastKeyWasExclamation = lastKeyWasExclamationRef.current;
+			const currentActiveAutocomplete = activeAutocompleteRef.current;
+			const currentMentionPickerOpen = mentionPickerOpenRef.current;
+			const currentDisableMentions = disableMentionsRef.current;
+
 			// Check if the last character is "!" to trigger calendar picker
-			if (plainText.trim().endsWith("!") && !lastKeyWasExclamation) {
+			if (plainText.trim().endsWith("!") && !currentLastKeyWasExclamation) {
 				setLastKeyWasExclamation(true);
 				setCalendarPickerOpen(true);
 			} else if (!plainText.trim().endsWith("!")) {
@@ -208,8 +221,8 @@ const Editor = ({
 			// Autocomplete triggers:
 			// - "@" for users (disabled in direct messages)
 			// - "#" for channels
-			if (!activeAutocomplete) {
-				if (!disableMentions && plainText.trim().endsWith("@")) {
+			if (!currentActiveAutocomplete) {
+				if (!currentDisableMentions && plainText.trim().endsWith("@")) {
 					setActiveAutocomplete("mention");
 					setMentionPickerOpen(true);
 					setMentionSearchQuery("");
@@ -219,7 +232,7 @@ const Editor = ({
 					setMentionSearchQuery("");
 				}
 			} else {
-				const triggerChar = activeAutocomplete === "mention" ? "@" : "#";
+				const triggerChar = currentActiveAutocomplete === "mention" ? "@" : "#";
 				const triggerIndex = plainText.lastIndexOf(triggerChar);
 
 				if (triggerIndex >= 0) {
@@ -245,7 +258,7 @@ const Editor = ({
 			}
 
 			// If the text is completely empty, close the mention picker
-			if (plainText.trim() === "" && mentionPickerOpen) {
+			if (plainText.trim() === "" && currentMentionPickerOpen) {
 				setActiveAutocomplete(null);
 				setMentionPickerOpen(false);
 			}
@@ -254,7 +267,7 @@ const Editor = ({
 			document.addEventListener(
 				"keydown",
 				(e) => {
-					if (e.key === "Escape" && mentionPickerOpen) {
+					if (e.key === "Escape" && mentionPickerOpenRef.current) {
 						setMentionPickerOpen(false);
 						setActiveAutocomplete(null);
 					}
@@ -271,13 +284,10 @@ const Editor = ({
 			if (quillRef) quillRef.current = null;
 			if (innerRef) innerRef.current = null;
 		};
-	}, [
-		innerRef,
-		activeAutocomplete,
-		disableMentions,
-		lastKeyWasExclamation,
-		mentionPickerOpen,
-	]);
+		// Only depend on refs and disableMentions. Do NOT include activeAutocomplete,
+		// lastKeyWasExclamation, or mentionPickerOpen — they are set by TEXT_CHANGE when
+		// the user types @, #, or ! and would remount the editor and wipe content.
+	}, [innerRef]);
 
 	const toggleToolbar = () => {
 		setIsToolbarVisible((current) => !current);
@@ -561,17 +571,17 @@ const Editor = ({
 	return (
 		<div className="flex flex-col">
 			<CalendarPicker
-				open={calendarPickerOpen}
 				onClose={() => setCalendarPickerOpen(false)}
 				onSelect={handleCalendarSelect}
+				open={calendarPickerOpen}
 			/>
 
 			<input
-				type="file"
 				accept="image/*"
-				ref={imageElementRef}
-				onChange={(e) => setImage(e.target.files?.[0] ?? null)}
 				className="hidden"
+				onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+				ref={imageElementRef}
+				type="file"
 			/>
 
 			{/* Render the MentionPicker outside of any container for fixed positioning */}
@@ -579,22 +589,22 @@ const Editor = ({
 				<div ref={mentionPickerRef}>
 					{activeAutocomplete === "channel" ? (
 						<ChannelPicker
-							open={mentionPickerOpen}
 							onClose={() => {
 								setMentionPickerOpen(false);
 								setActiveAutocomplete(null);
 							}}
 							onSelect={handleChannelSelect}
+							open={mentionPickerOpen}
 							searchQuery={mentionSearchQuery}
 						/>
 					) : (
 						<MentionPicker
-							open={mentionPickerOpen}
 							onClose={() => {
 								setMentionPickerOpen(false);
 								setActiveAutocomplete(null);
 							}}
 							onSelect={handleMentionSelect}
+							open={mentionPickerOpen}
 							searchQuery={mentionSearchQuery}
 						/>
 					)}
@@ -607,29 +617,29 @@ const Editor = ({
 					disabled && "opacity-50"
 				)}
 			>
-				<div ref={containerRef} className="h-full" />
+				<div className="h-full" ref={containerRef} />
 
 				{!!image && (
 					<div className="p-2">
 						<div className="group/image relative flex size-[62px] items-center justify-center">
 							<Hint label="Remove image">
 								<button
+									className="absolute -right-2.5 -top-2.5 z-[4] hidden size-6 items-center justify-center rounded-full border-2 border-white bg-black/70 text-white hover:bg-black group-hover/image:flex"
 									onClick={() => {
 										setImage(null);
 
 										imageElementRef.current!.value = "";
 									}}
-									className="absolute -right-2.5 -top-2.5 z-[4] hidden size-6 items-center justify-center rounded-full border-2 border-white bg-black/70 text-white hover:bg-black group-hover/image:flex"
 								>
 									<XIcon className="size-3.5" />
 								</button>
 							</Hint>
 
 							<Image
-								src={URL.createObjectURL(image)}
 								alt="Uploaded image"
-								fill
 								className="overflow-hidden rounded-xl border object-cover"
+								fill
+								src={URL.createObjectURL(image)}
 							/>
 						</div>
 					</div>
@@ -641,9 +651,9 @@ const Editor = ({
 					>
 						<Button
 							disabled={disabled}
+							onClick={toggleToolbar}
 							size="iconSm"
 							variant="ghost"
-							onClick={toggleToolbar}
 						>
 							<PiTextAa className="size-4" />
 						</Button>
@@ -660,9 +670,9 @@ const Editor = ({
 							<Hint label="Image">
 								<Button
 									disabled={disabled}
+									onClick={() => imageElementRef.current?.click()}
 									size="iconSm"
 									variant="ghost"
-									onClick={() => imageElementRef.current?.click()}
 								>
 									<ImageIcon className="size-4" />
 								</Button>
@@ -670,9 +680,9 @@ const Editor = ({
 							<Hint label="Calendar">
 								<Button
 									disabled={disabled}
+									onClick={() => setCalendarPickerOpen(true)}
 									size="iconSm"
 									variant="ghost"
-									onClick={() => setCalendarPickerOpen(true)}
 								>
 									<CalendarIcon className="size-4" />
 								</Button>
@@ -680,10 +690,8 @@ const Editor = ({
 							{!disableMentions && (
 								<Hint label="Mention User">
 									<Button
-										disabled={disabled}
-										size="iconSm"
-										variant="ghost"
 										data-mention-button="true"
+										disabled={disabled}
 										onClick={() => {
 											// Just open the mention picker directly
 											setActiveAutocomplete("mention");
@@ -699,18 +707,20 @@ const Editor = ({
 												quill.focus();
 											}
 										}}
+										size="iconSm"
+										variant="ghost"
 									>
 										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="16"
-											height="16"
-											viewBox="0 0 24 24"
+											className="size-4"
 											fill="none"
+											height="16"
 											stroke="currentColor"
-											strokeWidth="2"
 											strokeLinecap="round"
 											strokeLinejoin="round"
-											className="size-4"
+											strokeWidth="2"
+											viewBox="0 0 24 24"
+											width="16"
+											xmlns="http://www.w3.org/2000/svg"
 										>
 											<circle cx="12" cy="12" r="4" />
 											<path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
@@ -723,9 +733,9 @@ const Editor = ({
 									<Hint label="New Canvas">
 										<Button
 											disabled={disabled || isCreatingCanvas}
+											onClick={navigateToCanvas}
 											size="iconSm"
 											variant="ghost"
-											onClick={navigateToCanvas}
 										>
 											{isCreatingCanvas ? (
 												<div className="animate-spin h-4 w-4 border-2 border-secondary border-t-transparent rounded-full" />
@@ -737,9 +747,9 @@ const Editor = ({
 									<Hint label="New Note">
 										<Button
 											disabled={disabled || isCreatingNote}
+											onClick={createNewNote}
 											size="iconSm"
 											variant="ghost"
-											onClick={createNewNote}
 										>
 											{isCreatingNote ? (
 												<div className="animate-spin h-4 w-4 border-2 border-secondary border-t-transparent rounded-full" />
@@ -756,15 +766,16 @@ const Editor = ({
 					{variant === "update" && (
 						<div className="ml-auto flex items-center gap-x-2">
 							<Button
-								variant="outline"
-								size="sm"
-								onClick={onCancel}
 								disabled={disabled}
+								onClick={onCancel}
+								size="sm"
+								variant="outline"
 							>
 								Cancel
 							</Button>
 
 							<Button
+								className="bg-primary text-white hover:bg-primary/80"
 								disabled={disabled || isEmpty}
 								onClick={() => {
 									if (!quillRef.current) return;
@@ -776,7 +787,6 @@ const Editor = ({
 									});
 								}}
 								size="sm"
-								className="bg-primary text-white hover:bg-primary/80"
 							>
 								Save
 							</Button>
@@ -785,7 +795,12 @@ const Editor = ({
 
 					{variant === "create" && (
 						<Button
-							title="Send Message"
+							className={cn(
+								"ml-auto",
+								isEmpty
+									? "bg-white text-muted-foreground hover:bg-white/80"
+									: "bg-primary text-white hover:bg-primary/80"
+							)}
 							disabled={disabled || isEmpty}
 							onClick={() => {
 								if (!quillRef.current) return;
@@ -796,13 +811,8 @@ const Editor = ({
 									calendarEvent: selectedCalendarEvent || undefined,
 								});
 							}}
-							className={cn(
-								"ml-auto",
-								isEmpty
-									? "bg-white text-muted-foreground hover:bg-white/80"
-									: "bg-primary text-white hover:bg-primary/80"
-							)}
 							size="iconSm"
+							title="Send Message"
 						>
 							<MdSend className="size-4" />
 						</Button>

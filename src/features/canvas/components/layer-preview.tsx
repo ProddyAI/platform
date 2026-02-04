@@ -44,14 +44,14 @@ export const LayerPreview = memo(
 			case LayerType.Path:
 				return (
 					<Path
-						key={id}
-						points={layer.points}
-						onPointerDown={(e) => onLayerPointerDown(e, id)}
-						x={layer.x}
-						y={layer.y}
 						fill={layer.fill ? colorToCSS(layer.fill) : "#000"}
+						key={id}
+						onPointerDown={(e) => onLayerPointerDown(e, id)}
+						points={layer.points}
 						stroke={selectionColor}
 						strokeWidth={layer.strokeWidth}
+						x={layer.x}
+						y={layer.y}
 					/>
 				);
 			case LayerType.Note:
@@ -85,9 +85,9 @@ export const LayerPreview = memo(
 				return (
 					<Rectangle
 						id={id}
+						layer={layer as any}
 						onPointerDown={onLayerPointerDown}
 						selectionColor={selectionColor}
-						layer={layer as any}
 					/>
 				);
 			case LayerType.Mermaid:

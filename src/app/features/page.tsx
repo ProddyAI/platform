@@ -153,13 +153,13 @@ const FeaturesPage = () => {
 		>
 			<div className="absolute inset-0">
 				<Image
-					src={src}
 					alt={alt}
-					fill
-					sizes="(max-width: 768px) 100vw, 50vw"
 					className="object-cover hover:scale-105 transition-transform duration-700"
-					style={{ objectFit: "cover", objectPosition: "center" }}
+					fill
 					priority
+					sizes="(max-width: 768px) 100vw, 50vw"
+					src={src}
+					style={{ objectFit: "cover", objectPosition: "center" }}
 				/>
 			</div>
 		</div>
@@ -182,13 +182,13 @@ const FeaturesPage = () => {
 			<div className={`relative h-full ${gradientClass} overflow-hidden`}>
 				<div className="absolute inset-0">
 					<Image
-						src={imageSrc}
 						alt={`${feature.name} preview`}
-						fill
-						sizes="(max-width: 768px) 100vw, 50vw"
 						className="object-cover hover:scale-105 transition-transform duration-700 ease-in-out"
-						style={{ objectFit: "cover", objectPosition: "center" }}
+						fill
 						priority
+						sizes="(max-width: 768px) 100vw, 50vw"
+						src={imageSrc}
+						style={{ objectFit: "cover", objectPosition: "center" }}
 					/>
 				</div>
 				<div className={`absolute bottom-0 left-0 w-full h-1 ${accentClass}`} />
@@ -233,8 +233,13 @@ const FeaturesPage = () => {
 						Key Features
 					</h4>
 					<ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+<<<<<<< HEAD
 						{feature.features.slice(0, 6).map((featureItem) => (
 							<li key={featureItem} className="flex items-start gap-2.5">
+=======
+						{feature.features.slice(0, 6).map((featureItem, idx) => (
+							<li className="flex items-start gap-2.5" key={idx}>
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 								<ArrowRight
 									className={`size-4 ${arrowColorClass} mt-1 flex-shrink-0`}
 								/>
@@ -261,31 +266,31 @@ const FeaturesPage = () => {
 
 		return (
 			<motion.div
-				key={feature.id}
 				id={feature.id}
+				key={feature.id}
 				{...fadeInAnimation}
-				transition={{ duration: 0.5, delay: index * 0.1 }}
 				className={`bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-xl ${hoverBorderClass} transition-all duration-300`}
+				transition={{ duration: 0.5, delay: index * 0.1 }}
 			>
 				<div className="grid grid-cols-1 lg:grid-cols-2 h-full">
 					{index % 2 === 0 ? (
 						// Content on left, image on right for even indexes
 						<>
 							<div className="h-full">
-								<FeatureContent feature={feature} color={color} />
+								<FeatureContent color={color} feature={feature} />
 							</div>
 							<div className="h-full">
-								<FeatureImage feature={feature} color={color} />
+								<FeatureImage color={color} feature={feature} />
 							</div>
 						</>
 					) : (
 						// Image on left, content on right for odd indexes
 						<>
 							<div className="h-full">
-								<FeatureImage feature={feature} color={color} />
+								<FeatureImage color={color} feature={feature} />
 							</div>
 							<div className="h-full">
-								<FeatureContent feature={feature} color={color} />
+								<FeatureContent color={color} feature={feature} />
 							</div>
 						</>
 					)}
@@ -301,8 +306,8 @@ const FeaturesPage = () => {
 			{/* Hero Section - More compact */}
 			<section
 				className="pt-24 pb-12 md:pt-32 md:pb-16 bg-gradient-to-b from-white via-gray-50/50 to-gray-50 relative overflow-hidden"
-				ref={heroRef}
 				id="hero"
+				ref={heroRef}
 			>
 				<div className="absolute inset-0 overflow-hidden">
 					<div className="absolute -top-[30%] -right-[10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-3xl" />
@@ -348,17 +353,17 @@ const FeaturesPage = () => {
 							>
 								<Link href="#features-tabs">
 									<Button
-										size="lg"
 										className="gap-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 bg-primary hover:bg-primary/90 px-6 py-2 text-base"
+										size="lg"
 									>
 										Explore Features <ArrowRight className="size-4" />
 									</Button>
 								</Link>
-								<Link href="/signup">
+								<Link href="/auth/signup">
 									<Button
+										className="gap-2 rounded-full border-gray-300 hover:border-primary/50 px-6 py-2 text-base"
 										size="lg"
 										variant="outline"
-										className="gap-2 rounded-full border-gray-300 hover:border-primary/50 px-6 py-2 text-base"
 									>
 										Get Started
 									</Button>
@@ -367,9 +372,9 @@ const FeaturesPage = () => {
 						</div>
 
 						<motion.div
+							animate={{ opacity: 1, x: 0 }}
 							className="relative h-[300px] md:h-[350px] rounded-2xl overflow-hidden shadow-xl border border-gray-100"
 							initial={{ opacity: 0, x: 50 }}
-							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.7, delay: 0.4 }}
 						>
 							<div className="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-transparent z-10" />
@@ -378,32 +383,32 @@ const FeaturesPage = () => {
 									<div className="flex flex-col gap-3 h-full">
 										<div className="h-1/2">
 											<HeroFeatureImage
-												src="/messages.png"
 												alt="Messaging feature"
 												bgColor="bg-blue-50"
+												src="/messages.png"
 											/>
 										</div>
 										<div className="h-1/2">
 											<HeroFeatureImage
-												src="/tasks.png"
 												alt="Tasks feature"
 												bgColor="bg-green-50"
+												src="/tasks.png"
 											/>
 										</div>
 									</div>
 									<div className="flex flex-col gap-3 h-full">
 										<div className="h-1/2">
 											<HeroFeatureImage
-												src="/calender.png"
 												alt="Calendar feature"
 												bgColor="bg-purple-50"
+												src="/calender.png"
 											/>
 										</div>
 										<div className="h-1/2">
 											<HeroFeatureImage
-												src="/reports.png"
 												alt="Reports feature"
 												bgColor="bg-indigo-50"
+												src="/reports.png"
 											/>
 										</div>
 									</div>
@@ -416,14 +421,14 @@ const FeaturesPage = () => {
 
 			{/* Features Tabs Section */}
 			<section
-				id="features-tabs"
 				className="py-16 bg-gradient-to-b from-white to-gray-50"
+				id="features-tabs"
 			>
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
 					<Tabs
-						value={activeTab}
-						onValueChange={setActiveTab}
 						className="w-full"
+						onValueChange={setActiveTab}
+						value={activeTab}
 					>
 						<div className="mb-16 text-center">
 							<h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -436,8 +441,6 @@ const FeaturesPage = () => {
 							<TabsList className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full h-20 max-w-4xl mx-auto bg-white p-2.5 rounded-xl shadow-sm border border-primary/60">
 								{tabConfig.map((tab) => (
 									<TabsTrigger
-										key={tab.id}
-										value={tab.id}
 										className={cn(
 											"relative py-4 px-5 text-base font-medium text-gray-700 rounded-lg ring-1 ring-gray-400",
 											tab.hoverBg,
@@ -448,6 +451,8 @@ const FeaturesPage = () => {
 											tab.activeRing,
 											"data-[state=active]:shadow-md data-[state=active]:font-semibold transition-all duration-200"
 										)}
+										key={tab.id}
+										value={tab.id}
 									>
 										<span className="flex items-center justify-center gap-3">
 											{tab.icon}
@@ -466,17 +471,17 @@ const FeaturesPage = () => {
 						</div>
 						{tabConfig.map((tab) => (
 							<TabsContent
+								className="mt-8 animate-in fade-in-50 duration-300"
 								key={tab.id}
 								value={tab.id}
-								className="mt-8 animate-in fade-in-50 duration-300"
 							>
 								<div className="space-y-12">
 									{getFeaturesByGroup(tab.id).map((feature, index) => (
 										<FeatureCard
-											key={feature.id}
+											color={tab.color}
 											feature={feature}
 											index={index}
-											color={tab.color}
+											key={feature.id}
 										/>
 									))}
 								</div>

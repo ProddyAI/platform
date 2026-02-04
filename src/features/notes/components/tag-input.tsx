@@ -81,17 +81,17 @@ export const TagInput = ({
 			{/* Existing tags */}
 			{tags.map((tag) => (
 				<Badge
-					key={tag}
-					variant="outline"
 					className={cn(
 						"text-xs px-2 py-1 h-6 flex items-center gap-1",
 						getTagColor(tag)
 					)}
+					key={tag}
+					variant="outline"
 				>
 					<span>{tag}</span>
 					<button
-						onClick={() => removeTag(tag)}
 						className="hover:bg-black/10 rounded-full p-0.5 transition-colors"
+						onClick={() => removeTag(tag)}
 					>
 						<X className="h-2.5 w-2.5" />
 					</button>
@@ -101,21 +101,21 @@ export const TagInput = ({
 			{/* Add tag input or button */}
 			{isInputVisible ? (
 				<Input
-					value={inputValue}
+					autoFocus
+					className="h-6 text-xs px-2 py-1 w-24 min-w-0"
+					onBlur={handleInputBlur}
 					onChange={(e) => setInputValue(e.target.value)}
 					onKeyDown={handleKeyDown}
-					onBlur={handleInputBlur}
 					placeholder={placeholder}
-					className="h-6 text-xs px-2 py-1 w-24 min-w-0"
-					autoFocus
+					value={inputValue}
 				/>
 			) : (
 				tags.length < maxTags && (
 					<Button
-						variant="ghost"
-						size="sm"
-						onClick={() => setIsInputVisible(true)}
 						className="h-6 px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+						onClick={() => setIsInputVisible(true)}
+						size="sm"
+						variant="ghost"
 					>
 						<Plus className="h-3 w-3 mr-1" />
 						Add tag

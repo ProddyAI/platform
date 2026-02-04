@@ -185,11 +185,11 @@ export const TestChatsMessages = ({
 
 		return (
 			<div
-				key={message.id}
 				className={cn(
 					"flex gap-3 group hover:bg-muted/30 px-4 py-1 transition-colors",
 					isCurrentUser && "flex-row-reverse"
 				)}
+				key={message.id}
 			>
 				{/* Avatar */}
 				<div className="flex-shrink-0">
@@ -251,7 +251,7 @@ export const TestChatsMessages = ({
 						>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+									<Button className="h-6 w-6 p-0" size="sm" variant="ghost">
 										<Smile className="h-3 w-3" />
 									</Button>
 								</DropdownMenuTrigger>
@@ -259,9 +259,9 @@ export const TestChatsMessages = ({
 									<div className="flex gap-1 p-1">
 										{commonEmojis.map((emoji) => (
 											<button
+												className="hover:bg-muted rounded p-1 text-sm"
 												key={emoji}
 												onClick={() => onReaction(message.id, emoji)}
-												className="hover:bg-muted rounded p-1 text-sm"
 											>
 												{emoji}
 											</button>
@@ -270,13 +270,13 @@ export const TestChatsMessages = ({
 								</DropdownMenuContent>
 							</DropdownMenu>
 
-							<Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+							<Button className="h-6 w-6 p-0" size="sm" variant="ghost">
 								<Reply className="h-3 w-3" />
 							</Button>
 
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+									<Button className="h-6 w-6 p-0" size="sm" variant="ghost">
 										<MoreHorizontal className="h-3 w-3" />
 									</Button>
 								</DropdownMenuTrigger>
@@ -316,14 +316,14 @@ export const TestChatsMessages = ({
 						>
 							{message.reactions.map((reaction) => (
 								<button
-									key={reaction.emoji}
-									onClick={() => onReaction(message.id, reaction.emoji)}
 									className={cn(
 										"flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition-colors",
 										reaction.users.includes(currentUserId)
 											? "bg-primary/10 border-primary/20 text-primary"
 											: "bg-muted border-border hover:bg-muted/80"
 									)}
+									key={reaction.emoji}
+									onClick={() => onReaction(message.id, reaction.emoji)}
 								>
 									<span>{reaction.emoji}</span>
 									<span>{reaction.users.length}</span>
@@ -371,11 +371,11 @@ export const TestChatsMessages = ({
 			{contextMenu.show && (
 				<div
 					className="fixed bg-white border rounded-lg shadow-lg py-1 z-50 min-w-[160px]"
+					onClick={(e) => e.stopPropagation()}
 					style={{
 						left: contextMenu.x,
 						top: contextMenu.y,
 					}}
-					onClick={(e) => e.stopPropagation()}
 				>
 					<button
 						className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
@@ -424,7 +424,7 @@ export const TestChatsMessages = ({
 			)}
 
 			{/* Task Creation Modal */}
-			<Dialog open={showTaskModal} onOpenChange={setShowTaskModal}>
+			<Dialog onOpenChange={setShowTaskModal} open={showTaskModal}>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">
@@ -438,21 +438,21 @@ export const TestChatsMessages = ({
 							<Label htmlFor="taskTitle">Task Title</Label>
 							<Input
 								id="taskTitle"
-								value={taskTitle}
 								onChange={(e) => setTaskTitle(e.target.value)}
 								placeholder="Enter task title..."
+								value={taskTitle}
 							/>
 						</div>
 
 						<div className="space-y-2">
 							<Label htmlFor="taskContent">Task Description</Label>
 							<Textarea
+								className="resize-none"
 								id="taskContent"
-								value={taskContent}
 								onChange={(e) => setTaskContent(e.target.value)}
 								placeholder="Task description..."
 								rows={3}
-								className="resize-none"
+								value={taskContent}
 							/>
 						</div>
 
@@ -460,14 +460,14 @@ export const TestChatsMessages = ({
 							<Label htmlFor="taskDueDate">Due Date (Optional)</Label>
 							<Input
 								id="taskDueDate"
+								onChange={(e) => setTaskDueDate(e.target.value)}
 								type="date"
 								value={taskDueDate}
-								onChange={(e) => setTaskDueDate(e.target.value)}
 							/>
 						</div>
 
 						<div className="flex justify-end gap-2">
-							<Button variant="outline" onClick={() => setShowTaskModal(false)}>
+							<Button onClick={() => setShowTaskModal(false)} variant="outline">
 								Cancel
 							</Button>
 							<Button onClick={handleTaskCreate}>Create Task</Button>

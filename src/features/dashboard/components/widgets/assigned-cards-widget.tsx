@@ -85,8 +85,8 @@ export const AssignedCardsWidget = ({
 					<h3 className="font-semibold text-base">Assigned Cards</h3>
 					{!isEditMode && sortedCards.length > 0 && (
 						<Badge
-							variant="secondary"
 							className="ml-1 h-5 px-2 text-xs font-medium"
+							variant="secondary"
 						>
 							{sortedCards.length}
 						</Badge>
@@ -97,14 +97,14 @@ export const AssignedCardsWidget = ({
 					: channels &&
 						channels.length > 0 && (
 							<Button
-								variant="ghost"
-								size="sm"
 								className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 								onClick={() =>
 									router.push(
 										`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
 									)
 								}
+								size="sm"
+								variant="ghost"
 							>
 								View all
 							</Button>
@@ -132,17 +132,17 @@ export const AssignedCardsWidget = ({
 									</div>
 									<div className="flex items-center gap-2">
 										<Badge
-											variant="outline"
 											className="text-xs h-5 px-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300"
+											variant="outline"
 										>
 											# {card.channelName || "Unknown Channel"}
 										</Badge>
 									</div>
 									<Button
-										variant="ghost"
-										size="sm"
 										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 										onClick={() => handleViewCard(card)}
+										size="sm"
+										variant="ghost"
 									>
 										View
 									</Button>
@@ -162,14 +162,14 @@ export const AssignedCardsWidget = ({
 					</p>
 					{channels && channels.length > 0 && (
 						<Button
-							variant="default"
-							size="sm"
 							className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 							onClick={() =>
 								router.push(
 									`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
 								)
 							}
+							size="sm"
+							variant="default"
 						>
 							View boards
 						</Button>

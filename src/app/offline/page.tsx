@@ -29,11 +29,11 @@ export default function OfflinePage() {
 			<div className="mb-8 flex items-center justify-center">
 				<div className="relative h-20 w-20">
 					<Image
-						src="/logo-nobg.png"
 						alt="Proddy Logo"
-						fill
 						className="object-contain"
+						fill
 						priority
+						src="/logo-nobg.png"
 					/>
 				</div>
 			</div>
@@ -49,12 +49,12 @@ export default function OfflinePage() {
 			</p>
 
 			<div className="mb-8 flex flex-col gap-4 sm:flex-row">
-				<Button onClick={handleRefresh} className="flex items-center gap-2">
+				<Button className="flex items-center gap-2" onClick={handleRefresh}>
 					<RefreshCw className="h-4 w-4" />
 					Refresh Page
 				</Button>
 				<Link href="/" passHref>
-					<Button variant="outline" className="flex items-center gap-2">
+					<Button className="flex items-center gap-2" variant="outline">
 						<Wifi className="h-4 w-4" />
 						Try Again
 					</Button>

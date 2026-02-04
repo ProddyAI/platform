@@ -150,10 +150,10 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 				<div className="relative max-w-md">
 					<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
-						placeholder="Search cards..."
 						className="pl-9"
-						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
+						placeholder="Search cards..."
+						value={searchQuery}
 					/>
 				</div>
 				<div className="mt-2 text-sm text-muted-foreground">
@@ -249,8 +249,8 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 						{filteredCards.length === 0 ? (
 							<tr>
 								<td
-									colSpan={8}
 									className="p-8 text-center text-muted-foreground"
+									colSpan={8}
 								>
 									{searchQuery
 										? "No cards match your search"
@@ -260,8 +260,8 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 						) : (
 							filteredCards.map((card) => (
 								<tr
-									key={card._id}
 									className="border-b hover:bg-muted/30 transition-colors"
+									key={card._id}
 								>
 									<td className="p-3 font-medium">
 										<div className="flex items-center gap-2">{card.title}</div>
@@ -270,7 +270,7 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 										<div className="truncate">{card.description || "-"}</div>
 									</td>
 									<td className="p-3">
-										<Badge variant="outline" className="font-normal">
+										<Badge className="font-normal" variant="outline">
 											{card.listTitle}
 										</Badge>
 									</td>
@@ -279,6 +279,15 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 											<div className="flex items-center gap-1">
 												{getPriorityIcon(card.priority)}
 												<Badge
+													className={cn(
+														"text-xs px-2 py-0.5",
+														card.priority === "high" &&
+															"bg-orange-500 hover:bg-orange-500/90",
+														card.priority === "low" &&
+															"border-blue-400 text-blue-400",
+														card.priority === "lowest" &&
+															"border-secondary/30 text-secondary/70"
+													)}
 													variant={
 														card.priority === "highest"
 															? "destructive"
@@ -290,15 +299,6 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 																		? "outline"
 																		: "outline"
 													}
-													className={cn(
-														"text-xs px-2 py-0.5",
-														card.priority === "high" &&
-															"bg-orange-500 hover:bg-orange-500/90",
-														card.priority === "low" &&
-															"border-blue-400 text-blue-400",
-														card.priority === "lowest" &&
-															"border-secondary/30 text-secondary/70"
-													)}
 												>
 													{card.priority.charAt(0).toUpperCase() +
 														card.priority.slice(1)}
@@ -313,9 +313,13 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 											{Array.isArray(card.labels) && card.labels.length > 0 ? (
 												card.labels.map((label: string) => (
 													<Badge
+<<<<<<< HEAD
 														key={label}
-														variant="secondary"
+=======
 														className="text-xs px-2 py-0.5 bg-secondary/20"
+														key={i}
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
+														variant="secondary"
 													>
 														{label}
 													</Badge>
@@ -361,8 +365,8 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 																	<TooltipTrigger asChild>
 																		<Avatar className="h-6 w-6 border border-background">
 																			<AvatarImage
-																				src={assignee?.image}
 																				alt={assignee?.name}
+																				src={assignee?.image}
 																			/>
 																			<AvatarFallback className="text-[10px]">
 																				{fallback}
@@ -406,9 +410,9 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 												<Tooltip>
 													<TooltipTrigger asChild>
 														<Button
+															onClick={() => onEditCard(card)}
 															size="iconSm"
 															variant="ghost"
-															onClick={() => onEditCard(card)}
 														>
 															<Pencil className="w-3.5 h-3.5" />
 														</Button>
@@ -422,9 +426,9 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 												<Tooltip>
 													<TooltipTrigger asChild>
 														<Button
+															onClick={() => onDeleteCard(card._id)}
 															size="iconSm"
 															variant="ghost"
-															onClick={() => onDeleteCard(card._id)}
 														>
 															<Trash className="w-3.5 h-3.5" />
 														</Button>

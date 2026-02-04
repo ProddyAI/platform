@@ -106,7 +106,7 @@ export const FlowchartGenerator = ({
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={setIsOpen}>
+		<Dialog onOpenChange={setIsOpen} open={isOpen}>
 			<DialogTrigger asChild>{children}</DialogTrigger>
 			<DialogContent className="sm:max-w-[600px]">
 				<DialogHeader>
@@ -119,19 +119,19 @@ export const FlowchartGenerator = ({
 				<div className="space-y-4">
 					<div>
 						<label
-							htmlFor="prompt"
 							className="text-sm font-medium text-gray-700 mb-2 block"
+							htmlFor="prompt"
 						>
 							Describe your process or workflow:
 						</label>
 						<Textarea
-							id="prompt"
-							placeholder="e.g., 'Create a flowchart for user registration process with email verification'"
-							value={prompt}
-							onChange={(e) => setPrompt(e.target.value)}
-							onKeyDown={handleKeyDown}
 							className="min-h-[100px] resize-none"
 							disabled={isGenerating}
+							id="prompt"
+							onChange={(e) => setPrompt(e.target.value)}
+							onKeyDown={handleKeyDown}
+							placeholder="e.g., 'Create a flowchart for user registration process with email verification'"
+							value={prompt}
 						/>
 						<p className="text-xs text-gray-500 mt-1">
 							Press Ctrl+Enter to generate
@@ -146,12 +146,20 @@ export const FlowchartGenerator = ({
 						<div className="flex flex-wrap gap-2">
 							{examplePrompts.map((example) => (
 								<Button
+<<<<<<< HEAD
 									key={example}
 									variant="outline"
 									size="sm"
 									onClick={() => handleExampleClick(example)}
 									disabled={isGenerating}
+=======
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 									className="text-xs h-7"
+									disabled={isGenerating}
+									key={index}
+									onClick={() => handleExampleClick(example)}
+									size="sm"
+									variant="outline"
 								>
 									{example}
 								</Button>
@@ -162,16 +170,16 @@ export const FlowchartGenerator = ({
 					{/* Action buttons */}
 					<div className="flex justify-end gap-2 pt-4">
 						<Button
-							variant="outline"
-							onClick={() => setIsOpen(false)}
 							disabled={isGenerating}
+							onClick={() => setIsOpen(false)}
+							variant="outline"
 						>
 							Cancel
 						</Button>
 						<Button
-							onClick={handleGenerate}
-							disabled={isGenerating || !prompt.trim()}
 							className="bg-purple-600 hover:bg-purple-700"
+							disabled={isGenerating || !prompt.trim()}
+							onClick={handleGenerate}
 						>
 							{isGenerating ? (
 								<>

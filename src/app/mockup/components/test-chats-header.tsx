@@ -115,10 +115,10 @@ export const TestChatsHeader = ({
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-2">
 						<Button
-							variant="ghost"
-							size="sm"
-							onClick={onShowDailyRecap}
 							className="text-muted-foreground hover:text-foreground"
+							onClick={onShowDailyRecap}
+							size="sm"
+							variant="ghost"
 						>
 							<Clock className="h-4 w-4 mr-2" />
 							Daily Recap
@@ -128,10 +128,10 @@ export const TestChatsHeader = ({
 							<>
 								{selectedChat.type === "direct" && (
 									<>
-										<Button variant="ghost" size="sm">
+										<Button size="sm" variant="ghost">
 											<Phone className="h-4 w-4" />
 										</Button>
-										<Button variant="ghost" size="sm">
+										<Button size="sm" variant="ghost">
 											<Video className="h-4 w-4" />
 										</Button>
 									</>
@@ -139,7 +139,7 @@ export const TestChatsHeader = ({
 
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button variant="ghost" size="sm">
+										<Button size="sm" variant="ghost">
 											<MoreHorizontal className="h-4 w-4" />
 										</Button>
 									</DropdownMenuTrigger>

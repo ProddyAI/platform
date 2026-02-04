@@ -416,10 +416,10 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				<div className="flex items-center gap-2">
 					<div className="flex items-center border dark:border-gray-700 rounded-md overflow-hidden">
 						<Button
-							variant="ghost"
-							size="sm"
 							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
 							onClick={goToPreviousWeek}
+							size="sm"
+							variant="ghost"
 						>
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
@@ -428,10 +428,10 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 							{format(addDays(currentStartDate, zoomLevel - 1), "MMM d, yyyy")}
 						</div>
 						<Button
-							variant="ghost"
-							size="sm"
 							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
 							onClick={goToNextWeek}
+							size="sm"
+							variant="ghost"
 						>
 							<ArrowRight className="h-4 w-4" />
 						</Button>
@@ -439,11 +439,11 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 
 					<div className="flex items-center border dark:border-gray-700 rounded-md overflow-hidden ml-2">
 						<Button
-							variant="ghost"
-							size="sm"
 							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
-							onClick={zoomOut}
 							disabled={zoomLevel >= 28}
+							onClick={zoomOut}
+							size="sm"
+							variant="ghost"
 						>
 							<ZoomOut className="h-4 w-4" />
 						</Button>
@@ -451,21 +451,21 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 							{zoomLevel} days
 						</div>
 						<Button
-							variant="ghost"
-							size="sm"
 							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
-							onClick={zoomIn}
 							disabled={zoomLevel <= 7}
+							onClick={zoomIn}
+							size="sm"
+							variant="ghost"
 						>
 							<ZoomIn className="h-4 w-4" />
 						</Button>
 					</div>
 
 					<Button
-						variant="outline"
-						size="sm"
 						className="h-8 px-2 flex items-center gap-1 dark:bg-gray-800 dark:border-gray-700"
 						onClick={() => setCurrentStartDate(startOfWeek(new Date()))}
+						size="sm"
+						variant="outline"
 					>
 						<Calendar className="h-3.5 w-3.5" />
 						<span className="text-xs">Today</span>
@@ -506,8 +506,12 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					<div className="flex pl-[250px]">
 						{timelineDates.map((date, _index) => (
 							<div
+<<<<<<< HEAD
 								key={date.toISOString()}
+=======
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 								className="flex-1 text-center py-2 text-xs font-medium border-r dark:border-gray-800 last:border-r-0"
+								key={index}
 								style={{ minWidth: "60px" }}
 							>
 								<div className="text-muted-foreground dark:text-gray-400">
@@ -528,8 +532,8 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					{/* List rows with tasks */}
 					{lists.map((list) => (
 						<div
-							key={list._id}
 							className="border-b dark:border-gray-800 last:border-b-0"
+							key={list._id}
 						>
 							<div className="flex">
 								{/* List name column */}
@@ -548,8 +552,12 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									<div className="absolute inset-0 flex">
 										{timelineDates.map((date, index) => (
 											<div
+<<<<<<< HEAD
 												key={date.toISOString()}
+=======
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 												className={`flex-1 border-r dark:border-gray-800 last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5 dark:bg-secondary/10" : index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800/30" : "dark:bg-gray-900"}`}
+												key={index}
 												style={{ minWidth: "60px" }}
 											/>
 										))}
@@ -561,12 +569,14 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 											const style = getTaskPosition(task);
 											return (
 												<div
-													key={task.id}
 													className="mb-2 relative"
+													key={task.id}
 													style={{ height: "30px" }}
 												>
 													<div
 														className="absolute top-0 h-full rounded-md border-2 shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]"
+														onClick={() => setSelectedTask(task)}
+														onMouseDown={(e) => handleDragStart(e, task)}
 														style={{
 															...style,
 															backgroundColor: getSolidPriorityColor(
@@ -574,8 +584,6 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 															),
 															borderColor: getSolidPriorityColor(task.priority),
 														}}
-														onClick={() => setSelectedTask(task)}
-														onMouseDown={(e) => handleDragStart(e, task)}
 													>
 														<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
 															<span className="text-xs font-semibold truncate text-white drop-shadow-sm">
@@ -626,11 +634,11 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 								Task Details
 							</span>
 							<Button
-								variant="ghost"
-								size="sm"
+								aria-label="Close task details"
 								className="h-7 w-7 p-0 flex-shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800"
 								onClick={() => setSelectedTask(null)}
-								aria-label="Close task details"
+								size="sm"
+								variant="ghost"
 							>
 								<X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
 							</Button>
@@ -698,8 +706,12 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									<div className="flex flex-wrap gap-1">
 										{selectedTask.labels.map((label) => (
 											<span
+<<<<<<< HEAD
 												key={label}
+=======
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 												className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 text-xs rounded-full"
+												key={index}
 											>
 												{label}
 											</span>
@@ -710,22 +722,22 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 
 							<div className="pt-2 flex gap-2">
 								<Button
-									size="sm"
-									variant="outline"
 									className="flex-1"
 									onClick={() => onEditCard(selectedTask.originalCard)}
+									size="sm"
+									variant="outline"
 								>
 									<Pencil className="h-3.5 w-3.5 mr-1" />
 									Edit
 								</Button>
 								<Button
-									size="sm"
-									variant="outline"
 									className="flex-1"
 									onClick={() => {
 										onDeleteCard(selectedTask.id);
 										setSelectedTask(null);
 									}}
+									size="sm"
+									variant="outline"
 								>
 									<Trash className="h-3.5 w-3.5 mr-1" />
 									Delete

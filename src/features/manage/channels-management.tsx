@@ -641,7 +641,7 @@ export const ChannelsManagement = ({
 					</p>
 				</div>
 
-				<Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+				<Dialog onOpenChange={setCreateDialogOpen} open={createDialogOpen}>
 					<DialogTrigger asChild>
 						<Button>
 							<Plus className="mr-2 h-4 w-4" />
@@ -668,31 +668,32 @@ export const ChannelsManagement = ({
 								<div className="flex items-center gap-3">
 									<div className="flex-shrink-0 relative">
 										<input
-											ref={newImageInputRef}
-											type="file"
 											accept="image/*"
-											onChange={handleNewIconImageUpload}
 											className="hidden"
 											id="new-icon-upload"
+											onChange={handleNewIconImageUpload}
+											ref={newImageInputRef}
+											type="file"
 										/>
 										<div
+											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 											onClick={() =>
 												!isUploadingNew && newImageInputRef.current?.click()
 											}
-											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 										>
 											{newChannelIconPreview || newChannelIcon ? (
 												<>
 													{newChannelIconPreview ? (
 														<img
-															src={newChannelIconPreview}
 															alt="Icon preview"
 															className="h-full w-full object-cover"
+															src={newChannelIconPreview}
 														/>
 													) : (
 														<span className="text-4xl">{newChannelIcon}</span>
 													)}
 													<button
+														className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 														onClick={(e) => {
 															e.stopPropagation();
 															if (
@@ -705,7 +706,6 @@ export const ChannelsManagement = ({
 																setNewChannelIcon(undefined);
 															}
 														}}
-														className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 													>
 														<X className="h-3.5 w-3.5" />
 													</button>
@@ -720,12 +720,12 @@ export const ChannelsManagement = ({
 											)}
 										</div>
 										<EmojiPopover
-											onEmojiSelect={handleNewChannelEmojiSelect}
 											hint="Select emoji icon"
+											onEmojiSelect={handleNewChannelEmojiSelect}
 										>
 											<button
-												type="button"
 												className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+												type="button"
 											>
 												<Smile className="h-4 w-4" />
 											</button>
@@ -733,21 +733,21 @@ export const ChannelsManagement = ({
 									</div>
 									<div className="flex-1">
 										<Label
-											htmlFor="name"
 											className="text-sm font-medium mb-1 block"
+											htmlFor="name"
 										>
 											Channel Name
 										</Label>
 										<Input
+											className="h-10 !leading-[1.5] py-2.5"
 											id="name"
-											value={newChannelName}
+											maxLength={20}
+											minLength={3}
 											onChange={(e) => setNewChannelName(e.target.value)}
 											placeholder="e.g. plan-budget"
 											required
-											minLength={3}
-											maxLength={20}
-											className="h-10 !leading-[1.5] py-2.5"
 											style={{ lineHeight: "1.5" }}
+											value={newChannelName}
 										/>
 										<p className="text-xs text-muted-foreground mt-1">
 											Max 5MB for images
@@ -757,7 +757,7 @@ export const ChannelsManagement = ({
 							</div>
 						</div>
 						<DialogFooter>
-							<Button onClick={handleCreateChannel} disabled={isCreating}>
+							<Button disabled={isCreating} onClick={handleCreateChannel}>
 								{isCreating ? (
 									<>
 										<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -810,17 +810,17 @@ export const ChannelsManagement = ({
 								<TableCell>
 									<div className="flex items-center gap-2">
 										<Button
-											variant="outline"
-											size="sm"
 											onClick={() => openEditDialog(channel)}
+											size="sm"
+											variant="outline"
 										>
 											<Edit className="h-4 w-4" />
 										</Button>
 										<Button
-											variant="outline"
-											size="sm"
 											className="text-destructive hover:bg-destructive/10"
 											onClick={() => openDeleteDialog(channel._id)}
+											size="sm"
+											variant="outline"
 										>
 											<Trash2 className="h-4 w-4" />
 										</Button>
@@ -833,7 +833,7 @@ export const ChannelsManagement = ({
 			)}
 
 			{/* Edit Channel Dialog */}
-			<Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+			<Dialog onOpenChange={setEditDialogOpen} open={editDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Edit Channel</DialogTitle>
@@ -852,31 +852,32 @@ export const ChannelsManagement = ({
 							<div className="flex items-center gap-3">
 								<div className="flex-shrink-0 relative">
 									<input
-										ref={editImageInputRef}
-										type="file"
 										accept="image/*"
-										onChange={handleEditIconImageUpload}
 										className="hidden"
 										id="edit-icon-upload"
+										onChange={handleEditIconImageUpload}
+										ref={editImageInputRef}
+										type="file"
 									/>
 									<div
+										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 										onClick={() =>
 											!isUploadingEdit && editImageInputRef.current?.click()
 										}
-										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 									>
 										{editChannelIconPreview || editChannelIcon ? (
 											<>
 												{editChannelIconPreview ? (
 													<img
-														src={editChannelIconPreview}
 														alt="Icon preview"
 														className="h-full w-full object-cover"
+														src={editChannelIconPreview}
 													/>
 												) : (
 													<span className="text-4xl">{editChannelIcon}</span>
 												)}
 												<button
+													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 													onClick={(e) => {
 														e.stopPropagation();
 														if (
@@ -889,7 +890,6 @@ export const ChannelsManagement = ({
 															setEditChannelIcon(undefined);
 														}
 													}}
-													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 												>
 													<X className="h-3.5 w-3.5" />
 												</button>
@@ -904,12 +904,12 @@ export const ChannelsManagement = ({
 										)}
 									</div>
 									<EmojiPopover
-										onEmojiSelect={handleEditChannelEmojiSelect}
 										hint="Select emoji icon"
+										onEmojiSelect={handleEditChannelEmojiSelect}
 									>
 										<button
-											type="button"
 											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+											type="button"
 										>
 											<Smile className="h-4 w-4" />
 										</button>
@@ -917,20 +917,20 @@ export const ChannelsManagement = ({
 								</div>
 								<div className="flex-1">
 									<Label
-										htmlFor="edit-name"
 										className="text-sm font-medium mb-1 block"
+										htmlFor="edit-name"
 									>
 										Channel Name
 									</Label>
 									<Input
+										className="h-10 !leading-[1.5] py-2.5"
 										id="edit-name"
-										value={editChannelName}
+										maxLength={20}
+										minLength={3}
 										onChange={(e) => setEditChannelName(e.target.value)}
 										required
-										minLength={3}
-										maxLength={20}
-										className="h-10 !leading-[1.5] py-2.5"
 										style={{ lineHeight: "1.5" }}
+										value={editChannelName}
 									/>
 									<p className="text-xs text-muted-foreground mt-1">
 										Max 5MB for images
@@ -940,7 +940,7 @@ export const ChannelsManagement = ({
 						</div>
 					</div>
 					<DialogFooter>
-						<Button onClick={handleUpdateChannel} disabled={isUpdating}>
+						<Button disabled={isUpdating} onClick={handleUpdateChannel}>
 							{isUpdating ? (
 								<>
 									<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -955,7 +955,7 @@ export const ChannelsManagement = ({
 			</Dialog>
 
 			{/* Delete Channel Dialog */}
-			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+			<AlertDialog onOpenChange={setDeleteDialogOpen} open={deleteDialogOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
 						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -967,9 +967,9 @@ export const ChannelsManagement = ({
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
-							onClick={handleDeleteChannel}
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 							disabled={isDeleting}
+							onClick={handleDeleteChannel}
 						>
 							{isDeleting ? "Deleting..." : "Delete"}
 						</AlertDialogAction>

@@ -17,6 +17,10 @@ const RATE_LIMITS = {
 	// Per email recipient: 5 invites per day (prevent spam to same email)
 	EMAIL_INVITES_PER_DAY: 5,
 	EMAIL_WINDOW_MS: 24 * 60 * 60 * 1000, // 24 hours
+
+	// Password reset: 3 attempts per hour per email
+	PASSWORD_RESET_PER_HOUR: 3,
+	PASSWORD_RESET_WINDOW_MS: 60 * 60 * 1000, // 1 hour
 };
 
 /**
@@ -269,6 +273,53 @@ export const recordRateLimit = mutation({
 		});
 
 		return { success: true };
+	},
+});
+
+/**
+ * Validate and record password reset rate limit
+ * No authentication required - uses email as the key
+ */
+export const validatePasswordResetRateLimit = mutation({
+	args: {
+		email: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const now = Date.now();
+		const normalizedEmail = args.email.toLowerCase().trim();
+
+		// Check password reset rate limit for this email
+		const passwordResetLimits = await ctx.db
+			.query("rateLimits")
+			.withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("type"), "password_reset"),
+					q.gt(q.field("expiresAt"), now)
+				)
+			)
+			.take(RATE_LIMITS.PASSWORD_RESET_PER_HOUR);
+
+		if (passwordResetLimits.length >= RATE_LIMITS.PASSWORD_RESET_PER_HOUR) {
+			const oldestExpiry = Math.min(
+				...passwordResetLimits.map((l) => l.expiresAt)
+			);
+			const minutesRemaining = Math.ceil((oldestExpiry - now) / 1000 / 60);
+			return {
+				allowed: false,
+				reason: `Too many password reset requests. Please try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? "s" : ""}.`,
+			};
+		}
+
+		// All checks passed - record the rate limit entry
+		await ctx.db.insert("rateLimits", {
+			email: normalizedEmail,
+			type: "password_reset",
+			expiresAt: now + RATE_LIMITS.PASSWORD_RESET_WINDOW_MS,
+			createdAt: now,
+		});
+
+		return { allowed: true };
 	},
 });
 

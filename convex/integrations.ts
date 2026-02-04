@@ -296,6 +296,29 @@ export const getMyConnectedAccountByToolkit = query({
 	},
 });
 
+// Get any active connected account for workspace + toolkit (for workspace-level connections stored without memberId).
+// Matches toolkit case-insensitively (DB may have "GITHUB" or "github" depending on how the connection was stored).
+export const getWorkspaceConnectedAccountByToolkit = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		toolkit: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const accounts = await ctx.db
+			.query("connected_accounts")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) => q.eq(q.field("status"), "ACTIVE"))
+			.collect();
+		const toolkitLower = args.toolkit.toLowerCase();
+		return (
+			accounts.find((acc) => acc.toolkit?.toLowerCase() === toolkitLower) ??
+			null
+		);
+	},
+});
+
 // Get connected account by user and toolkit (for backward compatibility)
 export const getConnectedAccountByUserAndToolkit = query({
 	args: {

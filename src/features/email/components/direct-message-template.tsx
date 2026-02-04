@@ -42,11 +42,11 @@ export const DirectMessageTemplate: React.FC<
 			<Body style={main}>
 				<Container style={container}>
 					<Img
-						src="https://proddy.tech/logo-nobg.png"
-						width="40"
-						height="40"
 						alt="Proddy"
+						height="40"
+						src="https://proddy.tech/logo-nobg.png"
 						style={logo}
+						width="40"
 					/>
 					<Heading style={heading}>New Direct Message</Heading>
 					<Section style={section}>
@@ -62,6 +62,7 @@ export const DirectMessageTemplate: React.FC<
 
 						<Section style={buttonContainer}>
 							<Button
+								href={workspaceUrl}
 								style={{
 									...button,
 									paddingLeft: "20px",
@@ -69,7 +70,6 @@ export const DirectMessageTemplate: React.FC<
 									paddingTop: "12px",
 									paddingBottom: "12px",
 								}}
-								href={workspaceUrl}
 							>
 								View Message
 							</Button>

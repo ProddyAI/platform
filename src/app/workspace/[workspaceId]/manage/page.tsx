@@ -53,9 +53,9 @@ const ManagePage = () => {
 		<div className="flex h-full flex-col">
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 					size="sm"
+					variant="ghost"
 				>
 					<Settings className="mr-2 size-5" />
 					<span className="truncate">Manage</span>
@@ -78,14 +78,14 @@ const ManagePage = () => {
 							</div>
 							<div className="bg-background rounded-lg p-6 shadow-sm border">
 								<IntegrationsManagement
-									workspaceId={workspaceId}
 									currentMember={member}
+									workspaceId={workspaceId}
 								/>
 							</div>
 						</div>
 					) : (
 						/* For admins and owners, show all tabs */
-						<Tabs defaultValue="integrations" className="w-full">
+						<Tabs className="w-full" defaultValue="integrations">
 							<TabsList className="grid w-full grid-cols-4 mb-8">
 								<TabsTrigger value="workspace">
 									<Settings className="h-4 w-4 mr-2" />
@@ -106,42 +106,42 @@ const ManagePage = () => {
 							</TabsList>
 
 							<TabsContent
-								value="workspace"
 								className="bg-background rounded-lg p-6 shadow-sm border"
+								value="workspace"
 							>
 								<WorkspaceManagement
-									workspace={workspace}
 									currentMember={member}
+									workspace={workspace}
 								/>
 							</TabsContent>
 
 							<TabsContent
-								value="channels"
 								className="bg-background rounded-lg p-6 shadow-sm border"
+								value="channels"
 							>
 								<ChannelsManagement
-									workspaceId={workspaceId}
 									currentMember={member}
+									workspaceId={workspaceId}
 								/>
 							</TabsContent>
 
 							<TabsContent
-								value="members"
 								className="bg-background rounded-lg p-6 shadow-sm border"
+								value="members"
 							>
 								<MembersManagement
-									workspaceId={workspaceId}
 									currentMember={member}
+									workspaceId={workspaceId}
 								/>
 							</TabsContent>
 
 							<TabsContent
-								value="integrations"
 								className="bg-background rounded-lg p-6 shadow-sm border"
+								value="integrations"
 							>
 								<IntegrationsManagement
-									workspaceId={workspaceId}
 									currentMember={member}
+									workspaceId={workspaceId}
 								/>
 							</TabsContent>
 						</Tabs>

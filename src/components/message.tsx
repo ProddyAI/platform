@@ -112,19 +112,19 @@ const MessageComponent = ({
 			<TaskCreationModal
 				isOpen={taskModal.show}
 				onClose={() => setTaskModal({ ...taskModal, show: false })}
-				taskTitle={taskModal.title}
-				taskContent={taskModal.content}
-				taskDueDate={taskModal.dueDate}
-				onTaskTitleChange={(value) =>
-					setTaskModal({ ...taskModal, title: value })
-				}
+				onCreateTask={handleCreateTask}
 				onTaskContentChange={(value) =>
 					setTaskModal({ ...taskModal, content: value })
 				}
 				onTaskDueDateChange={(value) =>
 					setTaskModal({ ...taskModal, dueDate: value })
 				}
-				onCreateTask={handleCreateTask}
+				onTaskTitleChange={(value) =>
+					setTaskModal({ ...taskModal, title: value })
+				}
+				taskContent={taskModal.content}
+				taskDueDate={taskModal.dueDate}
+				taskTitle={taskModal.title}
 			/>
 		</>
 	);

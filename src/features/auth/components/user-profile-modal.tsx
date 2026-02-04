@@ -47,6 +47,7 @@ import { StatusTrackingSettings } from "@/features/preferences/components/status
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useCurrentUser } from "../api/use-current-user";
 import { useDeleteAccount } from "../api/use-delete-account";
+import { PasswordChangeForm } from "./password-change-form";
 
 interface UserProfileModalProps {
 	open: boolean;
@@ -397,7 +398,7 @@ export const UserProfileModal = ({
 		: undefined;
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden">
 				<div className="flex h-full overflow-hidden">
 					{/* Left Panel - Profile Overview with banner */}
@@ -409,23 +410,23 @@ export const UserProfileModal = ({
 						{isEditMode && isEditing && (
 							<div className="absolute top-3 right-3 z-20 flex items-center gap-2">
 								<Button
+									aria-label="Reset banner"
+									className="rounded-full size-8 p-0 shadow-md"
+									disabled={isUploadingBanner}
+									onClick={handleResetBanner}
 									size="sm"
 									variant="ghost"
-									className="rounded-full size-8 p-0 shadow-md"
-									onClick={handleResetBanner}
-									aria-label="Reset banner"
-									disabled={isUploadingBanner}
 								>
 									<Trash2 className="size-4" />
 								</Button>
 
 								<Button
+									aria-label="Change banner"
+									className="rounded-full size-8 p-0 shadow-md"
+									disabled={isUploadingBanner}
+									onClick={handleBannerChange}
 									size="sm"
 									variant="secondary"
-									className="rounded-full size-8 p-0 shadow-md"
-									onClick={handleBannerChange}
-									aria-label="Change banner"
-									disabled={isUploadingBanner}
 								>
 									{isUploadingBanner ? (
 										<Loader2 className="size-4 animate-spin" />
@@ -437,10 +438,10 @@ export const UserProfileModal = ({
 						)}
 
 						<div className="flex flex-col items-center justify-center text-center h-full relative z-10">
-							<div className="w-full max-w-xs bg-white/70 dark:bg-white/5 backdrop-blur-md rounded-2xl p-6 shadow-lg">
+							<div className="w-full max-w-xs bg-white/70 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/20 dark:border-slate-700/50">
 								<div className="space-y-4 flex-1 flex flex-col items-center justify-center">
 									<div className="relative">
-										<Avatar className="size-24 ring-4 ring-background shadow-lg">
+										<Avatar className="size-24 ring-4 ring-white dark:ring-slate-700 shadow-lg">
 											<AvatarImage
 												src={
 													avatarPreview ||
@@ -462,12 +463,12 @@ export const UserProfileModal = ({
 
 										{isEditMode && isEditing && (
 											<Button
+												aria-label="Change avatar"
+												className="absolute -bottom-1 -right-1 rounded-full size-8 p-0 z-10 shadow-md"
+												disabled={isUploadingAvatar}
+												onClick={handleAvatarChange}
 												size="sm"
 												variant="secondary"
-												className="absolute -bottom-1 -right-1 rounded-full size-8 p-0 z-10 shadow-md"
-												onClick={handleAvatarChange}
-												aria-label="Change avatar"
-												disabled={isUploadingAvatar}
 											>
 												{isUploadingAvatar ? (
 													<Loader2 className="size-4 animate-spin" />
@@ -478,19 +479,19 @@ export const UserProfileModal = ({
 										)}
 
 										<input
+											accept="image/*"
+											className="hidden"
+											onChange={handleFileChange}
 											ref={fileInputRef}
 											type="file"
-											accept="image/*"
-											onChange={handleFileChange}
-											className="hidden"
 										/>
 
 										<input
+											accept="image/*"
+											className="hidden"
+											onChange={handleBannerFileChange}
 											ref={bannerFileInputRef}
 											type="file"
-											accept="image/*"
-											onChange={handleBannerFileChange}
-											className="hidden"
 										/>
 									</div>
 
@@ -501,16 +502,16 @@ export const UserProfileModal = ({
 										<p className="text-sm text-muted-foreground">
 											{currentUser?.email}
 										</p>
-										<Badge variant="secondary" className="text-xs">
+										<Badge className="text-xs" variant="secondary">
 											Member since {memberSince}
 										</Badge>
 
 										{isEditMode && !isEditing && (
 											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => setIsEditing(true)}
 												className="gap-2 mt-3"
+												onClick={() => setIsEditing(true)}
+												size="sm"
+												variant="outline"
 											>
 												<Edit3 className="size-4" />
 												Edit Profile
@@ -520,22 +521,22 @@ export const UserProfileModal = ({
 										{isEditMode && isEditing && (
 											<div className="flex flex-col gap-2 mt-3">
 												<Button
+													className="gap-2 w-full"
+													disabled={isUpdating}
+													onClick={handleCancel}
+													size="sm"
 													type="button"
 													variant="outline"
-													onClick={handleCancel}
-													disabled={isUpdating}
-													className="gap-2 w-full"
-													size="sm"
 												>
 													<X className="size-4" />
 													Cancel
 												</Button>
 												<Button
-													type="submit"
-													disabled={isUpdating || !hasChanges}
 													className="gap-2 w-full"
-													size="sm"
+													disabled={isUpdating || !hasChanges}
 													form="profile-form"
+													size="sm"
+													type="submit"
 												>
 													<Save className="size-4" />
 													{isUpdating ? "Saving..." : "Save Changes"}
@@ -564,14 +565,14 @@ export const UserProfileModal = ({
 										<div className="flex items-center gap-2 text-sm text-muted-foreground">
 											<Globe className="size-4 flex-shrink-0" />
 											<a
+												className="text-primary hover:underline truncate"
 												href={
 													website.startsWith("http")
 														? website
 														: `https://${website}`
 												}
-												target="_blank"
 												rel="noopener noreferrer"
-												className="text-primary hover:underline truncate"
+												target="_blank"
 											>
 												{website}
 											</a>
@@ -589,7 +590,7 @@ export const UserProfileModal = ({
 					</div>
 
 					{/* Right Panel - Content */}
-					<div className="flex-1 flex flex-col">
+					<div className="flex-1 flex flex-col overflow-hidden">
 						<DialogHeader className="px-6 py-4 border-b flex-shrink-0">
 							<DialogTitle className="text-2xl font-semibold">
 								{isEditMode ? "Account Settings" : "Profile"}
@@ -598,33 +599,33 @@ export const UserProfileModal = ({
 
 						<div className="flex-1 overflow-y-auto min-w-0">
 							{isEditMode ? (
-								<div className="h-full flex flex-col">
+								<div className="h-full flex flex-col overflow-hidden">
 									<Tabs
+										className="w-full h-full flex flex-col overflow-hidden"
 										defaultValue={defaultTab}
-										className="w-full h-full flex flex-col"
 									>
 										<TabsList className="grid w-full grid-cols-2 mx-6 mt-4 flex-shrink-0">
-											<TabsTrigger value="profile" className="gap-2">
+											<TabsTrigger className="gap-2" value="profile">
 												<User className="size-4" />
 												Profile
 											</TabsTrigger>
-											<TabsTrigger value="notifications" className="gap-2">
+											<TabsTrigger className="gap-2" value="notifications">
 												<Mail className="size-4" />
 												Notifications
 											</TabsTrigger>
 										</TabsList>
 
 										<TabsContent
-											value="profile"
 											className="flex-1 overflow-y-auto min-w-0 px-6"
 											data-state="active"
+											value="profile"
 										>
 											<div className="py-6 space-y-6 max-w-none">
 												{isEditing ? (
 													<form
+														className="space-y-6"
 														id="profile-form"
 														onSubmit={handleSubmit}
-														className="space-y-6"
 													>
 														<Card>
 															<CardHeader>
@@ -642,24 +643,24 @@ export const UserProfileModal = ({
 																	<div className="space-y-2">
 																		<Label htmlFor="name">Display Name *</Label>
 																		<Input
+																			disabled={isUpdating}
 																			id="name"
-																			value={displayName}
 																			onChange={(e) =>
 																				setDisplayName(e.target.value)
 																			}
-																			disabled={isUpdating}
-																			required
 																			placeholder="Enter your display name"
+																			required
+																			value={displayName}
 																		/>
 																	</div>
 																	<div className="space-y-2">
 																		<Label htmlFor="email">Email Address</Label>
 																		<Input
-																			id="email"
-																			value={currentUser?.email || ""}
-																			disabled
-																			readOnly
 																			className="bg-muted"
+																			disabled
+																			id="email"
+																			readOnly
+																			value={currentUser?.email || ""}
 																		/>
 																		<p className="text-xs text-muted-foreground">
 																			Email cannot be changed
@@ -670,12 +671,12 @@ export const UserProfileModal = ({
 																<div className="space-y-2">
 																	<Label htmlFor="bio">Bio</Label>
 																	<Input
-																		id="bio"
-																		value={bio}
-																		onChange={(e) => setBio(e.target.value)}
 																		disabled={isUpdating}
-																		placeholder="Tell us about yourself..."
+																		id="bio"
 																		maxLength={160}
+																		onChange={(e) => setBio(e.target.value)}
+																		placeholder="Tell us about yourself..."
+																		value={bio}
 																	/>
 																	<p className="text-xs text-muted-foreground">
 																		{bio.length}/160 characters
@@ -686,25 +687,25 @@ export const UserProfileModal = ({
 																	<div className="space-y-2">
 																		<Label htmlFor="location">Location</Label>
 																		<Input
+																			disabled={isUpdating}
 																			id="location"
-																			value={location}
 																			onChange={(e) =>
 																				setLocation(e.target.value)
 																			}
-																			disabled={isUpdating}
 																			placeholder="City, Country"
+																			value={location}
 																		/>
 																	</div>
 																	<div className="space-y-2">
 																		<Label htmlFor="website">Website</Label>
 																		<Input
+																			disabled={isUpdating}
 																			id="website"
-																			value={website}
 																			onChange={(e) =>
 																				setWebsite(e.target.value)
 																			}
-																			disabled={isUpdating}
 																			placeholder="https://yourwebsite.com"
+																			value={website}
 																		/>
 																	</div>
 																</div>
@@ -712,11 +713,11 @@ export const UserProfileModal = ({
 																<div className="space-y-2">
 																	<Label htmlFor="phone">Phone Number</Label>
 																	<Input
-																		id="phone"
-																		value={phone}
-																		onChange={(e) => setPhone(e.target.value)}
 																		disabled={isUpdating}
+																		id="phone"
+																		onChange={(e) => setPhone(e.target.value)}
 																		placeholder="+1 (555) 123-4567"
+																		value={phone}
 																	/>
 																</div>
 															</CardContent>
@@ -796,6 +797,7 @@ export const UserProfileModal = ({
 																						Website
 																					</Label>
 																					<a
+																						className="text-sm text-primary hover:underline"
 																						href={
 																							(
 																								currentUser as any
@@ -803,9 +805,8 @@ export const UserProfileModal = ({
 																								? (currentUser as any).website
 																								: `https://${(currentUser as any).website}`
 																						}
-																						target="_blank"
 																						rel="noopener noreferrer"
-																						className="text-sm text-primary hover:underline"
+																						target="_blank"
 																					>
 																						{(currentUser as any).website}
 																					</a>
@@ -836,6 +837,9 @@ export const UserProfileModal = ({
 															</CardContent>
 														</Card>
 
+														{/* Password Change Form */}
+														<PasswordChangeForm />
+
 														<Card className="border-destructive/50">
 															<CardHeader>
 																<CardTitle className="text-destructive flex items-center gap-2">
@@ -860,9 +864,9 @@ export const UserProfileModal = ({
 																		</p>
 																	</div>
 																	<Button
-																		variant="destructive"
-																		onClick={() => setDeleteDialogOpen(true)}
 																		className="gap-2 whitespace-nowrap"
+																		onClick={() => setDeleteDialogOpen(true)}
+																		variant="destructive"
 																	>
 																		<Trash2 className="size-4" />
 																		Delete Account
@@ -876,9 +880,9 @@ export const UserProfileModal = ({
 										</TabsContent>
 
 										<TabsContent
-											value="notifications"
 											className="flex-1 overflow-y-auto min-w-0 px-6"
 											data-state="inactive"
+											value="notifications"
 										>
 											<div className="py-6">
 												<NotificationSettings />
@@ -903,8 +907,8 @@ export const UserProfileModal = ({
 													</p>
 													{currentUser?.email ? (
 														<a
-															href={`mailto:${currentUser.email}`}
 															className="text-sm font-medium text-primary hover:underline"
+															href={`mailto:${currentUser.email}`}
 														>
 															{currentUser.email}
 														</a>
@@ -941,7 +945,7 @@ export const UserProfileModal = ({
 			</DialogContent>
 
 			{/* Delete Account Dialog */}
-			<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+			<Dialog onOpenChange={setDeleteDialogOpen} open={deleteDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Delete Account</DialogTitle>
@@ -960,19 +964,21 @@ export const UserProfileModal = ({
 					</div>
 
 					<div className="mt-4">
-						<Label htmlFor="confirm-delete" className="text-sm font-medium">
+						<Label className="text-sm font-medium" htmlFor="confirm-delete">
 							Type{" "}
-							<span className="font-semibold text-destructive">DELETE</span> to
-							confirm
+							<span className="font-semibold text-destructive">
+								delete my account
+							</span>{" "}
+							to confirm
 						</Label>
 						<Input
-							id="confirm-delete"
-							placeholder="Type DELETE to confirm"
-							value={confirmText}
-							onChange={(e) => setConfirmText(e.target.value)}
-							disabled={isDeleting}
-							className="mt-2"
 							autoComplete="off"
+							className="mt-2"
+							disabled={isDeleting}
+							id="confirm-delete"
+							onChange={(e) => setConfirmText(e.target.value)}
+							placeholder="Type 'delete my account' to confirm"
+							value={confirmText}
 						/>
 						<p className="text-xs text-muted-foreground mt-2">
 							This will permanently delete your account and all associated data.
@@ -981,22 +987,22 @@ export const UserProfileModal = ({
 
 					<DialogFooter>
 						<Button
-							variant="outline"
+							disabled={isDeleting}
 							onClick={() => {
 								setDeleteDialogOpen(false);
 								setConfirmText("");
 							}}
-							disabled={isDeleting}
+							variant="outline"
 						>
 							Cancel
 						</Button>
 						<Button
-							variant="destructive"
-							onClick={handleDeleteAccount}
 							disabled={
 								isDeleting ||
 								confirmText.trim().toLowerCase() !== "delete my account"
 							}
+							onClick={handleDeleteAccount}
+							variant="destructive"
 						>
 							{isDeleting ? (
 								<>

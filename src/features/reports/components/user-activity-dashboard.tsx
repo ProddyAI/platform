@@ -117,8 +117,7 @@ export const UserActivityDashboard = ({
 		.slice(0, 10)
 		.map((item) => {
 			const timeValue = item.totalTimeSpent || 0;
-			// Color code based on time spent (in seconds)
-			// Green: > 1 hour, Yellow: 15min - 1 hour, Blue: < 15min
+
 			const color =
 				timeValue > ONE_HOUR_IN_SECONDS
 					? "bg-green-500"
@@ -253,8 +252,8 @@ export const UserActivityDashboard = ({
 						<div className="h-[400px] max-h-[400px] overflow-auto">
 							<HorizontalBarChart
 								data={messageCountData}
-								height={30}
 								formatValue={(value) => `${value} messages`}
+								height={30}
 							/>
 						</div>
 					</CardContent>
@@ -272,8 +271,8 @@ export const UserActivityDashboard = ({
 							{timeSpentData.length > 0 ? (
 								<HorizontalBarChart
 									data={timeSpentData}
-									height={30}
 									formatValue={(value) => formatDuration(value, "short")}
+									height={30}
 								/>
 							) : (
 								<div className="flex flex-col items-center justify-center h-full bg-muted/20 rounded-md">

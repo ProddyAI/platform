@@ -160,8 +160,6 @@ export const ExportNoteDialog = ({
 	};
 
 	const convertToPDF = (note: Note): string => {
-		// For now, return a data URL placeholder
-		// In a real implementation, you'd use a library like puppeteer or jsPDF
 		const htmlContent = convertToHTML(note);
 
 		// This is a placeholder - in production you'd generate actual PDF
@@ -365,7 +363,7 @@ export const ExportNoteDialog = ({
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
+		<Dialog onOpenChange={onClose} open={isOpen}>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>Export Note</DialogTitle>
@@ -374,44 +372,44 @@ export const ExportNoteDialog = ({
 					</DialogDescription>
 				</DialogHeader>
 
-				<Tabs defaultValue="format" className="w-full">
+				<Tabs className="w-full" defaultValue="format">
 					<TabsList className="grid w-full grid-cols-1">
 						<TabsTrigger value="format">Export Format</TabsTrigger>
 					</TabsList>
 
-					<TabsContent value="format" className="space-y-4">
+					<TabsContent className="space-y-4" value="format">
 						<div className="grid grid-cols-2 gap-3">
 							<Button
-								variant={exportFormat === "markdown" ? "default" : "outline"}
-								onClick={() => setExportFormat("markdown")}
 								className="h-20 flex flex-col items-center justify-center"
+								onClick={() => setExportFormat("markdown")}
+								variant={exportFormat === "markdown" ? "default" : "outline"}
 							>
 								<span className="text-lg mb-1">📝</span>
 								<span className="text-xs">Markdown</span>
 							</Button>
 
 							<Button
-								variant={exportFormat === "html" ? "default" : "outline"}
-								onClick={() => setExportFormat("html")}
 								className="h-20 flex flex-col items-center justify-center"
+								onClick={() => setExportFormat("html")}
+								variant={exportFormat === "html" ? "default" : "outline"}
 							>
 								<span className="text-lg mb-1">🌐</span>
 								<span className="text-xs">HTML</span>
 							</Button>
 
 							<Button
-								variant={exportFormat === "json" ? "default" : "outline"}
-								onClick={() => setExportFormat("json")}
 								className="h-20 flex flex-col items-center justify-center"
+								onClick={() => setExportFormat("json")}
+								variant={exportFormat === "json" ? "default" : "outline"}
 							>
 								<span className="text-lg mb-1">📋</span>
 								<span className="text-xs">JSON</span>
 							</Button>
 
 							<Button
-								variant={exportFormat === "pdf" ? "default" : "outline"}
-								onClick={() => setExportFormat("pdf")}
 								className="h-20 flex flex-col items-center justify-center"
+								onClick={() => setExportFormat("pdf")}
+								variant={exportFormat === "pdf" ? "default" : "outline"}
 							>
 								<span className="text-lg mb-1">📄</span>
 								<span className="text-xs">PDF</span>
@@ -422,19 +420,19 @@ export const ExportNoteDialog = ({
 
 				<DialogFooter className="flex justify-between">
 					<Button
-						variant="outline"
-						onClick={handleExportToChat}
-						disabled={isExporting}
 						className="flex items-center"
+						disabled={isExporting}
+						onClick={handleExportToChat}
+						variant="outline"
 					>
 						<MessageSquare className="h-4 w-4 mr-2" />
 						Share in Chat
 					</Button>
 
 					<Button
-						onClick={handleExportToSystem}
-						disabled={isExporting}
 						className="flex items-center"
+						disabled={isExporting}
+						onClick={handleExportToSystem}
 					>
 						<Download className="h-4 w-4 mr-2" />
 						{isExporting ? "Exporting..." : "Download"}

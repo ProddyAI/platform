@@ -15,17 +15,17 @@ const PrivacyPage = () => {
 				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center">
 						<motion.h1
+							animate={{ opacity: 1, y: 0 }}
 							className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
 							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5 }}
 						>
 							Privacy Policy
 						</motion.h1>
 						<motion.p
+							animate={{ opacity: 1, y: 0 }}
 							className="text-lg text-gray-600"
 							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
 							Last updated:{" "}
@@ -221,8 +221,8 @@ const PrivacyPage = () => {
 							<p className="mt-2">
 								<strong>Email:</strong>{" "}
 								<a
-									href="mailto:support@proddy.tech"
 									className="text-primary hover:underline"
+									href="mailto:support@proddy.tech"
 								>
 									support@proddy.tech
 								</a>

@@ -65,26 +65,26 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 	};
 
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
+		<Popover onOpenChange={setOpen} open={open}>
 			<PopoverTrigger asChild>
 				<Button
-					variant="outline"
-					role="combobox"
 					aria-expanded={open}
 					className="w-full justify-between"
+					role="combobox"
+					variant="outline"
 				>
 					{selectedMembers.length > 0 ? (
 						<div className="flex flex-wrap gap-1 max-w-[90%] overflow-hidden">
 							{selectedMembers.map((member) => (
 								<Badge
+									className="flex items-center gap-1"
 									key={member._id}
 									variant="secondary"
-									className="flex items-center gap-1"
 								>
 									<Avatar className="h-4 w-4">
 										<AvatarImage
-											src={member.user.image}
 											alt={member.user.name}
+											src={member.user.image}
 										/>
 										<AvatarFallback className="text-[8px]">
 											{member.user.name.charAt(0).toUpperCase()}
@@ -111,10 +111,10 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 						<div className="relative">
 							<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
 							<Input
-								placeholder="Search members..."
 								className="pl-8"
-								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
+								placeholder="Search members..."
+								value={searchTerm}
 							/>
 						</div>
 					</div>
@@ -129,15 +129,15 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 							) : (
 								filteredMembers.map((member) => (
 									<div
-										key={member._id}
 										className="flex items-center justify-between p-2 hover:bg-muted rounded-md cursor-pointer"
+										key={member._id}
 										onClick={() => toggleMember(member._id)}
 									>
 										<div className="flex items-center gap-2">
 											<Avatar className="h-6 w-6">
 												<AvatarImage
-													src={member.user.image}
 													alt={member.user.name}
+													src={member.user.image}
 												/>
 												<AvatarFallback>
 													{member.user.name.charAt(0).toUpperCase()}
@@ -163,14 +163,14 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 							<div className="flex flex-wrap gap-1">
 								{selectedMembers.map((member) => (
 									<Badge
+										className="flex items-center gap-1"
 										key={member._id}
 										variant="secondary"
-										className="flex items-center gap-1"
 									>
 										<Avatar className="h-4 w-4">
 											<AvatarImage
-												src={member.user.image}
 												alt={member.user.name}
+												src={member.user.image}
 											/>
 											<AvatarFallback className="text-[8px]">
 												{member.user.name.charAt(0).toUpperCase()}

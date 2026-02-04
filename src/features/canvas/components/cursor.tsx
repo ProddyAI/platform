@@ -107,12 +107,12 @@ export const Cursor = memo(({ connectionId }: CursorProps) => {
 
 	return (
 		<foreignObject
+			className="relative drop-shadow-md"
+			height={50}
 			style={{
 				transform: `translateX(${x}px) translateY(${y}px)`,
-			}}
-			height={50}
-			width={nameWidth * 1.5} // Increase width to ensure full name is visible
-			className="relative drop-shadow-md"
+			}} // Increase width to ensure full name is visible
+			width={nameWidth * 1.5}
 		>
 			<MousePointer2
 				className="h-5 w-5"

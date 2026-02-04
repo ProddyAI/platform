@@ -247,14 +247,14 @@ export const OverviewDashboard = ({
 								</CardContent>
 							</Card>
 						</TooltipTrigger>
-						<TooltipContent side="top" className="max-w-xs">
+						<TooltipContent className="max-w-xs" side="top">
 							<div className="space-y-1">
 								<p className="font-medium text-sm">Active Users:</p>
 								{activeUsersData?.activeUsers &&
 								activeUsersData.activeUsers.length > 0 ? (
 									<div className="space-y-1">
 										{activeUsersData.activeUsers.map((user, _index) => (
-											<div key={user.memberId} className="text-xs">
+											<div className="text-xs" key={user.memberId}>
 												• {user.name}
 											</div>
 										))}
@@ -381,10 +381,10 @@ export const OverviewDashboard = ({
 						{activityTrendData.length > 0 ? (
 							<div className="flex-1 flex items-center justify-center h-[400px] max-h-[400px] overflow-hidden">
 								<LineChart
-									data={activityTrendData}
-									height={350}
-									formatValue={(value) => `${value} messages`}
 									className="w-full h-full"
+									data={activityTrendData}
+									formatValue={(value) => `${value} messages`}
+									height={350}
 								/>
 							</div>
 						) : (

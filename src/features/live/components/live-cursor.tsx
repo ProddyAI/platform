@@ -85,12 +85,12 @@ export const LiveCursor = memo(
 
 		return (
 			<foreignObject
+				className="relative drop-shadow-md"
+				height={50}
 				style={{
 					transform: `translateX(${x}px) translateY(${y}px)`,
 				}}
-				height={50}
 				width={nameWidth * 1.5}
-				className="relative drop-shadow-md"
 			>
 				<MousePointer2
 					className="h-5 w-5"

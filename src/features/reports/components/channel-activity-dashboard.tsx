@@ -125,8 +125,7 @@ export const ChannelActivityDashboard = ({
 		.filter((item) => (item.totalTimeSpent || 0) > 0) // Only show channels with time spent
 		.map((item) => {
 			const timeValue = item.totalTimeSpent || 0;
-			// Color code based on time spent (in seconds)
-			// Green: > 2 hours, Yellow: 30min - 2 hours, Blue: < 30min
+
 			const color =
 				timeValue > TWO_HOURS_IN_SECONDS
 					? "bg-green-500"
@@ -291,8 +290,8 @@ export const ChannelActivityDashboard = ({
 						<div className="h-[400px] max-h-[400px] overflow-auto">
 							<HorizontalBarChart
 								data={messageCountData}
-								height={30}
 								formatValue={(value) => `${value} messages`}
+								height={30}
 							/>
 						</div>
 					</CardContent>
@@ -309,9 +308,9 @@ export const ChannelActivityDashboard = ({
 						<div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
 							<PieChart
 								data={pieData}
-								size={350}
-								maxSize={450}
 								formatValue={(value) => `${value} messages`}
+								maxSize={450}
+								size={350}
 							/>
 						</div>
 					</CardContent>
@@ -329,8 +328,8 @@ export const ChannelActivityDashboard = ({
 							{timeSpentData.length > 0 ? (
 								<HorizontalBarChart
 									data={timeSpentData}
-									height={30}
 									formatValue={(value) => formatDuration(value, "short")}
+									height={30}
 								/>
 							) : (
 								<div className="flex flex-col items-center justify-center h-full bg-muted/20 rounded-md">
@@ -358,8 +357,8 @@ export const ChannelActivityDashboard = ({
 						<div className="h-[400px] max-h-[400px] overflow-auto">
 							<HorizontalBarChart
 								data={visitorsData}
-								height={30}
 								formatValue={(value) => `${value} users`}
+								height={30}
 							/>
 						</div>
 					</CardContent>

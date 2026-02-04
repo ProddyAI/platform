@@ -6,6 +6,52 @@ import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
 import type { DataModel } from "./_generated/dataModel";
 import { mutation } from "./_generated/server";
 
+/**
+ * Hash a password using PBKDF2 with 100,000 iterations and SHA-256.
+ * This matches the hashing used in convex/passwordManagement.ts
+ * to ensure compatibility across signup, changePassword, and resetPassword.
+ */
+async function hashPasswordPBKDF2(password: string): Promise<string> {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(password);
+	const salt = encoder.encode("convex-auth-salt"); // Static salt for compatibility
+
+	const keyMaterial = await crypto.subtle.importKey(
+		"raw",
+		data,
+		"PBKDF2",
+		false,
+		["deriveBits"]
+	);
+
+	const derivedBits = await crypto.subtle.deriveBits(
+		{
+			name: "PBKDF2",
+			salt: salt,
+			iterations: 100000,
+			hash: "SHA-256",
+		},
+		keyMaterial,
+		256
+	);
+
+	// Convert to base64 for storage
+	const hashArray = Array.from(new Uint8Array(derivedBits));
+	const hashBase64 = btoa(String.fromCharCode(...hashArray));
+	return hashBase64;
+}
+
+/**
+ * Verify a password against a PBKDF2 hash.
+ */
+async function verifyPasswordPBKDF2(
+	password: string,
+	hash: string
+): Promise<boolean> {
+	const computedHash = await hashPasswordPBKDF2(password);
+	return computedHash === hash;
+}
+
 const CustomPassword = Password<DataModel>({
 	profile(params) {
 		// Validate email exists and is a string
@@ -25,6 +71,14 @@ const CustomPassword = Password<DataModel>({
 			email: email,
 			name: params.name as string,
 		};
+	},
+	crypto: {
+		hashSecret: async (secret: string) => {
+			return await hashPasswordPBKDF2(secret);
+		},
+		verifySecret: async (secret: string, hash: string) => {
+			return await verifyPasswordPBKDF2(secret, hash);
+		},
 	},
 });
 

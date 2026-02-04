@@ -208,9 +208,9 @@ const ReportsPage = () => {
 		<>
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 					size="sm"
+					variant="ghost"
 				>
 					<BarChart className="mr-2 size-5" />
 					<span className="truncate">Reports</span>
@@ -236,36 +236,36 @@ const ReportsPage = () => {
 								</span>
 								<div className="flex rounded-md border border-input bg-background overflow-hidden">
 									<Button
-										type="button"
-										variant={timeRange === "1d" ? "default" : "ghost"}
 										className="rounded-none border-0"
 										onClick={() => setTimeRange("1d")}
+										type="button"
+										variant={timeRange === "1d" ? "default" : "ghost"}
 									>
 										1 day
 									</Button>
 									<Button
-										type="button"
-										variant={timeRange === "7d" ? "default" : "ghost"}
 										className="rounded-none border-0"
 										onClick={() => setTimeRange("7d")}
+										type="button"
+										variant={timeRange === "7d" ? "default" : "ghost"}
 									>
 										7 days
 									</Button>
 									<Button
-										type="button"
-										variant={timeRange === "30d" ? "default" : "ghost"}
 										className="rounded-none border-0"
 										onClick={() => setTimeRange("30d")}
+										type="button"
+										variant={timeRange === "30d" ? "default" : "ghost"}
 									>
 										30 days
 									</Button>
 								</div>
 								<div className="flex items-center">
 									<Button
-										variant="outline"
-										onClick={handleExport}
-										disabled={isExporting || isOverviewLoading}
 										className="rounded-r-none border-r-0"
+										disabled={isExporting || isOverviewLoading}
+										onClick={handleExport}
+										variant="outline"
 									>
 										{isExporting ? (
 											<Loader className="mr-2 h-4 w-4 animate-spin" />
@@ -277,10 +277,10 @@ const ReportsPage = () => {
 									<Popover>
 										<PopoverTrigger asChild>
 											<Button
-												variant="outline"
-												size="sm"
 												className="rounded-l-none px-2"
 												disabled={isExporting || isOverviewLoading}
+												size="sm"
+												variant="outline"
 											>
 												<ChevronDown className="h-4 w-4" />
 											</Button>
@@ -288,21 +288,21 @@ const ReportsPage = () => {
 										<PopoverContent className="w-40 p-2">
 											<div className="space-y-1">
 												<Button
-													variant={exportFormat === "pdf" ? "default" : "ghost"}
-													size="sm"
 													className="w-full justify-start"
 													onClick={() => setExportFormat("pdf")}
+													size="sm"
+													variant={exportFormat === "pdf" ? "default" : "ghost"}
 												>
 													<FileText className="mr-2 h-4 w-4" />
 													PDF
 												</Button>
 												<Button
+													className="w-full justify-start"
+													onClick={() => setExportFormat("json")}
+													size="sm"
 													variant={
 														exportFormat === "json" ? "default" : "ghost"
 													}
-													size="sm"
-													className="w-full justify-start"
-													onClick={() => setExportFormat("json")}
 												>
 													<Download className="mr-2 h-4 w-4" />
 													JSON
@@ -320,60 +320,60 @@ const ReportsPage = () => {
 				<div className="flex-1 overflow-auto p-4 bg-background">
 					<div className="mx-auto max-w-7xl space-y-6">
 						{/* Tabs */}
-						<Tabs defaultValue="overview" className="space-y-6">
+						<Tabs className="space-y-6" defaultValue="overview">
 							<TabsList className="grid w-full grid-cols-7 mb-4 bg-muted/30">
 								<TabsTrigger
-									value="overview"
-									onClick={() => setActiveTab("overview")}
 									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
+									onClick={() => setActiveTab("overview")}
+									value="overview"
 								>
 									<BarChart className="h-4 w-4 mr-2" />
 									Overview
 								</TabsTrigger>
 								<TabsTrigger
-									value="users"
-									onClick={() => setActiveTab("users")}
 									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
+									onClick={() => setActiveTab("users")}
+									value="users"
 								>
 									<Users className="h-4 w-4 mr-2" />
 									Users
 								</TabsTrigger>
 								<TabsTrigger
-									value="channels"
-									onClick={() => setActiveTab("channels")}
 									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
+									onClick={() => setActiveTab("channels")}
+									value="channels"
 								>
 									<Hash className="h-4 w-4 mr-2" />
 									Channels
 								</TabsTrigger>
 								<TabsTrigger
-									value="messages"
-									onClick={() => setActiveTab("messages")}
 									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
+									onClick={() => setActiveTab("messages")}
+									value="messages"
 								>
 									<MessageSquare className="h-4 w-4 mr-2" />
 									Messages
 								</TabsTrigger>
 								<TabsTrigger
-									value="content"
-									onClick={() => setActiveTab("content")}
 									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
+									onClick={() => setActiveTab("content")}
+									value="content"
 								>
 									<FileText className="h-4 w-4 mr-2" />
 									Content
 								</TabsTrigger>
 								<TabsTrigger
-									value="performance"
-									onClick={() => setActiveTab("performance")}
 									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
+									onClick={() => setActiveTab("performance")}
+									value="performance"
 								>
 									<Activity className="h-4 w-4 mr-2" />
 									Performance
 								</TabsTrigger>
 								<TabsTrigger
-									value="tasks"
-									onClick={() => setActiveTab("tasks")}
 									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
+									onClick={() => setActiveTab("tasks")}
+									value="tasks"
 								>
 									<CheckSquare className="h-4 w-4 mr-2" />
 									Tasks
@@ -384,8 +384,8 @@ const ReportsPage = () => {
 							<TabsContent value="overview">
 								{workspaceId ? (
 									<OverviewDashboard
-										workspaceId={workspaceId}
 										timeRange={timeRange}
+										workspaceId={workspaceId}
 									/>
 								) : (
 									<div className="flex items-center justify-center h-64">
@@ -398,8 +398,8 @@ const ReportsPage = () => {
 							<TabsContent value="users">
 								{workspaceId ? (
 									<UserActivityDashboard
-										workspaceId={workspaceId}
 										timeRange={timeRange}
+										workspaceId={workspaceId}
 									/>
 								) : (
 									<div className="flex items-center justify-center h-64">
@@ -412,8 +412,8 @@ const ReportsPage = () => {
 							<TabsContent value="channels">
 								{workspaceId ? (
 									<ChannelActivityDashboard
-										workspaceId={workspaceId}
 										timeRange={timeRange}
+										workspaceId={workspaceId}
 									/>
 								) : (
 									<div className="flex items-center justify-center h-64">
@@ -515,8 +515,8 @@ const ReportsPage = () => {
 																label: format(new Date(item.date), "MMM dd"),
 																value: item.count,
 															}))}
-															height={300}
 															formatValue={(value) => `${value} messages`}
+															height={300}
 														/>
 													) : (
 														<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
@@ -572,8 +572,8 @@ const ReportsPage = () => {
 							<TabsContent value="content">
 								{workspaceId ? (
 									<ContentAnalysisDashboard
-										workspaceId={workspaceId}
 										timeRange={timeRange}
+										workspaceId={workspaceId}
 									/>
 								) : (
 									<div className="flex items-center justify-center h-64">
@@ -586,8 +586,8 @@ const ReportsPage = () => {
 							<TabsContent value="performance">
 								{workspaceId ? (
 									<PerformanceMetricsDashboard
-										workspaceId={workspaceId}
 										timeRange={timeRange}
+										workspaceId={workspaceId}
 									/>
 								) : (
 									<div className="flex items-center justify-center h-64">
@@ -736,11 +736,11 @@ const ReportsPage = () => {
 																			},
 																		]
 															}
-															size={450}
-															maxSize={500}
 															formatValue={(value) =>
 																taskData.totalTasks > 0 ? `${value} tasks` : ""
 															}
+															maxSize={500}
+															size={450}
 														/>
 													</div>
 												</CardContent>
@@ -783,11 +783,11 @@ const ReportsPage = () => {
 																			},
 																		]
 															}
-															size={450}
-															maxSize={500}
 															formatValue={(value) =>
 																taskData.totalTasks > 0 ? `${value} tasks` : ""
 															}
+															maxSize={500}
+															size={450}
 														/>
 													</div>
 												</CardContent>
@@ -806,8 +806,8 @@ const ReportsPage = () => {
 															label: format(new Date(item.date), "MMM dd"),
 															value: item.count,
 														}))}
-														height={350}
 														formatValue={(value) => `${value} tasks`}
+														height={350}
 													/>
 												) : (
 													<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">

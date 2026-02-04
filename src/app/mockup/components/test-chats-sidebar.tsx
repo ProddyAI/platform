@@ -94,11 +94,11 @@ export const TestChatsSidebar = ({
 	if (collapsed) {
 		return (
 			<div className="w-16 border-r bg-muted/30 flex flex-col items-center py-4 gap-2">
-				<Button variant="ghost" size="sm">
+				<Button size="sm" variant="ghost">
 					<Plus className="h-4 w-4" />
 				</Button>
 				{totalUnread > 0 && (
-					<Badge variant="destructive" className="text-xs">
+					<Badge className="text-xs" variant="destructive">
 						{totalUnread > 99 ? "99+" : totalUnread}
 					</Badge>
 				)}
@@ -117,10 +117,10 @@ export const TestChatsSidebar = ({
 					<div className="relative flex-1">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
+							className="pl-9"
+							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="Search chats..."
 							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-9"
 						/>
 					</div>
 					<Button size="sm">
@@ -131,41 +131,41 @@ export const TestChatsSidebar = ({
 				{/* Chat Type Filters */}
 				<div className="flex gap-1 flex-wrap">
 					<Button
-						variant={filterType === "all" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setFilterType("all")}
 						className="text-xs h-7"
+						onClick={() => setFilterType("all")}
+						size="sm"
+						variant={filterType === "all" ? "default" : "ghost"}
 					>
 						All
 						{totalUnread > 0 && (
-							<Badge variant="secondary" className="ml-1 text-xs">
+							<Badge className="ml-1 text-xs" variant="secondary">
 								{totalUnread}
 							</Badge>
 						)}
 					</Button>
 					<Button
-						variant={filterType === "direct" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setFilterType("direct")}
 						className="text-xs h-7"
+						onClick={() => setFilterType("direct")}
+						size="sm"
+						variant={filterType === "direct" ? "default" : "ghost"}
 					>
 						<MessageCircle className="h-3 w-3 mr-1" />
 						Direct
 					</Button>
 					<Button
-						variant={filterType === "group" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setFilterType("group")}
 						className="text-xs h-7"
+						onClick={() => setFilterType("group")}
+						size="sm"
+						variant={filterType === "group" ? "default" : "ghost"}
 					>
 						<Users className="h-3 w-3 mr-1" />
 						Groups
 					</Button>
 					<Button
-						variant={filterType === "channel" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => setFilterType("channel")}
 						className="text-xs h-7"
+						onClick={() => setFilterType("channel")}
+						size="sm"
+						variant={filterType === "channel" ? "default" : "ghost"}
 					>
 						<Hash className="h-3 w-3 mr-1" />
 						Channels
@@ -178,6 +178,12 @@ export const TestChatsSidebar = ({
 				<div className="p-2">
 					{sortedChats.map((chat) => (
 						<button
+							className={cn(
+								"w-full text-left p-3 rounded-lg border transition-colors mb-1",
+								selectedChatId === chat.id
+									? "bg-primary/10 border-primary/20"
+									: "bg-background hover:bg-muted/50 border-transparent"
+							)}
 							key={chat.id}
 							onClick={() => {
 								onChatSelect(chat.id);
@@ -185,12 +191,6 @@ export const TestChatsSidebar = ({
 									onMarkAsRead(chat.id);
 								}
 							}}
-							className={cn(
-								"w-full text-left p-3 rounded-lg border transition-colors mb-1",
-								selectedChatId === chat.id
-									? "bg-primary/10 border-primary/20"
-									: "bg-background hover:bg-muted/50 border-transparent"
-							)}
 						>
 							<div className="flex items-start gap-3">
 								<div className="relative">
@@ -225,7 +225,7 @@ export const TestChatsSidebar = ({
 												</span>
 											)}
 											{chat.unreadCount > 0 && (
-												<Badge variant="destructive" className="text-xs">
+												<Badge className="text-xs" variant="destructive">
 													{chat.unreadCount > 99 ? "99+" : chat.unreadCount}
 												</Badge>
 											)}

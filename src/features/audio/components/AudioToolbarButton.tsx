@@ -171,28 +171,28 @@ export const AudioToolbarButton = () => {
 			{/* Speaker (audio output) control */}
 			<AudioControlButton
 				icon={speakerMuted ? VolumeX : Volume2}
+				isMuted={speakerMuted}
 				label={speakerMuted ? "Unmute speaker" : "Mute speaker"}
 				onClick={toggleSpeaker}
 				variant="speaker"
-				isMuted={speakerMuted}
 			/>
 
 			{/* Microphone control */}
 			{micPermissionError ? (
 				<AudioControlButton
+					disabled={true}
 					icon={AlertCircle}
 					label="Mic Permission Denied"
 					onClick={() => toast.error("Microphone permission denied")}
 					variant="mic"
-					disabled={true}
 				/>
 			) : (
 				<AudioControlButton
 					icon={isMute ? MicOff : Mic}
+					isMuted={isMute}
 					label={isMute ? "Unmute to speak" : "Mute microphone"}
 					onClick={() => void toggleMicrophone()}
 					variant="mic"
-					isMuted={isMute}
 				/>
 			)}
 		</div>

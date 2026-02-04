@@ -52,11 +52,11 @@ export const CardAssignmentTemplate: React.FC<
 			<Body style={main}>
 				<Container style={container}>
 					<Img
-						src="https://proddy.tech/logo-nobg.png"
-						width="40"
-						height="40"
 						alt="Proddy"
+						height="40"
+						src="https://proddy.tech/logo-nobg.png"
 						style={logo}
+						width="40"
 					/>
 					<Heading style={heading}>Card Assignment</Heading>
 					<Section style={section}>
@@ -101,6 +101,7 @@ export const CardAssignmentTemplate: React.FC<
 
 						<Section style={buttonContainer}>
 							<Button
+								href={workspaceUrl}
 								style={{
 									...button,
 									paddingLeft: "20px",
@@ -108,7 +109,6 @@ export const CardAssignmentTemplate: React.FC<
 									paddingTop: "12px",
 									paddingBottom: "12px",
 								}}
-								href={workspaceUrl}
 							>
 								View Card
 							</Button>

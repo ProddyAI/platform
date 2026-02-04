@@ -170,9 +170,9 @@ const TasksPage = () => {
 		<div className="flex h-full flex-col">
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 					size="sm"
+					variant="ghost"
 				>
 					<CheckSquare className="mr-2 size-5" />
 					<span className="truncate">Tasks</span>
@@ -184,10 +184,10 @@ const TasksPage = () => {
 						<div className="mb-8 space-y-4">
 							<div className="relative">
 								<Input
+									className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--card-accent))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--card-accent))] dark:focus-visible:ring-pink-400 dark:focus-visible:border-pink-400 dark:focus-visible:ring-offset-0"
+									onChange={(e) => setSearchQuery(e.target.value)}
 									placeholder="Search tasks..."
 									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--card-accent))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--card-accent))] dark:focus-visible:ring-pink-400 dark:focus-visible:border-pink-400 dark:focus-visible:ring-offset-0"
 								/>
 								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
 							</div>
@@ -204,8 +204,8 @@ const TasksPage = () => {
 										Create a new task
 									</h2>
 									<TaskCreateForm
-										workspaceId={workspaceId}
 										onSuccess={handleTaskCreated}
+										workspaceId={workspaceId}
 									/>
 								</div>
 								<div className="space-y-4">
@@ -240,10 +240,10 @@ const TasksPage = () => {
 				</div>
 
 				<TaskSidebar
-					filterOptions={filterOptions}
-					onFilterChange={handleFilterChange}
 					categories={categories}
 					categoriesLoading={categoriesLoading}
+					filterOptions={filterOptions}
+					onFilterChange={handleFilterChange}
 				/>
 			</div>
 		</div>

@@ -38,8 +38,6 @@ export const LineChart = ({
 		left: string;
 	} | null>(null);
 
-	// Calculate tooltip position based on hovered point
-	// Note: This effect relies on the containerRef being attached to the outer div
 	// containing the SVG chart. The SVG must be a direct child with data-point-index attributes.
 	useEffect(() => {
 		if (hoveredIndex === null) {
@@ -132,8 +130,6 @@ export const LineChart = ({
 	const minValue = Math.min(...data.map((item) => item.value));
 	const range = maxValue - minValue;
 
-	// Add padding to the top and bottom
-	// Use a more generous padding for better visualization
 	const paddingFactor = 0.2;
 	const adjustedMaxValue = maxValue + range * paddingFactor;
 	// Always start from 0 for better context
@@ -185,9 +181,9 @@ export const LineChart = ({
 				}}
 			>
 				<svg
-					viewBox="0 0 100 100"
 					className="w-full h-full"
 					preserveAspectRatio="xMidYMid meet"
+					viewBox="0 0 100 100"
 				>
 					{/* Grid lines */}
 					{showGrid && (
@@ -195,36 +191,36 @@ export const LineChart = ({
 							{/* Horizontal grid lines */}
 							{[chartMargin, 25, 50, 75, 100 - chartMargin].map((y) => (
 								<line
+									className="stroke-muted stroke-[0.5]"
 									key={`h-${y}`}
 									x1={chartMargin}
-									y1={y}
 									x2={100 - chartMargin}
+									y1={y}
 									y2={y}
-									className="stroke-muted stroke-[0.5]"
 								/>
 							))}
 
 							{/* Vertical grid lines */}
 							{points.map((point) => (
 								<line
+									className="stroke-muted stroke-[0.5]"
 									key={`v-${point.index}`}
 									x1={point.x}
-									y1={chartMargin}
 									x2={point.x}
+									y1={chartMargin}
 									y2={100 - chartMargin}
-									className="stroke-muted stroke-[0.5]"
 								/>
 							))}
 						</>
 					)}
 
 					{/* Area under the line */}
-					<path d={areaPath} className="fill-secondary/20" />
+					<path className="fill-secondary/20" d={areaPath} />
 
 					{/* Line */}
 					<path
-						d={linePath}
 						className={cn("fill-none stroke-[2]", lineColor)}
+						d={linePath}
 						strokeLinecap="round"
 						strokeLinejoin="round"
 					/>
@@ -237,30 +233,30 @@ export const LineChart = ({
 							return (
 								<g key={point.index}>
 									<circle
-										data-point-index={point.index}
-										cx={point.x}
-										cy={point.y}
-										r={isHovered ? "3" : "2"}
 										className={cn(
 											"stroke-white transition-all duration-200",
 											isHovered ? "stroke-[3.5]" : "stroke-[2.5]",
 											pointColor,
 											onPointClick && "cursor-pointer"
 										)}
-										onMouseEnter={() => setHoveredIndex(point.index)}
-										onMouseLeave={() => setHoveredIndex(null)}
+										cx={point.x}
+										cy={point.y}
+										data-point-index={point.index}
 										onClick={() =>
 											onPointClick?.(point.label, point.value, point.index)
 										}
+										onMouseEnter={() => setHoveredIndex(point.index)}
+										onMouseLeave={() => setHoveredIndex(null)}
+										r={isHovered ? "3" : "2"}
 									/>
 
 									{isHovered && (
 										<line
-											x1={point.x}
-											y1={chartMargin}
-											x2={point.x}
-											y2={100 - chartMargin}
 											className="stroke-secondary/30 stroke-[0.5] stroke-dashed pointer-events-none"
+											x1={point.x}
+											x2={point.x}
+											y1={chartMargin}
+											y2={100 - chartMargin}
 										/>
 									)}
 								</g>
@@ -287,11 +283,15 @@ export const LineChart = ({
 				<div className="flex justify-between mt-2 flex-shrink-0 px-4">
 					{data.map((item, index) => (
 						<div
+<<<<<<< HEAD
 							key={item.label}
+=======
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 							className={cn(
 								"text-xs text-muted-foreground px-1 text-center",
 								hoveredIndex === index && "font-medium text-foreground"
 							)}
+							key={index}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
 						>

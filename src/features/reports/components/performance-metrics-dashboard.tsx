@@ -111,8 +111,6 @@ export const PerformanceMetricsDashboard = ({
 		return userActivityData
 			.filter((user) => user.member?.user?._id) // Only users with IDs
 			.map((user) => {
-				// Calculate a value based on message activity
-				// In a real app, you'd use actual task assignment data
 				const _messageCount = user.messageCount || 0;
 				const taskValue = Math.floor(5 + Math.random() * 10);
 				const completionRate = 0.4 + Math.random() * 0.5; // Random completion rate between 40-90%
@@ -233,8 +231,8 @@ export const PerformanceMetricsDashboard = ({
 
 			{/* Performance tabs */}
 			<Tabs
-				defaultValue="tasks"
 				className="space-y-4"
+				defaultValue="tasks"
 				onValueChange={setActiveTab}
 			>
 				<TabsList>
@@ -249,7 +247,7 @@ export const PerformanceMetricsDashboard = ({
 				</TabsList>
 
 				{/* Task Performance Tab */}
-				<TabsContent value="tasks" className="space-y-4">
+				<TabsContent className="space-y-4" value="tasks">
 					{/* Key metrics */}
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 						<Card className={!hasTaskData ? "opacity-50" : ""}>
@@ -282,7 +280,7 @@ export const PerformanceMetricsDashboard = ({
 															: "Needs Improvement"}
 												</Badge>
 											</div>
-											<Progress value={taskCompletionRate} className="h-2" />
+											<Progress className="h-2" value={taskCompletionRate} />
 										</div>
 										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
 											{taskData?.completedTasks || 0} of{" "}
@@ -295,11 +293,11 @@ export const PerformanceMetricsDashboard = ({
 											<div className="text-2xl font-bold text-muted-foreground/40">
 												0%
 											</div>
-											<Badge variant="secondary" className="opacity-50">
+											<Badge className="opacity-50" variant="secondary">
 												Needs Improvement
 											</Badge>
 										</div>
-										<Progress value={0} className="h-2 opacity-30" />
+										<Progress className="h-2 opacity-30" value={0} />
 										<CardDescription className="mt-2 text-muted-foreground/60">
 											0 of 0 tasks completed
 										</CardDescription>
@@ -339,8 +337,8 @@ export const PerformanceMetricsDashboard = ({
 												</Badge>
 											</div>
 											<Progress
-												value={100 - avgCompletionTime * 10}
 												className="h-2"
+												value={100 - avgCompletionTime * 10}
 											/>
 										</div>
 										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
@@ -353,11 +351,11 @@ export const PerformanceMetricsDashboard = ({
 											<div className="text-2xl font-bold text-muted-foreground/40">
 												2.5 days
 											</div>
-											<Badge variant="secondary" className="opacity-50">
+											<Badge className="opacity-50" variant="secondary">
 												Average
 											</Badge>
 										</div>
-										<Progress value={0} className="h-2 opacity-30" />
+										<Progress className="h-2 opacity-30" value={0} />
 										<CardDescription className="mt-2 text-muted-foreground/60">
 											Target: 2 days per task
 										</CardDescription>
@@ -396,7 +394,7 @@ export const PerformanceMetricsDashboard = ({
 															: "Needs Improvement"}
 												</Badge>
 											</div>
-											<Progress value={onTimeCompletionRate} className="h-2" />
+											<Progress className="h-2" value={onTimeCompletionRate} />
 										</div>
 										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
 											Tasks completed before deadline
@@ -408,11 +406,11 @@ export const PerformanceMetricsDashboard = ({
 											<div className="text-2xl font-bold text-muted-foreground/40">
 												78%
 											</div>
-											<Badge variant="secondary" className="opacity-50">
+											<Badge className="opacity-50" variant="secondary">
 												Average
 											</Badge>
 										</div>
-										<Progress value={0} className="h-2 opacity-30" />
+										<Progress className="h-2 opacity-30" value={0} />
 										<CardDescription className="mt-2 text-muted-foreground/60">
 											Tasks completed before deadline
 										</CardDescription>
@@ -434,8 +432,8 @@ export const PerformanceMetricsDashboard = ({
 									{hasTaskData && taskCompletionTrend.length > 0 ? (
 										<LineChart
 											data={taskCompletionTrend}
-											height={300}
 											formatValue={(value) => `${value} tasks`}
+											height={300}
 										/>
 									) : (
 										<div className="flex flex-col items-center justify-center h-full bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
@@ -473,12 +471,12 @@ export const PerformanceMetricsDashboard = ({
 														},
 													]
 										}
-										size={380}
 										formatValue={(value) =>
 											hasTaskData && taskStatusData.length > 0
 												? `${value} tasks`
 												: ""
 										}
+										size={380}
 									/>
 								</div>
 							</CardContent>
@@ -496,8 +494,13 @@ export const PerformanceMetricsDashboard = ({
 							<div className="max-h-[300px] overflow-auto">
 								{hasTaskData && hasUserData && tasksByAssignee.length > 0 ? (
 									<div className="space-y-4">
+<<<<<<< HEAD
 										{tasksByAssignee.map((user) => (
 											<div key={user.label} className="space-y-2">
+=======
+										{tasksByAssignee.map((user, index) => (
+											<div className="space-y-2" key={index}>
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 												<div className="flex items-center justify-between">
 													<div className="font-medium">{user.label}</div>
 													<div className="text-sm text-muted-foreground">
@@ -506,8 +509,8 @@ export const PerformanceMetricsDashboard = ({
 												</div>
 												<div className="flex items-center gap-2">
 													<Progress
-														value={user.completionRate * 100}
 														className="h-2 flex-1"
+														value={user.completionRate * 100}
 													/>
 													<div className="text-sm font-medium w-12 text-right">
 														{Math.round(user.completionRate * 100)}%
@@ -533,7 +536,7 @@ export const PerformanceMetricsDashboard = ({
 				</TabsContent>
 
 				{/* User Performance Tab */}
-				<TabsContent value="users" className="space-y-4">
+				<TabsContent className="space-y-4" value="users">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<Card className="flex flex-col">
 							<CardHeader>
@@ -547,7 +550,11 @@ export const PerformanceMetricsDashboard = ({
 									{userPerformanceData.length > 0 ? (
 										<div className="space-y-4">
 											{userPerformanceData.map((user, index) => (
+<<<<<<< HEAD
 												<div key={user.name} className="space-y-2">
+=======
+												<div className="space-y-2" key={index}>
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 													<div className="flex items-center justify-between">
 														<div className="font-medium flex items-center">
 															{index === 0 && (
@@ -561,8 +568,8 @@ export const PerformanceMetricsDashboard = ({
 													</div>
 													<div className="flex items-center gap-2">
 														<Progress
-															value={user.activityScore / 2}
 															className="h-2 flex-1"
+															value={user.activityScore / 2}
 														/>
 														<div className="text-xs text-muted-foreground">
 															{user.messages} msgs, {user.tasks} tasks

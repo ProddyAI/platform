@@ -45,7 +45,6 @@ export const TaskToggleView = ({
 			{/* Toggle Buttons */}
 			<div className="flex rounded-lg border overflow-hidden dark:border-gray-700">
 				<Button
-					variant="ghost"
 					className={cn(
 						"flex-1 rounded-none border-0 py-2 px-4 flex items-center justify-center gap-2",
 						activeView === "active"
@@ -53,6 +52,7 @@ export const TaskToggleView = ({
 							: "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
 					)}
 					onClick={() => setActiveView("active")}
+					variant="ghost"
 				>
 					<Circle className="h-4 w-4" />
 					<span>Active</span>
@@ -62,7 +62,6 @@ export const TaskToggleView = ({
 				</Button>
 
 				<Button
-					variant="ghost"
 					className={cn(
 						"flex-1 rounded-none border-0 py-2 px-4 flex items-center justify-center gap-2",
 						activeView === "completed"
@@ -70,6 +69,7 @@ export const TaskToggleView = ({
 							: "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
 					)}
 					onClick={() => setActiveView("completed")}
+					variant="ghost"
 				>
 					<CheckCircle2 className="h-4 w-4" />
 					<span>Completed</span>
@@ -94,15 +94,15 @@ export const TaskToggleView = ({
 						{(activeView === "active" ? activeTasks : completedTasks).map(
 							(task) => (
 								<TaskItem
-									key={task._id}
-									id={task._id}
-									workspaceId={workspaceId}
-									title={task.title}
-									description={task.description}
-									completed={task.completed}
-									dueDate={task.dueDate}
-									priority={task.priority}
 									categoryId={task.categoryId}
+									completed={task.completed}
+									description={task.description}
+									dueDate={task.dueDate}
+									id={task._id}
+									key={task._id}
+									priority={task.priority}
+									title={task.title}
+									workspaceId={workspaceId}
 								/>
 							)
 						)}

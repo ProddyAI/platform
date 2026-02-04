@@ -20,6 +20,18 @@ const schema = defineSchema({
 		website: v.optional(v.string()),
 	}).index("email", ["email"]),
 
+	// Email OTP verifications
+	emailVerifications: defineTable({
+		email: v.string(),
+		otp: v.string(),
+		expiresAt: v.number(),
+		verified: v.boolean(),
+		attempts: v.number(),
+		createdAt: v.number(),
+	})
+		.index("by_email", ["email"])
+		.index("by_expiry", ["expiresAt"]),
+
 	workspaces: defineTable({
 		name: v.string(),
 		userId: v.id("users"),
@@ -489,13 +501,14 @@ const schema = defineSchema({
 
 	// Rate limiting for invites and other actions
 	rateLimits: defineTable({
-		userId: v.id("users"),
-		workspaceId: v.id("workspaces"),
+		userId: v.optional(v.id("users")), // Optional for unauthenticated rate limiting (e.g., password reset)
+		workspaceId: v.optional(v.id("workspaces")), // Optional for unauthenticated rate limiting
 		email: v.optional(v.string()), // For email-specific rate limits
 		type: v.union(
 			v.literal("user_invite"),
 			v.literal("workspace_invite"),
-			v.literal("email_invite")
+			v.literal("email_invite"),
+			v.literal("password_reset") // For password reset rate limiting
 		),
 		expiresAt: v.number(), // When this rate limit entry expires
 		createdAt: v.number(),
@@ -505,6 +518,18 @@ const schema = defineSchema({
 		.index("by_email", ["email"])
 		.index("by_type", ["type"])
 		.index("by_expires_at", ["expiresAt"]),
+
+	// Password reset tokens
+	passwordResetTokens: defineTable({
+		email: v.string(),
+		token: v.string(), // Hashed token for security
+		expiresAt: v.number(),
+		used: v.boolean(),
+		createdAt: v.number(),
+	})
+		.index("by_email", ["email"])
+		.index("by_token", ["token"])
+		.index("by_expiry", ["expiresAt"]),
 });
 
 export default schema;

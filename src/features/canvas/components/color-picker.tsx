@@ -40,9 +40,9 @@ const ColorButton = ({ color, onClick }: ColorButtonProps) => {
 			onClick={() => onClick(color)}
 		>
 			<div
+				aria-hidden
 				className="h-8 w-8 rounded-md border border-neutral-300"
 				style={{ background: colorToCSS(color) }}
-				aria-hidden
 			/>
 		</button>
 	);

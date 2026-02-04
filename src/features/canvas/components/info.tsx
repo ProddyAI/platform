@@ -55,9 +55,9 @@ export const Info = ({ boardId, canvasId }: InfoProps) => {
 	return (
 		<div className="absolute top-2 left-2 bg-white rounded-md px-1.5 h-12 flex items-center shadow-md">
 			<Hint label="Channel Canvas" side="bottom">
-				<Button variant="ghost" className="px-2" asChild>
+				<Button asChild className="px-2" variant="ghost">
 					<Link href={`/workspace/${workspaceId}/channel/${effectiveId}/chats`}>
-						<Image src="/logo.svg" alt="Channel Logo" height={40} width={40} />
+						<Image alt="Channel Logo" height={40} src="/logo.svg" width={40} />
 						<span className={cn("font-semibold text-xl ml-2 text-black")}>
 							{isLoading ? (
 								<>
@@ -76,9 +76,9 @@ export const Info = ({ boardId, canvasId }: InfoProps) => {
 
 			<Hint label="Edit title" side="bottom">
 				<Button
+					className="text-base font-normal px-2"
 					onClick={() => onOpen(data._id, data.title)}
 					variant="ghost"
-					className="text-base font-normal px-2"
 				>
 					{data.title}
 				</Button>
@@ -86,7 +86,7 @@ export const Info = ({ boardId, canvasId }: InfoProps) => {
 
 			<TabSeparator />
 
-			<Actions id={data._id} title={data.title} side="bottom" sideOffset={10}>
+			<Actions id={data._id} side="bottom" sideOffset={10} title={data.title}>
 				<div className="">
 					<Hint label="Main menu" side="bottom">
 						<Button size="icon" variant="ghost">
@@ -102,8 +102,8 @@ export const Info = ({ boardId, canvasId }: InfoProps) => {
 export const InfoSkeleton = () => {
 	return (
 		<div
-			className="w-[300px] absolute top-2 left-2 bg-white rounded-md px-1.5 h-12 flex items-center shadow-md"
 			aria-hidden
+			className="w-[300px] absolute top-2 left-2 bg-white rounded-md px-1.5 h-12 flex items-center shadow-md"
 		/>
 	);
 };

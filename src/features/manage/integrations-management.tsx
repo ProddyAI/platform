@@ -127,7 +127,7 @@ export const IntegrationsManagement = ({
 			// Fetch auth configs and connected accounts using unified AgentAuth endpoint
 			// Now with memberId to get user-specific integrations
 			const response = await fetch(
-				`/api/composio/agentauth?action=fetch-data&workspaceId=${workspaceId}&memberId=${currentMember._id}`
+				`/api/assistant/composio/agentauth?action=fetch-data&workspaceId=${workspaceId}&memberId=${currentMember._id}`
 			);
 
 			if (response.ok) {
@@ -152,7 +152,7 @@ export const IntegrationsManagement = ({
 		async (toolkit: string, userId?: string) => {
 			try {
 				// Complete connection using AgentAuth with member-scoped entity ID
-				const response = await fetch("/api/composio/agentauth", {
+				const response = await fetch("/api/assistant/composio/agentauth", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -272,13 +272,13 @@ export const IntegrationsManagement = ({
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{SUPPORTED_TOOLKITS.map((toolkit) => (
 						<ServiceIntegrationCard
-							key={`${toolkit}-${refreshKey}`}
-							workspaceId={workspaceId}
-							toolkit={toolkit}
 							authConfig={authConfigsByToolkit[toolkit]}
 							connectedAccount={connectedAccountsByToolkit[toolkit]}
 							currentMember={currentMember}
+							key={`${toolkit}-${refreshKey}`}
 							onConnectionChange={handleConnectionChange}
+							toolkit={toolkit}
+							workspaceId={workspaceId}
 						/>
 					))}
 				</div>

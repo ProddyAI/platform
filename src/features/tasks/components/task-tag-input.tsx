@@ -75,35 +75,35 @@ export const TaskTagInput = ({
 			<div className="flex flex-wrap gap-1.5 rounded-md border p-1.5">
 				{value.map((tag) => (
 					<Badge
+						className="flex items-center gap-1"
 						key={tag}
 						variant="secondary"
-						className="flex items-center gap-1"
 					>
 						{tag}
 						<Button
+							className="h-3 w-3 rounded-full p-0 text-muted-foreground hover:text-foreground"
+							onClick={() => handleRemoveTag(tag)}
+							size="iconSm"
 							type="button"
 							variant="ghost"
-							size="iconSm"
-							onClick={() => handleRemoveTag(tag)}
-							className="h-3 w-3 rounded-full p-0 text-muted-foreground hover:text-foreground"
 						>
 							<X className="h-2 w-2" />
 							<span className="sr-only">Remove {tag}</span>
 						</Button>
 					</Badge>
 				))}
-				<Popover open={open} onOpenChange={setOpen}>
+				<Popover onOpenChange={setOpen} open={open}>
 					<PopoverTrigger asChild>
 						<Input
-							ref={inputRef}
-							value={inputValue}
+							className="h-7 flex-1 min-w-[120px] border-0 p-0 shadow-none focus-visible:ring-0"
 							onChange={(e) => setInputValue(e.target.value)}
 							onKeyDown={handleKeyDown}
-							className="h-7 flex-1 min-w-[120px] border-0 p-0 shadow-none focus-visible:ring-0"
 							placeholder={value.length > 0 ? "" : "Add tags..."}
+							ref={inputRef}
+							value={inputValue}
 						/>
 					</PopoverTrigger>
-					<PopoverContent className="w-60 p-0" align="start">
+					<PopoverContent align="start" className="w-60 p-0">
 						<Command>
 							<CommandList>
 								<CommandGroup>

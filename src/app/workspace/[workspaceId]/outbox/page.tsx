@@ -218,9 +218,9 @@ export default function OutboxPage() {
 		<>
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 					size="sm"
+					variant="ghost"
 				>
 					<Mail className="mr-2 size-5" />
 					<span className="truncate">Outbox</span>
@@ -254,9 +254,9 @@ export default function OutboxPage() {
 											<TooltipTrigger asChild>
 												<DropdownMenuTrigger asChild>
 													<Button
-														variant="outline"
-														size="icon"
 														className="h-8 w-8"
+														size="icon"
+														variant="outline"
 													>
 														<Filter className="h-4 w-4" />
 													</Button>
@@ -300,9 +300,9 @@ export default function OutboxPage() {
 											<TooltipTrigger asChild>
 												<DropdownMenuTrigger asChild>
 													<Button
-														variant="outline"
-														size="icon"
 														className="h-8 w-8"
+														size="icon"
+														variant="outline"
 													>
 														<SortDesc className="h-4 w-4" />
 													</Button>
@@ -317,10 +317,10 @@ export default function OutboxPage() {
 										<DropdownMenuLabel>Sort by</DropdownMenuLabel>
 										<DropdownMenuSeparator />
 										<DropdownMenuRadioGroup
-											value={sortBy}
 											onValueChange={(value) =>
 												setSortBy(value as typeof sortBy)
 											}
+											value={sortBy}
 										>
 											<DropdownMenuRadioItem value="newest">
 												Newest First
@@ -341,31 +341,31 @@ export default function OutboxPage() {
 							<div className="relative flex-1">
 								<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 								<Input
-									type="search"
-									placeholder="Search messages..."
 									className="pl-8"
-									value={searchQuery}
 									onChange={(e) => setSearchQuery(e.target.value)}
+									placeholder="Search messages..."
+									type="search"
+									value={searchQuery}
 								/>
 							</div>
 
-							<Tabs defaultValue="all" className="w-[300px]">
+							<Tabs className="w-[300px]" defaultValue="all">
 								<TabsList className="grid w-full grid-cols-3">
 									<TabsTrigger
-										value="all"
 										onClick={() => setActiveFilter("all")}
+										value="all"
 									>
 										All
 									</TabsTrigger>
 									<TabsTrigger
-										value="channels"
 										onClick={() => setActiveFilter("channels")}
+										value="channels"
 									>
 										Channels
 									</TabsTrigger>
 									<TabsTrigger
-										value="direct"
 										onClick={() => setActiveFilter("direct")}
+										value="direct"
 									>
 										Direct
 									</TabsTrigger>
@@ -390,8 +390,8 @@ export default function OutboxPage() {
 									<div>
 										<div className="flex items-center gap-2 mb-3">
 											<Badge
-												variant="outline"
 												className="rounded-full px-3 py-1 bg-secondary/5"
+												variant="outline"
 											>
 												<Clock className="mr-1 h-3 w-3" />
 												Today
@@ -410,8 +410,8 @@ export default function OutboxPage() {
 									<div>
 										<div className="flex items-center gap-2 mb-3">
 											<Badge
-												variant="outline"
 												className="rounded-full px-3 py-1 bg-muted"
+												variant="outline"
 											>
 												<Clock className="mr-1 h-3 w-3" />
 												Yesterday
@@ -430,8 +430,8 @@ export default function OutboxPage() {
 									<div>
 										<div className="flex items-center gap-2 mb-3">
 											<Badge
-												variant="outline"
 												className="rounded-full px-3 py-1 bg-muted"
+												variant="outline"
 											>
 												<Clock className="mr-1 h-3 w-3" />
 												This Week
@@ -450,8 +450,8 @@ export default function OutboxPage() {
 									<div>
 										<div className="flex items-center gap-2 mb-3">
 											<Badge
-												variant="outline"
 												className="rounded-full px-3 py-1 bg-muted"
+												variant="outline"
 											>
 												<Clock className="mr-1 h-3 w-3" />
 												Earlier
@@ -477,15 +477,15 @@ export default function OutboxPage() {
 
 		return (
 			<Link
-				key={message._id}
-				href={getMessageUrl(message)}
 				className="flex flex-col rounded-lg border bg-white p-4 shadow-sm hover:shadow-md transition-all"
+				href={getMessageUrl(message)}
+				key={message._id}
 			>
 				<div className="flex items-center justify-between mb-3">
 					<div className="flex items-center gap-2">
 						<Badge
-							variant="outline"
 							className={`rounded-full px-2 py-0.5 ${message.context.type === "channel" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}`}
+							variant="outline"
 						>
 							{message.context.type === "channel" ? (
 								<span className="flex items-center">

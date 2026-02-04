@@ -112,8 +112,8 @@ export const BlockNoteNotesEditor = ({
 			{/* Note Content */}
 			<div className="flex-1 overflow-hidden dark:bg-[hsl(var(--card-accent))]">
 				<BlockNoteEditor
-					noteId={note._id}
 					className="h-full dark:bg-[hsl(var(--card-accent))]"
+					noteId={note._id}
 					onEditorReady={handleEditorReady}
 				/>
 			</div>
@@ -121,11 +121,11 @@ export const BlockNoteNotesEditor = ({
 			{/* Format Button - Top Right */}
 			<div className="absolute top-4 right-4 z-10">
 				<Button
-					onClick={handleFormatNote}
+					className="shadow-lg hover:shadow-xl transition-shadow"
 					disabled={isFormatting || isLoading}
+					onClick={handleFormatNote}
 					size="sm"
 					variant="secondary"
-					className="shadow-lg hover:shadow-xl transition-shadow"
 				>
 					{isFormatting ? (
 						<>

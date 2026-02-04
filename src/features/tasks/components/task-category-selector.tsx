@@ -94,13 +94,13 @@ export const TaskCategorySelector = ({
 
 	return (
 		<div className="flex flex-col gap-2">
-			<Popover open={open} onOpenChange={setOpen}>
+			<Popover onOpenChange={setOpen} open={open}>
 				<PopoverTrigger asChild>
 					<Button
-						variant="outline"
-						role="combobox"
 						aria-expanded={open}
 						className="w-full justify-between"
+						role="combobox"
+						variant="outline"
 					>
 						{selectedCategory ? (
 							<div className="flex items-center gap-2">
@@ -115,18 +115,18 @@ export const TaskCategorySelector = ({
 						)}
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className="w-full p-0" align="start">
+				<PopoverContent align="start" className="w-full p-0">
 					<Command>
 						<CommandInput placeholder="Search categories..." />
 						<CommandList>
 							<CommandEmpty>No categories found.</CommandEmpty>
 							<CommandGroup>
 								<CommandItem
+									className="flex items-center gap-2"
 									onSelect={() => {
 										onChange(null);
 										setOpen(false);
 									}}
-									className="flex items-center gap-2"
 								>
 									<div className="flex h-4 w-4 items-center justify-center">
 										{!value && <Check className="h-3 w-3" />}
@@ -141,12 +141,12 @@ export const TaskCategorySelector = ({
 								) : (
 									categories?.map((category) => (
 										<CommandItem
+											className="flex items-center gap-2"
 											key={category._id}
 											onSelect={() => {
 												onChange(category._id);
 												setOpen(false);
 											}}
-											className="flex items-center gap-2"
 										>
 											<div className="flex h-4 w-4 items-center justify-center">
 												{value === category._id && (
@@ -179,7 +179,7 @@ export const TaskCategorySelector = ({
 				</PopoverContent>
 			</Popover>
 
-			<Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+			<Dialog onOpenChange={setCreateDialogOpen} open={createDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Create new category</DialogTitle>
@@ -191,16 +191,16 @@ export const TaskCategorySelector = ({
 					<form onSubmit={handleCreateCategory}>
 						<div className="grid gap-4 py-4">
 							<div className="grid gap-2">
-								<label htmlFor="name" className="text-sm font-medium">
+								<label className="text-sm font-medium" htmlFor="name">
 									Name
 								</label>
 								<Input
+									className="w-full"
 									id="name"
-									value={newCategoryName}
 									onChange={(e) => setNewCategoryName(e.target.value)}
 									placeholder="Category name"
-									className="w-full"
 									required
+									value={newCategoryName}
 								/>
 							</div>
 
@@ -209,17 +209,17 @@ export const TaskCategorySelector = ({
 								<div className="grid grid-cols-5 gap-2">
 									{CATEGORY_COLORS.map((color) => (
 										<button
-											key={color.value}
-											type="button"
-											onClick={() => setNewCategoryColor(color.value)}
 											className={cn(
 												"h-8 w-8 rounded-full cursor-pointer flex items-center justify-center border-2",
 												newCategoryColor === color.value
 													? "border-black dark:border-white"
 													: "border-transparent"
 											)}
+											key={color.value}
+											onClick={() => setNewCategoryColor(color.value)}
 											style={{ backgroundColor: color.value }}
 											title={color.label}
+											type="button"
 										>
 											{newCategoryColor === color.value && (
 												<Check className="h-4 w-4 text-white" />
@@ -232,9 +232,9 @@ export const TaskCategorySelector = ({
 
 						<DialogFooter>
 							<Button
+								onClick={() => setCreateDialogOpen(false)}
 								type="button"
 								variant="outline"
-								onClick={() => setCreateDialogOpen(false)}
 							>
 								Cancel
 							</Button>

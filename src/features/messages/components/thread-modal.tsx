@@ -231,7 +231,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 	const parsedParentBody = parseMessageBody(thread.parentMessage.body);
 
 	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
+		<Dialog onOpenChange={onClose} open={isOpen}>
 			<DialogContent className="max-w-2xl h-[80vh] p-0 flex flex-col gap-0">
 				{/* Header */}
 				<div className="flex items-center gap-3 p-4 border-b flex-shrink-0">
@@ -240,12 +240,12 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 						<h2 className="text-lg font-semibold">Thread</h2>
 						<div className="flex items-center gap-2 mt-1">
 							<Badge
-								variant="outline"
 								className={`rounded-full text-xs ${
 									thread.context.type === "channel"
 										? "bg-blue-50 text-blue-700 border-blue-200"
 										: "bg-purple-50 text-purple-700 border-purple-200"
 								}`}
+								variant="outline"
 							>
 								{thread.context.type === "channel" ? (
 									<span className="flex items-center gap-1">
@@ -319,10 +319,10 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 								{threadReplies.continueCursor && (
 									<div className="flex justify-center pb-4">
 										<Button
-											variant="outline"
-											size="sm"
-											onClick={handleLoadMore}
 											className="text-xs"
+											onClick={handleLoadMore}
+											size="sm"
+											variant="outline"
 										>
 											Load older replies
 										</Button>
@@ -338,8 +338,8 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 												const parsedReplyBody = parseMessageBody(reply.body);
 												return (
 													<div
-														key={reply._id}
 														className="flex items-start gap-3 pl-4"
+														key={reply._id}
 													>
 														<Avatar className="h-8 w-8 flex-shrink-0">
 															<AvatarImage src={reply.user?.image} />
@@ -396,10 +396,10 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 				<div className="border-t p-4 flex-shrink-0 bg-white dark:bg-card">
 					<Editor
-						key={editorKey}
-						innerRef={editorRef}
-						onSubmit={handleSubmit}
 						disabled={isPending}
+						innerRef={editorRef}
+						key={editorKey}
+						onSubmit={handleSubmit}
 						placeholder="Reply to thread..."
 						variant="create"
 					/>

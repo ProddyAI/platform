@@ -193,7 +193,7 @@ export const DailyRecapModal = ({
 					);
 				}
 				// Check if it's a bullet point
-				else if (line.match(/^- (.+)$/)) {
+				else if (/^- (.+)$/.test(line)) {
 					const text = line.replace(/^- /, "");
 					paragraphs.push(
 						new Paragraph({
@@ -284,8 +284,8 @@ export const DailyRecapModal = ({
 							</span>
 						</h2>
 						<button
-							onClick={onClose}
 							className="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800"
+							onClick={onClose}
 						>
 							<X className="h-5 w-5" />
 						</button>
@@ -308,10 +308,10 @@ export const DailyRecapModal = ({
 				<div className="mt-4 flex flex-wrap items-center justify-between gap-2">
 					<div className="flex flex-wrap items-center gap-2">
 						<Button
-							onClick={handleCopy}
-							variant="outline"
 							className="flex items-center gap-1 text-xs"
+							onClick={handleCopy}
 							size="sm"
+							variant="outline"
 						>
 							{isCopied ? (
 								<Check className="h-3 w-3" />
@@ -321,29 +321,29 @@ export const DailyRecapModal = ({
 							{isCopied ? "Copied" : "Copy"}
 						</Button>
 						<Button
-							onClick={handleExportWord}
-							variant="outline"
 							className="flex items-center gap-1 text-xs"
+							onClick={handleExportWord}
 							size="sm"
+							variant="outline"
 						>
 							<File className="h-3 w-3" />
 							Export Word
 						</Button>
 						<Button
-							onClick={handleExportPDF}
-							variant="outline"
 							className="flex items-center gap-1 text-xs"
+							onClick={handleExportPDF}
 							size="sm"
+							variant="outline"
 						>
 							<FileOutput className="h-3 w-3" />
 							Export PDF
 						</Button>
 					</div>
 					<Button
-						onClick={onClose}
-						variant="ghost"
 						className="text-xs"
+						onClick={onClose}
 						size="sm"
+						variant="ghost"
 					>
 						Close
 					</Button>

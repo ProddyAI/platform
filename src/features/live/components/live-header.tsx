@@ -143,17 +143,17 @@ export const LiveHeader = ({
 							<div className="flex items-center gap-1">
 								{isEditing ? (
 									<Input
-										value={localTitle}
-										onChange={(e) => setLocalTitle(e.target.value)}
-										onBlur={handleTitleSubmit}
-										onKeyDown={handleTitleKeyDown}
-										className="text-lg font-semibold border-none shadow-none p-0 h-auto focus-visible:ring-0"
 										autoFocus
+										className="text-lg font-semibold border-none shadow-none p-0 h-auto focus-visible:ring-0"
+										onBlur={handleTitleSubmit}
+										onChange={(e) => setLocalTitle(e.target.value)}
+										onKeyDown={handleTitleKeyDown}
+										value={localTitle}
 									/>
 								) : (
 									<button
-										onClick={() => setIsEditing(true)}
 										className="text-lg font-semibold text-left truncate hover:text-primary transition-colors"
+										onClick={() => setIsEditing(true)}
 										title="Click to edit title"
 									>
 										{title ||
@@ -170,7 +170,7 @@ export const LiveHeader = ({
 													<Info className="h-4 w-4" />
 												</button>
 											</TooltipTrigger>
-											<TooltipContent side="bottom" className="max-w-xs">
+											<TooltipContent className="max-w-xs" side="bottom">
 												<div className="space-y-1">
 													{createdAt && (
 														<div>
@@ -217,7 +217,7 @@ export const LiveHeader = ({
 							)}
 
 							{hasUnsavedChanges && !autoSaveStatus && (
-								<Badge variant="secondary" className="text-xs">
+								<Badge className="text-xs" variant="secondary">
 									Unsaved
 								</Badge>
 							)}
@@ -237,7 +237,7 @@ export const LiveHeader = ({
 
 					{/* Save Button */}
 					{onSave && (
-						<Button onClick={onSave} size="sm" disabled={!hasUnsavedChanges}>
+						<Button disabled={!hasUnsavedChanges} onClick={onSave} size="sm">
 							<Save className="h-4 w-4 mr-2" />
 							Save
 						</Button>
@@ -273,9 +273,9 @@ export const LiveHeader = ({
 					{/* Live Participants - moved inside header */}
 					<div className="flex items-center border-l pl-2 ml-2">
 						<LiveParticipants
-							variant={type}
-							isFullScreen={isFullScreen}
 							className="flex items-center"
+							isFullScreen={isFullScreen}
+							variant={type}
 						/>
 					</div>
 				</div>
@@ -290,10 +290,10 @@ export const LiveHeader = ({
 						<div className="flex items-center gap-2">
 							<Tag className="h-4 w-4 text-muted-foreground" />
 							<TagInput
-								tags={tags}
+								className="max-w-md"
 								onTagsChange={onTagsChange}
 								placeholder="Add tags..."
-								className="max-w-md"
+								tags={tags}
 							/>
 						</div>
 					)}
@@ -304,10 +304,10 @@ export const LiveHeader = ({
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 								<Input
+									className="pl-9"
+									onChange={(e) => onSearchChange(e.target.value)}
 									placeholder={`Search ${type}...`}
 									value={searchQuery}
-									onChange={(e) => onSearchChange(e.target.value)}
-									className="pl-9"
 								/>
 							</div>
 						</div>

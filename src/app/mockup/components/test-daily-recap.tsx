@@ -130,7 +130,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 							<p className="text-sm text-muted-foreground">{todayStr}</p>
 						</div>
 					</div>
-					<Button variant="ghost" size="sm" onClick={onClose}>
+					<Button onClick={onClose} size="sm" variant="ghost">
 						<X className="h-4 w-4" />
 					</Button>
 				</div>
@@ -199,7 +199,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 										<span>Communication Efficiency</span>
 										<span>{recapData.productivity}%</span>
 									</div>
-									<Progress value={recapData.productivity} className="h-2" />
+									<Progress className="h-2" value={recapData.productivity} />
 									<p className="text-xs text-muted-foreground">
 										Great job! You responded quickly and maintained active
 										conversations.
@@ -216,8 +216,13 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								</CardHeader>
 								<CardContent>
 									<div className="space-y-4">
+<<<<<<< HEAD
 										{recapData.highlights.map((highlight) => (
 											<div key={highlight.title} className="flex gap-3">
+=======
+										{recapData.highlights.map((highlight, index) => (
+											<div className="flex gap-3" key={index}>
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 												<div className="flex-shrink-0 mt-1">
 													{getHighlightIcon(highlight.type)}
 												</div>
@@ -233,6 +238,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 															{highlight.time}
 														</span>
 														<div className="flex gap-1">
+<<<<<<< HEAD
 															{highlight.participants.map((participant) => (
 																<Badge
 																	key={participant}
@@ -242,6 +248,19 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 																	{participant}
 																</Badge>
 															))}
+=======
+															{highlight.participants.map(
+																(participant, pIndex) => (
+																	<Badge
+																		className="text-xs"
+																		key={pIndex}
+																		variant="secondary"
+																	>
+																		{participant}
+																	</Badge>
+																)
+															)}
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 														</div>
 													</div>
 												</div>
@@ -261,10 +280,14 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								<CardContent>
 									<div className="space-y-3">
 										{recapData.topContacts.map((contact, index) => (
+<<<<<<< HEAD
 											<div
 												key={contact.name}
 												className="flex items-center gap-3"
 											>
+=======
+											<div className="flex items-center gap-3" key={index}>
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 												<Avatar className="h-8 w-8">
 													<AvatarFallback className="text-xs">
 														{getInitials(contact.name)}
@@ -278,7 +301,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 														{contact.messages} messages
 													</div>
 												</div>
-												<Badge variant="outline" className="text-xs">
+												<Badge className="text-xs" variant="outline">
 													#{index + 1}
 												</Badge>
 											</div>
@@ -297,8 +320,12 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								<div className="space-y-3">
 									{recapData.upcomingTasks.map((task) => (
 										<div
+<<<<<<< HEAD
 											key={task.task}
+=======
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 											className="flex items-center justify-between p-3 border rounded-lg"
+											key={index}
 										>
 											<div className="flex-1">
 												<div className="font-medium text-sm">{task.task}</div>
@@ -324,7 +351,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 							Recap generated at {new Date().toLocaleTimeString()}
 						</div>
 						<div className="flex gap-2">
-							<Button variant="outline" size="sm">
+							<Button size="sm" variant="outline">
 								Export Report
 							</Button>
 							<Button onClick={onClose} size="sm">

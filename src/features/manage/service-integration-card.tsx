@@ -29,10 +29,10 @@ type AuthConfig = {
 	toolkit: "github" | "gmail" | "slack" | "jira" | "notion" | "clickup";
 	name: string;
 	type:
-		| "use_composio_managed_auth"
-		| "use_custom_auth"
-		| "service_connection"
-		| "no_auth";
+	| "use_composio_managed_auth"
+	| "use_custom_auth"
+	| "service_connection"
+	| "no_auth";
 	authScheme?: string;
 	composioAuthConfigId: string;
 	credentials?: any;
@@ -148,7 +148,7 @@ export const ServiceIntegrationCard = ({
 
 		try {
 			// Use AgentAuth to authorize user to toolkit with member-specific entity ID
-			const response = await fetch("/api/composio/agentauth", {
+			const response = await fetch("/api/assistant/composio/agentauth", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -177,7 +177,7 @@ export const ServiceIntegrationCard = ({
 				}
 				throw new Error(
 					errorDetails.error ||
-						`Failed to authorize toolkit (HTTP ${response.status})`
+					`Failed to authorize toolkit (HTTP ${response.status})`
 				);
 			}
 
@@ -206,8 +206,6 @@ export const ServiceIntegrationCard = ({
 	};
 
 	const _handleConnect = async () => {
-		// With AgentAuth, we don't need a separate auth config step
-		// The authorization and connection happen in one flow
 		await handleCreateAuthConfig();
 	};
 
@@ -221,7 +219,7 @@ export const ServiceIntegrationCard = ({
 
 		try {
 			// Call AgentAuth API to disconnect the account with member-specific entity ID
-			const response = await fetch("/api/composio/agentauth", {
+			const response = await fetch("/api/assistant/composio/agentauth", {
 				method: "DELETE",
 				headers: {
 					"Content-Type": "application/json",
@@ -269,7 +267,7 @@ export const ServiceIntegrationCard = ({
 		try {
 			// Call AgentAuth API to check connection status
 			const response = await fetch(
-				`/api/composio/agentauth?action=check-status&composioAccountId=${connectedAccount.composioAccountId}&memberId=${currentMember._id}`,
+				`/api/assistant/composio/agentauth?action=check-status&composioAccountId=${connectedAccount.composioAccountId}&memberId=${currentMember._id}`,
 				{
 					method: "GET",
 				}
@@ -340,11 +338,11 @@ export const ServiceIntegrationCard = ({
 
 						<div className="flex gap-2">
 							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleRefresh}
-								disabled={isConnecting}
 								className="bg-blue-100 border-blue-200 text-blue-700 hover:bg-blue-200 hover:border-blue-300"
+								disabled={isConnecting}
+								onClick={handleRefresh}
+								size="sm"
+								variant="outline"
 							>
 								{isConnecting ? (
 									<>
@@ -360,11 +358,11 @@ export const ServiceIntegrationCard = ({
 							</Button>
 
 							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleDisconnect}
-								disabled={isDisconnecting}
 								className="bg-red-100 border-red-200 text-red-700 hover:bg-red-200 hover:border-red-300"
+								disabled={isDisconnecting}
+								onClick={handleDisconnect}
+								size="sm"
+								variant="outline"
 							>
 								{isDisconnecting ? (
 									<>
@@ -383,9 +381,9 @@ export const ServiceIntegrationCard = ({
 				) : (
 					<div className="space-y-3">
 						<Button
-							onClick={handleCreateAuthConfig}
-							disabled={isConnecting}
 							className={`w-full ${toolkits[toolkit].color} text-white`}
+							disabled={isConnecting}
+							onClick={handleCreateAuthConfig}
 						>
 							{isConnecting ? (
 								<>
@@ -406,9 +404,8 @@ export const ServiceIntegrationCard = ({
 			{/* Subtle connection status indicator - only show for non-connected states */}
 			{!isConnected && (
 				<div
-					className={`absolute bottom-3 right-3 w-2 h-2 rounded-full ${
-						hasAuthConfig ? "bg-yellow-400" : "bg-gray-300"
-					}`}
+					className={`absolute bottom-3 right-3 w-2 h-2 rounded-full ${hasAuthConfig ? "bg-yellow-400" : "bg-gray-300"
+						}`}
 				/>
 			)}
 		</Card>

@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { Loader2, Phone, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAudioRoom } from "../"; // Import from index to get the new implementation
+import { useAudioRoom } from ".."; // Import from index to get the new implementation
 import { AudioControlButton } from "./AudioControlButton";
 import { AudioToolbarButton } from "./AudioToolbarButton";
 
@@ -156,10 +156,10 @@ export const StreamAudioRoom = ({
 		return (
 			<div className="fixed bottom-4 right-4 z-50">
 				<Button
-					variant="outline"
-					size="sm"
 					className="bg-white hover:bg-gray-100 flex items-center gap-2"
 					disabled
+					size="sm"
+					variant="outline"
 				>
 					<div className="animate-spin h-3 w-3 border-2 border-secondary border-t-transparent rounded-full" />
 					Connecting to audio...
@@ -173,10 +173,10 @@ export const StreamAudioRoom = ({
 		return (
 			<div className="fixed bottom-4 right-4 z-50">
 				<Button
-					variant="outline"
-					size="sm"
 					className="bg-white hover:bg-gray-100 flex items-center gap-2"
 					onClick={() => setShowFallbackUI(false)}
+					size="sm"
+					variant="outline"
 				>
 					Enable Audio
 				</Button>
@@ -205,20 +205,20 @@ export const StreamAudioRoom = ({
 
 				<div className="flex gap-2">
 					<Button
-						variant="outline"
-						size="sm"
 						className="flex-1 bg-white hover:bg-gray-100 text-secondary flex items-center justify-center"
 						onClick={handleRetry}
+						size="sm"
+						variant="outline"
 					>
 						Retry
 					</Button>
 
 					{isWSError && (
 						<Button
-							variant="outline"
-							size="sm"
 							className="flex-1 bg-white hover:bg-gray-100 text-gray-600 flex items-center justify-center"
 							onClick={handleShowFallback}
+							size="sm"
+							variant="outline"
 						>
 							Continue Without Audio
 						</Button>
@@ -241,11 +241,11 @@ export const StreamAudioRoom = ({
 				className={`fixed ${isFullScreen ? "bottom-8 right-8" : "bottom-4 right-4"} z-50`}
 			>
 				<AudioControlButton
+					className="bg-green-600 hover:bg-green-700 text-white border-green-600"
 					icon={Phone}
 					label="Join Audio Room"
 					onClick={handleJoinAudio}
 					variant="action"
-					className="bg-green-600 hover:bg-green-700 text-white border-green-600"
 				/>
 			</div>
 		);
@@ -279,17 +279,17 @@ export const StreamAudioRoom = ({
 						</p>
 						<div className="flex gap-3 justify-end">
 							<Button
-								variant="outline"
-								onClick={cancelLeaveAudio}
-								disabled={isLeavingConfirmed}
 								className="px-4 py-2"
+								disabled={isLeavingConfirmed}
+								onClick={cancelLeaveAudio}
+								variant="outline"
 							>
 								Cancel
 							</Button>
 							<Button
-								onClick={confirmLeaveAudio}
-								disabled={isLeavingConfirmed}
 								className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white flex items-center gap-2"
+								disabled={isLeavingConfirmed}
+								onClick={confirmLeaveAudio}
 							>
 								{isLeavingConfirmed && (
 									<Loader2 className="h-4 w-4 animate-spin" />
@@ -357,11 +357,11 @@ const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 					{onLeaveAudio && (
 						<div className="flex justify-center">
 							<AudioControlButton
+								className="bg-red-500 hover:bg-red-600 text-white border-red-500 text-xs px-3 py-1.5"
 								icon={PhoneOff}
 								label="Leave Audio"
 								onClick={handleLeaveWithConfirmation}
 								variant="action"
-								className="bg-red-500 hover:bg-red-600 text-white border-red-500 text-xs px-3 py-1.5"
 							/>
 						</div>
 					)}

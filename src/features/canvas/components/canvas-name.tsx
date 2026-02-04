@@ -199,12 +199,12 @@ export const CanvasName = ({ savedCanvasName }: CanvasNameProps) => {
 				{isEditing ? (
 					<div className="flex items-center">
 						<Input
-							value={inputValue}
-							onChange={(e) => setInputValue(e.target.value)}
-							onKeyDown={handleKeyDown}
-							onBlur={handleSave}
 							autoFocus
 							className="h-8 w-40 text-sm"
+							onBlur={handleSave}
+							onChange={(e) => setInputValue(e.target.value)}
+							onKeyDown={handleKeyDown}
+							value={inputValue}
 						/>
 					</div>
 				) : (
@@ -213,10 +213,10 @@ export const CanvasName = ({ savedCanvasName }: CanvasNameProps) => {
 						<div className="flex items-center gap-1">
 							<Hint label="Rename canvas" side="right">
 								<Button
-									onClick={handleEditClick}
-									variant="ghost"
-									size="icon"
 									className="h-6 w-6"
+									onClick={handleEditClick}
+									size="icon"
+									variant="ghost"
 								>
 									<Edit2 className="h-3.5 w-3.5" />
 								</Button>
@@ -226,14 +226,14 @@ export const CanvasName = ({ savedCanvasName }: CanvasNameProps) => {
 								side="right"
 							>
 								<Button
+									className="h-6 w-6"
 									onClick={
 										isExistingSavedCanvas
 											? handleQuickSave
 											: () => setIsSaveDialogOpen(true)
 									}
-									variant="ghost"
 									size="icon"
-									className="h-6 w-6"
+									variant="ghost"
 								>
 									<Save className="h-3.5 w-3.5" />
 								</Button>
@@ -243,20 +243,20 @@ export const CanvasName = ({ savedCanvasName }: CanvasNameProps) => {
 							</Hint>
 							<Hint label="New Canvas" side="right">
 								<Button
-									onClick={handleNewCanvasClick}
-									variant="ghost"
-									size="icon"
 									className="h-6 w-6"
+									onClick={handleNewCanvasClick}
+									size="icon"
+									variant="ghost"
 								>
 									<FilePlus className="h-3.5 w-3.5" />
 								</Button>
 							</Hint>
 							<Hint label="Export Canvas" side="right">
 								<Button
-									onClick={() => setIsExportDialogOpen(true)}
-									variant="ghost"
-									size="icon"
 									className="h-6 w-6"
+									onClick={() => setIsExportDialogOpen(true)}
+									size="icon"
+									variant="ghost"
 								>
 									<Download className="h-3.5 w-3.5" />
 								</Button>
@@ -267,21 +267,21 @@ export const CanvasName = ({ savedCanvasName }: CanvasNameProps) => {
 			</div>
 
 			<SaveCanvasDialog
-				open={isSaveDialogOpen}
 				onOpenChange={setIsSaveDialogOpen}
 				onSave={handleSaveCanvas}
+				open={isSaveDialogOpen}
 			/>
 
 			<NewCanvasDialog
-				open={isNewCanvasConfirmOpen}
-				onOpenChange={setIsNewCanvasConfirmOpen}
 				onConfirm={handleNewCanvas}
+				onOpenChange={setIsNewCanvasConfirmOpen}
+				open={isNewCanvasConfirmOpen}
 			/>
 
 			<ExportCanvasDialog
-				open={isExportDialogOpen}
-				onOpenChange={setIsExportDialogOpen}
 				canvasName={canvasName}
+				onOpenChange={setIsExportDialogOpen}
+				open={isExportDialogOpen}
 			/>
 		</>
 	);

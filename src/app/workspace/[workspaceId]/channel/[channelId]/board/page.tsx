@@ -307,29 +307,22 @@ const BoardPage = () => {
 	return (
 		<div className="h-full flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 overflow-hidden">
 			<BoardHeader
-				totalCards={allCards.length}
 				listsCount={lists?.length || 0}
-				view={view}
-				setView={setView}
 				onAddList={() => setAddListOpen(true)}
 				onSearch={setSearchQuery}
 				onSearchListName={setListNameQuery}
+				setView={setView}
+				totalCards={allCards.length}
+				view={view}
 			/>
 
 			<div className="flex-1 overflow-auto">
 				{view === "kanban" && (
 					<BoardKanbanView
-						lists={filteredLists}
 						cardsByList={cardsByList}
-						onEditList={(list) => {
-							setListToEdit(list);
-							setEditListTitle(list.title);
-							setEditListOpen(true);
-						}}
-						onDeleteList={(list) => {
-							setListToDelete(list);
-							setDeleteListOpen(true);
-						}}
+						handleDragEnd={handleDragEnd}
+						lists={filteredLists}
+						members={members}
 						onAddCard={(listId) => {
 							setAddCardOpen(listId);
 							setCardTitle("");
@@ -337,6 +330,11 @@ const BoardPage = () => {
 							setCardLabels("");
 							setCardPriority("");
 						}}
+						onDeleteCard={handleDeleteCard}
+						onDeleteList={(list) => {
+							setListToDelete(list);
+							setDeleteListOpen(true);
+						}}
 						onEditCard={(card) => {
 							setEditCardOpen({ card });
 							setCardTitle(card.title);
@@ -346,16 +344,20 @@ const BoardPage = () => {
 							setCardDueDate(card.dueDate ? new Date(card.dueDate) : undefined);
 							setCardAssignees(card.assignees || []);
 						}}
-						onDeleteCard={handleDeleteCard}
-						handleDragEnd={handleDragEnd}
-						members={members}
+						onEditList={(list) => {
+							setListToEdit(list);
+							setEditListTitle(list.title);
+							setEditListOpen(true);
+						}}
 					/>
 				)}
 
 				{view === "table" && (
 					<BoardTableView
-						lists={lists}
 						allCards={filteredCards}
+						lists={lists}
+						members={members}
+						onDeleteCard={handleDeleteCard}
 						onEditCard={(card) => {
 							setEditCardOpen({ card });
 							setCardTitle(card.title);
@@ -365,15 +367,15 @@ const BoardPage = () => {
 							setCardDueDate(card.dueDate ? new Date(card.dueDate) : undefined);
 							setCardAssignees(card.assignees || []);
 						}}
-						onDeleteCard={handleDeleteCard}
-						members={members}
 					/>
 				)}
 
 				{view === "gantt" && (
 					<BoardGanttView
-						lists={lists}
 						allCards={allCards}
+						lists={lists}
+						members={members}
+						onDeleteCard={handleDeleteCard}
 						onEditCard={(card) => {
 							setEditCardOpen({ card });
 							setCardTitle(card.title);
@@ -383,34 +385,38 @@ const BoardPage = () => {
 							setCardDueDate(card.dueDate ? new Date(card.dueDate) : undefined);
 							setCardAssignees(card.assignees || []);
 						}}
-						onDeleteCard={handleDeleteCard}
-						members={members}
 					/>
 				)}
 			</div>
 
 			{/* Modals */}
 			<BoardAddListModal
-				open={addListOpen}
-				onOpenChange={setAddListOpen}
-				title={newListTitle}
-				setTitle={setNewListTitle}
 				onAdd={handleAddList}
+				onOpenChange={setAddListOpen}
+				open={addListOpen}
+				setTitle={setNewListTitle}
+				title={newListTitle}
 			/>
 			<BoardEditListModal
-				open={editListOpen}
 				onOpenChange={setEditListOpen}
-				title={editListTitle}
-				setTitle={setEditListTitle}
 				onSave={handleEditList}
+				open={editListOpen}
+				setTitle={setEditListTitle}
+				title={editListTitle}
 			/>
 			<BoardDeleteListModal
-				open={deleteListOpen}
-				onOpenChange={setDeleteListOpen}
 				onDelete={handleDeleteList}
+				onOpenChange={setDeleteListOpen}
+				open={deleteListOpen}
 			/>
 			<BoardAddCardModal
-				open={!!addCardOpen}
+				assignees={cardAssignees}
+				description={cardDesc}
+				dueDate={cardDueDate}
+				labelSuggestions={uniqueLabels}
+				labels={cardLabels}
+				members={members}
+				onAdd={() => addCardOpen && handleAddCard(addCardOpen)}
 				onOpenChange={(open: boolean) => {
 					if (!open) {
 						setAddCardOpen(null);
@@ -422,42 +428,36 @@ const BoardPage = () => {
 						setCardAssignees([]);
 					}
 				}}
-				title={cardTitle}
-				setTitle={setCardTitle}
-				description={cardDesc}
-				setDescription={setCardDesc}
-				labels={cardLabels}
-				setLabels={setCardLabels}
+				open={!!addCardOpen}
 				priority={cardPriority}
-				setPriority={setCardPriority}
-				dueDate={cardDueDate}
-				setDueDate={setCardDueDate}
-				assignees={cardAssignees}
 				setAssignees={setCardAssignees}
-				members={members}
-				labelSuggestions={uniqueLabels}
-				onAdd={() => addCardOpen && handleAddCard(addCardOpen)}
+				setDescription={setCardDesc}
+				setDueDate={setCardDueDate}
+				setLabels={setCardLabels}
+				setPriority={setCardPriority}
+				setTitle={setCardTitle}
+				title={cardTitle}
 			/>
 			<BoardEditCardModal
-				open={!!editCardOpen}
+				assignees={cardAssignees}
+				description={cardDesc}
+				dueDate={cardDueDate}
+				labelSuggestions={uniqueLabels}
+				labels={cardLabels}
+				members={members}
 				onOpenChange={(open: boolean) => {
 					if (!open) setEditCardOpen(null);
 				}}
-				title={cardTitle}
-				setTitle={setCardTitle}
-				description={cardDesc}
-				setDescription={setCardDesc}
-				labels={cardLabels}
-				setLabels={setCardLabels}
-				priority={cardPriority}
-				setPriority={setCardPriority}
-				dueDate={cardDueDate}
-				setDueDate={setCardDueDate}
-				assignees={cardAssignees}
-				setAssignees={setCardAssignees}
-				members={members}
-				labelSuggestions={uniqueLabels}
 				onSave={handleEditCard}
+				open={!!editCardOpen}
+				priority={cardPriority}
+				setAssignees={setCardAssignees}
+				setDescription={setCardDesc}
+				setDueDate={setCardDueDate}
+				setLabels={setCardLabels}
+				setPriority={setCardPriority}
+				setTitle={setCardTitle}
+				title={cardTitle}
 			/>
 		</div>
 	);

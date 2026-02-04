@@ -118,13 +118,15 @@ async function getWorkspaceWeeklyStats(
 
 	const topChannels = [];
 	for (const channelId in channelMessageCounts) {
-		const count = channelMessageCounts[channelId];
-		const channel = await ctx.db.get(channelId as any);
-		if (channel && "name" in channel && count) {
-			topChannels.push({
-				name: channel.name,
-				messageCount: count,
-			});
+		if (Object.hasOwn(channelMessageCounts, channelId)) {
+			const count = channelMessageCounts[channelId];
+			const channel = await ctx.db.get(channelId as any);
+			if (channel && "name" in channel && count) {
+				topChannels.push({
+					name: channel.name,
+					messageCount: count,
+				});
+			}
 		}
 	}
 

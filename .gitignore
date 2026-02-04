@@ -2,7 +2,6 @@
 scripts/next-build.js
 /node_modules
 /.pnp
-.env
 .env.local
 /coverage
 /.next/

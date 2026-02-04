@@ -201,7 +201,7 @@ export const CalendarPicker = ({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onClose}>
+		<Dialog onOpenChange={onClose} open={open}>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>Add Calendar Event</DialogTitle>
@@ -211,30 +211,30 @@ export const CalendarPicker = ({
 						<Label htmlFor="date-option">Date</Label>
 						<div className="flex flex-wrap gap-2">
 							<Button
-								variant={dateType === "today" ? "default" : "outline"}
 								onClick={() => handleDateTypeChange("today")}
 								size="sm"
+								variant={dateType === "today" ? "default" : "outline"}
 							>
 								Today
 							</Button>
 							<Button
-								variant={dateType === "tomorrow" ? "default" : "outline"}
 								onClick={() => handleDateTypeChange("tomorrow")}
 								size="sm"
+								variant={dateType === "tomorrow" ? "default" : "outline"}
 							>
 								Tomorrow
 							</Button>
 							<Button
-								variant={dateType === "next-week" ? "default" : "outline"}
 								onClick={() => handleDateTypeChange("next-week")}
 								size="sm"
+								variant={dateType === "next-week" ? "default" : "outline"}
 							>
 								Next week
 							</Button>
 							<Button
-								variant={dateType === "custom" ? "default" : "outline"}
 								onClick={() => handleDateTypeChange("custom")}
 								size="sm"
+								variant={dateType === "custom" ? "default" : "outline"}
 							>
 								Custom
 							</Button>
@@ -247,8 +247,8 @@ export const CalendarPicker = ({
 									{["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
 										(day, _index) => (
 											<div
-												key={day}
 												className="text-center text-xs font-medium text-muted-foreground"
+												key={day}
 											>
 												{day}
 											</div>
@@ -256,16 +256,20 @@ export const CalendarPicker = ({
 									)}
 									{nextWeekDates.map((nextWeekDate) => (
 										<Button
+<<<<<<< HEAD
 											key={nextWeekDate.toISOString()}
+=======
+											className="h-8 w-full p-0 text-xs"
+											key={index}
+											onClick={() => setDate(nextWeekDate)}
+											size="sm"
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 											variant={
 												date &&
 												date.toDateString() === nextWeekDate.toDateString()
 													? "default"
 													: "outline"
 											}
-											size="sm"
-											className="h-8 w-full p-0 text-xs"
-											onClick={() => setDate(nextWeekDate)}
 										>
 											{nextWeekDate.getDate()}
 										</Button>
@@ -274,30 +278,30 @@ export const CalendarPicker = ({
 							)}
 
 						{dateType === "custom" && (
-							<Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+							<Popover onOpenChange={setCalendarOpen} open={calendarOpen}>
 								<PopoverTrigger asChild>
 									<Button
-										variant="outline"
 										className={cn(
 											"w-full justify-start text-left font-normal mt-2",
 											!date && "text-muted-foreground"
 										)}
+										variant="outline"
 									>
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{date ? format(date, "PPP") : <span>Pick a date</span>}
 									</Button>
 								</PopoverTrigger>
-								<PopoverContent className="w-[280px] p-0" align="start">
+								<PopoverContent align="start" className="w-[280px] p-0">
 									<Calendar
+										initialFocus
 										mode="single"
-										selected={date}
 										onSelect={(newDate) => {
 											if (newDate) {
 												setDate(newDate);
 												setCalendarOpen(false);
 											}
 										}}
-										initialFocus
+										selected={date}
 									/>
 								</PopoverContent>
 							</Popover>
@@ -311,8 +315,8 @@ export const CalendarPicker = ({
 							{timeOptions.length > 0 ? (
 								<select
 									className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-									value={selectedTime}
 									onChange={(e) => setSelectedTime(e.target.value)}
+									value={selectedTime}
 								>
 									{timeOptions.map((option) => (
 										<option key={option} value={option}>
@@ -329,7 +333,7 @@ export const CalendarPicker = ({
 					</div>
 				</div>
 				<DialogFooter>
-					<Button variant="outline" onClick={onClose}>
+					<Button onClick={onClose} variant="outline">
 						Cancel
 					</Button>
 					<Button onClick={handleSubmit}>Add to Calendar</Button>

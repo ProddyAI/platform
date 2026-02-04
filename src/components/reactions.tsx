@@ -34,12 +34,12 @@ export const Reactions = ({ data, onChange }: ReactionsProps) => {
 					label={`${reaction.count} ${reaction.count === 1 ? "person" : "people"} reacted with ${reaction.value}`}
 				>
 					<button
-						onClick={() => onChange(reaction.value)}
 						className={cn(
 							"flex h-6 items-center gap-x-1 rounded-full border border-transparent bg-slate-200/70 px-2 text-slate-800 transition-standard hover:bg-slate-200/90 hover:scale-105",
 							reaction.memberIds.includes(currentMemberId) &&
 								"border-secondary bg-secondary/10 text-secondary hover:bg-secondary/20"
 						)}
+						onClick={() => onChange(reaction.value)}
 					>
 						{reaction.value}{" "}
 						<span

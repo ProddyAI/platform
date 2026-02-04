@@ -200,12 +200,8 @@ export class PDFExporter {
 				12
 			);
 			this.addSubtitle(
-				`Time Range: ${this.getTimeRangeLabel(data.timeRange)}`,
-				10
+				`Time Range: ${PDFExporter.getTimeRangeLabel(data.timeRange)}`
 			);
-			this.addSpace(20);
-
-			// Overview Section
 			if (data.overview) {
 				this.addTitle("Overview", 16);
 				this.addSpace(10);
@@ -404,7 +400,7 @@ export class PDFExporter {
 		}
 	}
 
-	private getTimeRangeLabel(timeRange: string): string {
+	private static getTimeRangeLabel(timeRange: string): string {
 		switch (timeRange) {
 			case "1d":
 				return "Last 1 day";

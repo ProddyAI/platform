@@ -1,8 +1,11 @@
+<<<<<<< HEAD
 // This file contains custom service worker code that will be injected into the generated service worker
 
 /* global clients */
 
 // Disable workbox logging in production
+=======
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 self.__WB_DISABLE_DEV_LOGS = true;
 
 // Handle push notifications
@@ -80,7 +83,6 @@ self.addEventListener("fetch", (event) => {
 		event.respondWith(
 			fetch(event.request).catch(() => caches.match(offlineFallbackPage))
 		);
-		return;
 	}
 
 	// For other requests, use the default strategy from workbox

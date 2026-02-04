@@ -44,10 +44,14 @@ export const PasswordStrengthIndicator = ({
 				<div className="flex gap-1 h-1.5">
 					{[...Array(5)].map((_, index) => (
 						<div
+<<<<<<< HEAD
 							key={`strength-bar-${index}`}
+=======
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 							className={`flex-1 rounded-full transition-all duration-300 ${
 								index <= strength.score ? strength.color : "bg-gray-200"
 							}`}
+							key={index}
 						/>
 					))}
 				</div>
@@ -56,11 +60,16 @@ export const PasswordStrengthIndicator = ({
 			{/* Requirements List */}
 			{showRequirements && (
 				<div className="space-y-1.5">
+<<<<<<< HEAD
 					{requirements.map((requirement) => (
 						<div
 							key={requirement.label}
 							className="flex items-center gap-2 text-xs"
 						>
+=======
+					{requirements.map((requirement, index) => (
+						<div className="flex items-center gap-2 text-xs" key={index}>
+>>>>>>> 7b9cc96a09880de15193206296b24a5439aa03c2
 							{requirement.met ? (
 								<Check className="size-3.5 text-green-600 flex-shrink-0" />
 							) : (

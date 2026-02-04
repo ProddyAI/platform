@@ -51,7 +51,7 @@ export const LiveblocksRoom = ({
 
 	return (
 		// Use the key to force remount when roomId changes
-		<div key={key} className="h-full">
+		<div className="h-full" key={key}>
 			<RoomProvider
 				id={normalizedRoomId}
 				initialPresence={{

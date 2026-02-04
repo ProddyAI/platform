@@ -27,7 +27,7 @@ export const NewCanvasDialog = ({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>Create New Canvas</DialogTitle>
@@ -37,7 +37,7 @@ export const NewCanvasDialog = ({
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter className="flex flex-row justify-end gap-2 mt-4">
-					<Button variant="outline" onClick={() => onOpenChange(false)}>
+					<Button onClick={() => onOpenChange(false)} variant="outline">
 						Cancel
 					</Button>
 					<Button onClick={handleConfirm}>Create New Canvas</Button>

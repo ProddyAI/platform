@@ -134,8 +134,8 @@ export const TasksWidget = ({
 					<h3 className="font-semibold text-base">Your Tasks</h3>
 					{!isEditMode && sortedTasks.length > 0 && (
 						<Badge
-							variant="secondary"
 							className="ml-1 h-5 px-2 text-xs font-medium"
+							variant="secondary"
 						>
 							{sortedTasks.length}
 						</Badge>
@@ -145,10 +145,10 @@ export const TasksWidget = ({
 					controls
 				) : (
 					<Button
-						variant="ghost"
-						size="sm"
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
+						size="sm"
+						variant="ghost"
 					>
 						View all
 					</Button>
@@ -160,19 +160,19 @@ export const TasksWidget = ({
 					<div className="space-y-2 pr-4">
 						{sortedTasks.map((task) => (
 							<WidgetCard
-								key={task._id}
 								className={task.completed ? "bg-muted/20" : ""}
 								contentClassName="p-4"
+								key={task._id}
 							>
 								<div className="flex items-start gap-3">
 									<Button
-										variant="ghost"
-										size="icon"
 										className="h-6 w-6 rounded-full flex-shrink-0 mt-0.5"
+										disabled={updatingTaskId === task._id}
 										onClick={() =>
 											handleToggleTaskCompletion(task._id, task.completed)
 										}
-										disabled={updatingTaskId === task._id}
+										size="icon"
+										variant="ghost"
 									>
 										{updatingTaskId === task._id ? (
 											<Loader className="h-4 w-4 animate-spin" />
@@ -199,15 +199,15 @@ export const TasksWidget = ({
 												</span>
 											</div>
 										)}
-										<Badge variant="outline" className="border-2 text-xs w-fit">
+										<Badge className="border-2 text-xs w-fit" variant="outline">
 											{getCategoryName(task.categoryId)}
 										</Badge>
 									</div>
 									<Button
-										variant="ghost"
-										size="sm"
 										className="h-7 px-2 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950 flex-shrink-0"
 										onClick={() => handleViewTask(task._id)}
+										size="sm"
+										variant="ghost"
 									>
 										View
 									</Button>
@@ -224,12 +224,12 @@ export const TasksWidget = ({
 						You don't have any tasks created
 					</p>
 					<Button
-						variant="default"
-						size="sm"
 						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 						onClick={() =>
 							router.push(`/workspace/${workspaceId}/tasks?action=create`)
 						}
+						size="sm"
+						variant="default"
 					>
 						Create Task
 					</Button>
