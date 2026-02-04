@@ -46,10 +46,10 @@ export const ThemeToggle = () => {
 
 	return (
 		<Button
-			variant="ghost"
-			size="iconSm"
-			onClick={toggle}
 			aria-label="Toggle color theme"
+			onClick={toggle}
+			size="iconSm"
+			variant="ghost"
 		>
 			{theme === "dark" ? (
 				<Sun className="size-5" />

@@ -32,11 +32,11 @@ export const InviteMailTemplate: React.FC<
 			<Body style={main}>
 				<Container style={container}>
 					<Img
-						src="https://proddy.tech/logo-nobg.png"
-						width="40"
-						height="40"
 						alt="Proddy"
+						height="40"
+						src="https://proddy.tech/logo-nobg.png"
 						style={logo}
+						width="40"
 					/>
 					<Heading style={heading}>
 						You've been invited to join a workspace
@@ -49,6 +49,7 @@ export const InviteMailTemplate: React.FC<
 
 						<Section style={buttonContainer}>
 							<Button
+								href={inviteLink}
 								style={{
 									...button,
 									paddingLeft: "24px",
@@ -56,7 +57,6 @@ export const InviteMailTemplate: React.FC<
 									paddingTop: "12px",
 									paddingBottom: "12px",
 								}}
-								href={inviteLink}
 							>
 								Accept Invite
 							</Button>

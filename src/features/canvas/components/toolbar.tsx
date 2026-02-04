@@ -122,16 +122,16 @@ export const Toolbar = ({
 			{/* Undo/Redo Card */}
 			<div className="bg-white rounded-md p-1.5 flex flex-col items-center shadow-md">
 				<ToolButton
-					label="Undo"
 					icon={Undo2}
-					onClick={handleUndo}
 					isDisabled={!canUndo}
+					label="Undo"
+					onClick={handleUndo}
 				/>
 				<ToolButton
-					label="Redo"
 					icon={Redo2}
-					onClick={handleRedo}
 					isDisabled={!canRedo}
+					label="Redo"
+					onClick={handleRedo}
 				/>
 			</div>
 
@@ -139,12 +139,12 @@ export const Toolbar = ({
 			{onGenerateFlowchart && (
 				<div className="bg-white rounded-md p-1.5 flex flex-col items-center shadow-md">
 					<FlowchartGenerator
-						onGenerateFlowchart={onGenerateFlowchart}
 						camera={camera}
+						onGenerateFlowchart={onGenerateFlowchart}
 					>
 						<ToolButton
-							label="AI Flowchart"
 							icon={Sparkles}
+							label="AI Flowchart"
 							onClick={() => {}} // Handled by FlowchartGenerator
 							variant="default"
 						/>
@@ -155,8 +155,8 @@ export const Toolbar = ({
 			{/* Clear Canvas Card */}
 			<div className="bg-white rounded-md p-1.5 flex flex-col items-center shadow-md">
 				<ToolButton
-					label="Clear Canvas"
 					icon={Trash2}
+					label="Clear Canvas"
 					onClick={clearCanvas}
 					variant="danger"
 				/>
@@ -168,8 +168,8 @@ export const Toolbar = ({
 export const ToolbarSkeleton = () => {
 	return (
 		<div
-			className="absolute top-[55%] -translate-y-[50%] left-2 flex flex-col gap-y-4 bg-white h-[360px] w-[52px] shadow-md rounded-md"
 			aria-hidden
+			className="absolute top-[55%] -translate-y-[50%] left-2 flex flex-col gap-y-4 bg-white h-[360px] w-[52px] shadow-md rounded-md"
 		/>
 	);
 };

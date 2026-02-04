@@ -90,8 +90,8 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 							<span>{totalCards} cards</span>
 						</div>
 						<Badge
-							variant="outline"
 							className="bg-white/50 dark:bg-gray-800/50 dark:border-gray-700"
+							variant="outline"
 						>
 							<Clock className="w-3 h-3 mr-1" /> Updated just now
 						</Badge>
@@ -102,10 +102,10 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button
-									variant="outline"
-									size="sm"
 									className="h-9 px-3 bg-white dark:bg-gray-800 dark:border-gray-700"
 									onClick={onAddList}
+									size="sm"
+									variant="outline"
 								>
 									<span className="hidden md:inline mr-1">Add List</span>+
 								</Button>
@@ -119,9 +119,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
-								variant="outline"
-								size="icon"
 								className="h-9 w-9 bg-white dark:bg-gray-800 dark:border-gray-700"
+								size="icon"
+								variant="outline"
 							>
 								<Filter className="h-4 w-4" />
 							</Button>
@@ -151,27 +151,27 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 
 			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
 				<div className="flex items-center gap-2 w-full sm:w-auto">
-					<form onSubmit={handleSearch} className="relative w-full sm:w-64">
+					<form className="relative w-full sm:w-64" onSubmit={handleSearch}>
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-500" />
 						<Input
-							placeholder="Search tasks"
 							className="pl-9 bg-white/80 dark:bg-gray-800/80 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500 w-full"
-							value={searchQuery}
 							onChange={handleSearchChange}
+							placeholder="Search tasks"
+							value={searchQuery}
 						/>
 					</form>
 
 					{view === "kanban" && (
 						<form
-							onSubmit={handleListNameSearch}
 							className="relative w-full sm:w-64"
+							onSubmit={handleListNameSearch}
 						>
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-500" />
 							<Input
-								placeholder="Search Cards"
 								className="pl-9 bg-white/80 dark:bg-gray-800/80 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500 w-full"
-								value={listNameQuery}
 								onChange={handleListNameSearchChange}
+								placeholder="Search Cards"
+								value={listNameQuery}
 							/>
 						</form>
 					)}
@@ -180,8 +180,6 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 				<div className="flex flex-col">
 					<div className="flex items-center gap-1 bg-white/90 dark:bg-gray-800/90 p-1 rounded-lg border dark:border-gray-700 shadow-sm">
 						<Button
-							variant="ghost"
-							size="sm"
 							className={cn(
 								"px-3 py-1.5 flex items-center gap-2 rounded-md transition-all duration-200",
 								view === "kanban"
@@ -189,6 +187,8 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
 							)}
 							onClick={() => setView("kanban")}
+							size="sm"
+							variant="ghost"
 						>
 							<LayoutGrid
 								className={cn(
@@ -202,8 +202,6 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 						</Button>
 
 						<Button
-							variant="ghost"
-							size="sm"
 							className={cn(
 								"px-3 py-1.5 flex items-center gap-2 rounded-md transition-all duration-200",
 								view === "table"
@@ -211,6 +209,8 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
 							)}
 							onClick={() => setView("table")}
+							size="sm"
+							variant="ghost"
 						>
 							<Table
 								className={cn(
@@ -224,8 +224,6 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 						</Button>
 
 						<Button
-							variant="ghost"
-							size="sm"
 							className={cn(
 								"px-3 py-1.5 flex items-center gap-2 rounded-md transition-all duration-200",
 								view === "gantt"
@@ -233,6 +231,8 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
 							)}
 							onClick={() => setView("gantt")}
+							size="sm"
+							variant="ghost"
 						>
 							<GanttChart
 								className={cn(

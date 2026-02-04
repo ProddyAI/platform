@@ -66,7 +66,7 @@ export const SignUpCard = ({
 
 		try {
 			// Send OTP to email
-			const response = await fetch("/api/otp/send", {
+			const response = await fetch("/api/account/otp", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ email }),
@@ -129,51 +129,51 @@ export const SignUpCard = ({
 			)}
 
 			<CardContent className="space-y-5 px-0 pb-0">
-				<form onSubmit={handleSignUp} className="space-y-2.5">
+				<form className="space-y-2.5" onSubmit={handleSignUp}>
 					<Input
 						disabled={pending}
-						value={name}
+						maxLength={50}
+						minLength={3}
 						onChange={(e) => setName(e.target.value)}
 						placeholder="Full Name"
-						minLength={3}
-						maxLength={50}
 						required
+						value={name}
 					/>
 
 					<Input
 						disabled={pending}
-						value={email}
 						onChange={(e) => setEmail(e.target.value)}
 						placeholder="Email"
-						type="email"
 						required
+						type="email"
+						value={email}
 					/>
 					<div className="space-y-2">
 						<Input
 							disabled={pending}
-							value={password}
 							onChange={(e) => setPassword(e.target.value)}
 							placeholder="Password"
-							type="password"
 							required
+							type="password"
+							value={password}
 						/>
 						<PasswordStrengthIndicator password={password} />
 					</div>
 
 					<Input
 						disabled={pending}
-						value={confirmPassword}
 						onChange={(e) => setConfirmPassword(e.target.value)}
 						placeholder="Confirm Password"
-						type="password"
 						required
+						type="password"
+						value={confirmPassword}
 					/>
 
 					<Button
-						type="submit"
 						className="bg-primary w-full transition-all duration-300 hover:shadow-lg hover:bg-primary/90"
-						size="lg"
 						disabled={pending}
+						size="lg"
+						type="submit"
 					>
 						Continue
 					</Button>
@@ -183,24 +183,24 @@ export const SignUpCard = ({
 
 				<div className="flex flex-col gap-y-2.5">
 					<Button
+						className="relative w-full transition-all duration-300 hover:shadow-md group"
 						disabled={pending}
 						onClick={() => handleOAuthSignUp("google")}
-						variant="outline"
 						size="lg"
-						className="relative w-full transition-all duration-300 hover:shadow-md group"
+						variant="outline"
 					>
 						<FcGoogle className="absolute left-2.5 top-3 size-5 transition-transform duration-200 group-hover:scale-110" />
 						Continue with Google
 					</Button>
 
 					<Button
+						className="relative w-full transition-all duration-300 hover:shadow-md group"
 						disabled={pending}
 						onClick={() => {
 							handleOAuthSignUp("github");
 						}}
-						variant="outline"
 						size="lg"
-						className="relative w-full transition-all duration-300 hover:shadow-md group"
+						variant="outline"
 					>
 						<FaGithub className="absolute left-2.5 top-3 size-5 transition-transform duration-200 group-hover:scale-110" />
 						Continue with GitHub
@@ -211,16 +211,16 @@ export const SignUpCard = ({
 					Already have an account?{" "}
 					{isStandalone ? (
 						<Link
-							href="/signin"
 							className="text-secondary cursor-pointer font-medium hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+							href="/auth/signin"
 						>
 							Sign in
 						</Link>
 					) : (
 						<button
+							className="cursor-pointer font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
 							disabled={pending}
 							onClick={() => setState?.("signIn")}
-							className="cursor-pointer font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
 						>
 							Sign in
 						</button>

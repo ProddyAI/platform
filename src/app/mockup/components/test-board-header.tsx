@@ -51,9 +51,9 @@ export const TestBoardHeader = ({
 			<div className="border-b bg-primary p-4">
 				<div className="flex items-center justify-between">
 					<Button
-						variant="ghost"
 						className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 						size="sm"
+						variant="ghost"
 					>
 						<LayoutGrid className="mr-2 size-5" />
 						<span className="truncate">Board</span>
@@ -96,13 +96,13 @@ export const TestBoardHeader = ({
 						{/* Search */}
 						<div className="relative">
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-							<Input placeholder="Search cards..." className="w-64 pl-9" />
+							<Input className="w-64 pl-9" placeholder="Search cards..." />
 						</div>
 
 						{/* Filter */}
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<Button variant="outline" size="sm">
+								<Button size="sm" variant="outline">
 									<Filter className="h-4 w-4 mr-2" />
 									Filter
 								</Button>
@@ -144,28 +144,28 @@ export const TestBoardHeader = ({
 						{/* View Toggle */}
 						<div className="flex items-center border rounded-md">
 							<Button
-								variant={view === "kanban" ? "default" : "ghost"}
-								size="sm"
-								onClick={() => onViewChange("kanban")}
 								className="rounded-r-none"
+								onClick={() => onViewChange("kanban")}
+								size="sm"
+								variant={view === "kanban" ? "default" : "ghost"}
 							>
 								<LayoutGrid className="h-4 w-4" />
 								<span className="hidden sm:ml-2 sm:inline">Kanban</span>
 							</Button>
 							<Button
-								variant={view === "table" ? "default" : "ghost"}
-								size="sm"
-								onClick={() => onViewChange("table")}
 								className="rounded-none border-x"
+								onClick={() => onViewChange("table")}
+								size="sm"
+								variant={view === "table" ? "default" : "ghost"}
 							>
 								<Table className="h-4 w-4" />
 								<span className="hidden sm:ml-2 sm:inline">Table</span>
 							</Button>
 							<Button
-								variant={view === "gantt" ? "default" : "ghost"}
-								size="sm"
-								onClick={() => onViewChange("gantt")}
 								className="rounded-l-none"
+								onClick={() => onViewChange("gantt")}
+								size="sm"
+								variant={view === "gantt" ? "default" : "ghost"}
 							>
 								<BarChart3 className="h-4 w-4" />
 								<span className="hidden sm:ml-2 sm:inline">Gantt</span>

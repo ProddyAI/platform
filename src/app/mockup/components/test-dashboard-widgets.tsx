@@ -43,10 +43,10 @@ export const TestDashboardWidgets = () => {
 							<CardTitle className="text-lg">Upcoming Events</CardTitle>
 						</div>
 						<Button
-							variant="outline"
-							size="sm"
-							onClick={handleViewAllEvents}
 							className="flex items-center gap-2"
+							onClick={handleViewAllEvents}
+							size="sm"
+							variant="outline"
 						>
 							<ExternalLink className="h-4 w-4" />
 							View Calendar
@@ -70,10 +70,10 @@ export const TestDashboardWidgets = () => {
 										Conference Room A
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="default" className="text-xs">
+										<Badge className="text-xs" variant="default">
 											High Priority
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Meeting
 										</Badge>
 									</div>
@@ -92,10 +92,10 @@ export const TestDashboardWidgets = () => {
 										Zoom Call
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="default" className="text-xs">
+										<Badge className="text-xs" variant="default">
 											High Priority
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Meeting
 										</Badge>
 									</div>
@@ -116,10 +116,10 @@ export const TestDashboardWidgets = () => {
 										Remote
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="destructive" className="text-xs">
+										<Badge className="text-xs" variant="destructive">
 											High Priority
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Deadline
 										</Badge>
 									</div>
@@ -306,10 +306,10 @@ export const TestDashboardWidgets = () => {
 										Due: Today
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="destructive" className="text-xs">
+										<Badge className="text-xs" variant="destructive">
 											P1 Incident
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Backend
 										</Badge>
 									</div>
@@ -326,10 +326,10 @@ export const TestDashboardWidgets = () => {
 										Due: Tomorrow
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="default" className="text-xs">
+										<Badge className="text-xs" variant="default">
 											High Priority
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Review
 										</Badge>
 									</div>
@@ -346,10 +346,10 @@ export const TestDashboardWidgets = () => {
 										Due: Tomorrow
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="secondary" className="text-xs">
+										<Badge className="text-xs" variant="secondary">
 											Medium Priority
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Planning
 										</Badge>
 									</div>
@@ -366,7 +366,7 @@ export const TestDashboardWidgets = () => {
 										Completed yesterday
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Completed
 										</Badge>
 									</div>
@@ -387,10 +387,10 @@ export const TestDashboardWidgets = () => {
 							<Badge variant="secondary">3</Badge>
 						</div>
 						<Button
-							variant="outline"
-							size="sm"
-							onClick={handleViewBoard}
 							className="flex items-center gap-2"
+							onClick={handleViewBoard}
+							size="sm"
+							variant="outline"
 						>
 							<ExternalLink className="h-4 w-4" />
 							View Board
@@ -410,10 +410,10 @@ export const TestDashboardWidgets = () => {
 										Due in 3 days • To Do
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="destructive" className="text-xs">
+										<Badge className="text-xs" variant="destructive">
 											Highest Priority
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Backend
 										</Badge>
 									</div>
@@ -430,10 +430,10 @@ export const TestDashboardWidgets = () => {
 										Due in 2 days • In Progress
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="default" className="text-xs">
+										<Badge className="text-xs" variant="default">
 											High Priority
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Security
 										</Badge>
 									</div>
@@ -450,10 +450,10 @@ export const TestDashboardWidgets = () => {
 										Due tomorrow • Review
 									</div>
 									<div className="flex items-center gap-2 mt-2">
-										<Badge variant="destructive" className="text-xs">
+										<Badge className="text-xs" variant="destructive">
 											Highest Priority
 										</Badge>
-										<Badge variant="outline" className="text-xs">
+										<Badge className="text-xs" variant="outline">
 											Security
 										</Badge>
 									</div>

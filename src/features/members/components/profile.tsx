@@ -188,17 +188,17 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 						<div className="mt-4 flex items-center gap-2">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<Button variant="outline" className="w-full capitalize">
+									<Button className="w-full capitalize" variant="outline">
 										{member.role} <ChevronDown className="ml-2 size-4" />
 									</Button>
 								</DropdownMenuTrigger>
 
 								<DropdownMenuContent className="w-full">
 									<DropdownMenuRadioGroup
-										value={member.role}
 										onValueChange={(role) =>
 											onUpdate(role as "admin" | "member")
 										}
+										value={member.role}
 									>
 										<DropdownMenuRadioItem value="admin">
 											Admin
@@ -210,14 +210,14 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 								</DropdownMenuContent>
 							</DropdownMenu>
 
-							<Button onClick={onRemove} variant="outline" className="w-full">
+							<Button className="w-full" onClick={onRemove} variant="outline">
 								Remove
 							</Button>
 						</div>
 					) : currentMember._id === memberId &&
 						currentMember.role !== "admin" ? (
 						<div className="mt-4">
-							<Button onClick={onLeave} variant="outline" className="w-full">
+							<Button className="w-full" onClick={onLeave} variant="outline">
 								Leave
 							</Button>
 						</div>
@@ -240,8 +240,8 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 							</p>
 
 							<Link
-								href={`mailto:${member.user.email}`}
 								className="text-sm text-[#1264a3] hover:underline"
+								href={`mailto:${member.user.email}`}
 							>
 								{member.user.email}
 							</Link>

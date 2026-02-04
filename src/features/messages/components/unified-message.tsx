@@ -125,8 +125,8 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 	return (
 		<Card
-			data-message-component="true"
 			className="w-full max-w-sm !bg-gradient-to-r !from-slate-50 !to-slate-100 dark:!from-slate-600 dark:!to-slate-500 shadow-lg border border-primary/20 dark:border-purple-400/40 hover:shadow-xl transition-shadow"
+			data-message-component="true"
 		>
 			<div className="flex items-center justify-between p-3 min-h-[60px] gap-2">
 				<div className="flex items-center space-x-2 flex-1 min-w-0">
@@ -158,10 +158,10 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 				</div>
 
 				<Button
-					onClick={handleClick}
-					variant="default"
-					size="sm"
 					className="flex-shrink-0 bg-primary dark:!bg-purple-400 text-white dark:!text-white hover:bg-primary/90 dark:hover:!bg-purple-500 font-medium rounded-md transition-all text-xs px-2 py-1 h-auto"
+					onClick={handleClick}
+					size="sm"
+					variant="default"
 				>
 					{getButtonText()}
 				</Button>

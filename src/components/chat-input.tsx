@@ -175,12 +175,14 @@ export const ChatInput = ({
 		<div className="w-full px-5">
 			{channelId && channelName && !conversationId ? (
 				<Suggestions
-					onSelectSuggestion={handleSuggestionSelect}
 					channelName={channelName}
+					onSelectSuggestion={handleSuggestionSelect}
 				/>
 			) : null}
 			<Editor
-				placeholder={placeholder}
+				disabled={isPending}
+				disableMentions={!!conversationId}
+				innerRef={innerRef}
 				key={editorKey}
 				onSubmit={handleSubmit}
 				disabled={isPending}

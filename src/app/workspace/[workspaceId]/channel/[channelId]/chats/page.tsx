@@ -64,20 +64,20 @@ const ChannelChatPage = () => {
 	return (
 		<div className="flex h-full flex-col">
 			<MessageList
-				channelName={channel.name}
-				channelCreationTime={channel._creationTime}
-				data={results}
-				loadMore={loadMore}
-				isLoadingMore={status === "LoadingMore"}
 				canLoadMore={status === "CanLoadMore"}
+				channelCreationTime={channel._creationTime}
+				channelName={channel.name}
+				data={results}
+				isLoadingMore={status === "LoadingMore"}
+				loadMore={loadMore}
 			/>
 
 			<TypingIndicator typingText={typingText} isVisible={isAnyoneTyping} />
 
 			<ChatInput
-				placeholder={`Message # ${channel.name}`}
 				channelId={channelId}
 				channelName={channel.name}
+				placeholder={`Message # ${channel.name}`}
 			/>
 		</div>
 	);

@@ -125,8 +125,8 @@ export const ThreadRepliesWidget = ({
 					<h3 className="font-semibold text-base">Thread Replies</h3>
 					{!isEditMode && threadMessages.length > 0 && (
 						<Badge
-							variant="secondary"
 							className="ml-1 h-5 px-2 text-xs font-medium"
+							variant="secondary"
 						>
 							{threadMessages.length}
 						</Badge>
@@ -136,10 +136,10 @@ export const ThreadRepliesWidget = ({
 					controls
 				) : (
 					<Button
-						variant="ghost"
-						size="sm"
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
+						size="sm"
+						variant="ghost"
 					>
 						View All
 					</Button>
@@ -154,8 +154,8 @@ export const ThreadRepliesWidget = ({
 								<div className="flex items-start gap-3">
 									<Avatar className="h-8 w-8">
 										<AvatarImage
-											src={thread.currentUser.image}
 											alt={thread.currentUser.name || "User avatar"}
+											src={thread.currentUser.image}
 										/>
 										<AvatarFallback>
 											{thread.currentUser.name
@@ -171,8 +171,8 @@ export const ThreadRepliesWidget = ({
 												</p>
 												{thread.context.type === "channel" && (
 													<Badge
-														variant="outline"
 														className="flex items-center gap-1 border-2"
+														variant="outline"
 													>
 														<Hash className="h-3 w-3" />
 														{thread.context.name}
@@ -216,10 +216,10 @@ export const ThreadRepliesWidget = ({
 											</p>
 										</div>
 										<Button
-											variant="ghost"
-											size="sm"
 											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 											onClick={() => handleViewThread(thread)}
+											size="sm"
+											variant="ghost"
 										>
 											View thread
 										</Button>

@@ -151,12 +151,12 @@ export const MessageList = ({
 			<div className="messages-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4">
 				{recapData && (
 					<DailyRecapModal
+						date={recapData.date}
+						isCached={recapData.isCached}
 						isOpen={isRecapModalOpen}
+						messageCount={recapData.messageCount}
 						onClose={() => setIsRecapModalOpen(false)}
 						recap={recapData.recap}
-						date={recapData.date}
-						messageCount={recapData.messageCount}
-						isCached={recapData.isCached}
 					/>
 				)}
 
@@ -172,11 +172,11 @@ export const MessageList = ({
 
 								<Hint label="Generate daily recap">
 									<Button
-										variant="ghost"
-										size="sm"
 										className="h-6 px-2 rounded-full bg-card border border-border shadow-sm hover:bg-accent text-foreground dark:text-gray-300 dark:bg-[hsl(var(--card))] dark:border-border dark:hover:bg-slate-700"
-										onClick={() => handleGenerateRecap(dateKey, messages)}
 										disabled={isGeneratingRecap}
+										onClick={() => handleGenerateRecap(dateKey, messages)}
+										size="sm"
+										variant="ghost"
 									>
 										<Sparkles className="size-3 text-amber-500 dark:text-amber-400 mr-1" />
 										<span className="text-xs font-medium text-amber-600 dark:text-amber-400">
@@ -199,26 +199,26 @@ export const MessageList = ({
 
 							return (
 								<Message
-									key={message._id}
-									id={message._id}
-									memberId={message.memberId}
 									authorImage={message.user.image}
 									authorName={message.user.name}
-									isAuthor={message.memberId === currentMember?._id}
-									reactions={message.reactions}
 									body={message.body}
-									image={message.image}
-									updatedAt={message.updatedAt}
+									calendarEvent={message.calendarEvent}
 									createdAt={message._creationTime}
+									hideThreadButton={variant === "thread"}
+									id={message._id}
+									image={message.image}
+									isAuthor={message.memberId === currentMember?._id}
+									isCompact={isCompact}
+									isEditing={editingId === message._id}
+									key={message._id}
+									memberId={message.memberId}
+									reactions={message.reactions}
+									setEditingId={setEditingId}
 									threadCount={message.threadCount}
 									threadImage={message.threadImage}
 									threadName={message.threadName}
 									threadTimestamp={message.threadTimestamp}
-									isEditing={editingId === message._id}
-									setEditingId={setEditingId}
-									isCompact={isCompact}
-									hideThreadButton={variant === "thread"}
-									calendarEvent={message.calendarEvent}
+									updatedAt={message.updatedAt}
 								/>
 							);
 						})}
@@ -254,10 +254,10 @@ export const MessageList = ({
 				)}
 
 				{variant === "channel" && channelName && channelCreationTime && (
-					<ChannelHero name={channelName} creationTime={channelCreationTime} />
+					<ChannelHero creationTime={channelCreationTime} name={channelName} />
 				)}
 				{variant === "conversation" && (
-					<ConversationHero name={memberName} image={memberImage} />
+					<ConversationHero image={memberImage} name={memberName} />
 				)}
 			</div>
 		</ContextMenuProvider>

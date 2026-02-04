@@ -1,13 +1,17 @@
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 dotenv.config();
 
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY || '',
+});
+
 export async function POST(req: NextRequest) {
 	try {
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+		if (!process.env.OPENROUTER_API_KEY) {
 			return NextResponse.json(
 				{ error: "API key not configured" },
 				{ status: 500 }
@@ -24,7 +28,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const model = google("gemini-2.5-flash");
+		const model = openrouter("google/gemini-2.5-flash");
 
 		const systemPrompt = `You are a diagram generator.
 

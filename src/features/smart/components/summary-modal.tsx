@@ -84,8 +84,8 @@ export const SummaryModal = ({
 							</span>
 						</h2>
 						<button
-							onClick={onClose}
 							className="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800"
+							onClick={onClose}
 						>
 							<X className="h-5 w-5" />
 						</button>
@@ -106,7 +106,7 @@ export const SummaryModal = ({
 
 				{/* Footer */}
 				<div className="mt-4 flex justify-between">
-					<Button variant="outline" onClick={handleCopy}>
+					<Button onClick={handleCopy} variant="outline">
 						{isCopied ? (
 							<>
 								<Check className="mr-2 h-4 w-4" />

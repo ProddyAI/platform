@@ -93,15 +93,15 @@ export const TestCanvasToolbar = ({
 						const Icon = tool.icon;
 						return (
 							<Button
-								key={tool.id}
-								variant={selectedTool === tool.id ? "default" : "ghost"}
-								size="sm"
-								onClick={() => onToolSelect(tool.id)}
 								className={cn(
 									"flex flex-col gap-1 h-auto py-3",
 									selectedTool === tool.id &&
 										"bg-primary text-primary-foreground"
 								)}
+								key={tool.id}
+								onClick={() => onToolSelect(tool.id)}
+								size="sm"
+								variant={selectedTool === tool.id ? "default" : "ghost"}
 							>
 								<Icon className="h-4 w-4" />
 								<span className="text-xs">{tool.name}</span>
@@ -124,14 +124,14 @@ export const TestCanvasToolbar = ({
 							<div className="grid grid-cols-6 gap-1">
 								{colors.map((color) => (
 									<button
-										key={color}
-										onClick={() => handleColorChange(color)}
 										className={cn(
 											"w-6 h-6 rounded border-2 transition-all",
 											selectedItem.style.backgroundColor === color
 												? "border-primary scale-110"
 												: "border-border hover:scale-105"
 										)}
+										key={color}
+										onClick={() => handleColorChange(color)}
 										style={{ backgroundColor: color }}
 									/>
 								))}
@@ -173,14 +173,14 @@ export const TestCanvasToolbar = ({
 						<Separator />
 
 						<Button
-							variant="destructive"
-							size="sm"
 							className="w-full"
 							onClick={() => {
 								if (selectedItem && onItemDelete) {
 									onItemDelete(selectedItem.id);
 								}
 							}}
+							size="sm"
+							variant="destructive"
 						>
 							<Trash2 className="h-4 w-4 mr-2" />
 							Delete

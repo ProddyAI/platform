@@ -90,33 +90,33 @@ export const CompactMessage = ({
 					)}
 				>
 					<MessageContent
-						id={id}
 						body={body}
-						image={image}
-						isEditing={isEditing}
-						isAuthor={isAuthor}
-						updatedAt={updatedAt}
 						calendarEvent={calendarEvent}
+						id={id}
+						image={image}
+						isAuthor={isAuthor}
+						isEditing={isEditing}
+						isPending={isPending}
+						onCancel={() => setEditingId(null)}
+						onContextMenu={handleContextMenu}
+						onOpenMessage={onOpenMessage}
+						onReaction={onReaction}
+						onUpdate={onUpdate}
 						reactions={reactions}
 						threadCount={threadCount}
 						threadImage={threadImage}
 						threadName={threadName}
 						threadTimestamp={threadTimestamp}
-						isPending={isPending}
-						onUpdate={onUpdate}
-						onCancel={() => setEditingId(null)}
-						onReaction={onReaction}
-						onOpenMessage={onOpenMessage}
-						onContextMenu={handleContextMenu}
+						updatedAt={updatedAt}
 					/>
 				</div>
 			</div>
 
 			<MessageContextMenu
-				messageId={id}
+				hideThreadButton={hideThreadButton}
 				isAuthor={isAuthor}
 				isSelected={isSelected}
-				hideThreadButton={hideThreadButton}
+				messageId={id}
 				onAction={onContextMenuAction}
 			/>
 		</>

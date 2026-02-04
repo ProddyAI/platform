@@ -128,9 +128,9 @@ const LabelInput: React.FC<LabelInputProps> = ({
 				<div className="flex flex-wrap gap-1 mb-2">
 					{selectedLabels.map((label, index) => (
 						<Badge
+							className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
 							key={index}
 							variant="secondary"
-							className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
 						>
 							{label}
 							<X
@@ -144,11 +144,8 @@ const LabelInput: React.FC<LabelInputProps> = ({
 
 			{/* Input field */}
 			<Input
-				ref={inputRef}
-				value={inputValue}
-				onChange={handleInputChange}
 				onBlur={handleBlur}
-				onKeyDown={handleKeyDown}
+				onChange={handleInputChange}
 				onFocus={() => {
 					const currentInput = inputValue.split(",").pop()?.trim() || "";
 					if (currentInput && currentInput.length > 0) {
@@ -159,22 +156,25 @@ const LabelInput: React.FC<LabelInputProps> = ({
 						setShowSuggestions(filtered.length > 0);
 					}
 				}}
+				onKeyDown={handleKeyDown}
 				placeholder={placeholder}
+				ref={inputRef}
+				value={inputValue}
 			/>
 
 			{/* Suggestions dropdown */}
 			{showSuggestions && (
 				<div
-					ref={suggestionsRef}
 					className="absolute z-10 mt-1 w-full max-h-40 overflow-auto bg-white border rounded-md shadow-lg"
+					ref={suggestionsRef}
 				>
 					{filteredSuggestions.map((suggestion, index) => (
 						<div
-							key={index}
 							className={cn(
 								"px-3 py-1.5 cursor-pointer hover:bg-secondary/10",
 								"text-sm text-foreground"
 							)}
+							key={index}
 							onClick={() => handleSuggestionClick(suggestion)}
 						>
 							{suggestion}

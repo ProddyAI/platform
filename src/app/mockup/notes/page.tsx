@@ -59,9 +59,9 @@ const TestNotesPage = () => {
 			<div className="border-b bg-primary p-4">
 				<div className="flex items-center justify-between">
 					<Button
-						variant="ghost"
 						className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 						size="sm"
+						variant="ghost"
 					>
 						<FileText className="mr-2 size-5" />
 						<span className="truncate">Notes</span>
@@ -73,19 +73,19 @@ const TestNotesPage = () => {
 
 			{/* Specific Notes Header */}
 			<TestNotesHeader
-				selectedNote={selectedNote}
-				onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-				sidebarCollapsed={sidebarCollapsed}
 				onCreateNote={handleCreateNote}
+				onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+				selectedNote={selectedNote}
+				sidebarCollapsed={sidebarCollapsed}
 			/>
 
 			<div className="flex flex-1 overflow-hidden">
 				<TestNotesSidebar
-					notes={notes}
-					selectedNoteId={selectedNoteId}
-					onNoteSelect={handleNoteSelect}
 					collapsed={sidebarCollapsed}
+					notes={notes}
 					onCreateNote={handleCreateNote}
+					onNoteSelect={handleNoteSelect}
+					selectedNoteId={selectedNoteId}
 				/>
 
 				<div className="flex-1 overflow-hidden">

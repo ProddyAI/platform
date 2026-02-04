@@ -103,7 +103,7 @@ export const TestCanvasChat = ({ onViewAllChats }: TestCanvasChatProps) => {
 				<div className="flex items-center gap-2">
 					<MessageSquare className="h-5 w-5 text-primary" />
 					<span className="font-medium text-gray-900">Canvas Chat</span>
-					<Badge variant="secondary" className="text-xs">
+					<Badge className="text-xs" variant="secondary">
 						{messages.filter((m) => !m.isCurrentUser).length} new
 					</Badge>
 				</div>
@@ -114,11 +114,11 @@ export const TestCanvasChat = ({ onViewAllChats }: TestCanvasChatProps) => {
 				<div className="space-y-3">
 					{messages.map((message) => (
 						<div
-							key={message.id}
 							className={cn(
 								"flex gap-2",
 								message.isCurrentUser ? "justify-end" : "justify-start"
 							)}
+							key={message.id}
 						>
 							{!message.isCurrentUser && (
 								<Avatar className="h-8 w-8 flex-shrink-0">
@@ -168,26 +168,26 @@ export const TestCanvasChat = ({ onViewAllChats }: TestCanvasChatProps) => {
 			<div className="p-4 border-t bg-gray-50">
 				<div className="flex gap-2 mb-3">
 					<Input
-						value={newMessage}
+						className="flex-1"
 						onChange={(e) => setNewMessage(e.target.value)}
 						onKeyPress={handleKeyPress}
 						placeholder="Type a message..."
-						className="flex-1"
+						value={newMessage}
 					/>
 					<Button
-						onClick={handleSendMessage}
-						disabled={!newMessage.trim()}
-						size="sm"
 						className="px-3"
+						disabled={!newMessage.trim()}
+						onClick={handleSendMessage}
+						size="sm"
 					>
 						<Send className="h-4 w-4" />
 					</Button>
 				</div>
 
 				<Button
+					className="w-full text-sm"
 					onClick={handleViewAllChats}
 					size="sm"
-					className="w-full text-sm"
 				>
 					<ExternalLink className="h-4 w-4 mr-2" />
 					View All Chats

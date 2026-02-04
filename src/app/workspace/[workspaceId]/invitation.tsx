@@ -58,7 +58,7 @@ export const InviteModal = ({
 	};
 
 	const handleCopyLink = () => {
-		const inviteLink = `${window.location.origin}/join/${workspaceId}`;
+		const inviteLink = `${window.location.origin}/auth/join/${workspaceId}`;
 
 		navigator.clipboard
 			.writeText(inviteLink)
@@ -77,7 +77,7 @@ export const InviteModal = ({
 		<>
 			<ConfirmDialog />
 
-			<Dialog open={open || isPending} onOpenChange={setOpen}>
+			<Dialog onOpenChange={setOpen} open={open || isPending}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Invite people to {name}</DialogTitle>
@@ -94,8 +94,8 @@ export const InviteModal = ({
 						<Button
 							disabled={isPending}
 							onClick={handleCopyCode}
-							variant="ghost"
 							size="sm"
+							variant="ghost"
 						>
 							Copy code <CopyIcon className="ml-2 size-4" />
 						</Button>

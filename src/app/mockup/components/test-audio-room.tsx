@@ -92,12 +92,12 @@ export const TestAudioRoom = ({
 		return (
 			<div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
 				<Button
-					onClick={handleToggleCall}
 					className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2"
+					onClick={handleToggleCall}
 				>
 					<Phone className="h-5 w-5" />
 					Join Audio Room
-					<Badge variant="secondary" className="ml-2 bg-white/20 text-white">
+					<Badge className="ml-2 bg-white/20 text-white" variant="secondary">
 						{participants.length - 1} active
 					</Badge>
 				</Button>
@@ -113,7 +113,7 @@ export const TestAudioRoom = ({
 					<div className="flex items-center gap-2">
 						<Users className="h-5 w-5 text-gray-400" />
 						<span className="text-sm font-medium">Canvas Audio Room</span>
-						<Badge variant="secondary" className="bg-gray-700 text-gray-200">
+						<Badge className="bg-gray-700 text-gray-200" variant="secondary">
 							{participants.length} participants
 						</Badge>
 					</div>
@@ -121,7 +121,7 @@ export const TestAudioRoom = ({
 					{/* Participants avatars */}
 					<div className="flex items-center gap-2">
 						{participants.slice(0, 4).map((participant) => (
-							<div key={participant.id} className="relative">
+							<div className="relative" key={participant.id}>
 								<Avatar
 									className={cn(
 										"h-8 w-8 border-2",
@@ -170,15 +170,15 @@ export const TestAudioRoom = ({
 				<div className="flex items-center gap-3">
 					{/* Mute/Unmute */}
 					<Button
-						onClick={handleToggleMute}
-						variant="ghost"
-						size="sm"
 						className={cn(
 							"h-10 w-10 rounded-full",
 							isMuted
 								? "bg-red-600 hover:bg-red-700 text-white"
 								: "bg-gray-700 hover:bg-gray-600 text-gray-200"
 						)}
+						onClick={handleToggleMute}
+						size="sm"
+						variant="ghost"
 					>
 						{isMuted ? (
 							<MicOff className="h-5 w-5" />
@@ -189,15 +189,15 @@ export const TestAudioRoom = ({
 
 					{/* Speaker On/Off */}
 					<Button
-						onClick={handleToggleSpeaker}
-						variant="ghost"
-						size="sm"
 						className={cn(
 							"h-10 w-10 rounded-full",
 							!isSpeakerOn
 								? "bg-red-600 hover:bg-red-700 text-white"
 								: "bg-gray-700 hover:bg-gray-600 text-gray-200"
 						)}
+						onClick={handleToggleSpeaker}
+						size="sm"
+						variant="ghost"
 					>
 						{isSpeakerOn ? (
 							<Volume2 className="h-5 w-5" />
@@ -208,28 +208,28 @@ export const TestAudioRoom = ({
 
 					{/* Settings */}
 					<Button
-						variant="ghost"
-						size="sm"
 						className="h-10 w-10 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-200"
+						size="sm"
+						variant="ghost"
 					>
 						<Settings className="h-5 w-5" />
 					</Button>
 
 					{/* More options */}
 					<Button
-						variant="ghost"
-						size="sm"
 						className="h-10 w-10 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-200"
+						size="sm"
+						variant="ghost"
 					>
 						<MoreHorizontal className="h-5 w-5" />
 					</Button>
 
 					{/* Leave Call */}
 					<Button
-						onClick={handleToggleCall}
-						variant="ghost"
-						size="sm"
 						className="h-10 w-10 rounded-full bg-red-600 hover:bg-red-700 text-white ml-2"
+						onClick={handleToggleCall}
+						size="sm"
+						variant="ghost"
 					>
 						<PhoneOff className="h-5 w-5" />
 					</Button>

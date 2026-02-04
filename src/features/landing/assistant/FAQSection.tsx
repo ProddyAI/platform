@@ -8,22 +8,22 @@ export const FAQSection = () => {
 	const isFaqInView = useInView(faqRef, { once: true, margin: "-100px 0px" });
 
 	return (
-		<section ref={faqRef} className="py-20 bg-gray-50">
+		<section className="py-20 bg-gray-50" ref={faqRef}>
 			<div className="container px-6 md:px-8 mx-auto max-w-7xl">
 				<div className="text-center mb-16">
 					<motion.h2
-						initial={{ opacity: 0, y: 20 }}
 						animate={isFaqInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5 }}
 						className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5 }}
 					>
 						Frequently Asked Questions
 					</motion.h2>
 					<motion.p
-						initial={{ opacity: 0, y: 20 }}
 						animate={isFaqInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.1 }}
 						className="text-lg text-gray-600 max-w-3xl mx-auto"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.1 }}
 					>
 						Common questions about Proddy AI and how it works
 					</motion.p>
@@ -31,10 +31,10 @@ export const FAQSection = () => {
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={isFaqInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.2 }}
 						className="space-y-6"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.2 }}
 					>
 						<div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-gray-900">
@@ -74,10 +74,10 @@ export const FAQSection = () => {
 					</motion.div>
 
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={isFaqInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.3 }}
 						className="space-y-6"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.3 }}
 					>
 						<div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-gray-900">

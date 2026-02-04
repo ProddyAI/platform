@@ -50,14 +50,22 @@ export async function GET(req: NextRequest) {
 
 		if (connectedAppNames.length > 0) {
 			try {
-				// Get all available tools using the entity ID (member-specific or workspace)
-				const allTools = await getAllToolsForApps(
-					composio,
-					entityId,
-					connectedAppNames,
-					true // use cache
-				);
-				totalTools = allTools.length;
+				// Composio tools response can exceed Next.js data cache limit (2MB).
+				// Use a no-store fetch so Next.js doesn't try to cache the large response.
+				const originalFetch = globalThis.fetch;
+				globalThis.fetch = ((url: RequestInfo | URL, init?: RequestInit) =>
+					originalFetch(url, { ...init, cache: "no-store" })) as typeof fetch;
+				try {
+					const allTools = await getAllToolsForApps(
+						composio,
+						entityId,
+						connectedAppNames,
+						true // use cache (in-memory only; fetch cache disabled above)
+					);
+					totalTools = allTools.length;
+				} finally {
+					globalThis.fetch = originalFetch;
+				}
 			} catch (error) {
 				console.warn("[Connections Status] Failed to get tool count:", error);
 				// Don't fail the whole request if tool fetching fails

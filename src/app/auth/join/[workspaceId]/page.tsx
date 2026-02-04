@@ -50,7 +50,7 @@ const JoinWorkspaceIdPage = () => {
 			setInviteError(null);
 
 			try {
-				const response = await fetch("/api/invite/verify", {
+				const response = await fetch("/api/account/invite/verify", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ workspaceId, invite: inviteHash }),
@@ -116,7 +116,7 @@ const JoinWorkspaceIdPage = () => {
 	if (inviteHash && inviteError) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-white p-8 shadow-md">
-				<Image src="/logo-nobg.png" alt="Logo" width={60} height={60} />
+				<Image alt="Logo" height={60} src="/logo-nobg.png" width={60} />
 
 				<div className="flex max-w-md flex-col items-center justify-center gap-y-4">
 					<div className="flex flex-col items-center justify-center gap-y-2">
@@ -128,7 +128,7 @@ const JoinWorkspaceIdPage = () => {
 				</div>
 
 				<div className="flex gap-x-4">
-					<Button size="lg" variant="outline" asChild>
+					<Button asChild size="lg" variant="outline">
 						<Link href="/home">
 							<Undo2 className="mr-2 size-4" /> Back to home
 						</Link>
@@ -141,7 +141,7 @@ const JoinWorkspaceIdPage = () => {
 	// Show join code input (default flow)
 	return (
 		<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-white p-8 shadow-md">
-			<Image src="/logo-nobg.png" alt="Logo" width={60} height={60} />
+			<Image alt="Logo" height={60} src="/logo-nobg.png" width={60} />
 
 			<div className="flex max-w-md flex-col items-center justify-center gap-y-4">
 				<div className="flex flex-col items-center justify-center gap-y-2">
@@ -155,11 +155,7 @@ const JoinWorkspaceIdPage = () => {
 				</div>
 
 				<VerificationInput
-					value={code}
-					onChange={setCode}
-					onComplete={handleComplete}
-					validChars="A-Za-z0-9"
-					length={6}
+					autoFocus={!codeFromUrl}
 					classNames={{
 						container: cn(
 							"flex gap-x-2",
@@ -171,12 +167,16 @@ const JoinWorkspaceIdPage = () => {
 						characterSelected: "bg-white text-black",
 						characterFilled: "bg-white text-black",
 					}}
-					autoFocus={!codeFromUrl}
+					length={6}
+					onChange={setCode}
+					onComplete={handleComplete}
+					validChars="A-Za-z0-9"
+					value={code}
 				/>
 			</div>
 
 			<div className="flex gap-x-4">
-				<Button size="lg" variant="outline" asChild>
+				<Button asChild size="lg" variant="outline">
 					<Link href="/home">
 						<Undo2 className="mr-2 size-4" /> Back to home
 					</Link>

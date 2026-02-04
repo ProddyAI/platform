@@ -57,20 +57,20 @@ export const HeroSection = () => {
 
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-7xl">
 				<motion.div
+					animate={isVisible ? "visible" : "hidden"}
 					className="flex flex-col items-center text-center"
 					initial="hidden"
-					animate={isVisible ? "visible" : "hidden"}
 					variants={containerVariants}
 				>
-					<motion.div variants={itemVariants} className="mb-4">
+					<motion.div className="mb-4" variants={itemVariants}>
 						<span className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full bg-primary/10 text-primary">
 							AI-Powered Productivity Suite
 						</span>
 					</motion.div>
 
 					<motion.h1
-						variants={itemVariants}
 						className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 mb-4 max-w-4xl"
+						variants={itemVariants}
 					>
 						Your Teams's{" "}
 						<span className="text-primary relative">
@@ -80,8 +80,8 @@ export const HeroSection = () => {
 					</motion.h1>
 
 					<motion.p
-						variants={itemVariants}
 						className="text-lg md:text-xl text-gray-600 mb-6 max-w-[800px]"
+						variants={itemVariants}
 					>
 						An intelligent workspace designed for startups and growing teams —
 						streamline collaboration, boost productivity, and scale
@@ -89,8 +89,8 @@ export const HeroSection = () => {
 					</motion.p>
 
 					<motion.div
-						variants={imageVariants}
 						className="relative w-full max-w-[1600px]"
+						variants={imageVariants}
 					>
 						<div className="rounded-2xl overflow-hidden shadow-xl bg-white p-1">
 							<div className="relative rounded-xl overflow-hidden">
@@ -105,10 +105,9 @@ export const HeroSection = () => {
 									}}
 								>
 									<iframe
-										src="https://app.supademo.com/embed/cmb4xp1ch2omwppkpndluqnku?embed_v=2"
-										loading="lazy"
-										title="Proddy Interactive Demo"
 										allow="fullscreen https://app.supademo.com clipboard-write"
+										loading="lazy"
+										src="https://app.supademo.com/embed/cmb4xp1ch2omwppkpndluqnku?embed_v=2"
 										style={{
 											position: "absolute",
 											top: 0,
@@ -118,6 +117,7 @@ export const HeroSection = () => {
 											border: "none",
 											borderRadius: "12px",
 										}}
+										title="Proddy Interactive Demo"
 									/>
 								</div>
 							</div>
@@ -125,12 +125,13 @@ export const HeroSection = () => {
 					</motion.div>
 
 					<motion.div
+						animate={{ opacity: 1, y: 0 }}
 						className="mt-12 flex justify-center"
 						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 1.5, duration: 0.5 }}
 					>
 						<button
+							className="flex flex-col items-center text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
 							onClick={() => {
 								const element = document.getElementById("modules");
 								if (element) {
@@ -140,7 +141,6 @@ export const HeroSection = () => {
 									});
 								}
 							}}
-							className="flex flex-col items-center text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
 						>
 							<span className="text-sm font-medium mb-2">Discover More</span>
 							<ChevronDown className="size-5 animate-bounce" />

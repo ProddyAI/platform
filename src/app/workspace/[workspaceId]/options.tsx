@@ -47,7 +47,7 @@ export const SidebarItem = ({
 		>
 			{isCollapsed ? (
 				<div className="relative flex-shrink-0">
-					<Hint label={label} side="right" align="center">
+					<Hint align="center" label={label} side="right">
 						<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
 					</Hint>
 				</div>
@@ -110,7 +110,7 @@ export const MemberItem = ({
 
 	return (
 		<Button
-			variant="ghost"
+			asChild
 			className={cn(
 				"group py-2 md:py-2.5 flex items-center gap-2 md:gap-3 font-medium h-9 md:h-10 text-sm overflow-hidden rounded-[10px] transition-standard w-full",
 				isActive
@@ -121,15 +121,15 @@ export const MemberItem = ({
 					: "justify-start px-2 md:px-4"
 			)}
 			size="sm"
-			asChild
+			variant="ghost"
 		>
 			<Link
-				href={`/workspace/${workspaceId}/member/${id}`}
 				className="w-full overflow-hidden"
+				href={`/workspace/${workspaceId}/member/${id}`}
 			>
 				{isCollapsed ? (
 					<div className="relative flex-shrink-0">
-						<Hint label={label} side="right" align="center">
+						<Hint align="center" label={label} side="right">
 							<div className="relative">
 								<Avatar className="size-6 md:size-7 transition-transform duration-200 group-hover:scale-110">
 									<AvatarImage alt={label} src={image} />
@@ -142,8 +142,8 @@ export const MemberItem = ({
 								</Avatar>
 								{member && (
 									<PresenceIndicator
-										status={status}
 										className="w-2 h-2 md:w-2.5 md:h-2.5"
+										isOnline={isOnline}
 									/>
 								)}
 							</div>
@@ -163,8 +163,8 @@ export const MemberItem = ({
 							</Avatar>
 							{member && (
 								<PresenceIndicator
-									status={status}
 									className="w-2 h-2 md:w-2.5 md:h-2.5"
+									isOnline={isOnline}
 								/>
 							)}
 						</div>
@@ -203,10 +203,10 @@ export const ChannelItem = ({
 		if (iconImageUrl && !imageLoadError) {
 			return (
 				<img
-					src={iconImageUrl}
 					alt={`Channel icon for ${label}`}
 					className="h-full w-full object-cover rounded-full"
 					onError={() => setImageLoadError(true)}
+					src={iconImageUrl}
 				/>
 			);
 		}
@@ -222,8 +222,8 @@ export const ChannelItem = ({
 
 	return (
 		<Link
-			href={`/workspace/${workspaceId}/channel/${id}/chats`}
 			className="w-full"
+			href={`/workspace/${workspaceId}/channel/${id}/chats`}
 		>
 			<div
 				className={cn(
@@ -236,7 +236,7 @@ export const ChannelItem = ({
 			>
 				{isCollapsed ? (
 					<div className="relative flex-shrink-0">
-						<Hint label={label} side="right" align="center">
+						<Hint align="center" label={label} side="right">
 							<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
 								{renderIcon()}
 							</div>

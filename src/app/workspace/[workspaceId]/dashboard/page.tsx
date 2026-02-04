@@ -59,9 +59,9 @@ const DashboardPage = () => {
 		<div className="flex h-full flex-col">
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 					size="sm"
+					variant="ghost"
 				>
 					<LayoutDashboard className="mr-2 size-5" />
 					<span className="truncate">Dashboard</span>
@@ -70,7 +70,7 @@ const DashboardPage = () => {
 			<div className="flex flex-1 overflow-hidden p-4 md:p-6">
 				<div className="flex w-full flex-col">
 					{/* Full-width Widgets section */}
-					<DashboardWidgets workspaceId={workspaceId} member={enhancedMember} />
+					<DashboardWidgets member={enhancedMember} workspaceId={workspaceId} />
 				</div>
 			</div>
 		</div>

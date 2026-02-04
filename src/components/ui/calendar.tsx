@@ -118,19 +118,19 @@ function Calendar({
 			{/* Month navigation */}
 			<div className="flex items-center justify-between mb-4">
 				<Button
-					variant="outline"
-					size="icon"
-					onClick={handlePrevMonth}
 					className="h-7 w-7 bg-transparent p-0"
+					onClick={handlePrevMonth}
+					size="icon"
+					variant="outline"
 				>
 					<ChevronLeft className="h-4 w-4" />
 				</Button>
 				<div className="font-medium text-sm">{format(month, "MMMM yyyy")}</div>
 				<Button
-					variant="outline"
-					size="icon"
-					onClick={handleNextMonth}
 					className="h-7 w-7 bg-transparent p-0"
+					onClick={handleNextMonth}
+					size="icon"
+					variant="outline"
 				>
 					<ChevronRight className="h-4 w-4" />
 				</Button>
@@ -142,8 +142,8 @@ function Calendar({
 					<tr className="flex w-full justify-between">
 						{dayNames.map((day) => (
 							<th
-								key={day}
 								className="text-muted-foreground text-xs font-normal w-8 text-center"
+								key={day}
 							>
 								{day}
 							</th>
@@ -152,14 +152,11 @@ function Calendar({
 				</thead>
 				<tbody>
 					{weeks.map((week, weekIndex) => (
-						<tr key={weekIndex} className="flex w-full justify-between mt-2">
+						<tr className="flex w-full justify-between mt-2" key={weekIndex}>
 							{week.map((day, dayIndex) => (
-								<td key={dayIndex} className="p-0 text-center">
+								<td className="p-0 text-center" key={dayIndex}>
 									{day !== null ? (
 										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => handleDayClick(day)}
 											className={cn(
 												"h-8 w-8 p-0 font-normal text-sm",
 												isDaySelected(day) &&
@@ -179,6 +176,9 @@ function Calendar({
 														)
 													: disabled === true
 											}
+											onClick={() => handleDayClick(day)}
+											size="icon"
+											variant="ghost"
 										>
 											{day}
 										</Button>

@@ -53,44 +53,44 @@ export const TestCanvasHeader = ({
 				<div className="flex items-center gap-3">
 					<div className="flex items-center gap-1 border rounded-lg p-1">
 						<Button
-							variant="ghost"
-							size="sm"
-							onClick={handleZoomOut}
 							disabled={zoom <= 25}
+							onClick={handleZoomOut}
+							size="sm"
+							variant="ghost"
 						>
 							<ZoomOut className="h-4 w-4" />
 						</Button>
 
 						<Button
-							variant="ghost"
-							size="sm"
-							onClick={handleResetZoom}
 							className="text-xs px-2"
+							onClick={handleResetZoom}
+							size="sm"
+							variant="ghost"
 						>
 							{zoom}%
 						</Button>
 
 						<Button
-							variant="ghost"
-							size="sm"
-							onClick={handleZoomIn}
 							disabled={zoom >= 200}
+							onClick={handleZoomIn}
+							size="sm"
+							variant="ghost"
 						>
 							<ZoomIn className="h-4 w-4" />
 						</Button>
 					</div>
 
-					<Button variant="ghost" size="sm">
+					<Button size="sm" variant="ghost">
 						<RotateCcw className="h-4 w-4 mr-2" />
 						Reset
 					</Button>
 
-					<Button variant="ghost" size="sm">
+					<Button size="sm" variant="ghost">
 						<Share className="h-4 w-4 mr-2" />
 						Share
 					</Button>
 
-					<Button variant="ghost" size="sm">
+					<Button size="sm" variant="ghost">
 						<Download className="h-4 w-4 mr-2" />
 						Export
 					</Button>

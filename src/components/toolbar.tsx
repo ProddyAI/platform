@@ -83,24 +83,24 @@ export const Toolbar = ({
 		<>
 			<AddMessageToTaskModal
 				isOpen={isAddToTaskModalOpen}
-				onClose={() => setIsAddToTaskModalOpen(false)}
-				messageId={messageId as Id<"messages">}
-				workspaceId={workspaceId}
 				messageContent={extractedContent}
+				messageId={messageId as Id<"messages">}
+				onClose={() => setIsAddToTaskModalOpen(false)}
+				workspaceId={workspaceId}
 			/>
 
 			<div className="absolute right-5 top-0">
 				<div className="rounded-md border bg-white dark:bg-gray-800 dark:border-gray-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
 					<Hint label={isSelected ? "Deselect message" : "Select message"}>
 						<Button
-							variant="ghost"
-							size="iconSm"
-							onClick={() => toggleMessageSelection(messageId as any)}
 							className={
 								isSelected
 									? "text-blue-500 dark:text-blue-400"
 									: "dark:text-white dark:hover:text-blue-400"
 							}
+							onClick={() => toggleMessageSelection(messageId as any)}
+							size="iconSm"
+							variant="ghost"
 						>
 							<CheckSquare className="size-4" />
 						</Button>
@@ -108,10 +108,10 @@ export const Toolbar = ({
 
 					<EmojiPopover hint="Add reaction" onEmojiSelect={handleReaction}>
 						<Button
-							variant="ghost"
-							size="iconSm"
-							disabled={isPending}
 							className="dark:text-white dark:hover:text-blue-400"
+							disabled={isPending}
+							size="iconSm"
+							variant="ghost"
 						>
 							<Smile className="size-4" />
 						</Button>
@@ -119,11 +119,11 @@ export const Toolbar = ({
 
 					<Hint label="Add to tasks">
 						<Button
-							variant="ghost"
-							size="iconSm"
+							className="text-secondary hover:bg-secondary/10 dark:text-white dark:hover:text-blue-400"
 							disabled={isPending}
 							onClick={() => setIsAddToTaskModalOpen(true)}
-							className="text-secondary hover:bg-secondary/10 dark:text-white dark:hover:text-blue-400"
+							size="iconSm"
+							variant="ghost"
 						>
 							<ListTodo className="size-4" />
 						</Button>
@@ -132,11 +132,11 @@ export const Toolbar = ({
 					{!hideThreadButton && (
 						<Hint label="Reply in thread">
 							<Button
-								onClick={handleThread}
-								variant="ghost"
-								size="iconSm"
-								disabled={isPending}
 								className="dark:text-white dark:hover:text-blue-400"
+								disabled={isPending}
+								onClick={handleThread}
+								size="iconSm"
+								variant="ghost"
 							>
 								<MessageSquareText className="size-4" />
 							</Button>
@@ -146,11 +146,11 @@ export const Toolbar = ({
 					{isAuthor && (
 						<Hint label="Edit message">
 							<Button
-								onClick={handleEdit}
-								variant="ghost"
-								size="iconSm"
-								disabled={isPending}
 								className="dark:text-white dark:hover:text-blue-400"
+								disabled={isPending}
+								onClick={handleEdit}
+								size="iconSm"
+								variant="ghost"
 							>
 								<Pencil className="size-4" />
 							</Button>
@@ -160,11 +160,11 @@ export const Toolbar = ({
 					{isAuthor && (
 						<Hint label="Delete message">
 							<Button
-								onClick={handleDelete}
-								variant="ghost"
-								size="iconSm"
-								disabled={isPending}
 								className="dark:text-white dark:hover:text-blue-400"
+								disabled={isPending}
+								onClick={handleDelete}
+								size="iconSm"
+								variant="ghost"
 							>
 								<Trash className="size-4" />
 							</Button>

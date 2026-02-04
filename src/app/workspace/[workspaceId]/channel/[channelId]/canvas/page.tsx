@@ -308,23 +308,23 @@ const CanvasPage = () => {
 	if (!activeCanvas) {
 		return (
 			<div
-				ref={pageContainerRef}
 				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900" : ""}`}
+				ref={pageContainerRef}
 			>
 				{/* Canvas Sidebar - always show even when no canvas selected */}
 				{!isFullScreen && (
 					<LiveSidebar
-						type="canvas"
-						items={canvasItems}
-						selectedItemId={activeCanvasId}
-						onItemSelect={(canvasId) => handleCanvasSelect(canvasId)}
+						channelId={channelId}
 						collapsed={sidebarCollapsed}
-						onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+						items={canvasItems}
 						onCreateItem={handleCreateCanvas}
 						onDeleteItem={handleDeleteCanvas}
+						onItemSelect={(canvasId) => handleCanvasSelect(canvasId)}
 						onRenameItem={handleRenameCanvas}
+						onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+						selectedItemId={activeCanvasId}
+						type="canvas"
 						workspaceId={workspaceId}
-						channelId={channelId}
 					/>
 				)}
 
@@ -335,9 +335,9 @@ const CanvasPage = () => {
 						Create a new canvas to start drawing and collaborating
 					</p>
 					<Button
-						onClick={handleCreateCanvas}
-						disabled={isCreatingCanvas}
 						className="flex items-center gap-2"
+						disabled={isCreatingCanvas}
+						onClick={handleCreateCanvas}
 					>
 						{isCreatingCanvas ? (
 							<>
@@ -359,22 +359,22 @@ const CanvasPage = () => {
 	return (
 		<LiveblocksRoom roomId={activeCanvas.roomId} roomType="canvas">
 			<div
-				ref={pageContainerRef}
 				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900" : ""}`}
+				ref={pageContainerRef}
 			>
 				{!isFullScreen && (
 					<LiveSidebar
-						type="canvas"
-						items={canvasItems}
-						selectedItemId={activeCanvasId}
-						onItemSelect={(canvasId) => handleCanvasSelect(canvasId)}
+						channelId={channelId}
 						collapsed={sidebarCollapsed}
-						onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+						items={canvasItems}
 						onCreateItem={handleCreateCanvas}
 						onDeleteItem={handleDeleteCanvas}
+						onItemSelect={(canvasId) => handleCanvasSelect(canvasId)}
 						onRenameItem={handleRenameCanvas}
+						onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+						selectedItemId={activeCanvasId}
+						type="canvas"
 						workspaceId={workspaceId}
-						channelId={channelId}
 					/>
 				)}
 
@@ -382,32 +382,32 @@ const CanvasPage = () => {
 					{/* Canvas Header - hidden in fullscreen */}
 					{!isFullScreen && (
 						<LiveHeader
-							type="canvas"
-							title={activeCanvas.canvasName}
+							autoSaveStatus="saved"
+							createdAt={activeCanvas.createdAt}
+							hasUnsavedChanges={false}
+							isFullScreen={isFullScreen}
+							lastSaved={activeCanvas.updatedAt}
+							onCreateItem={handleCreateCanvas}
+							onSave={() => {
+								console.log("Save canvas");
+								// Implement canvas save functionality
+							}}
+							onTagsChange={(newTags) => {
+								console.log("Canvas tags changing:", newTags);
+								handleUpdateCanvasTags(activeCanvas._id, newTags);
+							}}
 							onTitleChange={(newTitle) => {
 								// Update canvas name
 								console.log("Title changed to:", newTitle);
 								// You can implement canvas title update here
 							}}
-							onCreateItem={handleCreateCanvas}
-							toggleFullScreen={toggleFullScreen}
-							isFullScreen={isFullScreen}
 							showFullScreenToggle={true}
-							createdAt={activeCanvas.createdAt}
-							updatedAt={activeCanvas.updatedAt}
-							onSave={() => {
-								console.log("Save canvas");
-								// Implement canvas save functionality
-							}}
-							hasUnsavedChanges={false} // You can track canvas changes here
-							autoSaveStatus="saved"
-							lastSaved={activeCanvas.updatedAt}
+							showTags={true} // You can track canvas changes here
 							tags={activeCanvas.tags || []}
-							onTagsChange={(newTags) => {
-								console.log("Canvas tags changing:", newTags);
-								handleUpdateCanvasTags(activeCanvas._id, newTags);
-							}}
-							showTags={true}
+							title={activeCanvas.canvasName}
+							toggleFullScreen={toggleFullScreen}
+							type="canvas"
+							updatedAt={activeCanvas.updatedAt}
 						/>
 					)}
 
@@ -421,11 +421,11 @@ const CanvasPage = () => {
 				{/* Audio Room Component */}
 				{activeCanvas.roomId && (
 					<StreamAudioRoom
+						canvasName={activeCanvas.canvasName || "Canvas Audio Room"}
+						channelId={channelId}
+						isFullScreen={isFullScreen}
 						roomId={activeCanvas.roomId}
 						workspaceId={workspaceId}
-						channelId={channelId}
-						canvasName={activeCanvas.canvasName || "Canvas Audio Room"}
-						isFullScreen={isFullScreen}
 					/>
 				)}
 			</div>

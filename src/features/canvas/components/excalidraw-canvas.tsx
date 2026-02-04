@@ -422,7 +422,7 @@ export const ExcalidrawCanvas = () => {
 		}
 	};
 
-	const openAiFormatSidebar = () => {
+	const collapsibleSidebar = () => {
 		const api = excalidrawApiRef.current;
 		if (!api) return;
 		api.toggleSidebar({ name: "ai-format", force: true });
@@ -661,13 +661,13 @@ export const ExcalidrawCanvas = () => {
 		const newElements =
 			restoreElements && convertToExcalidrawElements
 				? restoreElements(
-						convertToExcalidrawElements([
-							shadowSkeleton,
-							rectSkeleton,
-							textSkeleton,
-						]) as any,
-						null
-					)
+					convertToExcalidrawElements([
+						shadowSkeleton,
+						rectSkeleton,
+						textSkeleton,
+					]) as any,
+					null
+				)
 				: ([shadowSkeleton, rectSkeleton, textSkeleton] as any[]);
 		const existing = api.getSceneElements() as any[];
 
@@ -725,110 +725,10 @@ export const ExcalidrawCanvas = () => {
 		<div className="h-full w-full" ref={excalidrawHostRef}>
 			<div className="relative h-full w-full">
 				<Excalidraw
-					theme={theme}
-					initialData={initialData}
 					excalidrawAPI={(api) => {
 						excalidrawApiRef.current = api;
 					}}
-					renderTopRightUI={() => {
-						const name = currentUser?.name || "Anonymous";
-						const image = currentUser?.image;
-						const bg = generateUserColor((currentUser as any)?._id || name);
-						const showToolFallback = !toolbarPortalTarget;
-
-						return (
-							<div className="flex items-center gap-2">
-								{showToolFallback ? (
-									<>
-										<button
-											type="button"
-											className="ToolIcon ToolIcon_type_button"
-											title="Sticky Note (N)"
-											aria-label="Sticky Note"
-											onClick={insertStickyNote}
-										>
-											<div className="ToolIcon__icon" aria-hidden>
-												<span style={{ fontSize: 16, lineHeight: 1 }}>🗒</span>
-											</div>
-										</button>
-										<button
-											type="button"
-											className="ToolIcon ToolIcon_type_button"
-											title="AI Format"
-											aria-label="AI Format"
-											onClick={openAiFormatSidebar}
-										>
-											<div className="ToolIcon__icon" aria-hidden>
-												<span style={{ fontSize: 16, lineHeight: 1 }}>✨</span>
-											</div>
-										</button>
-									</>
-								) : null}
-
-								<LiveParticipants />
-
-								<Avatar className="h-7 w-7 border-2 border-muted">
-									<AvatarImage src={image} />
-									<AvatarFallback
-										className="text-xs font-semibold text-white"
-										style={{ backgroundColor: bg }}
-									>
-										{name?.[0] || "A"}
-									</AvatarFallback>
-								</Avatar>
-							</div>
-						);
-					}}
-					onPointerUpdate={({ pointer, button }: any) => {
-						if (!pointer) return;
-						const api = excalidrawApiRef.current;
-						const appState = api?.getAppState?.() || latestAppStateRef.current;
-						const scrollX =
-							typeof appState?.scrollX === "number" ? appState.scrollX : 0;
-						const scrollY =
-							typeof appState?.scrollY === "number" ? appState.scrollY : 0;
-						const zoom =
-							typeof appState?.zoom?.value === "number"
-								? appState.zoom.value
-								: typeof appState?.zoom === "number"
-									? appState.zoom
-									: 1;
-						const width =
-							typeof appState?.width === "number" ? appState.width : 0;
-						const height =
-							typeof appState?.height === "number" ? appState.height : 0;
-
-						const isLikelyViewport =
-							width > 0 &&
-							height > 0 &&
-							pointer.x >= 0 &&
-							pointer.x <= width &&
-							pointer.y >= 0 &&
-							pointer.y <= height;
-
-						const sceneX = isLikelyViewport
-							? pointer.x / zoom - scrollX
-							: pointer.x;
-						const sceneY = isLikelyViewport
-							? pointer.y / zoom - scrollY
-							: pointer.y;
-						const viewportX = isLikelyViewport
-							? pointer.x
-							: (pointer.x + scrollX) * zoom;
-						const viewportY = isLikelyViewport
-							? pointer.y
-							: (pointer.y + scrollY) * zoom;
-
-						updateMyPresence({
-							cursor: {
-								viewport: { x: viewportX, y: viewportY },
-								scene: { x: sceneX, y: sceneY },
-								tool: pointer.tool,
-								button,
-							} as any,
-							lastActivity: Date.now(),
-						});
-					}}
+					initialData={initialData}
 					onChange={(elements: readonly any[], appState: any, files: any) => {
 						latestAppStateRef.current = appState;
 						if (isApplyingRemoteSceneRef.current) return;
@@ -931,8 +831,8 @@ export const ExcalidrawCanvas = () => {
 								const parentId = getStickyNoteParentId(selectedShadow);
 								const parentNote = parentId
 									? elementsArray.find(
-											(el) => el?.id === parentId && isStickyNoteElement(el)
-										)
+										(el) => el?.id === parentId && isStickyNoteElement(el)
+									)
 									: null;
 								if (parentNote) {
 									const api = excalidrawApiRef.current;
@@ -1082,36 +982,136 @@ export const ExcalidrawCanvas = () => {
 							});
 						}, 250);
 					}}
+					onPointerUpdate={({ pointer, button }: any) => {
+						if (!pointer) return;
+						const api = excalidrawApiRef.current;
+						const appState = api?.getAppState?.() || latestAppStateRef.current;
+						const scrollX =
+							typeof appState?.scrollX === "number" ? appState.scrollX : 0;
+						const scrollY =
+							typeof appState?.scrollY === "number" ? appState.scrollY : 0;
+						const zoom =
+							typeof appState?.zoom?.value === "number"
+								? appState.zoom.value
+								: typeof appState?.zoom === "number"
+									? appState.zoom
+									: 1;
+						const width =
+							typeof appState?.width === "number" ? appState.width : 0;
+						const height =
+							typeof appState?.height === "number" ? appState.height : 0;
+
+						const isLikelyViewport =
+							width > 0 &&
+							height > 0 &&
+							pointer.x >= 0 &&
+							pointer.x <= width &&
+							pointer.y >= 0 &&
+							pointer.y <= height;
+
+						const sceneX = isLikelyViewport
+							? pointer.x / zoom - scrollX
+							: pointer.x;
+						const sceneY = isLikelyViewport
+							? pointer.y / zoom - scrollY
+							: pointer.y;
+						const viewportX = isLikelyViewport
+							? pointer.x
+							: (pointer.x + scrollX) * zoom;
+						const viewportY = isLikelyViewport
+							? pointer.y
+							: (pointer.y + scrollY) * zoom;
+
+						updateMyPresence({
+							cursor: {
+								viewport: { x: viewportX, y: viewportY },
+								scene: { x: sceneX, y: sceneY },
+								tool: pointer.tool,
+								button,
+							} as any,
+							lastActivity: Date.now(),
+						});
+					}}
+					renderTopRightUI={() => {
+						const name = currentUser?.name || "Anonymous";
+						const image = currentUser?.image;
+						const bg = generateUserColor((currentUser as any)?._id || name);
+						const showToolFallback = !toolbarPortalTarget;
+
+						return (
+							<div className="flex items-center gap-2">
+								{showToolFallback ? (
+									<>
+										<button
+											aria-label="Sticky Note"
+											className="ToolIcon ToolIcon_type_button"
+											onClick={insertStickyNote}
+											title="Sticky Note (N)"
+											type="button"
+										>
+											<div aria-hidden className="ToolIcon__icon">
+												<span style={{ fontSize: 16, lineHeight: 1 }}>🗒</span>
+											</div>
+										</button>
+										<button
+											aria-label="AI Format"
+											className="ToolIcon ToolIcon_type_button"
+											onClick={collapsibleSidebar}
+											title="AI Format"
+											type="button"
+										>
+											<div aria-hidden className="ToolIcon__icon">
+												<span style={{ fontSize: 16, lineHeight: 1 }}>✨</span>
+											</div>
+										</button>
+									</>
+								) : null}
+
+								<LiveParticipants />
+
+								<Avatar className="h-7 w-7 border-2 border-muted">
+									<AvatarImage src={image} />
+									<AvatarFallback
+										className="text-xs font-semibold text-white"
+										style={{ backgroundColor: bg }}
+									>
+										{name?.[0] || "A"}
+									</AvatarFallback>
+								</Avatar>
+							</div>
+						);
+					}}
+					theme={theme}
 				>
 					{/* Sticky Note + AI Format: toolbar buttons (inside tool palette) */}
 					{toolbarPortalTarget
 						? createPortal(
-								<>
-									<button
-										type="button"
-										className="ToolIcon ToolIcon_type_button"
-										title="Sticky Note (N)"
-										aria-label="Sticky Note"
-										onClick={insertStickyNote}
-									>
-										<div className="ToolIcon__icon" aria-hidden>
-											<span style={{ fontSize: 16, lineHeight: 1 }}>🗒</span>
-										</div>
-									</button>
-									<button
-										type="button"
-										className="ToolIcon ToolIcon_type_button"
-										title="AI Format"
-										aria-label="AI Format"
-										onClick={openAiFormatSidebar}
-									>
-										<div className="ToolIcon__icon" aria-hidden>
-											<span style={{ fontSize: 16, lineHeight: 1 }}>✨</span>
-										</div>
-									</button>
-								</>,
-								toolbarPortalTarget
-							)
+							<>
+								<button
+									aria-label="Sticky Note"
+									className="ToolIcon ToolIcon_type_button"
+									onClick={insertStickyNote}
+									title="Sticky Note (N)"
+									type="button"
+								>
+									<div aria-hidden className="ToolIcon__icon">
+										<span style={{ fontSize: 16, lineHeight: 1 }}>🗒</span>
+									</div>
+								</button>
+								<button
+									aria-label="AI Format"
+									className="ToolIcon ToolIcon_type_button"
+									onClick={collapsibleSidebar}
+									title="AI Format"
+									type="button"
+								>
+									<div aria-hidden className="ToolIcon__icon">
+										<span style={{ fontSize: 16, lineHeight: 1 }}>✨</span>
+									</div>
+								</button>
+							</>,
+							toolbarPortalTarget
+						)
 						: null}
 
 					{ExcalidrawSidebar ? (
@@ -1120,13 +1120,13 @@ export const ExcalidrawCanvas = () => {
 							<div className="flex flex-col gap-3 p-3">
 								<textarea
 									className="min-h-[160px] w-full resize-y rounded-md border border-input bg-background p-2 text-sm outline-none"
+									onChange={(e) => setAiPrompt(e.target.value)}
 									placeholder='Describe a diagram, e.g. "User login flow with email/password, OTP verification, success and failure paths"'
 									value={aiPrompt}
-									onChange={(e) => setAiPrompt(e.target.value)}
 								/>
 								<Button
-									onClick={generateDiagramFromPrompt}
 									disabled={isGenerating}
+									onClick={generateDiagramFromPrompt}
 								>
 									{isGenerating ? "Generating…" : "Generate"}
 								</Button>
@@ -1142,8 +1142,8 @@ export const ExcalidrawCanvas = () => {
 
 						const point =
 							cursor?.viewport &&
-							typeof cursor.viewport.x === "number" &&
-							typeof cursor.viewport.y === "number"
+								typeof cursor.viewport.x === "number" &&
+								typeof cursor.viewport.y === "number"
 								? { x: cursor.viewport.x, y: cursor.viewport.y }
 								: typeof cursor.x === "number" && typeof cursor.y === "number"
 									? { x: cursor.x, y: cursor.y }
@@ -1157,12 +1157,12 @@ export const ExcalidrawCanvas = () => {
 
 						return (
 							<div
+								className="absolute left-0 top-0"
 								key={other.connectionId}
 								style={{ transform: `translate(${x}px, ${y}px)` }}
-								className="absolute left-0 top-0"
 							>
 								<div className="flex items-start gap-1">
-									<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+									<svg fill="none" height="18" viewBox="0 0 24 24" width="18">
 										<path
 											d="M5 3L19 12L13 13L11 19L5 3Z"
 											fill={color}

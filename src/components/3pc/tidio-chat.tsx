@@ -37,8 +37,8 @@ const PUBLIC_ROUTES = [
 	"/why-proddy",
 	"/assistant",
 	"/mockup",
-	"/signup",
-	"/signin",
+	"/auth/signup",
+	"/auth/signin",
 	"/auth",
 	"/", // Root path
 ];
@@ -128,8 +128,6 @@ export const TidioChat = () => {
 			{/* Set up tidioIdentify before loading the Tidio script */}
 			{currentUser?._id && (
 				<Script
-					id="tidio-identify"
-					strategy="afterInteractive"
 					dangerouslySetInnerHTML={{
 						__html: `
               // Define visitor identification data
@@ -158,6 +156,8 @@ export const TidioChat = () => {
               document.addEventListener("tidioChat-ready", onTidioReady);
             `,
 					}}
+					id="tidio-identify"
+					strategy="afterInteractive"
 				/>
 			)}
 
@@ -171,7 +171,7 @@ export const TidioChat = () => {
 			)}
 
 			{/* Add custom CSS for widget spacing */}
-			<style jsx global>{`
+			<style global jsx>{`
         #tidio-chat-iframe,
         #tidio-chat {
           bottom: 20px !important;

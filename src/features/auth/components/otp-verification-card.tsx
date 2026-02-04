@@ -100,7 +100,7 @@ export const OTPVerificationCard = ({
 				router.push("/");
 			} else {
 				// Just email verification (for future use cases)
-				router.push("/signin?verified=true");
+				router.push("/auth/signin?verified=true");
 			}
 		} catch (err) {
 			// Show user-friendly error messages with appropriate type
@@ -149,7 +149,7 @@ export const OTPVerificationCard = ({
 		setOtp("");
 
 		try {
-			const response = await fetch("/api/otp/send", {
+			const response = await fetch("/api/account/otp", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ email }),
@@ -193,11 +193,10 @@ export const OTPVerificationCard = ({
 
 			{!!error && (
 				<div
-					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm border ${
-						errorType === "expired"
-							? "bg-orange-50 border-orange-200 text-orange-700"
-							: "bg-red-50 border-red-200 text-red-600"
-					}`}
+					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm border ${errorType === "expired"
+						? "bg-orange-50 border-orange-200 text-orange-700"
+						: "bg-red-50 border-red-200 text-red-600"
+						}`}
 				>
 					<TriangleAlert className="size-4 flex-shrink-0" />
 					<p>{error}</p>
@@ -207,51 +206,51 @@ export const OTPVerificationCard = ({
 			<CardContent className="space-y-6 px-0 pb-0">
 				<div className="flex justify-center">
 					<InputOTP
+						autoFocus
+						disabled={pending}
 						maxLength={6}
-						value={otp}
 						onChange={(value) => {
 							setOtp(value);
 							setError("");
 							setErrorType("general");
 						}}
-						disabled={pending}
 						pattern={REGEXP_ONLY_DIGITS}
-						autoFocus
+						value={otp}
 					>
 						<InputOTPGroup className="gap-2">
 							<InputOTPSlot
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 								index={0}
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 							/>
 							<InputOTPSlot
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 								index={1}
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 							/>
 							<InputOTPSlot
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 								index={2}
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 							/>
 							<InputOTPSlot
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 								index={3}
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 							/>
 							<InputOTPSlot
+								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 								index={4}
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
 							/>
 							<InputOTPSlot
-								index={5}
 								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
+								index={5}
 							/>
 						</InputOTPGroup>
 					</InputOTP>
 				</div>
 
 				<Button
-					onClick={handleVerify}
 					className="bg-primary w-full transition-all duration-300 hover:shadow-lg hover:bg-primary/90"
-					size="lg"
 					disabled={pending || otp.length !== 6}
+					onClick={handleVerify}
+					size="lg"
 				>
 					Verify Code
 				</Button>
@@ -262,9 +261,9 @@ export const OTPVerificationCard = ({
 					</p>
 					{canResend ? (
 						<button
-							onClick={handleResend}
-							disabled={pending}
 							className="text-sm font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+							disabled={pending}
+							onClick={handleResend}
 						>
 							Resend OTP
 						</button>
@@ -277,9 +276,9 @@ export const OTPVerificationCard = ({
 
 				{onBack && (
 					<button
-						onClick={onBack}
-						disabled={pending}
 						className="w-full text-center text-xs text-primary hover:text-primary/80 transition-colors disabled:pointer-events-none disabled:opacity-50"
+						disabled={pending}
+						onClick={onBack}
 					>
 						← Back to signup
 					</button>

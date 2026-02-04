@@ -47,20 +47,20 @@ const AnimatedArrow: React.FC<AnimatedArrowProps> = ({
 				d={path}
 				fill="none"
 				stroke="rgba(209, 213, 219, 0.5)"
-				strokeWidth={1.5}
 				strokeLinecap="round"
+				strokeWidth={1.5}
 			/>
 			{[0, 1, 2].map((i) => (
 				<g key={i}>
 					<circle
-						r={3}
 						fill="var(--primary)"
 						filter="drop-shadow(0 0 2px rgba(99, 102, 241, 0.6))"
+						r={3}
 					>
 						<animateMotion
-							path={path}
-							dur="3s"
 							begin={`${delay + i * 0.5}s`}
+							dur="3s"
+							path={path}
 							repeatCount="indefinite"
 							rotate="auto"
 						/>
@@ -68,11 +68,11 @@ const AnimatedArrow: React.FC<AnimatedArrowProps> = ({
 				</g>
 			))}
 			<polygon
-				points={`${endX - 5},${endY - 5} ${endX},${endY} ${endX - 5},${endY + 5}`}
 				fill="rgba(209, 213, 219, 0.7)"
-				transform={`rotate(${Math.atan2(endY - (startY + curveOffsetY), endX - midX) * (180 / Math.PI)}, ${endX}, ${endY})`}
+				points={`${endX - 5},${endY - 5} ${endX},${endY} ${endX - 5},${endY + 5}`}
 				rx="1"
 				ry="1"
+				transform={`rotate(${Math.atan2(endY - (startY + curveOffsetY), endX - midX) * (180 / Math.PI)}, ${endX}, ${endY})`}
 			/>
 		</svg>
 	);
@@ -119,8 +119,8 @@ export const ReplacementSection = () => {
 
 	return (
 		<section
-			ref={sectionRef}
 			className="py-16 md:py-24 bg-gray-50 relative overflow-hidden w-full"
+			ref={sectionRef}
 		>
 			{/* Background decorative elements */}
 			<div className="absolute inset-0 overflow-hidden">
@@ -130,32 +130,26 @@ export const ReplacementSection = () => {
 
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-7xl">
 				<motion.h2
-					initial={{ opacity: 0, y: 20 }}
 					animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-					transition={{ duration: 0.5, delay: 0.1 }}
 					className="text-3xl md:text-4xl font-bold text-center mb-6 text-gray-900"
+					initial={{ opacity: 0, y: 20 }}
+					transition={{ duration: 0.5, delay: 0.1 }}
 				>
 					Replace Multiple Tools with{" "}
 					<span className="text-primary">Proddy</span>
 				</motion.h2>
 
 				<motion.div
-					ref={containerRef}
-					initial={{ opacity: 0 }}
 					animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-					transition={{ duration: 0.5, delay: 0.3 }}
 					className="relative h-[400px] md:h-[500px] w-full"
+					initial={{ opacity: 0 }}
+					ref={containerRef}
+					transition={{ duration: 0.5, delay: 0.3 }}
 				>
 					{/* Left: Tools - Increased space-y to space-y-8 for more vertical separation */}
 					<div className="z-30 absolute left-0 top-1/2 transform -translate-y-1/2 w-1/3 flex flex-col items-center space-y-8">
 						{tools.map((tool, index) => (
 							<motion.div
-								key={tool.name}
-								ref={(el) => {
-									toolRefs.current[index] = el;
-								}}
-								className="flex items-center p-3 rounded-lg shadow-md bg-white border border-gray-100 hover:border-primary/20"
-								initial={{ x: -50, opacity: 0 }}
 								animate={
 									isInView
 										? {
@@ -165,6 +159,12 @@ export const ReplacementSection = () => {
 											}
 										: { x: -50, opacity: 0 }
 								}
+								className="flex items-center p-3 rounded-lg shadow-md bg-white border border-gray-100 hover:border-primary/20"
+								initial={{ x: -50, opacity: 0 }}
+								key={tool.name}
+								ref={(el) => {
+									toolRefs.current[index] = el;
+								}}
 								transition={{
 									duration: 0.5,
 									delay: 0.4 + index * 0.1,
@@ -175,7 +175,7 @@ export const ReplacementSection = () => {
 								}}
 							>
 								<motion.div>
-									<tool.icon size={24} color={tool.color} className="mr-2" />
+									<tool.icon className="mr-2" color={tool.color} size={24} />
 								</motion.div>
 								<span className="font-medium text-gray-800">{tool.name}</span>
 							</motion.div>
@@ -192,32 +192,32 @@ export const ReplacementSection = () => {
 							const endY = dimensions.height / 2;
 							return (
 								<AnimatedArrow
+									delay={index * 0.2}
+									endX={endX}
+									endY={endY}
 									key={`arrow-${tool.name}`}
 									startX={x}
 									startY={y}
-									endX={endX}
-									endY={endY}
-									delay={index * 0.2}
 								/>
 							);
 						})}
 
 					{/* Right: Proddy - Adjusted to center horizontally at the new arrow convergence point */}
 					<motion.div
-						className="absolute left-[70%] top-[40%] -translate-x-1/2 -translate-y-1/2 w-1/3 flex justify-center z-30" // Adjusted left-[70%] to left-[85%]
+						animate={isInView ? { x: 0, opacity: 1 } : { x: 50, opacity: 0 }} // Adjusted left-[70%] to left-[85%]
+						className="absolute left-[70%] top-[40%] -translate-x-1/2 -translate-y-1/2 w-1/3 flex justify-center z-30"
 						initial={{ x: 50, opacity: 0 }}
-						animate={isInView ? { x: 0, opacity: 1 } : { x: 50, opacity: 0 }}
 						transition={{ duration: 0.7, delay: 0.5 }}
 					>
 						<div className="bg-primary text-white p-6 md:p-8 rounded-2xl shadow-lg flex flex-col items-center justify-center">
 							<div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center">
 								<div className="relative w-full h-full">
 									<Image
-										src="/logo-white.png"
 										alt="Proddy Logo"
-										fill
 										className="object-contain"
+										fill
 										priority
+										src="/logo-white.png"
 									/>
 								</div>
 							</div>

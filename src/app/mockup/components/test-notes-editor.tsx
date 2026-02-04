@@ -78,8 +78,8 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 				// Bold text
 				parts.push(
 					<strong
-						key={`bold-${lineIndex}-${match.index}`}
 						className="font-semibold"
+						key={`bold-${lineIndex}-${match.index}`}
 					>
 						{match[2]}
 					</strong>
@@ -88,9 +88,9 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 				// Links
 				parts.push(
 					<button
+						className="text-blue-600 hover:text-blue-800 underline font-medium"
 						key={`link-${lineIndex}-${match.index}`}
 						onClick={() => match?.[4] && handleLinkClick(match[4])}
-						className="text-blue-600 hover:text-blue-800 underline font-medium"
 					>
 						{match?.[3]}
 					</button>
@@ -99,8 +99,8 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 				// Inline code
 				parts.push(
 					<code
-						key={`code-${lineIndex}-${match.index}`}
 						className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono"
+						key={`code-${lineIndex}-${match.index}`}
 					>
 						{match[5]}
 					</code>
@@ -128,7 +128,7 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 		const flushList = (currentIndex: number) => {
 			if (listItems.length > 0) {
 				elements.push(
-					<ul key={`list-${currentIndex}`} className="list-none space-y-1 mb-4">
+					<ul className="list-none space-y-1 mb-4" key={`list-${currentIndex}`}>
 						{listItems}
 					</ul>
 				);
@@ -145,7 +145,7 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 			if (!addedBrainstormButton && (trimmedLine === "---" || index === 8)) {
 				flushList(index);
 				elements.push(
-					<div key={`brainstorm-${index}`} className="not-prose my-6">
+					<div className="not-prose my-6" key={`brainstorm-${index}`}>
 						<div className="flex items-center gap-3 p-4 rounded-lg border border-blue-200 bg-blue-50/50 hover:bg-blue-50 transition-colors">
 							<div className="flex-shrink-0">
 								<div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -163,10 +163,10 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 								</p>
 							</div>
 							<Button
-								onClick={() => handleLinkClick("/mockup/canvas")}
-								variant="outline"
-								size="sm"
 								className="border-blue-300 text-blue-700 hover:bg-blue-100"
+								onClick={() => handleLinkClick("/mockup/canvas")}
+								size="sm"
+								variant="outline"
 							>
 								View Canvas
 							</Button>
@@ -181,8 +181,8 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 				flushList(index);
 				elements.push(
 					<h1
-						key={index}
 						className="text-2xl font-bold mb-4 mt-6 text-gray-900"
+						key={index}
 					>
 						{renderInlineFormatting(trimmedLine.substring(2), index)}
 					</h1>
@@ -193,8 +193,8 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 				flushList(index);
 				elements.push(
 					<h2
-						key={index}
 						className="text-xl font-semibold mb-3 mt-5 text-gray-800"
+						key={index}
 					>
 						{renderInlineFormatting(trimmedLine.substring(3), index)}
 					</h2>
@@ -205,8 +205,8 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 				flushList(index);
 				elements.push(
 					<h3
-						key={index}
 						className="text-lg font-medium mb-2 mt-4 text-gray-800"
+						key={index}
 					>
 						{renderInlineFormatting(trimmedLine.substring(4), index)}
 					</h3>
@@ -221,7 +221,7 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 
 				if (!inList) inList = true;
 				listItems.push(
-					<li key={`checkbox-${index}`} className="flex items-start gap-2">
+					<li className="flex items-start gap-2" key={`checkbox-${index}`}>
 						<span
 							className={`text-sm mt-0.5 ${isChecked ? "text-green-600" : "text-gray-400"}`}
 						>
@@ -243,7 +243,7 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 
 				if (!inList) inList = true;
 				listItems.push(
-					<li key={`list-${index}`} className="flex items-start gap-2">
+					<li className="flex items-start gap-2" key={`list-${index}`}>
 						<span className="text-gray-400 mt-1 text-sm">•</span>
 						<span className="flex-1 text-gray-700">
 							{renderInlineFormatting(text, index)}
@@ -259,7 +259,7 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 				if (match) {
 					if (!inList) inList = true;
 					listItems.push(
-						<li key={`numbered-${index}`} className="flex items-start gap-2">
+						<li className="flex items-start gap-2" key={`numbered-${index}`}>
 							<span className="text-gray-500 font-medium text-sm mt-0.5">
 								{match[1]}.
 							</span>
@@ -279,19 +279,19 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 
 			// Horizontal rule
 			if (trimmedLine === "---") {
-				elements.push(<hr key={index} className="my-6 border-gray-200" />);
+				elements.push(<hr className="my-6 border-gray-200" key={index} />);
 				continue;
 			}
 
 			// Empty line
 			if (trimmedLine === "") {
-				elements.push(<div key={index} className="mb-2" />);
+				elements.push(<div className="mb-2" key={index} />);
 				continue;
 			}
 
 			// Regular paragraph
 			elements.push(
-				<p key={index} className="mb-3 text-gray-700 leading-relaxed">
+				<p className="mb-3 text-gray-700 leading-relaxed" key={index}>
 					{renderInlineFormatting(trimmedLine, index)}
 				</p>
 			);
@@ -311,10 +311,10 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 			<div className="border-b p-4">
 				<div className="flex items-center justify-between mb-3">
 					<Input
-						value={title}
-						onChange={(e) => handleTitleChange(e.target.value)}
 						className="text-lg font-semibold border-none shadow-none p-0 h-auto focus-visible:ring-0"
+						onChange={(e) => handleTitleChange(e.target.value)}
 						placeholder="Note title..."
+						value={title}
 					/>
 
 					{isEditing && (
@@ -334,7 +334,7 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 							<span>•</span>
 							<div className="flex gap-1">
 								{note.tags.map((tag) => (
-									<Badge key={tag} variant="secondary" className="text-xs">
+									<Badge className="text-xs" key={tag} variant="secondary">
 										{tag}
 									</Badge>
 								))}

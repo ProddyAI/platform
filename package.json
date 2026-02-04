@@ -6,14 +6,14 @@
 	"scripts": {
 		"next": "next dev",
 		"convex": "convex dev",
-		"type": "NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit",
-		"lint": "biome check --write . --unsafe --max-diagnostics 2000 .",
+		"type": "tsc --noEmit",
+		"check": "biome check --write . --unsafe",
 		"start": "next start",
-		"build": "NODE_OPTIONS=--max-old-space-size=4096 next build"
+		"build": "next build"
 	},
 	"author": {
-		"name": "George Bobby",
-		"url": "https://github.com/george-bobby"
+		"name": "ProddyAI",
+		"url": "https://github.com/ProddyAI"
 	},
 	"description": "Collaborate with your team using real-time messaging in this app built with Next.js, Convex, and Shadcn UI.",
 	"keywords": [
@@ -56,8 +56,8 @@
 		"@blocknote/core": "^0.33.0",
 		"@blocknote/mantine": "^0.33.0",
 		"@blocknote/react": "^0.33.0",
-		"@composio/core": "^0.1.48",
-		"@composio/openai": "^0.1.48",
+		"@composio/core": "^0.6.2",
+		"@composio/openai": "^0.6.2",
 		"@convex-dev/auth": "^0.0.65",
 		"@convex-dev/presence": "^0.1.5",
 		"@convex-dev/prosemirror-sync": "^0.1.25",
@@ -72,6 +72,7 @@
 		"@langchain/core": "^0.3.57",
 		"@liveblocks/node": "^2.24.1",
 		"@liveblocks/react": "^2.24.1",
+		"@openrouter/ai-sdk-provider": "^2.1.1",
 		"@opentelemetry/api": "^1.9.0",
 		"@opentelemetry/instrumentation": "^0.202.0",
 		"@radix-ui/react-alert-dialog": "^1.1.1",
@@ -105,7 +106,7 @@
 		"class-variance-authority": "^0.7.0",
 		"clsx": "^2.1.1",
 		"cmdk": "1.0.0",
-		"convex": "^1.31.6",
+		"convex": "^1.31.7",
 		"date-fns": "^4.1.0",
 		"docx": "^9.4.1",
 		"dompurify": "^3.2.6",

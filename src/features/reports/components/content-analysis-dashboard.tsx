@@ -184,8 +184,8 @@ export const ContentAnalysisDashboard = ({
 
 			{/* Content tabs */}
 			<Tabs
-				defaultValue="messages"
 				className="space-y-4"
+				defaultValue="messages"
 				onValueChange={setActiveTab}
 			>
 				<TabsList>
@@ -204,7 +204,7 @@ export const ContentAnalysisDashboard = ({
 				</TabsList>
 
 				{/* Messages Tab */}
-				<TabsContent value="messages" className="space-y-4">
+				<TabsContent className="space-y-4" value="messages">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<Card className="flex flex-col">
 							<CardHeader>
@@ -216,8 +216,8 @@ export const ContentAnalysisDashboard = ({
 									{messagesByDayData.length > 0 ? (
 										<LineChart
 											data={messagesByDayData}
-											height={300}
 											formatValue={(value) => `${value} messages`}
+											height={300}
 										/>
 									) : (
 										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
@@ -272,8 +272,8 @@ export const ContentAnalysisDashboard = ({
 								{messageLengthData.length > 0 ? (
 									<BarChart
 										data={messageLengthData}
-										height={200}
 										formatValue={(value) => `${value}%`}
+										height={200}
 									/>
 								) : (
 									<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
@@ -316,7 +316,7 @@ export const ContentAnalysisDashboard = ({
 				</TabsContent>
 
 				{/* Files Tab */}
-				<TabsContent value="files" className="space-y-4">
+				<TabsContent className="space-y-4" value="files">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<Card className="flex flex-col">
 							<CardHeader>
@@ -384,8 +384,8 @@ export const ContentAnalysisDashboard = ({
 														100
 												),
 											}))}
-											height={300}
 											formatValue={(value) => `${value} images`}
+											height={300}
 										/>
 									) : (
 										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
@@ -436,7 +436,7 @@ export const ContentAnalysisDashboard = ({
 				</TabsContent>
 
 				{/* Activity Patterns Tab */}
-				<TabsContent value="activity" className="space-y-4">
+				<TabsContent className="space-y-4" value="activity">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<Card className="flex flex-col">
 							<CardHeader>
@@ -450,8 +450,8 @@ export const ContentAnalysisDashboard = ({
 									{busiestHoursData.length > 0 ? (
 										<BarChart
 											data={busiestHoursData}
-											height={300}
 											formatValue={(value) => `${value} messages`}
+											height={300}
 										/>
 									) : (
 										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
@@ -476,8 +476,8 @@ export const ContentAnalysisDashboard = ({
 									{weeklyActivityData.length > 0 ? (
 										<BarChart
 											data={weeklyActivityData}
-											height={300}
 											formatValue={(value) => `${value} messages`}
+											height={300}
 										/>
 									) : (
 										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">

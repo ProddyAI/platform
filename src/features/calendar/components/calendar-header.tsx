@@ -48,10 +48,10 @@ export const CalendarHeader = ({
 				{/* Left side - Month navigation */}
 				<div className="calendar-month-nav flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
 					<Button
-						variant="ghost"
-						size="sm"
-						onClick={onPreviousMonth}
 						className="h-8 w-8 p-0 rounded-md hover:bg-gray-100 hover:text-gray-700"
+						onClick={onPreviousMonth}
+						size="sm"
+						variant="ghost"
 					>
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
@@ -59,10 +59,10 @@ export const CalendarHeader = ({
 						{format(currentDate, "MMMM yyyy")}
 					</div>
 					<Button
-						variant="ghost"
-						size="sm"
-						onClick={onNextMonth}
 						className="h-8 w-8 p-0 rounded-md hover:bg-gray-100 hover:text-gray-700"
+						onClick={onNextMonth}
+						size="sm"
+						variant="ghost"
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>
@@ -77,15 +77,15 @@ export const CalendarHeader = ({
 
 					{onSearch && (
 						<form
-							onSubmit={handleSearch}
 							className="relative w-full sm:w-64 md:w-72"
+							onSubmit={handleSearch}
 						>
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
 							<Input
-								placeholder="Search events..."
 								className="pl-9 bg-white w-full border-gray-300 focus-visible:ring-gray-400 focus-visible:ring-opacity-30 rounded-md"
-								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
+								placeholder="Search events..."
+								value={searchQuery}
 							/>
 						</form>
 					)}

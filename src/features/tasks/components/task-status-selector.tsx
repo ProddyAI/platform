@@ -78,9 +78,9 @@ export const TaskStatusSelector = ({
 		<Popover>
 			<PopoverTrigger asChild>
 				<Button
-					variant="outline"
-					role="combobox"
 					className="w-full justify-between"
+					role="combobox"
+					variant="outline"
 				>
 					<div className="flex items-center gap-2">
 						{selectedStatus ? (
@@ -96,7 +96,7 @@ export const TaskStatusSelector = ({
 					</div>
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="w-full p-0" align="start">
+			<PopoverContent align="start" className="w-full p-0">
 				<Command>
 					<CommandInput placeholder="Search status..." />
 					<CommandList>
@@ -104,9 +104,9 @@ export const TaskStatusSelector = ({
 						<CommandGroup>
 							{statusOptions.map((status) => (
 								<CommandItem
+									className="flex items-center gap-2"
 									key={status.value}
 									onSelect={() => onChange(status.value)}
-									className="flex items-center gap-2"
 								>
 									<div className="flex h-4 w-4 items-center justify-center">
 										{value === status.value && <Check className="h-3 w-3" />}

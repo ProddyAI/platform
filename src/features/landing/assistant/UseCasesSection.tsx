@@ -60,8 +60,8 @@ export const UseCasesSection = () => {
 
 	return (
 		<section
-			ref={useCasesRef}
 			className="py-20 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden"
+			ref={useCasesRef}
 		>
 			{/* Background decorative elements */}
 			<div className="absolute inset-0 overflow-hidden">
@@ -72,12 +72,12 @@ export const UseCasesSection = () => {
 			<div className="container px-6 md:px-8 mx-auto max-w-7xl relative z-10">
 				<div className="text-center mb-16">
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5 }}
 						className="mb-4"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5 }}
 					>
 						<span className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full bg-primary/10 text-primary">
 							<Bot className="mr-1 h-3.5 w-3.5" />
@@ -85,12 +85,12 @@ export const UseCasesSection = () => {
 						</span>
 					</motion.div>
 					<motion.h2
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5, delay: 0.1 }}
 						className="text-3xl md:text-5xl font-bold text-gray-900 mb-6"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.1 }}
 					>
 						How Teams Use{" "}
 						<span className="text-primary relative">
@@ -99,32 +99,30 @@ export const UseCasesSection = () => {
 						</span>
 					</motion.h2>
 					<motion.p
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5, delay: 0.2 }}
 						className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.2 }}
 					>
 						Real-world applications that boost productivity across different
 						team functions
 					</motion.p>
 				</div>
 
-				<Tabs defaultValue="marketing" className="w-full">
+				<Tabs className="w-full" defaultValue="marketing">
 					<motion.div
-						initial={{ opacity: 0, y: 20 }}
 						animate={
 							isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						transition={{ duration: 0.5, delay: 0.3 }}
 						className="mb-12"
+						initial={{ opacity: 0, y: 20 }}
+						transition={{ duration: 0.5, delay: 0.3 }}
 					>
 						<TabsList className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full h-16 max-w-4xl mx-auto bg-white p-2.5 rounded-xl shadow-sm border border-gray-200">
 							{tabConfig.map((tab) => (
 								<TabsTrigger
-									key={tab.id}
-									value={tab.id}
 									className={cn(
 										"relative py-3 px-4 text-sm font-medium text-gray-700 rounded-lg ring-1 ring-gray-200",
 										tab.hoverBg,
@@ -133,6 +131,8 @@ export const UseCasesSection = () => {
 										tab.activeText,
 										"data-[state=active]:shadow-md data-[state=active]:font-semibold transition-all duration-200"
 									)}
+									key={tab.id}
+									value={tab.id}
 								>
 									<span className="flex items-center justify-center gap-2">
 										{tab.icon}
@@ -144,16 +144,16 @@ export const UseCasesSection = () => {
 					</motion.div>
 
 					<TabsContent
-						value="marketing"
 						className="mt-8 animate-in fade-in-50 duration-300"
+						value="marketing"
 					>
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={
 								isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 							}
-							transition={{ duration: 0.5, delay: 0.4 }}
 							className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<div>
 								<h3 className="text-2xl font-bold mb-4 text-gray-900">
@@ -257,16 +257,16 @@ export const UseCasesSection = () => {
 					</TabsContent>
 
 					<TabsContent
-						value="product"
 						className="mt-8 animate-in fade-in-50 duration-300"
+						value="product"
 					>
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={
 								isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 							}
-							transition={{ duration: 0.5, delay: 0.4 }}
 							className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<div>
 								<h3 className="text-2xl font-bold mb-4 text-gray-900">
@@ -354,16 +354,16 @@ export const UseCasesSection = () => {
 					</TabsContent>
 
 					<TabsContent
-						value="engineering"
 						className="mt-8 animate-in fade-in-50 duration-300"
+						value="engineering"
 					>
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={
 								isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 							}
-							transition={{ duration: 0.5, delay: 0.4 }}
 							className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<div>
 								<h3 className="text-2xl font-bold mb-4 text-gray-900">
@@ -461,16 +461,16 @@ export const UseCasesSection = () => {
 					</TabsContent>
 
 					<TabsContent
-						value="leadership"
 						className="mt-8 animate-in fade-in-50 duration-300"
+						value="leadership"
 					>
 						<motion.div
-							initial={{ opacity: 0, y: 20 }}
 							animate={
 								isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 							}
-							transition={{ duration: 0.5, delay: 0.4 }}
 							className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+							initial={{ opacity: 0, y: 20 }}
+							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<div>
 								<h3 className="text-2xl font-bold mb-4 text-gray-900">

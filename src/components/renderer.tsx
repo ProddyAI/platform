@@ -208,7 +208,7 @@ const Renderer = ({ value, calendarEvent }: RendererProps) => {
 
 	if (isEmpty) return null;
 
-	return <div ref={rendererRef} className="ql-editor ql-renderer" />;
+	return <div className="ql-editor ql-renderer" ref={rendererRef} />;
 };
 
 export default Renderer;

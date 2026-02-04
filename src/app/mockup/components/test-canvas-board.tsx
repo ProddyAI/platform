@@ -171,8 +171,6 @@ export const TestCanvasBoard = ({
 
 		return (
 			<div
-				key={item.id}
-				data-canvas-item={item.id}
 				className={cn(
 					"absolute cursor-pointer border-2 transition-all",
 					isSelected
@@ -182,6 +180,10 @@ export const TestCanvasBoard = ({
 					item.type === "note" && "rounded-lg shadow-md",
 					selectedTool === "select" ? "cursor-move" : "cursor-default"
 				)}
+				data-canvas-item={item.id}
+				key={item.id}
+				onDoubleClick={() => handleItemDoubleClick(item)}
+				onMouseDown={(e) => handleItemMouseDown(e, item)}
 				style={{
 					left: item.x,
 					top: item.y,
@@ -194,8 +196,6 @@ export const TestCanvasBoard = ({
 					transform: `scale(${zoom / 100})`,
 					transformOrigin: "top left",
 				}}
-				onMouseDown={(e) => handleItemMouseDown(e, item)}
-				onDoubleClick={() => handleItemDoubleClick(item)}
 			>
 				<div className="w-full h-full flex items-center justify-center p-2 text-center overflow-hidden">
 					{item.type === "note" ? (
@@ -223,18 +223,18 @@ export const TestCanvasBoard = ({
 	return (
 		<div className="flex-1 overflow-hidden bg-background">
 			<div
-				ref={canvasRef}
 				className="w-full h-full relative overflow-auto cursor-crosshair"
+				onClick={handleCanvasClick}
+				onMouseLeave={handleMouseUp}
+				onMouseMove={handleMouseMove}
+				onMouseUp={handleMouseUp}
+				ref={canvasRef}
 				style={{
 					backgroundImage: `
             radial-gradient(circle, #e5e7eb 1px, transparent 1px)
           `,
 					backgroundSize: `${20 * (zoom / 100)}px ${20 * (zoom / 100)}px`,
 				}}
-				onClick={handleCanvasClick}
-				onMouseMove={handleMouseMove}
-				onMouseUp={handleMouseUp}
-				onMouseLeave={handleMouseUp}
 			>
 				{/* Canvas content area */}
 				<div

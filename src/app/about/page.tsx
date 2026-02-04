@@ -18,17 +18,17 @@ const AboutPage = () => {
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center">
 						<motion.h1
+							animate={{ opacity: 1, y: 0 }}
 							className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6"
 							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5 }}
 						>
 							Our <span className="text-primary">Mission</span> & Story
 						</motion.h1>
 						<motion.p
+							animate={{ opacity: 1, y: 0 }}
 							className="text-xl text-gray-600 max-w-3xl mx-auto mb-10"
 							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
 							We're building the future of team productivity with AI-powered
@@ -44,9 +44,9 @@ const AboutPage = () => {
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 						<motion.div
 							initial={{ opacity: 0, x: -20 }}
-							whileInView={{ opacity: 1, x: 0 }}
-							viewport={{ once: true }}
 							transition={{ duration: 0.5 }}
+							viewport={{ once: true }}
+							whileInView={{ opacity: 1, x: 0 }}
 						>
 							<h2 className="text-3xl font-bold mb-6">Our Story</h2>
 							<div className="space-y-4 text-gray-700">
@@ -81,15 +81,15 @@ const AboutPage = () => {
 						<motion.div
 							className="relative h-[400px] rounded-xl overflow-hidden shadow-lg"
 							initial={{ opacity: 0, x: 20 }}
-							whileInView={{ opacity: 1, x: 0 }}
-							viewport={{ once: true }}
 							transition={{ duration: 0.5 }}
+							viewport={{ once: true }}
+							whileInView={{ opacity: 1, x: 0 }}
 						>
 							<Image
-								src="/about-team.jpg"
 								alt="Proddy Team"
-								fill
 								className="object-cover"
+								fill
+								src="/about-team.jpg"
 							/>
 						</motion.div>
 					</div>
@@ -111,9 +111,9 @@ const AboutPage = () => {
 						<motion.div
 							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
 							initial={{ opacity: 0, y: 20 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true }}
 							transition={{ duration: 0.5 }}
+							viewport={{ once: true }}
+							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
 								<Users className="text-primary h-6 w-6" />
@@ -130,9 +130,9 @@ const AboutPage = () => {
 						<motion.div
 							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
 							initial={{ opacity: 0, y: 20 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true }}
 							transition={{ duration: 0.5, delay: 0.1 }}
+							viewport={{ once: true }}
+							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
 								<Lightbulb className="text-primary h-6 w-6" />
@@ -149,9 +149,9 @@ const AboutPage = () => {
 						<motion.div
 							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
 							initial={{ opacity: 0, y: 20 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true }}
 							transition={{ duration: 0.5, delay: 0.2 }}
+							viewport={{ once: true }}
+							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
 								<Target className="text-primary h-6 w-6" />
@@ -168,9 +168,9 @@ const AboutPage = () => {
 						<motion.div
 							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
 							initial={{ opacity: 0, y: 20 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true }}
 							transition={{ duration: 0.5, delay: 0.3 }}
+							viewport={{ once: true }}
+							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
 								<Clock className="text-primary h-6 w-6" />
@@ -186,9 +186,9 @@ const AboutPage = () => {
 						<motion.div
 							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
 							initial={{ opacity: 0, y: 20 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true }}
 							transition={{ duration: 0.5, delay: 0.4 }}
+							viewport={{ once: true }}
+							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
 								<Zap className="text-primary h-6 w-6" />
@@ -205,9 +205,9 @@ const AboutPage = () => {
 						<motion.div
 							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
 							initial={{ opacity: 0, y: 20 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true }}
 							transition={{ duration: 0.5, delay: 0.5 }}
+							viewport={{ once: true }}
+							whileInView={{ opacity: 1, y: 0 }}
 						>
 							<div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
 								<Heart className="text-primary h-6 w-6" />

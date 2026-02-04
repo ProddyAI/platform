@@ -213,11 +213,11 @@ export const SelectionModal = () => {
 			<ConfirmDialog />
 			{summaryData && (
 				<SummaryModal
+					isCached={summaryData.isCached}
 					isOpen={isModalOpen}
+					messageCount={selectedMessages.length}
 					onClose={handleModalClose}
 					summary={summaryData.summary}
-					messageCount={selectedMessages.length}
-					isCached={summaryData.isCached}
 				/>
 			)}
 
@@ -229,11 +229,11 @@ export const SelectionModal = () => {
 					</span>
 
 					<Button
-						onClick={handleCopyMessages}
-						disabled={!messageContents}
-						variant="outline"
-						size="sm"
 						aria-label="Copy selected messages"
+						disabled={!messageContents}
+						onClick={handleCopyMessages}
+						size="sm"
+						variant="outline"
 					>
 						<Copy className="mr-2 size-4" />
 						Copy
@@ -241,12 +241,12 @@ export const SelectionModal = () => {
 
 					{canDeleteMessages && (
 						<Button
-							onClick={handleDeleteMessages}
-							disabled={isDeleting || !messageContents}
-							variant="outline"
-							size="sm"
-							className="text-destructive hover:text-destructive"
 							aria-label="Delete selected messages"
+							className="text-destructive hover:text-destructive"
+							disabled={isDeleting || !messageContents}
+							onClick={handleDeleteMessages}
+							size="sm"
+							variant="outline"
 						>
 							<Trash2 className="mr-2 size-4" />
 							{isDeleting ? "Deleting..." : "Delete"}
@@ -254,10 +254,10 @@ export const SelectionModal = () => {
 					)}
 
 					<Button
-						onClick={handleSummarize}
-						disabled={isSummarizing || !messageContents}
-						className="bg-secondary text-white hover:bg-secondary/70"
 						aria-label="Summarize selected messages"
+						className="bg-secondary text-white hover:bg-secondary/70"
+						disabled={isSummarizing || !messageContents}
+						onClick={handleSummarize}
 					>
 						<Sparkles className="mr-2 size-4" />
 						{isSummarizing ? "Summarizing..." : "Summarize"}

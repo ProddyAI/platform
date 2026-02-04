@@ -136,17 +136,17 @@ export const MentionPicker = ({
 					<div className="space-y-1">
 						{filteredMembers.map((member) => (
 							<Button
-								key={member._id}
-								variant="ghost"
 								className="w-full justify-start px-2 py-1.5 h-auto hover:bg-gray-100"
+								key={member._id}
 								onClick={() => handleSelect(member._id, member.user.name)}
+								variant="ghost"
 							>
 								<div className="flex items-center gap-2">
 									<div className="relative">
 										<Avatar className="h-8 w-8">
 											<AvatarImage
-												src={member.user.image}
 												alt={member.user.name}
+												src={member.user.image}
 											/>
 											<AvatarFallback>
 												{member.user.name.charAt(0).toUpperCase()}
@@ -167,12 +167,12 @@ export const MentionPicker = ({
 				<div className="relative">
 					<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
 					<Input
-						ref={searchInputRef}
-						placeholder="Search users..."
-						className="pl-8"
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
 						autoFocus
+						className="pl-8"
+						onChange={(e) => setSearchTerm(e.target.value)}
+						placeholder="Search users..."
+						ref={searchInputRef}
+						value={searchTerm}
 					/>
 				</div>
 			</div>

@@ -136,20 +136,20 @@ const NotesPage = () => {
 			roomType="note"
 		>
 			<NotesContent
-				workspaceId={workspaceId}
-				channelId={channelId}
-				activeNoteId={activeNoteId}
 				activeNote={activeNote || null}
-				notes={notes}
+				activeNoteId={activeNoteId}
+				channelId={channelId}
 				isFullScreen={isFullScreen}
-				setIsFullScreen={setIsFullScreen}
-				showExportDialog={showExportDialog}
-				setShowExportDialog={setShowExportDialog}
-				pageContainerRef={pageContainerRef}
-				onNoteSelect={handleNoteSelect}
+				notes={notes}
 				onCreateNote={handleCreateNote}
 				onDeleteNote={handleDeleteNote}
+				onNoteSelect={handleNoteSelect}
 				onUpdateNote={handleNoteUpdate}
+				pageContainerRef={pageContainerRef}
+				setIsFullScreen={setIsFullScreen}
+				setShowExportDialog={setShowExportDialog}
+				showExportDialog={showExportDialog}
+				workspaceId={workspaceId}
 			/>
 		</LiveblocksRoom>
 	);

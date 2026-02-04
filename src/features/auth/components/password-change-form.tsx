@@ -74,7 +74,7 @@ export const PasswordChangeForm = () => {
 				if (result.requiresReauth) {
 					toast.info("Please sign in with your new password");
 					await signOut();
-					router.push("/signin");
+					router.push("/auth/signin");
 				}
 			}
 		} catch (error) {
@@ -99,28 +99,28 @@ export const PasswordChangeForm = () => {
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<form onSubmit={handleSubmit} className="space-y-4">
+				<form className="space-y-4" onSubmit={handleSubmit}>
 					<div className="space-y-2">
 						<Label htmlFor="current-password">Current Password</Label>
 						<Input
+							disabled={isSubmitting}
 							id="current-password"
+							onChange={(e) => setCurrentPassword(e.target.value)}
+							placeholder="Enter current password"
 							type="password"
 							value={currentPassword}
-							onChange={(e) => setCurrentPassword(e.target.value)}
-							disabled={isSubmitting}
-							placeholder="Enter current password"
 						/>
 					</div>
 
 					<div className="space-y-2">
 						<Label htmlFor="new-password">New Password</Label>
 						<Input
+							disabled={isSubmitting}
 							id="new-password"
+							onChange={(e) => setNewPassword(e.target.value)}
+							placeholder="Enter new password"
 							type="password"
 							value={newPassword}
-							onChange={(e) => setNewPassword(e.target.value)}
-							disabled={isSubmitting}
-							placeholder="Enter new password"
 						/>
 						{newPassword && (
 							<PasswordStrengthIndicator
@@ -133,12 +133,12 @@ export const PasswordChangeForm = () => {
 					<div className="space-y-2">
 						<Label htmlFor="confirm-password">Confirm Password</Label>
 						<Input
+							disabled={isSubmitting}
 							id="confirm-password"
+							onChange={(e) => setConfirmPassword(e.target.value)}
+							placeholder="Confirm new password"
 							type="password"
 							value={confirmPassword}
-							onChange={(e) => setConfirmPassword(e.target.value)}
-							disabled={isSubmitting}
-							placeholder="Confirm new password"
 						/>
 						{confirmPassword && newPassword !== confirmPassword && (
 							<p className="text-sm text-destructive">Passwords do not match</p>
@@ -146,9 +146,9 @@ export const PasswordChangeForm = () => {
 					</div>
 
 					<Button
-						type="submit"
-						disabled={isSubmitting}
 						className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+						disabled={isSubmitting}
+						type="submit"
 					>
 						{isSubmitting ? "Changing Password..." : "Change Password"}
 					</Button>

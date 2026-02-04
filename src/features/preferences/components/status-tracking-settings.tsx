@@ -54,8 +54,8 @@ export const StatusTrackingSettings = () => {
 				</div>
 				<Switch
 					checked={statusTrackingEnabled}
-					onCheckedChange={handleStatusTrackingToggle}
 					disabled={isUpdating}
+					onCheckedChange={handleStatusTrackingToggle}
 				/>
 			</div>
 

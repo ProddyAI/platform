@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 const AuthPage = () => {
 	useEffect(() => {
-		redirect("/signin");
+		redirect("/auth/signin");
 	}, []);
 
 	return null;

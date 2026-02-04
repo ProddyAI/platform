@@ -220,25 +220,25 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 						{isEditingTitle ? (
 							<div className="flex items-center gap-2 flex-1">
 								<input
-									type="text"
-									value={titleInput}
+									className="flex-1 px-2 py-1 text-sm border border-border rounded bg-background"
 									onChange={(e) => setTitleInput(e.target.value)}
 									placeholder="Enter thread title..."
-									className="flex-1 px-2 py-1 text-sm border border-border rounded bg-background"
+									type="text"
+									value={titleInput}
 								/>
 								<Button
+									className="h-6 w-6"
+									onClick={handleSaveTitle}
 									size="iconSm"
 									variant="ghost"
-									onClick={handleSaveTitle}
-									className="h-6 w-6"
 								>
 									<Check className="size-4" />
 								</Button>
 								<Button
+									className="h-6 w-6"
+									onClick={() => setIsEditingTitle(false)}
 									size="iconSm"
 									variant="ghost"
-									onClick={() => setIsEditingTitle(false)}
-									className="h-6 w-6"
 								>
 									<X className="size-4" />
 								</Button>
@@ -247,10 +247,10 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 							<div className="flex items-center gap-2 flex-1">
 								<p className="text-lg font-bold">{savedTitle || "Thread"}</p>
 								<Button
+									className="h-6 w-6"
+									onClick={handleEditTitle}
 									size="iconSm"
 									variant="ghost"
-									onClick={handleEditTitle}
-									className="h-6 w-6"
 								>
 									<Edit2 className="size-4" />
 								</Button>
@@ -286,25 +286,25 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 								return (
 									<Message
-										key={message._id}
-										id={message._id}
-										memberId={message.memberId}
 										authorImage={message.user.image}
 										authorName={message.user.name}
-										isAuthor={message.memberId === currentMember?._id}
-										reactions={message.reactions}
 										body={message.body}
-										image={message.image}
-										updatedAt={message.updatedAt}
 										createdAt={message._creationTime}
+										hideThreadButton
+										id={message._id}
+										image={message.image}
+										isAuthor={message.memberId === currentMember?._id}
+										isCompact={isCompact}
+										isEditing={editingId === message._id}
+										key={message._id}
+										memberId={message.memberId}
+										reactions={message.reactions}
+										setEditingId={setEditingId}
 										threadCount={message.threadCount}
 										threadImage={message.threadImage}
 										threadName={message.threadName}
 										threadTimestamp={message.threadTimestamp}
-										isEditing={editingId === message._id}
-										setEditingId={setEditingId}
-										isCompact={isCompact}
-										hideThreadButton
+										updatedAt={message.updatedAt}
 									/>
 								);
 							})}
@@ -340,28 +340,28 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 					)}
 
 					<Message
-						hideThreadButton
-						memberId={message.memberId}
-						authorName={message.user.name}
 						authorImage={message.user.image}
-						isAuthor={message.memberId === currentMember?._id}
+						authorName={message.user.name}
 						body={message.body}
-						image={message.image}
 						createdAt={message._creationTime}
-						updatedAt={message.updatedAt}
+						hideThreadButton
 						id={message._id}
-						reactions={message.reactions}
+						image={message.image}
+						isAuthor={message.memberId === currentMember?._id}
 						isEditing={editingId === message._id}
+						memberId={message.memberId}
+						reactions={message.reactions}
 						setEditingId={setEditingId}
+						updatedAt={message.updatedAt}
 					/>
 				</div>
 
 				<div className="px-4">
 					<Editor
+						disabled={isPending}
+						innerRef={innerRef}
 						key={editorKey}
 						onSubmit={handleSubmit}
-						innerRef={innerRef}
-						disabled={isPending}
 						placeholder="Reply..."
 					/>
 				</div>

@@ -175,11 +175,11 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
         }
       `}</style>
 			<DndContext
-				sensors={sensors}
 				collisionDetection={collisionDetectionStrategy}
-				onDragStart={handleDragStart}
-				onDragOver={handleDragOver}
 				onDragEnd={onDragEnd}
+				onDragOver={handleDragOver}
+				onDragStart={handleDragStart}
+				sensors={sensors}
 			>
 				<SortableContext
 					items={lists.map((l) => l._id)}
@@ -187,16 +187,16 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 				>
 					{lists.map((list) => (
 						<BoardList
+							assigneeData={memberDataMap}
+							cards={cardsByList[list._id] || []}
 							key={list._id}
 							list={list}
-							cards={cardsByList[list._id] || []}
-							onEditList={() => onEditList(list)}
-							onDeleteList={() => onDeleteList(list)}
-							onAddCard={() => onAddCard(list._id)}
-							onEditCard={onEditCard}
-							onDeleteCard={onDeleteCard}
-							assigneeData={memberDataMap}
 							listCount={lists.length}
+							onAddCard={() => onAddCard(list._id)}
+							onDeleteCard={onDeleteCard}
+							onDeleteList={() => onDeleteList(list)}
+							onEditCard={onEditCard}
+							onEditList={() => onEditList(list)}
 						/>
 					))}
 				</SortableContext>
@@ -205,10 +205,10 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 				<DragOverlay>
 					{activeItem?.type === "card" && (
 						<BoardCard
-							card={activeItem.item}
-							onEdit={() => {}}
-							onDelete={() => {}}
 							assigneeData={memberDataMap}
+							card={activeItem.item}
+							onDelete={() => {}}
+							onEdit={() => {}}
 						/>
 					)}
 					{activeItem?.type === "list" && (

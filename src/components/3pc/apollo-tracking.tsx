@@ -19,11 +19,11 @@ export const ApolloTracking = () => {
 	return (
 		<Script
 			id="apollo-tracking"
-			src={`https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache=${cacheBuster}`}
-			strategy="afterInteractive"
 			onLoad={() => {
 				window.trackingFunctions?.onLoad?.({ appId });
 			}}
+			src={`https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache=${cacheBuster}`}
+			strategy="afterInteractive"
 		/>
 	);
 };

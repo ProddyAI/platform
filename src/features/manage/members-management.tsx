@@ -166,7 +166,7 @@ export const MembersManagement = ({
 
 		try {
 			setInviteLoading(true);
-			const res = await fetch("/api/invite", {
+			const res = await fetch("/api/account/invite", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -220,34 +220,34 @@ export const MembersManagement = ({
 						{/* Email Invite Section */}
 						<div className="p-4 bg-muted/30 dark:bg-muted/50 rounded-lg border border-border/50 dark:border-border">
 							<div className="grid gap-2">
-								<Label htmlFor="emailInvite" className="text-sm font-semibold">
+								<Label className="text-sm font-semibold" htmlFor="emailInvite">
 									Invite by Email
 								</Label>
 								<div className="flex gap-2">
 									<Input
+										className="flex-1"
+										disabled={inviteLoading}
 										id="emailInvite"
-										type="email"
-										value={email}
 										onChange={(e) => {
 											setEmail(e.target.value);
 											setInviteSuccess(false);
 										}}
-										placeholder="name@example.com"
-										className="flex-1"
-										disabled={inviteLoading}
 										onKeyDown={(e) => {
 											if (e.key === "Enter") {
 												sendInvite();
 											}
 										}}
+										placeholder="name@example.com"
+										type="email"
+										value={email}
 									/>
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<Button
-												variant="outline"
-												size="icon"
-												onClick={handleGenerateNewCode}
 												disabled={isGeneratingCode}
+												onClick={handleGenerateNewCode}
+												size="icon"
+												variant="outline"
 											>
 												{isGeneratingCode ? (
 													<RefreshCw className="h-4 w-4 animate-spin" />
@@ -261,9 +261,9 @@ export const MembersManagement = ({
 										</TooltipContent>
 									</Tooltip>
 									<Button
-										onClick={sendInvite}
-										disabled={inviteLoading}
 										className="min-w-[120px]"
+										disabled={inviteLoading}
+										onClick={sendInvite}
 									>
 										{inviteLoading ? "Sending..." : "Send Invite"}
 									</Button>
@@ -315,8 +315,8 @@ export const MembersManagement = ({
 										<div className="flex items-center gap-3">
 											<Avatar className="h-8 w-8">
 												<AvatarImage
-													src={member.user.image}
 													alt={member.user.name}
+													src={member.user.image}
 												/>
 												<AvatarFallback>
 													{member.user.name?.charAt(0).toUpperCase()}
@@ -343,9 +343,9 @@ export const MembersManagement = ({
 													<DropdownMenu>
 														<DropdownMenuTrigger asChild>
 															<Button
-																variant="outline"
-																size="sm"
 																disabled={isUpdating}
+																size="sm"
+																variant="outline"
 															>
 																<UserCog className="h-4 w-4" />
 															</Button>
@@ -353,30 +353,30 @@ export const MembersManagement = ({
 														<DropdownMenuContent align="end">
 															{isOwner && (
 																<DropdownMenuItem
+																	disabled={member.role === "owner"}
 																	onClick={() =>
 																		handleUpdateRole(member._id, "owner")
 																	}
-																	disabled={member.role === "owner"}
 																>
 																	Make Owner
 																</DropdownMenuItem>
 															)}
 															{(isOwner || isAdmin) && (
 																<DropdownMenuItem
+																	disabled={member.role === "admin"}
 																	onClick={() =>
 																		handleUpdateRole(member._id, "admin")
 																	}
-																	disabled={member.role === "admin"}
 																>
 																	Make Admin
 																</DropdownMenuItem>
 															)}
 															{(isOwner || isAdmin) && (
 																<DropdownMenuItem
+																	disabled={member.role === "member"}
 																	onClick={() =>
 																		handleUpdateRole(member._id, "member")
 																	}
-																	disabled={member.role === "member"}
 																>
 																	Make Member
 																</DropdownMenuItem>
@@ -387,8 +387,8 @@ export const MembersManagement = ({
 											{/* Show a badge for the only owner instead of role change button */}
 											{member._id === currentMember._id && isOnlyOwner && (
 												<Badge
-													variant="outline"
 													className="text-xs text-muted-foreground"
+													variant="outline"
 												>
 													Only Owner
 												</Badge>
@@ -397,16 +397,16 @@ export const MembersManagement = ({
 											{/* Remove Member Button */}
 											{((isOwner && member.role !== "owner") ||
 												(isAdmin && member.role === "member")) && (
-												<Button
-													variant="outline"
-													size="sm"
-													className="text-destructive hover:bg-destructive/10"
-													onClick={() => openRemoveDialog(member._id)}
-													disabled={member._id === currentMember._id}
-												>
-													<Trash2 className="h-4 w-4" />
-												</Button>
-											)}
+													<Button
+														className="text-destructive hover:bg-destructive/10"
+														disabled={member._id === currentMember._id}
+														onClick={() => openRemoveDialog(member._id)}
+														size="sm"
+														variant="outline"
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												)}
 										</div>
 									</TableCell>
 								</TableRow>
@@ -416,7 +416,7 @@ export const MembersManagement = ({
 				)}
 
 				{/* Remove Member Dialog */}
-				<AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+				<AlertDialog onOpenChange={setRemoveDialogOpen} open={removeDialogOpen}>
 					<AlertDialogContent>
 						<AlertDialogHeader>
 							<AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -428,9 +428,9 @@ export const MembersManagement = ({
 						<AlertDialogFooter>
 							<AlertDialogCancel>Cancel</AlertDialogCancel>
 							<AlertDialogAction
-								onClick={handleRemoveMember}
 								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 								disabled={isRemoving}
+								onClick={handleRemoveMember}
 							>
 								{isRemoving ? "Removing..." : "Remove Member"}
 							</AlertDialogAction>

@@ -35,7 +35,6 @@ export const AccordionItem = ({
 			)}
 		>
 			<button
-				type="button"
 				className={cn(
 					"flex w-full items-center justify-between px-6 py-5 text-left transition-all duration-300",
 					open
@@ -43,6 +42,7 @@ export const AccordionItem = ({
 						: "bg-white hover:bg-gray-50"
 				)}
 				onClick={handleToggle}
+				type="button"
 			>
 				<h3
 					className={cn(

@@ -231,9 +231,9 @@ const CalendarPage = () => {
 		<>
 			<WorkspaceToolbar>
 				<Button
-					variant="ghost"
 					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
 					size="sm"
+					variant="ghost"
 				>
 					<CalendarIcon className="mr-2 size-5" />
 					<span className="truncate">Calendar</span>
@@ -242,11 +242,11 @@ const CalendarPage = () => {
 			<div className="flex flex-1 flex-col bg-white overflow-hidden">
 				<CalendarHeader
 					currentDate={currentDate}
-					onPreviousMonth={handlePreviousMonth}
-					onNextMonth={handleNextMonth}
+					eventCounts={eventCounts}
 					filterOptions={filterOptions}
 					onFilterChange={handleFilterChange}
-					eventCounts={eventCounts}
+					onNextMonth={handleNextMonth}
+					onPreviousMonth={handlePreviousMonth}
 				/>
 				<div className="flex-1 overflow-auto p-4">
 					{isLoading ? (
@@ -259,8 +259,8 @@ const CalendarPage = () => {
 							<div className="grid grid-cols-7 gap-px border-b bg-muted text-center">
 								{weekdays.map((day) => (
 									<div
-										key={day}
 										className="bg-background p-2 text-xs font-medium text-muted-foreground"
+										key={day}
 									>
 										{day}
 									</div>
@@ -270,12 +270,12 @@ const CalendarPage = () => {
 							<div className="grid h-[calc(100%-1rem)] grid-cols-7 grid-rows-6 gap-px bg-muted">
 								{weeks.flat().map((dayObj, index) => (
 									<div
-										key={index}
 										className={`relative bg-background p-1 ${
 											dayObj.isCurrentMonth
 												? ""
 												: "text-muted-foreground opacity-50"
 										}`}
+										key={index}
 									>
 										{dayObj.day && (
 											<>
@@ -296,6 +296,13 @@ const CalendarPage = () => {
 													<div className="mt-4 flex max-h-[80px] flex-col gap-1 overflow-y-auto">
 														{dayObj.events.map((event) => (
 															<Link
+																className={`block rounded-sm p-1 text-[10px] leading-tight transition-colors ${
+																	event.type === "board-card"
+																		? "bg-purple-100 hover:bg-purple-200 border-l-2 border-purple-500 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:border-purple-400 dark:text-purple-100"
+																		: event.type === "task"
+																			? "bg-green-100 hover:bg-green-200 border-l-2 border-green-500 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:border-green-400 dark:text-green-100"
+																			: "bg-blue-100 hover:bg-blue-200 border-l-2 border-blue-500 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100"
+																}`}
 																href={
 																	event.type === "board-card" && event.boardCard
 																		? `/workspace/${workspaceId}/channel/${event.boardCard.channelId}/board`
@@ -308,13 +315,6 @@ const CalendarPage = () => {
 																					: "#"
 																}
 																key={event._id}
-																className={`block rounded-sm p-1 text-[10px] leading-tight transition-colors ${
-																	event.type === "board-card"
-																		? "bg-purple-100 hover:bg-purple-200 border-l-2 border-purple-500 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:border-purple-400 dark:text-purple-100"
-																		: event.type === "task"
-																			? "bg-green-100 hover:bg-green-200 border-l-2 border-green-500 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:border-green-400 dark:text-green-100"
-																			: "bg-blue-100 hover:bg-blue-200 border-l-2 border-blue-500 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100"
-																}`}
 																title={
 																	event.type === "board-card" && event.boardCard
 																		? `${event.boardCard.title} (${event.boardCard.listTitle})`
@@ -362,10 +362,10 @@ const CalendarPage = () => {
 																		</>
 																	) : event?.message?.body ? (
 																		<Renderer
-																			value={event.message.body}
 																			calendarEvent={
 																				event.message.calendarEvent
 																			}
+																			value={event.message.body}
 																		/>
 																	) : (
 																		"Event"

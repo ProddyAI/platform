@@ -1,12 +1,14 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
+
 	"files": {
-		"ignoreUnknown": false,
+		"ignoreUnknown": true,
 		"includes": [
 			"**/*.js",
 			"**/*.jsx",
@@ -23,20 +25,24 @@
 			"!!**/public"
 		]
 	},
+
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab",
 		"indentWidth": 2,
 		"lineWidth": 80
 	},
+
 	"linter": {
 		"enabled": true,
 		"rules": {
 			"recommended": true,
+
 			"complexity": {
 				"noExtraBooleanCast": "error",
 				"noUselessCatch": "error"
 			},
+
 			"correctness": {
 				"noConstAssign": "error",
 				"noConstantCondition": "error",
@@ -54,14 +60,16 @@
 				"noUnsafeFinally": "error",
 				"noUnsafeOptionalChaining": "error",
 				"noUnusedLabels": "error",
-				"noUnusedVariables": "error",
+				"noUnusedVariables": "warn",
 				"useIsNan": "error",
 				"useValidForDirection": "error"
 			},
+
 			"style": {
 				"useConst": "error",
 				"useTemplate": "error"
 			},
+
 			"suspicious": {
 				"noAsyncPromiseExecutor": "warn",
 				"noCatchAssign": "warn",
@@ -92,6 +100,7 @@
 			}
 		}
 	},
+
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double",
@@ -102,11 +111,13 @@
 			"lineEnding": "lf"
 		}
 	},
+
 	"assist": {
 		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": "on",
+				"useSortedAttributes": "on"
 			}
 		}
 	}

@@ -43,7 +43,7 @@ const ResetPasswordContent = () => {
 	useEffect(() => {
 		if (!token) {
 			toast.error("Invalid reset link");
-			router.push("/forgot-password");
+			router.push("/auth/forgot-password");
 		}
 	}, [token, router]);
 
@@ -51,7 +51,7 @@ const ResetPasswordContent = () => {
 		if (verifyToken && !verifyToken.valid) {
 			toast.error(verifyToken.message || "Invalid or expired reset link");
 			setTimeout(() => {
-				router.push("/forgot-password");
+				router.push("/auth/forgot-password");
 			}, 2000);
 		}
 	}, [verifyToken, router]);
@@ -105,7 +105,7 @@ const ResetPasswordContent = () => {
 
 				// Redirect to sign in page
 				setTimeout(() => {
-					router.push("/signin");
+					router.push("/auth/signin");
 				}, 1500);
 			}
 		} catch (error) {
@@ -157,8 +157,8 @@ const ResetPasswordContent = () => {
 					</CardHeader>
 					<CardContent className="px-0 pb-0">
 						<Button
-							onClick={() => router.push("/forgot-password")}
 							className="w-full bg-primary hover:bg-primary/90"
+							onClick={() => router.push("/auth/forgot-password")}
 						>
 							Request New Reset Link
 						</Button>
@@ -184,17 +184,17 @@ const ResetPasswordContent = () => {
 					</CardHeader>
 
 					<CardContent className="space-y-5 px-0 pb-0">
-						<form onSubmit={handleSubmit} className="space-y-4">
+						<form className="space-y-4" onSubmit={handleSubmit}>
 							<div className="space-y-2">
 								<Label htmlFor="new-password">New Password</Label>
 								<Input
-									id="new-password"
-									type="password"
-									value={newPassword}
-									onChange={(e) => setNewPassword(e.target.value)}
 									disabled={isSubmitting}
+									id="new-password"
+									onChange={(e) => setNewPassword(e.target.value)}
 									placeholder="Enter new password"
 									required
+									type="password"
+									value={newPassword}
 								/>
 								{newPassword && (
 									<PasswordStrengthIndicator
@@ -207,13 +207,13 @@ const ResetPasswordContent = () => {
 							<div className="space-y-2">
 								<Label htmlFor="confirm-password">Confirm Password</Label>
 								<Input
-									id="confirm-password"
-									type="password"
-									value={confirmPassword}
-									onChange={(e) => setConfirmPassword(e.target.value)}
 									disabled={isSubmitting}
+									id="confirm-password"
+									onChange={(e) => setConfirmPassword(e.target.value)}
 									placeholder="Confirm new password"
 									required
+									type="password"
+									value={confirmPassword}
 								/>
 								{confirmPassword && newPassword !== confirmPassword && (
 									<p className="text-sm text-red-500">Passwords do not match</p>
@@ -221,10 +221,10 @@ const ResetPasswordContent = () => {
 							</div>
 
 							<Button
-								type="submit"
 								className="bg-primary w-full transition-standard hover:shadow-lg hover:bg-primary/90"
-								size="lg"
 								disabled={isSubmitting || !isPasswordValid(newPassword)}
+								size="lg"
+								type="submit"
 							>
 								{isSubmitting ? "Resetting Password..." : "Reset Password"}
 							</Button>

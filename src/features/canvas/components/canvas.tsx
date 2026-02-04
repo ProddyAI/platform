@@ -420,33 +420,33 @@ export const Canvas = ({
 				<CanvasName savedCanvasName={savedCanvasName} />
 				<TopToolbar
 					canvasState={canvasState}
-					setCanvasState={setCanvasState}
-					onColorChange={setLastUsedColor}
 					currentColor={lastUsedColor}
-					strokeWidth={strokeWidth}
-					onStrokeWidthChange={setStrokeWidth}
-					toggleFullScreen={toggleFullScreen}
 					isFullScreen={isFullScreen}
+					onColorChange={setLastUsedColor}
+					onStrokeWidthChange={setStrokeWidth}
+					setCanvasState={setCanvasState}
+					strokeWidth={strokeWidth}
+					toggleFullScreen={toggleFullScreen}
 				/>
 				<Toolbar
-					onColorChange={setLastUsedColor}
-					currentColor={lastUsedColor}
+					camera={camera}
 					canRedo={canRedo}
 					canUndo={canUndo}
-					undo={history.undo}
-					redo={history.redo}
+					currentColor={lastUsedColor}
 					effectiveId={effectiveId}
+					onColorChange={setLastUsedColor}
 					onGenerateFlowchart={handleGenerateFlowchart}
-					camera={camera}
+					redo={history.redo}
+					undo={history.undo}
 				/>
 
 				<svg
 					className={`h-full w-full ${getCursorStyle()}`}
-					onWheel={onWheel}
-					onPointerMove={onPointerMove}
-					onPointerLeave={onPointerLeave}
 					onPointerDown={onPointerDown}
+					onPointerLeave={onPointerLeave}
+					onPointerMove={onPointerMove}
 					onPointerUp={onPointerUp}
+					onWheel={onWheel}
 				>
 					<g
 						style={{
@@ -457,8 +457,8 @@ export const Canvas = ({
 						{Array.isArray(layerIds) &&
 							layerIds.map((layerId) => (
 								<LayerPreview
-									key={layerId}
 									id={layerId}
+									key={layerId}
 									onLayerPointerDown={onLayerPointerDown}
 									selectionColor={layerIdsToColorSelection[layerId]}
 								/>
@@ -474,12 +474,12 @@ export const Canvas = ({
 								<g>
 									{/* Empty canvas state */}
 									<text
+										className="fill-gray-500 dark:fill-gray-400"
+										fontFamily="sans-serif"
+										fontSize="14"
+										textAnchor="middle"
 										x="50%"
 										y="50%"
-										textAnchor="middle"
-										className="fill-gray-500 dark:fill-gray-400"
-										fontSize="14"
-										fontFamily="sans-serif"
 									>
 										Canvas is empty. Start drawing or add shapes.
 									</text>
@@ -492,22 +492,22 @@ export const Canvas = ({
 							canvasState.current != null && (
 								<rect
 									className="fill-blue-500/5 stroke-blue-500 stroke-1"
-									x={Math.min(canvasState.origin.x, canvasState.current.x)}
-									y={Math.min(canvasState.origin.y, canvasState.current.y)}
-									width={Math.abs(canvasState.origin.x - canvasState.current.x)}
 									height={Math.abs(
 										canvasState.origin.y - canvasState.current.y
 									)}
+									width={Math.abs(canvasState.origin.x - canvasState.current.x)}
+									x={Math.min(canvasState.origin.x, canvasState.current.x)}
+									y={Math.min(canvasState.origin.y, canvasState.current.y)}
 								/>
 							)}
-						<LiveCursorsPresence variant="canvas" showDrawingPaths={true} />
+						<LiveCursorsPresence showDrawingPaths={true} variant="canvas" />
 						{pencilDraft != null && pencilDraft.length > 0 && (
 							<Path
-								points={pencilDraft}
 								fill={colorToCSS(lastUsedColor)}
+								points={pencilDraft}
+								strokeWidth={presenceStrokeWidth || 16}
 								x={0}
 								y={0}
-								strokeWidth={presenceStrokeWidth || 16}
 							/>
 						)}
 					</g>

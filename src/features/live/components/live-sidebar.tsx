@@ -182,17 +182,17 @@ export const LiveSidebar = ({
 			>
 				<div className="p-2 border-b dark:border-[hsl(var(--border))]">
 					<Button
-						onClick={onToggleCollapse}
-						variant="ghost"
-						size="sm"
 						className="w-full h-8 p-0"
+						onClick={onToggleCollapse}
+						size="sm"
+						variant="ghost"
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>
 				</div>
 
 				<div className="p-2">
-					<Button onClick={onCreateItem} size="sm" className="w-full h-8 p-0">
+					<Button className="w-full h-8 p-0" onClick={onCreateItem} size="sm">
 						<Plus className="h-4 w-4" />
 					</Button>
 				</div>
@@ -220,10 +220,10 @@ export const LiveSidebar = ({
 					</h2>
 
 					<Button
-						onClick={onToggleCollapse}
-						variant="ghost"
-						size="sm"
 						className="h-6 w-6 p-0"
+						onClick={onToggleCollapse}
+						size="sm"
+						variant="ghost"
 					>
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
@@ -234,10 +234,10 @@ export const LiveSidebar = ({
 					<div className="relative flex-1">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
+							className="pl-9"
+							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder={`Search ${type}...`}
 							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-9"
 						/>
 					</div>
 					<Button onClick={onCreateItem} size="sm">
@@ -261,10 +261,10 @@ export const LiveSidebar = ({
 							</p>
 							{!searchQuery && (
 								<Button
-									onClick={onCreateItem}
-									variant="outline"
-									size="sm"
 									className="mt-2"
+									onClick={onCreateItem}
+									size="sm"
+									variant="outline"
 								>
 									<Plus className="h-4 w-4 mr-1" />
 									Create {type === "notes" ? "Note" : "Canvas"}
@@ -275,6 +275,12 @@ export const LiveSidebar = ({
 						<div className="space-y-1">
 							{filteredItems.map((item) => (
 								<div
+									className={cn(
+										"p-3 rounded-lg cursor-pointer transition-colors group",
+										selectedItemId === item._id
+											? "bg-primary/10 border border-primary/20 dark:bg-primary/30 dark:border-primary/40"
+											: "hover:bg-muted/50 dark:hover:bg-muted/70"
+									)}
 									key={item._id}
 									onClick={() => handleItemClick(item)}
 									onMouseEnter={() => setHoveredItemId(item._id)}
@@ -284,24 +290,18 @@ export const LiveSidebar = ({
 											setHoveredItemId(null);
 										}
 									}}
-									className={cn(
-										"p-3 rounded-lg cursor-pointer transition-colors group",
-										selectedItemId === item._id
-											? "bg-primary/10 border border-primary/20 dark:bg-primary/30 dark:border-primary/40"
-											: "hover:bg-muted/50 dark:hover:bg-muted/70"
-									)}
 								>
 									<div className="flex items-start justify-between gap-2">
 										<div className="flex-1 min-w-0">
 											{renamingItemId === item._id ? (
 												<Input
-													value={renameValue}
-													onChange={(e) => setRenameValue(e.target.value)}
-													onKeyDown={(e) => handleRenameKeyDown(e, item._id)}
-													onBlur={() => handleRenameSubmit(item._id)}
 													autoFocus
 													className="h-6 text-sm font-medium border-none shadow-none p-0 focus-visible:ring-0"
+													onBlur={() => handleRenameSubmit(item._id)}
+													onChange={(e) => setRenameValue(e.target.value)}
 													onClick={(e) => e.stopPropagation()}
+													onKeyDown={(e) => handleRenameKeyDown(e, item._id)}
+													value={renameValue}
 												/>
 											) : (
 												<h3 className="font-medium text-sm truncate">
@@ -319,15 +319,15 @@ export const LiveSidebar = ({
 												<div className="flex flex-wrap gap-1 mt-2">
 													{item.tags.slice(0, 3).map((tag, index) => (
 														<Badge
+															className="text-xs"
 															key={index}
 															variant="secondary"
-															className="text-xs"
 														>
 															{tag}
 														</Badge>
 													))}
 													{item.tags.length > 3 && (
-														<Badge variant="secondary" className="text-xs">
+														<Badge className="text-xs" variant="secondary">
 															+{item.tags.length - 3}
 														</Badge>
 													)}
@@ -354,10 +354,10 @@ export const LiveSidebar = ({
 											>
 												<DropdownMenuTrigger asChild>
 													<Button
-														variant="ghost"
-														size="sm"
 														className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
 														onClick={(e) => e.stopPropagation()}
+														size="sm"
+														variant="ghost"
 													>
 														<MoreHorizontal className="h-4 w-4" />
 													</Button>
@@ -373,8 +373,8 @@ export const LiveSidebar = ({
 													)}
 													{onDeleteItem && (
 														<DropdownMenuItem
-															onClick={(e) => handleDelete(e, item._id)}
 															className="text-destructive"
+															onClick={(e) => handleDelete(e, item._id)}
 														>
 															<Trash2 className="h-4 w-4 mr-2" />
 															Delete

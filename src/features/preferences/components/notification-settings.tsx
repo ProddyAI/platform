@@ -186,9 +186,9 @@ export const NotificationSettings = () => {
 						</div>
 						<Switch
 							checked={allNotificationsEnabled}
-							onCheckedChange={handleMasterToggle}
-							disabled={isUpdating}
 							className="data-[state=checked]:bg-green-600"
+							disabled={isUpdating}
+							onCheckedChange={handleMasterToggle}
 						/>
 					</div>
 
@@ -232,10 +232,10 @@ export const NotificationSettings = () => {
 								</div>
 								<Switch
 									checked={notification.enabled}
+									disabled={isUpdating}
 									onCheckedChange={(enabled) =>
 										handleNotificationToggle(notification.key, enabled)
 									}
-									disabled={isUpdating}
 								/>
 							</div>
 							{index < notificationTypes.length - 1 && (
@@ -260,10 +260,10 @@ export const NotificationSettings = () => {
 							</div>
 							<Switch
 								checked={weeklyDigestEnabled}
+								disabled={isUpdating}
 								onCheckedChange={(enabled) =>
 									handleNotificationToggle("weeklyDigest", enabled)
 								}
-								disabled={isUpdating}
 							/>
 						</div>
 
@@ -271,9 +271,9 @@ export const NotificationSettings = () => {
 							<div className="ml-6 space-y-2">
 								<Label className="text-sm font-medium">Delivery Day</Label>
 								<Select
-									value={weeklyDigestDay}
-									onValueChange={handleWeeklyDigestDayChange}
 									disabled={isUpdating}
+									onValueChange={handleWeeklyDigestDayChange}
+									value={weeklyDigestDay}
 								>
 									<SelectTrigger className="w-48">
 										<SelectValue />

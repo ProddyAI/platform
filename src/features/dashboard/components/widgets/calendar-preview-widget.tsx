@@ -125,8 +125,8 @@ export const CalendarPreviewWidget = ({
 					<h3 className="font-medium">Upcoming Events</h3>
 					{!isEditMode && upcomingEvents.length > 0 && (
 						<Badge
-							variant="secondary"
 							className="ml-1 h-5 px-2 text-xs font-medium"
+							variant="secondary"
 						>
 							{upcomingEvents.length}
 						</Badge>
@@ -136,10 +136,10 @@ export const CalendarPreviewWidget = ({
 					controls
 				) : (
 					<Button
-						variant="ghost"
-						size="sm"
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewCalendar}
+						size="sm"
+						variant="ghost"
 					>
 						View All
 					</Button>
@@ -151,8 +151,8 @@ export const CalendarPreviewWidget = ({
 					<div className="space-y-4 p-4">
 						{eventsByDay.map((dayData) => (
 							<div
-								key={format(dayData.date, "yyyy-MM-dd")}
 								className="space-y-2"
+								key={format(dayData.date, "yyyy-MM-dd")}
 							>
 								<div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-1">
 									<h4 className="text-sm font-medium">
@@ -166,24 +166,24 @@ export const CalendarPreviewWidget = ({
 
 								{dayData.events.length > 0 ? (
 									dayData.events.map((event: CalendarEvent) => (
-										<Card key={event._id} className="overflow-hidden border-2">
+										<Card className="overflow-hidden border-2" key={event._id}>
 											<CardContent className="p-3">
 												<div className="space-y-1">
 													<div className="flex items-center justify-between">
 														<h5 className="font-medium">{event.title}</h5>
 														<Badge
-															variant={!event.time ? "outline" : "secondary"}
 															className="text-xs border-2"
+															variant={!event.time ? "outline" : "secondary"}
 														>
 															{!event.time ? "All day" : event.time}
 														</Badge>
 													</div>
 													{/* Location is not available in the current event structure */}
 													<Button
-														variant="ghost"
-														size="sm"
 														className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 														onClick={() => handleViewEvent(event._id)}
+														size="sm"
+														variant="ghost"
 													>
 														View details
 													</Button>
@@ -208,10 +208,10 @@ export const CalendarPreviewWidget = ({
 						Schedule events to see them here
 					</p>
 					<Button
-						variant="default"
-						size="sm"
 						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
 						onClick={handleViewCalendar}
+						size="sm"
+						variant="default"
 					>
 						View Calendar <ArrowRight className="ml-2 h-3.5 w-3.5" />
 					</Button>
