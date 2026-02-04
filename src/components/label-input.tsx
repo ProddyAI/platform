@@ -129,7 +129,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
 					{selectedLabels.map((label, index) => (
 						<Badge
 							className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
-							key={index}
+							key={`${label}-${index}`}
 							variant="secondary"
 						>
 							{label}
@@ -174,7 +174,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
 								"px-3 py-1.5 cursor-pointer hover:bg-secondary/10",
 								"text-sm text-foreground"
 							)}
-							key={index}
+							key={`${suggestion}-${index}`}
 							onClick={() => handleSuggestionClick(suggestion)}
 						>
 							{suggestion}

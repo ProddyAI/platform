@@ -653,10 +653,10 @@ Try asking me things like:`;
 								Sources used for this response:
 							</h4>
 							<div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-								{sources.map((source, index) => (
+								{sources.map((source) => (
 									<div
 										className="text-xs p-2 bg-muted/50 rounded border"
-										key={index}
+										key={source.id}
 									>
 										<div className="font-semibold text-primary mb-1">
 											{getSourceTypeDisplay(source.type)}
@@ -840,10 +840,10 @@ Try asking me things like:`;
 									{message.sources && renderSourceBadges(message.sources)}
 									{message.actions && message.actions.length > 0 && (
 										<div className="flex flex-wrap gap-2 mt-3">
-											{message.actions.map((action, index) => (
+											{message.actions.map((action) => (
 												<Button
 													className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
-													key={index}
+													key={`${action.type}-${action.url}`}
 													onClick={() => handleNavigation(action)}
 													size="sm"
 													variant="outline"

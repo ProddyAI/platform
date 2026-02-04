@@ -254,10 +254,10 @@ export const CalendarPicker = ({
 											</div>
 										)
 									)}
-									{nextWeekDates.map((nextWeekDate, index) => (
-										<Button
-											className="h-8 w-full p-0 text-xs"
-											key={index}
+								{nextWeekDates.map((nextWeekDate) => (
+									<Button
+										className="h-8 w-full p-0 text-xs"
+										key={nextWeekDate.getTime()}
 											onClick={() => setDate(nextWeekDate)}
 											size="sm"
 											variant={

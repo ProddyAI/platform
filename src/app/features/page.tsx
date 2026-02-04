@@ -234,7 +234,7 @@ const FeaturesPage = () => {
 					</h4>
 					<ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
 						{feature.features.slice(0, 6).map((featureItem, idx) => (
-							<li className="flex items-start gap-2.5" key={idx}>
+							<li className="flex items-start gap-2.5" key={`${feature.id}-${idx}-${featureItem.slice(0, 20)}`}>
 								<ArrowRight
 									className={`size-4 ${arrowColorClass} mt-1 flex-shrink-0`}
 								/>

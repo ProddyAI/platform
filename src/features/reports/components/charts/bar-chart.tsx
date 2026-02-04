@@ -92,7 +92,7 @@ export const BarChart = ({
 					<div
 						className="relative flex flex-col items-center justify-end flex-1 group"
 						data-bar-index={index}
-						key={index}
+						key={item.label}
 						onClick={() => onBarClick?.(item.label, item.value, index)}
 						onMouseEnter={() => setHoveredIndex(index)}
 						onMouseLeave={() => setHoveredIndex(null)}

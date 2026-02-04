@@ -108,7 +108,7 @@ export const FeatureSection = () => {
 									</h4>
 									<ul className="space-y-3 mb-6">
 										{activeFeature.features.map((feature, index) => (
-											<li className="flex items-start gap-2" key={index}>
+											<li className="flex items-start gap-2" key={`${activeFeature.id}-${index}-${feature.slice(0, 20)}`}>
 												<ArrowRight className="size-4 text-primary mt-1 flex-shrink-0" />
 												<span className="text-gray-700">{feature}</span>
 											</li>
