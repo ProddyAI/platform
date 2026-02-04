@@ -32,7 +32,7 @@ interface CalendarPickerProps {
 const generateTimeOptions = (startDate: Date) => {
 	const options = [];
 	const now = new Date(startDate);
-	const end = new Date(startDate);
+	let end = new Date(startDate);
 	end.setHours(end.getHours() + 24); // 24 hours from now
 
 	// Round the start time to the nearest 15 minutes
@@ -45,7 +45,7 @@ const generateTimeOptions = (startDate: Date) => {
 	now.setMilliseconds(0);
 
 	// Generate times in 15-minute intervals for the next 24 hours
-	const current = new Date(now);
+	let current = new Date(now);
 	while (current < end) {
 		const hours = current.getHours().toString().padStart(2, "0");
 		const minutes = current.getMinutes().toString().padStart(2, "0");
