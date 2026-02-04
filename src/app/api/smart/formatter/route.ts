@@ -37,7 +37,6 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-
 		// Create the Gemini model
 		const model = google("gemini-2.5-flash");
 

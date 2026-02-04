@@ -163,7 +163,6 @@ export const deleteAccount = mutation({
 					.collect(),
 			]);
 
-
 			// Helper function to safely delete a document
 			const safeDelete = async (id: any) => {
 				try {

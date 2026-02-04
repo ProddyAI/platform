@@ -8,7 +8,7 @@ import { generateUnsubscribeUrl } from "@/lib/email-unsubscribe";
 // Log the API key (masked for security)
 const apiKey = process.env.RESEND_API_KEY;
 if (apiKey) {
-	const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+	const _maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
 }
 
 const resend = new Resend(apiKey);
@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
 
 		// Set the subject for mention emails
 		const subject = "You were mentioned in Proddy";
-
 
 		// Create the mention email template
 		const emailTemplate = MentionTemplate({

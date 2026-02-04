@@ -106,7 +106,7 @@ export const WeeklyDigestTemplate: React.FC<
 
 						{/* Workspace Details */}
 						{workspaces.map((workspace, index) => (
-						<Section key={workspace.workspaceName} style={workspaceSection}>
+							<Section key={workspace.workspaceName} style={workspaceSection}>
 								<Heading style={workspaceHeading}>
 									{workspace.workspaceName}
 								</Heading>

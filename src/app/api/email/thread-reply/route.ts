@@ -8,7 +8,7 @@ import { generateUnsubscribeUrl } from "@/lib/email-unsubscribe";
 // Log the API key (masked for security)
 const apiKey = process.env.RESEND_API_KEY;
 if (apiKey) {
-	const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+	const _maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
 }
 
 const resend = new Resend(apiKey);

@@ -287,7 +287,7 @@ export const LineChart = ({
 				<div className="flex justify-between mt-2 flex-shrink-0 px-4">
 					{data.map((item, index) => (
 						<div
-						key={item.label}
+							key={item.label}
 							className={cn(
 								"text-xs text-muted-foreground px-1 text-center",
 								hoveredIndex === index && "font-medium text-foreground"

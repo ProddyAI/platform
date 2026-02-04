@@ -78,7 +78,6 @@ export const getMentionsForCurrentUser = query({
 				return [];
 			}
 
-
 			// Query mentions for the current member
 			let mentionsQuery = ctx.db
 				.query("mentions")

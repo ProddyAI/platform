@@ -299,7 +299,6 @@ export const fixNotificationsSchema = mutation({
 			const notifications = pref.settings?.notifications as any;
 
 			if (notifications === true || notifications === false) {
-
 				// Convert boolean to proper object structure with defaults
 				const newSettings = {
 					...pref.settings,
@@ -322,7 +321,6 @@ export const fixNotificationsSchema = mutation({
 				skippedCount++;
 			}
 		}
-
 
 		return {
 			success: true,

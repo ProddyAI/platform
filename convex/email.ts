@@ -331,7 +331,7 @@ export const sendDirectMessageEmail = action({
 					};
 				}
 
-				const result = await response.json();
+				const _result = await response.json();
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending direct message email:", error);
@@ -448,7 +448,7 @@ export const sendMentionEmail = action({
 					};
 				}
 
-				const result = await response.json();
+				const _result = await response.json();
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending mention email:", error);
@@ -572,7 +572,7 @@ export const sendThreadReplyEmail = action({
 					};
 				}
 
-				const result = await response.json();
+				const _result = await response.json();
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending thread reply email:", error);
@@ -640,7 +640,6 @@ export const sendWeeklyDigestEmails = action({
 					| "sunday",
 			});
 
-
 			const results = [];
 			const weekRange = getWeekRange();
 
@@ -700,8 +699,6 @@ export const sendWeeklyDigestEmails = action({
 							success: emailResponse.ok,
 							result: emailResult,
 						});
-
-
 					} else {
 						results.push({
 							userId: user.userId,
@@ -709,7 +706,7 @@ export const sendWeeklyDigestEmails = action({
 							success: true,
 							skipped: true,
 							reason: "No activity",
-						});	
+						});
 					}
 				} catch (error) {
 					console.error(
@@ -1057,7 +1054,7 @@ export const sendCardAssignmentEmail = action({
 					};
 				}
 
-				const result = await response.json();
+				const _result = await response.json();
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending card assignment email:", error);

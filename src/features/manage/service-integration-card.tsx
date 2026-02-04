@@ -147,7 +147,6 @@ export const ServiceIntegrationCard = ({
 		setIsConnecting(true);
 
 		try {
-
 			// Use AgentAuth to authorize user to toolkit with member-specific entity ID
 			const response = await fetch("/api/composio/agentauth", {
 				method: "POST",
@@ -243,7 +242,7 @@ export const ServiceIntegrationCard = ({
 				throw new Error(error.error || "Failed to disconnect account");
 			}
 
-			const result = await response.json();
+			const _result = await response.json();
 
 			toast.success(`${toolkits[toolkit].name} disconnected successfully`);
 			onConnectionChange?.();

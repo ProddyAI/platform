@@ -123,7 +123,6 @@ export const ExportCanvasDialog = ({
 				return null;
 			}
 
-
 			// Create a new SVG element for the export
 			const exportSvg = document.createElementNS(
 				"http://www.w3.org/2000/svg",
@@ -346,16 +345,15 @@ export const ExportCanvasDialog = ({
 	// Direct method to capture canvas using html2canvas approach
 	const captureCanvasDirect = async (): Promise<string | null> => {
 		try {
-
 			// Try to find the canvas container with the actual drawings
 			// Look for specific elements that might contain the drawings
 			const canvasElements = document.querySelectorAll(
 				'svg, canvas, [data-canvas="true"], .canvas-container, .whiteboard'
 			);
 			// Log all potential canvas elements for debugging
-			canvasElements.forEach((element, index) => {
+			canvasElements.forEach((element, _index) => {
 				// Use type assertion to access element properties safely
-				const el = element as HTMLElement;
+				const _el = element as HTMLElement;
 			});
 
 			// Try to find the element with the most child nodes (likely the main canvas)
@@ -376,7 +374,6 @@ export const ExportCanvasDialog = ({
 				console.error("Could not find main canvas element");
 				return null;
 			}
-
 
 			// Create a canvas element for rendering
 			const canvas = document.createElement("canvas");

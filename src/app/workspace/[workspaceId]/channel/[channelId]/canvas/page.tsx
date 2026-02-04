@@ -383,7 +383,7 @@ const CanvasPage = () => {
 						<LiveHeader
 							type="canvas"
 							title={activeCanvas.canvasName}
-							onTitleChange={(newTitle) => {
+							onTitleChange={(_newTitle) => {
 								// You can implement canvas title update here
 							}}
 							onCreateItem={handleCreateCanvas}

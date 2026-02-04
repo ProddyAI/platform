@@ -504,7 +504,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				{/* Timeline Header */}
 				<div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b dark:border-gray-800">
 					<div className="flex pl-[250px]">
-						{timelineDates.map((date, index) => (
+						{timelineDates.map((date, _index) => (
 							<div
 								key={date.toISOString()}
 								className="flex-1 text-center py-2 text-xs font-medium border-r dark:border-gray-800 last:border-r-0"
@@ -696,9 +696,9 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 										Labels
 									</div>
 									<div className="flex flex-wrap gap-1">
-									{selectedTask.labels.map((label) => (
-										<span
-											key={label}
+										{selectedTask.labels.map((label) => (
+											<span
+												key={label}
 												className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 text-xs rounded-full"
 											>
 												{label}

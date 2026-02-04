@@ -233,17 +233,15 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 															{highlight.time}
 														</span>
 														<div className="flex gap-1">
-															{highlight.participants.map(
-																(participant) => (
-																	<Badge
-																		key={participant}
-																		variant="secondary"
-																		className="text-xs"
-																	>
-																		{participant}
-																	</Badge>
-																)
-															)}
+															{highlight.participants.map((participant) => (
+																<Badge
+																	key={participant}
+																	variant="secondary"
+																	className="text-xs"
+																>
+																	{participant}
+																</Badge>
+															))}
 														</div>
 													</div>
 												</div>
@@ -263,7 +261,10 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								<CardContent>
 									<div className="space-y-3">
 										{recapData.topContacts.map((contact, index) => (
-											<div key={contact.name} className="flex items-center gap-3">
+											<div
+												key={contact.name}
+												className="flex items-center gap-3"
+											>
 												<Avatar className="h-8 w-8">
 													<AvatarFallback className="text-xs">
 														{getInitials(contact.name)}

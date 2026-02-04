@@ -92,7 +92,6 @@ Generate the Mermaid flowchart code:`;
 				temperature: 0.3, // Lower temperature for more consistent diagram structure
 			});
 
-
 			// Clean up the response to ensure it's valid Mermaid code
 			let mermaidCode = text.trim();
 

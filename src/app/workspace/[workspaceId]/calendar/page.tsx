@@ -270,7 +270,11 @@ const CalendarPage = () => {
 							<div className="grid h-[calc(100%-1rem)] grid-cols-7 grid-rows-6 gap-px bg-muted">
 								{weeks.flat().map((dayObj, index) => (
 									<div
-										key={dayObj.day !== null ? `day-${dayObj.day}` : `empty-${index}`}
+										key={
+											dayObj.day !== null
+												? `day-${dayObj.day}`
+												: `empty-${index}`
+										}
 										className={`relative bg-background p-1 ${
 											dayObj.isCurrentMonth
 												? ""

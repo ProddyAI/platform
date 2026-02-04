@@ -203,7 +203,6 @@ const BoardPage = () => {
 
 		// Log the drag event for debugging
 
-
 		// Get data from the dragged item
 		const activeType = active.data.current?.type;
 

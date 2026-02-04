@@ -770,7 +770,6 @@ export async function getAllToolsForApps(
 			}
 
 			try {
-
 				// Fetch maximum available tools
 				const tools = await composio.tools.get(entityId, {
 					authConfigIds: [authConfigId],
@@ -828,7 +827,6 @@ export async function getAllToolsForApps(
 				timestamp: Date.now(),
 			});
 		}
-
 
 		return validatedTools;
 	} catch (error) {

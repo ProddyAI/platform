@@ -312,7 +312,7 @@ interface AudioRoomUIProps {
 const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 	const { useParticipants, useLocalParticipant } = useCallStateHooks();
 	const participants = useParticipants();
-	const localParticipant = useLocalParticipant();
+	const _localParticipant = useLocalParticipant();
 	const [isLeaving, _setIsLeaving] = useState(false);
 
 	// Check if audio is published
@@ -322,7 +322,7 @@ const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 	useEffect(() => {
 		if (process.env.NODE_ENV !== "development") return;
 
-		const summarize = (p: StreamVideoParticipant) => {
+		const _summarize = (p: StreamVideoParticipant) => {
 			const userId = (p as unknown as { userId?: string }).userId ?? "unknown";
 			return {
 				userId,
@@ -330,7 +330,7 @@ const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 				publishedTracks: p.publishedTracks,
 			};
 		};
-	}, [participants, localParticipant]);
+	}, []);
 
 	// Handle leave audio with confirmation
 	const handleLeaveWithConfirmation = () => {

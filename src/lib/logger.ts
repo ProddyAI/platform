@@ -6,7 +6,7 @@ export const logger = {
 		}
 	},
 
-	info: (message: string, ...args: unknown[]) => {
+	info: (_message: string, ..._args: unknown[]) => {
 		if (process.env.NODE_ENV === "development") {
 		}
 	},

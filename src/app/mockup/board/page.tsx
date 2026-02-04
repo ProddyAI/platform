@@ -82,8 +82,7 @@ const TestBoardPage = () => {
 		setSelectedListId(null);
 	};
 
-	const handleDragEnd = (event: any) => {
-	};
+	const handleDragEnd = (_event: any) => {};
 
 	const moveCardToNextList = (cardId: string) => {
 		setCards((prev) =>
