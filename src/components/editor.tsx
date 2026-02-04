@@ -56,6 +56,7 @@ interface EditorProps {
 	innerRef?: MutableRefObject<Quill | null>;
 	variant?: "create" | "update";
 	disableMentions?: boolean;
+	onTextChange?: () => void;
 }
 
 const Editor = ({
@@ -67,6 +68,7 @@ const Editor = ({
 	innerRef,
 	variant = "create",
 	disableMentions = false,
+	onTextChange,
 }: EditorProps) => {
 	const router = useRouter();
 	const workspaceId = useWorkspaceId();
@@ -197,6 +199,11 @@ const Editor = ({
 			const plainText = newText.replace(/\n+$/, "");
 			setText(newText);
 
+			// Call onTextChange callback if provided
+			if (onTextChange && newText.trim().length > 0) {
+				onTextChange();
+			}
+
 			// Check if the last character is "!" to trigger calendar picker
 			if (plainText.trim().endsWith("!") && !lastKeyWasExclamation) {
 				setLastKeyWasExclamation(true);
@@ -277,6 +284,7 @@ const Editor = ({
 		disableMentions,
 		lastKeyWasExclamation,
 		mentionPickerOpen,
+		onTextChange,
 	]);
 
 	const toggleToolbar = () => {

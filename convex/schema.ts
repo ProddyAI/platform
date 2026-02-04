@@ -285,6 +285,14 @@ const schema = defineSchema({
 			v.object({
 				theme: v.optional(v.string()),
 				statusTracking: v.optional(v.boolean()), // Enable/disable status tracking
+				userStatus: v.optional(
+					v.union(
+						v.literal("online"),
+						v.literal("idle"),
+						v.literal("dnd"),
+						v.literal("offline")
+					)
+				), // User's custom status (e.g., DND)
 				// Notification preferences
 				notifications: v.optional(
 					v.object({

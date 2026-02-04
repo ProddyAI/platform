@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useGetMember } from "@/features/members/api/use-get-member";
 import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
-import { useUserPresence } from "@/features/presence/hooks/use-workspace-presence";
+import { useUserStatus } from "@/features/presence/hooks/use-user-status";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { generateUserColor } from "@/lib/placeholder-image";
 import { cn } from "@/lib/utils";
@@ -99,8 +99,11 @@ export const MemberItem = ({
 	// Get the member data to access the userId
 	const { data: member } = useGetMember({ id });
 
-	// Get the user's presence status using the new presence system
-	const { isOnline } = useUserPresence(member?.userId);
+	// Get the user's status using the enhanced status system
+	const { status } = useUserStatus({
+		userId: member?.userId,
+		workspaceId,
+	});
 
 	// Generate background color for avatar fallback
 	const backgroundColor = generateUserColor(member?.userId || label);
@@ -139,7 +142,7 @@ export const MemberItem = ({
 								</Avatar>
 								{member && (
 									<PresenceIndicator
-										isOnline={isOnline}
+										status={status}
 										className="w-2 h-2 md:w-2.5 md:h-2.5"
 									/>
 								)}
@@ -160,7 +163,7 @@ export const MemberItem = ({
 							</Avatar>
 							{member && (
 								<PresenceIndicator
-									isOnline={isOnline}
+									status={status}
 									className="w-2 h-2 md:w-2.5 md:h-2.5"
 								/>
 							)}

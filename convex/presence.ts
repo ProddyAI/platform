@@ -157,6 +157,28 @@ export const workspaceHeartbeat = mutation({
 			return { roomToken: roomId, sessionToken: sessionId };
 		}
 
+		// Update activity tracking in history table for idle detection
+		const existingHistory = await ctx.db
+			.query("history")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("userId", authUserId)
+			)
+			.filter((q) => q.eq(q.field("status"), "active"))
+			.first();
+
+		if (existingHistory) {
+			await ctx.db.patch(existingHistory._id, {
+				lastSeen: Date.now(),
+			});
+		} else {
+			await ctx.db.insert("history", {
+				userId: authUserId,
+				workspaceId,
+				status: "active",
+				lastSeen: Date.now(),
+			});
+		}
+
 		return await presence.heartbeat(
 			ctx,
 			roomId,

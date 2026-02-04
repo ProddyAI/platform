@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useCreateCalendarEvent } from "@/features/calendar/api/use-create-calendar-event";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
+import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicator";
 import { Suggestions } from "@/features/smart/components/suggestions";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -60,6 +61,12 @@ export const ChatInput = ({
 	const { mutate: createMessage } = useCreateMessage();
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();
 	const { mutate: createCalendarEvent } = useCreateCalendarEvent();
+
+	// Typing indicator
+	const { signalTyping, stopTyping } = useTypingIndicator({
+		channelId,
+		conversationId,
+	});
 
 	const handleSubmit = async ({
 		body,
@@ -137,6 +144,9 @@ export const ChatInput = ({
 			}
 
 			setEditorKey((prevKey) => prevKey + 1);
+
+			// Stop typing indicator after sending message
+			stopTyping();
 		} catch (_error) {
 			toast.error("Failed to send message.");
 		} finally {
@@ -176,6 +186,10 @@ export const ChatInput = ({
 				disabled={isPending}
 				innerRef={innerRef}
 				disableMentions={!!conversationId} // Disable mentions for direct messages (when conversationId is present)
+				onTextChange={() => {
+					// Signal typing when user types
+					signalTyping();
+				}}
 			/>
 		</div>
 	);

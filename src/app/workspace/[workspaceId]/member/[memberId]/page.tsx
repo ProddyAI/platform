@@ -8,11 +8,13 @@ import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { ChatInput } from "@/components/chat-input";
 import { MessageList } from "@/components/message-list";
+import { TypingIndicator } from "@/components/typing-indicator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useCreateOrGetConversation } from "@/features/conversations/api/use-create-or-get-conversation";
 import { useGetMember } from "@/features/members/api/use-get-member";
 import { useGetMessages } from "@/features/messages/api/use-get-messages";
+import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicator";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useMemberId } from "@/hooks/use-member-id";
 import { usePanel } from "@/hooks/use-panel";
@@ -43,6 +45,11 @@ const MemberIdPage = () => {
 
 	// Set document title based on member name
 	useDocumentTitle(member?.user.name || "Direct Message");
+
+	// Get typing indicator data
+	const { typingText, isAnyoneTyping } = useTypingIndicator({
+		conversationId,
+	});
 
 	useEffect(() => {
 		mutate(
@@ -116,7 +123,9 @@ const MemberIdPage = () => {
 				canLoadMore={status === "CanLoadMore"}
 				isLoadingMore={status === "LoadingMore"}
 			/>
-
+	
+			<TypingIndicator typingText={typingText} isVisible={isAnyoneTyping} />
+	
 			<ChatInput
 				placeholder={`Message ${member?.user.name}`}
 				conversationId={conversationId}
