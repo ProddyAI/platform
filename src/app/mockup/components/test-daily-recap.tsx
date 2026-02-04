@@ -263,7 +263,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								<CardContent>
 									<div className="space-y-3">
 										{recapData.topContacts.map((contact, index) => (
-										<div className="flex items-center gap-3" key={contact.name}>
+									<div className="flex items-center gap-3" key={`${contact.name}-${index}`}>
 												<Avatar className="h-8 w-8">
 													<AvatarFallback className="text-xs">
 														{getInitials(contact.name)}

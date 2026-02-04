@@ -129,8 +129,8 @@ export const WeeklyDigestTemplate: React.FC<
 								{workspace.topChannels.length > 0 && (
 									<div style={channelSection}>
 										<Text style={sectionTitle}>🔥 Most Active Channels</Text>
-									{workspace.topChannels.slice(0, 3).map((channel) => (
-									    	<Text key={channel.name} style={channelItem}>
+								{workspace.topChannels.slice(0, 3).map((channel, index) => (
+							    	<Text key={`${channel.name}-${channel.messageCount}-${index}`} style={channelItem}>
 												#{channel.name} - {channel.messageCount} messages
 											</Text>
 										))}

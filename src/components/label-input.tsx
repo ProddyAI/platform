@@ -126,10 +126,10 @@ const LabelInput: React.FC<LabelInputProps> = ({
 			{/* Selected labels */}
 			{selectedLabels.length > 0 && (
 				<div className="flex flex-wrap gap-1 mb-2">
-					{selectedLabels.map((label, index) => (
-						<Badge
-							className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
-							key={`${label}-${index}`}
+				{Array.from(new Set(selectedLabels)).map((label) => (
+					<Badge
+						className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
+						key={label}
 							variant="secondary"
 						>
 							{label}

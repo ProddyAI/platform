@@ -843,7 +843,7 @@ Try asking me things like:`;
 											{message.actions.map((action) => (
 												<Button
 													className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
-													key={`${action.type}-${action.url}`}
+												key={`${action.type}-${action.url}-${action.label}`}
 													onClick={() => handleNavigation(action)}
 													size="sm"
 													variant="outline"
