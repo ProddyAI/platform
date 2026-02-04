@@ -371,7 +371,6 @@ Try asking me things like:`;
 		setIsLoading(true);
 
 		try {
-			console.log("Sending message to assistant:", userQuery);
 
 			// Get workspace context for assistant integration
 			const workspaceContext = workspace ? `Workspace: ${workspace.name}` : "";
@@ -387,11 +386,6 @@ Try asking me things like:`;
 							: msg.content, // Truncate long messages
 				}));
 
-			console.log(
-				"Sending conversation history:",
-				conversationHistory.length,
-				"messages"
-			);
 
 			// Call the main assistant router API
 			const response = await fetch("/api/assistant", {
@@ -430,8 +424,6 @@ Try asking me things like:`;
 			if (!result.response) {
 				throw new Error("Missing response content from assistant API");
 			}
-
-			console.log("Received response from assistant");
 
 			// Add assistant response to UI immediately so the user sees it
 			const assistantMessage: Message = {

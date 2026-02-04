@@ -82,7 +82,6 @@ const CanvasPage = () => {
 							updatedAt: message._creationTime,
 							tags: message.tags || body.tags || [],
 						};
-						console.log("Canvas item parsed:", canvasItem);
 						canvasMessages.push(canvasItem);
 					}
 				} catch (_error) {
@@ -389,16 +388,13 @@ const CanvasPage = () => {
 							lastSaved={activeCanvas.updatedAt}
 							onCreateItem={handleCreateCanvas}
 							onSave={() => {
-								console.log("Save canvas");
 								// Implement canvas save functionality
 							}}
 							onTagsChange={(newTags) => {
-								console.log("Canvas tags changing:", newTags);
 								handleUpdateCanvasTags(activeCanvas._id, newTags);
 							}}
 							onTitleChange={(newTitle) => {
 								// Update canvas name
-								console.log("Title changed to:", newTitle);
 								// You can implement canvas title update here
 							}}
 							showFullScreenToggle={true}

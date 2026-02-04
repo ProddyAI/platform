@@ -493,10 +493,6 @@ export const adminDeleteConnectedAccount = mutation({
 		}
 
 		// Log the deletion for audit purposes
-		console.log(
-			`Admin ${userId} (member ${callerMember._id}) deleting connected account ${args.connectedAccountId} ` +
-				`(toolkit: ${connectedAccount.toolkit}, has memberId: ${!!connectedAccount.memberId})`
-		);
 
 		// Delete the connected account from database
 		await ctx.db.delete(args.connectedAccountId);

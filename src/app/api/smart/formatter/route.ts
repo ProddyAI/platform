@@ -39,11 +39,6 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		console.log(
-			"[Smart Formatter] Processing formatting request for content length:",
-			content.length
-		);
-
 		// Create the Gemini model
 		const model = openrouter("google/gemini-2.5-flash");
 
@@ -87,8 +82,6 @@ Formatted Content:`;
 				prompt,
 				temperature: 0.3, // Lower temperature for more consistent formatting
 			});
-
-			console.log("[Smart Formatter] Successfully formatted content");
 
 			return NextResponse.json({
 				formattedContent: text.trim(),

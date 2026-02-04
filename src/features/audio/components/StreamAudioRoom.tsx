@@ -331,13 +331,6 @@ const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 			};
 		};
 
-		console.log("Stream audio participants", {
-			count: participants.length,
-			localUserId:
-				(localParticipant as unknown as { userId?: string })?.userId ??
-				"unknown",
-			participants: participants.map(summarize),
-		});
 	}, [participants, localParticipant]);
 
 	// Handle leave audio with confirmation

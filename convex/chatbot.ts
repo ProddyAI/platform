@@ -424,7 +424,6 @@ async function executeComposioAction(
 			};
 		}
 
-		console.log("[Composio] Initializing clients for:", { entityId, appNames });
 
 		// Initialize Composio client
 		const composio = new Composio({
@@ -493,7 +492,6 @@ async function executeComposioAction(
 			}
 		}
 
-		console.log("[Composio] Retrieved", tools.length, "tools");
 
 		if (tools.length === 0) {
 			return {
@@ -540,11 +538,6 @@ async function executeComposioAction(
 			completion.choices[0]?.message?.tool_calls &&
 			completion.choices[0].message.tool_calls.length > 0
 		) {
-			console.log(
-				"[Composio] Executing",
-				completion.choices[0].message.tool_calls.length,
-				"tool calls"
-			);
 
 			for (const toolCall of completion.choices[0].message.tool_calls) {
 				if (toolCall.type === "function") {
@@ -556,10 +549,6 @@ async function executeComposioAction(
 								userId: entityId,
 								arguments: actionParams,
 							}
-						);
-
-						console.log(
-							`[Composio] Tool ${toolCall.function.name} executed successfully`
 						);
 
 						toolResults.push({
@@ -1638,7 +1627,6 @@ export const askAssistant = action({
 		const composioIntent = detectComposioIntent(args.query);
 
 		if (composioIntent) {
-			console.log("[Composio] Intent detected:", composioIntent);
 
 			// Get current member for entity ID
 			let memberId: Id<"members">;
@@ -1666,8 +1654,6 @@ export const askAssistant = action({
 			// Construct member-scoped entity ID
 			const entityId = `member_${memberId}`;
 			const appNames = [composioIntent.app];
-
-			console.log("[Composio] Executing with:", { entityId, appNames });
 
 			// Execute Composio action (pass ctx and workspaceId to resolve authConfigIds from connected accounts)
 			const composioResult = await executeComposioAction(
