@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
 					.map((msg: any) => ({
 						role: msg.role as "user" | "assistant",
 						// Strip control characters and normalize content
-						content: msg.content.replace(/[\x00-\x1F\x7F]/g, "").trim(),
+						content: msg.content.replace(/[^\x20-\x7E\s]/g, "").trim(),
 					}));
 
 				const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
