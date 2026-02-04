@@ -156,9 +156,9 @@ const BoardCard: React.FC<BoardCardProps> = ({
 			{/* Card Labels */}
 			{Array.isArray(card.labels) && card.labels.length > 0 && (
 				<div className="flex flex-wrap gap-1">
-					{card.labels.map((label: string, i: number) => (
+					{card.labels.map((label: string) => (
 						<Badge
-							key={i}
+							key={label}
 							variant="secondary"
 							className="text-xs px-2 py-0.5 bg-secondary/20 dark:bg-secondary/30 text-secondary-foreground dark:text-gray-200"
 						>

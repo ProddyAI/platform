@@ -254,9 +254,9 @@ export const CalendarPicker = ({
 											</div>
 										)
 									)}
-									{nextWeekDates.map((nextWeekDate, index) => (
-										<Button
-											key={index}
+								{nextWeekDates.map((nextWeekDate) => (
+									<Button
+										key={nextWeekDate.toISOString()}
 											variant={
 												date &&
 												date.toDateString() === nextWeekDate.toDateString()

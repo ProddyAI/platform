@@ -144,9 +144,9 @@ export const FlowchartGenerator = ({
 							Try these examples:
 						</p>
 						<div className="flex flex-wrap gap-2">
-							{examplePrompts.map((example, index) => (
+							{examplePrompts.map((example) => (
 								<Button
-									key={index}
+									key={example}
 									variant="outline"
 									size="sm"
 									onClick={() => handleExampleClick(example)}

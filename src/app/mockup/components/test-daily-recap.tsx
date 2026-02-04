@@ -216,8 +216,8 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								</CardHeader>
 								<CardContent>
 									<div className="space-y-4">
-										{recapData.highlights.map((highlight, index) => (
-											<div key={index} className="flex gap-3">
+										{recapData.highlights.map((highlight) => (
+											<div key={highlight.title} className="flex gap-3">
 												<div className="flex-shrink-0 mt-1">
 													{getHighlightIcon(highlight.type)}
 												</div>
@@ -234,9 +234,9 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 														</span>
 														<div className="flex gap-1">
 															{highlight.participants.map(
-																(participant, pIndex) => (
+																(participant) => (
 																	<Badge
-																		key={pIndex}
+																		key={participant}
 																		variant="secondary"
 																		className="text-xs"
 																	>
@@ -263,7 +263,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								<CardContent>
 									<div className="space-y-3">
 										{recapData.topContacts.map((contact, index) => (
-											<div key={index} className="flex items-center gap-3">
+											<div key={contact.name} className="flex items-center gap-3">
 												<Avatar className="h-8 w-8">
 													<AvatarFallback className="text-xs">
 														{getInitials(contact.name)}
@@ -294,9 +294,9 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 							</CardHeader>
 							<CardContent>
 								<div className="space-y-3">
-									{recapData.upcomingTasks.map((task, index) => (
+									{recapData.upcomingTasks.map((task) => (
 										<div
-											key={index}
+											key={task.task}
 											className="flex items-center justify-between p-3 border rounded-lg"
 										>
 											<div className="flex-1">

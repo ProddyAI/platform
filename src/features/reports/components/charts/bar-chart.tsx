@@ -90,7 +90,7 @@ export const BarChart = ({
 
 				return (
 					<div
-						key={index}
+						key={item.label}
 						data-bar-index={index}
 						className="relative flex flex-col items-center justify-end flex-1 group"
 						style={{ height: chartHeight }}

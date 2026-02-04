@@ -311,9 +311,9 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 									<td className="p-3">
 										<div className="flex flex-wrap gap-1">
 											{Array.isArray(card.labels) && card.labels.length > 0 ? (
-												card.labels.map((label: string, i: number) => (
+												card.labels.map((label: string) => (
 													<Badge
-														key={i}
+														key={label}
 														variant="secondary"
 														className="text-xs px-2 py-0.5 bg-secondary/20"
 													>

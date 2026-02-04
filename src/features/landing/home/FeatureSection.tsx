@@ -107,8 +107,8 @@ export const FeatureSection = () => {
 										Key Features
 									</h4>
 									<ul className="space-y-3 mb-6">
-										{activeFeature.features.map((feature, index) => (
-											<li key={index} className="flex items-start gap-2">
+									{activeFeature.features.map((feature) => (
+											<li key={feature} className="flex items-start gap-2">
 												<ArrowRight className="size-4 text-primary mt-1 flex-shrink-0" />
 												<span className="text-gray-700">{feature}</span>
 											</li>

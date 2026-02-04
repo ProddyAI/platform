@@ -126,9 +126,9 @@ const LabelInput: React.FC<LabelInputProps> = ({
 			{/* Selected labels */}
 			{selectedLabels.length > 0 && (
 				<div className="flex flex-wrap gap-1 mb-2">
-					{selectedLabels.map((label, index) => (
+					{selectedLabels.map((label) => (
 						<Badge
-							key={index}
+							key={label}
 							variant="secondary"
 							className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
 						>
@@ -168,9 +168,9 @@ const LabelInput: React.FC<LabelInputProps> = ({
 					ref={suggestionsRef}
 					className="absolute z-10 mt-1 w-full max-h-40 overflow-auto bg-white border rounded-md shadow-lg"
 				>
-					{filteredSuggestions.map((suggestion, index) => (
+					{filteredSuggestions.map((suggestion) => (
 						<div
-							key={index}
+							key={suggestion}
 							className={cn(
 								"px-3 py-1.5 cursor-pointer hover:bg-secondary/10",
 								"text-sm text-foreground"

@@ -270,7 +270,7 @@ export const PieChart = ({
 
 										return (
 											<path
-												key={`side-${segment.index}-${idx}`}
+												key={`side-${segment.index}-${pathData.type}`}
 												d={pathData.path}
 												fill={fillColor}
 												stroke="rgba(0,0,0,0.1)"
@@ -330,7 +330,7 @@ export const PieChart = ({
 
 											return (
 												<path
-													key={`side-${segment.index}-${idx}`}
+													key={`side-${segment.index}-${pathData.type}`}
 													d={pathData.path}
 													fill={fillColor}
 													stroke="rgba(0,0,0,0.1)"

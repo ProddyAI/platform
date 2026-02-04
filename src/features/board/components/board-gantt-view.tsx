@@ -506,7 +506,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					<div className="flex pl-[250px]">
 						{timelineDates.map((date, index) => (
 							<div
-								key={index}
+								key={date.toISOString()}
 								className="flex-1 text-center py-2 text-xs font-medium border-r dark:border-gray-800 last:border-r-0"
 								style={{ minWidth: "60px" }}
 							>
@@ -548,7 +548,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 									<div className="absolute inset-0 flex">
 										{timelineDates.map((date, index) => (
 											<div
-												key={index}
+												key={date.toISOString()}
 												className={`flex-1 border-r dark:border-gray-800 last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5 dark:bg-secondary/10" : index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800/30" : "dark:bg-gray-900"}`}
 												style={{ minWidth: "60px" }}
 											/>
@@ -696,9 +696,9 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 										Labels
 									</div>
 									<div className="flex flex-wrap gap-1">
-										{selectedTask.labels.map((label, index) => (
-											<span
-												key={index}
+									{selectedTask.labels.map((label) => (
+										<span
+											key={label}
 												className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 text-xs rounded-full"
 											>
 												{label}

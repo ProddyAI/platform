@@ -52,7 +52,7 @@ export const HorizontalBarChart = ({
 
 					return (
 						<div
-							key={index}
+							key={item.label}
 							className="space-y-1"
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}

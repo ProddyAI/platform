@@ -116,7 +116,7 @@ export const ComparisonSection = () => {
 
 							{comparisonItems.map((item, index) => (
 								<ComparisonItem
-									key={index}
+									key={item.title}
 									title={item.title}
 									traditional={item.traditional}
 									proddy={item.proddy}
