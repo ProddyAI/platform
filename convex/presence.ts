@@ -158,24 +158,37 @@ export const workspaceHeartbeat = mutation({
 		}
 
 		// Update activity tracking in history table for idle detection
-		const existingHistory = await ctx.db
+		// First, get ALL active records for this user/workspace to clean up duplicates
+		const allActiveRecords = await ctx.db
 			.query("history")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", workspaceId).eq("userId", authUserId)
+			.withIndex("by_workspace_id_user_id_status", (q) =>
+				q
+					.eq("workspaceId", workspaceId)
+					.eq("userId", authUserId)
+					.eq("status", "active")
 			)
-			.filter((q) => q.eq(q.field("status"), "active"))
-			.first();
+			.collect();
 
-		if (existingHistory) {
-			await ctx.db.patch(existingHistory._id, {
-				lastSeen: Date.now(),
+		const now = Date.now();
+
+		if (allActiveRecords.length > 0) {
+			// Update the first record and delete any duplicates
+			const recordToKeep = allActiveRecords[0];
+
+			await ctx.db.patch(recordToKeep._id, {
+				lastSeen: now,
 			});
+
+			// Delete any duplicate records
+			for (let i = 1; i < allActiveRecords.length; i++) {
+				await ctx.db.delete(allActiveRecords[i]._id);
+			}
 		} else {
 			await ctx.db.insert("history", {
 				userId: authUserId,
 				workspaceId,
 				status: "active",
-				lastSeen: Date.now(),
+				lastSeen: now,
 			});
 		}
 

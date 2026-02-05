@@ -185,11 +185,11 @@ export const ChatInput = ({
 				innerRef={innerRef}
 				key={editorKey}
 				onSubmit={handleSubmit}
-				placeholder={placeholder}
 				onTextChange={() => {
 					// Signal typing when user types
 					signalTyping();
 				}}
+				placeholder={placeholder}
 			/>
 		</div>
 	);

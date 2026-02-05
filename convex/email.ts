@@ -333,7 +333,8 @@ export const sendDirectMessageEmail = action({
 					};
 				}
 
-				const _result = await response.json();
+				const result = await response.json();
+				console.log("Direct message email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending direct message email:", error);
@@ -451,7 +452,8 @@ export const sendMentionEmail = action({
 					};
 				}
 
-				const _result = await response.json();
+				const result = await response.json();
+				console.log("Mention email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending mention email:", error);
@@ -576,7 +578,8 @@ export const sendThreadReplyEmail = action({
 					};
 				}
 
-				const _result = await response.json();
+				const result = await response.json();
+				console.log("Thread reply email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending thread reply email:", error);
@@ -1059,7 +1062,8 @@ export const sendCardAssignmentEmail = action({
 					};
 				}
 
-				const _result = await response.json();
+				const result = await response.json();
+				console.log("Card assignment email sent successfully:", result);
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending card assignment email:", error);

@@ -152,7 +152,7 @@ export async function shouldSendEmail(
 
 		const notificationKey = getNotificationKey(emailType);
 		return preferences[notificationKey] ?? true;
-	} catch (error) {
+	} catch (_error) {
 		return emailType !== "weeklyDigest";
 	}
 }

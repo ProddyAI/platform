@@ -56,7 +56,7 @@ export const PasswordStrengthIndicator = ({
 			{/* Requirements List */}
 			{showRequirements && (
 				<div className="space-y-1.5">
-					{requirements.map((requirement, _index) => (
+					{requirements.map((requirement) => (
 						<div
 							className="flex items-center gap-2 text-xs"
 							key={requirement.label}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -24,7 +24,7 @@ export const useTypingIndicator = ({
 	});
 
 	// Function to signal that user is typing
-	const signalTyping = () => {
+	const signalTyping = useCallback(() => {
 		// Clear any existing timeout
 		if (typingTimeoutRef.current) {
 			clearTimeout(typingTimeoutRef.current);
@@ -45,10 +45,10 @@ export const useTypingIndicator = ({
 				isTyping: false,
 			}).catch(console.error);
 		}, 3000);
-	};
+	}, [channelId, conversationId, setTyping]);
 
 	// Function to stop typing signal
-	const stopTyping = () => {
+	const stopTyping = useCallback(() => {
 		if (typingTimeoutRef.current) {
 			clearTimeout(typingTimeoutRef.current);
 		}
@@ -58,7 +58,7 @@ export const useTypingIndicator = ({
 			conversationId,
 			isTyping: false,
 		}).catch(console.error);
-	};
+	}, [channelId, conversationId, setTyping]);
 
 	// Cleanup on unmount
 	useEffect(() => {

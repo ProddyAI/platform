@@ -393,9 +393,17 @@ const CanvasPage = () => {
 							onTagsChange={(newTags) => {
 								handleUpdateCanvasTags(activeCanvas._id, newTags);
 							}}
-							onTitleChange={(_newTitle) => {
-								// Update canvas name
-								// You can implement canvas title update here
+							onTitleChange={async (newTitle) => {
+								const trimmedTitle = newTitle.trim();
+								if (!trimmedTitle || trimmedTitle === activeCanvas.canvasName) {
+									return;
+								}
+								try {
+									await handleRenameCanvas(activeCanvas._id, trimmedTitle);
+								} catch (error) {
+									console.error("Error updating canvas title:", error);
+									toast.error("Failed to update canvas title");
+								}
 							}}
 							showFullScreenToggle={true}
 							showTags={true} // You can track canvas changes here

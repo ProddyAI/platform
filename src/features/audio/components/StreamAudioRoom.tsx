@@ -310,9 +310,8 @@ interface AudioRoomUIProps {
 }
 
 const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
-	const { useParticipants, useLocalParticipant } = useCallStateHooks();
+	const { useParticipants } = useCallStateHooks();
 	const participants = useParticipants();
-	const _localParticipant = useLocalParticipant();
 	const [isLeaving, _setIsLeaving] = useState(false);
 
 	const _hasAudio = (p: StreamVideoParticipant) =>

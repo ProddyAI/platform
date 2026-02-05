@@ -5,6 +5,23 @@ import { mutation, query } from "./_generated/server";
 
 export type UserStatus = "online" | "idle" | "dnd" | "offline" | "hidden";
 
+// Status threshold constants
+const ONLINE_THRESHOLD_MS = 60_000; // 1 minute
+const IDLE_THRESHOLD_MS = 300_000; // 5 minutes
+
+/**
+ * Determine user status based on time since last seen
+ */
+function determineStatusFromLastSeen(deltaMs: number): UserStatus {
+	if (deltaMs < ONLINE_THRESHOLD_MS) {
+		return "online";
+	}
+	if (deltaMs < IDLE_THRESHOLD_MS) {
+		return "idle";
+	}
+	return "offline";
+}
+
 /**
  * Set user's custom status (DND, etc.)
  */
@@ -94,30 +111,30 @@ export const getUserStatus = query({
 			return { status: "dnd" as UserStatus, lastSeen: Date.now() };
 		}
 
-		const presenceData = await ctx.db
+		// Get all active presence records for this user/workspace and find the most recent
+		const allPresenceData = await ctx.db
 			.query("history")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", workspaceId).eq("userId", userId)
+			.withIndex("by_workspace_id_user_id_status", (q) =>
+				q.eq("workspaceId", workspaceId).eq("userId", userId).eq("status", "active")
 			)
-			.filter((q) => q.eq("status", "active"))
-			.order("desc")
-			.first();
+			.collect();
 
+		// Find the record with the most recent lastSeen timestamp
+		const presenceData =
+			allPresenceData.length > 0
+				? allPresenceData.reduce((latest, current) =>
+						current.lastSeen > latest.lastSeen ? current : latest
+					)
+				: null;
+	
 		if (!presenceData) {
 			return { status: "offline" as UserStatus, lastSeen: null };
 		}
-
+	
 		const now = Date.now();
 		const timeSinceLastSeen = now - presenceData.lastSeen;
-
-		let status: UserStatus;
-		if (timeSinceLastSeen < 60000) {
-			status = "online";
-		} else if (timeSinceLastSeen < 300000) {
-			status = "idle";
-		} else {
-			status = "offline";
-		}
+	
+		const status = determineStatusFromLastSeen(timeSinceLastSeen);
 
 		return {
 			status,
@@ -150,16 +167,21 @@ export const getMultipleUserStatuses = query({
 		const allPrefs = await Promise.all(prefsPromises);
 
 		// Batch fetch all presence data
-		const presencePromises = userIds.map((userId) =>
-			ctx.db
+		const presencePromises = userIds.map(async (userId) => {
+			const records = await ctx.db
 				.query("history")
-				.withIndex("by_workspace_id_user_id", (q) =>
-					q.eq("workspaceId", workspaceId).eq("userId", userId)
+				.withIndex("by_workspace_id_user_id_status", (q) =>
+					q.eq("workspaceId", workspaceId).eq("userId", userId).eq("status", "active")
 				)
-				.filter((q) => q.eq("status", "active"))
-				.order("desc")
-				.first()
-		);
+				.collect();
+	
+			// Find the record with the most recent lastSeen timestamp
+			return records.length > 0
+				? records.reduce((latest, current) =>
+						current.lastSeen > latest.lastSeen ? current : latest
+					)
+				: null;
+		});
 		const allPresenceData = await Promise.all(presencePromises);
 
 		// Build status map from batched data
@@ -178,6 +200,7 @@ export const getMultipleUserStatuses = query({
 			const statusTrackingEnabled = userPrefs?.settings?.statusTracking ?? true;
 
 			if (!statusTrackingEnabled) {
+				statusMap[userId] = { status: "hidden", lastSeen: null };
 				continue;
 			}
 
@@ -196,16 +219,9 @@ export const getMultipleUserStatuses = query({
 			}
 
 			const timeSinceLastSeen = now - presenceData.lastSeen;
-	
-			let status: UserStatus;
-			if (timeSinceLastSeen < 60000) {
-				status = "online";
-			} else if (timeSinceLastSeen < 300000) {
-				status = "idle";
-			} else {
-				status = "offline";
-			}
-	
+
+			const status = determineStatusFromLastSeen(timeSinceLastSeen);
+
 			statusMap[userId] = {
 				status,
 				lastSeen: presenceData.lastSeen,

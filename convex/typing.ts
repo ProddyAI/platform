@@ -96,14 +96,40 @@ export const getTypingUsers = query({
 			return [];
 		}
 
+		// Authorization check: verify user is a member
+		let workspaceId;
+		if (channelId) {
+			const channel = await ctx.db.get(channelId);
+			if (!channel) return [];
+			workspaceId = channel.workspaceId;
+		} else if (conversationId) {
+			const conversation = await ctx.db.get(conversationId);
+			if (!conversation) return [];
+			workspaceId = conversation.workspaceId;
+		} else {
+			return [];
+		}
+
+		// Verify user is a member of the workspace
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!member) {
+			return [];
+		}
+
 		const roomId = channelId
 			? `channel-${channelId}`
 			: `conversation-${conversationId}`;
 
-		// Get all typing records for this room
+		// Get all typing records for this room using the index
 		const typingRecords = await ctx.db
 			.query("history")
-			.filter((q) => q.eq(q.field("status"), `typing-${roomId}`))
+			.withIndex("by_status", (q) => q.eq("status", `typing-${roomId}`))
 			.collect();
 
 		const now = Date.now();

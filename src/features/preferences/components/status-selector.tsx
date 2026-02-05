@@ -50,6 +50,11 @@ export const StatusSelector = () => {
 
 	const _isDisabled = !statusTrackingEnabled || isUpdating || isLoadingTracking;
 
+	// Show loading skeleton while checking tracking status
+	if (isLoadingTracking) {
+		return null;
+	}
+
 	// Hide DND toggle when status tracking is disabled
 	if (!statusTrackingEnabled) {
 		return null;
@@ -69,7 +74,7 @@ export const StatusSelector = () => {
 				</div>
 				<Switch
 					checked={isDndEnabled}
-					disabled={isUpdating || isLoadingTracking}
+					disabled={_isDisabled}
 					onCheckedChange={handleDndToggle}
 				/>
 			</div>

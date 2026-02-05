@@ -353,12 +353,6 @@ export const ExportCanvasDialog = ({
 				'svg, canvas, [data-canvas="true"], .canvas-container, .whiteboard'
 			);
 
-			// Log all potential canvas elements for debugging
-			canvasElements.forEach((element, _index) => {
-				// Use type assertion to access element properties safely
-				const _el = element as HTMLElement;
-			});
-
 			// Try to find the element with the most child nodes (likely the main canvas)
 			let mainCanvas: Element | null = null;
 			let maxChildren = 0;

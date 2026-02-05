@@ -1,9 +1,16 @@
 "use client";
 
 import { Minus, Moon } from "lucide-react";
+import type { UserStatus } from "@/../convex/userStatus";
 import { cn } from "@/lib/utils";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-export type UserStatus = "online" | "idle" | "dnd" | "offline" | "hidden";
+export type { UserStatus };
 
 interface PresenceIndicatorProps {
 	status?: UserStatus;
@@ -29,7 +36,13 @@ export const PresenceIndicator = ({
 		idle: "bg-yellow-500",
 		dnd: "bg-red-500",
 		offline: "bg-gray-400",
-		hidden: "",
+	};
+
+	const statusLabels = {
+		online: "Online",
+		idle: "Idle",
+		dnd: "Do Not Disturb",
+		offline: "Offline",
 	};
 
 	const renderIcon = () => {
@@ -49,14 +62,23 @@ export const PresenceIndicator = ({
 	};
 
 	return (
-		<div
-			className={cn(
-				"absolute -bottom-0.5 -right-0.5 size-3 rounded-full flex items-center justify-center border border-gray-300/50 dark:border-gray-600/50",
-				statusColors[displayStatus],
-				className
-			)}
-		>
-			{renderIcon()}
-		</div>
+		<TooltipProvider delayDuration={300}>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<div
+						className={cn(
+							"absolute -bottom-0.5 -right-0.5 size-3 rounded-full flex items-center justify-center border border-gray-300/50 dark:border-gray-600/50 cursor-default",
+							statusColors[displayStatus],
+							className
+						)}
+					>
+						{renderIcon()}
+					</div>
+				</TooltipTrigger>
+				<TooltipContent side="top" className="text-xs">
+					{statusLabels[displayStatus]}
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	);
 };

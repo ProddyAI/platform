@@ -1,9 +1,10 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { useCallback, useMemo } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import type { UserStatus } from "../components/presence-indicator";
+import type { UserStatus } from "@/../convex/userStatus";
 
 interface UseUserStatusProps {
 	userId?: Id<"users">;
@@ -16,8 +17,20 @@ export const useUserStatus = ({ userId, workspaceId }: UseUserStatusProps) => {
 		userId ? { userId, workspaceId } : "skip"
 	);
 
+	const status = (data?.status as UserStatus) || "offline";
+
+	// Debug logging
+	if (userId) {
+		console.log("[useUserStatus] Status for user:", {
+			userId,
+			status,
+			lastSeen: data?.lastSeen,
+			rawData: data,
+		});
+	}
+
 	return {
-		status: (data?.status as UserStatus) || "offline",
+		status,
 		lastSeen: data?.lastSeen || null,
 	};
 };
@@ -31,10 +44,18 @@ export const useMultipleUserStatuses = (
 		workspaceId,
 	});
 
-	return {
-		statusMap: data || {},
-		getUserStatus: (userId: Id<"users">): UserStatus => {
+	const getUserStatus = useCallback(
+		(userId: Id<"users">): UserStatus => {
 			return (data?.[userId]?.status as UserStatus) || "offline";
 		},
-	};
+		[data]
+	);
+
+	return useMemo(
+		() => ({
+			statusMap: data || {},
+			getUserStatus,
+		}),
+		[data, getUserStatus]
+	);
 };

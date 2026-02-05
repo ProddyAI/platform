@@ -71,7 +71,8 @@ export function initializeComposio() {
 			}
 
 			const { cleanupOldConnections } = await import("./composio-config");
-			const connectionId = (connection as any).id || (connection as any).connectionId;
+			const connectionId =
+				(connection as any).id || (connection as any).connectionId;
 			if (connectionId) {
 				cleanupOldConnections(
 					composioInstance,
@@ -82,8 +83,10 @@ export function initializeComposio() {
 			}
 
 			return {
-				redirectUrl: (connection as any).redirectUrl || (connection as any).authUrl,
-				connectionId: (connection as any).id || (connection as any).connectionId,
+				redirectUrl:
+					(connection as any).redirectUrl || (connection as any).authUrl,
+				connectionId:
+					(connection as any).id || (connection as any).connectionId,
 				id: (connection as any).id || (connection as any).connectionId,
 			};
 		},
@@ -102,9 +105,7 @@ export function initializeComposio() {
 		async getConnectionStatus(connectionId: string) {
 			return (
 				(await composioInstance.connectedAccounts?.get?.(connectionId)) ||
-				(await (composioInstance as any).connections?.get?.(
-					connectionId
-				))
+				(await (composioInstance as any).connections?.get?.(connectionId))
 			);
 		},
 
@@ -121,7 +122,9 @@ export function initializeComposio() {
 		},
 
 		async deleteConnection(connectionId: string) {
-			return await (composioInstance as any).connectedAccounts?.delete?.(connectionId);
+			return await (composioInstance as any).connectedAccounts?.delete?.(
+				connectionId
+			);
 		},
 	};
 
@@ -213,25 +216,21 @@ export async function createOpenAICompletion(
 	appNames: string[],
 	message: string
 ) {
-	try {
-		// Get tools for the entity
-		const tools = await getComposioToolsForOpenAI(entityId, appNames);
+	// Get tools for the entity
+	const tools = await getComposioToolsForOpenAI(entityId, appNames);
 
-		// Create OpenAI completion with tools
-		const response = await openaiClient.chat.completions.create({
-			model: "gpt-4",
-			tools: tools as any,
-			messages: [{ role: "user", content: message }],
-		});
+	// Create OpenAI completion with tools
+	const response = await openaiClient.chat.completions.create({
+		model: "gpt-4",
+		tools: tools as any,
+		messages: [{ role: "user", content: message }],
+	});
 
-		// Handle tool calls if any
-		if (response.choices[0].message.tool_calls) {
-			const result = await handleOpenAIToolCalls(response, entityId);
-			return result;
-		}
-
-		return response.choices[0].message.content;
-	} catch (error) {
-		throw error;
+	// Handle tool calls if any
+	if (response.choices[0].message.tool_calls) {
+		const result = await handleOpenAIToolCalls(response, entityId);
+		return result;
 	}
+
+	return response.choices[0].message.content;
 }

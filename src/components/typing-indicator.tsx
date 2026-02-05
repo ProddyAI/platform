@@ -4,13 +4,13 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface TypingIndicatorProps {
-	typingText: string;
+	typingText?: string;
 	isVisible: boolean;
 	className?: string;
 }
 
 export const TypingIndicator = ({
-	typingText,
+	typingText = "",
 	isVisible,
 	className,
 }: TypingIndicatorProps) => {

@@ -287,7 +287,7 @@ const Editor = ({
 			if (quillRef) quillRef.current = null;
 			if (innerRef) innerRef.current = null;
 		};
-	}, [innerRef]);
+	}, [innerRef, onTextChange]);
 
 	const toggleToolbar = () => {
 		setIsToolbarVisible((current) => !current);

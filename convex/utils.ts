@@ -1,7 +1,6 @@
 import type { Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 
-
 export const getMember = async (
 	ctx: QueryCtx,
 	workspaceId: Id<"workspaces">,
@@ -62,7 +61,7 @@ export const getUserEmailFromMemberId = async (
 		if (!user) return null;
 
 		return user.email;
-	} catch (error) {
+	} catch (_error) {
 		return null;
 	}
 };
@@ -79,7 +78,7 @@ export const getUserNameFromMemberId = async (
 		if (!user) return null;
 
 		return user.name;
-	} catch (error) {
+	} catch (_error) {
 		return null;
 	}
 };

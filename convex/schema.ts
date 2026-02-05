@@ -122,6 +122,12 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_workspace_id_user_id_status", [
+			"workspaceId",
+			"userId",
+			"status",
+		])
+		.index("by_status", ["status"])
 		.index("by_channel_id", ["channelId"])
 		.index("by_workspace_channel", ["workspaceId", "channelId"]),
 
