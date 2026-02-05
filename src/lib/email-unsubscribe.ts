@@ -48,7 +48,6 @@ export function verifyUnsubscribeSignature(
 	try {
 		const secret = getUnsubscribeSecret();
 
-		// Check if timestamp is not too old (7 days)
 		const timestampNum = parseInt(timestamp, 10);
 		const now = Date.now();
 		const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
@@ -57,16 +56,13 @@ export function verifyUnsubscribeSignature(
 			return { valid: false, error: "Unsubscribe link has expired" };
 		}
 
-		// Recreate the data that was signed
 		const data = `${userId}:${emailType}:${timestamp}`;
 
-		// Generate expected signature
 		const expectedSignature = crypto
 			.createHmac("sha256", secret)
 			.update(data)
 			.digest("hex");
 
-		// Compare signatures using timing-safe comparison
 		const isValid = crypto.timingSafeEqual(
 			new Uint8Array(Buffer.from(signature, "hex")),
 			new Uint8Array(Buffer.from(expectedSignature, "hex"))
@@ -77,14 +73,11 @@ export function verifyUnsubscribeSignature(
 		}
 
 		return { valid: true };
-	} catch (_error) {
+	} catch {
 		return { valid: false, error: "Failed to verify unsubscribe signature" };
 	}
 }
 
-/**
- * Get user-friendly email type names
- */
 export function getEmailTypeName(emailType: EmailType): string {
 	const names: Record<EmailType, string> = {
 		mentions: "Mention notifications",
@@ -160,8 +153,6 @@ export async function shouldSendEmail(
 		const notificationKey = getNotificationKey(emailType);
 		return preferences[notificationKey] ?? true;
 	} catch (error) {
-		console.error("Error checking email preferences:", error);
-		// On error, default to allowing emails (except weekly digest) to avoid blocking important notifications
 		return emailType !== "weeklyDigest";
 	}
 }

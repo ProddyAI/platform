@@ -1,43 +1,24 @@
-// Server-only runtime guard
-if (typeof window !== "undefined") {
-	throw new Error(
-		"composio.ts contains server-only code and cannot be imported in the browser. " +
-			"This file uses server credentials that must not be exposed to the client."
-	);
-}
-
 import { Composio } from "@composio/core";
 import { OpenAIProvider } from "@composio/openai";
 import OpenAI from "openai";
 
-// Validate required environment variables
 if (!process.env.OPENAI_API_KEY) {
-	throw new Error(
-		"OPENAI_API_KEY environment variable is required but not set. " +
-			"Please configure your OpenAI API key in the environment variables."
-	);
+	throw new Error("OPENAI_API_KEY is required");
 }
 
-// Configure timeout (default 30 seconds, configurable via env var)
 const openaiTimeoutMs = process.env.OPENAI_TIMEOUT_MS
 	? parseInt(process.env.OPENAI_TIMEOUT_MS, 10)
 	: 30000;
 
-// Initialize OpenAI client (server-only)
 export const openaiClient = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 	timeout: openaiTimeoutMs,
 });
 
-// Validate Composio API key
 if (!process.env.COMPOSIO_API_KEY) {
-	throw new Error(
-		"COMPOSIO_API_KEY environment variable is required but not set. " +
-			"Please configure your Composio API key in the environment variables."
-	);
+	throw new Error("COMPOSIO_API_KEY is required");
 }
 
-// Initialize Composio client with OpenAI provider (server-only)
 export const composio = new Composio({
 	apiKey: process.env.COMPOSIO_API_KEY,
 	provider: new OpenAIProvider(),
@@ -45,29 +26,16 @@ export const composio = new Composio({
 
 export default composio;
 
-/**
- * Initialize and return the shared Composio instance along with a convenience API client for managing connections, tools, and connection status.
- *
- * The returned `apiClient` exposes: `createConnection(userId, appName)`, `getConnections(userId)`, `getConnectionStatus(connectionId)`, `getTools(entityId, appNames)`, and `deleteConnection(connectionId)`.
- *
- * @returns An object containing `composio` (the shared Composio instance) and `apiClient` (a wrapper providing connection and tool management methods)
- */
 export function initializeComposio() {
 	if (!process.env.COMPOSIO_API_KEY) {
-		throw new Error("COMPOSIO_API_KEY environment variable is required");
+		throw new Error("COMPOSIO_API_KEY is required");
 	}
 
-	// Use the shared singleton Composio instance instead of creating a new one
 	const composioInstance = composio;
 
-	// Create API client wrapper for common operations
 	const apiClient = {
-		// Create connection for a user and app
 		async createConnection(userId: string, appName: string) {
-			// Import APP_CONFIGS to get auth config ID
 			const { APP_CONFIGS } = await import("./composio-config");
-
-			// Convert appName to uppercase to match our config keys
 			const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
 			const appConfig = APP_CONFIGS[appKey];
 
@@ -102,61 +70,44 @@ export function initializeComposio() {
 				throw new Error("Failed to create connection");
 			}
 
-			// Clean up old connections in background
 			const { cleanupOldConnections } = await import("./composio-config");
-			const connectionId =
-				(connection as unknown as any).id ||
-				(connection as unknown as any).connectionId;
+			const connectionId = (connection as any).id || (connection as any).connectionId;
 			if (connectionId) {
 				cleanupOldConnections(
 					composioInstance,
 					userId,
 					authConfigId,
 					connectionId
-				).catch((err) => {
-					console.warn(
-						`Failed to cleanup old connections for userId=${userId}, authConfigId=${authConfigId}, connectionId=${connectionId}:`,
-						err
-					);
-				});
+				).catch(() => {});
 			}
 
 			return {
-				redirectUrl:
-					(connection as unknown as any).redirectUrl ||
-					(connection as unknown as any).authUrl,
-				connectionId:
-					(connection as unknown as any).id ||
-					(connection as unknown as any).connectionId,
-				id:
-					(connection as unknown as any).id ||
-					(connection as unknown as any).connectionId,
+				redirectUrl: (connection as any).redirectUrl || (connection as any).authUrl,
+				connectionId: (connection as any).id || (connection as any).connectionId,
+				id: (connection as any).id || (connection as any).connectionId,
 			};
 		},
 
-		// Get connections for a user
 		async getConnections(userId: string) {
 			return (
 				(await composioInstance.connectedAccounts?.list?.({
 					userIds: [userId],
 				})) ||
-				(await (composioInstance as unknown as any).connections?.list?.({
+				(await (composioInstance as any).connections?.list?.({
 					entityId: userId,
 				}))
 			);
 		},
 
-		// Get connection status
 		async getConnectionStatus(connectionId: string) {
 			return (
 				(await composioInstance.connectedAccounts?.get?.(connectionId)) ||
-				(await (composioInstance as unknown as any).connections?.get?.(
+				(await (composioInstance as any).connections?.get?.(
 					connectionId
 				))
 			);
 		},
 
-		// Get tools for entity and apps
 		async getTools(entityId: string, appNames: string[]) {
 			try {
 				const tools = await composioInstance.tools.get(entityId, {
@@ -164,85 +115,13 @@ export function initializeComposio() {
 				} as any);
 
 				return { items: Array.isArray(tools) ? tools : [tools] };
-			} catch (error) {
-				console.error("Error getting tools:", error);
+			} catch {
 				return { items: [] };
 			}
 		},
 
-		// Delete connection
 		async deleteConnection(connectionId: string) {
-			// Try different methods to delete the connection with proper fallback
-			let result;
-			let lastError;
-
-			// Try first method: connectedAccounts.delete
-			try {
-				if (
-					typeof (composioInstance as any).connectedAccounts?.delete ===
-					"function"
-				) {
-					result = await (composioInstance as any).connectedAccounts.delete(
-						connectionId
-					);
-					if (result !== undefined) {
-						return result;
-					}
-				}
-			} catch (error) {
-				console.warn(
-					"deleteConnection: connectedAccounts.delete failed:",
-					error
-				);
-				lastError = error;
-			}
-
-			// Try second method: connections.delete
-			try {
-				if (
-					typeof (composioInstance as any).connections?.delete === "function"
-				) {
-					result = await (composioInstance as any).connections.delete(
-						connectionId
-					);
-					if (result !== undefined) {
-						return result;
-					}
-				}
-			} catch (error) {
-				console.warn("deleteConnection: connections.delete failed:", error);
-				lastError = error;
-			}
-
-			// Try third method: connectedAccounts.remove
-			try {
-				if (
-					typeof (composioInstance as any).connectedAccounts?.remove ===
-					"function"
-				) {
-					result = await (composioInstance as any).connectedAccounts.remove(
-						connectionId
-					);
-					if (result !== undefined) {
-						return result;
-					}
-				}
-			} catch (error) {
-				console.warn(
-					"deleteConnection: connectedAccounts.remove failed:",
-					error
-				);
-				lastError = error;
-			}
-
-			// If all methods failed, throw the last error
-			if (lastError) {
-				console.error("Error deleting connection:", lastError);
-				throw lastError;
-			}
-
-			// If no methods were available or returned undefined
-			return undefined;
+			return await (composioInstance as any).connectedAccounts?.delete?.(connectionId);
 		},
 	};
 
@@ -353,10 +232,6 @@ export async function createOpenAICompletion(
 
 		return response.choices[0].message.content;
 	} catch (error) {
-		console.error(
-			"Error creating OpenAI completion with Composio tools:",
-			error
-		);
 		throw error;
 	}
 }
