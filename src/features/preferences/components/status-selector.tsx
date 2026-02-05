@@ -30,6 +30,11 @@ export const StatusSelector = () => {
 	}, [preferences]);
 
 	const handleDndToggle = async (enabled: boolean) => {
+		if (!workspaceId) {
+			toast.error("Workspace not found");
+			return;
+		}
+
 		setIsUpdating(true);
 		try {
 			await setUserStatus({

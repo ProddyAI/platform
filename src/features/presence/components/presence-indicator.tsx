@@ -2,13 +2,13 @@
 
 import { Minus, Moon } from "lucide-react";
 import type { UserStatus } from "@/../convex/userStatus";
-import { cn } from "@/lib/utils";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export type { UserStatus };
 
@@ -75,7 +75,7 @@ export const PresenceIndicator = ({
 						{renderIcon()}
 					</div>
 				</TooltipTrigger>
-				<TooltipContent side="top" className="text-xs">
+				<TooltipContent className="text-xs" side="top">
 					{statusLabels[displayStatus]}
 				</TooltipContent>
 			</Tooltip>

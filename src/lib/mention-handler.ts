@@ -87,23 +87,23 @@ export const setupGlobalMentionHandler = (): void => {
 
 /**
  * Hook for programmatic navigation to member profiles
- * 
+ *
  * This hook provides a function to navigate to a member's profile page within a workspace.
  * It uses Next.js router.push internally to perform client-side navigation.
- * 
+ *
  * @returns An object containing the navigateToMemberProfile function
- * 
+ *
  * @example
  * ```tsx
  * import { useMentionNavigation } from '@/lib/mention-handler';
- * 
+ *
  * function MyComponent() {
  *   const { navigateToMemberProfile } = useMentionNavigation();
- *   
+ *
  *   const handleClick = () => {
  *     navigateToMemberProfile(memberId, workspaceId);
  *   };
- *   
+ *
  *   return <button onClick={handleClick}>View Profile</button>;
  * }
  * ```

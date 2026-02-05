@@ -15,7 +15,7 @@ interface ComposioConnection {
 /**
  * Result type for connection deletion operations
  */
-type ConnectedAccountDeleteResult = boolean | void | { success: boolean };
+type ConnectedAccountDeleteResult = boolean | undefined | { success: boolean };
 
 if (!process.env.OPENAI_API_KEY) {
 	throw new Error("OPENAI_API_KEY is required");
@@ -152,7 +152,17 @@ export function initializeComposio() {
 		async deleteConnection(
 			connectionId: string
 		): Promise<ConnectedAccountDeleteResult> {
-			return await composioInstance.connectedAccounts?.delete?.(connectionId);
+			// Try modern API first
+			const result =
+				await composioInstance.connectedAccounts?.delete?.(connectionId);
+
+			// Fallback to legacy API if modern API returns undefined or doesn't exist
+			if (result === undefined) {
+				const connectionsApi = composioInstance as any;
+				return await connectionsApi.connections?.delete?.(connectionId);
+			}
+
+			return result;
 		},
 	};
 

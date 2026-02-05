@@ -106,6 +106,7 @@ const Editor = ({
 	const defaultValueRef = useRef(defaultValue);
 	const disabledRef = useRef(disabled);
 	const disableMentionsRef = useRef(disableMentions);
+	const onTextChangeRef = useRef(onTextChange);
 	disableMentionsRef.current = disableMentions;
 
 	useLayoutEffect(() => {
@@ -113,6 +114,7 @@ const Editor = ({
 		placeholderRef.current = placeholder;
 		defaultValueRef.current = defaultValue;
 		disabledRef.current = disabled;
+		onTextChangeRef.current = onTextChange;
 	});
 
 	// Add click outside handler to close the mention picker
@@ -206,7 +208,7 @@ const Editor = ({
 			const newText = quill.getText();
 			const plainText = newText.replace(/\n+$/, "");
 			setText(newText);
-			onTextChange?.();
+			onTextChangeRef.current?.();
 
 			const currentLastKeyWasExclamation = lastKeyWasExclamationRef.current;
 			const currentActiveAutocomplete = activeAutocompleteRef.current;
@@ -287,7 +289,7 @@ const Editor = ({
 			if (quillRef) quillRef.current = null;
 			if (innerRef) innerRef.current = null;
 		};
-	}, [innerRef, onTextChange]);
+	}, [innerRef]);
 
 	const toggleToolbar = () => {
 		setIsToolbarVisible((current) => !current);

@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
 /**
@@ -97,7 +98,7 @@ export const getTypingUsers = query({
 		}
 
 		// Authorization check: verify user is a member
-		let workspaceId;
+		let workspaceId: Id<"workspaces"> | undefined;
 		if (channelId) {
 			const channel = await ctx.db.get(channelId);
 			if (!channel) return [];

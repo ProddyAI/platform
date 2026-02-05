@@ -90,13 +90,17 @@ export function getEmailTypeName(emailType: EmailType): string {
 	return names[emailType] || emailType;
 }
 
+// Type for email notification keys (excludes non-email preferences like weeklyDigestDay)
+export type EmailNotificationKey = Extract<
+	keyof NotificationPreferences,
+	EmailType
+>;
+
 /**
  * Get the corresponding notification preference key for an email type
  */
-export function getNotificationKey(
-	emailType: EmailType
-): keyof NotificationPreferences {
-	const keyMap: Record<EmailType, keyof NotificationPreferences> = {
+export function getNotificationKey(emailType: EmailType): EmailNotificationKey {
+	const keyMap: Record<EmailType, EmailNotificationKey> = {
 		mentions: "mentions",
 		assignee: "assignee",
 		threadReply: "threadReply",

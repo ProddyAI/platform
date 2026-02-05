@@ -115,7 +115,10 @@ export const getUserStatus = query({
 		const allPresenceData = await ctx.db
 			.query("history")
 			.withIndex("by_workspace_id_user_id_status", (q) =>
-				q.eq("workspaceId", workspaceId).eq("userId", userId).eq("status", "active")
+				q
+					.eq("workspaceId", workspaceId)
+					.eq("userId", userId)
+					.eq("status", "active")
 			)
 			.collect();
 
@@ -126,14 +129,14 @@ export const getUserStatus = query({
 						current.lastSeen > latest.lastSeen ? current : latest
 					)
 				: null;
-	
+
 		if (!presenceData) {
 			return { status: "offline" as UserStatus, lastSeen: null };
 		}
-	
+
 		const now = Date.now();
 		const timeSinceLastSeen = now - presenceData.lastSeen;
-	
+
 		const status = determineStatusFromLastSeen(timeSinceLastSeen);
 
 		return {
@@ -166,23 +169,29 @@ export const getMultipleUserStatuses = query({
 		);
 		const allPrefs = await Promise.all(prefsPromises);
 
-		// Batch fetch all presence data
-		const presencePromises = userIds.map(async (userId) => {
-			const records = await ctx.db
-				.query("history")
-				.withIndex("by_workspace_id_user_id_status", (q) =>
-					q.eq("workspaceId", workspaceId).eq("userId", userId).eq("status", "active")
-				)
-				.collect();
-	
-			// Find the record with the most recent lastSeen timestamp
-			return records.length > 0
-				? records.reduce((latest, current) =>
-						current.lastSeen > latest.lastSeen ? current : latest
-					)
-				: null;
-		});
-		const allPresenceData = await Promise.all(presencePromises);
+		// Fetch all presence records for the workspace with status "active" in a single query
+		const allRecords = await ctx.db
+			.query("history")
+			.withIndex("by_workspace_id_status", (q) =>
+				q.eq("workspaceId", workspaceId).eq("status", "active")
+			)
+			.collect();
+
+		// Group records by userId and find the most recent for each user
+		const presenceByUser = new Map<Id<"users">, (typeof allRecords)[0]>();
+		for (const record of allRecords) {
+			if (userIds.includes(record.userId)) {
+				const existing = presenceByUser.get(record.userId);
+				if (!existing || record.lastSeen > existing.lastSeen) {
+					presenceByUser.set(record.userId, record);
+				}
+			}
+		}
+
+		// Create array matching userIds order
+		const allPresenceData = userIds.map(
+			(userId) => presenceByUser.get(userId) || null
+		);
 
 		// Build status map from batched data
 		const statusMap: Record<

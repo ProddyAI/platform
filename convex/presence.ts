@@ -180,8 +180,10 @@ export const workspaceHeartbeat = mutation({
 			});
 
 			// Delete any duplicate records
-			for (let i = 1; i < allActiveRecords.length; i++) {
-				await ctx.db.delete(allActiveRecords[i]._id);
+			if (allActiveRecords.length > 1) {
+				await Promise.all(
+					allActiveRecords.slice(1).map((record) => ctx.db.delete(record._id))
+				);
 			}
 		} else {
 			await ctx.db.insert("history", {

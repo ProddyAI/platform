@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -75,8 +75,8 @@ export const useTypingIndicator = ({
 		};
 	}, [channelId, conversationId, setTyping]);
 
-	// Format typing indicator text
-	const getTypingText = (): string => {
+	// Format typing indicator text - memoized to avoid unnecessary re-renders
+	const typingText = useMemo((): string => {
 		if (!typingUsers || typingUsers.length === 0) {
 			return "";
 		}
@@ -95,11 +95,11 @@ export const useTypingIndicator = ({
 
 		// More than 3 users
 		return `${typingUsers.length} people are typing...`;
-	};
+	}, [typingUsers]);
 
 	return {
 		typingUsers: typingUsers || [],
-		typingText: getTypingText(),
+		typingText,
 		isAnyoneTyping: (typingUsers?.length || 0) > 0,
 		signalTyping,
 		stopTyping,

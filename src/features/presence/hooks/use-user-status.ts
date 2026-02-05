@@ -19,16 +19,6 @@ export const useUserStatus = ({ userId, workspaceId }: UseUserStatusProps) => {
 
 	const status = (data?.status as UserStatus) || "offline";
 
-	// Debug logging
-	if (userId) {
-		console.log("[useUserStatus] Status for user:", {
-			userId,
-			status,
-			lastSeen: data?.lastSeen,
-			rawData: data,
-		});
-	}
-
 	return {
 		status,
 		lastSeen: data?.lastSeen || null,

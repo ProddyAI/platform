@@ -3,7 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { showTidioChat } from "@/lib/tidio-helpers";
+import { showTidioChat } from "@/lib/client/tidio-helpers";
 
 export const Footer = () => {
 	return (
