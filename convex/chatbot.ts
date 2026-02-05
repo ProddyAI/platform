@@ -424,7 +424,6 @@ async function executeComposioAction(
 			};
 		}
 
-
 		// Initialize Composio client
 		const composio = new Composio({
 			apiKey: process.env.COMPOSIO_API_KEY,
@@ -492,7 +491,6 @@ async function executeComposioAction(
 			}
 		}
 
-
 		if (tools.length === 0) {
 			return {
 				success: false,
@@ -538,7 +536,6 @@ async function executeComposioAction(
 			completion.choices[0]?.message?.tool_calls &&
 			completion.choices[0].message.tool_calls.length > 0
 		) {
-
 			for (const toolCall of completion.choices[0].message.tool_calls) {
 				if (toolCall.type === "function") {
 					try {
@@ -1627,7 +1624,6 @@ export const askAssistant = action({
 		const composioIntent = detectComposioIntent(args.query);
 
 		if (composioIntent) {
-
 			// Get current member for entity ID
 			let memberId: Id<"members">;
 			try {

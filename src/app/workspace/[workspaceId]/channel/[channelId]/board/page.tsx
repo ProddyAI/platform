@@ -212,7 +212,6 @@ const BoardPage = () => {
 			const newIndex = lists.findIndex((l) => l._id === over.id);
 
 			if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-
 				// Create a new array with the reordered lists
 				const reorderedLists = arrayMove([...lists], oldIndex, newIndex);
 
@@ -221,7 +220,6 @@ const BoardPage = () => {
 					listId: list._id,
 					order: idx,
 				}));
-
 
 				// Call the mutation to update the database
 				try {
@@ -272,7 +270,6 @@ const BoardPage = () => {
 				}
 			}
 
-
 			if (fromListId && toListId) {
 				// Calculate the new order
 				const targetCards = cardsByList[toListId] || [];
@@ -288,7 +285,6 @@ const BoardPage = () => {
 					// If dropped directly on a list, place at the end
 					newOrder = targetCards.length;
 				}
-
 
 				try {
 					await moveCard({

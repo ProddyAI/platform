@@ -127,7 +127,6 @@ export const Mermaid = ({
 				return;
 			}
 
-
 			try {
 				setIsLoading(true);
 				setError(null);

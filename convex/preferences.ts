@@ -287,7 +287,6 @@ export const getWorkspacePreferences = query({
 export const fixNotificationsSchema = mutation({
 	args: {},
 	handler: async (ctx) => {
-
 		// Get all preferences documents
 		const allPreferences = await ctx.db.query("preferences").collect();
 
@@ -300,7 +299,6 @@ export const fixNotificationsSchema = mutation({
 			const notifications = pref.settings?.notifications as any;
 
 			if (notifications === true || notifications === false) {
-
 				// Convert boolean to proper object structure with defaults
 				const newSettings = {
 					...pref.settings,
@@ -324,7 +322,6 @@ export const fixNotificationsSchema = mutation({
 			}
 		}
 
-
 		return {
 			success: true,
 			totalDocuments: allPreferences.length,
@@ -344,7 +341,6 @@ export const checkNotificationsSchema = mutation({
 		// Get all preferences documents to check the current state
 		const allPreferences = await ctx.db.query("preferences").collect();
 
-
 		const problematicDocs = [];
 		let validDocs = 0;
 
@@ -361,7 +357,6 @@ export const checkNotificationsSchema = mutation({
 				validDocs++;
 			}
 		}
-
 
 		return {
 			totalDocuments: allPreferences.length,

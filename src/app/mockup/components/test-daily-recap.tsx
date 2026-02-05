@@ -217,7 +217,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								<CardContent>
 									<div className="space-y-4">
 										{recapData.highlights.map((highlight, index) => (
-										<div className="flex gap-3" key={`highlight-${index}`}>
+											<div className="flex gap-3" key={`highlight-${index}`}>
 												<div className="flex-shrink-0 mt-1">
 													{getHighlightIcon(highlight.type)}
 												</div>
@@ -237,7 +237,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 																(participant, pIndex) => (
 																	<Badge
 																		className="text-xs"
-																	key={`participant-${index}-${pIndex}`}
+																		key={`participant-${index}-${pIndex}`}
 																		variant="secondary"
 																	>
 																		{participant}
@@ -263,7 +263,10 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								<CardContent>
 									<div className="space-y-3">
 										{recapData.topContacts.map((contact, index) => (
-									<div className="flex items-center gap-3" key={`contact-${index}`}>
+											<div
+												className="flex items-center gap-3"
+												key={`contact-${index}`}
+											>
 												<Avatar className="h-8 w-8">
 													<AvatarFallback className="text-xs">
 														{getInitials(contact.name)}
@@ -297,7 +300,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 									{recapData.upcomingTasks.map((task, index) => (
 										<div
 											className="flex items-center justify-between p-3 border rounded-lg"
-										key={`task-${index}`}
+											key={`task-${index}`}
 										>
 											<div className="flex-1">
 												<div className="font-medium text-sm">{task.task}</div>

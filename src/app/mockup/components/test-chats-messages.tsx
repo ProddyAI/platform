@@ -55,7 +55,7 @@ export const TestChatsMessages = ({
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const [showTaskModal, setShowTaskModal] = useState(false);
-	const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(
+	const [_selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(
 		null
 	);
 	const [taskTitle, setTaskTitle] = useState("");
@@ -98,7 +98,7 @@ export const TestChatsMessages = ({
 		setTaskDueDate("");
 	};
 
-	const handleDeleteMessage = (messageId: string) => {
+	const handleDeleteMessage = (_messageId: string) => {
 		// Here you would typically delete the message from your backend
 	};
 

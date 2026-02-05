@@ -393,7 +393,7 @@ const CanvasPage = () => {
 							onTagsChange={(newTags) => {
 								handleUpdateCanvasTags(activeCanvas._id, newTags);
 							}}
-							onTitleChange={(newTitle) => {
+							onTitleChange={(_newTitle) => {
 								// Update canvas name
 								// You can implement canvas title update here
 							}}

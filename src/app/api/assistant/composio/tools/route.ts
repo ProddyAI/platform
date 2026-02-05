@@ -87,7 +87,6 @@ export async function POST(req: NextRequest) {
 			completion.choices[0]?.message?.tool_calls &&
 			completion.choices[0].message.tool_calls.length > 0
 		) {
-
 			for (const toolCall of completion.choices[0].message.tool_calls) {
 				if (toolCall.type === "function") {
 					try {
@@ -177,7 +176,6 @@ export async function GET(req: NextRequest) {
 				{ status: 400 }
 			);
 		}
-
 
 		const composio = createComposioClient();
 

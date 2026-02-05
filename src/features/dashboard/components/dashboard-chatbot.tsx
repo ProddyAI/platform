@@ -371,7 +371,6 @@ Try asking me things like:`;
 		setIsLoading(true);
 
 		try {
-
 			// Get workspace context for assistant integration
 			const workspaceContext = workspace ? `Workspace: ${workspace.name}` : "";
 
@@ -385,7 +384,6 @@ Try asking me things like:`;
 							? `${msg.content.substring(0, 500)}...`
 							: msg.content, // Truncate long messages
 				}));
-
 
 			// Call the main assistant router API
 			const response = await fetch("/api/assistant", {
@@ -846,7 +844,7 @@ Try asking me things like:`;
 											{message.actions.map((action) => (
 												<Button
 													className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
-												key={`${action.type}-${action.url}-${action.label}`}
+													key={`${action.type}-${action.url}-${action.label}`}
 													onClick={() => handleNavigation(action)}
 													size="sm"
 													variant="outline"

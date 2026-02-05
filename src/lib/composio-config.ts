@@ -770,7 +770,6 @@ export async function getAllToolsForApps(
 			}
 
 			try {
-
 				// Fetch maximum available tools
 				const tools = await composio.tools.get(entityId, {
 					authConfigIds: [authConfigId],
@@ -829,7 +828,6 @@ export async function getAllToolsForApps(
 			});
 		}
 
-
 		return validatedTools;
 	} catch (error) {
 		console.error("Error fetching all tools for apps:", error);
@@ -865,7 +863,6 @@ export function filterToolsForQuery(
 	const queryLower = query.toLowerCase();
 	const extractedKeywords = extractKeywordsFromQuery(queryLower);
 	const allKeywords = [...keywords, ...extractedKeywords];
-
 
 	// Determine app focus
 	const needsGithub = allKeywords.some((k) =>
@@ -999,7 +996,6 @@ export function filterToolsForQuery(
 	const selectedTools = scoredTools
 		.sort((a, b) => b._score - a._score)
 		.slice(0, maxTools);
-
 
 	return selectedTools;
 }
@@ -1178,7 +1174,6 @@ function _processAppTools(
 			.slice(0, remainingSlots);
 
 		filteredTools.push(...priorityTools);
-
 	}
 
 	// Strategy 3: If we still need more and have keywords, use keyword matching
@@ -1376,7 +1371,6 @@ export async function getAnyConnectedApps(
 				? [targetEntityId, `workspace_${workspaceId}`]
 				: [targetEntityId];
 
-
 		// Get entity-specific connections (member and/or workspace)
 		let entityConnections: ComposioConnection[] = [];
 		try {
@@ -1433,7 +1427,6 @@ export async function getAnyConnectedApps(
 						new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
 					);
 				})[0];
-
 
 			return {
 				app,
