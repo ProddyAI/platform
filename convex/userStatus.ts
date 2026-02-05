@@ -92,17 +92,43 @@ export const getUserStatus = query({
 			return { status: "offline" as UserStatus, lastSeen: null };
 		}
 
+		// Verify requester is a member of the workspace
+		const authMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("userId", authUserId)
+			)
+			.unique();
+
+		if (!authMember) {
+			return { status: "offline" as UserStatus, lastSeen: null };
+		}
+
+		// Verify target user is a member of the workspace
+		const targetMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!targetMember) {
+			return { status: "offline" as UserStatus, lastSeen: null };
+		}
+
 		const userPrefs = await ctx.db
 			.query("preferences")
 			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
+		// Default: status tracking is ON (true) if not explicitly disabled
 		const statusTrackingEnabled = userPrefs?.settings?.statusTracking ?? true;
 
 		if (!statusTrackingEnabled) {
 			return { status: "hidden" as UserStatus, lastSeen: null };
 		}
 
+		// Default: DND mode is OFF (undefined) unless explicitly set
 		const customStatus = userPrefs?.settings?.userStatus as
 			| UserStatus
 			| undefined;
@@ -160,8 +186,40 @@ export const getMultipleUserStatuses = query({
 			return {};
 		}
 
+		// Verify requester is a member of the workspace
+		const authMember = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("userId", authUserId)
+			)
+			.unique();
+
+		if (!authMember) {
+			return {};
+		}
+
+		// Filter userIds to only include workspace members
+		const membershipChecks = await Promise.all(
+			userIds.map((userId) =>
+				ctx.db
+					.query("members")
+					.withIndex("by_workspace_id_user_id", (q) =>
+						q.eq("workspaceId", workspaceId).eq("userId", userId)
+					)
+					.unique()
+			)
+		);
+
+		const validUserIds = userIds.filter(
+			(_, index) => membershipChecks[index] !== null
+		);
+
+		if (validUserIds.length === 0) {
+			return {};
+		}
+
 		// Batch fetch all user preferences
-		const prefsPromises = userIds.map((userId) =>
+		const prefsPromises = validUserIds.map((userId) =>
 			ctx.db
 				.query("preferences")
 				.withIndex("by_user_id", (q) => q.eq("userId", userId))
@@ -180,7 +238,7 @@ export const getMultipleUserStatuses = query({
 		// Group records by userId and find the most recent for each user
 		const presenceByUser = new Map<Id<"users">, (typeof allRecords)[0]>();
 		for (const record of allRecords) {
-			if (userIds.includes(record.userId)) {
+			if (validUserIds.includes(record.userId)) {
 				const existing = presenceByUser.get(record.userId);
 				if (!existing || record.lastSeen > existing.lastSeen) {
 					presenceByUser.set(record.userId, record);
@@ -188,8 +246,8 @@ export const getMultipleUserStatuses = query({
 			}
 		}
 
-		// Create array matching userIds order
-		const allPresenceData = userIds.map(
+		// Create array matching validUserIds order
+		const allPresenceData = validUserIds.map(
 			(userId) => presenceByUser.get(userId) || null
 		);
 
@@ -201,11 +259,12 @@ export const getMultipleUserStatuses = query({
 
 		const now = Date.now();
 
-		for (let i = 0; i < userIds.length; i++) {
-			const userId = userIds[i];
+		for (let i = 0; i < validUserIds.length; i++) {
+			const userId = validUserIds[i];
 			const userPrefs = allPrefs[i];
 			const presenceData = allPresenceData[i];
 
+			// Default: status tracking is ON (true) if not explicitly disabled
 			const statusTrackingEnabled = userPrefs?.settings?.statusTracking ?? true;
 
 			if (!statusTrackingEnabled) {
@@ -213,6 +272,7 @@ export const getMultipleUserStatuses = query({
 				continue;
 			}
 
+			// Default: DND mode is OFF (undefined) unless explicitly set
 			const customStatus = userPrefs?.settings?.userStatus as
 				| UserStatus
 				| undefined;

@@ -23,8 +23,9 @@ export const createMentionElement = (
 	workspaceId: string
 ): string => {
 	const mentionId = `mention-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+	const profileUrl = buildMemberProfileUrl(memberId, workspaceId);
 	return `<a
-    href="/workspace/${workspaceId}/member/${memberId}"
+    href="${profileUrl}"
     id="${mentionId}"
     class="user-mention"
     data-member-id="${memberId}"
