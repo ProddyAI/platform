@@ -206,6 +206,7 @@ const Editor = ({
 			const newText = quill.getText();
 			const plainText = newText.replace(/\n+$/, "");
 			setText(newText);
+			onTextChange?.();
 
 			const currentLastKeyWasExclamation = lastKeyWasExclamationRef.current;
 			const currentActiveAutocomplete = activeAutocompleteRef.current;

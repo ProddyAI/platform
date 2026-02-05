@@ -69,7 +69,7 @@ export const MentionPicker = ({
 			return;
 		}
 
-		const processMembers = async () => {
+		const processMembers = () => {
 			const membersWithPresence: MemberWithPresence[] = members.map(
 				(member) => ({
 					_id: member._id,

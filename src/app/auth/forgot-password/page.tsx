@@ -84,38 +84,14 @@ const ForgotPasswordPage = () => {
 			const result = await response.json();
 
 			if (response.ok && result.success) {
-				// Always show success message regardless of whether email was sent
-				// This prevents attackers from knowing if an email exists in the system
 				const now = Date.now();
 				setEmailSent(true);
 				setLastSentTimestamp(now);
-				// Initialize cooldown immediately to prevent fast "Try again" bypass
 				setRemainingCooldown(COOLDOWN_DURATION);
 				toast.success(
 					"If an account exists with this email, a password reset link will be sent"
 				);
-			} else if (
-				response.status === 404 &&
-				result.reason === "user_not_found"
-			) {
-				// User doesn't exist - redirect to signup
-				toast.error("No account found with this email address", {
-					duration: 4000,
-				});
-				setTimeout(() => {
-					window.location.href = "/auth/signup";
-				}, 2000);
-			} else if (response.status === 400 && result.reason === "oauth_only") {
-				// User has OAuth only
-				toast.error(
-					result.error ||
-						"This account uses social login. Please sign in with Google or GitHub.",
-					{
-						duration: 5000,
-					}
-				);
 			} else if (response.status === 429) {
-				// Handle rate limiting with detailed message
 				const errorMessage =
 					result.error || "Too many requests. Please try again later.";
 				toast.error(errorMessage, {

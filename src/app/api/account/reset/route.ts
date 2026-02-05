@@ -88,32 +88,8 @@ export async function POST(request: NextRequest) {
 			}
 		);
 
-		// Handle different failure reasons
+		// Security: Always return same response to prevent account enumeration
 		if (!result.token) {
-			if (result.reason === "user_not_found") {
-				return NextResponse.json(
-					{
-						success: false,
-						error: "No account found with this email address",
-						reason: "user_not_found",
-					},
-					{ status: 404 }
-				);
-			}
-
-			if (result.reason === "oauth_only") {
-				return NextResponse.json(
-					{
-						success: false,
-						error:
-							"This account uses social login (Google/GitHub). Please sign in with your social account.",
-						reason: "oauth_only",
-					},
-					{ status: 400 }
-				);
-			}
-
-			// Fallback for unknown reasons
 			return NextResponse.json({
 				success: true,
 				message:
@@ -121,13 +97,8 @@ export async function POST(request: NextRequest) {
 			});
 		}
 
-		// Generate reset link with the server-generated token
 		const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${result.token}`;
-
-		// Send email
 		const resendClient = getResend();
-
-		// Use normalized email for template and recipient
 		const emailTemplate = PasswordResetMail({
 			email: normalizedEmail,
 			resetLink,

@@ -315,24 +315,9 @@ const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 	const _localParticipant = useLocalParticipant();
 	const [isLeaving, _setIsLeaving] = useState(false);
 
-	// Check if audio is published
 	const _hasAudio = (p: StreamVideoParticipant) =>
 		p.publishedTracks.includes(SfuModels.TrackType.AUDIO);
 
-	useEffect(() => {
-		if (process.env.NODE_ENV !== "development") return;
-
-		const _summarize = (p: StreamVideoParticipant) => {
-			const userId = (p as unknown as { userId?: string }).userId ?? "unknown";
-			return {
-				userId,
-				sessionId: (p as unknown as { sessionId?: string }).sessionId,
-				publishedTracks: p.publishedTracks,
-			};
-		};
-	}, []);
-
-	// Handle leave audio with confirmation
 	const handleLeaveWithConfirmation = () => {
 		if (!onLeaveAudio || isLeaving) return;
 		onLeaveAudio();

@@ -37,22 +37,29 @@ export const setTyping = mutation({
 					lastSeen: Date.now(),
 				});
 			} else {
+				// Fetch workspaceId from channel or conversation
+				const workspaceId = channelId
+					? (
+							await ctx.db
+								.query("channels")
+								.filter((q) => q.eq(q.field("_id"), channelId))
+								.first()
+						)?.workspaceId
+					: (
+							await ctx.db
+								.query("conversations")
+								.filter((q) => q.eq(q.field("_id"), conversationId))
+								.first()
+						)?.workspaceId;
+
+				if (!workspaceId) {
+					throw new Error("Channel or conversation not found");
+				}
+
 				// Create new typing record
 				await ctx.db.insert("history", {
 					userId,
-					workspaceId: channelId
-						? (
-								await ctx.db
-									.query("channels")
-									.filter((q) => q.eq(q.field("_id"), channelId))
-									.first()
-							)?.workspaceId!
-						: (
-								await ctx.db
-									.query("conversations")
-									.filter((q) => q.eq(q.field("_id"), conversationId))
-									.first()
-							)?.workspaceId!,
+					workspaceId,
 					channelId,
 					status: `typing-${roomId}`,
 					lastSeen: Date.now(),

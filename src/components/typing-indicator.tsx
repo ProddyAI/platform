@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface TypingIndicatorProps {
@@ -14,6 +14,8 @@ export const TypingIndicator = ({
 	isVisible,
 	className,
 }: TypingIndicatorProps) => {
+	const shouldReduceMotion = useReducedMotion();
+
 	return (
 		<AnimatePresence>
 			{isVisible && (
@@ -29,29 +31,29 @@ export const TypingIndicator = ({
 				>
 					<div className="flex gap-1">
 						<motion.div
-							animate={{ y: [0, -4, 0] }}
+							animate={shouldReduceMotion ? { opacity: 1 } : { y: [0, -4, 0] }}
 							className="w-1.5 h-1.5 bg-muted-foreground rounded-full"
 							transition={{
 								duration: 0.6,
-								repeat: Number.POSITIVE_INFINITY,
+								repeat: shouldReduceMotion ? 0 : Number.POSITIVE_INFINITY,
 								delay: 0,
 							}}
 						/>
 						<motion.div
-							animate={{ y: [0, -4, 0] }}
+							animate={shouldReduceMotion ? { opacity: 1 } : { y: [0, -4, 0] }}
 							className="w-1.5 h-1.5 bg-muted-foreground rounded-full"
 							transition={{
 								duration: 0.6,
-								repeat: Number.POSITIVE_INFINITY,
+								repeat: shouldReduceMotion ? 0 : Number.POSITIVE_INFINITY,
 								delay: 0.2,
 							}}
 						/>
 						<motion.div
-							animate={{ y: [0, -4, 0] }}
+							animate={shouldReduceMotion ? { opacity: 1 } : { y: [0, -4, 0] }}
 							className="w-1.5 h-1.5 bg-muted-foreground rounded-full"
 							transition={{
 								duration: 0.6,
-								repeat: Number.POSITIVE_INFINITY,
+								repeat: shouldReduceMotion ? 0 : Number.POSITIVE_INFINITY,
 								delay: 0.4,
 							}}
 						/>

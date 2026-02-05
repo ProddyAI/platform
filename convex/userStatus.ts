@@ -3,7 +3,6 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
-// Status types: online, idle, dnd, offline, hidden
 export type UserStatus = "online" | "idle" | "dnd" | "offline" | "hidden";
 
 /**
@@ -25,7 +24,6 @@ export const setUserStatus = mutation({
 			throw new Error("Unauthorized");
 		}
 
-		// Verify user is a member of the workspace
 		const member = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
@@ -37,7 +35,6 @@ export const setUserStatus = mutation({
 			throw new Error("Not a member of this workspace");
 		}
 
-		// Update or create user status record in preferences
 		const existingPrefs = await ctx.db
 			.query("preferences")
 			.withIndex("by_user_id", (q) => q.eq("userId", userId))
@@ -78,7 +75,6 @@ export const getUserStatus = query({
 			return { status: "offline" as UserStatus, lastSeen: null };
 		}
 
-		// Check if user has status tracking enabled
 		const userPrefs = await ctx.db
 			.query("preferences")
 			.withIndex("by_user_id", (q) => q.eq("userId", userId))
@@ -87,26 +83,23 @@ export const getUserStatus = query({
 		const statusTrackingEnabled = userPrefs?.settings?.statusTracking ?? true;
 
 		if (!statusTrackingEnabled) {
-			// Return "hidden" status so the bubble doesn't appear
 			return { status: "hidden" as UserStatus, lastSeen: null };
 		}
 
-		// Get custom status if set
 		const customStatus = userPrefs?.settings?.userStatus as
 			| UserStatus
 			| undefined;
 
-		// If user has set DND status, return it
 		if (customStatus === "dnd") {
 			return { status: "dnd" as UserStatus, lastSeen: Date.now() };
 		}
 
-		// Check recent presence activity to determine online/idle/offline
 		const presenceData = await ctx.db
 			.query("history")
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", workspaceId).eq("userId", userId)
 			)
+			.filter((q) => q.eq("status", "active"))
 			.order("desc")
 			.first();
 
@@ -117,19 +110,12 @@ export const getUserStatus = query({
 		const now = Date.now();
 		const timeSinceLastSeen = now - presenceData.lastSeen;
 
-		// Online: Actively connected (real-time presence)
-		// Idle/Yellow: Active within last 5 minutes
-		// Offline/Gray: No activity for more than 6 minutes
-
-		let status: UserStatus = "offline";
+		let status: UserStatus;
 		if (timeSinceLastSeen < 60000) {
-			// Less than 1 minute - actively online (green)
 			status = "online";
 		} else if (timeSinceLastSeen < 300000) {
-			// Less than 5 minutes - recently active (yellow)
 			status = "idle";
 		} else {
-			// More than 6 minutes - offline (gray)
 			status = "offline";
 		}
 
@@ -154,65 +140,72 @@ export const getMultipleUserStatuses = query({
 			return {};
 		}
 
+		// Batch fetch all user preferences
+		const prefsPromises = userIds.map((userId) =>
+			ctx.db
+				.query("preferences")
+				.withIndex("by_user_id", (q) => q.eq("userId", userId))
+				.unique()
+		);
+		const allPrefs = await Promise.all(prefsPromises);
+
+		// Batch fetch all presence data
+		const presencePromises = userIds.map((userId) =>
+			ctx.db
+				.query("history")
+				.withIndex("by_workspace_id_user_id", (q) =>
+					q.eq("workspaceId", workspaceId).eq("userId", userId)
+				)
+				.filter((q) => q.eq("status", "active"))
+				.order("desc")
+				.first()
+		);
+		const allPresenceData = await Promise.all(presencePromises);
+
+		// Build status map from batched data
 		const statusMap: Record<
 			Id<"users">,
 			{ status: UserStatus; lastSeen: number | null }
 		> = {};
 
-		for (const userId of userIds) {
-			// Check if user has status tracking enabled
-			const userPrefs = await ctx.db
-				.query("preferences")
-				.withIndex("by_user_id", (q) => q.eq("userId", userId))
-				.unique();
+		const now = Date.now();
+
+		for (let i = 0; i < userIds.length; i++) {
+			const userId = userIds[i];
+			const userPrefs = allPrefs[i];
+			const presenceData = allPresenceData[i];
 
 			const statusTrackingEnabled = userPrefs?.settings?.statusTracking ?? true;
 
 			if (!statusTrackingEnabled) {
-				// If tracking disabled, don't show any status
 				continue;
 			}
 
-			// Get custom status if set
 			const customStatus = userPrefs?.settings?.userStatus as
 				| UserStatus
 				| undefined;
 
-			// If user has set DND status, return it
 			if (customStatus === "dnd") {
-				statusMap[userId] = { status: "dnd", lastSeen: Date.now() };
+				statusMap[userId] = { status: "dnd", lastSeen: now };
 				continue;
 			}
-
-			// Check recent presence activity
-			const presenceData = await ctx.db
-				.query("history")
-				.withIndex("by_workspace_id_user_id", (q) =>
-					q.eq("workspaceId", workspaceId).eq("userId", userId)
-				)
-				.order("desc")
-				.first();
 
 			if (!presenceData) {
 				statusMap[userId] = { status: "offline", lastSeen: null };
 				continue;
 			}
 
-			const now = Date.now();
 			const timeSinceLastSeen = now - presenceData.lastSeen;
-
-			let status: UserStatus = "offline";
+	
+			let status: UserStatus;
 			if (timeSinceLastSeen < 60000) {
-				// Less than 1 minute - actively online (green)
 				status = "online";
 			} else if (timeSinceLastSeen < 300000) {
-				// Less than 5 minutes - recently active (yellow)
 				status = "idle";
 			} else {
-				// More than 6 minutes - offline (gray)
 				status = "offline";
 			}
-
+	
 			statusMap[userId] = {
 				status,
 				lastSeen: presenceData.lastSeen,
