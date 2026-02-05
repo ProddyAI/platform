@@ -1,14 +1,17 @@
 "use client";
 
+import { useMutation } from "convex/react";
 import { Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useMutation } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { useStatusTrackingEnabled, useUserPreferences } from "../api/use-user-preferences";
+import {
+	useStatusTrackingEnabled,
+	useUserPreferences,
+} from "../api/use-user-preferences";
 
 export const StatusSelector = () => {
 	const workspaceId = useWorkspaceId();
@@ -45,7 +48,7 @@ export const StatusSelector = () => {
 		}
 	};
 
-	const isDisabled = !statusTrackingEnabled || isUpdating || isLoadingTracking;
+	const _isDisabled = !statusTrackingEnabled || isUpdating || isLoadingTracking;
 
 	// Hide DND toggle when status tracking is disabled
 	if (!statusTrackingEnabled) {
@@ -75,8 +78,8 @@ export const StatusSelector = () => {
 				<div className="rounded-lg bg-muted/50 p-3">
 					<p className="text-xs text-muted-foreground">
 						💡 <strong>Automatic Status:</strong> Your status automatically
-						shows green when online, yellow if idle, and gray if offline based on
-						your activity.
+						shows green when online, yellow if idle, and gray if offline based
+						on your activity.
 					</p>
 				</div>
 			)}

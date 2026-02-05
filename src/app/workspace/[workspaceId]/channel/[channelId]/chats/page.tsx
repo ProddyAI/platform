@@ -72,7 +72,7 @@ const ChannelChatPage = () => {
 				loadMore={loadMore}
 			/>
 
-			<TypingIndicator typingText={typingText} isVisible={isAnyoneTyping} />
+			<TypingIndicator isVisible={isAnyoneTyping} typingText={typingText} />
 
 			<ChatInput
 				channelId={channelId}

@@ -1,6 +1,6 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { v } from "convex/values";
 import { api, components } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
@@ -12,12 +12,14 @@ type FilterTypes = {
 	channelId: string;
 };
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
+	apiKey: process.env.OPENROUTER_API_KEY || "",
 });
 
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: openrouter.textEmbeddingModel("openai/text-embedding-3-small") as any,
+	textEmbeddingModel: openrouter.textEmbeddingModel(
+		"openai/text-embedding-3-small"
+	) as any,
 	embeddingDimension: 1536,
 });
 

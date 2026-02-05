@@ -6,11 +6,11 @@ import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/3pc/apollo-tracking";
 import { ClarityTracking } from "@/components/3pc/clarity-tracking";
 import { Formbricks } from "@/components/3pc/formbricks";
+import { TidioChat } from "@/components/3pc/tidio-chat";
+import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
-import { TidioChat } from "@/components/3pc/tidio-chat";
 import { Toaster } from "@/components/ui/sonner";
-import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
 import { siteConfig } from "@/config";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
 

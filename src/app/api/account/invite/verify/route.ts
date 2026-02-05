@@ -51,28 +51,28 @@ export async function POST(req: Request) {
 
 		const email = currentUser.email.toLowerCase();
 
-	// 3. Fetch invite by hash
-	const inviteDoc = await fetchQuery(api.workspaceInvites.getInviteByHash, {
-		hash: invite,
-	});
+		// 3. Fetch invite by hash
+		const inviteDoc = await fetchQuery(api.workspaceInvites.getInviteByHash, {
+			hash: invite,
+		});
 
-	if (!inviteDoc) {
-		return NextResponse.json({ error: "Invalid invite" }, { status: 400 });
-	}
+		if (!inviteDoc) {
+			return NextResponse.json({ error: "Invalid invite" }, { status: 400 });
+		}
 
-	// 4. Verify that the invite email matches the current user's email
-	if (inviteDoc.email !== email) {
-		return NextResponse.json(
-			{ error: "This invite was not sent to your email address" },
-			{ status: 403 }
+		// 4. Verify that the invite email matches the current user's email
+		if (inviteDoc.email !== email) {
+			return NextResponse.json(
+				{ error: "This invite was not sent to your email address" },
+				{ status: 403 }
+			);
+		}
+
+		// 5. Recompute hash to verify email binding
+		const joinCode = await fetchQuery(
+			api.workspaceInvites.getWorkspaceJoinCode,
+			{ workspaceId: workspaceId as Id<"workspaces"> }
 		);
-	}
-
-	// 5. Recompute hash to verify email binding
-	const joinCode = await fetchQuery(
-		api.workspaceInvites.getWorkspaceJoinCode,
-		{ workspaceId: workspaceId as Id<"workspaces"> }
-	);
 
 		if (!process.env.INVITE_SECRET) {
 			throw new Error("INVITE_SECRET environment variable is required");
@@ -95,11 +95,11 @@ export async function POST(req: Request) {
 			);
 		}
 
-	// 6. Consume invite
-	await fetchMutation(api.workspaceInvites.consumeInvite, {
-		inviteId: inviteDoc._id,
-		userId: currentUser._id,
-	});
+		// 6. Consume invite
+		await fetchMutation(api.workspaceInvites.consumeInvite, {
+			inviteId: inviteDoc._id,
+			userId: currentUser._id,
+		});
 
 		return NextResponse.json({ success: true });
 	} catch (err) {

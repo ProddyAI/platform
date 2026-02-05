@@ -49,7 +49,8 @@ export const StatusTrackingSettings = () => {
 						Status Tracking
 					</Label>
 					<p className="text-sm text-muted-foreground">
-						Allow others to see when you're online and your last seen time. When disabled, your status bubble will be hidden.
+						Allow others to see when you're online and your last seen time. When
+						disabled, your status bubble will be hidden.
 					</p>
 				</div>
 				<Switch

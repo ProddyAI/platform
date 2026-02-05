@@ -286,14 +286,7 @@ const Editor = ({
 			if (quillRef) quillRef.current = null;
 			if (innerRef) innerRef.current = null;
 		};
-	}, [
-		innerRef,
-		activeAutocomplete,
-		disableMentions,
-		lastKeyWasExclamation,
-		mentionPickerOpen,
-		onTextChange,
-	]);
+	}, [innerRef]);
 
 	const toggleToolbar = () => {
 		setIsToolbarVisible((current) => !current);

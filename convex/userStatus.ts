@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
 
 // Status types: online, idle, dnd, offline, hidden
 export type UserStatus = "online" | "idle" | "dnd" | "offline" | "hidden";
@@ -92,7 +92,9 @@ export const getUserStatus = query({
 		}
 
 		// Get custom status if set
-		const customStatus = userPrefs?.settings?.userStatus as UserStatus | undefined;
+		const customStatus = userPrefs?.settings?.userStatus as
+			| UserStatus
+			| undefined;
 
 		// If user has set DND status, return it
 		if (customStatus === "dnd") {
@@ -152,7 +154,10 @@ export const getMultipleUserStatuses = query({
 			return {};
 		}
 
-		const statusMap: Record<Id<"users">, { status: UserStatus; lastSeen: number | null }> = {};
+		const statusMap: Record<
+			Id<"users">,
+			{ status: UserStatus; lastSeen: number | null }
+		> = {};
 
 		for (const userId of userIds) {
 			// Check if user has status tracking enabled
@@ -169,7 +174,9 @@ export const getMultipleUserStatuses = query({
 			}
 
 			// Get custom status if set
-			const customStatus = userPrefs?.settings?.userStatus as UserStatus | undefined;
+			const customStatus = userPrefs?.settings?.userStatus as
+				| UserStatus
+				| undefined;
 
 			// If user has set DND status, return it
 			if (customStatus === "dnd") {

@@ -123,9 +123,9 @@ const MemberIdPage = () => {
 				memberName={member?.user.name}
 				variant="conversation"
 			/>
-	
-			<TypingIndicator typingText={typingText} isVisible={isAnyoneTyping} />
-	
+
+			<TypingIndicator isVisible={isAnyoneTyping} typingText={typingText} />
+
 			<ChatInput
 				conversationId={conversationId}
 				memberName={member?.user.name}

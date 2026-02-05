@@ -422,12 +422,18 @@ export const Header = () => {
 									</Link>
 								) : (
 									<>
-										<Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
+										<Link
+											href="/auth/signin"
+											onClick={() => setIsMenuOpen(false)}
+										>
 											<Button className="w-full rounded-full" variant="outline">
 												Sign In
 											</Button>
 										</Link>
-										<Link href="/auth/signup" onClick={() => setIsMenuOpen(false)}>
+										<Link
+											href="/auth/signup"
+											onClick={() => setIsMenuOpen(false)}
+										>
 											<Button className="w-full rounded-full">
 												Get Started
 											</Button>

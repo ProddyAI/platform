@@ -179,17 +179,17 @@ export const ChatInput = ({
 					onSelectSuggestion={handleSuggestionSelect}
 				/>
 			) : null}
-		<Editor
-			disabled={isPending}
-			disableMentions={!!conversationId}
-			innerRef={innerRef}
-			key={editorKey}
-			onSubmit={handleSubmit}
-			onTextChange={() => {
-				// Signal typing when user types
-				signalTyping();
-			}}
-		/>
+			<Editor
+				disabled={isPending}
+				disableMentions={!!conversationId}
+				innerRef={innerRef}
+				key={editorKey}
+				onSubmit={handleSubmit}
+				onTextChange={() => {
+					// Signal typing when user types
+					signalTyping();
+				}}
+			/>
 		</div>
 	);
 };

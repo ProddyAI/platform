@@ -1,8 +1,8 @@
 "use node";
 
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { Composio } from "@composio/core";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { v } from "convex/values";
 import OpenAI from "openai";
@@ -54,7 +54,7 @@ type LLMMessage = {
 };
 
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
+	apiKey: process.env.OPENROUTER_API_KEY || "",
 });
 
 const DEFAULT_SYSTEM_PROMPT = [

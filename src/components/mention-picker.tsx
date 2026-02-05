@@ -8,8 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
 import type { UserStatus } from "@/features/presence/components/presence-indicator";
+import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
 import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 

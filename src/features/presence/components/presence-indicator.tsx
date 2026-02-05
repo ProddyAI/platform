@@ -35,7 +35,12 @@ export const PresenceIndicator = ({
 	const renderIcon = () => {
 		switch (displayStatus) {
 			case "dnd":
-				return <Minus className="size-2 text-gray-700 dark:text-gray-800 translate-x-[0.5px]" strokeWidth={3} />;
+				return (
+					<Minus
+						className="size-2 text-gray-700 dark:text-gray-800 translate-x-[0.5px]"
+						strokeWidth={3}
+					/>
+				);
 			case "idle":
 				return <Moon className="size-2 text-white" strokeWidth={2} />;
 			default:
