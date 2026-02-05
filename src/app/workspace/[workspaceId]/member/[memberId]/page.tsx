@@ -48,7 +48,7 @@ const MemberIdPage = () => {
 
 	// Get typing indicator data
 	const { typingText, isAnyoneTyping } = useTypingIndicator({
-		conversationId,
+		conversationId: conversationId ?? undefined,
 	});
 
 	useEffect(() => {

@@ -292,7 +292,7 @@ export const generatePasswordResetTokenInternal = internalMutation({
 			.withIndex("email", (q) => q.eq("email", email))
 			.first();
 		if (!user) {
-			return { success: true, token: null };
+			return { success: true, token: null, reason: "user_not_found" };
 		}
 
 		const authAccounts = await ctx.db
@@ -305,7 +305,7 @@ export const generatePasswordResetTokenInternal = internalMutation({
 		);
 
 		if (!hasPasswordAuth) {
-			return { success: true, token: null };
+			return { success: true, token: null, reason: "oauth_only" };
 		}
 
 		const token = generateToken();
@@ -346,7 +346,7 @@ export const generatePasswordResetToken = action({
 	handler: async (
 		ctx,
 		args
-	): Promise<{ success: boolean; token: string | null }> => {
+	): Promise<{ success: boolean; token: string | null; reason?: string }> => {
 		const email = args.email.toLowerCase().trim();
 
 		// Generate token internally
@@ -359,8 +359,8 @@ export const generatePasswordResetToken = action({
 			throw new Error("Failed to generate password reset token");
 		}
 
-		// Return token for use by API route (only accessible server-side)
-		return { success: true, token: result.token };
+		// Return token and reason for use by API route (only accessible server-side)
+		return { success: true, token: result.token, reason: result.reason };
 	},
 });
 

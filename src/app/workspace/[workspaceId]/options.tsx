@@ -105,9 +105,6 @@ export const MemberItem = ({
 		workspaceId,
 	});
 
-	// Derive online status from the status object
-	const isOnline = status === "online";
-
 	// Generate background color for avatar fallback
 	const backgroundColor = generateUserColor(member?.userId || label);
 
@@ -146,7 +143,7 @@ export const MemberItem = ({
 								{member && (
 									<PresenceIndicator
 										className="w-2 h-2 md:w-2.5 md:h-2.5"
-										isOnline={isOnline}
+										status={status}
 									/>
 								)}
 							</div>
@@ -167,7 +164,7 @@ export const MemberItem = ({
 							{member && (
 								<PresenceIndicator
 									className="w-2 h-2 md:w-2.5 md:h-2.5"
-									isOnline={isOnline}
+									status={status}
 								/>
 							)}
 						</div>

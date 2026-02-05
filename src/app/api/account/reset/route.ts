@@ -88,9 +88,32 @@ export async function POST(request: NextRequest) {
 			}
 		);
 
-		// If no token was generated (user doesn't exist or doesn't use password auth),
-		// still return success to prevent account enumeration
+		// Handle different failure reasons
 		if (!result.token) {
+			if (result.reason === "user_not_found") {
+				return NextResponse.json(
+					{
+						success: false,
+						error: "No account found with this email address",
+						reason: "user_not_found",
+					},
+					{ status: 404 }
+				);
+			}
+
+			if (result.reason === "oauth_only") {
+				return NextResponse.json(
+					{
+						success: false,
+						error:
+							"This account uses social login (Google/GitHub). Please sign in with your social account.",
+						reason: "oauth_only",
+					},
+					{ status: 400 }
+				);
+			}
+
+			// Fallback for unknown reasons
 			return NextResponse.json({
 				success: true,
 				message:

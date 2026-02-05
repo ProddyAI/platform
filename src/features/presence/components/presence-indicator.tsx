@@ -1,5 +1,6 @@
 "use client";
 
+import { Minus, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type UserStatus = "online" | "idle" | "dnd" | "offline" | "hidden";
@@ -31,13 +32,26 @@ export const PresenceIndicator = ({
 		hidden: "",
 	};
 
+	const renderIcon = () => {
+		switch (displayStatus) {
+			case "dnd":
+				return <Minus className="size-2 text-gray-700 dark:text-gray-800 translate-x-[0.5px]" strokeWidth={3} />;
+			case "idle":
+				return <Moon className="size-2 text-white" strokeWidth={2} />;
+			default:
+				return null;
+		}
+	};
+
 	return (
 		<div
 			className={cn(
-				"absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white",
+				"absolute -bottom-0.5 -right-0.5 size-3 rounded-full flex items-center justify-center border border-gray-300/50 dark:border-gray-600/50",
 				statusColors[displayStatus],
 				className
 			)}
-		/>
+		>
+			{renderIcon()}
+		</div>
 	);
 };
