@@ -52,12 +52,13 @@ export async function updateNotificationPreferencesServer(
 ): Promise<boolean> {
 	try {
 		const convex = getConvexClient();
+		const notificationKey = getNotificationKey(emailType);
 
 		await convex.mutation(
 			api.preferences.updateNotificationPreferencesByUserId,
 			{
 				userId: userId,
-				notificationKey: emailType,
+				notificationKey,
 				enabled,
 			}
 		);

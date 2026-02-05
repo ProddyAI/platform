@@ -2,6 +2,21 @@ import { Composio } from "@composio/core";
 import { OpenAIProvider } from "@composio/openai";
 import OpenAI from "openai";
 
+/**
+ * Represents a Composio connection with properties that may vary across SDK versions
+ */
+interface ComposioConnection {
+	id?: string;
+	connectionId?: string;
+	redirectUrl?: string;
+	authUrl?: string;
+}
+
+/**
+ * Result type for connection deletion operations
+ */
+type ConnectedAccountDeleteResult = boolean | void | { success: boolean };
+
 if (!process.env.OPENAI_API_KEY) {
 	throw new Error("OPENAI_API_KEY is required");
 }
@@ -25,6 +40,27 @@ export const composio = new Composio({
 });
 
 export default composio;
+
+/**
+ * Helper to resolve the appropriate list method for connected accounts
+ * Handles SDK version compatibility between connectedAccounts.list and connections.list
+ */
+function resolveComposioListMethod(composioInstance: Composio) {
+	if (composioInstance.connectedAccounts?.list) {
+		return async (userId: string) => {
+			return await composioInstance.connectedAccounts.list({
+				userIds: [userId],
+			});
+		};
+	}
+	// Fallback for older SDK versions
+	return async (userId: string) => {
+		const connectionsApi = composioInstance as any;
+		return await connectionsApi.connections?.list?.({
+			entityId: userId,
+		});
+	};
+}
 
 export function initializeComposio() {
 	if (!process.env.COMPOSIO_API_KEY) {
@@ -58,21 +94,20 @@ export function initializeComposio() {
 				);
 			}
 
-			const connection = await composioInstance.connectedAccounts?.initiate?.(
+			const connection = (await composioInstance.connectedAccounts?.initiate?.(
 				userId,
 				authConfigId,
 				{
 					allowMultiple: true,
 				}
-			);
+			)) as ComposioConnection | undefined;
 
 			if (!connection) {
 				throw new Error("Failed to create connection");
 			}
 
 			const { cleanupOldConnections } = await import("./composio-config");
-			const connectionId =
-				(connection as any).id || (connection as any).connectionId;
+			const connectionId = connection.id ?? connection.connectionId;
 			if (connectionId) {
 				cleanupOldConnections(
 					composioInstance,
@@ -83,23 +118,15 @@ export function initializeComposio() {
 			}
 
 			return {
-				redirectUrl:
-					(connection as any).redirectUrl || (connection as any).authUrl,
-				connectionId:
-					(connection as any).id || (connection as any).connectionId,
-				id: (connection as any).id || (connection as any).connectionId,
+				redirectUrl: connection.redirectUrl ?? connection.authUrl,
+				connectionId: connection.id ?? connection.connectionId,
+				id: connection.id ?? connection.connectionId,
 			};
 		},
 
 		async getConnections(userId: string) {
-			return (
-				(await composioInstance.connectedAccounts?.list?.({
-					userIds: [userId],
-				})) ||
-				(await (composioInstance as any).connections?.list?.({
-					entityId: userId,
-				}))
-			);
+			const listMethod = resolveComposioListMethod(composioInstance);
+			return await listMethod(userId);
 		},
 
 		async getConnectionStatus(connectionId: string) {
@@ -116,15 +143,16 @@ export function initializeComposio() {
 				} as any);
 
 				return { items: Array.isArray(tools) ? tools : [tools] };
-			} catch {
+			} catch (err) {
+				console.error("Error fetching Composio tools:", err);
 				return { items: [] };
 			}
 		},
 
-		async deleteConnection(connectionId: string) {
-			return await (composioInstance as any).connectedAccounts?.delete?.(
-				connectionId
-			);
+		async deleteConnection(
+			connectionId: string
+		): Promise<ConnectedAccountDeleteResult> {
+			return await composioInstance.connectedAccounts?.delete?.(connectionId);
 		},
 	};
 
