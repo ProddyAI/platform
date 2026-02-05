@@ -141,8 +141,8 @@ export const WeeklyDigestTemplate: React.FC<
 								{workspace.recentTasks.length > 0 && (
 									<div style={taskSection}>
 										<Text style={sectionTitle}>📋 Recent Tasks</Text>
-									{workspace.recentTasks.slice(0, 3).map((task) => (
-											<Text key={task.title} style={taskItem}>
+											{workspace.recentTasks.slice(0, 3).map((task, taskIndex) => (
+											<Text key={`${workspace.workspaceUrl}-${task.title}-${task.dueDate || 'no-due'}-${taskIndex}`} style={taskItem}>
 												{task.status === "completed" ? "✅" : "⏳"} {task.title}
 												{task.dueDate && ` (Due: ${task.dueDate})`}
 											</Text>
