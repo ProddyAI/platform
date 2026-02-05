@@ -494,8 +494,8 @@ export const PerformanceMetricsDashboard = ({
 							<div className="max-h-[300px] overflow-auto">
 								{hasTaskData && hasUserData && tasksByAssignee.length > 0 ? (
 									<div className="space-y-4">
-										{tasksByAssignee.map((user, index) => (
-											<div className="space-y-2" key={index}>
+									{tasksByAssignee.map((user, index) => (
+								<div className="space-y-2" key={`${user.label}-${index}`}>
 												<div className="flex items-center justify-between">
 													<div className="font-medium">{user.label}</div>
 													<div className="text-sm text-muted-foreground">
@@ -545,7 +545,7 @@ export const PerformanceMetricsDashboard = ({
 									{userPerformanceData.length > 0 ? (
 										<div className="space-y-4">
 											{userPerformanceData.map((user, index) => (
-												<div className="space-y-2" key={index}>
+								<div className="space-y-2" key={`${user.name}-${index}`}>
 													<div className="flex items-center justify-between">
 														<div className="font-medium flex items-center">
 															{index === 0 && (

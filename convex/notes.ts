@@ -284,7 +284,6 @@ export const remove = mutation({
 		const existingNote = await ctx.db.get(args.id);
 
 		if (!existingNote) {
-			console.log(`Note not found: ${args.id}`);
 			// Return success even if note doesn't exist to avoid errors
 			return args.id;
 		}
@@ -301,9 +300,7 @@ export const remove = mutation({
 		}
 
 		try {
-			console.log(`Deleting note: ${args.id}`);
 			await ctx.db.delete(args.id);
-			console.log(`Successfully deleted note: ${args.id}`);
 			return args.id;
 		} catch (error) {
 			console.error(`Error deleting note ${args.id}:`, error);

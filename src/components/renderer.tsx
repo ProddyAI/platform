@@ -63,9 +63,6 @@ const Renderer = ({ value, calendarEvent }: RendererProps) => {
 
 		// Check if we're in a browser environment
 		if (typeof document === "undefined") {
-			console.log(
-				"Renderer: document is not defined, skipping Quill initialization"
-			);
 			return;
 		}
 

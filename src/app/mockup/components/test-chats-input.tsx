@@ -153,11 +153,6 @@ export const TestChatsInput = ({
 
 	const handleTaskCreate = () => {
 		// Here you would typically save the task to your backend
-		console.log("Creating task:", {
-			title: taskTitle,
-			content: taskContent,
-			dueDate: taskDueDate,
-		});
 
 		// Send the original message without the !
 		const messageWithoutExclamation = message.replace("!", "").trim();
@@ -190,7 +185,9 @@ export const TestChatsInput = ({
 
 	const adjustTextareaHeight = () => {
 		if (textareaRef.current) {
+			// Reset height to auto first to get accurate scrollHeight (allows shrinking)
 			textareaRef.current.style.height = "auto";
+			// Then set to content height with max of 120px
 			textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
 		}
 	};

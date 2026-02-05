@@ -1,9 +1,8 @@
 {
-	"node": {
-		"externalPackages": [
-			"@opentelemetry/api",
-			"@opentelemetry/instrumentation",
-			"@openrouter/ai-sdk-provider"
-		]
-	}
+  "node": {
+    "externalPackages": [
+      "@opentelemetry/api",
+      "@opentelemetry/instrumentation"
+    ]
+  }
 }

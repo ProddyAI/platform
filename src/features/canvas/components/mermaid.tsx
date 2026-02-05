@@ -119,22 +119,14 @@ export const Mermaid = ({
 
 		const renderMermaid = async () => {
 			if (!mermaidCode) {
-				console.log("No mermaid code provided");
 				return;
 			}
 
 			// Check if we're in browser environment
 			if (typeof window === "undefined") {
-				console.log("Not in browser environment");
 				return;
 			}
 
-			console.log(
-				"Starting mermaid rendering for:",
-				id,
-				"with code:",
-				mermaidCode
-			);
 
 			try {
 				setIsLoading(true);
@@ -142,7 +134,6 @@ export const Mermaid = ({
 
 				// Dynamic import of mermaid to avoid SSR issues
 				const mermaid = (await import("mermaid")).default;
-				console.log("Mermaid imported successfully");
 
 				// Initialize mermaid with configuration
 				mermaid.initialize({
@@ -157,25 +148,19 @@ export const Mermaid = ({
 						curve: "basis",
 					},
 				});
-				console.log("Mermaid initialized");
 
 				// Generate unique ID for this diagram
 				const diagramId = `mermaid-${id}-${Date.now()}`;
-				console.log("Rendering with ID:", diagramId);
-
 				// Render the mermaid diagram
 				const { svg } = await mermaid.render(diagramId, mermaidCode);
-				console.log("Mermaid rendered successfully, SVG length:", svg.length);
 
 				// Clean up the SVG to make it responsive
 				const cleanedSvg = svg
 					.replace(/width="[^"]*"/, 'width="100%"')
 					.replace(/height="[^"]*"/, 'height="100%"');
 
-				console.log("SVG cleaned, setting rendered SVG");
 				setRenderedSvg(cleanedSvg);
 				setIsLoading(false);
-				console.log("Rendering complete");
 			} catch (err) {
 				console.error("Mermaid rendering error:", err);
 				const errorMessage =
