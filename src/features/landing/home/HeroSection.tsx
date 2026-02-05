@@ -107,7 +107,7 @@ export const HeroSection = () => {
 									<iframe
 										allow="fullscreen https://app.supademo.com clipboard-write"
 										loading="lazy"
-										sandbox="allow-scripts allow-same-origin allow-presentation"
+										sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
 										src="https://app.supademo.com/embed/cmb4xp1ch2omwppkpndluqnku?embed_v=2"
 										style={{
 											position: "absolute",
