@@ -320,7 +320,7 @@ export const LiveSidebar = ({
 													{item.tags.slice(0, 3).map((tag, index) => (
 														<Badge
 															className="text-xs"
-															key={index}
+															key={`${item._id}-${tag}-${index}`}
 															variant="secondary"
 														>
 															{tag}

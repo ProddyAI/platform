@@ -47,7 +47,7 @@ export const PasswordStrengthIndicator = ({
 							className={`flex-1 rounded-full transition-all duration-300 ${
 								index <= strength.score ? strength.color : "bg-gray-200"
 							}`}
-							key={index}
+							key={`strength-bar-${index}`}
 						/>
 					))}
 				</div>
@@ -57,7 +57,7 @@ export const PasswordStrengthIndicator = ({
 			{showRequirements && (
 				<div className="space-y-1.5">
 					{requirements.map((requirement, index) => (
-						<div className="flex items-center gap-2 text-xs" key={index}>
+						<div className="flex items-center gap-2 text-xs" key={requirement.label}>
 							{requirement.met ? (
 								<Check className="size-3.5 text-green-600 flex-shrink-0" />
 							) : (

@@ -51,17 +51,11 @@ function extractTextFromRichText(body: string): string {
 					.join("")
 					.replace(/\\n|\\N|\n/g, " ")
 					.trim();
-			} else {
-				console.log(
-					"extractTextFromRichText - No ops array found in parsed JSON"
-				);
 			}
 		} catch (error) {
 			console.log("extractTextFromRichText - JSON parsing failed:", error);
 			// If parsing fails, just use the original body
 		}
-	} else {
-		console.log("extractTextFromRichText - Not JSON format, using as is");
 	}
 
 	// Store in cache for future use

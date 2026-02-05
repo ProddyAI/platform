@@ -126,10 +126,10 @@ const LabelInput: React.FC<LabelInputProps> = ({
 			{/* Selected labels */}
 			{selectedLabels.length > 0 && (
 				<div className="flex flex-wrap gap-1 mb-2">
-					{selectedLabels.map((label, index) => (
-						<Badge
-							className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
-							key={index}
+				{Array.from(new Set(selectedLabels)).map((label) => (
+					<Badge
+						className="flex items-center gap-1 bg-secondary/20 text-secondary-foreground"
+						key={label}
 							variant="secondary"
 						>
 							{label}
@@ -174,7 +174,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
 								"px-3 py-1.5 cursor-pointer hover:bg-secondary/10",
 								"text-sm text-foreground"
 							)}
-							key={index}
+							key={`${suggestion}-${index}`}
 							onClick={() => handleSuggestionClick(suggestion)}
 						>
 							{suggestion}

@@ -159,7 +159,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 					{card.labels.map((label: string, i: number) => (
 						<Badge
 							className="text-xs px-2 py-0.5 bg-secondary/20 dark:bg-secondary/30 text-secondary-foreground dark:text-gray-200"
-							key={i}
+							key={`${card._id}-${label}-${i}`}
 							variant="secondary"
 						>
 							{label}

@@ -152,9 +152,9 @@ function Calendar({
 				</thead>
 				<tbody>
 					{weeks.map((week, weekIndex) => (
-						<tr className="flex w-full justify-between mt-2" key={weekIndex}>
+						<tr className="flex w-full justify-between mt-2" key={`week-${month.getFullYear()}-${month.getMonth()}-${weekIndex}`}>
 							{week.map((day, dayIndex) => (
-								<td className="p-0 text-center" key={dayIndex}>
+								<td className="p-0 text-center" key={day !== null ? day : `empty-${weekIndex}-${dayIndex}`}>
 									{day !== null ? (
 										<Button
 											className={cn(

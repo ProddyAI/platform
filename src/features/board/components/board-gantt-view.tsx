@@ -507,7 +507,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 						{timelineDates.map((date, index) => (
 							<div
 								className="flex-1 text-center py-2 text-xs font-medium border-r dark:border-gray-800 last:border-r-0"
-								key={index}
+								key={date.getTime()}
 								style={{ minWidth: "60px" }}
 							>
 								<div className="text-muted-foreground dark:text-gray-400">
@@ -549,7 +549,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 										{timelineDates.map((date, index) => (
 											<div
 												className={`flex-1 border-r dark:border-gray-800 last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5 dark:bg-secondary/10" : index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800/30" : "dark:bg-gray-900"}`}
-												key={index}
+												key={date.getTime()}
 												style={{ minWidth: "60px" }}
 											/>
 										))}
@@ -699,7 +699,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 										{selectedTask.labels.map((label, index) => (
 											<span
 												className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 text-xs rounded-full"
-												key={index}
+												key={`${selectedTask.id}-${label}-${index}`}
 											>
 												{label}
 											</span>
