@@ -159,6 +159,52 @@ export const getWorkspaceJoinCodeForInviteVerification = internalQuery({
 	},
 });
 
+// Helper internal queries for authorization checks
+export const getMemberRole = internalQuery({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+			)
+			.unique();
+	},
+});
+
+export const getUserById = internalQuery({
+	args: {
+		userId: v.id("users"),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db.get(args.userId);
+	},
+});
+
+export const getPendingInviteForUser = internalQuery({
+	args: {
+		workspaceId: v.id("workspaces"),
+		email: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const now = Date.now();
+		return await ctx.db
+			.query("workspaceInvites")
+			.withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("email"), args.email),
+					q.eq(q.field("used"), false),
+					q.gt(q.field("expiresAt"), now)
+				)
+			)
+			.first();
+	},
+});
+
 // Server-side action for invite verification flow
 // This is called from the Next.js API route after server-side authentication
 export const getJoinCodeForVerification = action({
@@ -166,7 +212,50 @@ export const getJoinCodeForVerification = action({
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args): Promise<string | undefined> => {
-		// Call the internal query to get the join code
+		// Step 1: Verify user is authenticated (same as getWorkspaceJoinCode)
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized. User must be authenticated.");
+		}
+
+		// Step 2: Check if user is a workspace member with admin/owner role
+		const currentMember = await ctx.runQuery(
+			internal.workspaceInvites.getMemberRole,
+			{ workspaceId: args.workspaceId, userId }
+		);
+
+		if (
+			currentMember &&
+			(currentMember.role === "admin" || currentMember.role === "owner")
+		) {
+			// User is an admin/owner member - allow access to join code
+			return await ctx.runQuery(
+				internal.workspaceInvites.getWorkspaceJoinCodeForInviteVerification,
+				{ workspaceId: args.workspaceId }
+			);
+		}
+
+		// Step 3: If not a member, check if user has a valid pending invite
+		const user = await ctx.runQuery(internal.workspaceInvites.getUserById, {
+			userId,
+		});
+		if (!user || !user.email) {
+			throw new Error("Unauthorized. User email not found.");
+		}
+
+		const pendingInvite = await ctx.runQuery(
+			internal.workspaceInvites.getPendingInviteForUser,
+			{ workspaceId: args.workspaceId, email: user.email.toLowerCase() }
+		);
+
+		if (!pendingInvite) {
+			// User is neither a member with appropriate role, nor has a pending invite
+			throw new Error(
+				"Unauthorized. User does not have permission to access this workspace's join code."
+			);
+		}
+
+		// User has a valid pending invite - allow access to join code for verification
 		return await ctx.runQuery(
 			internal.workspaceInvites.getWorkspaceJoinCodeForInviteVerification,
 			{ workspaceId: args.workspaceId }
