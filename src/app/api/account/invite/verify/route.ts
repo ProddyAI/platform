@@ -6,7 +6,7 @@ import {
 import { ConvexHttpClient } from "convex/browser";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
-import { api } from "@/../convex/_generated/api";
+import { api, internal } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 const createConvexClient = () => {
@@ -112,8 +112,10 @@ export async function POST(req: Request) {
 		}
 
 		// 5. Recompute hash to verify email binding
-		const joinCode = await convex.query(
-			api.workspaceInvites.getWorkspaceJoinCodeForInviteVerification,
+		// Use internal query to get joinCode without exposing it on public API
+		const joinCode = await fetchQuery(
+			internal.workspaceInvites
+				.getWorkspaceJoinCodeForInviteVerification as any,
 			{ workspaceId: workspaceId as Id<"workspaces"> }
 		);
 

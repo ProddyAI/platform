@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 
 export const getInviteDetails = query({
 	args: {
@@ -145,17 +145,11 @@ export const getInviteByHash = query({
 	},
 });
 
-export const getWorkspaceJoinCodeForInviteVerification = query({
+export const getWorkspaceJoinCodeForInviteVerification = internalQuery({
 	args: {
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
-		// Require authentication (but not membership) for invite verification
-		const userId = await getAuthUserId(ctx);
-		if (!userId) {
-			throw new Error("Unauthorized. User must be authenticated.");
-		}
-
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) {
 			throw new Error("Workspace not found");
