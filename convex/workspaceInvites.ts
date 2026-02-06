@@ -145,6 +145,19 @@ export const getInviteByHash = query({
 	},
 });
 
+export const getWorkspaceJoinCodeForInviteVerification = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) {
+			throw new Error("Workspace not found");
+		}
+		return workspace.joinCode;
+	},
+});
+
 export const consumeInvite = mutation({
 	args: {
 		inviteId: v.id("workspaceInvites"),

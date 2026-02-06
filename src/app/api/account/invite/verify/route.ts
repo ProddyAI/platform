@@ -21,12 +21,14 @@ export async function POST(req: Request) {
 		const { workspaceId, invite } = await req.json();
 
 		if (!workspaceId || !invite) {
+			console.error("[Invite Verify] Missing data:", { workspaceId, invite });
 			return NextResponse.json({ error: "Missing data" }, { status: 400 });
 		}
 
 		// 1. Verify authentication
 		const isAuthenticated = await isAuthenticatedNextjs();
 		if (!isAuthenticated) {
+			console.error("[Invite Verify] User not authenticated");
 			return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 		}
 
@@ -34,6 +36,7 @@ export async function POST(req: Request) {
 		const convex = createConvexClient();
 		const token = await convexAuthNextjsToken();
 		if (!token || typeof token !== "string") {
+			console.error("[Invite Verify] Invalid token");
 			return NextResponse.json(
 				{ error: "Invalid authentication token" },
 				{ status: 401 }
@@ -43,6 +46,7 @@ export async function POST(req: Request) {
 
 		const currentUser = await convex.query(api.users.current);
 		if (!currentUser || !currentUser.email) {
+			console.error("[Invite Verify] User not found or email missing");
 			return NextResponse.json(
 				{ error: "User not found or email missing" },
 				{ status: 404 }
@@ -50,6 +54,7 @@ export async function POST(req: Request) {
 		}
 
 		const email = currentUser.email.toLowerCase();
+		console.log("[Invite Verify] Processing invite for user:", email);
 
 		// 3. Fetch invite by hash
 		const inviteDoc = await fetchQuery(api.workspaceInvites.getInviteByHash, {
@@ -57,28 +62,45 @@ export async function POST(req: Request) {
 		});
 
 		if (!inviteDoc) {
-			return NextResponse.json({ error: "Invalid invite" }, { status: 400 });
+			console.error("[Invite Verify] Invite not found for hash:", invite);
+			return NextResponse.json({ error: "Invalid or expired invite link" }, { status: 400 });
+		}
+
+		// Check if invite has already been used
+		if (inviteDoc.used) {
+			console.error("[Invite Verify] Invite already used:", invite);
+			return NextResponse.json({ error: "This invite has already been used" }, { status: 400 });
+		}
+
+		// Check if invite has expired
+		if (inviteDoc.expiresAt < Date.now()) {
+			console.error("[Invite Verify] Invite expired:", invite);
+			return NextResponse.json({ error: "This invite has expired. Please request a new one" }, { status: 400 });
 		}
 
 		// 4. Verify that the invite email matches the current user's email
 		if (inviteDoc.email !== email) {
+			console.error("[Invite Verify] Email mismatch. Invite:", inviteDoc.email, "User:", email);
 			return NextResponse.json(
-				{ error: "This invite was not sent to your email address" },
+				{ error: "This invite was sent to a different email address. Please sign in with the correct account" },
 				{ status: 403 }
 			);
 		}
 
 		// 5. Recompute hash to verify email binding
+		// Use the special query that doesn't require membership
 		const joinCode = await fetchQuery(
-			api.workspaceInvites.getWorkspaceJoinCode,
+			api.workspaceInvites.getWorkspaceJoinCodeForInviteVerification,
 			{ workspaceId: workspaceId as Id<"workspaces"> }
 		);
 
 		if (!process.env.INVITE_SECRET) {
+			console.error("[Invite Verify] INVITE_SECRET not configured");
 			throw new Error("INVITE_SECRET environment variable is required");
 		}
 
 		if (!joinCode) {
+			console.error("[Invite Verify] Workspace not found or missing join code:", workspaceId);
 			return NextResponse.json(
 				{ error: "Workspace not found or has no join code" },
 				{ status: 404 }
@@ -89,23 +111,27 @@ export async function POST(req: Request) {
 		const expectedHash = crypto.createHash("sha256").update(raw).digest("hex");
 
 		if (expectedHash !== invite) {
+			console.error("[Invite Verify] Hash mismatch. Expected:", expectedHash, "Got:", invite);
 			return NextResponse.json(
-				{ error: "Invite does not belong to this email" },
+				{ error: "Invalid invite link. The invite may have been regenerated or is corrupted" },
 				{ status: 403 }
 			);
 		}
 
 		// 6. Consume invite
+		console.log("[Invite Verify] Consuming invite for user:", email);
 		await fetchMutation(api.workspaceInvites.consumeInvite, {
 			inviteId: inviteDoc._id,
 			userId: currentUser._id,
 		});
 
+		console.log("[Invite Verify] Successfully verified and consumed invite");
 		return NextResponse.json({ success: true });
 	} catch (err) {
-		console.error(err);
+		console.error("[Invite Verify] Error:", err);
+		const errorMessage = err instanceof Error ? err.message : "Failed to verify invite";
 		return NextResponse.json(
-			{ error: "Failed to verify invite" },
+			{ error: errorMessage },
 			{ status: 500 }
 		);
 	}
