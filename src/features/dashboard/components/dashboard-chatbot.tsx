@@ -211,10 +211,10 @@ export const DashboardChatbot = ({
 					timestamp: new Date(msg.timestamp),
 					sources: msg.sources
 						? msg.sources.map((source) => ({
-							id: source.id,
-							type: source.type,
-							text: source.text,
-						}))
+								id: source.id,
+								type: source.type,
+								text: source.text,
+							}))
 						: undefined,
 					actions: (msg as any).actions || undefined,
 				}));
@@ -371,7 +371,6 @@ Try asking me things like:`;
 		setIsLoading(true);
 
 		try {
-
 			// Get workspace context for assistant integration
 			const workspaceContext = workspace ? `Workspace: ${workspace.name}` : "";
 
@@ -385,7 +384,6 @@ Try asking me things like:`;
 							? `${msg.content.substring(0, 500)}...`
 							: msg.content, // Truncate long messages
 				}));
-
 
 			// Call the main assistant router API
 			const response = await fetch("/api/assistant", {
@@ -472,10 +470,11 @@ Try asking me things like:`;
 			// Add fallback response with error details for better debugging
 			const fallbackMessage: Message = {
 				id: (Date.now() + 1).toString(),
-				content: `I'm having trouble connecting right now. Please try again later. ${process.env.NODE_ENV === "development"
-					? `(Error: ${errorMessage})`
-					: ""
-					}`,
+				content: `I'm having trouble connecting right now. Please try again later. ${
+					process.env.NODE_ENV === "development"
+						? `(Error: ${errorMessage})`
+						: ""
+				}`,
 				sender: "assistant",
 				role: "assistant",
 				timestamp: new Date(),
@@ -778,15 +777,17 @@ Try asking me things like:`;
 					<div className="flex flex-col gap-4 py-4 pb-10">
 						{messages.map((message) => (
 							<div
-								className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
-									}`}
+								className={`flex ${
+									message.sender === "user" ? "justify-end" : "justify-start"
+								}`}
 								key={message.id}
 							>
 								<div
-									className={`max-w-[80%] rounded-lg px-4 py-3 ${message.sender === "user"
-										? "bg-primary text-primary-foreground"
-										: "bg-muted"
-										}`}
+									className={`max-w-[80%] rounded-lg px-4 py-3 ${
+										message.sender === "user"
+											? "bg-primary text-primary-foreground"
+											: "bg-muted"
+									}`}
 								>
 									{message.sender === "user" ? (
 										<p className="text-sm">{message.content}</p>
@@ -843,7 +844,7 @@ Try asking me things like:`;
 											{message.actions.map((action) => (
 												<Button
 													className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
-												key={`${action.type}-${action.url}-${action.label}`}
+													key={`${action.type}-${action.url}-${action.label}`}
 													onClick={() => handleNavigation(action)}
 													size="sm"
 													variant="outline"

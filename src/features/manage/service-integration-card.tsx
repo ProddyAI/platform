@@ -29,10 +29,10 @@ type AuthConfig = {
 	toolkit: "github" | "gmail" | "slack" | "jira" | "notion" | "clickup";
 	name: string;
 	type:
-	| "use_composio_managed_auth"
-	| "use_custom_auth"
-	| "service_connection"
-	| "no_auth";
+		| "use_composio_managed_auth"
+		| "use_custom_auth"
+		| "service_connection"
+		| "no_auth";
 	authScheme?: string;
 	composioAuthConfigId: string;
 	credentials?: any;
@@ -147,7 +147,6 @@ export const ServiceIntegrationCard = ({
 		setIsConnecting(true);
 
 		try {
-
 			// Use AgentAuth to authorize user to toolkit with member-specific entity ID
 			const response = await fetch("/api/assistant/composio/agentauth", {
 				method: "POST",
@@ -178,7 +177,7 @@ export const ServiceIntegrationCard = ({
 				}
 				throw new Error(
 					errorDetails.error ||
-					`Failed to authorize toolkit (HTTP ${response.status})`
+						`Failed to authorize toolkit (HTTP ${response.status})`
 				);
 			}
 
@@ -239,7 +238,7 @@ export const ServiceIntegrationCard = ({
 				throw new Error(error.error || "Failed to disconnect account");
 			}
 
-			const result = await response.json();
+			const _result = await response.json();
 			toast.success(`${toolkits[toolkit].name} disconnected successfully`);
 			onConnectionChange?.();
 		} catch (error) {
@@ -402,8 +401,9 @@ export const ServiceIntegrationCard = ({
 			{/* Subtle connection status indicator - only show for non-connected states */}
 			{!isConnected && (
 				<div
-					className={`absolute bottom-3 right-3 w-2 h-2 rounded-full ${hasAuthConfig ? "bg-yellow-400" : "bg-gray-300"
-						}`}
+					className={`absolute bottom-3 right-3 w-2 h-2 rounded-full ${
+						hasAuthConfig ? "bg-yellow-400" : "bg-gray-300"
+					}`}
 				/>
 			)}
 		</Card>

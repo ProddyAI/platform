@@ -1,4 +1,4 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
@@ -7,7 +7,7 @@ import { type NextRequest, NextResponse } from "next/server";
 dotenv.config();
 
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
+	apiKey: process.env.OPENROUTER_API_KEY || "",
 });
 
 interface MessageData {

@@ -8,7 +8,7 @@ import { generateUnsubscribeUrl } from "@/lib/email-unsubscribe";
 // Log the API key (masked for security)
 const apiKey = process.env.RESEND_API_KEY;
 if (apiKey) {
-	const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+	const _maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
 }
 
 const resend = new Resend(apiKey);
@@ -59,7 +59,6 @@ export async function POST(req: NextRequest) {
 		// Set the subject for card assignment emails
 		const subject = `Card Assignment: ${cardTitle}`;
 
-
 		// Create the card assignment email template
 		const emailTemplate = CardAssignmentTemplate({
 			firstName: firstName || "User",
@@ -74,7 +73,6 @@ export async function POST(req: NextRequest) {
 			workspaceName,
 			unsubscribeUrl,
 		});
-
 
 		// Validate the from address
 		// Use Resend's default domain as a fallback if your domain isn't verified

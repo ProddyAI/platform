@@ -122,6 +122,13 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_workspace_id_user_id_status", [
+			"workspaceId",
+			"userId",
+			"status",
+		])
+		.index("by_workspace_id_status", ["workspaceId", "status"])
+		.index("by_status", ["status"])
 		.index("by_channel_id", ["channelId"])
 		.index("by_workspace_channel", ["workspaceId", "channelId"]),
 
@@ -285,6 +292,14 @@ const schema = defineSchema({
 			v.object({
 				theme: v.optional(v.string()),
 				statusTracking: v.optional(v.boolean()), // Enable/disable status tracking
+				userStatus: v.optional(
+					v.union(
+						v.literal("online"),
+						v.literal("idle"),
+						v.literal("dnd"),
+						v.literal("offline")
+					)
+				), // User's custom status (e.g., DND)
 				// Notification preferences
 				notifications: v.optional(
 					v.object({

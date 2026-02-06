@@ -1,8 +1,8 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import {
 	convexAuthNextjsToken,
 	isAuthenticatedNextjs,
 } from "@convex-dev/auth/nextjs/server";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { ConvexHttpClient } from "convex/browser";
 import { format } from "date-fns";
@@ -17,7 +17,7 @@ interface MessageData {
 }
 
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
+	apiKey: process.env.OPENROUTER_API_KEY || "",
 });
 
 function createConvexClient(): ConvexHttpClient {

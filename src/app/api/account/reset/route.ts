@@ -88,8 +88,7 @@ export async function POST(request: NextRequest) {
 			}
 		);
 
-		// If no token was generated (user doesn't exist or doesn't use password auth),
-		// still return success to prevent account enumeration
+		// Security: Always return same response to prevent account enumeration
 		if (!result.token) {
 			return NextResponse.json({
 				success: true,
@@ -98,13 +97,8 @@ export async function POST(request: NextRequest) {
 			});
 		}
 
-		// Generate reset link with the server-generated token
 		const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${result.token}`;
-
-		// Send email
 		const resendClient = getResend();
-
-		// Use normalized email for template and recipient
 		const emailTemplate = PasswordResetMail({
 			email: normalizedEmail,
 			resetLink,

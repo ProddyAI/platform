@@ -311,7 +311,6 @@ export const useAudioRoom = ({
 					);
 				}
 
-
 				// Some browsers/devices need mic enable after join as well.
 				try {
 					await joinedCall.microphone.enable();

@@ -63,7 +63,6 @@ export const getMentionsForCurrentUser = query({
 	},
 	handler: async (ctx, args) => {
 		try {
-
 			const userId = await getAuthUserId(ctx);
 			if (!userId) {
 				return [];
@@ -78,7 +77,6 @@ export const getMentionsForCurrentUser = query({
 			if (!currentMember) {
 				return [];
 			}
-
 
 			// Query mentions for the current member
 			let mentionsQuery = ctx.db

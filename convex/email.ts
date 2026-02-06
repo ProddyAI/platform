@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { logger } from "../src/lib/logger";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -333,7 +334,8 @@ export const sendDirectMessageEmail = action({
 					};
 				}
 
-				const result = await response.json();
+				await response.json();
+				logger.info("Direct message email sent successfully");
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending direct message email:", error);
@@ -451,7 +453,8 @@ export const sendMentionEmail = action({
 					};
 				}
 
-				const result = await response.json();
+				await response.json();
+				logger.info("Mention email sent successfully");
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending mention email:", error);
@@ -576,7 +579,8 @@ export const sendThreadReplyEmail = action({
 					};
 				}
 
-				const result = await response.json();
+				await response.json();
+				logger.info("Thread reply email sent successfully");
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending thread reply email:", error);
@@ -644,7 +648,6 @@ export const sendWeeklyDigestEmails = action({
 					| "sunday",
 			});
 
-
 			const results = [];
 			const weekRange = getWeekRange();
 
@@ -704,7 +707,6 @@ export const sendWeeklyDigestEmails = action({
 							success: emailResponse.ok,
 							result: emailResult,
 						});
-
 					} else {
 						results.push({
 							userId: user.userId,
@@ -1061,7 +1063,8 @@ export const sendCardAssignmentEmail = action({
 					};
 				}
 
-				const result = await response.json();
+				await response.json();
+				logger.info("Card assignment email sent successfully");
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending card assignment email:", error);

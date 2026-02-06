@@ -42,7 +42,7 @@ import { useSearchMessages } from "@/features/workspaces/api/use-search-messages
 import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { showTidioChat } from "@/lib/tidio-helpers";
+import { showTidioChat } from "@/lib/client/tidio-helpers";
 
 interface WorkspaceToolbarProps {
 	children: ReactNode;

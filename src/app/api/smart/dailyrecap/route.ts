@@ -1,8 +1,8 @@
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { format } from "date-fns";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 // Load environment variables
 dotenv.config();
@@ -15,7 +15,7 @@ interface MessageData {
 }
 
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
+	apiKey: process.env.OPENROUTER_API_KEY || "",
 });
 
 // More efficient text extraction with memoization

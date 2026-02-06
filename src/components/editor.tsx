@@ -56,6 +56,7 @@ interface EditorProps {
 	innerRef?: MutableRefObject<Quill | null>;
 	variant?: "create" | "update";
 	disableMentions?: boolean;
+	onTextChange?: () => void;
 }
 
 const Editor = ({
@@ -67,6 +68,7 @@ const Editor = ({
 	innerRef,
 	variant = "create",
 	disableMentions = false,
+	onTextChange,
 }: EditorProps) => {
 	const router = useRouter();
 	const workspaceId = useWorkspaceId();
@@ -104,6 +106,7 @@ const Editor = ({
 	const defaultValueRef = useRef(defaultValue);
 	const disabledRef = useRef(disabled);
 	const disableMentionsRef = useRef(disableMentions);
+	const onTextChangeRef = useRef(onTextChange);
 	disableMentionsRef.current = disableMentions;
 
 	useLayoutEffect(() => {
@@ -111,6 +114,7 @@ const Editor = ({
 		placeholderRef.current = placeholder;
 		defaultValueRef.current = defaultValue;
 		disabledRef.current = disabled;
+		onTextChangeRef.current = onTextChange;
 	});
 
 	// Add click outside handler to close the mention picker
@@ -204,6 +208,7 @@ const Editor = ({
 			const newText = quill.getText();
 			const plainText = newText.replace(/\n+$/, "");
 			setText(newText);
+			onTextChangeRef.current?.();
 
 			const currentLastKeyWasExclamation = lastKeyWasExclamationRef.current;
 			const currentActiveAutocomplete = activeAutocompleteRef.current;
@@ -284,9 +289,6 @@ const Editor = ({
 			if (quillRef) quillRef.current = null;
 			if (innerRef) innerRef.current = null;
 		};
-		// Only depend on refs and disableMentions. Do NOT include activeAutocomplete,
-		// lastKeyWasExclamation, or mentionPickerOpen — they are set by TEXT_CHANGE when
-		// the user types @, #, or ! and would remount the editor and wipe content.
 	}, [innerRef]);
 
 	const toggleToolbar = () => {
