@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { internalQuery, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { action, internalQuery, mutation, query } from "./_generated/server";
 
 export const getInviteDetails = query({
 	args: {
@@ -158,19 +159,18 @@ export const getWorkspaceJoinCodeForInviteVerification = internalQuery({
 	},
 });
 
-// Public wrapper for invite verification flow
-export const getWorkspaceJoinCodeForVerification = query({
+// Server-side action for invite verification flow
+// This is called from the Next.js API route after server-side authentication
+export const getJoinCodeForVerification = action({
 	args: {
 		workspaceId: v.id("workspaces"),
 	},
-	handler: async (ctx, args) => {
-		// This is a public query that can be called from the API route
-		// It gets the join code for verification purposes
-		const workspace = await ctx.db.get(args.workspaceId);
-		if (!workspace) {
-			throw new Error("Workspace not found");
-		}
-		return workspace.joinCode;
+	handler: async (ctx, args): Promise<string | undefined> => {
+		// Call the internal query to get the join code
+		return await ctx.runQuery(
+			internal.workspaceInvites.getWorkspaceJoinCodeForInviteVerification,
+			{ workspaceId: args.workspaceId }
+		);
 	},
 });
 

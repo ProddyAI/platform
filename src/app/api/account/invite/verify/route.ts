@@ -110,9 +110,9 @@ export async function POST(req: Request) {
 		}
 
 		// 5. Recompute hash to verify email binding
-		// Use public wrapper query to get joinCode
-		const joinCode = await convex.query(
-			api.workspaceInvites.getWorkspaceJoinCodeForVerification,
+		// Use server-side action to securely get joinCode
+		const joinCode = await convex.action(
+			api.workspaceInvites.getJoinCodeForVerification,
 			{ workspaceId: workspaceId as Id<"workspaces"> }
 		);
 
