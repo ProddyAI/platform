@@ -27,4 +27,4 @@ build.*.log
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
 
-certificates
+/certificates/

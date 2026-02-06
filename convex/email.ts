@@ -211,6 +211,16 @@ type EmailNotificationResult = {
 	skipped?: boolean;
 };
 
+// Helper function to escape HTML to prevent XSS
+const escapeHtml = (unsafe: string): string => {
+	return unsafe
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+};
+
 // Helper function to extract message preview from body
 const extractMessagePreview = (
 	body: string | undefined,
@@ -1101,7 +1111,7 @@ export const sendImportCompletionEmail = internalAction({
 	handler: async (ctx, args) => {
 		try {
 			const apiKey = process.env.RESEND_API_KEY;
-			const fromEmail = "Proddy <support@proddy.tech>";
+			const fromEmail = "Proddy <support@proddy.io>";
 
 			if (!apiKey || !fromEmail) {
 				console.error("Resend email not configured");
@@ -1143,9 +1153,9 @@ export const sendImportCompletionEmail = internalAction({
 									<h1 style="margin: 0; font-size: 24px;">🎉 Import Completed!</h1>
 								</div>
 								<div class="content">
-									<p>Hi ${args.userName},</p>
-									<p>Great news! Your ${platformName} data has been successfully imported into your Proddy workspace.</p>
-									
+									<p>Hi ${escapeHtml(args.userName)},</p>
+									<p>Great news! Your ${escapeHtml(platformName)} data has been successfully imported into your Proddy workspace.</p>
+
 									<div class="stats">
 										<h3 style="margin-top: 0; color: #333;">Import Summary</h3>
 										<div class="stat-item">
@@ -1158,11 +1168,11 @@ export const sendImportCompletionEmail = internalAction({
 										</div>
 										<div class="stat-item">
 											<span class="stat-label">Platform:</span>
-											<span class="stat-value">${platformName}</span>
+											<span class="stat-value">${escapeHtml(platformName)}</span>
 										</div>
 									</div>
 
-									<p>All your ${platformName} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!</p>
+									<p>All your ${escapeHtml(platformName)} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!</p>
 									
 									<div style="text-align: center;">
 										<a href="${workspaceUrl}" class="button">Go to Workspace</a>
@@ -1199,8 +1209,8 @@ export const sendImportCompletionEmail = internalAction({
 									<h1 style="margin: 0; font-size: 24px;">Import Failed</h1>
 								</div>
 								<div class="content">
-									<p>Hi ${args.userName},</p>
-									<p>Unfortunately, your ${platformName} data import encountered an error and could not be completed.</p>
+									<p>Hi ${escapeHtml(args.userName)},</p>
+									<p>Unfortunately, your ${escapeHtml(platformName)} data import encountered an error and could not be completed.</p>
 									<p>Please try again or contact our support team if the issue persists.</p>
 									
 									<div style="text-align: center;">
@@ -1237,8 +1247,8 @@ export const sendImportCompletionEmail = internalAction({
 									<h1 style="margin: 0; font-size: 24px;">Import Cancelled</h1>
 								</div>
 								<div class="content">
-									<p>Hi ${args.userName},</p>
-									<p>Your ${platformName} data import was cancelled.</p>
+									<p>Hi ${escapeHtml(args.userName)},</p>
+									<p>Your ${escapeHtml(platformName)} data import was cancelled.</p>
 									<p>You can start a new import anytime from your workspace settings.</p>
 								</div>
 								<div class="footer">

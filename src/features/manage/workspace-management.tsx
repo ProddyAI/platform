@@ -273,32 +273,34 @@ export const WorkspaceManagement = ({
 				<Separator />
 
 				{/* Channels Management Section */}
-				<Collapsible open={channelsExpanded} onOpenChange={setChannelsExpanded}>
-					<div className="flex items-center justify-between">
-						<div>
-							<h3 className="text-lg font-medium">Channel Management</h3>
-							<p className="text-sm text-muted-foreground">
-								Create, edit, and manage workspace channels
-							</p>
+				{isOwner && (
+					<Collapsible open={channelsExpanded} onOpenChange={setChannelsExpanded}>
+						<div className="flex items-center justify-between">
+							<div>
+								<h3 className="text-lg font-medium">Channel Management</h3>
+								<p className="text-sm text-muted-foreground">
+									Create, edit, and manage workspace channels
+								</p>
+							</div>
+							<CollapsibleTrigger asChild>
+								<Button variant="ghost" size="sm">
+									{channelsExpanded ? (
+										<ChevronDown className="h-4 w-4" />
+									) : (
+										<ChevronRight className="h-4 w-4" />
+									)}
+									<span className="ml-2">{channelsExpanded ? "Hide" : "Show"}</span>
+								</Button>
+							</CollapsibleTrigger>
 						</div>
-						<CollapsibleTrigger asChild>
-							<Button variant="ghost" size="sm">
-								{channelsExpanded ? (
-									<ChevronDown className="h-4 w-4" />
-								) : (
-									<ChevronRight className="h-4 w-4" />
-								)}
-								<span className="ml-2">{channelsExpanded ? "Hide" : "Show"}</span>
-							</Button>
-						</CollapsibleTrigger>
-					</div>
-					<CollapsibleContent className="mt-4">
-						<ChannelsManagement
-							currentMember={currentMember}
-							workspaceId={workspace._id}
-						/>
-					</CollapsibleContent>
-				</Collapsible>
+						<CollapsibleContent className="mt-4">
+							<ChannelsManagement
+								currentMember={currentMember}
+								workspaceId={workspace._id}
+							/>
+						</CollapsibleContent>
+					</Collapsible>
+				)}
 			</div>
 		</>
 	);

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
@@ -66,7 +66,7 @@ export const getJobs = query({
 
 		if (!member) throw new Error("Not a member of this workspace");
 
-		let query = ctx.db
+		const query = ctx.db
 			.query("import_jobs")
 			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
 			.order("desc");
@@ -167,7 +167,7 @@ export const initiateSlackOAuth = mutation({
 		const redirectUri = `${appUrl}/api/import/slack/callback`;
 		
 		// Generate state parameter for CSRF protection
-		const state = `${args.workspaceId}_${member._id}_${Date.now()}`;
+		const state = Buffer.from(JSON.stringify({ workspaceId: args.workspaceId, memberId: member._id })).toString("base64");
 
 		const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&response_type=code&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
 
@@ -304,7 +304,7 @@ export const startSlackImport = mutation({
 		});
 
 		// Schedule the import action to run in the background
-		await ctx.scheduler.runAfter(0, api.importIntegrations.processSlackImport, {
+		await ctx.scheduler.runAfter(0, internal.importIntegrations.processSlackImport, {
 			jobId,
 		});
 
@@ -387,7 +387,7 @@ export const disconnectImportConnection = mutation({
  * Process Slack import in the background
  * This is called by the scheduler after a job is created
  */
-export const processSlackImport = action({
+export const processSlackImport = internalAction({
 	args: {
 		jobId: v.id("import_jobs"),
 	},
@@ -400,6 +400,11 @@ export const processSlackImport = action({
 
 			if (!job) {
 				throw new Error("Job not found");
+			}
+
+			// Check if job was cancelled before we started processing
+			if (job.status === "cancelled") {
+				return;
 			}
 
 			// Update job status to in_progress
@@ -442,7 +447,7 @@ export const processSlackImport = action({
 
 			// Send completion email - will need to get member and user details
 			// We can't call the internal action from here, so we'll schedule it
-			await ctx.scheduler.runAfter(0, api.importIntegrations.notifyImportComplete, {
+			await ctx.scheduler.runAfter(0, internal.importIntegrations.notifyImportComplete, {
 				jobId: args.jobId,
 			});
 		} catch (error) {
@@ -453,6 +458,11 @@ export const processSlackImport = action({
 				completedAt: Date.now(),
 				errorMessage: error instanceof Error ? error.message : "Unknown error",
 			});
+
+			// Notify about failure
+			await ctx.scheduler.runAfter(0, internal.importIntegrations.notifyImportComplete, {
+				jobId: args.jobId,
+			});
 		}
 	},
 });
@@ -460,7 +470,7 @@ export const processSlackImport = action({
 /**
  * Notify user of import completion via email
  */
-export const notifyImportComplete = action({
+export const notifyImportComplete = internalAction({
 	args: {
 		jobId: v.id("import_jobs"),
 	},
@@ -500,7 +510,7 @@ export const notifyImportComplete = action({
 			userName: user.name || "User",
 			platform: job.platform,
 			status: job.status,
-			channelsImported: job.result?.channelsCreated.length || 0,
+			channelsImported: job.result?.channelsCreated?.length || 0,
 			messagesImported: job.result?.messagesCreated || 0,
 			workspaceId: job.workspaceId,
 		});

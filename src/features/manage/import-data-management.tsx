@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 import {
     Download,
@@ -154,19 +154,25 @@ export const ImportDataManagement = ({
     };
 
     const handleConfirmImport = async () => {
-        try {
-            await startSlackImport.mutate(
-                {
-                    workspaceId,
-                    config: {
-                        includeFiles: importConfig.includeFiles,
-                        includeThreads: importConfig.includeThreads,
-                    },
-                },
-                { throwError: true }
-            );
+        if (!selectedPlatform) return;
 
-            toast.success("Import started! You'll receive an email when it's complete.");
+        try {
+            if (selectedPlatform === "slack") {
+                await startSlackImport.mutate(
+                    {
+                        workspaceId,
+                        config: {
+                            includeFiles: importConfig.includeFiles,
+                            includeThreads: importConfig.includeThreads,
+                        },
+                    },
+                    { throwError: true }
+                );
+                toast.success("Import started! You'll receive an email when it's complete.");
+            } else {
+                toast.info("This platform import is not yet implemented");
+            }
+
             setConfigDialogOpen(false);
         } catch (error) {
             toast.error("Failed to start import");
@@ -198,11 +204,11 @@ export const ImportDataManagement = ({
     };
 
     const getConnectionForPlatform = (platformId: string) => {
-        return connections?.find((c: any) => c.platform === platformId && c.status === "active");
+        return connections?.find((c) => c.platform === platformId && c.status === "active");
     };
 
     const getLatestJobForPlatform = (platformId: string) => {
-        return jobs?.find((j: any) => j.platform === platformId);
+        return jobs?.find((j) => j.platform === platformId);
     };
 
     const formatDate = (timestamp: number) => {
@@ -210,7 +216,7 @@ export const ImportDataManagement = ({
     };
 
     const getStatusBadge = (status: string) => {
-        const variants: Record<string, { variant: any; icon: any }> = {
+        const variants: Record<string, { variant: React.ComponentProps<typeof Badge>['variant']; icon: React.ReactNode }> = {
             active: { variant: "default", icon: <CheckCircle2 className="h-3 w-3" /> },
             expired: { variant: "secondary", icon: <AlertCircle className="h-3 w-3" /> },
             revoked: { variant: "destructive", icon: <Trash2 className="h-3 w-3" /> },
@@ -282,7 +288,7 @@ export const ImportDataManagement = ({
                                                 size="sm"
                                                 className="flex-1"
                                                 onClick={() => handleStartImport(platform.id)}
-                                                disabled={!platform.available}
+                                                disabled={!platform.available || startSlackImport.isPending}
                                             >
                                                 <Upload className="h-4 w-4 mr-2" />
                                                 Start Import
@@ -291,6 +297,7 @@ export const ImportDataManagement = ({
                                                 size="sm"
                                                 variant="outline"
                                                 onClick={() => handleDisconnect(connection._id)}
+                                                disabled={disconnectImport.isPending}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -316,7 +323,12 @@ export const ImportDataManagement = ({
                                         </div>
                                         {latestJob.status === "in_progress" && (
                                             <div className="space-y-1">
-                                                <Progress value={(latestJob.progress.messagesImported / (latestJob.progress.messagesTotal || 1)) * 100} />
+                                                <Progress value={Math.min(
+                                                    latestJob.progress.messagesTotal
+                                                        ? (latestJob.progress.messagesImported / latestJob.progress.messagesTotal) * 100
+                                                        : 0,
+                                                    100
+                                                )} />
                                                 <p className="text-xs text-muted-foreground">
                                                     {latestJob.progress.currentStep}
                                                 </p>
@@ -354,7 +366,7 @@ export const ImportDataManagement = ({
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {jobs.map((job: any) => (
+                                    {jobs.map((job) => (
                                         <TableRow key={job._id}>
                                             <TableCell className="font-medium">
                                                 {PLATFORMS.find(p => p.id === job.platform)?.name || job.platform}
@@ -367,7 +379,12 @@ export const ImportDataManagement = ({
                                                 {job.status === "in_progress" ? (
                                                     <div className="space-y-1 min-w-[150px]">
                                                         <Progress
-                                                            value={(job.progress.messagesImported / (job.progress.messagesTotal || 1)) * 100}
+                                                            value={Math.min(
+                                                                job.progress.messagesTotal
+                                                                    ? (job.progress.messagesImported / job.progress.messagesTotal) * 100
+                                                                    : 0,
+                                                                100
+                                                            )}
                                                         />
                                                         <p className="text-xs text-muted-foreground">
                                                             {job.progress.currentStep}
@@ -395,6 +412,7 @@ export const ImportDataManagement = ({
                                                         size="sm"
                                                         variant="ghost"
                                                         onClick={() => handleCancelJob(job._id)}
+                                                        disabled={cancelImportJob.isPending}
                                                     >
                                                         Cancel
                                                     </Button>
@@ -463,7 +481,7 @@ export const ImportDataManagement = ({
                         <Button variant="outline" onClick={() => setConfigDialogOpen(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={handleConfirmImport}>
+                        <Button onClick={handleConfirmImport} disabled={startSlackImport.isPending}>
                             <Download className="h-4 w-4 mr-2" />
                             Start Import
                         </Button>

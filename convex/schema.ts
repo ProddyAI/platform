@@ -540,15 +540,16 @@ const schema = defineSchema({
 			v.literal("todoist"),
 			v.literal("linear"),
 			v.literal("notion"),
-			v.literal("miro")
+			v.literal("miro"),
+			v.literal("clickup")
 		),
-		accessToken: v.string(), // Encrypted OAuth access token
-		refreshToken: v.optional(v.string()), // Encrypted refresh token if applicable
+		accessToken: v.string(), // OAuth access token (should be encrypted at rest)
+		refreshToken: v.optional(v.string()), // Refresh token (should be encrypted at rest)
 		expiresAt: v.optional(v.number()), // Token expiration timestamp
 		scope: v.string(), // OAuth scopes granted
 		teamId: v.optional(v.string()), // Slack team ID or similar
 		teamName: v.optional(v.string()), // Human-readable team name
-		metadata: v.optional(v.any()), // Platform-specific metadata
+		metadata: v.optional(v.record(v.string(), v.string())), // Platform-specific metadata
 		status: v.union(
 			v.literal("active"),
 			v.literal("expired"),
@@ -573,7 +574,8 @@ const schema = defineSchema({
 			v.literal("todoist"),
 			v.literal("linear"),
 			v.literal("notion"),
-			v.literal("miro")
+			v.literal("miro"),
+			v.literal("clickup")
 		),
 		status: v.union(
 			v.literal("pending"),
