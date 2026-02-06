@@ -530,6 +530,97 @@ const schema = defineSchema({
 		.index("by_email", ["email"])
 		.index("by_token", ["token"])
 		.index("by_expiry", ["expiresAt"]),
+
+	// Import connections - Separate from Composio integrations for data import
+	import_connections: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.id("members"),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro")
+		),
+		accessToken: v.string(), // Encrypted OAuth access token
+		refreshToken: v.optional(v.string()), // Encrypted refresh token if applicable
+		expiresAt: v.optional(v.number()), // Token expiration timestamp
+		scope: v.string(), // OAuth scopes granted
+		teamId: v.optional(v.string()), // Slack team ID or similar
+		teamName: v.optional(v.string()), // Human-readable team name
+		metadata: v.optional(v.any()), // Platform-specific metadata
+		status: v.union(
+			v.literal("active"),
+			v.literal("expired"),
+			v.literal("revoked"),
+			v.literal("error")
+		),
+		connectedAt: v.number(),
+		lastUsed: v.optional(v.number()),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_platform", ["workspaceId", "platform"])
+		.index("by_member_platform", ["memberId", "platform"]),
+
+	// Import jobs - Track data import progress
+	import_jobs: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.id("members"),
+		connectionId: v.id("import_connections"),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro")
+		),
+		status: v.union(
+			v.literal("pending"),
+			v.literal("in_progress"),
+			v.literal("completed"),
+			v.literal("failed"),
+			v.literal("cancelled")
+		),
+		// Import configuration
+		config: v.object({
+			channels: v.optional(v.array(v.string())), // Slack channel IDs to import
+			dateFrom: v.optional(v.number()), // Import messages from this date
+			dateTo: v.optional(v.number()), // Import messages until this date
+			includeFiles: v.optional(v.boolean()), // Whether to import file attachments
+			includeThreads: v.optional(v.boolean()), // Whether to import threaded messages
+		}),
+		// Progress tracking
+		progress: v.object({
+			channelsImported: v.number(),
+			channelsTotal: v.number(),
+			messagesImported: v.number(),
+			messagesTotal: v.optional(v.number()),
+			usersImported: v.number(),
+			filesImported: v.optional(v.number()),
+			currentStep: v.string(), // e.g., "Fetching channels", "Importing messages"
+		}),
+		// Results
+		result: v.optional(
+			v.object({
+				channelsCreated: v.array(v.id("channels")),
+				messagesCreated: v.number(),
+				usersMatched: v.number(),
+				filesImported: v.number(),
+				errors: v.optional(v.array(v.string())),
+				warnings: v.optional(v.array(v.string())),
+			})
+		),
+		errorMessage: v.optional(v.string()),
+		startedAt: v.optional(v.number()),
+		completedAt: v.optional(v.number()),
+		createdAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_connection_id", ["connectionId"])
+		.index("by_status", ["status"])
+		.index("by_workspace_status", ["workspaceId", "status"]),
 });
 
 export default schema;

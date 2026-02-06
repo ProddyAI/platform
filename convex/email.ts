@@ -4,6 +4,7 @@ import type { Id } from "./_generated/dataModel";
 import {
 	type ActionCtx,
 	action,
+	internalAction,
 	internalMutation,
 	type QueryCtx,
 	query,
@@ -270,7 +271,7 @@ export const sendDirectMessageEmail = action({
 			}
 
 			// Get the sender using the existing query
-			const sender = await ctx.runQuery(api.members._getMemberById, {
+			const sender = await ctx.runQuery(api.members.getMemberById, {
 				memberId: message.memberId,
 			});
 			if (!sender || !sender.user) {
@@ -284,7 +285,7 @@ export const sendDirectMessageEmail = action({
 					? conversation.memberTwoId
 					: conversation.memberOneId;
 
-			const recipient = await ctx.runQuery(api.members._getMemberById, {
+			const recipient = await ctx.runQuery(api.members.getMemberById, {
 				memberId: recipientMemberId,
 			});
 			if (!recipient || !recipient.user || !recipient.user.email) {
@@ -369,7 +370,7 @@ export const sendMentionEmail = action({
 			}
 
 			// Get the mentioned member
-			const mentionedMember = await ctx.runQuery(api.members._getMemberById, {
+			const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
 				memberId: mention.mentionedMemberId,
 			});
 			if (
@@ -381,7 +382,7 @@ export const sendMentionEmail = action({
 			}
 
 			// Get the mentioner
-			const mentioner = await ctx.runQuery(api.members._getMemberById, {
+			const mentioner = await ctx.runQuery(api.members.getMemberById, {
 				memberId: mention.mentionerMemberId,
 			});
 			if (!mentioner || !mentioner.user) {
@@ -497,7 +498,7 @@ export const sendThreadReplyEmail = action({
 			}
 
 			// Get the original author (parent message author)
-			const originalAuthor = await ctx.runQuery(api.members._getMemberById, {
+			const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
 				memberId: parentMessage.memberId,
 			});
 			if (
@@ -509,7 +510,7 @@ export const sendThreadReplyEmail = action({
 			}
 
 			// Get the replier
-			const replier = await ctx.runQuery(api.members._getMemberById, {
+			const replier = await ctx.runQuery(api.members.getMemberById, {
 				memberId: replyMessage.memberId,
 			});
 			if (!replier || !replier.user) {
@@ -1072,6 +1073,217 @@ export const sendCardAssignmentEmail = action({
 			}
 		} catch (error) {
 			console.error("Error in sendCardAssignmentEmail:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
+/**
+ * Send import completion email notification
+ */
+export const sendImportCompletionEmail = internalAction({
+	args: {
+		email: v.string(),
+		userName: v.string(),
+		platform: v.string(),
+		status: v.union(
+			v.literal("completed"),
+			v.literal("failed"),
+			v.literal("cancelled")
+		),
+		channelsImported: v.number(),
+		messagesImported: v.number(),
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		try {
+			const apiKey = process.env.RESEND_API_KEY;
+			const fromEmail = "Proddy <support@proddy.tech>";
+
+			if (!apiKey || !fromEmail) {
+				console.error("Resend email not configured");
+				return { success: false, error: "Email service not configured" };
+			}
+
+			const workspaceUrl = `${process.env.SITE_URL}/workspace/${args.workspaceId}`;
+			const platformName =
+				args.platform.charAt(0).toUpperCase() + args.platform.slice(1);
+
+			let subject: string;
+			let htmlContent: string;
+
+			if (args.status === "completed") {
+				subject = `✅ ${platformName} Import Completed Successfully`;
+				htmlContent = `
+					<!DOCTYPE html>
+					<html>
+						<head>
+							<meta charset="utf-8">
+							<meta name="viewport" content="width=device-width, initial-scale=1.0">
+							<style>
+								body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+								.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+								.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+								.content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+								.stats { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+								.stat-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; }
+								.stat-item:last-child { border-bottom: none; }
+								.stat-label { font-weight: 600; color: #666; }
+								.stat-value { font-weight: bold; color: #667eea; }
+								.button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; margin-top: 20px; }
+								.footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+							</style>
+						</head>
+						<body>
+							<div class="container">
+								<div class="header">
+									<h1 style="margin: 0; font-size: 24px;">🎉 Import Completed!</h1>
+								</div>
+								<div class="content">
+									<p>Hi ${args.userName},</p>
+									<p>Great news! Your ${platformName} data has been successfully imported into your Proddy workspace.</p>
+									
+									<div class="stats">
+										<h3 style="margin-top: 0; color: #333;">Import Summary</h3>
+										<div class="stat-item">
+											<span class="stat-label">Channels Imported:</span>
+											<span class="stat-value">${args.channelsImported}</span>
+										</div>
+										<div class="stat-item">
+											<span class="stat-label">Messages Imported:</span>
+											<span class="stat-value">${args.messagesImported.toLocaleString()}</span>
+										</div>
+										<div class="stat-item">
+											<span class="stat-label">Platform:</span>
+											<span class="stat-value">${platformName}</span>
+										</div>
+									</div>
+
+									<p>All your ${platformName} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!</p>
+									
+									<div style="text-align: center;">
+										<a href="${workspaceUrl}" class="button">Go to Workspace</a>
+									</div>
+								</div>
+								<div class="footer">
+									<p>© 2026 Proddy. All rights reserved.</p>
+									<p>Questions? Contact us at support@proddy.io</p>
+								</div>
+							</div>
+						</body>
+					</html>
+				`;
+			} else if (args.status === "failed") {
+				subject = `❌ ${platformName} Import Failed`;
+				htmlContent = `
+					<!DOCTYPE html>
+					<html>
+						<head>
+							<meta charset="utf-8">
+							<meta name="viewport" content="width=device-width, initial-scale=1.0">
+							<style>
+								body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+								.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+								.header { background: #ef4444; color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+								.content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+								.button { display: inline-block; background: #ef4444; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; margin-top: 20px; }
+								.footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+							</style>
+						</head>
+						<body>
+							<div class="container">
+								<div class="header">
+									<h1 style="margin: 0; font-size: 24px;">Import Failed</h1>
+								</div>
+								<div class="content">
+									<p>Hi ${args.userName},</p>
+									<p>Unfortunately, your ${platformName} data import encountered an error and could not be completed.</p>
+									<p>Please try again or contact our support team if the issue persists.</p>
+									
+									<div style="text-align: center;">
+										<a href="${workspaceUrl}/manage?tab=import" class="button">Try Again</a>
+									</div>
+								</div>
+								<div class="footer">
+									<p>© 2026 Proddy. All rights reserved.</p>
+									<p>Questions? Contact us at support@proddy.io</p>
+								</div>
+							</div>
+						</body>
+					</html>
+				`;
+			} else {
+				subject = `${platformName} Import Cancelled`;
+				htmlContent = `
+					<!DOCTYPE html>
+					<html>
+						<head>
+							<meta charset="utf-8">
+							<meta name="viewport" content="width=device-width, initial-scale=1.0">
+							<style>
+								body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+								.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+								.header { background: #f59e0b; color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+								.content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+								.footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+							</style>
+						</head>
+						<body>
+							<div class="container">
+								<div class="header">
+									<h1 style="margin: 0; font-size: 24px;">Import Cancelled</h1>
+								</div>
+								<div class="content">
+									<p>Hi ${args.userName},</p>
+									<p>Your ${platformName} data import was cancelled.</p>
+									<p>You can start a new import anytime from your workspace settings.</p>
+								</div>
+								<div class="footer">
+									<p>© 2026 Proddy. All rights reserved.</p>
+								</div>
+							</div>
+						</body>
+					</html>
+				`;
+			}
+
+			try {
+				const response = await fetch("https://api.resend.com/emails", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${apiKey}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						from: fromEmail,
+						to: args.email,
+						subject,
+						html: htmlContent,
+					}),
+				});
+
+				if (!response.ok) {
+					const errorData = await response.json();
+					console.error("Email API error:", errorData);
+					return {
+						success: false,
+						error: `Email API error: ${response.status}`,
+					};
+				}
+
+				return { success: true };
+			} catch (error) {
+				console.error("Error sending import completion email:", error);
+				return {
+					success: false,
+					error: error instanceof Error ? error.message : "Unknown error",
+				};
+			}
+		} catch (error) {
+			console.error("Error in sendImportCompletionEmail:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

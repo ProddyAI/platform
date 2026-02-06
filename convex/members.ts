@@ -2,14 +2,23 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
-import { mutation, type QueryCtx, query } from "./_generated/server";
+import { internalQuery, mutation, type QueryCtx, query } from "./_generated/server";
+
+export const _getMemberById = internalQuery({
+	args: {
+		id: v.id("members"),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db.get(args.id);
+	},
+});
 
 const populateUser = (ctx: QueryCtx, id: Id<"users">) => {
 	return ctx.db.get(id);
 };
 
-// Helper query to get a member by ID (for internal use)
-export const _getMemberById = query({
+// Helper query to get a member by ID with user info
+export const getMemberById = query({
 	args: {
 		memberId: v.id("members"),
 	},

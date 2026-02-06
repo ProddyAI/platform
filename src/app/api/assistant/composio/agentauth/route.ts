@@ -55,7 +55,7 @@ async function verifyMemberOwnership(
 	}
 
 	// Get the member for this workspace and verify ownership
-	const member = await convexClient.query(api.members._getMemberById, {
+	const member = await convexClient.query(api.members.getMemberById, {
 		memberId: memberId as Id<"members">,
 	});
 
