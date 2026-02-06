@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
 			}
 
 			// Get the member for this workspace and verify ownership
-			const member = await convex.query(api.members._getMemberById, {
+			const member = await convex.query(api.members.getMemberById, {
 				memberId: memberId as Id<"members">,
 			});
 

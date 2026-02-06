@@ -21,6 +21,7 @@ import type * as direct from "../direct.js";
 import type * as email from "../email.js";
 import type * as emailVerification from "../emailVerification.js";
 import type * as http from "../http.js";
+import type * as importIntegrations from "../importIntegrations.js";
 import type * as integrations from "../integrations.js";
 import type * as members from "../members.js";
 import type * as mentions from "../mentions.js";
@@ -64,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   email: typeof email;
   emailVerification: typeof emailVerification;
   http: typeof http;
+  importIntegrations: typeof importIntegrations;
   integrations: typeof integrations;
   members: typeof members;
   mentions: typeof mentions;

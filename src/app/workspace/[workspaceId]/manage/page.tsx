@@ -1,12 +1,12 @@
 "use client";
 
-import { Hash, Loader, Plug, Settings, Shield, Users } from "lucide-react";
+import { Database, Loader, Plug, Settings, Shield, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChannelsManagement } from "@/features/manage/channels-management";
 import { IntegrationsManagement } from "@/features/manage/integrations-management";
 import { MembersManagement } from "@/features/manage/members-management";
+import { ImportDataManagement } from "@/features/manage/import-data-management";
 
 import { WorkspaceManagement } from "@/features/manage/workspace-management";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
@@ -85,15 +85,11 @@ const ManagePage = () => {
 						</div>
 					) : (
 						/* For admins and owners, show all tabs */
-						<Tabs className="w-full" defaultValue="integrations">
+						<Tabs className="w-full" defaultValue="workspace">
 							<TabsList className="grid w-full grid-cols-4 mb-8">
 								<TabsTrigger value="workspace">
 									<Settings className="h-4 w-4 mr-2" />
 									Workspace
-								</TabsTrigger>
-								<TabsTrigger value="channels">
-									<Hash className="h-4 w-4 mr-2" />
-									Channels
 								</TabsTrigger>
 								<TabsTrigger value="members">
 									<Users className="h-4 w-4 mr-2" />
@@ -102,6 +98,10 @@ const ManagePage = () => {
 								<TabsTrigger value="integrations">
 									<Plug className="h-4 w-4 mr-2" />
 									Integrations
+								</TabsTrigger>
+								<TabsTrigger value="import">
+									<Database className="h-4 w-4 mr-2" />
+									Import Data
 								</TabsTrigger>
 							</TabsList>
 
@@ -112,16 +112,6 @@ const ManagePage = () => {
 								<WorkspaceManagement
 									currentMember={member}
 									workspace={workspace}
-								/>
-							</TabsContent>
-
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="channels"
-							>
-								<ChannelsManagement
-									currentMember={member}
-									workspaceId={workspaceId}
 								/>
 							</TabsContent>
 
@@ -140,6 +130,16 @@ const ManagePage = () => {
 								value="integrations"
 							>
 								<IntegrationsManagement
+									currentMember={member}
+									workspaceId={workspaceId}
+								/>
+							</TabsContent>
+
+							<TabsContent
+								className="bg-background rounded-lg p-6 shadow-sm border"
+								value="import"
+							>
+								<ImportDataManagement
 									currentMember={member}
 									workspaceId={workspaceId}
 								/>

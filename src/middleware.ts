@@ -4,6 +4,7 @@ import {
 	isAuthenticatedNextjs,
 	nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
+import { NextResponse } from "next/server";
 
 // Define public pages that don't require authentication
 const _isPublicPage = createRouteMatcher([
@@ -31,7 +32,7 @@ const isAuthenticatedOnlyPage = createRouteMatcher([
 	"/auth/join/:workspaceId",
 ]);
 
-export default convexAuthNextjsMiddleware((req) => {
+const authMiddleware = convexAuthNextjsMiddleware((req) => {
 	// If trying to access authenticated-only pages without being logged in
 	if (isAuthenticatedOnlyPage(req) && !isAuthenticatedNextjs()) {
 		return nextjsMiddlewareRedirect(req, "/auth/signin");
@@ -56,6 +57,18 @@ export default convexAuthNextjsMiddleware((req) => {
 		return nextjsMiddlewareRedirect(req, "/home");
 	}
 });
+
+export default function middleware(
+	req: Parameters<typeof authMiddleware>[0],
+	event: Parameters<typeof authMiddleware>[1]
+) {
+	// Allow Slack OAuth callback to pass through without auth handling
+	if (req.nextUrl.pathname === "/api/import/slack/callback") {
+		return NextResponse.next();
+	}
+
+	return authMiddleware(req, event);
+}
 
 export const config = {
 	matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
