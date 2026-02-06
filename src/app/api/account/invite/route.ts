@@ -54,7 +54,10 @@ export async function POST(req: Request) {
 			throw new Error("RESEND_API_KEY environment variable is required");
 		}
 
-		console.log("[Invite Send] Using APP_URL:", process.env.NEXT_PUBLIC_APP_URL);
+		console.log(
+			"[Invite Send] Using APP_URL:",
+			process.env.NEXT_PUBLIC_APP_URL
+		);
 
 		resend ??= new Resend(process.env.RESEND_API_KEY);
 
@@ -101,7 +104,7 @@ export async function POST(req: Request) {
 		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.INVITE_SECRET}`;
 		const hash = crypto.createHash("sha256").update(raw).digest("hex");
 
-		console.log("[Invite Send] Creating invite for email:", email.toLowerCase(), "to workspace:", workspaceId);
+		console.log("[Invite Send] Creating invite for workspace:", workspaceId);
 
 		await convex.mutation(api.workspaceInvites.insertInvite, {
 			workspaceId,
@@ -111,7 +114,10 @@ export async function POST(req: Request) {
 		});
 
 		const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/join/${workspaceId}?invite=${hash}`;
-		console.log("[Invite Send] Generated invite link:", inviteLink);
+		console.log(
+			"[Invite Send] Generated invite link for workspace:",
+			workspaceId
+		);
 
 		// Create the invite email template
 		const emailTemplate = InviteMailTemplate({
@@ -128,14 +134,16 @@ export async function POST(req: Request) {
 			react: emailTemplate,
 		});
 
-		console.log("[Invite Send] Email sent successfully. Email ID:", emailResult.data?.id);
+		console.log(
+			"[Invite Send] Email sent successfully. Email ID:",
+			emailResult.data?.id
+		);
 
 		return NextResponse.json({ success: true });
 	} catch (err) {
 		console.error("[Invite Send] Error:", err);
-		const errorMessage = err instanceof Error ? err.message : "Failed to send invite";
 		return NextResponse.json(
-			{ error: errorMessage },
+			{ error: "Failed to send invite" },
 			{ status: 500 }
 		);
 	}

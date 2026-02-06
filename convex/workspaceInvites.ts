@@ -150,6 +150,12 @@ export const getWorkspaceJoinCodeForInviteVerification = query({
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
+		// Require authentication (but not membership) for invite verification
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized. User must be authenticated.");
+		}
+
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) {
 			throw new Error("Workspace not found");
