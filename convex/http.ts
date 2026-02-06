@@ -13,6 +13,12 @@ http.route({
 	path: "/import/slack/callback",
 	method: "GET",
 	handler: httpAction(async (ctx, request) => {
+		// Early validation of SITE_URL configuration
+		const siteUrl = process.env.SITE_URL;
+		if (!siteUrl) {
+			return new Response("Configuration error", { status: 500 });
+		}
+
 		const url = new URL(request.url);
 		const code = url.searchParams.get("code");
 		const state = url.searchParams.get("state");
@@ -37,7 +43,7 @@ http.route({
 			return new Response(null, {
 				status: 302,
 				headers: {
-					Location: `${process.env.SITE_URL}${redirectPath}`,
+					Location: `${siteUrl}${redirectPath}`,
 				},
 			});
 		}
@@ -65,24 +71,39 @@ http.route({
 			// Exchange code for access token
 			const clientId = process.env.SLACK_CLIENT_ID;
 			const clientSecret = process.env.SLACK_CLIENT_SECRET;
-			const redirectUri = `${process.env.SITE_URL}/api/import/slack/callback`;
+			const redirectUri = `${siteUrl}/api/import/slack/callback`;
 
 			if (!clientId || !clientSecret) {
 				throw new Error("Slack OAuth not configured");
 			}
 
-			const tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				body: new URLSearchParams({
-					code,
-					client_id: clientId,
-					client_secret: clientSecret,
-					redirect_uri: redirectUri,
-				}),
-			});
+			// Create AbortController for timeout handling
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+			let tokenResponse;
+			try {
+				tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/x-www-form-urlencoded",
+					},
+					body: new URLSearchParams({
+						code,
+						client_id: clientId,
+						client_secret: clientSecret,
+						redirect_uri: redirectUri,
+					}),
+					signal: controller.signal,
+				});
+			} catch (error) {
+				if (error instanceof Error && error.name === "AbortError") {
+					throw new Error("OAuth token exchange timeout");
+				}
+				throw error;
+			} finally {
+				clearTimeout(timeoutId);
+			}
 
 			const tokenData = await tokenResponse.json();
 
@@ -119,7 +140,7 @@ http.route({
 			return new Response(null, {
 				status: 302,
 				headers: {
-					Location: `${process.env.SITE_URL}/workspace/${workspaceId}/manage?tab=import&success=slack_connected`,
+					Location: `${siteUrl}/workspace/${workspaceId}/manage?tab=import&success=slack_connected`,
 				},
 			});
 		} catch (error) {
@@ -129,7 +150,7 @@ http.route({
 			return new Response(null, {
 				status: 302,
 				headers: {
-					Location: `${process.env.SITE_URL}/workspace/${workspaceId}/manage?tab=import&error=${encodeURIComponent(errorMessage)}`,
+					Location: `${siteUrl}/workspace/${workspaceId}/manage?tab=import&error=${encodeURIComponent(errorMessage)}`,
 				},
 			});
 		}

@@ -36,11 +36,10 @@ export const getConnections = query({
 			.collect();
 
 		// Don't expose sensitive tokens in the response
-		return connections.map((conn) => ({
-			...conn,
-			accessToken: undefined,
-			refreshToken: undefined,
-		}));
+		return connections.map((conn) => {
+			const { accessToken, refreshToken, ...safe } = conn;
+			return safe;
+		});
 	},
 });
 
@@ -167,7 +166,7 @@ export const initiateSlackOAuth = mutation({
 		const redirectUri = `${appUrl}/api/import/slack/callback`;
 		
 		// Generate state parameter for CSRF protection
-		const state = Buffer.from(JSON.stringify({ workspaceId: args.workspaceId, memberId: member._id })).toString("base64");
+		const state = btoa(JSON.stringify({ workspaceId: args.workspaceId, memberId: member._id }));
 
 		const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&response_type=code&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
 
@@ -282,6 +281,17 @@ export const startSlackImport = mutation({
 
 		if (connection.status !== "active") {
 			throw new Error("Slack connection is not active. Please reconnect.");
+		}
+
+		// Check for existing jobs to prevent duplicate imports
+		const existingJob = await ctx.db
+			.query("import_jobs")
+			.withIndex("by_connection_id", (q) => q.eq("connectionId", connection._id))
+			.filter((q) => q.or(q.eq(q.field("status"), "pending"), q.eq(q.field("status"), "in_progress")))
+			.first();
+
+		if (existingJob) {
+			throw new Error("Import already in progress for this connection");
 		}
 
 		// Create import job
@@ -544,13 +554,13 @@ export const updateJobStatus = internalMutation({
 		const job = await ctx.db.get(jobId);
 		if (!job) return;
 
-		const patch: any = {
+		const patch: Partial<typeof job> = {
 			status: updates.status,
 		};
 
-		if (updates.startedAt) patch.startedAt = updates.startedAt;
-		if (updates.completedAt) patch.completedAt = updates.completedAt;
-		if (updates.errorMessage) patch.errorMessage = updates.errorMessage;
+		if (updates.startedAt !== undefined) patch.startedAt = updates.startedAt;
+		if (updates.completedAt !== undefined) patch.completedAt = updates.completedAt;
+		if (updates.errorMessage !== undefined) patch.errorMessage = updates.errorMessage;
 		if (updates.currentStep) {
 			patch.progress = {
 				...job.progress,

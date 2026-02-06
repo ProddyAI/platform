@@ -1092,6 +1092,68 @@ export const sendCardAssignmentEmail = action({
 });
 
 /**
+ * Helper function to build import email HTML with dynamic parameters
+ */
+function buildImportEmailHtml(
+	headerColor: string,
+	headerTitle: string,
+	bodyParagraphs: string[],
+	buttonLabel: string,
+	buttonHref: string
+): string {
+	const bodyContent = bodyParagraphs.map((p) => {
+		// If the paragraph contains HTML tags (like divs for stats), use as-is
+		if (p.includes("<")) {
+			return p;
+		}
+		// Otherwise wrap in <p> tags
+		return `<p>${p}</p>`;
+	}).join("");
+
+	const buttonHtml = buttonLabel && buttonHref
+		? `<div style="text-align: center;"><a href="${buttonHref}" class="button">${buttonLabel}</a></div>`
+		: "";
+
+	return `
+		<!DOCTYPE html>
+		<html>
+			<head>
+				<meta charset="utf-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<style>
+					body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+					.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+					.header { background: ${headerColor}; color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+					.content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+					.stats { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+					.stat-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; }
+					.stat-item:last-child { border-bottom: none; }
+					.stat-label { font-weight: 600; color: #666; }
+					.stat-value { font-weight: bold; color: #667eea; }
+					.button { display: inline-block; background: ${headerColor}; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; margin-top: 20px; }
+					.footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+				</style>
+			</head>
+			<body>
+				<div class="container">
+					<div class="header">
+						<h1 style="margin: 0; font-size: 24px;">${headerTitle}</h1>
+					</div>
+					<div class="content">
+						${bodyContent}
+						${buttonHtml}
+					</div>
+					<div class="footer">
+						<p>© 2026 Proddy. All rights reserved.</p>
+						<p>Questions? Contact us at support@proddy.io</p>
+					</div>
+				</div>
+			</body>
+		</html>
+	`;
+}
+
+/**
  * Send import completion email notification
  */
 export const sendImportCompletionEmail = internalAction({
@@ -1113,7 +1175,7 @@ export const sendImportCompletionEmail = internalAction({
 			const apiKey = process.env.RESEND_API_KEY;
 			const fromEmail = "Proddy <support@proddy.io>";
 
-			if (!apiKey || !fromEmail) {
+			if (!apiKey) {
 				console.error("Resend email not configured");
 				return { success: false, error: "Email service not configured" };
 			}
@@ -1125,140 +1187,64 @@ export const sendImportCompletionEmail = internalAction({
 			let subject: string;
 			let htmlContent: string;
 
-			if (args.status === "completed") {
-				subject = `✅ ${platformName} Import Completed Successfully`;
-				htmlContent = `
-					<!DOCTYPE html>
-					<html>
-						<head>
-							<meta charset="utf-8">
-							<meta name="viewport" content="width=device-width, initial-scale=1.0">
-							<style>
-								body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-								.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-								.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
-								.content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
-								.stats { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-								.stat-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; }
-								.stat-item:last-child { border-bottom: none; }
-								.stat-label { font-weight: 600; color: #666; }
-								.stat-value { font-weight: bold; color: #667eea; }
-								.button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; margin-top: 20px; }
-								.footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-							</style>
-						</head>
-						<body>
-							<div class="container">
-								<div class="header">
-									<h1 style="margin: 0; font-size: 24px;">🎉 Import Completed!</h1>
-								</div>
-								<div class="content">
-									<p>Hi ${escapeHtml(args.userName)},</p>
-									<p>Great news! Your ${escapeHtml(platformName)} data has been successfully imported into your Proddy workspace.</p>
-
-									<div class="stats">
-										<h3 style="margin-top: 0; color: #333;">Import Summary</h3>
-										<div class="stat-item">
-											<span class="stat-label">Channels Imported:</span>
-											<span class="stat-value">${args.channelsImported}</span>
-										</div>
-										<div class="stat-item">
-											<span class="stat-label">Messages Imported:</span>
-											<span class="stat-value">${args.messagesImported.toLocaleString()}</span>
-										</div>
-										<div class="stat-item">
-											<span class="stat-label">Platform:</span>
-											<span class="stat-value">${escapeHtml(platformName)}</span>
-										</div>
-									</div>
-
-									<p>All your ${escapeHtml(platformName)} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!</p>
-									
-									<div style="text-align: center;">
-										<a href="${workspaceUrl}" class="button">Go to Workspace</a>
-									</div>
-								</div>
-								<div class="footer">
-									<p>© 2026 Proddy. All rights reserved.</p>
-									<p>Questions? Contact us at support@proddy.io</p>
-								</div>
-							</div>
-						</body>
-					</html>
-				`;
-			} else if (args.status === "failed") {
-				subject = `❌ ${platformName} Import Failed`;
-				htmlContent = `
-					<!DOCTYPE html>
-					<html>
-						<head>
-							<meta charset="utf-8">
-							<meta name="viewport" content="width=device-width, initial-scale=1.0">
-							<style>
-								body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-								.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-								.header { background: #ef4444; color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
-								.content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
-								.button { display: inline-block; background: #ef4444; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; margin-top: 20px; }
-								.footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-							</style>
-						</head>
-						<body>
-							<div class="container">
-								<div class="header">
-									<h1 style="margin: 0; font-size: 24px;">Import Failed</h1>
-								</div>
-								<div class="content">
-									<p>Hi ${escapeHtml(args.userName)},</p>
-									<p>Unfortunately, your ${escapeHtml(platformName)} data import encountered an error and could not be completed.</p>
-									<p>Please try again or contact our support team if the issue persists.</p>
-									
-									<div style="text-align: center;">
-										<a href="${workspaceUrl}/manage?tab=import" class="button">Try Again</a>
-									</div>
-								</div>
-								<div class="footer">
-									<p>© 2026 Proddy. All rights reserved.</p>
-									<p>Questions? Contact us at support@proddy.io</p>
-								</div>
-							</div>
-						</body>
-					</html>
-				`;
-			} else {
-				subject = `${platformName} Import Cancelled`;
-				htmlContent = `
-					<!DOCTYPE html>
-					<html>
-						<head>
-							<meta charset="utf-8">
-							<meta name="viewport" content="width=device-width, initial-scale=1.0">
-							<style>
-								body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-								.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-								.header { background: #f59e0b; color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
-								.content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
-								.footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-							</style>
-						</head>
-						<body>
-							<div class="container">
-								<div class="header">
-									<h1 style="margin: 0; font-size: 24px;">Import Cancelled</h1>
-								</div>
-								<div class="content">
-									<p>Hi ${escapeHtml(args.userName)},</p>
-									<p>Your ${escapeHtml(platformName)} data import was cancelled.</p>
-									<p>You can start a new import anytime from your workspace settings.</p>
-								</div>
-								<div class="footer">
-									<p>© 2026 Proddy. All rights reserved.</p>
-								</div>
-							</div>
-						</body>
-					</html>
-				`;
-			}
+		if (args.status === "completed") {
+			subject = `✅ ${platformName} Import Completed Successfully`;
+			const statsHtml = `
+				<div class="stats">
+					<h3 style="margin-top: 0; color: #333;">Import Summary</h3>
+					<div class="stat-item">
+						<span class="stat-label">Channels Imported:</span>
+						<span class="stat-value">${args.channelsImported}</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-label">Messages Imported:</span>
+						<span class="stat-value">${args.messagesImported.toLocaleString()}</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-label">Platform:</span>
+						<span class="stat-value">${escapeHtml(platformName)}</span>
+					</div>
+				</div>
+			`;
+			htmlContent = buildImportEmailHtml(
+				"linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+				"🎉 Import Completed!",
+				[
+					`Hi ${escapeHtml(args.userName)},`,
+					`Great news! Your ${escapeHtml(platformName)} data has been successfully imported into your Proddy workspace.`,
+					statsHtml,
+					`All your ${escapeHtml(platformName)} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!`,
+				],
+				"Go to Workspace",
+				workspaceUrl
+			);
+		} else if (args.status === "failed") {
+			subject = `❌ ${platformName} Import Failed`;
+			htmlContent = buildImportEmailHtml(
+				"#ef4444",
+				"Import Failed",
+				[
+					`Hi ${escapeHtml(args.userName)},`,
+					`Unfortunately, your ${escapeHtml(platformName)} data import encountered an error and could not be completed.`,
+					`Please try again or contact our support team if the issue persists.`,
+				],
+				"Try Again",
+				`${workspaceUrl}/manage?tab=import`
+			);
+		} else {
+			subject = `${platformName} Import Cancelled`;
+			htmlContent = buildImportEmailHtml(
+				"#f59e0b",
+				"Import Cancelled",
+				[
+					`Hi ${escapeHtml(args.userName)},`,
+					`Your ${escapeHtml(platformName)} data import was cancelled.`,
+					`You can start a new import anytime from your workspace settings.`,
+				],
+				"",
+				""
+			);
+		}
 
 			try {
 				const response = await fetch("https://api.resend.com/emails", {

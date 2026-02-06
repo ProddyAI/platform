@@ -114,6 +114,7 @@ export const ImportDataManagement = ({
 }: ImportDataManagementProps) => {
     const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
     const [configDialogOpen, setConfigDialogOpen] = useState(false);
+    const [pendingCancelJobId, setPendingCancelJobId] = useState<string | null>(null);
     const [importConfig, setImportConfig] = useState({
         includeFiles: true,
         includeThreads: true,
@@ -192,13 +193,24 @@ export const ImportDataManagement = ({
     };
 
     const handleCancelJob = async (jobId: Id<"import_jobs">) => {
+        setPendingCancelJobId(jobId);
         try {
             await cancelImportJob.mutate(
                 { jobId },
-                { throwError: true }
+                {
+                    throwError: true,
+                    onSuccess: () => {
+                        setPendingCancelJobId(null);
+                        toast.success("Import cancelled");
+                    },
+                    onError: () => {
+                        setPendingCancelJobId(null);
+                        toast.error("Failed to cancel import");
+                    },
+                }
             );
-            toast.success("Import cancelled");
         } catch (error) {
+            setPendingCancelJobId(null);
             toast.error("Failed to cancel import");
         }
     };
@@ -336,7 +348,7 @@ export const ImportDataManagement = ({
                                         )}
                                         {latestJob.status === "completed" && latestJob.result && (
                                             <p className="text-xs text-muted-foreground">
-                                                {latestJob.result.channelsCreated.length} channels, {latestJob.result.messagesCreated.toLocaleString()} messages
+                                                {latestJob.result?.channelsCreated?.length ?? 0} channels, {(latestJob.result?.messagesCreated ?? 0).toLocaleString()} messages
                                             </p>
                                         )}
                                     </div>
@@ -399,8 +411,8 @@ export const ImportDataManagement = ({
                                             <TableCell>
                                                 {job.result ? (
                                                     <div className="text-xs space-y-1">
-                                                        <div>{job.result.channelsCreated.length} channels</div>
-                                                        <div>{job.result.messagesCreated.toLocaleString()} messages</div>
+                                                        <div>{job.result?.channelsCreated?.length ?? 0} channels</div>
+                                                        <div>{(job.result?.messagesCreated ?? 0).toLocaleString()} messages</div>
                                                     </div>
                                                 ) : (
                                                     <span className="text-sm text-muted-foreground">—</span>
@@ -412,7 +424,7 @@ export const ImportDataManagement = ({
                                                         size="sm"
                                                         variant="ghost"
                                                         onClick={() => handleCancelJob(job._id)}
-                                                        disabled={cancelImportJob.isPending}
+                                                        disabled={pendingCancelJobId === job._id}
                                                     >
                                                         Cancel
                                                     </Button>

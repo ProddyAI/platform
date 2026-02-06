@@ -2,6 +2,25 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Helper function to build and return a redirect response to the Convex callback handler
+ * @param convexUrl - The base Convex URL
+ * @param searchParams - URLSearchParams containing OAuth parameters (code, state, error)
+ * @param defaultWorkspaceId - Optional default workspace ID
+ * @returns NextResponse.redirect() to the Convex callback endpoint
+ */
+function buildCallbackRedirect(
+	convexUrl: string,
+	searchParams: URLSearchParams,
+	defaultWorkspaceId?: string
+): NextResponse {
+	const targetUrl = new URL("/import/slack/callback", convexUrl);
+	searchParams.forEach((value, key) => {
+		targetUrl.searchParams.append(key, value);
+	});
+	return NextResponse.redirect(targetUrl.toString(), 302);
+}
+
 export async function GET(request: Request) {
 	let convexUrl = process.env.NEXT_PUBLIC_CONVEX_HTTP_URL;
 
@@ -42,11 +61,7 @@ export async function GET(request: Request) {
 
 	// If Slack returned an error, forward it to the Convex handler
 	if (error) {
-		const targetUrl = new URL("/import/slack/callback", convexUrl);
-		url.searchParams.forEach((value, key) => {
-			targetUrl.searchParams.append(key, value);
-		});
-		return NextResponse.redirect(targetUrl.toString(), 302);
+		return buildCallbackRedirect(convexUrl, url.searchParams);
 	}
 
 	if (!code || !state) {
@@ -56,10 +71,5 @@ export async function GET(request: Request) {
 		);
 	}
 
-	const targetUrl = new URL("/import/slack/callback", convexUrl);
-	url.searchParams.forEach((value, key) => {
-		targetUrl.searchParams.append(key, value);
-	});
-
-	return NextResponse.redirect(targetUrl.toString(), 302);
+	return buildCallbackRedirect(convexUrl, url.searchParams);
 }

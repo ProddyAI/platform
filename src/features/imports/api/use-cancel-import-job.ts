@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -20,13 +20,10 @@ export const useCancelImportJob = () => {
 		"success" | "error" | "pending" | null
 	>(null);
 
-	const isPending = useMemo(() => status === "pending", [status]);
-	const isSuccess = useMemo(() => status === "success", [status]);
-	const isError = useMemo(() => status === "error", [status]);
-	const isSettled = useMemo(
-		() => status === "success" || status === "error",
-		[status]
-	);
+	const isPending = status === "pending";
+	const isSuccess = status === "success";
+	const isError = status === "error";
+	const isSettled = status === "success" || status === "error";
 
 	const mutation = useMutation(api.importIntegrations.cancelImportJob);
 
