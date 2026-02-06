@@ -158,12 +158,33 @@ export const getWorkspaceJoinCodeForInviteVerification = internalQuery({
 	},
 });
 
+// Public wrapper for invite verification flow
+export const getWorkspaceJoinCodeForVerification = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		// This is a public query that can be called from the API route
+		// It gets the join code for verification purposes
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) {
+			throw new Error("Workspace not found");
+		}
+		return workspace.joinCode;
+	},
+});
+
 export const consumeInvite = mutation({
 	args: {
 		inviteId: v.id("workspaceInvites"),
-		userId: v.id("users"),
 	},
 	handler: async (ctx, args) => {
+		// Get userId from authenticated context instead of trusting client-supplied argument
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized. User must be authenticated.");
+		}
+
 		const invite = await ctx.db.get(args.inviteId);
 		if (!invite) {
 			throw new Error("Invite not found");
@@ -180,7 +201,7 @@ export const consumeInvite = mutation({
 		const existingMember = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", invite.workspaceId).eq("userId", args.userId)
+				q.eq("workspaceId", invite.workspaceId).eq("userId", userId)
 			)
 			.unique();
 
@@ -190,7 +211,7 @@ export const consumeInvite = mutation({
 
 		await ctx.db.insert("members", {
 			workspaceId: invite.workspaceId,
-			userId: args.userId,
+			userId: userId,
 			role: "member",
 		});
 

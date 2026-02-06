@@ -134,6 +134,14 @@ export async function POST(req: Request) {
 			react: emailTemplate,
 		});
 
+		// Check for Resend API errors (SDK doesn't throw, returns { data, error })
+		if (emailResult.error) {
+			console.error("[Invite Send] Resend API error:", emailResult.error);
+			throw new Error(
+				`Failed to send email: ${emailResult.error.message || "Unknown error"}`
+			);
+		}
+
 		console.log(
 			"[Invite Send] Email sent successfully. Email ID:",
 			emailResult.data?.id

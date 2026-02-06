@@ -4,9 +4,8 @@ import {
 	isAuthenticatedNextjs,
 } from "@convex-dev/auth/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
-import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { NextResponse } from "next/server";
-import { api, internal } from "@/../convex/_generated/api";
+import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 const createConvexClient = () => {
@@ -17,7 +16,6 @@ const createConvexClient = () => {
 };
 
 const maskInvite = (invite: string) => `...${invite.slice(-8)}`;
-const _maskEmail = () => "[redacted-email]";
 
 export async function POST(req: Request) {
 	try {
@@ -63,7 +61,7 @@ export async function POST(req: Request) {
 		);
 
 		// 3. Fetch invite by hash
-		const inviteDoc = await fetchQuery(api.workspaceInvites.getInviteByHash, {
+		const inviteDoc = await convex.query(api.workspaceInvites.getInviteByHash, {
 			hash: invite,
 		});
 
@@ -112,10 +110,9 @@ export async function POST(req: Request) {
 		}
 
 		// 5. Recompute hash to verify email binding
-		// Use internal query to get joinCode without exposing it on public API
-		const joinCode = await fetchQuery(
-			internal.workspaceInvites
-				.getWorkspaceJoinCodeForInviteVerification as any,
+		// Use public wrapper query to get joinCode
+		const joinCode = await convex.query(
+			api.workspaceInvites.getWorkspaceJoinCodeForVerification,
 			{ workspaceId: workspaceId as Id<"workspaces"> }
 		);
 
@@ -154,9 +151,9 @@ export async function POST(req: Request) {
 
 		// 6. Consume invite
 		console.log("[Invite Verify] Consuming invite for workspace:", workspaceId);
-		await fetchMutation(api.workspaceInvites.consumeInvite, {
+		// The mutation will get userId from the authenticated context
+		await convex.mutation(api.workspaceInvites.consumeInvite, {
 			inviteId: inviteDoc._id,
-			userId: currentUser._id,
 		});
 
 		console.log("[Invite Verify] Successfully verified and consumed invite");
