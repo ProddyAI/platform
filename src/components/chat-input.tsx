@@ -172,7 +172,7 @@ export const ChatInput = ({
 
 	// Only show suggestions for channel messages, not for direct messages
 	return (
-		<div className="w-full px-5">
+		<div className="w-full px-1 md:px-5">
 			{channelId && channelName && !conversationId ? (
 				<Suggestions
 					channelName={channelName}
