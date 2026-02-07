@@ -3,7 +3,7 @@
 import { Loader } from "lucide-react";
 import Script from "next/script";
 import type { PropsWithChildren } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { NavigationListener } from "@/components/navigation-listener";
@@ -34,14 +34,14 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({ workspaceId });
 
 	// Handle mobile menu toggle
-	const handleMobileMenuToggle = () => {
-		// Check current window width instead of state
-		if (window.innerWidth < 768) {
+	const handleMobileMenuToggle = useCallback(() => {
+		if (isMobile) {
 			setShowMobileSidebar((prev) => !prev);
-		} else {
-			setIsCollapsed(!isCollapsed);
+			return;
 		}
-	};
+
+		setIsCollapsed(!isCollapsed);
+	}, [isMobile, isCollapsed, setIsCollapsed]);
 
 	const showPanel = !!parentMessageId || !!profileMemberId;
 
@@ -124,22 +124,23 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 									{/* Sidebar Overlay */}
 									<div
 										className={cn(
-									"md:hidden fixed left-0 z-50",
-										"bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
-										"w-[280px] shadow-2xl",
-										"transform transition-transform duration-300 ease-in-out",
-										"overscroll-contain",
-										"top-4 bottom-4",
-										"rounded-r-2xl",
-										showMobileSidebar ? "translate-x-0" : "-translate-x-full"
-									)}
-									style={{
-										WebkitOverflowScrolling: 'touch',
-									}}
+											"md:hidden fixed left-0 z-50",
+											"bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+											"w-[280px] shadow-2xl",
+											"transform transition-transform duration-300 ease-in-out",
+											"overscroll-contain",
+											"top-4 bottom-4",
+											"rounded-r-2xl",
+											showMobileSidebar ? "translate-x-0" : "-translate-x-full"
+										)}
+										style={{
+											WebkitOverflowScrolling: 'touch',
+										}}
 									>
+										{/* Mobile overlay: close via onMobileClose without mutating collapse state. */}
 										<WorkspaceSidebar
 											isCollapsed={false}
-											setIsCollapsed={() => setShowMobileSidebar(false)}
+											setIsCollapsed={setIsCollapsed}
 											onMobileClose={() => setShowMobileSidebar(false)}
 										/>
 									</div>

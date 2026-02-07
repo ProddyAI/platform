@@ -54,6 +54,9 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../toolbar";
 
+const TAB_TRIGGER_CLASS =
+	"data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3";
+
 const ReportsPage = () => {
 	// Set document title
 	useDocumentTitle("Reports");
@@ -97,10 +100,10 @@ const ReportsPage = () => {
 		api.analytics.getWorkspaceOverview,
 		workspaceId
 			? {
-					workspaceId,
-					startDate,
-					endDate,
-				}
+				workspaceId,
+				startDate,
+				endDate,
+			}
 			: "skip"
 	);
 	const isOverviewLoading = overviewData === undefined;
@@ -110,10 +113,10 @@ const ReportsPage = () => {
 		api.analytics.getMessageAnalytics,
 		workspaceId
 			? {
-					workspaceId,
-					startDate,
-					endDate,
-				}
+				workspaceId,
+				startDate,
+				endDate,
+			}
 			: "skip"
 	);
 	const isMessageLoading = messageData === undefined;
@@ -123,10 +126,10 @@ const ReportsPage = () => {
 		api.analytics.getTaskAnalytics,
 		workspaceId
 			? {
-					workspaceId,
-					startDate,
-					endDate,
-				}
+				workspaceId,
+				startDate,
+				endDate,
+			}
 			: "skip"
 	);
 	const isTaskLoading = taskData === undefined;
@@ -326,7 +329,7 @@ const ReportsPage = () => {
 							<div className="overflow-x-auto -mx-2 md:mx-0">
 								<TabsList className="grid grid-cols-7 min-w-max md:w-full mb-3 md:mb-4 bg-muted/30">
 									<TabsTrigger
-										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										className={TAB_TRIGGER_CLASS}
 										onClick={() => setActiveTab("overview")}
 										value="overview"
 									>
@@ -334,7 +337,7 @@ const ReportsPage = () => {
 										<span className="hidden md:inline">Overview</span>
 									</TabsTrigger>
 									<TabsTrigger
-										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										className={TAB_TRIGGER_CLASS}
 										onClick={() => setActiveTab("users")}
 										value="users"
 									>
@@ -342,7 +345,7 @@ const ReportsPage = () => {
 										<span className="hidden md:inline">Users</span>
 									</TabsTrigger>
 									<TabsTrigger
-										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										className={TAB_TRIGGER_CLASS}
 										onClick={() => setActiveTab("channels")}
 										value="channels"
 									>
@@ -350,7 +353,7 @@ const ReportsPage = () => {
 										<span className="hidden md:inline">Channels</span>
 									</TabsTrigger>
 									<TabsTrigger
-										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										className={TAB_TRIGGER_CLASS}
 										onClick={() => setActiveTab("messages")}
 										value="messages"
 									>
@@ -358,7 +361,7 @@ const ReportsPage = () => {
 										<span className="hidden md:inline">Messages</span>
 									</TabsTrigger>
 									<TabsTrigger
-										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										className={TAB_TRIGGER_CLASS}
 										onClick={() => setActiveTab("content")}
 										value="content"
 									>
@@ -366,7 +369,7 @@ const ReportsPage = () => {
 										<span className="hidden md:inline">Content</span>
 									</TabsTrigger>
 									<TabsTrigger
-										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										className={TAB_TRIGGER_CLASS}
 										onClick={() => setActiveTab("performance")}
 										value="performance"
 									>
@@ -374,7 +377,7 @@ const ReportsPage = () => {
 										<span className="hidden md:inline">Performance</span>
 									</TabsTrigger>
 									<TabsTrigger
-										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										className={TAB_TRIGGER_CLASS}
 										onClick={() => setActiveTab("tasks")}
 										value="tasks"
 									>
@@ -469,9 +472,9 @@ const ReportsPage = () => {
 														<div className="text-2xl font-bold text-foreground">
 															{messageData.messagesByDate.length > 0
 																? Math.round(
-																		messageData.totalMessages /
-																			messageData.messagesByDate.length
-																	)
+																	messageData.totalMessages /
+																	messageData.messagesByDate.length
+																)
 																: 0}
 														</div>
 													</div>
@@ -704,41 +707,41 @@ const ReportsPage = () => {
 															data={
 																taskData.totalTasks > 0
 																	? [
-																			{
-																				label: "Completed",
-																				value: taskData.statusCounts.completed,
-																				color: "#22c55e",
-																			},
-																			{
-																				label: "In Progress",
-																				value:
-																					taskData.statusCounts.in_progress,
-																				color: "#3b82f6",
-																			},
-																			{
-																				label: "Not Started",
-																				value:
-																					taskData.statusCounts.not_started,
-																				color: "#6b7280",
-																			},
-																			{
-																				label: "On Hold",
-																				value: taskData.statusCounts.on_hold,
-																				color: "#f59e0b",
-																			},
-																			{
-																				label: "Cancelled",
-																				value: taskData.statusCounts.cancelled,
-																				color: "#ef4444",
-																			},
-																		].filter((item) => item.value > 0)
+																		{
+																			label: "Completed",
+																			value: taskData.statusCounts.completed,
+																			color: "#22c55e",
+																		},
+																		{
+																			label: "In Progress",
+																			value:
+																				taskData.statusCounts.in_progress,
+																			color: "#3b82f6",
+																		},
+																		{
+																			label: "Not Started",
+																			value:
+																				taskData.statusCounts.not_started,
+																			color: "#6b7280",
+																		},
+																		{
+																			label: "On Hold",
+																			value: taskData.statusCounts.on_hold,
+																			color: "#f59e0b",
+																		},
+																		{
+																			label: "Cancelled",
+																			value: taskData.statusCounts.cancelled,
+																			color: "#ef4444",
+																		},
+																	].filter((item) => item.value > 0)
 																	: [
-																			{
-																				label: "No Data Available",
-																				value: 100,
-																				color: "#6b7280",
-																			},
-																		]
+																		{
+																			label: "No Data Available",
+																			value: 100,
+																			color: "#6b7280",
+																		},
+																	]
 															}
 															formatValue={(value) =>
 																taskData.totalTasks > 0 ? `${value} tasks` : ""
@@ -763,29 +766,29 @@ const ReportsPage = () => {
 															data={
 																taskData.totalTasks > 0
 																	? [
-																			{
-																				label: "High",
-																				value: taskData.priorityCounts.high,
-																				color: "#ef4444",
-																			},
-																			{
-																				label: "Medium",
-																				value: taskData.priorityCounts.medium,
-																				color: "#f59e0b",
-																			},
-																			{
-																				label: "Low",
-																				value: taskData.priorityCounts.low,
-																				color: "#22c55e",
-																			},
-																		].filter((item) => item.value > 0)
+																		{
+																			label: "High",
+																			value: taskData.priorityCounts.high,
+																			color: "#ef4444",
+																		},
+																		{
+																			label: "Medium",
+																			value: taskData.priorityCounts.medium,
+																			color: "#f59e0b",
+																		},
+																		{
+																			label: "Low",
+																			value: taskData.priorityCounts.low,
+																			color: "#22c55e",
+																		},
+																	].filter((item) => item.value > 0)
 																	: [
-																			{
-																				label: "No Data Available",
-																				value: 100,
-																				color: "#6b7280",
-																			},
-																		]
+																		{
+																			label: "No Data Available",
+																			value: 100,
+																			color: "#6b7280",
+																		},
+																	]
 															}
 															formatValue={(value) =>
 																taskData.totalTasks > 0 ? `${value} tasks` : ""

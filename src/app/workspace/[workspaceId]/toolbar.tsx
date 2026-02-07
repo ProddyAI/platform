@@ -58,6 +58,12 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const [userSettingsTab, setUserSettingsTab] = useState<
 		"profile" | "notifications"
 	>("profile");
+	const roadmapUrl = process.env.NEXT_PUBLIC_ROADMAP_URL;
+	const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL;
+	const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_URL;
+	const hasRoadmapUrl = Boolean(roadmapUrl && roadmapUrl !== "#");
+	const hasDocsUrl = Boolean(docsUrl && docsUrl !== "#");
+	const hasStatusUrl = Boolean(statusPageUrl && statusPageUrl !== "#");
 
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
@@ -337,49 +343,58 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 			{/* Right section - Actions */}
 			<div className="ml-auto flex flex-1 items-center justify-end gap-x-1.5 md:gap-x-3 px-3 md:px-6">
-				{/* Roadmap Button - Hidden on mobile */}
-				<div className="hidden md:block">
-					<Hint label="Roadmap & Feedback" side="bottom">
-						<Button
-							className="text-white relative hover:bg-white/15 transition-colors"
-							onClick={() => {
-								// Open roadmap page in a new tab
-							const roadmapUrl = process.env.NEXT_PUBLIC_ROADMAP_URL || "#";
-							if (roadmapUrl !== "#") {
-								window.open(roadmapUrl, "_blank", "noopener,noreferrer");
-							}
-							}}
-							size="iconSm"
-							variant="ghost"
-						>
-							<div className="relative">
-								<MapIcon className="size-5" />
-							</div>
-						</Button>
-					</Hint>
+				{/* Mobile Search Button */}
+				<div className="md:hidden">
+					<Button
+						aria-label="Open search"
+						className="text-white relative hover:bg-white/15 transition-colors"
+						onClick={() => setSearchOpen(true)}
+						size="iconSm"
+						variant="ghost"
+					>
+						<Search className="size-5" />
+					</Button>
 				</div>
 
+				{/* Roadmap Button - Hidden on mobile */}
+				{hasRoadmapUrl && (
+					<div className="hidden md:block">
+						<Hint label="Roadmap & Feedback" side="bottom">
+							<Button
+								className="text-white relative hover:bg-white/15 transition-colors"
+								onClick={() => {
+									window.open(roadmapUrl, "_blank", "noopener,noreferrer");
+								}}
+								size="iconSm"
+								variant="ghost"
+							>
+								<div className="relative">
+									<MapIcon className="size-5" />
+								</div>
+							</Button>
+						</Hint>
+					</div>
+				)}
+
 				{/* Documentation Button - Hidden on mobile */}
-				<div className="hidden md:block">
-					<Hint label="Documentation" side="bottom">
-						<Button
-							className="text-white relative hover:bg-white/15 transition-colors"
-							onClick={() => {
-								// Open documentation in a new tab
-							const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || "#";
-							if (docsUrl !== "#") {
-								window.open(docsUrl, "_blank", "noopener,noreferrer");
-							}
-							}}
-							size="iconSm"
-							variant="ghost"
-						>
-							<div className="relative">
-								<HelpCircle className="size-5" />
-							</div>
-						</Button>
-					</Hint>
-				</div>
+				{hasDocsUrl && (
+					<div className="hidden md:block">
+						<Hint label="Documentation" side="bottom">
+							<Button
+								className="text-white relative hover:bg-white/15 transition-colors"
+								onClick={() => {
+									window.open(docsUrl, "_blank", "noopener,noreferrer");
+								}}
+								size="iconSm"
+								variant="ghost"
+							>
+								<div className="relative">
+									<HelpCircle className="size-5" />
+								</div>
+							</Button>
+						</Hint>
+					</div>
+				)}
 
 				{/* Chat Support Button - Hidden on mobile */}
 				<div className="hidden md:block">
@@ -401,26 +416,24 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				</div>
 
 				{/* Status Page Button - Hidden on mobile */}
-				<div className="hidden md:block">
-					<Hint label="System Status" side="bottom">
-						<Button
-							className="text-white relative hover:bg-white/15 transition-colors"
-							onClick={() => {
-								// Open status page in a new tab
-							const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_URL || "#";
-							if (statusPageUrl !== "#") {
-								window.open(statusPageUrl, "_blank", "noopener,noreferrer");
-							}
-							}}
-							size="iconSm"
-							variant="ghost"
-						>
-							<div className="relative">
-								<Activity className="size-5" />
-							</div>
-						</Button>
-					</Hint>
-				</div>
+				{hasStatusUrl && (
+					<div className="hidden md:block">
+						<Hint label="System Status" side="bottom">
+							<Button
+								className="text-white relative hover:bg-white/15 transition-colors"
+								onClick={() => {
+									window.open(statusPageUrl, "_blank", "noopener,noreferrer");
+								}}
+								size="iconSm"
+								variant="ghost"
+							>
+								<div className="relative">
+									<Activity className="size-5" />
+								</div>
+							</Button>
+						</Hint>
+					</div>
+				)}
 
 				{/* Notifications Button */}
 				<Hint label="Notifications" side="bottom">

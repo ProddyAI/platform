@@ -632,6 +632,7 @@ const Editor = ({
 
 										imageElementRef.current!.value = "";
 									}}
+									type="button"
 								>
 									<XIcon className="size-3 md:size-3.5" />
 								</button>
