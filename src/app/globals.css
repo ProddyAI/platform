@@ -27,6 +27,14 @@
 .sidebar-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  scroll-behavior: smooth;
+  overscroll-behavior: contain; /* Prevent scroll chaining */
+}
+
+/* Safe area padding for mobile devices (notches, etc.) */
+.mobile-footer-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @layer base {

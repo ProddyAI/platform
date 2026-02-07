@@ -54,7 +54,7 @@ export const CompactMessage = ({
 		<>
 			<div
 				className={cn(
-					"group relative flex items-start gap-3 p-3 hover:bg-gray-100/60 dark:hover:bg-slate-700/50 transition-standard hover:shadow-sm rounded-[10px]",
+					"group relative flex items-start gap-2 md:gap-3 p-2 md:p-3 hover:bg-gray-100/60 dark:hover:bg-slate-700/50 transition-standard hover:shadow-sm rounded-[10px]",
 					isEditing && "bg-secondary/20 hover:bg-secondary/20",
 					isPending &&
 						"origin-bottom scale-y-0 transform bg-rose-500/50 transition-standard",
@@ -64,18 +64,18 @@ export const CompactMessage = ({
 				onContextMenu={handleContextMenu}
 			>
 				{/* Timestamp */}
-				<div className="flex items-center gap-2 min-w-[50px]">
+				<div className="flex items-center gap-2 min-w-[40px] md:min-w-[50px]">
 					{isAuthor ? (
 						// For self messages, show timestamp on the right (due to flex-row-reverse)
 						<Hint label={formatFullTime(new Date(createdAt))}>
-							<button className="text-center text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
+							<button className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
 								{format(new Date(createdAt), "h:mm a")}
 							</button>
 						</Hint>
 					) : (
 						// For other messages, show timestamp on the left
 						<Hint label={formatFullTime(new Date(createdAt))}>
-							<button className="text-center text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
+							<button className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
 								{format(new Date(createdAt), "h:mm a")}
 							</button>
 						</Hint>

@@ -622,18 +622,19 @@ const Editor = ({
 				<div className="h-full" ref={containerRef} />
 
 				{!!image && (
-					<div className="p-2">
-						<div className="group/image relative flex size-[62px] items-center justify-center">
+					<div className="p-1.5 md:p-2">
+						<div className="group/image relative flex size-[50px] md:size-[62px] items-center justify-center">
 							<Hint label="Remove image">
 								<button
-									className="absolute -right-2.5 -top-2.5 z-[4] hidden size-6 items-center justify-center rounded-full border-2 border-white bg-black/70 text-white hover:bg-black group-hover/image:flex"
+									className="absolute -right-2 -top-2 md:-right-2.5 md:-top-2.5 z-[4] hidden size-5 md:size-6 items-center justify-center rounded-full border-2 border-white bg-black/70 text-white hover:bg-black group-hover/image:flex"
 									onClick={() => {
 										setImage(null);
 
 										imageElementRef.current!.value = "";
 									}}
+									type="button"
 								>
-									<XIcon className="size-3.5" />
+									<XIcon className="size-3 md:size-3.5" />
 								</button>
 							</Hint>
 
@@ -647,7 +648,7 @@ const Editor = ({
 					</div>
 				)}
 
-				<div className="z-[5] flex px-2 pb-2">
+				<div className="z-[5] flex px-1.5 md:px-2 pb-1.5 md:pb-2">
 					<Hint
 						label={isToolbarVisible ? "Hide formatting" : "Show formatting"}
 					>
@@ -657,13 +658,13 @@ const Editor = ({
 							size="iconSm"
 							variant="ghost"
 						>
-							<PiTextAa className="size-4" />
+							<PiTextAa className="size-3.5 md:size-4" />
 						</Button>
 					</Hint>
 
 					<EmojiPopover onEmojiSelect={onEmojiSelect}>
 						<Button disabled={disabled} size="iconSm" variant="ghost">
-							<Smile className="size-4" />
+							<Smile className="size-3.5 md:size-4" />
 						</Button>
 					</EmojiPopover>
 
@@ -676,7 +677,7 @@ const Editor = ({
 									size="iconSm"
 									variant="ghost"
 								>
-									<ImageIcon className="size-4" />
+									<ImageIcon className="size-3.5 md:size-4" />
 								</Button>
 							</Hint>
 							<Hint label="Calendar">
@@ -686,7 +687,7 @@ const Editor = ({
 									size="iconSm"
 									variant="ghost"
 								>
-									<CalendarIcon className="size-4" />
+									<CalendarIcon className="size-3.5 md:size-4" />
 								</Button>
 							</Hint>
 							{!disableMentions && (
@@ -713,7 +714,7 @@ const Editor = ({
 										variant="ghost"
 									>
 										<svg
-											className="size-4"
+											className="size-3.5 md:size-4"
 											fill="none"
 											height="16"
 											stroke="currentColor"
@@ -740,9 +741,9 @@ const Editor = ({
 											variant="ghost"
 										>
 											{isCreatingCanvas ? (
-												<div className="animate-spin h-4 w-4 border-2 border-secondary border-t-transparent rounded-full" />
+												<div className="animate-spin h-3.5 w-3.5 md:h-4 md:w-4 border-2 border-secondary border-t-transparent rounded-full" />
 											) : (
-												<PaintBucket className="size-4" />
+												<PaintBucket className="size-3.5 md:size-4" />
 											)}
 										</Button>
 									</Hint>
@@ -754,9 +755,9 @@ const Editor = ({
 											variant="ghost"
 										>
 											{isCreatingNote ? (
-												<div className="animate-spin h-4 w-4 border-2 border-secondary border-t-transparent rounded-full" />
+												<div className="animate-spin h-3.5 w-3.5 md:h-4 md:w-4 border-2 border-secondary border-t-transparent rounded-full" />
 											) : (
-												<FileText className="size-4" />
+												<FileText className="size-3.5 md:size-4" />
 											)}
 										</Button>
 									</Hint>
@@ -766,7 +767,7 @@ const Editor = ({
 					)}
 
 					{variant === "update" && (
-						<div className="ml-auto flex items-center gap-x-2">
+						<div className="ml-auto flex items-center gap-x-1 md:gap-x-2">
 							<Button
 								disabled={disabled}
 								onClick={onCancel}
@@ -816,7 +817,7 @@ const Editor = ({
 							size="iconSm"
 							title="Send Message"
 						>
-							<MdSend className="size-4" />
+							<MdSend className="size-3.5 md:size-4" />
 						</Button>
 					)}
 				</div>

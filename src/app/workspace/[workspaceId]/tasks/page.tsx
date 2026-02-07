@@ -1,11 +1,12 @@
 "use client";
 
 import { isAfter, isBefore, isToday, startOfDay } from "date-fns";
-import { CheckSquare, Loader, Search } from "lucide-react";
+import { CheckSquare, Loader, Search, SlidersHorizontal } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
 import { useGetTaskCategories } from "@/features/tasks/api/use-get-task-categories";
 import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
@@ -31,6 +32,7 @@ const TasksPage = () => {
 		useGetTaskCategories({ workspaceId });
 
 	const [searchQuery, setSearchQuery] = useState("");
+	const [filtersOpen, setFiltersOpen] = useState(false);
 	const [filterOptions, setFilterOptions] = useState<TaskFilterOptions>({
 		status: "all",
 		priority: "all",
@@ -180,16 +182,27 @@ const TasksPage = () => {
 			</WorkspaceToolbar>
 			<div className="flex h-[calc(100%-4rem)] bg-white">
 				<div className="flex-1 overflow-y-auto">
-					<div className="max-w-3xl mx-auto px-6 py-8">
-						<div className="mb-8 space-y-4">
-							<div className="relative">
-								<Input
-									className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--card-accent))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--card-accent))] dark:focus-visible:ring-pink-400 dark:focus-visible:border-pink-400 dark:focus-visible:ring-offset-0"
-									onChange={(e) => setSearchQuery(e.target.value)}
-									placeholder="Search tasks..."
-									value={searchQuery}
-								/>
-								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+					<div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
+						<div className="mb-6 md:mb-8 space-y-4">
+							<div className="flex items-center gap-2">
+								<div className="relative flex-1">
+									<Input
+										className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--card-accent))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--card-accent))] dark:focus-visible:ring-pink-400 dark:focus-visible:border-pink-400 dark:focus-visible:ring-offset-0"
+										onChange={(e) => setSearchQuery(e.target.value)}
+										placeholder="Search tasks..."
+										value={searchQuery}
+									/>
+									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+								</div>
+								<Button
+									aria-label="Open task filters"
+									className="md:hidden"
+									onClick={() => setFiltersOpen(true)}
+									size="iconSm"
+									variant="outline"
+								>
+									<SlidersHorizontal className="size-4" />
+								</Button>
 							</div>
 						</div>
 
@@ -219,10 +232,10 @@ const TasksPage = () => {
 											</h3>
 											<p className="mt-2 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
 												{searchQuery ||
-												filterOptions.status !== "all" ||
-												filterOptions.priority !== "all" ||
-												filterOptions.dueDate !== "all" ||
-												filterOptions.categoryId !== null
+													filterOptions.status !== "all" ||
+													filterOptions.priority !== "all" ||
+													filterOptions.dueDate !== "all" ||
+													filterOptions.categoryId !== null
 													? "Try adjusting your filters or search query"
 													: "Create your first task to get started"}
 											</p>
@@ -239,12 +252,24 @@ const TasksPage = () => {
 					</div>
 				</div>
 
-				<TaskSidebar
-					categories={categories}
-					categoriesLoading={categoriesLoading}
-					filterOptions={filterOptions}
-					onFilterChange={handleFilterChange}
-				/>
+				<Sheet onOpenChange={setFiltersOpen} open={filtersOpen}>
+					<SheetContent className="w-[280px] p-0" side="right">
+						<TaskSidebar
+							categories={categories}
+							categoriesLoading={categoriesLoading}
+							filterOptions={filterOptions}
+							onFilterChange={handleFilterChange}
+						/>
+					</SheetContent>
+				</Sheet>
+				<div className="hidden lg:block">
+					<TaskSidebar
+						categories={categories}
+						categoriesLoading={categoriesLoading}
+						filterOptions={filterOptions}
+						onFilterChange={handleFilterChange}
+					/>
+				</div>
 			</div>
 		</div>
 	);

@@ -117,6 +117,11 @@ export const MentionsNotificationDialog = ({
 	};
 
 	const getSourceLink = (mention: any) => {
+		// Safety check: ensure mention has source with type and id
+		if (!mention?.source?.type || !mention?.source?.id) {
+			return `/workspace/${workspaceId}`;
+		}
+
 		switch (mention.source.type) {
 			case "channel":
 				return `/workspace/${workspaceId}/channel/${mention.source.id}`;
@@ -257,10 +262,15 @@ export const MentionsNotificationDialog = ({
 					// Determine if this is a direct message or a mention
 					const isDirect = notification.type === "direct";
 
-					// Get the appropriate link
+					// Get the appropriate link with fallback to workspace
 					const link = isDirect
-						? `/workspace/${workspaceId}/member/${notification.author.id}`
+						? notification.author?.id
+							? `/workspace/${workspaceId}/member/${notification.author.id}`
+							: `/workspace/${workspaceId}`
 						: getSourceLink(notification);
+
+					// Skip rendering if we don't have a valid link
+					if (!link) return null;
 
 					return (
 						<Link

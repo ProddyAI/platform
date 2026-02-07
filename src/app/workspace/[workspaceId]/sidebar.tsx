@@ -36,6 +36,44 @@ import { cn } from "@/lib/utils";
 import { WorkspaceHeader } from "./header";
 import { ChannelItem, MemberItem, SidebarItem } from "./options";
 
+interface MobileCloseWrapperProps {
+	children: React.ReactNode;
+	onClose?: () => void;
+	className?: string;
+	ariaLabel?: string;
+}
+
+const MobileCloseWrapper = ({
+	children,
+	onClose,
+	className,
+	ariaLabel = "Close mobile sidebar",
+}: MobileCloseWrapperProps) => {
+	const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		if (!onClose) {
+			return;
+		}
+
+		if (event.key === "Enter" || event.key === " ") {
+			event.preventDefault();
+			onClose();
+		}
+	};
+
+	return (
+		<div
+			aria-label={onClose ? ariaLabel : undefined}
+			className={className}
+			onClick={onClose}
+			onKeyDown={onClose ? handleKeyDown : undefined}
+			role={onClose ? "button" : undefined}
+			tabIndex={onClose ? 0 : undefined}
+		>
+			{children}
+		</div>
+	);
+};
+
 // DroppableItem Component
 interface DroppableItemProps {
 	label: string;
@@ -123,9 +161,11 @@ const DroppableItem = ({
 export const WorkspaceSidebar = ({
 	isCollapsed,
 	setIsCollapsed,
+	onMobileClose,
 }: {
 	isCollapsed: boolean;
 	setIsCollapsed: (value: boolean) => void;
+	onMobileClose?: () => void;
 }) => {
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
@@ -203,6 +243,20 @@ export const WorkspaceSidebar = ({
 				isCollapsed ? "w-[70px]" : "w-[280px]"
 			)}
 		>
+			{/* Close button for mobile overlay */}
+			{onMobileClose && (
+				<div className="flex justify-end p-2 md:hidden flex-shrink-0">
+					<Button
+						className="h-8 w-8 rounded-full p-0"
+						onClick={onMobileClose}
+						size="sm"
+						variant="ghost"
+					>
+						<PanelLeftClose className="size-4 text-secondary-foreground/80" />
+					</Button>
+				</div>
+			)}
+
 			{/* Workspace Header */}
 			<div className="flex-shrink-0">
 				<WorkspaceHeader
@@ -212,186 +266,211 @@ export const WorkspaceSidebar = ({
 				/>
 			</div>
 
-			{/* Dashboard Link */}
-			<div className="mt-4 px-2 md:px-4">
-				<SidebarItem
-					href={`/workspace/${workspaceId}/dashboard`}
-					icon={LayoutDashboard}
-					id="dashboard"
-					isActive={pathname.includes("/dashboard")}
-					isCollapsed={isCollapsed}
-					label="Dashboard"
-				/>
-			</div>
-
-			{/* Proddy AI Link */}
-			<div className="mt-2 px-2 md:px-4">
-				<SidebarItem
-					href={`/workspace/${workspaceId}/assistant`}
-					icon={Bot}
-					id="assistant"
-					isActive={pathname.includes("/assistant")}
-					isCollapsed={isCollapsed}
-					label="Proddy AI"
-				/>
-			</div>
-
-			{/* Channels Section */}
-			{channels && channels.length > 0 && (
-				<div className="mt-2">
-					<DroppableItem
-						hint="Channels"
-						icon={Hash}
-						isCollapsed={isCollapsed}
-						isExpanded={expandedSections.Channels}
-						label="Channels"
-						onToggle={handleSectionToggle}
-					>
-						{channels.map((item) => (
-							<ChannelItem
-								icon={item.icon}
-								iconImageUrl={item.iconImageUrl}
-								id={item._id}
-								isActive={channelId === item._id}
-								isCollapsed={isCollapsed}
-								key={item._id}
-								label={item.name}
-							/>
-						))}
-
-						{/* New Channel option - only visible to admins and owners */}
-						{(member.role === "admin" || member.role === "owner") && (
-							<div
-								className={cn(
-									"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
-									isCollapsed
-										? "justify-center px-1 md:px-2 py-2 md:py-2.5"
-										: "justify-start px-2 md:px-4 py-2 md:py-2.5"
-								)}
-								onClick={() => setOpen(true)}
-							>
-								{isCollapsed ? (
-									<div className="relative flex-shrink-0">
-										<Hint align="center" label="New Channel" side="right">
-											<div className="flex items-center justify-center">
-												<PlusIcon className="size-4 text-secondary-foreground/80" />
-											</div>
-										</Hint>
-									</div>
-								) : (
-									<>
-										<PlusIcon className="size-4 text-secondary-foreground/80" />
-										<span className="truncate min-w-0">New Channel</span>
-									</>
-								)}
-							</div>
-						)}
-					</DroppableItem>
+			{/* Scrollable content container */}
+			<div className={cn("flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar", onMobileClose && "pb-4")}>
+				{/* Dashboard Link - Hidden in footer on mobile, shown in overlay */}
+				<div className={cn("mt-4 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
+					<MobileCloseWrapper onClose={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/dashboard`}
+							icon={LayoutDashboard}
+							id="dashboard"
+							isActive={pathname.includes("/dashboard")}
+							isCollapsed={isCollapsed}
+							label="Dashboard"
+						/>
+					</MobileCloseWrapper>
 				</div>
-			)}
 
-			{/* Members Section */}
-			{members && members.length > 0 && (
-				<div className="mt-2">
-					<DroppableItem
-						hint="Members"
-						icon={Users}
-						isCollapsed={isCollapsed}
-						isExpanded={expandedSections.Members}
-						label="Members"
-						onToggle={handleSectionToggle}
-					>
-						{members.map((item) => (
-							<MemberItem
-								id={item._id}
-								image={item.user.image}
-								isActive={item._id === memberId}
-								isCollapsed={isCollapsed}
-								key={item._id}
-								label={item.user.name}
-							/>
-						))}
-					</DroppableItem>
+				{/* Proddy AI Link - Hidden in footer on mobile, shown in overlay */}
+				<div className={cn("mt-2 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
+					<MobileCloseWrapper onClose={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/assistant`}
+							icon={Bot}
+							id="assistant"
+							isActive={pathname.includes("/assistant")}
+							isCollapsed={isCollapsed}
+							label="Proddy AI"
+						/>
+					</MobileCloseWrapper>
 				</div>
-			)}
 
-			{/* Divider between dynamic and static sections */}
-			<Separator className="my-4 mx-4 bg-secondary-foreground/10" />
+				{/* Channels Section */}
+				{channels && channels.length > 0 && (
+					<div className="mt-2">
+						<DroppableItem
+							hint="Channels"
+							icon={Hash}
+							isCollapsed={isCollapsed}
+							isExpanded={expandedSections.Channels}
+							label="Channels"
+							onToggle={handleSectionToggle}
+						>
+							{channels.map((item) => (
+								<MobileCloseWrapper key={item._id} onClose={onMobileClose}>
+									<ChannelItem
+										icon={item.icon}
+										iconImageUrl={item.iconImageUrl}
+										id={item._id}
+										isActive={channelId === item._id}
+										isCollapsed={isCollapsed}
+										label={item.name}
+									/>
+								</MobileCloseWrapper>
+							))}
 
-			{/* Static Items */}
-			<div className="flex flex-col gap-2 px-4">
-				<SidebarItem
-					href={`/workspace/${workspaceId}/outbox`}
-					icon={SendHorizonal}
-					id="outbox"
-					isActive={pathname.includes("/outbox")}
-					isCollapsed={isCollapsed}
-					label="Outbox"
-				/>
-				<SidebarItem
-					href={`/workspace/${workspaceId}/threads`}
-					icon={MessageSquareText}
-					id="threads"
-					isActive={pathname.includes("/threads")}
-					isCollapsed={isCollapsed}
-					label="Threads"
-				/>
-				<SidebarItem
-					href={`/workspace/${workspaceId}/tasks`}
-					icon={CheckSquare}
-					id="tasks"
-					isActive={pathname.includes("/tasks")}
-					isCollapsed={isCollapsed}
-					label="Tasks"
-				/>
-				<SidebarItem
-					href={`/workspace/${workspaceId}/calendar`}
-					icon={CalendarIcon}
-					id="calendar"
-					isActive={pathname.includes("/calendar")}
-					isCollapsed={isCollapsed}
-					label="Calendar"
-				/>
-				{(member.role === "admin" || member.role === "owner") && (
-					<SidebarItem
-						href={`/workspace/${workspaceId}/reports`}
-						icon={BarChart}
-						id="reports"
-						isActive={pathname.includes("/reports")}
-						isCollapsed={isCollapsed}
-						label="Reports"
-					/>
+							{/* New Channel option - only visible to admins and owners */}
+							{(member.role === "admin" || member.role === "owner") && (
+								<div
+									className={cn(
+										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
+										isCollapsed
+											? "justify-center px-1 md:px-2 py-2 md:py-2.5"
+											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
+									)}
+									onClick={() => setOpen(true)}
+								>
+									{isCollapsed ? (
+										<div className="relative flex-shrink-0">
+											<Hint align="center" label="New Channel" side="right">
+												<div className="flex items-center justify-center">
+													<PlusIcon className="size-4 text-secondary-foreground/80" />
+												</div>
+											</Hint>
+										</div>
+									) : (
+										<>
+											<PlusIcon className="size-4 text-secondary-foreground/80" />
+											<span className="truncate min-w-0">New Channel</span>
+										</>
+									)}
+								</div>
+							)}
+						</DroppableItem>
+					</div>
 				)}
-				<SidebarItem
-					href={`/workspace/${workspaceId}/manage`}
-					icon={Settings}
-					id="manage"
-					isActive={pathname.includes("/manage")}
-					isCollapsed={isCollapsed}
-					label="Manage"
-				/>
+
+				{/* Members Section */}
+				{members && members.length > 0 && (
+					<div className="mt-2">
+						<DroppableItem
+							hint="Members"
+							icon={Users}
+							isCollapsed={isCollapsed}
+							isExpanded={expandedSections.Members}
+							label="Members"
+							onToggle={handleSectionToggle}
+						>
+							{members.map((item) => (
+								<MobileCloseWrapper key={item._id} onClose={onMobileClose}>
+									<MemberItem
+										id={item._id}
+										image={item.user.image}
+										isActive={item._id === memberId}
+										isCollapsed={isCollapsed}
+										label={item.user.name}
+									/>
+								</MobileCloseWrapper>
+							))}
+						</DroppableItem>
+					</div>
+				)}
+
+				{/* Divider between dynamic and static sections */}
+				<Separator className="my-4 mx-4 bg-secondary-foreground/10" />
+
+				{/* Static Items */}
+				<div className="flex flex-col gap-2 px-4">
+					{/* Outbox - Hidden on mobile (shown in footer) */}
+					<MobileCloseWrapper className="hidden md:block" onClose={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/outbox`}
+							icon={SendHorizonal}
+							id="outbox"
+							isActive={pathname.includes("/outbox")}
+							isCollapsed={isCollapsed}
+							label="Outbox"
+						/>
+					</MobileCloseWrapper>
+					{/* Threads - Hidden on mobile (shown in footer) */}
+					<MobileCloseWrapper className="hidden md:block" onClose={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/threads`}
+							icon={MessageSquareText}
+							id="threads"
+							isActive={pathname.includes("/threads")}
+							isCollapsed={isCollapsed}
+							label="Threads"
+						/>
+					</MobileCloseWrapper>
+					<MobileCloseWrapper onClose={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/tasks`}
+							icon={CheckSquare}
+							id="tasks"
+							isActive={pathname.includes("/tasks")}
+							isCollapsed={isCollapsed}
+							label="Tasks"
+						/>
+					</MobileCloseWrapper>
+					<MobileCloseWrapper onClose={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/calendar`}
+							icon={CalendarIcon}
+							id="calendar"
+							isActive={pathname.includes("/calendar")}
+							isCollapsed={isCollapsed}
+							label="Calendar"
+						/>
+					</MobileCloseWrapper>
+					{(member.role === "admin" || member.role === "owner") && (
+						<MobileCloseWrapper onClose={onMobileClose}>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/reports`}
+								icon={BarChart}
+								id="reports"
+								isActive={pathname.includes("/reports")}
+								isCollapsed={isCollapsed}
+								label="Reports"
+							/>
+						</MobileCloseWrapper>
+					)}
+					<MobileCloseWrapper onClose={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/manage`}
+							icon={Settings}
+							id="manage"
+							isActive={pathname.includes("/manage")}
+							isCollapsed={isCollapsed}
+							label="Manage"
+						/>
+					</MobileCloseWrapper>
+				</div>
 			</div>
 
-			{/* Collapse/Expand Button */}
-			<div className="mt-auto mb-4 flex justify-center">
-				<Hint
-					label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-					side="right"
-				>
-					<Button
-						className="h-8 w-8 rounded-full p-0 flex items-center justify-center hover:bg-secondary-foreground/10"
-						onClick={() => setIsCollapsed(!isCollapsed)}
-						size="sm"
-						variant="ghost"
+			{/* Collapse/Expand Button - Hidden in mobile overlay */}
+			{!onMobileClose && (
+				<div className="mt-auto mb-4 flex justify-center">
+					<Hint
+						label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+						side="right"
 					>
-						{isCollapsed ? (
-							<PanelLeftOpen className="size-4 text-secondary-foreground/80" />
-						) : (
-							<PanelLeftClose className="size-4 text-secondary-foreground/80" />
-						)}
-					</Button>
-				</Hint>
-			</div>
+						<Button
+							className="h-8 w-8 rounded-full p-0 flex items-center justify-center hover:bg-secondary-foreground/10"
+							onClick={() => setIsCollapsed(!isCollapsed)}
+							size="sm"
+							variant="ghost"
+						>
+							{isCollapsed ? (
+								<PanelLeftOpen className="size-4 text-secondary-foreground/80" />
+							) : (
+								<PanelLeftClose className="size-4 text-secondary-foreground/80" />
+							)}
+						</Button>
+					</Hint>
+				</div>
+			)}
 		</div>
 	);
 };
