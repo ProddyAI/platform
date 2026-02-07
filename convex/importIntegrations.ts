@@ -1,8 +1,13 @@
-import { v } from "convex/values";
-import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { api, internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import {
+	internalAction,
+	internalMutation,
+	internalQuery,
+	mutation,
+	query,
+} from "./_generated/server";
 
 // ============================================================================
 // QUERIES
@@ -32,7 +37,9 @@ export const getConnections = query({
 		// Get all connections for the workspace
 		const connections = await ctx.db
 			.query("import_connections")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
 		// Don't expose sensitive tokens in the response
@@ -67,7 +74,9 @@ export const getJobs = query({
 
 		const query = ctx.db
 			.query("import_jobs")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.order("desc");
 
 		if (args.limit) {
@@ -164,12 +173,15 @@ export const initiateSlackOAuth = mutation({
 			throw new Error("SITE_URL is not configured");
 		}
 		const redirectUri = `${appUrl}/api/import/slack/callback`;
-		
-		// Generate state parameter for CSRF protection
-		const state = btoa(JSON.stringify({ workspaceId: args.workspaceId, memberId: member._id }));
 
-		const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&response_type=code&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+		// Generate URL-safe state parameter for CSRF protection
+		const stateJson = JSON.stringify({
+			workspaceId: args.workspaceId,
+			memberId: member._id,
+		});
+		const state = base64UrlEncode(stateJson);
 
+		const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&response_type=code&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`;
 
 		return {
 			authUrl,
@@ -177,6 +189,11 @@ export const initiateSlackOAuth = mutation({
 		};
 	},
 });
+
+function base64UrlEncode(value: string): string {
+	const base64 = btoa(value);
+	return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
 
 /**
  * Store Slack OAuth tokens after successful authorization
@@ -286,8 +303,15 @@ export const startSlackImport = mutation({
 		// Check for existing jobs to prevent duplicate imports
 		const existingJob = await ctx.db
 			.query("import_jobs")
-			.withIndex("by_connection_id", (q) => q.eq("connectionId", connection._id))
-			.filter((q) => q.or(q.eq(q.field("status"), "pending"), q.eq(q.field("status"), "in_progress")))
+			.withIndex("by_connection_id", (q) =>
+				q.eq("connectionId", connection._id)
+			)
+			.filter((q) =>
+				q.or(
+					q.eq(q.field("status"), "pending"),
+					q.eq(q.field("status"), "in_progress")
+				)
+			)
 			.first();
 
 		if (existingJob) {
@@ -314,9 +338,13 @@ export const startSlackImport = mutation({
 		});
 
 		// Schedule the import action to run in the background
-		await ctx.scheduler.runAfter(0, internal.importIntegrations.processSlackImport, {
-			jobId,
-		});
+		await ctx.scheduler.runAfter(
+			0,
+			internal.importIntegrations.processSlackImport,
+			{
+				jobId,
+			}
+		);
 
 		return jobId;
 	},
@@ -404,7 +432,7 @@ export const processSlackImport = internalAction({
 	handler: async (ctx, args) => {
 		try {
 			// Get job details
-				const job = await ctx.runQuery(internal.importIntegrations._getJob, {
+			const job = await ctx.runQuery(internal.importIntegrations._getJob, {
 				jobId: args.jobId,
 			});
 
@@ -457,9 +485,13 @@ export const processSlackImport = internalAction({
 
 			// Send completion email - will need to get member and user details
 			// We can't call the internal action from here, so we'll schedule it
-			await ctx.scheduler.runAfter(0, internal.importIntegrations.notifyImportComplete, {
-				jobId: args.jobId,
-			});
+			await ctx.scheduler.runAfter(
+				0,
+				internal.importIntegrations.notifyImportComplete,
+				{
+					jobId: args.jobId,
+				}
+			);
 		} catch (error) {
 			// Mark job as failed
 			await ctx.runMutation(internal.importIntegrations.updateJobStatus, {
@@ -470,9 +502,13 @@ export const processSlackImport = internalAction({
 			});
 
 			// Notify about failure
-			await ctx.scheduler.runAfter(0, internal.importIntegrations.notifyImportComplete, {
-				jobId: args.jobId,
-			});
+			await ctx.scheduler.runAfter(
+				0,
+				internal.importIntegrations.notifyImportComplete,
+				{
+					jobId: args.jobId,
+				}
+			);
 		}
 	},
 });
@@ -559,8 +595,10 @@ export const updateJobStatus = internalMutation({
 		};
 
 		if (updates.startedAt !== undefined) patch.startedAt = updates.startedAt;
-		if (updates.completedAt !== undefined) patch.completedAt = updates.completedAt;
-		if (updates.errorMessage !== undefined) patch.errorMessage = updates.errorMessage;
+		if (updates.completedAt !== undefined)
+			patch.completedAt = updates.completedAt;
+		if (updates.errorMessage !== undefined)
+			patch.errorMessage = updates.errorMessage;
 		if (updates.currentStep) {
 			patch.progress = {
 				...job.progress,

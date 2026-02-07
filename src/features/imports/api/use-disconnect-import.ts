@@ -16,16 +16,21 @@ type Options = {
 export const useDisconnectImport = () => {
 	const [data, setData] = useState<ResponseType>(null);
 	const [error, setError] = useState<Error | null>(null);
-	const [status, setStatus] = useState<
-		"success" | "error" | "pending" | null
-	>(null);
+	const [status, setStatus] = useState<"success" | "error" | "pending" | null>(
+		null
+	);
 
 	const isPending = useMemo(() => status === "pending", [status]);
 	const isSuccess = useMemo(() => status === "success", [status]);
 	const isError = useMemo(() => status === "error", [status]);
-	const isSettled = useMemo(() => status === "success" || status === "error", [status]);
+	const isSettled = useMemo(
+		() => status === "success" || status === "error",
+		[status]
+	);
 
-	const mutation = useMutation(api.importIntegrations.disconnectImportConnection);
+	const mutation = useMutation(
+		api.importIntegrations.disconnectImportConnection
+	);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

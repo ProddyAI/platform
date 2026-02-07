@@ -16,9 +16,9 @@ type Options = {
 export const useCancelImportJob = () => {
 	const [data, setData] = useState<ResponseType>(null);
 	const [error, setError] = useState<Error | null>(null);
-	const [status, setStatus] = useState<
-		"success" | "error" | "pending" | null
-	>(null);
+	const [status, setStatus] = useState<"success" | "error" | "pending" | null>(
+		null
+	);
 
 	const isPending = status === "pending";
 	const isSuccess = status === "success";

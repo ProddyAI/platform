@@ -4,9 +4,9 @@ import { Database, Loader, Plug, Settings, Shield, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImportDataManagement } from "@/features/manage/import-data-management";
 import { IntegrationsManagement } from "@/features/manage/integrations-management";
 import { MembersManagement } from "@/features/manage/members-management";
-import { ImportDataManagement } from "@/features/manage/import-data-management";
 
 import { WorkspaceManagement } from "@/features/manage/workspace-management";
 import { useCurrentMember } from "@/features/members/api/use-current-member";

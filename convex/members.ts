@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
-import { internalQuery, mutation, type QueryCtx, query } from "./_generated/server";
+import {
+	internalQuery,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 
 export const _getMemberById = internalQuery({
 	args: {

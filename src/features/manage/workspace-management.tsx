@@ -1,6 +1,15 @@
 "use client";
 
-import { Calendar, Hash, RefreshCw, Save, Trash2, Users, ChevronDown, ChevronRight } from "lucide-react";
+import {
+	Calendar,
+	ChevronDown,
+	ChevronRight,
+	Hash,
+	RefreshCw,
+	Save,
+	Trash2,
+	Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,10 +28,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useNewJoinCode } from "@/features/workspaces/api/use-new-join-code";
@@ -274,7 +287,10 @@ export const WorkspaceManagement = ({
 
 				{/* Channels Management Section */}
 				{isOwner && (
-					<Collapsible open={channelsExpanded} onOpenChange={setChannelsExpanded}>
+					<Collapsible
+						onOpenChange={setChannelsExpanded}
+						open={channelsExpanded}
+					>
 						<div className="flex items-center justify-between">
 							<div>
 								<h3 className="text-lg font-medium">Channel Management</h3>
@@ -283,13 +299,15 @@ export const WorkspaceManagement = ({
 								</p>
 							</div>
 							<CollapsibleTrigger asChild>
-								<Button variant="ghost" size="sm">
+								<Button size="sm" variant="ghost">
 									{channelsExpanded ? (
 										<ChevronDown className="h-4 w-4" />
 									) : (
 										<ChevronRight className="h-4 w-4" />
 									)}
-									<span className="ml-2">{channelsExpanded ? "Hide" : "Show"}</span>
+									<span className="ml-2">
+										{channelsExpanded ? "Hide" : "Show"}
+									</span>
 								</Button>
 							</CollapsibleTrigger>
 						</div>

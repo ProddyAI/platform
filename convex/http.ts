@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
-import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
+import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 
 const http = httpRouter();
@@ -29,10 +29,10 @@ http.route({
 			let workspaceId = "";
 			try {
 				if (state) {
-					const parsed = JSON.parse(Buffer.from(state, "base64").toString("utf-8"));
+					const parsed = JSON.parse(base64UrlDecode(state));
 					workspaceId = parsed.workspaceId || "";
 				}
-			} catch (e) {
+			} catch (_e) {
 				// If state parsing fails, redirect to a safe default
 			}
 
@@ -56,14 +56,14 @@ http.route({
 		let workspaceId: string;
 		let memberId: string;
 		try {
-			const parsed = JSON.parse(Buffer.from(state, "base64").toString("utf-8"));
+			const parsed = JSON.parse(base64UrlDecode(state));
 			workspaceId = parsed.workspaceId;
 			memberId = parsed.memberId;
 
 			if (!workspaceId || !memberId) {
 				throw new Error("Invalid state parameter");
 			}
-		} catch (e) {
+		} catch (_e) {
 			return new Response("Invalid state parameter", { status: 400 });
 		}
 
@@ -145,7 +145,8 @@ http.route({
 			});
 		} catch (error) {
 			// Sanitize error logging to avoid leaking sensitive data
-			const errorMessage = error instanceof Error ? error.message : "Unknown error";
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
 			console.error("Slack OAuth error:", errorMessage);
 			return new Response(null, {
 				status: 302,
@@ -158,3 +159,9 @@ http.route({
 });
 
 export default http;
+
+function base64UrlDecode(value: string): string {
+	const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+	const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+	return atob(padded);
+}

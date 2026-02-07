@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 function buildCallbackRedirect(
 	convexUrl: string,
 	searchParams: URLSearchParams,
-	defaultWorkspaceId?: string
+	_defaultWorkspaceId?: string
 ): NextResponse {
 	const targetUrl = new URL("/import/slack/callback", convexUrl);
 	searchParams.forEach((value, key) => {
@@ -26,19 +26,19 @@ export async function GET(request: Request) {
 
 	if (!convexUrl) {
 		const convexCloudUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-		if (convexCloudUrl && convexCloudUrl.includes(".convex.cloud")) {
+		if (convexCloudUrl?.includes(".convex.cloud")) {
 			convexUrl = convexCloudUrl.replace(".convex.cloud", ".convex.site");
 		} else {
 			console.warn(
 				"Neither NEXT_PUBLIC_CONVEX_HTTP_URL is set nor a valid .convex.cloud URL was found. " +
-				"Please set NEXT_PUBLIC_CONVEX_HTTP_URL for production."
+					"Please set NEXT_PUBLIC_CONVEX_HTTP_URL for production."
 			);
 
 			if (process.env.NODE_ENV === "production") {
 				return new NextResponse(
 					"NEXT_PUBLIC_CONVEX_HTTP_URL is not properly configured for production",
 					{
-					status: 500,
+						status: 500,
 					}
 				);
 			}
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 		return new NextResponse(
 			"NEXT_PUBLIC_CONVEX_HTTP_URL or NEXT_PUBLIC_CONVEX_URL is not configured",
 			{
-			status: 500,
+				status: 500,
 			}
 		);
 	}

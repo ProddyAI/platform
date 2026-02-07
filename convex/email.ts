@@ -1104,18 +1104,21 @@ function buildImportEmailHtml(
 	buttonLabel: string,
 	buttonHref: string
 ): string {
-	const bodyContent = bodyParagraphs.map((p) => {
-		// If the paragraph contains HTML tags (like divs for stats), use as-is
-		if (p.includes("<")) {
-			return p;
-		}
-		// Otherwise wrap in <p> tags
-		return `<p>${p}</p>`;
-	}).join("");
+	const bodyContent = bodyParagraphs
+		.map((p) => {
+			// If the paragraph contains HTML tags (like divs for stats), use as-is
+			if (p.includes("<")) {
+				return p;
+			}
+			// Otherwise wrap in <p> tags
+			return `<p>${p}</p>`;
+		})
+		.join("");
 
-	const buttonHtml = buttonLabel && buttonHref
-		? `<div style="text-align: center;"><a href="${buttonHref}" class="button">${buttonLabel}</a></div>`
-		: "";
+	const buttonHtml =
+		buttonLabel && buttonHref
+			? `<div style="text-align: center;"><a href="${buttonHref}" class="button">${buttonLabel}</a></div>`
+			: "";
 
 	return `
 		<!DOCTYPE html>
@@ -1148,7 +1151,7 @@ function buildImportEmailHtml(
 					</div>
 					<div class="footer">
 						<p>© 2026 Proddy. All rights reserved.</p>
-						<p>Questions? Contact us at support@proddy.io</p>
+						<p>Questions? Contact us at support@proddy.tech</p>
 					</div>
 				</div>
 			</body>
@@ -1173,10 +1176,10 @@ export const sendImportCompletionEmail = internalAction({
 		messagesImported: v.number(),
 		workspaceId: v.id("workspaces"),
 	},
-	handler: async (ctx, args) => {
+	handler: async (_ctx, args) => {
 		try {
 			const apiKey = process.env.RESEND_API_KEY;
-			const fromEmail = "Proddy <support@proddy.io>";
+			const fromEmail = "Proddy <support@proddy.tech>";
 
 			if (!apiKey) {
 				console.error("Resend email not configured");
@@ -1190,9 +1193,9 @@ export const sendImportCompletionEmail = internalAction({
 			let subject: string;
 			let htmlContent: string;
 
-		if (args.status === "completed") {
-			subject = `✅ ${platformName} Import Completed Successfully`;
-			const statsHtml = `
+			if (args.status === "completed") {
+				subject = `✅ ${platformName} Import Completed Successfully`;
+				const statsHtml = `
 				<div class="stats">
 					<h3 style="margin-top: 0; color: #333;">Import Summary</h3>
 					<div class="stat-item">
@@ -1209,45 +1212,45 @@ export const sendImportCompletionEmail = internalAction({
 					</div>
 				</div>
 			`;
-			htmlContent = buildImportEmailHtml(
-				"linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-				"🎉 Import Completed!",
-				[
-					`Hi ${escapeHtml(args.userName)},`,
-					`Great news! Your ${escapeHtml(platformName)} data has been successfully imported into your Proddy workspace.`,
-					statsHtml,
-					`All your ${escapeHtml(platformName)} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!`,
-				],
-				"Go to Workspace",
-				workspaceUrl
-			);
-		} else if (args.status === "failed") {
-			subject = `❌ ${platformName} Import Failed`;
-			htmlContent = buildImportEmailHtml(
-				"#ef4444",
-				"Import Failed",
-				[
-					`Hi ${escapeHtml(args.userName)},`,
-					`Unfortunately, your ${escapeHtml(platformName)} data import encountered an error and could not be completed.`,
-					`Please try again or contact our support team if the issue persists.`,
-				],
-				"Try Again",
-				`${workspaceUrl}/manage?tab=import`
-			);
-		} else {
-			subject = `${platformName} Import Cancelled`;
-			htmlContent = buildImportEmailHtml(
-				"#f59e0b",
-				"Import Cancelled",
-				[
-					`Hi ${escapeHtml(args.userName)},`,
-					`Your ${escapeHtml(platformName)} data import was cancelled.`,
-					`You can start a new import anytime from your workspace settings.`,
-				],
-				"",
-				""
-			);
-		}
+				htmlContent = buildImportEmailHtml(
+					"linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+					"🎉 Import Completed!",
+					[
+						`Hi ${escapeHtml(args.userName)},`,
+						`Great news! Your ${escapeHtml(platformName)} data has been successfully imported into your Proddy workspace.`,
+						statsHtml,
+						`All your ${escapeHtml(platformName)} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!`,
+					],
+					"Go to Workspace",
+					workspaceUrl
+				);
+			} else if (args.status === "failed") {
+				subject = `❌ ${platformName} Import Failed`;
+				htmlContent = buildImportEmailHtml(
+					"#ef4444",
+					"Import Failed",
+					[
+						`Hi ${escapeHtml(args.userName)},`,
+						`Unfortunately, your ${escapeHtml(platformName)} data import encountered an error and could not be completed.`,
+						`Please try again or contact our support team if the issue persists.`,
+					],
+					"Try Again",
+					`${workspaceUrl}/manage?tab=import`
+				);
+			} else {
+				subject = `${platformName} Import Cancelled`;
+				htmlContent = buildImportEmailHtml(
+					"#f59e0b",
+					"Import Cancelled",
+					[
+						`Hi ${escapeHtml(args.userName)},`,
+						`Your ${escapeHtml(platformName)} data import was cancelled.`,
+						`You can start a new import anytime from your workspace settings.`,
+					],
+					"",
+					""
+				);
+			}
 
 			try {
 				const response = await fetch("https://api.resend.com/emails", {
