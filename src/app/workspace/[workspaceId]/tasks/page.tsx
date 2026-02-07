@@ -180,8 +180,8 @@ const TasksPage = () => {
 			</WorkspaceToolbar>
 			<div className="flex h-[calc(100%-4rem)] bg-white">
 				<div className="flex-1 overflow-y-auto">
-					<div className="max-w-3xl mx-auto px-6 py-8">
-						<div className="mb-8 space-y-4">
+					<div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
+						<div className="mb-6 md:mb-8 space-y-4">
 							<div className="relative">
 								<Input
 									className="pl-10 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors dark:bg-[hsl(var(--card-accent))] dark:border-[hsl(var(--border))] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:bg-[hsl(var(--card-accent))] dark:focus-visible:ring-pink-400 dark:focus-visible:border-pink-400 dark:focus-visible:ring-offset-0"
@@ -239,12 +239,14 @@ const TasksPage = () => {
 					</div>
 				</div>
 
-				<TaskSidebar
-					categories={categories}
-					categoriesLoading={categoriesLoading}
-					filterOptions={filterOptions}
-					onFilterChange={handleFilterChange}
-				/>
+				<div className="hidden lg:block">
+					<TaskSidebar
+						categories={categories}
+						categoriesLoading={categoriesLoading}
+						filterOptions={filterOptions}
+						onFilterChange={handleFilterChange}
+					/>
+				</div>
 			</div>
 		</div>
 	);

@@ -39,7 +39,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		if (window.innerWidth < 768) {
 			setShowMobileSidebar((prev) => !prev);
 		} else {
-			setIsCollapsed((prev) => !prev);
+			setIsCollapsed(!isCollapsed);
 		}
 	};
 
@@ -124,11 +124,13 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 									{/* Sidebar Overlay */}
 									<div
 										className={cn(
-											"md:hidden fixed left-0 top-0 bottom-0 z-50",
-											"bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
-											"w-[280px] shadow-2xl",
-											"transform transition-transform duration-300 ease-in-out",
+									"md:hidden fixed left-0 z-50",
+										"bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+										"w-[280px] shadow-2xl",
+										"transform transition-transform duration-300 ease-in-out",
 										"overscroll-contain",
+										"top-4 bottom-4",
+										"rounded-r-2xl",
 										showMobileSidebar ? "translate-x-0" : "-translate-x-full"
 									)}
 									style={{

@@ -202,13 +202,12 @@ export const WorkspaceSidebar = ({
 		<div
 			className={cn(
 				"flex h-full flex-col bg-primary transition-all duration-300 ease-in-out border-r-2 border-white/20 dark:border-border/40",
-				isCollapsed ? "w-[70px]" : "w-[280px]",
-				onMobileClose && "pt-4 pb-24" // Add top and bottom padding on mobile to prevent overlap with status bar and footer
+				isCollapsed ? "w-[70px]" : "w-[280px]"
 			)}
 		>
 			{/* Close button for mobile overlay */}
 			{onMobileClose && (
-				<div className="flex justify-end p-2 md:hidden">
+				<div className="flex justify-end p-2 md:hidden flex-shrink-0">
 					<Button
 						className="h-8 w-8 rounded-full p-0"
 						onClick={onMobileClose}
@@ -229,23 +228,25 @@ export const WorkspaceSidebar = ({
 				/>
 			</div>
 
-			{/* Dashboard Link - Hidden in footer on mobile, shown in overlay */}
-			<div className={cn("mt-4 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
-				<div onClick={onMobileClose}>
-					<SidebarItem
-						href={`/workspace/${workspaceId}/dashboard`}
-						icon={LayoutDashboard}
-						id="dashboard"
-						isActive={pathname.includes("/dashboard")}
-						isCollapsed={isCollapsed}
-						label="Dashboard"
-					/>
+			{/* Scrollable content container */}
+			<div className={cn("flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar", onMobileClose && "pb-4")}>
+				{/* Dashboard Link - Hidden in footer on mobile, shown in overlay */}
+				<div className={cn("mt-4 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
+					<div onClick={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/dashboard`}
+							icon={LayoutDashboard}
+							id="dashboard"
+							isActive={pathname.includes("/dashboard")}
+							isCollapsed={isCollapsed}
+							label="Dashboard"
+						/>
+					</div>
 				</div>
-			</div>
 
-			{/* Proddy AI Link - Hidden in footer on mobile, shown in overlay */}
-			<div className={cn("mt-2 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
-				<div onClick={onMobileClose}>
+				{/* Proddy AI Link - Hidden in footer on mobile, shown in overlay */}
+				<div className={cn("mt-2 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
+					<div onClick={onMobileClose}>
 					<SidebarItem
 						href={`/workspace/${workspaceId}/assistant`}
 						icon={Bot}
@@ -397,15 +398,16 @@ export const WorkspaceSidebar = ({
 						/>
 					</div>
 				)}
-				<div onClick={onMobileClose}>
-					<SidebarItem
-						href={`/workspace/${workspaceId}/manage`}
-						icon={Settings}
-						id="manage"
-						isActive={pathname.includes("/manage")}
-						isCollapsed={isCollapsed}
-						label="Manage"
-					/>
+					<div onClick={onMobileClose}>
+						<SidebarItem
+							href={`/workspace/${workspaceId}/manage`}
+							icon={Settings}
+							id="manage"
+							isActive={pathname.includes("/manage")}
+							isCollapsed={isCollapsed}
+							label="Manage"
+						/>
+					</div>
 				</div>
 			</div>
 

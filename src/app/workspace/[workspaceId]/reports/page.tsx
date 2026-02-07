@@ -230,13 +230,13 @@ const ReportsPage = () => {
 						</div>
 						<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 							{/* Time Range Filter */}
-							<div className="flex items-center gap-2">
-								<span className="text-sm font-medium text-foreground">
+							<div className="flex items-center gap-2 flex-wrap">
+								<span className="text-xs md:text-sm font-medium text-foreground">
 									Time Range:
 								</span>
 								<div className="flex rounded-md border border-input bg-background overflow-hidden">
 									<Button
-										className="rounded-none border-0"
+										className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
 										onClick={() => setTimeRange("1d")}
 										type="button"
 										variant={timeRange === "1d" ? "default" : "ghost"}
@@ -244,7 +244,7 @@ const ReportsPage = () => {
 										1 day
 									</Button>
 									<Button
-										className="rounded-none border-0"
+										className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
 										onClick={() => setTimeRange("7d")}
 										type="button"
 										variant={timeRange === "7d" ? "default" : "ghost"}
@@ -252,7 +252,7 @@ const ReportsPage = () => {
 										7 days
 									</Button>
 									<Button
-										className="rounded-none border-0"
+										className="rounded-none border-0 text-xs md:text-sm px-2 md:px-4"
 										onClick={() => setTimeRange("30d")}
 										type="button"
 										variant={timeRange === "30d" ? "default" : "ghost"}
@@ -262,17 +262,19 @@ const ReportsPage = () => {
 								</div>
 								<div className="flex items-center">
 									<Button
-										className="rounded-r-none border-r-0"
+										className="rounded-r-none border-r-0 text-xs md:text-sm"
 										disabled={isExporting || isOverviewLoading}
 										onClick={handleExport}
+										size="sm"
 										variant="outline"
 									>
 										{isExporting ? (
-											<Loader className="mr-2 h-4 w-4 animate-spin" />
+											<Loader className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />
 										) : (
-											<Download className="mr-2 h-4 w-4" />
+											<Download className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
 										)}
-										Export {exportFormat.toUpperCase()}
+										<span className="hidden sm:inline">Export {exportFormat.toUpperCase()}</span>
+										<span className="sm:hidden">Export</span>
 									</Button>
 									<Popover>
 										<PopoverTrigger asChild>
@@ -317,68 +319,70 @@ const ReportsPage = () => {
 				</div>
 
 				{/* Main content area */}
-				<div className="flex-1 overflow-auto p-4 bg-background">
-					<div className="mx-auto max-w-7xl space-y-6">
+				<div className="flex-1 overflow-auto p-2 md:p-4 bg-background">
+					<div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
 						{/* Tabs */}
-						<Tabs className="space-y-6" defaultValue="overview">
-							<TabsList className="grid w-full grid-cols-7 mb-4 bg-muted/30">
-								<TabsTrigger
-									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
-									onClick={() => setActiveTab("overview")}
-									value="overview"
-								>
-									<BarChart className="h-4 w-4 mr-2" />
-									Overview
-								</TabsTrigger>
-								<TabsTrigger
-									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
-									onClick={() => setActiveTab("users")}
-									value="users"
-								>
-									<Users className="h-4 w-4 mr-2" />
-									Users
-								</TabsTrigger>
-								<TabsTrigger
-									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
-									onClick={() => setActiveTab("channels")}
-									value="channels"
-								>
-									<Hash className="h-4 w-4 mr-2" />
-									Channels
-								</TabsTrigger>
-								<TabsTrigger
-									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
-									onClick={() => setActiveTab("messages")}
-									value="messages"
-								>
-									<MessageSquare className="h-4 w-4 mr-2" />
-									Messages
-								</TabsTrigger>
-								<TabsTrigger
-									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
-									onClick={() => setActiveTab("content")}
-									value="content"
-								>
-									<FileText className="h-4 w-4 mr-2" />
-									Content
-								</TabsTrigger>
-								<TabsTrigger
-									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
-									onClick={() => setActiveTab("performance")}
-									value="performance"
-								>
-									<Activity className="h-4 w-4 mr-2" />
-									Performance
-								</TabsTrigger>
-								<TabsTrigger
-									className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500"
-									onClick={() => setActiveTab("tasks")}
-									value="tasks"
-								>
-									<CheckSquare className="h-4 w-4 mr-2" />
-									Tasks
-								</TabsTrigger>
-							</TabsList>
+						<Tabs className="space-y-4 md:space-y-6" defaultValue="overview">
+							<div className="overflow-x-auto -mx-2 md:mx-0">
+								<TabsList className="grid grid-cols-7 min-w-max md:w-full mb-3 md:mb-4 bg-muted/30">
+									<TabsTrigger
+										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										onClick={() => setActiveTab("overview")}
+										value="overview"
+									>
+										<BarChart className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+										<span className="hidden md:inline">Overview</span>
+									</TabsTrigger>
+									<TabsTrigger
+										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										onClick={() => setActiveTab("users")}
+										value="users"
+									>
+										<Users className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+										<span className="hidden md:inline">Users</span>
+									</TabsTrigger>
+									<TabsTrigger
+										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										onClick={() => setActiveTab("channels")}
+										value="channels"
+									>
+										<Hash className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+										<span className="hidden md:inline">Channels</span>
+									</TabsTrigger>
+									<TabsTrigger
+										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										onClick={() => setActiveTab("messages")}
+										value="messages"
+									>
+										<MessageSquare className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+										<span className="hidden md:inline">Messages</span>
+									</TabsTrigger>
+									<TabsTrigger
+										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										onClick={() => setActiveTab("content")}
+										value="content"
+									>
+										<FileText className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+										<span className="hidden md:inline">Content</span>
+									</TabsTrigger>
+									<TabsTrigger
+										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										onClick={() => setActiveTab("performance")}
+										value="performance"
+									>
+										<Activity className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+										<span className="hidden md:inline">Performance</span>
+									</TabsTrigger>
+									<TabsTrigger
+										className="data-[state=active]:bg-pink-500/20 data-[state=active]:border-2 data-[state=active]:border-pink-500 data-[state=active]:text-pink-500 text-xs md:text-sm px-2 md:px-3"
+										onClick={() => setActiveTab("tasks")}
+										value="tasks"
+									>
+										<CheckSquare className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+										<span className="hidden md:inline">Tasks</span>
+									</TabsTrigger>
+								</TabsList>
+							</div>
 
 							{/* Overview Tab */}
 							<TabsContent value="overview">

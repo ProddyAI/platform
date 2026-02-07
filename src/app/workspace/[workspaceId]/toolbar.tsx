@@ -136,7 +136,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	return (
 		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 items-center overflow-hidden border-b bg-primary text-secondary-foreground shadow-md ml-[-2px]">
 			{/* Left section - Entity info (Channel/Member/etc) */}
-			<div className="flex items-center px-3 md:px-6">{children}</div>
+			<div className="flex items-center px-2 md:px-6">{children}</div>
 
 			{/* Middle section - Search - Hidden on mobile */}
 			<div className="hidden md:block min-w-[280px] max-w-[642px] shrink grow-[2] px-4">
