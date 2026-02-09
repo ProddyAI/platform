@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { prosemirrorSync } from "./prosemirror";
 
 // Create a new note
@@ -194,6 +194,16 @@ export const getById = query({
 		}
 
 		return note;
+	},
+});
+
+// Internal helper for backend jobs that shouldn't require user auth.
+export const _getNoteById = internalQuery({
+	args: {
+		noteId: v.id("notes"),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db.get(args.noteId);
 	},
 });
 // Update a note
