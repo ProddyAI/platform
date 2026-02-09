@@ -198,7 +198,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
-							<span className="hidden sm:inline text-xs font-medium">Kanban</span>
+							<span className="hidden sm:inline text-xs font-medium">
+								Kanban
+							</span>
 						</Button>
 
 						<Button
@@ -220,7 +222,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
-							<span className="hidden sm:inline text-xs font-medium">Table</span>
+							<span className="hidden sm:inline text-xs font-medium">
+								Table
+							</span>
 						</Button>
 
 						<Button
@@ -242,7 +246,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
-							<span className="hidden sm:inline text-xs font-medium">Gantt</span>
+							<span className="hidden sm:inline text-xs font-medium">
+								Gantt
+							</span>
 						</Button>
 					</div>
 				</div>

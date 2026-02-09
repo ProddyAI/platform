@@ -267,9 +267,19 @@ export const WorkspaceSidebar = ({
 			</div>
 
 			{/* Scrollable content container */}
-			<div className={cn("flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar", onMobileClose && "pb-4")}>
+			<div
+				className={cn(
+					"flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+					onMobileClose && "pb-4"
+				)}
+			>
 				{/* Dashboard Link - Hidden in footer on mobile, shown in overlay */}
-				<div className={cn("mt-4 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
+				<div
+					className={cn(
+						"mt-4 px-2 md:px-4",
+						onMobileClose ? "block" : "hidden md:block"
+					)}
+				>
 					<MobileCloseWrapper onClose={onMobileClose}>
 						<SidebarItem
 							href={`/workspace/${workspaceId}/dashboard`}
@@ -283,7 +293,12 @@ export const WorkspaceSidebar = ({
 				</div>
 
 				{/* Proddy AI Link - Hidden in footer on mobile, shown in overlay */}
-				<div className={cn("mt-2 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
+				<div
+					className={cn(
+						"mt-2 px-2 md:px-4",
+						onMobileClose ? "block" : "hidden md:block"
+					)}
+				>
 					<MobileCloseWrapper onClose={onMobileClose}>
 						<SidebarItem
 							href={`/workspace/${workspaceId}/assistant`}
@@ -383,7 +398,10 @@ export const WorkspaceSidebar = ({
 				{/* Static Items */}
 				<div className="flex flex-col gap-2 px-4">
 					{/* Outbox - Hidden on mobile (shown in footer) */}
-					<MobileCloseWrapper className="hidden md:block" onClose={onMobileClose}>
+					<MobileCloseWrapper
+						className="hidden md:block"
+						onClose={onMobileClose}
+					>
 						<SidebarItem
 							href={`/workspace/${workspaceId}/outbox`}
 							icon={SendHorizonal}
@@ -394,7 +412,10 @@ export const WorkspaceSidebar = ({
 						/>
 					</MobileCloseWrapper>
 					{/* Threads - Hidden on mobile (shown in footer) */}
-					<MobileCloseWrapper className="hidden md:block" onClose={onMobileClose}>
+					<MobileCloseWrapper
+						className="hidden md:block"
+						onClose={onMobileClose}
+					>
 						<SidebarItem
 							href={`/workspace/${workspaceId}/threads`}
 							icon={MessageSquareText}

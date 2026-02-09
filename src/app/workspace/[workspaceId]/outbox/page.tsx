@@ -535,24 +535,24 @@ export default function OutboxPage() {
 								{(content.type === "canvas" ||
 									content.type === "canvas-live" ||
 									content.type === "canvas-export") && (
-										<div className="flex items-center gap-2 text-sm">
-											<Brush className="h-4 w-4 text-muted-foreground" />
-											<span>
-												Canvas:{" "}
-												{content.canvasName ||
-													content.roomId?.split("-").slice(1, -1).join("-") ||
-													"Untitled Canvas"}
-											</span>
-										</div>
-									)}
+									<div className="flex items-center gap-2 text-sm">
+										<Brush className="h-4 w-4 text-muted-foreground" />
+										<span>
+											Canvas:{" "}
+											{content.canvasName ||
+												content.roomId?.split("-").slice(1, -1).join("-") ||
+												"Untitled Canvas"}
+										</span>
+									</div>
+								)}
 								{(content.type === "note" ||
 									content.type === "note-live" ||
 									content.type === "note-export") && (
-										<div className="flex items-center gap-2 text-sm">
-											<FileText className="h-4 w-4 text-muted-foreground" />
-											<span>Note: {content.noteTitle || "Untitled Note"}</span>
-										</div>
-									)}
+									<div className="flex items-center gap-2 text-sm">
+										<FileText className="h-4 w-4 text-muted-foreground" />
+										<span>Note: {content.noteTitle || "Untitled Note"}</span>
+									</div>
+								)}
 							</div>
 						) : (
 							<p className="text-sm">{content}</p>

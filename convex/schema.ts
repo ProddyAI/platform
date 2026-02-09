@@ -157,7 +157,58 @@ const schema = defineSchema({
 		),
 		dueDate: v.optional(v.number()),
 		assignees: v.optional(v.array(v.id("members"))),
-	}).index("by_list_id", ["listId"]),
+		// Subtask/hierarchy fields
+		parentCardId: v.optional(v.id("cards")),
+		isCompleted: v.optional(v.boolean()),
+		// Time tracking fields
+		estimate: v.optional(v.number()), // Story points or hours
+		timeSpent: v.optional(v.number()), // Hours spent
+		// Watchers and relationships
+		watchers: v.optional(v.array(v.id("members"))),
+		blockedBy: v.optional(v.array(v.id("cards"))),
+	})
+		.index("by_list_id", ["listId"])
+		.index("by_parent_card_id", ["parentCardId"]),
+
+	// Card comments for discussions on cards
+	card_comments: defineTable({
+		cardId: v.id("cards"),
+		memberId: v.id("members"),
+		workspaceId: v.id("workspaces"),
+		content: v.string(),
+		createdAt: v.number(),
+		updatedAt: v.optional(v.number()),
+	})
+		.index("by_card_id", ["cardId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id", ["workspaceId"]),
+
+	// Card activity log for audit trail
+	card_activity: defineTable({
+		cardId: v.id("cards"),
+		memberId: v.id("members"),
+		workspaceId: v.id("workspaces"),
+		action: v.union(
+			v.literal("created"),
+			v.literal("updated"),
+			v.literal("moved"),
+			v.literal("assigned"),
+			v.literal("unassigned"),
+			v.literal("completed"),
+			v.literal("reopened"),
+			v.literal("commented"),
+			v.literal("priority_changed"),
+			v.literal("due_date_changed"),
+			v.literal("blocked"),
+			v.literal("unblocked")
+		),
+		details: v.optional(v.string()), // JSON stringified details
+		timestamp: v.number(),
+	})
+		.index("by_card_id", ["cardId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_card_id_timestamp", ["cardId", "timestamp"]),
 
 	categories: defineTable({
 		name: v.string(),

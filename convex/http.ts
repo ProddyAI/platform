@@ -56,14 +56,17 @@ http.route({
 		let workspaceId: string;
 		let memberId: string;
 		try {
-			const parsed = JSON.parse(base64UrlDecode(state));
+			const normalizedState = normalizeStateParam(state);
+			const parsed = JSON.parse(base64UrlDecode(normalizedState));
 			workspaceId = parsed.workspaceId;
 			memberId = parsed.memberId;
 
 			if (!workspaceId || !memberId) {
 				throw new Error("Invalid state parameter");
 			}
-		} catch (_e) {
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			console.error("Slack OAuth state decode failed:", message);
 			return new Response("Invalid state parameter", { status: 400 });
 		}
 
@@ -160,8 +163,23 @@ http.route({
 
 export default http;
 
+function normalizeStateParam(value: string): string {
+	if (!value.includes("%")) return value;
+	try {
+		return decodeURIComponent(value);
+	} catch (_error) {
+		return value;
+	}
+}
+
 function base64UrlDecode(value: string): string {
 	const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
 	const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-	return atob(padded);
+	if (typeof atob === "function") {
+		return atob(padded);
+	}
+	if (typeof Buffer !== "undefined") {
+		return Buffer.from(padded, "base64").toString("utf8");
+	}
+	throw new Error("Base64 decode not supported");
 }

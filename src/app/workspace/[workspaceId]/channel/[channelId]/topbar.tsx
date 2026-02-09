@@ -65,10 +65,12 @@ const Topbar = () => {
 							href={tab.href}
 							key={tab.href}
 						>
-							<Icon className={cn(
-								"h-4 w-4 md:h-5 md:w-5 flex-shrink-0",
-								tab.active && "text-secondary"
-							)} />
+							<Icon
+								className={cn(
+									"h-4 w-4 md:h-5 md:w-5 flex-shrink-0",
+									tab.active && "text-secondary"
+								)}
+							/>
 							<span className="hidden sm:inline-block ml-1.5 md:ml-2 text-xs md:text-sm">
 								{tab.label}
 							</span>

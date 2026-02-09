@@ -232,10 +232,10 @@ const TasksPage = () => {
 											</h3>
 											<p className="mt-2 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
 												{searchQuery ||
-													filterOptions.status !== "all" ||
-													filterOptions.priority !== "all" ||
-													filterOptions.dueDate !== "all" ||
-													filterOptions.categoryId !== null
+												filterOptions.status !== "all" ||
+												filterOptions.priority !== "all" ||
+												filterOptions.dueDate !== "all" ||
+												filterOptions.categoryId !== null
 													? "Try adjusting your filters or search query"
 													: "Create your first task to get started"}
 											</p>

@@ -100,10 +100,10 @@ const ReportsPage = () => {
 		api.analytics.getWorkspaceOverview,
 		workspaceId
 			? {
-				workspaceId,
-				startDate,
-				endDate,
-			}
+					workspaceId,
+					startDate,
+					endDate,
+				}
 			: "skip"
 	);
 	const isOverviewLoading = overviewData === undefined;
@@ -113,10 +113,10 @@ const ReportsPage = () => {
 		api.analytics.getMessageAnalytics,
 		workspaceId
 			? {
-				workspaceId,
-				startDate,
-				endDate,
-			}
+					workspaceId,
+					startDate,
+					endDate,
+				}
 			: "skip"
 	);
 	const isMessageLoading = messageData === undefined;
@@ -126,10 +126,10 @@ const ReportsPage = () => {
 		api.analytics.getTaskAnalytics,
 		workspaceId
 			? {
-				workspaceId,
-				startDate,
-				endDate,
-			}
+					workspaceId,
+					startDate,
+					endDate,
+				}
 			: "skip"
 	);
 	const isTaskLoading = taskData === undefined;
@@ -276,7 +276,9 @@ const ReportsPage = () => {
 										) : (
 											<Download className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
 										)}
-										<span className="hidden sm:inline">Export {exportFormat.toUpperCase()}</span>
+										<span className="hidden sm:inline">
+											Export {exportFormat.toUpperCase()}
+										</span>
 										<span className="sm:hidden">Export</span>
 									</Button>
 									<Popover>
@@ -472,9 +474,9 @@ const ReportsPage = () => {
 														<div className="text-2xl font-bold text-foreground">
 															{messageData.messagesByDate.length > 0
 																? Math.round(
-																	messageData.totalMessages /
-																	messageData.messagesByDate.length
-																)
+																		messageData.totalMessages /
+																			messageData.messagesByDate.length
+																	)
 																: 0}
 														</div>
 													</div>
@@ -707,41 +709,41 @@ const ReportsPage = () => {
 															data={
 																taskData.totalTasks > 0
 																	? [
-																		{
-																			label: "Completed",
-																			value: taskData.statusCounts.completed,
-																			color: "#22c55e",
-																		},
-																		{
-																			label: "In Progress",
-																			value:
-																				taskData.statusCounts.in_progress,
-																			color: "#3b82f6",
-																		},
-																		{
-																			label: "Not Started",
-																			value:
-																				taskData.statusCounts.not_started,
-																			color: "#6b7280",
-																		},
-																		{
-																			label: "On Hold",
-																			value: taskData.statusCounts.on_hold,
-																			color: "#f59e0b",
-																		},
-																		{
-																			label: "Cancelled",
-																			value: taskData.statusCounts.cancelled,
-																			color: "#ef4444",
-																		},
-																	].filter((item) => item.value > 0)
+																			{
+																				label: "Completed",
+																				value: taskData.statusCounts.completed,
+																				color: "#22c55e",
+																			},
+																			{
+																				label: "In Progress",
+																				value:
+																					taskData.statusCounts.in_progress,
+																				color: "#3b82f6",
+																			},
+																			{
+																				label: "Not Started",
+																				value:
+																					taskData.statusCounts.not_started,
+																				color: "#6b7280",
+																			},
+																			{
+																				label: "On Hold",
+																				value: taskData.statusCounts.on_hold,
+																				color: "#f59e0b",
+																			},
+																			{
+																				label: "Cancelled",
+																				value: taskData.statusCounts.cancelled,
+																				color: "#ef4444",
+																			},
+																		].filter((item) => item.value > 0)
 																	: [
-																		{
-																			label: "No Data Available",
-																			value: 100,
-																			color: "#6b7280",
-																		},
-																	]
+																			{
+																				label: "No Data Available",
+																				value: 100,
+																				color: "#6b7280",
+																			},
+																		]
 															}
 															formatValue={(value) =>
 																taskData.totalTasks > 0 ? `${value} tasks` : ""
@@ -766,29 +768,29 @@ const ReportsPage = () => {
 															data={
 																taskData.totalTasks > 0
 																	? [
-																		{
-																			label: "High",
-																			value: taskData.priorityCounts.high,
-																			color: "#ef4444",
-																		},
-																		{
-																			label: "Medium",
-																			value: taskData.priorityCounts.medium,
-																			color: "#f59e0b",
-																		},
-																		{
-																			label: "Low",
-																			value: taskData.priorityCounts.low,
-																			color: "#22c55e",
-																		},
-																	].filter((item) => item.value > 0)
+																			{
+																				label: "High",
+																				value: taskData.priorityCounts.high,
+																				color: "#ef4444",
+																			},
+																			{
+																				label: "Medium",
+																				value: taskData.priorityCounts.medium,
+																				color: "#f59e0b",
+																			},
+																			{
+																				label: "Low",
+																				value: taskData.priorityCounts.low,
+																				color: "#22c55e",
+																			},
+																		].filter((item) => item.value > 0)
 																	: [
-																		{
-																			label: "No Data Available",
-																			value: 100,
-																			color: "#6b7280",
-																		},
-																	]
+																			{
+																				label: "No Data Available",
+																				value: 100,
+																				color: "#6b7280",
+																			},
+																		]
 															}
 															formatValue={(value) =>
 																taskData.totalTasks > 0 ? `${value} tasks` : ""

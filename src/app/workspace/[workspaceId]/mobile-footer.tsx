@@ -9,10 +9,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Hint } from "@/components/hint";
+import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { cn } from "@/lib/utils";
-import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 
 interface MobileFooterProps {
 	onMenuClick: () => void;
