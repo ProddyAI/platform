@@ -378,7 +378,7 @@ export async function POST(req: NextRequest) {
 			}
 		}
 
-		// Default: Use Convex assistant (Gemini-based)
+		// Default: Use Convex assistant (AI-based)
 		try {
 			const result = await convex.action(api.chatbot.askAssistant, {
 				query: message,
