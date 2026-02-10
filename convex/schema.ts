@@ -36,6 +36,15 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(
+					v.literal("canvas"),
+					v.literal("notes"),
+					v.literal("boards")
+				)
+			)
+		),
 	}).index("by_user_id", ["userId"]),
 
 	members: defineTable({
@@ -50,6 +59,15 @@ const schema = defineSchema({
 	channels: defineTable({
 		name: v.string(),
 		workspaceId: v.id("workspaces"),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(
+					v.literal("canvas"),
+					v.literal("notes"),
+					v.literal("boards")
+				)
+			)
+		),
 		icon: v.optional(v.string()), // Store emoji as string
 		iconImage: v.optional(v.id("_storage")), // Store uploaded image
 	}).index("by_workspace_id", ["workspaceId"]),

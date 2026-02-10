@@ -57,6 +57,15 @@ export const update = mutation({
 		name: v.string(),
 		icon: v.optional(v.string()),
 		iconImage: v.optional(v.id("_storage")),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(
+					v.literal("canvas"),
+					v.literal("notes"),
+					v.literal("boards")
+				)
+			)
+		),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -93,6 +102,7 @@ export const update = mutation({
 			name: string;
 			icon?: string;
 			iconImage?: typeof args.iconImage;
+			enabledFeatures?: typeof args.enabledFeatures;
 		} = {
 			name: parsedName,
 		};
@@ -103,6 +113,10 @@ export const update = mutation({
 
 		if (args.iconImage !== undefined) {
 			updateData.iconImage = args.iconImage;
+		}
+
+		if (args.enabledFeatures !== undefined) {
+			updateData.enabledFeatures = args.enabledFeatures;
 		}
 
 		await ctx.db.patch(args.id, updateData);
@@ -117,6 +131,15 @@ export const create = mutation({
 		workspaceId: v.id("workspaces"),
 		icon: v.optional(v.string()),
 		iconImage: v.optional(v.id("_storage")),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(
+					v.literal("canvas"),
+					v.literal("notes"),
+					v.literal("boards")
+				)
+			)
+		),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -138,9 +161,16 @@ export const create = mutation({
 
 		const parsedName = args.name.replace(/\s+/g, "-").toLowerCase();
 
+		const workspace = await ctx.db.get(args.workspaceId);
+
+		if (!workspace) throw new Error("Workspace not found.");
+
 		const channelId = await ctx.db.insert("channels", {
 			name: parsedName,
 			workspaceId: args.workspaceId,
+			enabledFeatures: (args.enabledFeatures ??
+				workspace.enabledFeatures ??
+				[]) as Array<"canvas" | "notes" | "boards">,
 			icon: args.icon,
 			iconImage: args.iconImage,
 		});

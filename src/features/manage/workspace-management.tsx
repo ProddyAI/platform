@@ -41,6 +41,7 @@ import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useNewJoinCode } from "@/features/workspaces/api/use-new-join-code";
 import { useRemoveWorkspace } from "@/features/workspaces/api/use-remove-workspace";
 import { useUpdateWorkspace } from "@/features/workspaces/api/use-update-workspace";
+import { FeaturesManagement } from "./features-management";
 import { ChannelsManagement } from "./channels-management";
 
 interface WorkspaceManagementProps {
@@ -282,6 +283,10 @@ export const WorkspaceManagement = ({
 						</div>
 					)}
 				</div>
+
+				<Separator />
+
+				<FeaturesManagement workspace={workspace} />
 
 				<Separator />
 

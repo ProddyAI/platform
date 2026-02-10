@@ -1,7 +1,15 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Loader, LogOut, Settings } from "lucide-react";
+import {
+	Activity,
+	HelpCircle,
+	HeartPulse,
+	Loader,
+	LogOut,
+	Map,
+	Settings,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -10,11 +18,13 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "../api/use-current-user";
 import { UserProfileModal } from "./user-profile-modal";
+import { showTidioChat } from "@/lib/client/tidio-helpers";
 
 // Removed useMarkOfflineGlobally - now handled by presence system
 
@@ -33,6 +43,12 @@ export const UserButton = ({
 	const { signOut } = useAuthActions();
 	const { data, isLoading } = useCurrentUser();
 	const [settingsOpen, setSettingsOpen] = useState(false);
+	const roadmapUrl = process.env.NEXT_PUBLIC_ROADMAP_URL;
+	const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL;
+	const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_URL;
+	const hasRoadmapUrl = Boolean(roadmapUrl && roadmapUrl !== "#");
+	const hasDocsUrl = Boolean(docsUrl && docsUrl !== "#");
+	const hasStatusUrl = Boolean(statusPageUrl && statusPageUrl !== "#");
 
 	// Handle external control for opening settings modal
 	useEffect(() => {
@@ -66,6 +82,8 @@ export const UserButton = ({
 		router.replace("/"); // Redirect to homepage after logout
 	};
 
+	const hasHelpLinks = true;
+
 	return (
 		<>
 			<DropdownMenu modal={false}>
@@ -86,6 +104,51 @@ export const UserButton = ({
 						<Settings className="mr-2 size-4" />
 						Account Settings
 					</DropdownMenuItem>
+
+					{hasHelpLinks && (
+						<>
+							<DropdownMenuSeparator />
+							<DropdownMenuLabel>Help & Resources</DropdownMenuLabel>
+						</>
+					)}
+
+					{hasRoadmapUrl && (
+						<DropdownMenuItem
+							onClick={() =>
+								window.open(roadmapUrl, "_blank", "noopener,noreferrer")
+							}
+						>
+							<Map className="mr-2 size-4" />
+							Roadmap & Feedback
+						</DropdownMenuItem>
+					)}
+
+					{hasDocsUrl && (
+						<DropdownMenuItem
+							onClick={() =>
+								window.open(docsUrl, "_blank", "noopener,noreferrer")
+							}
+						>
+							<HelpCircle className="mr-2 size-4" />
+							Documentation
+						</DropdownMenuItem>
+					)}
+
+					<DropdownMenuItem onClick={showTidioChat}>
+						<HeartPulse className="mr-2 size-4" />
+						Chat Support
+					</DropdownMenuItem>
+
+					{hasStatusUrl && (
+						<DropdownMenuItem
+							onClick={() =>
+								window.open(statusPageUrl, "_blank", "noopener,noreferrer")
+							}
+						>
+							<Activity className="mr-2 size-4" />
+							System Status
+						</DropdownMenuItem>
+					)}
 
 					<DropdownMenuSeparator />
 

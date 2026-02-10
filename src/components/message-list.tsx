@@ -172,16 +172,14 @@ export const MessageList = ({
 
 								<Hint label="Generate daily recap">
 									<Button
-										className="h-6 px-2 rounded-full bg-card border border-border shadow-sm hover:bg-accent text-foreground dark:text-gray-300 dark:bg-[hsl(var(--card))] dark:border-border dark:hover:bg-slate-700"
+										aria-label="Generate daily recap"
+										className="h-7 w-7 rounded-full border border-border bg-card shadow-sm hover:bg-accent text-foreground dark:text-gray-300 dark:bg-[hsl(var(--card))] dark:border-border dark:hover:bg-slate-700"
 										disabled={isGeneratingRecap}
 										onClick={() => handleGenerateRecap(dateKey, messages)}
-										size="sm"
+										size="iconSm"
 										variant="ghost"
 									>
-										<Sparkles className="size-3 text-amber-500 dark:text-amber-400 mr-1" />
-										<span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-											Recap
-										</span>
+										<Sparkles className="size-3 text-amber-500 dark:text-amber-400" />
 									</Button>
 								</Hint>
 							</div>

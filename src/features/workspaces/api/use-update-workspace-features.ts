@@ -1,16 +1,17 @@
 import { useMutation } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
+
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
+type FeatureKey = "canvas" | "notes" | "boards";
+
 type RequestType = {
-	name: string;
-	id: Id<"channels">;
-	icon?: string;
-	iconImage?: Id<"_storage">;
-	enabledFeatures?: Array<"canvas" | "notes" | "boards">;
+	id: Id<"workspaces">;
+	enabledFeatures: FeatureKey[];
 };
-type ResponseType = Id<"channels"> | null;
+
+type ResponseType = Id<"workspaces"> | null;
 
 type Options = {
 	onSuccess?: (data: ResponseType) => void;
@@ -19,7 +20,7 @@ type Options = {
 	throwError?: boolean;
 };
 
-export const useUpdateChannel = () => {
+export const useUpdateWorkspaceFeatures = () => {
 	const [data, setData] = useState<ResponseType>(null);
 	const [error, setError] = useState<Error | null>(null);
 	const [status, setStatus] = useState<
@@ -31,7 +32,7 @@ export const useUpdateChannel = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.channels.update);
+	const mutation = useMutation(api.workspaces.updateEnabledFeatures);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {
