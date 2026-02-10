@@ -32,7 +32,10 @@ const isAuthenticatedOnlyPage = createRouteMatcher([
 	"/auth/join/:workspaceId",
 ]);
 
-const authMiddleware = convexAuthNextjsMiddleware((req) => {
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+
+const authMiddleware = convexAuthNextjsMiddleware(
+	(req) => {
 	// If trying to access authenticated-only pages without being logged in
 	if (isAuthenticatedOnlyPage(req) && !isAuthenticatedNextjs()) {
 		return nextjsMiddlewareRedirect(req, "/auth/signin");
@@ -56,7 +59,9 @@ const authMiddleware = convexAuthNextjsMiddleware((req) => {
 	if (req.nextUrl.pathname === "/" && !isAuthenticatedNextjs()) {
 		return nextjsMiddlewareRedirect(req, "/home");
 	}
-});
+	},
+	convexUrl ? { convexUrl } : undefined
+);
 
 export default function middleware(
 	req: Parameters<typeof authMiddleware>[0],
