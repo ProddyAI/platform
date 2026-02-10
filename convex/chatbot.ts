@@ -511,7 +511,7 @@ async function executeComposioAction(
 
 		// Create OpenAI completion with tools
 		const completion = await openaiClient.chat.completions.create({
-			model: "gpt-4o-mini",
+			model: "gpt-5-mini",
 			tools: openaiTools,
 			messages: [
 				{
@@ -606,7 +606,7 @@ async function executeComposioAction(
 				];
 
 				const followUpCompletion = await openaiClient.chat.completions.create({
-					model: "gpt-4o-mini",
+					model: "gpt-5-mini",
 					messages: followUpMessages,
 					temperature: 0.7,
 					max_tokens: 1000,
@@ -739,7 +739,7 @@ async function generateLLMResponse(opts: {
 
 	try {
 		const { text } = await generateText({
-			model: openrouter("openai/gpt-4o-mini") as any,
+			model: openrouter("openai/gpt-5-mini") as any,
 			messages: messages as any,
 			temperature: 0.2,
 		});

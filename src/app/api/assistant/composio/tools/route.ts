@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
 		// Use the tools with OpenAI directly
 		const completion = await openai.chat.completions.create({
-			model: "gpt-4o-mini",
+			model: "gpt-5-mini",
 			tools: openaiTools.length > 0 ? openaiTools : undefined,
 			messages: [
 				{
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
 				];
 
 				const followUpCompletion = await openai.chat.completions.create({
-					model: "gpt-4o-mini",
+					model: "gpt-5-mini",
 					messages: followUpMessages,
 					temperature: 0.7,
 					max_tokens: 1000,

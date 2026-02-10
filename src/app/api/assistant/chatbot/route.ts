@@ -281,7 +281,7 @@ export async function POST(req: NextRequest) {
 
 				// Create completion with tools
 				const completion = await openai.chat.completions.create({
-					model: "gpt-4o-mini",
+					model: "gpt-5-mini",
 					tools: composioTools,
 					messages,
 					temperature: 0.7,
@@ -341,7 +341,7 @@ export async function POST(req: NextRequest) {
 						];
 
 						const followUpCompletion = await openai.chat.completions.create({
-							model: "gpt-4o-mini",
+							model: "gpt-5-mini",
 							messages: followUpMessages,
 							temperature: 0.7,
 							max_tokens: 1500,
