@@ -530,6 +530,23 @@ const schema = defineSchema({
 		.index("by_email", ["email"])
 		.index("by_token", ["token"])
 		.index("by_expiry", ["expiresAt"]),
+
+	// RAG indexing errors tracking
+	indexingErrors: defineTable({
+		workspaceId: v.id("workspaces"),
+		contentId: v.string(),
+		contentType: v.string(),
+		error: v.string(),
+		stack: v.optional(v.string()),
+		retryCount: v.number(),
+		lastRetryAt: v.optional(v.number()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_content_id", ["contentId"])
+		.index("by_workspace_content", ["workspaceId", "contentId"])
+		.index("by_created_at", ["createdAt"]),
 });
 
 export default schema;

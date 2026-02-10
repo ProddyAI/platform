@@ -3,7 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { api, components } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 
 type FilterTypes = {
@@ -43,6 +43,61 @@ function extractTextFromRichText(body: string): string {
 	return body.trim();
 }
 
+/**
+ * Track indexing errors in the database for monitoring and debugging
+ */
+async function trackIndexingError(
+	ctx: any,
+	workspaceId: Id<"workspaces">,
+	contentId: string,
+	contentType: string,
+	error: Error | string,
+	stack?: string
+): Promise<void> {
+	try {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorStack = stack || (error instanceof Error ? error.stack : undefined);
+
+		// Check if this error already exists
+		const existing = await ctx.db
+			.query("indexingErrors")
+			.withIndex("by_workspace_content", (q: any) =>
+				q.eq("workspaceId", workspaceId).eq("contentId", contentId)
+			)
+			.first();
+
+		if (existing) {
+			// Update existing error record
+			await ctx.db.patch(existing._id, {
+				error: errorMessage,
+				retryCount: (existing.retryCount || 0) + 1,
+				lastRetryAt: Date.now(),
+				updatedAt: Date.now(),
+			});
+			console.log(
+				`[RAG] Error tracked (retry #${(existing.retryCount || 0) + 1}): ${contentType}:${contentId} - ${errorMessage}`
+			);
+		} else {
+			// Create new error record
+			await ctx.db.insert("indexingErrors", {
+				workspaceId,
+				contentId,
+				contentType,
+				error: errorMessage,
+				stack: errorStack,
+				retryCount: 1,
+				createdAt: Date.now(),
+				updatedAt: Date.now(),
+			});
+			console.log(
+				`[RAG] New error tracked: ${contentType}:${contentId} - ${errorMessage}`
+			);
+		}
+	} catch (err) {
+		console.error("[RAG] Failed to track indexing error:", err);
+	}
+}
+
 export const indexContent = action({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -58,8 +113,15 @@ export const indexContent = action({
 		metadata: v.any(),
 	},
 	handler: async (ctx, args) => {
-		if (!args.text || args.text.trim().length < 3) return;
-		if (!process.env.OPENAI_API_KEY) return;
+		if (!args.text || args.text.trim().length < 3) {
+			console.log(`[RAG] Skipped indexing ${args.contentType}:${args.contentId} - text too short`);
+			return;
+		}
+		if (!process.env.OPENROUTER_API_KEY) {
+			console.warn("[RAG] OPENROUTER_API_KEY not configured - indexing skipped");
+			return;
+		}
+		console.log(`[RAG] Starting indexing: ${args.contentType}:${args.contentId}`);
 		const channelIdFilterValue = (() => {
 			const metadata = args.metadata as unknown;
 			if (!metadata || typeof metadata !== "object") {
@@ -79,12 +141,25 @@ export const indexContent = action({
 			{ name: "contentType", value: args.contentType },
 			{ name: "channelId", value: channelIdFilterValue },
 		];
-		await rag.add(ctx, {
-			namespace: args.workspaceId,
-			key: args.contentId,
-			text: args.text,
-			filterValues,
-		});
+		try {
+			await rag.add(ctx, {
+				namespace: args.workspaceId,
+				key: args.contentId,
+				text: args.text,
+				filterValues,
+			});
+			console.log(`[RAG] Successfully indexed ${args.contentType}:${args.contentId}`);
+		} catch (error) {
+			console.error(`[RAG] Failed to index ${args.contentType}:${args.contentId}:`, error);
+			await trackIndexingError(
+				ctx,
+				args.workspaceId,
+				args.contentId,
+				args.contentType,
+				error instanceof Error ? error : new Error(String(error))
+			);
+			throw error;
+		}
 	},
 });
 
@@ -313,8 +388,11 @@ export const bulkIndexWorkspace = action({
 			cards: number;
 			events: number;
 		};
+		errors: number;
 	}> => {
 		const limit = args.limit ?? 100;
+		console.log(`[RAG] Starting bulk indexing for workspace ${args.workspaceId} (limit: ${limit})`);
+		let errorCount = 0;
 		try {
 			await rag.add(ctx, {
 				namespace: args.workspaceId,
@@ -326,8 +404,9 @@ export const bulkIndexWorkspace = action({
 					{ name: "channelId", value: NO_CHANNEL_FILTER_VALUE },
 				],
 			});
-		} catch {
-			// Namespace may already exist
+			console.log(`[RAG] Workspace namespace initialized`);
+		} catch (error) {
+			console.log(`[RAG] Namespace already exists or initialization skipped`);
 		}
 		const messages: Doc<"messages">[] = await ctx.runQuery(
 			api.ragchat.getWorkspaceMessages,
@@ -336,6 +415,7 @@ export const bulkIndexWorkspace = action({
 				limit,
 			}
 		);
+		console.log(`[RAG] Indexing ${messages.length} messages`);
 		for (const message of messages) {
 			try {
 				await ctx.runAction(api.ragchat.indexContent, {
@@ -349,8 +429,16 @@ export const bulkIndexWorkspace = action({
 						conversationId: message.conversationId,
 					},
 				});
-			} catch {
-				// Skip failed items
+			} catch (error) {
+				errorCount++;
+				console.error(`[RAG] Failed to index message ${message._id}:`, error);
+				await trackIndexingError(
+					ctx,
+					message.workspaceId,
+					message._id,
+					"message",
+					error instanceof Error ? error : new Error(String(error))
+				);
 			}
 		}
 		const notes: Doc<"notes">[] = await ctx.runQuery(
@@ -360,6 +448,7 @@ export const bulkIndexWorkspace = action({
 				limit,
 			}
 		);
+		console.log(`[RAG] Indexing ${notes.length} notes`);
 		for (const note of notes) {
 			try {
 				await ctx.runAction(api.ragchat.indexContent, {
@@ -372,8 +461,16 @@ export const bulkIndexWorkspace = action({
 						memberId: note.memberId,
 					},
 				});
-			} catch {
-				// Skip failed items
+			} catch (error) {
+				errorCount++;
+				console.error(`[RAG] Failed to index note ${note._id}:`, error);
+				await trackIndexingError(
+					ctx,
+					note.workspaceId,
+					note._id,
+					"note",
+					error instanceof Error ? error : new Error(String(error))
+				);
 			}
 		}
 		const tasks: Doc<"tasks">[] = await ctx.runQuery(
@@ -383,6 +480,7 @@ export const bulkIndexWorkspace = action({
 				limit,
 			}
 		);
+		console.log(`[RAG] Indexing ${tasks.length} tasks`);
 		for (const task of tasks) {
 			try {
 				await ctx.runAction(api.ragchat.indexContent, {
@@ -396,8 +494,16 @@ export const bulkIndexWorkspace = action({
 						completed: task.completed,
 					},
 				});
-			} catch {
-				// Skip failed items
+			} catch (error) {
+				errorCount++;
+				console.error(`[RAG] Failed to index task ${task._id}:`, error);
+				await trackIndexingError(
+					ctx,
+					task.workspaceId,
+					task._id,
+					"task",
+					error instanceof Error ? error : new Error(String(error))
+				);
 			}
 		}
 		const cardsWithInfo: Array<{
@@ -408,6 +514,7 @@ export const bulkIndexWorkspace = action({
 			workspaceId: args.workspaceId,
 			limit,
 		});
+		console.log(`[RAG] Indexing ${cardsWithInfo.length} cards`);
 		for (const { card, list, channel } of cardsWithInfo) {
 			try {
 				await ctx.runAction(api.ragchat.indexContent, {
@@ -420,8 +527,16 @@ export const bulkIndexWorkspace = action({
 						channelId: list.channelId,
 					},
 				});
-			} catch {
-				// Skip failed items
+			} catch (error) {
+				errorCount++;
+				console.error(`[RAG] Failed to index card ${card._id}:`, error);
+				await trackIndexingError(
+					ctx,
+					channel.workspaceId,
+					card._id,
+					"card",
+					error instanceof Error ? error : new Error(String(error))
+				);
 			}
 		}
 		const events: Doc<"events">[] = await ctx.runQuery(
@@ -431,15 +546,27 @@ export const bulkIndexWorkspace = action({
 				limit,
 			}
 		);
+		console.log(`[RAG] Indexing ${events.length} events`);
 		for (const event of events) {
 			try {
 				await ctx.runAction(api.ragchat.autoIndexCalendarEvent, {
 					eventId: event._id,
 				});
-			} catch {
-				// Skip failed items
+			} catch (error) {
+				errorCount++;
+				console.error(`[RAG] Failed to index event ${event._id}:`, error);
+				await trackIndexingError(
+					ctx,
+					args.workspaceId,
+					event._id,
+					"event",
+					error instanceof Error ? error : new Error(String(error))
+				);
 			}
 		}
+		console.log(
+			`[RAG] Bulk indexing completed: ${messages.length} messages, ${notes.length} notes, ${tasks.length} tasks, ${cardsWithInfo.length} cards, ${events.length} events. Errors: ${errorCount}`
+		);
 		return {
 			success: true,
 			indexed: {
@@ -449,6 +576,7 @@ export const bulkIndexWorkspace = action({
 				cards: cardsWithInfo.length,
 				events: events.length,
 			},
+			errors: errorCount,
 		};
 	},
 });
@@ -503,6 +631,7 @@ export const semanticSearch = action({
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
+		console.log(`[RAG] Starting semantic search: "${args.query}" (limit: ${args.limit ?? 10})`);
 		const userId = args.userId ?? (await getAuthUserId(ctx));
 		if (!userId) throw new Error("Unauthorized");
 
@@ -535,18 +664,26 @@ export const semanticSearch = action({
 				limit: args.limit ?? 10,
 				vectorScoreThreshold: 0.5,
 			});
+			console.log(
+				`[RAG] Search completed: found ${results.length} results for query "${args.query}"`
+			);
 			return { results, text, entries };
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
+			console.error(`[RAG] Search error for query "${args.query}":`, errorMessage);
 			if (errorMessage.includes("No compatible namespace found")) {
+				console.log(
+					`[RAG] Namespace not found, triggering auto-initialization for workspace ${args.workspaceId}`
+				);
 				try {
 					await ctx.runMutation(api.ragchat.autoInitializeWorkspace, {
 						workspaceId: args.workspaceId,
 						limit: 1000,
 					});
-				} catch {
-					// Ignore
+					console.log(`[RAG] Workspace auto-initialization scheduled`);
+				} catch (initError) {
+					console.error(`[RAG] Failed to initialize workspace:`, initError);
 				}
 				return { results: [], text: "", entries: [] };
 			}
