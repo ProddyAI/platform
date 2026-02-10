@@ -25,10 +25,6 @@ type ChatMessage = {
 	actions?: NavigationAction[];
 };
 
-type ChatHistory = {
-	messages: ChatMessage[];
-};
-
 type NavigationAction = {
 	label: string;
 	type: string;

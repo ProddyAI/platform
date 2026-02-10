@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
 	ArrowRight,
 	BarChart,
-	Calendar,
+	ChartNoAxesGantt,
 	CheckSquare,
 	MessageSquare,
 } from "lucide-react";
@@ -106,7 +106,7 @@ const FeaturesPage = () => {
 		},
 		{
 			id: "planning",
-			icon: <Calendar className="size-5 flex-shrink-0" />,
+			icon: <ChartNoAxesGantt className="size-5 flex-shrink-0" />,
 			label: "Planning",
 			color: "purple",
 			hoverBg: "hover:bg-purple-50",

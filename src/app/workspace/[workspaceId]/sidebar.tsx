@@ -5,6 +5,7 @@ import {
 	BarChart,
 	Bot,
 	CalendarIcon,
+	ChartNoAxesGantt,
 	CheckSquare,
 	ChevronDown,
 	Hash,
@@ -402,7 +403,7 @@ export const WorkspaceSidebar = ({
 				<div className="mt-2">
 					<DroppableItem
 						hint="Planning"
-						icon={CalendarIcon}
+						icon={ChartNoAxesGantt}
 						isCollapsed={isCollapsed}
 						isExpanded={expandedSections.Planning}
 						label="Planning"
