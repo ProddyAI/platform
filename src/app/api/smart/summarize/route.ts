@@ -217,15 +217,6 @@ function pruneCache() {
 
 export async function POST(req: NextRequest) {
 	try {
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			return NextResponse.json(
-				{
-					error:
-						"GOOGLE_GENERATIVE_AI_API_KEY is not configured (required for smart summarization).",
-				},
-				{ status: 500 }
-			);
-		}
 
 		let requestData;
 		try {
