@@ -1239,7 +1239,7 @@ function isLikelyTomorrowReferenceFallback(
 	const t = toPlainText(text).toLowerCase();
 	if (!t) return false;
 	if (tomorrowKey && t.includes(tomorrowKey)) return true;
-	// Small heuristic only for fallback when Gemini isn't available.
+	// Small heuristic only for fallback when AI isn't available.
 	if (/\b(tmr|tmrw|tomo|tomorow|tommorow|tommorrow|tommrow)\b/i.test(t))
 		return true;
 	if (hasApproximateToken(t, "tomorrow", 2)) return true;
@@ -1427,59 +1427,6 @@ function extractIntent(query: string): AssistantIntent {
 	}
 
 	return { mode: "qa", channel: null };
-}
-
-function _extractSearchTerms(query: string): string[] {
-	const q = query.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
-	const raw = q
-		.split(/\s+/g)
-		.map((w) => w.trim())
-		.filter(Boolean);
-	const stop = new Set([
-		"the",
-		"a",
-		"an",
-		"to",
-		"for",
-		"of",
-		"in",
-		"on",
-		"is",
-		"are",
-		"am",
-		"was",
-		"were",
-		"my",
-		"your",
-		"our",
-		"their",
-		"what",
-		"whats",
-		"what's",
-		"about",
-		"please",
-		"do",
-		"i",
-		"we",
-		"you",
-		"me",
-		"it",
-		"this",
-		"that",
-		"with",
-		"and",
-		"or",
-		"as",
-		"now",
-		"today",
-		"tomorrow",
-		"tmr",
-		"tmrw",
-		"tomo",
-	]);
-	return Array.from(
-		new Set(raw.filter((w) => w.length >= 3 && !stop.has(w)))
-	).slice(0, 8);
 }
 
 type PriorityGroup = {
@@ -2064,7 +2011,7 @@ Updates:\n${context}`;
 						});
 						lines.push(summary);
 					} catch {
-						// If Gemini isn't available, avoid showing raw messages; show a non-verbatim fallback.
+						// If AI isn't available, avoid showing raw messages; show a non-verbatim fallback.
 						const fallback = updates
 							.slice(0, 6)
 							.map((u) => `• @${u.author} posted in #${u.channel}`)
@@ -2633,7 +2580,7 @@ Mentions:\n${mentionContext}`;
 								recentMessages: recentChatMessages,
 							});
 						} catch {
-							// Gemini isn't available: avoid topic/keyword heuristics; use a safe structured fallback.
+							// AI isn't available: avoid topic/keyword heuristics; use a safe structured fallback.
 							if (matches.length) {
 								mentionsSummary = matches
 									.slice(0, 6)

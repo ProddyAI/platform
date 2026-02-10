@@ -8,7 +8,9 @@ interface ChannelHeroProps {
 export const ChannelHero = ({ name, creationTime }: ChannelHeroProps) => {
 	return (
 		<div className="mx-2 md:mx-5 mb-4 mt-[88px]">
-			<p className="mb-2 flex items-center text-xl md:text-2xl font-bold"># {name}</p>
+			<p className="mb-2 flex items-center text-xl md:text-2xl font-bold">
+				# {name}
+			</p>
 
 			<p className="mb-4 text-sm md:text-base font-normal text-slate-800 dark:text-slate-400">
 				This channel was created on{" "}

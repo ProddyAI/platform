@@ -134,21 +134,23 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 											showMobileSidebar ? "translate-x-0" : "-translate-x-full"
 										)}
 										style={{
-											WebkitOverflowScrolling: 'touch',
+											WebkitOverflowScrolling: "touch",
 										}}
 									>
 										{/* Mobile overlay: close via onMobileClose without mutating collapse state. */}
 										<WorkspaceSidebar
 											isCollapsed={false}
-											setIsCollapsed={setIsCollapsed}
 											onMobileClose={() => setShowMobileSidebar(false)}
+											setIsCollapsed={setIsCollapsed}
 										/>
 									</div>
 								</>
 							)}
 
 							{/* Main content area - remove overflow-auto to prevent toolbar scrolling */}
-							<div className="flex-1 h-full flex flex-col pb-24 md:pb-0">{children}</div>
+							<div className="flex-1 h-full flex flex-col pb-24 md:pb-0">
+								{children}
+							</div>
 
 							{/* Right panel for threads and profiles - Hidden on mobile */}
 							{showPanel && (

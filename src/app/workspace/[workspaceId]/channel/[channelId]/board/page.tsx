@@ -19,15 +19,20 @@ import {
 import BoardTableView from "@/features/board/components/board-table-view";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 const BoardPage = () => {
 	const channelId = useChannelId();
+	const workspaceId = useWorkspaceId();
 	const lists = useQuery(api.board.getLists, { channelId });
 	const allCards =
 		useQuery(api.board.getAllCardsForChannel, { channelId }) || [];
 	const uniqueLabels = useQuery(api.board.getUniqueLabels, { channelId }) || [];
 	const members = useQuery(api.board.getMembersForChannel, { channelId }) || [];
 	const channel = useQuery(api.channels.getById, { id: channelId });
+	const currentMember = useQuery(api.members.current, {
+		workspaceId,
+	});
 
 	// Set document title based on channel name
 	useDocumentTitle(channel ? `Board - ${channel.name}` : "Board");
@@ -440,8 +445,12 @@ const BoardPage = () => {
 			/>
 			<BoardEditCardModal
 				assignees={cardAssignees}
+				cardId={editCardOpen?.card._id as Id<"cards">}
+				channelId={channelId}
+				currentMemberId={currentMember?._id}
 				description={cardDesc}
 				dueDate={cardDueDate}
+				estimate={editCardOpen?.card.estimate}
 				labelSuggestions={uniqueLabels}
 				labels={cardLabels}
 				members={members}
@@ -457,7 +466,9 @@ const BoardPage = () => {
 				setLabels={setCardLabels}
 				setPriority={setCardPriority}
 				setTitle={setCardTitle}
+				timeSpent={editCardOpen?.card.timeSpent}
 				title={cardTitle}
+				watchers={editCardOpen?.card.watchers}
 			/>
 		</div>
 	);

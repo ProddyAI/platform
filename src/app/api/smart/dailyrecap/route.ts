@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
 
 		try {
 			const { text } = await generateText({
-				model: openrouter("google/gemini-2.5-flash"),
+				model: openrouter("openai/gpt-5-mini"),
 				messages: [
 					{
 						role: "system",

@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { v } from "convex/values";
-import { api, components } from "./_generated/api";
+import { api, components, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 
@@ -18,7 +18,7 @@ const openrouter = createOpenRouter({
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
 	textEmbeddingModel: openrouter.textEmbeddingModel(
-		"openai/text-embedding-3-small"
+		"openai/text-embedding-ada-002"
 	) as any,
 	embeddingDimension: 1536,
 });
@@ -197,7 +197,9 @@ export const autoIndexMessage = action({
 export const autoIndexNote = action({
 	args: { noteId: v.id("notes") },
 	handler: async (ctx, args) => {
-		const note = await ctx.runQuery(api.notes.getById, { noteId: args.noteId });
+		const note = await ctx.runQuery(internal.notes._getNoteById, {
+			noteId: args.noteId,
+		});
 		if (note) {
 			await ctx.runAction(api.ragchat.indexContent, {
 				workspaceId: note.workspaceId,
