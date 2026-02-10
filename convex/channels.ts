@@ -59,11 +59,7 @@ export const update = mutation({
 		iconImage: v.optional(v.id("_storage")),
 		enabledFeatures: v.optional(
 			v.array(
-				v.union(
-					v.literal("canvas"),
-					v.literal("notes"),
-					v.literal("boards")
-				)
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
 			)
 		),
 	},
@@ -133,11 +129,7 @@ export const create = mutation({
 		iconImage: v.optional(v.id("_storage")),
 		enabledFeatures: v.optional(
 			v.array(
-				v.union(
-					v.literal("canvas"),
-					v.literal("notes"),
-					v.literal("boards")
-				)
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
 			)
 		),
 	},

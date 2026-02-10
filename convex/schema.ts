@@ -38,11 +38,7 @@ const schema = defineSchema({
 		joinCode: v.string(),
 		enabledFeatures: v.optional(
 			v.array(
-				v.union(
-					v.literal("canvas"),
-					v.literal("notes"),
-					v.literal("boards")
-				)
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
 			)
 		),
 	}).index("by_user_id", ["userId"]),
@@ -61,11 +57,7 @@ const schema = defineSchema({
 		workspaceId: v.id("workspaces"),
 		enabledFeatures: v.optional(
 			v.array(
-				v.union(
-					v.literal("canvas"),
-					v.literal("notes"),
-					v.literal("boards")
-				)
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
 			)
 		),
 		icon: v.optional(v.string()), // Store emoji as string

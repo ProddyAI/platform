@@ -111,7 +111,6 @@ function pruneCache() {
 
 export async function POST(req: NextRequest) {
 	try {
-
 		let requestData;
 		try {
 			requestData = await req.json();

@@ -17,9 +17,7 @@ const Topbar = () => {
 	const channelId = useChannelId();
 	const { data: channel } = useGetChannel({ id: channelId });
 	const enabledFeatures = new Set(
-		(channel?.enabledFeatures ?? []) as Array<
-			"canvas" | "notes" | "boards"
-		>
+		(channel?.enabledFeatures ?? []) as Array<"canvas" | "notes" | "boards">
 	);
 
 	const tabs = [
@@ -31,33 +29,33 @@ const Topbar = () => {
 		},
 		...(enabledFeatures.has("canvas")
 			? [
-				{
-					label: "Canvas",
-					icon: PaintBucket,
-					href: `/workspace/${workspaceId}/channel/${channelId}/canvas`,
-					active: pathname.includes(`/channel/${channelId}/canvas`),
-				},
-			]
+					{
+						label: "Canvas",
+						icon: PaintBucket,
+						href: `/workspace/${workspaceId}/channel/${channelId}/canvas`,
+						active: pathname.includes(`/channel/${channelId}/canvas`),
+					},
+				]
 			: []),
 		...(enabledFeatures.has("notes")
 			? [
-				{
-					label: "Notes",
-					icon: FileText,
-					href: `/workspace/${workspaceId}/channel/${channelId}/notes`,
-					active: pathname.includes(`/channel/${channelId}/notes`),
-				},
-			]
+					{
+						label: "Notes",
+						icon: FileText,
+						href: `/workspace/${workspaceId}/channel/${channelId}/notes`,
+						active: pathname.includes(`/channel/${channelId}/notes`),
+					},
+				]
 			: []),
 		...(enabledFeatures.has("boards")
 			? [
-				{
-					label: "Boards",
-					icon: LayoutGrid,
-					href: `/workspace/${workspaceId}/channel/${channelId}/board`,
-					active: pathname.includes(`/channel/${channelId}/board`),
-				},
-			]
+					{
+						label: "Boards",
+						icon: LayoutGrid,
+						href: `/workspace/${workspaceId}/channel/${channelId}/board`,
+						active: pathname.includes(`/channel/${channelId}/board`),
+					},
+				]
 			: []),
 	];
 
@@ -77,7 +75,7 @@ const Topbar = () => {
 							className={cn(
 								"flex h-full items-center justify-center border-b-2 border-transparent px-1 sm:px-4 py-2 md:py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-muted/30 hover:text-foreground opacity-100 visible flex-1 min-w-0",
 								tab.active &&
-								"border-secondary text-secondary bg-secondary/5 hover:bg-secondary/10"
+									"border-secondary text-secondary bg-secondary/5 hover:bg-secondary/10"
 							)}
 							href={tab.href}
 							key={tab.href}

@@ -431,7 +431,6 @@ export const WorkspaceSidebar = ({
 					</DroppableItem>
 				</div>
 
-
 				{/* Messages Section */}
 				<div className="mt-2">
 					<DroppableItem

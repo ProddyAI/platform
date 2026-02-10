@@ -227,11 +227,7 @@ export const updateEnabledFeatures = mutation({
 	args: {
 		id: v.id("workspaces"),
 		enabledFeatures: v.array(
-			v.union(
-				v.literal("canvas"),
-				v.literal("notes"),
-				v.literal("boards")
-			)
+			v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
 		),
 	},
 	handler: async (ctx, args) => {

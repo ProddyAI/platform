@@ -3,8 +3,8 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
 	Activity,
-	HelpCircle,
 	HeartPulse,
+	HelpCircle,
 	Loader,
 	LogOut,
 	Map,
@@ -22,9 +22,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { showTidioChat } from "@/lib/client/tidio-helpers";
 import { useCurrentUser } from "../api/use-current-user";
 import { UserProfileModal } from "./user-profile-modal";
-import { showTidioChat } from "@/lib/client/tidio-helpers";
 
 // Removed useMarkOfflineGlobally - now handled by presence system
 

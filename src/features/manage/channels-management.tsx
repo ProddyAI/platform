@@ -604,7 +604,6 @@ export const ChannelsManagement = ({
 									</p>
 								</div>
 							</div>
-
 						</div>
 
 						<div className="space-y-3">
