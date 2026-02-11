@@ -467,6 +467,17 @@ const schema = defineSchema({
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id_member_id", ["workspaceId", "memberId"]),
 
+	assistantConversations: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		conversationId: v.string(),
+		lastMessageAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_conversation_id", ["conversationId"]),
+
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({
 		workspaceId: v.id("workspaces"),

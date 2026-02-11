@@ -1,5 +1,10 @@
 "use client";
 
+import {
+	DatabaseChatProvider,
+	useDatabaseChat,
+	useMessagesWithStreaming,
+} from "@dayhaysoos/convex-database-chat";
 import { useMutation, useQuery } from "convex/react";
 import {
 	Bot,
@@ -75,10 +80,29 @@ type Message = {
 export const DashboardChatbot = ({
 	workspaceId,
 	member,
+}: DashboardChatbotProps) => (
+	<DatabaseChatProvider
+		api={{
+			getMessages: api.assistantChat.getMessages,
+			listConversations: api.assistantChat.listConversations,
+			getStreamState: api.assistantChat.getStreamState,
+			getStreamDeltas: api.assistantChat.getStreamDeltas,
+			createConversation: api.assistantChat.createConversation,
+			abortStream: api.assistantChat.abortStream,
+			sendMessage: api.assistantChat.sendMessage,
+		}}
+	>
+		<DashboardChatbotBody workspaceId={workspaceId} member={member} />
+	</DatabaseChatProvider>
+);
+
+const DashboardChatbotBody = ({
+	workspaceId,
+	member,
 }: DashboardChatbotProps) => {
-	const [messages, setMessages] = useState<Message[]>([]);
+	const [conversationId, setConversationId] = useState<string | null>(null);
+	const [welcomeMessage, setWelcomeMessage] = useState<Message | null>(null);
 	const [input, setInput] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
 	const [integrationStatus, setIntegrationStatus] = useState<{
 		connected: any[];
 		totalTools: number;
@@ -86,7 +110,6 @@ export const DashboardChatbot = ({
 	}>({ connected: [], totalTools: 0, loading: true });
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const { toast } = useToast();
-	const [isInitialized, setIsInitialized] = useState(false);
 	const router = useRouter();
 
 	// Autocomplete for @users and #channels in the chatbot input
@@ -184,74 +207,43 @@ export const DashboardChatbot = ({
 		return () => document.removeEventListener("mousedown", onMouseDown);
 	}, [autocompleteOpen, closeAutocomplete]);
 
-	// Get workspace data
-	const workspace = useQuery(
-		api.workspaces.getById,
-		workspaceId ? { id: workspaceId } : "skip"
-	);
-
-	// Get chat history from Convex
-	const chatHistory = useQuery(api.chatbotQueries.getChatHistory, {
-		workspaceId,
+	const createConversation = useMutation(api.assistantChat.createConversation);
+	const { send, abort, isLoading: isSending } = useDatabaseChat({
+		conversationId,
 	});
+	const { allMessages, isStreaming } = useMessagesWithStreaming({
+		conversationId,
+	});
+	const isLoading = isSending || isStreaming;
 
-	// Convex mutations
-	const clearChatHistoryMutation = useMutation(
-		api.chatbotQueries.clearChatHistory
-	);
-	const addMessageMutation = useMutation(api.chatbotQueries.addMessage);
+	const displayMessages: Message[] = allMessages.map((msg, index) => ({
+		id: String((msg as any)._id ?? index),
+		content: msg.content ?? "",
+		sender: msg.role === "user" ? "user" : "assistant",
+		role: msg.role === "user" ? "user" : "assistant",
+		timestamp: new Date((msg as any)._creationTime ?? Date.now()),
+	}));
 
-	// Initialize messages from chat history
+	const renderedMessages = displayMessages.length
+		? displayMessages
+		: welcomeMessage
+			? [welcomeMessage]
+			: [];
+
 	useEffect(() => {
-		if (chatHistory && !isInitialized) {
-			if (chatHistory.messages && chatHistory.messages.length > 0) {
-				// Convert Convex chat history to our Message format
-				const formattedMessages = chatHistory.messages.map((msg, index) => ({
-					id: index.toString(),
-					content: msg.content,
-					sender: msg.role as "user" | "assistant",
-					role: msg.role as "user" | "assistant", // Ensure role is set
-					timestamp: new Date(msg.timestamp),
-					sources: msg.sources
-						? msg.sources.map((source) => ({
-								id: source.id,
-								type: source.type,
-								text: source.text,
-							}))
-						: undefined,
-					actions: (msg as any).actions || undefined,
-				}));
-				setMessages(formattedMessages);
-			} else {
-				// Set basic welcome message - will be updated when integration status loads
-				setMessages([
-					{
-						id: "1",
-						content: `Hello! I'm your workspace assistant. I can help you with:
-
-• **Workspace Content**: Search messages, tasks, notes, and board cards
-• **Navigation**: Find and navigate to specific workspace content
-
-I'm checking for available integrations...`,
-						sender: "assistant",
-						role: "assistant",
-						timestamp: new Date(),
-					},
-				]);
-			}
-			setIsInitialized(true);
+		if (!conversationId && workspaceId && member?.userId) {
+			createConversation({
+				workspaceId,
+				userId: member.userId,
+				title: "Assistant Chat",
+			}).then(setConversationId);
 		}
-	}, [chatHistory, isInitialized]);
+	}, [conversationId, workspaceId, member, createConversation]);
 
 	// Update welcome message when integration status changes
 	useEffect(() => {
-		if (!integrationStatus.loading && isInitialized) {
-			// Only update if it's the initial welcome message
-			if (
-				messages.length === 1 &&
-				messages[0].id === "1" &&
-				messages[0].content.includes("checking for available integrations")
-			) {
+		if (!integrationStatus.loading) {
+			if (!displayMessages.length) {
 				const connectedApps = integrationStatus.connected;
 				const hasGitHub = connectedApps.some(
 					(app: any) => app.app === "GITHUB"
@@ -299,18 +291,16 @@ Try asking me things like:`;
 *Note: Connect GitHub or Gmail integrations to unlock more capabilities!*`;
 				}
 
-				setMessages([
-					{
-						id: "1",
-						content,
-						sender: "assistant",
-						role: "assistant",
-						timestamp: new Date(),
-					},
-				]);
+				setWelcomeMessage({
+					id: "welcome",
+					content,
+					sender: "assistant",
+					role: "assistant",
+					timestamp: new Date(),
+				});
 			}
 		}
-	}, [integrationStatus, isInitialized, messages]);
+	}, [integrationStatus, displayMessages.length]);
 
 	// Check integration status
 	useEffect(() => {
@@ -351,147 +341,25 @@ Try asking me things like:`;
 				scrollContainer.scrollTop = scrollContainer.scrollHeight;
 			}
 		}
-	}, []);
+	}, [renderedMessages.length, isStreaming]);
 
 	const handleSendMessage = async () => {
-		if (!input.trim()) return;
+		if (!input.trim() || !conversationId) return;
 
-		// Add user message to UI
-		const userMessage: Message = {
-			id: Date.now().toString(),
-			content: input,
-			sender: "user",
-			role: "user", // Add role property
-			timestamp: new Date(),
-		};
-
-		// Store the message for later use
 		const userQuery = input.trim();
-
-		// Update UI immediately
-		setMessages((prev) => [...prev, userMessage]);
 		setInput("");
-		setIsLoading(true);
 
 		try {
-			// Get workspace context for assistant integration
-			const workspaceContext = workspace ? `Workspace: ${workspace.name}` : "";
-
-			// Prepare conversation history for the API (take last 6 exchanges)
-			const conversationHistory = messages
-				.slice(-12) // Last 12 messages (6 exchanges) - reduced from 20
-				.map((msg) => ({
-					role: msg.role || msg.sender, // Use role if available, fallback to sender
-					content:
-						msg.content.length > 500
-							? `${msg.content.substring(0, 500)}...`
-							: msg.content, // Truncate long messages
-				}));
-
-			// Call the main assistant router API
-			const response = await fetch("/api/assistant", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				credentials: "include",
-				body: JSON.stringify({
-					message: userQuery,
-					workspaceContext,
-					workspaceId,
-					conversationHistory,
-					memberId: member?._id, // Pass member ID for user-specific integrations
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					`Assistant API error: ${response.status} ${response.statusText}`
-				);
-			}
-
-			const result = await response.json();
-
-			// Validate response
-			if (!result) {
-				throw new Error("Empty response from assistant API");
-			}
-
-			if (result.error) {
-				console.error("Error from assistant API:", result.error);
-				throw new Error(result.error);
-			}
-
-			if (!result.response) {
-				throw new Error("Missing response content from assistant API");
-			}
-
-			// Add assistant response to UI immediately so the user sees it
-			const assistantMessage: Message = {
-				id: (Date.now() + 1).toString(),
-				content: result.response,
-				sender: "assistant",
-				role: "assistant",
-				timestamp: new Date(),
-				sources: result.sources,
-				actions: result.actions,
-			};
-			setMessages((prev) => [...prev, assistantMessage]);
-
-			// Persist to Convex after UI update (so UI is not blocked by save)
-			try {
-				await addMessageMutation({
-					workspaceId,
-					content: userQuery,
-					role: "user",
-				});
-				await addMessageMutation({
-					workspaceId,
-					content: result.response,
-					role: "assistant",
-					sources: result.sources,
-					actions: result.actions,
-				});
-			} catch (persistError) {
-				console.warn(
-					"[Dashboard Chatbot] Failed to persist messages:",
-					persistError
-				);
-				toast({
-					title: "Chat saved locally",
-					description: "Response may not sync to other devices.",
-					variant: "default",
-				});
-			}
+			await send(userQuery);
 		} catch (error) {
-			console.error("Error in chatbot:", error);
-
-			// Extract error message
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error occurred";
-
-			// Add fallback response with error details for better debugging
-			const fallbackMessage: Message = {
-				id: (Date.now() + 1).toString(),
-				content: `I'm having trouble connecting right now. Please try again later. ${
-					process.env.NODE_ENV === "development"
-						? `(Error: ${errorMessage})`
-						: ""
-				}`,
-				sender: "assistant",
-				role: "assistant",
-				timestamp: new Date(),
-			};
-
-			setMessages((prev) => [...prev, fallbackMessage]);
-
+			console.error("Error in chatbot:", error);
 			toast({
 				title: "Assistant Error",
-				description: "Failed to get a response from the assistant.",
+				description: errorMessage,
 				variant: "destructive",
 			});
-		} finally {
-			setIsLoading(false);
 		}
 	};
 
@@ -516,19 +384,21 @@ Try asking me things like:`;
 
 	const clearConversation = async () => {
 		try {
-			await clearChatHistoryMutation({ workspaceId });
-
-			// Reset UI messages
-			setMessages([
-				{
-					id: Date.now().toString(),
-					content:
-						"Hello! I'm your workspace assistant. How can I help you today?",
-					sender: "assistant",
-					role: "assistant",
-					timestamp: new Date(),
-				},
-			]);
+			if (isStreaming) {
+				await abort();
+			}
+			const newConversationId = await createConversation({
+				workspaceId,
+				userId: member.userId,
+				title: "Assistant Chat",
+				forceNew: true,
+			});
+			setConversationId(newConversationId);
+			setWelcomeMessage(null);
+			toast({
+				title: "Success",
+				description: "Chat history cleared.",
+			});
 		} catch (error) {
 			console.error("Error clearing chat history:", error);
 			toast({
@@ -778,19 +648,17 @@ Try asking me things like:`;
 			<CardContent className="flex-1 overflow-hidden p-0">
 				<ScrollArea className="h-[calc(100vh-240px)] px-4" ref={scrollAreaRef}>
 					<div className="flex flex-col gap-4 py-4 pb-10">
-						{messages.map((message) => (
+						{renderedMessages.map((message) => (
 							<div
-								className={`flex ${
-									message.sender === "user" ? "justify-end" : "justify-start"
-								}`}
+								className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
+									}`}
 								key={message.id}
 							>
 								<div
-									className={`max-w-[80%] rounded-lg px-4 py-3 ${
-										message.sender === "user"
-											? "bg-primary text-primary-foreground"
-											: "bg-muted"
-									}`}
+									className={`max-w-[80%] rounded-lg px-4 py-3 ${message.sender === "user"
+										? "bg-primary text-primary-foreground"
+										: "bg-muted"
+										}`}
 								>
 									{message.sender === "user" ? (
 										<p className="text-sm">{message.content}</p>

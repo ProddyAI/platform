@@ -2,7 +2,7 @@
 
 import { Composio } from "@composio/core";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { v } from "convex/values";
 import OpenAI from "openai";
@@ -48,10 +48,6 @@ type LLMMessage = {
 	role: "system" | "user" | "assistant";
 	content: string;
 };
-
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY || "",
-});
 
 const DEFAULT_SYSTEM_PROMPT = [
 	"You are Proddy, a personal work assistant for a team workspace.",
@@ -507,7 +503,7 @@ async function executeComposioAction(
 
 		// Create OpenAI completion with tools
 		const completion = await openaiClient.chat.completions.create({
-			model: "gpt-5-mini",
+			model: "gpt-4o-mini",
 			tools: openaiTools,
 			messages: [
 				{
@@ -602,7 +598,7 @@ async function executeComposioAction(
 				];
 
 				const followUpCompletion = await openaiClient.chat.completions.create({
-					model: "gpt-5-mini",
+					model: "gpt-4o-mini",
 					messages: followUpMessages,
 					temperature: 0.7,
 					max_tokens: 1000,
@@ -708,10 +704,10 @@ async function generateLLMResponse(opts: {
 	systemPrompt?: string;
 	recentMessages?: ReadonlyArray<ChatMessage>;
 }): Promise<string> {
-	const apiKey = process.env.OPENROUTER_API_KEY;
+	const apiKey = process.env.OPENAI_API_KEY;
 	if (!apiKey) {
 		throw new Error(
-			"OPENROUTER_API_KEY is required. Please configure the OpenRouter API key in your environment variables."
+			"OPENAI_API_KEY is required. Please configure the OpenAI API key in your environment variables."
 		);
 	}
 
@@ -735,7 +731,7 @@ async function generateLLMResponse(opts: {
 
 	try {
 		const { text } = await generateText({
-			model: openrouter("openai/gpt-5-mini") as any,
+			model: openai("gpt-4o-mini"),
 			messages: messages as any,
 			temperature: 0.2,
 		});
@@ -1481,10 +1477,6 @@ function shortDate(ms: number) {
 }
 
 type Priority = "lowest" | "low" | "medium" | "high" | "highest";
-
-function _isDefined<T>(value: T | null | undefined): value is T {
-	return value !== null && value !== undefined;
-}
 
 function normalizePriority(input: unknown): Priority | undefined {
 	if (typeof input !== "string") return undefined;
@@ -3049,27 +3041,5 @@ Context:\n${combinedContext}`;
 				sources: [],
 			};
 		}
-	},
-});
-
-// -----------------------------
-// DEPRECATED ACTION
-// -----------------------------
-// This function is no longer used.
-// All chat functionality has been moved to the main assistant router.
-// This is kept for backward compatibility but should not be called.
-export const generateResponse = action({
-	args: {
-		workspaceId: v.id("workspaces"),
-		message: v.string(),
-	},
-	handler: async (_ctx, _args): Promise<GenerateResponseResult> => {
-		// This function is deprecated - all logic moved to /api/assistant router
-		return {
-			response:
-				"This function is deprecated. Please use the main assistant router.",
-			sources: [],
-			actions: [],
-		};
 	},
 });

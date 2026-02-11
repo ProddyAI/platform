@@ -18,6 +18,21 @@ export const _getMemberById = internalQuery({
 	},
 });
 
+export const _getByWorkspaceAndUser = internalQuery({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+			)
+			.unique();
+	},
+});
+
 const populateUser = (ctx: QueryCtx, id: Id<"users">) => {
 	return ctx.db.get(id);
 };

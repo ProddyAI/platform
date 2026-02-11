@@ -378,35 +378,60 @@ export async function POST(req: NextRequest) {
 			}
 		}
 
-		// Default: Use Convex assistant (AI-based)
+		// Default: Use new AI-driven assistant with database-chat
 		try {
-			const result = await convex.action(api.chatbot.askAssistant, {
-				query: message,
+			// Get or create conversation for this workspace/user
+			// Use memberId if available, otherwise use workspace ID
+			const currentUser = await convex.query(api.users.current);
+			if (!currentUser) {
+				return NextResponse.json(
+					{ success: false, error: "User not authenticated" },
+					{ status: 401 }
+				);
+			}
+
+			// Create a unique conversation ID for this workspace + user
+			// In production, you'd want to persist this and reuse it
+			const conversationId = await convex.mutation(
+				api.assistantChat.createConversation,
+				{
+					workspaceId: workspaceId as Id<"workspaces">,
+					userId: currentUser._id,
+					title: "Assistant Chat",
+				}
+			);
+
+			// Call the AI assistant with the message
+			const result = await convex.action(api.assistantChat.sendMessage, {
+				conversationId,
+				message,
 				workspaceId: workspaceId as Id<"workspaces">,
+				userId: currentUser._id,
 			});
 
-			const responseText = result?.answer || "No response generated";
-			const sources = (result?.sources ?? []).map((s: string, idx: number) => ({
-				id: `source-${idx}`,
-				type: "source",
-				text: s,
-			}));
+			if (!result.success) {
+				return NextResponse.json(
+					{
+						success: false,
+						error: result.error || "Assistant failed to respond",
+					},
+					{ status: 500 }
+				);
+			}
 
-			const actions = Array.isArray((result as any)?.actions)
-				? (result as any).actions
-				: [];
+			const responseText = result.content || "No response generated";
 
 			return NextResponse.json({
 				success: true,
 				response: responseText,
-				sources,
-				actions,
+				sources: [],
+				actions: [],
 				toolResults: [],
-				assistantType: "convex",
+				assistantType: "ai-tools",
 				composioToolsUsed: false,
 			});
 		} catch (error) {
-			console.error("[Chatbot Assistant] Convex assistant failed:", error);
+			console.error("[Chatbot Assistant] AI assistant failed:", error);
 			return NextResponse.json(
 				{
 					success: false,
