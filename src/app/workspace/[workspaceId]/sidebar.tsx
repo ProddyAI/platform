@@ -27,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useCreateChannelModal } from "@/features/channels/store/use-create-channel-modal";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
+import { useInviteMemberModal } from "@/features/members/store/use-invite-member-modal";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useChannelId } from "@/hooks/use-channel-id";
@@ -184,23 +185,32 @@ export const WorkspaceSidebar = ({
 	});
 
 	const [_open, setOpen] = useCreateChannelModal();
+	const [_inviteOpen, setInviteOpen] = useInviteMemberModal();
 
 	const handleSectionToggle = (label: string) => {
-		// If we're expanding a section, collapse all others
-		if (!expandedSections[label]) {
-			const newExpandedSections: Record<string, boolean> = {};
+		// Channels and Members are mutually exclusive
+		const topSections = ["Channels", "Members"];
+		// Planning, Messages, Settings can all be open simultaneously
+		const bottomSections = ["Planning", "Messages", "Settings"];
 
-			// Set all sections to collapsed
-			Object.keys(expandedSections).forEach((section) => {
-				newExpandedSections[section] = false;
-			});
-
-			// Expand only the clicked section
-			newExpandedSections[label] = true;
-
-			setExpandedSections(newExpandedSections);
-		} else {
-			// If we're collapsing a section, just toggle it
+		if (topSections.includes(label)) {
+			// For Channels/Members: collapse the other one when opening
+			if (!expandedSections[label]) {
+				const newExpandedSections = { ...expandedSections };
+				// Collapse other top sections
+				topSections.forEach((section) => {
+					newExpandedSections[section] = section === label;
+				});
+				setExpandedSections(newExpandedSections);
+			} else {
+				// Just toggle if collapsing
+				setExpandedSections({
+					...expandedSections,
+					[label]: false,
+				});
+			}
+		} else if (bottomSections.includes(label)) {
+			// For Planning/Messages/Settings: independent toggle
 			setExpandedSections({
 				...expandedSections,
 				[label]: !expandedSections[label],
@@ -392,6 +402,34 @@ export const WorkspaceSidebar = ({
 									/>
 								</MobileCloseWrapper>
 							))}
+
+							{/* New Member option - only visible to admins and owners */}
+							{(member.role === "admin" || member.role === "owner") && (
+								<div
+									className={cn(
+										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
+										isCollapsed
+											? "justify-center px-1 md:px-2 py-2 md:py-2.5"
+											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
+									)}
+									onClick={() => setInviteOpen(true)}
+								>
+									{isCollapsed ? (
+										<div className="relative flex-shrink-0">
+											<Hint align="center" label="New Member" side="right">
+												<div className="flex items-center justify-center">
+													<PlusIcon className="size-4 text-secondary-foreground/80" />
+												</div>
+											</Hint>
+										</div>
+									) : (
+										<>
+											<PlusIcon className="size-4 text-secondary-foreground/80" />
+											<span className="truncate min-w-0">New Member</span>
+										</>
+									)}
+								</div>
+							)}
 						</DroppableItem>
 					</div>
 				)}
