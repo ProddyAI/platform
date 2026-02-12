@@ -23952,3 +23952,1401 @@ index 0000000000000000000000000000000000000000..b4d1e63f1d6bb3fe7207244d290b08f9
 
 thinking
 **Staging and committing all changes**
+exec
+/bin/zsh -lc 'git add -A && git commit -m "docs(progress): record S3 run outcomes
+
+Append S3 iteration 2 progress details, including verification
+results and implementation commit reference.
+
+Reference: Story S3"' in /Users/macbook/Documents/GitHub/platform succeeded in 51ms:
+[main f394351] docs(progress): record S3 run outcomes
+ 3 files changed, 4266 insertions(+)
+file update:
+diff --git a/convex/assistantComposioTools.ts b/convex/assistantComposioTools.ts
+index b407dafe5e710034fa0ec8f6624fb183a771166e..0587238c9aeb6a11e1d712c7b639d6ef9cb19bd7
+--- a/convex/assistantComposioTools.ts
++++ b/convex/assistantComposioTools.ts
+@@ -3,6 +3,7 @@
+ import { Composio } from "@composio/core";
+ import { v } from "convex/values";
+ import OpenAI from "openai";
++import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
+ import {
+ 	buildCancellationMessage,
+ 	buildConfirmationRequiredMessage,
+@@ -14,11 +15,16 @@
+ import { action } from "./_generated/server";
+ 
+ async function executeComposioAction(
+-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
++	ctx: {
++		runQuery: (query: any, args: any) => Promise<any>;
++		runMutation: (mutation: any, args: any) => Promise<any>;
++	},
+ 	entityId: string,
+ 	appNames: string[],
+ 	message: string,
+-	workspaceId: Id<"workspaces">
++	workspaceId: Id<"workspaces">,
++	userId: Id<"users">,
++	memberId: Id<"members">
+ ): Promise<{ success: boolean; response?: string; error?: string }> {
+ 	try {
+ 		if (!process.env.COMPOSIO_API_KEY) {
+@@ -139,11 +145,78 @@
+ 
+ 			for (const toolCall of toolCalls) {
+ 				if (toolCall.type === "function") {
+-					const actionParams = JSON.parse(toolCall.function.arguments);
+-					await composio.tools.execute(toolCall.function.name, {
+-						userId: entityId,
+-						arguments: actionParams,
+-					});
++					const sanitizedArgs = parseAndSanitizeArguments(
++						toolCall.function.arguments
++					);
++					let actionParams: Record<string, unknown> | undefined;
++					try {
++						const parsed = JSON.parse(toolCall.function.arguments);
++						if (
++							parsed &&
++							typeof parsed === "object" &&
++							!Array.isArray(parsed)
++						) {
++							actionParams = parsed as Record<string, unknown>;
++						}
++					} catch (error) {
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								userId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "error",
++								error:
++									error instanceof Error
++										? error.message
++										: "Invalid tool call arguments",
++								executionPath: "convex-assistant",
++								toolCallId: toolCall.id,
++							}
++						);
++						throw error;
++					}
++
++					try {
++						await composio.tools.execute(toolCall.function.name, {
++							userId: entityId,
++							arguments: actionParams,
++						});
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								userId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "success",
++								executionPath: "convex-assistant",
++								toolCallId: toolCall.id,
++							}
++						);
++					} catch (error) {
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								userId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "error",
++								error: error instanceof Error ? error.message : "Unknown error",
++								executionPath: "convex-assistant",
++								toolCallId: toolCall.id,
++							}
++						);
++						throw error;
++					}
+ 				}
+ 			}
+ 		}
+@@ -184,7 +257,9 @@
+ 			`member_${memberId}`,
+ 			["GMAIL"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -205,7 +280,9 @@
+ 			`member_${memberId}`,
+ 			["SLACK"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -226,7 +303,9 @@
+ 			`member_${memberId}`,
+ 			["GITHUB"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -247,7 +326,9 @@
+ 			`member_${memberId}`,
+ 			["NOTION"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -268,7 +349,9 @@
+ 			`member_${memberId}`,
+ 			["CLICKUP"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -289,7 +372,9 @@
+ 			`member_${memberId}`,
+ 			["LINEAR"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+diff --git a/convex/assistantToolAudits.ts b/convex/assistantToolAudits.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..21e110faed2a35e15b8f14f2e60b621ebcd689dc
+--- /dev/null
++++ b/convex/assistantToolAudits.ts
+@@ -0,0 +1,161 @@
++import { getAuthUserId } from "@convex-dev/auth/server";
++import { v } from "convex/values";
++import { sanitizeAuditPayload } from "../src/lib/assistant-tool-audit";
++import type { Id } from "./_generated/dataModel";
++import { internalMutation, mutation, query } from "./_generated/server";
++
++type ToolAuditOutcome = "success" | "error";
++
++async function getCurrentMember(
++	ctx: { db: any },
++	workspaceId: Id<"workspaces">,
++	userId: Id<"users">
++) {
++	return await ctx.db
++		.query("members")
++		.withIndex("by_workspace_id_user_id", (q: any) =>
++			q.eq("workspaceId", workspaceId).eq("userId", userId)
++		)
++		.unique();
++}
++
++const auditArgs = {
++	workspaceId: v.id("workspaces"),
++	memberId: v.optional(v.id("members")),
++	userId: v.optional(v.id("users")),
++	toolName: v.string(),
++	toolkit: v.optional(v.string()),
++	argumentsSnapshot: v.optional(v.any()),
++	outcome: v.union(v.literal("success"), v.literal("error")),
++	error: v.optional(v.string()),
++	executionPath: v.string(),
++	toolCallId: v.optional(v.string()),
++	timestamp: v.optional(v.number()),
++};
++
++function normalizeOutcome(value: ToolAuditOutcome): ToolAuditOutcome {
++	return value === "error" ? "error" : "success";
++}
++
++async function insertAuditEvent(
++	ctx: { db: any },
++	args: {
++		workspaceId: Id<"workspaces">;
++		memberId?: Id<"members">;
++		userId?: Id<"users">;
++		toolName: string;
++		toolkit?: string;
++		argumentsSnapshot?: unknown;
++		outcome: ToolAuditOutcome;
++		error?: string;
++		executionPath: string;
++		toolCallId?: string;
++		timestamp?: number;
++	}
++) {
++	const safeArguments = sanitizeAuditPayload(args.argumentsSnapshot);
++	const safeError = sanitizeAuditPayload(args.error);
++
++	await ctx.db.insert("assistantToolAuditEvents", {
++		workspaceId: args.workspaceId,
++		memberId: args.memberId,
++		userId: args.userId,
++		toolName: args.toolName,
++		toolkit: args.toolkit,
++		argumentsSnapshot: safeArguments,
++		outcome: normalizeOutcome(args.outcome),
++		error: typeof safeError === "string" ? safeError : undefined,
++		executionPath: args.executionPath,
++		toolCallId: args.toolCallId,
++		timestamp: args.timestamp ?? Date.now(),
++	});
++}
++
++export const logExternalToolAttemptInternal = internalMutation({
++	args: auditArgs,
++	handler: async (ctx, args) => {
++		await insertAuditEvent(ctx, args);
++	},
++});
++
++export const logExternalToolAttempt = mutation({
++	args: auditArgs,
++	handler: async (ctx, args) => {
++		const authUserId = await getAuthUserId(ctx);
++		if (!authUserId) {
++			throw new Error("Unauthorized");
++		}
++
++		const member = await getCurrentMember(ctx, args.workspaceId, authUserId);
++		if (!member) {
++			throw new Error("Unauthorized");
++		}
++
++		await insertAuditEvent(ctx, {
++			...args,
++			userId: args.userId ?? authUserId,
++			memberId: args.memberId ?? member._id,
++		});
++	},
++});
++
++export const listByWorkspace = query({
++	args: {
++		workspaceId: v.id("workspaces"),
++		limit: v.optional(v.number()),
++	},
++	handler: async (ctx, args) => {
++		const authUserId = await getAuthUserId(ctx);
++		if (!authUserId) {
++			return [];
++		}
++
++		const member = await getCurrentMember(ctx, args.workspaceId, authUserId);
++		if (!member) {
++			return [];
++		}
++
++		return await ctx.db
++			.query("assistantToolAuditEvents")
++			.withIndex("by_workspace_id_timestamp", (q: any) =>
++				q.eq("workspaceId", args.workspaceId)
++			)
++			.order("desc")
++			.take(args.limit ?? 50);
++	},
++});
++
++export const listByWorkspaceAndMember = query({
++	args: {
++		workspaceId: v.id("workspaces"),
++		memberId: v.id("members"),
++		limit: v.optional(v.number()),
++	},
++	handler: async (ctx, args) => {
++		const authUserId = await getAuthUserId(ctx);
++		if (!authUserId) {
++			return [];
++		}
++
++		const requester = await getCurrentMember(ctx, args.workspaceId, authUserId);
++		if (!requester) {
++			return [];
++		}
++
++		if (
++			requester._id !== args.memberId &&
++			requester.role !== "owner" &&
++			requester.role !== "admin"
++		) {
++			return [];
++		}
++
++		return await ctx.db
++			.query("assistantToolAuditEvents")
++			.withIndex("by_workspace_id_member_id", (q: any) =>
++				q.eq("workspaceId", args.workspaceId).eq("memberId", args.memberId)
++			)
++			.order("desc")
++			.take(args.limit ?? 50);
++	},
++});
+diff --git a/convex/chatbot.ts b/convex/chatbot.ts
+index b41cb9487015832d10b915e4f21901e9fb54d42c..242ba7640b4198c6eb2d0b5f7567b41da918e32d
+--- a/convex/chatbot.ts
++++ b/convex/chatbot.ts
+@@ -6,7 +6,8 @@
+ import { generateText } from "ai";
+ import { v } from "convex/values";
+ import OpenAI from "openai";
+-import { api } from "./_generated/api";
++import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
++import { api, internal } from "./_generated/api";
+ import type { Id, TableNames } from "./_generated/dataModel";
+ import { action } from "./_generated/server";
+ 
+@@ -388,11 +389,15 @@
+  * Resolves auth config IDs from the member's connected accounts so tools.get uses valid authConfigIds.
+  */
+ async function executeComposioAction(
+-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
++	ctx: {
++		runQuery: (query: any, args: any) => Promise<any>;
++		runMutation: (mutation: any, args: any) => Promise<any>;
++	},
+ 	entityId: string,
+ 	appNames: string[],
+ 	message: string,
+-	workspaceId: Id<"workspaces">
++	workspaceId: Id<"workspaces">,
++	memberId: Id<"members">
+ ): Promise<{
+ 	success: boolean;
+ 	response?: string;
+@@ -530,6 +535,9 @@
+ 		) {
+ 			for (const toolCall of completion.choices[0].message.tool_calls) {
+ 				if (toolCall.type === "function") {
++					const sanitizedArgs = parseAndSanitizeArguments(
++						toolCall.function.arguments
++					);
+ 					try {
+ 						const actionParams = JSON.parse(toolCall.function.arguments);
+ 						const result = await composio.tools.execute(
+@@ -539,6 +547,19 @@
+ 								arguments: actionParams,
+ 							}
+ 						);
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "success",
++								executionPath: "convex-chatbot",
++								toolCallId: toolCall.id,
++							}
++						);
+ 
+ 						toolResults.push({
+ 							toolCallId: toolCall.id,
+@@ -553,6 +574,20 @@
+ 
+ 						const errorMessage =
+ 							error instanceof Error ? error.message : "Unknown error";
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "error",
++								error: errorMessage,
++								executionPath: "convex-chatbot",
++								toolCallId: toolCall.id,
++							}
++						);
+ 
+ 						// Check if it's a connection error
+ 						if (
+@@ -1592,7 +1627,8 @@
+ 				entityId,
+ 				appNames,
+ 				args.query,
+-				workspaceId
++				workspaceId,
++				memberId
+ 			);
+ 
+ 			if (composioResult.success && composioResult.response) {
+diff --git a/convex/schema.ts b/convex/schema.ts
+index 098a15a7bed4cd5260de78be08702bf605f86def..a0957242440c438d698faacc94d4310279f837df
+--- a/convex/schema.ts
++++ b/convex/schema.ts
+@@ -478,6 +478,24 @@
+ 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+ 		.index("by_conversation_id", ["conversationId"]),
+ 
++	assistantToolAuditEvents: defineTable({
++		workspaceId: v.id("workspaces"),
++		memberId: v.optional(v.id("members")),
++		userId: v.optional(v.id("users")),
++		toolName: v.string(),
++		toolkit: v.optional(v.string()),
++		argumentsSnapshot: v.optional(v.any()),
++		outcome: v.union(v.literal("success"), v.literal("error")),
++		error: v.optional(v.string()),
++		executionPath: v.string(),
++		toolCallId: v.optional(v.string()),
++		timestamp: v.number(),
++	})
++		.index("by_workspace_id", ["workspaceId"])
++		.index("by_member_id", ["memberId"])
++		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
++		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
++
+ 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
+ 	auth_configs: defineTable({
+ 		workspaceId: v.id("workspaces"),
+diff --git a/src/app/api/assistant/chatbot/route.ts b/src/app/api/assistant/chatbot/route.ts
+index 7575c2d3ab45abe294e8dc07b91b0920d200da3b..ba636e7b5fabdc48e6c0b4eaa955431ed87ff202
+--- a/src/app/api/assistant/chatbot/route.ts
++++ b/src/app/api/assistant/chatbot/route.ts
+@@ -13,6 +13,7 @@
+ 	buildAssistantSystemPrompt,
+ 	classifyAssistantQuery,
+ } from "@/lib/assistant-orchestration";
++import { parseAndSanitizeArguments } from "@/lib/assistant-tool-audit";
+ import {
+ 	type AvailableApp,
+ 	createComposioClient,
+@@ -58,6 +59,43 @@
+ 	});
+ }
+ 
++async function logExternalToolAuditEvent(params: {
++	convex: ConvexHttpClient;
++	workspaceId: Id<"workspaces">;
++	memberId?: Id<"members">;
++	userId?: Id<"users">;
++	toolName: string;
++	toolkit?: string;
++	argumentsSnapshot: unknown;
++	outcome: "success" | "error";
++	error?: string;
++	executionPath: string;
++	toolCallId?: string;
++}) {
++	try {
++		await params.convex.mutation(
++			api.assistantToolAudits.logExternalToolAttempt,
++			{
++				workspaceId: params.workspaceId,
++				memberId: params.memberId,
++				userId: params.userId,
++				toolName: params.toolName,
++				toolkit: params.toolkit,
++				argumentsSnapshot: params.argumentsSnapshot,
++				outcome: params.outcome,
++				error: params.error,
++				executionPath: params.executionPath,
++				toolCallId: params.toolCallId,
++			}
++		);
++	} catch (error) {
++		console.warn(
++			"[Chatbot Assistant] Failed to persist tool audit event",
++			error
++		);
++	}
++}
++
+ /**
+  * Handle chatbot POST requests by routing the user's query through OpenAI+Composio tool integration when applicable, otherwise falling back to the Convex-based assistant.
+  *
+@@ -83,6 +121,7 @@
+ export async function POST(req: NextRequest) {
+ 	try {
+ 		const convex = createConvexClient();
++		let authenticatedUserId: Id<"users"> | null = null;
+ 
+ 		// Pass auth through to Convex so membership/tasks/channels work.
+ 		// We attempt token retrieval even if isAuthenticatedNextjs() is false, because
+@@ -140,6 +179,7 @@
+ 			if (!currentUser) {
+ 				return NextResponse.json({ error: "User not found" }, { status: 404 });
+ 			}
++			authenticatedUserId = currentUser._id;
+ 
+ 			// Get the member for this workspace and verify ownership
+ 			const member = await convex.query(api.members.getMemberById, {
+@@ -368,6 +408,39 @@
+ 							resultMap[call.id] = toolResults[idx] ?? { success: true };
+ 						});
+ 
++						await Promise.all(
++							toolCalls.map(async (call) => {
++								const toolResult = resultMap[call.id];
++								const outcome: "success" | "error" =
++									toolResult?.success === false || Boolean(toolResult?.error)
++										? "error"
++										: "success";
++
++								await logExternalToolAuditEvent({
++									convex,
++									workspaceId: workspaceId as Id<"workspaces">,
++									memberId: memberId as Id<"members"> | undefined,
++									userId: authenticatedUserId ?? undefined,
++									toolName: call.function?.name || "unknown_tool",
++									toolkit: undefined,
++									argumentsSnapshot: parseAndSanitizeArguments(
++										call.function?.arguments || "{}"
++									),
++									outcome,
++									error:
++										outcome === "error"
++											? String(
++													toolResult?.error ||
++														toolResult?.message ||
++														"Tool execution failed"
++												)
++											: undefined,
++									executionPath: "nextjs-openai-composio",
++									toolCallId: call.id,
++								});
++							})
++						);
++
+ 						// Log warning if counts differ
+ 						if (toolCalls.length !== toolResults.length) {
+ 							console.warn(
+@@ -400,6 +473,28 @@
+ 							"[Chatbot Assistant] Tool execution failed:",
+ 							toolError
+ 						);
++						await Promise.all(
++							toolCalls.map(async (call) => {
++								await logExternalToolAuditEvent({
++									convex,
++									workspaceId: workspaceId as Id<"workspaces">,
++									memberId: memberId as Id<"members"> | undefined,
++									userId: authenticatedUserId ?? undefined,
++									toolName: call.function?.name || "unknown_tool",
++									toolkit: undefined,
++									argumentsSnapshot: parseAndSanitizeArguments(
++										call.function?.arguments || "{}"
++									),
++									outcome: "error",
++									error:
++										toolError instanceof Error
++											? toolError.message
++											: "Tool execution failed",
++									executionPath: "nextjs-openai-composio",
++									toolCallId: call.id,
++								});
++							})
++						);
+ 						responseText +=
+ 							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";
+ 					}
+diff --git a/src/lib/assistant-tool-audit.ts b/src/lib/assistant-tool-audit.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..b4d1e63f1d6bb3fe7207244d290b08f9c10f931f
+--- /dev/null
++++ b/src/lib/assistant-tool-audit.ts
+@@ -0,0 +1,70 @@
++const REDACTED_VALUE = "[REDACTED]";
++const MAX_DEPTH = 6;
++const MAX_STRING_LENGTH = 2000;
++const SENSITIVE_KEY_PATTERN =
++	/(^|_|-)(token|secret|password|passphrase|api[_-]?key|authorization|cookie|credential|private[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret)(_|-|$)/i;
++
++function sanitizeString(input: string): string {
++	return input
++		.replace(/(Bearer\s+)[^\s]+/gi, `$1${REDACTED_VALUE}`)
++		.replace(
++			/(token|secret|password|api[_-]?key)\s*[:=]\s*["']?[^"',\s}]+/gi,
++			`$1=${REDACTED_VALUE}`
++		)
++		.slice(0, MAX_STRING_LENGTH);
++}
++
++export function sanitizeAuditPayload(
++	value: unknown,
++	depth = 0,
++	parentKey = ""
++): unknown {
++	if (depth > MAX_DEPTH) {
++		return "[TRUNCATED]";
++	}
++
++	if (value === null || value === undefined) {
++		return value;
++	}
++
++	if (SENSITIVE_KEY_PATTERN.test(parentKey)) {
++		return REDACTED_VALUE;
++	}
++
++	if (typeof value === "string") {
++		return sanitizeString(value);
++	}
++
++	if (
++		typeof value === "number" ||
++		typeof value === "boolean" ||
++		typeof value === "bigint"
++	) {
++		return value;
++	}
++
++	if (Array.isArray(value)) {
++		return value.map((item) =>
++			sanitizeAuditPayload(item, depth + 1, parentKey)
++		);
++	}
++
++	if (typeof value === "object") {
++		const entries = Object.entries(value as Record<string, unknown>);
++		const sanitized: Record<string, unknown> = {};
++		for (const [key, childValue] of entries) {
++			sanitized[key] = sanitizeAuditPayload(childValue, depth + 1, key);
++		}
++		return sanitized;
++	}
++
++	return String(value).slice(0, MAX_STRING_LENGTH);
++}
++
++export function parseAndSanitizeArguments(rawArguments: string): unknown {
++	try {
++		return sanitizeAuditPayload(JSON.parse(rawArguments));
++	} catch {
++		return sanitizeAuditPayload(rawArguments);
++	}
++}
+
+
+thinking
+**Checking clean status**
+exec
+/bin/zsh -lc 'git status --porcelain' in /Users/macbook/Documents/GitHub/platform succeeded in 52ms:
+ M .ralph/runs/run-20260212-173602-17364-iter-2.log
+file update:
+diff --git a/convex/assistantComposioTools.ts b/convex/assistantComposioTools.ts
+index b407dafe5e710034fa0ec8f6624fb183a771166e..0587238c9aeb6a11e1d712c7b639d6ef9cb19bd7
+--- a/convex/assistantComposioTools.ts
++++ b/convex/assistantComposioTools.ts
+@@ -3,6 +3,7 @@
+ import { Composio } from "@composio/core";
+ import { v } from "convex/values";
+ import OpenAI from "openai";
++import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
+ import {
+ 	buildCancellationMessage,
+ 	buildConfirmationRequiredMessage,
+@@ -14,11 +15,16 @@
+ import { action } from "./_generated/server";
+ 
+ async function executeComposioAction(
+-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
++	ctx: {
++		runQuery: (query: any, args: any) => Promise<any>;
++		runMutation: (mutation: any, args: any) => Promise<any>;
++	},
+ 	entityId: string,
+ 	appNames: string[],
+ 	message: string,
+-	workspaceId: Id<"workspaces">
++	workspaceId: Id<"workspaces">,
++	userId: Id<"users">,
++	memberId: Id<"members">
+ ): Promise<{ success: boolean; response?: string; error?: string }> {
+ 	try {
+ 		if (!process.env.COMPOSIO_API_KEY) {
+@@ -139,11 +145,78 @@
+ 
+ 			for (const toolCall of toolCalls) {
+ 				if (toolCall.type === "function") {
+-					const actionParams = JSON.parse(toolCall.function.arguments);
+-					await composio.tools.execute(toolCall.function.name, {
+-						userId: entityId,
+-						arguments: actionParams,
+-					});
++					const sanitizedArgs = parseAndSanitizeArguments(
++						toolCall.function.arguments
++					);
++					let actionParams: Record<string, unknown> | undefined;
++					try {
++						const parsed = JSON.parse(toolCall.function.arguments);
++						if (
++							parsed &&
++							typeof parsed === "object" &&
++							!Array.isArray(parsed)
++						) {
++							actionParams = parsed as Record<string, unknown>;
++						}
++					} catch (error) {
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								userId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "error",
++								error:
++									error instanceof Error
++										? error.message
++										: "Invalid tool call arguments",
++								executionPath: "convex-assistant",
++								toolCallId: toolCall.id,
++							}
++						);
++						throw error;
++					}
++
++					try {
++						await composio.tools.execute(toolCall.function.name, {
++							userId: entityId,
++							arguments: actionParams,
++						});
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								userId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "success",
++								executionPath: "convex-assistant",
++								toolCallId: toolCall.id,
++							}
++						);
++					} catch (error) {
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								userId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "error",
++								error: error instanceof Error ? error.message : "Unknown error",
++								executionPath: "convex-assistant",
++								toolCallId: toolCall.id,
++							}
++						);
++						throw error;
++					}
+ 				}
+ 			}
+ 		}
+@@ -184,7 +257,9 @@
+ 			`member_${memberId}`,
+ 			["GMAIL"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -205,7 +280,9 @@
+ 			`member_${memberId}`,
+ 			["SLACK"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -226,7 +303,9 @@
+ 			`member_${memberId}`,
+ 			["GITHUB"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -247,7 +326,9 @@
+ 			`member_${memberId}`,
+ 			["NOTION"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -268,7 +349,9 @@
+ 			`member_${memberId}`,
+ 			["CLICKUP"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+@@ -289,7 +372,9 @@
+ 			`member_${memberId}`,
+ 			["LINEAR"],
+ 			args.instruction,
+-			args.workspaceId
++			args.workspaceId,
++			args.userId,
++			memberId
+ 		);
+ 	},
+ });
+diff --git a/convex/assistantToolAudits.ts b/convex/assistantToolAudits.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..21e110faed2a35e15b8f14f2e60b621ebcd689dc
+--- /dev/null
++++ b/convex/assistantToolAudits.ts
+@@ -0,0 +1,161 @@
++import { getAuthUserId } from "@convex-dev/auth/server";
++import { v } from "convex/values";
++import { sanitizeAuditPayload } from "../src/lib/assistant-tool-audit";
++import type { Id } from "./_generated/dataModel";
++import { internalMutation, mutation, query } from "./_generated/server";
++
++type ToolAuditOutcome = "success" | "error";
++
++async function getCurrentMember(
++	ctx: { db: any },
++	workspaceId: Id<"workspaces">,
++	userId: Id<"users">
++) {
++	return await ctx.db
++		.query("members")
++		.withIndex("by_workspace_id_user_id", (q: any) =>
++			q.eq("workspaceId", workspaceId).eq("userId", userId)
++		)
++		.unique();
++}
++
++const auditArgs = {
++	workspaceId: v.id("workspaces"),
++	memberId: v.optional(v.id("members")),
++	userId: v.optional(v.id("users")),
++	toolName: v.string(),
++	toolkit: v.optional(v.string()),
++	argumentsSnapshot: v.optional(v.any()),
++	outcome: v.union(v.literal("success"), v.literal("error")),
++	error: v.optional(v.string()),
++	executionPath: v.string(),
++	toolCallId: v.optional(v.string()),
++	timestamp: v.optional(v.number()),
++};
++
++function normalizeOutcome(value: ToolAuditOutcome): ToolAuditOutcome {
++	return value === "error" ? "error" : "success";
++}
++
++async function insertAuditEvent(
++	ctx: { db: any },
++	args: {
++		workspaceId: Id<"workspaces">;
++		memberId?: Id<"members">;
++		userId?: Id<"users">;
++		toolName: string;
++		toolkit?: string;
++		argumentsSnapshot?: unknown;
++		outcome: ToolAuditOutcome;
++		error?: string;
++		executionPath: string;
++		toolCallId?: string;
++		timestamp?: number;
++	}
++) {
++	const safeArguments = sanitizeAuditPayload(args.argumentsSnapshot);
++	const safeError = sanitizeAuditPayload(args.error);
++
++	await ctx.db.insert("assistantToolAuditEvents", {
++		workspaceId: args.workspaceId,
++		memberId: args.memberId,
++		userId: args.userId,
++		toolName: args.toolName,
++		toolkit: args.toolkit,
++		argumentsSnapshot: safeArguments,
++		outcome: normalizeOutcome(args.outcome),
++		error: typeof safeError === "string" ? safeError : undefined,
++		executionPath: args.executionPath,
++		toolCallId: args.toolCallId,
++		timestamp: args.timestamp ?? Date.now(),
++	});
++}
++
++export const logExternalToolAttemptInternal = internalMutation({
++	args: auditArgs,
++	handler: async (ctx, args) => {
++		await insertAuditEvent(ctx, args);
++	},
++});
++
++export const logExternalToolAttempt = mutation({
++	args: auditArgs,
++	handler: async (ctx, args) => {
++		const authUserId = await getAuthUserId(ctx);
++		if (!authUserId) {
++			throw new Error("Unauthorized");
++		}
++
++		const member = await getCurrentMember(ctx, args.workspaceId, authUserId);
++		if (!member) {
++			throw new Error("Unauthorized");
++		}
++
++		await insertAuditEvent(ctx, {
++			...args,
++			userId: args.userId ?? authUserId,
++			memberId: args.memberId ?? member._id,
++		});
++	},
++});
++
++export const listByWorkspace = query({
++	args: {
++		workspaceId: v.id("workspaces"),
++		limit: v.optional(v.number()),
++	},
++	handler: async (ctx, args) => {
++		const authUserId = await getAuthUserId(ctx);
++		if (!authUserId) {
++			return [];
++		}
++
++		const member = await getCurrentMember(ctx, args.workspaceId, authUserId);
++		if (!member) {
++			return [];
++		}
++
++		return await ctx.db
++			.query("assistantToolAuditEvents")
++			.withIndex("by_workspace_id_timestamp", (q: any) =>
++				q.eq("workspaceId", args.workspaceId)
++			)
++			.order("desc")
++			.take(args.limit ?? 50);
++	},
++});
++
++export const listByWorkspaceAndMember = query({
++	args: {
++		workspaceId: v.id("workspaces"),
++		memberId: v.id("members"),
++		limit: v.optional(v.number()),
++	},
++	handler: async (ctx, args) => {
++		const authUserId = await getAuthUserId(ctx);
++		if (!authUserId) {
++			return [];
++		}
++
++		const requester = await getCurrentMember(ctx, args.workspaceId, authUserId);
++		if (!requester) {
++			return [];
++		}
++
++		if (
++			requester._id !== args.memberId &&
++			requester.role !== "owner" &&
++			requester.role !== "admin"
++		) {
++			return [];
++		}
++
++		return await ctx.db
++			.query("assistantToolAuditEvents")
++			.withIndex("by_workspace_id_member_id", (q: any) =>
++				q.eq("workspaceId", args.workspaceId).eq("memberId", args.memberId)
++			)
++			.order("desc")
++			.take(args.limit ?? 50);
++	},
++});
+diff --git a/convex/chatbot.ts b/convex/chatbot.ts
+index b41cb9487015832d10b915e4f21901e9fb54d42c..242ba7640b4198c6eb2d0b5f7567b41da918e32d
+--- a/convex/chatbot.ts
++++ b/convex/chatbot.ts
+@@ -6,7 +6,8 @@
+ import { generateText } from "ai";
+ import { v } from "convex/values";
+ import OpenAI from "openai";
+-import { api } from "./_generated/api";
++import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
++import { api, internal } from "./_generated/api";
+ import type { Id, TableNames } from "./_generated/dataModel";
+ import { action } from "./_generated/server";
+ 
+@@ -388,11 +389,15 @@
+  * Resolves auth config IDs from the member's connected accounts so tools.get uses valid authConfigIds.
+  */
+ async function executeComposioAction(
+-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
++	ctx: {
++		runQuery: (query: any, args: any) => Promise<any>;
++		runMutation: (mutation: any, args: any) => Promise<any>;
++	},
+ 	entityId: string,
+ 	appNames: string[],
+ 	message: string,
+-	workspaceId: Id<"workspaces">
++	workspaceId: Id<"workspaces">,
++	memberId: Id<"members">
+ ): Promise<{
+ 	success: boolean;
+ 	response?: string;
+@@ -530,6 +535,9 @@
+ 		) {
+ 			for (const toolCall of completion.choices[0].message.tool_calls) {
+ 				if (toolCall.type === "function") {
++					const sanitizedArgs = parseAndSanitizeArguments(
++						toolCall.function.arguments
++					);
+ 					try {
+ 						const actionParams = JSON.parse(toolCall.function.arguments);
+ 						const result = await composio.tools.execute(
+@@ -539,6 +547,19 @@
+ 								arguments: actionParams,
+ 							}
+ 						);
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "success",
++								executionPath: "convex-chatbot",
++								toolCallId: toolCall.id,
++							}
++						);
+ 
+ 						toolResults.push({
+ 							toolCallId: toolCall.id,
+@@ -553,6 +574,20 @@
+ 
+ 						const errorMessage =
+ 							error instanceof Error ? error.message : "Unknown error";
++						await ctx.runMutation(
++							internal.assistantToolAudits.logExternalToolAttemptInternal,
++							{
++								workspaceId,
++								memberId,
++								toolName: toolCall.function.name,
++								toolkit: appNames[0]?.toUpperCase(),
++								argumentsSnapshot: sanitizedArgs,
++								outcome: "error",
++								error: errorMessage,
++								executionPath: "convex-chatbot",
++								toolCallId: toolCall.id,
++							}
++						);
+ 
+ 						// Check if it's a connection error
+ 						if (
+@@ -1592,7 +1627,8 @@
+ 				entityId,
+ 				appNames,
+ 				args.query,
+-				workspaceId
++				workspaceId,
++				memberId
+ 			);
+ 
+ 			if (composioResult.success && composioResult.response) {
+diff --git a/convex/schema.ts b/convex/schema.ts
+index 098a15a7bed4cd5260de78be08702bf605f86def..a0957242440c438d698faacc94d4310279f837df
+--- a/convex/schema.ts
++++ b/convex/schema.ts
+@@ -478,6 +478,24 @@
+ 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+ 		.index("by_conversation_id", ["conversationId"]),
+ 
++	assistantToolAuditEvents: defineTable({
++		workspaceId: v.id("workspaces"),
++		memberId: v.optional(v.id("members")),
++		userId: v.optional(v.id("users")),
++		toolName: v.string(),
++		toolkit: v.optional(v.string()),
++		argumentsSnapshot: v.optional(v.any()),
++		outcome: v.union(v.literal("success"), v.literal("error")),
++		error: v.optional(v.string()),
++		executionPath: v.string(),
++		toolCallId: v.optional(v.string()),
++		timestamp: v.number(),
++	})
++		.index("by_workspace_id", ["workspaceId"])
++		.index("by_member_id", ["memberId"])
++		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
++		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
++
+ 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
+ 	auth_configs: defineTable({
+ 		workspaceId: v.id("workspaces"),
+diff --git a/src/app/api/assistant/chatbot/route.ts b/src/app/api/assistant/chatbot/route.ts
+index 7575c2d3ab45abe294e8dc07b91b0920d200da3b..ba636e7b5fabdc48e6c0b4eaa955431ed87ff202
+--- a/src/app/api/assistant/chatbot/route.ts
++++ b/src/app/api/assistant/chatbot/route.ts
+@@ -13,6 +13,7 @@
+ 	buildAssistantSystemPrompt,
+ 	classifyAssistantQuery,
+ } from "@/lib/assistant-orchestration";
++import { parseAndSanitizeArguments } from "@/lib/assistant-tool-audit";
+ import {
+ 	type AvailableApp,
+ 	createComposioClient,
+@@ -58,6 +59,43 @@
+ 	});
+ }
+ 
++async function logExternalToolAuditEvent(params: {
++	convex: ConvexHttpClient;
++	workspaceId: Id<"workspaces">;
++	memberId?: Id<"members">;
++	userId?: Id<"users">;
++	toolName: string;
++	toolkit?: string;
++	argumentsSnapshot: unknown;
++	outcome: "success" | "error";
++	error?: string;
++	executionPath: string;
++	toolCallId?: string;
++}) {
++	try {
++		await params.convex.mutation(
++			api.assistantToolAudits.logExternalToolAttempt,
++			{
++				workspaceId: params.workspaceId,
++				memberId: params.memberId,
++				userId: params.userId,
++				toolName: params.toolName,
++				toolkit: params.toolkit,
++				argumentsSnapshot: params.argumentsSnapshot,
++				outcome: params.outcome,
++				error: params.error,
++				executionPath: params.executionPath,
++				toolCallId: params.toolCallId,
++			}
++		);
++	} catch (error) {
++		console.warn(
++			"[Chatbot Assistant] Failed to persist tool audit event",
++			error
++		);
++	}
++}
++
+ /**
+  * Handle chatbot POST requests by routing the user's query through OpenAI+Composio tool integration when applicable, otherwise falling back to the Convex-based assistant.
+  *
+@@ -83,6 +121,7 @@
+ export async function POST(req: NextRequest) {
+ 	try {
+ 		const convex = createConvexClient();
++		let authenticatedUserId: Id<"users"> | null = null;
+ 
+ 		// Pass auth through to Convex so membership/tasks/channels work.
+ 		// We attempt token retrieval even if isAuthenticatedNextjs() is false, because
+@@ -140,6 +179,7 @@
+ 			if (!currentUser) {
+ 				return NextResponse.json({ error: "User not found" }, { status: 404 });
+ 			}
++			authenticatedUserId = currentUser._id;
+ 
+ 			// Get the member for this workspace and verify ownership
+ 			const member = await convex.query(api.members.getMemberById, {
+@@ -368,6 +408,39 @@
+ 							resultMap[call.id] = toolResults[idx] ?? { success: true };
+ 						});
+ 
++						await Promise.all(
++							toolCalls.map(async (call) => {
++								const toolResult = resultMap[call.id];
++								const outcome: "success" | "error" =
++									toolResult?.success === false || Boolean(toolResult?.error)
++										? "error"
++										: "success";
++
++								await logExternalToolAuditEvent({
++									convex,
++									workspaceId: workspaceId as Id<"workspaces">,
++									memberId: memberId as Id<"members"> | undefined,
++									userId: authenticatedUserId ?? undefined,
++									toolName: call.function?.name || "unknown_tool",
++									toolkit: undefined,
++									argumentsSnapshot: parseAndSanitizeArguments(
++										call.function?.arguments || "{}"
++									),
++									outcome,
++									error:
++										outcome === "error"
++											? String(
++													toolResult?.error ||
++														toolResult?.message ||
++														"Tool execution failed"
++												)
++											: undefined,
++									executionPath: "nextjs-openai-composio",
++									toolCallId: call.id,
++								});
++							})
++						);
++
+ 						// Log warning if counts differ
+ 						if (toolCalls.length !== toolResults.length) {
+ 							console.warn(
+@@ -400,6 +473,28 @@
+ 							"[Chatbot Assistant] Tool execution failed:",
+ 							toolError
+ 						);
++						await Promise.all(
++							toolCalls.map(async (call) => {
++								await logExternalToolAuditEvent({
++									convex,
++									workspaceId: workspaceId as Id<"workspaces">,
++									memberId: memberId as Id<"members"> | undefined,
++									userId: authenticatedUserId ?? undefined,
++									toolName: call.function?.name || "unknown_tool",
++									toolkit: undefined,
++									argumentsSnapshot: parseAndSanitizeArguments(
++										call.function?.arguments || "{}"
++									),
++									outcome: "error",
++									error:
++										toolError instanceof Error
++											? toolError.message
++											: "Tool execution failed",
++									executionPath: "nextjs-openai-composio",
++									toolCallId: call.id,
++								});
++							})
++						);
+ 						responseText +=
+ 							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";
+ 					}
+diff --git a/src/lib/assistant-tool-audit.ts b/src/lib/assistant-tool-audit.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..b4d1e63f1d6bb3fe7207244d290b08f9c10f931f
+--- /dev/null
++++ b/src/lib/assistant-tool-audit.ts
+@@ -0,0 +1,70 @@
++const REDACTED_VALUE = "[REDACTED]";
++const MAX_DEPTH = 6;
++const MAX_STRING_LENGTH = 2000;
++const SENSITIVE_KEY_PATTERN =
++	/(^|_|-)(token|secret|password|passphrase|api[_-]?key|authorization|cookie|credential|private[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret)(_|-|$)/i;
++
++function sanitizeString(input: string): string {
++	return input
++		.replace(/(Bearer\s+)[^\s]+/gi, `$1${REDACTED_VALUE}`)
++		.replace(
++			/(token|secret|password|api[_-]?key)\s*[:=]\s*["']?[^"',\s}]+/gi,
++			`$1=${REDACTED_VALUE}`
++		)
++		.slice(0, MAX_STRING_LENGTH);
++}
++
++export function sanitizeAuditPayload(
++	value: unknown,
++	depth = 0,
++	parentKey = ""
++): unknown {
++	if (depth > MAX_DEPTH) {
++		return "[TRUNCATED]";
++	}
++
++	if (value === null || value === undefined) {
++		return value;
++	}
++
++	if (SENSITIVE_KEY_PATTERN.test(parentKey)) {
++		return REDACTED_VALUE;
++	}
++
++	if (typeof value === "string") {
++		return sanitizeString(value);
++	}
++
++	if (
++		typeof value === "number" ||
++		typeof value === "boolean" ||
++		typeof value === "bigint"
++	) {
++		return value;
++	}
++
++	if (Array.isArray(value)) {
++		return value.map((item) =>
++			sanitizeAuditPayload(item, depth + 1, parentKey)
++		);
++	}
++
++	if (typeof value === "object") {
++		const entries = Object.entries(value as Record<string, unknown>);
++		const sanitized: Record<string, unknown> = {};
++		for (const [key, childValue] of entries) {
++			sanitized[key] = sanitizeAuditPayload(childValue, depth + 1, key);
++		}
++		return sanitized;
++	}
++
++	return String(value).slice(0, MAX_STRING_LENGTH);
++}
++
++export function parseAndSanitizeArguments(rawArguments: string): unknown {
++	try {
++		return sanitizeAuditPayload(JSON.parse(rawArguments));
++	} catch {
++		return sanitizeAuditPayload(rawArguments);
++	}
++}
+
+
+thinking
+**Testing final commit and status check**
+codex
+I’m seeing the run log file update on each command invocation, so I’m doing one final log-only commit with an inline status check to satisfy the clean-tree requirement deterministically.
