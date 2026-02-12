@@ -77,6 +77,88 @@ type Message = {
 	actions?: NavigationAction[];
 };
 
+type IntegrationStatusApp = {
+	app: string;
+	connected: boolean;
+	connectionId?: string;
+	entityId?: string;
+};
+
+const SUPPORTED_INTEGRATION_ORDER = [
+	"GITHUB",
+	"GMAIL",
+	"SLACK",
+	"NOTION",
+	"CLICKUP",
+	"LINEAR",
+] as const;
+
+type SupportedIntegration = (typeof SUPPORTED_INTEGRATION_ORDER)[number];
+
+const INTEGRATION_METADATA: Record<
+	SupportedIntegration,
+	{
+		name: string;
+		description: string;
+		welcomeCapability: string;
+		examplePrompt: string;
+		icon: typeof Github;
+		iconClassName: string;
+	}
+> = {
+	GITHUB: {
+		name: "GitHub",
+		description: "Repository management, issues, and pull requests",
+		welcomeCapability: "List repositories, create issues, manage pull requests",
+		examplePrompt: "List my repositories",
+		icon: Github,
+		iconClassName: "text-gray-800 dark:text-gray-200",
+	},
+	GMAIL: {
+		name: "Gmail",
+		description: "Email sending, reading, and management",
+		welcomeCapability: "Send emails, read inbox messages, and manage drafts",
+		examplePrompt: "Send an email to [email]",
+		icon: Mail,
+		iconClassName: "text-red-600",
+	},
+	SLACK: {
+		name: "Slack",
+		description: "Messages, channels, and workspace communication",
+		welcomeCapability: "Send messages, browse channels, and review discussions",
+		examplePrompt: "Post a Slack update to #team",
+		icon: MessageSquare,
+		iconClassName: "text-violet-600",
+	},
+	NOTION: {
+		name: "Notion",
+		description: "Pages, databases, and workspace knowledge",
+		welcomeCapability: "Create pages, query databases, and find Notion content",
+		examplePrompt: "Create a Notion page for sprint notes",
+		icon: FileText,
+		iconClassName: "text-slate-700 dark:text-slate-200",
+	},
+	CLICKUP: {
+		name: "ClickUp",
+		description: "Tasks, projects, and time tracking",
+		welcomeCapability: "Create tasks, manage lists, and track project work",
+		examplePrompt: "Create a ClickUp task for release QA",
+		icon: CheckSquare,
+		iconClassName: "text-pink-600",
+	},
+	LINEAR: {
+		name: "Linear",
+		description: "Issue tracking and project planning",
+		welcomeCapability: "Create issues, update projects, and review team work",
+		examplePrompt: "Create a Linear issue for onboarding bug",
+		icon: Kanban,
+		iconClassName: "text-blue-600",
+	},
+};
+
+const getIntegrationMetadata = (app: string) =>
+	INTEGRATION_METADATA[app as SupportedIntegration];
+
 export const DashboardChatbot = ({
 	workspaceId,
 	member,
@@ -104,7 +186,7 @@ const DashboardChatbotBody = ({
 	const [welcomeMessage, setWelcomeMessage] = useState<Message | null>(null);
 	const [input, setInput] = useState("");
 	const [integrationStatus, setIntegrationStatus] = useState<{
-		connected: any[];
+		connected: IntegrationStatusApp[];
 		totalTools: number;
 		loading: boolean;
 	}>({ connected: [], totalTools: 0, loading: true });
@@ -249,23 +331,26 @@ const DashboardChatbotBody = ({
 		if (!integrationStatus.loading) {
 			if (!displayMessages.length) {
 				const connectedApps = integrationStatus.connected;
-				const hasGitHub = connectedApps.some(
-					(app: any) => app.app === "GITHUB"
-				);
-				const hasGmail = connectedApps.some((app: any) => app.app === "GMAIL");
+				const connectedSupportedIntegrations =
+					SUPPORTED_INTEGRATION_ORDER.filter((integration) =>
+						connectedApps.some(
+							(connectedApp) => connectedApp.app === integration
+						)
+					);
 
 				let content = `Hello! I'm your workspace assistant. I can help you with:
 
 • **Workspace Content**: Search messages, tasks, notes, and board cards`;
 
-				if (hasGitHub) {
+				if (connectedSupportedIntegrations.length > 0) {
 					content += `
-• **GitHub Integration**: List repositories, create issues, manage pull requests`;
-				}
-
-				if (hasGmail) {
-					content += `
-• **Gmail Integration**: Send emails, read messages, manage drafts`;
+• **Connected Integrations**:`;
+					for (const integration of connectedSupportedIntegrations) {
+						const metadata = getIntegrationMetadata(integration);
+						if (!metadata) continue;
+						content += `
+• **${metadata.name}**: ${metadata.welcomeCapability}`;
+					}
 				}
 
 				content += `
@@ -273,26 +358,29 @@ const DashboardChatbotBody = ({
 
 Try asking me things like:`;
 
-				if (hasGitHub) {
+				for (const integration of connectedSupportedIntegrations) {
+					const metadata = getIntegrationMetadata(integration);
+					if (!metadata) continue;
 					content += `
-- "List my repositories"`;
+- "${metadata.examplePrompt}"`;
 				}
 
 				content += `
 - "What are my recent tasks?"`;
 
-				if (hasGmail) {
-					content += `
-- "Send an email to [email]"`;
-				}
-
 				content += `
 - "Show me recent messages"`;
 
-				if (!hasGitHub && !hasGmail) {
+				if (connectedSupportedIntegrations.length === 0) {
+					const supportedNames = SUPPORTED_INTEGRATION_ORDER.map(
+						(integration) => {
+							const metadata = getIntegrationMetadata(integration);
+							return metadata?.name ?? integration;
+						}
+					).join(", ");
 					content += `
 
-*Note: Connect GitHub or Gmail integrations to unlock more capabilities!*`;
+*Note: Connect supported integrations (${supportedNames}) to unlock more capabilities!*`;
 				}
 
 				setWelcomeMessage({
@@ -597,31 +685,31 @@ Try asking me things like:`;
 													Connected Integrations
 												</h4>
 												<div className="space-y-2">
-													{integrationStatus.connected.map((app: any) => (
-														<div
-															className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border"
-															key={app.app}
-														>
-															{app.app === "GITHUB" && (
-																<Github className="h-4 w-4 text-gray-800 dark:text-gray-200" />
-															)}
-															{app.app === "GMAIL" && (
-																<Mail className="h-4 w-4 text-red-600" />
-															)}
-															<div className="flex-1">
-																<div className="font-medium text-sm">
-																	{app.app}
+													{integrationStatus.connected.map((app) => {
+														const metadata = getIntegrationMetadata(app.app);
+														const Icon = metadata?.icon ?? Zap;
+
+														return (
+															<div
+																className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border"
+																key={app.app}
+															>
+																<Icon
+																	className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
+																/>
+																<div className="flex-1">
+																	<div className="font-medium text-sm">
+																		{metadata?.name ?? app.app}
+																	</div>
+																	<div className="text-xs text-muted-foreground">
+																		{metadata?.description ??
+																			"Connected and available for assistant actions"}
+																	</div>
 																</div>
-																<div className="text-xs text-muted-foreground">
-																	{app.app === "GITHUB" &&
-																		"Repository management, issues, pull requests"}
-																	{app.app === "GMAIL" &&
-																		"Email sending, reading, and management"}
-																</div>
+																<CheckCircle className="h-4 w-4 text-green-600" />
 															</div>
-															<CheckCircle className="h-4 w-4 text-green-600" />
-														</div>
-													))}
+														);
+													})}
 												</div>
 												<div className="text-xs text-muted-foreground pt-2 border-t">
 													{integrationStatus.totalTools} tools available for
