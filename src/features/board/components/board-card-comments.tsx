@@ -21,7 +21,7 @@ export const BoardCardComments: React.FC<BoardCardCommentsProps> = ({
 }) => {
 	const [commentContent, setCommentContent] = useState("");
 
-	const comments = useQuery(api.board.getComments, { cardId });
+	const comments = useQuery(api.board.getComments, cardId ? { cardId } : "skip");
 	const addComment = useMutation(api.board.addComment);
 
 	const handleAddComment = async () => {

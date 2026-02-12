@@ -27,7 +27,7 @@ export const BoardCardBlockingRelationships: React.FC<
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 
-	const blockingCards = useQuery(api.board.getBlockingCards, { cardId });
+	const blockingCards = useQuery(api.board.getBlockingCards, cardId ? { cardId } : "skip");
 	const allCards = useQuery(api.board.getAllCardsForChannel, { channelId });
 
 	const addBlockingRelationship = useMutation(
