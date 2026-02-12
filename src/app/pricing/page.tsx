@@ -61,38 +61,27 @@ const PricingPage = () => {
 							<h3 className="text-lg font-semibold mb-2">Free</h3>
 							<div className="mb-6">
 								<span className="text-4xl font-bold">$0</span>
-								<span className="text-gray-500 ml-2">/user/month</span>
+								<div className="text-sm text-gray-500 mt-1">Up to 3</div>
 							</div>
 							<p className="text-gray-600 mb-6">
-								Core tasks, notes, and messaging for individuals and small
-								teams.
+								Quickly and easily meet your core design needs
 							</p>
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">5 users</span>
+									<span className="text-gray-700">Core Features</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">1 workspace</span>
+									<span className="text-gray-700">5 GB Storage</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">1 GB document storage</span>
+									<span className="text-gray-700">5 Users</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Up to 2 integrations</span>
-								</li>
-								<li className="flex items-start">
-									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">
-										Basic AI summaries (5 / month)
-									</span>
-								</li>
-								<li className="flex items-start">
-									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">1:1 voice calls only</span>
+									<span className="text-gray-700">Community Support</span>
 								</li>
 							</ul>
 							<Link href="/auth/signup">
@@ -111,43 +100,28 @@ const PricingPage = () => {
 						>
 							<h3 className="text-lg font-semibold mb-2">Pro</h3>
 							<div className="mb-6">
-								<span className="text-4xl font-bold">$8</span>
-								<span className="text-gray-500 ml-2">/user/month</span>
-								<span className="text-xs text-gray-500 ml-2">
-									billed annually
-								</span>
+								<span className="text-4xl font-bold">$5</span>
+								<span className="text-gray-500 ml-2">Per User / month</span>
 							</div>
 							<p className="text-gray-600 mb-6">
-								Everything in Free, plus team workspaces and more storage.
+								Full-service creative for your team
 							</p>
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">
-										Unlimited tasks & projects
-									</span>
+									<span className="text-gray-700">Advanced Features</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Up to 5 workspaces</span>
+									<span className="text-gray-700">25 GB Storage</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">5 GB document storage</span>
+									<span className="text-gray-700">25 Users</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Up to 5–10 integrations</span>
-								</li>
-								<li className="flex items-start">
-									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">
-										Basic AI summaries (20 / month)
-									</span>
-								</li>
-								<li className="flex items-start">
-									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Group calls up to 720p</span>
+									<span className="text-gray-700">Priority Support</span>
 								</li>
 							</ul>
 							<Button className="w-full" disabled variant="outline">
@@ -165,33 +139,27 @@ const PricingPage = () => {
 							<h3 className="text-lg font-semibold mb-2">Enterprise</h3>
 							<div className="mb-6">
 								<span className="text-4xl font-bold">Custom</span>
-								<span className="text-gray-500 ml-2">/quote</span>
+								<div className="text-sm text-gray-500 mt-1">$8-12 Per User /month</div>
 							</div>
 							<p className="text-gray-600 mb-6">
-								Enterprise controls, compliance, and dedicated support.
+								For large organizations
 							</p>
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">
-										Unlimited teams & workspaces
-									</span>
+									<span className="text-gray-700">Unlimited Storage</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">SCIM & SAML SSO</span>
+									<span className="text-gray-700">SSO & Compliance</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">
-										Data residency & custom SLAs
-									</span>
+									<span className="text-gray-700">Dedicated support</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">
-										Dedicated account management
-									</span>
+									<span className="text-gray-700">Custom Integration</span>
 								</li>
 							</ul>
 							<Link href="/contact">
@@ -502,9 +470,9 @@ const PricingPage = () => {
 									</tr>
 									<tr className="border-b border-gray-100">
 										<td className="py-3 px-4">Storage per workspace</td>
-										<td className="py-3 px-4">1 GB</td>
 										<td className="py-3 px-4">5 GB</td>
-										<td className="py-3 px-4">1 TB+</td>
+										<td className="py-3 px-4">25 GB</td>
+										<td className="py-3 px-4">Unlimited</td>
 									</tr>
 									<tr className="border-b border-gray-100">
 										<td className="py-3 px-4">AI usage (monthly quota)</td>
