@@ -478,6 +478,24 @@ const schema = defineSchema({
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
 		.index("by_conversation_id", ["conversationId"]),
 
+	assistantToolAuditEvents: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.optional(v.id("members")),
+		userId: v.optional(v.id("users")),
+		toolName: v.string(),
+		toolkit: v.optional(v.string()),
+		argumentsSnapshot: v.optional(v.any()),
+		outcome: v.union(v.literal("success"), v.literal("error")),
+		error: v.optional(v.string()),
+		executionPath: v.string(),
+		toolCallId: v.optional(v.string()),
+		timestamp: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
+
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({
 		workspaceId: v.id("workspaces"),

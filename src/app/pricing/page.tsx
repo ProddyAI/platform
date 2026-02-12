@@ -70,7 +70,7 @@ const PricingPage = () => {
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-									<span className="text-gray-700">Unlimited users</span>
+									<span className="text-gray-700">5 users</span>
 								</li>
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />

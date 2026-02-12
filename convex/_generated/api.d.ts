@@ -12,6 +12,7 @@ import type * as analytics from "../analytics.js";
 import type * as assistantChat from "../assistantChat.js";
 import type * as assistantComposioTools from "../assistantComposioTools.js";
 import type * as assistantConversations from "../assistantConversations.js";
+import type * as assistantToolAudits from "../assistantToolAudits.js";
 import type * as assistantTools from "../assistantTools.js";
 import type * as auth from "../auth.js";
 import type * as board from "../board.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   assistantChat: typeof assistantChat;
   assistantComposioTools: typeof assistantComposioTools;
   assistantConversations: typeof assistantConversations;
+  assistantToolAudits: typeof assistantToolAudits;
   assistantTools: typeof assistantTools;
   auth: typeof auth;
   board: typeof board;

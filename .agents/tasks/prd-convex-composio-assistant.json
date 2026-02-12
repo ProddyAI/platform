@@ -249,7 +249,7 @@
 		{
 			"id": "S2",
 			"title": "Add high-impact action confirmation",
-			"status": "in_progress",
+			"status": "done",
 			"dependsOn": ["S1"],
 			"description": "Introduce a confirmation gate before high-risk external actions (send, delete, archive, merge, permission changes) are executed via Composio.",
 			"acceptanceCriteria": [
@@ -258,20 +258,23 @@
 				"Cancellation path returns clear assistant feedback without side effects"
 			],
 			"startedAt": "2026-02-12T12:06:02.659705+00:00",
-			"completedAt": null,
-			"updatedAt": "2026-02-12T12:06:02.660069+00:00"
+			"completedAt": "2026-02-12T12:14:17.639297+00:00",
+			"updatedAt": "2026-02-12T12:14:17.638883+00:00"
 		},
 		{
 			"id": "S3",
 			"title": "Persist tool execution audit trail",
-			"status": "open",
+			"status": "in_progress",
 			"dependsOn": ["S1"],
 			"description": "Persist normalized records for external tool attempts in Convex including actor, tool, arguments snapshot (sanitized), outcome, and timestamp.",
 			"acceptanceCriteria": [
 				"Every external tool attempt writes an audit event",
 				"Audit payload omits secrets/tokens",
 				"Audit records are queryable by workspace and member"
-			]
+			],
+			"startedAt": "2026-02-12T12:14:19.788082+00:00",
+			"completedAt": null,
+			"updatedAt": "2026-02-12T12:14:19.788401+00:00"
 		},
 		{
 			"id": "S4",

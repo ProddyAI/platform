@@ -6,7 +6,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
 import OpenAI from "openai";
-import { api } from "./_generated/api";
+import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
+import { api, internal } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
@@ -388,11 +389,15 @@ function detectComposioIntent(query: string): ComposioIntent | null {
  * Resolves auth config IDs from the member's connected accounts so tools.get uses valid authConfigIds.
  */
 async function executeComposioAction(
-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
+	ctx: {
+		runQuery: (query: any, args: any) => Promise<any>;
+		runMutation: (mutation: any, args: any) => Promise<any>;
+	},
 	entityId: string,
 	appNames: string[],
 	message: string,
-	workspaceId: Id<"workspaces">
+	workspaceId: Id<"workspaces">,
+	memberId: Id<"members">
 ): Promise<{
 	success: boolean;
 	response?: string;
@@ -530,6 +535,9 @@ async function executeComposioAction(
 		) {
 			for (const toolCall of completion.choices[0].message.tool_calls) {
 				if (toolCall.type === "function") {
+					const sanitizedArgs = parseAndSanitizeArguments(
+						toolCall.function.arguments
+					);
 					try {
 						const actionParams = JSON.parse(toolCall.function.arguments);
 						const result = await composio.tools.execute(
@@ -537,6 +545,19 @@ async function executeComposioAction(
 							{
 								userId: entityId,
 								arguments: actionParams,
+							}
+						);
+						await ctx.runMutation(
+							internal.assistantToolAudits.logExternalToolAttemptInternal,
+							{
+								workspaceId,
+								memberId,
+								toolName: toolCall.function.name,
+								toolkit: appNames[0]?.toUpperCase(),
+								argumentsSnapshot: sanitizedArgs,
+								outcome: "success",
+								executionPath: "convex-chatbot",
+								toolCallId: toolCall.id,
 							}
 						);
 
@@ -553,6 +574,20 @@ async function executeComposioAction(
 
 						const errorMessage =
 							error instanceof Error ? error.message : "Unknown error";
+						await ctx.runMutation(
+							internal.assistantToolAudits.logExternalToolAttemptInternal,
+							{
+								workspaceId,
+								memberId,
+								toolName: toolCall.function.name,
+								toolkit: appNames[0]?.toUpperCase(),
+								argumentsSnapshot: sanitizedArgs,
+								outcome: "error",
+								error: errorMessage,
+								executionPath: "convex-chatbot",
+								toolCallId: toolCall.id,
+							}
+						);
 
 						// Check if it's a connection error
 						if (
@@ -1592,7 +1627,8 @@ export const askAssistant = action({
 				entityId,
 				appNames,
 				args.query,
-				workspaceId
+				workspaceId,
+				memberId
 			);
 
 			if (composioResult.success && composioResult.response) {

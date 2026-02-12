@@ -13,6 +13,7 @@ import {
 	buildAssistantSystemPrompt,
 	classifyAssistantQuery,
 } from "@/lib/assistant-orchestration";
+import { parseAndSanitizeArguments } from "@/lib/assistant-tool-audit";
 import {
 	type AvailableApp,
 	createComposioClient,
@@ -58,6 +59,43 @@ function createOpenAIClient(): OpenAI {
 	});
 }
 
+async function logExternalToolAuditEvent(params: {
+	convex: ConvexHttpClient;
+	workspaceId: Id<"workspaces">;
+	memberId?: Id<"members">;
+	userId?: Id<"users">;
+	toolName: string;
+	toolkit?: string;
+	argumentsSnapshot: unknown;
+	outcome: "success" | "error";
+	error?: string;
+	executionPath: string;
+	toolCallId?: string;
+}) {
+	try {
+		await params.convex.mutation(
+			api.assistantToolAudits.logExternalToolAttempt,
+			{
+				workspaceId: params.workspaceId,
+				memberId: params.memberId,
+				userId: params.userId,
+				toolName: params.toolName,
+				toolkit: params.toolkit,
+				argumentsSnapshot: params.argumentsSnapshot,
+				outcome: params.outcome,
+				error: params.error,
+				executionPath: params.executionPath,
+				toolCallId: params.toolCallId,
+			}
+		);
+	} catch (error) {
+		console.warn(
+			"[Chatbot Assistant] Failed to persist tool audit event",
+			error
+		);
+	}
+}
+
 /**
  * Handle chatbot POST requests by routing the user's query through OpenAI+Composio tool integration when applicable, otherwise falling back to the Convex-based assistant.
  *
@@ -83,6 +121,7 @@ function createOpenAIClient(): OpenAI {
 export async function POST(req: NextRequest) {
 	try {
 		const convex = createConvexClient();
+		let authenticatedUserId: Id<"users"> | null = null;
 
 		// Pass auth through to Convex so membership/tasks/channels work.
 		// We attempt token retrieval even if isAuthenticatedNextjs() is false, because
@@ -140,6 +179,7 @@ export async function POST(req: NextRequest) {
 			if (!currentUser) {
 				return NextResponse.json({ error: "User not found" }, { status: 404 });
 			}
+			authenticatedUserId = currentUser._id;
 
 			// Get the member for this workspace and verify ownership
 			const member = await convex.query(api.members.getMemberById, {
@@ -368,6 +408,39 @@ export async function POST(req: NextRequest) {
 							resultMap[call.id] = toolResults[idx] ?? { success: true };
 						});
 
+						await Promise.all(
+							toolCalls.map(async (call) => {
+								const toolResult = resultMap[call.id];
+								const outcome: "success" | "error" =
+									toolResult?.success === false || Boolean(toolResult?.error)
+										? "error"
+										: "success";
+
+								await logExternalToolAuditEvent({
+									convex,
+									workspaceId: workspaceId as Id<"workspaces">,
+									memberId: memberId as Id<"members"> | undefined,
+									userId: authenticatedUserId ?? undefined,
+									toolName: call.function?.name || "unknown_tool",
+									toolkit: undefined,
+									argumentsSnapshot: parseAndSanitizeArguments(
+										call.function?.arguments || "{}"
+									),
+									outcome,
+									error:
+										outcome === "error"
+											? String(
+													toolResult?.error ||
+														toolResult?.message ||
+														"Tool execution failed"
+												)
+											: undefined,
+									executionPath: "nextjs-openai-composio",
+									toolCallId: call.id,
+								});
+							})
+						);
+
 						// Log warning if counts differ
 						if (toolCalls.length !== toolResults.length) {
 							console.warn(
@@ -399,6 +472,28 @@ export async function POST(req: NextRequest) {
 						console.error(
 							"[Chatbot Assistant] Tool execution failed:",
 							toolError
+						);
+						await Promise.all(
+							toolCalls.map(async (call) => {
+								await logExternalToolAuditEvent({
+									convex,
+									workspaceId: workspaceId as Id<"workspaces">,
+									memberId: memberId as Id<"members"> | undefined,
+									userId: authenticatedUserId ?? undefined,
+									toolName: call.function?.name || "unknown_tool",
+									toolkit: undefined,
+									argumentsSnapshot: parseAndSanitizeArguments(
+										call.function?.arguments || "{}"
+									),
+									outcome: "error",
+									error:
+										toolError instanceof Error
+											? toolError.message
+											: "Tool execution failed",
+									executionPath: "nextjs-openai-composio",
+									toolCallId: call.id,
+								});
+							})
 						);
 						responseText +=
 							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";

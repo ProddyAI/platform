@@ -3,6 +3,7 @@
 import { Composio } from "@composio/core";
 import { v } from "convex/values";
 import OpenAI from "openai";
+import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
 import {
 	buildCancellationMessage,
 	buildConfirmationRequiredMessage,
@@ -14,11 +15,16 @@ import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
 async function executeComposioAction(
-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
+	ctx: {
+		runQuery: (query: any, args: any) => Promise<any>;
+		runMutation: (mutation: any, args: any) => Promise<any>;
+	},
 	entityId: string,
 	appNames: string[],
 	message: string,
-	workspaceId: Id<"workspaces">
+	workspaceId: Id<"workspaces">,
+	userId: Id<"users">,
+	memberId: Id<"members">
 ): Promise<{ success: boolean; response?: string; error?: string }> {
 	try {
 		if (!process.env.COMPOSIO_API_KEY) {
@@ -139,11 +145,78 @@ async function executeComposioAction(
 
 			for (const toolCall of toolCalls) {
 				if (toolCall.type === "function") {
-					const actionParams = JSON.parse(toolCall.function.arguments);
-					await composio.tools.execute(toolCall.function.name, {
-						userId: entityId,
-						arguments: actionParams,
-					});
+					const sanitizedArgs = parseAndSanitizeArguments(
+						toolCall.function.arguments
+					);
+					let actionParams: Record<string, unknown> | undefined;
+					try {
+						const parsed = JSON.parse(toolCall.function.arguments);
+						if (
+							parsed &&
+							typeof parsed === "object" &&
+							!Array.isArray(parsed)
+						) {
+							actionParams = parsed as Record<string, unknown>;
+						}
+					} catch (error) {
+						await ctx.runMutation(
+							internal.assistantToolAudits.logExternalToolAttemptInternal,
+							{
+								workspaceId,
+								memberId,
+								userId,
+								toolName: toolCall.function.name,
+								toolkit: appNames[0]?.toUpperCase(),
+								argumentsSnapshot: sanitizedArgs,
+								outcome: "error",
+								error:
+									error instanceof Error
+										? error.message
+										: "Invalid tool call arguments",
+								executionPath: "convex-assistant",
+								toolCallId: toolCall.id,
+							}
+						);
+						throw error;
+					}
+
+					try {
+						await composio.tools.execute(toolCall.function.name, {
+							userId: entityId,
+							arguments: actionParams,
+						});
+						await ctx.runMutation(
+							internal.assistantToolAudits.logExternalToolAttemptInternal,
+							{
+								workspaceId,
+								memberId,
+								userId,
+								toolName: toolCall.function.name,
+								toolkit: appNames[0]?.toUpperCase(),
+								argumentsSnapshot: sanitizedArgs,
+								outcome: "success",
+								executionPath: "convex-assistant",
+								toolCallId: toolCall.id,
+							}
+						);
+					} catch (error) {
+						await ctx.runMutation(
+							internal.assistantToolAudits.logExternalToolAttemptInternal,
+							{
+								workspaceId,
+								memberId,
+								userId,
+								toolName: toolCall.function.name,
+								toolkit: appNames[0]?.toUpperCase(),
+								argumentsSnapshot: sanitizedArgs,
+								outcome: "error",
+								error: error instanceof Error ? error.message : "Unknown error",
+								executionPath: "convex-assistant",
+								toolCallId: toolCall.id,
+							}
+						);
+						throw error;
+					}
 				}
 			}
 		}
@@ -184,7 +257,9 @@ export const runGmailTool = action({
 			`member_${memberId}`,
 			["GMAIL"],
 			args.instruction,
-			args.workspaceId
+			args.workspaceId,
+			args.userId,
+			memberId
 		);
 	},
 });
@@ -205,7 +280,9 @@ export const runSlackTool = action({
 			`member_${memberId}`,
 			["SLACK"],
 			args.instruction,
-			args.workspaceId
+			args.workspaceId,
+			args.userId,
+			memberId
 		);
 	},
 });
@@ -226,7 +303,9 @@ export const runGithubTool = action({
 			`member_${memberId}`,
 			["GITHUB"],
 			args.instruction,
-			args.workspaceId
+			args.workspaceId,
+			args.userId,
+			memberId
 		);
 	},
 });
@@ -247,7 +326,9 @@ export const runNotionTool = action({
 			`member_${memberId}`,
 			["NOTION"],
 			args.instruction,
-			args.workspaceId
+			args.workspaceId,
+			args.userId,
+			memberId
 		);
 	},
 });
@@ -268,7 +349,9 @@ export const runClickupTool = action({
 			`member_${memberId}`,
 			["CLICKUP"],
 			args.instruction,
-			args.workspaceId
+			args.workspaceId,
+			args.userId,
+			memberId
 		);
 	},
 });
@@ -289,7 +372,9 @@ export const runLinearTool = action({
 			`member_${memberId}`,
 			["LINEAR"],
 			args.instruction,
-			args.workspaceId
+			args.workspaceId,
+			args.userId,
+			memberId
 		);
 	},
 });
