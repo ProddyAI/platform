@@ -34,10 +34,10 @@ import { useMarkAllDirectMessagesAsRead } from "@/features/messages/api/use-mark
 import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-mentions-as-read";
 import { useMarkDirectMessageAsRead } from "@/features/messages/api/use-mark-direct-message-as-read";
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
-import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useAdBlockerDetection } from "@/hooks/use-ad-blocker-detection";
-import { Badge } from "./ui/badge";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { Alert, AlertDescription } from "./ui/alert";
+import { Badge } from "./ui/badge";
 
 interface MentionsNotificationDialogProps {
 	open: boolean;
@@ -388,7 +388,7 @@ export const MentionsNotificationDialog = ({
 							</Button>
 						)}
 					</div>
-					
+
 					{/* Ad Blocker Warning */}
 					{isAdBlockerActive && (
 						<Alert className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">

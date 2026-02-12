@@ -1,12 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import {
-	Clock,
-	Loader,
-	MessageSquare,
-	Users,
-} from "lucide-react";
+import { Clock, Loader, MessageSquare, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";

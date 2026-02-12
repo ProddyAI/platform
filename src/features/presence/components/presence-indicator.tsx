@@ -71,7 +71,10 @@ export const PresenceIndicator = ({
 								className
 							)}
 						>
-							<Moon className="size-3 text-yellow-500 fill-yellow-500" strokeWidth={0} />
+							<Moon
+								className="size-3 text-yellow-500 fill-yellow-500"
+								strokeWidth={0}
+							/>
 						</div>
 					</TooltipTrigger>
 					<TooltipContent className="text-xs" side="top">

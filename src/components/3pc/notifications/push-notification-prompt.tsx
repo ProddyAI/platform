@@ -14,7 +14,8 @@ import {
 import { useAdBlockerDetection } from "@/hooks/use-ad-blocker-detection";
 
 export const PushNotificationPrompt = () => {
-	const [permission, setPermission] = useState<NotificationPermission>("default");
+	const [permission, setPermission] =
+		useState<NotificationPermission>("default");
 	const [isSupported, setIsSupported] = useState(false);
 	const [isRequesting, setIsRequesting] = useState(false);
 	const isAdBlockerActive = useAdBlockerDetection();

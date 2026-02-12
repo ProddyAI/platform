@@ -14,6 +14,7 @@ import {
 	VolumeX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PushNotificationPrompt } from "@/components/3pc/notifications";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
 	Card,
@@ -36,7 +37,6 @@ import {
 	useNotificationPreferences,
 	useUserPreferences,
 } from "../api/use-user-preferences";
-import { PushNotificationPrompt } from "@/components/3pc/notifications";
 
 export const NotificationSettings = () => {
 	const { updateSettings } = useUserPreferences();
@@ -162,7 +162,8 @@ export const NotificationSettings = () => {
 		{
 			key: "workspaceJoin",
 			title: "Workspace Joins",
-			description: "Get notified when someone joins a workspace (if you are online)",
+			description:
+				"Get notified when someone joins a workspace (if you are online)",
 			icon: Users,
 			enabled: notifications?.workspaceJoin ?? true,
 		},
@@ -278,7 +279,8 @@ export const NotificationSettings = () => {
 								Online/Offline Status
 							</Label>
 							<p className="text-sm text-muted-foreground">
-								Get notified when team members go online or offline (excludes DND status changes)
+								Get notified when team members go online or offline (excludes
+								DND status changes)
 							</p>
 						</div>
 						<Switch

@@ -19,7 +19,8 @@ export const useAdBlockerDetection = (): boolean => {
 				// Method 1: Multiple bait elements with different ad-like attributes
 				const baitTests = [
 					{
-						className: "adsbox ad-banner ad-placement advertisement pub_300x250",
+						className:
+							"adsbox ad-banner ad-placement advertisement pub_300x250",
 						id: "google_ads_iframe_1",
 					},
 					{
@@ -71,11 +72,11 @@ export const useAdBlockerDetection = (): boolean => {
 
 				// Method 2: Check for ad blocker extension properties
 				const adBlockerProps = [
-					// @ts-ignore
+					// @ts-expect-error
 					() => typeof window.canRunAds !== "undefined" && !window.canRunAds,
-					// @ts-ignore
+					// @ts-expect-error
 					() => typeof window.google_ad_modifications !== "undefined",
-					// @ts-ignore
+					// @ts-expect-error
 					() => typeof window.isAdBlocked !== "undefined" && window.isAdBlocked,
 				];
 
@@ -103,7 +104,7 @@ export const useAdBlockerDetection = (): boolean => {
 						const scriptLoadPromise = new Promise<boolean>((resolve) => {
 							testScript.onload = () => resolve(false); // Script loaded = no blocker
 							testScript.onerror = () => resolve(true); // Script blocked = blocker present
-							
+
 							// Timeout after 2 seconds
 							setTimeout(() => resolve(false), 2000);
 						});
@@ -133,14 +134,14 @@ export const useAdBlockerDetection = (): boolean => {
 						const imageLoadPromise = new Promise<boolean>((resolve) => {
 							testImage.onload = () => resolve(false); // Image loaded = no blocker
 							testImage.onerror = () => resolve(true); // Image blocked = blocker present
-							
+
 							// Timeout after 2 seconds
 							setTimeout(() => resolve(false), 2000);
 						});
 
 						// Use a timestamp to prevent caching
 						testImage.src = `https://pagead2.googlesyndication.com/pagead/show_ads.js?${Date.now()}`;
-						
+
 						const isImageBlocked = await imageLoadPromise;
 						if (isImageBlocked) {
 							detectionScore++;
@@ -154,10 +155,12 @@ export const useAdBlockerDetection = (): boolean => {
 				// Set ad blocker status based on detection score
 				const isBlocked = detectionScore >= detectionThreshold;
 				setIsAdBlockerActive(isBlocked);
-				
+
 				// Optional: Log for debugging
 				if (process.env.NODE_ENV === "development") {
-					console.log(`Ad blocker detection score: ${detectionScore} (threshold: ${detectionThreshold})`);
+					console.log(
+						`Ad blocker detection score: ${detectionScore} (threshold: ${detectionThreshold})`
+					);
 				}
 			} catch (error) {
 				console.warn("Ad blocker detection error:", error);

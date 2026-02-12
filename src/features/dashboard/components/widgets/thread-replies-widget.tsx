@@ -168,88 +168,90 @@ export const ThreadRepliesWidget = ({
 					<div className="space-y-2 pr-4">
 						{threadMessages.map((thread) => {
 							const authorUserId = thread.currentUser?.userId;
-							const status = authorUserId ? getUserStatus(authorUserId) : undefined;
-							
+							const status = authorUserId
+								? getUserStatus(authorUserId)
+								: undefined;
+
 							return (
-							<WidgetCard key={thread.message._id.toString()}>
-								<div className="flex items-start gap-3">
-									<div className="relative">
-										<Avatar className="h-8 w-8">
-											<AvatarImage
-												alt={thread.currentUser.name || "User avatar"}
-												src={thread.currentUser.image}
-											/>
-											<AvatarFallback>
-												{thread.currentUser.name
-													? thread.currentUser.name.charAt(0).toUpperCase()
-													: "?"}
-											</AvatarFallback>
-										</Avatar>
-										{status && <PresenceIndicator status={status} />}
-									</div>
-									<div className="flex-1 space-y-1">
-										<div className="flex items-center justify-between">
-											<div className="flex items-center gap-2">
-												<p className="font-medium">
-													{thread.currentUser.name || "Unknown User"}
-												</p>
-												{thread.context.type === "channel" && (
-													<Badge
-														className="flex items-center gap-1 border-2"
-														variant="outline"
-													>
-														<Hash className="h-3 w-3" />
-														{thread.context.name}
-													</Badge>
-												)}
-											</div>
-											<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
-												<Clock className="h-2.5 w-2.5" />
-												{(() => {
-													try {
-														// Try to safely format the date
-														if (
-															thread.message._creationTime &&
-															!Number.isNaN(
-																Number(thread.message._creationTime)
-															)
-														) {
-															const date = new Date(
-																Number(thread.message._creationTime)
-															);
-															if (date.toString() !== "Invalid Date") {
-																return formatDistanceToNow(date, {
-																	addSuffix: true,
-																}).replace("about ", "");
+								<WidgetCard key={thread.message._id.toString()}>
+									<div className="flex items-start gap-3">
+										<div className="relative">
+											<Avatar className="h-8 w-8">
+												<AvatarImage
+													alt={thread.currentUser.name || "User avatar"}
+													src={thread.currentUser.image}
+												/>
+												<AvatarFallback>
+													{thread.currentUser.name
+														? thread.currentUser.name.charAt(0).toUpperCase()
+														: "?"}
+												</AvatarFallback>
+											</Avatar>
+											{status && <PresenceIndicator status={status} />}
+										</div>
+										<div className="flex-1 space-y-1">
+											<div className="flex items-center justify-between">
+												<div className="flex items-center gap-2">
+													<p className="font-medium">
+														{thread.currentUser.name || "Unknown User"}
+													</p>
+													{thread.context.type === "channel" && (
+														<Badge
+															className="flex items-center gap-1 border-2"
+															variant="outline"
+														>
+															<Hash className="h-3 w-3" />
+															{thread.context.name}
+														</Badge>
+													)}
+												</div>
+												<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
+													<Clock className="h-2.5 w-2.5" />
+													{(() => {
+														try {
+															// Try to safely format the date
+															if (
+																thread.message._creationTime &&
+																!Number.isNaN(
+																	Number(thread.message._creationTime)
+																)
+															) {
+																const date = new Date(
+																	Number(thread.message._creationTime)
+																);
+																if (date.toString() !== "Invalid Date") {
+																	return formatDistanceToNow(date, {
+																		addSuffix: true,
+																	}).replace("about ", "");
+																}
 															}
+															return "recently";
+														} catch (_error) {
+															return "recently";
 														}
-														return "recently";
-													} catch (_error) {
-														return "recently";
-													}
-												})()}
-											</span>
+													})()}
+												</span>
+											</div>
+											<div className="rounded-md bg-muted/30 p-2 text-xs">
+												<p className="font-medium text-muted-foreground">
+													Replied to your thread:
+												</p>
+												<p className="mt-1">
+													{getMessagePreview(thread.message.body)}
+													{thread.message.body.length > 50 ? "..." : ""}
+												</p>
+											</div>
+											<Button
+												className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+												onClick={() => handleViewThread(thread)}
+												size="sm"
+												variant="ghost"
+											>
+												View thread
+											</Button>
 										</div>
-										<div className="rounded-md bg-muted/30 p-2 text-xs">
-											<p className="font-medium text-muted-foreground">
-												Replied to your thread:
-											</p>
-											<p className="mt-1">
-												{getMessagePreview(thread.message.body)}
-												{thread.message.body.length > 50 ? "..." : ""}
-											</p>
-										</div>
-										<Button
-											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-											onClick={() => handleViewThread(thread)}
-											size="sm"
-											variant="ghost"
-										>
-											View thread
-										</Button>
 									</div>
-								</div>
-							</WidgetCard>
+								</WidgetCard>
 							);
 						})}
 					</div>

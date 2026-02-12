@@ -1179,7 +1179,8 @@ export const sendImportCompletionEmail = internalAction({
 	handler: async (_ctx, args) => {
 		try {
 			const apiKey = process.env.RESEND_API_KEY;
-			const fromEmail = process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
+			const fromEmail =
+				process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
 
 			if (!apiKey) {
 				console.error("Resend email not configured");

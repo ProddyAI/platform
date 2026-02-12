@@ -1,8 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
-import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internalMutation, mutation } from "./_generated/server";
 
 /**
  * Send a push notification to specific users
@@ -59,20 +58,23 @@ export const sendPushNotification = internalMutation({
 
 		try {
 			// Send notification via OneSignal REST API
-			const response = await fetch("https://onesignal.com/api/v1/notifications", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Basic ${oneSignalApiKey}`,
-				},
-				body: JSON.stringify({
-					app_id: oneSignalAppId,
-					include_external_user_ids: filteredUserIds,
-					headings: { en: args.title },
-					contents: { en: args.message },
-					data: args.data || {},
-				}),
-			});
+			const response = await fetch(
+				"https://onesignal.com/api/v1/notifications",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Basic ${oneSignalApiKey}`,
+					},
+					body: JSON.stringify({
+						app_id: oneSignalAppId,
+						include_external_user_ids: filteredUserIds,
+						headings: { en: args.title },
+						contents: { en: args.message },
+						data: args.data || {},
+					}),
+				}
+			);
 
 			const result = await response.json();
 
@@ -108,26 +110,30 @@ export const notifyInviteSent = mutation({
 		// Get all online members in the workspace
 		const members = await ctx.db
 			.query("members")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
-		const userIds = members
-			.map((m) => m.userId)
-			.filter((id) => id !== userId); // Don't notify the sender
+		const userIds = members.map((m) => m.userId).filter((id) => id !== userId); // Don't notify the sender
 
 		if (userIds.length === 0) return;
 
 		// Schedule internal notification
-		await ctx.scheduler.runAfter(0, "notifications:sendPushNotification" as any, {
-			userIds,
-			title: `Invite sent to ${workspace.name}`,
-			message: `An invitation has been sent to ${args.invitedEmail}`,
-			notificationType: "inviteSent",
-			data: {
-				workspaceId: args.workspaceId,
-				type: "invite_sent",
-			},
-		});
+		await ctx.scheduler.runAfter(
+			0,
+			"notifications:sendPushNotification" as any,
+			{
+				userIds,
+				title: `Invite sent to ${workspace.name}`,
+				message: `An invitation has been sent to ${args.invitedEmail}`,
+				notificationType: "inviteSent",
+				data: {
+					workspaceId: args.workspaceId,
+					type: "invite_sent",
+				},
+			}
+		);
 	},
 });
 
@@ -166,17 +172,21 @@ export const notifyWorkspaceJoin = mutation({
 		if (onlineUserIds.length === 0) return;
 
 		// Schedule internal notification
-		await ctx.scheduler.runAfter(0, "notifications:sendPushNotification" as any, {
-			userIds: onlineUserIds,
-			title: `${newUser.name} joined ${workspace.name}`,
-			message: `${newUser.name} has joined the workspace`,
-			notificationType: "workspaceJoin",
-			data: {
-				workspaceId: args.workspaceId,
-				userId: newMember.userId,
-				type: "workspace_join",
-			},
-		});
+		await ctx.scheduler.runAfter(
+			0,
+			"notifications:sendPushNotification" as any,
+			{
+				userIds: onlineUserIds,
+				title: `${newUser.name} joined ${workspace.name}`,
+				message: `${newUser.name} has joined the workspace`,
+				notificationType: "workspaceJoin",
+				data: {
+					workspaceId: args.workspaceId,
+					userId: newMember.userId,
+					type: "workspace_join",
+				},
+			}
+		);
 	},
 });
 
@@ -205,7 +215,9 @@ export const notifyStatusChange = mutation({
 		// Get all members in the workspace (excluding the user who changed status)
 		const members = await ctx.db
 			.query("members")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
 		const userIds = members
@@ -218,17 +230,21 @@ export const notifyStatusChange = mutation({
 			args.newStatus === "online" ? "is now online" : "is now offline";
 
 		// Schedule internal notification
-		await ctx.scheduler.runAfter(0, "notifications:sendPushNotification" as any, {
-			userIds,
-			title: `${user.name} ${statusMessage}`,
-			message: `${user.name} ${statusMessage} in ${(await ctx.db.get(args.workspaceId))?.name}`,
-			notificationType: "onlineStatus",
-			data: {
-				workspaceId: args.workspaceId,
-				userId: args.userId,
-				status: args.newStatus,
-				type: "status_change",
-			},
-		});
+		await ctx.scheduler.runAfter(
+			0,
+			"notifications:sendPushNotification" as any,
+			{
+				userIds,
+				title: `${user.name} ${statusMessage}`,
+				message: `${user.name} ${statusMessage} in ${(await ctx.db.get(args.workspaceId))?.name}`,
+				notificationType: "onlineStatus",
+				data: {
+					workspaceId: args.workspaceId,
+					userId: args.userId,
+					status: args.newStatus,
+					type: "status_change",
+				},
+			}
+		);
 	},
 });
