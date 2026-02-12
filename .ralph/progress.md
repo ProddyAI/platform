@@ -147,3 +147,40 @@ Run summary: /Users/macbook/Documents/GitHub/platform/.ralph/runs/run-20260212-1
   - Useful context
   - Convex codegen updates `convex/_generated/api.d.ts` and should be run after adding new Convex modules.
 ---
+## [2026-02-12 18:15:58 +0530] - S4: Harden error handling and fallback UX
+Thread: 
+Run: 20260212-180835-23441 (iteration 1)
+Run log: /Users/macbook/Documents/GitHub/platform/.ralph/runs/run-20260212-180835-23441-iter-1.log
+Run summary: /Users/macbook/Documents/GitHub/platform/.ralph/runs/run-20260212-180835-23441-iter-1.md
+- Guardrails reviewed: yes
+- No-commit run: false
+- Commit: 965c586 fix(assistant): harden composio error fallback
+- Post-commit status: `.ralph/runs/run-20260212-180835-23441-iter-1.log`, `.ralph/progress.md`
+- Verification:
+  - Command: `bun run type` -> PASS
+  - Command: `bun run check` -> FAIL
+  - Command: `bun run build` -> PASS
+- Files changed:
+  - src/lib/assistant-error-utils.ts
+  - src/app/api/assistant/chatbot/route.ts
+  - src/app/api/assistant/route.ts
+  - src/app/api/assistant/composio/route.ts
+  - src/app/api/assistant/composio/status/route.ts
+  - src/app/api/assistant/composio/tools/route.ts
+  - src/app/api/assistant/composio/agentauth/route.ts
+  - .ralph/activity.log
+  - .ralph/progress.md
+  - .ralph/runs/run-20260212-180835-23441-iter-1.log
+- What was implemented
+  - Added shared assistant/composio error utilities for sanitized logging (`logRouteError`), safe error text redaction, and consistent actionable client error payloads.
+  - Updated assistant and composio API routes to replace raw error/detailed payloads with actionable responses and consistent error codes/next steps.
+  - Preserved and hardened fallback UX in chatbot route: Composio failures continue to fall back to Convex, and recoverable dual-path failures now return a usable assistant fallback response instead of hard-failing.
+  - Removed raw exception object logging in assistant/composio routes to reduce sensitive-data leakage risk.
+- **Learnings for future iterations:**
+  - Patterns discovered
+  - A shared route-level error utility keeps response shape and logging behavior consistent across assistant/composio endpoints.
+  - Gotchas encountered
+  - `bun run check` fails due large pre-existing repository diagnostics unrelated to S4; it remains useful for formatting but not as a clean gate in current repo state.
+  - Useful context
+  - `bun run build` succeeds with the new error utility and route wiring, confirming no regression in Next.js API route compilation.
+---
