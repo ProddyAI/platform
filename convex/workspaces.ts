@@ -96,7 +96,7 @@ export const create = mutation({
 			name: args.name,
 			userId,
 			joinCode,
-			enabledFeatures: [],
+			enabledFeatures: ["canvas", "notes", "boards"],
 		});
 
 		await ctx.db.insert("members", {
@@ -108,7 +108,7 @@ export const create = mutation({
 		await ctx.db.insert("channels", {
 			name: "general",
 			workspaceId,
-			enabledFeatures: [],
+			enabledFeatures: ["canvas", "notes", "boards"],
 		});
 
 		// Create default task categories for the workspace

@@ -162,7 +162,7 @@ export const create = mutation({
 			workspaceId: args.workspaceId,
 			enabledFeatures: (args.enabledFeatures ??
 				workspace.enabledFeatures ??
-				[]) as Array<"canvas" | "notes" | "boards">,
+				["canvas", "notes", "boards"]) as Array<"canvas" | "notes" | "boards">,
 			icon: args.icon,
 			iconImage: args.iconImage,
 		});
