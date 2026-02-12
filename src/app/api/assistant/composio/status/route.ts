@@ -1,6 +1,10 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 import {
+	buildActionableErrorPayload,
+	logRouteError,
+} from "@/lib/assistant-error-utils";
+import {
 	type AvailableApp,
 	createComposioClient,
 	getAllToolsForApps,
@@ -62,7 +66,12 @@ export async function GET(req: NextRequest) {
 				);
 				totalTools = allTools.length;
 			} catch (error) {
-				console.warn("[Connections Status] Failed to get tool count:", error);
+				logRouteError({
+					route: "Connections Status",
+					stage: "tool_count_fetch_failed",
+					error,
+					level: "warn",
+				});
 				// Don't fail the whole request if tool fetching fails
 				totalTools = 0;
 			}
@@ -78,11 +87,20 @@ export async function GET(req: NextRequest) {
 			timestamp: new Date().toISOString(),
 		});
 	} catch (error) {
-		console.error("[Connections Status] Error:", error);
+		logRouteError({
+			route: "Connections Status",
+			stage: "status_route_failed",
+			error,
+		});
 		return NextResponse.json(
 			{
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
+				...buildActionableErrorPayload({
+					message: "Unable to load integration status.",
+					nextStep:
+						"Retry in a few seconds. If it persists, reconnect the integration and retry.",
+					code: "COMPOSIO_STATUS_ROUTE_FAILED",
+					recoverable: true,
+				}),
 				connected: [],
 				totalTools: 0,
 			},

@@ -1,5 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import {
+	buildActionableErrorPayload,
+	buildComposioFailureGuidance,
+	logRouteError,
+	sanitizeErrorMessage,
+} from "@/lib/assistant-error-utils";
 import { createComposioClient } from "@/lib/composio-config";
 
 // Initialize OpenAI client
@@ -42,11 +48,21 @@ export async function POST(req: NextRequest) {
 						tools.push(appTools);
 					}
 				} catch (error) {
-					console.warn(`No tools found for app ${appName}:`, error);
+					logRouteError({
+						route: "Composio Tools",
+						stage: "app_tools_missing",
+						error,
+						level: "warn",
+						context: { appName },
+					});
 				}
 			}
 		} catch (error) {
-			console.error("Error fetching tools:", error);
+			logRouteError({
+				route: "Composio Tools",
+				stage: "tools_fetch_failed",
+				error,
+			});
 			tools = [];
 		}
 
@@ -101,10 +117,17 @@ export async function POST(req: NextRequest) {
 							toolName: toolCall.function.name,
 						});
 					} catch (error) {
-						console.error("Tool execution error:", error);
+						logRouteError({
+							route: "Composio Tools",
+							stage: "tool_execution_error",
+							error,
+							context: { toolName: toolCall.function.name },
+						});
 						toolResults.push({
 							toolCallId: toolCall.id,
-							error: error instanceof Error ? error.message : "Unknown error",
+							error: sanitizeErrorMessage(
+								error instanceof Error ? error.message : "Unknown error"
+							),
 							toolName: toolCall.function.name,
 						});
 					}
@@ -152,12 +175,18 @@ export async function POST(req: NextRequest) {
 			availableTools: tools.length,
 		});
 	} catch (error) {
-		console.error("[Composio Tools] Error:", error);
+		logRouteError({
+			route: "Composio Tools",
+			stage: "tools_post_failed",
+			error,
+		});
 		return NextResponse.json(
-			{
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			},
+			buildActionableErrorPayload({
+				message: "Composio tools request failed.",
+				nextStep: buildComposioFailureGuidance(),
+				code: "COMPOSIO_TOOLS_POST_FAILED",
+				recoverable: true,
+			}),
 			{ status: 500 }
 		);
 	}
@@ -193,7 +222,13 @@ export async function GET(req: NextRequest) {
 						tools.push(appTools);
 					}
 				} catch (error) {
-					console.warn(`No tools found for app ${appName}:`, error);
+					logRouteError({
+						route: "Composio Tools",
+						stage: "app_tools_missing_get",
+						error,
+						level: "warn",
+						context: { appName },
+					});
 				}
 			}
 		} else {
@@ -202,7 +237,13 @@ export async function GET(req: NextRequest) {
 				const allTools = await composio.tools.get(entityId, {} as any);
 				tools = Array.isArray(allTools) ? allTools : [allTools];
 			} catch (error) {
-				console.warn("No tools found for entity:", error);
+				logRouteError({
+					route: "Composio Tools",
+					stage: "entity_tools_missing_get",
+					error,
+					level: "warn",
+					context: { entityId },
+				});
 				tools = [];
 			}
 		}
@@ -218,12 +259,19 @@ export async function GET(req: NextRequest) {
 			count: tools.length,
 		});
 	} catch (error) {
-		console.error("[Composio Tools] GET Error:", error);
+		logRouteError({
+			route: "Composio Tools",
+			stage: "tools_get_failed",
+			error,
+		});
 		return NextResponse.json(
-			{
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			},
+			buildActionableErrorPayload({
+				message: "Unable to fetch available Composio tools.",
+				nextStep:
+					"Confirm the account is connected, then retry the tools request.",
+				code: "COMPOSIO_TOOLS_GET_FAILED",
+				recoverable: true,
+			}),
 			{ status: 500 }
 		);
 	}

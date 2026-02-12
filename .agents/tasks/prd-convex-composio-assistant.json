@@ -264,7 +264,7 @@
 		{
 			"id": "S3",
 			"title": "Persist tool execution audit trail",
-			"status": "in_progress",
+			"status": "done",
 			"dependsOn": ["S1"],
 			"description": "Persist normalized records for external tool attempts in Convex including actor, tool, arguments snapshot (sanitized), outcome, and timestamp.",
 			"acceptanceCriteria": [
@@ -273,20 +273,23 @@
 				"Audit records are queryable by workspace and member"
 			],
 			"startedAt": "2026-02-12T12:14:19.788082+00:00",
-			"completedAt": null,
-			"updatedAt": "2026-02-12T12:14:19.788401+00:00"
+			"completedAt": "2026-02-12T12:23:34.915190+00:00",
+			"updatedAt": "2026-02-12T12:23:34.914649+00:00"
 		},
 		{
 			"id": "S4",
 			"title": "Harden error handling and fallback UX",
-			"status": "open",
+			"status": "in_progress",
 			"dependsOn": ["S1"],
 			"description": "Normalize error handling across assistant and composio routes so failures produce actionable messages and preserve usable fallback responses.",
 			"acceptanceCriteria": [
 				"Composio path failures return actionable user-facing messages",
 				"Fallback assistant response is returned for recoverable failures",
 				"Error logging is consistent and does not leak sensitive data"
-			]
+			],
+			"startedAt": "2026-02-12T12:38:35.878167+00:00",
+			"completedAt": null,
+			"updatedAt": "2026-02-12T12:38:35.878511+00:00"
 		},
 		{
 			"id": "S5",

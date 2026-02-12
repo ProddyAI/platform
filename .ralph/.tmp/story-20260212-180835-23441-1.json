@@ -1,0 +1,13 @@
+{
+	"ok": true,
+	"total": 5,
+	"remaining": 2,
+	"quality_gates": [
+		"bun run type",
+		"bun run check",
+		"No secrets in logs or client payloads",
+		"Assistant fallback path must be preserved"
+	],
+	"id": "S4",
+	"title": "Harden error handling and fallback UX"
+}

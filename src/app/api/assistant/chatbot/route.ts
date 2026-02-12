@@ -9,6 +9,12 @@ import OpenAI from "openai";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import {
+	buildActionableErrorPayload,
+	buildComposioFailureGuidance,
+	buildRecoverableAssistantFallback,
+	logRouteError,
+} from "@/lib/assistant-error-utils";
+import {
 	buildAssistantResponseMetadata,
 	buildAssistantSystemPrompt,
 	classifyAssistantQuery,
@@ -89,10 +95,12 @@ async function logExternalToolAuditEvent(params: {
 			}
 		);
 	} catch (error) {
-		console.warn(
-			"[Chatbot Assistant] Failed to persist tool audit event",
-			error
-		);
+		logRouteError({
+			route: "Chatbot Assistant",
+			stage: "audit_persist_failed",
+			error,
+			level: "warn",
+		});
 	}
 }
 
@@ -131,16 +139,21 @@ export async function POST(req: NextRequest) {
 			if (token) {
 				convex.setAuth(token);
 			} else if (isAuthenticatedNextjs()) {
-				console.warn(
-					"[Chatbot Assistant] Authenticated session but no Convex token found"
-				);
+				logRouteError({
+					route: "Chatbot Assistant",
+					stage: "missing_convex_token",
+					error: new Error("Authenticated session but no Convex token found"),
+					level: "warn",
+				});
 			}
 		} catch (err) {
 			if (isAuthenticatedNextjs()) {
-				console.warn(
-					"[Chatbot Assistant] Failed to read Convex auth token from request",
-					err
-				);
+				logRouteError({
+					route: "Chatbot Assistant",
+					stage: "convex_token_read_failed",
+					error: err,
+					level: "warn",
+				});
 			}
 		}
 
@@ -259,9 +272,14 @@ export async function POST(req: NextRequest) {
 			} catch (_error) {
 				// Composio setup failed, fall back to Convex
 				composioFallbackReason = "composio_initialization_failed";
-				console.warn(
-					"[Chatbot Assistant] Composio initialization failed, using Convex fallback"
-				);
+				logRouteError({
+					route: "Chatbot Assistant",
+					stage: "composio_initialization_failed",
+					error: new Error(
+						"Composio initialization failed, using Convex fallback"
+					),
+					level: "warn",
+				});
 			}
 		} else if (needsExternalTools) {
 			composioFallbackReason = "composio_not_configured";
@@ -443,9 +461,14 @@ export async function POST(req: NextRequest) {
 
 						// Log warning if counts differ
 						if (toolCalls.length !== toolResults.length) {
-							console.warn(
-								`[Chatbot Assistant] Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
-							);
+							logRouteError({
+								route: "Chatbot Assistant",
+								stage: "tool_results_mismatch",
+								error: new Error(
+									`Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
+								),
+								level: "warn",
+							});
 						}
 
 						// Get follow-up response with tool results
@@ -469,10 +492,11 @@ export async function POST(req: NextRequest) {
 						responseText =
 							followUpCompletion.choices[0]?.message?.content || responseText;
 					} catch (toolError) {
-						console.error(
-							"[Chatbot Assistant] Tool execution failed:",
-							toolError
-						);
+						logRouteError({
+							route: "Chatbot Assistant",
+							stage: "tool_execution_failed",
+							error: toolError,
+						});
 						await Promise.all(
 							toolCalls.map(async (call) => {
 								await logExternalToolAuditEvent({
@@ -495,8 +519,7 @@ export async function POST(req: NextRequest) {
 								});
 							})
 						);
-						responseText +=
-							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";
+						responseText += `\n\nNote: I couldn't complete one or more ${connectedApps.join(", ")} actions. ${buildComposioFailureGuidance()}`;
 					}
 				}
 
@@ -522,10 +545,12 @@ export async function POST(req: NextRequest) {
 					}),
 				});
 			} catch (error) {
-				console.error(
-					"[Chatbot Assistant] OpenAI+Composio failed, falling back to Convex:",
-					error
-				);
+				logRouteError({
+					route: "Chatbot Assistant",
+					stage: "openai_composio_failed",
+					error,
+					context: { connectedAppsCount: connectedApps.length },
+				});
 				composioAttempted = true;
 				composioFallbackReason = "openai_composio_failed";
 				// Fall through to Convex assistant
@@ -603,25 +628,67 @@ export async function POST(req: NextRequest) {
 				metadata: responseMetadata,
 			});
 		} catch (error) {
-			console.error("[Chatbot Assistant] AI assistant failed:", error);
-			return NextResponse.json(
-				{
-					success: false,
-					error:
-						error instanceof Error
-							? error.message
-							: "Failed to generate assistant response",
+			logRouteError({
+				route: "Chatbot Assistant",
+				stage: "convex_assistant_failed",
+				error,
+				context: {
+					composioAttempted,
+					composioFallbackReason,
 				},
+			});
+			if (composioAttempted || composioFallbackReason) {
+				const fallbackResponse = buildRecoverableAssistantFallback(
+					"The external tools path could not complete your request"
+				);
+				return NextResponse.json({
+					success: true,
+					response: fallbackResponse,
+					sources: [],
+					actions: [],
+					toolResults: [],
+					assistantType: "convex",
+					composioToolsUsed: false,
+					metadata: buildAssistantResponseMetadata({
+						assistantType: "convex",
+						executionPath: "convex-assistant",
+						intent: queryIntent,
+						tools: {
+							internalEnabled: true,
+							externalEnabled: false,
+							externalUsed: false,
+							connectedApps,
+						},
+						fallback: {
+							attempted: true,
+							reason: composioFallbackReason ?? "convex_assistant_failed",
+						},
+					}),
+				});
+			}
+			return NextResponse.json(
+				buildActionableErrorPayload({
+					message: "Assistant response generation failed.",
+					nextStep:
+						"Retry your message. If it keeps failing, refresh and try a shorter prompt.",
+					code: "ASSISTANT_RESPONSE_FAILED",
+				}),
 				{ status: 500 }
 			);
 		}
 	} catch (error) {
-		console.error("[Chatbot Assistant] Error:", error);
+		logRouteError({
+			route: "Chatbot Assistant",
+			stage: "request_failed",
+			error,
+		});
 		return NextResponse.json(
-			{
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			},
+			buildActionableErrorPayload({
+				message: "Assistant request failed before processing completed.",
+				nextStep:
+					"Check required fields and retry. If this persists, reconnect integrations and try again.",
+				code: "ASSISTANT_REQUEST_FAILED",
+			}),
 			{ status: 500 }
 		);
 	}
