@@ -30731,3 +30731,2007 @@ index 0000000000000000000000000000000000000000..d0c0c912b2ec33fb178b73555394ff02
 
 thinking
 **Adding second commit with docs update**
+exec
+/bin/zsh -lc 'git add -A && git commit -m "docs(ralph): record S4 run progress"' in /Users/macbook/Documents/GitHub/platform succeeded in 52ms:
+[main f0e778a] docs(ralph): record S4 run progress
+ 3 files changed, 8111 insertions(+)
+file update:
+diff --git a/src/app/api/assistant/chatbot/route.ts b/src/app/api/assistant/chatbot/route.ts
+index ba636e7b5fabdc48e6c0b4eaa955431ed87ff202..48ca353e160c62c14a45f95afb0fc697ae71ee04
+--- a/src/app/api/assistant/chatbot/route.ts
++++ b/src/app/api/assistant/chatbot/route.ts
+@@ -9,6 +9,12 @@
+ import { api } from "@/../convex/_generated/api";
+ import type { Id } from "@/../convex/_generated/dataModel";
+ import {
++	buildActionableErrorPayload,
++	buildComposioFailureGuidance,
++	buildRecoverableAssistantFallback,
++	logRouteError,
++} from "@/lib/assistant-error-utils";
++import {
+ 	buildAssistantResponseMetadata,
+ 	buildAssistantSystemPrompt,
+ 	classifyAssistantQuery,
+@@ -89,10 +95,12 @@
+ 			}
+ 		);
+ 	} catch (error) {
+-		console.warn(
+-			"[Chatbot Assistant] Failed to persist tool audit event",
+-			error
+-		);
++		logRouteError({
++			route: "Chatbot Assistant",
++			stage: "audit_persist_failed",
++			error,
++			level: "warn",
++		});
+ 	}
+ }
+ 
+@@ -131,16 +139,21 @@
+ 			if (token) {
+ 				convex.setAuth(token);
+ 			} else if (isAuthenticatedNextjs()) {
+-				console.warn(
+-					"[Chatbot Assistant] Authenticated session but no Convex token found"
+-				);
++				logRouteError({
++					route: "Chatbot Assistant",
++					stage: "missing_convex_token",
++					error: new Error("Authenticated session but no Convex token found"),
++					level: "warn",
++				});
+ 			}
+ 		} catch (err) {
+ 			if (isAuthenticatedNextjs()) {
+-				console.warn(
+-					"[Chatbot Assistant] Failed to read Convex auth token from request",
+-					err
+-				);
++				logRouteError({
++					route: "Chatbot Assistant",
++					stage: "convex_token_read_failed",
++					error: err,
++					level: "warn",
++				});
+ 			}
+ 		}
+ 
+@@ -259,9 +272,14 @@
+ 			} catch (_error) {
+ 				// Composio setup failed, fall back to Convex
+ 				composioFallbackReason = "composio_initialization_failed";
+-				console.warn(
+-					"[Chatbot Assistant] Composio initialization failed, using Convex fallback"
+-				);
++				logRouteError({
++					route: "Chatbot Assistant",
++					stage: "composio_initialization_failed",
++					error: new Error(
++						"Composio initialization failed, using Convex fallback"
++					),
++					level: "warn",
++				});
+ 			}
+ 		} else if (needsExternalTools) {
+ 			composioFallbackReason = "composio_not_configured";
+@@ -443,9 +461,14 @@
+ 
+ 						// Log warning if counts differ
+ 						if (toolCalls.length !== toolResults.length) {
+-							console.warn(
+-								`[Chatbot Assistant] Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
+-							);
++							logRouteError({
++								route: "Chatbot Assistant",
++								stage: "tool_results_mismatch",
++								error: new Error(
++									`Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
++								),
++								level: "warn",
++							});
+ 						}
+ 
+ 						// Get follow-up response with tool results
+@@ -469,10 +492,11 @@
+ 						responseText =
+ 							followUpCompletion.choices[0]?.message?.content || responseText;
+ 					} catch (toolError) {
+-						console.error(
+-							"[Chatbot Assistant] Tool execution failed:",
+-							toolError
+-						);
++						logRouteError({
++							route: "Chatbot Assistant",
++							stage: "tool_execution_failed",
++							error: toolError,
++						});
+ 						await Promise.all(
+ 							toolCalls.map(async (call) => {
+ 								await logExternalToolAuditEvent({
+@@ -495,8 +519,7 @@
+ 								});
+ 							})
+ 						);
+-						responseText +=
+-							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";
++						responseText += `\n\nNote: I couldn't complete one or more ${connectedApps.join(", ")} actions. ${buildComposioFailureGuidance()}`;
+ 					}
+ 				}
+ 
+@@ -522,10 +545,12 @@
+ 					}),
+ 				});
+ 			} catch (error) {
+-				console.error(
+-					"[Chatbot Assistant] OpenAI+Composio failed, falling back to Convex:",
+-					error
+-				);
++				logRouteError({
++					route: "Chatbot Assistant",
++					stage: "openai_composio_failed",
++					error,
++					context: { connectedAppsCount: connectedApps.length },
++				});
+ 				composioAttempted = true;
+ 				composioFallbackReason = "openai_composio_failed";
+ 				// Fall through to Convex assistant
+@@ -603,25 +628,67 @@
+ 				metadata: responseMetadata,
+ 			});
+ 		} catch (error) {
+-			console.error("[Chatbot Assistant] AI assistant failed:", error);
+-			return NextResponse.json(
+-				{
+-					success: false,
+-					error:
+-						error instanceof Error
+-							? error.message
+-							: "Failed to generate assistant response",
++			logRouteError({
++				route: "Chatbot Assistant",
++				stage: "convex_assistant_failed",
++				error,
++				context: {
++					composioAttempted,
++					composioFallbackReason,
+ 				},
++			});
++			if (composioAttempted || composioFallbackReason) {
++				const fallbackResponse = buildRecoverableAssistantFallback(
++					"The external tools path could not complete your request"
++				);
++				return NextResponse.json({
++					success: true,
++					response: fallbackResponse,
++					sources: [],
++					actions: [],
++					toolResults: [],
++					assistantType: "convex",
++					composioToolsUsed: false,
++					metadata: buildAssistantResponseMetadata({
++						assistantType: "convex",
++						executionPath: "convex-assistant",
++						intent: queryIntent,
++						tools: {
++							internalEnabled: true,
++							externalEnabled: false,
++							externalUsed: false,
++							connectedApps,
++						},
++						fallback: {
++							attempted: true,
++							reason: composioFallbackReason ?? "convex_assistant_failed",
++						},
++					}),
++				});
++			}
++			return NextResponse.json(
++				buildActionableErrorPayload({
++					message: "Assistant response generation failed.",
++					nextStep:
++						"Retry your message. If it keeps failing, refresh and try a shorter prompt.",
++					code: "ASSISTANT_RESPONSE_FAILED",
++				}),
+ 				{ status: 500 }
+ 			);
+ 		}
+ 	} catch (error) {
+-		console.error("[Chatbot Assistant] Error:", error);
++		logRouteError({
++			route: "Chatbot Assistant",
++			stage: "request_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				success: false,
+-				error: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Assistant request failed before processing completed.",
++				nextStep:
++					"Check required fields and retry. If this persists, reconnect integrations and try again.",
++				code: "ASSISTANT_REQUEST_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/app/api/assistant/composio/agentauth/route.ts b/src/app/api/assistant/composio/agentauth/route.ts
+index b6979e6da2e22ee6673d76a2e2ee70785c5fef43..4bcfaacd6980f41c5e2ccd5c961eec749c201d00
+--- a/src/app/api/assistant/composio/agentauth/route.ts
++++ b/src/app/api/assistant/composio/agentauth/route.ts
+@@ -6,6 +6,12 @@
+ import { type NextRequest, NextResponse } from "next/server";
+ import { api } from "@/../convex/_generated/api";
+ import type { Id } from "@/../convex/_generated/dataModel";
++import {
++	buildActionableErrorPayload,
++	buildComposioFailureGuidance,
++	logRouteError,
++	sanitizeErrorMessage,
++} from "@/lib/assistant-error-utils";
+ import { initializeComposio } from "@/lib/composio";
+ 
+ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+@@ -111,7 +117,12 @@
+ 		if (action === "authorize") {
+ 			// Verify ownership: ensure the authenticated user has permission to act on this memberId
+ 			if (!memberId) {
+-				console.error("[AgentAuth] Missing memberId for authorization");
++				logRouteError({
++					route: "AgentAuth",
++					stage: "missing_member_id_authorize",
++					error: new Error("Missing memberId for authorization"),
++					level: "warn",
++				});
+ 				return NextResponse.json(
+ 					{ error: "Missing memberId" },
+ 					{ status: 400 }
+@@ -134,9 +145,20 @@
+ 				const redirectUrl = connection.redirectUrl;
+ 
+ 				if (!redirectUrl) {
+-					console.error("No redirect URL received from Composio:", connection);
++					logRouteError({
++						route: "AgentAuth",
++						stage: "missing_redirect_url",
++						error: new Error("No redirect URL from Composio"),
++						context: { toolkit },
++					});
+ 					return NextResponse.json(
+-						{ error: "No redirect URL received from authorization" },
++						buildActionableErrorPayload({
++							message: "Authorization URL was not returned by Composio.",
++							nextStep:
++								"Retry authorization. If this continues, verify the toolkit auth configuration.",
++							code: "AGENTAUTH_REDIRECT_URL_MISSING",
++							recoverable: true,
++						}),
+ 						{ status: 400 }
+ 					);
+ 				}
+@@ -162,12 +184,22 @@
+ 								createdBy: memberId as Id<"members">,
+ 							});
+ 						} else {
+-							console.warn(
+-								`[AgentAuth] No auth config ID found for ${toolkit}`
+-							);
++							logRouteError({
++								route: "AgentAuth",
++								stage: "auth_config_id_missing",
++								error: new Error("No auth config ID found"),
++								level: "warn",
++								context: { toolkit },
++							});
+ 						}
+ 					} catch (error) {
+-						console.warn("Failed to store auth config:", error);
++						logRouteError({
++							route: "AgentAuth",
++							stage: "store_auth_config_failed",
++							error,
++							level: "warn",
++							context: { toolkit, workspaceId, memberId },
++						});
+ 					}
+ 				}
+ 
+@@ -178,11 +210,22 @@
+ 					message: `Redirect user to ${toolkit} authorization`,
+ 				});
+ 			} catch (error) {
+-				console.error("Authorization error:", error);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "authorization_failed",
++					error,
++					context: { toolkit, workspaceId, memberId },
++				});
+ 				return NextResponse.json(
+-					{
+-						error: `Failed to authorize toolkit: ${error instanceof Error ? error.message : "Unknown error"}`,
+-					},
++					buildActionableErrorPayload({
++						message: `Failed to authorize ${toolkit}.`,
++						nextStep: buildComposioFailureGuidance(),
++						code: "AGENTAUTH_AUTHORIZE_FAILED",
++						recoverable: true,
++						fallbackResponse: sanitizeErrorMessage(
++							error instanceof Error ? error.message : "Unknown error"
++						),
++					}),
+ 					{ status: 400 }
+ 				);
+ 			}
+@@ -191,7 +234,12 @@
+ 		if (action === "complete") {
+ 			// Verify ownership: ensure the authenticated user has permission to act on this memberId
+ 			if (!memberId) {
+-				console.error("[AgentAuth] Missing memberId for connection completion");
++				logRouteError({
++					route: "AgentAuth",
++					stage: "missing_member_id_complete",
++					error: new Error("Missing memberId for connection completion"),
++					level: "warn",
++				});
+ 				return NextResponse.json(
+ 					{ error: "Missing memberId" },
+ 					{ status: 400 }
+@@ -286,7 +334,13 @@
+ 							connectedBy: memberId as Id<"members">,
+ 						});
+ 					} catch (error) {
+-						console.warn("Failed to store connected account:", error);
++						logRouteError({
++							route: "AgentAuth",
++							stage: "store_connected_account_failed",
++							error,
++							level: "warn",
++							context: { toolkit, workspaceId, memberId },
++						});
+ 					}
+ 				}
+ 
+@@ -296,11 +350,22 @@
+ 					message: `${toolkit} connected successfully`,
+ 				});
+ 			} catch (error) {
+-				console.error("Connection completion error:", error);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "connection_completion_failed",
++					error,
++					context: { toolkit, workspaceId, memberId },
++				});
+ 				return NextResponse.json(
+-					{
+-						error: `Failed to complete connection: ${error instanceof Error ? error.message : "Unknown error"}`,
+-					},
++					buildActionableErrorPayload({
++						message: `Failed to complete ${toolkit} connection.`,
++						nextStep: buildComposioFailureGuidance(),
++						code: "AGENTAUTH_COMPLETE_FAILED",
++						recoverable: true,
++						fallbackResponse: sanitizeErrorMessage(
++							error instanceof Error ? error.message : "Unknown error"
++						),
++					}),
+ 					{ status: 500 }
+ 				);
+ 			}
+@@ -308,9 +373,17 @@
+ 
+ 		return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+ 	} catch (error) {
+-		console.error("[AgentAuth] Error:", error);
++		logRouteError({
++			route: "AgentAuth",
++			stage: "post_request_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{ error: "AgentAuth operation failed" },
++			buildActionableErrorPayload({
++				message: "Agent auth request failed.",
++				nextStep: buildComposioFailureGuidance(),
++				code: "AGENTAUTH_POST_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+@@ -392,7 +465,13 @@
+ 					connectedAccounts,
+ 				});
+ 			} catch (convexError) {
+-				console.error("[AgentAuth] Error fetching data:", convexError);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "fetch_data_failed",
++					error: convexError,
++					level: "warn",
++					context: { workspaceId },
++				});
+ 				// Return empty arrays if there's an error
+ 				return NextResponse.json({
+ 					success: true,
+@@ -414,7 +493,13 @@
+ 					account: connectedAccount,
+ 				});
+ 			} catch (error) {
+-				console.error("Status check error:", error);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "status_check_failed",
++					error,
++					level: "warn",
++					context: { composioAccountId },
++				});
+ 				return NextResponse.json({
+ 					connected: false,
+ 					status: "NOT_FOUND",
+@@ -428,7 +513,13 @@
+ 			// Validate userId format (should be member_{memberId})
+ 			const memberIdPattern = /^member_[A-Za-z0-9-_]+$/;
+ 			if (!memberIdPattern.test(userId)) {
+-				console.error(`[AgentAuth] Invalid userId format: ${userId}`);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "invalid_user_id_format",
++					error: new Error("Invalid userId format"),
++					level: "warn",
++					context: { userId },
++				});
+ 				return NextResponse.json(
+ 					{
+ 						error: "Invalid userId format. Expected format: member_{memberId}",
+@@ -452,11 +543,22 @@
+ 					entityId,
+ 				});
+ 			} catch (error) {
+-				console.error("Tools fetch error:", error);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "fetch_tools_failed",
++					error,
++					context: { toolkit, workspaceId, userId },
++				});
+ 				return NextResponse.json(
+-					{
+-						error: `Failed to fetch tools: ${error instanceof Error ? error.message : "Unknown error"}`,
+-					},
++					buildActionableErrorPayload({
++						message: `Failed to fetch tools for ${toolkit}.`,
++						nextStep: buildComposioFailureGuidance(),
++						code: "AGENTAUTH_FETCH_TOOLS_FAILED",
++						recoverable: true,
++						fallbackResponse: sanitizeErrorMessage(
++							error instanceof Error ? error.message : "Unknown error"
++						),
++					}),
+ 					{ status: 500 }
+ 				);
+ 			}
+@@ -471,9 +573,18 @@
+ 			{ status: 400 }
+ 		);
+ 	} catch (error) {
+-		console.error("[AgentAuth] GET Error:", error);
++		logRouteError({
++			route: "AgentAuth",
++			stage: "get_request_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{ error: "AgentAuth GET operation failed" },
++			buildActionableErrorPayload({
++				message: "Agent auth query failed.",
++				nextStep:
++					"Retry the request and confirm all required query parameters.",
++				code: "AGENTAUTH_GET_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+@@ -517,13 +628,11 @@
+ 			await apiClient.deleteConnection(composioAccountId);
+ 			composioDeleteSuccess = true;
+ 		} catch (error) {
+-			console.error(
+-				"[AgentAuth DELETE] ✗ Error disconnecting from Composio:",
+-				error
+-			);
+-			console.error("[AgentAuth DELETE] Error details:", {
+-				message: error instanceof Error ? error.message : String(error),
+-				stack: error instanceof Error ? error.stack : undefined,
++			logRouteError({
++				route: "AgentAuth DELETE",
++				stage: "composio_disconnect_failed",
++				error,
++				context: { composioAccountId, memberId, workspaceId },
+ 			});
+ 			// Continue to delete from database even if Composio delete fails
+ 		}
+@@ -540,17 +649,19 @@
+ 					memberId: memberId as Id<"members">,
+ 				});
+ 			} catch (error) {
+-				console.error(
+-					"[AgentAuth DELETE] ✗ Error deleting database record:",
+-					error
+-				);
+-				console.error("[AgentAuth DELETE] Database error details:", {
+-					message: error instanceof Error ? error.message : String(error),
+-					connectedAccountId,
+-					memberId,
++				logRouteError({
++					route: "AgentAuth DELETE",
++					stage: "database_disconnect_failed",
++					error,
++					context: { connectedAccountId, memberId, workspaceId },
+ 				});
+ 				return NextResponse.json(
+-					{ error: "Failed to delete connection from database" },
++					buildActionableErrorPayload({
++						message: "Failed to remove local connection record.",
++						nextStep:
++							"Retry disconnect. If this continues, refresh the integrations page and retry.",
++						code: "AGENTAUTH_DB_DISCONNECT_FAILED",
++					}),
+ 					{ status: 500 }
+ 				);
+ 			}
+@@ -562,13 +673,17 @@
+ 			composioDeleted: composioDeleteSuccess,
+ 		});
+ 	} catch (error) {
+-		console.error("[AgentAuth DELETE] Unexpected error:", error);
+-		console.error("[AgentAuth DELETE] Error details:", {
+-			message: error instanceof Error ? error.message : String(error),
+-			stack: error instanceof Error ? error.stack : undefined,
++		logRouteError({
++			route: "AgentAuth DELETE",
++			stage: "delete_request_failed",
++			error,
+ 		});
+ 		return NextResponse.json(
+-			{ error: "Failed to disconnect account" },
++			buildActionableErrorPayload({
++				message: "Failed to disconnect account.",
++				nextStep: buildComposioFailureGuidance(),
++				code: "AGENTAUTH_DELETE_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/app/api/assistant/composio/route.ts b/src/app/api/assistant/composio/route.ts
+index 82e3a085b23870efd4b70d030d044644bf73dac7..51c2bb49285c3005c7c6e09d077bbae7c1c5faf1
+--- a/src/app/api/assistant/composio/route.ts
++++ b/src/app/api/assistant/composio/route.ts
+@@ -1,5 +1,10 @@
+ import { type NextRequest, NextResponse } from "next/server";
+ import {
++	buildActionableErrorPayload,
++	logRouteError,
++	sanitizeErrorMessage,
++} from "@/lib/assistant-error-utils";
++import {
+ 	APP_CONFIGS,
+ 	AVAILABLE_APPS,
+ 	type AvailableApp,
+@@ -41,12 +46,18 @@
+ 			{ status: 400 }
+ 		);
+ 	} catch (error) {
+-		console.error("Composio API error:", error);
++		logRouteError({
++			route: "Composio API",
++			stage: "status_fetch_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				error: "Failed to fetch Composio status",
+-				details: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Failed to fetch Composio status.",
++				nextStep:
++					"Confirm the integration is configured and retry the status request.",
++				code: "COMPOSIO_STATUS_FETCH_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+@@ -92,7 +103,18 @@
+ 					message: `Redirect to ${app} for authorization`,
+ 				});
+ 			} else {
+-				return NextResponse.json({ error: result.error }, { status: 400 });
++				return NextResponse.json(
++					buildActionableErrorPayload({
++						message: `Could not start ${app} authorization.`,
++						nextStep: "Verify your app configuration and retry connection.",
++						code: "COMPOSIO_CONNECT_FAILED",
++						recoverable: true,
++						fallbackResponse: sanitizeErrorMessage(
++							result.error || "Authorization could not be started."
++						),
++					}),
++					{ status: 400 }
++				);
+ 			}
+ 		}
+ 
+@@ -101,12 +123,18 @@
+ 			{ status: 400 }
+ 		);
+ 	} catch (error) {
+-		console.error("Composio API error:", error);
++		logRouteError({
++			route: "Composio API",
++			stage: "connect_request_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				error: "Failed to process Composio request",
+-				details: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Failed to process Composio request.",
++				nextStep:
++					"Retry the request. If this continues, check Composio API key and auth config settings.",
++				code: "COMPOSIO_REQUEST_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/app/api/assistant/composio/status/route.ts b/src/app/api/assistant/composio/status/route.ts
+index 6cadfecb4ce2c907a803db105f5a3bc0266e6be5..21a893b75b755bec31272ca42d4387897f003504
+--- a/src/app/api/assistant/composio/status/route.ts
++++ b/src/app/api/assistant/composio/status/route.ts
+@@ -1,6 +1,10 @@
+ import { unstable_noStore as noStore } from "next/cache";
+ import { type NextRequest, NextResponse } from "next/server";
+ import {
++	buildActionableErrorPayload,
++	logRouteError,
++} from "@/lib/assistant-error-utils";
++import {
+ 	type AvailableApp,
+ 	createComposioClient,
+ 	getAllToolsForApps,
+@@ -62,7 +66,12 @@
+ 				);
+ 				totalTools = allTools.length;
+ 			} catch (error) {
+-				console.warn("[Connections Status] Failed to get tool count:", error);
++				logRouteError({
++					route: "Connections Status",
++					stage: "tool_count_fetch_failed",
++					error,
++					level: "warn",
++				});
+ 				// Don't fail the whole request if tool fetching fails
+ 				totalTools = 0;
+ 			}
+@@ -78,11 +87,20 @@
+ 			timestamp: new Date().toISOString(),
+ 		});
+ 	} catch (error) {
+-		console.error("[Connections Status] Error:", error);
++		logRouteError({
++			route: "Connections Status",
++			stage: "status_route_failed",
++			error,
++		});
+ 		return NextResponse.json(
+ 			{
+-				success: false,
+-				error: error instanceof Error ? error.message : "Unknown error",
++				...buildActionableErrorPayload({
++					message: "Unable to load integration status.",
++					nextStep:
++						"Retry in a few seconds. If it persists, reconnect the integration and retry.",
++					code: "COMPOSIO_STATUS_ROUTE_FAILED",
++					recoverable: true,
++				}),
+ 				connected: [],
+ 				totalTools: 0,
+ 			},
+diff --git a/src/app/api/assistant/composio/tools/route.ts b/src/app/api/assistant/composio/tools/route.ts
+index 8a70d56644c4aa40a0552a4ea802c974dddd7267..0e36e1b622488afa2db506149a7203b09a6c8aed
+--- a/src/app/api/assistant/composio/tools/route.ts
++++ b/src/app/api/assistant/composio/tools/route.ts
+@@ -1,5 +1,11 @@
+ import { type NextRequest, NextResponse } from "next/server";
+ import OpenAI from "openai";
++import {
++	buildActionableErrorPayload,
++	buildComposioFailureGuidance,
++	logRouteError,
++	sanitizeErrorMessage,
++} from "@/lib/assistant-error-utils";
+ import { createComposioClient } from "@/lib/composio-config";
+ 
+ // Initialize OpenAI client
+@@ -42,11 +48,21 @@
+ 						tools.push(appTools);
+ 					}
+ 				} catch (error) {
+-					console.warn(`No tools found for app ${appName}:`, error);
++					logRouteError({
++						route: "Composio Tools",
++						stage: "app_tools_missing",
++						error,
++						level: "warn",
++						context: { appName },
++					});
+ 				}
+ 			}
+ 		} catch (error) {
+-			console.error("Error fetching tools:", error);
++			logRouteError({
++				route: "Composio Tools",
++				stage: "tools_fetch_failed",
++				error,
++			});
+ 			tools = [];
+ 		}
+ 
+@@ -101,10 +117,17 @@
+ 							toolName: toolCall.function.name,
+ 						});
+ 					} catch (error) {
+-						console.error("Tool execution error:", error);
++						logRouteError({
++							route: "Composio Tools",
++							stage: "tool_execution_error",
++							error,
++							context: { toolName: toolCall.function.name },
++						});
+ 						toolResults.push({
+ 							toolCallId: toolCall.id,
+-							error: error instanceof Error ? error.message : "Unknown error",
++							error: sanitizeErrorMessage(
++								error instanceof Error ? error.message : "Unknown error"
++							),
+ 							toolName: toolCall.function.name,
+ 						});
+ 					}
+@@ -152,12 +175,18 @@
+ 			availableTools: tools.length,
+ 		});
+ 	} catch (error) {
+-		console.error("[Composio Tools] Error:", error);
++		logRouteError({
++			route: "Composio Tools",
++			stage: "tools_post_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				success: false,
+-				error: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Composio tools request failed.",
++				nextStep: buildComposioFailureGuidance(),
++				code: "COMPOSIO_TOOLS_POST_FAILED",
++				recoverable: true,
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+@@ -193,7 +222,13 @@
+ 						tools.push(appTools);
+ 					}
+ 				} catch (error) {
+-					console.warn(`No tools found for app ${appName}:`, error);
++					logRouteError({
++						route: "Composio Tools",
++						stage: "app_tools_missing_get",
++						error,
++						level: "warn",
++						context: { appName },
++					});
+ 				}
+ 			}
+ 		} else {
+@@ -202,7 +237,13 @@
+ 				const allTools = await composio.tools.get(entityId, {} as any);
+ 				tools = Array.isArray(allTools) ? allTools : [allTools];
+ 			} catch (error) {
+-				console.warn("No tools found for entity:", error);
++				logRouteError({
++					route: "Composio Tools",
++					stage: "entity_tools_missing_get",
++					error,
++					level: "warn",
++					context: { entityId },
++				});
+ 				tools = [];
+ 			}
+ 		}
+@@ -218,12 +259,19 @@
+ 			count: tools.length,
+ 		});
+ 	} catch (error) {
+-		console.error("[Composio Tools] GET Error:", error);
++		logRouteError({
++			route: "Composio Tools",
++			stage: "tools_get_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				success: false,
+-				error: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Unable to fetch available Composio tools.",
++				nextStep:
++					"Confirm the account is connected, then retry the tools request.",
++				code: "COMPOSIO_TOOLS_GET_FAILED",
++				recoverable: true,
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/app/api/assistant/route.ts b/src/app/api/assistant/route.ts
+index c704895b6e2a9e5b90cc3090f56b8eb3dfe5e698..15c87068f6c16c0db2cb55a2727e8495f9a30292
+--- a/src/app/api/assistant/route.ts
++++ b/src/app/api/assistant/route.ts
+@@ -1,4 +1,8 @@
+ import { type NextRequest, NextResponse } from "next/server";
++import {
++	buildActionableErrorPayload,
++	logRouteError,
++} from "@/lib/assistant-error-utils";
+ 
+ // Redirect to the chatbot endpoint
+ export async function POST(req: NextRequest) {
+@@ -30,12 +34,18 @@
+ 		const result = await chatbotResponse.json();
+ 		return NextResponse.json(result, { status: chatbotResponse.status });
+ 	} catch (error) {
+-		console.error("[Assistant Router] Error:", error);
++		logRouteError({
++			route: "Assistant Router",
++			stage: "forwarding_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				error: "Failed to process request",
+-				details: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Could not forward the assistant request.",
++				nextStep:
++					"Retry in a few seconds. If it persists, refresh and try again.",
++				code: "ASSISTANT_ROUTER_FORWARD_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/lib/assistant-error-utils.ts b/src/lib/assistant-error-utils.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..d0c0c912b2ec33fb178b73555394ff022d1c8222
+--- /dev/null
++++ b/src/lib/assistant-error-utils.ts
+@@ -0,0 +1,106 @@
++import { sanitizeAuditPayload } from "@/lib/assistant-tool-audit";
++
++const REDACTED = "[REDACTED]";
++const MAX_ERROR_MESSAGE_LENGTH = 280;
++const SENSITIVE_VALUE_PATTERN =
++	/(Bearer\s+)[^\s]+|((?:api[_-]?key|token|secret|password|authorization|cookie)\s*[:=]\s*)["']?[^"',\s}]+/gi;
++
++type ErrorLike = {
++	name?: string;
++	message?: string;
++	stack?: string;
++	code?: string;
++	status?: number;
++};
++
++export function sanitizeErrorMessage(input: string): string {
++	return input
++		.replace(SENSITIVE_VALUE_PATTERN, (...args) => {
++			if (args[1]) {
++				return `${args[1]}${REDACTED}`;
++			}
++			if (args[2]) {
++				return `${args[2]}${REDACTED}`;
++			}
++			return REDACTED;
++		})
++		.slice(0, MAX_ERROR_MESSAGE_LENGTH);
++}
++
++function normalizeError(error: unknown): {
++	name: string;
++	message: string;
++	code?: string;
++	stack?: string;
++} {
++	const err = (error ?? {}) as ErrorLike;
++	const message =
++		typeof err.message === "string" && err.message.trim().length > 0
++			? err.message
++			: "Unknown error";
++	return {
++		name: typeof err.name === "string" ? err.name : "Error",
++		message: sanitizeErrorMessage(message),
++		code: typeof err.code === "string" ? err.code : undefined,
++		stack:
++			typeof err.stack === "string"
++				? sanitizeErrorMessage(err.stack.split("\n").slice(0, 3).join("\n"))
++				: undefined,
++	};
++}
++
++export function logRouteError(params: {
++	route: string;
++	stage: string;
++	error: unknown;
++	context?: Record<string, unknown>;
++	level?: "warn" | "error";
++}) {
++	const payload = {
++		stage: params.stage,
++		error: normalizeError(params.error),
++		context: sanitizeAuditPayload(params.context ?? {}),
++	};
++	if (params.level === "warn") {
++		console.warn(`[${params.route}] ${params.stage}`, payload);
++		return;
++	}
++	console.error(`[${params.route}] ${params.stage}`, payload);
++}
++
++export function buildActionableErrorPayload(params: {
++	message: string;
++	nextStep: string;
++	code: string;
++	recoverable?: boolean;
++	fallbackResponse?: string;
++}): {
++	success: false;
++	error: string;
++	nextStep: string;
++	code: string;
++	recoverable: boolean;
++	fallbackResponse?: string;
++} {
++	return {
++		success: false,
++		error: params.message,
++		nextStep: params.nextStep,
++		code: params.code,
++		recoverable: params.recoverable ?? false,
++		fallbackResponse: params.fallbackResponse,
++	};
++}
++
++export function buildComposioFailureGuidance(): string {
++	return "Check your connected integrations in Assistant settings, then retry.";
++}
++
++export function buildRecoverableAssistantFallback(reason?: string): string {
++	const base =
++		"I hit a temporary issue with external integrations, but I can still help with workspace tasks.";
++	if (!reason) {
++		return `${base} Try again in a moment or reconnect the integration.`;
++	}
++	return `${base} Reason: ${reason}. Try again in a moment or reconnect the integration.`;
++}
+
+exec
+/bin/zsh -lc 'git status --porcelain' in /Users/macbook/Documents/GitHub/platform succeeded in 53ms:
+ M .ralph/runs/run-20260212-180835-23441-iter-1.log
+file update:
+diff --git a/src/app/api/assistant/chatbot/route.ts b/src/app/api/assistant/chatbot/route.ts
+index ba636e7b5fabdc48e6c0b4eaa955431ed87ff202..48ca353e160c62c14a45f95afb0fc697ae71ee04
+--- a/src/app/api/assistant/chatbot/route.ts
++++ b/src/app/api/assistant/chatbot/route.ts
+@@ -9,6 +9,12 @@
+ import { api } from "@/../convex/_generated/api";
+ import type { Id } from "@/../convex/_generated/dataModel";
+ import {
++	buildActionableErrorPayload,
++	buildComposioFailureGuidance,
++	buildRecoverableAssistantFallback,
++	logRouteError,
++} from "@/lib/assistant-error-utils";
++import {
+ 	buildAssistantResponseMetadata,
+ 	buildAssistantSystemPrompt,
+ 	classifyAssistantQuery,
+@@ -89,10 +95,12 @@
+ 			}
+ 		);
+ 	} catch (error) {
+-		console.warn(
+-			"[Chatbot Assistant] Failed to persist tool audit event",
+-			error
+-		);
++		logRouteError({
++			route: "Chatbot Assistant",
++			stage: "audit_persist_failed",
++			error,
++			level: "warn",
++		});
+ 	}
+ }
+ 
+@@ -131,16 +139,21 @@
+ 			if (token) {
+ 				convex.setAuth(token);
+ 			} else if (isAuthenticatedNextjs()) {
+-				console.warn(
+-					"[Chatbot Assistant] Authenticated session but no Convex token found"
+-				);
++				logRouteError({
++					route: "Chatbot Assistant",
++					stage: "missing_convex_token",
++					error: new Error("Authenticated session but no Convex token found"),
++					level: "warn",
++				});
+ 			}
+ 		} catch (err) {
+ 			if (isAuthenticatedNextjs()) {
+-				console.warn(
+-					"[Chatbot Assistant] Failed to read Convex auth token from request",
+-					err
+-				);
++				logRouteError({
++					route: "Chatbot Assistant",
++					stage: "convex_token_read_failed",
++					error: err,
++					level: "warn",
++				});
+ 			}
+ 		}
+ 
+@@ -259,9 +272,14 @@
+ 			} catch (_error) {
+ 				// Composio setup failed, fall back to Convex
+ 				composioFallbackReason = "composio_initialization_failed";
+-				console.warn(
+-					"[Chatbot Assistant] Composio initialization failed, using Convex fallback"
+-				);
++				logRouteError({
++					route: "Chatbot Assistant",
++					stage: "composio_initialization_failed",
++					error: new Error(
++						"Composio initialization failed, using Convex fallback"
++					),
++					level: "warn",
++				});
+ 			}
+ 		} else if (needsExternalTools) {
+ 			composioFallbackReason = "composio_not_configured";
+@@ -443,9 +461,14 @@
+ 
+ 						// Log warning if counts differ
+ 						if (toolCalls.length !== toolResults.length) {
+-							console.warn(
+-								`[Chatbot Assistant] Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
+-							);
++							logRouteError({
++								route: "Chatbot Assistant",
++								stage: "tool_results_mismatch",
++								error: new Error(
++									`Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
++								),
++								level: "warn",
++							});
+ 						}
+ 
+ 						// Get follow-up response with tool results
+@@ -469,10 +492,11 @@
+ 						responseText =
+ 							followUpCompletion.choices[0]?.message?.content || responseText;
+ 					} catch (toolError) {
+-						console.error(
+-							"[Chatbot Assistant] Tool execution failed:",
+-							toolError
+-						);
++						logRouteError({
++							route: "Chatbot Assistant",
++							stage: "tool_execution_failed",
++							error: toolError,
++						});
+ 						await Promise.all(
+ 							toolCalls.map(async (call) => {
+ 								await logExternalToolAuditEvent({
+@@ -495,8 +519,7 @@
+ 								});
+ 							})
+ 						);
+-						responseText +=
+-							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";
++						responseText += `\n\nNote: I couldn't complete one or more ${connectedApps.join(", ")} actions. ${buildComposioFailureGuidance()}`;
+ 					}
+ 				}
+ 
+@@ -522,10 +545,12 @@
+ 					}),
+ 				});
+ 			} catch (error) {
+-				console.error(
+-					"[Chatbot Assistant] OpenAI+Composio failed, falling back to Convex:",
+-					error
+-				);
++				logRouteError({
++					route: "Chatbot Assistant",
++					stage: "openai_composio_failed",
++					error,
++					context: { connectedAppsCount: connectedApps.length },
++				});
+ 				composioAttempted = true;
+ 				composioFallbackReason = "openai_composio_failed";
+ 				// Fall through to Convex assistant
+@@ -603,25 +628,67 @@
+ 				metadata: responseMetadata,
+ 			});
+ 		} catch (error) {
+-			console.error("[Chatbot Assistant] AI assistant failed:", error);
+-			return NextResponse.json(
+-				{
+-					success: false,
+-					error:
+-						error instanceof Error
+-							? error.message
+-							: "Failed to generate assistant response",
++			logRouteError({
++				route: "Chatbot Assistant",
++				stage: "convex_assistant_failed",
++				error,
++				context: {
++					composioAttempted,
++					composioFallbackReason,
+ 				},
++			});
++			if (composioAttempted || composioFallbackReason) {
++				const fallbackResponse = buildRecoverableAssistantFallback(
++					"The external tools path could not complete your request"
++				);
++				return NextResponse.json({
++					success: true,
++					response: fallbackResponse,
++					sources: [],
++					actions: [],
++					toolResults: [],
++					assistantType: "convex",
++					composioToolsUsed: false,
++					metadata: buildAssistantResponseMetadata({
++						assistantType: "convex",
++						executionPath: "convex-assistant",
++						intent: queryIntent,
++						tools: {
++							internalEnabled: true,
++							externalEnabled: false,
++							externalUsed: false,
++							connectedApps,
++						},
++						fallback: {
++							attempted: true,
++							reason: composioFallbackReason ?? "convex_assistant_failed",
++						},
++					}),
++				});
++			}
++			return NextResponse.json(
++				buildActionableErrorPayload({
++					message: "Assistant response generation failed.",
++					nextStep:
++						"Retry your message. If it keeps failing, refresh and try a shorter prompt.",
++					code: "ASSISTANT_RESPONSE_FAILED",
++				}),
+ 				{ status: 500 }
+ 			);
+ 		}
+ 	} catch (error) {
+-		console.error("[Chatbot Assistant] Error:", error);
++		logRouteError({
++			route: "Chatbot Assistant",
++			stage: "request_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				success: false,
+-				error: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Assistant request failed before processing completed.",
++				nextStep:
++					"Check required fields and retry. If this persists, reconnect integrations and try again.",
++				code: "ASSISTANT_REQUEST_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/app/api/assistant/composio/agentauth/route.ts b/src/app/api/assistant/composio/agentauth/route.ts
+index b6979e6da2e22ee6673d76a2e2ee70785c5fef43..4bcfaacd6980f41c5e2ccd5c961eec749c201d00
+--- a/src/app/api/assistant/composio/agentauth/route.ts
++++ b/src/app/api/assistant/composio/agentauth/route.ts
+@@ -6,6 +6,12 @@
+ import { type NextRequest, NextResponse } from "next/server";
+ import { api } from "@/../convex/_generated/api";
+ import type { Id } from "@/../convex/_generated/dataModel";
++import {
++	buildActionableErrorPayload,
++	buildComposioFailureGuidance,
++	logRouteError,
++	sanitizeErrorMessage,
++} from "@/lib/assistant-error-utils";
+ import { initializeComposio } from "@/lib/composio";
+ 
+ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+@@ -111,7 +117,12 @@
+ 		if (action === "authorize") {
+ 			// Verify ownership: ensure the authenticated user has permission to act on this memberId
+ 			if (!memberId) {
+-				console.error("[AgentAuth] Missing memberId for authorization");
++				logRouteError({
++					route: "AgentAuth",
++					stage: "missing_member_id_authorize",
++					error: new Error("Missing memberId for authorization"),
++					level: "warn",
++				});
+ 				return NextResponse.json(
+ 					{ error: "Missing memberId" },
+ 					{ status: 400 }
+@@ -134,9 +145,20 @@
+ 				const redirectUrl = connection.redirectUrl;
+ 
+ 				if (!redirectUrl) {
+-					console.error("No redirect URL received from Composio:", connection);
++					logRouteError({
++						route: "AgentAuth",
++						stage: "missing_redirect_url",
++						error: new Error("No redirect URL from Composio"),
++						context: { toolkit },
++					});
+ 					return NextResponse.json(
+-						{ error: "No redirect URL received from authorization" },
++						buildActionableErrorPayload({
++							message: "Authorization URL was not returned by Composio.",
++							nextStep:
++								"Retry authorization. If this continues, verify the toolkit auth configuration.",
++							code: "AGENTAUTH_REDIRECT_URL_MISSING",
++							recoverable: true,
++						}),
+ 						{ status: 400 }
+ 					);
+ 				}
+@@ -162,12 +184,22 @@
+ 								createdBy: memberId as Id<"members">,
+ 							});
+ 						} else {
+-							console.warn(
+-								`[AgentAuth] No auth config ID found for ${toolkit}`
+-							);
++							logRouteError({
++								route: "AgentAuth",
++								stage: "auth_config_id_missing",
++								error: new Error("No auth config ID found"),
++								level: "warn",
++								context: { toolkit },
++							});
+ 						}
+ 					} catch (error) {
+-						console.warn("Failed to store auth config:", error);
++						logRouteError({
++							route: "AgentAuth",
++							stage: "store_auth_config_failed",
++							error,
++							level: "warn",
++							context: { toolkit, workspaceId, memberId },
++						});
+ 					}
+ 				}
+ 
+@@ -178,11 +210,22 @@
+ 					message: `Redirect user to ${toolkit} authorization`,
+ 				});
+ 			} catch (error) {
+-				console.error("Authorization error:", error);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "authorization_failed",
++					error,
++					context: { toolkit, workspaceId, memberId },
++				});
+ 				return NextResponse.json(
+-					{
+-						error: `Failed to authorize toolkit: ${error instanceof Error ? error.message : "Unknown error"}`,
+-					},
++					buildActionableErrorPayload({
++						message: `Failed to authorize ${toolkit}.`,
++						nextStep: buildComposioFailureGuidance(),
++						code: "AGENTAUTH_AUTHORIZE_FAILED",
++						recoverable: true,
++						fallbackResponse: sanitizeErrorMessage(
++							error instanceof Error ? error.message : "Unknown error"
++						),
++					}),
+ 					{ status: 400 }
+ 				);
+ 			}
+@@ -191,7 +234,12 @@
+ 		if (action === "complete") {
+ 			// Verify ownership: ensure the authenticated user has permission to act on this memberId
+ 			if (!memberId) {
+-				console.error("[AgentAuth] Missing memberId for connection completion");
++				logRouteError({
++					route: "AgentAuth",
++					stage: "missing_member_id_complete",
++					error: new Error("Missing memberId for connection completion"),
++					level: "warn",
++				});
+ 				return NextResponse.json(
+ 					{ error: "Missing memberId" },
+ 					{ status: 400 }
+@@ -286,7 +334,13 @@
+ 							connectedBy: memberId as Id<"members">,
+ 						});
+ 					} catch (error) {
+-						console.warn("Failed to store connected account:", error);
++						logRouteError({
++							route: "AgentAuth",
++							stage: "store_connected_account_failed",
++							error,
++							level: "warn",
++							context: { toolkit, workspaceId, memberId },
++						});
+ 					}
+ 				}
+ 
+@@ -296,11 +350,22 @@
+ 					message: `${toolkit} connected successfully`,
+ 				});
+ 			} catch (error) {
+-				console.error("Connection completion error:", error);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "connection_completion_failed",
++					error,
++					context: { toolkit, workspaceId, memberId },
++				});
+ 				return NextResponse.json(
+-					{
+-						error: `Failed to complete connection: ${error instanceof Error ? error.message : "Unknown error"}`,
+-					},
++					buildActionableErrorPayload({
++						message: `Failed to complete ${toolkit} connection.`,
++						nextStep: buildComposioFailureGuidance(),
++						code: "AGENTAUTH_COMPLETE_FAILED",
++						recoverable: true,
++						fallbackResponse: sanitizeErrorMessage(
++							error instanceof Error ? error.message : "Unknown error"
++						),
++					}),
+ 					{ status: 500 }
+ 				);
+ 			}
+@@ -308,9 +373,17 @@
+ 
+ 		return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+ 	} catch (error) {
+-		console.error("[AgentAuth] Error:", error);
++		logRouteError({
++			route: "AgentAuth",
++			stage: "post_request_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{ error: "AgentAuth operation failed" },
++			buildActionableErrorPayload({
++				message: "Agent auth request failed.",
++				nextStep: buildComposioFailureGuidance(),
++				code: "AGENTAUTH_POST_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+@@ -392,7 +465,13 @@
+ 					connectedAccounts,
+ 				});
+ 			} catch (convexError) {
+-				console.error("[AgentAuth] Error fetching data:", convexError);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "fetch_data_failed",
++					error: convexError,
++					level: "warn",
++					context: { workspaceId },
++				});
+ 				// Return empty arrays if there's an error
+ 				return NextResponse.json({
+ 					success: true,
+@@ -414,7 +493,13 @@
+ 					account: connectedAccount,
+ 				});
+ 			} catch (error) {
+-				console.error("Status check error:", error);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "status_check_failed",
++					error,
++					level: "warn",
++					context: { composioAccountId },
++				});
+ 				return NextResponse.json({
+ 					connected: false,
+ 					status: "NOT_FOUND",
+@@ -428,7 +513,13 @@
+ 			// Validate userId format (should be member_{memberId})
+ 			const memberIdPattern = /^member_[A-Za-z0-9-_]+$/;
+ 			if (!memberIdPattern.test(userId)) {
+-				console.error(`[AgentAuth] Invalid userId format: ${userId}`);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "invalid_user_id_format",
++					error: new Error("Invalid userId format"),
++					level: "warn",
++					context: { userId },
++				});
+ 				return NextResponse.json(
+ 					{
+ 						error: "Invalid userId format. Expected format: member_{memberId}",
+@@ -452,11 +543,22 @@
+ 					entityId,
+ 				});
+ 			} catch (error) {
+-				console.error("Tools fetch error:", error);
++				logRouteError({
++					route: "AgentAuth",
++					stage: "fetch_tools_failed",
++					error,
++					context: { toolkit, workspaceId, userId },
++				});
+ 				return NextResponse.json(
+-					{
+-						error: `Failed to fetch tools: ${error instanceof Error ? error.message : "Unknown error"}`,
+-					},
++					buildActionableErrorPayload({
++						message: `Failed to fetch tools for ${toolkit}.`,
++						nextStep: buildComposioFailureGuidance(),
++						code: "AGENTAUTH_FETCH_TOOLS_FAILED",
++						recoverable: true,
++						fallbackResponse: sanitizeErrorMessage(
++							error instanceof Error ? error.message : "Unknown error"
++						),
++					}),
+ 					{ status: 500 }
+ 				);
+ 			}
+@@ -471,9 +573,18 @@
+ 			{ status: 400 }
+ 		);
+ 	} catch (error) {
+-		console.error("[AgentAuth] GET Error:", error);
++		logRouteError({
++			route: "AgentAuth",
++			stage: "get_request_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{ error: "AgentAuth GET operation failed" },
++			buildActionableErrorPayload({
++				message: "Agent auth query failed.",
++				nextStep:
++					"Retry the request and confirm all required query parameters.",
++				code: "AGENTAUTH_GET_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+@@ -517,13 +628,11 @@
+ 			await apiClient.deleteConnection(composioAccountId);
+ 			composioDeleteSuccess = true;
+ 		} catch (error) {
+-			console.error(
+-				"[AgentAuth DELETE] ✗ Error disconnecting from Composio:",
+-				error
+-			);
+-			console.error("[AgentAuth DELETE] Error details:", {
+-				message: error instanceof Error ? error.message : String(error),
+-				stack: error instanceof Error ? error.stack : undefined,
++			logRouteError({
++				route: "AgentAuth DELETE",
++				stage: "composio_disconnect_failed",
++				error,
++				context: { composioAccountId, memberId, workspaceId },
+ 			});
+ 			// Continue to delete from database even if Composio delete fails
+ 		}
+@@ -540,17 +649,19 @@
+ 					memberId: memberId as Id<"members">,
+ 				});
+ 			} catch (error) {
+-				console.error(
+-					"[AgentAuth DELETE] ✗ Error deleting database record:",
+-					error
+-				);
+-				console.error("[AgentAuth DELETE] Database error details:", {
+-					message: error instanceof Error ? error.message : String(error),
+-					connectedAccountId,
+-					memberId,
++				logRouteError({
++					route: "AgentAuth DELETE",
++					stage: "database_disconnect_failed",
++					error,
++					context: { connectedAccountId, memberId, workspaceId },
+ 				});
+ 				return NextResponse.json(
+-					{ error: "Failed to delete connection from database" },
++					buildActionableErrorPayload({
++						message: "Failed to remove local connection record.",
++						nextStep:
++							"Retry disconnect. If this continues, refresh the integrations page and retry.",
++						code: "AGENTAUTH_DB_DISCONNECT_FAILED",
++					}),
+ 					{ status: 500 }
+ 				);
+ 			}
+@@ -562,13 +673,17 @@
+ 			composioDeleted: composioDeleteSuccess,
+ 		});
+ 	} catch (error) {
+-		console.error("[AgentAuth DELETE] Unexpected error:", error);
+-		console.error("[AgentAuth DELETE] Error details:", {
+-			message: error instanceof Error ? error.message : String(error),
+-			stack: error instanceof Error ? error.stack : undefined,
++		logRouteError({
++			route: "AgentAuth DELETE",
++			stage: "delete_request_failed",
++			error,
+ 		});
+ 		return NextResponse.json(
+-			{ error: "Failed to disconnect account" },
++			buildActionableErrorPayload({
++				message: "Failed to disconnect account.",
++				nextStep: buildComposioFailureGuidance(),
++				code: "AGENTAUTH_DELETE_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/app/api/assistant/composio/route.ts b/src/app/api/assistant/composio/route.ts
+index 82e3a085b23870efd4b70d030d044644bf73dac7..51c2bb49285c3005c7c6e09d077bbae7c1c5faf1
+--- a/src/app/api/assistant/composio/route.ts
++++ b/src/app/api/assistant/composio/route.ts
+@@ -1,5 +1,10 @@
+ import { type NextRequest, NextResponse } from "next/server";
+ import {
++	buildActionableErrorPayload,
++	logRouteError,
++	sanitizeErrorMessage,
++} from "@/lib/assistant-error-utils";
++import {
+ 	APP_CONFIGS,
+ 	AVAILABLE_APPS,
+ 	type AvailableApp,
+@@ -41,12 +46,18 @@
+ 			{ status: 400 }
+ 		);
+ 	} catch (error) {
+-		console.error("Composio API error:", error);
++		logRouteError({
++			route: "Composio API",
++			stage: "status_fetch_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				error: "Failed to fetch Composio status",
+-				details: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Failed to fetch Composio status.",
++				nextStep:
++					"Confirm the integration is configured and retry the status request.",
++				code: "COMPOSIO_STATUS_FETCH_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+@@ -92,7 +103,18 @@
+ 					message: `Redirect to ${app} for authorization`,
+ 				});
+ 			} else {
+-				return NextResponse.json({ error: result.error }, { status: 400 });
++				return NextResponse.json(
++					buildActionableErrorPayload({
++						message: `Could not start ${app} authorization.`,
++						nextStep: "Verify your app configuration and retry connection.",
++						code: "COMPOSIO_CONNECT_FAILED",
++						recoverable: true,
++						fallbackResponse: sanitizeErrorMessage(
++							result.error || "Authorization could not be started."
++						),
++					}),
++					{ status: 400 }
++				);
+ 			}
+ 		}
+ 
+@@ -101,12 +123,18 @@
+ 			{ status: 400 }
+ 		);
+ 	} catch (error) {
+-		console.error("Composio API error:", error);
++		logRouteError({
++			route: "Composio API",
++			stage: "connect_request_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				error: "Failed to process Composio request",
+-				details: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Failed to process Composio request.",
++				nextStep:
++					"Retry the request. If this continues, check Composio API key and auth config settings.",
++				code: "COMPOSIO_REQUEST_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/app/api/assistant/composio/status/route.ts b/src/app/api/assistant/composio/status/route.ts
+index 6cadfecb4ce2c907a803db105f5a3bc0266e6be5..21a893b75b755bec31272ca42d4387897f003504
+--- a/src/app/api/assistant/composio/status/route.ts
++++ b/src/app/api/assistant/composio/status/route.ts
+@@ -1,6 +1,10 @@
+ import { unstable_noStore as noStore } from "next/cache";
+ import { type NextRequest, NextResponse } from "next/server";
+ import {
++	buildActionableErrorPayload,
++	logRouteError,
++} from "@/lib/assistant-error-utils";
++import {
+ 	type AvailableApp,
+ 	createComposioClient,
+ 	getAllToolsForApps,
+@@ -62,7 +66,12 @@
+ 				);
+ 				totalTools = allTools.length;
+ 			} catch (error) {
+-				console.warn("[Connections Status] Failed to get tool count:", error);
++				logRouteError({
++					route: "Connections Status",
++					stage: "tool_count_fetch_failed",
++					error,
++					level: "warn",
++				});
+ 				// Don't fail the whole request if tool fetching fails
+ 				totalTools = 0;
+ 			}
+@@ -78,11 +87,20 @@
+ 			timestamp: new Date().toISOString(),
+ 		});
+ 	} catch (error) {
+-		console.error("[Connections Status] Error:", error);
++		logRouteError({
++			route: "Connections Status",
++			stage: "status_route_failed",
++			error,
++		});
+ 		return NextResponse.json(
+ 			{
+-				success: false,
+-				error: error instanceof Error ? error.message : "Unknown error",
++				...buildActionableErrorPayload({
++					message: "Unable to load integration status.",
++					nextStep:
++						"Retry in a few seconds. If it persists, reconnect the integration and retry.",
++					code: "COMPOSIO_STATUS_ROUTE_FAILED",
++					recoverable: true,
++				}),
+ 				connected: [],
+ 				totalTools: 0,
+ 			},
+diff --git a/src/app/api/assistant/composio/tools/route.ts b/src/app/api/assistant/composio/tools/route.ts
+index 8a70d56644c4aa40a0552a4ea802c974dddd7267..0e36e1b622488afa2db506149a7203b09a6c8aed
+--- a/src/app/api/assistant/composio/tools/route.ts
++++ b/src/app/api/assistant/composio/tools/route.ts
+@@ -1,5 +1,11 @@
+ import { type NextRequest, NextResponse } from "next/server";
+ import OpenAI from "openai";
++import {
++	buildActionableErrorPayload,
++	buildComposioFailureGuidance,
++	logRouteError,
++	sanitizeErrorMessage,
++} from "@/lib/assistant-error-utils";
+ import { createComposioClient } from "@/lib/composio-config";
+ 
+ // Initialize OpenAI client
+@@ -42,11 +48,21 @@
+ 						tools.push(appTools);
+ 					}
+ 				} catch (error) {
+-					console.warn(`No tools found for app ${appName}:`, error);
++					logRouteError({
++						route: "Composio Tools",
++						stage: "app_tools_missing",
++						error,
++						level: "warn",
++						context: { appName },
++					});
+ 				}
+ 			}
+ 		} catch (error) {
+-			console.error("Error fetching tools:", error);
++			logRouteError({
++				route: "Composio Tools",
++				stage: "tools_fetch_failed",
++				error,
++			});
+ 			tools = [];
+ 		}
+ 
+@@ -101,10 +117,17 @@
+ 							toolName: toolCall.function.name,
+ 						});
+ 					} catch (error) {
+-						console.error("Tool execution error:", error);
++						logRouteError({
++							route: "Composio Tools",
++							stage: "tool_execution_error",
++							error,
++							context: { toolName: toolCall.function.name },
++						});
+ 						toolResults.push({
+ 							toolCallId: toolCall.id,
+-							error: error instanceof Error ? error.message : "Unknown error",
++							error: sanitizeErrorMessage(
++								error instanceof Error ? error.message : "Unknown error"
++							),
+ 							toolName: toolCall.function.name,
+ 						});
+ 					}
+@@ -152,12 +175,18 @@
+ 			availableTools: tools.length,
+ 		});
+ 	} catch (error) {
+-		console.error("[Composio Tools] Error:", error);
++		logRouteError({
++			route: "Composio Tools",
++			stage: "tools_post_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				success: false,
+-				error: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Composio tools request failed.",
++				nextStep: buildComposioFailureGuidance(),
++				code: "COMPOSIO_TOOLS_POST_FAILED",
++				recoverable: true,
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+@@ -193,7 +222,13 @@
+ 						tools.push(appTools);
+ 					}
+ 				} catch (error) {
+-					console.warn(`No tools found for app ${appName}:`, error);
++					logRouteError({
++						route: "Composio Tools",
++						stage: "app_tools_missing_get",
++						error,
++						level: "warn",
++						context: { appName },
++					});
+ 				}
+ 			}
+ 		} else {
+@@ -202,7 +237,13 @@
+ 				const allTools = await composio.tools.get(entityId, {} as any);
+ 				tools = Array.isArray(allTools) ? allTools : [allTools];
+ 			} catch (error) {
+-				console.warn("No tools found for entity:", error);
++				logRouteError({
++					route: "Composio Tools",
++					stage: "entity_tools_missing_get",
++					error,
++					level: "warn",
++					context: { entityId },
++				});
+ 				tools = [];
+ 			}
+ 		}
+@@ -218,12 +259,19 @@
+ 			count: tools.length,
+ 		});
+ 	} catch (error) {
+-		console.error("[Composio Tools] GET Error:", error);
++		logRouteError({
++			route: "Composio Tools",
++			stage: "tools_get_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				success: false,
+-				error: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Unable to fetch available Composio tools.",
++				nextStep:
++					"Confirm the account is connected, then retry the tools request.",
++				code: "COMPOSIO_TOOLS_GET_FAILED",
++				recoverable: true,
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/app/api/assistant/route.ts b/src/app/api/assistant/route.ts
+index c704895b6e2a9e5b90cc3090f56b8eb3dfe5e698..15c87068f6c16c0db2cb55a2727e8495f9a30292
+--- a/src/app/api/assistant/route.ts
++++ b/src/app/api/assistant/route.ts
+@@ -1,4 +1,8 @@
+ import { type NextRequest, NextResponse } from "next/server";
++import {
++	buildActionableErrorPayload,
++	logRouteError,
++} from "@/lib/assistant-error-utils";
+ 
+ // Redirect to the chatbot endpoint
+ export async function POST(req: NextRequest) {
+@@ -30,12 +34,18 @@
+ 		const result = await chatbotResponse.json();
+ 		return NextResponse.json(result, { status: chatbotResponse.status });
+ 	} catch (error) {
+-		console.error("[Assistant Router] Error:", error);
++		logRouteError({
++			route: "Assistant Router",
++			stage: "forwarding_failed",
++			error,
++		});
+ 		return NextResponse.json(
+-			{
+-				error: "Failed to process request",
+-				details: error instanceof Error ? error.message : "Unknown error",
+-			},
++			buildActionableErrorPayload({
++				message: "Could not forward the assistant request.",
++				nextStep:
++					"Retry in a few seconds. If it persists, refresh and try again.",
++				code: "ASSISTANT_ROUTER_FORWARD_FAILED",
++			}),
+ 			{ status: 500 }
+ 		);
+ 	}
+diff --git a/src/lib/assistant-error-utils.ts b/src/lib/assistant-error-utils.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..d0c0c912b2ec33fb178b73555394ff022d1c8222
+--- /dev/null
++++ b/src/lib/assistant-error-utils.ts
+@@ -0,0 +1,106 @@
++import { sanitizeAuditPayload } from "@/lib/assistant-tool-audit";
++
++const REDACTED = "[REDACTED]";
++const MAX_ERROR_MESSAGE_LENGTH = 280;
++const SENSITIVE_VALUE_PATTERN =
++	/(Bearer\s+)[^\s]+|((?:api[_-]?key|token|secret|password|authorization|cookie)\s*[:=]\s*)["']?[^"',\s}]+/gi;
++
++type ErrorLike = {
++	name?: string;
++	message?: string;
++	stack?: string;
++	code?: string;
++	status?: number;
++};
++
++export function sanitizeErrorMessage(input: string): string {
++	return input
++		.replace(SENSITIVE_VALUE_PATTERN, (...args) => {
++			if (args[1]) {
++				return `${args[1]}${REDACTED}`;
++			}
++			if (args[2]) {
++				return `${args[2]}${REDACTED}`;
++			}
++			return REDACTED;
++		})
++		.slice(0, MAX_ERROR_MESSAGE_LENGTH);
++}
++
++function normalizeError(error: unknown): {
++	name: string;
++	message: string;
++	code?: string;
++	stack?: string;
++} {
++	const err = (error ?? {}) as ErrorLike;
++	const message =
++		typeof err.message === "string" && err.message.trim().length > 0
++			? err.message
++			: "Unknown error";
++	return {
++		name: typeof err.name === "string" ? err.name : "Error",
++		message: sanitizeErrorMessage(message),
++		code: typeof err.code === "string" ? err.code : undefined,
++		stack:
++			typeof err.stack === "string"
++				? sanitizeErrorMessage(err.stack.split("\n").slice(0, 3).join("\n"))
++				: undefined,
++	};
++}
++
++export function logRouteError(params: {
++	route: string;
++	stage: string;
++	error: unknown;
++	context?: Record<string, unknown>;
++	level?: "warn" | "error";
++}) {
++	const payload = {
++		stage: params.stage,
++		error: normalizeError(params.error),
++		context: sanitizeAuditPayload(params.context ?? {}),
++	};
++	if (params.level === "warn") {
++		console.warn(`[${params.route}] ${params.stage}`, payload);
++		return;
++	}
++	console.error(`[${params.route}] ${params.stage}`, payload);
++}
++
++export function buildActionableErrorPayload(params: {
++	message: string;
++	nextStep: string;
++	code: string;
++	recoverable?: boolean;
++	fallbackResponse?: string;
++}): {
++	success: false;
++	error: string;
++	nextStep: string;
++	code: string;
++	recoverable: boolean;
++	fallbackResponse?: string;
++} {
++	return {
++		success: false,
++		error: params.message,
++		nextStep: params.nextStep,
++		code: params.code,
++		recoverable: params.recoverable ?? false,
++		fallbackResponse: params.fallbackResponse,
++	};
++}
++
++export function buildComposioFailureGuidance(): string {
++	return "Check your connected integrations in Assistant settings, then retry.";
++}
++
++export function buildRecoverableAssistantFallback(reason?: string): string {
++	const base =
++		"I hit a temporary issue with external integrations, but I can still help with workspace tasks.";
++	if (!reason) {
++		return `${base} Try again in a moment or reconnect the integration.`;
++	}
++	return `${base} Reason: ${reason}. Try again in a moment or reconnect the integration.`;
++}
+
+
+thinking
+**Finalizing commit to avoid log dirtiness**
