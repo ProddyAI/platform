@@ -45,8 +45,8 @@ Run log: /Users/macbook/Documents/GitHub/platform/.ralph/runs/run-20260212-17165
 Run summary: /Users/macbook/Documents/GitHub/platform/.ralph/runs/run-20260212-171656-15046-iter-1.md
 - Guardrails reviewed: yes
 - No-commit run: false
-- Commit: TBD
-- Post-commit status: TBD
+- Commit: dc7d9be chore(assistant): record s1 run verification
+- Post-commit status: `dirty` (.ralph/runs/run-20260212-171656-15046-iter-1.log updated after commit)
 - Verification:
   - Command: `bun run type` -> PASS
   - Command: `bun run check` -> FAIL
