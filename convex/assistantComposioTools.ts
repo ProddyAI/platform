@@ -3,6 +3,12 @@
 import { Composio } from "@composio/core";
 import { v } from "convex/values";
 import OpenAI from "openai";
+import {
+	buildCancellationMessage,
+	buildConfirmationRequiredMessage,
+	getHighImpactToolNames,
+	getUserConfirmationDecision,
+} from "../src/lib/high-impact-action-confirmation";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
@@ -112,7 +118,26 @@ async function executeComposioAction(
 			completion.choices[0]?.message?.tool_calls &&
 			completion.choices[0].message.tool_calls.length > 0
 		) {
-			for (const toolCall of completion.choices[0].message.tool_calls) {
+			const toolCalls = completion.choices[0].message.tool_calls;
+			const highImpactToolNames = getHighImpactToolNames(toolCalls);
+			const decision = getUserConfirmationDecision(message);
+
+			if (highImpactToolNames.length > 0) {
+				if (decision === "cancel") {
+					return {
+						success: true,
+						response: buildCancellationMessage(highImpactToolNames),
+					};
+				}
+				if (decision !== "confirm") {
+					return {
+						success: true,
+						response: buildConfirmationRequiredMessage(highImpactToolNames),
+					};
+				}
+			}
+
+			for (const toolCall of toolCalls) {
 				if (toolCall.type === "function") {
 					const actionParams = JSON.parse(toolCall.function.arguments);
 					await composio.tools.execute(toolCall.function.name, {

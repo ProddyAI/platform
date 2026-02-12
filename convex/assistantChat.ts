@@ -587,6 +587,21 @@ export const sendMessage = action({
 								} else {
 									result = await ctx.runAction(tool.handler as any, fullArgs);
 								}
+								const toolResultResponse =
+									typeof result === "object" &&
+									result !== null &&
+									"response" in result &&
+									typeof (result as { response?: unknown }).response ===
+										"string"
+										? (result as { response: string }).response
+										: null;
+								const noSideEffectsMessage =
+									toolResultResponse?.includes("No changes were made.") ??
+									false;
+								if (tool.externalApp && noSideEffectsMessage) {
+									responseText = toolResultResponse ?? responseText;
+									continue;
+								}
 
 								// Call again with tool result
 								const followUpMessages = [

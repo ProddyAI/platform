@@ -21,6 +21,12 @@ import {
 	getAnyConnectedApps,
 	getWorkspaceEntityId,
 } from "@/lib/composio-config";
+import {
+	buildCancellationMessage,
+	buildConfirmationRequiredMessage,
+	getHighImpactToolNames,
+	getUserConfirmationDecision,
+} from "@/lib/high-impact-action-confirmation";
 
 export const dynamic = "force-dynamic";
 
@@ -285,6 +291,60 @@ export async function POST(req: NextRequest) {
 					completion.choices[0]?.message?.tool_calls &&
 					completion.choices[0].message.tool_calls.length > 0
 				) {
+					const toolCalls = completion.choices[0].message.tool_calls as any[];
+					const highImpactToolNames = getHighImpactToolNames(toolCalls);
+					const decision = getUserConfirmationDecision(message);
+
+					if (highImpactToolNames.length > 0) {
+						if (decision === "cancel") {
+							return NextResponse.json({
+								success: true,
+								response: buildCancellationMessage(highImpactToolNames),
+								sources: [],
+								actions: [],
+								toolResults: [],
+								assistantType: "openai-composio",
+								composioToolsUsed: false,
+								connectedApps,
+								metadata: buildAssistantResponseMetadata({
+									assistantType: "openai-composio",
+									executionPath: "nextjs-openai-composio",
+									intent: queryIntent,
+									tools: {
+										internalEnabled: true,
+										externalEnabled: true,
+										externalUsed: false,
+										connectedApps,
+									},
+								}),
+							});
+						}
+
+						if (decision !== "confirm") {
+							return NextResponse.json({
+								success: true,
+								response: buildConfirmationRequiredMessage(highImpactToolNames),
+								sources: [],
+								actions: [],
+								toolResults: [],
+								assistantType: "openai-composio",
+								composioToolsUsed: false,
+								connectedApps,
+								metadata: buildAssistantResponseMetadata({
+									assistantType: "openai-composio",
+									executionPath: "nextjs-openai-composio",
+									intent: queryIntent,
+									tools: {
+										internalEnabled: true,
+										externalEnabled: true,
+										externalUsed: false,
+										connectedApps,
+									},
+								}),
+							});
+						}
+					}
+
 					try {
 						// Use Composio's provider.handleToolCalls method (matches sample code pattern)
 						const result = await composioClient.provider.handleToolCalls(
@@ -296,7 +356,6 @@ export async function POST(req: NextRequest) {
 						toolResults = Array.isArray(result) ? result : [result];
 
 						// Create source badges for executed tools
-						const toolCalls = completion.choices[0].message.tool_calls as any[];
 						sources = toolCalls.map((call, idx) => ({
 							id: `tool-${idx}`,
 							type: "tool",
