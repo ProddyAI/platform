@@ -27,6 +27,7 @@ import type * as members from "../members.js";
 import type * as mentions from "../mentions.js";
 import type * as messages from "../messages.js";
 import type * as notes from "../notes.js";
+import type * as notifications from "../notifications.js";
 import type * as passwordManagement from "../passwordManagement.js";
 import type * as preferences from "../preferences.js";
 import type * as presence from "../presence.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   mentions: typeof mentions;
   messages: typeof messages;
   notes: typeof notes;
+  notifications: typeof notifications;
   passwordManagement: typeof passwordManagement;
   preferences: typeof preferences;
   presence: typeof presence;

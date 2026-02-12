@@ -3,12 +3,15 @@
 import { formatDistanceToNow } from "date-fns";
 import { Clock, Hash, Loader, MessageSquareText } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetThreadMessages } from "@/features/messages/api/use-get-thread-messages";
+import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
+import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
 import { WidgetCard } from "../shared/widget-card";
 
 interface ThreadRepliesWidgetProps {
@@ -45,10 +48,12 @@ interface ThreadReplyMessage {
 	parentUser: {
 		name: string;
 		image?: string;
+		userId?: Id<"users">;
 	};
 	currentUser: {
 		name: string;
 		image?: string;
+		userId?: Id<"users">;
 	};
 	context: {
 		name: string;
@@ -79,6 +84,18 @@ export const ThreadRepliesWidget = ({
 
 	// Define the type for a thread message
 	type ThreadMessageType = NonNullable<typeof threadMessages>[0];
+
+	// Get user IDs from thread messages for status tracking
+	const userIds = useMemo(
+		() =>
+			threadMessages
+				?.map((t) => t.currentUser?.userId)
+				.filter((id): id is Id<"users"> => id !== undefined) || [],
+		[threadMessages]
+	);
+
+	// Get statuses for all thread reply authors
+	const { getUserStatus } = useMultipleUserStatuses(userIds, workspaceId);
 
 	const handleViewThread = (thread: ThreadMessageType) => {
 		if (thread.context.type === "channel" && thread.message.parentMessageId) {
@@ -149,20 +166,27 @@ export const ThreadRepliesWidget = ({
 			{threadMessages && threadMessages.length > 0 ? (
 				<ScrollArea className="h-[280px]">
 					<div className="space-y-2 pr-4">
-						{threadMessages.map((thread) => (
+						{threadMessages.map((thread) => {
+							const authorUserId = thread.currentUser?.userId;
+							const status = authorUserId ? getUserStatus(authorUserId) : undefined;
+							
+							return (
 							<WidgetCard key={thread.message._id.toString()}>
 								<div className="flex items-start gap-3">
-									<Avatar className="h-8 w-8">
-										<AvatarImage
-											alt={thread.currentUser.name || "User avatar"}
-											src={thread.currentUser.image}
-										/>
-										<AvatarFallback>
-											{thread.currentUser.name
-												? thread.currentUser.name.charAt(0).toUpperCase()
-												: "?"}
-										</AvatarFallback>
-									</Avatar>
+									<div className="relative">
+										<Avatar className="h-8 w-8">
+											<AvatarImage
+												alt={thread.currentUser.name || "User avatar"}
+												src={thread.currentUser.image}
+											/>
+											<AvatarFallback>
+												{thread.currentUser.name
+													? thread.currentUser.name.charAt(0).toUpperCase()
+													: "?"}
+											</AvatarFallback>
+										</Avatar>
+										{status && <PresenceIndicator status={status} />}
+									</div>
 									<div className="flex-1 space-y-1">
 										<div className="flex items-center justify-between">
 											<div className="flex items-center gap-2">
@@ -226,7 +250,8 @@ export const ThreadRepliesWidget = ({
 									</div>
 								</div>
 							</WidgetCard>
-						))}
+							);
+						})}
 					</div>
 				</ScrollArea>
 			) : (

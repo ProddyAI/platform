@@ -6,6 +6,7 @@ import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/3pc/apollo-tracking";
 import { ClarityTracking } from "@/components/3pc/clarity-tracking";
 import { Formbricks } from "@/components/3pc/formbricks";
+import { AuthenticatedOneSignalTracking } from "@/components/3pc/notifications";
 import { TidioChat } from "@/components/3pc/tidio-chat";
 import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
@@ -85,6 +86,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 							<UsetifulProvider>
 								<Toaster closeButton richColors theme="light" />
 								<ModalProvider />
+								<AuthenticatedOneSignalTracking />
 								<TidioChat />
 								<Formbricks />
 								<ClarityTracking />

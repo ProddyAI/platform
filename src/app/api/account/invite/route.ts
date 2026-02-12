@@ -128,10 +128,11 @@ export async function POST(req: Request) {
 		});
 
 		const emailResult = await resend.emails.send({
-			from: "Proddy <no-reply@proddy.tech>",
+			from: process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>",
 			to: email,
 			subject: `You've been invited to join ${inviteDetails.workspaceName}`,
 			react: emailTemplate,
+			replyTo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@proddy.tech",
 		});
 
 		// Check for Resend API errors (SDK doesn't throw, returns { data, error })

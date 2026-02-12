@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { AtSign, CheckCircle, Clock, Hash, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,8 @@ import { useGetMentionedMessages } from "@/features/messages/api/use-get-mention
 import { useGetUnreadMentionsCount } from "@/features/messages/api/use-get-unread-mentions-count";
 import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-mentions-as-read";
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
+import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
+import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
 import { WidgetCard } from "../shared/widget-card";
 
 interface MentionsWidgetProps {
@@ -72,6 +75,18 @@ export const MentionsWidget = ({
 					mention !== undefined && mention !== null && mention.id !== undefined
 			)
 		: [];
+
+	// Get user IDs from mentions for status tracking
+	const userIds = useMemo(
+		() =>
+			mentions
+				.map((m) => m.author?.userId)
+				.filter((id): id is Id<"users"> => id !== undefined),
+		[mentions]
+	);
+
+	// Get statuses for all mentioned users
+	const { getUserStatus } = useMultipleUserStatuses(userIds, workspaceId);
 
 	const handleViewMention = (mention: Mention) => {
 		// Mark as read
@@ -152,20 +167,27 @@ export const MentionsWidget = ({
 			{mentions && mentions.length > 0 ? (
 				<ScrollArea className="widget-scroll-area">
 					<div className="space-y-2 p-4">
-						{mentions.map((mention) => (
+						{mentions.map((mention) => {
+							const authorUserId = mention.author?.userId;
+							const status = authorUserId ? getUserStatus(authorUserId) : undefined;
+							
+							return (
 							<WidgetCard key={mention.id}>
 								<div className="flex items-start gap-3">
-									<Avatar className="h-8 w-8">
-										<AvatarImage
-											alt={mention.author.name || "User avatar"}
-											src={mention.author.image}
-										/>
-										<AvatarFallback>
-											{mention.author.name
-												? mention.author.name.charAt(0).toUpperCase()
-												: "?"}
-										</AvatarFallback>
-									</Avatar>
+									<div className="relative">
+										<Avatar className="h-8 w-8">
+											<AvatarImage
+												alt={mention.author.name || "User avatar"}
+												src={mention.author.image}
+											/>
+											<AvatarFallback>
+												{mention.author.name
+													? mention.author.name.charAt(0).toUpperCase()
+													: "?"}
+											</AvatarFallback>
+										</Avatar>
+										{status && <PresenceIndicator status={status} />}
+									</div>
 									<div className="flex-1 space-y-1">
 										<div className="flex items-center justify-between">
 											<div className="flex items-center gap-2">
@@ -220,7 +242,8 @@ export const MentionsWidget = ({
 									</div>
 								</div>
 							</WidgetCard>
-						))}
+							);
+						})}
 					</div>
 				</ScrollArea>
 			) : (

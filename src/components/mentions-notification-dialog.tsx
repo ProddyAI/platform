@@ -2,6 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns";
 import {
+	AlertTriangle,
 	AtSign,
 	Bell,
 	CheckCircle2,
@@ -34,7 +35,9 @@ import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-m
 import { useMarkDirectMessageAsRead } from "@/features/messages/api/use-mark-direct-message-as-read";
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { useAdBlockerDetection } from "@/hooks/use-ad-blocker-detection";
 import { Badge } from "./ui/badge";
+import { Alert, AlertDescription } from "./ui/alert";
 
 interface MentionsNotificationDialogProps {
 	open: boolean;
@@ -56,6 +59,7 @@ export const MentionsNotificationDialog = ({
 	const markAllMentionsAsReadMutation = useMarkAllMentionsAsRead();
 	const markAllDirectMessagesAsReadMutation = useMarkAllDirectMessagesAsRead();
 	const [activeTab, setActiveTab] = useState("all");
+	const isAdBlockerActive = useAdBlockerDetection();
 
 	// Combine mentions and direct messages
 	const allNotifications = [
@@ -356,7 +360,7 @@ export const MentionsNotificationDialog = ({
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className="sm:max-w-[550px] p-0 overflow-hidden shadow-lg [&>button]:hidden dark:bg-gray-900 dark:border-gray-800">
-				<DialogHeader className="p-5 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+				<DialogHeader className="p-5 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 space-y-3">
 					<div className="flex items-center justify-between">
 						<DialogTitle className="flex items-center gap-2 text-xl dark:text-gray-100">
 							<div className="bg-blue-100 dark:bg-blue-900/40 p-1.5 rounded-full">
@@ -384,6 +388,16 @@ export const MentionsNotificationDialog = ({
 							</Button>
 						)}
 					</div>
+					
+					{/* Ad Blocker Warning */}
+					{isAdBlockerActive && (
+						<Alert className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+							<AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+							<AlertDescription className="text-red-700 dark:text-red-300 text-sm">
+								Turn off ad blocker to receive notifications
+							</AlertDescription>
+						</Alert>
+					)}
 				</DialogHeader>
 
 				{isLoading ? (

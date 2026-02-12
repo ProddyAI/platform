@@ -44,6 +44,7 @@ import { CanvasWidget } from "./widgets/canvas-widget";
 import { MentionsWidget } from "./widgets/mentions-widget";
 import { NotesWidget } from "./widgets/notes-widget";
 import { TasksWidget } from "./widgets/tasks-widget";
+import { TeamStatusWidget } from "./widgets/team-status-widget";
 import { ThreadRepliesWidget } from "./widgets/thread-replies-widget";
 
 interface DashboardWidgetsProps {
@@ -68,7 +69,8 @@ type WidgetType =
 	| "cards"
 	| "calendar"
 	| "notes"
-	| "canvas";
+	| "canvas"
+	| "team";
 
 // Available widgets configuration
 const AVAILABLE_WIDGETS = [
@@ -91,6 +93,11 @@ const AVAILABLE_WIDGETS = [
 	{ id: "calendar", title: "Calendar Preview", description: "Upcoming events" },
 	{ id: "notes", title: "Notes", description: "Recent notes" },
 	{ id: "canvas", title: "Canvas", description: "Recent canvas items" },
+	{
+		id: "team",
+		title: "Team Status",
+		description: "See who's online and message teammates",
+	},
 ];
 
 // Sortable widget wrapper component
@@ -379,6 +386,14 @@ export const DashboardWidgets = ({
 				case "canvas":
 					return (
 						<CanvasWidget
+							isEditMode={isEditMode}
+							member={member}
+							workspaceId={workspaceId}
+						/>
+					);
+				case "team":
+					return (
+						<TeamStatusWidget
 							isEditMode={isEditMode}
 							member={member}
 							workspaceId={workspaceId}

@@ -105,10 +105,11 @@ export async function POST(request: NextRequest) {
 		});
 
 		const { error } = await resendClient.emails.send({
-			from: "Proddy <noreply@proddy.tech>",
+			from: process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>",
 			to: normalizedEmail,
 			subject: "Reset Your Password - Proddy",
 			react: emailTemplate,
+			replyTo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@proddy.tech",
 		});
 
 		if (error) {

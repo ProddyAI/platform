@@ -69,10 +69,11 @@ export async function POST(req: Request) {
 		});
 
 		await resendClient.emails.send({
-			from: "Proddy <no-reply@proddy.tech>",
+			from: process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>",
 			to: email.toLowerCase(),
 			subject: "Verify your email - Proddy",
 			react: emailTemplate,
+			replyTo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@proddy.tech",
 		});
 
 		return NextResponse.json({ success: true });
