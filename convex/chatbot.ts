@@ -1,12 +1,13 @@
 "use node";
 
+import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { v } from "convex/values";
 import OpenAI from "openai";
-import { api } from "./_generated/api";
+import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
+import { api, internal } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
@@ -23,10 +24,6 @@ type ChatMessage = {
 	timestamp: number;
 	sources?: Source[];
 	actions?: NavigationAction[];
-};
-
-type ChatHistory = {
-	messages: ChatMessage[];
 };
 
 type NavigationAction = {
@@ -52,10 +49,6 @@ type LLMMessage = {
 	role: "system" | "user" | "assistant";
 	content: string;
 };
-
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY || "",
-});
 
 const DEFAULT_SYSTEM_PROMPT = [
 	"You are Proddy, a personal work assistant for a team workspace.",
@@ -396,11 +389,15 @@ function detectComposioIntent(query: string): ComposioIntent | null {
  * Resolves auth config IDs from the member's connected accounts so tools.get uses valid authConfigIds.
  */
 async function executeComposioAction(
-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
+	ctx: {
+		runQuery: (query: any, args: any) => Promise<any>;
+		runMutation: (mutation: any, args: any) => Promise<any>;
+	},
 	entityId: string,
 	appNames: string[],
 	message: string,
-	workspaceId: Id<"workspaces">
+	workspaceId: Id<"workspaces">,
+	memberId: Id<"members">
 ): Promise<{
 	success: boolean;
 	response?: string;
@@ -538,6 +535,9 @@ async function executeComposioAction(
 		) {
 			for (const toolCall of completion.choices[0].message.tool_calls) {
 				if (toolCall.type === "function") {
+					const sanitizedArgs = parseAndSanitizeArguments(
+						toolCall.function.arguments
+					);
 					try {
 						const actionParams = JSON.parse(toolCall.function.arguments);
 						const result = await composio.tools.execute(
@@ -545,6 +545,19 @@ async function executeComposioAction(
 							{
 								userId: entityId,
 								arguments: actionParams,
+							}
+						);
+						await ctx.runMutation(
+							internal.assistantToolAudits.logExternalToolAttemptInternal,
+							{
+								workspaceId,
+								memberId,
+								toolName: toolCall.function.name,
+								toolkit: appNames[0]?.toUpperCase(),
+								argumentsSnapshot: sanitizedArgs,
+								outcome: "success",
+								executionPath: "convex-chatbot",
+								toolCallId: toolCall.id,
 							}
 						);
 
@@ -561,6 +574,20 @@ async function executeComposioAction(
 
 						const errorMessage =
 							error instanceof Error ? error.message : "Unknown error";
+						await ctx.runMutation(
+							internal.assistantToolAudits.logExternalToolAttemptInternal,
+							{
+								workspaceId,
+								memberId,
+								toolName: toolCall.function.name,
+								toolkit: appNames[0]?.toUpperCase(),
+								argumentsSnapshot: sanitizedArgs,
+								outcome: "error",
+								error: errorMessage,
+								executionPath: "convex-chatbot",
+								toolCallId: toolCall.id,
+							}
+						);
 
 						// Check if it's a connection error
 						if (
@@ -712,10 +739,10 @@ async function generateLLMResponse(opts: {
 	systemPrompt?: string;
 	recentMessages?: ReadonlyArray<ChatMessage>;
 }): Promise<string> {
-	const apiKey = process.env.OPENROUTER_API_KEY;
+	const apiKey = process.env.OPENAI_API_KEY;
 	if (!apiKey) {
 		throw new Error(
-			"OPENROUTER_API_KEY is required. Please configure the OpenRouter API key in your environment variables."
+			"OPENAI_API_KEY is required. Please configure the OpenAI API key in your environment variables."
 		);
 	}
 
@@ -739,7 +766,7 @@ async function generateLLMResponse(opts: {
 
 	try {
 		const { text } = await generateText({
-			model: openrouter("openai/gpt-4o-mini") as any,
+			model: openai("gpt-4o-mini"),
 			messages: messages as any,
 			temperature: 0.2,
 		});
@@ -1239,7 +1266,7 @@ function isLikelyTomorrowReferenceFallback(
 	const t = toPlainText(text).toLowerCase();
 	if (!t) return false;
 	if (tomorrowKey && t.includes(tomorrowKey)) return true;
-	// Small heuristic only for fallback when Gemini isn't available.
+	// Small heuristic only for fallback when AI isn't available.
 	if (/\b(tmr|tmrw|tomo|tomorow|tommorow|tommorrow|tommrow)\b/i.test(t))
 		return true;
 	if (hasApproximateToken(t, "tomorrow", 2)) return true;
@@ -1429,59 +1456,6 @@ function extractIntent(query: string): AssistantIntent {
 	return { mode: "qa", channel: null };
 }
 
-function _extractSearchTerms(query: string): string[] {
-	const q = query.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
-	const raw = q
-		.split(/\s+/g)
-		.map((w) => w.trim())
-		.filter(Boolean);
-	const stop = new Set([
-		"the",
-		"a",
-		"an",
-		"to",
-		"for",
-		"of",
-		"in",
-		"on",
-		"is",
-		"are",
-		"am",
-		"was",
-		"were",
-		"my",
-		"your",
-		"our",
-		"their",
-		"what",
-		"whats",
-		"what's",
-		"about",
-		"please",
-		"do",
-		"i",
-		"we",
-		"you",
-		"me",
-		"it",
-		"this",
-		"that",
-		"with",
-		"and",
-		"or",
-		"as",
-		"now",
-		"today",
-		"tomorrow",
-		"tmr",
-		"tmrw",
-		"tomo",
-	]);
-	return Array.from(
-		new Set(raw.filter((w) => w.length >= 3 && !stop.has(w)))
-	).slice(0, 8);
-}
-
 type PriorityGroup = {
 	high: string[];
 	medium: string[];
@@ -1538,10 +1512,6 @@ function shortDate(ms: number) {
 }
 
 type Priority = "lowest" | "low" | "medium" | "high" | "highest";
-
-function _isDefined<T>(value: T | null | undefined): value is T {
-	return value !== null && value !== undefined;
-}
 
 function normalizePriority(input: unknown): Priority | undefined {
 	if (typeof input !== "string") return undefined;
@@ -1657,7 +1627,8 @@ export const askAssistant = action({
 				entityId,
 				appNames,
 				args.query,
-				workspaceId
+				workspaceId,
+				memberId
 			);
 
 			if (composioResult.success && composioResult.response) {
@@ -2064,7 +2035,7 @@ Updates:\n${context}`;
 						});
 						lines.push(summary);
 					} catch {
-						// If Gemini isn't available, avoid showing raw messages; show a non-verbatim fallback.
+						// If AI isn't available, avoid showing raw messages; show a non-verbatim fallback.
 						const fallback = updates
 							.slice(0, 6)
 							.map((u) => `• @${u.author} posted in #${u.channel}`)
@@ -2633,7 +2604,7 @@ Mentions:\n${mentionContext}`;
 								recentMessages: recentChatMessages,
 							});
 						} catch {
-							// Gemini isn't available: avoid topic/keyword heuristics; use a safe structured fallback.
+							// AI isn't available: avoid topic/keyword heuristics; use a safe structured fallback.
 							if (matches.length) {
 								mentionsSummary = matches
 									.slice(0, 6)
@@ -3106,27 +3077,5 @@ Context:\n${combinedContext}`;
 				sources: [],
 			};
 		}
-	},
-});
-
-// -----------------------------
-// DEPRECATED ACTION
-// -----------------------------
-// This function is no longer used.
-// All chat functionality has been moved to the main assistant router.
-// This is kept for backward compatibility but should not be called.
-export const generateResponse = action({
-	args: {
-		workspaceId: v.id("workspaces"),
-		message: v.string(),
-	},
-	handler: async (_ctx, _args): Promise<GenerateResponseResult> => {
-		// This function is deprecated - all logic moved to /api/assistant router
-		return {
-			response:
-				"This function is deprecated. Please use the main assistant router.",
-			sources: [],
-			actions: [],
-		};
 	},
 });

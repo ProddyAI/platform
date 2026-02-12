@@ -26,7 +26,6 @@
 
 - [ ] All **CodeRabbitAI** review comments have been resolved
 - [ ] All **Copilot** review comments have been resolved
-- [ ] All **Sentry** feedback and error suggestions have been addressed
 - [ ] All **DeepSource** static analysis comments have been resolved
 - [ ] All **Vercel** build and deployment comments have been addressed
 

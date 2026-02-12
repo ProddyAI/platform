@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const model = openrouter("google/gemini-2.5-flash");
+		const model = openrouter("openai/gpt-5-mini");
 
 		const systemPrompt = `You are a diagram generator.
 

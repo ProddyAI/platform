@@ -9,6 +9,18 @@ import OpenAI from "openai";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import {
+	buildActionableErrorPayload,
+	buildComposioFailureGuidance,
+	buildRecoverableAssistantFallback,
+	logRouteError,
+} from "@/lib/assistant-error-utils";
+import {
+	buildAssistantResponseMetadata,
+	buildAssistantSystemPrompt,
+	classifyAssistantQuery,
+} from "@/lib/assistant-orchestration";
+import { parseAndSanitizeArguments } from "@/lib/assistant-tool-audit";
+import {
 	type AvailableApp,
 	createComposioClient,
 	filterToolsForQuery,
@@ -16,6 +28,12 @@ import {
 	getAnyConnectedApps,
 	getWorkspaceEntityId,
 } from "@/lib/composio-config";
+import {
+	buildCancellationMessage,
+	buildConfirmationRequiredMessage,
+	getHighImpactToolNames,
+	getUserConfirmationDecision,
+} from "@/lib/high-impact-action-confirmation";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +65,45 @@ function createOpenAIClient(): OpenAI {
 	});
 }
 
+async function logExternalToolAuditEvent(params: {
+	convex: ConvexHttpClient;
+	workspaceId: Id<"workspaces">;
+	memberId?: Id<"members">;
+	userId?: Id<"users">;
+	toolName: string;
+	toolkit?: string;
+	argumentsSnapshot: unknown;
+	outcome: "success" | "error";
+	error?: string;
+	executionPath: string;
+	toolCallId?: string;
+}) {
+	try {
+		await params.convex.mutation(
+			api.assistantToolAudits.logExternalToolAttempt,
+			{
+				workspaceId: params.workspaceId,
+				memberId: params.memberId,
+				userId: params.userId,
+				toolName: params.toolName,
+				toolkit: params.toolkit,
+				argumentsSnapshot: params.argumentsSnapshot,
+				outcome: params.outcome,
+				error: params.error,
+				executionPath: params.executionPath,
+				toolCallId: params.toolCallId,
+			}
+		);
+	} catch (error) {
+		logRouteError({
+			route: "Chatbot Assistant",
+			stage: "audit_persist_failed",
+			error,
+			level: "warn",
+		});
+	}
+}
+
 /**
  * Handle chatbot POST requests by routing the user's query through OpenAI+Composio tool integration when applicable, otherwise falling back to the Convex-based assistant.
  *
@@ -72,6 +129,7 @@ function createOpenAIClient(): OpenAI {
 export async function POST(req: NextRequest) {
 	try {
 		const convex = createConvexClient();
+		let authenticatedUserId: Id<"users"> | null = null;
 
 		// Pass auth through to Convex so membership/tasks/channels work.
 		// We attempt token retrieval even if isAuthenticatedNextjs() is false, because
@@ -81,16 +139,21 @@ export async function POST(req: NextRequest) {
 			if (token) {
 				convex.setAuth(token);
 			} else if (isAuthenticatedNextjs()) {
-				console.warn(
-					"[Chatbot Assistant] Authenticated session but no Convex token found"
-				);
+				logRouteError({
+					route: "Chatbot Assistant",
+					stage: "missing_convex_token",
+					error: new Error("Authenticated session but no Convex token found"),
+					level: "warn",
+				});
 			}
 		} catch (err) {
 			if (isAuthenticatedNextjs()) {
-				console.warn(
-					"[Chatbot Assistant] Failed to read Convex auth token from request",
-					err
-				);
+				logRouteError({
+					route: "Chatbot Assistant",
+					stage: "convex_token_read_failed",
+					error: err,
+					level: "warn",
+				});
 			}
 		}
 
@@ -129,6 +192,7 @@ export async function POST(req: NextRequest) {
 			if (!currentUser) {
 				return NextResponse.json({ error: "User not found" }, { status: 404 });
 			}
+			authenticatedUserId = currentUser._id;
 
 			// Get the member for this workspace and verify ownership
 			const member = await convex.query(api.members.getMemberById, {
@@ -159,45 +223,15 @@ export async function POST(req: NextRequest) {
 		let composioTools: any[] = []; // Keep as any[] for OpenAI compatibility
 		let composioClient: Composio | null = null; // Store composio client for reuse
 		let userId: string = ""; // Composio uses userId as entity identifier
-
-		// Detect if query needs external tools (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)
-		// Tightened patterns to require explicit app names or contextual phrases to reduce false positives
-		const queryLower = message.toLowerCase();
-		const needsGmail =
-			/\b(gmail|send\s+email|email\s+to|in\s+gmail|my\s+inbox|draft\s+email)\b/i.test(
-				queryLower
-			);
-		const needsGithub =
-			/\b(github|github\s+(repo|issue|pr|commit)|in\s+github|on\s+github)\b/i.test(
-				queryLower
-			);
-		const needsSlack =
-			/\b(slack|slack\s+(message|channel)|in\s+slack|on\s+slack|send\s+to\s+slack)\b/i.test(
-				queryLower
-			);
-		const needsNotion =
-			/\b(notion|notion\s+(page|database)|in\s+notion|on\s+notion|my\s+notion)\b/i.test(
-				queryLower
-			);
-		const needsClickup =
-			/\b(clickup|clickup\s+(task|project)|in\s+clickup|on\s+clickup|my\s+clickup)\b/i.test(
-				queryLower
-			);
-		const needsLinear =
-			/\b(linear|linear\s+(issue|ticket)|in\s+linear|on\s+linear|my\s+linear)\b/i.test(
-				queryLower
-			);
-		const needsExternalTools =
-			needsGmail ||
-			needsGithub ||
-			needsSlack ||
-			needsNotion ||
-			needsClickup ||
-			needsLinear;
+		let composioFallbackReason: string | null = null;
+		let composioAttempted = false;
+		const queryIntent = classifyAssistantQuery(message);
+		const needsExternalTools = queryIntent.requiresExternalTools;
 
 		// If external tools are needed and Composio is configured, try to use it
 		if (needsExternalTools && process.env.COMPOSIO_API_KEY) {
 			try {
+				composioAttempted = true;
 				composioClient = createComposioClient();
 				userId = memberId
 					? `member_${memberId}`
@@ -229,14 +263,26 @@ export async function POST(req: NextRequest) {
 
 					if (composioTools.length > 0) {
 						useComposio = true;
+					} else {
+						composioFallbackReason = "no_matching_composio_tools";
 					}
+				} else {
+					composioFallbackReason = "no_connected_apps";
 				}
 			} catch (_error) {
 				// Composio setup failed, fall back to Convex
-				console.warn(
-					"[Chatbot Assistant] Composio initialization failed, using Convex fallback"
-				);
+				composioFallbackReason = "composio_initialization_failed";
+				logRouteError({
+					route: "Chatbot Assistant",
+					stage: "composio_initialization_failed",
+					error: new Error(
+						"Composio initialization failed, using Convex fallback"
+					),
+					level: "warn",
+				});
 			}
+		} else if (needsExternalTools) {
+			composioFallbackReason = "composio_not_configured";
 		}
 
 		// If Composio should be used, handle with OpenAI + Composio tools
@@ -269,7 +315,12 @@ export async function POST(req: NextRequest) {
 				const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
 					{
 						role: "system",
-						content: `You are Proddy AI, an intelligent workspace assistant with access to ${connectedApps.join(", ")} integrations. Help the user accomplish their tasks using these tools when appropriate. For workspace-related queries (messages, tasks, notes), acknowledge that you can help but may need to access workspace data. ${workspaceContext || ""}`,
+						content: buildAssistantSystemPrompt({
+							workspaceContext:
+								typeof workspaceContext === "string" ? workspaceContext : "",
+							connectedApps,
+							externalToolsAllowed: true,
+						}),
 					},
 					// Add sanitized conversation history
 					...sanitizedHistory,
@@ -281,7 +332,7 @@ export async function POST(req: NextRequest) {
 
 				// Create completion with tools
 				const completion = await openai.chat.completions.create({
-					model: "gpt-4o-mini",
+					model: "gpt-5-mini",
 					tools: composioTools,
 					messages,
 					temperature: 0.7,
@@ -298,6 +349,60 @@ export async function POST(req: NextRequest) {
 					completion.choices[0]?.message?.tool_calls &&
 					completion.choices[0].message.tool_calls.length > 0
 				) {
+					const toolCalls = completion.choices[0].message.tool_calls as any[];
+					const highImpactToolNames = getHighImpactToolNames(toolCalls);
+					const decision = getUserConfirmationDecision(message);
+
+					if (highImpactToolNames.length > 0) {
+						if (decision === "cancel") {
+							return NextResponse.json({
+								success: true,
+								response: buildCancellationMessage(highImpactToolNames),
+								sources: [],
+								actions: [],
+								toolResults: [],
+								assistantType: "openai-composio",
+								composioToolsUsed: false,
+								connectedApps,
+								metadata: buildAssistantResponseMetadata({
+									assistantType: "openai-composio",
+									executionPath: "nextjs-openai-composio",
+									intent: queryIntent,
+									tools: {
+										internalEnabled: true,
+										externalEnabled: true,
+										externalUsed: false,
+										connectedApps,
+									},
+								}),
+							});
+						}
+
+						if (decision !== "confirm") {
+							return NextResponse.json({
+								success: true,
+								response: buildConfirmationRequiredMessage(highImpactToolNames),
+								sources: [],
+								actions: [],
+								toolResults: [],
+								assistantType: "openai-composio",
+								composioToolsUsed: false,
+								connectedApps,
+								metadata: buildAssistantResponseMetadata({
+									assistantType: "openai-composio",
+									executionPath: "nextjs-openai-composio",
+									intent: queryIntent,
+									tools: {
+										internalEnabled: true,
+										externalEnabled: true,
+										externalUsed: false,
+										connectedApps,
+									},
+								}),
+							});
+						}
+					}
+
 					try {
 						// Use Composio's provider.handleToolCalls method (matches sample code pattern)
 						const result = await composioClient.provider.handleToolCalls(
@@ -309,7 +414,6 @@ export async function POST(req: NextRequest) {
 						toolResults = Array.isArray(result) ? result : [result];
 
 						// Create source badges for executed tools
-						const toolCalls = completion.choices[0].message.tool_calls as any[];
 						sources = toolCalls.map((call, idx) => ({
 							id: `tool-${idx}`,
 							type: "tool",
@@ -322,11 +426,49 @@ export async function POST(req: NextRequest) {
 							resultMap[call.id] = toolResults[idx] ?? { success: true };
 						});
 
+						await Promise.all(
+							toolCalls.map(async (call) => {
+								const toolResult = resultMap[call.id];
+								const outcome: "success" | "error" =
+									toolResult?.success === false || Boolean(toolResult?.error)
+										? "error"
+										: "success";
+
+								await logExternalToolAuditEvent({
+									convex,
+									workspaceId: workspaceId as Id<"workspaces">,
+									memberId: memberId as Id<"members"> | undefined,
+									userId: authenticatedUserId ?? undefined,
+									toolName: call.function?.name || "unknown_tool",
+									toolkit: undefined,
+									argumentsSnapshot: parseAndSanitizeArguments(
+										call.function?.arguments || "{}"
+									),
+									outcome,
+									error:
+										outcome === "error"
+											? String(
+													toolResult?.error ||
+														toolResult?.message ||
+														"Tool execution failed"
+												)
+											: undefined,
+									executionPath: "nextjs-openai-composio",
+									toolCallId: call.id,
+								});
+							})
+						);
+
 						// Log warning if counts differ
 						if (toolCalls.length !== toolResults.length) {
-							console.warn(
-								`[Chatbot Assistant] Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
-							);
+							logRouteError({
+								route: "Chatbot Assistant",
+								stage: "tool_results_mismatch",
+								error: new Error(
+									`Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
+								),
+								level: "warn",
+							});
 						}
 
 						// Get follow-up response with tool results
@@ -341,7 +483,7 @@ export async function POST(req: NextRequest) {
 						];
 
 						const followUpCompletion = await openai.chat.completions.create({
-							model: "gpt-4o-mini",
+							model: "gpt-5-mini",
 							messages: followUpMessages,
 							temperature: 0.7,
 							max_tokens: 1500,
@@ -350,12 +492,34 @@ export async function POST(req: NextRequest) {
 						responseText =
 							followUpCompletion.choices[0]?.message?.content || responseText;
 					} catch (toolError) {
-						console.error(
-							"[Chatbot Assistant] Tool execution failed:",
-							toolError
+						logRouteError({
+							route: "Chatbot Assistant",
+							stage: "tool_execution_failed",
+							error: toolError,
+						});
+						await Promise.all(
+							toolCalls.map(async (call) => {
+								await logExternalToolAuditEvent({
+									convex,
+									workspaceId: workspaceId as Id<"workspaces">,
+									memberId: memberId as Id<"members"> | undefined,
+									userId: authenticatedUserId ?? undefined,
+									toolName: call.function?.name || "unknown_tool",
+									toolkit: undefined,
+									argumentsSnapshot: parseAndSanitizeArguments(
+										call.function?.arguments || "{}"
+									),
+									outcome: "error",
+									error:
+										toolError instanceof Error
+											? toolError.message
+											: "Tool execution failed",
+									executionPath: "nextjs-openai-composio",
+									toolCallId: call.id,
+								});
+							})
 						);
-						responseText +=
-							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";
+						responseText += `\n\nNote: I couldn't complete one or more ${connectedApps.join(", ")} actions. ${buildComposioFailureGuidance()}`;
 					}
 				}
 
@@ -368,63 +532,163 @@ export async function POST(req: NextRequest) {
 					assistantType: "openai-composio",
 					composioToolsUsed: true,
 					connectedApps,
+					metadata: buildAssistantResponseMetadata({
+						assistantType: "openai-composio",
+						executionPath: "nextjs-openai-composio",
+						intent: queryIntent,
+						tools: {
+							internalEnabled: true,
+							externalEnabled: true,
+							externalUsed: toolResults.length > 0,
+							connectedApps,
+						},
+					}),
 				});
 			} catch (error) {
-				console.error(
-					"[Chatbot Assistant] OpenAI+Composio failed, falling back to Convex:",
-					error
-				);
+				logRouteError({
+					route: "Chatbot Assistant",
+					stage: "openai_composio_failed",
+					error,
+					context: { connectedAppsCount: connectedApps.length },
+				});
+				composioAttempted = true;
+				composioFallbackReason = "openai_composio_failed";
 				// Fall through to Convex assistant
 			}
 		}
 
-		// Default: Use Convex assistant (Gemini-based)
+		// Default: Use new AI-driven assistant with database-chat
 		try {
-			const result = await convex.action(api.chatbot.askAssistant, {
-				query: message,
+			// Get or create conversation for this workspace/user
+			// Use memberId if available, otherwise use workspace ID
+			const currentUser = await convex.query(api.users.current);
+			if (!currentUser) {
+				return NextResponse.json(
+					{ success: false, error: "User not authenticated" },
+					{ status: 401 }
+				);
+			}
+
+			// Create a unique conversation ID for this workspace + user
+			// In production, you'd want to persist this and reuse it
+			const conversationId = await convex.mutation(
+				api.assistantChat.createConversation,
+				{
+					workspaceId: workspaceId as Id<"workspaces">,
+					userId: currentUser._id,
+					title: "Assistant Chat",
+				}
+			);
+
+			// Call the AI assistant with the message
+			const result = await convex.action(api.assistantChat.sendMessage, {
+				conversationId,
+				message,
 				workspaceId: workspaceId as Id<"workspaces">,
+				userId: currentUser._id,
 			});
 
-			const responseText = result?.answer || "No response generated";
-			const sources = (result?.sources ?? []).map((s: string, idx: number) => ({
-				id: `source-${idx}`,
-				type: "source",
-				text: s,
-			}));
+			if (!result.success) {
+				return NextResponse.json(
+					{
+						success: false,
+						error: result.error || "Assistant failed to respond",
+					},
+					{ status: 500 }
+				);
+			}
 
-			const actions = Array.isArray((result as any)?.actions)
-				? (result as any).actions
-				: [];
+			const responseText = result.content || "No response generated";
+			const responseMetadata =
+				result.metadata ??
+				buildAssistantResponseMetadata({
+					assistantType: "convex",
+					executionPath: "convex-assistant",
+					intent: queryIntent,
+					tools: {
+						internalEnabled: true,
+						externalEnabled: false,
+						externalUsed: false,
+						connectedApps,
+					},
+					fallback: {
+						attempted: composioAttempted || Boolean(composioFallbackReason),
+						reason: composioFallbackReason,
+					},
+				});
 
 			return NextResponse.json({
 				success: true,
 				response: responseText,
-				sources,
-				actions,
+				sources: [],
+				actions: [],
 				toolResults: [],
 				assistantType: "convex",
 				composioToolsUsed: false,
+				metadata: responseMetadata,
 			});
 		} catch (error) {
-			console.error("[Chatbot Assistant] Convex assistant failed:", error);
-			return NextResponse.json(
-				{
-					success: false,
-					error:
-						error instanceof Error
-							? error.message
-							: "Failed to generate assistant response",
+			logRouteError({
+				route: "Chatbot Assistant",
+				stage: "convex_assistant_failed",
+				error,
+				context: {
+					composioAttempted,
+					composioFallbackReason,
 				},
+			});
+			if (composioAttempted || composioFallbackReason) {
+				const fallbackResponse = buildRecoverableAssistantFallback(
+					"The external tools path could not complete your request"
+				);
+				return NextResponse.json({
+					success: true,
+					response: fallbackResponse,
+					sources: [],
+					actions: [],
+					toolResults: [],
+					assistantType: "convex",
+					composioToolsUsed: false,
+					metadata: buildAssistantResponseMetadata({
+						assistantType: "convex",
+						executionPath: "convex-assistant",
+						intent: queryIntent,
+						tools: {
+							internalEnabled: true,
+							externalEnabled: false,
+							externalUsed: false,
+							connectedApps,
+						},
+						fallback: {
+							attempted: true,
+							reason: composioFallbackReason ?? "convex_assistant_failed",
+						},
+					}),
+				});
+			}
+			return NextResponse.json(
+				buildActionableErrorPayload({
+					message: "Assistant response generation failed.",
+					nextStep:
+						"Retry your message. If it keeps failing, refresh and try a shorter prompt.",
+					code: "ASSISTANT_RESPONSE_FAILED",
+				}),
 				{ status: 500 }
 			);
 		}
 	} catch (error) {
-		console.error("[Chatbot Assistant] Error:", error);
+		logRouteError({
+			route: "Chatbot Assistant",
+			stage: "request_failed",
+			error,
+		});
 		return NextResponse.json(
-			{
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			},
+			buildActionableErrorPayload({
+				message: "Assistant request failed before processing completed.",
+				nextStep:
+					"Check required fields and retry. If this persists, reconnect integrations and try again.",
+				code: "ASSISTANT_REQUEST_FAILED",
+			}),
 			{ status: 500 }
 		);
 	}

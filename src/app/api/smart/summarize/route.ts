@@ -217,16 +217,6 @@ function pruneCache() {
 
 export async function POST(req: NextRequest) {
 	try {
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			return NextResponse.json(
-				{
-					error:
-						"GOOGLE_GENERATIVE_AI_API_KEY is not configured (required for smart summarization).",
-				},
-				{ status: 500 }
-			);
-		}
-
 		let requestData;
 		try {
 			requestData = await req.json();
@@ -338,7 +328,7 @@ export async function POST(req: NextRequest) {
 
 		try {
 			const { text } = await generateText({
-				model: openrouter("google/gemini-2.5-flash"),
+				model: openrouter("openai/gpt-5-mini"),
 				messages: [
 					{
 						role: "system",

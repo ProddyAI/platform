@@ -42,6 +42,7 @@ import { useNewJoinCode } from "@/features/workspaces/api/use-new-join-code";
 import { useRemoveWorkspace } from "@/features/workspaces/api/use-remove-workspace";
 import { useUpdateWorkspace } from "@/features/workspaces/api/use-update-workspace";
 import { ChannelsManagement } from "./channels-management";
+import { FeaturesManagement } from "./features-management";
 
 interface WorkspaceManagementProps {
 	workspace: Doc<"workspaces">;
@@ -285,8 +286,12 @@ export const WorkspaceManagement = ({
 
 				<Separator />
 
+				<FeaturesManagement workspace={workspace} />
+
+				<Separator />
+
 				{/* Channels Management Section */}
-				{isOwner && (
+				{(isOwner || currentMember.role === "admin") && (
 					<Collapsible
 						onOpenChange={setChannelsExpanded}
 						open={channelsExpanded}

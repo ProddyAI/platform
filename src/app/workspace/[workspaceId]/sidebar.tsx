@@ -5,6 +5,7 @@ import {
 	BarChart,
 	Bot,
 	CalendarIcon,
+	ChartNoAxesGantt,
 	CheckSquare,
 	ChevronDown,
 	Hash,
@@ -27,6 +28,7 @@ import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useCreateChannelModal } from "@/features/channels/store/use-create-channel-modal";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useGetMembers } from "@/features/members/api/use-get-members";
+import { useInviteMemberModal } from "@/features/members/store/use-invite-member-modal";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useMemberId } from "@/hooks/use-member-id";
@@ -177,26 +179,38 @@ export const WorkspaceSidebar = ({
 	>({
 		Channels: true, // Channels expanded by default
 		Members: false, // Members collapsed by default
+		Planning: false,
+		Messages: false,
+		Settings: false,
 	});
 
 	const [_open, setOpen] = useCreateChannelModal();
+	const [_inviteOpen, setInviteOpen] = useInviteMemberModal();
 
 	const handleSectionToggle = (label: string) => {
-		// If we're expanding a section, collapse all others
-		if (!expandedSections[label]) {
-			const newExpandedSections: Record<string, boolean> = {};
+		// Channels and Members are mutually exclusive
+		const topSections = ["Channels", "Members"];
+		// Planning, Messages, Settings can all be open simultaneously
+		const bottomSections = ["Planning", "Messages", "Settings"];
 
-			// Set all sections to collapsed
-			Object.keys(expandedSections).forEach((section) => {
-				newExpandedSections[section] = false;
-			});
-
-			// Expand only the clicked section
-			newExpandedSections[label] = true;
-
-			setExpandedSections(newExpandedSections);
-		} else {
-			// If we're collapsing a section, just toggle it
+		if (topSections.includes(label)) {
+			// For Channels/Members: collapse the other one when opening
+			if (!expandedSections[label]) {
+				const newExpandedSections = { ...expandedSections };
+				// Collapse other top sections
+				topSections.forEach((section) => {
+					newExpandedSections[section] = section === label;
+				});
+				setExpandedSections(newExpandedSections);
+			} else {
+				// Just toggle if collapsing
+				setExpandedSections({
+					...expandedSections,
+					[label]: false,
+				});
+			}
+		} else if (bottomSections.includes(label)) {
+			// For Planning/Messages/Settings: independent toggle
 			setExpandedSections({
 				...expandedSections,
 				[label]: !expandedSections[label],
@@ -267,9 +281,19 @@ export const WorkspaceSidebar = ({
 			</div>
 
 			{/* Scrollable content container */}
-			<div className={cn("flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar", onMobileClose && "pb-4")}>
+			<div
+				className={cn(
+					"flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+					onMobileClose && "pb-4"
+				)}
+			>
 				{/* Dashboard Link - Hidden in footer on mobile, shown in overlay */}
-				<div className={cn("mt-4 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
+				<div
+					className={cn(
+						"mt-4 px-2 md:px-4",
+						onMobileClose ? "block" : "hidden md:block"
+					)}
+				>
 					<MobileCloseWrapper onClose={onMobileClose}>
 						<SidebarItem
 							href={`/workspace/${workspaceId}/dashboard`}
@@ -283,7 +307,12 @@ export const WorkspaceSidebar = ({
 				</div>
 
 				{/* Proddy AI Link - Hidden in footer on mobile, shown in overlay */}
-				<div className={cn("mt-2 px-2 md:px-4", onMobileClose ? "block" : "hidden md:block")}>
+				<div
+					className={cn(
+						"mt-2 px-2 md:px-4",
+						onMobileClose ? "block" : "hidden md:block"
+					)}
+				>
 					<MobileCloseWrapper onClose={onMobileClose}>
 						<SidebarItem
 							href={`/workspace/${workspaceId}/assistant`}
@@ -373,6 +402,34 @@ export const WorkspaceSidebar = ({
 									/>
 								</MobileCloseWrapper>
 							))}
+
+							{/* New Member option - only visible to admins and owners */}
+							{(member.role === "admin" || member.role === "owner") && (
+								<div
+									className={cn(
+										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
+										isCollapsed
+											? "justify-center px-1 md:px-2 py-2 md:py-2.5"
+											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
+									)}
+									onClick={() => setInviteOpen(true)}
+								>
+									{isCollapsed ? (
+										<div className="relative flex-shrink-0">
+											<Hint align="center" label="New Member" side="right">
+												<div className="flex items-center justify-center">
+													<PlusIcon className="size-4 text-secondary-foreground/80" />
+												</div>
+											</Hint>
+										</div>
+									) : (
+										<>
+											<PlusIcon className="size-4 text-secondary-foreground/80" />
+											<span className="truncate min-w-0">New Member</span>
+										</>
+									)}
+								</div>
+							)}
 						</DroppableItem>
 					</div>
 				)}
@@ -380,72 +437,113 @@ export const WorkspaceSidebar = ({
 				{/* Divider between dynamic and static sections */}
 				<Separator className="my-4 mx-4 bg-secondary-foreground/10" />
 
-				{/* Static Items */}
-				<div className="flex flex-col gap-2 px-4">
-					{/* Outbox - Hidden on mobile (shown in footer) */}
-					<MobileCloseWrapper className="hidden md:block" onClose={onMobileClose}>
-						<SidebarItem
-							href={`/workspace/${workspaceId}/outbox`}
-							icon={SendHorizonal}
-							id="outbox"
-							isActive={pathname.includes("/outbox")}
-							isCollapsed={isCollapsed}
-							label="Outbox"
-						/>
-					</MobileCloseWrapper>
-					{/* Threads - Hidden on mobile (shown in footer) */}
-					<MobileCloseWrapper className="hidden md:block" onClose={onMobileClose}>
-						<SidebarItem
-							href={`/workspace/${workspaceId}/threads`}
-							icon={MessageSquareText}
-							id="threads"
-							isActive={pathname.includes("/threads")}
-							isCollapsed={isCollapsed}
-							label="Threads"
-						/>
-					</MobileCloseWrapper>
-					<MobileCloseWrapper onClose={onMobileClose}>
-						<SidebarItem
-							href={`/workspace/${workspaceId}/tasks`}
-							icon={CheckSquare}
-							id="tasks"
-							isActive={pathname.includes("/tasks")}
-							isCollapsed={isCollapsed}
-							label="Tasks"
-						/>
-					</MobileCloseWrapper>
-					<MobileCloseWrapper onClose={onMobileClose}>
-						<SidebarItem
-							href={`/workspace/${workspaceId}/calendar`}
-							icon={CalendarIcon}
-							id="calendar"
-							isActive={pathname.includes("/calendar")}
-							isCollapsed={isCollapsed}
-							label="Calendar"
-						/>
-					</MobileCloseWrapper>
-					{(member.role === "admin" || member.role === "owner") && (
+				{/* Planning Section */}
+				<div className="mt-2">
+					<DroppableItem
+						hint="Planning"
+						icon={ChartNoAxesGantt}
+						isCollapsed={isCollapsed}
+						isExpanded={expandedSections.Planning}
+						label="Planning"
+						onToggle={handleSectionToggle}
+					>
 						<MobileCloseWrapper onClose={onMobileClose}>
 							<SidebarItem
-								href={`/workspace/${workspaceId}/reports`}
-								icon={BarChart}
-								id="reports"
-								isActive={pathname.includes("/reports")}
+								href={`/workspace/${workspaceId}/tasks`}
+								icon={CheckSquare}
+								id="tasks"
+								isActive={pathname.includes("/tasks")}
 								isCollapsed={isCollapsed}
-								label="Reports"
+								label="Tasks"
 							/>
 						</MobileCloseWrapper>
-					)}
-					<MobileCloseWrapper onClose={onMobileClose}>
-						<SidebarItem
-							href={`/workspace/${workspaceId}/manage`}
-							icon={Settings}
-							id="manage"
-							isActive={pathname.includes("/manage")}
-							isCollapsed={isCollapsed}
-							label="Manage"
-						/>
-					</MobileCloseWrapper>
+						<MobileCloseWrapper onClose={onMobileClose}>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/calendar`}
+								icon={CalendarIcon}
+								id="calendar"
+								isActive={pathname.includes("/calendar")}
+								isCollapsed={isCollapsed}
+								label="Calendar"
+							/>
+						</MobileCloseWrapper>
+					</DroppableItem>
+				</div>
+
+				{/* Messages Section */}
+				<div className="mt-2">
+					<DroppableItem
+						hint="Messages"
+						icon={MessageSquareText}
+						isCollapsed={isCollapsed}
+						isExpanded={expandedSections.Messages}
+						label="Messages"
+						onToggle={handleSectionToggle}
+					>
+						{/* Outbox - Hidden on mobile (shown in footer) */}
+						<MobileCloseWrapper
+							className="hidden md:block"
+							onClose={onMobileClose}
+						>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/outbox`}
+								icon={SendHorizonal}
+								id="outbox"
+								isActive={pathname.includes("/outbox")}
+								isCollapsed={isCollapsed}
+								label="Outbox"
+							/>
+						</MobileCloseWrapper>
+						{/* Threads - Hidden on mobile (shown in footer) */}
+						<MobileCloseWrapper
+							className="hidden md:block"
+							onClose={onMobileClose}
+						>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/threads`}
+								icon={MessageSquareText}
+								id="threads"
+								isActive={pathname.includes("/threads")}
+								isCollapsed={isCollapsed}
+								label="Threads"
+							/>
+						</MobileCloseWrapper>
+					</DroppableItem>
+				</div>
+
+				{/* Settings Section */}
+				<div className="mt-2">
+					<DroppableItem
+						hint="Settings"
+						icon={Settings}
+						isCollapsed={isCollapsed}
+						isExpanded={expandedSections.Settings}
+						label="Settings"
+						onToggle={handleSectionToggle}
+					>
+						{(member.role === "admin" || member.role === "owner") && (
+							<MobileCloseWrapper onClose={onMobileClose}>
+								<SidebarItem
+									href={`/workspace/${workspaceId}/reports`}
+									icon={BarChart}
+									id="reports"
+									isActive={pathname.includes("/reports")}
+									isCollapsed={isCollapsed}
+									label="Reports"
+								/>
+							</MobileCloseWrapper>
+						)}
+						<MobileCloseWrapper onClose={onMobileClose}>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/manage`}
+								icon={Settings}
+								id="manage"
+								isActive={pathname.includes("/manage")}
+								isCollapsed={isCollapsed}
+								label="Manage"
+							/>
+						</MobileCloseWrapper>
+					</DroppableItem>
 				</div>
 			</div>
 

@@ -263,7 +263,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 			let text;
 			try {
 				const response = await generateText({
-					model: openrouter("google/gemini-2.5-flash"),
+					model: openrouter("openai/gpt-5-mini"),
 					messages: [
 						{
 							role: "system",
@@ -280,7 +280,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 				text = response.text;
 			} catch (error) {
 				const aiError = error as Error;
-				console.error("Error calling Gemini API:", aiError);
+				console.error("Error calling OpenAI API:", aiError);
 				// Return fallback suggestions instead of throwing
 				return NextResponse.json({
 					suggestions: [
@@ -289,7 +289,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 						"Could we schedule a meeting about this?",
 					],
 					cached: false,
-					error: `Gemini API error: ${aiError.message || "Unknown error"}`,
+					error: `OpenAI API error: ${aiError.message || "Unknown error"}`,
 				});
 			}
 

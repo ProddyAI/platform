@@ -36,6 +36,11 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
+			)
+		),
 	}).index("by_user_id", ["userId"]),
 
 	members: defineTable({
@@ -50,6 +55,11 @@ const schema = defineSchema({
 	channels: defineTable({
 		name: v.string(),
 		workspaceId: v.id("workspaces"),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
+			)
+		),
 		icon: v.optional(v.string()), // Store emoji as string
 		iconImage: v.optional(v.id("_storage")), // Store uploaded image
 	}).index("by_workspace_id", ["workspaceId"]),
@@ -157,7 +167,58 @@ const schema = defineSchema({
 		),
 		dueDate: v.optional(v.number()),
 		assignees: v.optional(v.array(v.id("members"))),
-	}).index("by_list_id", ["listId"]),
+		// Subtask/hierarchy fields
+		parentCardId: v.optional(v.id("cards")),
+		isCompleted: v.optional(v.boolean()),
+		// Time tracking fields
+		estimate: v.optional(v.number()), // Story points or hours
+		timeSpent: v.optional(v.number()), // Hours spent
+		// Watchers and relationships
+		watchers: v.optional(v.array(v.id("members"))),
+		blockedBy: v.optional(v.array(v.id("cards"))),
+	})
+		.index("by_list_id", ["listId"])
+		.index("by_parent_card_id", ["parentCardId"]),
+
+	// Card comments for discussions on cards
+	card_comments: defineTable({
+		cardId: v.id("cards"),
+		memberId: v.id("members"),
+		workspaceId: v.id("workspaces"),
+		content: v.string(),
+		createdAt: v.number(),
+		updatedAt: v.optional(v.number()),
+	})
+		.index("by_card_id", ["cardId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id", ["workspaceId"]),
+
+	// Card activity log for audit trail
+	card_activity: defineTable({
+		cardId: v.id("cards"),
+		memberId: v.id("members"),
+		workspaceId: v.id("workspaces"),
+		action: v.union(
+			v.literal("created"),
+			v.literal("updated"),
+			v.literal("moved"),
+			v.literal("assigned"),
+			v.literal("unassigned"),
+			v.literal("completed"),
+			v.literal("reopened"),
+			v.literal("commented"),
+			v.literal("priority_changed"),
+			v.literal("due_date_changed"),
+			v.literal("blocked"),
+			v.literal("unblocked")
+		),
+		details: v.optional(v.string()), // JSON stringified details
+		timestamp: v.number(),
+	})
+		.index("by_card_id", ["cardId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_card_id_timestamp", ["cardId", "timestamp"]),
 
 	categories: defineTable({
 		name: v.string(),
@@ -408,6 +469,35 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id_member_id", ["workspaceId", "memberId"]),
+
+	assistantConversations: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		conversationId: v.string(),
+		lastMessageAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_conversation_id", ["conversationId"]),
+
+	assistantToolAuditEvents: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.optional(v.id("members")),
+		userId: v.optional(v.id("users")),
+		toolName: v.string(),
+		toolkit: v.optional(v.string()),
+		argumentsSnapshot: v.optional(v.any()),
+		outcome: v.union(v.literal("success"), v.literal("error")),
+		error: v.optional(v.string()),
+		executionPath: v.string(),
+		toolCallId: v.optional(v.string()),
+		timestamp: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({

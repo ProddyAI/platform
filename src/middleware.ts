@@ -32,31 +32,36 @@ const isAuthenticatedOnlyPage = createRouteMatcher([
 	"/auth/join/:workspaceId",
 ]);
 
-const authMiddleware = convexAuthNextjsMiddleware((req) => {
-	// If trying to access authenticated-only pages without being logged in
-	if (isAuthenticatedOnlyPage(req) && !isAuthenticatedNextjs()) {
-		return nextjsMiddlewareRedirect(req, "/auth/signin");
-	}
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 
-	if (
-		(req.nextUrl.pathname === "/auth" ||
-			req.nextUrl.pathname === "/auth/signin" ||
-			req.nextUrl.pathname === "/auth/signup") &&
-		isAuthenticatedNextjs()
-	) {
-		return nextjsMiddlewareRedirect(req, "/workspace");
-	}
+const authMiddleware = convexAuthNextjsMiddleware(
+	(req) => {
+		// If trying to access authenticated-only pages without being logged in
+		if (isAuthenticatedOnlyPage(req) && !isAuthenticatedNextjs()) {
+			return nextjsMiddlewareRedirect(req, "/auth/signin");
+		}
 
-	// If accessing the root page while authenticated, redirect to workspace
-	if (req.nextUrl.pathname === "/" && isAuthenticatedNextjs()) {
-		return nextjsMiddlewareRedirect(req, "/workspace");
-	}
+		if (
+			(req.nextUrl.pathname === "/auth" ||
+				req.nextUrl.pathname === "/auth/signin" ||
+				req.nextUrl.pathname === "/auth/signup") &&
+			isAuthenticatedNextjs()
+		) {
+			return nextjsMiddlewareRedirect(req, "/workspace");
+		}
 
-	// If accessing the root page while not authenticated, redirect to home
-	if (req.nextUrl.pathname === "/" && !isAuthenticatedNextjs()) {
-		return nextjsMiddlewareRedirect(req, "/home");
-	}
-});
+		// If accessing the root page while authenticated, redirect to workspace
+		if (req.nextUrl.pathname === "/" && isAuthenticatedNextjs()) {
+			return nextjsMiddlewareRedirect(req, "/workspace");
+		}
+
+		// If accessing the root page while not authenticated, redirect to home
+		if (req.nextUrl.pathname === "/" && !isAuthenticatedNextjs()) {
+			return nextjsMiddlewareRedirect(req, "/home");
+		}
+	},
+	convexUrl ? { convexUrl } : undefined
+);
 
 export default function middleware(
 	req: Parameters<typeof authMiddleware>[0],

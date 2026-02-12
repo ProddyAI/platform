@@ -1,5 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import {
+	buildActionableErrorPayload,
+	logRouteError,
+	sanitizeErrorMessage,
+} from "@/lib/assistant-error-utils";
+import {
 	APP_CONFIGS,
 	AVAILABLE_APPS,
 	type AvailableApp,
@@ -41,12 +46,18 @@ export async function GET(req: NextRequest) {
 			{ status: 400 }
 		);
 	} catch (error) {
-		console.error("Composio API error:", error);
+		logRouteError({
+			route: "Composio API",
+			stage: "status_fetch_failed",
+			error,
+		});
 		return NextResponse.json(
-			{
-				error: "Failed to fetch Composio status",
-				details: error instanceof Error ? error.message : "Unknown error",
-			},
+			buildActionableErrorPayload({
+				message: "Failed to fetch Composio status.",
+				nextStep:
+					"Confirm the integration is configured and retry the status request.",
+				code: "COMPOSIO_STATUS_FETCH_FAILED",
+			}),
 			{ status: 500 }
 		);
 	}
@@ -92,7 +103,18 @@ export async function POST(req: NextRequest) {
 					message: `Redirect to ${app} for authorization`,
 				});
 			} else {
-				return NextResponse.json({ error: result.error }, { status: 400 });
+				return NextResponse.json(
+					buildActionableErrorPayload({
+						message: `Could not start ${app} authorization.`,
+						nextStep: "Verify your app configuration and retry connection.",
+						code: "COMPOSIO_CONNECT_FAILED",
+						recoverable: true,
+						fallbackResponse: sanitizeErrorMessage(
+							result.error || "Authorization could not be started."
+						),
+					}),
+					{ status: 400 }
+				);
 			}
 		}
 
@@ -101,12 +123,18 @@ export async function POST(req: NextRequest) {
 			{ status: 400 }
 		);
 	} catch (error) {
-		console.error("Composio API error:", error);
+		logRouteError({
+			route: "Composio API",
+			stage: "connect_request_failed",
+			error,
+		});
 		return NextResponse.json(
-			{
-				error: "Failed to process Composio request",
-				details: error instanceof Error ? error.message : "Unknown error",
-			},
+			buildActionableErrorPayload({
+				message: "Failed to process Composio request.",
+				nextStep:
+					"Retry the request. If this continues, check Composio API key and auth config settings.",
+				code: "COMPOSIO_REQUEST_FAILED",
+			}),
 			{ status: 500 }
 		);
 	}
