@@ -917,3 +917,50 @@ convex/integrations.ts:265:56 lint/style/noNonNullAssertion ━━━━━━�
     264 │ 				.query("connected_accounts")
   > 265 │ 				.withIndex("by_member_id", (q) => q.eq("memberId", args.memberId!))
         │ 				                                                   ^^^^^^^^^^^^^^
+ succeeded in 28.15s:
+$ tsc --noEmit
+file update:
+diff --git a/src/app/api/assistant/chatbot/route.ts b/src/app/api/assistant/chatbot/route.ts
+index 173ec5b3b176d1d8c4845db4dd6a6782384934dc..d2e9beeb85a6e209dad50bc2c6151b50981345d2
+--- a/src/app/api/assistant/chatbot/route.ts
++++ b/src/app/api/assistant/chatbot/route.ts
+@@ -420,16 +420,9 @@
+ 			}
+ 
+ 			const responseText = result.content || "No response generated";
+-
+-			return NextResponse.json({
+-				success: true,
+-				response: responseText,
+-				sources: [],
+-				actions: [],
+-				toolResults: [],
+-				assistantType: "convex",
+-				composioToolsUsed: false,
+-				metadata: buildAssistantResponseMetadata({
++			const responseMetadata =
++				result.metadata ??
++				buildAssistantResponseMetadata({
+ 					assistantType: "convex",
+ 					executionPath: "convex-assistant",
+ 					intent: queryIntent,
+@@ -443,7 +436,17 @@
+ 						attempted: composioAttempted || Boolean(composioFallbackReason),
+ 						reason: composioFallbackReason,
+ 					},
+-				}),
++				});
++
++			return NextResponse.json({
++				success: true,
++				response: responseText,
++				sources: [],
++				actions: [],
++				toolResults: [],
++				assistantType: "convex",
++				composioToolsUsed: false,
++				metadata: responseMetadata,
+ 			});
+ 		} catch (error) {
+ 			console.error("[Chatbot Assistant] AI assistant failed:", error);
+
