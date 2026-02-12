@@ -291,7 +291,7 @@ export const WorkspaceManagement = ({
 				<Separator />
 
 				{/* Channels Management Section */}
-				{isOwner && (
+				{(isOwner || currentMember.role === "admin") && (
 					<Collapsible
 						onOpenChange={setChannelsExpanded}
 						open={channelsExpanded}
