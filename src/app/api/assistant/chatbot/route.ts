@@ -9,6 +9,11 @@ import OpenAI from "openai";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import {
+	buildAssistantResponseMetadata,
+	buildAssistantSystemPrompt,
+	classifyAssistantQuery,
+} from "@/lib/assistant-orchestration";
+import {
 	type AvailableApp,
 	createComposioClient,
 	filterToolsForQuery,
@@ -159,45 +164,15 @@ export async function POST(req: NextRequest) {
 		let composioTools: any[] = []; // Keep as any[] for OpenAI compatibility
 		let composioClient: Composio | null = null; // Store composio client for reuse
 		let userId: string = ""; // Composio uses userId as entity identifier
-
-		// Detect if query needs external tools (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)
-		// Tightened patterns to require explicit app names or contextual phrases to reduce false positives
-		const queryLower = message.toLowerCase();
-		const needsGmail =
-			/\b(gmail|send\s+email|email\s+to|in\s+gmail|my\s+inbox|draft\s+email)\b/i.test(
-				queryLower
-			);
-		const needsGithub =
-			/\b(github|github\s+(repo|issue|pr|commit)|in\s+github|on\s+github)\b/i.test(
-				queryLower
-			);
-		const needsSlack =
-			/\b(slack|slack\s+(message|channel)|in\s+slack|on\s+slack|send\s+to\s+slack)\b/i.test(
-				queryLower
-			);
-		const needsNotion =
-			/\b(notion|notion\s+(page|database)|in\s+notion|on\s+notion|my\s+notion)\b/i.test(
-				queryLower
-			);
-		const needsClickup =
-			/\b(clickup|clickup\s+(task|project)|in\s+clickup|on\s+clickup|my\s+clickup)\b/i.test(
-				queryLower
-			);
-		const needsLinear =
-			/\b(linear|linear\s+(issue|ticket)|in\s+linear|on\s+linear|my\s+linear)\b/i.test(
-				queryLower
-			);
-		const needsExternalTools =
-			needsGmail ||
-			needsGithub ||
-			needsSlack ||
-			needsNotion ||
-			needsClickup ||
-			needsLinear;
+		let composioFallbackReason: string | null = null;
+		let composioAttempted = false;
+		const queryIntent = classifyAssistantQuery(message);
+		const needsExternalTools = queryIntent.requiresExternalTools;
 
 		// If external tools are needed and Composio is configured, try to use it
 		if (needsExternalTools && process.env.COMPOSIO_API_KEY) {
 			try {
+				composioAttempted = true;
 				composioClient = createComposioClient();
 				userId = memberId
 					? `member_${memberId}`
@@ -229,14 +204,21 @@ export async function POST(req: NextRequest) {
 
 					if (composioTools.length > 0) {
 						useComposio = true;
+					} else {
+						composioFallbackReason = "no_matching_composio_tools";
 					}
+				} else {
+					composioFallbackReason = "no_connected_apps";
 				}
 			} catch (_error) {
 				// Composio setup failed, fall back to Convex
+				composioFallbackReason = "composio_initialization_failed";
 				console.warn(
 					"[Chatbot Assistant] Composio initialization failed, using Convex fallback"
 				);
 			}
+		} else if (needsExternalTools) {
+			composioFallbackReason = "composio_not_configured";
 		}
 
 		// If Composio should be used, handle with OpenAI + Composio tools
@@ -269,7 +251,12 @@ export async function POST(req: NextRequest) {
 				const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
 					{
 						role: "system",
-						content: `You are Proddy AI, an intelligent workspace assistant with access to ${connectedApps.join(", ")} integrations. Help the user accomplish their tasks using these tools when appropriate. For workspace-related queries (messages, tasks, notes), acknowledge that you can help but may need to access workspace data. ${workspaceContext || ""}`,
+						content: buildAssistantSystemPrompt({
+							workspaceContext:
+								typeof workspaceContext === "string" ? workspaceContext : "",
+							connectedApps,
+							externalToolsAllowed: true,
+						}),
 					},
 					// Add sanitized conversation history
 					...sanitizedHistory,
@@ -368,12 +355,25 @@ export async function POST(req: NextRequest) {
 					assistantType: "openai-composio",
 					composioToolsUsed: true,
 					connectedApps,
+					metadata: buildAssistantResponseMetadata({
+						assistantType: "openai-composio",
+						executionPath: "nextjs-openai-composio",
+						intent: queryIntent,
+						tools: {
+							internalEnabled: true,
+							externalEnabled: true,
+							externalUsed: toolResults.length > 0,
+							connectedApps,
+						},
+					}),
 				});
 			} catch (error) {
 				console.error(
 					"[Chatbot Assistant] OpenAI+Composio failed, falling back to Convex:",
 					error
 				);
+				composioAttempted = true;
+				composioFallbackReason = "openai_composio_failed";
 				// Fall through to Convex assistant
 			}
 		}
@@ -420,6 +420,23 @@ export async function POST(req: NextRequest) {
 			}
 
 			const responseText = result.content || "No response generated";
+			const responseMetadata =
+				result.metadata ??
+				buildAssistantResponseMetadata({
+					assistantType: "convex",
+					executionPath: "convex-assistant",
+					intent: queryIntent,
+					tools: {
+						internalEnabled: true,
+						externalEnabled: false,
+						externalUsed: false,
+						connectedApps,
+					},
+					fallback: {
+						attempted: composioAttempted || Boolean(composioFallbackReason),
+						reason: composioFallbackReason,
+					},
+				});
 
 			return NextResponse.json({
 				success: true,
@@ -427,8 +444,9 @@ export async function POST(req: NextRequest) {
 				sources: [],
 				actions: [],
 				toolResults: [],
-				assistantType: "ai-tools",
+				assistantType: "convex",
 				composioToolsUsed: false,
+				metadata: responseMetadata,
 			});
 		} catch (error) {
 			console.error("[Chatbot Assistant] AI assistant failed:", error);

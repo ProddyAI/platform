@@ -1,14 +1,13 @@
 /**
  * AI Assistant Tools - replaces deterministic intent matching with AI-driven tool selection
- * 
+ *
  * Each tool is a Convex query/action that the AI can call based on user intent.
  * The LLM reads the tool descriptions and decides which to invoke.
  */
 
 import { v } from "convex/values";
-import { query, action } from "./_generated/server";
-import { api, internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import { api } from "./_generated/api";
+import { action, query } from "./_generated/server";
 
 // Helper functions
 function startOfDayMs(date: Date) {
@@ -39,12 +38,14 @@ export const getMyCalendarToday = query({
 		userId: v.id("users"),
 	},
 	returns: v.object({
-		events: v.array(v.object({
-			id: v.string(),
-			title: v.string(),
-			time: v.optional(v.string()),
-			date: v.number(),
-		})),
+		events: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				time: v.optional(v.string()),
+				date: v.number(),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
@@ -54,16 +55,18 @@ export const getMyCalendarToday = query({
 
 		const allEvents = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
-		const todayEvents = allEvents.filter(event => {
+		const todayEvents = allEvents.filter((event) => {
 			const eventDate = new Date(event.date).getTime();
 			return eventDate >= todayStart && eventDate <= todayEnd;
 		});
 
 		return {
-			events: todayEvents.map(e => ({
+			events: todayEvents.map((e) => ({
 				id: e._id,
 				title: e.title,
 				time: e.time,
@@ -80,12 +83,14 @@ export const getMyCalendarTomorrow = query({
 		userId: v.id("users"),
 	},
 	returns: v.object({
-		events: v.array(v.object({
-			id: v.string(),
-			title: v.string(),
-			time: v.optional(v.string()),
-			date: v.number(),
-		})),
+		events: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				time: v.optional(v.string()),
+				date: v.number(),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
@@ -96,16 +101,18 @@ export const getMyCalendarTomorrow = query({
 
 		const allEvents = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
-		const tomorrowEvents = allEvents.filter(event => {
+		const tomorrowEvents = allEvents.filter((event) => {
 			const eventDate = new Date(event.date).getTime();
 			return eventDate >= tomorrowStart && eventDate <= tomorrowEnd;
 		});
 
 		return {
-			events: tomorrowEvents.map(e => ({
+			events: tomorrowEvents.map((e) => ({
 				id: e._id,
 				title: e.title,
 				time: e.time,
@@ -122,12 +129,14 @@ export const getMyCalendarNextWeek = query({
 		userId: v.id("users"),
 	},
 	returns: v.object({
-		events: v.array(v.object({
-			id: v.string(),
-			title: v.string(),
-			time: v.optional(v.string()),
-			date: v.number(),
-		})),
+		events: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				time: v.optional(v.string()),
+				date: v.number(),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
@@ -137,16 +146,21 @@ export const getMyCalendarNextWeek = query({
 
 		const allEvents = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
-		const nextWeekEvents = allEvents.filter(event => {
+		const nextWeekEvents = allEvents.filter((event) => {
 			const eventDate = new Date(event.date).getTime();
-			return eventDate >= startOfDayMs(nextWeekStart) && eventDate <= endOfDayMs(nextWeekEnd);
+			return (
+				eventDate >= startOfDayMs(nextWeekStart) &&
+				eventDate <= endOfDayMs(nextWeekEnd)
+			);
 		});
 
 		return {
-			events: nextWeekEvents.map(e => ({
+			events: nextWeekEvents.map((e) => ({
 				id: e._id,
 				title: e.title,
 				time: e.time,
@@ -167,14 +181,16 @@ export const getMyTasksToday = query({
 		userId: v.id("users"),
 	},
 	returns: v.object({
-		tasks: v.array(v.object({
-			id: v.string(),
-			title: v.string(),
-			description: v.optional(v.string()),
-			status: v.string(),
-			priority: v.optional(v.string()),
-			dueDate: v.optional(v.number()),
-		})),
+		tasks: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				description: v.optional(v.string()),
+				status: v.string(),
+				priority: v.optional(v.string()),
+				dueDate: v.optional(v.number()),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
@@ -184,18 +200,20 @@ export const getMyTasksToday = query({
 
 		const allTasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.filter((q) => q.eq(q.field("userId"), args.userId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
-		const todayTasks = allTasks.filter(task => {
+		const todayTasks = allTasks.filter((task) => {
 			if (!task.dueDate) return false;
 			return task.dueDate >= todayStart && task.dueDate <= todayEnd;
 		});
 
 		return {
-			tasks: todayTasks.map(t => ({
+			tasks: todayTasks.map((t) => ({
 				id: t._id,
 				title: t.title,
 				description: t.description,
@@ -214,14 +232,16 @@ export const getMyTasksTomorrow = query({
 		userId: v.id("users"),
 	},
 	returns: v.object({
-		tasks: v.array(v.object({
-			id: v.string(),
-			title: v.string(),
-			description: v.optional(v.string()),
-			status: v.string(),
-			priority: v.optional(v.string()),
-			dueDate: v.optional(v.number()),
-		})),
+		tasks: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				description: v.optional(v.string()),
+				status: v.string(),
+				priority: v.optional(v.string()),
+				dueDate: v.optional(v.number()),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
@@ -232,18 +252,20 @@ export const getMyTasksTomorrow = query({
 
 		const allTasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.filter((q) => q.eq(q.field("userId"), args.userId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
-		const tomorrowTasks = allTasks.filter(task => {
+		const tomorrowTasks = allTasks.filter((task) => {
 			if (!task.dueDate) return false;
 			return task.dueDate >= tomorrowStart && task.dueDate <= tomorrowEnd;
 		});
 
 		return {
-			tasks: tomorrowTasks.map(t => ({
+			tasks: tomorrowTasks.map((t) => ({
 				id: t._id,
 				title: t.title,
 				description: t.description,
@@ -263,21 +285,25 @@ export const getMyAllTasks = query({
 		includeCompleted: v.optional(v.boolean()),
 	},
 	returns: v.object({
-		tasks: v.array(v.object({
-			id: v.string(),
-			title: v.string(),
-			description: v.optional(v.string()),
-			status: v.string(),
-			priority: v.optional(v.string()),
-			dueDate: v.optional(v.number()),
-			completed: v.boolean(),
-		})),
+		tasks: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				description: v.optional(v.string()),
+				status: v.string(),
+				priority: v.optional(v.string()),
+				dueDate: v.optional(v.number()),
+				completed: v.boolean(),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
 		let query = ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.filter((q) => q.eq(q.field("userId"), args.userId));
 
 		if (!args.includeCompleted) {
@@ -287,7 +313,7 @@ export const getMyAllTasks = query({
 		const tasks = await query.collect();
 
 		return {
-			tasks: tasks.map(t => ({
+			tasks: tasks.map((t) => ({
 				id: t._id,
 				title: t.title,
 				description: t.description,
@@ -311,28 +337,32 @@ export const searchChannels = query({
 		query: v.optional(v.string()),
 	},
 	returns: v.object({
-		channels: v.array(v.object({
-			id: v.string(),
-			name: v.string(),
-		})),
+		channels: v.array(
+			v.object({
+				id: v.string(),
+				name: v.string(),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
 		let filteredChannels = channels;
 		if (args.query) {
 			const queryLower = args.query.toLowerCase();
-			filteredChannels = channels.filter(ch => 
+			filteredChannels = channels.filter((ch) =>
 				ch.name.toLowerCase().includes(queryLower)
 			);
 		}
 
 		return {
-			channels: filteredChannels.map(ch => ({
+			channels: filteredChannels.map((ch) => ({
 				id: ch._id,
 				name: ch.name,
 			})),
@@ -355,7 +385,11 @@ export const getChannelSummary: ReturnType<typeof action> = action({
 	handler: async (
 		ctx,
 		args
-	): Promise<{ summary: string; messageCount: number; channelName: string }> => {
+	): Promise<{
+		summary: string;
+		messageCount: number;
+		channelName: string;
+	}> => {
 		// Get channel info
 		const channel = (await ctx.runQuery(api.channels.getById, {
 			id: args.channelId,
@@ -389,7 +423,8 @@ export const getChannelSummary: ReturnType<typeof action> = action({
 		const messageContext: string = results.page
 			.slice(-10)
 			.map((m) => {
-				const body = typeof m.body === "string" ? m.body : JSON.stringify(m.body);
+				const body =
+					typeof m.body === "string" ? m.body : JSON.stringify(m.body);
 				return body.substring(0, 200);
 			})
 			.join("\n");
@@ -421,25 +456,35 @@ export const getWorkspaceOverview = query({
 	handler: async (ctx, args) => {
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 		const members = await ctx.db
 			.query("members")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 		const tasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.filter((q) => q.eq(q.field("userId"), args.userId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 		const events = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
 		const now = Date.now();
-		const upcomingEvents = events.filter(e => new Date(e.date).getTime() >= now);
+		const upcomingEvents = events.filter(
+			(e) => new Date(e.date).getTime() >= now
+		);
 
 		return {
 			channelCount: channels.length,
@@ -460,14 +505,16 @@ export const getMyCards = query({
 		userId: v.id("users"),
 	},
 	returns: v.object({
-		cards: v.array(v.object({
-			id: v.string(),
-			title: v.string(),
-			description: v.optional(v.string()),
-			listName: v.string(),
-			channelName: v.string(),
-			dueDate: v.optional(v.number()),
-		})),
+		cards: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				description: v.optional(v.string()),
+				listName: v.string(),
+				channelName: v.string(),
+				dueDate: v.optional(v.number()),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
@@ -484,7 +531,9 @@ export const getMyCards = query({
 		// Get all channels in workspace
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.collect();
 
 		const cards = [];
@@ -547,18 +596,23 @@ export const semanticSearch: ReturnType<typeof action> = action({
 		limit: v.optional(v.number()),
 	},
 	returns: v.object({
-		results: v.array(v.object({
-			id: v.string(),
-			text: v.string(),
-			type: v.string(),
-			score: v.number(),
-		})),
+		results: v.array(
+			v.object({
+				id: v.string(),
+				text: v.string(),
+				type: v.string(),
+				score: v.number(),
+			})
+		),
 		count: v.number(),
 	}),
 	handler: async (
 		ctx,
 		args
-	): Promise<{ results: Array<{ id: string; text: string; type: string; score: number }>; count: number }> => {
+	): Promise<{
+		results: Array<{ id: string; text: string; type: string; score: number }>;
+		count: number;
+	}> => {
 		// Use existing RAG semantic search
 		const searchResult = (await ctx.runAction(api.ragchat.semanticSearch, {
 			workspaceId: args.workspaceId,
@@ -575,8 +629,7 @@ export const semanticSearch: ReturnType<typeof action> = action({
 		const mappedResults = searchResult.results.map((r) => {
 			const firstContent = r.content?.[0];
 			const contentType =
-				firstContent &&
-				typeof firstContent.metadata?.contentType === "string"
+				firstContent && typeof firstContent.metadata?.contentType === "string"
 					? String(firstContent.metadata?.contentType)
 					: "content";
 			return {

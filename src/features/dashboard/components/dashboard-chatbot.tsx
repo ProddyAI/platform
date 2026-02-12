@@ -5,7 +5,7 @@ import {
 	useDatabaseChat,
 	useMessagesWithStreaming,
 } from "@dayhaysoos/convex-database-chat";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import {
 	Bot,
 	Calendar,
@@ -92,7 +92,7 @@ export const DashboardChatbot = ({
 			sendMessage: api.assistantChat.sendMessage,
 		}}
 	>
-		<DashboardChatbotBody workspaceId={workspaceId} member={member} />
+		<DashboardChatbotBody member={member} workspaceId={workspaceId} />
 	</DatabaseChatProvider>
 );
 
@@ -208,7 +208,11 @@ const DashboardChatbotBody = ({
 	}, [autocompleteOpen, closeAutocomplete]);
 
 	const createConversation = useMutation(api.assistantChat.createConversation);
-	const { send, abort, isLoading: isSending } = useDatabaseChat({
+	const {
+		send,
+		abort,
+		isLoading: isSending,
+	} = useDatabaseChat({
 		conversationId,
 	});
 	const { allMessages, isStreaming } = useMessagesWithStreaming({
@@ -341,7 +345,7 @@ Try asking me things like:`;
 				scrollContainer.scrollTop = scrollContainer.scrollHeight;
 			}
 		}
-	}, [renderedMessages.length, isStreaming]);
+	}, []);
 
 	const handleSendMessage = async () => {
 		if (!input.trim() || !conversationId) return;
@@ -650,15 +654,17 @@ Try asking me things like:`;
 					<div className="flex flex-col gap-4 py-4 pb-10">
 						{renderedMessages.map((message) => (
 							<div
-								className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
-									}`}
+								className={`flex ${
+									message.sender === "user" ? "justify-end" : "justify-start"
+								}`}
 								key={message.id}
 							>
 								<div
-									className={`max-w-[80%] rounded-lg px-4 py-3 ${message.sender === "user"
-										? "bg-primary text-primary-foreground"
-										: "bg-muted"
-										}`}
+									className={`max-w-[80%] rounded-lg px-4 py-3 ${
+										message.sender === "user"
+											? "bg-primary text-primary-foreground"
+											: "bg-muted"
+									}`}
 								>
 									{message.sender === "user" ? (
 										<p className="text-sm">{message.content}</p>

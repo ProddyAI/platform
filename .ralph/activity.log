@@ -1,0 +1,13 @@
+# Activity Log
+
+## Run Summary
+
+## Events
+
+[2026-02-12 17:10:08] ITERATION 1 start (mode=build story=S1)
+[2026-02-12 17:10:33] Start S1 audit: unify assistant orchestration behavior
+[2026-02-12 17:14:04] Implemented shared assistant orchestration contract and wired Convex + chatbot route metadata/tool routing
+[2026-02-12 17:16:57] ITERATION 1 start (mode=build story=S1)
+[2026-02-12 17:17:22] Start S1: audit assistant orchestration paths and metadata consistency
+[2026-02-12 17:18:09] Completed verification: type/build run, check run reported pre-existing lint failures
+[2026-02-12 17:18:28] S1 major change: Next.js chatbot fallback now reuses Convex assistant metadata envelope when available

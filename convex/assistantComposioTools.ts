@@ -1,8 +1,8 @@
 "use node";
 
 import { Composio } from "@composio/core";
-import OpenAI from "openai";
 import { v } from "convex/values";
+import OpenAI from "openai";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
@@ -105,7 +105,7 @@ async function executeComposioAction(
 			max_tokens: 1000,
 		});
 
-		let responseText =
+		const responseText =
 			completion.choices[0]?.message?.content || "No response generated";
 
 		if (
