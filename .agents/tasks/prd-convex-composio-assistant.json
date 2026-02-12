@@ -234,7 +234,7 @@
 		{
 			"id": "S1",
 			"title": "Unify assistant orchestration behavior",
-			"status": "in_progress",
+			"status": "done",
 			"dependsOn": [],
 			"description": "Standardize runtime behavior between Convex assistant flow and Next.js chatbot route so prompts, tool selection behavior, and response envelope are consistent and predictable.",
 			"acceptanceCriteria": [
@@ -243,8 +243,8 @@
 				"No regression in conversation creation, message persistence, or streaming"
 			],
 			"startedAt": "2026-02-12T11:46:56.586150+00:00",
-			"completedAt": null,
-			"updatedAt": "2026-02-12T11:46:56.586782+00:00"
+			"completedAt": "2026-02-12T11:53:10.113237+00:00",
+			"updatedAt": "2026-02-12T11:53:10.112724+00:00"
 		},
 		{
 			"id": "S2",
