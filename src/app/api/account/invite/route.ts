@@ -9,6 +9,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
 import { InviteMailTemplate } from "@/features/email/components/invite-mail";
+import { getEmailConfig } from "@/lib/email-config";
 
 let resend: Resend | null = null;
 
@@ -127,11 +128,14 @@ export async function POST(req: Request) {
 			inviteLink,
 		});
 
+		const { fromAddress, replyToAddress } = getEmailConfig();
+
 		const emailResult = await resend.emails.send({
-			from: "Proddy <no-reply@proddy.tech>",
+			from: fromAddress,
 			to: email,
 			subject: `You've been invited to join ${inviteDetails.workspaceName}`,
 			react: emailTemplate,
+			replyTo: replyToAddress,
 		});
 
 		// Check for Resend API errors (SDK doesn't throw, returns { data, error })

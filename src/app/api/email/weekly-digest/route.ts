@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { WeeklyDigestTemplate } from "@/features/email/components/weekly-digest-template";
+import { getEmailConfig } from "@/lib/email-config";
 import { shouldSendEmailServer } from "@/lib/email-preferences-server";
 import { generateUnsubscribeUrl } from "@/lib/email-unsubscribe";
 
@@ -69,9 +70,8 @@ export async function POST(req: NextRequest) {
 			unsubscribeUrl,
 		});
 
-		// Validate the from address
-		// Use Resend's default domain as a fallback if your domain isn't verified
-		const fromAddress = "Proddy <support@proddy.tech>";
+		// Get email configuration (from address and reply-to)
+		const { fromAddress, replyToAddress } = getEmailConfig();
 
 		try {
 			const { data, error } = await resend.emails.send({
@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
 				to: [to],
 				subject,
 				react: emailTemplate,
+				replyTo: replyToAddress,
 			});
 
 			if (error) {

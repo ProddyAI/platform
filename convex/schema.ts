@@ -380,6 +380,9 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
+						inviteSent: v.optional(v.boolean()), // Default: true - when invite link is sent
+						workspaceJoin: v.optional(v.boolean()), // Default: true - when someone joins workspace
+						onlineStatus: v.optional(v.boolean()), // Default: false - online/offline status changes
 					})
 				),
 			})
