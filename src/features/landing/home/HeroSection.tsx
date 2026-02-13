@@ -72,20 +72,20 @@ export const HeroSection = () => {
 						className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 mb-4 max-w-4xl"
 						variants={itemVariants}
 					>
-						Your Teams's{" "}
+						Your Team's Smart <br></br>
 						<span className="text-primary relative">
-							Second Brain
+							Work Management
 							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
-						</span>
+						</span>{" "}
+						Suite
 					</motion.h1>
 
 					<motion.p
 						className="text-lg md:text-xl text-gray-600 mb-6 max-w-[800px]"
 						variants={itemVariants}
 					>
-						An intelligent workspace designed for startups and growing teams —
-						streamline collaboration, boost productivity, and scale
-						effortlessly.
+						Proddy unifies canvas, meetings, messaging, notes so work moves from
+						discussion to execution without friction.
 					</motion.p>
 
 					<motion.div

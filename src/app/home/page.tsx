@@ -11,7 +11,7 @@ import { ReplacementSection } from "@/features/landing/home/ReplacementSection";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 const HomePage = () => {
-	useDocumentTitle("Proddy - Your Team's Second Brain");
+	useDocumentTitle("Proddy - Your Smart Work Management Suite  ");
 
 	return (
 		<div className="min-h-screen flex flex-col">

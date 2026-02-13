@@ -29,10 +29,10 @@ type AuthConfig = {
 	toolkit: "github" | "gmail" | "slack" | "jira" | "notion" | "clickup";
 	name: string;
 	type:
-		| "use_composio_managed_auth"
-		| "use_custom_auth"
-		| "service_connection"
-		| "no_auth";
+	| "use_composio_managed_auth"
+	| "use_custom_auth"
+	| "service_connection"
+	| "no_auth";
 	authScheme?: string;
 	composioAuthConfigId: string;
 	credentials?: any;
@@ -177,7 +177,7 @@ export const ServiceIntegrationCard = ({
 				}
 				throw new Error(
 					errorDetails.error ||
-						`Failed to authorize toolkit (HTTP ${response.status})`
+					`Failed to authorize toolkit (HTTP ${response.status})`
 				);
 			}
 
@@ -189,7 +189,16 @@ export const ServiceIntegrationCard = ({
 			}
 
 			// Redirect to service OAuth (AgentAuth handles the full flow)
-			window.location.href = result.redirectUrl;
+			const newTab = window.open(
+				result.redirectUrl,
+				"_blank",
+				"noopener,noreferrer"
+			);
+			if (!newTab) {
+				toast.success(
+					`${toolkits[toolkit].name} login process started in new tab. Please allow pop-ups and try again if not opened.`
+				);
+			}
 		} catch (error) {
 			console.error(`[ServiceCard] Error authorizing ${toolkit}:`, error);
 			console.error(`[ServiceCard] Error details:`, {
@@ -401,9 +410,8 @@ export const ServiceIntegrationCard = ({
 			{/* Subtle connection status indicator - only show for non-connected states */}
 			{!isConnected && (
 				<div
-					className={`absolute bottom-3 right-3 w-2 h-2 rounded-full ${
-						hasAuthConfig ? "bg-yellow-400" : "bg-gray-300"
-					}`}
+					className={`absolute bottom-3 right-3 w-2 h-2 rounded-full ${hasAuthConfig ? "bg-yellow-400" : "bg-gray-300"
+						}`}
 				/>
 			)}
 		</Card>
