@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
 import {
 	buildActionableErrorPayload,
 	buildComposioFailureGuidance,
@@ -7,11 +8,6 @@ import {
 	sanitizeErrorMessage,
 } from "@/lib/assistant-error-utils";
 import { createComposioClient } from "@/lib/composio-config";
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Get Composio tools for OpenAI
 export async function POST(req: NextRequest) {
@@ -34,145 +30,33 @@ export async function POST(req: NextRequest) {
 		}
 
 		const composio = createComposioClient();
+		const tools = await (composio as any).getTools({ apps: appNames }, entityId);
 
-		// Get tools for the specified apps using the Composio SDK
-		let tools: any[] = [];
-		try {
-			// Get all available tools for the entity with specific apps
-			for (const appName of appNames) {
-				try {
-					const appTools = await composio.tools.get(entityId, appName);
-					if (Array.isArray(appTools)) {
-						tools.push(...appTools);
-					} else if (appTools) {
-						tools.push(appTools);
-					}
-				} catch (error) {
-					logRouteError({
-						route: "Composio Tools",
-						stage: "app_tools_missing",
-						error,
-						level: "warn",
-						context: { appName },
-					});
-				}
-			}
-		} catch (error) {
-			logRouteError({
-				route: "Composio Tools",
-				stage: "tools_fetch_failed",
-				error,
-			});
-			tools = [];
+		if (!tools || Object.keys(tools).length === 0) {
+			return NextResponse.json(
+				{ error: "No tools available for the requested apps." },
+				{ status: 400 }
+			);
 		}
 
-		// Convert Composio tools to OpenAI format
-		const openaiTools = tools.map((tool: any) => ({
-			type: "function" as const,
-			function: {
-				name: tool.name || tool.slug,
-				description: tool.description,
-				parameters: tool.parameters || tool.schema || {},
-			},
-		}));
-
-		// Use the tools with OpenAI directly
-		const completion = await openai.chat.completions.create({
-			model: "gpt-5-mini",
-			tools: openaiTools.length > 0 ? openaiTools : undefined,
-			messages: [
-				{
-					role: "system",
-					content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools.`,
-				},
-				{
-					role: "user",
-					content: message,
-				},
-			],
+		const result = await generateText({
+			model: openai("gpt-5-mini"),
+			system: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools.`,
+			messages: [{ role: "user", content: message }],
+			tools,
 			temperature: 0.7,
-			max_tokens: 1000,
 		});
 
-		let responseText =
-			completion.choices[0]?.message?.content || "No response generated";
-		const toolResults: any[] = [];
-
-		// Execute any tool calls with Composio
-		if (
-			completion.choices[0]?.message?.tool_calls &&
-			completion.choices[0].message.tool_calls.length > 0
-		) {
-			for (const toolCall of completion.choices[0].message.tool_calls) {
-				if (toolCall.type === "function") {
-					try {
-						const result = await composio.tools.execute(
-							toolCall.function.name,
-							JSON.parse(toolCall.function.arguments)
-						);
-
-						toolResults.push({
-							toolCallId: toolCall.id,
-							result: result,
-							toolName: toolCall.function.name,
-						});
-					} catch (error) {
-						logRouteError({
-							route: "Composio Tools",
-							stage: "tool_execution_error",
-							error,
-							context: { toolName: toolCall.function.name },
-						});
-						toolResults.push({
-							toolCallId: toolCall.id,
-							error: sanitizeErrorMessage(
-								error instanceof Error ? error.message : "Unknown error"
-							),
-							toolName: toolCall.function.name,
-						});
-					}
-				}
-			}
-
-			// If we have tool results, create a follow-up completion
-			if (toolResults.length > 0) {
-				const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-					{
-						role: "system",
-						content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools.`,
-					},
-					{
-						role: "user",
-						content: message,
-					},
-					completion.choices[0].message,
-					...toolResults.map((result) => ({
-						role: "tool" as const,
-						tool_call_id: result.toolCallId,
-						content: result.error
-							? `Error: ${result.error}`
-							: JSON.stringify(result.result),
-					})),
-				];
-
-				const followUpCompletion = await openai.chat.completions.create({
-					model: "gpt-5-mini",
-					messages: followUpMessages,
-					temperature: 0.7,
-					max_tokens: 1000,
-				});
-
-				responseText =
-					followUpCompletion.choices[0]?.message?.content || responseText;
-			}
-		}
+		const steps = Array.isArray(result.steps) ? result.steps : [];
+		const toolCalls = steps.flatMap((step) => step.toolCalls ?? []);
+		const toolResults = steps.flatMap((step) => step.toolResults ?? []);
 
 		return NextResponse.json({
 			success: true,
-			response: responseText,
-			toolCalls: completion.choices[0]?.message?.tool_calls || [],
+			response: result.text || "No response generated",
+			toolCalls,
 			toolResults,
-			availableTools: tools.length,
+			availableTools: Object.keys(tools).length,
 		});
 	} catch (error) {
 		logRouteError({

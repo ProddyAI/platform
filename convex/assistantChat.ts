@@ -1,6 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import OpenAI from "openai";
+import { openai } from "@ai-sdk/openai";
+import { generateText, tool } from "ai";
+import { z } from "zod";
 import {
 	type AssistantExternalApp,
 	buildAssistantResponseMetadata,
@@ -28,6 +30,80 @@ type ToolDefinition = {
 	};
 	externalApp?: AssistantExternalApp;
 };
+
+function jsonSchemaToZod(jsonSchema: ToolDefinition["parameters"]) {
+	const shape: Record<string, z.ZodTypeAny> = {};
+	const properties = jsonSchema?.properties ?? {};
+
+	for (const [key, prop] of Object.entries(properties)) {
+		let zodType: z.ZodTypeAny;
+		switch (prop.type) {
+			case "string":
+				zodType = z.string();
+				break;
+			case "number":
+				zodType = z.number();
+				break;
+			case "boolean":
+				zodType = z.boolean();
+				break;
+			case "array":
+				zodType = z.array(z.any());
+				break;
+			case "object":
+				zodType = z.record(z.any());
+				break;
+			default:
+				zodType = z.any();
+		}
+
+		if (prop.description) {
+			zodType = zodType.describe(prop.description);
+		}
+		if (!jsonSchema.required || !jsonSchema.required.includes(key)) {
+			zodType = zodType.optional();
+		}
+		shape[key] = zodType;
+	}
+
+	return z.object(shape);
+}
+
+function buildAiTools(
+	toolDefinitions: ToolDefinition[],
+	ctx: { runQuery: any; runMutation: any; runAction: any },
+	workspaceId: string,
+	userId: string
+): Record<string, any> {
+	const tools: Record<string, any> = {};
+
+	for (const toolDef of toolDefinitions) {
+		const parameters = jsonSchemaToZod(toolDef.parameters);
+		tools[toolDef.name] = tool({
+			description: toolDef.description,
+			parameters,
+			execute: async (params: any) => {
+				const fullArgs: Record<string, unknown> = { ...params };
+				if (toolDef.contextParams?.needsWorkspaceId) {
+					fullArgs.workspaceId = workspaceId;
+				}
+				if (toolDef.contextParams?.needsUserId) {
+					fullArgs.userId = userId;
+				}
+
+				if (toolDef.handlerType === "query") {
+					return await ctx.runQuery(toolDef.handler as any, fullArgs);
+				}
+				if (toolDef.handlerType === "mutation") {
+					return await ctx.runMutation(toolDef.handler as any, fullArgs);
+				}
+				return await ctx.runAction(toolDef.handler as any, fullArgs);
+			},
+		} as any);
+	}
+
+	return tools;
+}
 
 // Define tools that AI can use (handles are created inside the action)
 const TOOL_DEFINITIONS: ToolDefinition[] = [
@@ -526,113 +602,31 @@ export const sendMessage = action({
 				}
 			);
 
-			const openai = new OpenAI({
-				apiKey: apiKey,
-			});
+			const aiTools = buildAiTools(
+				selectedToolDefinitions,
+				ctx,
+				resolvedWorkspaceId,
+				resolvedUserId
+			);
 
-			// Format tools for OpenAI
-			const openaiTools: OpenAI.Chat.ChatCompletionTool[] =
-				selectedToolDefinitions.map((t) => ({
-					type: "function" as const,
-					function: {
-						name: t.name,
-						description: t.description,
-						parameters: t.parameters,
-					},
-				}));
-
-			// Call OpenAI with tools
-			const completion = await openai.chat.completions.create({
-				model: "gpt-4o-mini",
-				messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
-				tools: openaiTools,
+			const result = await generateText({
+				model: openai("gpt-4o-mini"),
+				messages: messages as any,
+				tools: aiTools,
 				temperature: 0.7,
-				max_tokens: 2000,
 			});
 
-			let responseText =
-				completion.choices[0]?.message?.content || "No response generated";
-			const toolCalls = completion.choices[0]?.message?.tool_calls;
+			const responseText = result.text || "No response generated";
 			let externalToolUsed = false;
-
-			// Execute tool calls if any
-			if (toolCalls && toolCalls.length > 0) {
-				for (const toolCall of toolCalls) {
-					if (toolCall.type === "function") {
-						try {
-							const toolName = toolCall.function.name;
-							const toolArgs = JSON.parse(toolCall.function.arguments);
-
-							// Find the tool definition
-							const tool = selectedToolDefinitions.find(
-								(t) => t.name === toolName
-							);
-							if (tool) {
-								if (tool.externalApp) {
-									externalToolUsed = true;
-								}
-								// Inject context parameters based on tool's needs
-								const fullArgs: Record<string, any> = { ...toolArgs };
-
-								if (tool.contextParams?.needsWorkspaceId) {
-									fullArgs.workspaceId = resolvedWorkspaceId;
-								}
-								if (tool.contextParams?.needsUserId) {
-									fullArgs.userId = resolvedUserId;
-								}
-
-								let result: unknown;
-								if (tool.handlerType === "query") {
-									result = await ctx.runQuery(tool.handler as any, fullArgs);
-								} else {
-									result = await ctx.runAction(tool.handler as any, fullArgs);
-								}
-								const toolResultResponse =
-									typeof result === "object" &&
-									result !== null &&
-									"response" in result &&
-									typeof (result as { response?: unknown }).response ===
-										"string"
-										? (result as { response: string }).response
-										: null;
-								const noSideEffectsMessage =
-									toolResultResponse?.includes("No changes were made.") ??
-									false;
-								if (tool.externalApp && noSideEffectsMessage) {
-									responseText = toolResultResponse ?? responseText;
-									continue;
-								}
-
-								// Call again with tool result
-								const followUpMessages = [
-									...messages,
-									completion.choices[0].message,
-									{
-										role: "tool" as const,
-										tool_call_id: toolCall.id,
-										content: JSON.stringify(result),
-									},
-								];
-
-								const followUpCompletion = await openai.chat.completions.create(
-									{
-										model: "gpt-4o-mini",
-										messages: followUpMessages as any,
-										temperature: 0.7,
-										max_tokens: 2000,
-									}
-								);
-
-								responseText =
-									followUpCompletion.choices[0]?.message?.content ||
-									responseText;
-							}
-						} catch (error) {
-							console.error(
-								`Tool execution error for ${toolCall.function.name}:`,
-								error
-							);
-						}
+			const steps = Array.isArray(result.steps) ? result.steps : [];
+			for (const step of steps) {
+				const stepToolCalls = step.toolCalls ?? [];
+				for (const toolCall of stepToolCalls) {
+					const toolDef = selectedToolDefinitions.find(
+						(t) => t.name === toolCall.toolName
+					);
+					if (toolDef?.externalApp) {
+						externalToolUsed = true;
 					}
 				}
 			}

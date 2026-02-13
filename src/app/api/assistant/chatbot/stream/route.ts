@@ -5,17 +5,15 @@ import {
 	isAuthenticatedNextjs,
 } from "@convex-dev/auth/nextjs/server";
 import { openai } from "@ai-sdk/openai";
-import { generateText } from "ai";
+import { streamText } from "ai";
 import { ConvexHttpClient } from "convex/browser";
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import {
-	buildActionableErrorPayload,
 	logRouteError,
 } from "@/lib/assistant-error-utils";
 import {
-	buildAssistantResponseMetadata,
 	buildAssistantSystemPrompt,
 } from "@/lib/assistant-orchestration";
 import { parseAndSanitizeArguments } from "@/lib/assistant-tool-audit";
@@ -34,7 +32,7 @@ import { UnifiedToolManager } from "@/lib/unified-tool-manager";
 export const dynamic = "force-dynamic";
 
 /**
- * Create a Convex HTTP client configured from the NEXT_PUBLIC_CONVEX_URL environment variable.
+ * Create a Convex HTTP client
  */
 function createConvexClient(): ConvexHttpClient {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
@@ -44,7 +42,7 @@ function createConvexClient(): ConvexHttpClient {
 }
 
 /**
- * Log external tool audit events to Convex
+ * Log external tool audit events
  */
 async function logExternalToolAuditEvent(params: {
 	convex: ConvexHttpClient;
@@ -77,7 +75,7 @@ async function logExternalToolAuditEvent(params: {
 		);
 	} catch (error) {
 		logRouteError({
-			route: "Chatbot Assistant (AI SDK)",
+			route: "Chatbot Assistant Stream",
 			stage: "audit_persist_failed",
 			error,
 			level: "warn",
@@ -86,14 +84,13 @@ async function logExternalToolAuditEvent(params: {
 }
 
 /**
- * Modernized chatbot handler using Vercel AI SDK
+ * Streaming chatbot handler using Vercel AI SDK
  *
- * This endpoint:
- * - Uses AI-powered query classification (replaces regex-based)
- * - Uses AI-powered tool selection (replaces deterministic scoring)
- * - Uses AI-powered confirmation logic (replaces regex-based high-impact detection)
- * - Unified single-path architecture with better error handling
- * - Composio integration via VercelProvider for AI SDK
+ * Provides real-time streaming of assistant responses with:
+ * - AI-powered query classification
+ * - Unified tool management (internal + external)
+ * - Real-time confirmation prompts
+ * - Streaming text responses
  */
 export async function POST(req: NextRequest) {
 	try {
@@ -109,7 +106,7 @@ export async function POST(req: NextRequest) {
 		} catch (err) {
 			if (isAuthenticatedNextjs()) {
 				logRouteError({
-					route: "Chatbot Assistant (AI SDK)",
+					route: "Chatbot Assistant Stream",
 					stage: "convex_token_read_failed",
 					error: err,
 					level: "warn",
@@ -126,9 +123,9 @@ export async function POST(req: NextRequest) {
 		} = await req.json();
 
 		if (!message || !workspaceId) {
-			return NextResponse.json(
-				{ error: "Message and workspaceId are required" },
-				{ status: 400 }
+			return new Response(
+				JSON.stringify({ error: "Message and workspaceId are required" }),
+				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
@@ -136,15 +133,18 @@ export async function POST(req: NextRequest) {
 		if (memberId) {
 			const isAuthenticated = await isAuthenticatedNextjs();
 			if (!isAuthenticated) {
-				return NextResponse.json(
-					{ error: "Authentication required when specifying memberId" },
-					{ status: 401 }
+				return new Response(
+					JSON.stringify({ error: "Authentication required when specifying memberId" }),
+					{ status: 401, headers: { "Content-Type": "application/json" } }
 				);
 			}
 
 			const currentUser = await convex.query(api.users.current);
 			if (!currentUser) {
-				return NextResponse.json({ error: "User not found" }, { status: 404 });
+				return new Response(
+					JSON.stringify({ error: "User not found" }),
+					{ status: 404, headers: { "Content-Type": "application/json" } }
+				);
 			}
 			authenticatedUserId = currentUser._id;
 
@@ -154,18 +154,21 @@ export async function POST(req: NextRequest) {
 			});
 
 			if (!member) {
-				return NextResponse.json({ error: "Member not found" }, { status: 404 });
+				return new Response(
+					JSON.stringify({ error: "Member not found" }),
+					{ status: 404, headers: { "Content-Type": "application/json" } }
+				);
 			}
 
 			if (member.userId !== currentUser._id) {
-				return NextResponse.json(
-					{ error: "Unauthorized: Member belongs to different user" },
-					{ status: 403 }
+				return new Response(
+					JSON.stringify({ error: "Unauthorized: Member belongs to different user" }),
+					{ status: 403, headers: { "Content-Type": "application/json" } }
 				);
 			}
 		}
 
-		// AI-powered query classification
+		// AI-powered query classification (with caching)
 		const queryIntent = await classifyAssistantQueryWithAI(message);
 
 		console.log("[AI Classification]", {
@@ -175,7 +178,7 @@ export async function POST(req: NextRequest) {
 			reasoning: queryIntent.reasoning,
 		});
 
-		//Initialize Composio if external tools needed and API key available
+		// Initialize Composio if external tools needed
 		let composio: Composio<any> | null = null;
 		let workspaceEntityId: string | undefined;
 		let connectedApps: string[] = [];
@@ -189,7 +192,6 @@ export async function POST(req: NextRequest) {
 
 				workspaceEntityId = getWorkspaceEntityId(workspaceId as Id<"workspaces">);
 
-				// Check connected apps
 				const connections = await (composio as any).integrations?.list({
 					entityId: workspaceEntityId,
 				});
@@ -202,7 +204,7 @@ export async function POST(req: NextRequest) {
 
 				if (activeConnections.length === 0) {
 					console.log("[Composio] No active connections found");
-					composio = null; // Don't use Composio if no apps connected
+					composio = null;
 				}
 			} catch (error) {
 				console.error("[Composio] Initialization failed:", error);
@@ -219,7 +221,7 @@ export async function POST(req: NextRequest) {
 			workspaceEntityId,
 		});
 
-		// Get all relevant tools (internal + external)
+		// Get all relevant tools
 		const tools = await toolManager.getAllTools({
 			includeInternal: true,
 			includeExternal: queryIntent.requiresExternalTools,
@@ -249,9 +251,8 @@ export async function POST(req: NextRequest) {
 					.trim(),
 			}));
 
-		// First, generate initial response to see what tools will be called
-		// We use maxSteps: 1 to stop before tool execution
-		const initialResult = await generateText({
+		// Stream response with AI SDK
+		const result = await streamText({
 			model: openai("gpt-4o-mini"),
 			system: buildAssistantSystemPrompt({
 				workspaceContext: typeof workspaceContext === "string" ? workspaceContext : "",
@@ -267,157 +268,59 @@ export async function POST(req: NextRequest) {
 			],
 			tools,
 			temperature: 0.7,
+			onStepFinish: async (step) => {
+				// Log tool executions
+				if (step.toolCalls && step.toolCalls.length > 0) {
+					for (const toolCall of step.toolCalls) {
+						const toolCallAny = toolCall as any;
+						const toolResult = (step.toolResults || []).find(
+							(tr: any) => tr.toolCallId === toolCallAny.toolCallId
+						) as any;
+						const outcome =
+							toolResult?.result?.success === false ? "error" : "success";
+
+						await logExternalToolAuditEvent({
+							convex,
+							workspaceId: workspaceId as Id<"workspaces">,
+							memberId: memberId as Id<"members"> | undefined,
+							userId: authenticatedUserId ?? undefined,
+							toolName: toolCallAny.toolName,
+							toolkit: undefined,
+							argumentsSnapshot: parseAndSanitizeArguments(
+								JSON.stringify(toolCallAny.args)
+							),
+							outcome,
+							error:
+								outcome === "error"
+									? String(
+											toolResult?.result?.error ||
+												"Tool execution failed"
+										)
+									: undefined,
+							executionPath: "nextjs-streaming-ai-sdk",
+							toolCallId: toolCallAny.toolCallId,
+						});
+					}
+				}
+			},
 		});
 
-		// Check if there are tool calls that need confirmation
-		const firstStep = initialResult.steps[0];
-		if (firstStep?.toolCalls && firstStep.toolCalls.length > 0) {
-			// AI-powered confirmation analysis
-			const confirmationAnalysis = await analyzeActionForConfirmation(
-				firstStep.toolCalls.map((tc: any) => ({
-					name: tc.toolName,
-					description: tools[tc.toolName]?.description,
-					arguments: tc.args,
-				})),
-				message
-			);
-
-			console.log("[AI Confirmation Analysis]", confirmationAnalysis);
-
-			// If confirmation required, check user's message for confirmation
-			if (confirmationAnalysis.requiresConfirmation) {
-				const userDecision = await parseUserConfirmationResponse(message);
-
-				if (userDecision.decision === "cancel") {
-					return NextResponse.json({
-						success: true,
-						response: buildCancellationMessage(confirmationAnalysis),
-						sources: [],
-						actions: [],
-						toolResults: [],
-						assistantType: "openai-composio",
-						composioToolsUsed: false,
-						connectedApps,
-						metadata: buildAssistantResponseMetadata({
-							assistantType: "openai-composio",
-							executionPath: "nextjs-openai-composio",
-							intent: queryIntent,
-							tools: {
-								internalEnabled: false,
-								externalEnabled: true,
-								externalUsed: false,
-								connectedApps,
-							},
-						}),
-					});
-				}
-
-				if (userDecision.decision !== "confirm") {
-					// Need confirmation - return prompt
-					return NextResponse.json({
-						success: true,
-						response: buildConfirmationPrompt(confirmationAnalysis),
-						sources: [],
-						actions: [],
-						toolResults: [],
-						assistantType: "openai-composio",
-						composioToolsUsed: false,
-						connectedApps,
-						metadata: buildAssistantResponseMetadata({
-							assistantType: "openai-composio",
-							executionPath: "nextjs-openai-composio",
-							intent: queryIntent,
-							tools: {
-								internalEnabled: false,
-								externalEnabled: true,
-								externalUsed: false,
-								connectedApps,
-							},
-						}),
-					});
-				}
-			}
-
-			// User confirmed or no confirmation needed - proceed with execution
-			// Log tool executions
-			for (const toolCall of firstStep.toolCalls as any[]) {
-				const toolResult = (firstStep.toolResults || []).find(
-					(tr: any) => tr.toolCallId === toolCall.toolCallId
-				) as any;
-				const outcome = toolResult?.result?.success === false ? "error" : "success";
-				await logExternalToolAuditEvent({
-					convex,
-					workspaceId: workspaceId as Id<"workspaces">,
-					memberId: memberId as Id<"members"> | undefined,
-					userId: authenticatedUserId ?? undefined,
-					toolName: toolCall.toolName,
-					toolkit: undefined,
-					argumentsSnapshot: parseAndSanitizeArguments(
-						JSON.stringify(toolCall.args)
-					),
-					outcome,
-					error:
-						outcome === "error"
-							? String(
-									toolResult?.result?.error || "Tool execution failed"
-								)
-							: undefined,
-					executionPath: "nextjs-openai-composio-ai-sdk",
-					toolCallId: toolCall.toolCallId,
-				});
-			}
-		}
-
-		const result = initialResult;
-
-		// Build sources from tool calls
-		const sources = result.steps
-			.flatMap((step) => step.toolCalls || [])
-			.map((toolCall, idx) => ({
-				id: `tool-${idx}`,
-				type: "tool",
-				text: `${(toolCall as any).toolName} executed`,
-			}));
-
-		return NextResponse.json({
-			success: true,
-			response: result.text,
-			sources,
-			actions: [],
-			toolResults: result.steps
-				.flatMap((step) => step.toolResults || [])
-				.map((tr: any) => tr.result),
-			assistantType: "unified-ai-sdk",
-			composioToolsUsed: composio !== null && queryIntent.requiresExternalTools,
-			connectedApps,
-			metadata: buildAssistantResponseMetadata({
-				assistantType: "openai-composio",
-				executionPath: "nextjs-openai-composio",
-				intent: queryIntent,
-				tools: {
-					internalEnabled: true,
-					externalEnabled: composio !== null,
-					externalUsed: composio !== null && queryIntent.requiresExternalTools,
-					connectedApps,
-				},
-			}),
-		});
+		// Return streaming response
+		return result.toTextStreamResponse();
 
 	} catch (error: any) {
 		logRouteError({
-			route: "Chatbot Assistant (AI SDK)",
+			route: "Chatbot Assistant Stream",
 			stage: "request_failed",
 			error,
 		});
 
-		return NextResponse.json(
-			buildActionableErrorPayload({
-				message: "An error occurred while processing your request.",
-				nextStep: "Retry in a few seconds. If it persists, refresh and try again.",
-				code: "ASSISTANT_CHATBOT_FAILED",
-				recoverable: true,
+		return new Response(
+			JSON.stringify({
+				error: "An error occurred while processing your request",
+				details: error.message,
 			}),
-			{ status: 500 }
+			{ status: 500, headers: { "Content-Type": "application/json" } }
 		);
 	}
 }
