@@ -14,7 +14,7 @@ const baseConfig = withPWA({
 	disable: process.env.NODE_ENV === "development",
 	customWorkerDir: "worker",
 	// Avoid Workbox precache warnings and bloated caches by excluding sourcemaps.
-	buildExcludes: [/\.map$/, /OneSignalSDK\.sw\.js$/],
+	buildExcludes: [/\.map$/, /OneSignalSDK\.sw\.js$/, /OneSignalSDKWorker\.js$/],
 	runtimeCaching: [
 		{
 			urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,

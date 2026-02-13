@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useEffect, useRef } from "react";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
+import { logger } from "@/lib/logger";
 
 declare global {
 	interface Window {
@@ -27,7 +28,9 @@ export const OneSignalTracking = () => {
 				serviceWorkerParam: { scope: "/" },
 			});
 
-			console.log("OneSignal initialized");
+			if (process.env.NODE_ENV === "development") {
+				logger.debug("OneSignal initialized");
+			}
 		});
 
 		initializedRef.current = true;
@@ -40,7 +43,9 @@ export const OneSignalTracking = () => {
 
 		window.OneSignalDeferred.push(async (OneSignal: any) => {
 			await OneSignal.login(currentUser._id);
-			console.log("OneSignal user ID set:", currentUser._id);
+			if (process.env.NODE_ENV === "development") {
+				logger.debug("OneSignal user ID set:", currentUser._id);
+			}
 		});
 	}, [currentUser?._id]);
 
@@ -52,4 +57,3 @@ export const OneSignalTracking = () => {
 			strategy="afterInteractive"
 		/>
 	);
-};

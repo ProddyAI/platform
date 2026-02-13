@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
 import { internalMutation, mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 /**
  * Send a push notification to specific users
@@ -34,19 +35,21 @@ export const sendPushNotification = internalMutation({
 		}
 
 		// Check notification preferences for each user
+		const userPreferences = await Promise.all(
+			args.userIds.map(async (userId) => {
+				const preferences = await ctx.db
+					.query("preferences")
+					.withIndex("by_user_id", (q) => q.eq("userId", userId))
+					.unique();
+
+				return { userId, preferences };
+			})
+		);
+
 		const filteredUserIds: string[] = [];
-
-		for (const userId of args.userIds) {
-			const preferences = await ctx.db
-				.query("preferences")
-				.withIndex("by_user_id", (q) => q.eq("userId", userId))
-				.unique();
-
+		for (const { userId, preferences } of userPreferences) {
 			const notifications = preferences?.settings?.notifications;
-
-			// Check if user has this notification type enabled
 			const isEnabled = notifications?.[args.notificationType] ?? true;
-
 			if (isEnabled) {
 				filteredUserIds.push(userId);
 			}
@@ -122,7 +125,7 @@ export const notifyInviteSent = mutation({
 		// Schedule internal notification
 		await ctx.scheduler.runAfter(
 			0,
-			"notifications:sendPushNotification" as any,
+			internal.notifications.sendPushNotification,
 			{
 				userIds,
 				title: `Invite sent to ${workspace.name}`,
@@ -174,7 +177,7 @@ export const notifyWorkspaceJoin = mutation({
 		// Schedule internal notification
 		await ctx.scheduler.runAfter(
 			0,
-			"notifications:sendPushNotification" as any,
+			internal.notifications.sendPushNotification,
 			{
 				userIds: onlineUserIds,
 				title: `${newUser.name} joined ${workspace.name}`,
@@ -232,7 +235,7 @@ export const notifyStatusChange = mutation({
 		// Schedule internal notification
 		await ctx.scheduler.runAfter(
 			0,
-			"notifications:sendPushNotification" as any,
+			internal.notifications.sendPushNotification,
 			{
 				userIds,
 				title: `${user.name} ${statusMessage}`,

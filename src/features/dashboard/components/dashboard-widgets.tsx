@@ -395,7 +395,6 @@ export const DashboardWidgets = ({
 					return (
 						<TeamStatusWidget
 							isEditMode={isEditMode}
-							member={member}
 							workspaceId={workspaceId}
 						/>
 					);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { logger } from "@/lib/logger";
 
 /**
  * Comprehensive ad blocker detection hook
@@ -11,6 +12,8 @@ export const useAdBlockerDetection = (): boolean => {
 	const [isAdBlockerActive, setIsAdBlockerActive] = useState(false);
 
 	useEffect(() => {
+		let isCancelled = false;
+
 		const detectAdBlocker = async () => {
 			try {
 				let detectionScore = 0;
@@ -127,7 +130,7 @@ export const useAdBlockerDetection = (): boolean => {
 					}
 				}
 
-				// Method 4: Test image request to ad server
+				// Method 4: Test image request to ad server (1x1 pixel tracking endpoint)
 				if (detectionScore < detectionThreshold) {
 					try {
 						const testImage = new Image();
@@ -139,8 +142,9 @@ export const useAdBlockerDetection = (): boolean => {
 							setTimeout(() => resolve(false), 2000);
 						});
 
-						// Use a timestamp to prevent caching
-						testImage.src = `https://pagead2.googlesyndication.com/pagead/show_ads.js?${Date.now()}`;
+						// Use an actual image endpoint (not a JS file) to avoid false positives
+						const imageUrl = `https://pagead2.googlesyndication.com/pagead/imp.gif?t=${Date.now()}`;
+						testImage.src = imageUrl;
 
 						const isImageBlocked = await imageLoadPromise;
 						if (isImageBlocked) {
@@ -153,17 +157,21 @@ export const useAdBlockerDetection = (): boolean => {
 				}
 
 				// Set ad blocker status based on detection score
+				if (isCancelled) return;
 				const isBlocked = detectionScore >= detectionThreshold;
 				setIsAdBlockerActive(isBlocked);
 
-				// Optional: Log for debugging
+				// Optional: Log for debugging (dev only)
 				if (process.env.NODE_ENV === "development") {
-					console.log(
+					logger.debug(
 						`Ad blocker detection score: ${detectionScore} (threshold: ${detectionThreshold})`
 					);
 				}
 			} catch (error) {
-				console.warn("Ad blocker detection error:", error);
+				if (isCancelled) return;
+				if (process.env.NODE_ENV === "development") {
+					logger.debug("Ad blocker detection error:", error);
+				}
 				setIsAdBlockerActive(false);
 			}
 		};
@@ -171,8 +179,15 @@ export const useAdBlockerDetection = (): boolean => {
 		if (typeof window !== "undefined" && document.body) {
 			// Delay to ensure DOM is fully ready
 			const timer = setTimeout(detectAdBlocker, 500);
-			return () => clearTimeout(timer);
+			return () => {
+				isCancelled = true;
+				clearTimeout(timer);
+			};
 		}
+
+		return () => {
+			isCancelled = true;
+		};
 	}, []);
 
 	return isAdBlockerActive;

@@ -17,16 +17,6 @@ import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-pr
 
 interface TeamStatusWidgetProps {
 	workspaceId: Id<"workspaces">;
-	member: {
-		_id: Id<"members">;
-		userId: Id<"users">;
-		role: string;
-		workspaceId: Id<"workspaces">;
-		user?: {
-			name: string;
-			image?: string;
-		};
-	};
 	isEditMode?: boolean;
 	controls?: React.ReactNode;
 }
