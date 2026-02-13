@@ -11,14 +11,20 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { useAdBlockerDetection } from "@/hooks/use-ad-blocker-detection";
+import { logger } from "@/lib/logger";
+import { useAdBlockerDetectionContext } from "@/lib/ad-blocker-context";
 
-export const PushNotificationPrompt = () => {
+export interface PushNotificationPromptProps {
+	// Props can be extended here for future customization
+	// e.g., title?: string; description?: string;
+}
+
+export const PushNotificationPrompt = (props: PushNotificationPromptProps) => {
 	const [permission, setPermission] =
 		useState<NotificationPermission>("default");
 	const [isSupported, setIsSupported] = useState(false);
 	const [isRequesting, setIsRequesting] = useState(false);
-	const isAdBlockerActive = useAdBlockerDetection();
+	const isAdBlockerActive = useAdBlockerDetectionContext();
 
 	useEffect(() => {
 		// Check if notifications are supported
@@ -33,18 +39,19 @@ export const PushNotificationPrompt = () => {
 
 		setIsRequesting(true);
 		try {
-			// Use OneSignal's showNativePrompt if available
+			// Use OneSignal's requestPermission if available
 			if (window.OneSignal) {
 				await window.OneSignal.Notifications.requestPermission();
-				const newPermission = await window.OneSignal.Notifications.permission;
-				setPermission(newPermission ? "granted" : "denied");
+				// Read permission state after request instead of awaiting it
+				const newPermission = Notification.permission;
+				setPermission(newPermission);
 			} else {
 				// Fallback to native browser notification API
 				const result = await Notification.requestPermission();
 				setPermission(result);
 			}
 		} catch (error) {
-			console.error("Error requesting notification permission:", error);
+			logger.error("Error requesting notification permission:", error);
 		} finally {
 			setIsRequesting(false);
 		}

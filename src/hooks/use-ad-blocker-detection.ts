@@ -94,38 +94,23 @@ export const useAdBlockerDetection = (): boolean => {
 					}
 				}
 
-				// Method 3: Test loading ad-related scripts (catches network-based blockers)
+				// Method 3: Test fetch request to ad server (network-based detection)
 				if (detectionScore < detectionThreshold) {
 					try {
-						// Create a script element to test if it gets blocked
-						const testScript = document.createElement("script");
-						testScript.type = "text/javascript";
-						testScript.async = true;
-						testScript.src =
-							"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
+						const fetchPromise = Promise.race([
+							fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", {
+								mode: "no-cors",
+								cache: "no-store",
+							}),
+							new Promise<Response>((_, reject) =>
+								setTimeout(() => reject(new Error("Timeout")), 2000)
+							),
+						]);
 
-						const scriptLoadPromise = new Promise<boolean>((resolve) => {
-							testScript.onload = () => resolve(false); // Script loaded = no blocker
-							testScript.onerror = () => resolve(true); // Script blocked = blocker present
-
-							// Timeout after 2 seconds
-							setTimeout(() => resolve(false), 2000);
-						});
-
-						// Append script temporarily
-						document.head.appendChild(testScript);
-						const isScriptBlocked = await scriptLoadPromise;
-
-						// Clean up
-						if (testScript.parentNode) {
-							document.head.removeChild(testScript);
-						}
-
-						if (isScriptBlocked) {
-							detectionScore++;
-						}
+						await fetchPromise;
+						// If fetch succeeds or times out, assume no blocker
 					} catch {
-						// If script creation fails, might be blocked
+						// If fetch fails, likely blocked
 						detectionScore++;
 					}
 				}

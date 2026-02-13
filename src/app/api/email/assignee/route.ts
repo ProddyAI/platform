@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { getEmailConfig } from "@/lib/email-config";
 import { Resend } from "resend";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { CardAssignmentTemplate } from "@/features/email/components/card-assignment";
@@ -74,12 +75,8 @@ export async function POST(req: NextRequest) {
 			unsubscribeUrl,
 		});
 
-		// Validate the from address
-		// Use Resend's default domain as a fallback if your domain isn't verified
-		const fromAddress =
-			process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
-		const replyToAddress =
-			process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@proddy.tech";
+		// Get email configuration (from address and reply-to)
+		const { fromAddress, replyToAddress } = getEmailConfig();
 
 		try {
 			const { data, error } = await resend.emails.send({

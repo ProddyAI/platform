@@ -6,6 +6,7 @@ import { OneSignalTracking } from "./onesignal";
 /**
  * Wrapper component that only renders OneSignal tracking after user authentication.
  * This prevents the notification prompt from appearing on public pages like sign-in/sign-up.
+ * Passes currentUser to child component to avoid duplicate hook calls.
  */
 export const AuthenticatedOneSignalTracking = () => {
 	const { data: currentUser, isLoading } = useCurrentUser();
@@ -20,5 +21,5 @@ export const AuthenticatedOneSignalTracking = () => {
 		return null;
 	}
 
-	return <OneSignalTracking />;
+	return <OneSignalTracking userId={currentUser._id} />;
 };

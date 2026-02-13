@@ -70,17 +70,21 @@ export const ThreadRepliesWidget = ({
 	const router = useRouter();
 	const rawThreadMessages = useGetThreadMessages();
 
-	// Filter out threads with invalid data
-	const threadMessages = rawThreadMessages
-		? rawThreadMessages.filter(
-				(thread) =>
-					thread !== undefined &&
-					thread !== null &&
-					thread.message?._id !== undefined &&
-					thread.context?.type === "channel" &&
-					thread.message?.parentMessageId !== undefined
-			)
-		: null;
+	// Memoize threadMessages array to avoid recalculating on every render
+	const threadMessages = useMemo(
+		() =>
+			rawThreadMessages
+				? rawThreadMessages.filter(
+						(thread) =>
+							thread !== undefined &&
+							thread !== null &&
+							thread.message?._id !== undefined &&
+							thread.context?.type === "channel" &&
+							thread.message?.parentMessageId !== undefined
+					)
+				: null,
+		[rawThreadMessages]
+	);
 
 	// Define the type for a thread message
 	type ThreadMessageType = NonNullable<typeof threadMessages>[0];

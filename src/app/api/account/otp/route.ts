@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 			to: email.toLowerCase(),
 			subject: "Verify your email - Proddy",
 			react: emailTemplate,
-			replyTo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@proddy.tech",
+			replyTo: process.env.SUPPORT_EMAIL || "support@proddy.tech",
 		});
 
 		return NextResponse.json({ success: true });

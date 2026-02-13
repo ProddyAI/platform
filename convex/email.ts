@@ -1254,6 +1254,9 @@ export const sendImportCompletionEmail = internalAction({
 			}
 
 			try {
+				const supportEmail =
+					process.env.SUPPORT_EMAIL || "support@proddy.tech";
+
 				const response = await fetch("https://api.resend.com/emails", {
 					method: "POST",
 					headers: {
@@ -1263,6 +1266,7 @@ export const sendImportCompletionEmail = internalAction({
 					body: JSON.stringify({
 						from: fromEmail,
 						to: args.email,
+						replyTo: supportEmail,
 						subject,
 						html: htmlContent,
 					}),

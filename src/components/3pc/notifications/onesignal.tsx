@@ -2,18 +2,25 @@
 
 import Script from "next/script";
 import { useEffect, useRef } from "react";
-import { useCurrentUser } from "@/features/auth/api/use-current-user";
 import { logger } from "@/lib/logger";
+
+// Use the OneSignalInterface type from global.d.ts for proper typing
+declare const OneSignal: OneSignalInterface;
+
+type OneSignalDeferredCallback = (OneSignal: OneSignalInterface) => void | Promise<void>;
 
 declare global {
 	interface Window {
-		OneSignalDeferred?: Array<(OneSignal: any) => void>;
+		OneSignalDeferred?: OneSignalDeferredCallback[];
 	}
 }
 
-export const OneSignalTracking = () => {
+interface OneSignalTrackingProps {
+	userId?: string;
+}
+
+export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
-	const { data: currentUser } = useCurrentUser();
 	const initializedRef = useRef(false);
 
 	useEffect(() => {
@@ -21,7 +28,7 @@ export const OneSignalTracking = () => {
 
 		window.OneSignalDeferred = window.OneSignalDeferred || [];
 
-		window.OneSignalDeferred.push(async (OneSignal: any) => {
+		window.OneSignalDeferred.push(async (OneSignal: OneSignalInterface) => {
 			await OneSignal.init({
 				appId,
 				serviceWorkerPath: "/OneSignalSDK.sw.js",
@@ -37,17 +44,28 @@ export const OneSignalTracking = () => {
 	}, [appId]);
 
 	useEffect(() => {
-		if (!currentUser?._id) return;
+		if (!userId) return;
 
 		window.OneSignalDeferred = window.OneSignalDeferred || [];
 
-		window.OneSignalDeferred.push(async (OneSignal: any) => {
-			await OneSignal.login(currentUser._id);
+		window.OneSignalDeferred.push(async (OneSignal: OneSignalInterface) => {
+			await OneSignal.login(userId);
 			if (process.env.NODE_ENV === "development") {
-				logger.debug("OneSignal user ID set:", currentUser._id);
+				logger.debug("OneSignal user logged in");
 			}
 		});
-	}, [currentUser?._id]);
+
+		// Cleanup: logout when userId changes (e.g., on sign-out)
+		return () => {
+			window.OneSignalDeferred = window.OneSignalDeferred || [];
+			window.OneSignalDeferred.push(async (OneSignal: OneSignalInterface) => {
+				await OneSignal.logout();
+				if (process.env.NODE_ENV === "development") {
+					logger.debug("OneSignal user logged out");
+				}
+			});
+		};
+	}, [userId]);
 
 	if (!appId) return null;
 

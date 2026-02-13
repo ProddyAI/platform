@@ -876,14 +876,8 @@ export const getThreadMessages = query({
 				return {
 					message,
 					parentMessage,
-					parentUser: {
-						...parentUser,
-						userId: parentMember.userId,
-					},
-					currentUser: {
-						...currentUser,
-						userId: currentMember.userId,
-					},
+					parentUser,
+					currentUser,
 					context,
 				};
 			})

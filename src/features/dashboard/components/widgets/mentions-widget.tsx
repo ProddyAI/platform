@@ -69,13 +69,17 @@ export const MentionsWidget = ({
 	const markAsRead = useMarkMentionAsRead();
 	const markAllAsRead = useMarkAllMentionsAsRead();
 
-	// Filter out mentions with invalid data
-	const mentions = rawMentions
-		? rawMentions.filter(
-				(mention): mention is typeof mention =>
-					mention !== undefined && mention !== null && mention.id !== undefined
-			)
-		: [];
+	// Memoize mentions array to avoid recalculating on every render
+	const mentions = useMemo(
+		() =>
+			rawMentions
+				? rawMentions.filter(
+						(mention): mention is typeof mention =>
+							mention !== undefined && mention !== null && mention.id !== undefined
+					)
+				: [],
+		[rawMentions]
+	);
 
 	// Get user IDs from mentions for status tracking
 	const userIds = useMemo(

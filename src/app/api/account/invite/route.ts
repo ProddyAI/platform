@@ -132,7 +132,7 @@ export async function POST(req: Request) {
 			to: email,
 			subject: `You've been invited to join ${inviteDetails.workspaceName}`,
 			react: emailTemplate,
-			replyTo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@proddy.tech",
+			replyTo: process.env.SUPPORT_EMAIL || "support@proddy.tech",
 		});
 
 		// Check for Resend API errors (SDK doesn't throw, returns { data, error })

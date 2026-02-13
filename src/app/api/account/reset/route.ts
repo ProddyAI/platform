@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
 			to: normalizedEmail,
 			subject: "Reset Your Password - Proddy",
 			react: emailTemplate,
-			replyTo: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@proddy.tech",
+			replyTo: process.env.SUPPORT_EMAIL || "support@proddy.tech",
 		});
 
 		if (error) {

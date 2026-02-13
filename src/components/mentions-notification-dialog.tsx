@@ -34,7 +34,7 @@ import { useMarkAllDirectMessagesAsRead } from "@/features/messages/api/use-mark
 import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-mentions-as-read";
 import { useMarkDirectMessageAsRead } from "@/features/messages/api/use-mark-direct-message-as-read";
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
-import { useAdBlockerDetection } from "@/hooks/use-ad-blocker-detection";
+import { useAdBlockerDetectionContext } from "@/lib/ad-blocker-context";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Badge } from "./ui/badge";
@@ -59,7 +59,7 @@ export const MentionsNotificationDialog = ({
 	const markAllMentionsAsReadMutation = useMarkAllMentionsAsRead();
 	const markAllDirectMessagesAsReadMutation = useMarkAllDirectMessagesAsRead();
 	const [activeTab, setActiveTab] = useState("all");
-	const isAdBlockerActive = useAdBlockerDetection();
+	const isAdBlockerActive = useAdBlockerDetectionContext();
 
 	// Combine mentions and direct messages
 	const allNotifications = [
