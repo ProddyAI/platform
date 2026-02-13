@@ -98,10 +98,13 @@ export const useAdBlockerDetection = (): boolean => {
 				if (detectionScore < detectionThreshold) {
 					try {
 						const fetchPromise = Promise.race([
-							fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", {
-								mode: "no-cors",
-								cache: "no-store",
-							}),
+							fetch(
+								"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js",
+								{
+									mode: "no-cors",
+									cache: "no-store",
+								}
+							),
 							new Promise<Response>((_, reject) =>
 								setTimeout(() => reject(new Error("Timeout")), 2000)
 							),

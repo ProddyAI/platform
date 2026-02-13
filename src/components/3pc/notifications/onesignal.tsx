@@ -11,6 +11,7 @@ interface OneSignalTrackingProps {
 export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 	const initializedRef = useRef(false);
+	const oneSignalLoadFailedRef = useRef(false);
 
 	useEffect(() => {
 		if (!appId || initializedRef.current) return;
@@ -33,7 +34,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	}, [appId]);
 
 	useEffect(() => {
-		if (!userId) return;
+		if (!userId || oneSignalLoadFailedRef.current) return;
 
 		window.OneSignalDeferred = window.OneSignalDeferred || [];
 
@@ -46,6 +47,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 		// Cleanup: logout when userId changes (e.g., on sign-out)
 		return () => {
+			if (oneSignalLoadFailedRef.current) return;
 			window.OneSignalDeferred = window.OneSignalDeferred || [];
 			window.OneSignalDeferred.push(async (OneSignal: OneSignalInterface) => {
 				await OneSignal.logout();
@@ -60,17 +62,23 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 	return (
 		<Script
-			src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-			strategy="afterInteractive"
 			onError={() => {
 				logger.warn("OneSignal SDK failed to load");
-				// Prevent infinite callback queuing by marking as initialized
-				const failedCallback = async (OneSignal: OneSignalInterface) => {
-					logger.error("OneSignal failed to initialize due to SDK load error");
-				};
-				window.OneSignalDeferred = window.OneSignalDeferred || [];
-				window.OneSignalDeferred.push(failedCallback);
+				oneSignalLoadFailedRef.current = true;
+				const queuedCallbacks = window.OneSignalDeferred || [];
+				window.OneSignalDeferred = [];
+				for (const callback of queuedCallbacks) {
+					try {
+						callback({} as OneSignalInterface);
+					} catch (_error) {
+						logger.error(
+							"OneSignal deferred callback failed after SDK load error"
+						);
+					}
+				}
 			}}
+			src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+			strategy="afterInteractive"
 		/>
 	);
 };

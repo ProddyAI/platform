@@ -21,7 +21,7 @@ export const sendPushNotification = internalAction({
 			v.literal("workspaceJoin"),
 			v.literal("onlineStatus")
 		),
-		data: v.optional(v.any()),
+		data: v.optional(v.record(v.string(), v.any())),
 	},
 	handler: async (_ctx, args) => {
 		// Get OneSignal API key from environment
@@ -123,7 +123,7 @@ export const notifyInviteSent = mutation({
 			{
 				userIds,
 				title: `New invite in ${workspace.name}`,
-				message: `An invitation has been sent to ${args.invitedEmail}`,
+				message: "An invitation has been sent",
 				notificationType: "inviteSent",
 				data: {
 					workspaceId: args.workspaceId,
@@ -198,8 +198,18 @@ export const notifyStatusChange = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
-		newStatus: v.string(),
-		oldStatus: v.string(),
+		newStatus: v.union(
+			v.literal("online"),
+			v.literal("idle"),
+			v.literal("dnd"),
+			v.literal("offline")
+		),
+		oldStatus: v.union(
+			v.literal("online"),
+			v.literal("idle"),
+			v.literal("dnd"),
+			v.literal("offline")
+		),
 	},
 	handler: async (ctx, args) => {
 		// Require authentication

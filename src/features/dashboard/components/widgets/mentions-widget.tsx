@@ -1,6 +1,5 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
 import { AtSign, CheckCircle, Clock, Hash, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -225,7 +224,7 @@ export const MentionsWidget = ({
 													return (
 														<>
 															{preview}
-															{preview.length === 50 ? "..." : ""}
+															{preview.length >= 50 ? "..." : ""}
 														</>
 													);
 												})()}

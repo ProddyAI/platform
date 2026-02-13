@@ -10,10 +10,7 @@ export const safeFormatDistanceToNow = (
 ): string => {
 	try {
 		// Check for null/undefined or invalid numbers
-		if (
-			!timestamp ||
-			Number.isNaN(Number(timestamp))
-		) {
+		if (!timestamp || Number.isNaN(Number(timestamp))) {
 			return "recently";
 		}
 

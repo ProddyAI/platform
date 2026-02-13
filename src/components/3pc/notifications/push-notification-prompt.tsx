@@ -110,7 +110,7 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 						</p>
 						<Button
 							className="w-full"
-							disabled={isRequesting}
+							disabled={isRequesting || isAdBlockerActive}
 							onClick={requestPermission}
 							size="lg"
 						>

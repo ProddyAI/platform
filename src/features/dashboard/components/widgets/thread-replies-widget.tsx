@@ -191,7 +191,9 @@ export const ThreadRepliesWidget = ({
 														: "?"}
 												</AvatarFallback>
 											</Avatar>
-											{status && <PresenceIndicator status={status} />}
+											{status && status !== "offline" && (
+												<PresenceIndicator status={status} />
+											)}
 										</div>
 										<div className="flex-1 space-y-1">
 											<div className="flex items-center justify-between">
@@ -211,10 +213,13 @@ export const ThreadRepliesWidget = ({
 												</div>
 												<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
 													<Clock className="h-2.5 w-2.5" />
-													{safeFormatDistanceToNow(thread.message._creationTime, {
-														addSuffix: true,
-														stripAbout: true,
-													})}
+													{safeFormatDistanceToNow(
+														thread.message._creationTime,
+														{
+															addSuffix: true,
+															stripAbout: true,
+														}
+													)}
 												</span>
 											</div>
 											<div className="rounded-md bg-muted/30 p-2 text-xs">
@@ -229,7 +234,7 @@ export const ThreadRepliesWidget = ({
 														return (
 															<>
 																{preview}
-																{preview.length === 50 ? "..." : ""}
+																{preview.length >= 50 ? "..." : ""}
 															</>
 														);
 													})()}

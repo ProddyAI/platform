@@ -19,7 +19,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -36,8 +38,6 @@ import { useMarkDirectMessageAsRead } from "@/features/messages/api/use-mark-dir
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useAdBlockerDetectionContext } from "@/lib/ad-blocker-context";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-	import { Badge } from "@/components/ui/badge";
 
 interface MentionsNotificationDialogProps {
 	open: boolean;
