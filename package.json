@@ -54,6 +54,7 @@
 		"@blocknote/react": "^0.33.0",
 		"@composio/core": "^0.6.3",
 		"@composio/openai": "^0.6.3",
+		"@composio/vercel": "^0.6.3",
 		"@convex-dev/auth": "^0.0.65",
 		"@convex-dev/presence": "^0.1.5",
 		"@convex-dev/prosemirror-sync": "^0.1.25",

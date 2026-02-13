@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "proddy",
@@ -13,6 +14,7 @@
         "@blocknote/react": "^0.33.0",
         "@composio/core": "^0.6.3",
         "@composio/openai": "^0.6.3",
+        "@composio/vercel": "^0.6.3",
         "@convex-dev/auth": "^0.0.65",
         "@convex-dev/presence": "^0.1.5",
         "@convex-dev/prosemirror-sync": "^0.1.25",
@@ -359,6 +361,8 @@
     "@composio/json-schema-to-zod": ["@composio/json-schema-to-zod@0.1.20", "", { "peerDependencies": { "zod": ">=3.25.76 <5" } }, "sha512-d4V34itLrUWG/VBh7ciznKcxF/T22MBLHmuEzHoX0zsBOHsUmjYz5qtDh20S2p3FE+HHvLZxpXiv8yfdd4yI+Q=="],
 
     "@composio/openai": ["@composio/openai@0.6.3", "", { "peerDependencies": { "@composio/core": "0.6.3", "openai": "^6.16.0" } }, "sha512-AnhE6Fu2zzLDB2Bf9O73pTfyF3e0RmR1795o3HrR6SkRDXT+dX1Laquc4g3ioMbReZAYVrt8SWnlSsvs7WPEuA=="],
+
+    "@composio/vercel": ["@composio/vercel@0.6.3", "", { "peerDependencies": { "@composio/core": "0.6.3", "ai": "^5.0.0 || ^6.0.0" } }, "sha512-hwtqufR2mWNwdATsRfrAuWRjPVZG4maRcqWZB4jDLpuIZU1NEBMLmL2Ae7b/QFXvNYXibA4w0Ug8XavV4Zkxlg=="],
 
     "@convex-dev/auth": ["@convex-dev/auth@0.0.65", "", { "dependencies": { "@auth/core": "^0.31.0", "arctic": "^1.2.0", "jose": "^5.2.2", "jwt-decode": "^4.0.0", "lucia": "^3.2.0", "oslo": "^1.1.2", "path-to-regexp": "^7.1.0", "server-only": "^0.0.1" }, "peerDependencies": { "convex": "^1.14.4", "react": "^18.2.0" }, "optionalPeers": ["react"], "bin": { "auth": "dist/bin.cjs" } }, "sha512-z6Q8eBeLEe1ZThhGmmNylMbXQPiubStoC7A679sfmLFZMzgrjYFUxFRD7Mq48y2lWWxg3J+ZBuohU+6n1TYYMA=="],
 

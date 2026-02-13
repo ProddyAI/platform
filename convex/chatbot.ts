@@ -2,10 +2,10 @@
 
 import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
-import OpenAI from "openai";
 import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
 import { api, internal } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
@@ -424,15 +424,13 @@ async function executeComposioAction(
 		// Initialize Composio client
 		const composio = new Composio({
 			apiKey: process.env.COMPOSIO_API_KEY,
+			provider: new VercelProvider(),
 		});
 
-		// Initialize OpenAI client
-		const openaiClient = new OpenAI({
-			apiKey: process.env.OPENAI_API_KEY,
-		});
+		const connectedApps: string[] = [];
+		let entityIdForTools = entityId;
 
-		// Resolve auth config IDs from member's or workspace's connected accounts (Composio requires authConfigIds, not appNames)
-		const tools: any[] = [];
+		// Resolve auth config IDs from member's or workspace's connected accounts
 		for (const appName of appNames) {
 			const toolkit = appName.toLowerCase();
 			try {
@@ -465,189 +463,105 @@ async function executeComposioAction(
 
 				// Use the connection's entityId: Composio links connections to an entity (e.g. workspace_xxx).
 				// tools.get must use that same entityId or Composio returns no tools.
-				const entityIdForTools =
+				const resolvedEntityId =
 					connectedAccount.userId && connectedAccount.userId.length > 0
 						? connectedAccount.userId
 						: entityId;
-
-				const appTools = await composio.tools.get(entityIdForTools, {
-					authConfigIds: [authConfig.composioAuthConfigId],
-					limit: 100,
-				});
-
-				const toolsArray = Array.isArray(appTools)
-					? appTools
-					: typeof appTools === "object" && appTools !== null
-						? Object.values(appTools)
-						: appTools
-							? [appTools]
-							: [];
-				tools.push(...toolsArray);
+				entityIdForTools = resolvedEntityId;
+				connectedApps.push(appName);
 			} catch (error) {
 				console.warn(`[Composio] No tools found for app ${appName}:`, error);
 			}
 		}
 
-		if (tools.length === 0) {
+		if (connectedApps.length === 0) {
 			return {
 				success: false,
 				error: `No tools available for ${appNames.join(", ")}. Please connect the app first.`,
 			};
 		}
 
-		// Convert Composio tools to OpenAI format (align with composio-config shape)
-		const openaiTools = tools.map((tool: any) => ({
-			type: "function" as const,
-			function: {
-				name: tool.function?.name || tool.name || tool.slug,
-				description: tool.function?.description || tool.description,
-				parameters:
-					tool.parameters ?? tool.schema ?? tool.function?.parameters ?? {},
-			},
-		}));
+		const tools = await (composio as any).getTools(
+			{ apps: connectedApps },
+			entityIdForTools
+		);
 
-		// Create OpenAI completion with tools
-		const completion = await openaiClient.chat.completions.create({
-			model: "gpt-4o-mini",
-			tools: openaiTools,
+		if (!tools || Object.keys(tools).length === 0) {
+			return {
+				success: false,
+				error: "No tools could be resolved for connected apps.",
+			};
+		}
+
+		const result = await generateText({
+			model: openai("gpt-4o-mini"),
+			system: `You are a helpful assistant with access to ${connectedApps.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
 			messages: [
-				{
-					role: "system",
-					content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-				},
 				{
 					role: "user",
 					content: message,
 				},
 			],
+			tools,
 			temperature: 0.7,
-			max_tokens: 1000,
 		});
 
-		let responseText =
-			completion.choices[0]?.message?.content || "No response generated";
-		const toolResults: any[] = [];
+		const steps = Array.isArray(result.steps) ? result.steps : [];
+		const toolCalls = steps.flatMap((step) => step.toolCalls ?? []);
+		const toolResults = steps.flatMap((step) => step.toolResults ?? []);
 
-		// Execute any tool calls with Composio
-		if (
-			completion.choices[0]?.message?.tool_calls &&
-			completion.choices[0].message.tool_calls.length > 0
-		) {
-			for (const toolCall of completion.choices[0].message.tool_calls) {
-				if (toolCall.type === "function") {
-					const sanitizedArgs = parseAndSanitizeArguments(
-						toolCall.function.arguments
-					);
-					try {
-						const actionParams = JSON.parse(toolCall.function.arguments);
-						const result = await composio.tools.execute(
-							toolCall.function.name,
-							{
-								userId: entityId,
-								arguments: actionParams,
-							}
-						);
-						await ctx.runMutation(
-							internal.assistantToolAudits.logExternalToolAttemptInternal,
-							{
-								workspaceId,
-								memberId,
-								toolName: toolCall.function.name,
-								toolkit: appNames[0]?.toUpperCase(),
-								argumentsSnapshot: sanitizedArgs,
-								outcome: "success",
-								executionPath: "convex-chatbot",
-								toolCallId: toolCall.id,
-							}
-						);
+		const isConnectionError = (value?: string) => {
+			if (!value) return false;
+			return (
+				value.includes("not connected") ||
+				value.includes("No connected account") ||
+				value.includes("401") ||
+				value.includes("403")
+			);
+		};
 
-						toolResults.push({
-							toolCallId: toolCall.id,
-							result: result,
-							toolName: toolCall.function.name,
-						});
-					} catch (error) {
-						console.error(
-							`[Composio] Tool execution error for ${toolCall.function.name}:`,
-							error
-						);
-
-						const errorMessage =
-							error instanceof Error ? error.message : "Unknown error";
-						await ctx.runMutation(
-							internal.assistantToolAudits.logExternalToolAttemptInternal,
-							{
-								workspaceId,
-								memberId,
-								toolName: toolCall.function.name,
-								toolkit: appNames[0]?.toUpperCase(),
-								argumentsSnapshot: sanitizedArgs,
-								outcome: "error",
-								error: errorMessage,
-								executionPath: "convex-chatbot",
-								toolCallId: toolCall.id,
-							}
-						);
-
-						// Check if it's a connection error
-						if (
-							errorMessage.includes("not connected") ||
-							errorMessage.includes("No connected account") ||
-							errorMessage.includes("401") ||
-							errorMessage.includes("403")
-						) {
-							return {
-								success: false,
-								error: "not_connected",
-							};
-						}
-
-						toolResults.push({
-							toolCallId: toolCall.id,
-							error: errorMessage,
-							toolName: toolCall.function.name,
-						});
-					}
+		for (const toolCall of toolCalls) {
+			const toolCallAny = toolCall as any;
+			const toolResultAny = toolResults.find(
+				(tr: any) => tr.toolCallId === toolCallAny.toolCallId
+			) as any;
+			const outcome =
+				toolResultAny?.result?.success === false ? "error" : "success";
+			const errorMessage =
+				outcome === "error"
+					? String(
+							toolResultAny?.result?.error || "Tool execution failed"
+						)
+					: undefined;
+			await ctx.runMutation(
+				internal.assistantToolAudits.logExternalToolAttemptInternal,
+				{
+					workspaceId,
+					memberId,
+					toolName: toolCallAny.toolName,
+					toolkit: connectedApps[0]?.toUpperCase(),
+					argumentsSnapshot: parseAndSanitizeArguments(
+						JSON.stringify(toolCallAny.args ?? {})
+					),
+					outcome,
+					error: errorMessage,
+					executionPath: "convex-chatbot",
+					toolCallId: toolCallAny.toolCallId,
 				}
-			}
+			);
 
-			// If we have tool results, create a follow-up completion
-			if (toolResults.length > 0) {
-				const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-					{
-						role: "system",
-						content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-					},
-					{
-						role: "user",
-						content: message,
-					},
-					completion.choices[0].message,
-					...toolResults.map((result) => ({
-						role: "tool" as const,
-						tool_call_id: result.toolCallId,
-						content: result.error
-							? `Error: ${result.error}`
-							: JSON.stringify(result.result),
-					})),
-				];
-
-				const followUpCompletion = await openaiClient.chat.completions.create({
-					model: "gpt-4o-mini",
-					messages: followUpMessages,
-					temperature: 0.7,
-					max_tokens: 1000,
-				});
-
-				responseText =
-					followUpCompletion.choices[0]?.message?.content || responseText;
+			if (errorMessage && isConnectionError(errorMessage)) {
+				return {
+					success: false,
+					error: "not_connected",
+				};
 			}
 		}
 
 		return {
 			success: true,
-			response: responseText,
-			toolCalls: completion.choices[0]?.message?.tool_calls,
+			response: result.text || "No response generated",
+			toolCalls,
 			toolResults,
 		};
 	} catch (error) {

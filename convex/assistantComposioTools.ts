@@ -1,15 +1,11 @@
 "use node";
 
 import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
 import { v } from "convex/values";
-import OpenAI from "openai";
 import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
-import {
-	buildCancellationMessage,
-	buildConfirmationRequiredMessage,
-	getHighImpactToolNames,
-	getUserConfirmationDecision,
-} from "../src/lib/high-impact-action-confirmation";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
@@ -34,10 +30,13 @@ async function executeComposioAction(
 			return { success: false, error: "OPENAI_API_KEY is not configured" };
 		}
 
-		const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
-		const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+		const composio = new Composio({
+			apiKey: process.env.COMPOSIO_API_KEY,
+			provider: new VercelProvider(),
+		});
 
-		const tools: any[] = [];
+		const connectedApps: string[] = [];
+		let entityIdForTools = entityId;
 		for (const appName of appNames) {
 			const toolkit = appName.toLowerCase();
 			try {
@@ -63,165 +62,81 @@ async function executeComposioAction(
 					continue;
 				}
 
-				const entityIdForTools =
+				const resolvedEntityId =
 					connectedAccount.userId && connectedAccount.userId.length > 0
 						? connectedAccount.userId
 						: entityId;
-
-				const appTools = await composio.tools.get(entityIdForTools, {
-					authConfigIds: [authConfig.composioAuthConfigId],
-					limit: 100,
-				});
-
-				const toolsArray = Array.isArray(appTools)
-					? appTools
-					: typeof appTools === "object" && appTools !== null
-						? Object.values(appTools)
-						: appTools
-							? [appTools]
-							: [];
-				tools.push(...toolsArray);
+				entityIdForTools = resolvedEntityId;
+				connectedApps.push(appName);
 			} catch {
 				// Skip app if tools cannot be resolved
 			}
 		}
 
-		if (tools.length === 0) {
+		if (connectedApps.length === 0) {
 			return {
 				success: false,
 				error: `No tools available for ${appNames.join(", ")}. Please connect the app first.`,
 			};
 		}
 
-		const openaiTools = tools.map((tool: any) => ({
-			type: "function" as const,
-			function: {
-				name: tool.function?.name || tool.name || tool.slug,
-				description: tool.function?.description || tool.description,
-				parameters:
-					tool.parameters ?? tool.schema ?? tool.function?.parameters ?? {},
-			},
-		}));
+		const tools = await (composio as any).getTools(
+			{ apps: connectedApps },
+			entityIdForTools
+		);
 
-		const completion = await openaiClient.chat.completions.create({
-			model: "gpt-5-mini",
-			tools: openaiTools,
-			messages: [
-				{
-					role: "system",
-					content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-				},
-				{ role: "user", content: message },
-			],
+		if (!tools || Object.keys(tools).length === 0) {
+			return {
+				success: false,
+				error: "No tools could be resolved for connected apps.",
+			};
+		}
+
+		const result = await generateText({
+			model: openai("gpt-5-mini"),
+			system: `You are a helpful assistant with access to ${connectedApps.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
+			messages: [{ role: "user", content: message }],
+			tools,
 			temperature: 0.7,
-			max_tokens: 1000,
 		});
 
-		const responseText =
-			completion.choices[0]?.message?.content || "No response generated";
-
-		if (
-			completion.choices[0]?.message?.tool_calls &&
-			completion.choices[0].message.tool_calls.length > 0
-		) {
-			const toolCalls = completion.choices[0].message.tool_calls;
-			const highImpactToolNames = getHighImpactToolNames(toolCalls);
-			const decision = getUserConfirmationDecision(message);
-
-			if (highImpactToolNames.length > 0) {
-				if (decision === "cancel") {
-					return {
-						success: true,
-						response: buildCancellationMessage(highImpactToolNames),
-					};
-				}
-				if (decision !== "confirm") {
-					return {
-						success: true,
-						response: buildConfirmationRequiredMessage(highImpactToolNames),
-					};
-				}
-			}
-
-			for (const toolCall of toolCalls) {
-				if (toolCall.type === "function") {
-					const sanitizedArgs = parseAndSanitizeArguments(
-						toolCall.function.arguments
-					);
-					let actionParams: Record<string, unknown> | undefined;
-					try {
-						const parsed = JSON.parse(toolCall.function.arguments);
-						if (
-							parsed &&
-							typeof parsed === "object" &&
-							!Array.isArray(parsed)
-						) {
-							actionParams = parsed as Record<string, unknown>;
-						}
-					} catch (error) {
-						await ctx.runMutation(
-							internal.assistantToolAudits.logExternalToolAttemptInternal,
-							{
-								workspaceId,
-								memberId,
-								userId,
-								toolName: toolCall.function.name,
-								toolkit: appNames[0]?.toUpperCase(),
-								argumentsSnapshot: sanitizedArgs,
-								outcome: "error",
-								error:
-									error instanceof Error
-										? error.message
-										: "Invalid tool call arguments",
-								executionPath: "convex-assistant",
-								toolCallId: toolCall.id,
-							}
-						);
-						throw error;
+		const steps = Array.isArray(result.steps) ? result.steps : [];
+		for (const step of steps) {
+			const stepToolCalls = step.toolCalls ?? [];
+			const stepToolResults = step.toolResults ?? [];
+			for (const toolCall of stepToolCalls) {
+				const toolCallAny = toolCall as any;
+				const toolResultAny = stepToolResults.find(
+					(tr: any) => tr.toolCallId === toolCallAny.toolCallId
+				) as any;
+				const outcome =
+					toolResultAny?.result?.success === false ? "error" : "success";
+				await ctx.runMutation(
+					internal.assistantToolAudits.logExternalToolAttemptInternal,
+					{
+						workspaceId,
+						memberId,
+						userId,
+						toolName: toolCallAny.toolName,
+						toolkit: connectedApps[0]?.toUpperCase(),
+						argumentsSnapshot: parseAndSanitizeArguments(
+							JSON.stringify(toolCallAny.args ?? {})
+						),
+						outcome,
+						error:
+							outcome === "error"
+								? String(
+										toolResultAny?.result?.error || "Tool execution failed"
+									)
+								: undefined,
+						executionPath: "convex-assistant",
+						toolCallId: toolCallAny.toolCallId,
 					}
-
-					try {
-						await composio.tools.execute(toolCall.function.name, {
-							userId: entityId,
-							arguments: actionParams,
-						});
-						await ctx.runMutation(
-							internal.assistantToolAudits.logExternalToolAttemptInternal,
-							{
-								workspaceId,
-								memberId,
-								userId,
-								toolName: toolCall.function.name,
-								toolkit: appNames[0]?.toUpperCase(),
-								argumentsSnapshot: sanitizedArgs,
-								outcome: "success",
-								executionPath: "convex-assistant",
-								toolCallId: toolCall.id,
-							}
-						);
-					} catch (error) {
-						await ctx.runMutation(
-							internal.assistantToolAudits.logExternalToolAttemptInternal,
-							{
-								workspaceId,
-								memberId,
-								userId,
-								toolName: toolCall.function.name,
-								toolkit: appNames[0]?.toUpperCase(),
-								argumentsSnapshot: sanitizedArgs,
-								outcome: "error",
-								error: error instanceof Error ? error.message : "Unknown error",
-								executionPath: "convex-assistant",
-								toolCallId: toolCall.id,
-							}
-						);
-						throw error;
-					}
-				}
+				);
 			}
 		}
 
-		return { success: true, response: responseText };
+		return { success: true, response: result.text };
 	} catch (error) {
 		const errorMessage =
 			error instanceof Error ? error.message : "Unknown error";
