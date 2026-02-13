@@ -139,11 +139,11 @@ const PricingPage = () => {
 							<h3 className="text-lg font-semibold mb-2">Enterprise</h3>
 							<div className="mb-6">
 								<span className="text-4xl font-bold">Custom</span>
-								<div className="text-sm text-gray-500 mt-1">$8-12 Per User /month</div>
+								<div className="text-sm text-gray-500 mt-1">
+									$8-12 Per User /month
+								</div>
 							</div>
-							<p className="text-gray-600 mb-6">
-								For large organizations
-							</p>
+							<p className="text-gray-600 mb-6">For large organizations</p>
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />

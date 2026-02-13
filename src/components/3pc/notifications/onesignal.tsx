@@ -57,3 +57,4 @@ export const OneSignalTracking = () => {
 			strategy="afterInteractive"
 		/>
 	);
+};
