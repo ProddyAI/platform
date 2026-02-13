@@ -15,6 +15,7 @@ import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-m
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
 import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
 import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
+import { safeFormatDistanceToNow } from "@/lib/date-utils";
 import { WidgetCard } from "../shared/widget-card";
 
 interface MentionsWidgetProps {
@@ -193,7 +194,9 @@ export const MentionsWidget = ({
 														: "?"}
 												</AvatarFallback>
 											</Avatar>
-											{status && <PresenceIndicator status={status} />}
+											{status && status !== "offline" && (
+												<PresenceIndicator status={status} />
+											)}
 										</div>
 										<div className="flex-1 space-y-1">
 											<div className="flex items-center justify-between">
@@ -213,27 +216,7 @@ export const MentionsWidget = ({
 												</div>
 												<div className="flex items-center text-xs text-red-600 dark:text-red-400 font-medium">
 													<Clock className="mr-1 h-3 w-3" />
-													{(() => {
-														try {
-															// Try to safely format the date
-															if (
-																mention.timestamp &&
-																!Number.isNaN(Number(mention.timestamp))
-															) {
-																const date = new Date(
-																	Number(mention.timestamp)
-																);
-																if (date.toString() !== "Invalid Date") {
-																	return formatDistanceToNow(date, {
-																		addSuffix: true,
-																	});
-																}
-															}
-															return "recently";
-														} catch (_error) {
-															return "recently";
-														}
-													})()}
+													{safeFormatDistanceToNow(mention.timestamp)}
 												</div>
 											</div>
 											<p className="text-sm text-muted-foreground">

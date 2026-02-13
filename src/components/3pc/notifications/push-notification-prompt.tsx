@@ -79,7 +79,7 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 					<Alert className="border-red-200 bg-red-50 dark:bg-red-950/20">
 						<AlertTriangle className="h-4 w-4 text-red-600" />
 						<AlertDescription className="text-red-700 dark:text-red-300">
-							Turn off ad blocker to receive notifications
+							Notifications may be blocked by your browser or network settings
 						</AlertDescription>
 					</Alert>
 				)}

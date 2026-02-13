@@ -62,6 +62,15 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 		<Script
 			src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
 			strategy="afterInteractive"
+			onError={() => {
+				logger.warn("OneSignal SDK failed to load");
+				// Prevent infinite callback queuing by marking as initialized
+				const failedCallback = async (OneSignal: OneSignalInterface) => {
+					logger.error("OneSignal failed to initialize due to SDK load error");
+				};
+				window.OneSignalDeferred = window.OneSignalDeferred || [];
+				window.OneSignalDeferred.push(failedCallback);
+			}}
 		/>
 	);
 };

@@ -3,7 +3,7 @@
 // OneSignal type declarations
 interface OneSignalNotifications {
 	requestPermission(): Promise<void>;
-	permission: NotificationPermission;
+	permission: boolean;
 }
 
 interface OneSignalInterface {

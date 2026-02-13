@@ -36,8 +36,8 @@ import { useMarkDirectMessageAsRead } from "@/features/messages/api/use-mark-dir
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useAdBlockerDetectionContext } from "@/lib/ad-blocker-context";
-import { Alert, AlertDescription } from "./ui/alert";
-import { Badge } from "./ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+	import { Badge } from "@/components/ui/badge";
 
 interface MentionsNotificationDialogProps {
 	open: boolean;
@@ -394,7 +394,7 @@ export const MentionsNotificationDialog = ({
 						<Alert className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
 							<AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
 							<AlertDescription className="text-red-700 dark:text-red-300 text-sm">
-								Turn off ad blocker to receive notifications
+								Notifications may be blocked by your browser or network settings
 							</AlertDescription>
 						</Alert>
 					)}

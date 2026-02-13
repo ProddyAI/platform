@@ -75,7 +75,12 @@ export const sendPushNotification = internalAction({
 				};
 			}
 
-			return { success: true, result };
+			// Sanitize response: only expose safe summary fields
+			return {
+				success: true,
+				id: result.id,
+				recipients: result.recipients || result.recipients_count || 0,
+			};
 		} catch (_error) {
 			console.error("Push notification failed");
 			return { success: false, message: "Push notification failed" };

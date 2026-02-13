@@ -1,6 +1,5 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
 import { Clock, Hash, Loader, MessageSquareText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -12,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetThreadMessages } from "@/features/messages/api/use-get-thread-messages";
 import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
 import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
+import { safeFormatDistanceToNow } from "@/lib/date-utils";
 import { WidgetCard } from "../shared/widget-card";
 
 interface ThreadRepliesWidgetProps {
@@ -48,12 +48,12 @@ interface ThreadReplyMessage {
 	parentUser: {
 		name: string;
 		image?: string;
-		userId?: Id<"users">;
+		_id: Id<"users">;
 	};
 	currentUser: {
 		name: string;
 		image?: string;
-		userId?: Id<"users">;
+		_id: Id<"users">;
 	};
 	context: {
 		name: string;
@@ -211,29 +211,10 @@ export const ThreadRepliesWidget = ({
 												</div>
 												<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
 													<Clock className="h-2.5 w-2.5" />
-													{(() => {
-														try {
-															// Try to safely format the date
-															if (
-																thread.message._creationTime &&
-																!Number.isNaN(
-																	Number(thread.message._creationTime)
-																)
-															) {
-																const date = new Date(
-																	Number(thread.message._creationTime)
-																);
-																if (date.toString() !== "Invalid Date") {
-																	return formatDistanceToNow(date, {
-																		addSuffix: true,
-																	}).replace("about ", "");
-																}
-															}
-															return "recently";
-														} catch (_error) {
-															return "recently";
-														}
-													})()}
+													{safeFormatDistanceToNow(thread.message._creationTime, {
+														addSuffix: true,
+														stripAbout: true,
+													})}
 												</span>
 											</div>
 											<div className="rounded-md bg-muted/30 p-2 text-xs">
