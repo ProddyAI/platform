@@ -14,6 +14,7 @@ import { ModalProvider } from "@/components/modal-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
+import { AdBlockerProvider } from "@/lib/ad-blocker-context";
 
 import "./globals.css";
 
@@ -82,18 +83,20 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 						`}
 					</Script>
 					<ConvexClientProvider>
-						<JotaiProvider>
-							<UsetifulProvider>
-								<Toaster closeButton richColors theme="light" />
-								<ModalProvider />
-								<AuthenticatedOneSignalTracking />
-								<TidioChat />
-								<Formbricks />
-								<ClarityTracking />
-								<ApolloTracking />
-								{children}
-							</UsetifulProvider>
-						</JotaiProvider>
+						<AdBlockerProvider>
+							<JotaiProvider>
+								<UsetifulProvider>
+									<Toaster closeButton richColors theme="light" />
+									<ModalProvider />
+									<AuthenticatedOneSignalTracking />
+									<TidioChat />
+									<Formbricks />
+									<ClarityTracking />
+									<ApolloTracking />
+									{children}
+								</UsetifulProvider>
+							</JotaiProvider>
+						</AdBlockerProvider>
 					</ConvexClientProvider>
 				</body>
 			</html>
