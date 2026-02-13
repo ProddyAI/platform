@@ -7,7 +7,7 @@ import type React from "react";
 import { type PropsWithChildren, useEffect, useRef, useState } from "react";
 import { FaChevronDown } from "react-icons/fa";
 import { toast } from "sonner";
-
+import type { Id } from "@/../convex/_generated/dataModel";
 import { EmojiPopover } from "@/components/emoji-popover";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,6 @@ import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import type { Id } from "@/../convex/_generated/dataModel";
 import { WorkspaceToolbar } from "../../toolbar";
 import Topbar from "./topbar";
 
@@ -408,7 +407,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 															<div
 																className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 																onClick={() =>
-																	!isUploadingIcon && imageInputRef.current?.click()
+																	!isUploadingIcon &&
+																	imageInputRef.current?.click()
 																}
 															>
 																{iconPreview || icon ? (
@@ -442,7 +442,9 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 																	<div className="flex flex-col items-center gap-1">
 																		<Upload className="h-6 w-6 text-gray-400" />
 																		<span className="text-xs text-gray-500 text-center">
-																			{isUploadingIcon ? "Uploading..." : "Upload"}
+																			{isUploadingIcon
+																				? "Uploading..."
+																				: "Upload"}
 																		</span>
 																	</div>
 																)}
@@ -484,7 +486,9 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 																	onClick={handleDelete}
 																>
 																	<Trash className="size-4" />
-																	<p className="text-sm font-semibold">Delete channel</p>
+																	<p className="text-sm font-semibold">
+																		Delete channel
+																	</p>
 																</button>
 															)}
 														</div>
@@ -494,7 +498,10 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 											<DialogFooter>
 												<DialogClose asChild>
-													<Button disabled={isUpdatingChannel} variant="outline">
+													<Button
+														disabled={isUpdatingChannel}
+														variant="outline"
+													>
 														Cancel
 													</Button>
 												</DialogClose>

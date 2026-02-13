@@ -61,10 +61,9 @@ const PricingPage = () => {
 							<h3 className="text-lg font-semibold mb-2">Free</h3>
 							<div className="mb-6">
 								<span className="text-4xl font-bold">$0</span>
-								<div className="text-sm text-gray-500 mt-1">Up to 3</div>
 							</div>
 							<p className="text-gray-600 mb-6">
-								Quickly and easily meet your core design needs
+								Quickly meet your core design needs
 							</p>
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
@@ -139,11 +138,8 @@ const PricingPage = () => {
 							<h3 className="text-lg font-semibold mb-2">Enterprise</h3>
 							<div className="mb-6">
 								<span className="text-4xl font-bold">Custom</span>
-								<div className="text-sm text-gray-500 mt-1">$8-12 Per User /month</div>
 							</div>
-							<p className="text-gray-600 mb-6">
-								For large organizations
-							</p>
+							<p className="text-gray-600 mb-6">For large organizations</p>
 							<ul className="space-y-3 mb-8">
 								<li className="flex items-start">
 									<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -168,6 +164,15 @@ const PricingPage = () => {
 								</Button>
 							</Link>
 						</motion.div>
+					</div>
+
+					{/* View Comparison Button */}
+					<div className="mt-12 text-center">
+						<a href="#comparison">
+							<Button size="lg" variant="outline">
+								View full comparison
+							</Button>
+						</a>
 					</div>
 				</div>
 			</section>
@@ -199,241 +204,209 @@ const PricingPage = () => {
 								<tbody className="text-gray-700">
 									<tr className="bg-gray-50">
 										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Task & Messaging Integration
+											Core Features
 										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Add chat messages to tasks/calendar
+										<td className="py-3 px-4">Users</td>
+										<td className="py-3 px-4">Up to 5</td>
+										<td className="py-3 px-4">Up to 25</td>
+										<td className="py-3 px-4">Unlimited</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Workspaces</td>
+										<td className="py-3 px-4">1</td>
+										<td className="py-3 px-4">5</td>
+										<td className="py-3 px-4">Unlimited</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Channels per workspace</td>
+										<td className="py-3 px-4">Unlimited</td>
+										<td className="py-3 px-4">Unlimited</td>
+										<td className="py-3 px-4">Unlimited</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Storage</td>
+										<td className="py-3 px-4">5 GB</td>
+										<td className="py-3 px-4">25 GB</td>
+										<td className="py-3 px-4">Unlimited</td>
+									</tr>
+
+									<tr className="bg-gray-50">
+										<td className="py-3 px-4 font-semibold" colSpan={4}>
+											Messaging & Communication
 										</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Real-time messaging</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Rich text formatting</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Threaded conversations</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Emoji reactions</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Direct messages</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">File sharing</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Message search</td>
 										<td className="py-3 px-4">Limited</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Convert chats into tasks (with context)
+										<td className="py-3 px-4">@mentions</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+
+									<tr className="bg-gray-50">
+										<td className="py-3 px-4 font-semibold" colSpan={4}>
+											Task Management
 										</td>
-										<td className="py-3 px-4">Limited</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Tasks & projects</td>
+										<td className="py-3 px-4">Unlimited</td>
+										<td className="py-3 px-4">Unlimited</td>
+										<td className="py-3 px-4">Unlimited</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Task categories & tags</td>
+										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											AI summarization of chats/tasks
-										</td>
-										<td className="py-3 px-4">Basic (5 / month)</td>
-										<td className="py-3 px-4">Standard (20 / month)</td>
-										<td className="py-3 px-4">Unlimited + custom</td>
+										<td className="py-3 px-4">Priority levels</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Automated chat replies</td>
-										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">Due dates & reminders</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Convert messages to tasks</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+
+									<tr className="bg-gray-50">
+										<td className="py-3 px-4 font-semibold" colSpan={4}>
+											Boards (Kanban)
+										</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Kanban boards</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Custom lists & cards</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Card assignments</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Card comments & activity</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Labels & priorities</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Subtasks & dependencies</td>
 										<td className="py-3 px-4">Basic</td>
-										<td className="py-3 px-4">Full</td>
-									</tr>
-
-									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											AI-Powered Collaboration
-										</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">AI notes & diagramming</td>
-										<td className="py-3 px-4">Limited cleanup</td>
-										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Contextual AI assistant (workspace Q&A)
-										</td>
-										<td className="py-3 px-4">Basic bots</td>
-										<td className="py-3 px-4">Standard models</td>
-										<td className="py-3 px-4">Custom agents</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											AI workflows (create issues, emails, tasks)
-										</td>
-										<td className="py-3 px-4">✕</td>
-										<td className="py-3 px-4">Basic (email only)</td>
-										<td className="py-3 px-4">Full</td>
-									</tr>
-
-									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Audio & Video Enhancements
-										</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											In-app audio calls (Notes & Canvas)
-										</td>
-										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Video calls (max resolution)</td>
-										<td className="py-3 px-4">Voice only</td>
-										<td className="py-3 px-4">720p</td>
-										<td className="py-3 px-4">4K+</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Meeting minutes/month</td>
-										<td className="py-3 px-4">2,000</td>
-										<td className="py-3 px-4">5,000</td>
-										<td className="py-3 px-4">Unlimited</td>
-									</tr>
-
-									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Smart Summaries & Dashboards
-										</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Weekly activity digest</td>
-										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Custom dashboards</td>
-										<td className="py-3 px-4">Up to 3</td>
-										<td className="py-3 px-4">Up to 10</td>
-										<td className="py-3 px-4">Unlimited</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Dashboard widgets</td>
-										<td className="py-3 px-4">Limited</td>
-										<td className="py-3 px-4">Standard</td>
-										<td className="py-3 px-4">All widgets</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Real-time activity feed</td>
-										<td className="py-3 px-4">✕</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 									</tr>
 
 									<tr className="bg-gray-50">
 										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Views & Layouts
+											Notes & Documentation
 										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Kanban / Table / Calendar views
-										</td>
+										<td className="py-3 px-4">Rich text notes</td>
 										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Gantt (timeline) view</td>
-										<td className="py-3 px-4">✕</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Unified calendar (tasks/notes/events)
-										</td>
-										<td className="py-3 px-4">Tasks only</td>
-										<td className="py-3 px-4">Tasks + calendar</td>
-										<td className="py-3 px-4">All items</td>
+										<td className="py-3 px-4">Note tags</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Workspace switching / invite code
-										</td>
-										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">Cover images & icons</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Real-time collaboration</td>
+										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 									</tr>
 
 									<tr className="bg-gray-50">
 										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Canvas & Notes
+											Canvas & Whiteboard
 										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Free-form Canvas (whiteboard)</td>
-										<td className="py-3 px-4">PNG export only</td>
-										<td className="py-3 px-4">PNG/PDF export</td>
-										<td className="py-3 px-4">PNG/PDF export</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Real-time collaborative editing
-										</td>
+										<td className="py-3 px-4">Collaborative canvas</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Enhanced notes editor</td>
-										<td className="py-3 px-4">Spellcheck only</td>
-										<td className="py-3 px-4">AI cleanup</td>
-										<td className="py-3 px-4">AI + formatting</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Role-based navigation</td>
-										<td className="py-3 px-4">Admin + Member</td>
-										<td className="py-3 px-4">Admin + Contributor</td>
-										<td className="py-3 px-4">Full roles + SSO</td>
-									</tr>
-
-									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Integrations & Automations
-										</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Third-party integrations (GitHub, Jira, Slack)
-										</td>
-										<td className="py-3 px-4">Up to 2</td>
-										<td className="py-3 px-4">Up to 5–10</td>
-										<td className="py-3 px-4">Unlimited</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Zapier/Webhook automations</td>
-										<td className="py-3 px-4">✕</td>
-										<td className="py-3 px-4">Basic triggers</td>
-										<td className="py-3 px-4">All workflows</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Shared email/chat (Gmail/Slack)
-										</td>
-										<td className="py-3 px-4">Read-only</td>
-										<td className="py-3 px-4">Standard</td>
-										<td className="py-3 px-4">Full + SAML SSO</td>
-									</tr>
-
-									<tr className="bg-gray-50">
-										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Productivity & Mobility
-										</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">PWA / mobile access</td>
-										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-										<td className="py-3 px-4">✓</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Offline support</td>
-										<td className="py-3 px-4">✕</td>
-										<td className="py-3 px-4">Basic</td>
-										<td className="py-3 px-4">Full</td>
-									</tr>
-									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Real-time updates across devices
-										</td>
+										<td className="py-3 px-4">Real-time drawing</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
 										<td className="py-3 px-4">✓</td>
@@ -445,74 +418,189 @@ const PricingPage = () => {
 										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Unified calendar integrations</td>
-										<td className="py-3 px-4">Tasks only</td>
-										<td className="py-3 px-4">Tasks + events</td>
-										<td className="py-3 px-4">All tools</td>
+										<td className="py-3 px-4">Unified calendar view</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Contextual AI scheduling</td>
+										<td className="py-3 px-4">Event creation from messages</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Task & board card integration</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+
+									<tr className="bg-gray-50">
+										<td className="py-3 px-4 font-semibold" colSpan={4}>
+											AI Assistant
+										</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">AI chatbot</td>
+										<td className="py-3 px-4">Basic</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">Advanced</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Workspace search & Q&A</td>
+										<td className="py-3 px-4">Limited</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Channel summaries</td>
 										<td className="py-3 px-4">✕</td>
-										<td className="py-3 px-4">Basic AI</td>
-										<td className="py-3 px-4">Enterprise AI</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Integration workflows</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 
 									<tr className="bg-gray-50">
 										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Limits & Capacities
+											Integrations
 										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Workspaces / Projects</td>
-										<td className="py-3 px-4">1 WS, 5 projects</td>
-										<td className="py-3 px-4">5 WS, 50 projects</td>
-										<td className="py-3 px-4">Unlimited</td>
+										<td className="py-3 px-4">GitHub</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Storage per workspace</td>
-										<td className="py-3 px-4">5 GB</td>
-										<td className="py-3 px-4">25 GB</td>
-										<td className="py-3 px-4">Unlimited</td>
+										<td className="py-3 px-4">Gmail</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">AI usage (monthly quota)</td>
-										<td className="py-3 px-4">Basic only</td>
-										<td className="py-3 px-4">Limited (GPT-4/Pro)</td>
-										<td className="py-3 px-4">Unlimited/custom</td>
+										<td className="py-3 px-4">Slack</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Customer support / SLA</td>
-										<td className="py-3 px-4">Community email</td>
-										<td className="py-3 px-4">Email support</td>
-										<td className="py-3 px-4">Dedicated SLA</td>
+										<td className="py-3 px-4">Linear</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Notion</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">ClickUp</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 
 									<tr className="bg-gray-50">
 										<td className="py-3 px-4 font-semibold" colSpan={4}>
-											Security & Admin (additional)
+											Dashboard & Analytics
 										</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">
-											Role-based access & permissions
-										</td>
-										<td className="py-3 px-4">Basic roles</td>
-										<td className="py-3 px-4">Admin + Contributor</td>
-										<td className="py-3 px-4">Granular + custom policies</td>
+										<td className="py-3 px-4">Personal dashboard</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr className="border-b border-gray-100">
-										<td className="py-3 px-4">Audit logs & exports</td>
+										<td className="py-3 px-4">Customizable widgets</td>
+										<td className="py-3 px-4">Basic</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Activity tracking</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Weekly digest emails</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+
+									<tr className="bg-gray-50">
+										<td className="py-3 px-4 font-semibold" colSpan={4}>
+											Security & Administration
+										</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Role-based permissions</td>
+										<td className="py-3 px-4">Basic (Owner, Admin, Member)</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">Advanced</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Workspace invite codes</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Activity audit logs</td>
 										<td className="py-3 px-4">✕</td>
 										<td className="py-3 px-4">Basic</td>
-										<td className="py-3 px-4">Enterprise-grade</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">SSO & SAML</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Data export</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+
+									<tr className="bg-gray-50">
+										<td className="py-3 px-4 font-semibold" colSpan={4}>
+											Support
+										</td>
+									</tr>
+									<tr className="bg-gray-50">
+										<td className="py-3 px-4 font-semibold" colSpan={4}>
+											Support
+										</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Community support</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
+									</tr>
+									<tr className="border-b border-gray-100">
+										<td className="py-3 px-4">Priority support</td>
+										<td className="py-3 px-4">✕</td>
+										<td className="py-3 px-4">✓</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 									<tr>
-										<td className="py-3 px-4">
-											Data residency & retention controls
-										</td>
+										<td className="py-3 px-4">Dedicated support</td>
 										<td className="py-3 px-4">✕</td>
 										<td className="py-3 px-4">✕</td>
-										<td className="py-3 px-4">Custom</td>
+										<td className="py-3 px-4">✓</td>
 									</tr>
 								</tbody>
 							</table>

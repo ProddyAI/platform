@@ -34,9 +34,9 @@ export const viewport: Viewport = {
 
 const metadata: Metadata = {
 	...siteConfig,
-	title: "Proddy - Your Team's Second Brain",
+	title: "Proddy - Your Smart Work Management Suite  ",
 	description:
-		"A vibrant team collaboration platform with real-time messaging, rich text editing, and emoji support.",
+		"Proddy unifies canvas, meetings, messaging, notes so work moves from discussion to execution without friction.",
 	manifest: "/manifest.json",
 	appleWebApp: {
 		capable: true,
