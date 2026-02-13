@@ -17,7 +17,9 @@ interface OneSignalInterface {
 	logout(): Promise<void>;
 }
 
-type OneSignalDeferredCallback = (OneSignal: OneSignalInterface) => void | Promise<void>;
+type OneSignalDeferredCallback = (
+	OneSignal: OneSignalInterface
+) => void | Promise<void>;
 
 interface Window {
 	OneSignal?: OneSignalInterface;

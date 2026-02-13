@@ -4,12 +4,12 @@
  */
 
 export function getEmailConfig() {
-  const fromAddress =
-    process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
-  const replyToAddress = process.env.SUPPORT_EMAIL || "support@proddy.tech";
+	const fromAddress =
+		process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
+	const replyToAddress = process.env.SUPPORT_EMAIL || "support@proddy.tech";
 
-  return {
-    fromAddress,
-    replyToAddress,
-  };
+	return {
+		fromAddress,
+		replyToAddress,
+	};
 }

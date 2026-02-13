@@ -4,17 +4,6 @@ import Script from "next/script";
 import { useEffect, useRef } from "react";
 import { logger } from "@/lib/logger";
 
-// Use the OneSignalInterface type from global.d.ts for proper typing
-declare const OneSignal: OneSignalInterface;
-
-type OneSignalDeferredCallback = (OneSignal: OneSignalInterface) => void | Promise<void>;
-
-declare global {
-	interface Window {
-		OneSignalDeferred?: OneSignalDeferredCallback[];
-	}
-}
-
 interface OneSignalTrackingProps {
 	userId?: string;
 }

@@ -93,7 +93,7 @@ export const ThreadRepliesWidget = ({
 	const userIds = useMemo(
 		() =>
 			threadMessages
-				?.map((t) => t.currentUser?.userId)
+				?.map((t) => t.currentUser?._id)
 				.filter((id): id is Id<"users"> => id !== undefined) || [],
 		[threadMessages]
 	);
@@ -171,7 +171,7 @@ export const ThreadRepliesWidget = ({
 				<ScrollArea className="h-[280px]">
 					<div className="space-y-2 pr-4">
 						{threadMessages.map((thread) => {
-							const authorUserId = thread.currentUser?.userId;
+							const authorUserId = thread.currentUser?._id;
 							const status = authorUserId
 								? getUserStatus(authorUserId)
 								: undefined;
@@ -241,8 +241,17 @@ export const ThreadRepliesWidget = ({
 													Replied to your thread:
 												</p>
 												<p className="mt-1">
-													{getMessagePreview(thread.message.body)}
-													{thread.message.body.length > 50 ? "..." : ""}
+													{(() => {
+														const preview = getMessagePreview(
+															thread.message.body
+														);
+														return (
+															<>
+																{preview}
+																{preview.length === 50 ? "..." : ""}
+															</>
+														);
+													})()}
 												</p>
 											</div>
 											<Button

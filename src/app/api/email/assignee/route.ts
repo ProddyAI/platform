@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getEmailConfig } from "@/lib/email-config";
 import { Resend } from "resend";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { CardAssignmentTemplate } from "@/features/email/components/card-assignment";
+import { getEmailConfig } from "@/lib/email-config";
 import { shouldSendEmailServer } from "@/lib/email-preferences-server";
 import { generateUnsubscribeUrl } from "@/lib/email-unsubscribe";
 

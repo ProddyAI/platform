@@ -11,20 +11,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { logger } from "@/lib/logger";
 import { useAdBlockerDetectionContext } from "@/lib/ad-blocker-context";
+import { logger } from "@/lib/logger";
 
-export interface PushNotificationPromptProps {
-	// Props can be extended here for future customization
-	// e.g., title?: string; description?: string;
-}
+export type PushNotificationPromptProps = {};
 
-export const PushNotificationPrompt = (props: PushNotificationPromptProps) => {
+export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 	const [permission, setPermission] =
 		useState<NotificationPermission>("default");
 	const [isSupported, setIsSupported] = useState(false);
 	const [isRequesting, setIsRequesting] = useState(false);
-	const isAdBlockerActive = useAdBlockerDetectionContext();
+	const { isAdBlockerActive } = useAdBlockerDetectionContext();
 
 	useEffect(() => {
 		// Check if notifications are supported

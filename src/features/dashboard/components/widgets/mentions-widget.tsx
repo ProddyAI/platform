@@ -74,8 +74,8 @@ export const MentionsWidget = ({
 		() =>
 			rawMentions
 				? rawMentions.filter(
-						(mention): mention is typeof mention =>
-							mention !== undefined && mention !== null && mention.id !== undefined
+						(mention): mention is NonNullable<typeof mention> =>
+							mention !== undefined && mention !== null
 					)
 				: [],
 		[rawMentions]
@@ -173,7 +173,7 @@ export const MentionsWidget = ({
 				<ScrollArea className="widget-scroll-area">
 					<div className="space-y-2 p-4">
 						{mentions.map((mention) => {
-							const authorUserId = mention.author?.userId;
+							const authorUserId = mention.author.userId;
 							const status = authorUserId
 								? getUserStatus(authorUserId)
 								: undefined;
@@ -237,8 +237,15 @@ export const MentionsWidget = ({
 												</div>
 											</div>
 											<p className="text-sm text-muted-foreground">
-												{getMessagePreview(mention.text)}
-												{mention.text.length > 50 ? "..." : ""}
+												{(() => {
+													const preview = getMessagePreview(mention.text);
+													return (
+														<>
+															{preview}
+															{preview.length === 50 ? "..." : ""}
+														</>
+													);
+												})()}
 											</p>
 											<Button
 												className="mt-2 h-8 px-3 w-auto justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"

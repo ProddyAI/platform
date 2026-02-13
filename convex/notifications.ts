@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalAction, internalMutation, mutation } from "./_generated/server";
+import { internalAction, mutation } from "./_generated/server";
 
 /**
  * Send a push notification to specific users
@@ -23,7 +23,7 @@ export const sendPushNotification = internalAction({
 		),
 		data: v.optional(v.any()),
 	},
-	handler: async (ctx, args) => {
+	handler: async (_ctx, args) => {
 		// Get OneSignal API key from environment
 		const oneSignalApiKey = process.env.ONESIGNAL_REST_API_KEY;
 		const oneSignalAppId = process.env.ONESIGNAL_APP_ID;
@@ -53,7 +53,10 @@ export const sendPushNotification = internalAction({
 					},
 					body: JSON.stringify({
 						app_id: oneSignalAppId,
-						include_external_user_ids: filteredUserIds,
+						include_aliases: {
+							external_id: filteredUserIds,
+						},
+						target_channel: "push",
 						headings: { en: args.title },
 						contents: { en: args.message },
 						data: args.data || {},
@@ -64,14 +67,18 @@ export const sendPushNotification = internalAction({
 			const result = await response.json();
 
 			if (!response.ok) {
-				console.error("OneSignal error:", result);
-				return { success: false, error: result };
+				console.error(`OneSignal error: status ${response.status}`);
+				return {
+					success: false,
+					status: response.status,
+					message: "Push notification failed",
+				};
 			}
 
 			return { success: true, result };
-		} catch (error) {
-			console.error("Error sending push notification:", error);
-			return { success: false, error };
+		} catch (_error) {
+			console.error("Push notification failed");
+			return { success: false, message: "Push notification failed" };
 		}
 	},
 });
@@ -110,7 +117,7 @@ export const notifyInviteSent = mutation({
 			internal.notifications.sendPushNotification,
 			{
 				userIds,
-				title: `Invite sent to ${workspace.name}`,
+				title: `New invite in ${workspace.name}`,
 				message: `An invitation has been sent to ${args.invitedEmail}`,
 				notificationType: "inviteSent",
 				data: {
@@ -223,6 +230,7 @@ export const notifyStatusChange = mutation({
 
 		if (userIds.length === 0) return;
 
+		// TODO: Add preference and interaction filtering to reduce notification noise
 		const statusMessage =
 			args.newStatus === "online" ? "is now online" : "is now offline";
 

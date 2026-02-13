@@ -1254,8 +1254,7 @@ export const sendImportCompletionEmail = internalAction({
 			}
 
 			try {
-				const supportEmail =
-					process.env.SUPPORT_EMAIL || "support@proddy.tech";
+				const supportEmail = process.env.SUPPORT_EMAIL || "support@proddy.tech";
 
 				const response = await fetch("https://api.resend.com/emails", {
 					method: "POST",
