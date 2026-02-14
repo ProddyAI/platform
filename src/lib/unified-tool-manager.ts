@@ -31,9 +31,20 @@ interface ConvexToolDefinition {
  */
 function jsonSchemaToZod(jsonSchema: any): z.ZodObject<any> {
 	const shape: Record<string, z.ZodTypeAny> = {};
+	const properties = jsonSchema?.properties ?? {};
+	const propertyEntries = Object.entries(properties);
 
-	if (jsonSchema.properties) {
-		for (const [key, prop] of Object.entries(jsonSchema.properties) as any) {
+	if (propertyEntries.length === 0) {
+		return z.object({
+			_unused: z
+				.string()
+				.optional()
+				.describe("No parameters required."),
+		});
+	}
+
+	if (propertyEntries.length > 0) {
+		for (const [key, prop] of propertyEntries as any) {
 			let zodType: z.ZodTypeAny;
 
 			switch (prop.type) {

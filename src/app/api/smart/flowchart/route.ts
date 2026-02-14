@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const model = openrouter("openai/gpt-5-mini");
+		const model = openrouter("openai/gpt-4o-mini");
 
 		// Prepare the flowchart generation prompt
 		const systemPrompt = `You are an expert flowchart designer and Mermaid diagram specialist. Your task is to convert text descriptions into well-structured Mermaid flowchart diagrams.

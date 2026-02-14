@@ -93,7 +93,7 @@ async function executeComposioAction(
 		}
 
 		const result = await generateText({
-			model: openai("gpt-5-mini"),
+			model: openai("gpt-4o-mini"),
 			system: `You are a helpful assistant with access to ${connectedApps.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
 			messages: [{ role: "user", content: message }],
 			tools,

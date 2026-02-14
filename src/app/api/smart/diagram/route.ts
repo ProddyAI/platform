@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const model = openrouter("openai/gpt-5-mini");
+		const model = openrouter("openai/gpt-4o-mini");
 
 		const systemPrompt = `You are a diagram generator.
 

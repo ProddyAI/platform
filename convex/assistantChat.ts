@@ -34,8 +34,18 @@ type ToolDefinition = {
 function jsonSchemaToZod(jsonSchema: ToolDefinition["parameters"]) {
 	const shape: Record<string, z.ZodTypeAny> = {};
 	const properties = jsonSchema?.properties ?? {};
+	const propertyEntries = Object.entries(properties);
 
-	for (const [key, prop] of Object.entries(properties)) {
+	if (propertyEntries.length === 0) {
+		return z.object({
+			_unused: z
+				.string()
+				.optional()
+				.describe("No parameters required."),
+		});
+	}
+
+	for (const [key, prop] of propertyEntries) {
 		let zodType: z.ZodTypeAny;
 		switch (prop.type) {
 			case "string":
