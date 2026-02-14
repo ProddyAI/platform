@@ -59,7 +59,7 @@ export const SignInCard = ({
 				</CardDescription>
 			</CardHeader>
 
-			{!!error && (
+			{Boolean(error) && (
 				<div className="mb-6 flex items-center gap-x-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
 					<TriangleAlert className="size-4" />
 					<p>{error}</p>

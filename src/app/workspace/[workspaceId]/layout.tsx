@@ -31,7 +31,18 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	// Use the Convex-backed sidebar collapsed state
 	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({ workspaceId });
 
-	const showPanel = !!parentMessageId || !!profileMemberId;
+	// Handle mobile menu toggle
+	const handleMobileMenuToggle = useCallback(() => {
+		if (isMobile) {
+			setShowMobileSidebar((prev) => !prev);
+			return;
+		}
+
+		setIsCollapsed(!isCollapsed);
+	}, [isMobile, isCollapsed, setIsCollapsed]);
+
+	const showPanel =Boolean(parentMessageId) || Boolean(profileMemberId);
+
 
 	// Check if mobile on initial load and when window resizes
 	useEffect(() => {

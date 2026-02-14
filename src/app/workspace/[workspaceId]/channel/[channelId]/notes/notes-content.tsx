@@ -61,7 +61,7 @@ export const NotesContent = ({
 		noteTitle: activeNote?.title || "Untitled",
 		workspaceId,
 		channelId,
-		autoAnnounce: !!activeNoteId, // Only auto-announce when there's an active note
+		autoAnnounce: Boolean(activeNoteId), // Only auto-announce when there's an active note
 	});
 
 	// Create a wrapper function that matches the hook's expected signature
