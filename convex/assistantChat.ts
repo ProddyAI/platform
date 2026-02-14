@@ -112,6 +112,19 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
+		name: "getMyCalendarThisWeek",
+		description:
+			"Get the user's calendar events for this week (the next 7 days starting from today). Use this when the user asks about 'this week' or 'upcoming week'.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyCalendarThisWeek,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
 		name: "getMyCalendarNextWeek",
 		description:
 			"Get the user's calendar events for next week (7-14 days from now). Returns all meetings scheduled in the upcoming week.",
@@ -148,6 +161,19 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		},
 		handlerType: "query" as const,
 		handler: api.assistantTools.getMyTasksTomorrow,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getMyTasksThisWeek",
+		description:
+			"Get tasks assigned to the user that are due this week (next 7 days). Returns incomplete tasks due within the current week. Use this when user asks about 'this week' or 'upcoming' tasks.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyTasksThisWeek,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
