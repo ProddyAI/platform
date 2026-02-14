@@ -16,7 +16,7 @@ async function testAssistant() {
 
 	try {
 		// Send a message to the assistant
-		const result = await client.mutation(api.assistantChat.sendMessage, {
+		const result = await client.action(api.assistantChat.sendMessage, {
 			conversationId: "test-conv-001",
 			message: "What's on my calendar today?",
 		});
