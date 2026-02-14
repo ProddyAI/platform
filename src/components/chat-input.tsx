@@ -171,7 +171,7 @@ export const ChatInput = ({
 			) : null}
 			<Editor
 				disabled={isPending}
-				disableMentions={!!conversationId}
+				disableMentions={Boolean(conversationId)} // Disable mentions for direct messages (when conversationId is present)
 				innerRef={innerRef}
 				key={editorKey}
 				onSubmit={handleSubmit}

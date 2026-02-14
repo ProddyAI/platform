@@ -619,7 +619,7 @@ const Editor = ({
 			>
 				<div className="h-full" ref={containerRef} />
 
-				{!!image && (
+				{image !== null && (
 					<div className="p-2">
 						<div className="group/image relative flex size-[62px] items-center justify-center">
 							<Hint label="Remove image">
