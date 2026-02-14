@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { openai } from "@ai-sdk/openai";
-import { generateText, tool } from "ai";
-import { z } from "zod";
+import { generateText, tool, stepCountIs } from "ai";
+import { jsonSchema } from "ai";
 import {
 	type AssistantExternalApp,
 	buildAssistantResponseMetadata,
@@ -31,54 +31,6 @@ type ToolDefinition = {
 	externalApp?: AssistantExternalApp;
 };
 
-function jsonSchemaToZod(jsonSchema: ToolDefinition["parameters"]) {
-	const shape: Record<string, z.ZodTypeAny> = {};
-	const properties = jsonSchema?.properties ?? {};
-	const propertyEntries = Object.entries(properties);
-
-	if (propertyEntries.length === 0) {
-		return z.object({
-			_unused: z
-				.string()
-				.optional()
-				.describe("No parameters required."),
-		});
-	}
-
-	for (const [key, prop] of propertyEntries) {
-		let zodType: z.ZodTypeAny;
-		switch (prop.type) {
-			case "string":
-				zodType = z.string();
-				break;
-			case "number":
-				zodType = z.number();
-				break;
-			case "boolean":
-				zodType = z.boolean();
-				break;
-			case "array":
-				zodType = z.array(z.any());
-				break;
-			case "object":
-				zodType = z.record(z.any());
-				break;
-			default:
-				zodType = z.any();
-		}
-
-		if (prop.description) {
-			zodType = zodType.describe(prop.description);
-		}
-		if (!jsonSchema.required || !jsonSchema.required.includes(key)) {
-			zodType = zodType.optional();
-		}
-		shape[key] = zodType;
-	}
-
-	return z.object(shape);
-}
-
 function buildAiTools(
 	toolDefinitions: ToolDefinition[],
 	ctx: { runQuery: any; runMutation: any; runAction: any },
@@ -87,12 +39,27 @@ function buildAiTools(
 ): Record<string, any> {
 	const tools: Record<string, any> = {};
 
+	console.log("[buildAiTools] Starting with", toolDefinitions.length, "tool definitions");
+
 	for (const toolDef of toolDefinitions) {
-		const parameters = jsonSchemaToZod(toolDef.parameters);
+		// Create JSON Schema with proper typing
+		const jsonSchemaObj: Record<string, any> = {
+			type: "object",
+			properties: toolDef.parameters.properties || {},
+			required: toolDef.parameters.required || [],
+			additionalProperties: false,
+		};
+
+		console.log(`[buildAiTools] Creating tool: ${toolDef.name}`, {
+			hasProperties: Object.keys(jsonSchemaObj.properties).length > 0,
+			required: jsonSchemaObj.required,
+		});
+
 		tools[toolDef.name] = tool({
 			description: toolDef.description,
-			parameters,
+			inputSchema: jsonSchema(jsonSchemaObj),
 			execute: async (params: any) => {
+				console.log(`[buildAiTools] Executing tool: ${toolDef.name}`, { params });
 				const fullArgs: Record<string, unknown> = { ...params };
 				if (toolDef.contextParams?.needsWorkspaceId) {
 					fullArgs.workspaceId = workspaceId;
@@ -112,6 +79,7 @@ function buildAiTools(
 		} as any);
 	}
 
+	console.log("[buildAiTools] Complete. Built tools:", Object.keys(tools));
 	return tools;
 }
 
@@ -548,11 +516,20 @@ export const sendMessage = action({
 		error?: string;
 		metadata?: unknown;
 	}> => {
+		console.log("[sendMessage] Starting handler");
+		console.log("[sendMessage] args:", { 
+			conversationId: args.conversationId,
+			messageLength: args.message.length,
+			hasWorkspaceId: !!args.workspaceId,
+			hasUserId: !!args.userId,
+		});
+
 		const apiKey = process.env.OPENAI_API_KEY;
 		if (!apiKey) {
 			return { success: false, error: "OPENAI_API_KEY not configured" };
 		}
 
+		console.log("[sendMessage] API Key configured, fetching conversation meta");
 		const conversationMeta = await ctx.runQuery(
 			api.assistantConversations.getByConversationId,
 			{ conversationId: args.conversationId }
@@ -575,6 +552,13 @@ export const sendMessage = action({
 			TOOL_DEFINITIONS,
 			queryIntent.requestedExternalApps
 		);
+
+		console.log("[sendMessage] Query classified:", {
+			mode: queryIntent.mode,
+			requiresExternalTools: queryIntent.requiresExternalTools,
+			selectedToolsCount: selectedToolDefinitions.length,
+			selectedToolNames: selectedToolDefinitions.map(t => t.name),
+		});
 
 		try {
 			// Save user message
@@ -619,19 +603,71 @@ export const sendMessage = action({
 				resolvedUserId
 			);
 
-			const result = await generateText({
-				model: openai("gpt-4o-mini"),
-				messages: messages as any,
-				tools: aiTools,
-				temperature: 0.7,
-			});
+			console.log("[sendMessage] buildAiTools completed");
+			console.log("[sendMessage] aiTools keys:", Object.keys(aiTools));
+			console.log("[sendMessage] messages array length:", messages.length);
+			console.log("[sendMessage] messages:", JSON.stringify(messages.slice(0, 2), null, 2));
 
-			const responseText = result.text || "No response generated";
-			let externalToolUsed = false;
-			const steps = Array.isArray(result.steps) ? result.steps : [];
-			for (const step of steps) {
-				const stepToolCalls = step.toolCalls ?? [];
-				for (const toolCall of stepToolCalls) {
+			let result;
+			try {
+				console.log("[sendMessage] Calling generateText...");
+				result = await generateText({
+					model: openai("gpt-4o-mini"),
+					messages: messages as any,
+					tools: aiTools,
+					temperature: 0.7,
+					stopWhen: stepCountIs(5), // Allow up to 5 steps for tool calls and follow-up responses
+				});
+				console.log("[sendMessage] generateText completed successfully");
+			} catch (generateError: any) {
+				console.error("[sendMessage] generateText error:", generateError);
+				console.error("[sendMessage] generateText error message:", generateError?.message);
+				console.error("[sendMessage] generateText error stack:", generateError?.stack);
+				throw generateError;
+			}
+
+			console.log("[sendMessage] generateText result received");
+			console.log("[sendMessage] result.text length:", result.text?.length ?? 0);
+			console.log("[sendMessage] result.text:", result.text);
+			console.log("[sendMessage] result.usage:", result.usage);
+			console.log("[sendMessage] result.steps count:", Array.isArray(result.steps) ? result.steps.length : 0);
+			console.log("[sendMessage] result keys:", Object.keys(result));
+			
+			// Log steps in detail
+			if (Array.isArray(result.steps)) {
+				result.steps.forEach((step, idx) => {
+					console.log(`[sendMessage] Step ${idx}:`, {
+						text: step.text,
+						toolCalls: step.toolCalls?.length ?? 0,
+						toolResults: step.toolResults?.length ?? 0,
+						finishReason: step.finishReason,
+						usage: step.usage,
+					});
+					if (step.toolCalls) {
+						step.toolCalls.forEach((call, callIdx) => {
+							console.log(`[sendMessage]   Tool call ${callIdx}:`, {
+								toolName: call.toolName,
+							input: call.input,
+						});
+					});
+				}
+				if (step.toolResults) {
+					step.toolResults.forEach((res, resIdx) => {
+						console.log(`[sendMessage]   Tool result ${resIdx}:`, {
+							toolName: res.toolName,
+							output: res.output,
+					});
+				});
+			}
+		});
+	}
+
+	const responseText = result.text || "No response generated";
+	let externalToolUsed = false;
+	const steps = Array.isArray(result.steps) ? result.steps : [];
+	for (const step of steps) {
+		const stepToolCalls = step.toolCalls ?? [];
+		for (const toolCall of stepToolCalls) {
 					const toolDef = selectedToolDefinitions.find(
 						(t) => t.name === toolCall.toolName
 					);
@@ -676,7 +712,8 @@ export const sendMessage = action({
 
 			return { success: true, content: responseText, metadata };
 		} catch (error) {
-			console.error("[Assistant] Error:", error);
+			console.error("[sendMessage] Error occurred:", error);
+			console.error("[sendMessage] Error stack:", error instanceof Error ? error.stack : "No stack");
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
