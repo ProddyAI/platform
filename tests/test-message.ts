@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "./convex/_generated/api";
+import { api } from "../convex/_generated/api";
 
 // Use the cloud deployment
 const deploymentUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "https://friendly-marmot-282.convex.cloud";
