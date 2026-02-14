@@ -289,10 +289,10 @@ export const TestDashboardChatbot = () => {
 										message.hasActions &&
 										message.actions && (
 											<div className="mt-3 flex flex-wrap gap-2">
-												{message.actions.map((action, index) => (
+												{message.actions.map((action) => (
 													<Button
 														className="flex items-center gap-2 text-xs"
-														key={index}
+														key={`${message.id}-${action.label}`}
 														onClick={action.action}
 														size="sm"
 														variant="outline"

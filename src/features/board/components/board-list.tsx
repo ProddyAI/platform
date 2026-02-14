@@ -36,6 +36,10 @@ interface BoardListProps {
 	onDeleteCard: (cardId: Id<"cards">) => void;
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
 	listCount?: number;
+	selectionMode?: boolean;
+	selectedCardIds?: Set<Id<"cards">>;
+	onToggleSelect?: (cardId: Id<"cards">) => void;
+	disableListDrag?: boolean;
 }
 
 const BoardList: React.FC<BoardListProps> = ({
@@ -48,6 +52,10 @@ const BoardList: React.FC<BoardListProps> = ({
 	onDeleteCard,
 	assigneeData = {},
 	listCount = 0,
+	selectionMode = false,
+	selectedCardIds,
+	onToggleSelect,
+	disableListDrag = false,
 }) => {
 	// Make the list sortable
 	const {
@@ -63,6 +71,7 @@ const BoardList: React.FC<BoardListProps> = ({
 			type: "list",
 			list,
 		},
+		disabled: disableListDrag,
 	});
 
 	// Make the list a drop target for cards
@@ -240,9 +249,12 @@ const BoardList: React.FC<BoardListProps> = ({
 								<BoardCard
 									assigneeData={assigneeData}
 									card={card}
+									isSelected={selectedCardIds?.has(card._id) || false}
 									key={card._id}
 									onDelete={() => onDeleteCard(card._id)}
 									onEdit={() => onEditCard(card)}
+									onToggleSelect={onToggleSelect}
+									selectionMode={selectionMode}
 								/>
 							))}
 							{cards.length > 0 && isOver && (

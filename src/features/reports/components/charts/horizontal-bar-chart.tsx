@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 
 interface HorizontalBarChartProps {
 	data: {
+		id?: string;
 		label: string;
 		value: number;
 		color?: string;
@@ -53,7 +54,7 @@ export const HorizontalBarChart = ({
 					return (
 						<div
 							className="space-y-1"
-							key={index}
+							key={item.id ?? item.label}
 							onClick={() => onBarClick?.(item.label, item.value, index)}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}

@@ -2,16 +2,12 @@
 
 import { formatDistanceToNow } from "date-fns";
 import {
-	Activity,
 	Bell,
 	Calendar,
 	CheckSquare,
 	FileText,
-	HeartPulse,
-	HelpCircle,
 	LayoutList,
 	Loader2,
-	Map as MapIcon,
 	MessageSquare,
 	Search,
 } from "lucide-react";
@@ -42,7 +38,6 @@ import { useSearchMessages } from "@/features/workspaces/api/use-search-messages
 import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { showTidioChat } from "@/lib/tidio-helpers";
 
 interface WorkspaceToolbarProps {
 	children: ReactNode;
@@ -58,7 +53,6 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const [userSettingsTab, setUserSettingsTab] = useState<
 		"profile" | "notifications"
 	>("profile");
-
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
 
@@ -136,10 +130,10 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	return (
 		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 items-center overflow-hidden border-b bg-primary text-secondary-foreground shadow-md ml-[-2px]">
 			{/* Left section - Entity info (Channel/Member/etc) */}
-			<div className="flex items-center px-6">{children}</div>
+			<div className="flex items-center px-2 md:px-6">{children}</div>
 
-			{/* Middle section - Search */}
-			<div className="min-w-[280px] max-w-[642px] shrink grow-[2] px-4">
+			{/* Middle section - Search - Hidden on mobile */}
+			<div className="hidden md:block min-w-[280px] max-w-[642px] shrink grow-[2] px-4">
 				<Button
 					className="h-9 w-full justify-start bg-white/10 px-3 hover:bg-white/20 transition-standard border border-white/10 rounded-[10px]"
 					onClick={() => setSearchOpen(true)}
@@ -336,77 +330,19 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 			</div>
 
 			{/* Right section - Actions */}
-			<div className="ml-auto flex flex-1 items-center justify-end gap-x-3 px-6">
-				{/* Roadmap Button */}
-				<Hint label="Roadmap & Feedback" side="bottom">
+			<div className="ml-auto flex flex-1 items-center justify-end gap-x-1.5 md:gap-x-3 px-3 md:px-6">
+				{/* Mobile Search Button */}
+				<div className="md:hidden">
 					<Button
+						aria-label="Open search"
 						className="text-white relative hover:bg-white/15 transition-colors"
-						onClick={() => {
-							// Open roadmap page in a new tab
-							const roadmapUrl = process.env.NEXT_PUBLIC_ROADMAP_URL!;
-							window.open(roadmapUrl, "_blank", "noopener,noreferrer");
-						}}
+						onClick={() => setSearchOpen(true)}
 						size="iconSm"
 						variant="ghost"
 					>
-						<div className="relative">
-							<MapIcon className="size-5" />
-						</div>
+						<Search className="size-5" />
 					</Button>
-				</Hint>
-
-				{/* Documentation Button */}
-				<Hint label="Documentation" side="bottom">
-					<Button
-						className="text-white relative hover:bg-white/15 transition-colors"
-						onClick={() => {
-							// Open documentation in a new tab
-							const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL!;
-							window.open(docsUrl, "_blank", "noopener,noreferrer");
-						}}
-						size="iconSm"
-						variant="ghost"
-					>
-						<div className="relative">
-							<HelpCircle className="size-5" />
-						</div>
-					</Button>
-				</Hint>
-
-				{/* Chat Support Button */}
-				<Hint label="Chat Support" side="bottom">
-					<Button
-						className="text-white relative hover:bg-white/15 transition-colors"
-						onClick={() => {
-							// Show Tidio chat widget
-							showTidioChat();
-						}}
-						size="iconSm"
-						variant="ghost"
-					>
-						<div className="relative">
-							<HeartPulse className="size-5" />
-						</div>
-					</Button>
-				</Hint>
-
-				{/* Status Page Button */}
-				<Hint label="System Status" side="bottom">
-					<Button
-						className="text-white relative hover:bg-white/15 transition-colors"
-						onClick={() => {
-							// Open status page in a new tab
-							const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_URL!;
-							window.open(statusPageUrl, "_blank", "noopener,noreferrer");
-						}}
-						size="iconSm"
-						variant="ghost"
-					>
-						<div className="relative">
-							<Activity className="size-5" />
-						</div>
-					</Button>
-				</Hint>
+				</div>
 
 				{/* Notifications Button */}
 				<Hint label="Notifications" side="bottom">
@@ -420,10 +356,10 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 							<Bell className="size-5" />
 							{!isLoadingMentions && counts && counts.total > 0 && (
 								<Badge
-									className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-red-500 border border-white shadow-sm"
+									className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-red-500 border border-white shadow-sm text-[10px]"
 									variant="default"
 								>
-									{counts.total}
+									{counts.total > 9 ? "9+" : counts.total}
 								</Badge>
 							)}
 						</div>
@@ -438,6 +374,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 				<ThemeToggle />
 
+				{/* UserButton - Always visible (moved from footer on mobile) */}
 				<UserButton
 					defaultTab={userSettingsTab}
 					forceOpenSettings={forceOpenUserSettings}

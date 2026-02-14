@@ -19,15 +19,20 @@ import {
 import BoardTableView from "@/features/board/components/board-table-view";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 const BoardPage = () => {
 	const channelId = useChannelId();
+	const workspaceId = useWorkspaceId();
 	const lists = useQuery(api.board.getLists, { channelId });
 	const allCards =
 		useQuery(api.board.getAllCardsForChannel, { channelId }) || [];
 	const uniqueLabels = useQuery(api.board.getUniqueLabels, { channelId }) || [];
 	const members = useQuery(api.board.getMembersForChannel, { channelId }) || [];
 	const channel = useQuery(api.channels.getById, { id: channelId });
+	const currentMember = useQuery(api.members.current, {
+		workspaceId,
+	});
 
 	// Set document title based on channel name
 	useDocumentTitle(channel ? `Board - ${channel.name}` : "Board");
@@ -198,18 +203,10 @@ const BoardPage = () => {
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!active || !over) {
-			console.log("No active or over element");
 			return;
 		}
 
 		// Log the drag event for debugging
-		console.log("Drag end event:", {
-			activeId: active.id,
-			overId: over.id,
-			activeType: active.data.current?.type,
-			overType: over.data.current?.type,
-			overData: over.data.current,
-		});
 
 		// Get data from the dragged item
 		const activeType = active.data.current?.type;
@@ -220,8 +217,6 @@ const BoardPage = () => {
 			const newIndex = lists.findIndex((l) => l._id === over.id);
 
 			if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-				console.log(`Moving list from position ${oldIndex} to ${newIndex}`);
-
 				// Create a new array with the reordered lists
 				const reorderedLists = arrayMove([...lists], oldIndex, newIndex);
 
@@ -231,12 +226,9 @@ const BoardPage = () => {
 					order: idx,
 				}));
 
-				console.log("New list order:", newOrder);
-
 				// Call the mutation to update the database
 				try {
 					await reorderLists({ listOrders: newOrder });
-					console.log("Lists reordered successfully");
 				} catch (error) {
 					console.error("Error reordering lists:", error);
 				}
@@ -265,12 +257,10 @@ const BoardPage = () => {
 			// Check if dropped on a droppable area (list container)
 			if (overId.startsWith("droppable-")) {
 				toListId = overId.replace("droppable-", "") as Id<"lists">;
-				console.log("Dropped on droppable area:", toListId);
 			}
 			// Check if dropped on a list
 			else if (over.data.current?.type === "list") {
 				toListId = over.data.current.listId || (over.id as Id<"lists">);
-				console.log("Dropped on list:", toListId);
 			}
 			// Check if dropped on a card
 			else if (over.data.current?.type === "card") {
@@ -280,13 +270,10 @@ const BoardPage = () => {
 					const cards = cardsByList[list._id] || [];
 					if (cards.some((c) => c._id === overCardId)) {
 						toListId = list._id;
-						console.log("Dropped on card in list:", toListId);
 						break;
 					}
 				}
 			}
-
-			console.log("Move card:", { cardId, fromListId, toListId });
 
 			if (fromListId && toListId) {
 				// Calculate the new order
@@ -304,15 +291,12 @@ const BoardPage = () => {
 					newOrder = targetCards.length;
 				}
 
-				console.log("Moving card to position:", newOrder);
-
 				try {
 					await moveCard({
 						cardId,
 						toListId,
 						order: newOrder,
 					});
-					console.log("Card moved successfully");
 				} catch (error) {
 					console.error("Error moving card:", error);
 				}
@@ -461,8 +445,12 @@ const BoardPage = () => {
 			/>
 			<BoardEditCardModal
 				assignees={cardAssignees}
+				cardId={editCardOpen?.card._id as Id<"cards">}
+				channelId={channelId}
+				currentMemberId={currentMember?._id}
 				description={cardDesc}
 				dueDate={cardDueDate}
+				estimate={editCardOpen?.card.estimate}
 				labelSuggestions={uniqueLabels}
 				labels={cardLabels}
 				members={members}
@@ -478,8 +466,10 @@ const BoardPage = () => {
 				setLabels={setCardLabels}
 				setPriority={setCardPriority}
 				setTitle={setCardTitle}
+				timeSpent={editCardOpen?.card.timeSpent}
 				title={cardTitle}
-				/>
+				watchers={editCardOpen?.card.watchers}
+			/>
 		</div>
 	);
 };

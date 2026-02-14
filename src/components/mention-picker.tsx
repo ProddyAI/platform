@@ -8,8 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGetMembers } from "@/features/members/api/use-get-members";
+import type { UserStatus } from "@/features/presence/components/presence-indicator";
 import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
-import { useMultipleUserPresence } from "@/features/presence/hooks/use-workspace-presence";
+import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface MentionPickerProps {
@@ -25,7 +26,7 @@ interface MemberWithPresence {
 		name: string;
 		image?: string;
 	};
-	isOnline: boolean;
+	status: UserStatus;
 }
 
 export const MentionPicker = ({
@@ -44,7 +45,7 @@ export const MentionPicker = ({
 
 	// Get presence information for all users
 	const userIds = members?.map((m) => m.userId) || [];
-	const { isUserOnline } = useMultipleUserPresence(userIds);
+	const { getUserStatus } = useMultipleUserStatuses(userIds, workspaceId);
 
 	// Initialize search term from the searchQuery prop
 	useEffect(() => {
@@ -68,7 +69,7 @@ export const MentionPicker = ({
 			return;
 		}
 
-		const processMembers = async () => {
+		const processMembers = () => {
 			const membersWithPresence: MemberWithPresence[] = members.map(
 				(member) => ({
 					_id: member._id,
@@ -76,7 +77,7 @@ export const MentionPicker = ({
 						name: member.user.name || "", // Add fallback to empty string
 						image: member.user.image,
 					},
-					isOnline: isUserOnline(member.userId), // Use presence data
+					status: getUserStatus(member.userId), // Use status data
 				})
 			);
 
@@ -92,7 +93,7 @@ export const MentionPicker = ({
 		};
 
 		processMembers();
-	}, [members, searchTerm, isUserOnline]);
+	}, [members, searchTerm, getUserStatus]);
 
 	const handleSelect = (memberId: Id<"members">, memberName: string) => {
 		onSelect(memberId, memberName);
@@ -152,7 +153,7 @@ export const MentionPicker = ({
 												{member.user.name.charAt(0).toUpperCase()}
 											</AvatarFallback>
 										</Avatar>
-										<PresenceIndicator isOnline={member.isOnline} />
+										<PresenceIndicator status={member.status} />
 									</div>
 									<span className="text-sm">{member.user.name}</span>
 								</div>

@@ -272,7 +272,7 @@ export const Header = () => {
 									? "text-gray-700 hover:text-primary"
 									: "text-gray-700 hover:text-primary"
 							)}
-							href={process.env.NEXT_PUBLIC_ROADMAP_URL!}
+							href={process.env.NEXT_PUBLIC_ROADMAP_URL || "#"}
 							rel="noopener noreferrer"
 							target="_blank"
 						>
@@ -404,7 +404,7 @@ export const Header = () => {
 
 								<Link
 									className="flex items-center gap-1 text-base font-medium text-gray-700 hover:text-primary transition-colors"
-									href={process.env.NEXT_PUBLIC_ROADMAP_URL!}
+									href={process.env.NEXT_PUBLIC_ROADMAP_URL || "#"}
 									onClick={() => setIsMenuOpen(false)}
 									rel="noopener noreferrer"
 									target="_blank"
@@ -422,12 +422,18 @@ export const Header = () => {
 									</Link>
 								) : (
 									<>
-										<Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
+										<Link
+											href="/auth/signin"
+											onClick={() => setIsMenuOpen(false)}
+										>
 											<Button className="w-full rounded-full" variant="outline">
 												Sign In
 											</Button>
 										</Link>
-										<Link href="/auth/signup" onClick={() => setIsMenuOpen(false)}>
+										<Link
+											href="/auth/signup"
+											onClick={() => setIsMenuOpen(false)}
+										>
 											<Button className="w-full rounded-full">
 												Get Started
 											</Button>

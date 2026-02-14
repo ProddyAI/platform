@@ -2,27 +2,21 @@ import { type NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { ThreadReplyTemplate } from "@/features/email/components/thread-reply-template";
+import { getEmailConfig } from "@/lib/email-config";
 import { shouldSendEmailServer } from "@/lib/email-preferences-server";
 import { generateUnsubscribeUrl } from "@/lib/email-unsubscribe";
 
 // Log the API key (masked for security)
 const apiKey = process.env.RESEND_API_KEY;
-console.log("Thread Reply Email API - Resend API Key exists:", !!apiKey);
 if (apiKey) {
-	const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-	console.log("Thread Reply Email API - Masked API Key:", maskedKey);
+	const _maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
 }
 
 const resend = new Resend(apiKey);
 
 export async function POST(req: NextRequest) {
 	try {
-		console.log("Thread Reply Email API received request");
 		const body = await req.json();
-		console.log(
-			"Thread Reply Email request body:",
-			JSON.stringify(body, null, 2)
-		);
 
 		const {
 			to,
@@ -51,9 +45,6 @@ export async function POST(req: NextRequest) {
 			"threadReply"
 		);
 		if (!shouldSend) {
-			console.log(
-				"User has unsubscribed from thread reply emails, skipping send"
-			);
 			return NextResponse.json(
 				{ success: true, message: "Email skipped - user has unsubscribed" },
 				{ status: 200 }
@@ -65,8 +56,6 @@ export async function POST(req: NextRequest) {
 
 		// Set the subject for thread reply emails
 		const subject = `${replierName} replied to your message in Proddy`;
-
-		console.log("Preparing thread reply email template");
 
 		// Create the thread reply email template
 		const emailTemplate = ThreadReplyTemplate({
@@ -80,28 +69,22 @@ export async function POST(req: NextRequest) {
 			unsubscribeUrl,
 		});
 
-		console.log("Sending thread reply email via Resend to:", to);
-		console.log("Email subject:", subject);
-
-		// Validate the from address
-		// Use Resend's default domain as a fallback if your domain isn't verified
-		const fromAddress = "Proddy <support@proddy.tech>";
-		console.log("From address:", fromAddress);
+		// Get email configuration (from address and reply-to)
+		const { fromAddress, replyToAddress } = getEmailConfig();
 
 		try {
-			console.log("Attempting to send thread reply email with Resend...");
 			const { data, error } = await resend.emails.send({
 				from: fromAddress,
 				to: [to],
 				subject,
 				react: emailTemplate,
+				replyTo: replyToAddress,
 			});
 
 			if (error) {
 				console.error("Thread reply email sending error from Resend:", error);
 
 				// Try with the test email as a fallback
-				console.log("Trying with test email as fallback...");
 				try {
 					const fallbackResult = await resend.emails.send({
 						from: fromAddress,
@@ -125,7 +108,6 @@ export async function POST(req: NextRequest) {
 						);
 					}
 
-					console.log("Fallback thread reply email sent successfully");
 					return NextResponse.json(
 						{
 							success: true,
@@ -154,7 +136,6 @@ export async function POST(req: NextRequest) {
 				}
 			}
 
-			console.log("Thread reply email sent successfully:", data);
 			return NextResponse.json(
 				{
 					success: true,

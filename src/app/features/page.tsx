@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
 	ArrowRight,
 	BarChart,
-	Calendar,
+	ChartNoAxesGantt,
 	CheckSquare,
 	MessageSquare,
 } from "lucide-react";
@@ -106,7 +106,7 @@ const FeaturesPage = () => {
 		},
 		{
 			id: "planning",
-			icon: <Calendar className="size-5 flex-shrink-0" />,
+			icon: <ChartNoAxesGantt className="size-5 flex-shrink-0" />,
 			label: "Planning",
 			color: "purple",
 			hoverBg: "hover:bg-purple-50",
@@ -234,7 +234,10 @@ const FeaturesPage = () => {
 					</h4>
 					<ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
 						{feature.features.slice(0, 6).map((featureItem, idx) => (
-							<li className="flex items-start gap-2.5" key={idx}>
+							<li
+								className="flex items-start gap-2.5"
+								key={`${feature.id}-feature-${idx}`}
+							>
 								<ArrowRight
 									className={`size-4 ${arrowColorClass} mt-1 flex-shrink-0`}
 								/>

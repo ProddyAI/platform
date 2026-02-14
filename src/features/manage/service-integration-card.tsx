@@ -29,10 +29,10 @@ type AuthConfig = {
 	toolkit: "github" | "gmail" | "slack" | "jira" | "notion" | "clickup";
 	name: string;
 	type:
-	| "use_composio_managed_auth"
-	| "use_custom_auth"
-	| "service_connection"
-	| "no_auth";
+		| "use_composio_managed_auth"
+		| "use_custom_auth"
+		| "service_connection"
+		| "no_auth";
 	authScheme?: string;
 	composioAuthConfigId: string;
 	credentials?: any;
@@ -147,12 +147,6 @@ export const ServiceIntegrationCard = ({
 		setIsConnecting(true);
 
 		try {
-			console.log(`[ServiceCard] Starting authorization for ${toolkit}:`, {
-				workspaceId,
-				memberId: currentMember._id,
-				userId: `member_${currentMember._id}`,
-			});
-
 			// Use AgentAuth to authorize user to toolkit with member-specific entity ID
 			const response = await fetch("/api/assistant/composio/agentauth", {
 				method: "POST",
@@ -167,8 +161,6 @@ export const ServiceIntegrationCard = ({
 					memberId: currentMember._id,
 				}),
 			});
-
-			console.log(`[ServiceCard] API response status:`, response.status);
 
 			if (!response.ok) {
 				let errorDetails;
@@ -185,15 +177,11 @@ export const ServiceIntegrationCard = ({
 				}
 				throw new Error(
 					errorDetails.error ||
-					`Failed to authorize toolkit (HTTP ${response.status})`
+						`Failed to authorize toolkit (HTTP ${response.status})`
 				);
 			}
 
 			const result = await response.json();
-			console.log(`[ServiceCard] Authorization successful:`, {
-				hasRedirectUrl: !!result.redirectUrl,
-				connectionId: result.connectionId,
-			});
 
 			if (!result.redirectUrl) {
 				console.error(`[ServiceCard] No redirect URL in response:`, result);
@@ -201,7 +189,16 @@ export const ServiceIntegrationCard = ({
 			}
 
 			// Redirect to service OAuth (AgentAuth handles the full flow)
-			window.location.href = result.redirectUrl;
+			const newTab = window.open(
+				result.redirectUrl,
+				"_blank",
+				"noopener,noreferrer"
+			);
+			if (!newTab) {
+				toast.success(
+					`${toolkits[toolkit].name} login process started in new tab. Please allow pop-ups and try again if not opened.`
+				);
+			}
 		} catch (error) {
 			console.error(`[ServiceCard] Error authorizing ${toolkit}:`, error);
 			console.error(`[ServiceCard] Error details:`, {
@@ -227,13 +224,6 @@ export const ServiceIntegrationCard = ({
 			return;
 		}
 
-		console.log(`[ServiceCard] Disconnecting ${toolkit}:`, {
-			connectedAccountId: connectedAccount._id,
-			composioAccountId: connectedAccount.composioAccountId,
-			memberId: currentMember._id,
-			workspaceId,
-		});
-
 		setIsDisconnecting(true);
 
 		try {
@@ -251,17 +241,13 @@ export const ServiceIntegrationCard = ({
 				}),
 			});
 
-			console.log(`[ServiceCard] Disconnect response status:`, response.status);
-
 			if (!response.ok) {
 				const error = await response.json();
 				console.error(`[ServiceCard] Disconnect failed:`, error);
 				throw new Error(error.error || "Failed to disconnect account");
 			}
 
-			const result = await response.json();
-			console.log(`[ServiceCard] Disconnect successful:`, result);
-
+			const _result = await response.json();
 			toast.success(`${toolkits[toolkit].name} disconnected successfully`);
 			onConnectionChange?.();
 		} catch (error) {
@@ -424,8 +410,9 @@ export const ServiceIntegrationCard = ({
 			{/* Subtle connection status indicator - only show for non-connected states */}
 			{!isConnected && (
 				<div
-					className={`absolute bottom-3 right-3 w-2 h-2 rounded-full ${hasAuthConfig ? "bg-yellow-400" : "bg-gray-300"
-						}`}
+					className={`absolute bottom-3 right-3 w-2 h-2 rounded-full ${
+						hasAuthConfig ? "bg-yellow-400" : "bg-gray-300"
+					}`}
 				/>
 			)}
 		</Card>

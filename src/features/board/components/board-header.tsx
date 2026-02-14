@@ -77,20 +77,20 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 	};
 
 	return (
-		<div className="flex flex-col gap-3 p-4 border-b dark:border-gray-800 bg-gradient-to-r from-secondary/5 to-secondary/5 dark:from-gray-900 dark:to-gray-900">
+		<div className="flex flex-col gap-3 p-3 md:p-4 border-b dark:border-gray-800 bg-gradient-to-r from-secondary/5 to-secondary/5 dark:from-gray-900 dark:to-gray-900">
 			<div className="flex items-center justify-between">
 				<div>
-					<div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground dark:text-gray-400">
+					<div className="flex items-center gap-2 md:gap-3 mt-1 text-xs md:text-sm text-muted-foreground dark:text-gray-400">
 						<div className="flex items-center gap-1">
-							<LayoutGrid className="w-4 h-4" />
+							<LayoutGrid className="w-3 h-3 md:w-4 md:h-4" />
 							<span>{listsCount} lists</span>
 						</div>
 						<div className="flex items-center gap-1">
-							<BarChart className="w-4 h-4" />
+							<BarChart className="w-3 h-3 md:w-4 md:h-4" />
 							<span>{totalCards} cards</span>
 						</div>
 						<Badge
-							className="bg-white/50 dark:bg-gray-800/50 dark:border-gray-700"
+							className="hidden sm:inline-flex bg-white/50 dark:bg-gray-800/50 dark:border-gray-700"
 							variant="outline"
 						>
 							<Clock className="w-3 h-3 mr-1" /> Updated just now
@@ -181,7 +181,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 					<div className="flex items-center gap-1 bg-white/90 dark:bg-gray-800/90 p-1 rounded-lg border dark:border-gray-700 shadow-sm">
 						<Button
 							className={cn(
-								"px-3 py-1.5 flex items-center gap-2 rounded-md transition-all duration-200",
+								"px-2 md:px-3 py-1.5 flex items-center gap-1 md:gap-2 rounded-md transition-all duration-200",
 								view === "kanban"
 									? "bg-secondary/15 dark:bg-secondary/25 text-secondary dark:text-secondary-foreground font-medium shadow-sm border-secondary/20 dark:border-secondary/30 border"
 									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
@@ -198,12 +198,14 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
-							<span className="text-xs font-medium">Kanban</span>
+							<span className="hidden sm:inline text-xs font-medium">
+								Kanban
+							</span>
 						</Button>
 
 						<Button
 							className={cn(
-								"px-3 py-1.5 flex items-center gap-2 rounded-md transition-all duration-200",
+								"px-2 md:px-3 py-1.5 flex items-center gap-1 md:gap-2 rounded-md transition-all duration-200",
 								view === "table"
 									? "bg-secondary/15 dark:bg-secondary/25 text-secondary dark:text-secondary-foreground font-medium shadow-sm border-secondary/20 dark:border-secondary/30 border"
 									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
@@ -220,12 +222,14 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
-							<span className="text-xs font-medium">Table</span>
+							<span className="hidden sm:inline text-xs font-medium">
+								Table
+							</span>
 						</Button>
 
 						<Button
 							className={cn(
-								"px-3 py-1.5 flex items-center gap-2 rounded-md transition-all duration-200",
+								"px-2 md:px-3 py-1.5 flex items-center gap-1 md:gap-2 rounded-md transition-all duration-200",
 								view === "gantt"
 									? "bg-secondary/15 dark:bg-secondary/25 text-secondary dark:text-secondary-foreground font-medium shadow-sm border-secondary/20 dark:border-secondary/30 border"
 									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
@@ -242,7 +246,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 										: "text-gray-500 dark:text-gray-400"
 								)}
 							/>
-							<span className="text-xs font-medium">Gantt</span>
+							<span className="hidden sm:inline text-xs font-medium">
+								Gantt
+							</span>
 						</Button>
 					</div>
 				</div>

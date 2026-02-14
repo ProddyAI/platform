@@ -1,6 +1,15 @@
 "use client";
 
-import { Calendar, Hash, RefreshCw, Save, Trash2, Users } from "lucide-react";
+import {
+	Calendar,
+	ChevronDown,
+	ChevronRight,
+	Hash,
+	RefreshCw,
+	Save,
+	Trash2,
+	Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,6 +28,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -27,6 +41,8 @@ import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useNewJoinCode } from "@/features/workspaces/api/use-new-join-code";
 import { useRemoveWorkspace } from "@/features/workspaces/api/use-remove-workspace";
 import { useUpdateWorkspace } from "@/features/workspaces/api/use-update-workspace";
+import { ChannelsManagement } from "./channels-management";
+import { FeaturesManagement } from "./features-management";
 
 interface WorkspaceManagementProps {
 	workspace: Doc<"workspaces">;
@@ -44,6 +60,7 @@ export const WorkspaceManagement = ({
 	const [_isGeneratingCode, setIsGeneratingCode] = useState(false);
 	const [_showJoinCode, _setShowJoinCode] = useState(false);
 	const [inviteOpen, setInviteOpen] = useState(false);
+	const [channelsExpanded, setChannelsExpanded] = useState(false);
 
 	const updateWorkspace = useUpdateWorkspace();
 	const removeWorkspace = useRemoveWorkspace();
@@ -266,6 +283,47 @@ export const WorkspaceManagement = ({
 						</div>
 					)}
 				</div>
+
+				<Separator />
+
+				<FeaturesManagement workspace={workspace} />
+
+				<Separator />
+
+				{/* Channels Management Section */}
+				{(isOwner || currentMember.role === "admin") && (
+					<Collapsible
+						onOpenChange={setChannelsExpanded}
+						open={channelsExpanded}
+					>
+						<div className="flex items-center justify-between">
+							<div>
+								<h3 className="text-lg font-medium">Channel Management</h3>
+								<p className="text-sm text-muted-foreground">
+									Create, edit, and manage workspace channels
+								</p>
+							</div>
+							<CollapsibleTrigger asChild>
+								<Button size="sm" variant="ghost">
+									{channelsExpanded ? (
+										<ChevronDown className="h-4 w-4" />
+									) : (
+										<ChevronRight className="h-4 w-4" />
+									)}
+									<span className="ml-2">
+										{channelsExpanded ? "Hide" : "Show"}
+									</span>
+								</Button>
+							</CollapsibleTrigger>
+						</div>
+						<CollapsibleContent className="mt-4">
+							<ChannelsManagement
+								currentMember={currentMember}
+								workspaceId={workspace._id}
+							/>
+						</CollapsibleContent>
+					</Collapsible>
+				)}
 			</div>
 		</>
 	);

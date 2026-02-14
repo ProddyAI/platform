@@ -36,6 +36,11 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
+			)
+		),
 	}).index("by_user_id", ["userId"]),
 
 	members: defineTable({
@@ -50,6 +55,11 @@ const schema = defineSchema({
 	channels: defineTable({
 		name: v.string(),
 		workspaceId: v.id("workspaces"),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
+			)
+		),
 		icon: v.optional(v.string()), // Store emoji as string
 		iconImage: v.optional(v.id("_storage")), // Store uploaded image
 	}).index("by_workspace_id", ["workspaceId"]),
@@ -122,6 +132,13 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_workspace_id_user_id_status", [
+			"workspaceId",
+			"userId",
+			"status",
+		])
+		.index("by_workspace_id_status", ["workspaceId", "status"])
+		.index("by_status", ["status"])
 		.index("by_channel_id", ["channelId"])
 		.index("by_workspace_channel", ["workspaceId", "channelId"]),
 
@@ -150,7 +167,58 @@ const schema = defineSchema({
 		),
 		dueDate: v.optional(v.number()),
 		assignees: v.optional(v.array(v.id("members"))),
-	}).index("by_list_id", ["listId"]),
+		// Subtask/hierarchy fields
+		parentCardId: v.optional(v.id("cards")),
+		isCompleted: v.optional(v.boolean()),
+		// Time tracking fields
+		estimate: v.optional(v.number()), // Story points or hours
+		timeSpent: v.optional(v.number()), // Hours spent
+		// Watchers and relationships
+		watchers: v.optional(v.array(v.id("members"))),
+		blockedBy: v.optional(v.array(v.id("cards"))),
+	})
+		.index("by_list_id", ["listId"])
+		.index("by_parent_card_id", ["parentCardId"]),
+
+	// Card comments for discussions on cards
+	card_comments: defineTable({
+		cardId: v.id("cards"),
+		memberId: v.id("members"),
+		workspaceId: v.id("workspaces"),
+		content: v.string(),
+		createdAt: v.number(),
+		updatedAt: v.optional(v.number()),
+	})
+		.index("by_card_id", ["cardId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id", ["workspaceId"]),
+
+	// Card activity log for audit trail
+	card_activity: defineTable({
+		cardId: v.id("cards"),
+		memberId: v.id("members"),
+		workspaceId: v.id("workspaces"),
+		action: v.union(
+			v.literal("created"),
+			v.literal("updated"),
+			v.literal("moved"),
+			v.literal("assigned"),
+			v.literal("unassigned"),
+			v.literal("completed"),
+			v.literal("reopened"),
+			v.literal("commented"),
+			v.literal("priority_changed"),
+			v.literal("due_date_changed"),
+			v.literal("blocked"),
+			v.literal("unblocked")
+		),
+		details: v.optional(v.string()), // JSON stringified details
+		timestamp: v.number(),
+	})
+		.index("by_card_id", ["cardId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_card_id_timestamp", ["cardId", "timestamp"]),
 
 	categories: defineTable({
 		name: v.string(),
@@ -285,6 +353,14 @@ const schema = defineSchema({
 			v.object({
 				theme: v.optional(v.string()),
 				statusTracking: v.optional(v.boolean()), // Enable/disable status tracking
+				userStatus: v.optional(
+					v.union(
+						v.literal("online"),
+						v.literal("idle"),
+						v.literal("dnd"),
+						v.literal("offline")
+					)
+				), // User's custom status (e.g., DND)
 				// Notification preferences
 				notifications: v.optional(
 					v.object({
@@ -304,6 +380,9 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
+						inviteSent: v.optional(v.boolean()), // Default: true - when invite link is sent
+						workspaceJoin: v.optional(v.boolean()), // Default: true - when someone joins workspace
+						onlineStatus: v.optional(v.boolean()), // Default: false - online/offline status changes
 					})
 				),
 			})
@@ -390,6 +469,35 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id_member_id", ["workspaceId", "memberId"]),
+
+	assistantConversations: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		conversationId: v.string(),
+		lastMessageAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_conversation_id", ["conversationId"]),
+
+	assistantToolAuditEvents: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.optional(v.id("members")),
+		userId: v.optional(v.id("users")),
+		toolName: v.string(),
+		toolkit: v.optional(v.string()),
+		argumentsSnapshot: v.optional(v.any()),
+		outcome: v.union(v.literal("success"), v.literal("error")),
+		error: v.optional(v.string()),
+		executionPath: v.string(),
+		toolCallId: v.optional(v.string()),
+		timestamp: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({
@@ -530,6 +638,99 @@ const schema = defineSchema({
 		.index("by_email", ["email"])
 		.index("by_token", ["token"])
 		.index("by_expiry", ["expiresAt"]),
+
+	// Import connections - Separate from Composio integrations for data import
+	import_connections: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.id("members"),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		accessToken: v.string(), // OAuth access token (should be encrypted at rest)
+		refreshToken: v.optional(v.string()), // Refresh token (should be encrypted at rest)
+		expiresAt: v.optional(v.number()), // Token expiration timestamp
+		scope: v.string(), // OAuth scopes granted
+		teamId: v.optional(v.string()), // Slack team ID or similar
+		teamName: v.optional(v.string()), // Human-readable team name
+		metadata: v.optional(v.record(v.string(), v.string())), // Platform-specific metadata
+		status: v.union(
+			v.literal("active"),
+			v.literal("expired"),
+			v.literal("revoked"),
+			v.literal("error")
+		),
+		connectedAt: v.number(),
+		lastUsed: v.optional(v.number()),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_platform", ["workspaceId", "platform"])
+		.index("by_member_platform", ["memberId", "platform"]),
+
+	// Import jobs - Track data import progress
+	import_jobs: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.id("members"),
+		connectionId: v.id("import_connections"),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		status: v.union(
+			v.literal("pending"),
+			v.literal("in_progress"),
+			v.literal("completed"),
+			v.literal("failed"),
+			v.literal("cancelled")
+		),
+		// Import configuration
+		config: v.object({
+			channels: v.optional(v.array(v.string())), // Slack channel IDs to import
+			dateFrom: v.optional(v.number()), // Import messages from this date
+			dateTo: v.optional(v.number()), // Import messages until this date
+			includeFiles: v.optional(v.boolean()), // Whether to import file attachments
+			includeThreads: v.optional(v.boolean()), // Whether to import threaded messages
+		}),
+		// Progress tracking
+		progress: v.object({
+			channelsImported: v.number(),
+			channelsTotal: v.number(),
+			messagesImported: v.number(),
+			messagesTotal: v.optional(v.number()),
+			usersImported: v.number(),
+			filesImported: v.optional(v.number()),
+			currentStep: v.string(), // e.g., "Fetching channels", "Importing messages"
+		}),
+		// Results
+		result: v.optional(
+			v.object({
+				channelsCreated: v.array(v.id("channels")),
+				messagesCreated: v.number(),
+				usersMatched: v.number(),
+				filesImported: v.number(),
+				errors: v.optional(v.array(v.string())),
+				warnings: v.optional(v.array(v.string())),
+			})
+		),
+		errorMessage: v.optional(v.string()),
+		startedAt: v.optional(v.number()),
+		completedAt: v.optional(v.number()),
+		createdAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_connection_id", ["connectionId"])
+		.index("by_status", ["status"])
+		.index("by_workspace_status", ["workspaceId", "status"]),
 });
 
 export default schema;

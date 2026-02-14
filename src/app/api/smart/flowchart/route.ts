@@ -1,13 +1,10 @@
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
-import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
+	apiKey: process.env.OPENROUTER_API_KEY || "",
 });
-// Load environment variables
-dotenv.config();
 
 export async function POST(req: NextRequest) {
 	try {
@@ -40,13 +37,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		console.log(
-			"[Smart Flowchart] Processing flowchart request for prompt:",
-			prompt
-		);
-
-		// Create the Gemini model
-		const model = openrouter("google/gemini-2.5-flash");
+		const model = openrouter("openai/gpt-5-mini");
 
 		// Prepare the flowchart generation prompt
 		const systemPrompt = `You are an expert flowchart designer and Mermaid diagram specialist. Your task is to convert text descriptions into well-structured Mermaid flowchart diagrams.
@@ -99,8 +90,6 @@ Generate the Mermaid flowchart code:`;
 				prompt: systemPrompt,
 				temperature: 0.3, // Lower temperature for more consistent diagram structure
 			});
-
-			console.log("[Smart Flowchart] Successfully generated flowchart");
 
 			// Clean up the response to ensure it's valid Mermaid code
 			let mermaidCode = text.trim();

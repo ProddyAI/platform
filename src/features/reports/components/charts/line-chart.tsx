@@ -287,7 +287,7 @@ export const LineChart = ({
 								"text-xs text-muted-foreground px-1 text-center",
 								hoveredIndex === index && "font-medium text-foreground"
 							)}
-							key={index}
+							key={item.label}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
 						>

@@ -17,11 +17,33 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
+import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 import { useCreateChannel } from "../api/use-create-channel";
 import { useCreateChannelModal } from "../store/use-create-channel-modal";
+
+const FEATURE_OPTIONS = [
+	{
+		id: "canvas",
+		label: "Canvas",
+		description: "Show the Canvas tab in this channel.",
+	},
+	{
+		id: "notes",
+		label: "Notes",
+		description: "Show the Notes tab in this channel.",
+	},
+	{
+		id: "boards",
+		label: "Boards",
+		description: "Show the Boards tab in this channel.",
+	},
+] as const;
+
+type FeatureKey = (typeof FEATURE_OPTIONS)[number]["id"];
 
 export const CreateChannelModal = () => {
 	const router = useRouter();
@@ -33,11 +55,13 @@ export const CreateChannelModal = () => {
 		undefined
 	);
 	const [iconPreview, setIconPreview] = useState<string | undefined>(undefined);
+	const [enabledFeatures, setEnabledFeatures] = useState<FeatureKey[]>([]);
 	const [isUploading, setIsUploading] = useState(false);
 	const imageInputRef = useRef<HTMLInputElement>(null);
 
 	const { mutate, isPending } = useCreateChannel();
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();
+	const { data: workspace } = useGetWorkspace({ id: workspaceId });
 
 	// Cleanup blob URL on unmount to prevent memory leaks
 	useEffect(() => {
@@ -48,10 +72,17 @@ export const CreateChannelModal = () => {
 		};
 	}, [iconPreview]);
 
+	useEffect(() => {
+		if (open) {
+			setEnabledFeatures((workspace?.enabledFeatures ?? []) as FeatureKey[]);
+		}
+	}, [open, workspace?.enabledFeatures]);
+
 	const handleClose = () => {
 		setName("");
 		setIcon(undefined);
 		setIconImage(undefined);
+		setEnabledFeatures([]);
 		// Properly revoke the blob URL before clearing
 		setIconPreview((previousPreview) => {
 			if (previousPreview) {
@@ -158,6 +189,14 @@ export const CreateChannelModal = () => {
 		}
 	};
 
+	const toggleFeature = (feature: FeatureKey) => {
+		setEnabledFeatures((prev) =>
+			prev.includes(feature)
+				? prev.filter((item) => item !== feature)
+				: [...prev, feature]
+		);
+	};
+
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
@@ -167,6 +206,7 @@ export const CreateChannelModal = () => {
 				workspaceId,
 				icon,
 				iconImage,
+				enabledFeatures,
 			},
 			{
 				onSuccess: (id) => {
@@ -301,6 +341,41 @@ export const CreateChannelModal = () => {
 										Max 5MB for images
 									</p>
 								</div>
+							</div>
+						</div>
+
+						<div className="space-y-3">
+							<div>
+								<Label className="text-sm font-medium">Channel Features</Label>
+								<p className="text-xs text-muted-foreground">
+									Choose which tabs this channel starts with.
+								</p>
+							</div>
+							<div className="space-y-3">
+								{FEATURE_OPTIONS.map((feature) => {
+									const isEnabled = enabledFeatures.includes(feature.id);
+
+									return (
+										<div
+											className="flex items-center justify-between gap-4 rounded-lg border border-border/70 p-3"
+											key={feature.id}
+										>
+											<div>
+												<div className="text-sm font-medium">
+													{feature.label}
+												</div>
+												<p className="text-xs text-muted-foreground">
+													{feature.description}
+												</p>
+											</div>
+											<Switch
+												checked={isEnabled}
+												disabled={isPending}
+												onCheckedChange={() => toggleFeature(feature.id)}
+											/>
+										</div>
+									);
+								})}
 							</div>
 						</div>
 					</div>

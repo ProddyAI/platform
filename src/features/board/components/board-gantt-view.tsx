@@ -1,5 +1,3 @@
-"use client";
-
 import { useMutation } from "convex/react";
 import {
 	addDays,
@@ -31,6 +29,7 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
 interface BoardGanttViewProps {
 	lists: any[];
@@ -40,30 +39,30 @@ interface BoardGanttViewProps {
 	members?: any[];
 }
 
-// Define a type for our task items
-interface GanttTask {
+type GanttTask = {
 	id: Id<"cards">;
 	title: string;
 	startDate: Date;
 	endDate: Date;
 	priority?: string;
-	listId: Id<"lists">;
+	listId: Id<"lists"> | string;
 	listTitle: string;
 	description?: string;
 	labels?: string[];
+	parentCardId?: Id<"cards">;
+	isSubtask: boolean;
+	order?: number;
+	parentTitle?: string;
 	originalCard: any;
-}
+};
 
 const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	lists,
 	allCards,
 	onEditCard,
 	onDeleteCard,
-	members = [],
 }) => {
-	// State for timeline controls
-	const [currentStartDate, setCurrentStartDate] = useState<Date>(() => {
-		// Find the earliest due date or default to today
+	const initialStartDate = useMemo(() => {
 		const earliestDueDate = allCards
 			.filter((card) => card.dueDate)
 			.reduce(
@@ -77,9 +76,11 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 		return earliestDueDate
 			? startOfWeek(earliestDueDate)
 			: startOfWeek(new Date());
-	});
+	}, [allCards]);
 
-	const [zoomLevel, setZoomLevel] = useState<number>(14); // Number of days to show
+	const [currentStartDate, setCurrentStartDate] =
+		useState<Date>(initialStartDate);
+	const [zoomLevel, setZoomLevel] = useState<number>(14);
 	const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
 	const [draggingTask, setDraggingTask] = useState<GanttTask | null>(null);
 	const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -87,25 +88,26 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragStartDate, setDragStartDate] = useState<Date | null>(null);
 
-	// Ref for the timeline container to calculate positions
 	const timelineContainerRef = useRef<HTMLDivElement>(null);
-
-	// Mutation to update card due date
 	const updateCardInGantt = useMutation(api.board.updateCardInGantt);
 	const { toast } = useToast();
 
-	// Process cards into Gantt tasks
 	const tasks = useMemo(() => {
+		const cardById = new Map<Id<"cards">, any>();
+		allCards.forEach((card) => cardById.set(card._id, card));
+
 		return allCards
 			.filter((card) => card.dueDate)
 			.map((card) => {
 				const list = lists.find((l) => l._id === card.listId);
 				const dueDate = new Date(card.dueDate);
 
-				// For simplicity, we'll set the start date to 3 days before the due date
-				// In a real app, you might have actual start dates stored
 				const startDate = new Date(dueDate);
 				startDate.setDate(startDate.getDate() - 3);
+
+				const parentTitle = card.parentCardId
+					? cardById.get(card.parentCardId)?.title
+					: undefined;
 
 				return {
 					id: card._id,
@@ -117,80 +119,89 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 					listTitle: list ? list.title : "Unknown List",
 					description: card.description,
 					labels: card.labels,
+					parentCardId: card.parentCardId,
+					isSubtask: Boolean(card.parentCardId),
+					order: card.order,
+					parentTitle,
 					originalCard: card,
 				} as GanttTask;
 			});
 	}, [allCards, lists]);
 
-	// Generate the dates for our timeline
 	const timelineDates = useMemo(() => {
 		const endDate = addDays(currentStartDate, zoomLevel - 1);
 		return eachDayOfInterval({ start: currentStartDate, end: endDate });
 	}, [currentStartDate, zoomLevel]);
 
-	// Get priority color
-	function getPriorityColor(priority: string | undefined) {
-		switch (priority) {
-			case "highest":
-				return "bg-red-500";
-			case "high":
-				return "bg-orange-500";
-			case "medium":
-				return "bg-secondary";
-			case "low":
-				return "bg-blue-400";
-			case "lowest":
-				return "bg-secondary/50";
-			default:
-				return "bg-gray-400";
-		}
-	}
+	const cardsByList = useMemo(() => {
+		const map: Record<string, any[]> = {};
+		lists.forEach((list) => {
+			map[list._id] = [];
+		});
+		allCards.forEach((card) => {
+			if (!map[card.listId]) {
+				map[card.listId] = [];
+			}
+			map[card.listId].push(card);
+		});
+		Object.values(map).forEach((cards) => {
+			cards.sort((a, b) => (a.order || 0) - (b.order || 0));
+		});
+		return map;
+	}, [allCards, lists]);
 
-	// Get solid background color for task bars
-	function getSolidPriorityColor(priority: string | undefined) {
-		switch (priority) {
-			case "highest":
-				return "#ef4444"; // red-500
-			case "high":
-				return "#f97316"; // orange-500
-			case "medium":
-				return "hsl(var(--secondary))"; // secondary color
-			case "low":
-				return "#60a5fa"; // blue-400
-			case "lowest":
-				return "#a78bfa"; // purple-400
-			default:
-				return "#9ca3af"; // gray-400
-		}
-	}
+	const tasksById = useMemo(() => {
+		const map = new Map<Id<"cards">, GanttTask>();
+		tasks.forEach((task) => map.set(task.id, task));
+		return map;
+	}, [tasks]);
 
-	function getPriorityTextColor(priority: string | undefined) {
-		switch (priority) {
-			case "highest":
-				return "text-red-500";
-			case "high":
-				return "text-orange-500";
-			case "medium":
-				return "text-secondary";
-			case "low":
-				return "text-blue-400";
-			case "lowest":
-				return "text-secondary";
-			default:
-				return "text-gray-500";
-		}
-	}
+	const groupedTasksByList = useMemo(() => {
+		const grouped: Record<
+			string,
+			{ rows: { card: any; task?: GanttTask; level: "parent" | "subtask" }[] }
+		> = {};
 
-	// Group tasks by list
-	const tasksByList = lists.reduce(
-		(acc, list) => {
-			acc[list._id] = tasks.filter((task) => task.listId === list._id);
-			return acc;
-		},
-		{} as Record<string, GanttTask[]>
-	);
+		lists.forEach((list) => {
+			const listCards = cardsByList[list._id] || [];
+			const rows: {
+				card: any;
+				task?: GanttTask;
+				level: "parent" | "subtask";
+			}[] = [];
 
-	// Navigation functions
+			const parentCards = listCards.filter((card) => !card.parentCardId);
+			parentCards.forEach((parent) => {
+				const parentTask = tasksById.get(parent._id);
+				const subtaskCards = listCards.filter(
+					(card) => card.parentCardId === parent._id
+				);
+				subtaskCards.sort((a, b) => (a.order || 0) - (b.order || 0));
+				const subtaskTasks = subtaskCards
+					.map((card) => tasksById.get(card._id))
+					.filter(Boolean) as GanttTask[];
+
+				const hasVisibleSubtasks = subtaskTasks.length > 0;
+				if (!parentTask && !hasVisibleSubtasks) {
+					return;
+				}
+
+				rows.push({ card: parent, task: parentTask, level: "parent" });
+				subtaskTasks.forEach((task) => {
+					rows.push({
+						card: task.originalCard,
+						task,
+						level: "subtask",
+					});
+				});
+			});
+
+			grouped[list._id] = { rows };
+		});
+
+		return grouped;
+	}, [lists, cardsByList, tasksById]);
+
 	const goToPreviousWeek = () => {
 		setCurrentStartDate((prev) => subWeeks(prev, 1));
 	};
@@ -207,24 +218,71 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 		setZoomLevel((prev) => Math.min(28, prev + 7));
 	};
 
-	// Calculate task position and width on the timeline
+	const getPriorityColor = (priority: string | undefined) => {
+		switch (priority) {
+			case "highest":
+				return "bg-red-500";
+			case "high":
+				return "bg-orange-500";
+			case "medium":
+				return "bg-secondary";
+			case "low":
+				return "bg-blue-400";
+			case "lowest":
+				return "bg-secondary/50";
+			default:
+				return "bg-gray-400";
+		}
+	};
+
+	const getSolidPriorityColor = (priority: string | undefined) => {
+		switch (priority) {
+			case "highest":
+				return "#ef4444";
+			case "high":
+				return "#f97316";
+			case "medium":
+				return "hsl(var(--secondary))";
+			case "low":
+				return "#60a5fa";
+			case "lowest":
+				return "#a78bfa";
+			default:
+				return "#9ca3af";
+		}
+	};
+
+	const getPriorityTextColor = (priority: string | undefined) => {
+		switch (priority) {
+			case "highest":
+				return "text-red-500";
+			case "high":
+				return "text-orange-500";
+			case "medium":
+				return "text-secondary";
+			case "low":
+				return "text-blue-400";
+			case "lowest":
+				return "text-secondary";
+			default:
+				return "text-gray-500";
+		}
+	};
+
 	const getTaskPosition = (task: GanttTask) => {
 		const timelineStart = startOfDay(currentStartDate);
 		const timelineEnd = endOfDay(addDays(currentStartDate, zoomLevel - 1));
 
-		// Check if task is within our visible timeline
 		const taskStartsBeforeTimeline = task.startDate < timelineStart;
 		const taskEndsAfterTimeline = task.endDate > timelineEnd;
 
-		// Calculate start position
 		const startPosition = taskStartsBeforeTimeline
 			? 0
 			: (differenceInDays(task.startDate, timelineStart) / zoomLevel) * 100;
 
-		// Calculate width
 		let width;
 		if (taskStartsBeforeTimeline && taskEndsAfterTimeline) {
-			width = 100; // Task spans the entire visible timeline
+			width = 100;
 		} else if (taskStartsBeforeTimeline) {
 			width =
 				((differenceInDays(task.endDate, timelineStart) + 1) / zoomLevel) * 100;
@@ -237,7 +295,6 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				100;
 		}
 
-		// Ensure minimum width for visibility
 		width = Math.max(width, 3);
 
 		return {
@@ -258,16 +315,12 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 		};
 	};
 
-	// Handle drag start
 	const handleDragStart = (e: React.MouseEvent, task: GanttTask) => {
-		// Prevent task selection when starting drag
 		e.stopPropagation();
 
-		// Store the task we're dragging
 		setDraggingTask(task);
 		setDragStartDate(new Date(task.endDate));
 
-		// Calculate the offset from the left edge of the task
 		const taskElement = e.currentTarget as HTMLElement;
 		const rect = taskElement.getBoundingClientRect();
 		setDragOffset({
@@ -275,7 +328,6 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 			y: e.clientY - rect.top,
 		});
 
-		// Set initial drag position
 		setDragPosition({
 			x: e.clientX,
 			y: e.clientY,
@@ -283,23 +335,19 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 
 		setIsDragging(true);
 
-		// Add event listeners for drag and drop
 		document.addEventListener("mousemove", handleDragMove);
 		document.addEventListener("mouseup", handleDragEnd);
 	};
 
-	// Handle drag move
 	const handleDragMove = (e: MouseEvent) => {
 		if (!isDragging || !draggingTask || !timelineContainerRef.current) return;
 
-		// Update drag position
 		setDragPosition({
 			x: e.clientX,
 			y: e.clientY,
 		});
 	};
 
-	// Handle drag end
 	const handleDragEnd = (e: MouseEvent) => {
 		if (
 			!isDragging ||
@@ -311,26 +359,19 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 			return;
 		}
 
-		// Calculate the new date based on drag position
 		const timelineRect = timelineContainerRef.current.getBoundingClientRect();
-		const timelineWidth = timelineRect.width - 250; // Subtract the width of the list name column
-		const timelineLeft = timelineRect.left + 250; // Add the width of the list name column
+		const timelineWidth = timelineRect.width - 250;
+		const timelineLeft = timelineRect.left + 250;
 
-		// Calculate the relative position within the timeline (0 to 1)
 		const relativePosition = Math.max(
 			0,
 			Math.min(1, (e.clientX - timelineLeft) / timelineWidth)
 		);
 
-		// Calculate the day offset from the start of the timeline
 		const dayOffset = Math.floor(relativePosition * zoomLevel);
-
-		// Calculate the new due date
 		const newDueDate = addDays(currentStartDate, dayOffset);
 
-		// Only update if the date has changed
 		if (newDueDate.getTime() !== draggingTask.endDate.getTime()) {
-			// Update the card due date in the backend
 			updateCardInGantt({
 				cardId: draggingTask.id,
 				dueDate: newDueDate.getTime(),
@@ -353,57 +394,50 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 		cleanupDrag();
 	};
 
-	// Clean up drag state
 	const cleanupDrag = () => {
 		setIsDragging(false);
 		setDraggingTask(null);
 		setDragStartDate(null);
 
-		// Remove event listeners
 		document.removeEventListener("mousemove", handleDragMove);
 		document.removeEventListener("mouseup", handleDragEnd);
 	};
 
-	// Calculate the position of the dragging task
 	const getDraggingTaskPosition = () => {
-		if (!isDragging || !draggingTask || !timelineContainerRef.current)
+		if (!isDragging || !draggingTask || !timelineContainerRef.current) {
 			return null;
+		}
 
 		const timelineRect = timelineContainerRef.current.getBoundingClientRect();
-		const timelineWidth = timelineRect.width - 250; // Subtract the width of the list name column
-		const timelineLeft = timelineRect.left + 250; // Add the width of the list name column
+		const timelineWidth = timelineRect.width - 250;
+		const timelineLeft = timelineRect.left + 250;
 
-		// Calculate the relative position within the timeline (0 to 1)
 		const relativePosition = Math.max(
 			0,
 			Math.min(1, (dragPosition.x - timelineLeft) / timelineWidth)
 		);
 
-		// Calculate the day offset from the start of the timeline
 		const dayOffset = Math.floor(relativePosition * zoomLevel);
-
-		// Calculate the task width (keep the same duration)
 		const taskDuration = differenceInDays(
 			draggingTask.endDate,
 			draggingTask.startDate
 		);
 
-		// Calculate the left position as a percentage
 		const startPosition = ((dayOffset - taskDuration) / zoomLevel) * 100;
-
-		// Ensure it's within bounds
 		const boundedStartPosition = Math.max(0, startPosition);
 
 		return {
 			left: `${boundedStartPosition}%`,
 			width: `${Math.max(3, ((taskDuration + 1) / zoomLevel) * 100)}%`,
-			position: "absolute",
+			position: "absolute" as const,
 			top: `${dragPosition.y - dragOffset.y}px`,
 			zIndex: 50,
 			opacity: 0.7,
-			pointerEvents: "none",
+			pointerEvents: "none" as const,
 		};
 	};
+
+	const rowHeight = 34;
 
 	return (
 		<div className="h-full flex flex-col bg-white dark:bg-gray-900">
@@ -504,10 +538,10 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				{/* Timeline Header */}
 				<div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b dark:border-gray-800">
 					<div className="flex pl-[250px]">
-						{timelineDates.map((date, index) => (
+						{timelineDates.map((date) => (
 							<div
 								className="flex-1 text-center py-2 text-xs font-medium border-r dark:border-gray-800 last:border-r-0"
-								key={index}
+								key={date.getTime()}
 								style={{ minWidth: "60px" }}
 							>
 								<div className="text-muted-foreground dark:text-gray-400">
@@ -525,73 +559,111 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 
 				{/* Gantt Chart Body */}
 				<div className="relative">
-					{/* List rows with tasks */}
-					{lists.map((list) => (
-						<div
-							className="border-b dark:border-gray-800 last:border-b-0"
-							key={list._id}
-						>
-							<div className="flex">
-								{/* List name column */}
-								<div className="w-[250px] sticky left-0 bg-white dark:bg-gray-900 z-10 border-r dark:border-gray-800 p-3 flex flex-col justify-center">
-									<div className="font-medium truncate dark:text-gray-100">
-										{list.title}
-									</div>
-									<div className="text-xs text-muted-foreground dark:text-gray-400">
-										{tasksByList[list._id]?.length || 0} tasks
-									</div>
-								</div>
+					{lists.map((list) => {
+						const rows = groupedTasksByList[list._id]?.rows || [];
+						const listHeight = Math.max(1, rows.length) * rowHeight;
+						const taskCount = rows.filter((row) => row.task).length;
 
-								{/* Timeline grid */}
-								<div className="flex-1 relative min-h-[100px]">
-									{/* Background grid lines */}
-									<div className="absolute inset-0 flex">
-										{timelineDates.map((date, index) => (
-											<div
-												className={`flex-1 border-r dark:border-gray-800 last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5 dark:bg-secondary/10" : index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800/30" : "dark:bg-gray-900"}`}
-												key={index}
-												style={{ minWidth: "60px" }}
-											/>
-										))}
-									</div>
-
-									{/* Tasks for this list */}
-									<div className="relative p-2">
-										{tasksByList[list._id]?.map((task: GanttTask) => {
-											const style = getTaskPosition(task);
-											return (
+						return (
+							<div
+								className="border-b dark:border-gray-800 last:border-b-0"
+								key={list._id}
+							>
+								<div className="flex">
+									<div className="w-[250px] sticky left-0 bg-white dark:bg-gray-900 z-10 border-r dark:border-gray-800">
+										<div className="p-3 border-b dark:border-gray-800">
+											<div className="font-medium truncate dark:text-gray-100">
+												{list.title}
+											</div>
+											<div className="text-xs text-muted-foreground dark:text-gray-400">
+												{taskCount} tasks
+											</div>
+										</div>
+										<div style={{ height: listHeight }}>
+											{rows.map((row, rowIndex) => (
 												<div
-													className="mb-2 relative"
-													key={task.id}
-													style={{ height: "30px" }}
+													className={cn(
+														"flex items-center px-3 text-xs border-b dark:border-gray-800",
+														row.level === "subtask"
+															? "pl-7 text-muted-foreground"
+															: "text-foreground"
+													)}
+													key={`${row.card._id}-${rowIndex}`}
+													style={{ height: rowHeight }}
 												>
+													<span className="truncate">{row.card.title}</span>
+												</div>
+											))}
+										</div>
+									</div>
+
+									<div
+										className="flex-1 relative"
+										style={{ minHeight: listHeight }}
+									>
+										<div
+											className="absolute inset-0 flex"
+											style={{ height: listHeight }}
+										>
+											{timelineDates.map((date, index) => (
+												<div
+													className={`flex-1 border-r dark:border-gray-800 last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5 dark:bg-secondary/10" : index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800/30" : "dark:bg-gray-900"}`}
+													key={date.getTime()}
+													style={{ minWidth: "60px" }}
+												/>
+											))}
+										</div>
+
+										<div className="relative" style={{ height: listHeight }}>
+											{rows.map((row) => {
+												if (!row.task) {
+													return (
+														<div
+															key={`${row.card._id}-empty`}
+															style={{ height: rowHeight }}
+														/>
+													);
+												}
+
+												const style = getTaskPosition(row.task);
+												return (
 													<div
-														className="absolute top-0 h-full rounded-md border-2 shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]"
-														onClick={() => setSelectedTask(task)}
-														onMouseDown={(e) => handleDragStart(e, task)}
-														style={{
-															...style,
-															backgroundColor: getSolidPriorityColor(
-																task.priority
-															),
-															borderColor: getSolidPriorityColor(task.priority),
-														}}
+														className="relative"
+														key={row.task.id}
+														style={{ height: rowHeight }}
 													>
-														<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
-															<span className="text-xs font-semibold truncate text-white drop-shadow-sm">
-																{task.title}
-															</span>
-															<GripHorizontal className="ml-auto h-3 w-3 text-white/70 opacity-70 hover:opacity-100" />
+														<div
+															className="absolute h-[24px] top-[5px] rounded-md border-2 shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]"
+															onClick={() => setSelectedTask(row.task || null)}
+															onMouseDown={(e) =>
+																handleDragStart(e, row.task as GanttTask)
+															}
+															style={{
+																...style,
+																backgroundColor: getSolidPriorityColor(
+																	row.task.priority
+																),
+																borderColor: getSolidPriorityColor(
+																	row.task.priority
+																),
+															}}
+														>
+															<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
+																<span className="text-xs font-semibold truncate text-white drop-shadow-sm">
+																	{row.task.title}
+																</span>
+																<GripHorizontal className="ml-auto h-3 w-3 text-white/70 opacity-70 hover:opacity-100" />
+															</div>
 														</div>
 													</div>
-												</div>
-											);
-										})}
+												);
+											})}
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 
 					{/* Dragging task overlay */}
 					{isDragging && draggingTask && (
@@ -619,7 +691,6 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 			{/* Task Details Sidebar */}
 			{selectedTask && (
 				<div className="fixed right-0 top-[60px] bottom-0 w-[300px] bg-white dark:bg-gray-900 border-l dark:border-gray-800 shadow-lg overflow-hidden z-20 flex flex-col">
-					{/* Fixed Header */}
 					<div className="flex-shrink-0 p-4 border-b dark:border-gray-800 bg-white dark:bg-gray-900">
 						<div className="flex items-center justify-between mb-2">
 							<span className="text-xs text-muted-foreground dark:text-gray-400 uppercase tracking-wide">
@@ -640,7 +711,6 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 						</h3>
 					</div>
 
-					{/* Scrollable Content */}
 					<div className="flex-1 overflow-y-auto p-4">
 						<div className="space-y-4">
 							<div>
@@ -699,7 +769,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 										{selectedTask.labels.map((label, index) => (
 											<span
 												className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 text-xs rounded-full"
-												key={index}
+												key={`${selectedTask.id}-${label}-${index}`}
 											>
 												{label}
 											</span>

@@ -6,13 +6,15 @@ import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/3pc/apollo-tracking";
 import { ClarityTracking } from "@/components/3pc/clarity-tracking";
 import { Formbricks } from "@/components/3pc/formbricks";
+import { AuthenticatedOneSignalTracking } from "@/components/3pc/notifications";
+import { TidioChat } from "@/components/3pc/tidio-chat";
+import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
-import { TidioChat } from "@/components/3pc/tidio-chat";
 import { Toaster } from "@/components/ui/sonner";
-import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
 import { siteConfig } from "@/config";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
+import { AdBlockerProvider } from "@/lib/ad-blocker-context";
 
 import "./globals.css";
 
@@ -34,9 +36,9 @@ export const viewport: Viewport = {
 
 const metadata: Metadata = {
 	...siteConfig,
-	title: "Proddy - Your Team's Second Brain",
+	title: "Proddy - Your Smart Work Management Suite  ",
 	description:
-		"A vibrant team collaboration platform with real-time messaging, rich text editing, and emoji support.",
+		"Proddy unifies canvas, meetings, messaging, notes so work moves from discussion to execution without friction.",
 	manifest: "/manifest.json",
 	appleWebApp: {
 		capable: true,
@@ -81,17 +83,20 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 						`}
 					</Script>
 					<ConvexClientProvider>
-						<JotaiProvider>
-							<UsetifulProvider>
-								<Toaster closeButton richColors theme="light" />
-								<ModalProvider />
-								<TidioChat />
-								<Formbricks />
-								<ClarityTracking />
-								<ApolloTracking />
-								{children}
-							</UsetifulProvider>
-						</JotaiProvider>
+						<AdBlockerProvider>
+							<JotaiProvider>
+								<UsetifulProvider>
+									<Toaster closeButton richColors theme="light" />
+									<ModalProvider />
+									<AuthenticatedOneSignalTracking />
+									<TidioChat />
+									<Formbricks />
+									<ClarityTracking />
+									<ApolloTracking />
+									{children}
+								</UsetifulProvider>
+							</JotaiProvider>
+						</AdBlockerProvider>
 					</ConvexClientProvider>
 				</body>
 			</html>

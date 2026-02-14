@@ -1,4 +1,4 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
@@ -7,7 +7,7 @@ import { type NextRequest, NextResponse } from "next/server";
 dotenv.config();
 
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
+	apiKey: process.env.OPENROUTER_API_KEY || "",
 });
 
 interface MessageData {
@@ -51,17 +51,11 @@ function extractTextFromRichText(body: string): string {
 					.join("")
 					.replace(/\\n|\\N|\n/g, " ")
 					.trim();
-			} else {
-				console.log(
-					"extractTextFromRichText - No ops array found in parsed JSON"
-				);
 			}
 		} catch (error) {
 			console.log("extractTextFromRichText - JSON parsing failed:", error);
 			// If parsing fails, just use the original body
 		}
-	} else {
-		console.log("extractTextFromRichText - Not JSON format, using as is");
 	}
 
 	// Store in cache for future use
@@ -269,7 +263,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 			let text;
 			try {
 				const response = await generateText({
-					model: openrouter("google/gemini-2.5-flash"),
+					model: openrouter("openai/gpt-5-mini"),
 					messages: [
 						{
 							role: "system",
@@ -286,7 +280,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 				text = response.text;
 			} catch (error) {
 				const aiError = error as Error;
-				console.error("Error calling Gemini API:", aiError);
+				console.error("Error calling API:", aiError);
 				// Return fallback suggestions instead of throwing
 				return NextResponse.json({
 					suggestions: [
@@ -295,7 +289,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 						"Could we schedule a meeting about this?",
 					],
 					cached: false,
-					error: `Gemini API error: ${aiError.message || "Unknown error"}`,
+					error: `API error: ${aiError.message || "Unknown error"}`,
 				});
 			}
 

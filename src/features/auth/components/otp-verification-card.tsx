@@ -193,10 +193,11 @@ export const OTPVerificationCard = ({
 
 			{Boolean(error) && (
 				<div
-					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm border ${errorType === "expired"
-						? "bg-orange-50 border-orange-200 text-orange-700"
-						: "bg-red-50 border-red-200 text-red-600"
-						}`}
+					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm border ${
+						errorType === "expired"
+							? "bg-orange-50 border-orange-200 text-orange-700"
+							: "bg-red-50 border-red-200 text-red-600"
+					}`}
 				>
 					<TriangleAlert className="size-4 flex-shrink-0" />
 					<p>{error}</p>

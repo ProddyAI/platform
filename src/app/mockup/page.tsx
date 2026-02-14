@@ -303,10 +303,10 @@ const MockupPage = () => {
 										Key Features:
 									</p>
 									<div className="flex flex-wrap gap-2">
-										{page.features.map((feature, index) => (
+										{page.features.map((feature) => (
 											<Badge
 												className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-100"
-												key={index}
+												key={`${page.id}-${feature}`}
 												variant="secondary"
 											>
 												{feature}

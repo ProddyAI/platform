@@ -1,9 +1,11 @@
 import { v } from "convex/values";
+import { logger } from "../src/lib/logger";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
 	type ActionCtx,
 	action,
+	internalAction,
 	internalMutation,
 	type QueryCtx,
 	query,
@@ -210,6 +212,16 @@ type EmailNotificationResult = {
 	skipped?: boolean;
 };
 
+// Helper function to escape HTML to prevent XSS
+const escapeHtml = (unsafe: string): string => {
+	return unsafe
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+};
+
 // Helper function to extract message preview from body
 const extractMessagePreview = (
 	body: string | undefined,
@@ -254,9 +266,6 @@ export const sendDirectMessageEmail = action({
 
 			// Only process direct messages (messages with conversationId)
 			if (!message.conversationId) {
-				console.log(
-					"Message is not a direct message, skipping email notification"
-				);
 				return { success: true, skipped: true };
 			}
 
@@ -273,7 +282,7 @@ export const sendDirectMessageEmail = action({
 			}
 
 			// Get the sender using the existing query
-			const sender = await ctx.runQuery(api.members._getMemberById, {
+			const sender = await ctx.runQuery(api.members.getMemberById, {
 				memberId: message.memberId,
 			});
 			if (!sender || !sender.user) {
@@ -287,19 +296,15 @@ export const sendDirectMessageEmail = action({
 					? conversation.memberTwoId
 					: conversation.memberOneId;
 
-			const recipient = await ctx.runQuery(api.members._getMemberById, {
+			const recipient = await ctx.runQuery(api.members.getMemberById, {
 				memberId: recipientMemberId,
 			});
 			if (!recipient || !recipient.user || !recipient.user.email) {
-				console.log("Recipient has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
 			// Don't send email to the sender
 			if (sender.userId === recipient.userId) {
-				console.log(
-					"Sender and recipient are the same, skipping email notification"
-				);
 				return { success: true, skipped: true };
 			}
 
@@ -313,11 +318,6 @@ export const sendDirectMessageEmail = action({
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${message.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/direct-message`;
-			console.log(
-				"Sending direct message email notification to:",
-				recipient.user.email
-			);
-			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
@@ -345,8 +345,8 @@ export const sendDirectMessageEmail = action({
 					};
 				}
 
-				const result = await response.json();
-				console.log("Direct message email sent successfully:", result);
+				await response.json();
+				logger.info("Direct message email sent successfully");
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending direct message email:", error);
@@ -382,7 +382,7 @@ export const sendMentionEmail = action({
 			}
 
 			// Get the mentioned member
-			const mentionedMember = await ctx.runQuery(api.members._getMemberById, {
+			const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
 				memberId: mention.mentionedMemberId,
 			});
 			if (
@@ -390,12 +390,11 @@ export const sendMentionEmail = action({
 				!mentionedMember.user ||
 				!mentionedMember.user.email
 			) {
-				console.log("Mentioned user has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
 			// Get the mentioner
-			const mentioner = await ctx.runQuery(api.members._getMemberById, {
+			const mentioner = await ctx.runQuery(api.members.getMemberById, {
 				memberId: mention.mentionerMemberId,
 			});
 			if (!mentioner || !mentioner.user) {
@@ -405,9 +404,6 @@ export const sendMentionEmail = action({
 
 			// Don't send email to the mentioner themselves
 			if (mentioner.userId === mentionedMember.userId) {
-				console.log(
-					"Mentioner and mentioned user are the same, skipping email notification"
-				);
 				return { success: true, skipped: true };
 			}
 
@@ -440,11 +436,6 @@ export const sendMentionEmail = action({
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${mention.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/mention`;
-			console.log(
-				"Sending mention email notification to:",
-				mentionedMember.user.email
-			);
-			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
@@ -473,8 +464,8 @@ export const sendMentionEmail = action({
 					};
 				}
 
-				const result = await response.json();
-				console.log("Mention email sent successfully:", result);
+				await response.json();
+				logger.info("Mention email sent successfully");
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending mention email:", error);
@@ -520,7 +511,7 @@ export const sendThreadReplyEmail = action({
 			}
 
 			// Get the original author (parent message author)
-			const originalAuthor = await ctx.runQuery(api.members._getMemberById, {
+			const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
 				memberId: parentMessage.memberId,
 			});
 			if (
@@ -528,12 +519,11 @@ export const sendThreadReplyEmail = action({
 				!originalAuthor.user ||
 				!originalAuthor.user.email
 			) {
-				console.log("Original author has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
 			// Get the replier
-			const replier = await ctx.runQuery(api.members._getMemberById, {
+			const replier = await ctx.runQuery(api.members.getMemberById, {
 				memberId: replyMessage.memberId,
 			});
 			if (!replier || !replier.user) {
@@ -543,9 +533,6 @@ export const sendThreadReplyEmail = action({
 
 			// Don't send email if the replier is the same as the original author
 			if (replier.userId === originalAuthor.userId) {
-				console.log(
-					"Replier and original author are the same, skipping email notification"
-				);
 				return { success: true, skipped: true };
 			}
 
@@ -574,11 +561,6 @@ export const sendThreadReplyEmail = action({
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${replyMessage.workspaceId}`;
 			const apiUrl = `${baseUrl}/api/email/thread-reply`;
-			console.log(
-				"Sending thread reply email notification to:",
-				originalAuthor.user.email
-			);
-			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
@@ -608,8 +590,8 @@ export const sendThreadReplyEmail = action({
 					};
 				}
 
-				const result = await response.json();
-				console.log("Thread reply email sent successfully:", result);
+				await response.json();
+				logger.info("Thread reply email sent successfully");
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending thread reply email:", error);
@@ -677,10 +659,6 @@ export const sendWeeklyDigestEmails = action({
 					| "sunday",
 			});
 
-			console.log(
-				`Found ${users.length} users for weekly digest on ${args.dayOfWeek}`
-			);
-
 			const results = [];
 			const weekRange = getWeekRange();
 
@@ -740,10 +718,6 @@ export const sendWeeklyDigestEmails = action({
 							success: emailResponse.ok,
 							result: emailResult,
 						});
-
-						console.log(
-							`Weekly digest email ${emailResponse.ok ? "sent" : "failed"} for user ${user.email}`
-						);
 					} else {
 						results.push({
 							userId: user.userId,
@@ -752,9 +726,6 @@ export const sendWeeklyDigestEmails = action({
 							skipped: true,
 							reason: "No activity",
 						});
-						console.log(
-							`Skipped weekly digest for ${user.email} - no activity`
-						);
 					}
 				} catch (error) {
 					console.error(
@@ -1030,10 +1001,6 @@ export const sendCardAssignmentEmail = action({
 	): Promise<EmailNotificationResult> => {
 		try {
 			// Get the card details
-			console.log(
-				"Getting card details for email notification, cardId:",
-				cardId
-			);
 			const card: CardDetails | null = await ctx.runQuery(
 				api.board._getCardDetails,
 				{ cardId }
@@ -1042,14 +1009,8 @@ export const sendCardAssignmentEmail = action({
 				console.error("Card not found for email notification:", cardId);
 				return { success: false, error: "Card not found" };
 			}
-			console.log("Card details retrieved:", {
-				title: card.title,
-				listName: card.listName,
-				channelName: card.channelName,
-			});
 
 			// Get the assignee's email and name
-			console.log("Getting assignee email and name, assigneeId:", assigneeId);
 			const assigneeEmail: string | null = await ctx.runQuery(
 				api.board._getMemberEmail,
 				{
@@ -1057,7 +1018,6 @@ export const sendCardAssignmentEmail = action({
 				}
 			);
 			if (!assigneeEmail) {
-				console.log("Assignee has no email, skipping notification");
 				return { success: true, skipped: true };
 			}
 
@@ -1067,26 +1027,20 @@ export const sendCardAssignmentEmail = action({
 					memberId: assigneeId,
 				}
 			);
-			console.log("Assignee email:", assigneeEmail);
-			console.log("Assignee name:", assigneeName);
 
 			// Get the assigner's name
-			console.log("Getting assigner name, assignerId:", assignerId);
 			const assignerName: string | null = await ctx.runQuery(
 				api.board._getMemberName,
 				{
 					memberId: assignerId,
 				}
 			);
-			console.log("Assigner name:", assignerName);
 
 			// Send the email
 			// Make sure we're using the correct URL format for the API endpoint
 			const baseUrl = process.env.SITE_URL;
 			const workspaceUrl = `${baseUrl}/workspace/${card.workspaceId}/channel/${card.channelId}/board`;
 			const apiUrl = `${baseUrl}/api/email/assignee`;
-			console.log("Sending email notification to:", assigneeEmail);
-			console.log("Using API URL:", apiUrl);
 
 			try {
 				const response: Response = await fetch(apiUrl, {
@@ -1120,8 +1074,8 @@ export const sendCardAssignmentEmail = action({
 					};
 				}
 
-				const result = await response.json();
-				console.log("Card assignment email sent successfully:", result);
+				await response.json();
+				logger.info("Card assignment email sent successfully");
 				return { success: true };
 			} catch (error) {
 				console.error("Error sending card assignment email:", error);
@@ -1132,6 +1086,210 @@ export const sendCardAssignmentEmail = action({
 			}
 		} catch (error) {
 			console.error("Error in sendCardAssignmentEmail:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
+/**
+ * Helper function to build import email HTML with dynamic parameters
+ */
+function buildImportEmailHtml(
+	headerColor: string,
+	headerTitle: string,
+	bodyParagraphs: string[],
+	buttonLabel: string,
+	buttonHref: string
+): string {
+	const bodyContent = bodyParagraphs
+		.map((p) => {
+			// If the paragraph contains HTML tags (like divs for stats), use as-is
+			if (p.includes("<")) {
+				return p;
+			}
+			// Otherwise wrap in <p> tags
+			return `<p>${p}</p>`;
+		})
+		.join("");
+
+	const buttonHtml =
+		buttonLabel && buttonHref
+			? `<div style="text-align: center;"><a href="${buttonHref}" class="button">${buttonLabel}</a></div>`
+			: "";
+
+	return `
+		<!DOCTYPE html>
+		<html>
+			<head>
+				<meta charset="utf-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<style>
+					body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+					.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+					.header { background: ${headerColor}; color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+					.content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+					.stats { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+					.stat-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0; }
+					.stat-item:last-child { border-bottom: none; }
+					.stat-label { font-weight: 600; color: #666; }
+					.stat-value { font-weight: bold; color: #667eea; }
+					.button { display: inline-block; background: ${headerColor}; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; margin-top: 20px; }
+					.footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+				</style>
+			</head>
+			<body>
+				<div class="container">
+					<div class="header">
+						<h1 style="margin: 0; font-size: 24px;">${headerTitle}</h1>
+					</div>
+					<div class="content">
+						${bodyContent}
+						${buttonHtml}
+					</div>
+					<div class="footer">
+						<p>© 2026 Proddy. All rights reserved.</p>
+						<p>Questions? Contact us at support@proddy.tech</p>
+					</div>
+				</div>
+			</body>
+		</html>
+	`;
+}
+
+/**
+ * Send import completion email notification
+ */
+export const sendImportCompletionEmail = internalAction({
+	args: {
+		email: v.string(),
+		userName: v.string(),
+		platform: v.string(),
+		status: v.union(
+			v.literal("completed"),
+			v.literal("failed"),
+			v.literal("cancelled")
+		),
+		channelsImported: v.number(),
+		messagesImported: v.number(),
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (_ctx, args) => {
+		try {
+			const apiKey = process.env.RESEND_API_KEY;
+			const fromEmail =
+				process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
+
+			if (!apiKey) {
+				console.error("Resend email not configured");
+				return { success: false, error: "Email service not configured" };
+			}
+
+			const workspaceUrl = `${process.env.SITE_URL}/workspace/${args.workspaceId}`;
+			const platformName =
+				args.platform.charAt(0).toUpperCase() + args.platform.slice(1);
+
+			let subject: string;
+			let htmlContent: string;
+
+			if (args.status === "completed") {
+				subject = `✅ ${platformName} Import Completed Successfully`;
+				const statsHtml = `
+				<div class="stats">
+					<h3 style="margin-top: 0; color: #333;">Import Summary</h3>
+					<div class="stat-item">
+						<span class="stat-label">Channels Imported:</span>
+						<span class="stat-value">${args.channelsImported}</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-label">Messages Imported:</span>
+						<span class="stat-value">${args.messagesImported.toLocaleString()}</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-label">Platform:</span>
+						<span class="stat-value">${escapeHtml(platformName)}</span>
+					</div>
+				</div>
+			`;
+				htmlContent = buildImportEmailHtml(
+					"linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+					"🎉 Import Completed!",
+					[
+						`Hi ${escapeHtml(args.userName)},`,
+						`Great news! Your ${escapeHtml(platformName)} data has been successfully imported into your Proddy workspace.`,
+						statsHtml,
+						`All your ${escapeHtml(platformName)} conversations, channels, and messages are now available in your workspace. You can start collaborating with your team right away!`,
+					],
+					"Go to Workspace",
+					workspaceUrl
+				);
+			} else if (args.status === "failed") {
+				subject = `❌ ${platformName} Import Failed`;
+				htmlContent = buildImportEmailHtml(
+					"#ef4444",
+					"Import Failed",
+					[
+						`Hi ${escapeHtml(args.userName)},`,
+						`Unfortunately, your ${escapeHtml(platformName)} data import encountered an error and could not be completed.`,
+						`Please try again or contact our support team if the issue persists.`,
+					],
+					"Try Again",
+					`${workspaceUrl}/manage?tab=import`
+				);
+			} else {
+				subject = `${platformName} Import Cancelled`;
+				htmlContent = buildImportEmailHtml(
+					"#f59e0b",
+					"Import Cancelled",
+					[
+						`Hi ${escapeHtml(args.userName)},`,
+						`Your ${escapeHtml(platformName)} data import was cancelled.`,
+						`You can start a new import anytime from your workspace settings.`,
+					],
+					"",
+					""
+				);
+			}
+
+			try {
+				const supportEmail = process.env.SUPPORT_EMAIL || "support@proddy.tech";
+
+				const response = await fetch("https://api.resend.com/emails", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${apiKey}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						from: fromEmail,
+						to: args.email,
+						replyTo: supportEmail,
+						subject,
+						html: htmlContent,
+					}),
+				});
+
+				if (!response.ok) {
+					const errorData = await response.json();
+					console.error("Email API error:", errorData);
+					return {
+						success: false,
+						error: `Email API error: ${response.status}`,
+					};
+				}
+
+				return { success: true };
+			} catch (error) {
+				console.error("Error sending import completion email:", error);
+				return {
+					success: false,
+					error: error instanceof Error ? error.message : "Unknown error",
+				};
+			}
+		} catch (error) {
+			console.error("Error in sendImportCompletionEmail:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

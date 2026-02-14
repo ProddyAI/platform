@@ -1,4 +1,4 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
@@ -6,7 +6,7 @@ import { type NextRequest, NextResponse } from "next/server";
 // Load environment variables
 dotenv.config();
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
+	apiKey: process.env.OPENROUTER_API_KEY || "",
 });
 export async function POST(req: NextRequest) {
 	try {
@@ -39,13 +39,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		console.log(
-			"[Smart Formatter] Processing formatting request for content length:",
-			content.length
-		);
-
-		// Create the Gemini model
-		const model = openrouter("google/gemini-2.5-flash");
+		const model = openrouter("openai/gpt-5-mini");
 
 		// Prepare the formatting prompt
 		const prompt = `You are an expert document formatter and editor. Your task is to improve the formatting, structure, and readability of the provided document while preserving all the original content and meaning.
@@ -87,8 +81,6 @@ Formatted Content:`;
 				prompt,
 				temperature: 0.3, // Lower temperature for more consistent formatting
 			});
-
-			console.log("[Smart Formatter] Successfully formatted content");
 
 			return NextResponse.json({
 				formattedContent: text.trim(),

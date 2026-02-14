@@ -261,7 +261,7 @@ export const PieChart = ({
 
 							return (
 								<g key={`depth-${segment.index}`}>
-									{sidePaths?.map((pathData, idx) => {
+									{sidePaths?.map((pathData) => {
 										// Use lighter shade for outer arc to create proper cylinder effect
 										const fillColor =
 											pathData.type === "outer"
@@ -273,7 +273,7 @@ export const PieChart = ({
 												d={pathData.path}
 												fill={fillColor}
 												fillOpacity="1"
-												key={`side-${segment.index}-${idx}`}
+												key={`side-${segment.index}-${pathData.type}`}
 												stroke="rgba(0,0,0,0.1)"
 												strokeLinecap="round"
 												strokeLinejoin="round"
@@ -321,7 +321,7 @@ export const PieChart = ({
 
 								return (
 									<g key={`depth-hovered-${segment.index}`}>
-										{sidePaths?.map((pathData, idx) => {
+										{sidePaths?.map((pathData) => {
 											// Use lighter shade for outer arc to create proper cylinder effect
 											const fillColor =
 												pathData.type === "outer"
@@ -333,7 +333,7 @@ export const PieChart = ({
 													d={pathData.path}
 													fill={fillColor}
 													fillOpacity="1"
-													key={`side-${segment.index}-${idx}`}
+													key={`side-${segment.index}-${pathData.type}`}
 													stroke="rgba(0,0,0,0.1)"
 													strokeLinecap="round"
 													strokeLinejoin="round"

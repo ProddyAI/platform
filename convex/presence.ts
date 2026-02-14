@@ -157,6 +157,43 @@ export const workspaceHeartbeat = mutation({
 			return { roomToken: roomId, sessionToken: sessionId };
 		}
 
+		// Update activity tracking in history table for idle detection
+		// First, get ALL active records for this user/workspace to clean up duplicates
+		const allActiveRecords = await ctx.db
+			.query("history")
+			.withIndex("by_workspace_id_user_id_status", (q) =>
+				q
+					.eq("workspaceId", workspaceId)
+					.eq("userId", authUserId)
+					.eq("status", "active")
+			)
+			.collect();
+
+		const now = Date.now();
+
+		if (allActiveRecords.length > 0) {
+			// Update the first record and delete any duplicates
+			const recordToKeep = allActiveRecords[0];
+
+			await ctx.db.patch(recordToKeep._id, {
+				lastSeen: now,
+			});
+
+			// Delete any duplicate records
+			if (allActiveRecords.length > 1) {
+				await Promise.all(
+					allActiveRecords.slice(1).map((record) => ctx.db.delete(record._id))
+				);
+			}
+		} else {
+			await ctx.db.insert("history", {
+				userId: authUserId,
+				workspaceId,
+				status: "active",
+				lastSeen: now,
+			});
+		}
+
 		return await presence.heartbeat(
 			ctx,
 			roomId,

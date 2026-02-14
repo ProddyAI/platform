@@ -9,6 +9,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
 import { InviteMailTemplate } from "@/features/email/components/invite-mail";
+import { getEmailConfig } from "@/lib/email-config";
 
 let resend: Resend | null = null;
 
@@ -40,16 +41,24 @@ export async function POST(req: Request) {
 		convex.setAuth(token);
 
 		if (!process.env.INVITE_SECRET) {
+			console.error("[Invite Send] INVITE_SECRET not configured");
 			throw new Error("INVITE_SECRET environment variable is required");
 		}
 
 		if (!process.env.NEXT_PUBLIC_APP_URL) {
+			console.error("[Invite Send] NEXT_PUBLIC_APP_URL not configured");
 			throw new Error("NEXT_PUBLIC_APP_URL environment variable is required");
 		}
 
 		if (!process.env.RESEND_API_KEY) {
+			console.error("[Invite Send] RESEND_API_KEY not configured");
 			throw new Error("RESEND_API_KEY environment variable is required");
 		}
+
+		console.log(
+			"[Invite Send] Using APP_URL:",
+			process.env.NEXT_PUBLIC_APP_URL
+		);
 
 		resend ??= new Resend(process.env.RESEND_API_KEY);
 
@@ -96,6 +105,8 @@ export async function POST(req: Request) {
 		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.INVITE_SECRET}`;
 		const hash = crypto.createHash("sha256").update(raw).digest("hex");
 
+		console.log("[Invite Send] Creating invite for workspace:", workspaceId);
+
 		await convex.mutation(api.workspaceInvites.insertInvite, {
 			workspaceId,
 			email: email.toLowerCase(),
@@ -104,6 +115,10 @@ export async function POST(req: Request) {
 		});
 
 		const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/join/${workspaceId}?invite=${hash}`;
+		console.log(
+			"[Invite Send] Generated invite link for workspace:",
+			workspaceId
+		);
 
 		// Create the invite email template
 		const emailTemplate = InviteMailTemplate({
@@ -113,16 +128,32 @@ export async function POST(req: Request) {
 			inviteLink,
 		});
 
-		await resend.emails.send({
-			from: "Proddy <no-reply@proddy.tech>",
+		const { fromAddress, replyToAddress } = getEmailConfig();
+
+		const emailResult = await resend.emails.send({
+			from: fromAddress,
 			to: email,
 			subject: `You've been invited to join ${inviteDetails.workspaceName}`,
 			react: emailTemplate,
+			replyTo: replyToAddress,
 		});
+
+		// Check for Resend API errors (SDK doesn't throw, returns { data, error })
+		if (emailResult.error) {
+			console.error("[Invite Send] Resend API error:", emailResult.error);
+			throw new Error(
+				`Failed to send email: ${emailResult.error.message || "Unknown error"}`
+			);
+		}
+
+		console.log(
+			"[Invite Send] Email sent successfully. Email ID:",
+			emailResult.data?.id
+		);
 
 		return NextResponse.json({ success: true });
 	} catch (err) {
-		console.error(err);
+		console.error("[Invite Send] Error:", err);
 		return NextResponse.json(
 			{ error: "Failed to send invite" },
 			{ status: 500 }

@@ -37,46 +37,56 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 		productivity: 85,
 		highlights: [
 			{
+				id: "highlight-1",
 				type: "achievement",
 				title: "Payment API Integration Complete",
 				description:
 					"Successfully completed Stripe webhook setup with Alex Rodriguez",
 				time: "2:30 PM",
-				participants: ["Alex Rodriguez"],
+				participants: [{ id: "participant-1-1", name: "Alex Rodriguez" }],
 			},
 			{
+				id: "highlight-2",
 				type: "collaboration",
 				title: "Team Sprint Planning",
 				description: "Coordinated next sprint goals with development team",
 				time: "11:45 AM",
-				participants: ["Sarah Johnson", "Maya Patel", "David Kim"],
+				participants: [
+					{ id: "participant-2-1", name: "Sarah Johnson" },
+					{ id: "participant-2-2", name: "Maya Patel" },
+					{ id: "participant-2-3", name: "David Kim" },
+				],
 			},
 			{
+				id: "highlight-3",
 				type: "milestone",
 				title: "Database Optimization Results",
 				description: "40% performance improvement confirmed by Sarah",
 				time: "9:15 AM",
-				participants: ["Sarah Johnson"],
+				participants: [{ id: "participant-3-1", name: "Sarah Johnson" }],
 			},
 		],
 		topContacts: [
-			{ name: "Alex Rodriguez", messages: 12, avatar: null },
-			{ name: "Development Team", messages: 8, avatar: null },
-			{ name: "Sarah Johnson", messages: 6, avatar: null },
-			{ name: "Maya Patel", messages: 4, avatar: null },
+			{ id: "contact-1", name: "Alex Rodriguez", messages: 12, avatar: null },
+			{ id: "contact-2", name: "Development Team", messages: 8, avatar: null },
+			{ id: "contact-3", name: "Sarah Johnson", messages: 6, avatar: null },
+			{ id: "contact-4", name: "Maya Patel", messages: 4, avatar: null },
 		],
 		upcomingTasks: [
 			{
+				id: "task-1",
 				task: "Demo payment integration",
 				time: "Tomorrow 9:00 AM",
 				priority: "high",
 			},
 			{
+				id: "task-2",
 				task: "Review mobile wireframes",
 				time: "Tomorrow 2:00 PM",
 				priority: "medium",
 			},
 			{
+				id: "task-3",
 				task: "Security audit follow-up",
 				time: "Friday 10:00 AM",
 				priority: "low",
@@ -216,8 +226,8 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								</CardHeader>
 								<CardContent>
 									<div className="space-y-4">
-										{recapData.highlights.map((highlight, index) => (
-											<div className="flex gap-3" key={index}>
+										{recapData.highlights.map((highlight) => (
+											<div className="flex gap-3" key={highlight.id}>
 												<div className="flex-shrink-0 mt-1">
 													{getHighlightIcon(highlight.type)}
 												</div>
@@ -233,17 +243,15 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 															{highlight.time}
 														</span>
 														<div className="flex gap-1">
-															{highlight.participants.map(
-																(participant, pIndex) => (
-																	<Badge
-																		className="text-xs"
-																		key={pIndex}
-																		variant="secondary"
-																	>
-																		{participant}
-																	</Badge>
-																)
-															)}
+															{highlight.participants.map((participant) => (
+																<Badge
+																	className="text-xs"
+																	key={participant.id}
+																	variant="secondary"
+																>
+																	{participant.name}
+																</Badge>
+															))}
 														</div>
 													</div>
 												</div>
@@ -263,7 +271,7 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 								<CardContent>
 									<div className="space-y-3">
 										{recapData.topContacts.map((contact, index) => (
-											<div className="flex items-center gap-3" key={index}>
+											<div className="flex items-center gap-3" key={contact.id}>
 												<Avatar className="h-8 w-8">
 													<AvatarFallback className="text-xs">
 														{getInitials(contact.name)}
@@ -294,10 +302,10 @@ export const TestDailyRecap = ({ onClose }: TestDailyRecapProps) => {
 							</CardHeader>
 							<CardContent>
 								<div className="space-y-3">
-									{recapData.upcomingTasks.map((task, index) => (
+									{recapData.upcomingTasks.map((task) => (
 										<div
 											className="flex items-center justify-between p-3 border rounded-lg"
-											key={index}
+											key={task.id}
 										>
 											<div className="flex-1">
 												<div className="font-medium text-sm">{task.task}</div>

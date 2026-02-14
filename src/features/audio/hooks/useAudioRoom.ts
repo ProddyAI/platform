@@ -187,14 +187,6 @@ export const useAudioRoom = ({
 						callId: uniqueRoomId,
 						typeCandidates: callTypesToTry,
 					};
-					console.log("Stream audio debug (before join)", {
-						userId: user.id,
-						baseUserId,
-						deviceId,
-						roomId,
-						callId: uniqueRoomId,
-						typeCandidates: callTypesToTry,
-					});
 				}
 
 				for (const candidateCallType of callTypesToTry) {
@@ -318,13 +310,6 @@ export const useAudioRoom = ({
 						)}. ${details}`
 					);
 				}
-
-				console.log("Stream call joined", {
-					userId: user.id,
-					callType: joinedCallType,
-					callId: uniqueRoomId,
-					roomId,
-				});
 
 				// Some browsers/devices need mic enable after join as well.
 				try {

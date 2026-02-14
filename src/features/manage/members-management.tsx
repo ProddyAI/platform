@@ -397,16 +397,16 @@ export const MembersManagement = ({
 											{/* Remove Member Button */}
 											{((isOwner && member.role !== "owner") ||
 												(isAdmin && member.role === "member")) && (
-													<Button
-														className="text-destructive hover:bg-destructive/10"
-														disabled={member._id === currentMember._id}
-														onClick={() => openRemoveDialog(member._id)}
-														size="sm"
-														variant="outline"
-													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												)}
+												<Button
+													className="text-destructive hover:bg-destructive/10"
+													disabled={member._id === currentMember._id}
+													onClick={() => openRemoveDialog(member._id)}
+													size="sm"
+													variant="outline"
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
+											)}
 										</div>
 									</TableCell>
 								</TableRow>

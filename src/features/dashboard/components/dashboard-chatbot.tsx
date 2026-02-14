@@ -1,6 +1,11 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import {
+	DatabaseChatProvider,
+	useDatabaseChat,
+	useMessagesWithStreaming,
+} from "@dayhaysoos/convex-database-chat";
+import { useMutation } from "convex/react";
 import {
 	Bot,
 	Calendar,
@@ -72,21 +77,121 @@ type Message = {
 	actions?: NavigationAction[];
 };
 
+type IntegrationStatusApp = {
+	app: string;
+	connected: boolean;
+	connectionId?: string;
+	entityId?: string;
+};
+
+const SUPPORTED_INTEGRATION_ORDER = [
+	"GITHUB",
+	"GMAIL",
+	"SLACK",
+	"NOTION",
+	"CLICKUP",
+	"LINEAR",
+] as const;
+
+type SupportedIntegration = (typeof SUPPORTED_INTEGRATION_ORDER)[number];
+
+const INTEGRATION_METADATA: Record<
+	SupportedIntegration,
+	{
+		name: string;
+		description: string;
+		welcomeCapability: string;
+		examplePrompt: string;
+		icon: typeof Github;
+		iconClassName: string;
+	}
+> = {
+	GITHUB: {
+		name: "GitHub",
+		description: "Repository management, issues, and pull requests",
+		welcomeCapability: "List repositories, create issues, manage pull requests",
+		examplePrompt: "List my repositories",
+		icon: Github,
+		iconClassName: "text-gray-800 dark:text-gray-200",
+	},
+	GMAIL: {
+		name: "Gmail",
+		description: "Email sending, reading, and management",
+		welcomeCapability: "Send emails, read inbox messages, and manage drafts",
+		examplePrompt: "Send an email to [email]",
+		icon: Mail,
+		iconClassName: "text-red-600",
+	},
+	SLACK: {
+		name: "Slack",
+		description: "Messages, channels, and workspace communication",
+		welcomeCapability: "Send messages, browse channels, and review discussions",
+		examplePrompt: "Post a Slack update to #team",
+		icon: MessageSquare,
+		iconClassName: "text-violet-600",
+	},
+	NOTION: {
+		name: "Notion",
+		description: "Pages, databases, and workspace knowledge",
+		welcomeCapability: "Create pages, query databases, and find Notion content",
+		examplePrompt: "Create a Notion page for sprint notes",
+		icon: FileText,
+		iconClassName: "text-slate-700 dark:text-slate-200",
+	},
+	CLICKUP: {
+		name: "ClickUp",
+		description: "Tasks, projects, and time tracking",
+		welcomeCapability: "Create tasks, manage lists, and track project work",
+		examplePrompt: "Create a ClickUp task for release QA",
+		icon: CheckSquare,
+		iconClassName: "text-pink-600",
+	},
+	LINEAR: {
+		name: "Linear",
+		description: "Issue tracking and project planning",
+		welcomeCapability: "Create issues, update projects, and review team work",
+		examplePrompt: "Create a Linear issue for onboarding bug",
+		icon: Kanban,
+		iconClassName: "text-blue-600",
+	},
+};
+
+const getIntegrationMetadata = (app: string) =>
+	INTEGRATION_METADATA[app as SupportedIntegration];
+
 export const DashboardChatbot = ({
 	workspaceId,
 	member,
+}: DashboardChatbotProps) => (
+	<DatabaseChatProvider
+		api={{
+			getMessages: api.assistantChat.getMessages,
+			listConversations: api.assistantChat.listConversations,
+			getStreamState: api.assistantChat.getStreamState,
+			getStreamDeltas: api.assistantChat.getStreamDeltas,
+			createConversation: api.assistantChat.createConversation,
+			abortStream: api.assistantChat.abortStream,
+			sendMessage: api.assistantChat.sendMessage,
+		}}
+	>
+		<DashboardChatbotBody member={member} workspaceId={workspaceId} />
+	</DatabaseChatProvider>
+);
+
+const DashboardChatbotBody = ({
+	workspaceId,
+	member,
 }: DashboardChatbotProps) => {
-	const [messages, setMessages] = useState<Message[]>([]);
+	const [conversationId, setConversationId] = useState<string | null>(null);
+	const [welcomeMessage, setWelcomeMessage] = useState<Message | null>(null);
 	const [input, setInput] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
 	const [integrationStatus, setIntegrationStatus] = useState<{
-		connected: any[];
+		connected: IntegrationStatusApp[];
 		totalTools: number;
 		loading: boolean;
 	}>({ connected: [], totalTools: 0, loading: true });
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const { toast } = useToast();
-	const [isInitialized, setIsInitialized] = useState(false);
 	const router = useRouter();
 
 	// Autocomplete for @users and #channels in the chatbot input
@@ -184,89 +289,68 @@ export const DashboardChatbot = ({
 		return () => document.removeEventListener("mousedown", onMouseDown);
 	}, [autocompleteOpen, closeAutocomplete]);
 
-	// Get workspace data
-	const workspace = useQuery(api.workspaces.getById, { id: workspaceId });
-
-	// Get chat history from Convex
-	const chatHistory = useQuery(api.chatbotQueries.getChatHistory, {
-		workspaceId,
+	const createConversation = useMutation(api.assistantChat.createConversation);
+	const {
+		send,
+		abort,
+		isLoading: isSending,
+	} = useDatabaseChat({
+		conversationId,
 	});
+	const { allMessages, isStreaming } = useMessagesWithStreaming({
+		conversationId,
+	});
+	const isLoading = isSending || isStreaming;
 
-	// Convex mutations
-	const clearChatHistoryMutation = useMutation(
-		api.chatbotQueries.clearChatHistory
-	);
-	const addMessageMutation = useMutation(api.chatbotQueries.addMessage);
+	const displayMessages: Message[] = allMessages.map((msg, index) => ({
+		id: String((msg as any)._id ?? index),
+		content: msg.content ?? "",
+		sender: msg.role === "user" ? "user" : "assistant",
+		role: msg.role === "user" ? "user" : "assistant",
+		timestamp: new Date((msg as any)._creationTime ?? Date.now()),
+	}));
 
-	// Initialize messages from chat history
+	const renderedMessages = displayMessages.length
+		? displayMessages
+		: welcomeMessage
+			? [welcomeMessage]
+			: [];
+
 	useEffect(() => {
-		if (chatHistory && !isInitialized) {
-			if (chatHistory.messages && chatHistory.messages.length > 0) {
-				// Convert Convex chat history to our Message format
-				const formattedMessages = chatHistory.messages.map((msg, index) => ({
-					id: index.toString(),
-					content: msg.content,
-					sender: msg.role as "user" | "assistant",
-					role: msg.role as "user" | "assistant", // Ensure role is set
-					timestamp: new Date(msg.timestamp),
-					sources: msg.sources
-						? msg.sources.map((source) => ({
-							id: source.id,
-							type: source.type,
-							text: source.text,
-						}))
-						: undefined,
-					actions: (msg as any).actions || undefined,
-				}));
-				setMessages(formattedMessages);
-			} else {
-				// Set basic welcome message - will be updated when integration status loads
-				setMessages([
-					{
-						id: "1",
-						content: `Hello! I'm your workspace assistant. I can help you with:
-
-• **Workspace Content**: Search messages, tasks, notes, and board cards
-• **Navigation**: Find and navigate to specific workspace content
-
-I'm checking for available integrations...`,
-						sender: "assistant",
-						role: "assistant",
-						timestamp: new Date(),
-					},
-				]);
-			}
-			setIsInitialized(true);
+		if (!conversationId && workspaceId && member?.userId) {
+			createConversation({
+				workspaceId,
+				userId: member.userId,
+				title: "Assistant Chat",
+			}).then(setConversationId);
 		}
-	}, [chatHistory, isInitialized]);
+	}, [conversationId, workspaceId, member, createConversation]);
 
 	// Update welcome message when integration status changes
 	useEffect(() => {
-		if (!integrationStatus.loading && isInitialized) {
-			// Only update if it's the initial welcome message
-			if (
-				messages.length === 1 &&
-				messages[0].id === "1" &&
-				messages[0].content.includes("checking for available integrations")
-			) {
+		if (!integrationStatus.loading) {
+			if (!displayMessages.length) {
 				const connectedApps = integrationStatus.connected;
-				const hasGitHub = connectedApps.some(
-					(app: any) => app.app === "GITHUB"
-				);
-				const hasGmail = connectedApps.some((app: any) => app.app === "GMAIL");
+				const connectedSupportedIntegrations =
+					SUPPORTED_INTEGRATION_ORDER.filter((integration) =>
+						connectedApps.some(
+							(connectedApp) => connectedApp.app === integration
+						)
+					);
 
 				let content = `Hello! I'm your workspace assistant. I can help you with:
 
 • **Workspace Content**: Search messages, tasks, notes, and board cards`;
 
-				if (hasGitHub) {
+				if (connectedSupportedIntegrations.length > 0) {
 					content += `
-• **GitHub Integration**: List repositories, create issues, manage pull requests`;
-				}
-
-				if (hasGmail) {
-					content += `
-• **Gmail Integration**: Send emails, read messages, manage drafts`;
+• **Connected Integrations**:`;
+					for (const integration of connectedSupportedIntegrations) {
+						const metadata = getIntegrationMetadata(integration);
+						if (!metadata) continue;
+						content += `
+• **${metadata.name}**: ${metadata.welcomeCapability}`;
+					}
 				}
 
 				content += `
@@ -274,40 +358,41 @@ I'm checking for available integrations...`,
 
 Try asking me things like:`;
 
-				if (hasGitHub) {
+				for (const integration of connectedSupportedIntegrations) {
+					const metadata = getIntegrationMetadata(integration);
+					if (!metadata) continue;
 					content += `
-- "List my repositories"`;
+- "${metadata.examplePrompt}"`;
 				}
 
 				content += `
 - "What are my recent tasks?"`;
 
-				if (hasGmail) {
-					content += `
-- "Send an email to [email]"`;
-				}
-
 				content += `
 - "Show me recent messages"`;
 
-				if (!hasGitHub && !hasGmail) {
+				if (connectedSupportedIntegrations.length === 0) {
+					const supportedNames = SUPPORTED_INTEGRATION_ORDER.map(
+						(integration) => {
+							const metadata = getIntegrationMetadata(integration);
+							return metadata?.name ?? integration;
+						}
+					).join(", ");
 					content += `
 
-*Note: Connect GitHub or Gmail integrations to unlock more capabilities!*`;
+*Note: Connect supported integrations (${supportedNames}) to unlock more capabilities!*`;
 				}
 
-				setMessages([
-					{
-						id: "1",
-						content,
-						sender: "assistant",
-						role: "assistant",
-						timestamp: new Date(),
-					},
-				]);
+				setWelcomeMessage({
+					id: "welcome",
+					content,
+					sender: "assistant",
+					role: "assistant",
+					timestamp: new Date(),
+				});
 			}
 		}
-	}, [integrationStatus, isInitialized, messages]);
+	}, [integrationStatus, displayMessages.length]);
 
 	// Check integration status
 	useEffect(() => {
@@ -351,153 +436,22 @@ Try asking me things like:`;
 	}, []);
 
 	const handleSendMessage = async () => {
-		if (!input.trim()) return;
+		if (!input.trim() || !conversationId) return;
 
-		// Add user message to UI
-		const userMessage: Message = {
-			id: Date.now().toString(),
-			content: input,
-			sender: "user",
-			role: "user", // Add role property
-			timestamp: new Date(),
-		};
-
-		// Store the message for later use
 		const userQuery = input.trim();
-
-		// Update UI immediately
-		setMessages((prev) => [...prev, userMessage]);
 		setInput("");
-		setIsLoading(true);
 
 		try {
-			console.log("Sending message to assistant:", userQuery);
-
-			// Get workspace context for assistant integration
-			const workspaceContext = workspace ? `Workspace: ${workspace.name}` : "";
-
-			// Prepare conversation history for the API (take last 6 exchanges)
-			const conversationHistory = messages
-				.slice(-12) // Last 12 messages (6 exchanges) - reduced from 20
-				.map((msg) => ({
-					role: msg.role || msg.sender, // Use role if available, fallback to sender
-					content:
-						msg.content.length > 500
-							? `${msg.content.substring(0, 500)}...`
-							: msg.content, // Truncate long messages
-				}));
-
-			console.log(
-				"Sending conversation history:",
-				conversationHistory.length,
-				"messages"
-			);
-
-			// Call the main assistant router API
-			const response = await fetch("/api/assistant", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				credentials: "include",
-				body: JSON.stringify({
-					message: userQuery,
-					workspaceContext,
-					workspaceId,
-					conversationHistory,
-					memberId: member?._id, // Pass member ID for user-specific integrations
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					`Assistant API error: ${response.status} ${response.statusText}`
-				);
-			}
-
-			const result = await response.json();
-
-			// Validate response
-			if (!result) {
-				throw new Error("Empty response from assistant API");
-			}
-
-			if (result.error) {
-				console.error("Error from assistant API:", result.error);
-				throw new Error(result.error);
-			}
-
-			if (!result.response) {
-				throw new Error("Missing response content from assistant API");
-			}
-
-			console.log("Received response from assistant");
-
-			// Add assistant response to UI immediately so the user sees it
-			const assistantMessage: Message = {
-				id: (Date.now() + 1).toString(),
-				content: result.response,
-				sender: "assistant",
-				role: "assistant",
-				timestamp: new Date(),
-				sources: result.sources,
-				actions: result.actions,
-			};
-			setMessages((prev) => [...prev, assistantMessage]);
-
-			// Persist to Convex after UI update (so UI is not blocked by save)
-			try {
-				await addMessageMutation({
-					workspaceId,
-					content: userQuery,
-					role: "user",
-				});
-				await addMessageMutation({
-					workspaceId,
-					content: result.response,
-					role: "assistant",
-					sources: result.sources,
-					actions: result.actions,
-				});
-			} catch (persistError) {
-				console.warn(
-					"[Dashboard Chatbot] Failed to persist messages:",
-					persistError
-				);
-				toast({
-					title: "Chat saved locally",
-					description: "Response may not sync to other devices.",
-					variant: "default",
-				});
-			}
+			await send(userQuery);
 		} catch (error) {
-			console.error("Error in chatbot:", error);
-
-			// Extract error message
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error occurred";
-
-			// Add fallback response with error details for better debugging
-			const fallbackMessage: Message = {
-				id: (Date.now() + 1).toString(),
-				content: `I'm having trouble connecting right now. Please try again later. ${process.env.NODE_ENV === "development"
-					? `(Error: ${errorMessage})`
-					: ""
-					}`,
-				sender: "assistant",
-				role: "assistant",
-				timestamp: new Date(),
-			};
-
-			setMessages((prev) => [...prev, fallbackMessage]);
-
+			console.error("Error in chatbot:", error);
 			toast({
 				title: "Assistant Error",
-				description: "Failed to get a response from the assistant.",
+				description: errorMessage,
 				variant: "destructive",
 			});
-		} finally {
-			setIsLoading(false);
 		}
 	};
 
@@ -522,19 +476,21 @@ Try asking me things like:`;
 
 	const clearConversation = async () => {
 		try {
-			await clearChatHistoryMutation({ workspaceId });
-
-			// Reset UI messages
-			setMessages([
-				{
-					id: Date.now().toString(),
-					content:
-						"Hello! I'm your workspace assistant. How can I help you today?",
-					sender: "assistant",
-					role: "assistant",
-					timestamp: new Date(),
-				},
-			]);
+			if (isStreaming) {
+				await abort();
+			}
+			const newConversationId = await createConversation({
+				workspaceId,
+				userId: member.userId,
+				title: "Assistant Chat",
+				forceNew: true,
+			});
+			setConversationId(newConversationId);
+			setWelcomeMessage(null);
+			toast({
+				title: "Success",
+				description: "Chat history cleared.",
+			});
 		} catch (error) {
 			console.error("Error clearing chat history:", error);
 			toast({
@@ -661,10 +617,10 @@ Try asking me things like:`;
 								Sources used for this response:
 							</h4>
 							<div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-								{sources.map((source, index) => (
+								{sources.map((source) => (
 									<div
 										className="text-xs p-2 bg-muted/50 rounded border"
-										key={index}
+										key={source.id}
 									>
 										<div className="font-semibold text-primary mb-1">
 											{getSourceTypeDisplay(source.type)}
@@ -729,31 +685,31 @@ Try asking me things like:`;
 													Connected Integrations
 												</h4>
 												<div className="space-y-2">
-													{integrationStatus.connected.map((app: any) => (
-														<div
-															className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border"
-															key={app.app}
-														>
-															{app.app === "GITHUB" && (
-																<Github className="h-4 w-4 text-gray-800 dark:text-gray-200" />
-															)}
-															{app.app === "GMAIL" && (
-																<Mail className="h-4 w-4 text-red-600" />
-															)}
-															<div className="flex-1">
-																<div className="font-medium text-sm">
-																	{app.app}
+													{integrationStatus.connected.map((app) => {
+														const metadata = getIntegrationMetadata(app.app);
+														const Icon = metadata?.icon ?? Zap;
+
+														return (
+															<div
+																className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border"
+																key={app.app}
+															>
+																<Icon
+																	className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
+																/>
+																<div className="flex-1">
+																	<div className="font-medium text-sm">
+																		{metadata?.name ?? app.app}
+																	</div>
+																	<div className="text-xs text-muted-foreground">
+																		{metadata?.description ??
+																			"Connected and available for assistant actions"}
+																	</div>
 																</div>
-																<div className="text-xs text-muted-foreground">
-																	{app.app === "GITHUB" &&
-																		"Repository management, issues, pull requests"}
-																	{app.app === "GMAIL" &&
-																		"Email sending, reading, and management"}
-																</div>
+																<CheckCircle className="h-4 w-4 text-green-600" />
 															</div>
-															<CheckCircle className="h-4 w-4 text-green-600" />
-														</div>
-													))}
+														);
+													})}
 												</div>
 												<div className="text-xs text-muted-foreground pt-2 border-t">
 													{integrationStatus.totalTools} tools available for
@@ -784,17 +740,19 @@ Try asking me things like:`;
 			<CardContent className="flex-1 overflow-hidden p-0">
 				<ScrollArea className="h-[calc(100vh-240px)] px-4" ref={scrollAreaRef}>
 					<div className="flex flex-col gap-4 py-4 pb-10">
-						{messages.map((message) => (
+						{renderedMessages.map((message) => (
 							<div
-								className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
-									}`}
+								className={`flex ${
+									message.sender === "user" ? "justify-end" : "justify-start"
+								}`}
 								key={message.id}
 							>
 								<div
-									className={`max-w-[80%] rounded-lg px-4 py-3 ${message.sender === "user"
-										? "bg-primary text-primary-foreground"
-										: "bg-muted"
-										}`}
+									className={`max-w-[80%] rounded-lg px-4 py-3 ${
+										message.sender === "user"
+											? "bg-primary text-primary-foreground"
+											: "bg-muted"
+									}`}
 								>
 									{message.sender === "user" ? (
 										<p className="text-sm">{message.content}</p>
@@ -848,10 +806,10 @@ Try asking me things like:`;
 									{message.sources && renderSourceBadges(message.sources)}
 									{message.actions && message.actions.length > 0 && (
 										<div className="flex flex-wrap gap-2 mt-3">
-											{message.actions.map((action, index) => (
+											{message.actions.map((action) => (
 												<Button
 													className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
-													key={index}
+													key={`${action.type}-${action.url}-${action.label}`}
 													onClick={() => handleNavigation(action)}
 													size="sm"
 													variant="outline"
