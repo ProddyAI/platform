@@ -197,7 +197,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "searchChannels",
 		description:
-			"Search for channels in the workspace by name. Returns matching channels with their IDs. ALWAYS use this first when the user mentions a channel by name (e.g., '#general', '#engineering') to get the channel ID before calling other channel tools.",
+			"Search for channels in the workspace by name. Returns matching channels with their IDs. Only use this for finding/browsing channel information within the workspace. For Slack operations (posting messages, replying), use runSlackTool instead.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -303,7 +303,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "runSlackTool",
 		description:
-			"Use Slack to post messages, reply in threads, or get channel info. Provide a clear instruction like 'post in #general that the deploy is done'.",
+			"Use Slack to post messages, find channels, reply in threads, or get channel info. This is your PRIMARY tool for any Slack operations - use it to send messages directly to Slack channels. Provide a clear instruction like 'post in #general that the deploy is done' or 'send a hi to any channel in slack'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -573,17 +573,44 @@ export const sendMessage = action({
 			};
 		}
 
+		console.log("[sendMessage] Fetching connected apps");
+		// Get connected apps for this user
+		let connectedAppNames = await ctx.runQuery(
+			api.integrations.getMyActiveConnectedAppNames,
+			{ workspaceId: resolvedWorkspaceId }
+		);
+		if (connectedAppNames.length === 0) {
+			console.log(
+				"[sendMessage] No connected apps in DB. Checking Composio directly..."
+			);
+			const composioConnectedApps = await ctx.runAction(
+				api.assistantComposioTools.getConnectedAppNamesFromComposio,
+				{
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+				}
+			);
+			if (Array.isArray(composioConnectedApps)) {
+				connectedAppNames = composioConnectedApps;
+			}
+		}
+		console.log("[sendMessage] Connected apps:", connectedAppNames);
+		console.log("[sendMessage] Connected apps count:", connectedAppNames.length);
+
 		const queryIntent = classifyAssistantQuery(args.message);
 		const selectedToolDefinitions = selectToolsForQuery(
 			TOOL_DEFINITIONS,
 			queryIntent.requestedExternalApps
 		);
 
+		console.log("[sendMessage] User message:", args.message);
 		console.log("[sendMessage] Query classified:", {
 			mode: queryIntent.mode,
 			requiresExternalTools: queryIntent.requiresExternalTools,
+			requestedExternalApps: queryIntent.requestedExternalApps,
 			selectedToolsCount: selectedToolDefinitions.length,
 			selectedToolNames: selectedToolDefinitions.map(t => t.name),
+			externalToolNames: selectedToolDefinitions.filter(t => t.externalApp).map(t => t.name),
 		});
 
 		try {
@@ -601,12 +628,17 @@ export const sendMessage = action({
 			);
 
 			// Build messages array with system prompt
+			const systemPrompt = buildAssistantSystemPrompt({
+				externalToolsAllowed: queryIntent.requiresExternalTools,
+				connectedApps: connectedAppNames,
+			});
+			console.log("[sendMessage] System prompt length:", systemPrompt.length);
+			console.log("[sendMessage] System prompt:", systemPrompt);
+
 			const messages = [
 				{
 					role: "system",
-					content: buildAssistantSystemPrompt({
-						externalToolsAllowed: queryIntent.requiresExternalTools,
-					}),
+					content: systemPrompt,
 				},
 				...rawMessages.map((m: any) => ({
 					role: m.role,
@@ -631,6 +663,11 @@ export const sendMessage = action({
 
 			console.log("[sendMessage] buildAiTools completed");
 			console.log("[sendMessage] aiTools keys:", Object.keys(aiTools));
+			console.log("[sendMessage] aiTools count:", Object.keys(aiTools).length);
+			console.log("[sendMessage] External tools in aiTools:", Object.keys(aiTools).filter(key => {
+				const toolDef = selectedToolDefinitions.find(t => t.name === key);
+				return toolDef?.externalApp;
+			}));
 			console.log("[sendMessage] messages array length:", messages.length);
 			console.log("[sendMessage] messages:", JSON.stringify(messages.slice(0, 2), null, 2));
 
@@ -732,7 +769,7 @@ export const sendMessage = action({
 						Boolean(tool.externalApp)
 					),
 					externalUsed: externalToolUsed,
-					connectedApps: [],
+					connectedApps: connectedAppNames,
 				},
 			});
 

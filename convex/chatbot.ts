@@ -10,6 +10,69 @@ import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
 import { api, internal } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
 import { action } from "./_generated/server";
+function filterToolSetForOpenAI(tools: Record<string, any>): Record<string, any> {
+	const entries = Object.entries(tools).filter(([name]) => {
+		if (!name || name.length > 64) return false;
+		if (!/^[a-zA-Z0-9_-]+$/.test(name)) return false;
+		return true;
+	});
+	return Object.fromEntries(entries);
+}
+
+function selectRelevantTools(
+	tools: Record<string, any>,
+	instruction: string,
+	maxTools: number
+): Record<string, any> {
+	const entries = Object.entries(tools);
+	const normalized = instruction.toLowerCase();
+
+	const scored = entries.map(([name, tool]) => {
+		const lowerName = name.toLowerCase();
+		let score = 0;
+
+		// Score based on instruction keywords matching tool name
+		if (normalized.includes("github") && lowerName.includes("github"))
+			score += 10;
+		if (normalized.includes("slack") && lowerName.includes("slack")) score += 10;
+		if (normalized.includes("message") && lowerName.includes("message"))
+			score += 5;
+		if (normalized.includes("post") && lowerName.includes("post")) score += 5;
+		if (normalized.includes("send") && lowerName.includes("post"))
+			score += 5;
+		if (normalized.includes("list") && lowerName.includes("list")) score += 3;
+		if (normalized.includes("rep") && lowerName.includes("repo")) score += 5;
+		if (normalized.includes("issue") && lowerName.includes("issue"))
+			score += 3;
+		if (normalized.includes("channel") && lowerName.includes("channel"))
+			score += 5;
+		if (normalized.includes("user") && lowerName.includes("user"))
+			score += 3;
+		if (normalized.includes("commit") && lowerName.includes("commit"))
+			score += 3;
+		if (normalized.includes("branch") && lowerName.includes("branch"))
+			score += 3;
+
+		// Bonus for common action words that are typically executable
+		if (lowerName.includes("list")) score += 1;
+		if (lowerName.includes("get")) score += 1;
+		if (lowerName.includes("create")) score += 1;
+		if (lowerName.includes("post")) score += 2;
+		if (lowerName.includes("send")) score += 2;
+
+		return { name, tool, score };
+	});
+
+	const filtered = scored
+		.filter((item) => item.score > 0)
+		.sort((a, b) => b.score - a.score)
+		.slice(0, maxTools);
+
+	if (filtered.length > 0) {
+		return Object.fromEntries(filtered.map((item) => [item.name, item.tool]));
+	}
+	return Object.fromEntries(entries.slice(0, maxTools));
+}
 
 // Define types for chat messages and responses
 type Source = {
@@ -428,6 +491,7 @@ async function executeComposioAction(
 		});
 
 		const connectedApps: string[] = [];
+		const authConfigIdsByApp: Record<string, string> = {};
 		let entityIdForTools = entityId;
 
 		// Resolve auth config IDs from member's or workspace's connected accounts
@@ -458,7 +522,8 @@ async function executeComposioAction(
 				);
 				if (!authConfig?.composioAuthConfigId) {
 					console.warn(`[Composio] No Composio auth config ID for ${appName}`);
-					continue;
+				} else {
+					authConfigIdsByApp[appName] = authConfig.composioAuthConfigId;
 				}
 
 				// Use the connection's entityId: Composio links connections to an entity (e.g. workspace_xxx).
@@ -481,10 +546,30 @@ async function executeComposioAction(
 			};
 		}
 
-		const tools = await (composio as any).getTools(
-			{ apps: connectedApps },
-			entityIdForTools
-		);
+		const toolsByApp: Record<string, any> = {};
+		for (const appName of connectedApps) {
+			try {
+				const authConfigId = authConfigIdsByApp[appName];
+				const appTools = authConfigId
+					? await composio.tools.get(entityIdForTools, {
+							authConfigIds: [authConfigId],
+							limit: 1000,
+						})
+					: await composio.tools.get(entityIdForTools, {
+							toolkits: [appName.toLowerCase()],
+							limit: 1000,
+						});
+				Object.assign(toolsByApp, appTools || {});
+			} catch (error) {
+				console.warn(
+					"[Chatbot Composio] Failed to fetch tools for",
+					appName
+				);
+			}
+		}
+
+		const filteredTools = filterToolSetForOpenAI(toolsByApp);
+		const tools = selectRelevantTools(filteredTools, message, 60);
 
 		if (!tools || Object.keys(tools).length === 0) {
 			return {
@@ -495,7 +580,17 @@ async function executeComposioAction(
 
 		const result = await generateText({
 			model: openai("gpt-4o-mini"),
-			system: `You are a helpful assistant with access to ${connectedApps.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
+			system: `You are a helpful assistant with access to ${connectedApps.join(", ")} tools. 
+			
+IMPORTANT: You MUST use the available tools to accomplish the user's request. 
+- Look through the available tools and select the most appropriate one
+- Execute the tool with the correct parameters
+- Return the results to the user
+
+For GitHub queries like "list repositories", use tools with names like GITHUB_LIST_REPOS or GITHUB_GITHUB_REPOS_FOR_AUTHENTICATED_USER.
+For Slack queries like "send message", use tools with names like SLACK_CHAT_POST_MESSAGE.
+
+Never say you cannot access these services - you have the tools to do so.`,
 			messages: [
 				{
 					role: "user",

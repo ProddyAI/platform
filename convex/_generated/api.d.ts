@@ -42,6 +42,7 @@ import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
 import type * as search from "../search.js";
 import type * as tasks from "../tasks.js";
+import type * as testComposio from "../testComposio.js";
 import type * as threadTitles from "../threadTitles.js";
 import type * as typing from "../typing.js";
 import type * as upload from "../upload.js";
@@ -92,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   reactions: typeof reactions;
   search: typeof search;
   tasks: typeof tasks;
+  testComposio: typeof testComposio;
   threadTitles: typeof threadTitles;
   typing: typeof typing;
   upload: typeof upload;
