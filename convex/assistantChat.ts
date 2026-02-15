@@ -1,3 +1,4 @@
+import { saveMessage } from "@convex-dev/agent";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { openai } from "@ai-sdk/openai";
@@ -9,7 +10,13 @@ import {
 	buildAssistantSystemPrompt,
 	classifyAssistantQuery,
 } from "../src/lib/assistant-orchestration";
-import { api, components } from "./_generated/api";
+import { proddyAgent } from "./assistant/agent";
+import { buildThreadContextPrompt } from "./assistant/context";
+import {
+	categorizeError,
+	handleAssistantError,
+} from "./assistant/errorHandling";
+import { api, components, internal } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
 
 type ToolHandlerType = "query" | "mutation" | "action";
@@ -437,19 +444,21 @@ export const createConversation = mutation({
 			return existing.conversationId;
 		}
 
-		const conversationId = await ctx.runMutation(
-			components.databaseChat.conversations.create,
+		// Use agent thread as conversation (unified agent-based architecture)
+		const thread = await ctx.runMutation(
+			components.agent.threads.createThread,
 			{
-				externalId: `workspace_${args.workspaceId}_user_${args.userId}_${Date.now()}`,
+				userId: args.userId,
 				title: args.title ?? "Chat with Proddy",
 			}
 		);
+		const conversationId = thread._id;
 
 		if (existing && args.forceNew) {
-			// Update existing record instead of creating duplicate
 			await ctx.db.patch(existing._id, {
 				conversationId,
 				lastMessageAt: Date.now(),
+				source: "agent",
 			});
 		} else {
 			await ctx.db.insert("assistantConversations", {
@@ -457,6 +466,7 @@ export const createConversation = mutation({
 				userId: args.userId,
 				conversationId,
 				lastMessageAt: Date.now(),
+				source: "agent",
 			});
 		}
 
@@ -464,10 +474,46 @@ export const createConversation = mutation({
 	},
 });
 
+/** Map agent MessageDoc to UI shape { role, content, _creationTime } */
+function agentMessageToUI(doc: {
+	_creationTime: number;
+	message?: { role?: string; content?: string | Array<{ type: string; text?: string }> };
+}): { role: string; content: string; _creationTime: number } {
+	const role = doc.message?.role ?? "user";
+	let content = "";
+	if (typeof doc.message?.content === "string") {
+		content = doc.message.content;
+	} else if (Array.isArray(doc.message?.content)) {
+		content = doc.message.content
+			.map((p) => (p.type === "text" && p.text ? p.text : ""))
+			.join("");
+	}
+	return { role, content, _creationTime: doc._creationTime };
+}
+
 export const getMessages = query({
 	args: { conversationId: v.string() },
 	returns: v.array(v.any()),
 	handler: async (ctx, args) => {
+		const meta = await ctx.runQuery(
+			api.assistantConversations.getByConversationId,
+			{ conversationId: args.conversationId }
+		);
+		if (!meta) return [];
+
+		if (meta.source === "agent") {
+			const result = await ctx.runQuery(
+				components.agent.messages.listMessagesByThreadId,
+				{
+					threadId: args.conversationId,
+					order: "asc",
+					paginationOpts: { numItems: 100, cursor: null },
+					excludeToolMessages: true,
+				}
+			);
+			return result.page.map(agentMessageToUI);
+		}
+
 		return await ctx.runQuery(components.databaseChat.messages.list, {
 			conversationId: args.conversationId as any,
 		});
@@ -478,6 +524,21 @@ export const listConversations = query({
 	args: { workspaceId: v.id("workspaces"), userId: v.id("users") },
 	returns: v.array(v.any()),
 	handler: async (ctx, args) => {
+		const row = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+			)
+			.unique();
+		if (row) {
+			return [
+				{
+					_id: row.conversationId,
+					title: "Chat with Proddy",
+					updatedAt: row.lastMessageAt,
+				},
+			];
+		}
 		return await ctx.runQuery(components.databaseChat.conversations.list, {
 			externalId: `workspace_${args.workspaceId}_user_${args.userId}`,
 		});
@@ -487,6 +548,11 @@ export const listConversations = query({
 export const getStreamState = query({
 	args: { conversationId: v.string() },
 	handler: async (ctx, args) => {
+		const meta = await ctx.runQuery(
+			api.assistantConversations.getByConversationId,
+			{ conversationId: args.conversationId }
+		);
+		if (meta?.source === "agent") return null;
 		return await ctx.runQuery(components.databaseChat.stream.getStream, {
 			conversationId: args.conversationId as any,
 		});
@@ -506,6 +572,11 @@ export const getStreamDeltas = query({
 export const abortStream = mutation({
 	args: { conversationId: v.string(), reason: v.optional(v.string()) },
 	handler: async (ctx, args) => {
+		const meta = await ctx.runQuery(
+			api.assistantConversations.getByConversationId,
+			{ conversationId: args.conversationId }
+		);
+		if (meta?.source === "agent") return;
 		return await ctx.runMutation(
 			components.databaseChat.stream.abortByConversation,
 			{
@@ -573,6 +644,8 @@ export const sendMessage = action({
 			};
 		}
 
+		const startMs = Date.now();
+
 		console.log("[sendMessage] Fetching connected apps");
 		// Get connected apps for this user
 		let connectedAppNames = await ctx.runQuery(
@@ -613,8 +686,99 @@ export const sendMessage = action({
 			externalToolNames: selectedToolDefinitions.filter(t => t.externalApp).map(t => t.name),
 		});
 
+		// Agent-backed conversation: use @convex-dev/agent thread and tools
+		if (conversationMeta?.source === "agent") {
+			try {
+				const threadContext = await ctx.runQuery(
+					api.assistant.context.getThreadContext,
+					{ threadId: args.conversationId }
+				);
+				const { messageId: promptMessageId } = await saveMessage(
+					ctx,
+					components.agent,
+					{
+						threadId: args.conversationId,
+						userId: resolvedUserId,
+						prompt: args.message,
+					}
+				);
+				let systemPrompt = buildAssistantSystemPrompt({
+					externalToolsAllowed: queryIntent.requiresExternalTools,
+					connectedApps: connectedAppNames,
+				});
+				if (threadContext?.recentTools?.length) {
+					systemPrompt += buildThreadContextPrompt(threadContext);
+				}
+				const result = await proddyAgent.generateText(
+					{
+						...ctx,
+						workspaceId: resolvedWorkspaceId,
+						userId: resolvedUserId,
+					},
+					{
+						threadId: args.conversationId,
+						userId: resolvedUserId,
+					},
+					{ promptMessageId, system: systemPrompt } as any
+				);
+				await ctx.runMutation(api.assistantConversations.upsertConversation, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: args.conversationId,
+					lastMessageAt: Date.now(),
+				});
+				const metadata = buildAssistantResponseMetadata({
+					assistantType: "convex",
+					executionPath: "convex-assistant",
+					intent: queryIntent,
+					tools: {
+						internalEnabled: true,
+						externalEnabled: selectedToolDefinitions.some((t) =>
+							Boolean(t.externalApp)
+						),
+						externalUsed: false,
+						connectedApps: connectedAppNames,
+					},
+				});
+				await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: args.conversationId,
+					outcome: "success",
+					durationMs: Date.now() - startMs,
+					executionPath: "convex-assistant",
+					timestamp: Date.now(),
+				});
+				return {
+					success: true,
+					content: result.text ?? "",
+					metadata,
+				};
+			} catch (error) {
+				console.error("[sendMessage] Agent error:", error);
+				await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: args.conversationId,
+					outcome: "error",
+					durationMs: Date.now() - startMs,
+					executionPath: "convex-assistant",
+					errorCategory: categorizeError(error),
+					timestamp: Date.now(),
+				});
+				const handled = await handleAssistantError(error, {
+					query: args.message,
+					attemptCount: 0,
+				});
+				return {
+					success: false,
+					error: handled.message,
+				};
+			}
+		}
+
 		try {
-			// Save user message
+			// Save user message (database-chat path)
 			await ctx.runMutation(components.databaseChat.messages.add, {
 				conversationId: args.conversationId as any,
 				role: "user",
@@ -773,13 +937,36 @@ export const sendMessage = action({
 				},
 			});
 
+			await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
+				workspaceId: resolvedWorkspaceId,
+				userId: resolvedUserId,
+				conversationId: args.conversationId,
+				outcome: "success",
+				durationMs: Date.now() - startMs,
+				executionPath: "convex-assistant",
+				timestamp: Date.now(),
+			});
 			return { success: true, content: responseText, metadata };
 		} catch (error) {
 			console.error("[sendMessage] Error occurred:", error);
 			console.error("[sendMessage] Error stack:", error instanceof Error ? error.stack : "No stack");
+			await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
+				workspaceId: resolvedWorkspaceId,
+				userId: resolvedUserId,
+				conversationId: args.conversationId,
+				outcome: "error",
+				durationMs: Date.now() - startMs,
+				executionPath: "convex-assistant",
+				errorCategory: categorizeError(error),
+				timestamp: Date.now(),
+			});
+			const handled = await handleAssistantError(error, {
+				query: args.message,
+				attemptCount: 0,
+			});
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
+				error: handled.message,
 			};
 		}
 	},

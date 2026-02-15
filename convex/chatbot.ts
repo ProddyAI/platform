@@ -1,5 +1,11 @@
 "use node";
 
+/**
+ * @deprecated Legacy chatbot implementation. New dashboard assistant uses
+ * agent-based flow in assistantChat.ts with @convex-dev/agent (see convex/assistant/agent.ts).
+ * Prefer createConversation/sendMessage via assistantChat for new features.
+ */
+
 import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
@@ -2972,11 +2978,11 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 				query: args.query,
 				limit: 5,
 			});
-			ragResults = ragResponse.results.map(
-				(r: { content: Array<{ text: string }> }) => ({
-					text: r.content.map((c) => c.text).join("\n"),
-				})
-			);
+			ragResults = (
+				ragResponse.results as Array<{ content: Array<{ text: string }> }>
+			).map((r) => ({
+				text: r.content.map((c) => c.text).join("\n"),
+			}));
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);

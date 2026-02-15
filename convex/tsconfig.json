@@ -13,13 +13,21 @@
 		"allowSyntheticDefaultImports": true,
 		/* These compiler options are required by Convex */
 		"target": "ESNext",
-		"lib": ["ES2022", "dom"],
+		"lib": [
+			"ES2022",
+			"dom"
+		],
 		"downlevelIteration": true,
 		"forceConsistentCasingInFileNames": true,
 		"module": "ESNext",
 		"isolatedModules": true,
 		"noEmit": true
 	},
-	"include": ["./**/*"],
-	"exclude": ["./_generated"]
+	"include": [
+		"./**/*",
+		"../tests/errorHandling.test.ts"
+	],
+	"exclude": [
+		"./_generated"
+	]
 }
