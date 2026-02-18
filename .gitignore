@@ -3,6 +3,7 @@ scripts/next-build.js
 /node_modules
 /.pnp
 .env.local
+.env.convex
 /coverage
 /.next/
 /.next-win/

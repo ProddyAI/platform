@@ -7,11 +7,14 @@ import {
 	Mail,
 	MessageSquare,
 	Shield,
+	UserCheck,
 	UserPlus,
+	Users,
 	Volume2,
 	VolumeX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PushNotificationPrompt } from "@/components/3pc/notifications";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
 	Card,
@@ -48,7 +51,9 @@ export const NotificationSettings = () => {
 				notifications.mentions &&
 				notifications.assignee &&
 				notifications.threadReply &&
-				notifications.directMessage;
+				notifications.directMessage &&
+				notifications.inviteSent &&
+				notifications.workspaceJoin;
 			setAllNotificationsEnabled(allEnabled);
 		}
 	}, [notifications]);
@@ -63,7 +68,9 @@ export const NotificationSettings = () => {
 					assignee: enabled,
 					threadReply: enabled,
 					directMessage: enabled,
-					// Keep weekly digest separate as it's different from instant notifications
+					inviteSent: enabled,
+					workspaceJoin: enabled,
+					// Keep weekly digest and onlineStatus separate as they're different from instant notifications
 				},
 			});
 		} finally {
@@ -145,6 +152,21 @@ export const NotificationSettings = () => {
 			icon: Mail,
 			enabled: notifications?.directMessage ?? true,
 		},
+		{
+			key: "inviteSent",
+			title: "Invite Links",
+			description: "Get notified when an invite link is sent to the workspace",
+			icon: Mail,
+			enabled: notifications?.inviteSent ?? true,
+		},
+		{
+			key: "workspaceJoin",
+			title: "Workspace Joins",
+			description:
+				"Get notified when someone joins a workspace (if you are online)",
+			icon: Users,
+			enabled: notifications?.workspaceJoin ?? true,
+		},
 	];
 
 	const weeklyDigestEnabled = notifications?.weeklyDigest ?? false;
@@ -152,6 +174,9 @@ export const NotificationSettings = () => {
 
 	return (
 		<div className="space-y-6">
+			{/* Push Notification Prompt */}
+			<PushNotificationPrompt />
+
 			{/* Master Notification Toggle */}
 			<Card>
 				<CardHeader>
@@ -243,6 +268,29 @@ export const NotificationSettings = () => {
 							)}
 						</div>
 					))}
+
+					<Separator />
+
+					{/* Online/Offline Status Notifications */}
+					<div className="flex items-center justify-between">
+						<div className="space-y-1">
+							<Label className="flex items-center gap-2 text-base font-medium">
+								<UserCheck className="h-4 w-4" />
+								Online/Offline Status
+							</Label>
+							<p className="text-sm text-muted-foreground">
+								Get notified when team members go online or offline (excludes
+								DND status changes)
+							</p>
+						</div>
+						<Switch
+							checked={notifications?.onlineStatus ?? false}
+							disabled={isUpdating}
+							onCheckedChange={(enabled) =>
+								handleNotificationToggle("onlineStatus", enabled)
+							}
+						/>
+					</div>
 
 					<Separator />
 

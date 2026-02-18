@@ -1,5 +1,5 @@
 import { Composio } from "@composio/core";
-import { OpenAIProvider } from "@composio/openai";
+import { VercelProvider } from "@composio/vercel";
 import { logger } from "./logger";
 
 // Type definitions for Composio tools
@@ -82,6 +82,7 @@ const DASHBOARD_TOOLS = {
 		"GITHUB_CREATE_AN_ORGANIZATION_REPOSITORY",
 		"GITHUB_CREATE_A_BLOB",
 		"GITHUB_CREATE_A_COMMIT",
+		"GITHUB_LIST_REPOS",
 		"GITHUB_CREATE_A_PULL_REQUEST",
 		"GITHUB_CREATE_A_REFERENCE",
 		"GITHUB_CREATE_A_RELEASE",
@@ -691,15 +692,15 @@ export const APP_CONFIGS = {
 	},
 } as const;
 
-// Initialize Composio client with OpenAI provider
-export function createComposioClient(): Composio {
+// Initialize Composio client with Vercel AI SDK provider
+export function createComposioClient(): Composio<VercelProvider> {
 	if (!process.env.COMPOSIO_API_KEY) {
 		throw new Error("COMPOSIO_API_KEY environment variable is required");
 	}
 
 	return new Composio({
 		apiKey: process.env.COMPOSIO_API_KEY,
-		provider: new OpenAIProvider(),
+		provider: new VercelProvider(),
 	});
 }
 
@@ -731,7 +732,7 @@ const API_TOOL_FALLBACKS: Record<string, string[]> = {
 
 // Fetch ALL available tools for connected apps and cache them
 export async function getAllToolsForApps(
-	composio: Composio,
+	composio: Composio<any>,
 	entityId: string,
 	apps: AvailableApp[],
 	useCache: boolean = true
@@ -1234,7 +1235,7 @@ export function getWorkspaceEntityId(workspaceId: string): string {
 
 // Helper to check if user has connected accounts for specific apps
 export async function getConnectedApps(
-	composio: Composio,
+	composio: Composio<any>,
 	entityId: string
 ): Promise<{ app: AvailableApp; connected: boolean; connectionId?: string }[]> {
 	try {
@@ -1355,7 +1356,7 @@ function validateToolsForOpenAI(tools: ComposioTool[]): ComposioTool[] {
  * @returns An array of ConnectedApp objects for each supported app indicating whether it is connected, the chosen connection id when connected, and the entity id used for the connection (present only when a connection was found).
  */
 export async function getAnyConnectedApps(
-	composio: Composio,
+	composio: Composio<any>,
 	workspaceId: string, // Keep workspaceId for backward compatibility
 	entityId?: string // Optional: specific entity ID (e.g., member_123 or workspace_456)
 ): Promise<ConnectedApp[]> {
@@ -1456,7 +1457,7 @@ export async function getAnyConnectedApps(
  * @param keepConnectionId - Optional connection ID to preserve (the newly created one)
  */
 export async function cleanupOldConnections(
-	composio: Composio,
+	composio: Composio<any>,
 	entityId: string,
 	authConfigId: string,
 	keepConnectionId?: string
@@ -1560,7 +1561,7 @@ export async function cleanupOldConnections(
  * @returns An object `{ success: true, redirectUrl, connectionId }` on success, or `{ success: false, error }` on failure
  */
 export async function initiateAppConnection(
-	composio: Composio,
+	composio: Composio<any>,
 	entityId: string,
 	app: AvailableApp,
 	callbackUrl?: string

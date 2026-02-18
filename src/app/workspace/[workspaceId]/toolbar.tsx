@@ -2,16 +2,12 @@
 
 import { formatDistanceToNow } from "date-fns";
 import {
-	Activity,
 	Bell,
 	Calendar,
 	CheckSquare,
 	FileText,
-	HeartPulse,
-	HelpCircle,
 	LayoutList,
 	Loader2,
-	Map as MapIcon,
 	MessageSquare,
 	Search,
 } from "lucide-react";
@@ -42,7 +38,6 @@ import { useSearchMessages } from "@/features/workspaces/api/use-search-messages
 import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { showTidioChat } from "@/lib/client/tidio-helpers";
 
 interface WorkspaceToolbarProps {
 	children: ReactNode;
@@ -58,13 +53,6 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const [userSettingsTab, setUserSettingsTab] = useState<
 		"profile" | "notifications"
 	>("profile");
-	const roadmapUrl = process.env.NEXT_PUBLIC_ROADMAP_URL;
-	const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL;
-	const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_URL;
-	const hasRoadmapUrl = Boolean(roadmapUrl && roadmapUrl !== "#");
-	const hasDocsUrl = Boolean(docsUrl && docsUrl !== "#");
-	const hasStatusUrl = Boolean(statusPageUrl && statusPageUrl !== "#");
-
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
 
@@ -355,85 +343,6 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						<Search className="size-5" />
 					</Button>
 				</div>
-
-				{/* Roadmap Button - Hidden on mobile */}
-				{hasRoadmapUrl && (
-					<div className="hidden md:block">
-						<Hint label="Roadmap & Feedback" side="bottom">
-							<Button
-								className="text-white relative hover:bg-white/15 transition-colors"
-								onClick={() => {
-									window.open(roadmapUrl, "_blank", "noopener,noreferrer");
-								}}
-								size="iconSm"
-								variant="ghost"
-							>
-								<div className="relative">
-									<MapIcon className="size-5" />
-								</div>
-							</Button>
-						</Hint>
-					</div>
-				)}
-
-				{/* Documentation Button - Hidden on mobile */}
-				{hasDocsUrl && (
-					<div className="hidden md:block">
-						<Hint label="Documentation" side="bottom">
-							<Button
-								className="text-white relative hover:bg-white/15 transition-colors"
-								onClick={() => {
-									window.open(docsUrl, "_blank", "noopener,noreferrer");
-								}}
-								size="iconSm"
-								variant="ghost"
-							>
-								<div className="relative">
-									<HelpCircle className="size-5" />
-								</div>
-							</Button>
-						</Hint>
-					</div>
-				)}
-
-				{/* Chat Support Button - Hidden on mobile */}
-				<div className="hidden md:block">
-					<Hint label="Chat Support" side="bottom">
-						<Button
-							className="text-white relative hover:bg-white/15 transition-colors"
-							onClick={() => {
-								// Show Tidio chat widget
-								showTidioChat();
-							}}
-							size="iconSm"
-							variant="ghost"
-						>
-							<div className="relative">
-								<HeartPulse className="size-5" />
-							</div>
-						</Button>
-					</Hint>
-				</div>
-
-				{/* Status Page Button - Hidden on mobile */}
-				{hasStatusUrl && (
-					<div className="hidden md:block">
-						<Hint label="System Status" side="bottom">
-							<Button
-								className="text-white relative hover:bg-white/15 transition-colors"
-								onClick={() => {
-									window.open(statusPageUrl, "_blank", "noopener,noreferrer");
-								}}
-								size="iconSm"
-								variant="ghost"
-							>
-								<div className="relative">
-									<Activity className="size-5" />
-								</div>
-							</Button>
-						</Hint>
-					</div>
-				)}
 
 				{/* Notifications Button */}
 				<Hint label="Notifications" side="bottom">

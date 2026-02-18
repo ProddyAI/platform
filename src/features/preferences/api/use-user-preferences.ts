@@ -17,6 +17,9 @@ export const useUserPreferences = () => {
 				assignee?: boolean;
 				threadReply?: boolean;
 				directMessage?: boolean;
+				inviteSent?: boolean;
+				workspaceJoin?: boolean;
+				onlineStatus?: boolean;
 				weeklyDigest?: boolean;
 				weeklyDigestDay?:
 					| "monday"

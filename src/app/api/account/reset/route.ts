@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { api } from "@/../convex/_generated/api";
 import { PasswordResetMail } from "@/features/email/components/password-reset-mail";
+import { getEmailConfig } from "@/lib/email-config";
 
 let resend: Resend | null = null;
 
@@ -104,11 +105,14 @@ export async function POST(request: NextRequest) {
 			resetLink,
 		});
 
+		const { fromAddress, replyToAddress } = getEmailConfig();
+
 		const { error } = await resendClient.emails.send({
-			from: "Proddy <noreply@proddy.tech>",
+			from: fromAddress,
 			to: normalizedEmail,
 			subject: "Reset Your Password - Proddy",
 			react: emailTemplate,
+			replyTo: replyToAddress,
 		});
 
 		if (error) {

@@ -1,25 +1,26 @@
 "use client";
 
-import { ChevronDown, Plus, RefreshCw } from "lucide-react";
+import { ChevronDown, Expand, Plus, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { forwardRef } from "react";
 
 import type { Doc } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useGetWorkspaces } from "@/features/workspaces/api/use-get-workspaces";
 import { useCreateWorkspaceModal } from "@/features/workspaces/store/use-create-workspace-modal";
@@ -28,188 +29,234 @@ import { cn } from "@/lib/utils";
 import { InviteModal } from "./invitation";
 
 interface WorkspaceHeaderProps {
-	workspace: Doc<"workspaces">;
-	isAdmin: boolean;
-	isCollapsed?: boolean;
+  workspace: Doc<"workspaces">;
+  isAdmin: boolean;
+  isCollapsed?: boolean;
 }
 
+// Helper function to show content when workspace button is collapsed
+const CollapsedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspaces"> }>(
+	function CollapsedButton({ workspace }: { workspace: Doc<"workspaces"> }) {
+  return (
+    <Hint align="center" label={workspace.name} side="right">
+      <Button
+        className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
+        size="icon"
+        variant="ghost"
+      >
+        <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+          {workspace.name.charAt(0).toUpperCase()}
+        </div>
+      </Button>
+    </Hint>
+  );
+}
+);
+
+// Helper function to show content when workspace button is expanded
+const ExpandedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspaces"> }>(function ExpandedButton({ workspace }: { workspace: Doc<"workspaces"> }) {
+  return (
+    <Button
+      className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
+      size="lg"
+      variant="ghost"
+    >
+      <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+        {workspace.name.charAt(0).toUpperCase()}
+      </div>
+      <div className="flex flex-col items-start min-w-0">
+        <span className="text-sm md:text-base font-semibold tracking-tight truncate max-w-[100px] md:max-w-full">
+          {workspace.name}
+        </span>
+        <span className="text-xs text-secondary-foreground/70 hidden md:inline-block">
+          Active Workspace
+        </span>
+      </div>
+      <ChevronDown className="ml-0.5 size-3.5 shrink-0 opacity-70 transition-transform duration-200 group-hover:rotate-180" />
+    </Button>
+  );
+}
+);
+
 export const WorkspaceHeader = ({
-	workspace,
-	isAdmin,
-	isCollapsed = false,
+  workspace,
+  isAdmin,
+  isCollapsed = false,
 }: WorkspaceHeaderProps) => {
-	const router = useRouter();
-	const [inviteOpen, setInviteOpen] = useState(false);
-	const [switchOpen, setSwitchOpen] = useState(false);
-	const [_, setCreateOpen] = useCreateWorkspaceModal();
-	const { data: workspaces } = useGetWorkspaces();
+  const router = useRouter();
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [switchOpen, setSwitchOpen] = useState(false);
+  const [_, setCreateOpen] = useCreateWorkspaceModal();
+  const { data: workspaces } = useGetWorkspaces();
 
-	const onWorkspaceClick = (id: string) => {
-		setSwitchOpen(false); // updated reference
-		router.push(`/workspace/${id}`);
-	};
+  const onWorkspaceClick = (id: string) => {
+    setSwitchOpen(false); // updated reference
+    router.push(`/workspace/${id}`);
+  };
 
-	return (
-		<>
-			<InviteModal
-				joinCode={workspace.joinCode}
-				name={workspace.name}
-				open={inviteOpen}
-				setOpen={setInviteOpen}
-			/>
+  return (
+    <>
+      <InviteModal
+        joinCode={workspace.joinCode}
+        name={workspace.name}
+        open={inviteOpen}
+        setOpen={setInviteOpen}
+      />
 
-			<div
-				className={cn(
-					"flex h-14 md:h-16 items-center justify-between gap-1 border-b border-primary/20",
-					isCollapsed ? "px-1 md:px-2" : "px-2 md:px-6"
-				)}
-			>
-				<div className="flex items-center gap-1">
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							{isCollapsed ? (
-								<Hint align="center" label={workspace.name} side="right">
-									<Button
-										className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
-										size="icon"
-										variant="ghost"
-									>
-										<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
-											{workspace.name.charAt(0).toUpperCase()}
-										</div>
-									</Button>
-								</Hint>
-							) : (
-								<Button
-									className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
-									size="lg"
-									variant="ghost"
-								>
-									<div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
-										{workspace.name.charAt(0).toUpperCase()}
-									</div>
-									<div className="flex flex-col items-start min-w-0">
-										<span className="text-sm md:text-base font-semibold tracking-tight truncate max-w-[100px] md:max-w-full">
-											{workspace.name}
-										</span>
-										<span className="text-xs text-secondary-foreground/70 hidden md:inline-block">
-											Active Workspace
-										</span>
-									</div>
-									<ChevronDown className="ml-0.5 size-3.5 shrink-0 opacity-70 transition-transform duration-200 group-hover:rotate-180" />
-								</Button>
-							)}
-						</DropdownMenuTrigger>
+      <div
+        className={cn(
+          "flex h-14 md:h-16 items-center justify-between gap-1 border-b border-primary/20",
+          isCollapsed ? "px-1 md:px-2" : "px-2 md:px-6",
+        )}
+      >
+        <div className="flex items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              {isCollapsed ? (
+                 <CollapsedButton workspace={workspace} />
+				// <Hint align="center" label={workspace.name} side="right">
+                //   <Button
+                //     className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
+                //     size="icon"
+                //     variant="ghost"
+                //   >
+                //     <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+                //       {workspace.name.charAt(0).toUpperCase()}
+                //     </div>
+                //   </Button>
+                // </Hint>
+              ) : (
+                // <ExpandedButton workspace={workspace} />
+                <Button
+                  className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
+                  size="lg"
+                  variant="ghost"
+                >
+                  <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+                    {workspace.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-sm md:text-base font-semibold tracking-tight truncate max-w-[100px] md:max-w-full">
+                      {workspace.name}
+                    </span>
+                    <span className="text-xs text-secondary-foreground/70 hidden md:inline-block">
+                      Active Workspace
+                    </span>
+                  </div>
+                  <ChevronDown className="ml-0.5 size-3.5 shrink-0 opacity-70 transition-transform duration-200 group-hover:rotate-180" />
+                </Button>
+              )}
+            </DropdownMenuTrigger>
 
-						<DropdownMenuContent
-							align="start"
-							className="w-64 p-2"
-							side="bottom"
-						>
-							<DropdownMenuItem className="cursor-pointer capitalize rounded-[8px] p-3 mb-1 hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground">
-								<div className="relative mr-3 flex size-10 items-center justify-center overflow-hidden rounded-[10px] bg-secondary text-xl font-semibold text-secondary-foreground shadow-md">
-									{workspace.name.charAt(0).toUpperCase()}
-								</div>
+            <DropdownMenuContent
+              align="start"
+              className="w-64 p-2"
+              side="bottom"
+            >
+              <DropdownMenuItem className="cursor-pointer capitalize rounded-[8px] p-3 mb-1 hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground">
+                <div className="relative mr-3 flex size-10 items-center justify-center overflow-hidden rounded-[10px] bg-secondary text-xl font-semibold text-secondary-foreground shadow-md">
+                  {workspace.name.charAt(0).toUpperCase()}
+                </div>
 
-								<div className="flex flex-col items-start">
-									<p className="font-bold tracking-tight">{workspace.name}</p>
-									<p className="text-xs text-muted-foreground">
-										Active workspace
-									</p>
-								</div>
-							</DropdownMenuItem>
+                <div className="flex flex-col items-start">
+                  <p className="font-bold tracking-tight">{workspace.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Active workspace
+                  </p>
+                </div>
+              </DropdownMenuItem>
 
-							{isAdmin && (
-								<>
-									<DropdownMenuSeparator />
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
 
-									<DropdownMenuItem
-										className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
-										onClick={() => setInviteOpen(true)}
-									>
-										<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
-											<Plus className="size-3.5 text-secondary transition-transform duration-200 group-hover:scale-125" />
-										</div>
-										<span className="font-medium">
-											Invite to {workspace.name}
-										</span>
-									</DropdownMenuItem>
-								</>
-							)}
+                  <DropdownMenuItem
+                    className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
+                    onClick={() => setInviteOpen(true)}
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
+                      <Plus className="size-3.5 text-secondary transition-transform duration-200 group-hover:scale-125" />
+                    </div>
+                    <span className="font-medium">
+                      Invite to {workspace.name}
+                    </span>
+                  </DropdownMenuItem>
+                </>
+              )}
 
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
-								onClick={() => setSwitchOpen(true)} // updated here
-							>
-								<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
-									<RefreshCw className="size-3.5 text-secondary transition-transform duration-200 group-hover:rotate-45" />
-								</div>
-								<span className="font-medium">Switch Workspace</span>
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
+                onClick={() => setSwitchOpen(true)} // updated here
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
+                  <RefreshCw className="size-3.5 text-secondary transition-transform duration-200 group-hover:rotate-45" />
+                </div>
+                <span className="font-medium">Switch Workspace</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-					<Dialog onOpenChange={setSwitchOpen} open={switchOpen}>
-						{" "}
-						{/* updated here */}
-						<DialogContent className="overflow-hidden p-0 rounded-[12px] border-0 shadow-xl">
-							<DialogHeader className="border-b p-5 bg-muted/30">
-								<DialogTitle className="text-xl font-semibold tracking-tight">
-									Workspaces
-								</DialogTitle>
-								<DialogDescription className="text-sm text-muted-foreground">
-									Select a workspace to switch to.
-								</DialogDescription>
-							</DialogHeader>
+          <Dialog onOpenChange={setSwitchOpen} open={switchOpen}>
+            {" "}
+            {/* updated here */}
+            <DialogContent className="overflow-hidden p-0 rounded-[12px] border-0 shadow-xl">
+              <DialogHeader className="border-b p-5 bg-muted/30">
+                <DialogTitle className="text-xl font-semibold tracking-tight">
+                  Workspaces
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  Select a workspace to switch to.
+                </DialogDescription>
+              </DialogHeader>
 
-							<div className="flex flex-col gap-y-3 p-5">
-								{workspaces?.map((item) => (
-									<button
-										className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border bg-card px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group"
-										key={item._id}
-										onClick={() => onWorkspaceClick(item._id)}
-									>
-										<div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg">
-											{item.name.charAt(0).toUpperCase()}
-										</div>
-										<div className="flex flex-col items-start">
-											<p className="text-sm font-semibold tracking-tight">
-												{item.name}
-											</p>
-											{item._id === workspace._id && (
-												<p className="text-xs text-muted-foreground">
-													Current workspace
-												</p>
-											)}
-										</div>
-										{item._id === workspace._id && (
-											<div className="ml-auto rounded-full bg-secondary/10 px-3 py-1 text-xs font-medium text-secondary shadow-sm">
-												Active
-											</div>
-										)}
-									</button>
-								))}
+              <div className="flex flex-col gap-y-3 p-5">
+                {workspaces?.map((item) => (
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border bg-card px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group"
+                    key={item._id}
+                    onClick={() => onWorkspaceClick(item._id)}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg">
+                      {item.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <p className="text-sm font-semibold tracking-tight">
+                        {item.name}
+                      </p>
+                      {item._id === workspace._id && (
+                        <p className="text-xs text-muted-foreground">
+                          Current workspace
+                        </p>
+                      )}
+                    </div>
+                    {item._id === workspace._id && (
+                      <div className="ml-auto rounded-full bg-secondary/10 px-3 py-1 text-xs font-medium text-secondary shadow-sm">
+                        Active
+                      </div>
+                    )}
+                  </button>
+                ))}
 
-								<button
-									className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border border-dashed bg-card/50 px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group mt-2"
-									onClick={() => {
-										setSwitchOpen(false); // updated here
-										setCreateOpen(true);
-									}}
-								>
-									<div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg">
-										<Plus className="size-5 transition-transform duration-200 group-hover:scale-125" />
-									</div>
-									<p className="text-sm font-semibold tracking-tight">
-										Create New Workspace
-									</p>
-								</button>
-							</div>
-						</DialogContent>
-					</Dialog>
-				</div>
-			</div>
-		</>
-	);
+                <button
+                  className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border border-dashed bg-card/50 px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group mt-2"
+                  onClick={() => {
+                    setSwitchOpen(false); // updated here
+                    setCreateOpen(true);
+                  }}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg">
+                    <Plus className="size-5 transition-transform duration-200 group-hover:scale-125" />
+                  </div>
+                  <p className="text-sm font-semibold tracking-tight">
+                    Create New Workspace
+                  </p>
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+    </>
+  );
 };

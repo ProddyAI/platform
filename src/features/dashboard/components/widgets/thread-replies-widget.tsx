@@ -1,14 +1,17 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
 import { Clock, Hash, Loader, MessageSquareText } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetThreadMessages } from "@/features/messages/api/use-get-thread-messages";
+import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
+import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
+import { safeFormatDistanceToNow } from "@/lib/date-utils";
 import { WidgetCard } from "../shared/widget-card";
 
 interface ThreadRepliesWidgetProps {
@@ -45,10 +48,12 @@ interface ThreadReplyMessage {
 	parentUser: {
 		name: string;
 		image?: string;
+		_id: Id<"users">;
 	};
 	currentUser: {
 		name: string;
 		image?: string;
+		_id: Id<"users">;
 	};
 	context: {
 		name: string;
@@ -65,20 +70,36 @@ export const ThreadRepliesWidget = ({
 	const router = useRouter();
 	const rawThreadMessages = useGetThreadMessages();
 
-	// Filter out threads with invalid data
-	const threadMessages = rawThreadMessages
-		? rawThreadMessages.filter(
-				(thread) =>
-					thread !== undefined &&
-					thread !== null &&
-					thread.message?._id !== undefined &&
-					thread.context?.type === "channel" &&
-					thread.message?.parentMessageId !== undefined
-			)
-		: null;
+	// Memoize threadMessages array to avoid recalculating on every render
+	const threadMessages = useMemo(
+		() =>
+			rawThreadMessages
+				? rawThreadMessages.filter(
+						(thread) =>
+							thread !== undefined &&
+							thread !== null &&
+							thread.message?._id !== undefined &&
+							thread.context?.type === "channel" &&
+							thread.message?.parentMessageId !== undefined
+					)
+				: null,
+		[rawThreadMessages]
+	);
 
 	// Define the type for a thread message
 	type ThreadMessageType = NonNullable<typeof threadMessages>[0];
+
+	// Get user IDs from thread messages for status tracking
+	const userIds = useMemo(
+		() =>
+			threadMessages
+				?.map((t) => t.currentUser?._id)
+				.filter((id): id is Id<"users"> => id !== undefined) || [],
+		[threadMessages]
+	);
+
+	// Get statuses for all thread reply authors
+	const { getUserStatus } = useMultipleUserStatuses(userIds, workspaceId);
 
 	const handleViewThread = (thread: ThreadMessageType) => {
 		if (thread.context.type === "channel" && thread.message.parentMessageId) {
@@ -149,84 +170,89 @@ export const ThreadRepliesWidget = ({
 			{threadMessages && threadMessages.length > 0 ? (
 				<ScrollArea className="h-[280px]">
 					<div className="space-y-2 pr-4">
-						{threadMessages.map((thread) => (
-							<WidgetCard key={thread.message._id.toString()}>
-								<div className="flex items-start gap-3">
-									<Avatar className="h-8 w-8">
-										<AvatarImage
-											alt={thread.currentUser.name || "User avatar"}
-											src={thread.currentUser.image}
-										/>
-										<AvatarFallback>
-											{thread.currentUser.name
-												? thread.currentUser.name.charAt(0).toUpperCase()
-												: "?"}
-										</AvatarFallback>
-									</Avatar>
-									<div className="flex-1 space-y-1">
-										<div className="flex items-center justify-between">
-											<div className="flex items-center gap-2">
-												<p className="font-medium">
-													{thread.currentUser.name || "Unknown User"}
-												</p>
-												{thread.context.type === "channel" && (
-													<Badge
-														className="flex items-center gap-1 border-2"
-														variant="outline"
-													>
-														<Hash className="h-3 w-3" />
-														{thread.context.name}
-													</Badge>
-												)}
-											</div>
-											<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
-												<Clock className="h-2.5 w-2.5" />
-												{(() => {
-													try {
-														// Try to safely format the date
-														if (
-															thread.message._creationTime &&
-															!Number.isNaN(
-																Number(thread.message._creationTime)
-															)
-														) {
-															const date = new Date(
-																Number(thread.message._creationTime)
-															);
-															if (date.toString() !== "Invalid Date") {
-																return formatDistanceToNow(date, {
-																	addSuffix: true,
-																}).replace("about ", "");
-															}
+						{threadMessages.map((thread) => {
+							const authorUserId = thread.currentUser?._id;
+							const status = authorUserId
+								? getUserStatus(authorUserId)
+								: undefined;
+
+							return (
+								<WidgetCard key={thread.message._id.toString()}>
+									<div className="flex items-start gap-3">
+										<div className="relative">
+											<Avatar className="h-8 w-8">
+												<AvatarImage
+													alt={thread.currentUser.name || "User avatar"}
+													src={thread.currentUser.image}
+												/>
+												<AvatarFallback>
+													{thread.currentUser.name
+														? thread.currentUser.name.charAt(0).toUpperCase()
+														: "?"}
+												</AvatarFallback>
+											</Avatar>
+											{status && status !== "offline" && (
+												<PresenceIndicator status={status} />
+											)}
+										</div>
+										<div className="flex-1 space-y-1">
+											<div className="flex items-center justify-between">
+												<div className="flex items-center gap-2">
+													<p className="font-medium">
+														{thread.currentUser.name || "Unknown User"}
+													</p>
+													{thread.context.type === "channel" && (
+														<Badge
+															className="flex items-center gap-1 border-2"
+															variant="outline"
+														>
+															<Hash className="h-3 w-3" />
+															{thread.context.name}
+														</Badge>
+													)}
+												</div>
+												<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
+													<Clock className="h-2.5 w-2.5" />
+													{safeFormatDistanceToNow(
+														thread.message._creationTime,
+														{
+															addSuffix: true,
+															stripAbout: true,
 														}
-														return "recently";
-													} catch (_error) {
-														return "recently";
-													}
-												})()}
-											</span>
+													)}
+												</span>
+											</div>
+											<div className="rounded-md bg-muted/30 p-2 text-xs">
+												<p className="font-medium text-muted-foreground">
+													Replied to your thread:
+												</p>
+												<p className="mt-1">
+													{(() => {
+														const preview = getMessagePreview(
+															thread.message.body
+														);
+														return (
+															<>
+																{preview}
+																{preview.length >= 50 ? "..." : ""}
+															</>
+														);
+													})()}
+												</p>
+											</div>
+											<Button
+												className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+												onClick={() => handleViewThread(thread)}
+												size="sm"
+												variant="ghost"
+											>
+												View thread
+											</Button>
 										</div>
-										<div className="rounded-md bg-muted/30 p-2 text-xs">
-											<p className="font-medium text-muted-foreground">
-												Replied to your thread:
-											</p>
-											<p className="mt-1">
-												{getMessagePreview(thread.message.body)}
-												{thread.message.body.length > 50 ? "..." : ""}
-											</p>
-										</div>
-										<Button
-											className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-											onClick={() => handleViewThread(thread)}
-											size="sm"
-											variant="ghost"
-										>
-											View thread
-										</Button>
 									</div>
-								</div>
-							</WidgetCard>
-						))}
+								</WidgetCard>
+							);
+						})}
 					</div>
 				</ScrollArea>
 			) : (

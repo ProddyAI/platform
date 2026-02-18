@@ -1,14 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import {
-	Circle,
-	CircleCheck,
-	Clock,
-	Loader,
-	MessageSquare,
-	Users,
-} from "lucide-react";
+import { Clock, Loader, MessageSquare, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -18,32 +11,35 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetMembers } from "@/features/members/api/use-get-members";
+import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
+import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
 import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-presence";
 
 interface TeamStatusWidgetProps {
 	workspaceId: Id<"workspaces">;
-	member: {
-		_id: Id<"members">;
-		userId: Id<"users">;
-		role: string;
-		workspaceId: Id<"workspaces">;
-		user?: {
-			name: string;
-			image?: string;
-		};
-	};
 	isEditMode?: boolean;
+	controls?: React.ReactNode;
 }
 
 export const TeamStatusWidget = ({
 	workspaceId,
 	isEditMode,
+	controls,
 }: TeamStatusWidgetProps) => {
 	const router = useRouter();
 	const { data: members, isLoading: membersLoading } = useGetMembers({
 		workspaceId,
 	});
 	const { presenceState, onlineCount } = useWorkspacePresence({ workspaceId });
+
+	// Get user IDs for status tracking
+	const userIds = useMemo(
+		() => (members ? members.map((m) => m.userId) : []),
+		[members]
+	);
+
+	// Get statuses for all team members
+	const { getUserStatus } = useMultipleUserStatuses(userIds, workspaceId);
 
 	// Combine member data with presence data
 	const teamMembers = useMemo(() => {
@@ -57,10 +53,11 @@ export const TeamStatusWidget = ({
 		return members
 			.map((member) => {
 				const isOnline = onlineUsers.has(member.userId);
+				const status = getUserStatus(member.userId);
 
 				return {
 					...member,
-					status: isOnline ? "online" : "offline",
+					status,
 					statusEmoji: "",
 					isOnline,
 					lastActive: member._creationTime || Date.now(),
@@ -76,7 +73,7 @@ export const TeamStatusWidget = ({
 
 				return (a.user?.name ?? "").localeCompare(b.user?.name ?? "");
 			});
-	}, [members, presenceState]);
+	}, [members, presenceState, getUserStatus]);
 
 	const handleStartChat = (userId: string) => {
 		router.push(`/workspace/${workspaceId}/direct/${userId}`);
@@ -92,9 +89,9 @@ export const TeamStatusWidget = ({
 
 	return (
 		<div className="space-y-4">
-			<div className="flex items-center justify-between pr-8">
+			<div className="flex items-center justify-between pr-2">
 				<div className="flex items-center gap-2">
-					<Users className="h-5 w-5 text-primary" />
+					<Users className="h-5 w-5 text-primary dark:text-purple-400" />
 					<h3 className="font-medium">Team Status</h3>
 					{!isEditMode && onlineCount > 0 && (
 						<Badge className="ml-2" variant="default">
@@ -102,6 +99,7 @@ export const TeamStatusWidget = ({
 						</Badge>
 					)}
 				</div>
+				{isEditMode && controls}
 			</div>
 
 			{teamMembers.length > 0 ? (
@@ -123,13 +121,7 @@ export const TeamStatusWidget = ({
 														: "U"}
 												</AvatarFallback>
 											</Avatar>
-											<div className="absolute bottom-0 right-0 rounded-full border-2 border-background">
-												{teamMember.isOnline ? (
-													<CircleCheck className="h-3 w-3 fill-green-500 text-background" />
-												) : (
-													<Circle className="h-3 w-3 fill-gray-400 text-background" />
-												)}
-											</div>
+											<PresenceIndicator status={teamMember.status} />
 										</div>
 										<div className="flex-1 space-y-1">
 											<div className="flex items-center justify-between">

@@ -9,6 +9,11 @@
  */
 
 import type * as analytics from "../analytics.js";
+import type * as assistantChat from "../assistantChat.js";
+import type * as assistantComposioTools from "../assistantComposioTools.js";
+import type * as assistantConversations from "../assistantConversations.js";
+import type * as assistantToolAudits from "../assistantToolAudits.js";
+import type * as assistantTools from "../assistantTools.js";
 import type * as auth from "../auth.js";
 import type * as board from "../board.js";
 import type * as calendar from "../calendar.js";
@@ -27,6 +32,7 @@ import type * as members from "../members.js";
 import type * as mentions from "../mentions.js";
 import type * as messages from "../messages.js";
 import type * as notes from "../notes.js";
+import type * as notifications from "../notifications.js";
 import type * as passwordManagement from "../passwordManagement.js";
 import type * as preferences from "../preferences.js";
 import type * as presence from "../presence.js";
@@ -53,6 +59,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
+  assistantChat: typeof assistantChat;
+  assistantComposioTools: typeof assistantComposioTools;
+  assistantConversations: typeof assistantConversations;
+  assistantToolAudits: typeof assistantToolAudits;
+  assistantTools: typeof assistantTools;
   auth: typeof auth;
   board: typeof board;
   calendar: typeof calendar;
@@ -71,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   mentions: typeof mentions;
   messages: typeof messages;
   notes: typeof notes;
+  notifications: typeof notifications;
   passwordManagement: typeof passwordManagement;
   preferences: typeof preferences;
   presence: typeof presence;
@@ -637,6 +649,307 @@ export declare const components: {
             startOrder: number;
           }>;
         }
+      >;
+    };
+  };
+  databaseChat: {
+    chat: {
+      send: FunctionReference<
+        "action",
+        "internal",
+        {
+          config: {
+            apiKey: string;
+            maxMessagesForLLM?: number;
+            model?: string;
+            systemPrompt?: string;
+            toolContext?: any;
+            tools?: Array<{
+              description: string;
+              handler: string;
+              handlerType?: "query" | "mutation" | "action";
+              name: string;
+              parameters: {
+                properties: any;
+                required?: Array<string>;
+                type: "object";
+              };
+            }>;
+          };
+          conversationId: string;
+          message: string;
+        },
+        {
+          content?: string;
+          error?: string;
+          success: boolean;
+          toolCalls?: Array<{ args: any; name: string; result: any }>;
+        }
+      >;
+      sendForExternalId: FunctionReference<
+        "action",
+        "internal",
+        {
+          config: {
+            apiKey: string;
+            maxMessagesForLLM?: number;
+            model?: string;
+            systemPrompt?: string;
+            toolContext?: any;
+            tools?: Array<{
+              description: string;
+              handler: string;
+              handlerType?: "query" | "mutation" | "action";
+              name: string;
+              parameters: {
+                properties: any;
+                required?: Array<string>;
+                type: "object";
+              };
+            }>;
+          };
+          conversationId: string;
+          externalId: string;
+          message: string;
+        },
+        {
+          content?: string;
+          error?: string;
+          success: boolean;
+          toolCalls?: Array<{ args: any; name: string; result: any }>;
+        }
+      >;
+    };
+    conversations: {
+      create: FunctionReference<
+        "mutation",
+        "internal",
+        { externalId: string; title?: string },
+        string
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        { conversationId: string },
+        {
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          externalId: string;
+          title?: string;
+          updatedAt: number;
+        } | null
+      >;
+      getForExternalId: FunctionReference<
+        "query",
+        "internal",
+        { conversationId: string; externalId: string },
+        {
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          externalId: string;
+          title?: string;
+          updatedAt: number;
+        }
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        { externalId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          externalId: string;
+          title?: string;
+          updatedAt: number;
+        }>
+      >;
+    };
+    messages: {
+      add: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          content: string;
+          conversationId: string;
+          role: "user" | "assistant" | "tool";
+          toolCalls?: Array<{ arguments: string; id: string; name: string }>;
+          toolResults?: Array<{ result: string; toolCallId: string }>;
+        },
+        string
+      >;
+      getLatest: FunctionReference<
+        "query",
+        "internal",
+        { conversationId: string },
+        {
+          _creationTime: number;
+          _id: string;
+          content: string;
+          conversationId: string;
+          createdAt: number;
+          role: "user" | "assistant" | "tool";
+          toolCalls?: Array<{ arguments: string; id: string; name: string }>;
+          toolResults?: Array<{ result: string; toolCallId: string }>;
+        } | null
+      >;
+      getLatestForExternalId: FunctionReference<
+        "query",
+        "internal",
+        { conversationId: string; externalId: string },
+        {
+          _creationTime: number;
+          _id: string;
+          content: string;
+          conversationId: string;
+          createdAt: number;
+          role: "user" | "assistant" | "tool";
+          toolCalls?: Array<{ arguments: string; id: string; name: string }>;
+          toolResults?: Array<{ result: string; toolCallId: string }>;
+        } | null
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        { conversationId: string; limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          content: string;
+          conversationId: string;
+          createdAt: number;
+          role: "user" | "assistant" | "tool";
+          toolCalls?: Array<{ arguments: string; id: string; name: string }>;
+          toolResults?: Array<{ result: string; toolCallId: string }>;
+        }>
+      >;
+      listForExternalId: FunctionReference<
+        "query",
+        "internal",
+        { conversationId: string; externalId: string; limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          content: string;
+          conversationId: string;
+          createdAt: number;
+          role: "user" | "assistant" | "tool";
+          toolCalls?: Array<{ arguments: string; id: string; name: string }>;
+          toolResults?: Array<{ result: string; toolCallId: string }>;
+        }>
+      >;
+    };
+    stream: {
+      abort: FunctionReference<
+        "mutation",
+        "internal",
+        { reason: string; streamId: string },
+        null
+      >;
+      abortByConversation: FunctionReference<
+        "mutation",
+        "internal",
+        { conversationId: string; reason: string },
+        boolean
+      >;
+      abortForExternalId: FunctionReference<
+        "mutation",
+        "internal",
+        { conversationId: string; externalId: string; reason: string },
+        boolean
+      >;
+      addDelta: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          end: number;
+          parts: Array<{
+            args?: string;
+            error?: string;
+            result?: string;
+            text?: string;
+            toolCallId?: string;
+            toolName?: string;
+            type: "text-delta" | "tool-call" | "tool-result" | "error";
+          }>;
+          start: number;
+          streamId: string;
+        },
+        boolean
+      >;
+      create: FunctionReference<
+        "mutation",
+        "internal",
+        { conversationId: string },
+        string
+      >;
+      finish: FunctionReference<
+        "mutation",
+        "internal",
+        { streamId: string },
+        null
+      >;
+      getStream: FunctionReference<
+        "query",
+        "internal",
+        { conversationId: string },
+        {
+          abortReason?: string;
+          endedAt?: number;
+          startedAt: number;
+          status: "streaming" | "finished" | "aborted";
+          streamId: string;
+        } | null
+      >;
+      getStreamForExternalId: FunctionReference<
+        "query",
+        "internal",
+        { conversationId: string; externalId: string },
+        {
+          abortReason?: string;
+          endedAt?: number;
+          startedAt: number;
+          status: "streaming" | "finished" | "aborted";
+          streamId: string;
+        } | null
+      >;
+      listDeltas: FunctionReference<
+        "query",
+        "internal",
+        { cursor: number; streamId: string },
+        Array<{
+          end: number;
+          parts: Array<{
+            args?: string;
+            error?: string;
+            result?: string;
+            text?: string;
+            toolCallId?: string;
+            toolName?: string;
+            type: "text-delta" | "tool-call" | "tool-result" | "error";
+          }>;
+          start: number;
+        }>
+      >;
+      listDeltasForExternalId: FunctionReference<
+        "query",
+        "internal",
+        { cursor: number; externalId: string; streamId: string },
+        Array<{
+          end: number;
+          parts: Array<{
+            args?: string;
+            error?: string;
+            result?: string;
+            text?: string;
+            toolCallId?: string;
+            toolName?: string;
+            type: "text-delta" | "tool-call" | "tool-result" | "error";
+          }>;
+          start: number;
+        }>
       >;
     };
   };

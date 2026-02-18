@@ -1,4 +1,9 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
+import {
+	buildActionableErrorPayload,
+	logRouteError,
+} from "@/lib/assistant-error-utils";
 import {
 	type AvailableApp,
 	createComposioClient,
@@ -7,6 +12,8 @@ import {
 } from "@/lib/composio-config";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 /**
  * Handle GET requests to report connected apps and total available tools for a workspace or member.
@@ -17,6 +24,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: NextRequest) {
 	try {
+		noStore();
 		const { searchParams } = new URL(req.url);
 		const workspaceId = searchParams.get("workspaceId");
 		const memberId = searchParams.get("memberId"); // Optional: get member-specific connections
@@ -50,24 +58,20 @@ export async function GET(req: NextRequest) {
 
 		if (connectedAppNames.length > 0) {
 			try {
-				// Composio tools response can exceed Next.js data cache limit (2MB).
-				// Use a no-store fetch so Next.js doesn't try to cache the large response.
-				const originalFetch = globalThis.fetch;
-				globalThis.fetch = ((url: RequestInfo | URL, init?: RequestInit) =>
-					originalFetch(url, { ...init, cache: "no-store" })) as typeof fetch;
-				try {
-					const allTools = await getAllToolsForApps(
-						composio,
-						entityId,
-						connectedAppNames,
-						true // use cache (in-memory only; fetch cache disabled above)
-					);
-					totalTools = allTools.length;
-				} finally {
-					globalThis.fetch = originalFetch;
-				}
+				const allTools = await getAllToolsForApps(
+					composio,
+					entityId,
+					connectedAppNames,
+					true // in-memory cache only; Next.js fetch cache disabled at route level
+				);
+				totalTools = allTools.length;
 			} catch (error) {
-				console.warn("[Connections Status] Failed to get tool count:", error);
+				logRouteError({
+					route: "Connections Status",
+					stage: "tool_count_fetch_failed",
+					error,
+					level: "warn",
+				});
 				// Don't fail the whole request if tool fetching fails
 				totalTools = 0;
 			}
@@ -83,11 +87,20 @@ export async function GET(req: NextRequest) {
 			timestamp: new Date().toISOString(),
 		});
 	} catch (error) {
-		console.error("[Connections Status] Error:", error);
+		logRouteError({
+			route: "Connections Status",
+			stage: "status_route_failed",
+			error,
+		});
 		return NextResponse.json(
 			{
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
+				...buildActionableErrorPayload({
+					message: "Unable to load integration status.",
+					nextStep:
+						"Retry in a few seconds. If it persists, reconnect the integration and retry.",
+					code: "COMPOSIO_STATUS_ROUTE_FAILED",
+					recoverable: true,
+				}),
 				connected: [],
 				totalTools: 0,
 			},

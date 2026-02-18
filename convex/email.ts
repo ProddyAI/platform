@@ -1179,7 +1179,8 @@ export const sendImportCompletionEmail = internalAction({
 	handler: async (_ctx, args) => {
 		try {
 			const apiKey = process.env.RESEND_API_KEY;
-			const fromEmail = "Proddy <support@proddy.tech>";
+			const fromEmail =
+				process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
 
 			if (!apiKey) {
 				console.error("Resend email not configured");
@@ -1253,6 +1254,8 @@ export const sendImportCompletionEmail = internalAction({
 			}
 
 			try {
+				const supportEmail = process.env.SUPPORT_EMAIL || "support@proddy.tech";
+
 				const response = await fetch("https://api.resend.com/emails", {
 					method: "POST",
 					headers: {
@@ -1262,6 +1265,7 @@ export const sendImportCompletionEmail = internalAction({
 					body: JSON.stringify({
 						from: fromEmail,
 						to: args.email,
+						replyTo: supportEmail,
 						subject,
 						html: htmlContent,
 					}),

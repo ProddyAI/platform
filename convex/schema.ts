@@ -36,6 +36,11 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
+			)
+		),
 	}).index("by_user_id", ["userId"]),
 
 	members: defineTable({
@@ -50,6 +55,11 @@ const schema = defineSchema({
 	channels: defineTable({
 		name: v.string(),
 		workspaceId: v.id("workspaces"),
+		enabledFeatures: v.optional(
+			v.array(
+				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
+			)
+		),
 		icon: v.optional(v.string()), // Store emoji as string
 		iconImage: v.optional(v.id("_storage")), // Store uploaded image
 	}).index("by_workspace_id", ["workspaceId"]),
@@ -370,6 +380,9 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
+						inviteSent: v.optional(v.boolean()), // Default: true - when invite link is sent
+						workspaceJoin: v.optional(v.boolean()), // Default: true - when someone joins workspace
+						onlineStatus: v.optional(v.boolean()), // Default: false - online/offline status changes
 					})
 				),
 			})
@@ -456,6 +469,35 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id_member_id", ["workspaceId", "memberId"]),
+
+	assistantConversations: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		conversationId: v.string(),
+		lastMessageAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_conversation_id", ["conversationId"]),
+
+	assistantToolAuditEvents: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.optional(v.id("members")),
+		userId: v.optional(v.id("users")),
+		toolName: v.string(),
+		toolkit: v.optional(v.string()),
+		argumentsSnapshot: v.optional(v.any()),
+		outcome: v.union(v.literal("success"), v.literal("error")),
+		error: v.optional(v.string()),
+		executionPath: v.string(),
+		toolCallId: v.optional(v.string()),
+		timestamp: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({

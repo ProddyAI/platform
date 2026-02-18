@@ -163,6 +163,9 @@ export const updateUserPreferences = mutation({
 								v.literal("sunday")
 							)
 						),
+						inviteSent: v.optional(v.boolean()),
+						workspaceJoin: v.optional(v.boolean()),
+						onlineStatus: v.optional(v.boolean()),
 					})
 				),
 			})
@@ -244,6 +247,9 @@ export const getNotificationPreferences = query({
 			directMessage: notifications?.directMessage ?? true,
 			weeklyDigest: notifications?.weeklyDigest ?? false,
 			weeklyDigestDay: notifications?.weeklyDigestDay ?? "monday",
+			inviteSent: notifications?.inviteSent ?? true,
+			workspaceJoin: notifications?.workspaceJoin ?? true,
+			onlineStatus: notifications?.onlineStatus ?? false,
 		};
 	},
 });
@@ -667,6 +673,9 @@ export const getNotificationPreferencesByUserId = query({
 			directMessage: notifications?.directMessage ?? true,
 			weeklyDigest: notifications?.weeklyDigest ?? false,
 			weeklyDigestDay: notifications?.weeklyDigestDay ?? "monday",
+			inviteSent: notifications?.inviteSent ?? true,
+			workspaceJoin: notifications?.workspaceJoin ?? true,
+			onlineStatus: notifications?.onlineStatus ?? false,
 		};
 	},
 });

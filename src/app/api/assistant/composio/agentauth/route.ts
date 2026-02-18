@@ -6,6 +6,12 @@ import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import {
+	buildActionableErrorPayload,
+	buildComposioFailureGuidance,
+	logRouteError,
+	sanitizeErrorMessage,
+} from "@/lib/assistant-error-utils";
 import { initializeComposio } from "@/lib/composio";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -111,7 +117,12 @@ export async function POST(req: NextRequest) {
 		if (action === "authorize") {
 			// Verify ownership: ensure the authenticated user has permission to act on this memberId
 			if (!memberId) {
-				console.error("[AgentAuth] Missing memberId for authorization");
+				logRouteError({
+					route: "AgentAuth",
+					stage: "missing_member_id_authorize",
+					error: new Error("Missing memberId for authorization"),
+					level: "warn",
+				});
 				return NextResponse.json(
 					{ error: "Missing memberId" },
 					{ status: 400 }
@@ -134,9 +145,20 @@ export async function POST(req: NextRequest) {
 				const redirectUrl = connection.redirectUrl;
 
 				if (!redirectUrl) {
-					console.error("No redirect URL received from Composio:", connection);
+					logRouteError({
+						route: "AgentAuth",
+						stage: "missing_redirect_url",
+						error: new Error("No redirect URL from Composio"),
+						context: { toolkit },
+					});
 					return NextResponse.json(
-						{ error: "No redirect URL received from authorization" },
+						buildActionableErrorPayload({
+							message: "Authorization URL was not returned by Composio.",
+							nextStep:
+								"Retry authorization. If this continues, verify the toolkit auth configuration.",
+							code: "AGENTAUTH_REDIRECT_URL_MISSING",
+							recoverable: true,
+						}),
 						{ status: 400 }
 					);
 				}
@@ -162,12 +184,22 @@ export async function POST(req: NextRequest) {
 								createdBy: memberId as Id<"members">,
 							});
 						} else {
-							console.warn(
-								`[AgentAuth] No auth config ID found for ${toolkit}`
-							);
+							logRouteError({
+								route: "AgentAuth",
+								stage: "auth_config_id_missing",
+								error: new Error("No auth config ID found"),
+								level: "warn",
+								context: { toolkit },
+							});
 						}
 					} catch (error) {
-						console.warn("Failed to store auth config:", error);
+						logRouteError({
+							route: "AgentAuth",
+							stage: "store_auth_config_failed",
+							error,
+							level: "warn",
+							context: { toolkit, workspaceId, memberId },
+						});
 					}
 				}
 
@@ -178,11 +210,22 @@ export async function POST(req: NextRequest) {
 					message: `Redirect user to ${toolkit} authorization`,
 				});
 			} catch (error) {
-				console.error("Authorization error:", error);
+				logRouteError({
+					route: "AgentAuth",
+					stage: "authorization_failed",
+					error,
+					context: { toolkit, workspaceId, memberId },
+				});
 				return NextResponse.json(
-					{
-						error: `Failed to authorize toolkit: ${error instanceof Error ? error.message : "Unknown error"}`,
-					},
+					buildActionableErrorPayload({
+						message: `Failed to authorize ${toolkit}.`,
+						nextStep: buildComposioFailureGuidance(),
+						code: "AGENTAUTH_AUTHORIZE_FAILED",
+						recoverable: true,
+						fallbackResponse: sanitizeErrorMessage(
+							error instanceof Error ? error.message : "Unknown error"
+						),
+					}),
 					{ status: 400 }
 				);
 			}
@@ -191,7 +234,12 @@ export async function POST(req: NextRequest) {
 		if (action === "complete") {
 			// Verify ownership: ensure the authenticated user has permission to act on this memberId
 			if (!memberId) {
-				console.error("[AgentAuth] Missing memberId for connection completion");
+				logRouteError({
+					route: "AgentAuth",
+					stage: "missing_member_id_complete",
+					error: new Error("Missing memberId for connection completion"),
+					level: "warn",
+				});
 				return NextResponse.json(
 					{ error: "Missing memberId" },
 					{ status: 400 }
@@ -286,7 +334,13 @@ export async function POST(req: NextRequest) {
 							connectedBy: memberId as Id<"members">,
 						});
 					} catch (error) {
-						console.warn("Failed to store connected account:", error);
+						logRouteError({
+							route: "AgentAuth",
+							stage: "store_connected_account_failed",
+							error,
+							level: "warn",
+							context: { toolkit, workspaceId, memberId },
+						});
 					}
 				}
 
@@ -296,11 +350,22 @@ export async function POST(req: NextRequest) {
 					message: `${toolkit} connected successfully`,
 				});
 			} catch (error) {
-				console.error("Connection completion error:", error);
+				logRouteError({
+					route: "AgentAuth",
+					stage: "connection_completion_failed",
+					error,
+					context: { toolkit, workspaceId, memberId },
+				});
 				return NextResponse.json(
-					{
-						error: `Failed to complete connection: ${error instanceof Error ? error.message : "Unknown error"}`,
-					},
+					buildActionableErrorPayload({
+						message: `Failed to complete ${toolkit} connection.`,
+						nextStep: buildComposioFailureGuidance(),
+						code: "AGENTAUTH_COMPLETE_FAILED",
+						recoverable: true,
+						fallbackResponse: sanitizeErrorMessage(
+							error instanceof Error ? error.message : "Unknown error"
+						),
+					}),
 					{ status: 500 }
 				);
 			}
@@ -308,9 +373,17 @@ export async function POST(req: NextRequest) {
 
 		return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 	} catch (error) {
-		console.error("[AgentAuth] Error:", error);
+		logRouteError({
+			route: "AgentAuth",
+			stage: "post_request_failed",
+			error,
+		});
 		return NextResponse.json(
-			{ error: "AgentAuth operation failed" },
+			buildActionableErrorPayload({
+				message: "Agent auth request failed.",
+				nextStep: buildComposioFailureGuidance(),
+				code: "AGENTAUTH_POST_FAILED",
+			}),
 			{ status: 500 }
 		);
 	}
@@ -392,7 +465,13 @@ export async function GET(req: NextRequest) {
 					connectedAccounts,
 				});
 			} catch (convexError) {
-				console.error("[AgentAuth] Error fetching data:", convexError);
+				logRouteError({
+					route: "AgentAuth",
+					stage: "fetch_data_failed",
+					error: convexError,
+					level: "warn",
+					context: { workspaceId },
+				});
 				// Return empty arrays if there's an error
 				return NextResponse.json({
 					success: true,
@@ -414,7 +493,13 @@ export async function GET(req: NextRequest) {
 					account: connectedAccount,
 				});
 			} catch (error) {
-				console.error("Status check error:", error);
+				logRouteError({
+					route: "AgentAuth",
+					stage: "status_check_failed",
+					error,
+					level: "warn",
+					context: { composioAccountId },
+				});
 				return NextResponse.json({
 					connected: false,
 					status: "NOT_FOUND",
@@ -428,7 +513,13 @@ export async function GET(req: NextRequest) {
 			// Validate userId format (should be member_{memberId})
 			const memberIdPattern = /^member_[A-Za-z0-9-_]+$/;
 			if (!memberIdPattern.test(userId)) {
-				console.error(`[AgentAuth] Invalid userId format: ${userId}`);
+				logRouteError({
+					route: "AgentAuth",
+					stage: "invalid_user_id_format",
+					error: new Error("Invalid userId format"),
+					level: "warn",
+					context: { userId },
+				});
 				return NextResponse.json(
 					{
 						error: "Invalid userId format. Expected format: member_{memberId}",
@@ -452,11 +543,22 @@ export async function GET(req: NextRequest) {
 					entityId,
 				});
 			} catch (error) {
-				console.error("Tools fetch error:", error);
+				logRouteError({
+					route: "AgentAuth",
+					stage: "fetch_tools_failed",
+					error,
+					context: { toolkit, workspaceId, userId },
+				});
 				return NextResponse.json(
-					{
-						error: `Failed to fetch tools: ${error instanceof Error ? error.message : "Unknown error"}`,
-					},
+					buildActionableErrorPayload({
+						message: `Failed to fetch tools for ${toolkit}.`,
+						nextStep: buildComposioFailureGuidance(),
+						code: "AGENTAUTH_FETCH_TOOLS_FAILED",
+						recoverable: true,
+						fallbackResponse: sanitizeErrorMessage(
+							error instanceof Error ? error.message : "Unknown error"
+						),
+					}),
 					{ status: 500 }
 				);
 			}
@@ -471,9 +573,18 @@ export async function GET(req: NextRequest) {
 			{ status: 400 }
 		);
 	} catch (error) {
-		console.error("[AgentAuth] GET Error:", error);
+		logRouteError({
+			route: "AgentAuth",
+			stage: "get_request_failed",
+			error,
+		});
 		return NextResponse.json(
-			{ error: "AgentAuth GET operation failed" },
+			buildActionableErrorPayload({
+				message: "Agent auth query failed.",
+				nextStep:
+					"Retry the request and confirm all required query parameters.",
+				code: "AGENTAUTH_GET_FAILED",
+			}),
 			{ status: 500 }
 		);
 	}
@@ -517,13 +628,11 @@ export async function DELETE(req: NextRequest) {
 			await apiClient.deleteConnection(composioAccountId);
 			composioDeleteSuccess = true;
 		} catch (error) {
-			console.error(
-				"[AgentAuth DELETE] ✗ Error disconnecting from Composio:",
-				error
-			);
-			console.error("[AgentAuth DELETE] Error details:", {
-				message: error instanceof Error ? error.message : String(error),
-				stack: error instanceof Error ? error.stack : undefined,
+			logRouteError({
+				route: "AgentAuth DELETE",
+				stage: "composio_disconnect_failed",
+				error,
+				context: { composioAccountId, memberId, workspaceId },
 			});
 			// Continue to delete from database even if Composio delete fails
 		}
@@ -540,17 +649,19 @@ export async function DELETE(req: NextRequest) {
 					memberId: memberId as Id<"members">,
 				});
 			} catch (error) {
-				console.error(
-					"[AgentAuth DELETE] ✗ Error deleting database record:",
-					error
-				);
-				console.error("[AgentAuth DELETE] Database error details:", {
-					message: error instanceof Error ? error.message : String(error),
-					connectedAccountId,
-					memberId,
+				logRouteError({
+					route: "AgentAuth DELETE",
+					stage: "database_disconnect_failed",
+					error,
+					context: { connectedAccountId, memberId, workspaceId },
 				});
 				return NextResponse.json(
-					{ error: "Failed to delete connection from database" },
+					buildActionableErrorPayload({
+						message: "Failed to remove local connection record.",
+						nextStep:
+							"Retry disconnect. If this continues, refresh the integrations page and retry.",
+						code: "AGENTAUTH_DB_DISCONNECT_FAILED",
+					}),
 					{ status: 500 }
 				);
 			}
@@ -562,13 +673,17 @@ export async function DELETE(req: NextRequest) {
 			composioDeleted: composioDeleteSuccess,
 		});
 	} catch (error) {
-		console.error("[AgentAuth DELETE] Unexpected error:", error);
-		console.error("[AgentAuth DELETE] Error details:", {
-			message: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
+		logRouteError({
+			route: "AgentAuth DELETE",
+			stage: "delete_request_failed",
+			error,
 		});
 		return NextResponse.json(
-			{ error: "Failed to disconnect account" },
+			buildActionableErrorPayload({
+				message: "Failed to disconnect account.",
+				nextStep: buildComposioFailureGuidance(),
+				code: "AGENTAUTH_DELETE_FAILED",
+			}),
 			{ status: 500 }
 		);
 	}

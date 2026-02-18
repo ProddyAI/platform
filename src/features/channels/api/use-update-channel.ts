@@ -8,6 +8,7 @@ type RequestType = {
 	id: Id<"channels">;
 	icon?: string;
 	iconImage?: Id<"_storage">;
+	enabledFeatures?: Array<"canvas" | "notes" | "boards">;
 };
 type ResponseType = Id<"channels"> | null;
 
