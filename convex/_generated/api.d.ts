@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as aiSearch from "../aiSearch.js";
 import type * as analytics from "../analytics.js";
 import type * as assistantChat from "../assistantChat.js";
 import type * as assistantComposioTools from "../assistantComposioTools.js";
@@ -57,6 +58,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  aiSearch: typeof aiSearch;
   analytics: typeof analytics;
   assistantChat: typeof assistantChat;
   assistantComposioTools: typeof assistantComposioTools;
