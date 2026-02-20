@@ -628,14 +628,19 @@ export const semanticSearch = action({
 				.join("\n\n");
 			const { text: rankOutput } = await generateText({
 				model: openai("gpt-4o-mini"),
-				system: "You output only a JSON array of integers: the zero-based indices of passages in order of relevance to the query, most relevant first. Output exactly one array, e.g. [3,0,1].",
+				system:
+					"You output only a JSON array of integers: the zero-based indices of passages in order of relevance to the query, most relevant first. Output exactly one array, e.g. [3,0,1].",
 				prompt: `Query: ${args.query}\n\nPassages:\n${passageList}\n\nReturn the top ${topK} most relevant passage indices as a JSON array.`,
 			});
 			let indices: number[] = [];
 			try {
-				const parsed = JSON.parse(rankOutput.replace(/^[^[]*\[/, "[").replace(/\][^]*$/, "]"));
+				const parsed = JSON.parse(
+					rankOutput.replace(/^[^[]*\[/, "[").replace(/\][^]*$/, "]")
+				);
 				if (Array.isArray(parsed)) {
-					indices = parsed.filter((n) => typeof n === "number" && n >= 0 && n < results.length);
+					indices = parsed.filter(
+						(n) => typeof n === "number" && n >= 0 && n < results.length
+					);
 				}
 			} catch {
 				// Fallback: use original order
@@ -653,10 +658,15 @@ export const semanticSearch = action({
 				const filterValues = entry?.filterValues;
 				const contentType =
 					(Array.isArray(filterValues)
-						? (filterValues.find((f) => f.name === "contentType") as { value?: string } | undefined)?.value
+						? (
+								filterValues.find((f) => f.name === "contentType") as
+									| { value?: string }
+									| undefined
+							)?.value
 						: undefined) ?? "message";
 				if ((contentTypeCount[contentType] ?? 0) >= maxPerType) continue;
-				contentTypeCount[contentType] = (contentTypeCount[contentType] ?? 0) + 1;
+				contentTypeCount[contentType] =
+					(contentTypeCount[contentType] ?? 0) + 1;
 				rerankedResults.push(results[i]);
 				if (entry) rerankedEntries.push(entry);
 			}

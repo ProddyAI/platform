@@ -8,7 +8,9 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
-const client = new ConvexHttpClient(process.env.CONVEX_URL || "http://localhost:8000");
+const client = new ConvexHttpClient(
+	process.env.CONVEX_URL || "http://localhost:8000"
+);
 
 async function testAssistant() {
 	console.log("🧪 Testing Assistant Message\n");
@@ -34,7 +36,7 @@ async function testAssistant() {
 		process.exit(1);
 	}
 
-	console.log("\n" + "=".repeat(60));
+	console.log(`\n${"=".repeat(60)}`);
 }
 
 testAssistant();

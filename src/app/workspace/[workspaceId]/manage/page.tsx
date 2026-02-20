@@ -96,7 +96,7 @@ const ManagePage = () => {
 								</TabsTrigger>
 								<TabsTrigger value="integrations">
 									<Plug className="h-4 w-4 mr-2" />
-									Integrations
+									AI Integrations
 								</TabsTrigger>
 								<TabsTrigger value="import">
 									<Database className="h-4 w-4 mr-2" />
