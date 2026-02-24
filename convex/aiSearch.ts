@@ -1,26 +1,6 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
-import type { ActionCtx, QueryCtx } from "./_generated/server";
 import { action, query } from "./_generated/server";
-
-function extractTextFromRichText(body: string): string {
-	if (typeof body !== "string") return String(body);
-	try {
-		const parsedBody = JSON.parse(body);
-		if (parsedBody.ops) {
-			return parsedBody.ops
-				.map((op: { insert?: string }) =>
-					typeof op.insert === "string" ? op.insert : ""
-				)
-				.join("")
-				.trim();
-		}
-	} catch {
-		return body.replace(/<[^>]*>/g, "").trim();
-	}
-	return body.trim();
-}
+import { extractTextFromRichText } from "./richText";
 
 function cleanAiAnswer(answer: string, userQuery: string): string {
 	let cleaned = answer
@@ -63,34 +43,6 @@ function cleanAiAnswer(answer: string, userQuery: string): string {
 	}
 
 	return cleaned;
-}
-
-interface SearchResult {
-	messages: Array<{
-		_id: Id<"messages">;
-		channelId: Id<"channels"> | undefined;
-		channelName: string;
-		_creationTime: number;
-		text: string;
-	}>;
-	notes: Array<{
-		_id: Id<"notes">;
-		title: string;
-		content: string;
-		channelId: Id<"channels">;
-	}>;
-	tasks: Array<{
-		_id: Id<"tasks">;
-		title: string;
-		description?: string;
-	}>;
-	cards: Array<{
-		_id: Id<"cards">;
-		title: string;
-		description?: string;
-		listId: Id<"lists">;
-		channelId: Id<"channels">;
-	}>;
 }
 
 // Helper query to fetch search data for a workspace

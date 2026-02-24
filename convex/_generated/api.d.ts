@@ -40,6 +40,7 @@ import type * as prosemirror from "../prosemirror.js";
 import type * as ragchat from "../ragchat.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
+import type * as richText from "../richText.js";
 import type * as search from "../search.js";
 import type * as tasks from "../tasks.js";
 import type * as threadTitles from "../threadTitles.js";
@@ -90,6 +91,7 @@ declare const fullApi: ApiFromModules<{
   ragchat: typeof ragchat;
   rateLimit: typeof rateLimit;
   reactions: typeof reactions;
+  richText: typeof richText;
   search: typeof search;
   tasks: typeof tasks;
   threadTitles: typeof threadTitles;

@@ -163,6 +163,19 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					shouldFilter={false}
 				>
 					<div className="flex items-center gap-2 border-b px-3 py-2">
+						<Button
+							className={`px-2 ${useAI ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+							onClick={() => {
+								setUseAI(!useAI);
+								setSearchQuery("");
+								setAiSearchInput("");
+							}}
+							size="sm"
+							title="Toggle AI Search"
+							variant="ghost"
+						>
+							<Sparkles className="h-4 w-4" />
+						</Button>
 						<div className="flex-1">
 							{useAI ? (
 								<input
@@ -185,19 +198,6 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 								/>
 							)}
 						</div>
-						<Button
-							className={`px-2 ${useAI ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-							onClick={() => {
-								setUseAI(!useAI);
-								setSearchQuery("");
-								setAiSearchInput("");
-							}}
-							size="sm"
-							title="Toggle AI Search"
-							variant="ghost"
-						>
-							<Sparkles className="h-4 w-4" />
-						</Button>
 					</div>
 					<CommandList>
 						{/* AI Search Results */}
