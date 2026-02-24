@@ -47,7 +47,6 @@ const BoardList: React.FC<BoardListProps> = ({
 	onEditCard,
 	onDeleteCard,
 	assigneeData = {},
-	listCount = 0,
 }) => {
 	// Make the list sortable
 	const {

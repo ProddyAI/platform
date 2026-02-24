@@ -24,14 +24,7 @@ interface BlockNoteNotesEditorProps {
 
 export const BlockNoteNotesEditor = ({
 	note,
-	onUpdate,
-	onTitleChange,
-	onContentChange,
-	onSaveNote,
 	isLoading = false,
-	workspaceId,
-	channelId,
-	toggleFullScreen,
 	isFullScreen = false,
 }: BlockNoteNotesEditorProps) => {
 	const [isFormatting, setIsFormatting] = useState(false);

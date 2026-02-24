@@ -14,7 +14,6 @@ const SUPPORTED_TOOLKITS = [
 	"clickup",
 ] as const;
 
-type SupportedToolkit = (typeof SUPPORTED_TOOLKITS)[number];
 
 // ===== HELPER FUNCTIONS =====
 

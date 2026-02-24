@@ -41,7 +41,7 @@ export const TasksWidget = ({
 	);
 
 	// Fetch your tasks
-	const { data: tasks, isLoading } = useGetTasks({ workspaceId });
+	const { data: tasks } = useGetTasks({ workspaceId });
 	const { data: categories } = useGetTaskCategories({ workspaceId });
 	const updateTask = useUpdateTask();
 

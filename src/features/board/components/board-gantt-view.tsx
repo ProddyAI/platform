@@ -59,7 +59,6 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	allCards,
 	onEditCard,
 	onDeleteCard,
-	members = [],
 }) => {
 	// State for timeline controls
 	const [currentStartDate, setCurrentStartDate] = useState<Date>(() => {

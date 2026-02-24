@@ -55,8 +55,6 @@ export const WeeklyDigestTemplate: React.FC<
 	weekRange,
 	workspaces,
 	totalStats,
-	userId,
-	email,
 	unsubscribeUrl,
 }) => {
 	const previewText = `Your weekly Proddy digest for ${weekRange}`;

@@ -17,7 +17,6 @@ export const AudioControlButton = ({
 	icon: Icon,
 	label,
 	onClick,
-	isActive = true,
 	isMuted = false,
 	variant = "action",
 	disabled = false,

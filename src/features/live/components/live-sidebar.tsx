@@ -69,8 +69,6 @@ export const LiveSidebar = ({
 	onCreateItem,
 	onDeleteItem,
 	onRenameItem,
-	workspaceId,
-	channelId,
 	className,
 }: LiveSidebarProps) => {
 	const [searchQuery, setSearchQuery] = useState("");

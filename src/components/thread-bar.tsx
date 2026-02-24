@@ -10,8 +10,6 @@ interface ThreadBarProps {
 
 export const ThreadBar = ({
 	count,
-	image,
-	name = "Member",
 	timestamp,
 	onClick,
 }: ThreadBarProps) => {

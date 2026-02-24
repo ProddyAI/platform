@@ -19,7 +19,6 @@ interface HorizontalBarChartProps {
 
 export const HorizontalBarChart = ({
 	data,
-	height = 30,
 	showValues = true,
 	className,
 	animate = true,

@@ -28,14 +28,12 @@ export interface CalendarProps {
 }
 
 function Calendar({
-	mode = "single",
 	selected,
 	onSelect,
 	className,
 	month: controlledMonth,
 	defaultMonth = new Date(),
 	disabled,
-	initialFocus,
 }: CalendarProps) {
 	const [month, setMonth] = React.useState(controlledMonth || defaultMonth);
 

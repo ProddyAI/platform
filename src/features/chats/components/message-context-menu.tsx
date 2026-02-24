@@ -22,7 +22,7 @@ export const MessageContextMenu = ({
 	onAction,
 }: MessageContextMenuProps) => {
 	const { contextMenu, closeContextMenu } = useContextMenu();
-	const { selectedMessages } = useMessageSelection();
+	useMessageSelection();
 
 	if (!contextMenu.show || contextMenu.messageId !== messageId) {
 		return null;

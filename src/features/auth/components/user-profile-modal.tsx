@@ -63,7 +63,6 @@ export const UserProfileModal = ({
 	open,
 	onOpenChange,
 	name = "",
-	email = "",
 	image,
 	mode,
 	defaultTab = "profile",

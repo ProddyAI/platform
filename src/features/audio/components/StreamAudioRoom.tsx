@@ -43,8 +43,6 @@ export const StreamAudioRoom = ({
 		isConnecting,
 		isConnected,
 		error,
-		connectToAudioRoom,
-		disconnectFromAudioRoom,
 	} = useAudioRoom({
 		roomId,
 		workspaceId,
