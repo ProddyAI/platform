@@ -1,21 +1,21 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { action, query } from "./_generated/server";
 import { extractTextFromRichText } from "./richText";
+import { getMember } from "./utils";
 
 function cleanAiAnswer(answer: string, userQuery: string): string {
-	let cleaned = answer
-		.replace(/\*\*(.*?)\*\*/g, "$1")
-		.replace(/^\s*\*\s+/gm, "- ")
-		.replace(/^\s*•\s+/gm, "- ")
-		.replace(/\bKey Points:\s*/i, "Key Points:\n")
-		.replace(/\n{3,}/g, "\n\n")
-		.replace(/[ \t]{2,}/g, " ")
-		.trim();
+	let cleaned = answer.trim();
 
 	const isSummaryIntent = /\b(summarize|summary|recap|overview)\b/i.test(userQuery);
 	if (!isSummaryIntent) {
+		// Model sometimes prefixes simple answers with "Summary:" even when not requested.
 		cleaned = cleaned.replace(/^summary:\s*/i, "");
 	}
+
+	// Model may emit "Key Points:" and first bullet on the same line.
+	cleaned = cleaned.replace(/\bKey Points:\s*/i, "Key Points:\n");
 
 	const keyPointsLabel = "Key Points:";
 	const keyPointsIndex = cleaned.toLowerCase().indexOf(keyPointsLabel.toLowerCase());
@@ -23,8 +23,11 @@ function cleanAiAnswer(answer: string, userQuery: string): string {
 		const before = cleaned.slice(0, keyPointsIndex + keyPointsLabel.length);
 		let after = cleaned
 			.slice(keyPointsIndex + keyPointsLabel.length)
+			// Remove a leading bullet marker if present right after "Key Points:".
 			.replace(/^\s*[-*•]\s*/g, "")
+			// Split inline bullets (" - item - item") into one-item-per-line.
 			.replace(/\s+[-*•]\s+/g, "\n- ")
+			// Ensure first item starts on its own line.
 			.replace(/^\s+/, "\n- ");
 
 		after = after
@@ -45,21 +48,43 @@ function cleanAiAnswer(answer: string, userQuery: string): string {
 	return cleaned;
 }
 
+function toIsoTimestamp(timestamp: number): string {
+	return new Date(timestamp).toISOString();
+}
+
+function toIsoDate(timestamp: number): string {
+	return new Date(timestamp).toISOString().slice(0, 10);
+}
+
 // Helper query to fetch search data for a workspace
 export const getSearchData = query({
 	args: { workspaceId: v.id("workspaces") },
 	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		const member = await getMember(
+			ctx,
+			args.workspaceId,
+			userId as Id<"users">
+		);
+		if (!member) {
+			throw new Error("Unauthorized");
+		}
+
 		// Fetch messages from all channels in the workspace
 		const channels = await ctx.db
 			.query("channels")
-			.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId))
-			.collect();
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.take(50);
 
 		const messages = [];
 		for (const channel of channels) {
 			const channelMessages = await ctx.db
 				.query("messages")
-				.filter((q) => q.eq(q.field("channelId"), channel._id))
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
 				.take(100);
 			
 			messages.push(
@@ -75,8 +100,8 @@ export const getSearchData = query({
 		// Fetch notes
 		const notes = await ctx.db
 			.query("notes")
-			.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId))
-			.collect();
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.take(100);
 
 		const formattedNotes = notes.map((note) => ({
 			title: note.title,
@@ -86,8 +111,8 @@ export const getSearchData = query({
 		// Fetch tasks
 		const tasks = await ctx.db
 			.query("tasks")
-			.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId))
-			.collect();
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.take(100);
 
 		const formattedTasks = tasks.map((task) => ({
 			title: task.title,
@@ -100,14 +125,14 @@ export const getSearchData = query({
 		for (const channel of channels) {
 			const lists = await ctx.db
 				.query("lists")
-				.filter((q) => q.eq(q.field("channelId"), channel._id))
-				.collect();
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.take(100);
 
 			for (const list of lists) {
 				const listCards = await ctx.db
 					.query("cards")
-					.filter((q) => q.eq(q.field("listId"), list._id))
-					.collect();
+					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+					.take(100);
 
 				cards.push(
 					...listCards.map((card) => ({
@@ -121,7 +146,7 @@ export const getSearchData = query({
 
 		const events = await ctx.db
 			.query("events")
-			.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId))
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
 			.take(100);
 
 		const formattedEvents = events.map((event) => ({
@@ -143,7 +168,6 @@ export const getSearchData = query({
 export const aiSearch = action({
 	args: {
 		query: v.string(),
-		openRouterApiKey: v.string(),
 		searchData: v.object({
 			messages: v.array(v.object({
 				_id: v.string(),
@@ -219,7 +243,7 @@ export const aiSearch = action({
 ${recentMessages
 	.map(
 		(m) =>
-			`- [${m.channelName}] ${new Date(m._creationTime).toLocaleString()}: ${m.text.substring(0, 200)}`
+			`- [${m.channelName}] ${toIsoTimestamp(m._creationTime)}: ${m.text.substring(0, 200)}`
 	)
 	.join("\n")}
 
@@ -234,7 +258,7 @@ ${args.searchData.tasks
 	.slice(0, 20)
 	.map(
 		(t) =>
-			`- "${t.title}" (due: ${t.dueDate ? new Date(t.dueDate).toLocaleString() : "No due date"}): ${
+			`- "${t.title}" (due: ${t.dueDate ? toIsoTimestamp(t.dueDate) : "No due date"}): ${
 				t.description?.substring(0, 150) ?? "No description"
 			}`
 	)
@@ -245,7 +269,7 @@ ${args.searchData.cards
 	.slice(0, 20)
 	.map(
 		(c) =>
-			`- "${c.title}" (due: ${c.dueDate ? new Date(c.dueDate).toLocaleString() : "No due date"}): ${
+			`- "${c.title}" (due: ${c.dueDate ? toIsoTimestamp(c.dueDate) : "No due date"}): ${
 				c.description?.substring(0, 150) ?? "No description"
 			}`
 	)
@@ -256,17 +280,17 @@ ${args.searchData.events
 	.slice(0, 30)
 	.map(
 		(e) =>
-			`- "${e.title}" at ${new Date(e.date).toLocaleDateString()}${e.time ? ` ${e.time}` : ""}`
+			`- "${e.title}" at ${toIsoDate(e.date)}${e.time ? ` ${e.time}` : ""}`
 	)
 	.join("\n")}
 `;
 
-			const openRouterApiKey = args.openRouterApiKey;
-			if (!openRouterApiKey) {
-				console.error("[aiSearch] OpenRouter API key not provided");
+			const openAiApiKey = process.env.OPENAI_API_KEY;
+			if (!openAiApiKey) {
+				console.error("[aiSearch] OPENAI_API_KEY missing in Convex environment");
 				return {
 					success: false,
-					error: "AI service not configured",
+					error: "AI service not configured (Convex env: OPENAI_API_KEY)",
 					answer: null,
 					sources: [],
 				};
@@ -280,7 +304,7 @@ ${dataContext}
 
 User Question: ${userQuery}
 
-Current Date/Time: ${now.toLocaleString()}
+Current Date/Time: ${now.toISOString()}
 
 Rules:
 - Use ONLY the provided workspace data.
@@ -298,28 +322,60 @@ Rules:
 
 Provide a clear, concise answer under 500 words.`;
 
-			const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${openRouterApiKey}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					model: "google/gemini-2.5-flash",
-					temperature: 0.7,
-					max_tokens: 1000,
-					messages: [
-						{
-							role: "user",
-							content: prompt,
+			const fetchWithTimeout = async (maxTokens: number) => {
+				const controller = new AbortController();
+				const timeout = setTimeout(() => controller.abort(), 10_000);
+				try {
+					return await fetch("https://api.openai.com/v1/chat/completions", {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${openAiApiKey}`,
+							"Content-Type": "application/json",
 						},
-					],
-				}),
-			});
+						signal: controller.signal,
+						body: JSON.stringify({
+							model: "gpt-4o-mini",
+							temperature: 0.7,
+							max_tokens: maxTokens,
+							messages: [
+								{
+									role: "user",
+									content: prompt,
+								},
+							],
+						}),
+					});
+				} finally {
+					clearTimeout(timeout);
+				}
+			};
+
+			let response: Response;
+			try {
+				response = await fetchWithTimeout(700);
+			} catch (fetchError) {
+				if (
+					fetchError instanceof Error &&
+					(fetchError.name === "AbortError" || fetchError.message.includes("aborted"))
+				) {
+					return {
+						success: false,
+						error: "AI search timed out",
+						answer: null,
+						sources: [],
+					};
+				}
+				throw fetchError;
+			}
+
+			// OpenAI commonly reports rate-limit/quota pressure as HTTP 429.
+			if (response.status === 429) {
+				response = await fetchWithTimeout(350);
+			}
 
 			if (!response.ok) {
 				const responseBody = await response.text();
-				throw new Error(`OpenRouter error (${response.status}): ${responseBody}`);
+				throw new Error(`OpenAI error (${response.status}): ${responseBody}`);
 			}
 
 			const payload = await response.json();

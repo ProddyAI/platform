@@ -23,52 +23,44 @@ export async function POST(request: NextRequest) {
 
 	try {
 		const { workspaceId, query } = await request.json();
+		const trimmedWorkspaceId =
+			typeof workspaceId === "string" ? workspaceId.trim() : "";
 
 		// Validate inputs
-		if (!workspaceId || !query || typeof query !== "string") {
+		if (
+			!trimmedWorkspaceId ||
+			!/^[a-zA-Z0-9_-]+$/.test(trimmedWorkspaceId) ||
+			!query ||
+			typeof query !== "string"
+		) {
 			return NextResponse.json(
 				{ error: "Missing or invalid parameters" },
 				{ status: 400 }
 			);
 		}
 
-		// Get API key from environment
-		const openRouterApiKey = process.env.OPENROUTER_API_KEY;
-		if (!openRouterApiKey) {
-			console.error("[AI Search API] OPENROUTER_API_KEY not configured");
-			return NextResponse.json(
-				{
-					success: false,
-					error: "AI service not configured",
-					answer: null,
-					sources: [],
-				},
-				{ status: 500 }
-			);
-		}
-
 		// Create Convex client with auth token
 		const client = createConvexClient();
+		let token: string | null | undefined = null;
 		try {
-			const token = await convexAuthNextjsToken();
-			if (token) {
-				client.setAuth(token);
-			}
+			token = await convexAuthNextjsToken();
 		} catch (err) {
-			if (isAuth) {
-				console.warn("[AI Search] Failed to read Convex auth token from request", err);
-			}
+			console.warn("[AI Search] Failed to read Convex auth token from request", err);
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
+		if (!token) {
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
+		client.setAuth(token);
 
 		// Fetch search data from Convex
 		const searchData = await client.query(api.aiSearch.getSearchData, {
-			workspaceId: workspaceId as Id<"workspaces">,
+			workspaceId: trimmedWorkspaceId as Id<"workspaces">,
 		});
 
-		// Call Convex AI search action with API key
+		// Call Convex AI search action
 		const result = await client.action(api.aiSearch.aiSearch, {
 			query: query.trim(),
-			openRouterApiKey,
 			searchData,
 		});
 
@@ -78,7 +70,7 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json(
 			{
 				success: false,
-				error: `AI search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+				error: "AI search failed",
 				answer: null,
 				sources: [],
 			},

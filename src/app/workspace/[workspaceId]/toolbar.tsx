@@ -13,7 +13,7 @@ import {
 	Sparkles,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
@@ -60,6 +60,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [useAI, setUseAI] = useState(false);
 	const [aiSearchInput, setAiSearchInput] = useState("");
+	const aiInputRef = useRef<HTMLInputElement | null>(null);
 
 	const { data: workspace } = useGetWorkspace({ id: workspaceId });
 	const { data: channels } = useGetChannels({ workspaceId });
@@ -82,6 +83,12 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 			setAiSearchInput("");
 		}
 	}, [searchOpen]);
+
+	useEffect(() => {
+		if (searchOpen && useAI) {
+			aiInputRef.current?.focus();
+		}
+	}, [searchOpen, useAI, workspaceId]);
 
 	// Handle URL parameter for opening user settings
 	useEffect(() => {
@@ -179,12 +186,17 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						<div className="flex-1">
 							{useAI ? (
 								<input
-									autoFocus
-									className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+									ref={aiInputRef}
+									className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
 									onChange={(e) => setAiSearchInput(e.target.value)}
 									onKeyDown={(e) => {
+										if (e.key === "Escape") {
+											e.preventDefault();
+											setSearchOpen(false);
+											return;
+										}
 										if (e.key === "Enter" && aiSearchInput.trim()) {
-											aiSearch(aiSearchInput);
+											aiSearch(aiSearchInput.trim());
 										}
 									}}
 									placeholder={`Ask AI about ${workspace?.name ?? "workspace"}...`}
@@ -214,27 +226,32 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 								{aiResult && aiResult.success && !isAISearching && (
 									<CommandGroup heading="AI Answer">
-										<div className="p-4 text-sm space-y-3">
-											<div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-												<p className="text-sm leading-relaxed text-foreground">
-													{aiResult.answer}
-												</p>
-											</div>
-											<div className="text-xs text-muted-foreground">
-												<p className="font-semibold mb-1">Sources:</p>
-												<div className="flex flex-wrap gap-1">
-													{aiResult.sources?.map((source) => (
-														<Badge
-															key={source}
-															variant="outline"
-															className="text-xs"
-														>
-															{source}
-														</Badge>
-													))}
+										<CommandItem
+											className="block cursor-default p-0 data-[selected=true]:bg-transparent"
+											onSelect={() => {}}
+										>
+											<div className="p-4 text-sm space-y-3">
+												<div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+													<p className="text-sm leading-relaxed text-foreground">
+														{aiResult.answer}
+													</p>
+												</div>
+												<div className="text-xs text-muted-foreground">
+													<p className="font-semibold mb-1">Sources:</p>
+													<div className="flex flex-wrap gap-1">
+														{aiResult.sources?.map((source) => (
+															<Badge
+																key={source}
+																variant="outline"
+																className="text-xs"
+															>
+																{source}
+															</Badge>
+														))}
+													</div>
 												</div>
 											</div>
-										</div>
+										</CommandItem>
 									</CommandGroup>
 								)}
 
@@ -245,21 +262,21 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 												{aiResult.error || "Failed to search with AI"}
 											</p>
 											{(aiResult.error?.includes("not configured") ||
-												aiResult.error?.includes("OPENROUTER_API_KEY")) && (
+												aiResult.error?.includes("OPENAI_API_KEY")) && (
 												<p className="text-xs text-muted-foreground mt-2">
-													Make sure you have set the OPENROUTER_API_KEY
+													Make sure you have set the OPENAI_API_KEY
 													environment variable.
 												</p>
 											)}
 											{(aiResult.error?.includes("not found") ||
 												aiResult.error?.includes("not supported")) && (
 												<p className="text-xs text-muted-foreground mt-2">
-													Selected OpenRouter model is unavailable for this API version.
+													Selected OpenAI model is unavailable for this API version.
 												</p>
 											)}
 											{aiResult.error?.includes("quota") && (
 												<p className="text-xs text-muted-foreground mt-2">
-													OpenRouter quota/rate limit exceeded. Check billing/limits or retry later.
+													OpenAI quota/rate limit exceeded. Check billing/limits or retry later.
 												</p>
 											)}
 										</div>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -14,6 +13,7 @@ interface AISearchResponse {
 		notesCount: number;
 		tasksCount: number;
 		cardsCount: number;
+		eventsCount?: number;
 	};
 }
 
