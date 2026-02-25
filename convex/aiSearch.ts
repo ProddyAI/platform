@@ -8,7 +8,9 @@ import { getMember } from "./utils";
 function cleanAiAnswer(answer: string, userQuery: string): string {
 	let cleaned = answer.trim();
 
-	const isSummaryIntent = /\b(summarize|summary|recap|overview)\b/i.test(userQuery);
+	const isSummaryIntent = /\b(summarize|summary|recap|overview)\b/i.test(
+		userQuery
+	);
 	if (!isSummaryIntent) {
 		// Model sometimes prefixes simple answers with "Summary:" even when not requested.
 		cleaned = cleaned.replace(/^summary:\s*/i, "");
@@ -18,7 +20,9 @@ function cleanAiAnswer(answer: string, userQuery: string): string {
 	cleaned = cleaned.replace(/\bKey Points:\s*/i, "Key Points:\n");
 
 	const keyPointsLabel = "Key Points:";
-	const keyPointsIndex = cleaned.toLowerCase().indexOf(keyPointsLabel.toLowerCase());
+	const keyPointsIndex = cleaned
+		.toLowerCase()
+		.indexOf(keyPointsLabel.toLowerCase());
 	if (keyPointsIndex !== -1) {
 		const before = cleaned.slice(0, keyPointsIndex + keyPointsLabel.length);
 		let after = cleaned
@@ -36,7 +40,8 @@ function cleanAiAnswer(answer: string, userQuery: string): string {
 				const trimmed = line.trim();
 				if (!trimmed) return "";
 				if (trimmed.toLowerCase().startsWith("summary:")) return trimmed;
-				if (trimmed.toLowerCase().startsWith("key points:")) return "Key Points:";
+				if (trimmed.toLowerCase().startsWith("key points:"))
+					return "Key Points:";
 				return trimmed.startsWith("- ") ? trimmed : `- ${trimmed}`;
 			})
 			.filter(Boolean)
@@ -77,7 +82,9 @@ export const getSearchData = query({
 		// Fetch messages from all channels in the workspace
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.take(50);
 
 		const messages = [];
@@ -86,7 +93,7 @@ export const getSearchData = query({
 				.query("messages")
 				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
 				.take(100);
-			
+
 			messages.push(
 				...channelMessages.map((msg) => ({
 					_id: msg._id.toString(),
@@ -100,7 +107,9 @@ export const getSearchData = query({
 		// Fetch notes
 		const notes = await ctx.db
 			.query("notes")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.take(100);
 
 		const formattedNotes = notes.map((note) => ({
@@ -111,33 +120,42 @@ export const getSearchData = query({
 		// Fetch tasks
 		const tasks = await ctx.db
 			.query("tasks")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.take(100);
 
 		const formattedTasks = tasks.map((task) => ({
 			title: task.title,
-			description: task.description ? extractTextFromRichText(task.description) : undefined,
+			description: task.description
+				? extractTextFromRichText(task.description)
+				: undefined,
 			dueDate: task.dueDate,
 		}));
 
 		// Fetch cards from all lists in channels
 		const cards = [];
+		const MAX_CARDS = 100;
 		for (const channel of channels) {
+			if (cards.length >= MAX_CARDS) break;
 			const lists = await ctx.db
 				.query("lists")
 				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
-				.take(100);
+				.take(20);
 
 			for (const list of lists) {
+				if (cards.length >= MAX_CARDS) break;
 				const listCards = await ctx.db
 					.query("cards")
 					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
-					.take(100);
+					.take(MAX_CARDS - cards.length);
 
 				cards.push(
 					...listCards.map((card) => ({
 						title: card.title,
-						description: card.description ? extractTextFromRichText(card.description) : undefined,
+						description: card.description
+							? extractTextFromRichText(card.description)
+							: undefined,
 						dueDate: card.dueDate,
 					}))
 				);
@@ -146,7 +164,9 @@ export const getSearchData = query({
 
 		const events = await ctx.db
 			.query("events")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.take(100);
 
 		const formattedEvents = events.map((event) => ({
@@ -169,34 +189,44 @@ export const aiSearch = action({
 	args: {
 		query: v.string(),
 		searchData: v.object({
-			messages: v.array(v.object({
-				_id: v.string(),
-				channelName: v.string(),
-				_creationTime: v.number(),
-				text: v.string(),
-			})),
-			notes: v.array(v.object({
-				title: v.string(),
-				content: v.string(),
-			})),
-			tasks: v.array(v.object({
-				title: v.string(),
-				description: v.optional(v.string()),
-				dueDate: v.optional(v.number()),
-			})),
-			cards: v.array(v.object({
-				title: v.string(),
-				description: v.optional(v.string()),
-				dueDate: v.optional(v.number()),
-			})),
-			events: v.array(v.object({
-				title: v.string(),
-				date: v.number(),
-				time: v.optional(v.string()),
-			})),
+			messages: v.array(
+				v.object({
+					_id: v.string(),
+					channelName: v.string(),
+					_creationTime: v.number(),
+					text: v.string(),
+				})
+			),
+			notes: v.array(
+				v.object({
+					title: v.string(),
+					content: v.string(),
+				})
+			),
+			tasks: v.array(
+				v.object({
+					title: v.string(),
+					description: v.optional(v.string()),
+					dueDate: v.optional(v.number()),
+				})
+			),
+			cards: v.array(
+				v.object({
+					title: v.string(),
+					description: v.optional(v.string()),
+					dueDate: v.optional(v.number()),
+				})
+			),
+			events: v.array(
+				v.object({
+					title: v.string(),
+					date: v.number(),
+					time: v.optional(v.string()),
+				})
+			),
 		}),
 	},
-	handler: async (ctx, args) => {
+	handler: async (_ctx, args) => {
 		const userQuery = args.query.trim();
 		if (!userQuery) {
 			return {
@@ -207,7 +237,8 @@ export const aiSearch = action({
 			};
 		}
 
-		const greetingPattern = /^(hi|hello|hey|yo|hola|good\s+(morning|afternoon|evening))([!.\s]*)$/i;
+		const greetingPattern =
+			/^(hi|hello|hey|yo|hola|good\s+(morning|afternoon|evening))([!.\s]*)$/i;
 		if (greetingPattern.test(userQuery)) {
 			return {
 				success: true,
@@ -229,8 +260,8 @@ export const aiSearch = action({
 			const requestedChannel = channelQueryMatch?.[1]?.toLowerCase();
 			const scopedMessages = requestedChannel
 				? args.searchData.messages.filter(
-					(m) => m.channelName.toLowerCase() === requestedChannel
-				)
+						(m) => m.channelName.toLowerCase() === requestedChannel
+					)
 				: args.searchData.messages;
 
 			const recentMessages = [...scopedMessages]
@@ -279,18 +310,20 @@ ${args.searchData.cards
 ${args.searchData.events
 	.slice(0, 30)
 	.map(
-		(e) =>
-			`- "${e.title}" at ${toIsoDate(e.date)}${e.time ? ` ${e.time}` : ""}`
+		(e) => `- "${e.title}" at ${toIsoDate(e.date)}${e.time ? ` ${e.time}` : ""}`
 	)
 	.join("\n")}
 `;
 
 			const openAiApiKey = process.env.OPENAI_API_KEY;
 			if (!openAiApiKey) {
-				console.error("[aiSearch] OPENAI_API_KEY missing in Convex environment");
+				console.error(
+					"[aiSearch] OPENAI_API_KEY missing in Convex environment"
+				);
 				return {
 					success: false,
-					error: "AI service not configured (Convex env: OPENAI_API_KEY)",
+					error:
+						"AI service is not configured. Please contact your administrator.",
 					answer: null,
 					sources: [],
 				};
@@ -324,7 +357,7 @@ Provide a clear, concise answer under 500 words.`;
 
 			const fetchWithTimeout = async (maxTokens: number) => {
 				const controller = new AbortController();
-				const timeout = setTimeout(() => controller.abort(), 10_000);
+				const timeout = setTimeout(() => controller.abort(), 20_000);
 				try {
 					return await fetch("https://api.openai.com/v1/chat/completions", {
 						method: "POST",
@@ -356,7 +389,8 @@ Provide a clear, concise answer under 500 words.`;
 			} catch (fetchError) {
 				if (
 					fetchError instanceof Error &&
-					(fetchError.name === "AbortError" || fetchError.message.includes("aborted"))
+					(fetchError.name === "AbortError" ||
+						fetchError.message.includes("aborted"))
 				) {
 					return {
 						success: false,
@@ -370,7 +404,24 @@ Provide a clear, concise answer under 500 words.`;
 
 			// OpenAI commonly reports rate-limit/quota pressure as HTTP 429.
 			if (response.status === 429) {
-				response = await fetchWithTimeout(350);
+				await new Promise((r) => setTimeout(r, 1500));
+				try {
+					response = await fetchWithTimeout(350);
+				} catch (retryError) {
+					if (
+						retryError instanceof Error &&
+						(retryError.name === "AbortError" ||
+							retryError.message.includes("aborted"))
+					) {
+						return {
+							success: false,
+							error: "AI search timed out",
+							answer: null,
+							sources: [],
+						};
+					}
+					throw retryError;
+				}
 			}
 
 			if (!response.ok) {
@@ -380,7 +431,9 @@ Provide a clear, concise answer under 500 words.`;
 
 			const payload = await response.json();
 			const rawAnswer = payload?.choices?.[0]?.message?.content?.trim();
-			const answer = rawAnswer ? cleanAiAnswer(rawAnswer, userQuery) : rawAnswer;
+			const answer = rawAnswer
+				? cleanAiAnswer(rawAnswer, userQuery)
+				: rawAnswer;
 
 			if (!answer) {
 				return {
@@ -392,13 +445,18 @@ Provide a clear, concise answer under 500 words.`;
 			}
 
 			// Identify sources mentioned in the answer
-			const query = userQuery.toLowerCase();
 			const isScheduleQuery =
-				/(today|day|schedule|agenda|calendar|meeting|events?|tomorrow|week)/i.test(query);
-			const isChannelQuery = /#[a-z0-9_-]+/i.test(query) || /\b(messages?|channel|chat|summari[sz]e)\b/i.test(query);
-			const isTaskQuery = /\b(task|todo|overdue|due)\b/i.test(query);
-			const isCardQuery = /\b(card|board|kanban|list)\b/i.test(query);
-			const isNoteQuery = /\b(note|notes|doc|docs|documentation)\b/i.test(query);
+				/(today|day|schedule|agenda|calendar|meeting|events?|tomorrow|week)/i.test(
+					userQuery
+				);
+			const isChannelQuery =
+				/#[a-z0-9_-]+/i.test(userQuery) ||
+				/\b(messages?|channel|chat|summari[sz]e)\b/i.test(userQuery);
+			const isTaskQuery = /\b(task|todo|overdue|due)\b/i.test(userQuery);
+			const isCardQuery = /\b(card|board|kanban|list)\b/i.test(userQuery);
+			const isNoteQuery = /\b(note|notes|doc|docs|documentation)\b/i.test(
+				userQuery
+			);
 
 			const sources = [];
 
@@ -406,7 +464,10 @@ Provide a clear, concise answer under 500 words.`;
 				if (recentMessages.length > 0) sources.push("messages");
 			} else if (isCardQuery) {
 				if (args.searchData.cards.length > 0) sources.push("cards");
-				if (isScheduleQuery && args.searchData.tasks.some((task) => task.dueDate)) {
+				if (
+					isScheduleQuery &&
+					args.searchData.tasks.some((task) => task.dueDate)
+				) {
 					sources.push("tasks");
 				}
 			} else if (isNoteQuery) {
@@ -415,15 +476,21 @@ Provide a clear, concise answer under 500 words.`;
 				if (args.searchData.tasks.length > 0) sources.push("tasks");
 			} else if (isScheduleQuery) {
 				if (args.searchData.events.length > 0) sources.push("events");
-				if (args.searchData.tasks.some((task) => task.dueDate)) sources.push("tasks");
-				if (args.searchData.cards.some((card) => card.dueDate)) sources.push("cards");
+				if (args.searchData.tasks.some((task) => task.dueDate))
+					sources.push("tasks");
+				if (args.searchData.cards.some((card) => card.dueDate))
+					sources.push("cards");
 			}
 
 			if (sources.length === 0) {
-				if (isScheduleQuery && args.searchData.events.length > 0) sources.push("events");
-				else if (isTaskQuery && args.searchData.tasks.length > 0) sources.push("tasks");
-				else if (isCardQuery && args.searchData.cards.length > 0) sources.push("cards");
-				else if (isNoteQuery && args.searchData.notes.length > 0) sources.push("notes");
+				if (isScheduleQuery && args.searchData.events.length > 0)
+					sources.push("events");
+				else if (isTaskQuery && args.searchData.tasks.length > 0)
+					sources.push("tasks");
+				else if (isCardQuery && args.searchData.cards.length > 0)
+					sources.push("cards");
+				else if (isNoteQuery && args.searchData.notes.length > 0)
+					sources.push("notes");
 				else if (recentMessages.length > 0) sources.push("messages");
 			}
 

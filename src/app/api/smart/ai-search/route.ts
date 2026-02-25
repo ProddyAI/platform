@@ -55,7 +55,10 @@ export async function POST(request: NextRequest) {
 		try {
 			token = await convexAuthNextjsToken();
 		} catch (err) {
-			console.warn("[AI Search] Failed to read Convex auth token from request", err);
+			console.warn(
+				"[AI Search] Failed to read Convex auth token from request",
+				err
+			);
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 		if (!token) {

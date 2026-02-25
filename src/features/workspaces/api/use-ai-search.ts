@@ -31,10 +31,16 @@ export const useAISearch = (workspaceId: Id<"workspaces">) => {
 	const search = useCallback(
 		async (query: string): Promise<AISearchResponse | null> => {
 			if (!query.trim()) {
-				setResult(null);
-				setError("Query cannot be empty");
+				const emptyResult = {
+					success: false,
+					answer: null,
+					sources: [],
+					error: "Query cannot be empty",
+				};
+				setResult(emptyResult);
+				setError(emptyResult.error);
 				setIsLoading(false);
-				return null;
+				return emptyResult;
 			}
 
 			setIsLoading(true);
@@ -59,15 +65,22 @@ export const useAISearch = (workspaceId: Id<"workspaces">) => {
 					if (errorText) {
 						try {
 							const errorData = JSON.parse(errorText) as { error?: string };
-							parsedError = typeof errorData.error === "string" ? errorData.error : null;
+							parsedError =
+								typeof errorData.error === "string" ? errorData.error : null;
 						} catch {
 							parsedError = null;
 						}
 					}
-
-					throw new Error(
-						parsedError || errorText || "Failed to perform AI search"
-					);
+					const failResult = {
+						success: false,
+						answer: null,
+						sources: [],
+						error: parsedError || errorText || "Failed to perform AI search",
+					};
+					setResult(failResult);
+					setError(failResult.error);
+					setIsLoading(false);
+					return failResult;
 				}
 
 				const data: AISearchResponse = await response.json();
@@ -77,12 +90,15 @@ export const useAISearch = (workspaceId: Id<"workspaces">) => {
 				const errorMsg =
 					err instanceof Error ? err.message : "Unknown error occurred";
 				setError(errorMsg);
-				return {
+				const errorResult: AISearchResponse = {
 					success: false,
 					answer: null,
 					sources: [],
 					error: errorMsg,
 				};
+				setResult(errorResult);
+				setIsLoading(false);
+				return errorResult;
 			} finally {
 				setIsLoading(false);
 			}
