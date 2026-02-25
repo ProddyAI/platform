@@ -832,14 +832,29 @@ Try asking me things like:`;
 						{isLoading && (
 							<div className="flex justify-start">
 								<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3">
-									<div className="flex items-center gap-2">
-										<Loader className="h-4 w-4 animate-spin" />
-										<div>
-											<p className="text-sm font-medium">Thinking...</p>
-											<p className="text-xs text-muted-foreground mt-1">
-												Searching workspace content for relevant information
-											</p>
+									<div className="flex items-start gap-2">
+										<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+											<Zap className="h-4 w-4 animate-pulse text-primary" />
 										</div>
+										<div className="min-w-0 flex-1">
+											<p className="text-sm font-medium">Using tools when needed</p>
+											<p className="text-xs text-muted-foreground mt-1">
+												Checking calendar, tasks, search, and integrations…
+											</p>
+											<div className="mt-2 flex flex-wrap gap-1">
+												{["Calendar", "Tasks", "Search", "Integrations"].map(
+													(label) => (
+														<span
+															key={label}
+															className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+														>
+															{label}
+														</span>
+													)
+												)}
+											</div>
+										</div>
+										<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
 									</div>
 								</div>
 							</div>

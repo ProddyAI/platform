@@ -54,12 +54,36 @@ export const PresenceIndicator = ({
 						strokeWidth={3}
 					/>
 				);
-			case "idle":
-				return <Moon className="size-2 text-white" strokeWidth={2} />;
 			default:
 				return null;
 		}
 	};
+
+	// Simple crescent moon icon for idle status
+	if (displayStatus === "idle") {
+		return (
+			<TooltipProvider delayDuration={300}>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<div
+							className={cn(
+								"absolute -bottom-0.5 -right-0.5 cursor-default",
+								className
+							)}
+						>
+							<Moon
+								className="size-3 text-yellow-500 fill-yellow-500"
+								strokeWidth={0}
+							/>
+						</div>
+					</TooltipTrigger>
+					<TooltipContent className="text-xs" side="top">
+						{statusLabels[displayStatus]}
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		);
+	}
 
 	return (
 		<TooltipProvider delayDuration={300}>

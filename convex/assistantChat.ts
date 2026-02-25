@@ -1,13 +1,22 @@
+import { saveMessage } from "@convex-dev/agent";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import OpenAI from "openai";
+import { openai } from "@ai-sdk/openai";
+import { generateText, tool, stepCountIs } from "ai";
+import { jsonSchema } from "ai";
 import {
 	type AssistantExternalApp,
 	buildAssistantResponseMetadata,
 	buildAssistantSystemPrompt,
 	classifyAssistantQuery,
 } from "../src/lib/assistant-orchestration";
-import { api, components } from "./_generated/api";
+import { proddyAgent } from "./assistant/agent";
+import { buildThreadContextPrompt } from "./assistant/context";
+import {
+	categorizeError,
+	handleAssistantError,
+} from "./assistant/errorHandling";
+import { api, components, internal } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
 
 type ToolHandlerType = "query" | "mutation" | "action";
@@ -28,6 +37,58 @@ type ToolDefinition = {
 	};
 	externalApp?: AssistantExternalApp;
 };
+
+function buildAiTools(
+	toolDefinitions: ToolDefinition[],
+	ctx: { runQuery: any; runMutation: any; runAction: any },
+	workspaceId: string,
+	userId: string
+): Record<string, any> {
+	const tools: Record<string, any> = {};
+
+	console.log("[buildAiTools] Starting with", toolDefinitions.length, "tool definitions");
+
+	for (const toolDef of toolDefinitions) {
+		// Create JSON Schema with proper typing
+		const jsonSchemaObj: Record<string, any> = {
+			type: "object",
+			properties: toolDef.parameters.properties || {},
+			required: toolDef.parameters.required || [],
+			additionalProperties: false,
+		};
+
+		console.log(`[buildAiTools] Creating tool: ${toolDef.name}`, {
+			hasProperties: Object.keys(jsonSchemaObj.properties).length > 0,
+			required: jsonSchemaObj.required,
+		});
+
+		tools[toolDef.name] = tool({
+			description: toolDef.description,
+			inputSchema: jsonSchema(jsonSchemaObj),
+			execute: async (params: any) => {
+				console.log(`[buildAiTools] Executing tool: ${toolDef.name}`, { params });
+				const fullArgs: Record<string, unknown> = { ...params };
+				if (toolDef.contextParams?.needsWorkspaceId) {
+					fullArgs.workspaceId = workspaceId;
+				}
+				if (toolDef.contextParams?.needsUserId) {
+					fullArgs.userId = userId;
+				}
+
+				if (toolDef.handlerType === "query") {
+					return await ctx.runQuery(toolDef.handler as any, fullArgs);
+				}
+				if (toolDef.handlerType === "mutation") {
+					return await ctx.runMutation(toolDef.handler as any, fullArgs);
+				}
+				return await ctx.runAction(toolDef.handler as any, fullArgs);
+			},
+		} as any);
+	}
+
+	console.log("[buildAiTools] Complete. Built tools:", Object.keys(tools));
+	return tools;
+}
 
 // Define tools that AI can use (handles are created inside the action)
 const TOOL_DEFINITIONS: ToolDefinition[] = [
@@ -55,6 +116,19 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		},
 		handlerType: "query" as const,
 		handler: api.assistantTools.getMyCalendarTomorrow,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getMyCalendarThisWeek",
+		description:
+			"Get the user's calendar events for this week (the next 7 days starting from today). Use this when the user asks about 'this week' or 'upcoming week'.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyCalendarThisWeek,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
@@ -97,6 +171,19 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
+		name: "getMyTasksThisWeek",
+		description:
+			"Get tasks assigned to the user that are due this week (next 7 days). Returns incomplete tasks due within the current week. Use this when user asks about 'this week' or 'upcoming' tasks.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyTasksThisWeek,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
 		name: "getMyAllTasks",
 		description:
 			"Get all tasks assigned to the user. Can optionally include completed tasks. Use this for general task queries like 'what are my tasks' or 'show all my work'.",
@@ -117,7 +204,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "searchChannels",
 		description:
-			"Search for channels in the workspace by name. Returns matching channels with their IDs. ALWAYS use this first when the user mentions a channel by name (e.g., '#general', '#engineering') to get the channel ID before calling other channel tools.",
+			"Search for channels in the workspace by name. Returns matching channels with their IDs. Only use this for finding/browsing channel information within the workspace. For Slack operations (posting messages, replying), use runSlackTool instead.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -223,7 +310,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "runSlackTool",
 		description:
-			"Use Slack to post messages, reply in threads, or get channel info. Provide a clear instruction like 'post in #general that the deploy is done'.",
+			"Use Slack to post messages, find channels, reply in threads, or get channel info. This is your PRIMARY tool for any Slack operations - use it to send messages directly to Slack channels. Provide a clear instruction like 'post in #general that the deploy is done' or 'send a hi to any channel in slack'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -357,19 +444,21 @@ export const createConversation = mutation({
 			return existing.conversationId;
 		}
 
-		const conversationId = await ctx.runMutation(
-			components.databaseChat.conversations.create,
+		// Use agent thread as conversation (unified agent-based architecture)
+		const thread = await ctx.runMutation(
+			components.agent.threads.createThread,
 			{
-				externalId: `workspace_${args.workspaceId}_user_${args.userId}_${Date.now()}`,
+				userId: args.userId,
 				title: args.title ?? "Chat with Proddy",
 			}
 		);
+		const conversationId = thread._id;
 
 		if (existing && args.forceNew) {
-			// Update existing record instead of creating duplicate
 			await ctx.db.patch(existing._id, {
 				conversationId,
 				lastMessageAt: Date.now(),
+				source: "agent",
 			});
 		} else {
 			await ctx.db.insert("assistantConversations", {
@@ -377,6 +466,7 @@ export const createConversation = mutation({
 				userId: args.userId,
 				conversationId,
 				lastMessageAt: Date.now(),
+				source: "agent",
 			});
 		}
 
@@ -384,10 +474,46 @@ export const createConversation = mutation({
 	},
 });
 
+/** Map agent MessageDoc to UI shape { role, content, _creationTime } */
+function agentMessageToUI(doc: {
+	_creationTime: number;
+	message?: { role?: string; content?: string | Array<{ type: string; text?: string }> };
+}): { role: string; content: string; _creationTime: number } {
+	const role = doc.message?.role ?? "user";
+	let content = "";
+	if (typeof doc.message?.content === "string") {
+		content = doc.message.content;
+	} else if (Array.isArray(doc.message?.content)) {
+		content = doc.message.content
+			.map((p) => (p.type === "text" && p.text ? p.text : ""))
+			.join("");
+	}
+	return { role, content, _creationTime: doc._creationTime };
+}
+
 export const getMessages = query({
 	args: { conversationId: v.string() },
 	returns: v.array(v.any()),
 	handler: async (ctx, args) => {
+		const meta = await ctx.runQuery(
+			api.assistantConversations.getByConversationId,
+			{ conversationId: args.conversationId }
+		);
+		if (!meta) return [];
+
+		if (meta.source === "agent") {
+			const result = await ctx.runQuery(
+				components.agent.messages.listMessagesByThreadId,
+				{
+					threadId: args.conversationId,
+					order: "asc",
+					paginationOpts: { numItems: 100, cursor: null },
+					excludeToolMessages: true,
+				}
+			);
+			return result.page.map(agentMessageToUI);
+		}
+
 		return await ctx.runQuery(components.databaseChat.messages.list, {
 			conversationId: args.conversationId as any,
 		});
@@ -398,6 +524,21 @@ export const listConversations = query({
 	args: { workspaceId: v.id("workspaces"), userId: v.id("users") },
 	returns: v.array(v.any()),
 	handler: async (ctx, args) => {
+		const row = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+			)
+			.unique();
+		if (row) {
+			return [
+				{
+					_id: row.conversationId,
+					title: "Chat with Proddy",
+					updatedAt: row.lastMessageAt,
+				},
+			];
+		}
 		return await ctx.runQuery(components.databaseChat.conversations.list, {
 			externalId: `workspace_${args.workspaceId}_user_${args.userId}`,
 		});
@@ -407,6 +548,11 @@ export const listConversations = query({
 export const getStreamState = query({
 	args: { conversationId: v.string() },
 	handler: async (ctx, args) => {
+		const meta = await ctx.runQuery(
+			api.assistantConversations.getByConversationId,
+			{ conversationId: args.conversationId }
+		);
+		if (meta?.source === "agent") return null;
 		return await ctx.runQuery(components.databaseChat.stream.getStream, {
 			conversationId: args.conversationId as any,
 		});
@@ -426,6 +572,11 @@ export const getStreamDeltas = query({
 export const abortStream = mutation({
 	args: { conversationId: v.string(), reason: v.optional(v.string()) },
 	handler: async (ctx, args) => {
+		const meta = await ctx.runQuery(
+			api.assistantConversations.getByConversationId,
+			{ conversationId: args.conversationId }
+		);
+		if (meta?.source === "agent") return;
 		return await ctx.runMutation(
 			components.databaseChat.stream.abortByConversation,
 			{
@@ -462,11 +613,20 @@ export const sendMessage = action({
 		error?: string;
 		metadata?: unknown;
 	}> => {
+		console.log("[sendMessage] Starting handler");
+		console.log("[sendMessage] args:", { 
+			conversationId: args.conversationId,
+			messageLength: args.message.length,
+			hasWorkspaceId: !!args.workspaceId,
+			hasUserId: !!args.userId,
+		});
+
 		const apiKey = process.env.OPENAI_API_KEY;
 		if (!apiKey) {
 			return { success: false, error: "OPENAI_API_KEY not configured" };
 		}
 
+		console.log("[sendMessage] API Key configured, fetching conversation meta");
 		const conversationMeta = await ctx.runQuery(
 			api.assistantConversations.getByConversationId,
 			{ conversationId: args.conversationId }
@@ -484,14 +644,141 @@ export const sendMessage = action({
 			};
 		}
 
+		const startMs = Date.now();
+
+		console.log("[sendMessage] Fetching connected apps");
+		// Get connected apps for this user
+		let connectedAppNames = await ctx.runQuery(
+			api.integrations.getMyActiveConnectedAppNames,
+			{ workspaceId: resolvedWorkspaceId }
+		);
+		if (connectedAppNames.length === 0) {
+			console.log(
+				"[sendMessage] No connected apps in DB. Checking Composio directly..."
+			);
+			const composioConnectedApps = await ctx.runAction(
+				api.assistantComposioTools.getConnectedAppNamesFromComposio,
+				{
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+				}
+			);
+			if (Array.isArray(composioConnectedApps)) {
+				connectedAppNames = composioConnectedApps;
+			}
+		}
+		console.log("[sendMessage] Connected apps:", connectedAppNames);
+		console.log("[sendMessage] Connected apps count:", connectedAppNames.length);
+
 		const queryIntent = classifyAssistantQuery(args.message);
 		const selectedToolDefinitions = selectToolsForQuery(
 			TOOL_DEFINITIONS,
 			queryIntent.requestedExternalApps
 		);
 
+		console.log("[sendMessage] User message:", args.message);
+		console.log("[sendMessage] Query classified:", {
+			mode: queryIntent.mode,
+			requiresExternalTools: queryIntent.requiresExternalTools,
+			requestedExternalApps: queryIntent.requestedExternalApps,
+			selectedToolsCount: selectedToolDefinitions.length,
+			selectedToolNames: selectedToolDefinitions.map(t => t.name),
+			externalToolNames: selectedToolDefinitions.filter(t => t.externalApp).map(t => t.name),
+		});
+
+		// Agent-backed conversation: use @convex-dev/agent thread and tools
+		if (conversationMeta?.source === "agent") {
+			try {
+				const threadContext = await ctx.runQuery(
+					api.assistant.context.getThreadContext,
+					{ threadId: args.conversationId }
+				);
+				const { messageId: promptMessageId } = await saveMessage(
+					ctx,
+					components.agent,
+					{
+						threadId: args.conversationId,
+						userId: resolvedUserId,
+						prompt: args.message,
+					}
+				);
+				let systemPrompt = buildAssistantSystemPrompt({
+					externalToolsAllowed: queryIntent.requiresExternalTools,
+					connectedApps: connectedAppNames,
+				});
+				if (threadContext?.recentTools?.length) {
+					systemPrompt += buildThreadContextPrompt(threadContext);
+				}
+				const result = await proddyAgent.generateText(
+					{
+						...ctx,
+						workspaceId: resolvedWorkspaceId,
+						userId: resolvedUserId,
+					},
+					{
+						threadId: args.conversationId,
+						userId: resolvedUserId,
+					},
+					{ promptMessageId, system: systemPrompt } as any
+				);
+				await ctx.runMutation(api.assistantConversations.upsertConversation, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: args.conversationId,
+					lastMessageAt: Date.now(),
+				});
+				const metadata = buildAssistantResponseMetadata({
+					assistantType: "convex",
+					executionPath: "convex-assistant",
+					intent: queryIntent,
+					tools: {
+						internalEnabled: true,
+						externalEnabled: selectedToolDefinitions.some((t) =>
+							Boolean(t.externalApp)
+						),
+						externalUsed: false,
+						connectedApps: connectedAppNames,
+					},
+				});
+				await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: args.conversationId,
+					outcome: "success",
+					durationMs: Date.now() - startMs,
+					executionPath: "convex-assistant",
+					timestamp: Date.now(),
+				});
+				return {
+					success: true,
+					content: result.text ?? "",
+					metadata,
+				};
+			} catch (error) {
+				console.error("[sendMessage] Agent error:", error);
+				await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: args.conversationId,
+					outcome: "error",
+					durationMs: Date.now() - startMs,
+					executionPath: "convex-assistant",
+					errorCategory: categorizeError(error),
+					timestamp: Date.now(),
+				});
+				const handled = await handleAssistantError(error, {
+					query: args.message,
+					attemptCount: 0,
+				});
+				return {
+					success: false,
+					error: handled.message,
+				};
+			}
+		}
+
 		try {
-			// Save user message
+			// Save user message (database-chat path)
 			await ctx.runMutation(components.databaseChat.messages.add, {
 				conversationId: args.conversationId as any,
 				role: "user",
@@ -505,12 +792,17 @@ export const sendMessage = action({
 			);
 
 			// Build messages array with system prompt
+			const systemPrompt = buildAssistantSystemPrompt({
+				externalToolsAllowed: queryIntent.requiresExternalTools,
+				connectedApps: connectedAppNames,
+			});
+			console.log("[sendMessage] System prompt length:", systemPrompt.length);
+			console.log("[sendMessage] System prompt:", systemPrompt);
+
 			const messages = [
 				{
 					role: "system",
-					content: buildAssistantSystemPrompt({
-						externalToolsAllowed: queryIntent.requiresExternalTools,
-					}),
+					content: systemPrompt,
 				},
 				...rawMessages.map((m: any) => ({
 					role: m.role,
@@ -526,113 +818,88 @@ export const sendMessage = action({
 				}
 			);
 
-			const openai = new OpenAI({
-				apiKey: apiKey,
-			});
+			const aiTools = buildAiTools(
+				selectedToolDefinitions,
+				ctx,
+				resolvedWorkspaceId,
+				resolvedUserId
+			);
 
-			// Format tools for OpenAI
-			const openaiTools: OpenAI.Chat.ChatCompletionTool[] =
-				selectedToolDefinitions.map((t) => ({
-					type: "function" as const,
-					function: {
-						name: t.name,
-						description: t.description,
-						parameters: t.parameters,
-					},
-				}));
+			console.log("[sendMessage] buildAiTools completed");
+			console.log("[sendMessage] aiTools keys:", Object.keys(aiTools));
+			console.log("[sendMessage] aiTools count:", Object.keys(aiTools).length);
+			console.log("[sendMessage] External tools in aiTools:", Object.keys(aiTools).filter(key => {
+				const toolDef = selectedToolDefinitions.find(t => t.name === key);
+				return toolDef?.externalApp;
+			}));
+			console.log("[sendMessage] messages array length:", messages.length);
+			console.log("[sendMessage] messages:", JSON.stringify(messages.slice(0, 2), null, 2));
 
-			// Call OpenAI with tools
-			const completion = await openai.chat.completions.create({
-				model: "gpt-4o-mini",
-				messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
-				tools: openaiTools,
-				temperature: 0.7,
-				max_tokens: 2000,
-			});
+			let result;
+			try {
+				console.log("[sendMessage] Calling generateText...");
+				result = await generateText({
+					model: openai("gpt-4o-mini"),
+					messages: messages as any,
+					tools: aiTools,
+					temperature: 0.7,
+					stopWhen: stepCountIs(5), // Allow up to 5 steps for tool calls and follow-up responses
+				});
+				console.log("[sendMessage] generateText completed successfully");
+			} catch (generateError: any) {
+				console.error("[sendMessage] generateText error:", generateError);
+				console.error("[sendMessage] generateText error message:", generateError?.message);
+				console.error("[sendMessage] generateText error stack:", generateError?.stack);
+				throw generateError;
+			}
 
-			let responseText =
-				completion.choices[0]?.message?.content || "No response generated";
-			const toolCalls = completion.choices[0]?.message?.tool_calls;
-			let externalToolUsed = false;
+			console.log("[sendMessage] generateText result received");
+			console.log("[sendMessage] result.text length:", result.text?.length ?? 0);
+			console.log("[sendMessage] result.text:", result.text);
+			console.log("[sendMessage] result.usage:", result.usage);
+			console.log("[sendMessage] result.steps count:", Array.isArray(result.steps) ? result.steps.length : 0);
+			console.log("[sendMessage] result keys:", Object.keys(result));
+			
+			// Log steps in detail
+			if (Array.isArray(result.steps)) {
+				result.steps.forEach((step, idx) => {
+					console.log(`[sendMessage] Step ${idx}:`, {
+						text: step.text,
+						toolCalls: step.toolCalls?.length ?? 0,
+						toolResults: step.toolResults?.length ?? 0,
+						finishReason: step.finishReason,
+						usage: step.usage,
+					});
+					if (step.toolCalls) {
+						step.toolCalls.forEach((call, callIdx) => {
+							console.log(`[sendMessage]   Tool call ${callIdx}:`, {
+								toolName: call.toolName,
+							input: call.input,
+						});
+					});
+				}
+				if (step.toolResults) {
+					step.toolResults.forEach((res, resIdx) => {
+						console.log(`[sendMessage]   Tool result ${resIdx}:`, {
+							toolName: res.toolName,
+							output: res.output,
+					});
+				});
+			}
+		});
+	}
 
-			// Execute tool calls if any
-			if (toolCalls && toolCalls.length > 0) {
-				for (const toolCall of toolCalls) {
-					if (toolCall.type === "function") {
-						try {
-							const toolName = toolCall.function.name;
-							const toolArgs = JSON.parse(toolCall.function.arguments);
-
-							// Find the tool definition
-							const tool = selectedToolDefinitions.find(
-								(t) => t.name === toolName
-							);
-							if (tool) {
-								if (tool.externalApp) {
-									externalToolUsed = true;
-								}
-								// Inject context parameters based on tool's needs
-								const fullArgs: Record<string, any> = { ...toolArgs };
-
-								if (tool.contextParams?.needsWorkspaceId) {
-									fullArgs.workspaceId = resolvedWorkspaceId;
-								}
-								if (tool.contextParams?.needsUserId) {
-									fullArgs.userId = resolvedUserId;
-								}
-
-								let result: unknown;
-								if (tool.handlerType === "query") {
-									result = await ctx.runQuery(tool.handler as any, fullArgs);
-								} else {
-									result = await ctx.runAction(tool.handler as any, fullArgs);
-								}
-								const toolResultResponse =
-									typeof result === "object" &&
-									result !== null &&
-									"response" in result &&
-									typeof (result as { response?: unknown }).response ===
-										"string"
-										? (result as { response: string }).response
-										: null;
-								const noSideEffectsMessage =
-									toolResultResponse?.includes("No changes were made.") ??
-									false;
-								if (tool.externalApp && noSideEffectsMessage) {
-									responseText = toolResultResponse ?? responseText;
-									continue;
-								}
-
-								// Call again with tool result
-								const followUpMessages = [
-									...messages,
-									completion.choices[0].message,
-									{
-										role: "tool" as const,
-										tool_call_id: toolCall.id,
-										content: JSON.stringify(result),
-									},
-								];
-
-								const followUpCompletion = await openai.chat.completions.create(
-									{
-										model: "gpt-4o-mini",
-										messages: followUpMessages as any,
-										temperature: 0.7,
-										max_tokens: 2000,
-									}
-								);
-
-								responseText =
-									followUpCompletion.choices[0]?.message?.content ||
-									responseText;
-							}
-						} catch (error) {
-							console.error(
-								`Tool execution error for ${toolCall.function.name}:`,
-								error
-							);
-						}
+	const responseText = result.text || "No response generated";
+	let externalToolUsed = false;
+	const steps = Array.isArray(result.steps) ? result.steps : [];
+	for (const step of steps) {
+		const stepToolCalls = step.toolCalls ?? [];
+		for (const toolCall of stepToolCalls) {
+					const toolDef = selectedToolDefinitions.find(
+						(t) => t.name === toolCall.toolName
+					);
+					if (toolDef?.externalApp) {
+						externalToolUsed = true;
 					}
 				}
 			}
@@ -666,16 +933,40 @@ export const sendMessage = action({
 						Boolean(tool.externalApp)
 					),
 					externalUsed: externalToolUsed,
-					connectedApps: [],
+					connectedApps: connectedAppNames,
 				},
 			});
 
+			await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
+				workspaceId: resolvedWorkspaceId,
+				userId: resolvedUserId,
+				conversationId: args.conversationId,
+				outcome: "success",
+				durationMs: Date.now() - startMs,
+				executionPath: "convex-assistant",
+				timestamp: Date.now(),
+			});
 			return { success: true, content: responseText, metadata };
 		} catch (error) {
-			console.error("[Assistant] Error:", error);
+			console.error("[sendMessage] Error occurred:", error);
+			console.error("[sendMessage] Error stack:", error instanceof Error ? error.stack : "No stack");
+			await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
+				workspaceId: resolvedWorkspaceId,
+				userId: resolvedUserId,
+				conversationId: args.conversationId,
+				outcome: "error",
+				durationMs: Date.now() - startMs,
+				executionPath: "convex-assistant",
+				errorCategory: categorizeError(error),
+				timestamp: Date.now(),
+			});
+			const handled = await handleAssistantError(error, {
+				query: args.message,
+				attemptCount: 0,
+			});
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
+				error: handled.message,
 			};
 		}
 	},

@@ -1,11 +1,25 @@
 import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
+import { generateText } from "ai";
 import { v } from "convex/values";
 import { api, components, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { extractTextFromRichText } from "./richText";
+
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/** Deterministic string hash for cache key (no Node crypto). */
+function hashQuery(query: string): string {
+	const s = query.trim().toLowerCase();
+	let h = 0;
+	for (let i = 0; i < s.length; i++) {
+		h = (h << 5) - h + s.charCodeAt(i);
+		h |= 0;
+	}
+	return String(h);
+}
 
 type FilterTypes = {
 	workspaceId: string;
@@ -14,11 +28,76 @@ type FilterTypes = {
 };
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: openai.embedding("text-embedding-3-small") as any,
-	embeddingDimension: 1536,
+	textEmbeddingModel: openai.embedding("text-embedding-3-large") as any,
+	embeddingDimension: 3072,
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
+
+export const getSearchCache = query({
+	args: { workspaceId: v.id("workspaces"), queryHash: v.string() },
+	returns: v.union(v.null(), v.any()),
+	handler: async (ctx, args) => {
+		const row = await ctx.db
+			.query("assistantSearchCache")
+			.withIndex("by_workspace_query", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("queryHash", args.queryHash)
+			)
+			.unique();
+		if (!row || row.expiresAt <= Date.now()) return null;
+		return row.result;
+	},
+});
+
+export const setSearchCache = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		queryHash: v.string(),
+		result: v.any(),
+		expiresAt: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const existing = await ctx.db
+			.query("assistantSearchCache")
+			.withIndex("by_workspace_query", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("queryHash", args.queryHash)
+			)
+			.unique();
+		if (existing) {
+			await ctx.db.patch(existing._id, {
+				result: args.result,
+				expiresAt: args.expiresAt,
+			});
+		} else {
+			await ctx.db.insert("assistantSearchCache", {
+				workspaceId: args.workspaceId,
+				queryHash: args.queryHash,
+				result: args.result,
+				expiresAt: args.expiresAt,
+			});
+		}
+	},
+});
+
+function extractTextFromRichText(body: string): string {
+	if (typeof body !== "string") {
+		return String(body);
+	}
+	try {
+		const parsedBody = JSON.parse(body);
+		if (parsedBody.ops) {
+			return parsedBody.ops
+				.map((op: { insert?: string }) =>
+					typeof op.insert === "string" ? op.insert : ""
+				)
+				.join("")
+				.trim();
+		}
+	} catch {
+		return body.replace(/<[^>]*>/g, "").trim();
+	}
+	return body.trim();
+}
 
 export const indexContent = action({
 	args: {
@@ -484,7 +563,10 @@ export const semanticSearch = action({
 		query: v.string(),
 		limit: v.optional(v.number()),
 	},
-	handler: async (ctx, args) => {
+	handler: async (
+		ctx,
+		args
+	): Promise<{ results: unknown[]; text: string; entries: unknown[] }> => {
 		const userId = args.userId ?? (await getAuthUserId(ctx));
 		if (!userId) throw new Error("Unauthorized");
 
@@ -509,15 +591,91 @@ export const semanticSearch = action({
 			filters.push({ name: "channelId", value: id });
 		}
 
+		const requestedLimit = args.limit ?? 10;
+		const queryHash = hashQuery(`${args.query}|${requestedLimit}`);
+		const cached: unknown = await ctx.runQuery(api.ragchat.getSearchCache, {
+			workspaceId: args.workspaceId,
+			queryHash,
+		});
+		if (cached != null) {
+			return cached as { results: unknown[]; text: string; entries: unknown[] };
+		}
+
 		try {
+			// Stage 1: broad vector search (more candidates, lower threshold)
 			const { results, text, entries } = await rag.search(ctx, {
 				namespace: args.workspaceId as string,
 				query: args.query,
 				filters,
-				limit: args.limit ?? 10,
-				vectorScoreThreshold: 0.5,
+				limit: Math.min(50, requestedLimit * 5),
+				vectorScoreThreshold: 0.3,
 			});
-			return { results, text, entries };
+
+			if (results.length <= requestedLimit) {
+				const out = { results, text, entries };
+				await ctx.runMutation(api.ragchat.setSearchCache, {
+					workspaceId: args.workspaceId,
+					queryHash,
+					result: out,
+					expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+				});
+				return out;
+			}
+
+			// Stage 2: rerank with LLM (top K by relevance to query)
+			const topK = requestedLimit;
+			const passageList = results
+				.map((r, i) => `[${i}] ${r.content?.[0]?.text ?? ""}`)
+				.join("\n\n");
+			const { text: rankOutput } = await generateText({
+				model: openai("gpt-4o-mini"),
+				system: "You output only a JSON array of integers: the zero-based indices of passages in order of relevance to the query, most relevant first. Output exactly one array, e.g. [3,0,1].",
+				prompt: `Query: ${args.query}\n\nPassages:\n${passageList}\n\nReturn the top ${topK} most relevant passage indices as a JSON array.`,
+			});
+			let indices: number[] = [];
+			try {
+				const parsed = JSON.parse(rankOutput.replace(/^[^[]*\[/, "[").replace(/\][^]*$/, "]"));
+				if (Array.isArray(parsed)) {
+					indices = parsed.filter((n) => typeof n === "number" && n >= 0 && n < results.length);
+				}
+			} catch {
+				// Fallback: use original order
+				indices = results.map((_, i) => i).slice(0, topK);
+			}
+
+			// Stage 3: diversify by contentType (max 3 per type)
+			const contentTypeCount: Record<string, number> = {};
+			const maxPerType = 3;
+			const rerankedResults: typeof results = [];
+			const rerankedEntries: typeof entries = [];
+			for (const i of indices) {
+				if (rerankedResults.length >= requestedLimit) break;
+				const entry = entries[i];
+				const filterValues = entry?.filterValues;
+				const contentType =
+					(Array.isArray(filterValues)
+						? (filterValues.find((f) => f.name === "contentType") as { value?: string } | undefined)?.value
+						: undefined) ?? "message";
+				if ((contentTypeCount[contentType] ?? 0) >= maxPerType) continue;
+				contentTypeCount[contentType] = (contentTypeCount[contentType] ?? 0) + 1;
+				rerankedResults.push(results[i]);
+				if (entry) rerankedEntries.push(entry);
+			}
+			const combinedText = rerankedResults
+				.map((r) => r.content?.[0]?.text ?? "")
+				.join("\n\n");
+			const out = {
+				results: rerankedResults,
+				text: combinedText,
+				entries: rerankedEntries,
+			};
+			await ctx.runMutation(api.ragchat.setSearchCache, {
+				workspaceId: args.workspaceId,
+				queryHash,
+				result: out,
+				expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+			});
+			return out;
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
