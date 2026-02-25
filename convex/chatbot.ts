@@ -1,15 +1,84 @@
 "use node";
 
+/**
+ * @deprecated Legacy chatbot implementation. New dashboard assistant uses
+ * agent-based flow in assistantChat.ts with @convex-dev/agent (see convex/assistant/agent.ts).
+ * Prefer createConversation/sendMessage via assistantChat for new features.
+ */
+
 import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
-import OpenAI from "openai";
 import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
 import { api, internal } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
 import { action } from "./_generated/server";
+function filterToolSetForOpenAI(tools: Record<string, any>): Record<string, any> {
+	const entries = Object.entries(tools).filter(([name]) => {
+		if (!name || name.length > 64) return false;
+		if (!/^[a-zA-Z0-9_-]+$/.test(name)) return false;
+		return true;
+	});
+	return Object.fromEntries(entries);
+}
+
+function selectRelevantTools(
+	tools: Record<string, any>,
+	instruction: string,
+	maxTools: number
+): Record<string, any> {
+	const entries = Object.entries(tools);
+	const normalized = instruction.toLowerCase();
+
+	const scored = entries.map(([name, tool]) => {
+		const lowerName = name.toLowerCase();
+		let score = 0;
+
+		// Score based on instruction keywords matching tool name
+		if (normalized.includes("github") && lowerName.includes("github"))
+			score += 10;
+		if (normalized.includes("slack") && lowerName.includes("slack")) score += 10;
+		if (normalized.includes("message") && lowerName.includes("message"))
+			score += 5;
+		if (normalized.includes("post") && lowerName.includes("post")) score += 5;
+		if (normalized.includes("send") && lowerName.includes("post"))
+			score += 5;
+		if (normalized.includes("list") && lowerName.includes("list")) score += 3;
+		if (normalized.includes("rep") && lowerName.includes("repo")) score += 5;
+		if (normalized.includes("issue") && lowerName.includes("issue"))
+			score += 3;
+		if (normalized.includes("channel") && lowerName.includes("channel"))
+			score += 5;
+		if (normalized.includes("user") && lowerName.includes("user"))
+			score += 3;
+		if (normalized.includes("commit") && lowerName.includes("commit"))
+			score += 3;
+		if (normalized.includes("branch") && lowerName.includes("branch"))
+			score += 3;
+
+		// Bonus for common action words that are typically executable
+		if (lowerName.includes("list")) score += 1;
+		if (lowerName.includes("get")) score += 1;
+		if (lowerName.includes("create")) score += 1;
+		if (lowerName.includes("post")) score += 2;
+		if (lowerName.includes("send")) score += 2;
+
+		return { name, tool, score };
+	});
+
+	const filtered = scored
+		.filter((item) => item.score > 0)
+		.sort((a, b) => b.score - a.score)
+		.slice(0, maxTools);
+
+	if (filtered.length > 0) {
+		return Object.fromEntries(filtered.map((item) => [item.name, item.tool]));
+	}
+	return Object.fromEntries(entries.slice(0, maxTools));
+}
 
 // Define types for chat messages and responses
 type Source = {
@@ -424,15 +493,14 @@ async function executeComposioAction(
 		// Initialize Composio client
 		const composio = new Composio({
 			apiKey: process.env.COMPOSIO_API_KEY,
+			provider: new VercelProvider(),
 		});
 
-		// Initialize OpenAI client
-		const openaiClient = new OpenAI({
-			apiKey: process.env.OPENAI_API_KEY,
-		});
+		const connectedApps: string[] = [];
+		const authConfigIdsByApp: Record<string, string> = {};
+		let entityIdForTools = entityId;
 
-		// Resolve auth config IDs from member's or workspace's connected accounts (Composio requires authConfigIds, not appNames)
-		const tools: any[] = [];
+		// Resolve auth config IDs from member's or workspace's connected accounts
 		for (const appName of appNames) {
 			const toolkit = appName.toLowerCase();
 			try {
@@ -460,194 +528,141 @@ async function executeComposioAction(
 				);
 				if (!authConfig?.composioAuthConfigId) {
 					console.warn(`[Composio] No Composio auth config ID for ${appName}`);
-					continue;
+				} else {
+					authConfigIdsByApp[appName] = authConfig.composioAuthConfigId;
 				}
 
 				// Use the connection's entityId: Composio links connections to an entity (e.g. workspace_xxx).
 				// tools.get must use that same entityId or Composio returns no tools.
-				const entityIdForTools =
+				const resolvedEntityId =
 					connectedAccount.userId && connectedAccount.userId.length > 0
 						? connectedAccount.userId
 						: entityId;
-
-				const appTools = await composio.tools.get(entityIdForTools, {
-					authConfigIds: [authConfig.composioAuthConfigId],
-					limit: 100,
-				});
-
-				const toolsArray = Array.isArray(appTools)
-					? appTools
-					: typeof appTools === "object" && appTools !== null
-						? Object.values(appTools)
-						: appTools
-							? [appTools]
-							: [];
-				tools.push(...toolsArray);
+				entityIdForTools = resolvedEntityId;
+				connectedApps.push(appName);
 			} catch (error) {
 				console.warn(`[Composio] No tools found for app ${appName}:`, error);
 			}
 		}
 
-		if (tools.length === 0) {
+		if (connectedApps.length === 0) {
 			return {
 				success: false,
 				error: `No tools available for ${appNames.join(", ")}. Please connect the app first.`,
 			};
 		}
 
-		// Convert Composio tools to OpenAI format (align with composio-config shape)
-		const openaiTools = tools.map((tool: any) => ({
-			type: "function" as const,
-			function: {
-				name: tool.function?.name || tool.name || tool.slug,
-				description: tool.function?.description || tool.description,
-				parameters:
-					tool.parameters ?? tool.schema ?? tool.function?.parameters ?? {},
-			},
-		}));
+		const toolsByApp: Record<string, any> = {};
+		for (const appName of connectedApps) {
+			try {
+				const authConfigId = authConfigIdsByApp[appName];
+				const appTools = authConfigId
+					? await composio.tools.get(entityIdForTools, {
+							authConfigIds: [authConfigId],
+							limit: 1000,
+						})
+					: await composio.tools.get(entityIdForTools, {
+							toolkits: [appName.toLowerCase()],
+							limit: 1000,
+						});
+				Object.assign(toolsByApp, appTools || {});
+			} catch (error) {
+				console.warn(
+					"[Chatbot Composio] Failed to fetch tools for",
+					appName
+				);
+			}
+		}
 
-		// Create OpenAI completion with tools
-		const completion = await openaiClient.chat.completions.create({
-			model: "gpt-4o-mini",
-			tools: openaiTools,
+		const filteredTools = filterToolSetForOpenAI(toolsByApp);
+		const tools = selectRelevantTools(filteredTools, message, 60);
+
+		if (!tools || Object.keys(tools).length === 0) {
+			return {
+				success: false,
+				error: "No tools could be resolved for connected apps.",
+			};
+		}
+
+		const result = await generateText({
+			model: openai("gpt-4o-mini"),
+			system: `You are a helpful assistant with access to ${connectedApps.join(", ")} tools. 
+			
+IMPORTANT: You MUST use the available tools to accomplish the user's request. 
+- Look through the available tools and select the most appropriate one
+- Execute the tool with the correct parameters
+- Return the results to the user
+
+For GitHub queries like "list repositories", use tools with names like GITHUB_LIST_REPOS or GITHUB_GITHUB_REPOS_FOR_AUTHENTICATED_USER.
+For Slack queries like "send message", use tools with names like SLACK_CHAT_POST_MESSAGE.
+
+Never say you cannot access these services - you have the tools to do so.`,
 			messages: [
-				{
-					role: "system",
-					content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-				},
 				{
 					role: "user",
 					content: message,
 				},
 			],
+			tools,
 			temperature: 0.7,
-			max_tokens: 1000,
 		});
 
-		let responseText =
-			completion.choices[0]?.message?.content || "No response generated";
-		const toolResults: any[] = [];
+		const steps = Array.isArray(result.steps) ? result.steps : [];
+		const toolCalls = steps.flatMap((step) => step.toolCalls ?? []);
+		const toolResults = steps.flatMap((step) => step.toolResults ?? []);
 
-		// Execute any tool calls with Composio
-		if (
-			completion.choices[0]?.message?.tool_calls &&
-			completion.choices[0].message.tool_calls.length > 0
-		) {
-			for (const toolCall of completion.choices[0].message.tool_calls) {
-				if (toolCall.type === "function") {
-					const sanitizedArgs = parseAndSanitizeArguments(
-						toolCall.function.arguments
-					);
-					try {
-						const actionParams = JSON.parse(toolCall.function.arguments);
-						const result = await composio.tools.execute(
-							toolCall.function.name,
-							{
-								userId: entityId,
-								arguments: actionParams,
-							}
-						);
-						await ctx.runMutation(
-							internal.assistantToolAudits.logExternalToolAttemptInternal,
-							{
-								workspaceId,
-								memberId,
-								toolName: toolCall.function.name,
-								toolkit: appNames[0]?.toUpperCase(),
-								argumentsSnapshot: sanitizedArgs,
-								outcome: "success",
-								executionPath: "convex-chatbot",
-								toolCallId: toolCall.id,
-							}
-						);
+		const isConnectionError = (value?: string) => {
+			if (!value) return false;
+			return (
+				value.includes("not connected") ||
+				value.includes("No connected account") ||
+				value.includes("401") ||
+				value.includes("403")
+			);
+		};
 
-						toolResults.push({
-							toolCallId: toolCall.id,
-							result: result,
-							toolName: toolCall.function.name,
-						});
-					} catch (error) {
-						console.error(
-							`[Composio] Tool execution error for ${toolCall.function.name}:`,
-							error
-						);
-
-						const errorMessage =
-							error instanceof Error ? error.message : "Unknown error";
-						await ctx.runMutation(
-							internal.assistantToolAudits.logExternalToolAttemptInternal,
-							{
-								workspaceId,
-								memberId,
-								toolName: toolCall.function.name,
-								toolkit: appNames[0]?.toUpperCase(),
-								argumentsSnapshot: sanitizedArgs,
-								outcome: "error",
-								error: errorMessage,
-								executionPath: "convex-chatbot",
-								toolCallId: toolCall.id,
-							}
-						);
-
-						// Check if it's a connection error
-						if (
-							errorMessage.includes("not connected") ||
-							errorMessage.includes("No connected account") ||
-							errorMessage.includes("401") ||
-							errorMessage.includes("403")
-						) {
-							return {
-								success: false,
-								error: "not_connected",
-							};
-						}
-
-						toolResults.push({
-							toolCallId: toolCall.id,
-							error: errorMessage,
-							toolName: toolCall.function.name,
-						});
-					}
+		for (const toolCall of toolCalls) {
+			const toolCallAny = toolCall as any;
+			const toolResultAny = toolResults.find(
+				(tr: any) => tr.toolCallId === toolCallAny.toolCallId
+			) as any;
+			const outcome =
+				toolResultAny?.result?.success === false ? "error" : "success";
+			const errorMessage =
+				outcome === "error"
+					? String(
+							toolResultAny?.result?.error || "Tool execution failed"
+						)
+					: undefined;
+			await ctx.runMutation(
+				internal.assistantToolAudits.logExternalToolAttemptInternal,
+				{
+					workspaceId,
+					memberId,
+					toolName: toolCallAny.toolName,
+					toolkit: connectedApps[0]?.toUpperCase(),
+					argumentsSnapshot: parseAndSanitizeArguments(
+						JSON.stringify(toolCallAny.args ?? {})
+					),
+					outcome,
+					error: errorMessage,
+					executionPath: "convex-chatbot",
+					toolCallId: toolCallAny.toolCallId,
 				}
-			}
+			);
 
-			// If we have tool results, create a follow-up completion
-			if (toolResults.length > 0) {
-				const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-					{
-						role: "system",
-						content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-					},
-					{
-						role: "user",
-						content: message,
-					},
-					completion.choices[0].message,
-					...toolResults.map((result) => ({
-						role: "tool" as const,
-						tool_call_id: result.toolCallId,
-						content: result.error
-							? `Error: ${result.error}`
-							: JSON.stringify(result.result),
-					})),
-				];
-
-				const followUpCompletion = await openaiClient.chat.completions.create({
-					model: "gpt-4o-mini",
-					messages: followUpMessages,
-					temperature: 0.7,
-					max_tokens: 1000,
-				});
-
-				responseText =
-					followUpCompletion.choices[0]?.message?.content || responseText;
+			if (errorMessage && isConnectionError(errorMessage)) {
+				return {
+					success: false,
+					error: "not_connected",
+				};
 			}
 		}
 
 		return {
 			success: true,
-			response: responseText,
-			toolCalls: completion.choices[0]?.message?.tool_calls,
+			response: result.text || "No response generated",
+			toolCalls,
 			toolResults,
 		};
 	} catch (error) {
@@ -2963,11 +2978,11 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 				query: args.query,
 				limit: 5,
 			});
-			ragResults = ragResponse.results.map(
-				(r: { content: Array<{ text: string }> }) => ({
-					text: r.content.map((c) => c.text).join("\n"),
-				})
-			);
+			ragResults = (
+				ragResponse.results as Array<{ content: Array<{ text: string }> }>
+			).map((r) => ({
+				text: r.content.map((c) => c.text).join("\n"),
+			}));
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);

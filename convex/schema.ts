@@ -380,6 +380,9 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
+						inviteSent: v.optional(v.boolean()), // Default: true - when invite link is sent
+						workspaceJoin: v.optional(v.boolean()), // Default: true - when someone joins workspace
+						onlineStatus: v.optional(v.boolean()), // Default: false - online/offline status changes
 					})
 				),
 			})
@@ -472,6 +475,10 @@ const schema = defineSchema({
 		userId: v.id("users"),
 		conversationId: v.string(),
 		lastMessageAt: v.number(),
+		/** When "agent", conversationId is an agent threadId; when "databaseChat" or omitted, it's database-chat. */
+		source: v.optional(
+			v.union(v.literal("agent"), v.literal("databaseChat"))
+		),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
@@ -495,6 +502,30 @@ const schema = defineSchema({
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
 		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
+
+	/** Cache for semantic search results (5 min TTL) to reduce embedding/LLM cost. */
+	assistantSearchCache: defineTable({
+		workspaceId: v.id("workspaces"),
+		queryHash: v.string(),
+		result: v.any(),
+		expiresAt: v.number(),
+	})
+		.index("by_workspace_query", ["workspaceId", "queryHash"])
+		.index("by_expires_at", ["expiresAt"]),
+
+	/** Assistant request logs for monitoring: latency, outcome, error category. */
+	assistantRequestLogs: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		conversationId: v.string(),
+		outcome: v.union(v.literal("success"), v.literal("error")),
+		durationMs: v.number(),
+		executionPath: v.string(),
+		errorCategory: v.optional(v.string()),
+		timestamp: v.number(),
+	})
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"])
+		.index("by_user_id_timestamp", ["userId", "timestamp"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({

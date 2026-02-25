@@ -14,7 +14,7 @@ const baseConfig = withPWA({
 	disable: process.env.NODE_ENV === "development",
 	customWorkerDir: "worker",
 	// Avoid Workbox precache warnings and bloated caches by excluding sourcemaps.
-	buildExcludes: [/\.map$/],
+	buildExcludes: [/\.map$/, /OneSignalSDK\.sw\.js$/, /OneSignalSDKWorker\.js$/],
 	runtimeCaching: [
 		{
 			urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,
@@ -149,6 +149,44 @@ const baseConfig = withPWA({
 				pathname: "/**",
 			},
 		],
+	},
+	async headers() {
+		return [
+			{
+				source: "/OneSignalSDK.sw.js",
+				headers: [
+					{
+						key: "Service-Worker-Allowed",
+						value: "/",
+					},
+					{
+						key: "Content-Type",
+						value: "application/javascript; charset=utf-8",
+					},
+					{
+						key: "Cache-Control",
+						value: "no-cache, no-store, must-revalidate",
+					},
+				],
+			},
+			{
+				source: "/OneSignalSDKWorker.js",
+				headers: [
+					{
+						key: "Service-Worker-Allowed",
+						value: "/",
+					},
+					{
+						key: "Content-Type",
+						value: "application/javascript; charset=utf-8",
+					},
+					{
+						key: "Cache-Control",
+						value: "no-cache, no-store, must-revalidate",
+					},
+				],
+			},
+		];
 	},
 	env: {
 		// Ensure Convex URL is available in client bundle

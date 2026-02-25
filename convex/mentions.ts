@@ -476,6 +476,7 @@ export const getProcessedMentions = query({
 					read: mention.read,
 					author: {
 						id: mentioner._id,
+						userId: mentioner.userId,
 						name: mentioner.user.name || "",
 						image: mentioner.user.image,
 					},

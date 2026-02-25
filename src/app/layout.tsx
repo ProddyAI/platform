@@ -6,6 +6,7 @@ import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/3pc/apollo-tracking";
 import { ClarityTracking } from "@/components/3pc/clarity-tracking";
 import { Formbricks } from "@/components/3pc/formbricks";
+import { AuthenticatedOneSignalTracking } from "@/components/3pc/notifications";
 import { TidioChat } from "@/components/3pc/tidio-chat";
 import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
@@ -13,6 +14,7 @@ import { ModalProvider } from "@/components/modal-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
+import { AdBlockerProvider } from "@/lib/ad-blocker-context";
 
 import "./globals.css";
 
@@ -81,17 +83,20 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 						`}
 					</Script>
 					<ConvexClientProvider>
-						<JotaiProvider>
-							<UsetifulProvider>
-								<Toaster closeButton richColors theme="light" />
-								<ModalProvider />
-								<TidioChat />
-								<Formbricks />
-								<ClarityTracking />
-								<ApolloTracking />
-								{children}
-							</UsetifulProvider>
-						</JotaiProvider>
+						<AdBlockerProvider>
+							<JotaiProvider>
+								<UsetifulProvider>
+									<Toaster closeButton richColors theme="light" />
+									<ModalProvider />
+									<AuthenticatedOneSignalTracking />
+									<TidioChat />
+									<Formbricks />
+									<ClarityTracking />
+									<ApolloTracking />
+									{children}
+								</UsetifulProvider>
+							</JotaiProvider>
+						</AdBlockerProvider>
 					</ConvexClientProvider>
 				</body>
 			</html>
