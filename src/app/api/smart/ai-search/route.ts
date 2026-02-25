@@ -22,16 +22,26 @@ export async function POST(request: NextRequest) {
 	}
 
 	try {
-		const { workspaceId, query } = await request.json();
+		let body: unknown;
+		try {
+			body = await request.json();
+		} catch {
+			return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+		}
+
+		const { workspaceId, query } = body as {
+			workspaceId?: unknown;
+			query?: unknown;
+		};
 		const trimmedWorkspaceId =
 			typeof workspaceId === "string" ? workspaceId.trim() : "";
+		const trimmedQuery = typeof query === "string" ? query.trim() : "";
 
 		// Validate inputs
 		if (
 			!trimmedWorkspaceId ||
 			!/^[a-zA-Z0-9_-]+$/.test(trimmedWorkspaceId) ||
-			!query ||
-			typeof query !== "string"
+			!trimmedQuery
 		) {
 			return NextResponse.json(
 				{ error: "Missing or invalid parameters" },
@@ -60,7 +70,7 @@ export async function POST(request: NextRequest) {
 
 		// Call Convex AI search action
 		const result = await client.action(api.aiSearch.aiSearch, {
-			query: query.trim(),
+			query: trimmedQuery,
 			searchData,
 		});
 

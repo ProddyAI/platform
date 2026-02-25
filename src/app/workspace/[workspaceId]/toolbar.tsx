@@ -73,7 +73,12 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		enabled: !useAI && searchQuery.trim().length > 0,
 	});
 
-	const { search: aiSearch, isLoading: isAISearching, result: aiResult } = useAISearch(workspaceId);
+	const {
+		search: aiSearch,
+		isLoading: isAISearching,
+		result: aiResult,
+		reset: resetAISearch,
+	} = useAISearch(workspaceId);
 
 	// Reset search state when dialog closes
 	useEffect(() => {
@@ -81,14 +86,15 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 			setSearchQuery("");
 			setUseAI(false);
 			setAiSearchInput("");
+			resetAISearch();
 		}
-	}, [searchOpen]);
+	}, [searchOpen, resetAISearch]);
 
 	useEffect(() => {
 		if (searchOpen && useAI) {
 			aiInputRef.current?.focus();
 		}
-	}, [searchOpen, useAI, workspaceId]);
+	}, [searchOpen, useAI]);
 
 	// Handle URL parameter for opening user settings
 	useEffect(() => {
@@ -176,6 +182,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 								setUseAI(!useAI);
 								setSearchQuery("");
 								setAiSearchInput("");
+								resetAISearch();
 							}}
 							size="sm"
 							title="Toggle AI Search"

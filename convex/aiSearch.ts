@@ -443,7 +443,7 @@ Provide a clear, concise answer under 500 words.`;
 			console.error("AI Search error:", error);
 			return {
 				success: false,
-				error: `AI search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+				error: "AI search failed",
 				answer: null,
 				sources: [],
 			};

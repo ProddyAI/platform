@@ -22,10 +22,18 @@ export const useAISearch = (workspaceId: Id<"workspaces">) => {
 	const [result, setResult] = useState<AISearchResponse | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
+	const reset = useCallback(() => {
+		setResult(null);
+		setError(null);
+		setIsLoading(false);
+	}, []);
+
 	const search = useCallback(
 		async (query: string): Promise<AISearchResponse | null> => {
 			if (!query.trim()) {
+				setResult(null);
 				setError("Query cannot be empty");
+				setIsLoading(false);
 				return null;
 			}
 
@@ -46,9 +54,19 @@ export const useAISearch = (workspaceId: Id<"workspaces">) => {
 				});
 
 				if (!response.ok) {
-					const errorData = await response.json();
+					let parsedError: string | null = null;
+					const errorText = await response.text();
+					if (errorText) {
+						try {
+							const errorData = JSON.parse(errorText) as { error?: string };
+							parsedError = typeof errorData.error === "string" ? errorData.error : null;
+						} catch {
+							parsedError = null;
+						}
+					}
+
 					throw new Error(
-						errorData.error || "Failed to perform AI search"
+						parsedError || errorText || "Failed to perform AI search"
 					);
 				}
 
@@ -74,6 +92,7 @@ export const useAISearch = (workspaceId: Id<"workspaces">) => {
 
 	return {
 		search,
+		reset,
 		isLoading,
 		result,
 		error,
