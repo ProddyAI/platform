@@ -6,6 +6,7 @@ import { v } from "convex/values";
 import { api, components, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
+import { extractTextFromRichText } from "./richText";
 
 const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
