@@ -1,8 +1,6 @@
 import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
 import { ConvexHttpClient } from "convex/browser";
-import { tool } from "ai";
-import { z } from "zod";
+import { tool, jsonSchema } from "ai";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -24,52 +22,6 @@ interface ConvexToolDefinition {
 		needsUserId?: boolean;
 	};
 	externalApp?: string;
-}
-
-/**
- * Convert JSON Schema parameters to Zod schema
- */
-function jsonSchemaToZod(jsonSchema: any): z.ZodObject<any> {
-	const shape: Record<string, z.ZodTypeAny> = {};
-
-	if (jsonSchema.properties) {
-		for (const [key, prop] of Object.entries(jsonSchema.properties) as any) {
-			let zodType: z.ZodTypeAny;
-
-			switch (prop.type) {
-				case "string":
-					zodType = z.string();
-					break;
-				case "number":
-					zodType = z.number();
-					break;
-				case "boolean":
-					zodType = z.boolean();
-					break;
-				case "array":
-					zodType = z.array(z.any());
-					break;
-				case "object":
-					zodType = z.record(z.any());
-					break;
-				default:
-					zodType = z.any();
-			}
-
-			if (prop.description) {
-				zodType = zodType.describe(prop.description);
-			}
-
-			// Make optional if not in required array
-			if (!jsonSchema.required || !jsonSchema.required.includes(key)) {
-				zodType = zodType.optional();
-			}
-
-			shape[key] = zodType;
-		}
-	}
-
-	return z.object(shape);
 }
 
 /**
@@ -272,11 +224,17 @@ export class UnifiedToolManager {
 		const tools: Record<string, any> = {};
 
 		for (const toolDef of INTERNAL_TOOL_DEFINITIONS) {
-			const zodSchema = jsonSchemaToZod(toolDef.parameters);
+			// Create JSON Schema with proper typing
+			const jsonSchemaObj: Record<string, any> = {
+				type: "object",
+				properties: toolDef.parameters.properties || {},
+				required: toolDef.parameters.required || [],
+				additionalProperties: false,
+			};
 
 			tools[toolDef.name] = tool({
 				description: toolDef.description,
-				parameters: zodSchema,
+				inputSchema: jsonSchema(jsonSchemaObj),
 				execute: async (params: any) => {
 					try {
 						// Inject context parameters

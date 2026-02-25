@@ -263,7 +263,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 			let text;
 			try {
 				const response = await generateText({
-					model: openrouter("openai/gpt-5-mini"),
+					model: openrouter("openai/gpt-4o-mini"),
 					messages: [
 						{
 							role: "system",

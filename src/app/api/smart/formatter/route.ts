@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const model = openrouter("openai/gpt-5-mini");
+		const model = openrouter("openai/gpt-4o-mini");
 
 		// Prepare the formatting prompt
 		const prompt = `You are an expert document formatter and editor. Your task is to improve the formatting, structure, and readability of the provided document while preserving all the original content and meaning.

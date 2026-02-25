@@ -328,7 +328,7 @@ export async function POST(req: NextRequest) {
 
 		try {
 			const { text } = await generateText({
-				model: openrouter("openai/gpt-5-mini"),
+				model: openrouter("openai/gpt-4o-mini"),
 				messages: [
 					{
 						role: "system",

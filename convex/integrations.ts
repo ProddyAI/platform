@@ -231,6 +231,59 @@ export const getMyConnectedAccounts = query({
 	},
 });
 
+// Get active connected app names for assistant (user-specific)
+export const getMyActiveConnectedAppNames = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		const member = await getCurrentMember(ctx, args.workspaceId);
+
+		// Get user's connected accounts
+		const userAccounts = await ctx.db
+			.query("connected_accounts")
+			.withIndex("by_member_id", (q) => q.eq("memberId", member._id))
+			.filter((q) => q.eq(q.field("status"), "ACTIVE"))
+			.collect();
+
+		console.log("[getMyActiveConnectedAppNames] User accounts:", userAccounts.length);
+		console.log("[getMyActiveConnectedAppNames] User account details:", userAccounts.map(acc => ({
+			toolkit: acc.toolkit,
+			status: acc.status,
+			memberId: acc.memberId,
+		})));
+
+		// Get workspace-level accounts (legacy without memberId)
+		const allWorkspaceAccounts = await ctx.db
+			.query("connected_accounts")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.filter((q) => q.eq(q.field("status"), "ACTIVE"))
+			.collect();
+		
+		const workspaceAccounts = allWorkspaceAccounts.filter(acc => !acc.memberId);
+		
+		console.log("[getMyActiveConnectedAppNames] Workspace accounts:", workspaceAccounts.length);
+		console.log("[getMyActiveConnectedAppNames] Workspace account details:", workspaceAccounts.map(acc => ({
+			toolkit: acc.toolkit,
+			status: acc.status,
+			memberId: acc.memberId,
+		})));
+
+		// Combine both and extract unique toolkit names
+		const allAccounts = [...userAccounts, ...workspaceAccounts];
+		const toolkitNames = [...new Set(allAccounts.map((acc) => acc.toolkit))];
+
+		console.log("[getMyActiveConnectedAppNames] All toolkit names:", toolkitNames);
+
+		// Map toolkit names to uppercase app names for assistant
+		const appNames = toolkitNames.map((toolkit) => toolkit.toUpperCase());
+
+		console.log("[getMyActiveConnectedAppNames] Final app names:", appNames);
+
+		return appNames;
+	},
+});
+
 // Get all connected accounts for a workspace (for admin view)
 export const getConnectedAccounts = query({
 	args: {

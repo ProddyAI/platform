@@ -123,6 +123,53 @@ export const getMyCalendarTomorrow = query({
 	},
 });
 
+export const getMyCalendarThisWeek = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+	},
+	returns: v.object({
+		events: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				time: v.optional(v.string()),
+				date: v.number(),
+			})
+		),
+		count: v.number(),
+	}),
+	handler: async (ctx, args) => {
+		const now = new Date();
+		const thisWeekEnd = addDays(now, 7);
+
+		const allEvents = await ctx.db
+			.query("events")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+
+		const thisWeekEvents = allEvents.filter((event) => {
+			const eventDate = new Date(event.date).getTime();
+			return (
+				eventDate >= startOfDayMs(now) &&
+				eventDate <= endOfDayMs(thisWeekEnd)
+			);
+		});
+
+		return {
+			events: thisWeekEvents.map((e) => ({
+				id: e._id,
+				title: e.title,
+				time: e.time,
+				date: new Date(e.date).getTime(),
+			})),
+			count: thisWeekEvents.length,
+		};
+	},
+});
+
 export const getMyCalendarNextWeek = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -274,6 +321,56 @@ export const getMyTasksTomorrow = query({
 				dueDate: t.dueDate,
 			})),
 			count: tomorrowTasks.length,
+		};
+	},
+});
+
+export const getMyTasksThisWeek = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+	},
+	returns: v.object({
+		tasks: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				description: v.optional(v.string()),
+				status: v.string(),
+				priority: v.optional(v.string()),
+				dueDate: v.optional(v.number()),
+			})
+		),
+		count: v.number(),
+	}),
+	handler: async (ctx, args) => {
+		const now = new Date();
+		const thisWeekEnd = addDays(now, 7);
+
+		const allTasks = await ctx.db
+			.query("tasks")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("completed"), false))
+			.collect();
+
+		const thisWeekTasks = allTasks.filter((task) => {
+			if (!task.dueDate) return false;
+			return task.dueDate >= startOfDayMs(now) && task.dueDate <= endOfDayMs(thisWeekEnd);
+		});
+
+		return {
+			tasks: thisWeekTasks.map((t) => ({
+				id: t._id,
+				title: t.title,
+				description: t.description,
+				status: t.status || "todo",
+				priority: t.priority,
+				dueDate: t.dueDate,
+			})),
+			count: thisWeekTasks.length,
 		};
 	},
 });
