@@ -48,7 +48,7 @@ export const useAISearch = (workspaceId: Id<"workspaces">) => {
 			setResult(null);
 
 			try {
-				const response = await fetch("/api/smart/ai-search", {
+				const response = await fetch("/api/smart/search", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
