@@ -6,6 +6,7 @@ import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/3pc/apollo-tracking";
 import { ClarityTracking } from "@/components/3pc/clarity-tracking";
 import { Formbricks } from "@/components/3pc/formbricks";
+import { GoogleAnalyticsTracking } from "@/components/3pc/google-analytics-tracking";
 import { AuthenticatedOneSignalTracking } from "@/components/3pc/notifications";
 import { TidioChat } from "@/components/3pc/tidio-chat";
 import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
@@ -93,6 +94,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 									<Formbricks />
 									<ClarityTracking />
 									<ApolloTracking />
+									<GoogleAnalyticsTracking />
 									{children}
 								</UsetifulProvider>
 							</JotaiProvider>
