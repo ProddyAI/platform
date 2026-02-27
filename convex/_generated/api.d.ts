@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as aiSearch from "../aiSearch.js";
 import type * as analytics from "../analytics.js";
 import type * as assistantChat from "../assistantChat.js";
 import type * as assistantComposioTools from "../assistantComposioTools.js";
@@ -50,6 +51,7 @@ import type * as prosemirror from "../prosemirror.js";
 import type * as ragchat from "../ragchat.js";
 import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
+import type * as richText from "../richText.js";
 import type * as search from "../search.js";
 import type * as slackImportProvider from "../slackImportProvider.js";
 import type * as tasks from "../tasks.js";
@@ -71,6 +73,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  aiSearch: typeof aiSearch;
   analytics: typeof analytics;
   assistantChat: typeof assistantChat;
   assistantComposioTools: typeof assistantComposioTools;
@@ -113,6 +116,7 @@ declare const fullApi: ApiFromModules<{
   ragchat: typeof ragchat;
   rateLimit: typeof rateLimit;
   reactions: typeof reactions;
+  richText: typeof richText;
   search: typeof search;
   slackImportProvider: typeof slackImportProvider;
   tasks: typeof tasks;
