@@ -3,8 +3,10 @@
 import { Loader, TriangleAlert } from "lucide-react";
 import { ChatInput } from "@/components/chat-input";
 import { MessageList } from "@/components/message-list";
+import { TypingIndicator } from "@/components/typing-indicator";
 import { useGetChannel } from "@/features/channels/api/use-get-channel";
 import { useGetMessages } from "@/features/messages/api/use-get-messages";
+import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicator";
 import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -35,6 +37,11 @@ const ChannelChatPage = () => {
 	// Set document title based on channel name
 	useDocumentTitle(channel ? `Chats - ${channel.name}` : "Chats");
 
+	// Get typing indicator data
+	const { typingText, isAnyoneTyping } = useTypingIndicator({
+		channelId,
+	});
+
 	if (channelLoading || status === "LoadingFirstPage") {
 		return (
 			<div className="flex h-full flex-1 items-center justify-center">
@@ -64,6 +71,8 @@ const ChannelChatPage = () => {
 				isLoadingMore={status === "LoadingMore"}
 				loadMore={loadMore}
 			/>
+
+			<TypingIndicator isVisible={isAnyoneTyping} typingText={typingText} />
 
 			<ChatInput
 				channelId={channelId}

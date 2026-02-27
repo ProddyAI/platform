@@ -182,7 +182,7 @@ export const Suggestions = ({
 					suggestions.map((suggestion, index) => (
 						<Button
 							className="h-auto rounded-full border-primary/20 bg-primary/5 px-3 py-1 text-xs text-muted-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-foreground"
-							key={index}
+							key={`suggestion-${index}`}
 							onClick={() => onSelectSuggestion(suggestion)}
 							size="sm"
 							variant="outline"

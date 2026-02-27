@@ -60,7 +60,7 @@ export const FullMessage = ({
 		<>
 			<div
 				className={cn(
-					"group relative flex items-start gap-3 p-3 hover:bg-gray-200/40 dark:hover:bg-slate-700/50 transition-standard hover:shadow-sm rounded-[10px]",
+					"group relative flex items-start gap-2 md:gap-3 p-2 md:p-3 hover:bg-gray-200/40 dark:hover:bg-slate-700/50 transition-standard hover:shadow-sm rounded-[10px]",
 					isEditing && "bg-secondary/20 hover:bg-secondary/20",
 					isPending &&
 						"origin-bottom scale-y-0 transform bg-rose-500/50 transition-standard",
@@ -72,7 +72,7 @@ export const FullMessage = ({
 				{/* Avatar */}
 				<div className="flex-shrink-0">
 					<button onClick={() => onOpenProfile(memberId)}>
-						<Avatar>
+						<Avatar className="h-8 w-8 md:h-10 md:w-10">
 							<AvatarImage alt={authorName} src={authorImage} />
 							<AvatarFallback>{avatarFallback}</AvatarFallback>
 						</Avatar>

@@ -688,19 +688,11 @@ export const getAllWorkspaceMessages = query({
 				.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId))
 				.collect();
 
-			console.log(
-				"getAllWorkspaceMessages - total messages:",
-				allMessages.length
-			);
-			console.log("getAllWorkspaceMessages - messages:", allMessages);
-
 			// Get all members in the workspace
 			const members = await ctx.db
 				.query("members")
 				.filter((q) => q.eq(q.field("workspaceId"), args.workspaceId))
 				.collect();
-
-			console.log("getAllWorkspaceMessages - members:", members);
 
 			return {
 				messages: allMessages,

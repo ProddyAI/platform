@@ -74,7 +74,6 @@ export const ExportCanvasDialog = ({
 			let svgElement: SVGSVGElement | null = null;
 			for (const selector of canvasSelectors) {
 				const elements = document.querySelectorAll(selector);
-				console.log(`Selector "${selector}" found ${elements.length} elements`);
 
 				if (elements.length > 0) {
 					// If multiple elements found, try to find the one with the most children
@@ -91,9 +90,6 @@ export const ExportCanvasDialog = ({
 					}
 
 					svgElement = bestElement;
-					console.log(
-						`Using element with ${maxChildren} children from selector "${selector}"`
-					);
 					break;
 				}
 			}
@@ -116,7 +112,6 @@ export const ExportCanvasDialog = ({
 					}
 
 					svgElement = bestSvg;
-					console.log(`Using SVG with most elements (${maxElements} elements)`);
 				} else {
 					console.error("No SVG elements found in the document");
 					return null;
@@ -129,12 +124,6 @@ export const ExportCanvasDialog = ({
 			}
 
 			// Log the structure of the SVG for debugging
-			console.log(
-				`SVG structure: width=${svgElement.getAttribute("width")}, height=${svgElement.getAttribute("height")}, viewBox=${svgElement.getAttribute("viewBox")}`
-			);
-			console.log(
-				`SVG has ${svgElement.querySelectorAll("*").length} total elements`
-			);
 
 			// Create a new SVG element for the export
 			const exportSvg = document.createElementNS(
@@ -303,9 +292,6 @@ export const ExportCanvasDialog = ({
 
 				// If secondary method fails for PNG, try the direct method
 				if (!imageData && exportFormat === "png") {
-					console.log(
-						"secondary capture method failed for chat export, trying direct method"
-					);
 					imageData = await captureCanvasDirect();
 				}
 
@@ -361,23 +347,11 @@ export const ExportCanvasDialog = ({
 	// Direct method to capture canvas using html2canvas approach
 	const captureCanvasDirect = async (): Promise<string | null> => {
 		try {
-			console.log("Using direct canvas capture method");
-
 			// Try to find the canvas container with the actual drawings
 			// Look for specific elements that might contain the drawings
 			const canvasElements = document.querySelectorAll(
 				'svg, canvas, [data-canvas="true"], .canvas-container, .whiteboard'
 			);
-			console.log(`Found ${canvasElements.length} potential canvas elements`);
-
-			// Log all potential canvas elements for debugging
-			canvasElements.forEach((element, index) => {
-				// Use type assertion to access element properties safely
-				const el = element as HTMLElement;
-				console.log(
-					`Canvas element ${index}: tag=${el.tagName || "unknown"}, class=${el.className || "none"}, id=${el.id || "none"}`
-				);
-			});
 
 			// Try to find the element with the most child nodes (likely the main canvas)
 			let mainCanvas: Element | null = null;
@@ -397,10 +371,6 @@ export const ExportCanvasDialog = ({
 				console.error("Could not find main canvas element");
 				return null;
 			}
-
-			console.log(
-				`Selected main canvas: tag=${(mainCanvas as HTMLElement).tagName || "unknown"}, children=${maxChildren}`
-			);
 
 			// Create a canvas element for rendering
 			const canvas = document.createElement("canvas");
@@ -552,7 +522,6 @@ export const ExportCanvasDialog = ({
 
 				// If secondary method fails, try the direct method
 				if (!pngDataUrl) {
-					console.log("secondary capture method failed, trying direct method");
 					pngDataUrl = await captureCanvasDirect();
 
 					if (!pngDataUrl) {

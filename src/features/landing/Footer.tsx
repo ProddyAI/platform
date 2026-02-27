@@ -3,7 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { showTidioChat } from "@/lib/tidio-helpers";
+import { showTidioChat } from "@/lib/client/tidio-helpers";
 
 export const Footer = () => {
 	return (
@@ -125,7 +125,7 @@ export const Footer = () => {
 								<li>
 									<Link
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
-										href={process.env.NEXT_PUBLIC_STATUS_URL!}
+										href={process.env.NEXT_PUBLIC_STATUS_URL || "#"}
 										rel="noopener noreferrer"
 										target="_blank"
 									>
@@ -135,7 +135,7 @@ export const Footer = () => {
 								<li>
 									<Link
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
-										href={process.env.NEXT_PUBLIC_ROADMAP_URL!}
+										href={process.env.NEXT_PUBLIC_ROADMAP_URL || "#"}
 										rel="noopener noreferrer"
 										target="_blank"
 									>
@@ -145,7 +145,7 @@ export const Footer = () => {
 								<li>
 									<a
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
-										href={process.env.NEXT_PUBLIC_DOCS_URL!}
+										href={process.env.NEXT_PUBLIC_DOCS_URL || "#"}
 										rel="noopener noreferrer"
 										target="_blank"
 									>
@@ -155,7 +155,7 @@ export const Footer = () => {
 								<li>
 									<a
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
-										href={process.env.NEXT_PUBLIC_CAREERS_URL!}
+										href={process.env.NEXT_PUBLIC_CAREERS_URL || "#"}
 										rel="noopener noreferrer"
 										target="_blank"
 									>

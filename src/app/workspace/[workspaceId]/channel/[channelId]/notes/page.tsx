@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { FileText, Plus } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -42,6 +42,14 @@ const NotesPage = () => {
 		api.notes.get,
 		activeNoteId ? { id: activeNoteId } : "skip"
 	);
+
+	useEffect(() => {
+		if (!activeNoteId) return;
+		const stillExists = notes.some((note) => note._id === activeNoteId);
+		if (!stillExists) {
+			setActiveNoteId(notes[0]?._id ?? null);
+		}
+	}, [activeNoteId, notes]);
 
 	// Convex mutations
 	const createNote = useMutation(api.notes.create);

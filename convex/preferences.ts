@@ -163,6 +163,9 @@ export const updateUserPreferences = mutation({
 								v.literal("sunday")
 							)
 						),
+						inviteSent: v.optional(v.boolean()),
+						workspaceJoin: v.optional(v.boolean()),
+						onlineStatus: v.optional(v.boolean()),
 					})
 				),
 			})
@@ -244,6 +247,9 @@ export const getNotificationPreferences = query({
 			directMessage: notifications?.directMessage ?? true,
 			weeklyDigest: notifications?.weeklyDigest ?? false,
 			weeklyDigestDay: notifications?.weeklyDigestDay ?? "monday",
+			inviteSent: notifications?.inviteSent ?? true,
+			workspaceJoin: notifications?.workspaceJoin ?? true,
+			onlineStatus: notifications?.onlineStatus ?? false,
 		};
 	},
 });
@@ -287,8 +293,6 @@ export const getWorkspacePreferences = query({
 export const fixNotificationsSchema = mutation({
 	args: {},
 	handler: async (ctx) => {
-		console.log("Starting migration to fix preferences notifications...");
-
 		// Get all preferences documents
 		const allPreferences = await ctx.db.query("preferences").collect();
 
@@ -301,10 +305,6 @@ export const fixNotificationsSchema = mutation({
 			const notifications = pref.settings?.notifications as any;
 
 			if (notifications === true || notifications === false) {
-				console.log(
-					`Fixing preferences document ${pref._id} - notifications was boolean: ${notifications}`
-				);
-
 				// Convert boolean to proper object structure with defaults
 				const newSettings = {
 					...pref.settings,
@@ -328,10 +328,6 @@ export const fixNotificationsSchema = mutation({
 			}
 		}
 
-		console.log(
-			`Migration completed. Fixed: ${fixedCount}, Skipped: ${skippedCount}, Total: ${allPreferences.length}`
-		);
-
 		return {
 			success: true,
 			totalDocuments: allPreferences.length,
@@ -351,8 +347,6 @@ export const checkNotificationsSchema = mutation({
 		// Get all preferences documents to check the current state
 		const allPreferences = await ctx.db.query("preferences").collect();
 
-		console.log(`Found ${allPreferences.length} preferences documents`);
-
 		const problematicDocs = [];
 		let validDocs = 0;
 
@@ -369,11 +363,6 @@ export const checkNotificationsSchema = mutation({
 				validDocs++;
 			}
 		}
-
-		console.log(
-			`Found ${problematicDocs.length} documents with boolean notifications`
-		);
-		console.log(`Found ${validDocs} documents with valid object notifications`);
 
 		return {
 			totalDocuments: allPreferences.length,
@@ -684,6 +673,9 @@ export const getNotificationPreferencesByUserId = query({
 			directMessage: notifications?.directMessage ?? true,
 			weeklyDigest: notifications?.weeklyDigest ?? false,
 			weeklyDigestDay: notifications?.weeklyDigestDay ?? "monday",
+			inviteSent: notifications?.inviteSent ?? true,
+			workspaceJoin: notifications?.workspaceJoin ?? true,
+			onlineStatus: notifications?.onlineStatus ?? false,
 		};
 	},
 });

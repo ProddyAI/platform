@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { prosemirrorSync } from "./prosemirror";
 
 // Create a new note
@@ -196,6 +196,16 @@ export const getById = query({
 		return note;
 	},
 });
+
+// Internal helper for backend jobs that shouldn't require user auth.
+export const _getNoteById = internalQuery({
+	args: {
+		noteId: v.id("notes"),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db.get(args.noteId);
+	},
+});
 // Update a note
 export const update = mutation({
 	args: {
@@ -284,7 +294,6 @@ export const remove = mutation({
 		const existingNote = await ctx.db.get(args.id);
 
 		if (!existingNote) {
-			console.log(`Note not found: ${args.id}`);
 			// Return success even if note doesn't exist to avoid errors
 			return args.id;
 		}
@@ -301,9 +310,7 @@ export const remove = mutation({
 		}
 
 		try {
-			console.log(`Deleting note: ${args.id}`);
 			await ctx.db.delete(args.id);
-			console.log(`Successfully deleted note: ${args.id}`);
 			return args.id;
 		} catch (error) {
 			console.error(`Error deleting note ${args.id}:`, error);

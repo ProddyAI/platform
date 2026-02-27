@@ -174,7 +174,7 @@ export const LiveSidebar = ({
 		return (
 			<div
 				className={cn(
-					"w-12 border-r bg-muted/30 dark:bg-[hsl(var(--card-accent))] flex flex-col",
+					"w-12 border-r bg-muted/30 dark:bg-[hsl(var(--card-accent))] hidden lg:flex flex-col",
 					className
 				)}
 			>
@@ -201,7 +201,7 @@ export const LiveSidebar = ({
 	return (
 		<div
 			className={cn(
-				"w-80 border-r bg-muted/30 dark:bg-[hsl(var(--card-accent))] flex flex-col",
+				"w-64 md:w-80 border-r bg-muted/30 dark:bg-[hsl(var(--card-accent))] flex flex-col hidden lg:flex",
 				className
 			)}
 		>
@@ -318,7 +318,7 @@ export const LiveSidebar = ({
 													{item.tags.slice(0, 3).map((tag, index) => (
 														<Badge
 															className="text-xs"
-															key={index}
+															key={`${item._id}-${tag}-${index}`}
 															variant="secondary"
 														>
 															{tag}

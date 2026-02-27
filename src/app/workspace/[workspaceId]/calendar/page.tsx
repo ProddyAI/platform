@@ -275,7 +275,11 @@ const CalendarPage = () => {
 												? ""
 												: "text-muted-foreground opacity-50"
 										}`}
-										key={index}
+										key={
+											dayObj.day !== null
+												? `day-${dayObj.day}`
+												: `empty-${index}`
+										}
 									>
 										{dayObj.day && (
 											<>

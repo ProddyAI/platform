@@ -43,6 +43,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUpdateUser } from "@/features/auth/api/use-update-user";
 import { NotificationSettings } from "@/features/preferences/components/notification-settings";
+import { StatusSelector } from "@/features/preferences/components/status-selector";
 import { StatusTrackingSettings } from "@/features/preferences/components/status-tracking-settings";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useCurrentUser } from "../api/use-current-user";
@@ -729,8 +730,10 @@ export const UserProfileModal = ({
 																	Control your privacy and status visibility
 																</CardDescription>
 															</CardHeader>
-															<CardContent>
+															<CardContent className="space-y-6">
 																<StatusTrackingSettings />
+																<Separator />
+																<StatusSelector />
 															</CardContent>
 														</Card>
 													</form>
@@ -831,8 +834,10 @@ export const UserProfileModal = ({
 															<CardHeader>
 																<CardTitle>Privacy Settings</CardTitle>
 															</CardHeader>
-															<CardContent>
+															<CardContent className="space-y-6">
 																<StatusTrackingSettings />
+																<Separator />
+																<StatusSelector />
 															</CardContent>
 														</Card>
 

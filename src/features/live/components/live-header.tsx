@@ -133,11 +133,16 @@ export const LiveHeader = ({
 	};
 
 	return (
-		<div className={cn("border-b bg-white p-4 flex flex-col gap-1", className)}>
+		<div
+			className={cn(
+				"border-b bg-white p-2 md:p-4 flex flex-col gap-1",
+				className
+			)}
+		>
 			{/* Top Row - Title, Actions, and Participants */}
-			<div className="flex items-center justify-between gap-4">
+			<div className="flex items-center justify-between gap-2 md:gap-4">
 				{/* Left Section - Title */}
-				<div className="flex items-center gap-4 flex-1 min-w-0">
+				<div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
 					{title !== undefined && (
 						<div className="flex items-center gap-2 min-w-0">
 							<div className="flex items-center gap-1">
@@ -226,10 +231,15 @@ export const LiveHeader = ({
 				</div>
 
 				{/* Right Section - Actions and Participants */}
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-1 md:gap-2">
 					{/* Create Button */}
 					{onCreateItem && (
-						<Button onClick={onCreateItem} size="sm" variant="outline">
+						<Button
+							className="hidden sm:flex"
+							onClick={onCreateItem}
+							size="sm"
+							variant="outline"
+						>
 							<Plus className="h-4 w-4 mr-2" />
 							New {type === "notes" ? "Note" : "Canvas"}
 						</Button>
@@ -246,16 +256,16 @@ export const LiveHeader = ({
 					{/* Share Button */}
 					{onShare && (
 						<Button onClick={onShare} size="sm" variant="outline">
-							<Share className="h-4 w-4 mr-2" />
-							Share
+							<Share className="h-4 w-4 md:mr-2" />
+							<span className="hidden md:inline">Share</span>
 						</Button>
 					)}
 
 					{/* Export Button */}
 					{onExport && (
 						<Button onClick={onExport} size="sm" variant="outline">
-							<Download className="h-4 w-4 mr-2" />
-							Export
+							<Download className="h-4 w-4 md:mr-2" />
+							<span className="hidden md:inline">Export</span>
 						</Button>
 					)}
 

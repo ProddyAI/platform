@@ -1,7 +1,6 @@
 import type { Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 
-// Helper function to get a member by workspace and user ID
 export const getMember = async (
 	ctx: QueryCtx,
 	workspaceId: Id<"workspaces">,
@@ -15,12 +14,10 @@ export const getMember = async (
 		.unique();
 };
 
-// Helper function to populate user data for a member
 export const populateUser = async (ctx: QueryCtx, userId: Id<"users">) => {
 	return await ctx.db.get(userId);
 };
 
-// Helper function to populate member data
 export const populateMember = async (
 	ctx: QueryCtx,
 	memberId: Id<"members">
@@ -37,12 +34,10 @@ export const populateMember = async (
 	};
 };
 
-// Helper function to get channel data
 export const getChannel = async (ctx: QueryCtx, channelId: Id<"channels">) => {
 	return await ctx.db.get(channelId);
 };
 
-// Helper function to get conversation data
 export const getConversation = async (
 	ctx: QueryCtx,
 	conversationId: Id<"conversations">
@@ -50,12 +45,10 @@ export const getConversation = async (
 	return await ctx.db.get(conversationId);
 };
 
-// Helper function to get message data
 export const getMessage = async (ctx: QueryCtx, messageId: Id<"messages">) => {
 	return await ctx.db.get(messageId);
 };
 
-// Helper function to get user email from member ID
 export const getUserEmailFromMemberId = async (
 	ctx: QueryCtx,
 	memberId: Id<"members">
@@ -68,13 +61,11 @@ export const getUserEmailFromMemberId = async (
 		if (!user) return null;
 
 		return user.email;
-	} catch (error) {
-		console.error("Error getting user email:", error);
+	} catch (_error) {
 		return null;
 	}
 };
 
-// Helper function to get user name from member ID
 export const getUserNameFromMemberId = async (
 	ctx: QueryCtx,
 	memberId: Id<"members">
@@ -87,8 +78,7 @@ export const getUserNameFromMemberId = async (
 		if (!user) return null;
 
 		return user.name;
-	} catch (error) {
-		console.error("Error getting user name:", error);
+	} catch (_error) {
 		return null;
 	}
 };

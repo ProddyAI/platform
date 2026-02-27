@@ -84,21 +84,20 @@ const ForgotPasswordPage = () => {
 			const result = await response.json();
 
 			if (response.ok && result.success) {
-				// Always show success message regardless of whether email was sent
-				// This prevents attackers from knowing if an email exists in the system
 				const now = Date.now();
 				setEmailSent(true);
 				setLastSentTimestamp(now);
-				// Initialize cooldown immediately to prevent fast "Try again" bypass
 				setRemainingCooldown(COOLDOWN_DURATION);
 				toast.success(
 					"If an account exists with this email, a password reset link will be sent"
 				);
 			} else if (response.status === 429) {
-				// Handle rate limiting
-				toast.error(
-					result.error || "Too many requests. Please try again later."
-				);
+				const errorMessage =
+					result.error || "Too many requests. Please try again later.";
+				toast.error(errorMessage, {
+					duration: 5000,
+				});
+				console.error("Rate limit error:", errorMessage);
 			} else {
 				throw new Error(result.error || "Failed to send reset email");
 			}
@@ -184,10 +183,11 @@ const ForgotPasswordPage = () => {
 								<p className="text-sm text-muted-foreground text-center">
 									Didn't receive the email? Check your spam folder or{" "}
 									<button
-										className={`font-medium transition-colors ${remainingCooldown > 0
-											? "text-muted-foreground cursor-not-allowed"
-											: "text-secondary hover:underline"
-											}`}
+										className={`font-medium transition-colors ${
+											remainingCooldown > 0
+												? "text-muted-foreground cursor-not-allowed"
+												: "text-secondary hover:underline"
+										}`}
 										disabled={remainingCooldown > 0}
 										onClick={handleTryAgain}
 										type="button"

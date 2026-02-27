@@ -32,16 +32,12 @@ export async function shouldSendEmailServer(
 		const notificationKey = getNotificationKey(emailType);
 		const preferenceValue = preferences[notificationKey];
 
-		// Handle the case where the preference might be a string (weeklyDigestDay) or boolean
 		if (typeof preferenceValue === "boolean") {
 			return preferenceValue;
 		}
 
-		// For non-boolean values (like weeklyDigestDay), default to true
 		return true;
-	} catch (error) {
-		console.error("Error checking email preferences:", error);
-		// On error, default to allowing emails (except weekly digest) to avoid blocking important notifications
+	} catch {
 		return emailType !== "weeklyDigest";
 	}
 }
@@ -56,20 +52,19 @@ export async function updateNotificationPreferencesServer(
 ): Promise<boolean> {
 	try {
 		const convex = getConvexClient();
-		const _notificationKey = getNotificationKey(emailType);
+		const notificationKey = getNotificationKey(emailType);
 
 		await convex.mutation(
 			api.preferences.updateNotificationPreferencesByUserId,
 			{
 				userId: userId,
-				notificationKey: emailType, // Use emailType directly since it matches the union type
+				notificationKey,
 				enabled,
 			}
 		);
 
 		return true;
-	} catch (error) {
-		console.error("Error updating notification preferences:", error);
+	} catch {
 		return false;
 	}
 }

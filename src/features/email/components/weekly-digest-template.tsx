@@ -104,7 +104,7 @@ export const WeeklyDigestTemplate: React.FC<
 
 						{/* Workspace Details */}
 						{workspaces.map((workspace, index) => (
-							<Section key={index} style={workspaceSection}>
+							<Section key={workspace.workspaceUrl} style={workspaceSection}>
 								<Heading style={workspaceHeading}>
 									{workspace.workspaceName}
 								</Heading>
@@ -127,8 +127,11 @@ export const WeeklyDigestTemplate: React.FC<
 								{workspace.topChannels.length > 0 && (
 									<div style={channelSection}>
 										<Text style={sectionTitle}>🔥 Most Active Channels</Text>
-										{workspace.topChannels.slice(0, 3).map((channel, idx) => (
-											<Text key={idx} style={channelItem}>
+										{workspace.topChannels.slice(0, 3).map((channel, index) => (
+											<Text
+												key={`${channel.name}-${channel.messageCount}-${index}`}
+												style={channelItem}
+											>
 												#{channel.name} - {channel.messageCount} messages
 											</Text>
 										))}
@@ -139,12 +142,18 @@ export const WeeklyDigestTemplate: React.FC<
 								{workspace.recentTasks.length > 0 && (
 									<div style={taskSection}>
 										<Text style={sectionTitle}>📋 Recent Tasks</Text>
-										{workspace.recentTasks.slice(0, 3).map((task, idx) => (
-											<Text key={idx} style={taskItem}>
-												{task.status === "completed" ? "✅" : "⏳"} {task.title}
-												{task.dueDate && ` (Due: ${task.dueDate})`}
-											</Text>
-										))}
+										{workspace.recentTasks
+											.slice(0, 3)
+											.map((task, taskIndex) => (
+												<Text
+													key={`${workspace.workspaceUrl}-${task.title}-${task.dueDate || "no-due"}-${taskIndex}`}
+													style={taskItem}
+												>
+													{task.status === "completed" ? "✅" : "⏳"}{" "}
+													{task.title}
+													{task.dueDate && ` (Due: ${task.dueDate})`}
+												</Text>
+											))}
 									</div>
 								)}
 

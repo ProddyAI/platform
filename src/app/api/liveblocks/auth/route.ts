@@ -132,7 +132,6 @@ export async function POST(req: NextRequest) {
 		const userAvatar = currentUser?.image ?? body.userAvatar ?? null;
 
 		// Log the authentication request for debugging
-		console.log("Liveblocks auth request:", { room, userId, userName });
 
 		// Prepare user info for the session
 		// Make sure to include the real user ID from Convex in the id field
@@ -161,13 +160,9 @@ export async function POST(req: NextRequest) {
 		// The FULL_ACCESS permission already includes storage persistence
 
 		// Authorize the session
-		console.log("Attempting to authorize Liveblocks session for room:", room);
-		console.log("With user info:", userInfo);
 		const { status, body: responseBody } = await session.authorize();
 
 		// Log successful authentication
-		console.log("Liveblocks auth successful:", { userId, room, status });
-		console.log("Liveblocks auth response body:", responseBody);
 
 		// Return the authorization response
 		return new Response(responseBody, { status });

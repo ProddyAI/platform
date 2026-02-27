@@ -98,14 +98,14 @@ export const useDashboardWidgets = ({
 			title: "Recent Notes",
 			description: "Shows recently updated notes",
 			visible: true,
-			size: "small",
+			size: "medium",
 		},
 		{
 			id: "canvas",
 			title: "Recent Canvas",
 			description: "Shows recently updated canvas items",
 			visible: true,
-			size: "small",
+			size: "medium",
 		},
 	];
 

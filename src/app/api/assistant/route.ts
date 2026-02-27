@@ -1,4 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
+import {
+	buildActionableErrorPayload,
+	logRouteError,
+} from "@/lib/assistant-error-utils";
 
 // Redirect to the chatbot endpoint
 export async function POST(req: NextRequest) {
@@ -30,12 +34,18 @@ export async function POST(req: NextRequest) {
 		const result = await chatbotResponse.json();
 		return NextResponse.json(result, { status: chatbotResponse.status });
 	} catch (error) {
-		console.error("[Assistant Router] Error:", error);
+		logRouteError({
+			route: "Assistant Router",
+			stage: "forwarding_failed",
+			error,
+		});
 		return NextResponse.json(
-			{
-				error: "Failed to process request",
-				details: error instanceof Error ? error.message : "Unknown error",
-			},
+			buildActionableErrorPayload({
+				message: "Could not forward the assistant request.",
+				nextStep:
+					"Retry in a few seconds. If it persists, refresh and try again.",
+				code: "ASSISTANT_ROUTER_FORWARD_FAILED",
+			}),
 			{ status: 500 }
 		);
 	}

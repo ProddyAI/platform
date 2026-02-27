@@ -2,24 +2,21 @@ import { type NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { CardAssignmentTemplate } from "@/features/email/components/card-assignment";
+import { getEmailConfig } from "@/lib/email-config";
 import { shouldSendEmailServer } from "@/lib/email-preferences-server";
 import { generateUnsubscribeUrl } from "@/lib/email-unsubscribe";
 
 // Log the API key (masked for security)
 const apiKey = process.env.RESEND_API_KEY;
-console.log("Resend API Key exists:", !!apiKey);
 if (apiKey) {
-	const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-	console.log("Masked API Key:", maskedKey);
+	const _maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
 }
 
 const resend = new Resend(apiKey);
 
 export async function POST(req: NextRequest) {
 	try {
-		console.log("Email API received request");
 		const body = await req.json();
-		console.log("Email request body:", JSON.stringify(body, null, 2));
 
 		const {
 			to,
@@ -51,7 +48,6 @@ export async function POST(req: NextRequest) {
 			"assignee"
 		);
 		if (!shouldSend) {
-			console.log("User has unsubscribed from assignee emails, skipping send");
 			return NextResponse.json(
 				{ success: true, message: "Email skipped - user has unsubscribed" },
 				{ status: 200 }
@@ -63,8 +59,6 @@ export async function POST(req: NextRequest) {
 
 		// Set the subject for card assignment emails
 		const subject = `Card Assignment: ${cardTitle}`;
-
-		console.log("Preparing card assignment email template");
 
 		// Create the card assignment email template
 		const emailTemplate = CardAssignmentTemplate({
@@ -81,28 +75,22 @@ export async function POST(req: NextRequest) {
 			unsubscribeUrl,
 		});
 
-		console.log("Sending email via Resend to:", to);
-		console.log("Email subject:", subject);
-
-		// Validate the from address
-		// Use Resend's default domain as a fallback if your domain isn't verified
-		const fromAddress = "Proddy <support@proddy.tech>";
-		console.log("From address:", fromAddress);
+		// Get email configuration (from address and reply-to)
+		const { fromAddress, replyToAddress } = getEmailConfig();
 
 		try {
-			console.log("Attempting to send email with Resend...");
 			const { data, error } = await resend.emails.send({
 				from: fromAddress,
 				to: [to],
 				subject,
 				react: emailTemplate,
+				replyTo: replyToAddress,
 			});
 
 			if (error) {
 				console.error("Email sending error from Resend:", error);
 
 				// Try with the test email as a fallback
-				console.log("Trying with test email as fallback...");
 				try {
 					const fallbackResult = await resend.emails.send({
 						from: fromAddress,
@@ -123,7 +111,6 @@ export async function POST(req: NextRequest) {
 						);
 					}
 
-					console.log("Fallback email sent successfully");
 					return NextResponse.json(
 						{
 							success: true,
@@ -149,7 +136,6 @@ export async function POST(req: NextRequest) {
 				}
 			}
 
-			console.log("Email sent successfully:", data);
 			return NextResponse.json(
 				{
 					success: true,

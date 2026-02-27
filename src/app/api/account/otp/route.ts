@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
 import { OTPVerificationMail } from "@/features/email/components/otp-verification-mail";
+import { getEmailConfig } from "@/lib/email-config";
 import { logger } from "@/lib/logger";
 
 let resend: Resend | null = null;
@@ -68,11 +69,14 @@ export async function POST(req: Request) {
 			otp: result.otp,
 		});
 
+		const { fromAddress, replyToAddress } = getEmailConfig();
+
 		await resendClient.emails.send({
-			from: "Proddy <no-reply@proddy.tech>",
+			from: fromAddress,
 			to: email.toLowerCase(),
 			subject: "Verify your email - Proddy",
 			react: emailTemplate,
+			replyTo: replyToAddress,
 		});
 
 		return NextResponse.json({ success: true });

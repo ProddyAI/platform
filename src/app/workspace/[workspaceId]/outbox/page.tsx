@@ -86,7 +86,10 @@ export default function OutboxPage() {
 			if (
 				parsed.type === "canvas" ||
 				parsed.type === "canvas-live" ||
-				parsed.type === "note"
+				parsed.type === "canvas-export" ||
+				parsed.type === "note" ||
+				parsed.type === "note-live" ||
+				parsed.type === "note-export"
 			) {
 				return parsed;
 			}
@@ -103,11 +106,18 @@ export default function OutboxPage() {
 		const parsedBody = parseMessageBody(message.body);
 		if (
 			typeof parsedBody === "object" &&
-			(parsedBody.type === "canvas" || parsedBody.type === "canvas-live")
+			(parsedBody.type === "canvas" ||
+				parsedBody.type === "canvas-live" ||
+				parsedBody.type === "canvas-export")
 		) {
 			return `/workspace/${workspaceId}/channel/${message.context.id}/canvas?roomId=${parsedBody.roomId}`;
 		}
-		if (typeof parsedBody === "object" && parsedBody.type === "note") {
+		if (
+			typeof parsedBody === "object" &&
+			(parsedBody.type === "note" ||
+				parsedBody.type === "note-live" ||
+				parsedBody.type === "note-export")
+		) {
 			return `/workspace/${workspaceId}/channel/${message.context.id}/notes?noteId=${parsedBody.noteId}`;
 		}
 		if (message.context.type === "channel") {
@@ -148,12 +158,20 @@ export default function OutboxPage() {
 			const messageType =
 				typeof parsedBody === "object" ? parsedBody.type : "text";
 			const matchesTypeFilter =
-				((messageType === "canvas" || messageType === "canvas-live") &&
+				((messageType === "canvas" ||
+					messageType === "canvas-live" ||
+					messageType === "canvas-export") &&
 					showCanvasMessages) ||
-				(messageType === "note" && showNoteMessages) ||
+				((messageType === "note" ||
+					messageType === "note-live" ||
+					messageType === "note-export") &&
+					showNoteMessages) ||
 				(messageType !== "canvas" &&
 					messageType !== "canvas-live" &&
+					messageType !== "canvas-export" &&
 					messageType !== "note" &&
+					messageType !== "note-live" &&
+					messageType !== "note-export" &&
 					showTextMessages);
 
 			return matchesSearch && matchesFilter && matchesTypeFilter;
@@ -515,7 +533,8 @@ export default function OutboxPage() {
 						{typeof content === "object" ? (
 							<div>
 								{(content.type === "canvas" ||
-									content.type === "canvas-live") && (
+									content.type === "canvas-live" ||
+									content.type === "canvas-export") && (
 									<div className="flex items-center gap-2 text-sm">
 										<Brush className="h-4 w-4 text-muted-foreground" />
 										<span>
@@ -526,7 +545,9 @@ export default function OutboxPage() {
 										</span>
 									</div>
 								)}
-								{content.type === "note" && (
+								{(content.type === "note" ||
+									content.type === "note-live" ||
+									content.type === "note-export") && (
 									<div className="flex items-center gap-2 text-sm">
 										<FileText className="h-4 w-4 text-muted-foreground" />
 										<span>Note: {content.noteTitle || "Untitled Note"}</span>

@@ -1,14 +1,84 @@
 "use node";
 
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+/**
+ * @deprecated Legacy chatbot implementation. New dashboard assistant uses
+ * agent-based flow in assistantChat.ts with @convex-dev/agent (see convex/assistant/agent.ts).
+ * Prefer createConversation/sendMessage via assistantChat for new features.
+ */
+
+import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateText } from "ai";
 import { v } from "convex/values";
-import OpenAI from "openai";
-import { api } from "./_generated/api";
+import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
+import { api, internal } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
 import { action } from "./_generated/server";
+function filterToolSetForOpenAI(tools: Record<string, any>): Record<string, any> {
+	const entries = Object.entries(tools).filter(([name]) => {
+		if (!name || name.length > 64) return false;
+		if (!/^[a-zA-Z0-9_-]+$/.test(name)) return false;
+		return true;
+	});
+	return Object.fromEntries(entries);
+}
+
+function selectRelevantTools(
+	tools: Record<string, any>,
+	instruction: string,
+	maxTools: number
+): Record<string, any> {
+	const entries = Object.entries(tools);
+	const normalized = instruction.toLowerCase();
+
+	const scored = entries.map(([name, tool]) => {
+		const lowerName = name.toLowerCase();
+		let score = 0;
+
+		// Score based on instruction keywords matching tool name
+		if (normalized.includes("github") && lowerName.includes("github"))
+			score += 10;
+		if (normalized.includes("slack") && lowerName.includes("slack")) score += 10;
+		if (normalized.includes("message") && lowerName.includes("message"))
+			score += 5;
+		if (normalized.includes("post") && lowerName.includes("post")) score += 5;
+		if (normalized.includes("send") && lowerName.includes("post"))
+			score += 5;
+		if (normalized.includes("list") && lowerName.includes("list")) score += 3;
+		if (normalized.includes("rep") && lowerName.includes("repo")) score += 5;
+		if (normalized.includes("issue") && lowerName.includes("issue"))
+			score += 3;
+		if (normalized.includes("channel") && lowerName.includes("channel"))
+			score += 5;
+		if (normalized.includes("user") && lowerName.includes("user"))
+			score += 3;
+		if (normalized.includes("commit") && lowerName.includes("commit"))
+			score += 3;
+		if (normalized.includes("branch") && lowerName.includes("branch"))
+			score += 3;
+
+		// Bonus for common action words that are typically executable
+		if (lowerName.includes("list")) score += 1;
+		if (lowerName.includes("get")) score += 1;
+		if (lowerName.includes("create")) score += 1;
+		if (lowerName.includes("post")) score += 2;
+		if (lowerName.includes("send")) score += 2;
+
+		return { name, tool, score };
+	});
+
+	const filtered = scored
+		.filter((item) => item.score > 0)
+		.sort((a, b) => b.score - a.score)
+		.slice(0, maxTools);
+
+	if (filtered.length > 0) {
+		return Object.fromEntries(filtered.map((item) => [item.name, item.tool]));
+	}
+	return Object.fromEntries(entries.slice(0, maxTools));
+}
 
 // Define types for chat messages and responses
 type Source = {
@@ -24,7 +94,6 @@ type ChatMessage = {
 	sources?: Source[];
 	actions?: NavigationAction[];
 };
-
 
 type NavigationAction = {
 	label: string;
@@ -49,10 +118,6 @@ type LLMMessage = {
 	role: "system" | "user" | "assistant";
 	content: string;
 };
-
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || '',
-});
 
 const DEFAULT_SYSTEM_PROMPT = [
 	"You are Proddy, a personal work assistant for a team workspace.",
@@ -393,11 +458,15 @@ function detectComposioIntent(query: string): ComposioIntent | null {
  * Resolves auth config IDs from the member's connected accounts so tools.get uses valid authConfigIds.
  */
 async function executeComposioAction(
-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
+	ctx: {
+		runQuery: (query: any, args: any) => Promise<any>;
+		runMutation: (mutation: any, args: any) => Promise<any>;
+	},
 	entityId: string,
 	appNames: string[],
 	message: string,
-	workspaceId: Id<"workspaces">
+	workspaceId: Id<"workspaces">,
+	memberId: Id<"members">
 ): Promise<{
 	success: boolean;
 	response?: string;
@@ -421,20 +490,17 @@ async function executeComposioAction(
 			};
 		}
 
-		console.log("[Composio] Initializing clients for:", { entityId, appNames });
-
 		// Initialize Composio client
 		const composio = new Composio({
 			apiKey: process.env.COMPOSIO_API_KEY,
+			provider: new VercelProvider(),
 		});
 
-		// Initialize OpenAI client
-		const openaiClient = new OpenAI({
-			apiKey: process.env.OPENAI_API_KEY,
-		});
+		const connectedApps: string[] = [];
+		const authConfigIdsByApp: Record<string, string> = {};
+		let entityIdForTools = entityId;
 
-		// Resolve auth config IDs from member's or workspace's connected accounts (Composio requires authConfigIds, not appNames)
-		const tools: any[] = [];
+		// Resolve auth config IDs from member's or workspace's connected accounts
 		for (const appName of appNames) {
 			const toolkit = appName.toLowerCase();
 			try {
@@ -462,176 +528,141 @@ async function executeComposioAction(
 				);
 				if (!authConfig?.composioAuthConfigId) {
 					console.warn(`[Composio] No Composio auth config ID for ${appName}`);
-					continue;
+				} else {
+					authConfigIdsByApp[appName] = authConfig.composioAuthConfigId;
 				}
 
 				// Use the connection's entityId: Composio links connections to an entity (e.g. workspace_xxx).
 				// tools.get must use that same entityId or Composio returns no tools.
-				const entityIdForTools =
+				const resolvedEntityId =
 					connectedAccount.userId && connectedAccount.userId.length > 0
 						? connectedAccount.userId
 						: entityId;
-
-				const appTools = await composio.tools.get(entityIdForTools, {
-					authConfigIds: [authConfig.composioAuthConfigId],
-					limit: 100,
-				});
-
-				const toolsArray = Array.isArray(appTools)
-					? appTools
-					: typeof appTools === "object" && appTools !== null
-						? Object.values(appTools)
-						: appTools
-							? [appTools]
-							: [];
-				tools.push(...toolsArray);
+				entityIdForTools = resolvedEntityId;
+				connectedApps.push(appName);
 			} catch (error) {
 				console.warn(`[Composio] No tools found for app ${appName}:`, error);
 			}
 		}
 
-		console.log("[Composio] Retrieved", tools.length, "tools");
-
-		if (tools.length === 0) {
+		if (connectedApps.length === 0) {
 			return {
 				success: false,
 				error: `No tools available for ${appNames.join(", ")}. Please connect the app first.`,
 			};
 		}
 
-		// Convert Composio tools to OpenAI format (align with composio-config shape)
-		const openaiTools = tools.map((tool: any) => ({
-			type: "function" as const,
-			function: {
-				name: tool.function?.name || tool.name || tool.slug,
-				description: tool.function?.description || tool.description,
-				parameters:
-					tool.parameters ?? tool.schema ?? tool.function?.parameters ?? {},
-			},
-		}));
+		const toolsByApp: Record<string, any> = {};
+		for (const appName of connectedApps) {
+			try {
+				const authConfigId = authConfigIdsByApp[appName];
+				const appTools = authConfigId
+					? await composio.tools.get(entityIdForTools, {
+							authConfigIds: [authConfigId],
+							limit: 1000,
+						})
+					: await composio.tools.get(entityIdForTools, {
+							toolkits: [appName.toLowerCase()],
+							limit: 1000,
+						});
+				Object.assign(toolsByApp, appTools || {});
+			} catch (error) {
+				console.warn(
+					"[Chatbot Composio] Failed to fetch tools for",
+					appName
+				);
+			}
+		}
 
-		// Create OpenAI completion with tools
-		const completion = await openaiClient.chat.completions.create({
-			model: "gpt-4o-mini",
-			tools: openaiTools,
+		const filteredTools = filterToolSetForOpenAI(toolsByApp);
+		const tools = selectRelevantTools(filteredTools, message, 60);
+
+		if (!tools || Object.keys(tools).length === 0) {
+			return {
+				success: false,
+				error: "No tools could be resolved for connected apps.",
+			};
+		}
+
+		const result = await generateText({
+			model: openai("gpt-4o-mini"),
+			system: `You are a helpful assistant with access to ${connectedApps.join(", ")} tools. 
+			
+IMPORTANT: You MUST use the available tools to accomplish the user's request. 
+- Look through the available tools and select the most appropriate one
+- Execute the tool with the correct parameters
+- Return the results to the user
+
+For GitHub queries like "list repositories", use tools with names like GITHUB_LIST_REPOS or GITHUB_GITHUB_REPOS_FOR_AUTHENTICATED_USER.
+For Slack queries like "send message", use tools with names like SLACK_CHAT_POST_MESSAGE.
+
+Never say you cannot access these services - you have the tools to do so.`,
 			messages: [
-				{
-					role: "system",
-					content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-				},
 				{
 					role: "user",
 					content: message,
 				},
 			],
+			tools,
 			temperature: 0.7,
-			max_tokens: 1000,
 		});
 
-		let responseText =
-			completion.choices[0]?.message?.content || "No response generated";
-		const toolResults: any[] = [];
+		const steps = Array.isArray(result.steps) ? result.steps : [];
+		const toolCalls = steps.flatMap((step) => step.toolCalls ?? []);
+		const toolResults = steps.flatMap((step) => step.toolResults ?? []);
 
-		// Execute any tool calls with Composio
-		if (
-			completion.choices[0]?.message?.tool_calls &&
-			completion.choices[0].message.tool_calls.length > 0
-		) {
-			console.log(
-				"[Composio] Executing",
-				completion.choices[0].message.tool_calls.length,
-				"tool calls"
+		const isConnectionError = (value?: string) => {
+			if (!value) return false;
+			return (
+				value.includes("not connected") ||
+				value.includes("No connected account") ||
+				value.includes("401") ||
+				value.includes("403")
+			);
+		};
+
+		for (const toolCall of toolCalls) {
+			const toolCallAny = toolCall as any;
+			const toolResultAny = toolResults.find(
+				(tr: any) => tr.toolCallId === toolCallAny.toolCallId
+			) as any;
+			const outcome =
+				toolResultAny?.result?.success === false ? "error" : "success";
+			const errorMessage =
+				outcome === "error"
+					? String(
+							toolResultAny?.result?.error || "Tool execution failed"
+						)
+					: undefined;
+			await ctx.runMutation(
+				internal.assistantToolAudits.logExternalToolAttemptInternal,
+				{
+					workspaceId,
+					memberId,
+					toolName: toolCallAny.toolName,
+					toolkit: connectedApps[0]?.toUpperCase(),
+					argumentsSnapshot: parseAndSanitizeArguments(
+						JSON.stringify(toolCallAny.args ?? {})
+					),
+					outcome,
+					error: errorMessage,
+					executionPath: "convex-chatbot",
+					toolCallId: toolCallAny.toolCallId,
+				}
 			);
 
-			for (const toolCall of completion.choices[0].message.tool_calls) {
-				if (toolCall.type === "function") {
-					try {
-						const actionParams = JSON.parse(toolCall.function.arguments);
-						const result = await composio.tools.execute(
-							toolCall.function.name,
-							{
-								userId: entityId,
-								arguments: actionParams,
-							}
-						);
-
-						console.log(
-							`[Composio] Tool ${toolCall.function.name} executed successfully`
-						);
-
-						toolResults.push({
-							toolCallId: toolCall.id,
-							result: result,
-							toolName: toolCall.function.name,
-						});
-					} catch (error) {
-						console.error(
-							`[Composio] Tool execution error for ${toolCall.function.name}:`,
-							error
-						);
-
-						const errorMessage =
-							error instanceof Error ? error.message : "Unknown error";
-
-						// Check if it's a connection error
-						if (
-							errorMessage.includes("not connected") ||
-							errorMessage.includes("No connected account") ||
-							errorMessage.includes("401") ||
-							errorMessage.includes("403")
-						) {
-							return {
-								success: false,
-								error: "not_connected",
-							};
-						}
-
-						toolResults.push({
-							toolCallId: toolCall.id,
-							error: errorMessage,
-							toolName: toolCall.function.name,
-						});
-					}
-				}
-			}
-
-			// If we have tool results, create a follow-up completion
-			if (toolResults.length > 0) {
-				const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-					{
-						role: "system",
-						content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-					},
-					{
-						role: "user",
-						content: message,
-					},
-					completion.choices[0].message,
-					...toolResults.map((result) => ({
-						role: "tool" as const,
-						tool_call_id: result.toolCallId,
-						content: result.error
-							? `Error: ${result.error}`
-							: JSON.stringify(result.result),
-					})),
-				];
-
-				const followUpCompletion = await openaiClient.chat.completions.create({
-					model: "gpt-4o-mini",
-					messages: followUpMessages,
-					temperature: 0.7,
-					max_tokens: 1000,
-				});
-
-				responseText =
-					followUpCompletion.choices[0]?.message?.content || responseText;
+			if (errorMessage && isConnectionError(errorMessage)) {
+				return {
+					success: false,
+					error: "not_connected",
+				};
 			}
 		}
 
 		return {
 			success: true,
-			response: responseText,
-			toolCalls: completion.choices[0]?.message?.tool_calls,
+			response: result.text || "No response generated",
+			toolCalls,
 			toolResults,
 		};
 	} catch (error) {
@@ -723,10 +754,10 @@ async function generateLLMResponse(opts: {
 	systemPrompt?: string;
 	recentMessages?: ReadonlyArray<ChatMessage>;
 }): Promise<string> {
-	const apiKey = process.env.OPENROUTER_API_KEY;
+	const apiKey = process.env.OPENAI_API_KEY;
 	if (!apiKey) {
 		throw new Error(
-			"OPENROUTER_API_KEY is required. Please configure the OpenRouter API key in your environment variables."
+			"OPENAI_API_KEY is required. Please configure the OpenAI API key in your environment variables."
 		);
 	}
 
@@ -750,7 +781,7 @@ async function generateLLMResponse(opts: {
 
 	try {
 		const { text } = await generateText({
-			model: openrouter("openai/gpt-4o-mini") as any,
+			model: openai("gpt-4o-mini"),
 			messages: messages as any,
 			temperature: 0.2,
 		});
@@ -1250,7 +1281,7 @@ function isLikelyTomorrowReferenceFallback(
 	const t = toPlainText(text).toLowerCase();
 	if (!t) return false;
 	if (tomorrowKey && t.includes(tomorrowKey)) return true;
-	// Small heuristic only for fallback when Gemini isn't available.
+	// Small heuristic only for fallback when AI isn't available.
 	if (/\b(tmr|tmrw|tomo|tomorow|tommorow|tommorrow|tommrow)\b/i.test(t))
 		return true;
 	if (hasApproximateToken(t, "tomorrow", 2)) return true;
@@ -1440,59 +1471,6 @@ function extractIntent(query: string): AssistantIntent {
 	return { mode: "qa", channel: null };
 }
 
-function _extractSearchTerms(query: string): string[] {
-	const q = query.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
-	const raw = q
-		.split(/\s+/g)
-		.map((w) => w.trim())
-		.filter(Boolean);
-	const stop = new Set([
-		"the",
-		"a",
-		"an",
-		"to",
-		"for",
-		"of",
-		"in",
-		"on",
-		"is",
-		"are",
-		"am",
-		"was",
-		"were",
-		"my",
-		"your",
-		"our",
-		"their",
-		"what",
-		"whats",
-		"what's",
-		"about",
-		"please",
-		"do",
-		"i",
-		"we",
-		"you",
-		"me",
-		"it",
-		"this",
-		"that",
-		"with",
-		"and",
-		"or",
-		"as",
-		"now",
-		"today",
-		"tomorrow",
-		"tmr",
-		"tmrw",
-		"tomo",
-	]);
-	return Array.from(
-		new Set(raw.filter((w) => w.length >= 3 && !stop.has(w)))
-	).slice(0, 8);
-}
-
 type PriorityGroup = {
 	high: string[];
 	medium: string[];
@@ -1549,10 +1527,6 @@ function shortDate(ms: number) {
 }
 
 type Priority = "lowest" | "low" | "medium" | "high" | "highest";
-
-function _isDefined<T>(value: T | null | undefined): value is T {
-	return value !== null && value !== undefined;
-}
 
 function normalizePriority(input: unknown): Priority | undefined {
 	if (typeof input !== "string") return undefined;
@@ -1635,8 +1609,6 @@ export const askAssistant = action({
 		const composioIntent = detectComposioIntent(args.query);
 
 		if (composioIntent) {
-			console.log("[Composio] Intent detected:", composioIntent);
-
 			// Get current member for entity ID
 			let memberId: Id<"members">;
 			try {
@@ -1664,15 +1636,14 @@ export const askAssistant = action({
 			const entityId = `member_${memberId}`;
 			const appNames = [composioIntent.app];
 
-			console.log("[Composio] Executing with:", { entityId, appNames });
-
 			// Execute Composio action (pass ctx and workspaceId to resolve authConfigIds from connected accounts)
 			const composioResult = await executeComposioAction(
 				ctx,
 				entityId,
 				appNames,
 				args.query,
-				workspaceId
+				workspaceId,
+				memberId
 			);
 
 			if (composioResult.success && composioResult.response) {
@@ -2079,7 +2050,7 @@ Updates:\n${context}`;
 						});
 						lines.push(summary);
 					} catch {
-						// If Gemini isn't available, avoid showing raw messages; show a non-verbatim fallback.
+						// If AI isn't available, avoid showing raw messages; show a non-verbatim fallback.
 						const fallback = updates
 							.slice(0, 6)
 							.map((u) => `• @${u.author} posted in #${u.channel}`)
@@ -2648,7 +2619,7 @@ Mentions:\n${mentionContext}`;
 								recentMessages: recentChatMessages,
 							});
 						} catch {
-							// Gemini isn't available: avoid topic/keyword heuristics; use a safe structured fallback.
+							// AI isn't available: avoid topic/keyword heuristics; use a safe structured fallback.
 							if (matches.length) {
 								mentionsSummary = matches
 									.slice(0, 6)
@@ -3007,11 +2978,11 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 				query: args.query,
 				limit: 5,
 			});
-			ragResults = ragResponse.results.map(
-				(r: { content: Array<{ text: string }> }) => ({
-					text: r.content.map((c) => c.text).join("\n"),
-				})
-			);
+			ragResults = (
+				ragResponse.results as Array<{ content: Array<{ text: string }> }>
+			).map((r) => ({
+				text: r.content.map((c) => c.text).join("\n"),
+			}));
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
@@ -3121,27 +3092,5 @@ Context:\n${combinedContext}`;
 				sources: [],
 			};
 		}
-	},
-});
-
-// -----------------------------
-// DEPRECATED ACTION
-// -----------------------------
-// This function is no longer used.
-// All chat functionality has been moved to the main assistant router.
-// This is kept for backward compatibility but should not be called.
-export const generateResponse = action({
-	args: {
-		workspaceId: v.id("workspaces"),
-		message: v.string(),
-	},
-	handler: async (_ctx, _args): Promise<GenerateResponseResult> => {
-		// This function is deprecated - all logic moved to /api/assistant router
-		return {
-			response:
-				"This function is deprecated. Please use the main assistant router.",
-			sources: [],
-			actions: [],
-		};
 	},
 });

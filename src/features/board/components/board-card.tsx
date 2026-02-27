@@ -6,6 +6,7 @@ import {
 	ArrowRightCircle,
 	CheckCircle2,
 	Clock,
+	ListChecks,
 	Pencil,
 	Trash,
 	Users,
@@ -15,6 +16,8 @@ import type { Id } from "@/../convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
 	Tooltip,
 	TooltipContent,
@@ -28,6 +31,9 @@ interface BoardCardProps {
 	onEdit: () => void;
 	onDelete: () => void;
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
+	selectionMode?: boolean;
+	isSelected?: boolean;
+	onToggleSelect?: (cardId: Id<"cards">) => void;
 }
 
 const BoardCard: React.FC<BoardCardProps> = ({
@@ -35,6 +41,9 @@ const BoardCard: React.FC<BoardCardProps> = ({
 	onEdit,
 	onDelete,
 	assigneeData = {},
+	selectionMode = false,
+	isSelected = false,
+	onToggleSelect,
 }) => {
 	const {
 		attributes,
@@ -49,11 +58,19 @@ const BoardCard: React.FC<BoardCardProps> = ({
 			type: "card",
 			card,
 		},
+		disabled: selectionMode,
 	});
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
+	};
+
+	const handleToggleSelect = (e?: React.MouseEvent) => {
+		e?.stopPropagation();
+		if (onToggleSelect) {
+			onToggleSelect(card._id);
+		}
 	};
 
 	// Get priority color for card styling
@@ -105,19 +122,31 @@ const BoardCard: React.FC<BoardCardProps> = ({
 			ref={setNodeRef}
 			style={style}
 			{...attributes}
-			{...listeners}
+			{...(selectionMode ? {} : listeners)}
 			className={cn(
 				"bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 flex flex-col gap-2 border dark:border-gray-700 hover:border-secondary/40 dark:hover:border-secondary/60 cursor-pointer transition-all duration-200 hover:shadow-md",
 				getPriorityColor(),
 				isDragging &&
-					"opacity-70 border-dashed border-secondary shadow-lg scale-105"
+					"opacity-70 border-dashed border-secondary shadow-lg scale-105",
+				selectionMode && isSelected && "ring-2 ring-secondary"
 			)}
+			onClick={selectionMode ? handleToggleSelect : undefined}
 		>
 			{/* Card Header */}
 			<div className="flex items-center justify-between">
-				<span className="font-semibold text-sm truncate dark:text-gray-100">
-					{card.title}
-				</span>
+				<div className="flex items-center gap-2 min-w-0">
+					{selectionMode && (
+						<Checkbox
+							checked={isSelected}
+							className="h-4 w-4"
+							onCheckedChange={() => onToggleSelect?.(card._id)}
+							onClick={handleToggleSelect}
+						/>
+					)}
+					<span className="font-semibold text-sm truncate dark:text-gray-100">
+						{card.title}
+					</span>
+				</div>
 				<div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
 					<TooltipProvider>
 						<Tooltip>
@@ -159,12 +188,30 @@ const BoardCard: React.FC<BoardCardProps> = ({
 					{card.labels.map((label: string, i: number) => (
 						<Badge
 							className="text-xs px-2 py-0.5 bg-secondary/20 dark:bg-secondary/30 text-secondary-foreground dark:text-gray-200"
-							key={i}
+							key={`${card._id}-${label}-${i}`}
 							variant="secondary"
 						>
 							{label}
 						</Badge>
 					))}
+				</div>
+			)}
+
+			{/* Subtask Progress */}
+			{card.subtaskStats && card.subtaskStats.total > 0 && (
+				<div className="space-y-1">
+					<div className="flex items-center justify-between text-xs">
+						<div className="flex items-center gap-1 text-muted-foreground">
+							<ListChecks className="w-3 h-3" />
+							<span>
+								{card.subtaskStats.completed}/{card.subtaskStats.total} subtasks
+							</span>
+						</div>
+						<span className="text-muted-foreground">
+							{Math.round(card.subtaskStats.percentage)}%
+						</span>
+					</div>
+					<Progress className="h-1" value={card.subtaskStats.percentage} />
 				</div>
 			)}
 
