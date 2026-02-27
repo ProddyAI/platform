@@ -1,18 +1,5 @@
 #!/usr/bin/env tsx
 
-/**
- * Comprehensive Test Script for AI-Powered Assistant
- *
- * Tests:
- * 1. Query Classification (with caching)
- * 2. Tool Selection (with caching)
- * 3. Confirmation Logic
- * 4. Multi-Step Planning
- * 5. Cache Performance
- *
- * Usage:
- *   npx tsx test-assistant.ts
- */
 
 import { config } from "dotenv";
 import { resolve } from "path";

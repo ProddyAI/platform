@@ -49,6 +49,7 @@ const ForgotPasswordPage = () => {
 		const interval = setInterval(updateCooldown, 1000);
 
 		return () => clearInterval(interval);
+		
 	}, [lastSentTimestamp]);
 
 	const handleSubmit = async (e: React.FormEvent) => {

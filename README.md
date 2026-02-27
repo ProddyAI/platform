@@ -1,4 +1,4 @@
-# Proddy
+# Proddy - Agentic Work Management Suite 
 
 Collaborate with your team using real-time messaging, boards, notes, calendar, and AI features. Built with Next.js, Convex, and Shadcn UI.
 
