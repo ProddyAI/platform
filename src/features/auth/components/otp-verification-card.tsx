@@ -191,7 +191,7 @@ export const OTPVerificationCard = ({
 				</CardDescription>
 			</CardHeader>
 
-			{!!error && (
+			{Boolean(error) && (
 				<div
 					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm border ${
 						errorType === "expired"

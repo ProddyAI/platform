@@ -433,7 +433,7 @@ const BoardPage = () => {
 						setCardAssignees([]);
 					}
 				}}
-				open={!!addCardOpen}
+				open={Boolean(addCardOpen)}
 				priority={cardPriority}
 				setAssignees={setCardAssignees}
 				setDescription={setCardDesc}
@@ -455,10 +455,10 @@ const BoardPage = () => {
 				labels={cardLabels}
 				members={members}
 				onOpenChange={(open: boolean) => {
-					if (!open) setEditCardOpen(null);
-				}}
+    			if (!Boolean(open)) setEditCardOpen(null);
+							}}
 				onSave={handleEditCard}
-				open={!!editCardOpen}
+				open={Boolean(editCardOpen)}
 				priority={cardPriority}
 				setAssignees={setCardAssignees}
 				setDescription={setCardDesc}

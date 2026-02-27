@@ -128,7 +128,7 @@ export const MessageList = ({
 				recap: data.recap,
 				date: dateKey,
 				messageCount: messages.length,
-				isCached: !!data.cached,
+				isCached: Boolean(data.cached),
 			});
 			setIsRecapModalOpen(true);
 

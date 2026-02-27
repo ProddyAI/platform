@@ -239,7 +239,7 @@ export const hasVerifiedOTP = query({
 			.filter((q) => q.eq(q.field("verified"), true))
 			.first();
 
-		return { verified: !!verifiedOTP };
+		return { verified: Boolean(verifiedOTP) };
 	},
 });
 

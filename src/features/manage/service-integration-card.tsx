@@ -141,7 +141,7 @@ export const ServiceIntegrationCard = ({
 
 	const IconComponent = toolkits[toolkit].icon;
 	const isConnected = connectedAccount && connectedAccount.status === "ACTIVE";
-	const hasAuthConfig = !!authConfig;
+	const hasAuthConfig = Boolean(authConfig);
 
 	const handleCreateAuthConfig = async () => {
 		setIsConnecting(true);

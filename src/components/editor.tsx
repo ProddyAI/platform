@@ -621,9 +621,9 @@ const Editor = ({
 			>
 				<div className="h-full" ref={containerRef} />
 
-				{!!image && (
-					<div className="p-1.5 md:p-2">
-						<div className="group/image relative flex size-[50px] md:size-[62px] items-center justify-center">
+				{image !== null && (
+					<div className="p-2">
+						<div className="group/image relative flex size-[62px] items-center justify-center">
 							<Hint label="Remove image">
 								<button
 									className="absolute -right-2 -top-2 md:-right-2.5 md:-top-2.5 z-[4] hidden size-5 md:size-6 items-center justify-center rounded-full border-2 border-white bg-black/70 text-white hover:bg-black group-hover/image:flex"
