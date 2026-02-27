@@ -476,9 +476,7 @@ const schema = defineSchema({
 		conversationId: v.string(),
 		lastMessageAt: v.number(),
 		/** When "agent", conversationId is an agent threadId; when "databaseChat" or omitted, it's database-chat. */
-		source: v.optional(
-			v.union(v.literal("agent"), v.literal("databaseChat"))
-		),
+		source: v.optional(v.union(v.literal("agent"), v.literal("databaseChat"))),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])

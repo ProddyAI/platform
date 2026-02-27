@@ -4,16 +4,18 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
 // Use the cloud deployment
-const deploymentUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "https://friendly-marmot-282.convex.cloud";
+const deploymentUrl =
+	process.env.NEXT_PUBLIC_CONVEX_URL ||
+	"https://friendly-marmot-282.convex.cloud";
 const client = new ConvexHttpClient(deploymentUrl);
 
 async function sendMessage() {
 	try {
 		console.log("\n📨 Sending message to assistant...");
 		console.log(`🌐 Using deployment: ${deploymentUrl}\n`);
-		
+
 		const result = await client.action(api.assistantChat.sendMessage, {
-			conversationId: "test-conv-" + Date.now(),
+			conversationId: `test-conv-${Date.now()}`,
 			message: "What's on my calendar today?",
 		});
 

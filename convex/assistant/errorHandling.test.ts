@@ -11,17 +11,25 @@ import {
 
 describe("categorizeError", () => {
 	it("detects rate_limit", () => {
-		expect(categorizeError(new Error("Rate limit exceeded"))).toBe("rate_limit");
-		expect(categorizeError(new Error("429 Too Many Requests"))).toBe("rate_limit");
+		expect(categorizeError(new Error("Rate limit exceeded"))).toBe(
+			"rate_limit"
+		);
+		expect(categorizeError(new Error("429 Too Many Requests"))).toBe(
+			"rate_limit"
+		);
 	});
 
 	it("detects tool_failure", () => {
-		expect(categorizeError(new Error("Tool execution failed"))).toBe("tool_failure");
+		expect(categorizeError(new Error("Tool execution failed"))).toBe(
+			"tool_failure"
+		);
 		expect(categorizeError(new Error("Composio error"))).toBe("tool_failure");
 	});
 
 	it("detects context_too_large", () => {
-		expect(categorizeError(new Error("Context length exceeded"))).toBe("context_too_large");
+		expect(categorizeError(new Error("Context length exceeded"))).toBe(
+			"context_too_large"
+		);
 	});
 
 	it("detects authentication", () => {

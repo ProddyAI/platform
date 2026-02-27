@@ -1,15 +1,11 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { type NextRequest, NextResponse } from "next/server";
 
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY || "",
-});
-
 export async function POST(req: NextRequest) {
 	try {
-		if (!process.env.OPENROUTER_API_KEY) {
-			console.error("Missing OPENROUTER_API_KEY");
+		if (!process.env.OPENAI_API_KEY) {
+			console.error("Missing OPENAI_API_KEY");
 			return NextResponse.json(
 				{ error: "API key not configured" },
 				{ status: 500 }
@@ -36,8 +32,6 @@ export async function POST(req: NextRequest) {
 				{ status: 400 }
 			);
 		}
-
-		const model = openrouter("openai/gpt-4o-mini");
 
 		// Prepare the flowchart generation prompt
 		const systemPrompt = `You are an expert flowchart designer and Mermaid diagram specialist. Your task is to convert text descriptions into well-structured Mermaid flowchart diagrams.
@@ -86,7 +80,7 @@ Generate the Mermaid flowchart code:`;
 
 		try {
 			const { text } = await generateText({
-				model,
+				model: openai("gpt-4o-mini"),
 				prompt: systemPrompt,
 				temperature: 0.3, // Lower temperature for more consistent diagram structure
 			});

@@ -2,8 +2,8 @@
  * Proddy assistant tools - internal workspace + external integrations.
  */
 
-import * as internal from "./internalTools";
 import * as composio from "./composioTools";
+import * as internal from "./internalTools";
 
 export type { AssistantCtx } from "./internalTools";
 

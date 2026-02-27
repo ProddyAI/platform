@@ -1,30 +1,19 @@
 #!/usr/bin/env tsx
 
-/**
- * Comprehensive Test Script for AI-Powered Assistant
- *
- * Tests:
- * 1. Query Classification (with caching)
- * 2. Tool Selection (with caching)
- * 3. Confirmation Logic
- * 4. Multi-Step Planning
- * 5. Cache Performance
- *
- * Usage:
- *   npx tsx test-assistant.ts
- */
-
+import { resolve } from "node:path";
 import { config } from "dotenv";
-import { resolve } from "path";
 
 // Load environment variables from .env.local
 config({ path: resolve(process.cwd(), ".env.local") });
 
+import { getCacheStats } from "../src/lib/ai-cache";
+import {
+	analyzeActionForConfirmation,
+	parseUserConfirmationResponse,
+} from "../src/lib/ai-confirmation-logic";
+import { createMultiStepPlan } from "../src/lib/ai-multi-step-planner";
 import { classifyAssistantQueryWithAI } from "../src/lib/ai-query-classifier";
 import { selectToolsWithAI } from "../src/lib/ai-tool-selector";
-import { analyzeActionForConfirmation, parseUserConfirmationResponse } from "../src/lib/ai-confirmation-logic";
-import { createMultiStepPlan } from "../src/lib/ai-multi-step-planner";
-import { getCacheStats } from "../src/lib/ai-cache";
 
 // Test queries
 const TEST_QUERIES = {
@@ -114,7 +103,9 @@ async function testQueryClassification() {
 
 				const expected = category;
 				const actual = result.mode;
-				const correct = expected === actual || (expected === "external" && actual === "external");
+				const correct =
+					expected === actual ||
+					(expected === "external" && actual === "external");
 
 				if (correct) {
 					log("green", `  ✓ "${query}"`);
@@ -122,7 +113,9 @@ async function testQueryClassification() {
 					log("red", `  ✗ "${query}"`);
 				}
 
-				console.log(`    Mode: ${result.mode}, Apps: [${result.requestedExternalApps.join(", ")}]`);
+				console.log(
+					`    Mode: ${result.mode}, Apps: [${result.requestedExternalApps.join(", ")}]`
+				);
 				console.log(`    Reasoning: ${result.reasoning}`);
 			} catch (error: any) {
 				log("red", `  ✗ Error: ${error.message}`);
@@ -153,14 +146,18 @@ async function testCaching() {
 	log("cyan", `  Time: ${time2}ms`);
 
 	// Performance improvement
-	const improvement = ((time1 - time2) / time1 * 100).toFixed(1);
+	const improvement = (((time1 - time2) / time1) * 100).toFixed(1);
 	log("green", `\n  ✓ Cache speedup: ${improvement}% faster`);
 
 	// Cache stats
 	const stats = getCacheStats();
 	log("yellow", "\nCache Statistics:");
-	console.log(`  Query Classification: ${stats.queryClassification.size}/${stats.queryClassification.maxSize} entries`);
-	console.log(`  Tool Selection: ${stats.toolSelection.size}/${stats.toolSelection.maxSize} entries`);
+	console.log(
+		`  Query Classification: ${stats.queryClassification.size}/${stats.queryClassification.maxSize} entries`
+	);
+	console.log(
+		`  Tool Selection: ${stats.toolSelection.size}/${stats.toolSelection.maxSize} entries`
+	);
 }
 
 async function testToolSelection() {
@@ -190,7 +187,7 @@ async function testToolSelection() {
 			});
 
 			log("cyan", `  Selected ${result.selectedTools.length} tools:`);
-			result.selectedTools.forEach(tool => {
+			result.selectedTools.forEach((tool) => {
 				console.log(`    - ${tool.name}`);
 			});
 
@@ -198,8 +195,8 @@ async function testToolSelection() {
 			console.log(`  Reasoning: ${result.reasoning}`);
 
 			// Check if expected tools are selected
-			const selectedNames = result.selectedTools.map(t => t.name);
-			const hasExpected = testCase.expectedTools.some(expected =>
+			const selectedNames = result.selectedTools.map((t) => t.name);
+			const hasExpected = testCase.expectedTools.some((expected) =>
 				selectedNames.includes(expected)
 			);
 
@@ -297,7 +294,10 @@ async function testConfirmationLogic() {
 		if (correct) {
 			log("green", `  ✓ "${test.message}" → ${result.decision}`);
 		} else {
-			log("red", `  ✗ "${test.message}" → ${result.decision} (expected ${test.expected})`);
+			log(
+				"red",
+				`  ✗ "${test.message}" → ${result.decision} (expected ${test.expected})`
+			);
 		}
 	}
 
@@ -328,7 +328,7 @@ async function testMultiStepPlanning() {
 
 			const plan = await createMultiStepPlan(
 				testCase.query,
-				MOCK_TOOLS.map(t => t.name)
+				MOCK_TOOLS.map((t) => t.name)
 			);
 
 			console.log(`  Multi-Step: ${plan.requiresMultiStep}`);
@@ -337,10 +337,12 @@ async function testMultiStepPlanning() {
 
 			if (plan.requiresMultiStep) {
 				log("cyan", `  Steps (${plan.steps.length}):`);
-				plan.steps.forEach(step => {
+				plan.steps.forEach((step) => {
 					console.log(`    ${step.stepNumber}. ${step.action}`);
 					console.log(`       Tools: [${step.toolsNeeded.join(", ")}]`);
-					console.log(`       Depends on: [${step.dependsOn.join(", ") || "none"}]`);
+					console.log(
+						`       Depends on: [${step.dependsOn.join(", ") || "none"}]`
+					);
 				});
 			}
 
@@ -372,10 +374,11 @@ async function runAllTests() {
 		log("green", "✅ All tests completed!");
 		log("cyan", "\nNext steps:");
 		console.log("  1. Review test results above");
-		console.log("  2. Test streaming endpoint: POST /api/assistant/chatbot/stream");
+		console.log(
+			"  2. Test streaming endpoint: POST /api/assistant/chatbot/stream"
+		);
 		console.log("  3. Monitor performance in production");
 		console.log("  4. Gather user feedback on classification accuracy");
-
 	} catch (error: any) {
 		log("red", `\n❌ Test suite failed: ${error.message}`);
 		console.error(error);

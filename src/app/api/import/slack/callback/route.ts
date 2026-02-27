@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 /**
- * Helper function to build and return a redirect response to the Convex callback handler
+ * Helper function to build and return a redirect proper response to the Convex callback handler
  * @param convexUrl - The base Convex URL
  * @param searchParams - URLSearchParams containing OAuth parameters (code, state, error)
  * @param defaultWorkspaceId - Optional default workspace ID

@@ -158,11 +158,14 @@ export const confirmationCache = new AICache<any>({
  * Clear expired entries periodically (every 5 minutes)
  */
 if (typeof setInterval !== "undefined") {
-	setInterval(() => {
-		queryClassificationCache.clearExpired();
-		toolSelectionCache.clearExpired();
-		confirmationCache.clearExpired();
-	}, 5 * 60 * 1000);
+	setInterval(
+		() => {
+			queryClassificationCache.clearExpired();
+			toolSelectionCache.clearExpired();
+			confirmationCache.clearExpired();
+		},
+		5 * 60 * 1000
+	);
 }
 
 /**

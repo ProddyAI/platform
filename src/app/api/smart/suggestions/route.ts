@@ -1,14 +1,10 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
 
 // Load environment variables
 dotenv.config();
-
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY || "",
-});
 
 interface MessageData {
 	id: string;
@@ -108,8 +104,8 @@ function pruneCache() {
 export async function POST(req: NextRequest) {
 	try {
 		// Check for API key
-		if (!process.env.OPENROUTER_API_KEY) {
-			console.error("Missing OPENROUTER_API_KEY");
+		if (!process.env.OPENAI_API_KEY) {
+			console.error("Missing OPENAI_API_KEY");
 			return NextResponse.json(
 				{ error: "API key not configured" },
 				{ status: 500 }
@@ -263,7 +259,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 			let text;
 			try {
 				const response = await generateText({
-					model: openrouter("openai/gpt-4o-mini"),
+					model: openai("gpt-4o-mini"),
 					messages: [
 						{
 							role: "system",

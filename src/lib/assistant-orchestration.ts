@@ -123,7 +123,7 @@ export function buildAssistantSystemPrompt(options?: {
 }): string {
 	const connectedApps = options?.connectedApps ?? [];
 	const externalToolsAllowed = options?.externalToolsAllowed ?? false;
-	
+
 	let policyLine = "";
 	if (externalToolsAllowed && connectedApps.length > 0) {
 		// User has connected apps - be very directive about using them
@@ -131,23 +131,35 @@ export function buildAssistantSystemPrompt(options?: {
 		policyLine = `IMPORTANT: The user has connected the following external apps: ${appsList}.
 
 You MUST use the appropriate tools for these apps when the user asks about them:
-${connectedApps.map(app => {
-		switch(app) {
-			case "GITHUB": return "- For GitHub queries (repos, issues, PRs): use runGithubTool";
-			case "SLACK": return "- For Slack queries (channels, messages): use runSlackTool";
-			case "GMAIL": return "- For Gmail queries (emails, inbox): use runGmailTool";
-			case "NOTION": return "- For Notion queries (pages, databases): use runNotionTool";
-			case "CLICKUP": return "- For ClickUp queries (tasks, lists): use runClickupTool";
-			case "LINEAR": return "- For Linear queries (issues, tickets): use runLinearTool";
-			default: return "";
+${connectedApps
+	.map((app) => {
+		switch (app) {
+			case "GITHUB":
+				return "- For GitHub queries (repos, issues, PRs): use runGithubTool";
+			case "SLACK":
+				return "- For Slack queries (channels, messages): use runSlackTool";
+			case "GMAIL":
+				return "- For Gmail queries (emails, inbox): use runGmailTool";
+			case "NOTION":
+				return "- For Notion queries (pages, databases): use runNotionTool";
+			case "CLICKUP":
+				return "- For ClickUp queries (tasks, lists): use runClickupTool";
+			case "LINEAR":
+				return "- For Linear queries (issues, tickets): use runLinearTool";
+			default:
+				return "";
 		}
-	}).filter(Boolean).join("\n")}
+	})
+	.filter(Boolean)
+	.join("\n")}
 
 NEVER say you can't access these apps - you have active connections and tools to use them.`;
 	} else if (externalToolsAllowed) {
-		policyLine = "External tool policy: external actions are allowed but no connected apps are available. Explain the required connection step before continuing.";
+		policyLine =
+			"External tool policy: external actions are allowed but no connected apps are available. Explain the required connection step before continuing.";
 	} else {
-		policyLine = "External tool policy: do not use external integration tools for this request; respond using workspace/internal capabilities only.";
+		policyLine =
+			"External tool policy: do not use external integration tools for this request; respond using workspace/internal capabilities only.";
 	}
 
 	const contextLine = options?.workspaceContext?.trim()
