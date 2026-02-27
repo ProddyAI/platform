@@ -1,27 +1,41 @@
-import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { generateObject } from "ai";
 import { z } from "zod";
 
 /**
  * Zod schema for multi-step plan
  */
 const MultiStepPlanSchema = z.object({
-	requiresMultiStep: z.boolean().describe(
-		"Whether this query requires multiple sequential steps to complete"
-	),
-	steps: z.array(
-		z.object({
-			stepNumber: z.number().describe("Step number in sequence (1, 2, 3, ...)"),
-			action: z.string().describe("What needs to be done in this step"),
-			toolsNeeded: z.array(z.string()).describe("Tools that will be used in this step"),
-			reasoning: z.string().describe("Why this step is necessary"),
-			dependsOn: z.array(z.number()).describe("Which previous steps must complete before this one (empty for step 1)"),
-		})
-	).describe("List of steps in execution order"),
-	overallGoal: z.string().describe("The final goal of this multi-step operation"),
-	estimatedComplexity: z.enum(["simple", "moderate", "complex"]).describe(
-		"Complexity of the overall operation"
-	),
+	requiresMultiStep: z
+		.boolean()
+		.describe(
+			"Whether this query requires multiple sequential steps to complete"
+		),
+	steps: z
+		.array(
+			z.object({
+				stepNumber: z
+					.number()
+					.describe("Step number in sequence (1, 2, 3, ...)"),
+				action: z.string().describe("What needs to be done in this step"),
+				toolsNeeded: z
+					.array(z.string())
+					.describe("Tools that will be used in this step"),
+				reasoning: z.string().describe("Why this step is necessary"),
+				dependsOn: z
+					.array(z.number())
+					.describe(
+						"Which previous steps must complete before this one (empty for step 1)"
+					),
+			})
+		)
+		.describe("List of steps in execution order"),
+	overallGoal: z
+		.string()
+		.describe("The final goal of this multi-step operation"),
+	estimatedComplexity: z
+		.enum(["simple", "moderate", "complex"])
+		.describe("Complexity of the overall operation"),
 });
 
 /**
@@ -181,7 +195,10 @@ Provide your plan:`,
 			estimatedComplexity: result.object.estimatedComplexity,
 		};
 	} catch (error) {
-		console.error("Multi-step planning failed, defaulting to single step:", error);
+		console.error(
+			"Multi-step planning failed, defaulting to single step:",
+			error
+		);
 		// Fallback: treat as single step
 		return {
 			requiresMultiStep: false,
@@ -224,18 +241,22 @@ export async function executeMultiStepPlan(
 	results: Array<{ stepNumber: number; result: any; error?: string }>;
 	finalResult: any;
 }> {
-	const results: Array<{ stepNumber: number; result: any; error?: string }> = [];
+	const results: Array<{ stepNumber: number; result: any; error?: string }> =
+		[];
 	const completedSteps: Record<number, any> = {};
 
 	try {
 		for (const step of plan.steps) {
 			// Check dependencies
-			const dependenciesMet = step.dependsOn.every(depStep =>
-				completedSteps[depStep] !== undefined
+			const dependenciesMet = step.dependsOn.every(
+				(depStep) => completedSteps[depStep] !== undefined
 			);
 
 			if (!dependenciesMet) {
-				console.error(`Step ${step.stepNumber} dependencies not met:`, step.dependsOn);
+				console.error(
+					`Step ${step.stepNumber} dependencies not met:`,
+					step.dependsOn
+				);
 				results.push({
 					stepNumber: step.stepNumber,
 					result: null,
@@ -244,14 +265,16 @@ export async function executeMultiStepPlan(
 				continue;
 			}
 
-			console.log(`[Multi-Step] Executing step ${step.stepNumber}: ${step.action}`);
+			console.log(
+				`[Multi-Step] Executing step ${step.stepNumber}: ${step.action}`
+			);
 
 			try {
 				const result = await executeStep({
 					stepNumber: step.stepNumber,
 					action: step.action,
 					previousResults: completedSteps,
-					execute: async (action, context) => {
+					execute: async (_action, context) => {
 						// This will be implemented by the caller
 						return { success: true, data: context };
 					},
@@ -277,7 +300,7 @@ export async function executeMultiStepPlan(
 		const finalResult = results[results.length - 1]?.result;
 
 		return {
-			success: results.every(r => !r.error),
+			success: results.every((r) => !r.error),
 			results,
 			finalResult,
 		};

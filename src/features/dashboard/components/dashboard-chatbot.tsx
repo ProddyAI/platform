@@ -837,7 +837,9 @@ Try asking me things like:`;
 											<Zap className="h-4 w-4 animate-pulse text-primary" />
 										</div>
 										<div className="min-w-0 flex-1">
-											<p className="text-sm font-medium">Using tools when needed</p>
+											<p className="text-sm font-medium">
+												Using tools when needed
+											</p>
 											<p className="text-xs text-muted-foreground mt-1">
 												Checking calendar, tasks, search, and integrations…
 											</p>
@@ -845,8 +847,8 @@ Try asking me things like:`;
 												{["Calendar", "Tasks", "Search", "Integrations"].map(
 													(label) => (
 														<span
-															key={label}
 															className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+															key={label}
 														>
 															{label}
 														</span>

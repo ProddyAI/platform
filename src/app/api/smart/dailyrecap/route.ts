@@ -1,4 +1,4 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { format } from "date-fns";
 import * as dotenv from "dotenv";
@@ -13,10 +13,6 @@ interface MessageData {
 	authorName: string;
 	creationTime: number;
 }
-
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY || "",
-});
 
 // More efficient text extraction with memoization
 const extractionCache = new Map<string, string>();
@@ -179,7 +175,7 @@ export async function POST(req: NextRequest) {
 
 		try {
 			const { text } = await generateText({
-				model: openrouter("openai/gpt-4o-mini"),
+				model: openai("gpt-4o-mini"),
 				messages: [
 					{
 						role: "system",

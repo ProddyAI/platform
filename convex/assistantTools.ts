@@ -153,8 +153,7 @@ export const getMyCalendarThisWeek = query({
 		const thisWeekEvents = allEvents.filter((event) => {
 			const eventDate = new Date(event.date).getTime();
 			return (
-				eventDate >= startOfDayMs(now) &&
-				eventDate <= endOfDayMs(thisWeekEnd)
+				eventDate >= startOfDayMs(now) && eventDate <= endOfDayMs(thisWeekEnd)
 			);
 		});
 
@@ -358,7 +357,10 @@ export const getMyTasksThisWeek = query({
 
 		const thisWeekTasks = allTasks.filter((task) => {
 			if (!task.dueDate) return false;
-			return task.dueDate >= startOfDayMs(now) && task.dueDate <= endOfDayMs(thisWeekEnd);
+			return (
+				task.dueDate >= startOfDayMs(now) &&
+				task.dueDate <= endOfDayMs(thisWeekEnd)
+			);
 		});
 
 		return {

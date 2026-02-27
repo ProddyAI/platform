@@ -1,5 +1,5 @@
-import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { generateObject } from "ai";
 import { z } from "zod";
 import { toolSelectionCache } from "./ai-cache";
 
@@ -7,17 +7,28 @@ import { toolSelectionCache } from "./ai-cache";
  * Zod schema for AI-powered tool selection
  */
 const ToolSelectionSchema = z.object({
-	selectedToolNames: z.array(z.string()).describe(
-		"Array of tool names that are most relevant for the user's query. Select tools that directly help accomplish the task. Be selective - only choose tools that are clearly needed."
-	),
-	reasoning: z.string().describe(
-		"Brief explanation of why these specific tools were selected and how they'll help accomplish the task"
-	),
-	primaryAction: z.enum([
-		"create", "read", "update", "delete", "send", "list", "search", "get"
-	]).describe(
-		"The primary action the user wants to perform"
-	),
+	selectedToolNames: z
+		.array(z.string())
+		.describe(
+			"Array of tool names that are most relevant for the user's query. Select tools that directly help accomplish the task. Be selective - only choose tools that are clearly needed."
+		),
+	reasoning: z
+		.string()
+		.describe(
+			"Brief explanation of why these specific tools were selected and how they'll help accomplish the task"
+		),
+	primaryAction: z
+		.enum([
+			"create",
+			"read",
+			"update",
+			"delete",
+			"send",
+			"list",
+			"search",
+			"get",
+		])
+		.describe("The primary action the user wants to perform"),
 });
 
 /**
@@ -52,7 +63,11 @@ export async function selectToolsWithAI(
 	const { maxTools = 20, requiredApps = [] } = options;
 
 	// Generate cache key (query + tool names hash)
-	const toolNamesHash = tools.map(t => t.name).sort().join(",").slice(0, 100);
+	const toolNamesHash = tools
+		.map((t) => t.name)
+		.sort()
+		.join(",")
+		.slice(0, 100);
 	const cacheKey = `${query}:${toolNamesHash}:${requiredApps.join(",")}`;
 
 	// Check cache first
@@ -61,7 +76,7 @@ export async function selectToolsWithAI(
 		console.log("[Cache Hit] Tool selection");
 		// Map cached tool names back to actual tool objects
 		const selectedToolNames = new Set(cached.selectedToolNames);
-		const selectedTools = tools.filter(t => selectedToolNames.has(t.name));
+		const selectedTools = tools.filter((t) => selectedToolNames.has(t.name));
 		return {
 			selectedTools,
 			reasoning: cached.reasoning,
@@ -72,8 +87,8 @@ export async function selectToolsWithAI(
 	// Pre-filter by required apps if specified
 	let availableTools = tools;
 	if (requiredApps.length > 0) {
-		const requiredAppsLower = requiredApps.map(app => app.toLowerCase());
-		availableTools = tools.filter(tool =>
+		const requiredAppsLower = requiredApps.map((app) => app.toLowerCase());
+		availableTools = tools.filter((tool) =>
 			requiredAppsLower.includes(tool.app?.toLowerCase() || "")
 		);
 	}
@@ -84,11 +99,11 @@ export async function selectToolsWithAI(
 		const queryLower = query.toLowerCase();
 		const keywords = extractBasicKeywords(queryLower);
 
-		availableTools = availableTools.filter(tool => {
+		availableTools = availableTools.filter((tool) => {
 			const toolName = tool.name.toLowerCase();
 			const toolDesc = (tool.description || "").toLowerCase();
-			return keywords.some(keyword =>
-				toolName.includes(keyword) || toolDesc.includes(keyword)
+			return keywords.some(
+				(keyword) => toolName.includes(keyword) || toolDesc.includes(keyword)
 			);
 		});
 
@@ -99,7 +114,7 @@ export async function selectToolsWithAI(
 	}
 
 	// Create a concise tool catalog for the AI
-	const toolCatalog = availableTools.map(tool => ({
+	const toolCatalog = availableTools.map((tool) => ({
 		name: tool.name,
 		description: tool.description || "No description available",
 		app: tool.app || "Unknown",
@@ -114,7 +129,7 @@ export async function selectToolsWithAI(
 User Query: "${query}"
 
 Available Tools (${toolCatalog.length} tools):
-${toolCatalog.map(t => `- ${t.name} (${t.app}): ${t.description}`).join('\n')}
+${toolCatalog.map((t) => `- ${t.name} (${t.app}): ${t.description}`).join("\n")}
 
 Selection Guidelines:
 1. Be highly selective - only choose tools that are directly needed for the task
@@ -133,7 +148,7 @@ Provide your selection:`,
 
 		// Filter tools based on AI selection
 		const selectedToolNamesSet = new Set(result.object.selectedToolNames);
-		const selectedTools = availableTools.filter(tool =>
+		const selectedTools = availableTools.filter((tool) =>
 			selectedToolNamesSet.has(tool.name)
 		);
 
@@ -148,32 +163,43 @@ Provide your selection:`,
 
 		// Cache the result (store tool names for cache efficiency)
 		toolSelectionCache.set(cacheKey, {
-			selectedToolNames: finalSelectedTools.map(t => t.name),
+			selectedToolNames: finalSelectedTools.map((t) => t.name),
 			reasoning: result.object.reasoning,
 			primaryAction: result.object.primaryAction,
 		});
 
 		return response;
 	} catch (error) {
-		console.error("AI tool selection failed, falling back to simple filtering:", error);
+		console.error(
+			"AI tool selection failed, falling back to simple filtering:",
+			error
+		);
 
 		// Fallback: simple keyword-based filtering
 		const queryLower = query.toLowerCase();
 		const keywords = extractBasicKeywords(queryLower);
 
-		const scoredTools = availableTools.map(tool => {
+		const scoredTools = availableTools.map((tool) => {
 			let score = 0;
 			const toolName = tool.name.toLowerCase();
 			const toolDesc = (tool.description || "").toLowerCase();
 
-			keywords.forEach(keyword => {
+			keywords.forEach((keyword) => {
 				if (toolName.includes(keyword)) score += 30;
 				else if (toolDesc.includes(keyword)) score += 15;
 			});
 
 			// Action matching
-			const actions = ["create", "list", "get", "update", "delete", "send", "search"];
-			actions.forEach(action => {
+			const actions = [
+				"create",
+				"list",
+				"get",
+				"update",
+				"delete",
+				"send",
+				"search",
+			];
+			actions.forEach((action) => {
 				if (queryLower.includes(action) && toolName.includes(action)) {
 					score += 40;
 				}
@@ -183,12 +209,15 @@ Provide your selection:`,
 		});
 
 		const fallbackTools = scoredTools
-			.filter(t => t._score > 0)
+			.filter((t) => t._score > 0)
 			.sort((a, b) => b._score - a._score)
 			.slice(0, maxTools);
 
 		return {
-			selectedTools: fallbackTools.length > 0 ? fallbackTools : availableTools.slice(0, maxTools),
+			selectedTools:
+				fallbackTools.length > 0
+					? fallbackTools
+					: availableTools.slice(0, maxTools),
 			reasoning: "AI selection failed, used fallback keyword matching",
 			primaryAction: "get",
 		};
@@ -203,26 +232,60 @@ function extractBasicKeywords(query: string): string[] {
 
 	// App keywords
 	const apps = ["gmail", "github", "slack", "notion", "clickup", "linear"];
-	apps.forEach(app => {
+	apps.forEach((app) => {
 		if (query.includes(app)) keywords.push(app);
 	});
 
 	// Action keywords
-	const actions = ["create", "send", "list", "get", "update", "delete", "search", "find", "show"];
-	actions.forEach(action => {
+	const actions = [
+		"create",
+		"send",
+		"list",
+		"get",
+		"update",
+		"delete",
+		"search",
+		"find",
+		"show",
+	];
+	actions.forEach((action) => {
 		if (query.includes(action)) keywords.push(action);
 	});
 
 	// Entity keywords
 	const entities = [
-		"email", "mail", "inbox", "message",
-		"issue", "pr", "pull", "commit", "repo", "repository", "branch",
-		"channel", "dm", "conversation", "workspace",
-		"page", "database", "block", "note", "doc",
-		"task", "project", "list", "folder", "goal",
-		"ticket", "bug", "feature", "cycle", "sprint"
+		"email",
+		"mail",
+		"inbox",
+		"message",
+		"issue",
+		"pr",
+		"pull",
+		"commit",
+		"repo",
+		"repository",
+		"branch",
+		"channel",
+		"dm",
+		"conversation",
+		"workspace",
+		"page",
+		"database",
+		"block",
+		"note",
+		"doc",
+		"task",
+		"project",
+		"list",
+		"folder",
+		"goal",
+		"ticket",
+		"bug",
+		"feature",
+		"cycle",
+		"sprint",
 	];
-	entities.forEach(entity => {
+	entities.forEach((entity) => {
 		if (query.includes(entity)) keywords.push(entity);
 	});
 
@@ -234,11 +297,13 @@ function extractBasicKeywords(query: string): string[] {
  */
 export async function selectToolsForQueriesBatch(
 	queries: Array<{ query: string; tools: Array<any>; options?: any }>
-): Promise<Array<{
-	selectedTools: Array<any>;
-	reasoning: string;
-	primaryAction: string;
-}>> {
+): Promise<
+	Array<{
+		selectedTools: Array<any>;
+		reasoning: string;
+		primaryAction: string;
+	}>
+> {
 	return Promise.all(
 		queries.map(({ query, tools, options }) =>
 			selectToolsWithAI(tools, query, options)

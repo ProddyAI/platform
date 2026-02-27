@@ -107,7 +107,8 @@ export async function handleAssistantError(
 			return {
 				shouldRetry: false,
 				adjustments: { maxMessages: 20 },
-				message: "That request was too long. Try a shorter message or start a new chat.",
+				message:
+					"That request was too long. Try a shorter message or start a new chat.",
 			};
 
 		case "authentication":

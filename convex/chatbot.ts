@@ -16,7 +16,10 @@ import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
 import { api, internal } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
 import { action } from "./_generated/server";
-function filterToolSetForOpenAI(tools: Record<string, any>): Record<string, any> {
+
+function filterToolSetForOpenAI(
+	tools: Record<string, any>
+): Record<string, any> {
 	const entries = Object.entries(tools).filter(([name]) => {
 		if (!name || name.length > 64) return false;
 		if (!/^[a-zA-Z0-9_-]+$/.test(name)) return false;
@@ -40,20 +43,18 @@ function selectRelevantTools(
 		// Score based on instruction keywords matching tool name
 		if (normalized.includes("github") && lowerName.includes("github"))
 			score += 10;
-		if (normalized.includes("slack") && lowerName.includes("slack")) score += 10;
+		if (normalized.includes("slack") && lowerName.includes("slack"))
+			score += 10;
 		if (normalized.includes("message") && lowerName.includes("message"))
 			score += 5;
 		if (normalized.includes("post") && lowerName.includes("post")) score += 5;
-		if (normalized.includes("send") && lowerName.includes("post"))
-			score += 5;
+		if (normalized.includes("send") && lowerName.includes("post")) score += 5;
 		if (normalized.includes("list") && lowerName.includes("list")) score += 3;
 		if (normalized.includes("rep") && lowerName.includes("repo")) score += 5;
-		if (normalized.includes("issue") && lowerName.includes("issue"))
-			score += 3;
+		if (normalized.includes("issue") && lowerName.includes("issue")) score += 3;
 		if (normalized.includes("channel") && lowerName.includes("channel"))
 			score += 5;
-		if (normalized.includes("user") && lowerName.includes("user"))
-			score += 3;
+		if (normalized.includes("user") && lowerName.includes("user")) score += 3;
 		if (normalized.includes("commit") && lowerName.includes("commit"))
 			score += 3;
 		if (normalized.includes("branch") && lowerName.includes("branch"))
@@ -566,11 +567,8 @@ async function executeComposioAction(
 							limit: 1000,
 						});
 				Object.assign(toolsByApp, appTools || {});
-			} catch (error) {
-				console.warn(
-					"[Chatbot Composio] Failed to fetch tools for",
-					appName
-				);
+			} catch (_error) {
+				console.warn("[Chatbot Composio] Failed to fetch tools for", appName);
 			}
 		}
 
@@ -630,9 +628,7 @@ Never say you cannot access these services - you have the tools to do so.`,
 				toolResultAny?.result?.success === false ? "error" : "success";
 			const errorMessage =
 				outcome === "error"
-					? String(
-							toolResultAny?.result?.error || "Tool execution failed"
-						)
+					? String(toolResultAny?.result?.error || "Tool execution failed")
 					: undefined;
 			await ctx.runMutation(
 				internal.assistantToolAudits.logExternalToolAttemptInternal,

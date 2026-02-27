@@ -1,23 +1,22 @@
+import { openai } from "@ai-sdk/openai";
 import { saveMessage } from "@convex-dev/agent";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { generateText, jsonSchema, stepCountIs, tool } from "ai";
 import { v } from "convex/values";
-import { openai } from "@ai-sdk/openai";
-import { generateText, tool, stepCountIs } from "ai";
-import { jsonSchema } from "ai";
 import {
 	type AssistantExternalApp,
 	buildAssistantResponseMetadata,
 	buildAssistantSystemPrompt,
 	classifyAssistantQuery,
 } from "../src/lib/assistant-orchestration";
+import { api, components, internal } from "./_generated/api";
+import { action, mutation, query } from "./_generated/server";
 import { proddyAgent } from "./assistant/agent";
 import { buildThreadContextPrompt } from "./assistant/context";
 import {
 	categorizeError,
 	handleAssistantError,
 } from "./assistant/errorHandling";
-import { api, components, internal } from "./_generated/api";
-import { action, mutation, query } from "./_generated/server";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 
@@ -46,7 +45,11 @@ function buildAiTools(
 ): Record<string, any> {
 	const tools: Record<string, any> = {};
 
-	console.log("[buildAiTools] Starting with", toolDefinitions.length, "tool definitions");
+	console.log(
+		"[buildAiTools] Starting with",
+		toolDefinitions.length,
+		"tool definitions"
+	);
 
 	for (const toolDef of toolDefinitions) {
 		// Create JSON Schema with proper typing
@@ -66,7 +69,9 @@ function buildAiTools(
 			description: toolDef.description,
 			inputSchema: jsonSchema(jsonSchemaObj),
 			execute: async (params: any) => {
-				console.log(`[buildAiTools] Executing tool: ${toolDef.name}`, { params });
+				console.log(`[buildAiTools] Executing tool: ${toolDef.name}`, {
+					params,
+				});
 				const fullArgs: Record<string, unknown> = { ...params };
 				if (toolDef.contextParams?.needsWorkspaceId) {
 					fullArgs.workspaceId = workspaceId;
@@ -477,7 +482,10 @@ export const createConversation = mutation({
 /** Map agent MessageDoc to UI shape { role, content, _creationTime } */
 function agentMessageToUI(doc: {
 	_creationTime: number;
-	message?: { role?: string; content?: string | Array<{ type: string; text?: string }> };
+	message?: {
+		role?: string;
+		content?: string | Array<{ type: string; text?: string }>;
+	};
 }): { role: string; content: string; _creationTime: number } {
 	const role = doc.message?.role ?? "user";
 	let content = "";
@@ -614,7 +622,7 @@ export const sendMessage = action({
 		metadata?: unknown;
 	}> => {
 		console.log("[sendMessage] Starting handler");
-		console.log("[sendMessage] args:", { 
+		console.log("[sendMessage] args:", {
 			conversationId: args.conversationId,
 			messageLength: args.message.length,
 			hasWorkspaceId: !!args.workspaceId,
@@ -668,7 +676,10 @@ export const sendMessage = action({
 			}
 		}
 		console.log("[sendMessage] Connected apps:", connectedAppNames);
-		console.log("[sendMessage] Connected apps count:", connectedAppNames.length);
+		console.log(
+			"[sendMessage] Connected apps count:",
+			connectedAppNames.length
+		);
 
 		const queryIntent = classifyAssistantQuery(args.message);
 		const selectedToolDefinitions = selectToolsForQuery(
@@ -682,8 +693,10 @@ export const sendMessage = action({
 			requiresExternalTools: queryIntent.requiresExternalTools,
 			requestedExternalApps: queryIntent.requestedExternalApps,
 			selectedToolsCount: selectedToolDefinitions.length,
-			selectedToolNames: selectedToolDefinitions.map(t => t.name),
-			externalToolNames: selectedToolDefinitions.filter(t => t.externalApp).map(t => t.name),
+			selectedToolNames: selectedToolDefinitions.map((t) => t.name),
+			externalToolNames: selectedToolDefinitions
+				.filter((t) => t.externalApp)
+				.map((t) => t.name),
 		});
 
 		// Agent-backed conversation: use @convex-dev/agent thread and tools
@@ -740,15 +753,18 @@ export const sendMessage = action({
 						connectedApps: connectedAppNames,
 					},
 				});
-				await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: args.conversationId,
-					outcome: "success",
-					durationMs: Date.now() - startMs,
-					executionPath: "convex-assistant",
-					timestamp: Date.now(),
-				});
+				await ctx.runMutation(
+					(internal as any)["assistant/monitoring"].logRequestInternal,
+					{
+						workspaceId: resolvedWorkspaceId,
+						userId: resolvedUserId,
+						conversationId: args.conversationId,
+						outcome: "success",
+						durationMs: Date.now() - startMs,
+						executionPath: "convex-assistant",
+						timestamp: Date.now(),
+					}
+				);
 				return {
 					success: true,
 					content: result.text ?? "",
@@ -756,16 +772,19 @@ export const sendMessage = action({
 				};
 			} catch (error) {
 				console.error("[sendMessage] Agent error:", error);
-				await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: args.conversationId,
-					outcome: "error",
-					durationMs: Date.now() - startMs,
-					executionPath: "convex-assistant",
-					errorCategory: categorizeError(error),
-					timestamp: Date.now(),
-				});
+				await ctx.runMutation(
+					(internal as any)["assistant/monitoring"].logRequestInternal,
+					{
+						workspaceId: resolvedWorkspaceId,
+						userId: resolvedUserId,
+						conversationId: args.conversationId,
+						outcome: "error",
+						durationMs: Date.now() - startMs,
+						executionPath: "convex-assistant",
+						errorCategory: categorizeError(error),
+						timestamp: Date.now(),
+					}
+				);
 				const handled = await handleAssistantError(error, {
 					query: args.message,
 					attemptCount: 0,
@@ -828,12 +847,18 @@ export const sendMessage = action({
 			console.log("[sendMessage] buildAiTools completed");
 			console.log("[sendMessage] aiTools keys:", Object.keys(aiTools));
 			console.log("[sendMessage] aiTools count:", Object.keys(aiTools).length);
-			console.log("[sendMessage] External tools in aiTools:", Object.keys(aiTools).filter(key => {
-				const toolDef = selectedToolDefinitions.find(t => t.name === key);
-				return toolDef?.externalApp;
-			}));
+			console.log(
+				"[sendMessage] External tools in aiTools:",
+				Object.keys(aiTools).filter((key) => {
+					const toolDef = selectedToolDefinitions.find((t) => t.name === key);
+					return toolDef?.externalApp;
+				})
+			);
 			console.log("[sendMessage] messages array length:", messages.length);
-			console.log("[sendMessage] messages:", JSON.stringify(messages.slice(0, 2), null, 2));
+			console.log(
+				"[sendMessage] messages:",
+				JSON.stringify(messages.slice(0, 2), null, 2)
+			);
 
 			let result;
 			try {
@@ -848,18 +873,30 @@ export const sendMessage = action({
 				console.log("[sendMessage] generateText completed successfully");
 			} catch (generateError: any) {
 				console.error("[sendMessage] generateText error:", generateError);
-				console.error("[sendMessage] generateText error message:", generateError?.message);
-				console.error("[sendMessage] generateText error stack:", generateError?.stack);
+				console.error(
+					"[sendMessage] generateText error message:",
+					generateError?.message
+				);
+				console.error(
+					"[sendMessage] generateText error stack:",
+					generateError?.stack
+				);
 				throw generateError;
 			}
 
 			console.log("[sendMessage] generateText result received");
-			console.log("[sendMessage] result.text length:", result.text?.length ?? 0);
+			console.log(
+				"[sendMessage] result.text length:",
+				result.text?.length ?? 0
+			);
 			console.log("[sendMessage] result.text:", result.text);
 			console.log("[sendMessage] result.usage:", result.usage);
-			console.log("[sendMessage] result.steps count:", Array.isArray(result.steps) ? result.steps.length : 0);
+			console.log(
+				"[sendMessage] result.steps count:",
+				Array.isArray(result.steps) ? result.steps.length : 0
+			);
 			console.log("[sendMessage] result keys:", Object.keys(result));
-			
+
 			// Log steps in detail
 			if (Array.isArray(result.steps)) {
 				result.steps.forEach((step, idx) => {
@@ -874,27 +911,27 @@ export const sendMessage = action({
 						step.toolCalls.forEach((call, callIdx) => {
 							console.log(`[sendMessage]   Tool call ${callIdx}:`, {
 								toolName: call.toolName,
-							input: call.input,
+								input: call.input,
+							});
 						});
-					});
-				}
-				if (step.toolResults) {
-					step.toolResults.forEach((res, resIdx) => {
-						console.log(`[sendMessage]   Tool result ${resIdx}:`, {
-							toolName: res.toolName,
-							output: res.output,
-					});
+					}
+					if (step.toolResults) {
+						step.toolResults.forEach((res, resIdx) => {
+							console.log(`[sendMessage]   Tool result ${resIdx}:`, {
+								toolName: res.toolName,
+								output: res.output,
+							});
+						});
+					}
 				});
 			}
-		});
-	}
 
-	const responseText = result.text || "No response generated";
-	let externalToolUsed = false;
-	const steps = Array.isArray(result.steps) ? result.steps : [];
-	for (const step of steps) {
-		const stepToolCalls = step.toolCalls ?? [];
-		for (const toolCall of stepToolCalls) {
+			const responseText = result.text || "No response generated";
+			let externalToolUsed = false;
+			const steps = Array.isArray(result.steps) ? result.steps : [];
+			for (const step of steps) {
+				const stepToolCalls = step.toolCalls ?? [];
+				for (const toolCall of stepToolCalls) {
 					const toolDef = selectedToolDefinitions.find(
 						(t) => t.name === toolCall.toolName
 					);
@@ -937,29 +974,38 @@ export const sendMessage = action({
 				},
 			});
 
-			await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
-				workspaceId: resolvedWorkspaceId,
-				userId: resolvedUserId,
-				conversationId: args.conversationId,
-				outcome: "success",
-				durationMs: Date.now() - startMs,
-				executionPath: "convex-assistant",
-				timestamp: Date.now(),
-			});
+			await ctx.runMutation(
+				(internal as any)["assistant/monitoring"].logRequestInternal,
+				{
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: args.conversationId,
+					outcome: "success",
+					durationMs: Date.now() - startMs,
+					executionPath: "convex-assistant",
+					timestamp: Date.now(),
+				}
+			);
 			return { success: true, content: responseText, metadata };
 		} catch (error) {
 			console.error("[sendMessage] Error occurred:", error);
-			console.error("[sendMessage] Error stack:", error instanceof Error ? error.stack : "No stack");
-			await ctx.runMutation((internal as any)["assistant/monitoring"].logRequestInternal, {
-				workspaceId: resolvedWorkspaceId,
-				userId: resolvedUserId,
-				conversationId: args.conversationId,
-				outcome: "error",
-				durationMs: Date.now() - startMs,
-				executionPath: "convex-assistant",
-				errorCategory: categorizeError(error),
-				timestamp: Date.now(),
-			});
+			console.error(
+				"[sendMessage] Error stack:",
+				error instanceof Error ? error.stack : "No stack"
+			);
+			await ctx.runMutation(
+				(internal as any)["assistant/monitoring"].logRequestInternal,
+				{
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: args.conversationId,
+					outcome: "error",
+					durationMs: Date.now() - startMs,
+					executionPath: "convex-assistant",
+					errorCategory: categorizeError(error),
+					timestamp: Date.now(),
+				}
+			);
 			const handled = await handleAssistantError(error, {
 				query: args.message,
 				attemptCount: 0,

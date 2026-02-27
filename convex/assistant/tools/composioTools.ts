@@ -4,9 +4,9 @@
  */
 
 import { createTool } from "@convex-dev/agent";
-import type { AssistantCtx } from "./internalTools";
-import { api } from "../../_generated/api";
 import { z } from "zod";
+import { api } from "../../_generated/api";
+import type { AssistantCtx } from "./internalTools";
 
 const instructionSchema = z.object({
 	instruction: z.string().describe("What you want the integration to do"),
