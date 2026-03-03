@@ -69,7 +69,6 @@ const PRIORITIES: IssuePriority[] = [
 	"no_priority",
 ];
 
-/** A single labelled property row */
 const PropertyRow = ({
 	label,
 	children,
@@ -186,9 +185,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 				showCloseButton={false}
 				side="right"
 			>
-				{/* ── Header ── */}
 				<div className="flex items-center justify-between px-5 py-3 border-b border-border/50 dark:border-gray-800/80 bg-muted/20 dark:bg-gray-900/50 shrink-0">
-					{/* Breadcrumb trail */}
 					<div className="flex items-center gap-1.5 text-xs text-muted-foreground overflow-hidden">
 						{currentStatus && (
 							<>
@@ -207,7 +204,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 						</span>
 					</div>
 
-					{/* Actions */}
 					<div className="flex items-center gap-0.5 shrink-0">
 						{confirmDelete ? (
 							<span className="text-[11px] text-destructive mr-2 font-medium">
@@ -240,10 +236,8 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					</div>
 				</div>
 
-				{/* ── Scrollable body ── */}
 				<div className="flex-1 overflow-y-auto">
 					<div className="px-6 py-5 space-y-5">
-						{/* Title */}
 						<textarea
 							className="w-full text-[22px] font-semibold bg-transparent border-none outline-none resize-none text-foreground placeholder:text-muted-foreground/30 leading-snug"
 							onBlur={handleSave}
@@ -253,7 +247,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 							value={title}
 						/>
 
-						{/* Description */}
 						<Textarea
 							className="min-h-[90px] text-sm bg-muted/20 dark:bg-gray-800/20 border-border/30 resize-none focus-visible:ring-1 focus-visible:ring-primary/30 placeholder:text-muted-foreground/40"
 							onBlur={handleSave}
@@ -264,9 +257,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 
 						<Separator className="opacity-40" />
 
-						{/* Properties */}
 						<div className="space-y-3">
-							{/* Status */}
 							<PropertyRow label="Status">
 								<Select onValueChange={handleStatusChange} value={statusId}>
 									<SelectTrigger className="h-8 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
@@ -298,7 +289,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 								</Select>
 							</PropertyRow>
 
-							{/* Priority */}
 							<PropertyRow label="Priority">
 								<Select onValueChange={handlePriorityChange} value={priority}>
 									<SelectTrigger className="h-8 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
@@ -322,7 +312,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 								</Select>
 							</PropertyRow>
 
-							{/* Assignees */}
 							<PropertyRow alignTop label="Assignees">
 								<MemberSelector
 									members={members}
@@ -332,7 +321,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 								/>
 							</PropertyRow>
 
-							{/* Due date */}
 							<PropertyRow label="Due date">
 								<Popover>
 									<PopoverTrigger asChild>
@@ -375,7 +363,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 								</Popover>
 							</PropertyRow>
 
-							{/* Labels */}
 							<PropertyRow alignTop label="Labels">
 								<div className="space-y-2">
 									{labels.length > 0 && (
@@ -423,7 +410,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 
 						<Separator className="opacity-40" />
 
-						{/* Metadata */}
 						<div className="space-y-1.5 text-[11px] text-muted-foreground/50">
 							<div className="flex items-center gap-2">
 								<Calendar className="w-3 h-3" />
@@ -441,7 +427,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					</div>
 				</div>
 
-				{/* ── Footer ── */}
 				<div className="px-5 py-3 border-t border-border/40 dark:border-gray-800/80 bg-muted/10 flex items-center justify-between shrink-0">
 					<span className="text-[11px] text-muted-foreground/50 font-mono">
 						{formatIssueId(issue._id)}

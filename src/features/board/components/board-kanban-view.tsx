@@ -94,7 +94,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		item: any;
 	} | null>(null);
 
-	// Build member data map for avatar display
 	const memberDataMap = useMemo(() => {
 		const map: Record<Id<"members">, { name: string; image?: string }> = {};
 		members.forEach((member) => {
@@ -108,7 +107,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		return map;
 	}, [members]);
 
-	// Group issues by statusId
 	const issuesByStatus = useMemo<Record<string, Issue[]>>(() => {
 		const grouped: Record<string, Issue[]> = {};
 		for (const s of statuses) {
@@ -143,7 +141,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		const { active } = event;
 		const current = active.data.current;
 		if (!current) return;
-		const type = current?.type;
+		const type = current.type;
 		if (type === "status") {
 			setActiveItem({ type: "status", item: current.status });
 		} else if (type === "issue") {
@@ -160,7 +158,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 
 		const activeType = active.data.current?.type;
 
-		// ── Reorder status columns ──────────────────────────────────────────
 		if (activeType === "status") {
 			const oldIdx = statuses.findIndex((s) => s._id === active.id);
 			const newIdx = statuses.findIndex((s) => s._id === over.id);
@@ -182,7 +179,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			return;
 		}
 
-		// ── Move issue between / within status columns ───────────────────────
 		if (activeType === "issue") {
 			const issueId = active.id as Id<"issues">;
 			const overId = over.id.toString();
@@ -229,12 +225,12 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 
 	return (
 		<div className="h-full w-full min-w-0 max-w-full flex flex-col overflow-hidden">
-			{showHeader && (
+			{showHeader && setView && (
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
 						onAddStatus={onAddStatus}
 						onSearch={onSearch}
-						setView={setView!}
+						setView={setView}
 						statusCount={statusCount}
 						totalIssues={totalIssues}
 						view={view}
@@ -282,7 +278,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 						)}
 					</SortableContext>
 
-					{/* Drag overlay */}
 					<DragOverlay>
 						{activeItem?.type === "issue" && (
 							<BoardIssueRow

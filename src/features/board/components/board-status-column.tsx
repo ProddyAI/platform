@@ -78,7 +78,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 
 	const hasIssues = issues.length > 0 || creating;
 
-	// Column sortable (for reordering columns)
 	const {
 		attributes,
 		listeners,
@@ -92,7 +91,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 		disabled: disableColumnDrag,
 	});
 
-	// Column droppable (for dropping issues into)
 	const { setNodeRef: setDropRef, isOver } = useDroppable({
 		id: `droppable-${status._id}`,
 		data: { type: "status", statusId: status._id },
@@ -138,7 +136,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 				hasIssues ? "h-full" : "h-auto"
 			)}
 		>
-			{/* Column header */}
 			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70 dark:border-gray-800 rounded-t-xl bg-muted/50 dark:bg-gray-800/40 flex-shrink-0">
 				<div
 					className={cn(
@@ -150,18 +147,15 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					<GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
 				</div>
 
-				{/* Status dot */}
 				<span
 					className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10"
 					style={{ backgroundColor: status.color }}
 				/>
 
-				{/* Status name */}
 				<span className="text-sm font-semibold text-foreground flex-1 truncate">
 					{status.name}
 				</span>
 
-				{/* Issue count */}
 				<Badge
 					className="text-[11px] h-5 px-1.5 font-normal bg-muted/60 dark:bg-gray-700/60 text-muted-foreground"
 					variant="secondary"
@@ -169,7 +163,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					{issues.length}
 				</Badge>
 
-				{/* Add issue button */}
 				<Button
 					className="h-6 w-6 hover:bg-muted dark:hover:bg-gray-700"
 					onClick={handleStartCreating}
@@ -180,7 +173,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					<Plus className="w-3.5 h-3.5" />
 				</Button>
 
-				{/* Column options */}
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
@@ -207,7 +199,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 				</DropdownMenu>
 			</div>
 
-			{/* Issues list – droppable area */}
 			{hasIssues && (
 				<div
 					className={cn(
@@ -236,7 +227,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 								/>
 							))}
 
-							{/* Drop indicator when dragging over a non-empty column */}
 							{issues.length > 0 && isOver && (
 								<div className="h-8 rounded-md border-2 border-dashed border-primary/40 bg-primary/5 flex items-center justify-center text-xs text-primary/60 mt-1">
 									Drop here
@@ -245,7 +235,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						</div>
 					</SortableContext>
 
-					{/* Inline issue creator */}
 					{creating && (
 						<div className="px-2 pb-2">
 							<Input
@@ -263,7 +252,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						</div>
 					)}
 
-					{/* Footer add button */}
 					{!creating && (
 						<button
 							className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 dark:hover:bg-gray-800/40 rounded-b-xl transition-colors border-t border-border/60 dark:border-gray-800/60"

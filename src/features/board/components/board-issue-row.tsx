@@ -124,11 +124,9 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				isDragOverlay && "shadow-lg bg-background border-border opacity-100"
 			)}
 			onClick={(_e) => {
-				// Only open if not dragging
 				if (!isDragging) onClick();
 			}}
 		>
-			{/* Priority icon */}
 			<TooltipProvider>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -142,23 +140,19 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				</Tooltip>
 			</TooltipProvider>
 
-			{/* Status color dot */}
 			<span
 				className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
 				style={{ backgroundColor: statusColor }}
 			/>
 
-			{/* Issue short ID */}
 			<span className="flex-shrink-0 text-[10px] font-mono text-muted-foreground/60 w-12 leading-none">
 				{formatIssueId(issue._id)}
 			</span>
 
-			{/* Title */}
 			<span className="flex-1 text-sm text-foreground truncate leading-none">
 				{issue.title}
 			</span>
 
-			{/* Labels */}
 			{issue.labels && issue.labels.length > 0 && (
 				<div className="hidden sm:flex items-center gap-1 flex-shrink-0">
 					{issue.labels.slice(0, 2).map((label, i) => (
@@ -178,7 +172,6 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				</div>
 			)}
 
-			{/* Due date */}
 			{issue.dueDate && (
 				<TooltipProvider>
 					<Tooltip>
@@ -203,7 +196,6 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				</TooltipProvider>
 			)}
 
-			{/* Assignee avatars */}
 			<div className="flex-shrink-0 flex -space-x-1.5">
 				{issue.assignees && issue.assignees.length > 0 ? (
 					<>
