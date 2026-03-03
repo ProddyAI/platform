@@ -173,8 +173,14 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		const activeType = active.data.current?.type;
 
 		if (activeType === "status") {
+			// Normalize over.id so that if we're hovering over an inner droppable
+			// like "droppable-${statusId}", we map it back to the owning status id.
+			const overIdStr = over.id.toString();
+			const overStatusId = overIdStr.startsWith("droppable-")
+				? (overIdStr.replace("droppable-", "") as Id<"statuses">)
+				: (over.id as Id<"statuses">);
 			const oldIdx = statuses.findIndex((s) => s._id === active.id);
-			const newIdx = statuses.findIndex((s) => s._id === over.id);
+			const newIdx = statuses.findIndex((s) => s._id === overStatusId);
 			if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
 
 			const reordered = arrayMove([...statuses], oldIdx, newIdx);

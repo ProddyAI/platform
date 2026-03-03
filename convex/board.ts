@@ -833,14 +833,104 @@ export const moveIssueStatus = mutation({
 	args: {
 		issueId: v.id("issues"),
 		toStatusId: v.id("statuses"),
-		order: v.number(),
+		order: v.number(), // treated as target index within the destination status
 	},
 	handler: async (ctx: MutationCtx, { issueId, toStatusId, order }) => {
-		return await ctx.db.patch(issueId, {
-			statusId: toStatusId,
-			order,
-			updatedAt: Date.now(),
-		});
+		// Fetch the issue to determine its current status
+		const issue = await ctx.db.get(issueId);
+		if (!issue) {
+			// Nothing to do if the issue does not exist
+			return;
+		}
+		const fromStatusId = issue.statusId as Id<"statuses">;
+		const targetIndex = Math.max(0, Math.floor(order));
+		const now = Date.now();
+		// Helper to sort issues by their current order, falling back to _creationTime
+		const sortByOrder = (a: any, b: any) => {
+			const ao = typeof a.order === "number" ? a.order : 0;
+			const bo = typeof b.order === "number" ? b.order : 0;
+			if (ao !== bo) return ao - bo;
+			return a._creationTime - b._creationTime;
+		};
+		if (fromStatusId === toStatusId) {
+			// Reorder within the same status
+			const allIssuesInStatus = await ctx.db
+				.query("issues")
+				.withIndex("by_status_id", (q) => q.eq("statusId", fromStatusId))
+				.collect();
+			// Exclude the moved issue from the list before re-inserting
+			const otherIssues = allIssuesInStatus
+				.filter((i) => i._id !== issueId)
+				.sort(sortByOrder);
+			const clampedIndex = Math.min(targetIndex, otherIssues.length);
+			const newOrderIds: Id<"issues">[] = [];
+			for (let i = 0; i < otherIssues.length; i++) {
+				if (i === clampedIndex) {
+					newOrderIds.push(issueId);
+				}
+				newOrderIds.push(otherIssues[i]._id);
+			}
+			if (clampedIndex === otherIssues.length) {
+				newOrderIds.push(issueId);
+			}
+			// Apply contiguous order values
+			let idx = 0;
+			for (const id of newOrderIds) {
+				await ctx.db.patch(id, {
+					order: idx++,
+					updatedAt: now,
+				});
+			}
+			return issueId;
+		}
+		// Moving across different statuses
+		// Reindex issues in the source status (excluding the moved issue)
+		const fromIssues = await ctx.db
+			.query("issues")
+			.withIndex("by_status_id", (q) => q.eq("statusId", fromStatusId))
+			.collect();
+		const remainingFromIssues = fromIssues
+			.filter((i) => i._id !== issueId)
+			.sort(sortByOrder);
+		for (let i = 0; i < remainingFromIssues.length; i++) {
+			await ctx.db.patch(remainingFromIssues[i]._id, {
+				order: i,
+				updatedAt: now,
+			});
+		}
+		// Prepare and reindex issues in the destination status, inserting the moved issue
+		const toIssues = await ctx.db
+			.query("issues")
+			.withIndex("by_status_id", (q) => q.eq("statusId", toStatusId))
+			.collect();
+		const sortedToIssues = toIssues.sort(sortByOrder);
+		const clampedDestIndex = Math.min(targetIndex, sortedToIssues.length);
+		const destOrderIds: Id<"issues">[] = [];
+		for (let i = 0; i < sortedToIssues.length; i++) {
+			if (i === clampedDestIndex) {
+				destOrderIds.push(issueId);
+			}
+			destOrderIds.push(sortedToIssues[i]._id);
+		}
+		if (clampedDestIndex === sortedToIssues.length) {
+			destOrderIds.push(issueId);
+		}
+		for (let i = 0; i < destOrderIds.length; i++) {
+			const id = destOrderIds[i];
+			if (id === issueId) {
+				await ctx.db.patch(id, {
+					statusId: toStatusId,
+					order: i,
+					updatedAt: now,
+				});
+			} else {
+				await ctx.db.patch(id, {
+					order: i,
+					updatedAt: now,
+				});
+			}
+		}
+		return issueId;
 	},
 });
 

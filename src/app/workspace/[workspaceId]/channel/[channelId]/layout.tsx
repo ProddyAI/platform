@@ -2,6 +2,7 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Loader, Smile, Trash, TriangleAlert, Upload, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { type PropsWithChildren, useEffect, useRef, useState } from "react";
@@ -59,12 +60,12 @@ const ChannelIcon = ({
 	const containerSize = sizeClasses[size];
 
 	if (iconImageUrl && !imageLoadError) {
-		// Use regular img tag for Convex storage URLs to avoid next/image remote pattern issues
 		return (
-			<div className={`${containerSize} rounded-full overflow-hidden`}>
-				<img
+			<div className={`${containerSize} rounded-full overflow-hidden relative`}>
+				<Image
 					alt={`Channel icon for ${name}`}
 					className="h-full w-full object-cover"
+					fill
 					onError={onImageError}
 					src={iconImageUrl}
 				/>
@@ -108,10 +109,11 @@ const ChannelIconPreview = ({
 }: ChannelIconPreviewProps) => {
 	if (iconPreview) {
 		return (
-			<div className="h-full w-full">
-				<img
+			<div className="h-full w-full relative">
+				<Image
 					alt="Icon preview"
 					className="h-full w-full object-cover rounded"
+					fill
 					src={iconPreview}
 				/>
 			</div>
