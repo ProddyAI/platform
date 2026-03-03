@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getUserEmailFromMemberId, getUserNameFromMemberId } from "./utils";
@@ -846,7 +846,7 @@ export const moveIssueStatus = mutation({
 		const targetIndex = Math.max(0, Math.floor(order));
 		const now = Date.now();
 		// Helper to sort issues by their current order, falling back to _creationTime
-		const sortByOrder = (a: any, b: any) => {
+		const sortByOrder = (a: Doc<"issues">, b: Doc<"issues">) => {
 			const ao = typeof a.order === "number" ? a.order : 0;
 			const bo = typeof b.order === "number" ? b.order : 0;
 			if (ao !== bo) return ao - bo;
@@ -881,7 +881,7 @@ export const moveIssueStatus = mutation({
 					updatedAt: now,
 				});
 			}
-			return issueId;
+			return;
 		}
 		// Moving across different statuses
 		// Reindex issues in the source status (excluding the moved issue)
@@ -930,7 +930,7 @@ export const moveIssueStatus = mutation({
 				});
 			}
 		}
-		return issueId;
+		return;
 	},
 });
 
