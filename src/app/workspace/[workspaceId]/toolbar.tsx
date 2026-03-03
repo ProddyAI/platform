@@ -54,7 +54,6 @@ interface WorkspaceToolbarProps {
 }
 
 interface SearchDialogContentProps {
-	workspaceId: Id<"workspaces">;
 	workspaceName?: string;
 	searchQuery: string;
 	useAI: boolean;
@@ -101,7 +100,6 @@ interface SearchDialogContentProps {
 }
 
 const SearchDialogContent = ({
-	workspaceId,
 	workspaceName,
 	searchQuery,
 	useAI,
@@ -655,7 +653,6 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						searchQuery={searchQuery}
 						searchResults={searchResults}
 						useAI={useAI}
-						workspaceId={workspaceId}
 						workspaceName={workspace?.name}
 					/>
 				</CommandDialog>

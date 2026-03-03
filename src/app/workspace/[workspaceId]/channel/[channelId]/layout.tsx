@@ -2,6 +2,7 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Loader, Smile, Trash, TriangleAlert, Upload, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { type PropsWithChildren, useEffect, useRef, useState } from "react";
@@ -60,10 +61,11 @@ const ChannelIcon = ({
 
 	if (iconImageUrl && !imageLoadError) {
 		return (
-			<div className={`${containerSize} rounded-full overflow-hidden`}>
-				<img
+			<div className={`${containerSize} rounded-full overflow-hidden relative`}>
+				<Image
 					alt={`Channel icon for ${name}`}
 					className="h-full w-full object-cover"
+					fill
 					onError={onImageError}
 					src={iconImageUrl}
 				/>
@@ -90,7 +92,6 @@ const ChannelIcon = ({
 
 interface ChannelIconPreviewProps {
 	iconImageUrl?: string | null;
-	iconImage?: Id<"_storage">;
 	icon?: string;
 	iconPreview?: string;
 	channelName: string;
@@ -100,7 +101,6 @@ interface ChannelIconPreviewProps {
 
 const ChannelIconPreview = ({
 	iconImageUrl,
-	iconImage,
 	icon,
 	iconPreview,
 	channelName,
@@ -109,11 +109,14 @@ const ChannelIconPreview = ({
 }: ChannelIconPreviewProps) => {
 	if (iconPreview) {
 		return (
-			<img
-				alt="Icon preview"
-				className="h-full w-full object-cover rounded"
-				src={iconPreview}
-			/>
+			<div className="h-full w-full relative">
+				<Image
+					alt="Icon preview"
+					className="h-full w-full object-cover rounded"
+					fill
+					src={iconPreview}
+				/>
+			</div>
 		);
 	}
 
@@ -141,8 +144,6 @@ interface ChannelIconUploaderProps {
 	isUploadingIcon: boolean;
 	imageInputRef: React.RefObject<HTMLInputElement>;
 	setIcon: (icon: string | undefined) => void;
-	setIconImage: (iconImage: Id<"_storage"> | undefined) => void;
-	setIconPreview: React.Dispatch<React.SetStateAction<string | undefined>>;
 	setImageLoadError: (value: boolean) => void;
 	onIconImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 	clearIconImage: () => void;
@@ -157,8 +158,6 @@ const ChannelIconUploader = ({
 	isUploadingIcon,
 	imageInputRef,
 	setIcon,
-	setIconImage,
-	setIconPreview,
 	setImageLoadError,
 	onIconImageUpload,
 	clearIconImage,
@@ -182,7 +181,6 @@ const ChannelIconUploader = ({
 						<ChannelIconPreview
 							channelName={channelName}
 							icon={icon}
-							iconImage={iconImage}
 							iconImageUrl={
 								iconPreview?.startsWith("http") ? iconPreview : undefined
 							}
@@ -249,8 +247,6 @@ interface ChannelNameDialogProps {
 	clearIconImage: () => void;
 	setEditOpen: (open: boolean) => void;
 	setIcon: (icon: string | undefined) => void;
-	setIconImage: (iconImage: Id<"_storage"> | undefined) => void;
-	setIconPreview: React.Dispatch<React.SetStateAction<string | undefined>>;
 	setValue: (value: string) => void;
 	value: string;
 	icon?: string;
@@ -273,8 +269,6 @@ const ChannelNameDialog = ({
 	clearIconImage,
 	setEditOpen,
 	setIcon,
-	setIconImage,
-	setIconPreview,
 	setValue,
 	value,
 	icon,
@@ -284,6 +278,13 @@ const ChannelNameDialog = ({
 	isUploadingIcon,
 	setImageLoadError,
 }: ChannelNameDialogProps) => {
+	const nameInputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (isUpdatingChannel) {
+			nameInputRef.current?.focus();
+		}
+	}, [isUpdatingChannel]);
 	return (
 		<Dialog onOpenChange={setEditOpen} open>
 			<DialogTrigger asChild>
@@ -354,8 +355,6 @@ const ChannelNameDialog = ({
 									isUploadingIcon={isUploadingIcon}
 									onIconImageUpload={onIconImageUpload}
 									setIcon={setIcon}
-									setIconImage={setIconImage}
-									setIconPreview={setIconPreview}
 									setImageLoadError={setImageLoadError}
 								/>
 								<div className="flex-1">
@@ -363,7 +362,6 @@ const ChannelNameDialog = ({
 										Channel Name
 									</label>
 									<Input
-										autoFocus
 										disabled={isUpdatingChannel}
 										maxLength={20}
 										minLength={3}
@@ -373,6 +371,7 @@ const ChannelNameDialog = ({
 											)
 										}
 										placeholder="e.g. plan-budget"
+										ref={nameInputRef}
 										required
 										value={value}
 									/>
@@ -809,8 +808,6 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 									onSubmit={handleSubmit}
 									setEditOpen={setEditOpen}
 									setIcon={setIcon}
-									setIconImage={setIconImage}
-									setIconPreview={setIconPreview}
 									setImageLoadError={setImageLoadError}
 									setValue={setValue}
 									value={value}

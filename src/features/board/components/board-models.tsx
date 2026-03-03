@@ -138,7 +138,7 @@ interface BoardEditStatusModalProps {
 	onSave: () => void;
 }
 
-export const _BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
+export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 	open,
 	onOpenChange,
 	name,
@@ -217,7 +217,7 @@ interface BoardDeleteStatusModalProps {
 	statusName?: string;
 }
 
-export const _BoardDeleteStatusModal: React.FC<BoardDeleteStatusModalProps> = ({
+export const BoardDeleteStatusModal: React.FC<BoardDeleteStatusModalProps> = ({
 	open,
 	onOpenChange,
 	onDelete,
@@ -255,7 +255,7 @@ interface BoardAddListModalProps {
 	onAdd: () => void;
 }
 
-export const _BoardAddListModal: React.FC<BoardAddListModalProps> = ({
+export const BoardAddListModal: React.FC<BoardAddListModalProps> = ({
 	open,
 	onOpenChange,
 	title,
@@ -303,7 +303,7 @@ interface BoardEditListModalProps {
 	onSave: () => void;
 }
 
-export const _BoardEditListModal: React.FC<BoardEditListModalProps> = ({
+export const BoardEditListModal: React.FC<BoardEditListModalProps> = ({
 	open,
 	onOpenChange,
 	title,
@@ -348,7 +348,7 @@ interface BoardDeleteListModalProps {
 	onDelete: () => void;
 }
 
-export const _BoardDeleteListModal: React.FC<BoardDeleteListModalProps> = ({
+export const BoardDeleteListModal: React.FC<BoardDeleteListModalProps> = ({
 	open,
 	onOpenChange,
 	onDelete,
@@ -398,7 +398,7 @@ interface BoardAddCardModalProps {
 	onAdd: () => void;
 }
 
-export const _BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
+export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 	open,
 	onOpenChange,
 	title,
@@ -588,7 +588,7 @@ const BoardCardBlockingRelationships = React.lazy(() =>
 	}))
 );
 
-export const _BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
+export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 	open,
 	onOpenChange,
 	cardId,
@@ -804,11 +804,3 @@ export const _BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 		</Dialog>
 	);
 };
-
-export const BoardAddListModal = _BoardAddListModal;
-export const BoardEditListModal = _BoardEditListModal;
-export const BoardDeleteListModal = _BoardDeleteListModal;
-export const BoardAddCardModal = _BoardAddCardModal;
-export const BoardEditCardModal = _BoardEditCardModal;
-export const BoardEditStatusModal = _BoardEditStatusModal;
-export const BoardDeleteStatusModal = _BoardDeleteStatusModal;

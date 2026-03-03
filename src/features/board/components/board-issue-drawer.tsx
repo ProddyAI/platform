@@ -30,6 +30,23 @@ import { cn } from "@/lib/utils";
 import type { IssuePriority } from "./board-issue-row";
 import { formatIssueId, priorityIcon, priorityLabel } from "./board-issue-row";
 
+const PropertyRow = ({
+	label,
+	children,
+	alignTop = false,
+}: {
+	label: string;
+	children: React.ReactNode;
+	alignTop?: boolean;
+}) => (
+	<div className={cn("flex gap-4", alignTop ? "items-start" : "items-center")}>
+		<span className="w-24 flex-shrink-0 text-xs font-medium text-muted-foreground">
+			{label}
+		</span>
+		<div className="flex-1 min-w-0">{children}</div>
+	</div>
+);
+
 interface Status {
 	_id: Id<"statuses">;
 	name: string;
@@ -416,23 +433,6 @@ const DrawerFooter = ({
 		>
 			{saving ? "Saving…" : "Save changes"}
 		</Button>
-	</div>
-);
-
-const PropertyRow = ({
-	label,
-	children,
-	alignTop = false,
-}: {
-	label: string;
-	children: React.ReactNode;
-	alignTop?: boolean;
-}) => (
-	<div className={cn("flex gap-4", alignTop ? "items-start" : "items-center")}>
-		<span className="w-24 flex-shrink-0 text-xs font-medium text-muted-foreground">
-			{label}
-		</span>
-		<div className="flex-1 min-w-0">{children}</div>
 	</div>
 );
 
