@@ -83,8 +83,145 @@ export function formatIssueId(id: string): string {
 }
 
 function isOverdue(dueDate?: number): boolean {
-	return !!dueDate && new Date(dueDate) < new Date();
+	if (dueDate === undefined) return false;
+	return new Date(dueDate) < new Date();
 }
+
+interface PriorityIndicatorProps {
+	priority?: IssuePriority;
+}
+
+const PriorityIndicator = ({ priority }: PriorityIndicatorProps) => (
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span className="flex-shrink-0">{priorityIcon(priority)}</span>
+			</TooltipTrigger>
+			<TooltipContent side="top">
+				<p>{priorityLabel(priority)}</p>
+			</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
+);
+
+interface LabelsDisplayProps {
+	labels?: string[];
+	issueId: Id<"issues">;
+}
+
+const LabelsDisplay = ({ labels, issueId }: LabelsDisplayProps) => {
+	if (!labels || labels.length === 0) return null;
+
+	return (
+		<div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+			{labels.slice(0, 2).map((label, i) => (
+				<Badge
+					className="text-[10px] px-1.5 py-0 h-4 font-normal"
+					key={`${issueId}-lbl-${label}-${i}`}
+					variant="secondary"
+				>
+					{label}
+				</Badge>
+			))}
+			{labels.length > 2 && (
+				<span className="text-[10px] text-muted-foreground">
+					+{labels.length - 2}
+				</span>
+			)}
+		</div>
+	);
+};
+
+interface DueDateDisplayProps {
+	dueDate?: number;
+}
+
+const DueDateDisplay = ({ dueDate }: DueDateDisplayProps) => {
+	if (!dueDate) return null;
+
+	const overdue = isOverdue(dueDate);
+
+	return (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<span
+						className={cn(
+							"hidden sm:flex flex-shrink-0 items-center gap-1 text-[10px] leading-none",
+							overdue ? "text-destructive" : "text-muted-foreground/70"
+						)}
+					>
+						<Calendar className="w-3 h-3" />
+						{format(new Date(dueDate), "MMM d")}
+					</span>
+				</TooltipTrigger>
+				<TooltipContent side="top">
+					<p>
+						{overdue ? "Overdue – " : "Due "}
+						{format(new Date(dueDate), "PPP")}
+					</p>
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
+	);
+};
+
+interface AssigneesDisplayProps {
+	assignees?: Id<"members">[];
+	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
+}
+
+interface AssigneeAvatarProps {
+	memberId: Id<"members">;
+	member?: { name: string; image?: string };
+}
+
+const AssigneeAvatar = ({ memberId, member }: AssigneeAvatarProps) => (
+	<TooltipProvider key={memberId}>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Avatar className="w-5 h-5 border-2 border-background">
+					<AvatarImage alt={member?.name} src={member?.image} />
+					<AvatarFallback className="text-[9px]">
+						{member?.name?.charAt(0).toUpperCase() || "?"}
+					</AvatarFallback>
+				</Avatar>
+			</TooltipTrigger>
+			<TooltipContent side="top">
+				<p>{member?.name || "Unknown"}</p>
+			</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
+);
+
+const AssigneesDisplay = ({
+	assignees,
+	assigneeData = {},
+}: AssigneesDisplayProps) => {
+	if (!assignees || assignees.length === 0) {
+		return (
+			<div className="w-5 h-5 rounded-full border-2 border-dashed border-muted-foreground/20" />
+		);
+	}
+
+	return (
+		<div className="flex-shrink-0 flex -space-x-1.5">
+			{assignees.slice(0, 3).map((memberId) => {
+				const member = assigneeData[memberId];
+				return (
+					<AssigneeAvatar key={memberId} member={member} memberId={memberId} />
+				);
+			})}
+			{assignees.length > 3 && (
+				<Avatar className="w-5 h-5 border-2 border-background bg-muted">
+					<AvatarFallback className="text-[9px]">
+						+{assignees.length - 3}
+					</AvatarFallback>
+				</Avatar>
+			)}
+		</div>
+	);
+};
 
 const BoardIssueRow = React.memo(function BoardIssueRow({
 	issue,
@@ -110,8 +247,6 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 		transition,
 	};
 
-	const overdue = isOverdue(issue.dueDate);
-
 	return (
 		<div
 			ref={setNodeRef}
@@ -127,18 +262,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				if (!isDragging) onClick();
 			}}
 		>
-			<TooltipProvider>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<span className="flex-shrink-0">
-							{priorityIcon(issue.priority)}
-						</span>
-					</TooltipTrigger>
-					<TooltipContent side="top">
-						<p>{priorityLabel(issue.priority)}</p>
-					</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
+			<PriorityIndicator priority={issue.priority} />
 
 			<span
 				className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
@@ -153,84 +277,14 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				{issue.title}
 			</span>
 
-			{issue.labels && issue.labels.length > 0 && (
-				<div className="hidden sm:flex items-center gap-1 flex-shrink-0">
-					{issue.labels.slice(0, 2).map((label, i) => (
-						<Badge
-							className="text-[10px] px-1.5 py-0 h-4 font-normal"
-							key={`${issue._id}-lbl-${i}`}
-							variant="secondary"
-						>
-							{label}
-						</Badge>
-					))}
-					{issue.labels.length > 2 && (
-						<span className="text-[10px] text-muted-foreground">
-							+{issue.labels.length - 2}
-						</span>
-					)}
-				</div>
-			)}
+			<LabelsDisplay issueId={issue._id} labels={issue.labels} />
 
-			{issue.dueDate && (
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<span
-								className={cn(
-									"hidden sm:flex flex-shrink-0 items-center gap-1 text-[10px] leading-none",
-									overdue ? "text-destructive" : "text-muted-foreground/70"
-								)}
-							>
-								<Calendar className="w-3 h-3" />
-								{format(new Date(issue.dueDate), "MMM d")}
-							</span>
-						</TooltipTrigger>
-						<TooltipContent side="top">
-							<p>
-								{overdue ? "Overdue – " : "Due "}
-								{format(new Date(issue.dueDate), "PPP")}
-							</p>
-						</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
-			)}
+			<DueDateDisplay dueDate={issue.dueDate} />
 
-			<div className="flex-shrink-0 flex -space-x-1.5">
-				{issue.assignees && issue.assignees.length > 0 ? (
-					<>
-						{issue.assignees.slice(0, 3).map((memberId) => {
-							const member = assigneeData[memberId];
-							return (
-								<TooltipProvider key={memberId}>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Avatar className="w-5 h-5 border-2 border-background">
-												<AvatarImage alt={member?.name} src={member?.image} />
-												<AvatarFallback className="text-[9px]">
-													{member?.name?.charAt(0).toUpperCase() || "?"}
-												</AvatarFallback>
-											</Avatar>
-										</TooltipTrigger>
-										<TooltipContent side="top">
-											<p>{member?.name || "Unknown"}</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-							);
-						})}
-						{issue.assignees.length > 3 && (
-							<Avatar className="w-5 h-5 border-2 border-background bg-muted">
-								<AvatarFallback className="text-[9px]">
-									+{issue.assignees.length - 3}
-								</AvatarFallback>
-							</Avatar>
-						)}
-					</>
-				) : (
-					<div className="w-5 h-5 rounded-full border-2 border-dashed border-muted-foreground/20" />
-				)}
-			</div>
+			<AssigneesDisplay
+				assigneeData={assigneeData}
+				assignees={issue.assignees}
+			/>
 		</div>
 	);
 });

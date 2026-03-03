@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import LabelInput from "@/components/label-input";
 import MemberSelector from "@/components/member-selector";
@@ -63,60 +63,70 @@ export const BoardAddStatusModal: React.FC<BoardAddStatusModalProps> = ({
 	color,
 	setColor,
 	onAdd,
-}) => (
-	<Dialog onOpenChange={onOpenChange} open={open}>
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>Add Status</DialogTitle>
-				<DialogDescription>Create a new status column.</DialogDescription>
-			</DialogHeader>
-			<Input
-				autoFocus
-				onChange={(e) => setName(e.target.value)}
-				onKeyDown={(e) => e.key === "Enter" && onAdd()}
-				placeholder="Status name (e.g. In Progress)"
-				value={name}
-			/>
-			<div className="space-y-2">
-				<p className="text-xs text-muted-foreground">Color</p>
-				<div className="flex gap-2 flex-wrap">
-					{STATUS_COLOR_PRESETS.map((c) => (
-						<button
-							className={cn(
-								"w-7 h-7 rounded-full border-2 transition-all",
-								color === c
-									? "border-foreground scale-110"
-									: "border-transparent hover:scale-105"
-							)}
-							key={c}
-							onClick={() => setColor(c)}
-							style={{ backgroundColor: c }}
-							type="button"
+}) => {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (open) {
+			inputRef.current?.focus();
+		}
+	}, [open]);
+
+	return (
+		<Dialog onOpenChange={onOpenChange} open={open}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Add Status</DialogTitle>
+					<DialogDescription>Create a new status column.</DialogDescription>
+				</DialogHeader>
+				<Input
+					onChange={(e) => setName(e.target.value)}
+					onKeyDown={(e) => e.key === "Enter" && onAdd()}
+					placeholder="Status name (e.g. In Progress)"
+					ref={inputRef}
+					value={name}
+				/>
+				<div className="space-y-2">
+					<p className="text-xs text-muted-foreground">Color</p>
+					<div className="flex gap-2 flex-wrap">
+						{STATUS_COLOR_PRESETS.map((c) => (
+							<button
+								className={cn(
+									"w-7 h-7 rounded-full border-2 transition-all",
+									color === c
+										? "border-foreground scale-110"
+										: "border-transparent hover:scale-105"
+								)}
+								key={c}
+								onClick={() => setColor(c)}
+								style={{ backgroundColor: c }}
+								type="button"
+							/>
+						))}
+					</div>
+					<div className="flex items-center gap-2">
+						<span className="text-xs text-muted-foreground">Custom:</span>
+						<input
+							className="w-8 h-8 rounded cursor-pointer border border-border"
+							onChange={(e) => setColor(e.target.value)}
+							type="color"
+							value={color}
 						/>
-					))}
+						<span className="text-xs font-mono text-muted-foreground">
+							{color}
+						</span>
+					</div>
 				</div>
-				<div className="flex items-center gap-2">
-					<span className="text-xs text-muted-foreground">Custom:</span>
-					<input
-						className="w-8 h-8 rounded cursor-pointer border border-border"
-						onChange={(e) => setColor(e.target.value)}
-						type="color"
-						value={color}
-					/>
-					<span className="text-xs font-mono text-muted-foreground">
-						{color}
-					</span>
-				</div>
-			</div>
-			<DialogFooter>
-				<Button onClick={onAdd}>Add Status</Button>
-				<DialogClose asChild>
-					<Button variant="outline">Cancel</Button>
-				</DialogClose>
-			</DialogFooter>
-		</DialogContent>
-	</Dialog>
-);
+				<DialogFooter>
+					<Button onClick={onAdd}>Add Status</Button>
+					<DialogClose asChild>
+						<Button variant="outline">Cancel</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
 interface BoardEditStatusModalProps {
 	open: boolean;
@@ -128,7 +138,7 @@ interface BoardEditStatusModalProps {
 	onSave: () => void;
 }
 
-export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
+export const _BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 	open,
 	onOpenChange,
 	name,
@@ -136,59 +146,69 @@ export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 	color,
 	setColor,
 	onSave,
-}) => (
-	<Dialog onOpenChange={onOpenChange} open={open}>
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>Edit Status</DialogTitle>
-			</DialogHeader>
-			<Input
-				autoFocus
-				onChange={(e) => setName(e.target.value)}
-				onKeyDown={(e) => e.key === "Enter" && onSave()}
-				placeholder="Status name"
-				value={name}
-			/>
-			<div className="space-y-2">
-				<p className="text-xs text-muted-foreground">Color</p>
-				<div className="flex gap-2 flex-wrap">
-					{STATUS_COLOR_PRESETS.map((c) => (
-						<button
-							className={cn(
-								"w-7 h-7 rounded-full border-2 transition-all",
-								color === c
-									? "border-foreground scale-110"
-									: "border-transparent hover:scale-105"
-							)}
-							key={c}
-							onClick={() => setColor(c)}
-							style={{ backgroundColor: c }}
-							type="button"
+}) => {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (open) {
+			inputRef.current?.focus();
+		}
+	}, [open]);
+
+	return (
+		<Dialog onOpenChange={onOpenChange} open={open}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Edit Status</DialogTitle>
+				</DialogHeader>
+				<Input
+					onChange={(e) => setName(e.target.value)}
+					onKeyDown={(e) => e.key === "Enter" && onSave()}
+					placeholder="Status name"
+					ref={inputRef}
+					value={name}
+				/>
+				<div className="space-y-2">
+					<p className="text-xs text-muted-foreground">Color</p>
+					<div className="flex gap-2 flex-wrap">
+						{STATUS_COLOR_PRESETS.map((c) => (
+							<button
+								className={cn(
+									"w-7 h-7 rounded-full border-2 transition-all",
+									color === c
+										? "border-foreground scale-110"
+										: "border-transparent hover:scale-105"
+								)}
+								key={c}
+								onClick={() => setColor(c)}
+								style={{ backgroundColor: c }}
+								type="button"
+							/>
+						))}
+					</div>
+					<div className="flex items-center gap-2">
+						<span className="text-xs text-muted-foreground">Custom:</span>
+						<input
+							className="w-8 h-8 rounded cursor-pointer border border-border"
+							onChange={(e) => setColor(e.target.value)}
+							type="color"
+							value={color}
 						/>
-					))}
+						<span className="text-xs font-mono text-muted-foreground">
+							{color}
+						</span>
+					</div>
 				</div>
-				<div className="flex items-center gap-2">
-					<span className="text-xs text-muted-foreground">Custom:</span>
-					<input
-						className="w-8 h-8 rounded cursor-pointer border border-border"
-						onChange={(e) => setColor(e.target.value)}
-						type="color"
-						value={color}
-					/>
-					<span className="text-xs font-mono text-muted-foreground">
-						{color}
-					</span>
-				</div>
-			</div>
-			<DialogFooter>
-				<Button onClick={onSave}>Save</Button>
-				<DialogClose asChild>
-					<Button variant="outline">Cancel</Button>
-				</DialogClose>
-			</DialogFooter>
-		</DialogContent>
-	</Dialog>
-);
+				<DialogFooter>
+					<Button onClick={onSave}>Save</Button>
+					<DialogClose asChild>
+						<Button variant="outline">Cancel</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
 interface BoardDeleteStatusModalProps {
 	open: boolean;
@@ -197,32 +217,34 @@ interface BoardDeleteStatusModalProps {
 	statusName?: string;
 }
 
-export const BoardDeleteStatusModal: React.FC<BoardDeleteStatusModalProps> = ({
+export const _BoardDeleteStatusModal: React.FC<BoardDeleteStatusModalProps> = ({
 	open,
 	onOpenChange,
 	onDelete,
 	statusName,
-}) => (
-	<Dialog onOpenChange={onOpenChange} open={open}>
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>Delete Status</DialogTitle>
-				<DialogDescription>
-					Delete &ldquo;{statusName}&rdquo; and all its issues? This cannot be
-					undone.
-				</DialogDescription>
-			</DialogHeader>
-			<DialogFooter>
-				<Button onClick={onDelete} variant="destructive">
-					Delete
-				</Button>
-				<DialogClose asChild>
-					<Button variant="outline">Cancel</Button>
-				</DialogClose>
-			</DialogFooter>
-		</DialogContent>
-	</Dialog>
-);
+}) => {
+	return (
+		<Dialog onOpenChange={onOpenChange} open={open}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Delete Status</DialogTitle>
+					<DialogDescription>
+						Delete &ldquo;{statusName}&rdquo; and all its issues? This cannot be
+						undone.
+					</DialogDescription>
+				</DialogHeader>
+				<DialogFooter>
+					<Button onClick={onDelete} variant="destructive">
+						Delete
+					</Button>
+					<DialogClose asChild>
+						<Button variant="outline">Cancel</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
 // BoardAddListModal
 interface BoardAddListModalProps {
@@ -233,34 +255,44 @@ interface BoardAddListModalProps {
 	onAdd: () => void;
 }
 
-export const BoardAddListModal: React.FC<BoardAddListModalProps> = ({
+export const _BoardAddListModal: React.FC<BoardAddListModalProps> = ({
 	open,
 	onOpenChange,
 	title,
 	setTitle,
 	onAdd,
-}) => (
-	<Dialog onOpenChange={onOpenChange} open={open}>
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>Add List</DialogTitle>
-				<DialogDescription>Enter a title for the new list.</DialogDescription>
-			</DialogHeader>
-			<Input
-				autoFocus
-				onChange={(e) => setTitle(e.target.value)}
-				placeholder="List title"
-				value={title}
-			/>
-			<DialogFooter>
-				<Button onClick={onAdd}>Add</Button>
-				<DialogClose asChild>
-					<Button variant="outline">Cancel</Button>
-				</DialogClose>
-			</DialogFooter>
-		</DialogContent>
-	</Dialog>
-);
+}) => {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (open) {
+			inputRef.current?.focus();
+		}
+	}, [open]);
+
+	return (
+		<Dialog onOpenChange={onOpenChange} open={open}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Add List</DialogTitle>
+					<DialogDescription>Enter a title for the new list.</DialogDescription>
+				</DialogHeader>
+				<Input
+					onChange={(e) => setTitle(e.target.value)}
+					placeholder="List title"
+					ref={inputRef}
+					value={title}
+				/>
+				<DialogFooter>
+					<Button onClick={onAdd}>Add</Button>
+					<DialogClose asChild>
+						<Button variant="outline">Cancel</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
 // BoardEditListModal
 interface BoardEditListModalProps {
@@ -271,33 +303,43 @@ interface BoardEditListModalProps {
 	onSave: () => void;
 }
 
-export const BoardEditListModal: React.FC<BoardEditListModalProps> = ({
+export const _BoardEditListModal: React.FC<BoardEditListModalProps> = ({
 	open,
 	onOpenChange,
 	title,
 	setTitle,
 	onSave,
-}) => (
-	<Dialog onOpenChange={onOpenChange} open={open}>
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>Edit List</DialogTitle>
-			</DialogHeader>
-			<Input
-				autoFocus
-				onChange={(e) => setTitle(e.target.value)}
-				placeholder="List title"
-				value={title}
-			/>
-			<DialogFooter>
-				<Button onClick={onSave}>Save</Button>
-				<DialogClose asChild>
-					<Button variant="outline">Cancel</Button>
-				</DialogClose>
-			</DialogFooter>
-		</DialogContent>
-	</Dialog>
-);
+}) => {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (open) {
+			inputRef.current?.focus();
+		}
+	}, [open]);
+
+	return (
+		<Dialog onOpenChange={onOpenChange} open={open}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Edit List</DialogTitle>
+				</DialogHeader>
+				<Input
+					onChange={(e) => setTitle(e.target.value)}
+					placeholder="List title"
+					ref={inputRef}
+					value={title}
+				/>
+				<DialogFooter>
+					<Button onClick={onSave}>Save</Button>
+					<DialogClose asChild>
+						<Button variant="outline">Cancel</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
 // BoardDeleteListModal
 interface BoardDeleteListModalProps {
@@ -306,30 +348,32 @@ interface BoardDeleteListModalProps {
 	onDelete: () => void;
 }
 
-export const BoardDeleteListModal: React.FC<BoardDeleteListModalProps> = ({
+export const _BoardDeleteListModal: React.FC<BoardDeleteListModalProps> = ({
 	open,
 	onOpenChange,
 	onDelete,
-}) => (
-	<Dialog onOpenChange={onOpenChange} open={open}>
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>Delete List</DialogTitle>
-				<DialogDescription>
-					This will delete the list and all its cards. Are you sure?
-				</DialogDescription>
-			</DialogHeader>
-			<DialogFooter>
-				<Button onClick={onDelete} variant="destructive">
-					Delete
-				</Button>
-				<DialogClose asChild>
-					<Button variant="outline">Cancel</Button>
-				</DialogClose>
-			</DialogFooter>
-		</DialogContent>
-	</Dialog>
-);
+}) => {
+	return (
+		<Dialog onOpenChange={onOpenChange} open={open}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Delete List</DialogTitle>
+					<DialogDescription>
+						This will delete the list and all its cards. Are you sure?
+					</DialogDescription>
+				</DialogHeader>
+				<DialogFooter>
+					<Button onClick={onDelete} variant="destructive">
+						Delete
+					</Button>
+					<DialogClose asChild>
+						<Button variant="outline">Cancel</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
 // BoardAddCardModal
 interface BoardAddCardModalProps {
@@ -354,7 +398,7 @@ interface BoardAddCardModalProps {
 	onAdd: () => void;
 }
 
-export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
+export const _BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 	open,
 	onOpenChange,
 	title,
@@ -372,107 +416,117 @@ export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 	members,
 	labelSuggestions,
 	onAdd,
-}) => (
-	<Dialog onOpenChange={onOpenChange} open={open}>
-		<DialogContent>
-			<DialogHeader>
-				<DialogTitle>Add Card</DialogTitle>
-				<DialogDescription>Enter details for the new card.</DialogDescription>
-			</DialogHeader>
-			<Input
-				autoFocus
-				onChange={(e) => setTitle(e.target.value)}
-				placeholder="Card title"
-				value={title}
-			/>
-			<Input
-				onChange={(e) => setDescription(e.target.value)}
-				placeholder="Description (optional)"
-				value={description}
-			/>
-			<LabelInput
-				onChange={setLabels}
-				placeholder="Labels (comma separated)"
-				suggestions={labelSuggestions}
-				value={labels}
-			/>
-			<MemberSelector
-				members={members}
-				onChange={setAssignees}
-				placeholder="Assign members"
-				selectedMemberIds={assignees}
-			/>
+}) => {
+	const inputRef = useRef<HTMLInputElement>(null);
 
-			<div className="grid grid-cols-2 gap-4">
-				<div>
-					<Select
-						onValueChange={(v) =>
-							setPriority(
-								v as "" | "lowest" | "low" | "medium" | "high" | "highest"
-							)
-						}
-						value={priority}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Priority" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="lowest">Lowest</SelectItem>
-							<SelectItem value="low">Low</SelectItem>
-							<SelectItem value="medium">Medium</SelectItem>
-							<SelectItem value="high">High</SelectItem>
-							<SelectItem value="highest">Highest</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
+	useEffect(() => {
+		if (open) {
+			inputRef.current?.focus();
+		}
+	}, [open]);
 
-				<div>
-					<Popover>
-						<PopoverTrigger asChild>
-							<Button
-								className={cn(
-									"w-full justify-start text-left font-normal",
-									!dueDate && "text-muted-foreground"
+	return (
+		<Dialog onOpenChange={onOpenChange} open={open}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Add Card</DialogTitle>
+					<DialogDescription>Enter details for the new card.</DialogDescription>
+				</DialogHeader>
+				<Input
+					onChange={(e) => setTitle(e.target.value)}
+					placeholder="Card title"
+					ref={inputRef}
+					value={title}
+				/>
+				<Input
+					onChange={(e) => setDescription(e.target.value)}
+					placeholder="Description (optional)"
+					value={description}
+				/>
+				<LabelInput
+					onChange={setLabels}
+					placeholder="Labels (comma separated)"
+					suggestions={labelSuggestions}
+					value={labels}
+				/>
+				<MemberSelector
+					members={members}
+					onChange={setAssignees}
+					placeholder="Assign members"
+					selectedMemberIds={assignees}
+				/>
+
+				<div className="grid grid-cols-2 gap-4">
+					<div>
+						<Select
+							onValueChange={(v) =>
+								setPriority(
+									v as "" | "lowest" | "low" | "medium" | "high" | "highest"
+								)
+							}
+							value={priority}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue placeholder="Priority" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="lowest">Lowest</SelectItem>
+								<SelectItem value="low">Low</SelectItem>
+								<SelectItem value="medium">Medium</SelectItem>
+								<SelectItem value="high">High</SelectItem>
+								<SelectItem value="highest">Highest</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div>
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									className={cn(
+										"w-full justify-start text-left font-normal",
+										!dueDate && "text-muted-foreground"
+									)}
+									variant="outline"
+								>
+									<CalendarIcon className="mr-2 h-4 w-4" />
+									{dueDate ? format(dueDate, "PPP") : <span>Due Date</span>}
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent align="start" className="w-auto p-0">
+								<Calendar
+									initialFocus
+									mode="single"
+									onSelect={setDueDate}
+									selected={dueDate}
+								/>
+								{dueDate && (
+									<div className="p-2 border-t">
+										<Button
+											className="text-destructive hover:text-destructive/90"
+											onClick={() => setDueDate(undefined)}
+											size="sm"
+											variant="ghost"
+										>
+											Clear Date
+										</Button>
+									</div>
 								)}
-								variant="outline"
-							>
-								<CalendarIcon className="mr-2 h-4 w-4" />
-								{dueDate ? format(dueDate, "PPP") : <span>Due Date</span>}
-							</Button>
-						</PopoverTrigger>
-						<PopoverContent align="start" className="w-auto p-0">
-							<Calendar
-								initialFocus
-								mode="single"
-								onSelect={setDueDate}
-								selected={dueDate}
-							/>
-							{dueDate && (
-								<div className="p-2 border-t">
-									<Button
-										className="text-destructive hover:text-destructive/90"
-										onClick={() => setDueDate(undefined)}
-										size="sm"
-										variant="ghost"
-									>
-										Clear Date
-									</Button>
-								</div>
-							)}
-						</PopoverContent>
-					</Popover>
+							</PopoverContent>
+						</Popover>
+					</div>
 				</div>
-			</div>
 
-			<DialogFooter>
-				<Button onClick={onAdd}>Add</Button>
-				<DialogClose asChild>
-					<Button variant="outline">Cancel</Button>
-				</DialogClose>
-			</DialogFooter>
-		</DialogContent>
-	</Dialog>
-);
+				<DialogFooter>
+					<Button onClick={onAdd}>Add</Button>
+					<DialogClose asChild>
+						<Button variant="outline">Cancel</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
 // BoardEditCardModal
 interface BoardEditCardModalProps {
@@ -534,7 +588,7 @@ const BoardCardBlockingRelationships = React.lazy(() =>
 	}))
 );
 
-export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
+export const _BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 	open,
 	onOpenChange,
 	cardId,
@@ -562,6 +616,13 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 	const [activeTab, setActiveTab] = React.useState<"details" | "activity">(
 		"details"
 	);
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (open) {
+			inputRef.current?.focus();
+		}
+	}, [open]);
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
@@ -590,9 +651,9 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 					{activeTab === "details" ? (
 						<>
 							<Input
-								autoFocus
 								onChange={(e) => setTitle(e.target.value)}
 								placeholder="Card title"
+								ref={inputRef}
 								value={title}
 							/>
 							<Input
@@ -743,3 +804,11 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 		</Dialog>
 	);
 };
+
+export const BoardAddListModal = _BoardAddListModal;
+export const BoardEditListModal = _BoardEditListModal;
+export const BoardDeleteListModal = _BoardDeleteListModal;
+export const BoardAddCardModal = _BoardAddCardModal;
+export const BoardEditCardModal = _BoardEditCardModal;
+export const BoardEditStatusModal = _BoardEditStatusModal;
+export const BoardDeleteStatusModal = _BoardDeleteStatusModal;

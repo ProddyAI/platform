@@ -581,6 +581,8 @@ function mapPriorityToIssue(
 			return "low";
 		case "lowest":
 			return "no_priority";
+		default:
+			return undefined;
 	}
 }
 

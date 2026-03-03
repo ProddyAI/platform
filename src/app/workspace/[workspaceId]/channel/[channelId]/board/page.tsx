@@ -50,26 +50,80 @@ const BoardPage = () => {
 	const [addStatusOpen, setAddStatusOpen] = useState(false);
 	const [editStatusOpen, setEditStatusOpen] = useState(false);
 	const [deleteStatusOpen, setDeleteStatusOpen] = useState(false);
-	const [statusToEdit, setStatusToEdit] = useState<any>(null);
-	const [statusToDelete, setStatusToDelete] = useState<any>(null);
+	const [statusToEdit, setStatusToEdit] = useState<{
+		_id: Id<"statuses">;
+		name: string;
+		color: string;
+		order: number;
+		channelId: Id<"channels">;
+	} | null>(null);
+	const [statusToDelete, setStatusToDelete] = useState<{
+		_id: Id<"statuses">;
+		name: string;
+		color: string;
+		order: number;
+		channelId: Id<"channels">;
+	} | null>(null);
 	const [statusName, setStatusName] = useState("");
 	const [statusColor, setStatusColor] = useState("#5e6ad2");
 
 	// ── Issue drawer state ──────────────────────────────────────────────────
 	const [drawerOpen, setDrawerOpen] = useState(false);
-	const [selectedIssue, setSelectedIssue] = useState<any>(null);
+	const [selectedIssue, setSelectedIssue] = useState<{
+		_id: Id<"issues">;
+		title: string;
+		description?: string;
+		statusId: Id<"statuses">;
+		channelId: Id<"channels">;
+		priority?: "urgent" | "high" | "medium" | "low" | "no_priority";
+		assignees?: Id<"members">[];
+		labels?: string[];
+		dueDate?: number;
+		order: number;
+		createdAt: number;
+		updatedAt: number;
+	} | null>(null);
 
 	// ── Optimistic statuses (for drag reorder) ──────────────────────────────
-	const [optimisticStatuses, setOptimisticStatuses] = useState<any[] | null>(
-		null
-	);
+	const [optimisticStatuses, setOptimisticStatuses] = useState<
+		| {
+				_id: Id<"statuses">;
+				name: string;
+				color: string;
+				order: number;
+				channelId: Id<"channels">;
+		  }[]
+		| null
+	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
 
 	// ── Old card modal state (for table/gantt views) ────────────────────────
 	const [deleteListOpen, setDeleteListOpen] = useState(false);
-	const [listToDelete, setListToDelete] = useState<any>(null);
+	const [listToDelete, setListToDelete] = useState<{
+		_id: Id<"lists">;
+		title: string;
+		order: number;
+		channelId: Id<"channels">;
+	} | null>(null);
 	const [addCardOpen, setAddCardOpen] = useState<null | Id<"lists">>(null);
-	const [editCardOpen, setEditCardOpen] = useState<null | { card: any }>();
+	const [editCardOpen, setEditCardOpen] = useState<{
+		card: {
+			_id: Id<"cards">;
+			title: string;
+			description?: string;
+			listId: Id<"lists">;
+			order: number;
+			labels?: string[];
+			priority?: "lowest" | "low" | "medium" | "high" | "highest";
+			dueDate?: number;
+			assignees?: Id<"members">[];
+			isCompleted?: boolean;
+			estimate?: number;
+			timeSpent?: number;
+			watchers?: Id<"members">[];
+			blockedBy?: Id<"cards">[];
+		};
+	} | null>();
 	const [cardTitle, setCardTitle] = useState("");
 	const [cardDesc, setCardDesc] = useState("");
 	const [cardLabels, setCardLabels] = useState("");
@@ -141,7 +195,7 @@ const BoardPage = () => {
 
 	// ── Issue handlers ──────────────────────────────────────────────────────
 	const handleCreateIssue = async (statusId: Id<"statuses">, title: string) => {
-		const statusIssues = issues.filter((i: any) => i.statusId === statusId);
+		const statusIssues = issues.filter((i) => i.statusId === statusId);
 		await createIssue({
 			channelId,
 			statusId,
@@ -150,31 +204,52 @@ const BoardPage = () => {
 		});
 	};
 
-	const handleClickIssue = (issue: any) => {
+	const handleClickIssue = (issue: {
+		_id: Id<"issues">;
+		title: string;
+		description?: string;
+		statusId: Id<"statuses">;
+		channelId: Id<"channels">;
+		priority?: "urgent" | "high" | "medium" | "low" | "no_priority";
+		assignees?: Id<"members">[];
+		labels?: string[];
+		dueDate?: number;
+		order: number;
+		createdAt: number;
+		updatedAt: number;
+	}) => {
 		setSelectedIssue(issue);
 		setDrawerOpen(true);
 	};
 
 	// ── Reorder statuses (optimistic) ───────────────────────────────────────
-	const handleReorderStatuses = (newOrder: any[]) => {
+	const handleReorderStatuses = (
+		newOrder: {
+			_id: Id<"statuses">;
+			name: string;
+			color: string;
+			order: number;
+			channelId: Id<"channels">;
+		}[]
+	) => {
 		setOptimisticStatuses(newOrder.map((s, idx) => ({ ...s, order: idx })));
 	};
 
 	// ── Search filter ───────────────────────────────────────────────────────
-	const filteredIssues = issues.filter((issue: any) => {
+	const filteredIssues = issues.filter((issue) => {
 		if (!searchQuery) return true;
-		const q = searchQuery.toLowerCase();
+		const query = searchQuery.toLowerCase();
 		return (
-			issue.title.toLowerCase().includes(q) ||
-			issue.description?.toLowerCase().includes(q) ||
-			issue.labels?.some((l: string) => l.toLowerCase().includes(q))
+			issue.title.toLowerCase().includes(query) ||
+			issue.description?.toLowerCase().includes(query) ||
+			issue.labels?.some((label) => label.toLowerCase().includes(query))
 		);
 	});
 
 	// ── Old card/list handlers (table + gantt views) ─────────────────────────
 	const handleAddCard = async (listId: Id<"lists">) => {
 		if (!cardTitle.trim()) return;
-		const cards = allCards.filter((c: any) => c.listId === listId) || [];
+		const cards = allCards.filter((c) => c.listId === listId) || [];
 		await createCard({
 			listId,
 			title: cardTitle,
@@ -227,8 +302,26 @@ const BoardPage = () => {
 	};
 
 	// Card group by list (for table/gantt)
-	const cardsByList: Record<string, any[]> = {};
-	allCards.forEach((card: any) => {
+	const cardsByList: Record<
+		string,
+		{
+			_id: Id<"cards">;
+			title: string;
+			description?: string;
+			listId: Id<"lists">;
+			order: number;
+			labels?: string[];
+			priority?: "lowest" | "low" | "medium" | "high" | "highest";
+			dueDate?: number;
+			assignees?: Id<"members">[];
+			isCompleted?: boolean;
+			estimate?: number;
+			timeSpent?: number;
+			watchers?: Id<"members">[];
+			blockedBy?: Id<"cards">[];
+		}[]
+	> = {};
+	allCards.forEach((card) => {
 		if (!cardsByList[card.listId]) cardsByList[card.listId] = [];
 		cardsByList[card.listId].push(card);
 	});
@@ -291,7 +384,7 @@ const BoardPage = () => {
 			{view !== "kanban" && (
 				<div className="flex-1 overflow-auto min-h-0">
 					<BoardTableView
-						allCards={allCards.filter((c: any) => {
+						allCards={allCards.filter((c) => {
 							if (!searchQuery) return true;
 							const q = searchQuery.toLowerCase();
 							return (

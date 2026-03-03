@@ -34,6 +34,7 @@ interface Status {
 	name: string;
 	color: string;
 	order: number;
+	channelId: Id<"channels">;
 }
 
 interface Issue {
@@ -54,7 +55,7 @@ interface Issue {
 interface BoardKanbanViewProps {
 	statuses: Status[];
 	issues: Issue[];
-	members?: any[];
+	members?: Member[];
 	onClickIssue: (issue: Issue) => void;
 	onCreateIssue: (statusId: Id<"statuses">, title: string) => Promise<void>;
 	onEditStatus: (status: Status) => void;
@@ -68,6 +69,18 @@ interface BoardKanbanViewProps {
 	onAddStatus?: () => void;
 	onSearch?: (query: string) => void;
 }
+
+interface Member {
+	_id: Id<"members">;
+	user?: {
+		name?: string;
+		image?: string;
+	};
+}
+
+type ActiveItem =
+	| { type: "status"; item: Status }
+	| { type: "issue"; item: Issue };
 
 const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	statuses,
@@ -89,10 +102,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	const moveIssueStatus = useMutation(api.board.moveIssueStatus);
 	const reorderStatuses = useMutation(api.board.reorderStatuses);
 
-	const [activeItem, setActiveItem] = React.useState<{
-		type: "status" | "issue";
-		item: any;
-	} | null>(null);
+	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
 
 	const memberDataMap = useMemo(() => {
 		const map: Record<Id<"members">, { name: string; image?: string }> = {};
@@ -129,13 +139,16 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		})
 	);
 
-	const collisionDetection = useCallback((args: any) => {
-		const rects = rectIntersection(args);
-		if (rects.length > 0) return rects;
-		const pointer = pointerWithin(args);
-		if (pointer.length > 0) return pointer;
-		return closestCenter(args);
-	}, []);
+	const collisionDetection = useCallback(
+		(args: Parameters<typeof closestCenter>[0]) => {
+			const rects = rectIntersection(args);
+			if (rects.length > 0) return rects;
+			const pointer = pointerWithin(args);
+			if (pointer.length > 0) return pointer;
+			return closestCenter(args);
+		},
+		[]
+	);
 
 	const handleDragStart = (event: DragStartEvent) => {
 		const { active } = event;
@@ -149,6 +162,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		}
 	};
 
+	// Required by DndContext but no custom drag-over behavior needed
 	const handleDragOver = (_event: DragOverEvent) => {};
 
 	const handleDragEnd = async (event: DragEndEvent) => {
@@ -284,7 +298,9 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 								assigneeData={memberDataMap}
 								isDragOverlay
 								issue={activeItem.item}
-								onClick={() => {}}
+								onClick={() => {
+									// No-op: drag overlay is not interactive
+								}}
 								statusColor={activeIssueStatus?.color || "#b4b4b4"}
 							/>
 						)}
