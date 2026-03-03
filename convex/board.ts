@@ -546,6 +546,447 @@ export const getMembersForChannel = query({
 	},
 });
 
+// ─── LINEAR-STYLE STATUSES ───────────────────────────────────────────────────
+
+const DEFAULT_STATUSES = [
+	{ name: "To-do", color: "#b4b4b4", order: 0 },
+	{ name: "In Progress", color: "#f2c94c", order: 1 },
+	{ name: "In Review", color: "#6938ef", order: 2 },
+	{ name: "Done", color: "#00b341", order: 3 },
+];
+
+const STATUS_COLORS = [
+	"#b4b4b4",
+	"#5e6ad2",
+	"#f2c94c",
+	"#6938ef",
+	"#00b341",
+	"#eb5757",
+	"#4ea7fc",
+	"#e07b39",
+];
+
+function mapPriorityToIssue(
+	priority?: "lowest" | "low" | "medium" | "high" | "highest"
+): "urgent" | "high" | "medium" | "low" | "no_priority" | undefined {
+	if (!priority) return undefined;
+	switch (priority) {
+		case "highest":
+			return "urgent";
+		case "high":
+			return "high";
+		case "medium":
+			return "medium";
+		case "low":
+			return "low";
+		case "lowest":
+			return "no_priority";
+	}
+}
+
+export const getStatuses = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx: QueryCtx, { channelId }: { channelId: Id<"channels"> }) => {
+		return await ctx.db
+			.query("statuses")
+			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
+			.collect();
+	},
+});
+
+export const createStatus = mutation({
+	args: {
+		channelId: v.id("channels"),
+		name: v.string(),
+		color: v.string(),
+		order: v.number(),
+	},
+	handler: async (ctx: MutationCtx, args) => {
+		return await ctx.db.insert("statuses", args);
+	},
+});
+
+export const updateStatus = mutation({
+	args: {
+		statusId: v.id("statuses"),
+		name: v.optional(v.string()),
+		color: v.optional(v.string()),
+		order: v.optional(v.number()),
+	},
+	handler: async (ctx: MutationCtx, { statusId, ...updates }) => {
+		return await ctx.db.patch(statusId, updates);
+	},
+});
+
+export const deleteStatus = mutation({
+	args: { statusId: v.id("statuses") },
+	handler: async (ctx: MutationCtx, { statusId }: { statusId: Id<"statuses"> }) => {
+		// Delete all issues in this status
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("by_status_id", (q) => q.eq("statusId", statusId))
+			.collect();
+		for (const issue of issues) {
+			await ctx.db.delete(issue._id);
+		}
+		return await ctx.db.delete(statusId);
+	},
+});
+
+export const reorderStatuses = mutation({
+	args: {
+		statusOrders: v.array(
+			v.object({ statusId: v.id("statuses"), order: v.number() })
+		),
+	},
+	handler: async (ctx: MutationCtx, { statusOrders }) => {
+		for (const { statusId, order } of statusOrders) {
+			await ctx.db.patch(statusId, { order });
+		}
+		return true;
+	},
+});
+
+// ─── LINEAR-STYLE ISSUES ─────────────────────────────────────────────────────
+
+export const getIssues = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx: QueryCtx, { channelId }: { channelId: Id<"channels"> }) => {
+		return await ctx.db
+			.query("issues")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+	},
+});
+
+export const createIssue = mutation({
+	args: {
+		channelId: v.id("channels"),
+		statusId: v.id("statuses"),
+		title: v.string(),
+		description: v.optional(v.string()),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+		order: v.number(),
+	},
+	handler: async (ctx: MutationCtx, args) => {
+		const now = Date.now();
+		const channel = await ctx.db.get(args.channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		const issueId = await ctx.db.insert("issues", {
+			...args,
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		// Notify assignees
+		if (args.assignees && args.assignees.length > 0) {
+			try {
+				const auth = await ctx.auth.getUserIdentity();
+				if (auth) {
+					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const creator = await ctx.db
+						.query("members")
+						.withIndex("by_workspace_id_user_id", (q) =>
+							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						)
+						.unique();
+
+					if (creator) {
+						for (const assigneeId of args.assignees) {
+							await ctx.db.insert("mentions", {
+								mentionedMemberId: assigneeId,
+								mentionerMemberId: creator._id,
+								workspaceId: channel.workspaceId,
+								channelId: args.channelId,
+								read: false,
+								createdAt: now,
+								issueId,
+								issueTitle: args.title,
+							});
+
+							await ctx.scheduler.runAfter(0, api.email.sendIssueAssignmentEmail, {
+								assigneeId,
+								issueId,
+								assignerId: creator._id,
+							});
+						}
+					}
+				}
+			} catch (error) {
+				console.error("Error creating mentions for issue assignees:", error);
+			}
+		}
+
+		return issueId;
+	},
+});
+
+export const updateIssue = mutation({
+	args: {
+		issueId: v.id("issues"),
+		title: v.optional(v.string()),
+		description: v.optional(v.string()),
+		statusId: v.optional(v.id("statuses")),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+		order: v.optional(v.number()),
+	},
+	handler: async (ctx: MutationCtx, { issueId, ...updates }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		await ctx.db.patch(issueId, { ...updates, updatedAt: Date.now() });
+
+		// Notify new assignees
+		if (updates.assignees !== undefined) {
+			try {
+				const auth = await ctx.auth.getUserIdentity();
+				if (auth) {
+					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const updater = await ctx.db
+						.query("members")
+						.withIndex("by_workspace_id_user_id", (q) =>
+							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						)
+						.unique();
+
+					if (updater) {
+						const currentAssignees = issue.assignees || [];
+						const newAssignees = updates.assignees.filter(
+							(id) => !currentAssignees.includes(id)
+						);
+
+						for (const assigneeId of newAssignees) {
+							await ctx.db.insert("mentions", {
+								mentionedMemberId: assigneeId,
+								mentionerMemberId: updater._id,
+								workspaceId: channel.workspaceId,
+								channelId: issue.channelId,
+								read: false,
+								createdAt: Date.now(),
+								issueId,
+								issueTitle: updates.title || issue.title,
+							});
+
+							await ctx.scheduler.runAfter(0, api.email.sendIssueAssignmentEmail, {
+								assigneeId,
+								issueId,
+								assignerId: updater._id,
+							});
+						}
+					}
+				}
+			} catch (error) {
+				console.error("Error creating mentions for issue assignees:", error);
+			}
+		}
+
+		return issueId;
+	},
+});
+
+export const moveIssueStatus = mutation({
+	args: {
+		issueId: v.id("issues"),
+		toStatusId: v.id("statuses"),
+		order: v.number(),
+	},
+	handler: async (ctx: MutationCtx, { issueId, toStatusId, order }) => {
+		return await ctx.db.patch(issueId, {
+			statusId: toStatusId,
+			order,
+			updatedAt: Date.now(),
+		});
+	},
+});
+
+export const deleteIssue = mutation({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx: MutationCtx, { issueId }: { issueId: Id<"issues"> }) => {
+		return await ctx.db.delete(issueId);
+	},
+});
+
+export const getAssignedIssues = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		memberId: v.id("members"),
+	},
+	handler: async (ctx, { workspaceId, memberId }) => {
+		const channels = await ctx.db
+			.query("channels")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+			.collect();
+
+		const assignedIssues = [];
+
+		for (const channel of channels) {
+			const issues = await ctx.db
+				.query("issues")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.collect();
+
+			const memberIssues = issues.filter(
+				(issue) =>
+					issue.assignees &&
+					Array.isArray(issue.assignees) &&
+					issue.assignees.includes(memberId)
+			);
+
+			const issuesWithContext = memberIssues.map((issue) => ({
+				...issue,
+				channelId: channel._id,
+				channelName: channel.name,
+			}));
+
+			assignedIssues.push(...issuesWithContext);
+		}
+
+		return assignedIssues;
+	},
+});
+
+// Helper for email: get issue details
+export const _getIssueDetails = query({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx, { issueId }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) return null;
+
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) return null;
+
+		const status = await ctx.db.get(issue.statusId);
+
+		return {
+			...issue,
+			statusName: status?.name,
+			channelId: issue.channelId,
+			channelName: channel.name,
+			workspaceId: channel.workspaceId,
+		};
+	},
+});
+
+export const migrateListsToStatuses = mutation({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx: MutationCtx, { channelId }: { channelId: Id<"channels"> }) => {
+		// Skip if statuses already exist
+		const existingStatuses = await ctx.db
+			.query("statuses")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		if (existingStatuses.length > 0) return { alreadyMigrated: true };
+
+		// Get existing lists
+		const lists = await ctx.db
+			.query("lists")
+			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		// Build status definitions from lists or use defaults
+		const statusDefs =
+			lists.length > 0
+				? lists.map((list, i) => ({
+						name: list.title,
+						color: STATUS_COLORS[i % STATUS_COLORS.length],
+						order: list.order,
+					}))
+				: DEFAULT_STATUSES;
+
+		const statusIdByListId: Record<string, Id<"statuses">> = {};
+
+		for (const def of statusDefs) {
+			const statusId = await ctx.db.insert("statuses", {
+				channelId,
+				...def,
+			});
+			// Map list to status by matching title
+			const matchingList = lists.find((l) => l.title === def.name);
+			if (matchingList) {
+				statusIdByListId[matchingList._id] = statusId;
+			}
+		}
+
+		// Migrate cards → issues
+		for (const list of lists) {
+			const statusId = statusIdByListId[list._id];
+			if (!statusId) continue;
+
+			const cards = await ctx.db
+				.query("cards")
+				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+				.collect();
+
+			const now = Date.now();
+			for (const card of cards) {
+				if (card.parentCardId) continue; // Skip subtasks
+				await ctx.db.insert("issues", {
+					channelId,
+					statusId,
+					title: card.title,
+					description: card.description,
+					priority: mapPriorityToIssue(card.priority),
+					assignees: card.assignees,
+					labels: card.labels,
+					dueDate: card.dueDate,
+					order: card.order,
+					createdAt: card._creationTime,
+					updatedAt: now,
+				});
+			}
+		}
+
+		return { migrated: true };
+	},
+});
+
+export const getUniqueIssueLabels = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx, { channelId }) => {
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		const allLabels = new Set<string>();
+		for (const issue of issues) {
+			if (issue.labels && Array.isArray(issue.labels)) {
+				issue.labels.forEach((label) => {
+					if (label) allLabels.add(label);
+				});
+			}
+		}
+		return Array.from(allLabels);
+	},
+});
+
 // NOTE: Email functions have been moved to convex/email.ts
 
 // SUBTASK MUTATIONS

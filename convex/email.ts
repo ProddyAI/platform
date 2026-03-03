@@ -1094,6 +1094,89 @@ export const sendCardAssignmentEmail = action({
 	},
 });
 
+// Action to send email notification for issue assignment
+export const sendIssueAssignmentEmail = action({
+	args: {
+		assigneeId: v.id("members"),
+		issueId: v.id("issues"),
+		assignerId: v.id("members"),
+	},
+	handler: async (
+		ctx: ActionCtx,
+		{
+			assigneeId,
+			issueId,
+			assignerId,
+		}: {
+			assigneeId: Id<"members">;
+			issueId: Id<"issues">;
+			assignerId: Id<"members">;
+		}
+	): Promise<EmailNotificationResult> => {
+		try {
+			const issue = await ctx.runQuery(api.board._getIssueDetails, { issueId });
+			if (!issue) {
+				return { success: false, error: "Issue not found" };
+			}
+
+			const assigneeEmail: string | null = await ctx.runQuery(
+				api.board._getMemberEmail,
+				{ memberId: assigneeId }
+			);
+			if (!assigneeEmail) return { success: true, skipped: true };
+
+			const assigneeName: string | null = await ctx.runQuery(
+				api.board._getMemberName,
+				{ memberId: assigneeId }
+			);
+
+			const assignerName: string | null = await ctx.runQuery(
+				api.board._getMemberName,
+				{ memberId: assignerId }
+			);
+
+			const baseUrl = process.env.SITE_URL;
+			const workspaceUrl = `${baseUrl}/workspace/${issue.workspaceId}/channel/${issue.channelId}/board`;
+			const apiUrl = `${baseUrl}/api/email/assignee`;
+
+			const response: Response = await fetch(apiUrl, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					to: assigneeEmail,
+					userId: assigneeId,
+					firstName: assigneeName || "User",
+					type: "issue_assignment",
+					cardTitle: issue.title,
+					cardDescription: issue.description,
+					dueDate: issue.dueDate,
+					priority: issue.priority,
+					listName: issue.statusName || "Board",
+					channelName: issue.channelName,
+					assignedBy: assignerName || "A team member",
+					workspaceUrl,
+					workspaceName: "Proddy",
+				}),
+			});
+
+			if (!response.ok) {
+				return {
+					success: false,
+					error: `Email API error: ${response.status}`,
+				};
+			}
+
+			logger.info("Issue assignment email sent successfully");
+			return { success: true };
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
 /**
  * Helper function to build import email HTML with dynamic parameters
  */

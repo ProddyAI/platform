@@ -253,7 +253,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 	}
 
 	return (
-		<div className="flex h-full flex-col">
+		<div className="flex h-full flex-col w-full min-w-0 overflow-x-hidden">
 			<ConfirmDialog />
 
 			<WorkspaceToolbar>
@@ -627,7 +627,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 			<Topbar />
 
-			<div className="flex-1 overflow-y-auto">{children}</div>
+			<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">{children}</div>
 		</div>
 	);
 };

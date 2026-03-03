@@ -264,7 +264,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	}, [setSearchOpen]);
 
 	return (
-		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 items-center overflow-hidden border-b bg-primary text-secondary-foreground shadow-md ml-[-2px]">
+		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 w-full min-w-0 max-w-full items-center overflow-x-hidden overflow-y-visible border-b bg-primary text-secondary-foreground shadow-md ml-[-2px]">
 			{/* Left section - Entity info (Channel/Member/etc) */}
 			<div className="flex items-center px-2 md:px-6">{children}</div>
 
