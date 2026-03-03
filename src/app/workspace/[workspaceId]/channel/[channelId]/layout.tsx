@@ -2,7 +2,6 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Loader, Smile, Trash, TriangleAlert, Upload, X } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { type PropsWithChildren, useEffect, useRef, useState } from "react";
@@ -60,12 +59,12 @@ const ChannelIcon = ({
 	const containerSize = sizeClasses[size];
 
 	if (iconImageUrl && !imageLoadError) {
+		// Use regular img tag for Convex storage URLs to avoid next/image remote pattern issues
 		return (
-			<div className={`${containerSize} rounded-full overflow-hidden relative`}>
-				<Image
+			<div className={`${containerSize} rounded-full overflow-hidden`}>
+				<img
 					alt={`Channel icon for ${name}`}
 					className="h-full w-full object-cover"
-					fill
 					onError={onImageError}
 					src={iconImageUrl}
 				/>
@@ -109,11 +108,10 @@ const ChannelIconPreview = ({
 }: ChannelIconPreviewProps) => {
 	if (iconPreview) {
 		return (
-			<div className="h-full w-full relative">
-				<Image
+			<div className="h-full w-full">
+				<img
 					alt="Icon preview"
 					className="h-full w-full object-cover rounded"
-					fill
 					src={iconPreview}
 				/>
 			</div>
@@ -255,6 +253,7 @@ interface ChannelNameDialogProps {
 	imageLoadError: boolean;
 	isUploadingIcon: boolean;
 	setImageLoadError: (value: boolean) => void;
+	editOpen: boolean;
 }
 
 const ChannelNameDialog = ({
@@ -277,6 +276,7 @@ const ChannelNameDialog = ({
 	imageLoadError,
 	isUploadingIcon,
 	setImageLoadError,
+	editOpen,
 }: ChannelNameDialogProps) => {
 	const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -286,7 +286,7 @@ const ChannelNameDialog = ({
 		}
 	}, [isUpdatingChannel]);
 	return (
-		<Dialog onOpenChange={setEditOpen} open>
+		<Dialog onOpenChange={setEditOpen} open={editOpen || isUpdatingChannel}>
 			<DialogTrigger asChild>
 				<button
 					className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
@@ -418,6 +418,7 @@ interface ChannelIconDialogProps {
 		iconImage?: Id<"_storage">;
 		iconImageUrl?: string | null;
 	};
+	iconEditOpen: boolean;
 	isUpdatingChannel: boolean;
 	onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 	onIconEditOpenChange: (open: boolean) => void;
@@ -427,6 +428,7 @@ interface ChannelIconDialogProps {
 
 const ChannelIconDialog = ({
 	channel,
+	iconEditOpen,
 	isUpdatingChannel,
 	onSubmit,
 	onIconEditOpenChange,
@@ -434,7 +436,7 @@ const ChannelIconDialog = ({
 	icon,
 }: ChannelIconDialogProps) => {
 	return (
-		<Dialog onOpenChange={onIconEditOpenChange} open>
+		<Dialog onOpenChange={onIconEditOpenChange} open={iconEditOpen}>
 			<DialogTrigger asChild>
 				<button className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50">
 					<div className="flex w-full items-center justify-between">
@@ -545,8 +547,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		undefined
 	);
 	const [iconPreview, setIconPreview] = useState<string | undefined>(undefined);
-	const [_editOpen, setEditOpen] = useState(false);
-	const [_iconEditOpen, setIconEditOpen] = useState(false);
+	const [editOpen, setEditOpen] = useState(false);
+	const [iconEditOpen, setIconEditOpen] = useState(false);
 	const [channelDialogOpen, setChannelDialogOpen] = useState(false);
 	const [imageLoadError, setImageLoadError] = useState(false);
 	const [isUploadingIcon, setIsUploadingIcon] = useState(false);
@@ -794,6 +796,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 								<ChannelNameDialog
 									channel={channel}
 									clearIconImage={clearIconImage}
+									editOpen={editOpen}
 									icon={icon}
 									iconImage={iconImage}
 									iconPreview={iconPreview}
@@ -817,6 +820,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 							<ChannelIconDialog
 								channel={channel}
 								icon={icon}
+								iconEditOpen={iconEditOpen}
 								isUpdatingChannel={isUpdatingChannel}
 								onIconEditOpenChange={setIconEditOpen}
 								onSubmit={handleIconSubmit}
