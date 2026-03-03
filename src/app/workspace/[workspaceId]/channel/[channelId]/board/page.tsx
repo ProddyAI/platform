@@ -8,15 +8,14 @@ import BoardGanttView from "@/features/board/components/board-gantt-view";
 import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
-import type { IssuePriority } from "@/features/board/components/board-issue-row";
 import {
-	BoardAddStatusModal,
-	BoardDeleteStatusModal,
-	BoardEditStatusModal,
 	// Keep old card/list modals for table/gantt views
 	BoardAddCardModal,
-	BoardEditCardModal,
+	BoardAddStatusModal,
 	BoardDeleteListModal,
+	BoardDeleteStatusModal,
+	BoardEditCardModal,
+	BoardEditStatusModal,
 } from "@/features/board/components/board-models";
 import BoardTableView from "@/features/board/components/board-table-view";
 import { useChannelId } from "@/hooks/use-channel-id";
@@ -30,7 +29,7 @@ const BoardPage = () => {
 	// ── New: issues & statuses ──────────────────────────────────────────────
 	const statuses = useQuery(api.board.getStatuses, { channelId });
 	const issues = useQuery(api.board.getIssues, { channelId }) || [];
-	const uniqueIssueLabels =
+	const _uniqueIssueLabels =
 		useQuery(api.board.getUniqueIssueLabels, { channelId }) || [];
 
 	// ── Existing: lists & cards (kept for table/gantt) ──────────────────────
@@ -85,14 +84,14 @@ const BoardPage = () => {
 	const createStatus = useMutation(api.board.createStatus);
 	const updateStatus = useMutation(api.board.updateStatus);
 	const deleteStatus = useMutation(api.board.deleteStatus);
-	const reorderStatuses = useMutation(api.board.reorderStatuses);
+	const _reorderStatuses = useMutation(api.board.reorderStatuses);
 	const createIssue = useMutation(api.board.createIssue);
 
 	// Existing card mutations
 	const createCard = useMutation(api.board.createCard);
 	const updateCard = useMutation(api.board.updateCard);
 	const deleteCard = useMutation(api.board.deleteCard);
-	const moveCard = useMutation(api.board.moveCard);
+	const _moveCard = useMutation(api.board.moveCard);
 	const deleteList = useMutation(api.board.deleteList);
 
 	// ── Auto-migration on first load ────────────────────────────────────────
@@ -110,8 +109,13 @@ const BoardPage = () => {
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {
 		if (!statusName.trim()) return;
-		const order = (statuses?.length ?? 0);
-		await createStatus({ channelId, name: statusName.trim(), color: statusColor, order });
+		const order = statuses?.length ?? 0;
+		await createStatus({
+			channelId,
+			name: statusName.trim(),
+			color: statusColor,
+			order,
+		});
 		setStatusName("");
 		setStatusColor("#5e6ad2");
 		setAddStatusOpen(false);
@@ -136,10 +140,7 @@ const BoardPage = () => {
 	};
 
 	// ── Issue handlers ──────────────────────────────────────────────────────
-	const handleCreateIssue = async (
-		statusId: Id<"statuses">,
-		title: string
-	) => {
+	const handleCreateIssue = async (statusId: Id<"statuses">, title: string) => {
 		const statusIssues = issues.filter((i: any) => i.statusId === statusId);
 		await createIssue({
 			channelId,
@@ -173,14 +174,16 @@ const BoardPage = () => {
 	// ── Old card/list handlers (table + gantt views) ─────────────────────────
 	const handleAddCard = async (listId: Id<"lists">) => {
 		if (!cardTitle.trim()) return;
-		const cards =
-			allCards.filter((c: any) => c.listId === listId) || [];
+		const cards = allCards.filter((c: any) => c.listId === listId) || [];
 		await createCard({
 			listId,
 			title: cardTitle,
 			description: cardDesc,
 			order: cards.length,
-			labels: cardLabels.split(",").map((l) => l.trim()).filter(Boolean),
+			labels: cardLabels
+				.split(",")
+				.map((l) => l.trim())
+				.filter(Boolean),
 			priority: cardPriority || undefined,
 			dueDate: cardDueDate ? cardDueDate.getTime() : undefined,
 			assignees: cardAssignees.length > 0 ? cardAssignees : undefined,
@@ -200,7 +203,10 @@ const BoardPage = () => {
 			cardId: editCardOpen.card._id,
 			title: cardTitle,
 			description: cardDesc,
-			labels: cardLabels.split(",").map((l) => l.trim()).filter(Boolean),
+			labels: cardLabels
+				.split(",")
+				.map((l) => l.trim())
+				.filter(Boolean),
 			priority: cardPriority || undefined,
 			dueDate: cardDueDate ? cardDueDate.getTime() : undefined,
 			assignees: cardAssignees.length > 0 ? cardAssignees : undefined,
@@ -232,55 +238,53 @@ const BoardPage = () => {
 	return (
 		<div className="h-full w-full max-w-full flex flex-col bg-background dark:bg-gray-950 overflow-x-hidden overflow-y-hidden min-w-0">
 			{view === "kanban" ? (
-				<>
-					{statuses === undefined ? (
-						<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-							Loading board…
-						</div>
-					) : (
-						<BoardKanbanView
-							statuses={displayedStatuses}
-							issues={filteredIssues}
-							members={members}
-							onClickIssue={handleClickIssue}
-							onCreateIssue={handleCreateIssue}
-							onEditStatus={(status) => {
-								setStatusToEdit(status);
-								setStatusName(status.name);
-								setStatusColor(status.color);
-								setEditStatusOpen(true);
-							}}
-							onDeleteStatus={(status) => {
-								setStatusToDelete(status);
-								setDeleteStatusOpen(true);
-							}}
-							onReorderStatuses={handleReorderStatuses}
-							showHeader
-							statusCount={displayedStatuses.length}
-							totalIssues={filteredIssues.length}
-							view={view}
-							setView={setView}
-							onAddStatus={() => {
-								setStatusName("");
-								setStatusColor("#5e6ad2");
-								setAddStatusOpen(true);
-							}}
-							onSearch={setSearchQuery}
-						/>
-					)}
-				</>
+				statuses === undefined ? (
+					<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+						Loading board…
+					</div>
+				) : (
+					<BoardKanbanView
+						issues={filteredIssues}
+						members={members}
+						onAddStatus={() => {
+							setStatusName("");
+							setStatusColor("#5e6ad2");
+							setAddStatusOpen(true);
+						}}
+						onClickIssue={handleClickIssue}
+						onCreateIssue={handleCreateIssue}
+						onDeleteStatus={(status) => {
+							setStatusToDelete(status);
+							setDeleteStatusOpen(true);
+						}}
+						onEditStatus={(status) => {
+							setStatusToEdit(status);
+							setStatusName(status.name);
+							setStatusColor(status.color);
+							setEditStatusOpen(true);
+						}}
+						onReorderStatuses={handleReorderStatuses}
+						onSearch={setSearchQuery}
+						setView={setView}
+						showHeader
+						statusCount={displayedStatuses.length}
+						statuses={displayedStatuses}
+						totalIssues={filteredIssues.length}
+						view={view}
+					/>
+				)
 			) : (
 				<BoardHeader
-					statusCount={displayedStatuses.length}
-					totalIssues={allCards.length}
-					view={view}
-					setView={setView}
 					onAddStatus={() => {
 						setStatusName("");
 						setStatusColor("#5e6ad2");
 						setAddStatusOpen(true);
 					}}
 					onSearch={setSearchQuery}
+					setView={setView}
+					statusCount={displayedStatuses.length}
+					totalIssues={allCards.length}
+					view={view}
 				/>
 			)}
 
@@ -304,9 +308,7 @@ const BoardPage = () => {
 							setCardDesc(card.description || "");
 							setCardLabels((card.labels || []).join(", "));
 							setCardPriority(card.priority || "");
-							setCardDueDate(
-								card.dueDate ? new Date(card.dueDate) : undefined
-							);
+							setCardDueDate(card.dueDate ? new Date(card.dueDate) : undefined);
 							setCardAssignees(card.assignees || []);
 						}}
 					/>
@@ -336,51 +338,57 @@ const BoardPage = () => {
 
 			{/* ── Status modals ─────────────────────────────────────────────── */}
 			<BoardAddStatusModal
-				open={addStatusOpen}
-				onOpenChange={setAddStatusOpen}
-				name={statusName}
-				setName={setStatusName}
 				color={statusColor}
-				setColor={setStatusColor}
+				name={statusName}
 				onAdd={handleAddStatus}
+				onOpenChange={setAddStatusOpen}
+				open={addStatusOpen}
+				setColor={setStatusColor}
+				setName={setStatusName}
 			/>
 			<BoardEditStatusModal
-				open={editStatusOpen}
-				onOpenChange={setEditStatusOpen}
-				name={statusName}
-				setName={setStatusName}
 				color={statusColor}
-				setColor={setStatusColor}
+				name={statusName}
+				onOpenChange={setEditStatusOpen}
 				onSave={handleEditStatus}
+				open={editStatusOpen}
+				setColor={setStatusColor}
+				setName={setStatusName}
 			/>
 			<BoardDeleteStatusModal
-				open={deleteStatusOpen}
-				onOpenChange={setDeleteStatusOpen}
 				onDelete={handleDeleteStatus}
+				onOpenChange={setDeleteStatusOpen}
+				open={deleteStatusOpen}
 				statusName={statusToDelete?.name}
 			/>
 
 			{/* ── Issue drawer ───────────────────────────────────────────────── */}
 			<BoardIssueDrawer
 				issue={selectedIssue}
-				open={drawerOpen}
+				members={members}
+				onDelete={() => setSelectedIssue(null)}
 				onOpenChange={(open) => {
 					setDrawerOpen(open);
 					if (!open) setSelectedIssue(null);
 				}}
+				open={drawerOpen}
 				statuses={displayedStatuses}
-				members={members}
-				onDelete={() => setSelectedIssue(null)}
 			/>
 
 			{/* ── Legacy card modals (table/gantt) ──────────────────────────── */}
 			<BoardDeleteListModal
-				open={deleteListOpen}
-				onOpenChange={setDeleteListOpen}
 				onDelete={handleDeleteList}
+				onOpenChange={setDeleteListOpen}
+				open={deleteListOpen}
 			/>
 			<BoardAddCardModal
-				open={Boolean(addCardOpen)}
+				assignees={cardAssignees}
+				description={cardDesc}
+				dueDate={cardDueDate}
+				labelSuggestions={uniqueLabels}
+				labels={cardLabels}
+				members={members}
+				onAdd={() => addCardOpen && handleAddCard(addCardOpen)}
 				onOpenChange={(open) => {
 					if (!open) {
 						setAddCardOpen(null);
@@ -392,48 +400,42 @@ const BoardPage = () => {
 						setCardAssignees([]);
 					}
 				}}
-				title={cardTitle}
-				setTitle={setCardTitle}
-				description={cardDesc}
-				setDescription={setCardDesc}
-				labels={cardLabels}
-				setLabels={setCardLabels}
+				open={Boolean(addCardOpen)}
 				priority={cardPriority}
-				setPriority={setCardPriority}
-				dueDate={cardDueDate}
-				setDueDate={setCardDueDate}
-				assignees={cardAssignees}
 				setAssignees={setCardAssignees}
-				members={members}
-				labelSuggestions={uniqueLabels}
-				onAdd={() => addCardOpen && handleAddCard(addCardOpen)}
+				setDescription={setCardDesc}
+				setDueDate={setCardDueDate}
+				setLabels={setCardLabels}
+				setPriority={setCardPriority}
+				setTitle={setCardTitle}
+				title={cardTitle}
 			/>
 			<BoardEditCardModal
-				open={Boolean(editCardOpen)}
+				assignees={cardAssignees}
+				cardId={editCardOpen?.card._id as Id<"cards">}
+				channelId={channelId}
+				currentMemberId={currentMember?._id}
+				description={cardDesc}
+				dueDate={cardDueDate}
+				estimate={editCardOpen?.card.estimate}
+				labelSuggestions={uniqueLabels}
+				labels={cardLabels}
+				members={members}
 				onOpenChange={(open) => {
 					if (!open) setEditCardOpen(null);
 				}}
-				cardId={editCardOpen?.card._id as Id<"cards">}
-				channelId={channelId}
-				title={cardTitle}
-				setTitle={setCardTitle}
-				description={cardDesc}
-				setDescription={setCardDesc}
-				labels={cardLabels}
-				setLabels={setCardLabels}
-				priority={cardPriority}
-				setPriority={setCardPriority}
-				dueDate={cardDueDate}
-				setDueDate={setCardDueDate}
-				assignees={cardAssignees}
-				setAssignees={setCardAssignees}
-				members={members}
-				labelSuggestions={uniqueLabels}
-				watchers={editCardOpen?.card.watchers}
-				currentMemberId={currentMember?._id}
-				estimate={editCardOpen?.card.estimate}
-				timeSpent={editCardOpen?.card.timeSpent}
 				onSave={handleEditCard}
+				open={Boolean(editCardOpen)}
+				priority={cardPriority}
+				setAssignees={setCardAssignees}
+				setDescription={setCardDesc}
+				setDueDate={setCardDueDate}
+				setLabels={setCardLabels}
+				setPriority={setCardPriority}
+				setTitle={setCardTitle}
+				timeSpent={editCardOpen?.card.timeSpent}
+				title={cardTitle}
+				watchers={editCardOpen?.card.watchers}
 			/>
 		</div>
 	);

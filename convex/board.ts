@@ -586,7 +586,10 @@ function mapPriorityToIssue(
 
 export const getStatuses = query({
 	args: { channelId: v.id("channels") },
-	handler: async (ctx: QueryCtx, { channelId }: { channelId: Id<"channels"> }) => {
+	handler: async (
+		ctx: QueryCtx,
+		{ channelId }: { channelId: Id<"channels"> }
+	) => {
 		return await ctx.db
 			.query("statuses")
 			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
@@ -620,7 +623,10 @@ export const updateStatus = mutation({
 
 export const deleteStatus = mutation({
 	args: { statusId: v.id("statuses") },
-	handler: async (ctx: MutationCtx, { statusId }: { statusId: Id<"statuses"> }) => {
+	handler: async (
+		ctx: MutationCtx,
+		{ statusId }: { statusId: Id<"statuses"> }
+	) => {
 		// Delete all issues in this status
 		const issues = await ctx.db
 			.query("issues")
@@ -651,7 +657,10 @@ export const reorderStatuses = mutation({
 
 export const getIssues = query({
 	args: { channelId: v.id("channels") },
-	handler: async (ctx: QueryCtx, { channelId }: { channelId: Id<"channels"> }) => {
+	handler: async (
+		ctx: QueryCtx,
+		{ channelId }: { channelId: Id<"channels"> }
+	) => {
 		return await ctx.db
 			.query("issues")
 			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
@@ -716,11 +725,15 @@ export const createIssue = mutation({
 								issueTitle: args.title,
 							});
 
-							await ctx.scheduler.runAfter(0, api.email.sendIssueAssignmentEmail, {
-								assigneeId,
-								issueId,
-								assignerId: creator._id,
-							});
+							await ctx.scheduler.runAfter(
+								0,
+								api.email.sendIssueAssignmentEmail,
+								{
+									assigneeId,
+									issueId,
+									assignerId: creator._id,
+								}
+							);
 						}
 					}
 				}
@@ -793,11 +806,15 @@ export const updateIssue = mutation({
 								issueTitle: updates.title || issue.title,
 							});
 
-							await ctx.scheduler.runAfter(0, api.email.sendIssueAssignmentEmail, {
-								assigneeId,
-								issueId,
-								assignerId: updater._id,
-							});
+							await ctx.scheduler.runAfter(
+								0,
+								api.email.sendIssueAssignmentEmail,
+								{
+									assigneeId,
+									issueId,
+									assignerId: updater._id,
+								}
+							);
 						}
 					}
 				}
@@ -895,7 +912,10 @@ export const _getIssueDetails = query({
 
 export const migrateListsToStatuses = mutation({
 	args: { channelId: v.id("channels") },
-	handler: async (ctx: MutationCtx, { channelId }: { channelId: Id<"channels"> }) => {
+	handler: async (
+		ctx: MutationCtx,
+		{ channelId }: { channelId: Id<"channels"> }
+	) => {
 		// Skip if statuses already exist
 		const existingStatuses = await ctx.db
 			.query("statuses")

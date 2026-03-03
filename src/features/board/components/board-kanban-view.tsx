@@ -25,8 +25,8 @@ import React, { useCallback, useMemo } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import BoardHeader from "./board-header";
-import BoardIssueRow from "./board-issue-row";
 import type { IssuePriority } from "./board-issue-row";
+import BoardIssueRow from "./board-issue-row";
 import BoardStatusColumn from "./board-status-column";
 
 interface Status {
@@ -141,11 +141,13 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 
 	const handleDragStart = (event: DragStartEvent) => {
 		const { active } = event;
-		const type = active.data.current?.type;
+		const current = active.data.current;
+		if (!current) return;
+		const type = current?.type;
 		if (type === "status") {
-			setActiveItem({ type: "status", item: active.data.current.status });
+			setActiveItem({ type: "status", item: current.status });
 		} else if (type === "issue") {
-			setActiveItem({ type: "issue", item: active.data.current.issue });
+			setActiveItem({ type: "issue", item: current.issue });
 		}
 	};
 
@@ -230,22 +232,22 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			{showHeader && (
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
+						onAddStatus={onAddStatus}
+						onSearch={onSearch}
+						setView={setView!}
 						statusCount={statusCount}
 						totalIssues={totalIssues}
 						view={view}
-						setView={setView!}
-						onAddStatus={onAddStatus}
-						onSearch={onSearch}
 					/>
 				</div>
 			)}
 			<div className="flex-1 w-full min-w-0 overflow-x-auto overflow-y-hidden">
 				<DndContext
-					sensors={sensors}
 					collisionDetection={collisionDetection}
-					onDragStart={handleDragStart}
-					onDragOver={handleDragOver}
 					onDragEnd={handleDragEnd}
+					onDragOver={handleDragOver}
+					onDragStart={handleDragStart}
+					sensors={sensors}
 				>
 					<SortableContext
 						items={sortedStatuses.map((s) => s._id)}
@@ -254,20 +256,25 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 						{sortedStatuses.length === 0 ? (
 							<div className="flex flex-col items-center justify-center gap-3 text-center text-muted-foreground py-20">
 								<p className="text-sm">No statuses yet.</p>
-								<p className="text-xs">Add a status to start tracking issues.</p>
+								<p className="text-xs">
+									Add a status to start tracking issues.
+								</p>
 							</div>
 						) : (
 							<div className="flex w-max min-w-max gap-4 px-4">
 								{sortedStatuses.map((status) => (
-									<div key={status._id} className="w-[calc(25vw-1.5rem)] flex-shrink-0 h-full max-h-full">
+									<div
+										className="w-[calc(25vw-1.5rem)] flex-shrink-0 h-full max-h-full"
+										key={status._id}
+									>
 										<BoardStatusColumn
-											status={status}
-											issues={issuesByStatus[status._id] || []}
 											assigneeData={memberDataMap}
-											onEditStatus={() => onEditStatus(status)}
-											onDeleteStatus={() => onDeleteStatus(status)}
+											issues={issuesByStatus[status._id] || []}
 											onClickIssue={onClickIssue}
 											onCreateIssue={onCreateIssue}
+											onDeleteStatus={() => onDeleteStatus(status)}
+											onEditStatus={() => onEditStatus(status)}
+											status={status}
 										/>
 									</div>
 								))}
@@ -279,11 +286,11 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 					<DragOverlay>
 						{activeItem?.type === "issue" && (
 							<BoardIssueRow
-								issue={activeItem.item}
-								statusColor={activeIssueStatus?.color || "#b4b4b4"}
 								assigneeData={memberDataMap}
-								onClick={() => {}}
 								isDragOverlay
+								issue={activeItem.item}
+								onClick={() => {}}
+								statusColor={activeIssueStatus?.color || "#b4b4b4"}
 							/>
 						)}
 						{activeItem?.type === "status" && (

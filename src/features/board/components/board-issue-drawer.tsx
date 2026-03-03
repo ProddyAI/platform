@@ -2,14 +2,9 @@
 
 import { useMutation } from "convex/react";
 import { format } from "date-fns";
-import {
-	Calendar,
-	CalendarIcon,
-	ChevronRight,
-	Trash2,
-	X,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { Calendar, CalendarIcon, ChevronRight, Trash2, X } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import MemberSelector from "@/components/member-selector";
@@ -32,8 +27,8 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { formatIssueId, priorityIcon, priorityLabel } from "./board-issue-row";
 import type { IssuePriority } from "./board-issue-row";
+import { formatIssueId, priorityIcon, priorityLabel } from "./board-issue-row";
 
 interface Status {
 	_id: Id<"statuses">;
@@ -185,11 +180,11 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 	};
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
+		<Sheet onOpenChange={onOpenChange} open={open}>
 			<SheetContent
-				side="right"
-				showCloseButton={false}
 				className="w-full sm:max-w-[580px] p-0 flex flex-col gap-0 border-l border-border/60 dark:border-gray-800 overflow-hidden"
+				showCloseButton={false}
+				side="right"
 			>
 				{/* ── Header ── */}
 				<div className="flex items-center justify-between px-5 py-3 border-b border-border/50 dark:border-gray-800/80 bg-muted/20 dark:bg-gray-900/50 shrink-0">
@@ -201,7 +196,9 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 									className="w-2 h-2 rounded-full flex-shrink-0"
 									style={{ backgroundColor: currentStatus.color }}
 								/>
-								<span className="truncate max-w-[120px]">{currentStatus.name}</span>
+								<span className="truncate max-w-[120px]">
+									{currentStatus.name}
+								</span>
 								<ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
 							</>
 						)}
@@ -218,8 +215,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 							</span>
 						) : null}
 						<Button
-							size="icon"
-							variant="ghost"
 							className={cn(
 								"h-8 w-8 rounded-lg transition-colors",
 								confirmDelete
@@ -227,16 +222,18 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 									: "hover:bg-destructive/10 hover:text-destructive text-muted-foreground"
 							)}
 							onClick={handleDelete}
+							size="icon"
 							title="Delete issue"
+							variant="ghost"
 						>
 							<Trash2 className="w-3.5 h-3.5" />
 						</Button>
 						<Button
-							size="icon"
-							variant="ghost"
 							className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
 							onClick={() => onOpenChange(false)}
+							size="icon"
 							title="Close"
+							variant="ghost"
 						>
 							<X className="w-4 h-4" />
 						</Button>
@@ -248,21 +245,21 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					<div className="px-6 py-5 space-y-5">
 						{/* Title */}
 						<textarea
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-							onBlur={handleSave}
 							className="w-full text-[22px] font-semibold bg-transparent border-none outline-none resize-none text-foreground placeholder:text-muted-foreground/30 leading-snug"
+							onBlur={handleSave}
+							onChange={(e) => setTitle(e.target.value)}
 							placeholder="Issue title"
 							rows={title.length > 55 ? 2 : 1}
+							value={title}
 						/>
 
 						{/* Description */}
 						<Textarea
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-							onBlur={handleSave}
-							placeholder="Add a description..."
 							className="min-h-[90px] text-sm bg-muted/20 dark:bg-gray-800/20 border-border/30 resize-none focus-visible:ring-1 focus-visible:ring-primary/30 placeholder:text-muted-foreground/40"
+							onBlur={handleSave}
+							onChange={(e) => setDescription(e.target.value)}
+							placeholder="Add a description..."
+							value={description}
 						/>
 
 						<Separator className="opacity-40" />
@@ -271,7 +268,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 						<div className="space-y-3">
 							{/* Status */}
 							<PropertyRow label="Status">
-								<Select value={statusId} onValueChange={handleStatusChange}>
+								<Select onValueChange={handleStatusChange} value={statusId}>
 									<SelectTrigger className="h-8 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
 										<SelectValue placeholder="Set status">
 											{currentStatus && (
@@ -287,7 +284,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 									</SelectTrigger>
 									<SelectContent>
 										{statuses.map((s) => (
-											<SelectItem key={s._id} value={s._id} className="text-xs">
+											<SelectItem className="text-xs" key={s._id} value={s._id}>
 												<span className="flex items-center gap-2">
 													<span
 														className="w-2 h-2 rounded-full flex-shrink-0"
@@ -303,7 +300,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 
 							{/* Priority */}
 							<PropertyRow label="Priority">
-								<Select value={priority} onValueChange={handlePriorityChange}>
+								<Select onValueChange={handlePriorityChange} value={priority}>
 									<SelectTrigger className="h-8 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
 										<SelectValue placeholder="Set priority">
 											<span className="flex items-center gap-2">
@@ -314,7 +311,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 									</SelectTrigger>
 									<SelectContent>
 										{PRIORITIES.map((p) => (
-											<SelectItem key={p} value={p} className="text-xs">
+											<SelectItem className="text-xs" key={p} value={p}>
 												<span className="flex items-center gap-2">
 													{priorityIcon(p, "w-3.5 h-3.5")}
 													{priorityLabel(p)}
@@ -326,12 +323,12 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 							</PropertyRow>
 
 							{/* Assignees */}
-							<PropertyRow label="Assignees" alignTop>
+							<PropertyRow alignTop label="Assignees">
 								<MemberSelector
 									members={members}
-									selectedMemberIds={assignees}
 									onChange={(ids) => setAssignees(ids)}
 									placeholder="Assign members"
+									selectedMemberIds={assignees}
 								/>
 							</PropertyRow>
 
@@ -340,35 +337,35 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 								<Popover>
 									<PopoverTrigger asChild>
 										<Button
-											variant="ghost"
 											className={cn(
 												"h-8 w-full text-xs justify-start font-normal px-3 border border-border/30 hover:bg-muted/40 focus:ring-1 focus:ring-primary/30",
 												!dueDate && "text-muted-foreground"
 											)}
+											variant="ghost"
 										>
 											<CalendarIcon className="mr-2 h-3.5 w-3.5 opacity-60" />
 											{dueDate ? format(dueDate, "PPP") : "Set due date"}
 										</Button>
 									</PopoverTrigger>
-									<PopoverContent className="w-auto p-0" align="start">
+									<PopoverContent align="start" className="w-auto p-0">
 										<CalendarWidget
 											mode="single"
-											selected={dueDate}
 											onSelect={(d) => {
 												setDueDate(d);
 												setTimeout(handleSave, 100);
 											}}
+											selected={dueDate}
 										/>
 										{dueDate && (
 											<div className="p-2 border-t">
 												<Button
-													size="sm"
-													variant="ghost"
 													className="text-destructive text-xs w-full"
 													onClick={() => {
 														setDueDate(undefined);
 														setTimeout(handleSave, 100);
 													}}
+													size="sm"
+													variant="ghost"
 												>
 													Clear date
 												</Button>
@@ -379,18 +376,18 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 							</PropertyRow>
 
 							{/* Labels */}
-							<PropertyRow label="Labels" alignTop>
+							<PropertyRow alignTop label="Labels">
 								<div className="space-y-2">
 									{labels.length > 0 && (
 										<div className="flex flex-wrap gap-1">
 											{labels.map((label) => (
 												<Badge
-													key={label}
-													variant="secondary"
 													className="text-[11px] px-2 py-0.5 gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+													key={label}
 													onClick={() =>
 														setLabels(labels.filter((l) => l !== label))
 													}
+													variant="secondary"
 												>
 													{label}
 													<X className="w-2.5 h-2.5" />
@@ -400,7 +397,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 									)}
 									<div className="flex gap-2">
 										<input
-											value={labelInput}
+											className="flex-1 h-8 text-xs bg-muted/20 dark:bg-gray-800/20 border border-border/30 rounded-md px-3 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-colors"
 											onChange={(e) => setLabelInput(e.target.value)}
 											onKeyDown={(e) => {
 												if (e.key === "Enter") {
@@ -409,13 +406,13 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 												}
 											}}
 											placeholder="Add label..."
-											className="flex-1 h-8 text-xs bg-muted/20 dark:bg-gray-800/20 border border-border/30 rounded-md px-3 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-colors"
+											value={labelInput}
 										/>
 										<Button
-											size="sm"
-											variant="outline"
 											className="h-8 text-xs px-3 border-border/40"
 											onClick={handleAddLabel}
+											size="sm"
+											variant="outline"
 										>
 											Add
 										</Button>
@@ -430,11 +427,15 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 						<div className="space-y-1.5 text-[11px] text-muted-foreground/50">
 							<div className="flex items-center gap-2">
 								<Calendar className="w-3 h-3" />
-								<span>Created {format(new Date(issue.createdAt), "PPP 'at' p")}</span>
+								<span>
+									Created {format(new Date(issue.createdAt), "PPP 'at' p")}
+								</span>
 							</div>
 							<div className="flex items-center gap-2">
 								<Calendar className="w-3 h-3" />
-								<span>Updated {format(new Date(issue.updatedAt), "PPP 'at' p")}</span>
+								<span>
+									Updated {format(new Date(issue.updatedAt), "PPP 'at' p")}
+								</span>
 							</div>
 						</div>
 					</div>
@@ -446,10 +447,10 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 						{formatIssueId(issue._id)}
 					</span>
 					<Button
-						size="sm"
-						onClick={handleSave}
-						disabled={saving || !title.trim()}
 						className="text-xs h-8 px-4"
+						disabled={saving || !title.trim()}
+						onClick={handleSave}
+						size="sm"
 					>
 						{saving ? "Saving…" : "Save changes"}
 					</Button>

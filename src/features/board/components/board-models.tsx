@@ -72,38 +72,40 @@ export const BoardAddStatusModal: React.FC<BoardAddStatusModalProps> = ({
 			</DialogHeader>
 			<Input
 				autoFocus
-				value={name}
 				onChange={(e) => setName(e.target.value)}
-				placeholder="Status name (e.g. In Progress)"
 				onKeyDown={(e) => e.key === "Enter" && onAdd()}
+				placeholder="Status name (e.g. In Progress)"
+				value={name}
 			/>
 			<div className="space-y-2">
 				<p className="text-xs text-muted-foreground">Color</p>
 				<div className="flex gap-2 flex-wrap">
 					{STATUS_COLOR_PRESETS.map((c) => (
 						<button
-							key={c}
-							type="button"
-							onClick={() => setColor(c)}
 							className={cn(
 								"w-7 h-7 rounded-full border-2 transition-all",
 								color === c
 									? "border-foreground scale-110"
 									: "border-transparent hover:scale-105"
 							)}
+							key={c}
+							onClick={() => setColor(c)}
 							style={{ backgroundColor: c }}
+							type="button"
 						/>
 					))}
 				</div>
 				<div className="flex items-center gap-2">
 					<span className="text-xs text-muted-foreground">Custom:</span>
 					<input
+						className="w-8 h-8 rounded cursor-pointer border border-border"
+						onChange={(e) => setColor(e.target.value)}
 						type="color"
 						value={color}
-						onChange={(e) => setColor(e.target.value)}
-						className="w-8 h-8 rounded cursor-pointer border border-border"
 					/>
-					<span className="text-xs font-mono text-muted-foreground">{color}</span>
+					<span className="text-xs font-mono text-muted-foreground">
+						{color}
+					</span>
 				</div>
 			</div>
 			<DialogFooter>
@@ -142,38 +144,40 @@ export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 			</DialogHeader>
 			<Input
 				autoFocus
-				value={name}
 				onChange={(e) => setName(e.target.value)}
-				placeholder="Status name"
 				onKeyDown={(e) => e.key === "Enter" && onSave()}
+				placeholder="Status name"
+				value={name}
 			/>
 			<div className="space-y-2">
 				<p className="text-xs text-muted-foreground">Color</p>
 				<div className="flex gap-2 flex-wrap">
 					{STATUS_COLOR_PRESETS.map((c) => (
 						<button
-							key={c}
-							type="button"
-							onClick={() => setColor(c)}
 							className={cn(
 								"w-7 h-7 rounded-full border-2 transition-all",
 								color === c
 									? "border-foreground scale-110"
 									: "border-transparent hover:scale-105"
 							)}
+							key={c}
+							onClick={() => setColor(c)}
 							style={{ backgroundColor: c }}
+							type="button"
 						/>
 					))}
 				</div>
 				<div className="flex items-center gap-2">
 					<span className="text-xs text-muted-foreground">Custom:</span>
 					<input
+						className="w-8 h-8 rounded cursor-pointer border border-border"
+						onChange={(e) => setColor(e.target.value)}
 						type="color"
 						value={color}
-						onChange={(e) => setColor(e.target.value)}
-						className="w-8 h-8 rounded cursor-pointer border border-border"
 					/>
-					<span className="text-xs font-mono text-muted-foreground">{color}</span>
+					<span className="text-xs font-mono text-muted-foreground">
+						{color}
+					</span>
 				</div>
 			</div>
 			<DialogFooter>

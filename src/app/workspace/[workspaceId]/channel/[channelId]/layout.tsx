@@ -627,7 +627,9 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 			<Topbar />
 
-			<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">{children}</div>
+			<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+				{children}
+			</div>
 		</div>
 	);
 };

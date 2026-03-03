@@ -1,11 +1,4 @@
-import {
-	BarChart2,
-	GanttChart,
-	LayoutGrid,
-	Plus,
-	Search,
-	Table,
-} from "lucide-react";
+import { GanttChart, LayoutGrid, Plus, Search, Table } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +16,7 @@ interface BoardHeaderProps {
 	statusCount: number;
 	view: "kanban" | "table" | "gantt";
 	setView: (view: "kanban" | "table" | "gantt") => void;
-	onAddStatus: () => void;
+	onAddStatus?: () => void;
 	onSearch?: (query: string) => void;
 }
 
@@ -65,10 +58,10 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 			<div className="flex-1 min-w-0 max-w-xs relative">
 				<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
 				<Input
-					value={searchQuery}
+					className="pl-8 h-8 text-sm bg-muted/40 dark:bg-gray-800/60 border-border/40 dark:border-gray-700 placeholder:text-muted-foreground/40"
 					onChange={handleSearchChange}
 					placeholder="Search issues..."
-					className="pl-8 h-8 text-sm bg-muted/40 dark:bg-gray-800/60 border-border/40 dark:border-gray-700 placeholder:text-muted-foreground/40"
+					value={searchQuery}
 				/>
 			</div>
 
@@ -84,16 +77,16 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 						] as const
 					).map(({ id, icon: Icon, label }) => (
 						<Button
-							key={id}
-							size="sm"
-							variant="ghost"
-							onClick={() => setView(id)}
 							className={cn(
 								"h-7 px-2.5 flex items-center gap-1.5 rounded-md text-xs transition-all",
 								view === id
 									? "bg-background dark:bg-gray-900 text-foreground shadow-sm"
 									: "text-muted-foreground hover:text-foreground"
 							)}
+							key={id}
+							onClick={() => setView(id)}
+							size="sm"
+							variant="ghost"
 						>
 							<Icon className="w-3.5 h-3.5" />
 							<span className="hidden sm:inline">{label}</span>
@@ -107,10 +100,10 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button
+									className="h-8 gap-1.5 text-xs border-border/50 dark:border-gray-700 bg-transparent hover:bg-muted/60 dark:hover:bg-gray-800"
+									onClick={onAddStatus}
 									size="sm"
 									variant="outline"
-									onClick={onAddStatus}
-									className="h-8 gap-1.5 text-xs border-border/50 dark:border-gray-700 bg-transparent hover:bg-muted/60 dark:hover:bg-gray-800"
 								>
 									<Plus className="w-3.5 h-3.5" />
 									<span className="hidden md:inline">Add Status</span>

@@ -4,7 +4,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import {
-	AlertTriangle,
 	ArrowDown,
 	ArrowRight,
 	ArrowUp,
@@ -57,11 +56,8 @@ export function priorityIcon(priority?: IssuePriority, size = "w-3.5 h-3.5") {
 			return <ArrowRight className={cn(size, "text-yellow-500")} />;
 		case "low":
 			return <ArrowDown className={cn(size, "text-blue-400")} />;
-		case "no_priority":
 		default:
-			return (
-				<Circle className={cn(size, "text-muted-foreground/40")} />
-			);
+			return <Circle className={cn(size, "text-muted-foreground/40")} />;
 	}
 }
 
@@ -97,11 +93,17 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	onClick,
 	isDragOverlay = false,
 }: IssueRowProps) {
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-		useSortable({
-			id: issue._id,
-			data: { type: "issue", issue },
-		});
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({
+		id: issue._id,
+		data: { type: "issue", issue },
+	});
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -121,7 +123,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				isDragging && "opacity-40",
 				isDragOverlay && "shadow-lg bg-background border-border opacity-100"
 			)}
-			onClick={(e) => {
+			onClick={(_e) => {
 				// Only open if not dragging
 				if (!isDragging) onClick();
 			}}
@@ -161,8 +163,8 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				<div className="hidden sm:flex items-center gap-1 flex-shrink-0">
 					{issue.labels.slice(0, 2).map((label, i) => (
 						<Badge
-							key={`${issue._id}-lbl-${i}`}
 							className="text-[10px] px-1.5 py-0 h-4 font-normal"
+							key={`${issue._id}-lbl-${i}`}
 							variant="secondary"
 						>
 							{label}
@@ -192,7 +194,10 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 							</span>
 						</TooltipTrigger>
 						<TooltipContent side="top">
-							<p>{overdue ? "Overdue – " : "Due "}{format(new Date(issue.dueDate), "PPP")}</p>
+							<p>
+								{overdue ? "Overdue – " : "Due "}
+								{format(new Date(issue.dueDate), "PPP")}
+							</p>
 						</TooltipContent>
 					</Tooltip>
 				</TooltipProvider>
@@ -209,10 +214,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<Avatar className="w-5 h-5 border-2 border-background">
-												<AvatarImage
-													src={member?.image}
-													alt={member?.name}
-												/>
+												<AvatarImage alt={member?.name} src={member?.image} />
 												<AvatarFallback className="text-[9px]">
 													{member?.name?.charAt(0).toUpperCase() || "?"}
 												</AvatarFallback>
