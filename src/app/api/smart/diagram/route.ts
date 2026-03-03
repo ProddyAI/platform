@@ -1,17 +1,13 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
 
 dotenv.config();
 
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY || "",
-});
-
 export async function POST(req: NextRequest) {
 	try {
-		if (!process.env.OPENROUTER_API_KEY) {
+		if (!process.env.OPENAI_API_KEY) {
 			return NextResponse.json(
 				{ error: "API key not configured" },
 				{ status: 500 }
@@ -27,8 +23,6 @@ export async function POST(req: NextRequest) {
 				{ status: 400 }
 			);
 		}
-
-		const model = openrouter("openai/gpt-4o-mini");
 
 		const systemPrompt = `You are a diagram generator.
 
@@ -62,7 +56,7 @@ ${prompt}
 Mermaid:`;
 
 		const { text } = await generateText({
-			model,
+			model: openai("gpt-4o-mini"),
 			prompt: fullPrompt,
 			temperature: 0.2,
 			maxOutputTokens: 1200,

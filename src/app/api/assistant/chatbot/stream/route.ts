@@ -1,32 +1,20 @@
+import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import {
 	convexAuthNextjsToken,
 	isAuthenticatedNextjs,
 } from "@convex-dev/auth/nextjs/server";
-import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { ConvexHttpClient } from "convex/browser";
-import { type NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import {
-	logRouteError,
-} from "@/lib/assistant-error-utils";
-import {
-	buildAssistantSystemPrompt,
-} from "@/lib/assistant-orchestration";
-import { parseAndSanitizeArguments } from "@/lib/assistant-tool-audit";
-import {
-	getWorkspaceEntityId,
-} from "@/lib/composio-config";
-import {
-	analyzeActionForConfirmation,
-	buildCancellationMessage,
-	buildConfirmationPrompt,
-	parseUserConfirmationResponse,
-} from "@/lib/ai-confirmation-logic";
 import { classifyAssistantQueryWithAI } from "@/lib/ai-query-classifier";
+import { logRouteError } from "@/lib/assistant-error-utils";
+import { buildAssistantSystemPrompt } from "@/lib/assistant-orchestration";
+import { parseAndSanitizeArguments } from "@/lib/assistant-tool-audit";
+import { getWorkspaceEntityId } from "@/lib/composio-config";
 import { UnifiedToolManager } from "@/lib/unified-tool-manager";
 
 export const dynamic = "force-dynamic";
@@ -134,17 +122,19 @@ export async function POST(req: NextRequest) {
 			const isAuthenticated = await isAuthenticatedNextjs();
 			if (!isAuthenticated) {
 				return new Response(
-					JSON.stringify({ error: "Authentication required when specifying memberId" }),
+					JSON.stringify({
+						error: "Authentication required when specifying memberId",
+					}),
 					{ status: 401, headers: { "Content-Type": "application/json" } }
 				);
 			}
 
 			const currentUser = await convex.query(api.users.current);
 			if (!currentUser) {
-				return new Response(
-					JSON.stringify({ error: "User not found" }),
-					{ status: 404, headers: { "Content-Type": "application/json" } }
-				);
+				return new Response(JSON.stringify({ error: "User not found" }), {
+					status: 404,
+					headers: { "Content-Type": "application/json" },
+				});
 			}
 			authenticatedUserId = currentUser._id;
 
@@ -154,15 +144,17 @@ export async function POST(req: NextRequest) {
 			});
 
 			if (!member) {
-				return new Response(
-					JSON.stringify({ error: "Member not found" }),
-					{ status: 404, headers: { "Content-Type": "application/json" } }
-				);
+				return new Response(JSON.stringify({ error: "Member not found" }), {
+					status: 404,
+					headers: { "Content-Type": "application/json" },
+				});
 			}
 
 			if (member.userId !== currentUser._id) {
 				return new Response(
-					JSON.stringify({ error: "Unauthorized: Member belongs to different user" }),
+					JSON.stringify({
+						error: "Unauthorized: Member belongs to different user",
+					}),
 					{ status: 403, headers: { "Content-Type": "application/json" } }
 				);
 			}
@@ -190,7 +182,9 @@ export async function POST(req: NextRequest) {
 					provider: new VercelProvider(),
 				});
 
-				workspaceEntityId = getWorkspaceEntityId(workspaceId as Id<"workspaces">);
+				workspaceEntityId = getWorkspaceEntityId(
+					workspaceId as Id<"workspaces">
+				);
 
 				const connections = await (composio as any).integrations?.list({
 					entityId: workspaceEntityId,
@@ -235,7 +229,9 @@ export async function POST(req: NextRequest) {
 		});
 
 		// Build message history
-		const sanitizedHistory = (Array.isArray(conversationHistory) ? conversationHistory : [])
+		const sanitizedHistory = (
+			Array.isArray(conversationHistory) ? conversationHistory : []
+		)
 			.filter((msg: any) => {
 				const allowedRoles = ["user", "assistant"];
 				return (
@@ -255,7 +251,8 @@ export async function POST(req: NextRequest) {
 		const result = await streamText({
 			model: openai("gpt-4o-mini"),
 			system: buildAssistantSystemPrompt({
-				workspaceContext: typeof workspaceContext === "string" ? workspaceContext : "",
+				workspaceContext:
+					typeof workspaceContext === "string" ? workspaceContext : "",
 				connectedApps,
 				externalToolsAllowed: true,
 			}),
@@ -292,10 +289,7 @@ export async function POST(req: NextRequest) {
 							outcome,
 							error:
 								outcome === "error"
-									? String(
-											toolResult?.result?.error ||
-												"Tool execution failed"
-										)
+									? String(toolResult?.result?.error || "Tool execution failed")
 									: undefined,
 							executionPath: "nextjs-streaming-ai-sdk",
 							toolCallId: toolCallAny.toolCallId,
@@ -307,7 +301,6 @@ export async function POST(req: NextRequest) {
 
 		// Return streaming response
 		return result.toTextStreamResponse();
-
 	} catch (error: any) {
 		logRouteError({
 			route: "Chatbot Assistant Stream",

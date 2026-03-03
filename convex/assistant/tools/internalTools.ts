@@ -3,11 +3,11 @@
  * Wraps assistantTools (calendar, tasks, channels, etc.) with createTool for @convex-dev/agent.
  */
 
-import { createTool } from "@convex-dev/agent";
-import type { Id } from "../../_generated/dataModel";
-import { api } from "../../_generated/api";
 import type { ToolCtx } from "@convex-dev/agent";
+import { createTool } from "@convex-dev/agent";
 import { z } from "zod";
+import { api } from "../../_generated/api";
+import type { Id } from "../../_generated/dataModel";
 
 export type AssistantCtx = ToolCtx & {
 	workspaceId: Id<"workspaces">;
@@ -102,7 +102,10 @@ export const getMyAllTasks = createTool({
 	description:
 		"Get all tasks assigned to the user. Can optionally include completed tasks. Use for general task queries like 'what are my tasks' or 'show all my work'.",
 	args: z.object({
-		includeCompleted: z.boolean().optional().describe("Whether to include completed tasks (default: false)"),
+		includeCompleted: z
+			.boolean()
+			.optional()
+			.describe("Whether to include completed tasks (default: false)"),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
 		return await ctx.runQuery(api.assistantTools.getMyAllTasks, {
@@ -117,7 +120,12 @@ export const searchChannels = createTool({
 	description:
 		"Search for channels in the workspace by name. Returns matching channels with their IDs. Only use for finding/browsing channel information within the workspace. For Slack operations, use runSlackTool instead.",
 	args: z.object({
-		query: z.string().optional().describe("Channel name to search for (without # symbol). Leave empty to get all channels."),
+		query: z
+			.string()
+			.optional()
+			.describe(
+				"Channel name to search for (without # symbol). Leave empty to get all channels."
+			),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
 		return await ctx.runQuery(api.assistantTools.searchChannels, {
@@ -131,8 +139,15 @@ export const getChannelSummary = createTool({
 	description:
 		"Get a summary of recent messages in a specific channel. Requires a channel ID - if user provides a channel name (e.g., '#general'), FIRST call searchChannels to find the ID, then use that ID here.",
 	args: z.object({
-		channelId: z.string().describe("Channel ID (get this from searchChannels if you only have the channel name)"),
-		limit: z.number().optional().describe("Max number of messages to analyze (default: 40)"),
+		channelId: z
+			.string()
+			.describe(
+				"Channel ID (get this from searchChannels if you only have the channel name)"
+			),
+		limit: z
+			.number()
+			.optional()
+			.describe("Max number of messages to analyze (default: 40)"),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
 		return await ctx.runAction(api.assistantTools.getChannelSummary, {
@@ -172,7 +187,10 @@ export const semanticSearch = createTool({
 		"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use for general questions that don't fit other tools.",
 	args: z.object({
 		query: z.string().describe("Search query"),
-		limit: z.number().optional().describe("Max results to return (default: 10)"),
+		limit: z
+			.number()
+			.optional()
+			.describe("Max results to return (default: 10)"),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
 		return await ctx.runAction(api.assistantTools.semanticSearch, {

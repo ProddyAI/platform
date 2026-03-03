@@ -6,6 +6,7 @@ import { v } from "convex/values";
 import { api, components, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
+import { extractTextFromRichText } from "./richText";
 
 const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -77,26 +78,6 @@ export const setSearchCache = mutation({
 		}
 	},
 });
-
-function extractTextFromRichText(body: string): string {
-	if (typeof body !== "string") {
-		return String(body);
-	}
-	try {
-		const parsedBody = JSON.parse(body);
-		if (parsedBody.ops) {
-			return parsedBody.ops
-				.map((op: { insert?: string }) =>
-					typeof op.insert === "string" ? op.insert : ""
-				)
-				.join("")
-				.trim();
-		}
-	} catch {
-		return body.replace(/<[^>]*>/g, "").trim();
-	}
-	return body.trim();
-}
 
 export const indexContent = action({
 	args: {
@@ -628,14 +609,19 @@ export const semanticSearch = action({
 				.join("\n\n");
 			const { text: rankOutput } = await generateText({
 				model: openai("gpt-4o-mini"),
-				system: "You output only a JSON array of integers: the zero-based indices of passages in order of relevance to the query, most relevant first. Output exactly one array, e.g. [3,0,1].",
+				system:
+					"You output only a JSON array of integers: the zero-based indices of passages in order of relevance to the query, most relevant first. Output exactly one array, e.g. [3,0,1].",
 				prompt: `Query: ${args.query}\n\nPassages:\n${passageList}\n\nReturn the top ${topK} most relevant passage indices as a JSON array.`,
 			});
 			let indices: number[] = [];
 			try {
-				const parsed = JSON.parse(rankOutput.replace(/^[^[]*\[/, "[").replace(/\][^]*$/, "]"));
+				const parsed = JSON.parse(
+					rankOutput.replace(/^[^[]*\[/, "[").replace(/\][^]*$/, "]")
+				);
 				if (Array.isArray(parsed)) {
-					indices = parsed.filter((n) => typeof n === "number" && n >= 0 && n < results.length);
+					indices = parsed.filter(
+						(n) => typeof n === "number" && n >= 0 && n < results.length
+					);
 				}
 			} catch {
 				// Fallback: use original order
@@ -653,10 +639,15 @@ export const semanticSearch = action({
 				const filterValues = entry?.filterValues;
 				const contentType =
 					(Array.isArray(filterValues)
-						? (filterValues.find((f) => f.name === "contentType") as { value?: string } | undefined)?.value
+						? (
+								filterValues.find((f) => f.name === "contentType") as
+									| { value?: string }
+									| undefined
+							)?.value
 						: undefined) ?? "message";
 				if ((contentTypeCount[contentType] ?? 0) >= maxPerType) continue;
-				contentTypeCount[contentType] = (contentTypeCount[contentType] ?? 0) + 1;
+				contentTypeCount[contentType] =
+					(contentTypeCount[contentType] ?? 0) + 1;
 				rerankedResults.push(results[i]);
 				if (entry) rerankedEntries.push(entry);
 			}

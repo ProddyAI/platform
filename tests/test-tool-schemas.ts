@@ -68,7 +68,7 @@ function zodToJsonSchema(zodSchema: z.ZodTypeAny): any {
 
 		for (const [key, value] of Object.entries(shape)) {
 			const zodType = value as z.ZodTypeAny;
-			
+
 			if (zodType instanceof z.ZodString) {
 				properties[key] = { type: "string" };
 			} else if (zodType instanceof z.ZodNumber) {
@@ -95,7 +95,7 @@ function zodToJsonSchema(zodSchema: z.ZodTypeAny): any {
 			type: "object",
 			properties,
 			required,
-			additionalProperties: false
+			additionalProperties: false,
 		};
 	}
 
@@ -110,7 +110,7 @@ const testCases = [
 			type: "object" as const,
 			properties: {},
 			required: [],
-		}
+		},
 	},
 	{
 		name: "Single optional parameter (searchChannels)",
@@ -119,11 +119,11 @@ const testCases = [
 			properties: {
 				query: {
 					type: "string",
-					description: "Channel name to search for"
-				}
+					description: "Channel name to search for",
+				},
 			},
 			required: [],
-		}
+		},
 	},
 	{
 		name: "Required parameter (getChannelSummary)",
@@ -132,16 +132,16 @@ const testCases = [
 			properties: {
 				channelId: {
 					type: "string",
-					description: "Channel ID"
+					description: "Channel ID",
 				},
 				limit: {
 					type: "number",
-					description: "Max results"
-				}
+					description: "Max results",
+				},
 			},
 			required: ["channelId"],
-		}
-	}
+		},
+	},
 ];
 
 console.log("🧪 Testing Tool Schema Generation\n");
@@ -152,16 +152,18 @@ let allPassed = true;
 for (const testCase of testCases) {
 	console.log(`\n📋 Test: ${testCase.name}`);
 	console.log(`Input: ${JSON.stringify(testCase.input, null, 2)}`);
-	
+
 	try {
 		const zodSchema = jsonSchemaToZod(testCase.input);
 		const jsonSchema = zodToJsonSchema(zodSchema);
-		
+
 		console.log(`Output JSON Schema: ${JSON.stringify(jsonSchema, null, 2)}`);
-		
+
 		// Validate
 		if (jsonSchema.type !== "object") {
-			console.log(`❌ FAIL: Expected type: "object", got type: "${jsonSchema.type}"`);
+			console.log(
+				`❌ FAIL: Expected type: "object", got type: "${jsonSchema.type}"`
+			);
 			allPassed = false;
 		} else if (!jsonSchema.properties) {
 			console.log(`❌ FAIL: Missing properties field`);
@@ -175,7 +177,7 @@ for (const testCase of testCases) {
 	}
 }
 
-console.log("\n" + "=".repeat(60));
+console.log(`\n${"=".repeat(60)}`);
 if (allPassed) {
 	console.log("✅ All tests passed!");
 	process.exit(0);

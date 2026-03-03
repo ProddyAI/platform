@@ -15,7 +15,7 @@ export const useGetRecentChannelMessages = ({
 	enabled = true,
 }: UseGetRecentChannelMessagesProps) => {
 	// Only enable the query if we have a valid channelId and enabled is true
-	const shouldEnable = enabled && !!channelId;
+	const shouldEnable = enabled && Boolean(channelId);
 
 	// Add a check for valid ID format
 	const isValidId = typeof channelId === "string" && channelId.length > 0;

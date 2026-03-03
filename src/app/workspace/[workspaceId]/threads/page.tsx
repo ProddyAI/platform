@@ -360,7 +360,7 @@ export default function ThreadsPage() {
 
 			{selectedThread && (
 				<ThreadModal
-					isOpen={!!selectedThread}
+					isOpen={Boolean(selectedThread)}
 					onClose={() => setSelectedThread(null)}
 					thread={selectedThread}
 				/>

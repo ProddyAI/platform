@@ -1,6 +1,6 @@
-import { Composio } from "@composio/core";
-import { ConvexHttpClient } from "convex/browser";
-import { tool, jsonSchema } from "ai";
+import type { Composio } from "@composio/core";
+import { jsonSchema, tool } from "ai";
+import type { ConvexHttpClient } from "convex/browser";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -69,8 +69,7 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 	},
 	{
 		name: "getMyTasksToday",
-		description:
-			"Get tasks assigned to the user that are due today.",
+		description: "Get tasks assigned to the user that are due today.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -82,8 +81,7 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 	},
 	{
 		name: "getMyTasksTomorrow",
-		description:
-			"Get tasks assigned to the user that are due tomorrow.",
+		description: "Get tasks assigned to the user that are due tomorrow.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -120,7 +118,8 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 			properties: {
 				query: {
 					type: "string",
-					description: "Channel name to search for (without # symbol). Leave empty to get all channels.",
+					description:
+						"Channel name to search for (without # symbol). Leave empty to get all channels.",
 				},
 			},
 			required: [],
@@ -138,7 +137,8 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 			properties: {
 				channelId: {
 					type: "string",
-					description: "The ID of the channel to summarize. Use searchChannels first to get the channel ID.",
+					description:
+						"The ID of the channel to summarize. Use searchChannels first to get the channel ID.",
 				},
 			},
 			required: ["channelId"],
@@ -258,7 +258,10 @@ export class UnifiedToolManager {
 
 						return result;
 					} catch (error: any) {
-						console.error(`Error executing internal tool ${toolDef.name}:`, error);
+						console.error(
+							`Error executing internal tool ${toolDef.name}:`,
+							error
+						);
 						return {
 							success: false,
 							error: error.message || "Tool execution failed",
@@ -274,15 +277,20 @@ export class UnifiedToolManager {
 	/**
 	 * Get external Composio tools as AI SDK tools
 	 */
-	async getExternalTools(requestedApps: string[]): Promise<Record<string, any>> {
+	async getExternalTools(
+		requestedApps: string[]
+	): Promise<Record<string, any>> {
 		if (!this.composio || !this.workspaceEntityId) {
 			return {};
 		}
 
 		try {
-			const tools = await (this.composio as any).getTools({
-				apps: requestedApps,
-			}, this.workspaceEntityId);
+			const tools = await (this.composio as any).getTools(
+				{
+					apps: requestedApps,
+				},
+				this.workspaceEntityId
+			);
 
 			return tools;
 		} catch (error) {
@@ -294,11 +302,13 @@ export class UnifiedToolManager {
 	/**
 	 * Get all tools (internal + external) as AI SDK tools
 	 */
-	async getAllTools(options: {
-		includeInternal?: boolean;
-		includeExternal?: boolean;
-		requestedApps?: string[];
-	} = {}): Promise<Record<string, any>> {
+	async getAllTools(
+		options: {
+			includeInternal?: boolean;
+			includeExternal?: boolean;
+			requestedApps?: string[];
+		} = {}
+	): Promise<Record<string, any>> {
 		const {
 			includeInternal = true,
 			includeExternal = true,

@@ -8,7 +8,7 @@ export const testDirectComposioCall = action({
 	args: {
 		entityId: v.string(),
 	},
-	handler: async (ctx, { entityId }) => {
+	handler: async (_ctx, { entityId }) => {
 		try {
 			if (!process.env.COMPOSIO_API_KEY) {
 				return { error: "COMPOSIO_API_KEY not configured" };
@@ -30,7 +30,10 @@ export const testDirectComposioCall = action({
 					"text"
 				);
 
-				console.log("[testComposio] Direct execute result:", JSON.stringify(result).substring(0, 500));
+				console.log(
+					"[testComposio] Direct execute result:",
+					JSON.stringify(result).substring(0, 500)
+				);
 				return { success: true, result };
 			} catch (execError: any) {
 				console.error("[testComposio] Execute error:", execError.message);

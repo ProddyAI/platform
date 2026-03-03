@@ -1,27 +1,34 @@
-import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { generateObject } from "ai";
 import { z } from "zod";
-import type { AssistantExternalApp, AssistantIntent } from "./assistant-orchestration";
 import { queryClassificationCache } from "./ai-cache";
+import type {
+	AssistantExternalApp,
+	AssistantIntent,
+} from "./assistant-orchestration";
 
 /**
  * Zod schema for AI-powered query classification
  */
 const QueryClassificationSchema = z.object({
-	requiresExternalTools: z.boolean().describe(
-		"Whether this query requires external integrations (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)"
-	),
-	requestedExternalApps: z.array(
-		z.enum(["GMAIL", "GITHUB", "SLACK", "NOTION", "CLICKUP", "LINEAR"])
-	).describe(
-		"List of external apps needed. Examples: ['GMAIL'] for email tasks, ['GITHUB'] for repository operations, ['SLACK'] for messaging, ['NOTION'] for notes, ['CLICKUP', 'LINEAR'] for project management. Empty array if no external tools needed."
-	),
-	requiresInternalTools: z.boolean().describe(
-		"Whether this query requires internal workspace data (calendar, tasks, channels, meetings, cards, notes, or workspace search)"
-	),
-	reasoning: z.string().describe(
-		"Brief explanation of why this classification was chosen"
-	),
+	requiresExternalTools: z
+		.boolean()
+		.describe(
+			"Whether this query requires external integrations (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)"
+		),
+	requestedExternalApps: z
+		.array(z.enum(["GMAIL", "GITHUB", "SLACK", "NOTION", "CLICKUP", "LINEAR"]))
+		.describe(
+			"List of external apps needed. Examples: ['GMAIL'] for email tasks, ['GITHUB'] for repository operations, ['SLACK'] for messaging, ['NOTION'] for notes, ['CLICKUP', 'LINEAR'] for project management. Empty array if no external tools needed."
+		),
+	requiresInternalTools: z
+		.boolean()
+		.describe(
+			"Whether this query requires internal workspace data (calendar, tasks, channels, meetings, cards, notes, or workspace search)"
+		),
+	reasoning: z
+		.string()
+		.describe("Brief explanation of why this classification was chosen"),
 });
 
 /**
@@ -139,7 +146,8 @@ Provide your classification:`,
 		const response = {
 			mode,
 			requiresExternalTools: result.object.requiresExternalTools,
-			requestedExternalApps: result.object.requestedExternalApps as AssistantExternalApp[],
+			requestedExternalApps: result.object
+				.requestedExternalApps as AssistantExternalApp[],
 			reasoning: result.object.reasoning,
 		};
 
@@ -148,7 +156,10 @@ Provide your classification:`,
 		return response;
 	} catch (error) {
 		// Fallback to internal mode if AI classification fails
-		console.error("AI query classification failed, falling back to internal mode:", error);
+		console.error(
+			"AI query classification failed, falling back to internal mode:",
+			error
+		);
 		return {
 			mode: "internal",
 			requiresExternalTools: false,
@@ -164,5 +175,5 @@ Provide your classification:`,
 export async function classifyAssistantQueriesBatch(
 	messages: string[]
 ): Promise<Array<AssistantIntent & { reasoning: string }>> {
-	return Promise.all(messages.map(msg => classifyAssistantQueryWithAI(msg)));
+	return Promise.all(messages.map((msg) => classifyAssistantQueryWithAI(msg)));
 }

@@ -1,15 +1,22 @@
+import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import {
 	convexAuthNextjsToken,
 	isAuthenticatedNextjs,
 } from "@convex-dev/auth/nextjs/server";
-import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import {
+	analyzeActionForConfirmation,
+	buildCancellationMessage,
+	buildConfirmationPrompt,
+	parseUserConfirmationResponse,
+} from "@/lib/ai-confirmation-logic";
+import { classifyAssistantQueryWithAI } from "@/lib/ai-query-classifier";
 import {
 	buildActionableErrorPayload,
 	logRouteError,
@@ -19,16 +26,7 @@ import {
 	buildAssistantSystemPrompt,
 } from "@/lib/assistant-orchestration";
 import { parseAndSanitizeArguments } from "@/lib/assistant-tool-audit";
-import {
-	getWorkspaceEntityId,
-} from "@/lib/composio-config";
-import {
-	analyzeActionForConfirmation,
-	buildCancellationMessage,
-	buildConfirmationPrompt,
-	parseUserConfirmationResponse,
-} from "@/lib/ai-confirmation-logic";
-import { classifyAssistantQueryWithAI } from "@/lib/ai-query-classifier";
+import { getWorkspaceEntityId } from "@/lib/composio-config";
 import { UnifiedToolManager } from "@/lib/unified-tool-manager";
 
 export const dynamic = "force-dynamic";
@@ -154,7 +152,10 @@ export async function POST(req: NextRequest) {
 			});
 
 			if (!member) {
-				return NextResponse.json({ error: "Member not found" }, { status: 404 });
+				return NextResponse.json(
+					{ error: "Member not found" },
+					{ status: 404 }
+				);
 			}
 
 			if (member.userId !== currentUser._id) {
@@ -187,7 +188,9 @@ export async function POST(req: NextRequest) {
 					provider: new VercelProvider(),
 				});
 
-				workspaceEntityId = getWorkspaceEntityId(workspaceId as Id<"workspaces">);
+				workspaceEntityId = getWorkspaceEntityId(
+					workspaceId as Id<"workspaces">
+				);
 
 				// Check connected apps
 				const connections = await (composio as any).integrations?.list({
@@ -233,7 +236,9 @@ export async function POST(req: NextRequest) {
 		});
 
 		// Build message history
-		const sanitizedHistory = (Array.isArray(conversationHistory) ? conversationHistory : [])
+		const sanitizedHistory = (
+			Array.isArray(conversationHistory) ? conversationHistory : []
+		)
 			.filter((msg: any) => {
 				const allowedRoles = ["user", "assistant"];
 				return (
@@ -254,7 +259,8 @@ export async function POST(req: NextRequest) {
 		const initialResult = await generateText({
 			model: openai("gpt-4o-mini"),
 			system: buildAssistantSystemPrompt({
-				workspaceContext: typeof workspaceContext === "string" ? workspaceContext : "",
+				workspaceContext:
+					typeof workspaceContext === "string" ? workspaceContext : "",
 				connectedApps,
 				externalToolsAllowed: true,
 			}),
@@ -344,7 +350,8 @@ export async function POST(req: NextRequest) {
 				const toolResult = (firstStep.toolResults || []).find(
 					(tr: any) => tr.toolCallId === toolCall.toolCallId
 				) as any;
-				const outcome = toolResult?.result?.success === false ? "error" : "success";
+				const outcome =
+					toolResult?.result?.success === false ? "error" : "success";
 				await logExternalToolAuditEvent({
 					convex,
 					workspaceId: workspaceId as Id<"workspaces">,
@@ -358,9 +365,7 @@ export async function POST(req: NextRequest) {
 					outcome,
 					error:
 						outcome === "error"
-							? String(
-									toolResult?.result?.error || "Tool execution failed"
-								)
+							? String(toolResult?.result?.error || "Tool execution failed")
 							: undefined,
 					executionPath: "nextjs-openai-composio-ai-sdk",
 					toolCallId: toolCall.toolCallId,
@@ -402,7 +407,6 @@ export async function POST(req: NextRequest) {
 				},
 			}),
 		});
-
 	} catch (error: any) {
 		logRouteError({
 			route: "Chatbot Assistant (AI SDK)",
@@ -413,7 +417,8 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json(
 			buildActionableErrorPayload({
 				message: "An error occurred while processing your request.",
-				nextStep: "Retry in a few seconds. If it persists, refresh and try again.",
+				nextStep:
+					"Retry in a few seconds. If it persists, refresh and try again.",
 				code: "ASSISTANT_CHATBOT_FAILED",
 				recoverable: true,
 			}),

@@ -1,8 +1,8 @@
 "use node";
 
+import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { v } from "convex/values";
 import { parseAndSanitizeArguments } from "../src/lib/assistant-tool-audit";
@@ -11,7 +11,9 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
-function filterToolSetForOpenAI(tools: Record<string, any>): Record<string, any> {
+function filterToolSetForOpenAI(
+	tools: Record<string, any>
+): Record<string, any> {
 	const entries = Object.entries(tools).filter(([name]) => {
 		if (!name || name.length > 64) return false;
 		if (!/^[a-zA-Z0-9_-]+$/.test(name)) return false;
@@ -35,20 +37,18 @@ function selectRelevantTools(
 		// Score based on instruction keywords matching tool name
 		if (normalized.includes("github") && lowerName.includes("github"))
 			score += 10;
-		if (normalized.includes("slack") && lowerName.includes("slack")) score += 10;
+		if (normalized.includes("slack") && lowerName.includes("slack"))
+			score += 10;
 		if (normalized.includes("message") && lowerName.includes("message"))
 			score += 5;
 		if (normalized.includes("post") && lowerName.includes("post")) score += 5;
-		if (normalized.includes("send") && lowerName.includes("post"))
-			score += 5;
+		if (normalized.includes("send") && lowerName.includes("post")) score += 5;
 		if (normalized.includes("list") && lowerName.includes("list")) score += 3;
 		if (normalized.includes("rep") && lowerName.includes("repo")) score += 5;
-		if (normalized.includes("issue") && lowerName.includes("issue"))
-			score += 3;
+		if (normalized.includes("issue") && lowerName.includes("issue")) score += 3;
 		if (normalized.includes("channel") && lowerName.includes("channel"))
 			score += 5;
-		if (normalized.includes("user") && lowerName.includes("user"))
-			score += 3;
+		if (normalized.includes("user") && lowerName.includes("user")) score += 3;
 		if (normalized.includes("commit") && lowerName.includes("commit"))
 			score += 3;
 		if (normalized.includes("branch") && lowerName.includes("branch"))
@@ -104,7 +104,9 @@ async function executeComposioAction(
 			const target = appName.toUpperCase();
 			const slug = String(connection?.toolkit?.slug ?? "").toUpperCase();
 			const app = String(connection?.appName ?? "").toUpperCase();
-			const integrationId = String(connection?.integrationId ?? "").toUpperCase();
+			const integrationId = String(
+				connection?.integrationId ?? ""
+			).toUpperCase();
 			const status = String(connection?.status ?? "").toUpperCase();
 			return (
 				status === "ACTIVE" &&
@@ -167,7 +169,9 @@ async function executeComposioAction(
 				let found = false;
 				for (const candidateEntityId of fallbackEntityIds) {
 					try {
-						const connectionsResponse = await (composio as any).connectedAccounts.list({
+						const connectionsResponse = await (
+							composio as any
+						).connectedAccounts.list({
 							userIds: [candidateEntityId],
 						});
 						const connections = connectionsResponse?.items ?? [];
@@ -230,7 +234,7 @@ async function executeComposioAction(
 							limit: 1000,
 						});
 				Object.assign(toolsByApp, appTools || {});
-			} catch (error) {
+			} catch (_error) {
 				console.warn(
 					"[executeComposioAction] Failed to fetch tools for",
 					appName
@@ -274,16 +278,14 @@ Example: {"tool": "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER", "parame
 		let toolSelection: { tool: string; parameters: any } | null = null;
 		try {
 			// Try to find and parse JSON in the response
-			const jsonStart = initialResult.text.indexOf('{');
-			const jsonEnd = initialResult.text.lastIndexOf('}');
+			const jsonStart = initialResult.text.indexOf("{");
+			const jsonEnd = initialResult.text.lastIndexOf("}");
 			if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
 				const jsonStr = initialResult.text.substring(jsonStart, jsonEnd + 1);
 				toolSelection = JSON.parse(jsonStr);
 			}
-		} catch (e) {
-			console.warn(
-				"[executeComposioAction] Failed to parse tool selection"
-			);
+		} catch (_e) {
+			console.warn("[executeComposioAction] Failed to parse tool selection");
 		}
 
 		if (!toolSelection || !toolSelection.tool) {
@@ -296,7 +298,7 @@ Example: {"tool": "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER", "parame
 		// Execute the tool directly from the tools object
 		let toolExecutionResult: any;
 		const selectedTool = tools[toolSelection.tool];
-		
+
 		if (selectedTool && typeof (selectedTool as any).execute === "function") {
 			try {
 				toolExecutionResult = await (selectedTool as any).execute(
@@ -310,9 +312,7 @@ Example: {"tool": "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER", "parame
 				throw execError;
 			}
 		} else {
-			const availableToolNames = Object.keys(tools)
-				.slice(0, 5)
-				.join(", ");
+			const availableToolNames = Object.keys(tools).slice(0, 5).join(", ");
 			console.error(
 				"[executeComposioAction] Tool not found:",
 				toolSelection.tool,

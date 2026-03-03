@@ -1,11 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { type NextRequest, NextResponse } from "next/server";
 import {
 	buildActionableErrorPayload,
 	buildComposioFailureGuidance,
 	logRouteError,
-	sanitizeErrorMessage,
 } from "@/lib/assistant-error-utils";
 import { createComposioClient } from "@/lib/composio-config";
 
@@ -30,7 +29,10 @@ export async function POST(req: NextRequest) {
 		}
 
 		const composio = createComposioClient();
-		const tools = await (composio as any).getTools({ apps: appNames }, entityId);
+		const tools = await (composio as any).getTools(
+			{ apps: appNames },
+			entityId
+		);
 
 		if (!tools || Object.keys(tools).length === 0) {
 			return NextResponse.json(

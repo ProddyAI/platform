@@ -1,38 +1,50 @@
-import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { generateObject } from "ai";
 import { z } from "zod";
 
 /**
  * Zod schema for AI-powered confirmation decision
  */
 const ConfirmationAnalysisSchema = z.object({
-	requiresConfirmation: z.boolean().describe(
-		"Whether this action requires user confirmation before execution. True for high-impact, irreversible, or sensitive actions."
-	),
-	riskLevel: z.enum(["low", "medium", "high", "critical"]).describe(
-		"Risk level of the action: low (safe, read-only), medium (creates/updates data), high (deletes/sends/changes permissions), critical (bulk operations, irreversible changes)"
-	),
-	impactDescription: z.string().describe(
-		"Brief description of what this action will do and its potential impact"
-	),
-	reasoning: z.string().describe(
-		"Explanation of why confirmation is or isn't needed"
-	),
-	affectedResources: z.array(z.string()).describe(
-		"List of resources that will be affected (e.g., 'email to john@example.com', '5 GitHub issues', 'admin permissions')"
-	),
+	requiresConfirmation: z
+		.boolean()
+		.describe(
+			"Whether this action requires user confirmation before execution. True for high-impact, irreversible, or sensitive actions."
+		),
+	riskLevel: z
+		.enum(["low", "medium", "high", "critical"])
+		.describe(
+			"Risk level of the action: low (safe, read-only), medium (creates/updates data), high (deletes/sends/changes permissions), critical (bulk operations, irreversible changes)"
+		),
+	impactDescription: z
+		.string()
+		.describe(
+			"Brief description of what this action will do and its potential impact"
+		),
+	reasoning: z
+		.string()
+		.describe("Explanation of why confirmation is or isn't needed"),
+	affectedResources: z
+		.array(z.string())
+		.describe(
+			"List of resources that will be affected (e.g., 'email to john@example.com', '5 GitHub issues', 'admin permissions')"
+		),
 });
 
 /**
  * Zod schema for parsing user's confirmation response
  */
 const UserConfirmationResponseSchema = z.object({
-	decision: z.enum(["confirm", "cancel", "unclear"]).describe(
-		"The user's decision: confirm (proceed), cancel (abort), or unclear (ambiguous response)"
-	),
-	reasoning: z.string().describe(
-		"Brief explanation of how the decision was determined from the user's message"
-	),
+	decision: z
+		.enum(["confirm", "cancel", "unclear"])
+		.describe(
+			"The user's decision: confirm (proceed), cancel (abort), or unclear (ambiguous response)"
+		),
+	reasoning: z
+		.string()
+		.describe(
+			"Brief explanation of how the decision was determined from the user's message"
+		),
 });
 
 /**
@@ -73,10 +85,12 @@ export async function analyzeActionForConfirmation(
 	}
 
 	// Format tool calls for AI analysis
-	const toolCallsSummary = toolCalls.map(tc => {
-		const args = tc.arguments ? JSON.stringify(tc.arguments, null, 2) : "{}";
-		return `Tool: ${tc.name}\nDescription: ${tc.description || "No description"}\nArguments: ${args}`;
-	}).join('\n\n');
+	const toolCallsSummary = toolCalls
+		.map((tc) => {
+			const args = tc.arguments ? JSON.stringify(tc.arguments, null, 2) : "{}";
+			return `Tool: ${tc.name}\nDescription: ${tc.description || "No description"}\nArguments: ${args}`;
+		})
+		.join("\n\n");
 
 	try {
 		const result = await generateObject({
@@ -231,25 +245,39 @@ Provide your safety analysis:`,
 			affectedResources: result.object.affectedResources,
 		};
 	} catch (error) {
-		console.error("AI confirmation analysis failed, defaulting to safe behavior:", error);
+		console.error(
+			"AI confirmation analysis failed, defaulting to safe behavior:",
+			error
+		);
 
 		// Fallback: conservative approach - check tool names for high-impact keywords
-		const toolNames = toolCalls.map(tc => tc.name.toLowerCase()).join(" ");
+		const toolNames = toolCalls.map((tc) => tc.name.toLowerCase()).join(" ");
 		const highImpactKeywords = [
-			"send", "delete", "remove", "archive", "merge", "deploy", "release",
-			"grant", "revoke", "permission", "access", "collaborator", "admin"
+			"send",
+			"delete",
+			"remove",
+			"archive",
+			"merge",
+			"deploy",
+			"release",
+			"grant",
+			"revoke",
+			"permission",
+			"access",
+			"collaborator",
+			"admin",
 		];
 
-		const hasHighImpactKeyword = highImpactKeywords.some(keyword =>
+		const hasHighImpactKeyword = highImpactKeywords.some((keyword) =>
 			toolNames.includes(keyword)
 		);
 
 		return {
 			requiresConfirmation: hasHighImpactKeyword,
 			riskLevel: hasHighImpactKeyword ? "high" : "medium",
-			impactDescription: `Executing ${toolCalls.length} action(s): ${toolCalls.map(tc => tc.name).join(", ")}`,
+			impactDescription: `Executing ${toolCalls.length} action(s): ${toolCalls.map((tc) => tc.name).join(", ")}`,
 			reasoning: "AI analysis failed, used fallback keyword detection",
-			affectedResources: toolCalls.map(tc => tc.name),
+			affectedResources: toolCalls.map((tc) => tc.name),
 		};
 	}
 }
@@ -300,51 +328,83 @@ Provide your decision:`,
 			reasoning: result.object.reasoning,
 		};
 	} catch (error) {
-		console.error("AI confirmation parsing failed, defaulting to unclear:", error);
+		console.error(
+			"AI confirmation parsing failed, defaulting to unclear:",
+			error
+		);
 
 		// Fallback: basic keyword detection
 		const messageLower = userMessage.toLowerCase().trim();
 
-		const confirmKeywords = ["confirm", "yes", "proceed", "go ahead", "do it", "approve", "ok", "okay"];
-		const cancelKeywords = ["cancel", "stop", "abort", "no", "don't", "never mind", "nope"];
+		const confirmKeywords = [
+			"confirm",
+			"yes",
+			"proceed",
+			"go ahead",
+			"do it",
+			"approve",
+			"ok",
+			"okay",
+		];
+		const cancelKeywords = [
+			"cancel",
+			"stop",
+			"abort",
+			"no",
+			"don't",
+			"never mind",
+			"nope",
+		];
 
-		const hasConfirm = confirmKeywords.some(keyword => messageLower.includes(keyword));
-		const hasCancel = cancelKeywords.some(keyword => messageLower.includes(keyword));
+		const hasConfirm = confirmKeywords.some((keyword) =>
+			messageLower.includes(keyword)
+		);
+		const hasCancel = cancelKeywords.some((keyword) =>
+			messageLower.includes(keyword)
+		);
 
 		if (hasCancel) {
-			return { decision: "cancel", reasoning: "Fallback: detected cancel keywords" };
+			return {
+				decision: "cancel",
+				reasoning: "Fallback: detected cancel keywords",
+			};
 		}
 		if (hasConfirm) {
-			return { decision: "confirm", reasoning: "Fallback: detected confirm keywords" };
+			return {
+				decision: "confirm",
+				reasoning: "Fallback: detected confirm keywords",
+			};
 		}
 
-		return { decision: "unclear", reasoning: "Fallback: no clear confirmation or cancellation detected" };
+		return {
+			decision: "unclear",
+			reasoning: "Fallback: no clear confirmation or cancellation detected",
+		};
 	}
 }
 
 /**
  * Build confirmation prompt for user
  */
-export function buildConfirmationPrompt(
-	analysis: {
-		riskLevel: string;
-		impactDescription: string;
-		affectedResources: string[];
-	}
-): string {
-	const riskEmoji = {
-		low: "ℹ️",
-		medium: "⚠️",
-		high: "🚨",
-		critical: "⛔"
-	}[analysis.riskLevel] || "⚠️";
+export function buildConfirmationPrompt(analysis: {
+	riskLevel: string;
+	impactDescription: string;
+	affectedResources: string[];
+}): string {
+	const riskEmoji =
+		{
+			low: "ℹ️",
+			medium: "⚠️",
+			high: "🚨",
+			critical: "⛔",
+		}[analysis.riskLevel] || "⚠️";
 
 	let prompt = `${riskEmoji} **Confirmation Required**\n\n`;
 	prompt += `**Action:** ${analysis.impactDescription}\n\n`;
 
 	if (analysis.affectedResources.length > 0) {
 		prompt += `**Affected Resources:**\n`;
-		analysis.affectedResources.forEach(resource => {
+		analysis.affectedResources.forEach((resource) => {
 			prompt += `- ${resource}\n`;
 		});
 		prompt += `\n`;
@@ -360,10 +420,8 @@ export function buildConfirmationPrompt(
 /**
  * Build cancellation message
  */
-export function buildCancellationMessage(
-	analysis: {
-		impactDescription: string;
-	}
-): string {
+export function buildCancellationMessage(analysis: {
+	impactDescription: string;
+}): string {
 	return `✅ **Action Cancelled**\n\nThe following action has been cancelled:\n${analysis.impactDescription}\n\nNo changes were made.`;
 }

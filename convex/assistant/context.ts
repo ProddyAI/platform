@@ -4,8 +4,6 @@
  */
 
 import { v } from "convex/values";
-import { api } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 
 export const getThreadContext = query({
@@ -58,8 +56,6 @@ export function buildThreadContextPrompt(context: {
 	recentTools: Array<{ toolName: string; outcome: string }>;
 }): string {
 	if (!context.recentTools.length) return "";
-	const lines = context.recentTools.map(
-		(t) => `- ${t.toolName}: ${t.outcome}`
-	);
+	const lines = context.recentTools.map((t) => `- ${t.toolName}: ${t.outcome}`);
 	return `\nRecent tools used in this conversation:\n${lines.join("\n")}`;
 }

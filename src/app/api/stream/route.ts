@@ -57,7 +57,7 @@ export async function GET() {
 
 	return NextResponse.json({
 		apiKeyExists: !!apiKey,
-		apiSecretExists: !!apiSecret,
+		apiSecretExists: Boolean(apiSecret),
 		apiKeyLength: apiKey?.length || 0,
 		apiSecretLength: apiSecret?.length || 0,
 		apiKeyPrefix: apiKey?.substring(0, 4) || "none",
