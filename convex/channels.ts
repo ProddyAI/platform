@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 
 import { mutation, query } from "./_generated/server";
 
@@ -97,7 +98,7 @@ export const update = mutation({
 		const updateData: {
 			name: string;
 			icon?: string;
-			iconImage?: Id<"_storage"> | null;
+			iconImage?: Id<"_storage">;
 			enabledFeatures?: typeof args.enabledFeatures;
 		} = {
 			name: parsedName,
@@ -108,7 +109,7 @@ export const update = mutation({
 		}
 
 		if ("iconImage" in args) {
-			updateData.iconImage = args.iconImage;
+			updateData.iconImage = args.iconImage ?? undefined;
 		}
 
 		if (args.enabledFeatures !== undefined) {

@@ -717,7 +717,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 				id: channelId,
 				name: value,
 				icon,
-				iconImage: iconImage === undefined && channel?.iconImage ? null : iconImage,
+				iconImage:
+					iconImage === undefined && channel?.iconImage ? null : iconImage,
 			},
 			{
 				onSuccess: () => {
@@ -745,7 +746,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 				id: channelId,
 				name: channel.name,
 				icon,
-				iconImage: iconImage === undefined && channel.iconImage ? null : iconImage,
+				iconImage:
+					iconImage === undefined && channel.iconImage ? null : iconImage,
 			},
 			{
 				onSuccess: () => {

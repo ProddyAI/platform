@@ -169,7 +169,7 @@ const BoardPage = () => {
 	useEffect(() => {
 		// Clear optimistic issue state when fresh server data arrives.
 		setOptimisticIssues(null);
-	}, [issues]);
+	}, []);
 
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {
