@@ -527,11 +527,13 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				setSearchOpen(false);
 				return;
 			}
-			if (event.key === "Enter" && aiSearchInput.trim()) {
-				aiSearch(aiSearchInput.trim());
+			// Let the form submit handler handle Enter key to avoid duplicate searches
+			if (event.key === "Enter") {
+				event.preventDefault();
+				event.stopPropagation();
 			}
 		},
-		[aiSearch, aiSearchInput, setSearchOpen]
+		[setSearchOpen]
 	);
 
 	const handleAiResultSelect = useCallback(() => {

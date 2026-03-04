@@ -57,6 +57,7 @@ const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
 			] as const
 		).map(({ id, icon: Icon, label }) => (
 			<Button
+				aria-label={label}
 				className={cn(
 					"h-7 px-2.5 flex items-center gap-1.5 rounded-md text-xs transition-all",
 					view === id
@@ -84,6 +85,7 @@ const AddStatusButton = ({ onClick }: AddStatusButtonProps) => (
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<Button
+					aria-label="Add status"
 					className="h-8 gap-1.5 text-xs border-border/50 dark:border-gray-700 bg-transparent hover:bg-muted/60 dark:hover:bg-gray-800"
 					onClick={onClick}
 					size="sm"

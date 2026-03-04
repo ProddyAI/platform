@@ -114,10 +114,10 @@ const LabelsDisplay = ({ labels, issueId }: LabelsDisplayProps) => {
 
 	return (
 		<div className="hidden sm:flex items-center gap-1 flex-shrink-0">
-			{labels.slice(0, 2).map((label, i) => (
+			{labels.slice(0, 2).map((label) => (
 				<Badge
 					className="text-[10px] px-1.5 py-0 h-4 font-normal"
-					key={`${issueId}-lbl-${label}-${i}`}
+					key={`${issueId}-lbl-${label}`}
 					variant="secondary"
 				>
 					{label}
@@ -261,6 +261,14 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 			onClick={(_e) => {
 				if (!isDragging) onClick();
 			}}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					if (!isDragging) onClick();
+				}
+			}}
+			role="button"
+			tabIndex={0}
 		>
 			<PriorityIndicator priority={issue.priority} />
 

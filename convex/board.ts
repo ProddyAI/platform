@@ -586,6 +586,39 @@ function mapPriorityToIssue(
 	}
 }
 
+// Helper to assert that the caller is a member of the workspace
+async function assertWorkspaceMember(
+	ctx: MutationCtx,
+	workspaceId: Id<"workspaces">
+): Promise<Doc<"members">> {
+	const auth = await ctx.auth.getUserIdentity();
+	if (!auth) throw new Error("Not authenticated");
+
+	const userId = auth.subject.split("|")[0] as Id<"users">;
+	const member = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
+		)
+		.unique();
+
+	if (!member) throw new Error("Not a member of this workspace");
+	return member;
+}
+
+// Helper to assert that the caller has a specific role in the workspace
+async function assertWorkspaceRole(
+	ctx: MutationCtx,
+	workspaceId: Id<"workspaces">,
+	requiredRole: "admin" | "member"
+): Promise<Doc<"members">> {
+	const member = await assertWorkspaceMember(ctx, workspaceId);
+	if (requiredRole === "admin" && member.role !== "admin") {
+		throw new Error("Admin role required");
+	}
+	return member;
+}
+
 export const getStatuses = query({
 	args: { channelId: v.id("channels") },
 	handler: async (
@@ -607,6 +640,11 @@ export const createStatus = mutation({
 		order: v.number(),
 	},
 	handler: async (ctx: MutationCtx, args) => {
+		// Verify caller is a member of the workspace
+		const channel = await ctx.db.get(args.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
 		return await ctx.db.insert("statuses", args);
 	},
 });
@@ -619,6 +657,13 @@ export const updateStatus = mutation({
 		order: v.optional(v.number()),
 	},
 	handler: async (ctx: MutationCtx, { statusId, ...updates }) => {
+		// Verify caller is a member and status belongs to channel
+		const status = await ctx.db.get(statusId);
+		if (!status) throw new Error("Status not found");
+		const channel = await ctx.db.get(status.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
 		return await ctx.db.patch(statusId, updates);
 	},
 });
@@ -629,6 +674,13 @@ export const deleteStatus = mutation({
 		ctx: MutationCtx,
 		{ statusId }: { statusId: Id<"statuses"> }
 	) => {
+		// Verify caller is admin and status belongs to channel
+		const status = await ctx.db.get(statusId);
+		if (!status) throw new Error("Status not found");
+		const channel = await ctx.db.get(status.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceRole(ctx, channel.workspaceId, "admin");
+
 		// Delete all issues in this status
 		const issues = await ctx.db
 			.query("issues")
@@ -648,6 +700,24 @@ export const reorderStatuses = mutation({
 		),
 	},
 	handler: async (ctx: MutationCtx, { statusOrders }) => {
+		if (statusOrders.length === 0) return true;
+
+		// Verify caller is a member and all statuses belong to the same channel
+		const firstStatus = await ctx.db.get(statusOrders[0].statusId);
+		if (!firstStatus) throw new Error("Status not found");
+		const channel = await ctx.db.get(firstStatus.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Verify all statuses belong to the same channel
+		for (const { statusId } of statusOrders) {
+			const status = await ctx.db.get(statusId);
+			if (!status) throw new Error("Status not found");
+			if (status.channelId !== channel._id) {
+				throw new Error("Status does not belong to the same channel");
+			}
+		}
+
 		for (const { statusId, order } of statusOrders) {
 			await ctx.db.patch(statusId, { order });
 		}
@@ -694,6 +764,16 @@ export const createIssue = mutation({
 		const now = Date.now();
 		const channel = await ctx.db.get(args.channelId);
 		if (!channel) throw new Error("Channel not found");
+
+		// Verify status belongs to the channel
+		const status = await ctx.db.get(args.statusId);
+		if (!status) throw new Error("Status not found");
+		if (status.channelId !== args.channelId) {
+			throw new Error("Status does not belong to issue's channel");
+		}
+
+		// Verify caller is a member of the workspace
+		await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		const issueId = await ctx.db.insert("issues", {
 			...args,
@@ -775,6 +855,18 @@ export const updateIssue = mutation({
 		const channel = await ctx.db.get(issue.channelId);
 		if (!channel) throw new Error("Channel not found");
 
+		// Verify caller is a member of the workspace
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Verify statusId belongs to the channel if provided
+		if (updates.statusId) {
+			const status = await ctx.db.get(updates.statusId);
+			if (!status) throw new Error("Status not found");
+			if (status.channelId !== issue.channelId) {
+				throw new Error("Status does not belong to issue's channel");
+			}
+		}
+
 		await ctx.db.patch(issueId, { ...updates, updatedAt: Date.now() });
 
 		// Notify new assignees
@@ -842,6 +934,19 @@ export const moveIssueStatus = mutation({
 			// Nothing to do if the issue does not exist
 			return;
 		}
+
+		// Verify caller is a member of the workspace
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Verify toStatusId belongs to the issue's channel
+		const toStatus = await ctx.db.get(toStatusId);
+		if (!toStatus) throw new Error("Status not found");
+		if (toStatus.channelId !== issue.channelId) {
+			throw new Error("Status does not belong to issue's channel");
+		}
+
 		const fromStatusId = issue.statusId as Id<"statuses">;
 		const targetIndex = Math.max(0, Math.floor(order));
 		const now = Date.now();
@@ -937,6 +1042,13 @@ export const moveIssueStatus = mutation({
 export const deleteIssue = mutation({
 	args: { issueId: v.id("issues") },
 	handler: async (ctx: MutationCtx, { issueId }: { issueId: Id<"issues"> }) => {
+		// Verify caller is a member of the workspace
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
 		return await ctx.db.delete(issueId);
 	},
 });
@@ -1039,9 +1151,9 @@ export const migrateListsToStatuses = mutation({
 				channelId,
 				...def,
 			});
-			// Map list to status by matching title
-			const matchingList = lists.find((l) => l.title === def.name);
-			if (matchingList) {
+			// Map all lists with matching title to this status (handles duplicates)
+			const matchingLists = lists.filter((l) => l.title === def.name);
+			for (const matchingList of matchingLists) {
 				statusIdByListId[matchingList._id] = statusId;
 			}
 		}

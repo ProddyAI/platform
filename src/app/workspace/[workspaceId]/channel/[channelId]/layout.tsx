@@ -172,9 +172,12 @@ const ChannelIconUploader = ({
 				ref={imageInputRef}
 				type="file"
 			/>
-			<div
-				className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
+			<button
+				aria-label="Upload workspace icon"
+				className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+				disabled={isUploadingIcon}
 				onClick={() => !isUploadingIcon && imageInputRef.current?.click()}
+				type="button"
 			>
 				{iconPreview || icon ? (
 					<>
@@ -216,8 +219,14 @@ const ChannelIconUploader = ({
 						</span>
 					</div>
 				)}
-			</div>
-			<EmojiPopover hint="Select emoji icon" onEmojiSelect={setIcon}>
+			</button>
+			<EmojiPopover
+				hint="Select emoji icon"
+				onEmojiSelect={(e) => {
+					clearIconImage();
+					setIcon(e);
+				}}
+			>
 				<button
 					className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
 					type="button"
@@ -386,6 +395,7 @@ const ChannelNameDialog = ({
 											className="flex cursor-pointer items-center gap-x-2 rounded-lg border bg-white px-5 py-4 text-rose-600 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
 											disabled={isRemovingChannel}
 											onClick={onDelete}
+											type="button"
 										>
 											<Trash className="size-4" />
 											<p className="text-sm font-semibold">Delete channel</p>
@@ -425,6 +435,8 @@ interface ChannelIconDialogProps {
 	onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 	onIconEditOpenChange: (open: boolean) => void;
 	setIcon: (icon: string | undefined) => void;
+	setIconImage: (iconImage: Id<"_storage"> | undefined) => void;
+	setIconPreview: (iconPreview: string | undefined) => void;
 	icon?: string;
 }
 
@@ -435,6 +447,8 @@ const ChannelIconDialog = ({
 	onSubmit,
 	onIconEditOpenChange,
 	setIcon,
+	setIconImage,
+	setIconPreview,
 	icon,
 }: ChannelIconDialogProps) => {
 	return (
@@ -494,7 +508,11 @@ const ChannelIconDialog = ({
 								<div className="flex-shrink-0">
 									<EmojiPopover
 										hint="Select channel icon"
-										onEmojiSelect={setIcon}
+										onEmojiSelect={(e) => {
+											setIconImage(undefined);
+											setIconPreview(undefined);
+											setIcon(e);
+										}}
 									>
 										<div className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-100 hover:bg-gray-200 hover:border-gray-400 transition-all">
 											{icon ? (
@@ -827,6 +845,8 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 								onIconEditOpenChange={setIconEditOpen}
 								onSubmit={handleIconSubmit}
 								setIcon={setIcon}
+								setIconImage={setIconImage}
+								setIconPreview={setIconPreview}
 							/>
 						</div>
 					</DialogContent>

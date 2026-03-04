@@ -5,10 +5,10 @@ import { format } from "date-fns";
 import { Calendar, CalendarIcon, ChevronRight, Trash2, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import MemberSelector from "@/components/member-selector";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import {
@@ -352,17 +352,18 @@ const IssueContent = ({
 						{labels.length > 0 && (
 							<div className="flex flex-wrap gap-1">
 								{labels.map((label) => (
-									<Badge
-										className="text-[11px] px-2 py-0.5 gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+									<button
+										aria-label={`Remove ${label}`}
+										className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-secondary hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer border-none"
 										key={label}
 										onClick={() =>
 											onLabelsChange(labels.filter((l) => l !== label))
 										}
-										variant="secondary"
+										type="button"
 									>
 										{label}
 										<X className="w-2.5 h-2.5" />
-									</Badge>
+									</button>
 								))}
 							</div>
 						)}
@@ -496,24 +497,41 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 				labels,
 				dueDate: dueDate ? dueDate.getTime() : undefined,
 			});
+		} catch (error) {
+			console.error("Error saving issue:", error);
+			toast.error("Failed to save issue changes");
 		} finally {
 			setSaving(false);
 		}
 	};
 
 	const handleStatusChange = async (newStatusId: string) => {
+		const previousStatusId = statusId;
 		setStatusId(newStatusId as Id<"statuses">);
 		if (!issue) return;
-		await updateIssue({
-			issueId: issue._id,
-			statusId: newStatusId as Id<"statuses">,
-		});
+		try {
+			await updateIssue({
+				issueId: issue._id,
+				statusId: newStatusId as Id<"statuses">,
+			});
+		} catch (error) {
+			console.error("Error updating status:", error);
+			toast.error("Failed to update status");
+			setStatusId(previousStatusId);
+		}
 	};
 
 	const handlePriorityChange = async (val: string) => {
 		const newPriority = val as IssuePriority;
+		const previousPriority = priority;
 		setPriority(newPriority);
-		await updateIssue({ issueId: issue._id, priority: newPriority });
+		try {
+			await updateIssue({ issueId: issue._id, priority: newPriority });
+		} catch (error) {
+			console.error("Error updating priority:", error);
+			toast.error("Failed to update priority");
+			setPriority(previousPriority);
+		}
 	};
 
 	const handleDelete = async () => {
@@ -522,9 +540,15 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 			setTimeout(() => setConfirmDelete(false), 3000);
 			return;
 		}
-		await deleteIssue({ issueId: issue._id });
-		onOpenChange(false);
-		onDelete?.(issue._id);
+		try {
+			await deleteIssue({ issueId: issue._id });
+			onOpenChange(false);
+			onDelete?.(issue._id);
+		} catch (error) {
+			console.error("Error deleting issue:", error);
+			toast.error("Failed to delete issue");
+			setConfirmDelete(false);
+		}
 	};
 
 	const handleAddLabel = () => {

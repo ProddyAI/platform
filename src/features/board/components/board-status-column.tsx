@@ -76,8 +76,6 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	const [newTitle, setNewTitle] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const hasIssues = issues.length > 0 || creating;
-
 	const {
 		attributes,
 		listeners,
@@ -125,6 +123,10 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 		}
 	};
 
+	const isDockedEmpty = issues.length === 0 && !creating;
+	const showDockedDropHint = isDockedEmpty && isOver;
+	const isEmpty = issues.length === 0;
+
 	return (
 		<div
 			ref={setSortableRef}
@@ -133,7 +135,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 			className={cn(
 				"flex flex-col bg-background dark:bg-gray-900 rounded-xl border border-border/70 dark:border-gray-800 shadow-sm w-full",
 				isDragging && "opacity-50 shadow-xl border-dashed",
-				hasIssues ? "h-full" : "h-auto"
+				isDockedEmpty ? "h-auto" : "h-full"
 			)}
 		>
 			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70 dark:border-gray-800 rounded-t-xl bg-muted/50 dark:bg-gray-800/40 flex-shrink-0">
@@ -199,41 +201,44 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 				</DropdownMenu>
 			</div>
 
-			{hasIssues && (
-				<div
-					className={cn(
-						"flex-1 flex flex-col min-h-0 overflow-y-auto rounded-b-xl transition-colors duration-150",
-						isOver && "bg-muted/40 dark:bg-gray-800/40"
-					)}
-					ref={setDropRef}
+			<div
+				className={cn(
+					"rounded-b-xl transition-colors duration-150",
+					isDockedEmpty && !showDockedDropHint
+						? "h-0 overflow-hidden"
+						: "flex-1 flex flex-col min-h-0 overflow-y-auto",
+					isOver && "bg-muted/40 dark:bg-gray-800/40"
+				)}
+				ref={setDropRef}
+			>
+				<SortableContext
+					items={issues.map((i) => i._id)}
+					strategy={verticalListSortingStrategy}
 				>
-					<SortableContext
-						items={issues.map((i) => i._id)}
-						strategy={verticalListSortingStrategy}
-					>
-						<div className="flex flex-col gap-0.5 p-2">
-							{issues.length === 0 && !creating && !isOver && (
-								<div className="flex items-center justify-center h-12 text-xs text-muted-foreground/50 rounded-md border-2 border-dashed border-border/30">
-									No issues
-								</div>
-							)}
-							{issues.map((issue) => (
-								<BoardIssueRow
-									assigneeData={assigneeData}
-									issue={issue}
-									key={issue._id}
-									onClick={() => onClickIssue(issue)}
-									statusColor={status.color}
-								/>
-							))}
+					<div className="flex flex-col gap-0.5 p-2">
+						{issues.map((issue) => (
+							<BoardIssueRow
+								assigneeData={assigneeData}
+								issue={issue}
+								key={issue._id}
+								onClick={() => onClickIssue(issue)}
+								statusColor={status.color}
+							/>
+						))}
 
-							{issues.length > 0 && isOver && (
-								<div className="h-8 rounded-md border-2 border-dashed border-primary/40 bg-primary/5 flex items-center justify-center text-xs text-primary/60 mt-1">
-									Drop here
-								</div>
-							)}
-						</div>
-					</SortableContext>
+						{isOver && (
+							<div
+								className={cn(
+									"rounded-md border-2 border-dashed border-primary/40 bg-primary/5 flex items-center justify-center text-xs text-primary/60",
+									isEmpty ? "h-12" : "h-8",
+									issues.length > 0 && "mt-1"
+								)}
+							>
+								Drop here
+							</div>
+						)}
+					</div>
+				</SortableContext>
 
 					{creating && (
 						<div className="px-2 pb-2">
@@ -252,7 +257,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						</div>
 					)}
 
-					{!creating && (
+					{!creating && issues.length > 0 && (
 						<button
 							className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 dark:hover:bg-gray-800/40 rounded-b-xl transition-colors border-t border-border/60 dark:border-gray-800/60"
 							onClick={handleStartCreating}
@@ -262,8 +267,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 							Add issue
 						</button>
 					)}
-				</div>
-			)}
+			</div>
 		</div>
 	);
 };

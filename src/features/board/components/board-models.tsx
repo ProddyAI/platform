@@ -91,6 +91,8 @@ export const BoardAddStatusModal: React.FC<BoardAddStatusModalProps> = ({
 					<div className="flex gap-2 flex-wrap">
 						{STATUS_COLOR_PRESETS.map((c) => (
 							<button
+								aria-label={`Select color ${c}`}
+								aria-pressed={color === c}
 								className={cn(
 									"w-7 h-7 rounded-full border-2 transition-all",
 									color === c
@@ -173,6 +175,8 @@ export const BoardEditStatusModal: React.FC<BoardEditStatusModalProps> = ({
 					<div className="flex gap-2 flex-wrap">
 						{STATUS_COLOR_PRESETS.map((c) => (
 							<button
+								aria-label={`Select color ${c}`}
+								aria-pressed={color === c}
 								className={cn(
 									"w-7 h-7 rounded-full border-2 transition-all",
 									color === c

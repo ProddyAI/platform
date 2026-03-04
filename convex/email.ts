@@ -11,6 +11,31 @@ import {
 	query,
 } from "./_generated/server";
 
+// Helper function to fetch with timeout
+async function fetchWithTimeout(
+	url: string,
+	options: RequestInit = {},
+	timeoutMs: number = 10000
+): Promise<Response> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+	try {
+		const response = await fetch(url, {
+			...options,
+			signal: controller.signal,
+		});
+		return response;
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			throw new Error(`Request timeout after ${timeoutMs}ms`);
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}
+
 // Get weekly digest data for a user across all their workspaces
 export const getUserWeeklyDigest = query({
 	args: {
@@ -320,7 +345,7 @@ export const sendDirectMessageEmail = action({
 			const apiUrl = `${baseUrl}/api/email/direct-message`;
 
 			try {
-				const response: Response = await fetch(apiUrl, {
+				const response: Response = await fetchWithTimeout(apiUrl, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -438,7 +463,7 @@ export const sendMentionEmail = action({
 			const apiUrl = `${baseUrl}/api/email/mention`;
 
 			try {
-				const response: Response = await fetch(apiUrl, {
+				const response: Response = await fetchWithTimeout(apiUrl, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -563,7 +588,7 @@ export const sendThreadReplyEmail = action({
 			const apiUrl = `${baseUrl}/api/email/thread-reply`;
 
 			try {
-				const response: Response = await fetch(apiUrl, {
+				const response: Response = await fetchWithTimeout(apiUrl, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -692,7 +717,7 @@ export const sendWeeklyDigestEmails = action({
 						digestData.totalStats.totalTasks > 0
 					) {
 						// Call the email API
-						const emailResponse = await fetch(
+						const emailResponse = await fetchWithTimeout(
 							`${process.env.SITE_URL}/api/email/weekly-digest`,
 							{
 								method: "POST",
@@ -911,7 +936,7 @@ export const sendWeeklyDigests = internalMutation({
 					digestData.totalStats.totalTasks > 0
 				) {
 					// Call the email API
-					const emailResponse = await fetch(
+					const emailResponse = await fetchWithTimeout(
 						`${process.env.SITE_URL}/api/email/weekly-digest`,
 						{
 							method: "POST",
@@ -1043,7 +1068,7 @@ export const sendCardAssignmentEmail = action({
 			const apiUrl = `${baseUrl}/api/email/assignee`;
 
 			try {
-				const response: Response = await fetch(apiUrl, {
+				const response: Response = await fetchWithTimeout(apiUrl, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -1139,7 +1164,7 @@ export const sendIssueAssignmentEmail = action({
 			const workspaceUrl = `${baseUrl}/workspace/${issue.workspaceId}/channel/${issue.channelId}/board`;
 			const apiUrl = `${baseUrl}/api/email/assignee`;
 
-			const response: Response = await fetch(apiUrl, {
+			const response: Response = await fetchWithTimeout(apiUrl, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -1339,20 +1364,23 @@ export const sendImportCompletionEmail = internalAction({
 			try {
 				const supportEmail = process.env.SUPPORT_EMAIL || "support@proddy.tech";
 
-				const response = await fetch("https://api.resend.com/emails", {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${apiKey}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						from: fromEmail,
-						to: args.email,
-						replyTo: supportEmail,
-						subject,
-						html: htmlContent,
-					}),
-				});
+				const response = await fetchWithTimeout(
+					"https://api.resend.com/emails",
+					{
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${apiKey}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							from: fromEmail,
+							to: args.email,
+							replyTo: supportEmail,
+							subject,
+							html: htmlContent,
+						}),
+					}
+				);
 
 				if (!response.ok) {
 					const errorData = await response.json();

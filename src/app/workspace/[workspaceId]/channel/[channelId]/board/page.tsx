@@ -96,6 +96,9 @@ const BoardPage = () => {
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
+	const [optimisticIssues, setOptimisticIssues] = useState<typeof issues | null>(
+		null
+	);
 
 	// ── Old card modal state (for table/gantt views) ────────────────────────
 	const [deleteListOpen, setDeleteListOpen] = useState(false);
@@ -138,7 +141,8 @@ const BoardPage = () => {
 	const createStatus = useMutation(api.board.createStatus);
 	const updateStatus = useMutation(api.board.updateStatus);
 	const deleteStatus = useMutation(api.board.deleteStatus);
-	const _reorderStatuses = useMutation(api.board.reorderStatuses);
+	const reorderStatuses = useMutation(api.board.reorderStatuses);
+	const moveIssueStatus = useMutation(api.board.moveIssueStatus);
 	const createIssue = useMutation(api.board.createIssue);
 
 	// Existing card mutations
@@ -159,6 +163,10 @@ const BoardPage = () => {
 	useEffect(() => {
 		if (statuses) setOptimisticStatuses(null);
 	}, [statuses]);
+
+	useEffect(() => {
+		setOptimisticIssues(null);
+	}, [issues]);
 
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {
@@ -235,8 +243,61 @@ const BoardPage = () => {
 		setOptimisticStatuses(newOrder.map((s, idx) => ({ ...s, order: idx })));
 	};
 
+	const handleMoveIssueStatus = async (
+		issueId: Id<"issues">,
+		toStatusId: Id<"statuses">,
+		order: number
+	) => {
+		const currentIssues = optimisticIssues ?? issues;
+		const movingIssue = currentIssues.find((issue) => issue._id === issueId);
+		if (!movingIssue) return;
+
+		const fromStatusId = movingIssue.statusId;
+		const sourceIssues = currentIssues
+			.filter((issue) => issue.statusId === fromStatusId && issue._id !== issueId)
+			.sort((a, b) => a.order - b.order)
+			.map((issue, idx) => ({ ...issue, order: idx }));
+
+		const destinationIssues = currentIssues
+			.filter((issue) => issue.statusId === toStatusId && issue._id !== issueId)
+			.sort((a, b) => a.order - b.order);
+
+		const insertAt = Math.max(0, Math.min(order, destinationIssues.length));
+		destinationIssues.splice(insertAt, 0, {
+			...movingIssue,
+			statusId: toStatusId,
+			order: insertAt,
+		});
+
+		const normalizedDestinationIssues = destinationIssues.map((issue, idx) => ({
+			...issue,
+			order: idx,
+		}));
+
+		const untouchedIssues = currentIssues.filter(
+			(issue) => issue.statusId !== fromStatusId && issue.statusId !== toStatusId
+		);
+
+		const nextIssues = [
+			...untouchedIssues,
+			...sourceIssues,
+			...normalizedDestinationIssues,
+		];
+
+		setOptimisticIssues(nextIssues);
+
+		try {
+			await moveIssueStatus({ issueId, toStatusId, order });
+		} catch (error) {
+			setOptimisticIssues(currentIssues);
+			throw error;
+		}
+	};
+
 	// ── Search filter ───────────────────────────────────────────────────────
-	const filteredIssues = issues.filter((issue) => {
+	const displayedIssues = optimisticIssues ?? issues;
+
+	const filteredIssues = displayedIssues.filter((issue) => {
 		if (!searchQuery) return true;
 		const query = searchQuery.toLowerCase();
 		return (
@@ -356,7 +417,11 @@ const BoardPage = () => {
 							setStatusColor(status.color);
 							setEditStatusOpen(true);
 						}}
+						onMoveIssueStatus={handleMoveIssueStatus}
 						onReorderStatuses={handleReorderStatuses}
+						onReorderStatusesPersist={async (statusOrders) => {
+							await reorderStatuses({ statusOrders });
+						}}
 						onSearch={setSearchQuery}
 						setView={setView}
 						showHeader
@@ -383,28 +448,33 @@ const BoardPage = () => {
 
 			{view !== "kanban" && (
 				<div className="flex-1 overflow-auto min-h-0">
-					<BoardTableView
-						allCards={allCards.filter((c) => {
-							if (!searchQuery) return true;
-							const q = searchQuery.toLowerCase();
-							return (
-								c.title.toLowerCase().includes(q) ||
-								c.description?.toLowerCase().includes(q)
-							);
-						})}
-						lists={lists || []}
-						members={members}
-						onDeleteCard={handleDeleteCard}
-						onEditCard={(card) => {
-							setEditCardOpen({ card });
-							setCardTitle(card.title);
-							setCardDesc(card.description || "");
-							setCardLabels((card.labels || []).join(", "));
-							setCardPriority(card.priority || "");
-							setCardDueDate(card.dueDate ? new Date(card.dueDate) : undefined);
-							setCardAssignees(card.assignees || []);
-						}}
-					/>
+					{/* ── Table view ─── */}
+					{view === "table" && (
+						<BoardTableView
+							allCards={allCards.filter((c) => {
+								if (!searchQuery) return true;
+								const q = searchQuery.toLowerCase();
+								return (
+									c.title.toLowerCase().includes(q) ||
+									c.description?.toLowerCase().includes(q)
+								);
+							})}
+							lists={lists || []}
+							members={members}
+							onDeleteCard={handleDeleteCard}
+							onEditCard={(card) => {
+								setEditCardOpen({ card });
+								setCardTitle(card.title);
+								setCardDesc(card.description || "");
+								setCardLabels((card.labels || []).join(", "));
+								setCardPriority(card.priority || "");
+								setCardDueDate(
+									card.dueDate ? new Date(card.dueDate) : undefined
+								);
+								setCardAssignees(card.assignees || []);
+							}}
+						/>
+					)}
 
 					{/* ── Gantt (legacy cards) ─── */}
 					{view === "gantt" && (

@@ -20,9 +20,7 @@ import {
 	SortableContext,
 	sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-import { useMutation } from "convex/react";
 import React, { useCallback, useMemo } from "react";
-import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import BoardHeader from "./board-header";
 import type { IssuePriority } from "./board-issue-row";
@@ -61,6 +59,14 @@ interface BoardKanbanViewProps {
 	onEditStatus: (status: Status) => void;
 	onDeleteStatus: (status: Status) => void;
 	onReorderStatuses: (newOrder: Status[]) => void;
+	onMoveIssueStatus?: (
+		issueId: Id<"issues">,
+		toStatusId: Id<"statuses">,
+		order: number
+	) => Promise<void>;
+	onReorderStatusesPersist?: (
+		statusOrders: { statusId: Id<"statuses">; order: number }[]
+	) => Promise<void>;
 	showHeader?: boolean;
 	statusCount?: number;
 	totalIssues?: number;
@@ -91,6 +97,8 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	onEditStatus,
 	onDeleteStatus,
 	onReorderStatuses,
+	onMoveIssueStatus,
+	onReorderStatusesPersist,
 	showHeader = false,
 	statusCount = 0,
 	totalIssues = 0,
@@ -99,9 +107,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	onAddStatus,
 	onSearch,
 }) => {
-	const moveIssueStatus = useMutation(api.board.moveIssueStatus);
-	const reorderStatuses = useMutation(api.board.reorderStatuses);
-
 	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
 
 	const memberDataMap = useMemo(() => {
@@ -183,18 +188,22 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			const newIdx = statuses.findIndex((s) => s._id === overStatusId);
 			if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
 
+			// Capture previous state for rollback
+			const previousStatuses = [...statuses];
 			const reordered = arrayMove([...statuses], oldIdx, newIdx);
 			onReorderStatuses(reordered);
 
 			try {
-				await reorderStatuses({
-					statusOrders: reordered.map((s, idx) => ({
+				await onReorderStatusesPersist?.(
+					reordered.map((s, idx) => ({
 						statusId: s._id,
 						order: idx,
-					})),
-				});
+					}))
+				);
 			} catch (error) {
 				console.error("Error reordering statuses:", error);
+				// Rollback to previous state
+				onReorderStatuses(previousStatuses);
 			}
 			return;
 		}
@@ -226,7 +235,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			if (!toStatusId) return;
 
 			try {
-				await moveIssueStatus({ issueId, toStatusId, order: newOrder });
+				await onMoveIssueStatus?.(issueId, toStatusId, newOrder);
 			} catch (error) {
 				console.error("Error moving issue:", error);
 			}
