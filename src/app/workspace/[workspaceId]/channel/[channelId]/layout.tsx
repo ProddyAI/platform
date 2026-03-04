@@ -180,37 +180,20 @@ const ChannelIconUploader = ({
 				type="button"
 			>
 				{iconPreview || icon ? (
-					<>
-						<ChannelIconPreview
-							channelName={channelName}
-							icon={icon}
-							iconImageUrl={
-								iconPreview?.startsWith("http") ? iconPreview : undefined
-							}
-							iconPreview={
-								iconPreview && !iconPreview.startsWith("http")
-									? iconPreview
-									: undefined
-							}
-							imageLoadError={imageLoadError}
-							setImageLoadError={setImageLoadError}
-						/>
-						<button
-							className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-							onClick={(e) => {
-								e.stopPropagation();
-								if (iconPreview || iconImage) {
-									clearIconImage();
-								}
-								if (icon) {
-									setIcon(undefined);
-								}
-							}}
-							type="button"
-						>
-							<X className="h-3.5 w-3.5" />
-						</button>
-					</>
+					<ChannelIconPreview
+						channelName={channelName}
+						icon={icon}
+						iconImageUrl={
+							iconPreview?.startsWith("http") ? iconPreview : undefined
+						}
+						iconPreview={
+							iconPreview && !iconPreview.startsWith("http")
+								? iconPreview
+								: undefined
+						}
+						imageLoadError={imageLoadError}
+						setImageLoadError={setImageLoadError}
+					/>
 				) : (
 					<div className="flex flex-col items-center gap-1">
 						<Upload className="h-6 w-6 text-gray-400" />
@@ -220,6 +203,23 @@ const ChannelIconUploader = ({
 					</div>
 				)}
 			</button>
+			{(iconPreview || icon) && (
+				<button
+					className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+					onClick={(e) => {
+						e.stopPropagation();
+						if (iconPreview || iconImage) {
+							clearIconImage();
+						}
+						if (icon) {
+							setIcon(undefined);
+						}
+					}}
+					type="button"
+				>
+					<X className="h-3.5 w-3.5" />
+				</button>
+			)}
 			<EmojiPopover
 				hint="Select emoji icon"
 				onEmojiSelect={(e) => {
@@ -302,6 +302,7 @@ const ChannelNameDialog = ({
 				<button
 					className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
 					disabled={isUpdatingChannel}
+					type="button"
 				>
 					<div className="flex w-full items-center justify-between">
 						<p className="text-sm font-semibold">Channel name and icon</p>
@@ -349,7 +350,7 @@ const ChannelNameDialog = ({
 					<div className="space-y-4">
 						<div className="flex flex-col gap-2">
 							<div className="flex items-center justify-between">
-								<label className="text-sm font-medium">Channel Icon</label>
+								<p className="text-sm font-medium">Channel Icon</p>
 								<span className="text-xs text-muted-foreground">
 									Select emoji or upload image
 								</span>
@@ -369,11 +370,15 @@ const ChannelNameDialog = ({
 									setImageLoadError={setImageLoadError}
 								/>
 								<div className="flex-1">
-									<label className="text-sm font-medium mb-1 block">
+									<label
+										className="text-sm font-medium mb-1 block"
+										htmlFor="channel-name-input"
+									>
 										Channel Name
 									</label>
 									<Input
 										disabled={isUpdatingChannel}
+										id="channel-name-input"
 										maxLength={20}
 										minLength={3}
 										onChange={(e) =>
@@ -435,7 +440,9 @@ interface ChannelIconDialogProps {
 	onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 	onIconEditOpenChange: (open: boolean) => void;
 	setIcon: (icon: string | undefined) => void;
-	setIconImage: React.Dispatch<React.SetStateAction<Id<"_storage"> | undefined>>;
+	setIconImage: React.Dispatch<
+		React.SetStateAction<Id<"_storage"> | undefined>
+	>;
 	setIconPreview: React.Dispatch<React.SetStateAction<string | undefined>>;
 	icon?: string;
 }
@@ -454,7 +461,10 @@ const ChannelIconDialog = ({
 	return (
 		<Dialog onOpenChange={onIconEditOpenChange} open={iconEditOpen}>
 			<DialogTrigger asChild>
-				<button className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50">
+				<button
+					className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50"
+					type="button"
+				>
 					<div className="flex w-full items-center justify-between">
 						<p className="text-sm font-semibold">Channel icon</p>
 						<p className="text-sm font-semibold text-[#1264A3] hover:underline">
@@ -499,7 +509,7 @@ const ChannelIconDialog = ({
 					<div className="space-y-4">
 						<div className="flex flex-col gap-2">
 							<div className="flex items-center justify-between">
-								<label className="text-sm font-medium">Channel Icon</label>
+								<p className="text-sm font-medium">Channel Icon</p>
 								<span className="text-xs text-muted-foreground">
 									Click to select an emoji
 								</span>

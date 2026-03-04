@@ -453,8 +453,11 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	// Handle URL parameter for opening user settings
 	useEffect(() => {
 		const openUserSettings = searchParams.get("openUserSettings");
-		if (openUserSettings) {
-			setUserSettingsTab(openUserSettings as "profile" | "notifications");
+		if (
+			openUserSettings === "profile" ||
+			openUserSettings === "notifications"
+		) {
+			setUserSettingsTab(openUserSettings);
 			setForceOpenUserSettings(true);
 
 			// Clean up URL parameter
@@ -525,12 +528,6 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 			if (event.key === "Escape") {
 				event.preventDefault();
 				setSearchOpen(false);
-				return;
-			}
-			// Let the form submit handler handle Enter key to avoid duplicate searches
-			if (event.key === "Enter") {
-				event.preventDefault();
-				event.stopPropagation();
 			}
 		},
 		[setSearchOpen]

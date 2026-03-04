@@ -606,6 +606,25 @@ async function assertWorkspaceMember(
 	return member;
 }
 
+async function assertWorkspaceMemberForRead(
+	ctx: QueryCtx,
+	workspaceId: Id<"workspaces">
+): Promise<Doc<"members">> {
+	const auth = await ctx.auth.getUserIdentity();
+	if (!auth) throw new Error("Not authenticated");
+
+	const userId = auth.subject.split("|")[0] as Id<"users">;
+	const member = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
+		)
+		.unique();
+
+	if (!member) throw new Error("Not a member of this workspace");
+	return member;
+}
+
 // Helper to assert that the caller has a specific role in the workspace
 async function assertWorkspaceRole(
 	ctx: MutationCtx,
@@ -613,7 +632,11 @@ async function assertWorkspaceRole(
 	requiredRole: "admin" | "member"
 ): Promise<Doc<"members">> {
 	const member = await assertWorkspaceMember(ctx, workspaceId);
-	if (requiredRole === "admin" && member.role !== "admin") {
+	if (
+		requiredRole === "admin" &&
+		member.role !== "admin" &&
+		member.role !== "owner"
+	) {
 		throw new Error("Admin role required");
 	}
 	return member;
@@ -625,6 +648,10 @@ export const getStatuses = query({
 		ctx: QueryCtx,
 		{ channelId }: { channelId: Id<"channels"> }
 	) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
 		return await ctx.db
 			.query("statuses")
 			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
@@ -733,6 +760,10 @@ export const getIssues = query({
 		ctx: QueryCtx,
 		{ channelId }: { channelId: Id<"channels"> }
 	) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
 		return await ctx.db
 			.query("issues")
 			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
@@ -796,8 +827,16 @@ export const createIssue = mutation({
 
 					if (creator) {
 						for (const assigneeId of args.assignees) {
+							const assigneeMember = await ctx.db.get(assigneeId);
+							if (
+								!assigneeMember ||
+								assigneeMember.workspaceId !== channel.workspaceId
+							) {
+								continue;
+							}
+
 							await ctx.db.insert("mentions", {
-								mentionedMemberId: assigneeId,
+								mentionedMemberId: assigneeMember._id,
 								mentionerMemberId: creator._id,
 								workspaceId: channel.workspaceId,
 								channelId: args.channelId,
@@ -811,7 +850,7 @@ export const createIssue = mutation({
 								0,
 								api.email.sendIssueAssignmentEmail,
 								{
-									assigneeId,
+									assigneeId: assigneeMember._id,
 									issueId,
 									assignerId: creator._id,
 								}
@@ -875,6 +914,7 @@ export const updateIssue = mutation({
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
 					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const mentionCreatedAt = Date.now();
 					const updater = await ctx.db
 						.query("members")
 						.withIndex("by_workspace_id_user_id", (q) =>
@@ -889,13 +929,21 @@ export const updateIssue = mutation({
 						);
 
 						for (const assigneeId of newAssignees) {
+							const assigneeMember = await ctx.db.get(assigneeId);
+							if (
+								!assigneeMember ||
+								assigneeMember.workspaceId !== channel.workspaceId
+							) {
+								continue;
+							}
+
 							await ctx.db.insert("mentions", {
-								mentionedMemberId: assigneeId,
+								mentionedMemberId: assigneeMember._id,
 								mentionerMemberId: updater._id,
 								workspaceId: channel.workspaceId,
 								channelId: issue.channelId,
 								read: false,
-								createdAt: Date.now(),
+								createdAt: mentionCreatedAt,
 								issueId,
 								issueTitle: updates.title || issue.title,
 							});
@@ -904,7 +952,7 @@ export const updateIssue = mutation({
 								0,
 								api.email.sendIssueAssignmentEmail,
 								{
-									assigneeId,
+									assigneeId: assigneeMember._id,
 									issueId,
 									assignerId: updater._id,
 								}
@@ -1009,6 +1057,13 @@ export const moveIssueStatus = mutation({
 			.withIndex("by_status_id", (q) => q.eq("statusId", toStatusId))
 			.collect();
 		const sortedToIssues = toIssues.sort(sortByOrder);
+		const mentions = await ctx.db
+			.query("mentions")
+			.withIndex("by_issue_id", (q) => q.eq("issueId", issue._id))
+			.collect();
+		for (const mention of mentions) {
+			await ctx.db.delete(mention._id);
+		}
 		const clampedDestIndex = Math.min(targetIndex, sortedToIssues.length);
 		const destOrderIds: Id<"issues">[] = [];
 		for (let i = 0; i < sortedToIssues.length; i++) {
@@ -1048,6 +1103,14 @@ export const deleteIssue = mutation({
 		const channel = await ctx.db.get(issue.channelId);
 		if (!channel) throw new Error("Channel not found");
 		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		const mentions = await ctx.db
+			.query("mentions")
+			.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
+			.collect();
+		for (const mention of mentions) {
+			await ctx.db.delete(mention._id);
+		}
 
 		return await ctx.db.delete(issueId);
 	},
@@ -1120,6 +1183,10 @@ export const migrateListsToStatuses = mutation({
 		ctx: MutationCtx,
 		{ channelId }: { channelId: Id<"channels"> }
 	) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
 		// Skip if statuses already exist
 		const existingStatuses = await ctx.db
 			.query("statuses")
@@ -1154,7 +1221,9 @@ export const migrateListsToStatuses = mutation({
 			// Map all lists with matching title to this status (handles duplicates)
 			const matchingLists = lists.filter((l) => l.title === def.name);
 			for (const matchingList of matchingLists) {
-				statusIdByListId[matchingList._id] = statusId;
+				if (!statusIdByListId[matchingList._id]) {
+					statusIdByListId[matchingList._id] = statusId;
+				}
 			}
 		}
 
@@ -1194,6 +1263,10 @@ export const migrateListsToStatuses = mutation({
 export const getUniqueIssueLabels = query({
 	args: { channelId: v.id("channels") },
 	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
 		const issues = await ctx.db
 			.query("issues")
 			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))

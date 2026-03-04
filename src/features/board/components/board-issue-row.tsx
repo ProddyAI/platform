@@ -250,7 +250,6 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 
 	return (
 		<button
-			type="button"
 			ref={(node) => {
 				setNodeRef(node);
 				if (!isDragOverlay) {
@@ -258,6 +257,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				}
 			}}
 			style={style}
+			type="button"
 			{...attributes}
 			{...listeners}
 			className={cn(

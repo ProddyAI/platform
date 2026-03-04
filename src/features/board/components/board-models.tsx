@@ -283,6 +283,12 @@ export const BoardAddListModal: React.FC<BoardAddListModalProps> = ({
 				</DialogHeader>
 				<Input
 					onChange={(e) => setTitle(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter") {
+							e.preventDefault();
+							onAdd();
+						}
+					}}
 					placeholder="List title"
 					ref={inputRef}
 					value={title}

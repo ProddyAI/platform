@@ -205,7 +205,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 				className={cn(
 					"rounded-b-xl transition-colors duration-150",
 					isDockedEmpty && !showDockedDropHint
-						? "h-0 overflow-hidden"
+						? "min-h-2 overflow-hidden"
 						: "flex-1 flex flex-col min-h-0 overflow-y-auto",
 					isOver && "bg-muted/40 dark:bg-gray-800/40"
 				)}
@@ -216,6 +216,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					strategy={verticalListSortingStrategy}
 				>
 					<div className="flex flex-col gap-0.5 p-2">
+						{isDockedEmpty && !showDockedDropHint && <div className="h-1" />}
 						{issues.map((issue) => (
 							<BoardIssueRow
 								assigneeData={assigneeData}
@@ -240,33 +241,33 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					</div>
 				</SortableContext>
 
-					{creating && (
-						<div className="px-2 pb-2">
-							<Input
-								className="h-8 text-sm bg-background border-primary/40 focus-visible:ring-1 focus-visible:ring-primary/40"
-								onBlur={handleCreateIssue}
-								onChange={(e) => setNewTitle(e.target.value)}
-								onKeyDown={handleKeyDown}
-								placeholder="Issue title..."
-								ref={inputRef}
-								value={newTitle}
-							/>
-							<p className="text-[10px] text-muted-foreground mt-1 pl-1">
-								Enter to save · Esc to cancel
-							</p>
-						</div>
-					)}
+				{creating && (
+					<div className="px-2 pb-2">
+						<Input
+							className="h-8 text-sm bg-background border-primary/40 focus-visible:ring-1 focus-visible:ring-primary/40"
+							onBlur={handleCreateIssue}
+							onChange={(e) => setNewTitle(e.target.value)}
+							onKeyDown={handleKeyDown}
+							placeholder="Issue title..."
+							ref={inputRef}
+							value={newTitle}
+						/>
+						<p className="text-[10px] text-muted-foreground mt-1 pl-1">
+							Enter to save · Esc to cancel
+						</p>
+					</div>
+				)}
 
-					{!creating && issues.length > 0 && (
-						<button
-							className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 dark:hover:bg-gray-800/40 rounded-b-xl transition-colors border-t border-border/60 dark:border-gray-800/60"
-							onClick={handleStartCreating}
-							type="button"
-						>
-							<Plus className="w-3.5 h-3.5" />
-							Add issue
-						</button>
-					)}
+				{!creating && issues.length > 0 && (
+					<button
+						className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 dark:hover:bg-gray-800/40 rounded-b-xl transition-colors border-t border-border/60 dark:border-gray-800/60"
+						onClick={handleStartCreating}
+						type="button"
+					>
+						<Plus className="w-3.5 h-3.5" />
+						Add issue
+					</button>
+				)}
 			</div>
 		</div>
 	);

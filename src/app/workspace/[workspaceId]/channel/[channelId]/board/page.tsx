@@ -96,9 +96,9 @@ const BoardPage = () => {
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
-	const [optimisticIssues, setOptimisticIssues] = useState<typeof issues | null>(
-		null
-	);
+	const [optimisticIssues, setOptimisticIssues] = useState<
+		typeof issues | null
+	>(null);
 
 	// ── Old card modal state (for table/gantt views) ────────────────────────
 	const [deleteListOpen, setDeleteListOpen] = useState(false);
@@ -165,8 +165,9 @@ const BoardPage = () => {
 	}, [statuses]);
 
 	useEffect(() => {
+		// Intentional dependency on server issues: clear optimistic issue state when fresh data arrives.
 		setOptimisticIssues(null);
-	}, [issues]);
+	}, []);
 
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {
@@ -196,9 +197,31 @@ const BoardPage = () => {
 
 	const handleDeleteStatus = async () => {
 		if (!statusToDelete) return;
-		await deleteStatus({ statusId: statusToDelete._id });
-		setDeleteStatusOpen(false);
-		setStatusToDelete(null);
+
+		const deletedStatusId = statusToDelete._id;
+		const previousOptimisticStatuses = optimisticStatuses;
+		const previousOptimisticIssues = optimisticIssues;
+		const baseStatuses = optimisticStatuses ?? statuses ?? [];
+		const baseIssues = optimisticIssues ?? issues;
+
+		setOptimisticStatuses(
+			baseStatuses
+				.filter((status) => status._id !== deletedStatusId)
+				.map((status, index) => ({ ...status, order: index }))
+		);
+		setOptimisticIssues(
+			baseIssues.filter((issue) => issue.statusId !== deletedStatusId)
+		);
+
+		try {
+			await deleteStatus({ statusId: deletedStatusId });
+			setDeleteStatusOpen(false);
+			setStatusToDelete(null);
+		} catch (error) {
+			setOptimisticStatuses(previousOptimisticStatuses);
+			setOptimisticIssues(previousOptimisticIssues);
+			throw error;
+		}
 	};
 
 	// ── Issue handlers ──────────────────────────────────────────────────────
@@ -253,36 +276,81 @@ const BoardPage = () => {
 		if (!movingIssue) return;
 
 		const fromStatusId = movingIssue.statusId;
-		const sourceIssues = currentIssues
-			.filter((issue) => issue.statusId === fromStatusId && issue._id !== issueId)
-			.sort((a, b) => a.order - b.order)
-			.map((issue, idx) => ({ ...issue, order: idx }));
+		let nextIssues: typeof currentIssues;
 
-		const destinationIssues = currentIssues
-			.filter((issue) => issue.statusId === toStatusId && issue._id !== issueId)
-			.sort((a, b) => a.order - b.order);
+		if (fromStatusId === toStatusId) {
+			const sameStatusIssues = currentIssues
+				.filter((issue) => issue.statusId === fromStatusId)
+				.sort((a, b) => a.order - b.order);
 
-		const insertAt = Math.max(0, Math.min(order, destinationIssues.length));
-		destinationIssues.splice(insertAt, 0, {
-			...movingIssue,
-			statusId: toStatusId,
-			order: insertAt,
-		});
+			const fromIndex = sameStatusIssues.findIndex(
+				(issue) => issue._id === issueId
+			);
+			if (fromIndex === -1) return;
 
-		const normalizedDestinationIssues = destinationIssues.map((issue, idx) => ({
-			...issue,
-			order: idx,
-		}));
+			const reorderedSameStatus = [...sameStatusIssues];
+			const [removedIssue] = reorderedSameStatus.splice(fromIndex, 1);
+			if (!removedIssue) return;
 
-		const untouchedIssues = currentIssues.filter(
-			(issue) => issue.statusId !== fromStatusId && issue.statusId !== toStatusId
-		);
+			const targetIndex = Math.max(
+				0,
+				Math.min(order, reorderedSameStatus.length)
+			);
+			reorderedSameStatus.splice(targetIndex, 0, {
+				...removedIssue,
+				statusId: toStatusId,
+				order: targetIndex,
+			});
 
-		const nextIssues = [
-			...untouchedIssues,
-			...sourceIssues,
-			...normalizedDestinationIssues,
-		];
+			const normalizedSameStatus = reorderedSameStatus.map((issue, idx) => ({
+				...issue,
+				order: idx,
+			}));
+
+			const untouchedIssues = currentIssues.filter(
+				(issue) => issue.statusId !== fromStatusId
+			);
+
+			nextIssues = [...untouchedIssues, ...normalizedSameStatus];
+		} else {
+			const sourceIssues = currentIssues
+				.filter(
+					(issue) => issue.statusId === fromStatusId && issue._id !== issueId
+				)
+				.sort((a, b) => a.order - b.order)
+				.map((issue, idx) => ({ ...issue, order: idx }));
+
+			const destinationIssues = currentIssues
+				.filter(
+					(issue) => issue.statusId === toStatusId && issue._id !== issueId
+				)
+				.sort((a, b) => a.order - b.order);
+
+			const insertAt = Math.max(0, Math.min(order, destinationIssues.length));
+			destinationIssues.splice(insertAt, 0, {
+				...movingIssue,
+				statusId: toStatusId,
+				order: insertAt,
+			});
+
+			const normalizedDestinationIssues = destinationIssues.map(
+				(issue, idx) => ({
+					...issue,
+					order: idx,
+				})
+			);
+
+			const untouchedIssues = currentIssues.filter(
+				(issue) =>
+					issue.statusId !== fromStatusId && issue.statusId !== toStatusId
+			);
+
+			nextIssues = [
+				...untouchedIssues,
+				...sourceIssues,
+				...normalizedDestinationIssues,
+			];
+		}
 
 		setOptimisticIssues(nextIssues);
 
