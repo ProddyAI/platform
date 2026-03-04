@@ -167,9 +167,9 @@ const BoardPage = () => {
 	}, [statuses]);
 
 	useEffect(() => {
-		// Intentional dependency on server issues: clear optimistic issue state when fresh data arrives.
+		// Clear optimistic issue state when fresh server data arrives.
 		setOptimisticIssues(null);
-	}, []);
+	}, [issues]);
 
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {

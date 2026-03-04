@@ -713,7 +713,12 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		e.preventDefault();
 
 		updateChannel(
-			{ id: channelId, name: value, icon, iconImage },
+			{
+				id: channelId,
+				name: value,
+				icon,
+				iconImage: iconImage === undefined && channel?.iconImage ? null : iconImage,
+			},
 			{
 				onSuccess: () => {
 					toast.success("Channel updated.");
@@ -736,7 +741,12 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		}
 
 		updateChannel(
-			{ id: channelId, name: channel.name, icon },
+			{
+				id: channelId,
+				name: channel.name,
+				icon,
+				iconImage: iconImage === undefined && channel.iconImage ? null : iconImage,
+			},
 			{
 				onSuccess: () => {
 					toast.success("Channel icon updated.");

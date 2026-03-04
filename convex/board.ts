@@ -1193,7 +1193,7 @@ export const getAssignedIssues = query({
 	},
 });
 
-// Helper for email: get issue details
+// Helper for email: get issue details (internal use - no auth check for scheduled actions)
 export const _getIssueDetails = query({
 	args: { issueId: v.id("issues") },
 	handler: async (ctx, { issueId }) => {
@@ -1202,8 +1202,6 @@ export const _getIssueDetails = query({
 
 		const channel = await ctx.db.get(issue.channelId);
 		if (!channel) return null;
-
-		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const status = await ctx.db.get(issue.statusId);
 
