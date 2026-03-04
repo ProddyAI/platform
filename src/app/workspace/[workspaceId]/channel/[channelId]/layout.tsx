@@ -435,8 +435,8 @@ interface ChannelIconDialogProps {
 	onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 	onIconEditOpenChange: (open: boolean) => void;
 	setIcon: (icon: string | undefined) => void;
-	setIconImage: (iconImage: Id<"_storage"> | undefined) => void;
-	setIconPreview: (iconPreview: string | undefined) => void;
+	setIconImage: React.Dispatch<React.SetStateAction<Id<"_storage"> | undefined>>;
+	setIconPreview: React.Dispatch<React.SetStateAction<string | undefined>>;
 	icon?: string;
 }
 
@@ -509,8 +509,8 @@ const ChannelIconDialog = ({
 									<EmojiPopover
 										hint="Select channel icon"
 										onEmojiSelect={(e) => {
-											setIconImage(undefined);
-											setIconPreview(undefined);
+											setIconImage(() => undefined);
+											setIconPreview(() => undefined);
 											setIcon(e);
 										}}
 									>

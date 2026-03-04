@@ -453,10 +453,10 @@ const BoardPage = () => {
 						<BoardTableView
 							allCards={allCards.filter((c) => {
 								if (!searchQuery) return true;
-								const q = searchQuery.toLowerCase();
+								const searchTerm = searchQuery.toLowerCase();
 								return (
-									c.title.toLowerCase().includes(q) ||
-									c.description?.toLowerCase().includes(q)
+									c.title.toLowerCase().includes(searchTerm) ||
+									c.description?.toLowerCase().includes(searchTerm)
 								);
 							})}
 							lists={lists || []}

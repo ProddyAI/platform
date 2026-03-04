@@ -147,7 +147,7 @@ const DueDateDisplay = ({ dueDate }: DueDateDisplayProps) => {
 				<TooltipTrigger asChild>
 					<span
 						className={cn(
-							"hidden sm:flex flex-shrink-0 items-center gap-1 text-[10px] leading-none",
+							"hidden sm:flex flex-shrink-0 items-center gap-1 text-[10px] leading-tight",
 							overdue ? "text-destructive" : "text-muted-foreground/70"
 						)}
 					>
@@ -233,6 +233,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	const {
 		attributes,
 		listeners,
+		setActivatorNodeRef,
 		setNodeRef,
 		transform,
 		transition,
@@ -248,8 +249,14 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	};
 
 	return (
-		<div
-			ref={setNodeRef}
+		<button
+			type="button"
+			ref={(node) => {
+				setNodeRef(node);
+				if (!isDragOverlay) {
+					setActivatorNodeRef(node);
+				}
+			}}
 			style={style}
 			{...attributes}
 			{...listeners}
@@ -258,17 +265,9 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				isDragging && "opacity-40",
 				isDragOverlay && "shadow-lg bg-background border-border opacity-100"
 			)}
-			onClick={(_e) => {
+			onClick={() => {
 				if (!isDragging) onClick();
 			}}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					if (!isDragging) onClick();
-				}
-			}}
-			role="button"
-			tabIndex={0}
 		>
 			<PriorityIndicator priority={issue.priority} />
 
@@ -277,11 +276,11 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				style={{ backgroundColor: statusColor }}
 			/>
 
-			<span className="flex-shrink-0 text-[10px] font-mono text-muted-foreground/60 w-12 leading-none">
+			<span className="flex-shrink-0 text-[10px] font-mono text-muted-foreground/60 w-12 leading-tight">
 				{formatIssueId(issue._id)}
 			</span>
 
-			<span className="flex-1 text-sm text-foreground truncate leading-none">
+			<span className="flex-1 text-sm text-foreground truncate leading-tight">
 				{issue.title}
 			</span>
 
@@ -293,7 +292,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				assigneeData={assigneeData}
 				assignees={issue.assignees}
 			/>
-		</div>
+		</button>
 	);
 });
 
