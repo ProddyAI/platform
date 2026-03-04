@@ -122,12 +122,33 @@ const SearchDialogContent = ({
 	const handleAiSubmit = useCallback(
 		(e: React.FormEvent) => {
 			e.preventDefault();
+			if (isAISearching) return;
 			if (aiSearchInput.trim()) {
 				onAiSearch(aiSearchInput.trim());
 			}
 		},
-		[aiSearchInput, onAiSearch]
+		[aiSearchInput, isAISearching, onAiSearch]
 	);
+
+	const mapAiErrorToMessage = useCallback((error?: string | null) => {
+		if (!error) return "Failed to search with AI";
+		if (error === "AI_SERVICE_NOT_CONFIGURED") {
+			return "The AI service is not configured. Please contact your administrator.";
+		}
+		if (error.includes("not found") || error.includes("not supported")) {
+			return "Selected OpenAI model is unavailable for this API version.";
+		}
+		if (error.includes("quota")) {
+			return "OpenAI quota/rate limit exceeded. Check billing/limits or retry later.";
+		}
+		return "Failed to search with AI";
+	}, []);
+
+	useEffect(() => {
+		if (aiResult?.success === false && aiResult.error) {
+			console.error("AI search error:", aiResult.error);
+		}
+	}, [aiResult?.error, aiResult?.success]);
 
 	const messages = searchResults.messages ?? [];
 	const notes = searchResults.notes ?? [];
@@ -139,6 +160,8 @@ const SearchDialogContent = ({
 		<>
 			<div className="flex items-center gap-2 border-b px-3 py-2">
 				<Button
+					aria-label={useAI ? "Disable AI search" : "Enable AI search"}
+					aria-pressed={useAI}
 					className={`px-2 ${useAI ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
 					onClick={onToggleAI}
 					size="sm"
@@ -216,26 +239,8 @@ const SearchDialogContent = ({
 							<CommandEmpty>
 								<div className="p-4 text-center">
 									<p className="text-sm text-destructive">
-										{aiResult.error || "Failed to search with AI"}
+										{mapAiErrorToMessage(aiResult.error)}
 									</p>
-									{aiResult.error === "AI_SERVICE_NOT_CONFIGURED" && (
-										<p className="text-xs text-muted-foreground mt-2">
-											The AI service is not configured. Please contact your
-											administrator.
-										</p>
-									)}
-									{(aiResult.error?.includes("not found") ||
-										aiResult.error?.includes("not supported")) && (
-										<p className="text-xs text-muted-foreground mt-2">
-											Selected OpenAI model is unavailable for this API version.
-										</p>
-									)}
-									{aiResult.error?.includes("quota") && (
-										<p className="text-xs text-muted-foreground mt-2">
-											OpenAI quota/rate limit exceeded. Check billing/limits or
-											retry later.
-										</p>
-									)}
 								</div>
 							</CommandEmpty>
 						)}

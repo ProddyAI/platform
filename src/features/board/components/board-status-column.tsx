@@ -110,9 +110,15 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 			setCreating(false);
 			return;
 		}
-		await onCreateIssue(status._id, newTitle.trim());
-		setNewTitle("");
-		setCreating(false);
+
+		try {
+			await onCreateIssue(status._id, newTitle.trim());
+			setNewTitle("");
+		} catch (error) {
+			console.error("Failed to create issue:", error);
+		} finally {
+			setCreating(false);
+		}
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {

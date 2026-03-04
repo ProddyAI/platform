@@ -290,14 +290,17 @@ const ChannelNameDialog = ({
 	editOpen,
 }: ChannelNameDialogProps) => {
 	const nameInputRef = useRef<HTMLInputElement>(null);
+	const isChannelEditOpen = editOpen || isUpdatingChannel;
 
 	useEffect(() => {
-		if (isUpdatingChannel) {
-			nameInputRef.current?.focus();
+		if (isChannelEditOpen) {
+			setTimeout(() => {
+				nameInputRef.current?.focus();
+			}, 0);
 		}
-	}, [isUpdatingChannel]);
+	}, [isChannelEditOpen]);
 	return (
-		<Dialog onOpenChange={setEditOpen} open={editOpen || isUpdatingChannel}>
+		<Dialog onOpenChange={setEditOpen} open={isChannelEditOpen}>
 			<DialogTrigger asChild>
 				<button
 					className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
@@ -601,6 +604,14 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 			}
 		}
 	}, [channel]);
+
+	useEffect(() => {
+		setImageLoadError(false);
+	}, []);
+
+	useEffect(() => {
+		setImageLoadError(false);
+	}, []);
 
 	const _handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value.replace(/\s+/g, "-").toLowerCase();

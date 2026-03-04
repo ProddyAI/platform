@@ -1185,9 +1185,15 @@ export const sendIssueAssignmentEmail = action({
 			});
 
 			if (!response.ok) {
+				const errorBody = await response.text();
+				console.error("Issue assignment email API error:", {
+					status: response.status,
+					statusText: response.statusText,
+					body: errorBody,
+				});
 				return {
 					success: false,
-					error: `Email API error: ${response.status}`,
+					error: `Email API error: ${response.status} ${response.statusText}${errorBody ? ` - ${errorBody}` : ""}`,
 				};
 			}
 

@@ -84,7 +84,9 @@ export function formatIssueId(id: string): string {
 
 function isOverdue(dueDate?: number): boolean {
 	if (dueDate === undefined) return false;
-	return new Date(dueDate) < new Date();
+	const dueDateEndOfDay = new Date(dueDate);
+	dueDateEndOfDay.setHours(23, 59, 59, 999);
+	return dueDateEndOfDay < new Date();
 }
 
 interface PriorityIndicatorProps {
@@ -223,6 +225,41 @@ const AssigneesDisplay = ({
 	);
 };
 
+interface BoardIssueRowContentProps {
+	issue: IssueRowProps["issue"];
+	statusColor: string;
+	assigneeData: NonNullable<IssueRowProps["assigneeData"]>;
+}
+
+const BoardIssueRowContent = ({
+	issue,
+	statusColor,
+	assigneeData,
+}: BoardIssueRowContentProps) => (
+	<>
+		<PriorityIndicator priority={issue.priority} />
+
+		<span
+			className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
+			style={{ backgroundColor: statusColor }}
+		/>
+
+		<span className="flex-shrink-0 text-[10px] font-mono text-muted-foreground/60 w-12 leading-tight">
+			{formatIssueId(issue._id)}
+		</span>
+
+		<span className="flex-1 text-sm text-foreground truncate leading-tight">
+			{issue.title}
+		</span>
+
+		<LabelsDisplay issueId={issue._id} labels={issue.labels} />
+
+		<DueDateDisplay dueDate={issue.dueDate} />
+
+		<AssigneesDisplay assigneeData={assigneeData} assignees={issue.assignees} />
+	</>
+);
+
 const BoardIssueRow = React.memo(function BoardIssueRow({
 	issue,
 	statusColor,
@@ -230,6 +267,23 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	onClick,
 	isDragOverlay = false,
 }: IssueRowProps) {
+	if (isDragOverlay) {
+		return (
+			<div
+				className={cn(
+					"group flex items-center gap-2 px-3 py-2 rounded-md border transition-colors duration-100 select-none",
+					"shadow-lg bg-background border-border opacity-100"
+				)}
+			>
+				<BoardIssueRowContent
+					assigneeData={assigneeData}
+					issue={issue}
+					statusColor={statusColor}
+				/>
+			</div>
+		);
+	}
+
 	const {
 		attributes,
 		listeners,
@@ -262,35 +316,16 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 			{...listeners}
 			className={cn(
 				"group flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/60 dark:hover:bg-gray-800/60 cursor-pointer transition-colors duration-100 border border-transparent hover:border-border/40 select-none",
-				isDragging && "opacity-40",
-				isDragOverlay && "shadow-lg bg-background border-border opacity-100"
+				isDragging && "opacity-40"
 			)}
 			onClick={() => {
 				if (!isDragging) onClick();
 			}}
 		>
-			<PriorityIndicator priority={issue.priority} />
-
-			<span
-				className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
-				style={{ backgroundColor: statusColor }}
-			/>
-
-			<span className="flex-shrink-0 text-[10px] font-mono text-muted-foreground/60 w-12 leading-tight">
-				{formatIssueId(issue._id)}
-			</span>
-
-			<span className="flex-1 text-sm text-foreground truncate leading-tight">
-				{issue.title}
-			</span>
-
-			<LabelsDisplay issueId={issue._id} labels={issue.labels} />
-
-			<DueDateDisplay dueDate={issue.dueDate} />
-
-			<AssigneesDisplay
+			<BoardIssueRowContent
 				assigneeData={assigneeData}
-				assignees={issue.assignees}
+				issue={issue}
+				statusColor={statusColor}
 			/>
 		</button>
 	);

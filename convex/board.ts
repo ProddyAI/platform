@@ -714,6 +714,13 @@ export const deleteStatus = mutation({
 			.withIndex("by_status_id", (q) => q.eq("statusId", statusId))
 			.collect();
 		for (const issue of issues) {
+			const mentions = await ctx.db
+				.query("mentions")
+				.withIndex("by_issue_id", (q) => q.eq("issueId", issue._id))
+				.collect();
+			for (const mention of mentions) {
+				await ctx.db.delete(mention._id);
+			}
 			await ctx.db.delete(issue._id);
 		}
 		return await ctx.db.delete(statusId);
@@ -806,14 +813,35 @@ export const createIssue = mutation({
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
+		const validatedAssignees =
+			args.assignees === undefined
+				? undefined
+				: (
+						await Promise.all(
+							args.assignees.map(async (assigneeId) => {
+								const assigneeMember = await ctx.db.get(assigneeId);
+								if (
+									!assigneeMember ||
+									assigneeMember.workspaceId !== channel.workspaceId
+								) {
+									return null;
+								}
+								return assigneeMember._id;
+							})
+						)
+					).filter((assigneeId): assigneeId is Id<"members"> =>
+						Boolean(assigneeId)
+					);
+
 		const issueId = await ctx.db.insert("issues", {
 			...args,
+			assignees: validatedAssignees,
 			createdAt: now,
 			updatedAt: now,
 		});
 
 		// Notify assignees
-		if (args.assignees && args.assignees.length > 0) {
+		if (validatedAssignees && validatedAssignees.length > 0) {
 			try {
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
@@ -826,17 +854,9 @@ export const createIssue = mutation({
 						.unique();
 
 					if (creator) {
-						for (const assigneeId of args.assignees) {
-							const assigneeMember = await ctx.db.get(assigneeId);
-							if (
-								!assigneeMember ||
-								assigneeMember.workspaceId !== channel.workspaceId
-							) {
-								continue;
-							}
-
+						for (const assigneeId of validatedAssignees) {
 							await ctx.db.insert("mentions", {
-								mentionedMemberId: assigneeMember._id,
+								mentionedMemberId: assigneeId,
 								mentionerMemberId: creator._id,
 								workspaceId: channel.workspaceId,
 								channelId: args.channelId,
@@ -850,7 +870,7 @@ export const createIssue = mutation({
 								0,
 								api.email.sendIssueAssignmentEmail,
 								{
-									assigneeId: assigneeMember._id,
+									assigneeId,
 									issueId,
 									assignerId: creator._id,
 								}
@@ -906,10 +926,36 @@ export const updateIssue = mutation({
 			}
 		}
 
-		await ctx.db.patch(issueId, { ...updates, updatedAt: Date.now() });
+		const validatedAssignees =
+			updates.assignees === undefined
+				? undefined
+				: (
+						await Promise.all(
+							updates.assignees.map(async (assigneeId) => {
+								const assigneeMember = await ctx.db.get(assigneeId);
+								if (
+									!assigneeMember ||
+									assigneeMember.workspaceId !== channel.workspaceId
+								) {
+									return null;
+								}
+								return assigneeMember._id;
+							})
+						)
+					).filter((assigneeId): assigneeId is Id<"members"> =>
+						Boolean(assigneeId)
+					);
+
+		await ctx.db.patch(issueId, {
+			...updates,
+			...(updates.assignees !== undefined
+				? { assignees: validatedAssignees }
+				: {}),
+			updatedAt: Date.now(),
+		});
 
 		// Notify new assignees
-		if (updates.assignees !== undefined) {
+		if (validatedAssignees !== undefined) {
 			try {
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
@@ -924,21 +970,13 @@ export const updateIssue = mutation({
 
 					if (updater) {
 						const currentAssignees = issue.assignees || [];
-						const newAssignees = updates.assignees.filter(
+						const newAssignees = validatedAssignees.filter(
 							(id) => !currentAssignees.includes(id)
 						);
 
 						for (const assigneeId of newAssignees) {
-							const assigneeMember = await ctx.db.get(assigneeId);
-							if (
-								!assigneeMember ||
-								assigneeMember.workspaceId !== channel.workspaceId
-							) {
-								continue;
-							}
-
 							await ctx.db.insert("mentions", {
-								mentionedMemberId: assigneeMember._id,
+								mentionedMemberId: assigneeId,
 								mentionerMemberId: updater._id,
 								workspaceId: channel.workspaceId,
 								channelId: issue.channelId,
@@ -952,7 +990,7 @@ export const updateIssue = mutation({
 								0,
 								api.email.sendIssueAssignmentEmail,
 								{
-									assigneeId: assigneeMember._id,
+									assigneeId,
 									issueId,
 									assignerId: updater._id,
 								}
@@ -1057,13 +1095,6 @@ export const moveIssueStatus = mutation({
 			.withIndex("by_status_id", (q) => q.eq("statusId", toStatusId))
 			.collect();
 		const sortedToIssues = toIssues.sort(sortByOrder);
-		const mentions = await ctx.db
-			.query("mentions")
-			.withIndex("by_issue_id", (q) => q.eq("issueId", issue._id))
-			.collect();
-		for (const mention of mentions) {
-			await ctx.db.delete(mention._id);
-		}
 		const clampedDestIndex = Math.min(targetIndex, sortedToIssues.length);
 		const destOrderIds: Id<"issues">[] = [];
 		for (let i = 0; i < sortedToIssues.length; i++) {
@@ -1122,6 +1153,13 @@ export const getAssignedIssues = query({
 		memberId: v.id("members"),
 	},
 	handler: async (ctx, { workspaceId, memberId }) => {
+		await assertWorkspaceMemberForRead(ctx, workspaceId);
+
+		const requestedMember = await ctx.db.get(memberId);
+		if (!requestedMember || requestedMember.workspaceId !== workspaceId) {
+			throw new Error("Member does not belong to this workspace");
+		}
+
 		const channels = await ctx.db
 			.query("channels")
 			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
@@ -1164,6 +1202,8 @@ export const _getIssueDetails = query({
 
 		const channel = await ctx.db.get(issue.channelId);
 		if (!channel) return null;
+
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const status = await ctx.db.get(issue.statusId);
 
@@ -1213,16 +1253,16 @@ export const migrateListsToStatuses = mutation({
 
 		const statusIdByListId: Record<string, Id<"statuses">> = {};
 
-		for (const def of statusDefs) {
+		for (let index = 0; index < statusDefs.length; index++) {
+			const def = statusDefs[index];
 			const statusId = await ctx.db.insert("statuses", {
 				channelId,
 				...def,
 			});
-			// Map all lists with matching title to this status (handles duplicates)
-			const matchingLists = lists.filter((l) => l.title === def.name);
-			for (const matchingList of matchingLists) {
-				if (!statusIdByListId[matchingList._id]) {
-					statusIdByListId[matchingList._id] = statusId;
+			if (lists.length > 0) {
+				const sourceList = lists[index];
+				if (sourceList) {
+					statusIdByListId[sourceList._id] = statusId;
 				}
 			}
 		}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import BoardGanttView from "@/features/board/components/board-gantt-view";
@@ -99,6 +100,7 @@ const BoardPage = () => {
 	const [optimisticIssues, setOptimisticIssues] = useState<
 		typeof issues | null
 	>(null);
+	const previousStatusOrderRef = useRef<typeof displayedStatuses | null>(null);
 
 	// ── Old card modal state (for table/gantt views) ────────────────────────
 	const [deleteListOpen, setDeleteListOpen] = useState(false);
@@ -172,27 +174,37 @@ const BoardPage = () => {
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {
 		if (!statusName.trim()) return;
-		const order = statuses?.length ?? 0;
-		await createStatus({
-			channelId,
-			name: statusName.trim(),
-			color: statusColor,
-			order,
-		});
-		setStatusName("");
-		setStatusColor("#5e6ad2");
-		setAddStatusOpen(false);
+		try {
+			const order = statuses?.length ?? 0;
+			await createStatus({
+				channelId,
+				name: statusName.trim(),
+				color: statusColor,
+				order,
+			});
+			setStatusName("");
+			setStatusColor("#5e6ad2");
+			setAddStatusOpen(false);
+		} catch (error) {
+			console.error("Failed to add status:", error);
+			toast.error("Failed to add status");
+		}
 	};
 
 	const handleEditStatus = async () => {
 		if (!statusToEdit || !statusName.trim()) return;
-		await updateStatus({
-			statusId: statusToEdit._id,
-			name: statusName.trim(),
-			color: statusColor,
-		});
-		setEditStatusOpen(false);
-		setStatusToEdit(null);
+		try {
+			await updateStatus({
+				statusId: statusToEdit._id,
+				name: statusName.trim(),
+				color: statusColor,
+			});
+			setEditStatusOpen(false);
+			setStatusToEdit(null);
+		} catch (error) {
+			console.error("Failed to edit status:", error);
+			toast.error("Failed to update status");
+		}
 	};
 
 	const handleDeleteStatus = async () => {
@@ -226,7 +238,9 @@ const BoardPage = () => {
 
 	// ── Issue handlers ──────────────────────────────────────────────────────
 	const handleCreateIssue = async (statusId: Id<"statuses">, title: string) => {
-		const statusIssues = issues.filter((i) => i.statusId === statusId);
+		const statusIssues = (optimisticIssues ?? issues).filter(
+			(i) => i.statusId === statusId
+		);
 		await createIssue({
 			channelId,
 			statusId,
@@ -263,6 +277,7 @@ const BoardPage = () => {
 			channelId: Id<"channels">;
 		}[]
 	) => {
+		previousStatusOrderRef.current = [...displayedStatuses];
 		setOptimisticStatuses(newOrder.map((s, idx) => ({ ...s, order: idx })));
 	};
 
@@ -488,7 +503,17 @@ const BoardPage = () => {
 						onMoveIssueStatus={handleMoveIssueStatus}
 						onReorderStatuses={handleReorderStatuses}
 						onReorderStatusesPersist={async (statusOrders) => {
-							await reorderStatuses({ statusOrders });
+							try {
+								await reorderStatuses({ statusOrders });
+								previousStatusOrderRef.current = null;
+							} catch (error) {
+								if (previousStatusOrderRef.current) {
+									setOptimisticStatuses(previousStatusOrderRef.current);
+								}
+								console.error("Failed to persist status reorder:", error);
+								toast.error("Failed to reorder statuses");
+								throw error;
+							}
 						}}
 						onSearch={setSearchQuery}
 						setView={setView}
