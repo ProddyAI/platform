@@ -60,9 +60,9 @@ const Topbar = () => {
 	];
 
 	return (
-		<div className="channel-topbar flex w-full items-center justify-center border-b bg-white shadow-sm">
+		<div className="channel-topbar flex w-full min-w-0 max-w-full overflow-x-hidden items-center justify-center border-b bg-white shadow-sm">
 			<div
-				className="grid h-10 md:h-12 w-full bg-white p-0 relative z-10 min-w-0"
+				className="grid h-10 md:h-12 w-full max-w-full bg-white p-0 relative z-10 min-w-0"
 				style={{
 					gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
 				}}

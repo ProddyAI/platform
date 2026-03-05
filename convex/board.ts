@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getUserEmailFromMemberId, getUserNameFromMemberId } from "./utils";
@@ -543,6 +543,782 @@ export const getMembersForChannel = query({
 		}
 
 		return membersWithUserData;
+	},
+});
+
+// ─── LINEAR-STYLE STATUSES ───────────────────────────────────────────────────
+
+const DEFAULT_STATUSES = [
+	{ name: "To-do", color: "#b4b4b4", order: 0 },
+	{ name: "In Progress", color: "#f2c94c", order: 1 },
+	{ name: "In Review", color: "#6938ef", order: 2 },
+	{ name: "Done", color: "#00b341", order: 3 },
+];
+
+const STATUS_COLORS = [
+	"#b4b4b4",
+	"#5e6ad2",
+	"#f2c94c",
+	"#6938ef",
+	"#00b341",
+	"#eb5757",
+	"#4ea7fc",
+	"#e07b39",
+];
+
+function mapPriorityToIssue(
+	priority?: "lowest" | "low" | "medium" | "high" | "highest"
+): "urgent" | "high" | "medium" | "low" | "no_priority" | undefined {
+	if (!priority) return undefined;
+	switch (priority) {
+		case "highest":
+			return "urgent";
+		case "high":
+			return "high";
+		case "medium":
+			return "medium";
+		case "low":
+			return "low";
+		case "lowest":
+			return "no_priority";
+		default:
+			return undefined;
+	}
+}
+
+// Helper to assert that the caller is a member of the workspace
+async function assertWorkspaceMember(
+	ctx: MutationCtx,
+	workspaceId: Id<"workspaces">
+): Promise<Doc<"members">> {
+	const auth = await ctx.auth.getUserIdentity();
+	if (!auth) throw new Error("Not authenticated");
+
+	const userId = auth.subject.split("|")[0] as Id<"users">;
+	const member = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
+		)
+		.unique();
+
+	if (!member) throw new Error("Not a member of this workspace");
+	return member;
+}
+
+async function assertWorkspaceMemberForRead(
+	ctx: QueryCtx,
+	workspaceId: Id<"workspaces">
+): Promise<Doc<"members">> {
+	const auth = await ctx.auth.getUserIdentity();
+	if (!auth) throw new Error("Not authenticated");
+
+	const userId = auth.subject.split("|")[0] as Id<"users">;
+	const member = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
+		)
+		.unique();
+
+	if (!member) throw new Error("Not a member of this workspace");
+	return member;
+}
+
+// Helper to assert that the caller has a specific role in the workspace
+async function assertWorkspaceRole(
+	ctx: MutationCtx,
+	workspaceId: Id<"workspaces">,
+	requiredRole: "admin" | "member"
+): Promise<Doc<"members">> {
+	const member = await assertWorkspaceMember(ctx, workspaceId);
+	if (
+		requiredRole === "admin" &&
+		member.role !== "admin" &&
+		member.role !== "owner"
+	) {
+		throw new Error("Admin role required");
+	}
+	return member;
+}
+
+export const getStatuses = query({
+	args: { channelId: v.id("channels") },
+	handler: async (
+		ctx: QueryCtx,
+		{ channelId }: { channelId: Id<"channels"> }
+	) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		return await ctx.db
+			.query("statuses")
+			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
+			.collect();
+	},
+});
+
+export const createStatus = mutation({
+	args: {
+		channelId: v.id("channels"),
+		name: v.string(),
+		color: v.string(),
+		order: v.number(),
+	},
+	handler: async (ctx: MutationCtx, args) => {
+		// Verify caller is a member of the workspace
+		const channel = await ctx.db.get(args.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		return await ctx.db.insert("statuses", args);
+	},
+});
+
+export const updateStatus = mutation({
+	args: {
+		statusId: v.id("statuses"),
+		name: v.optional(v.string()),
+		color: v.optional(v.string()),
+		order: v.optional(v.number()),
+	},
+	handler: async (ctx: MutationCtx, { statusId, ...updates }) => {
+		// Verify caller is a member and status belongs to channel
+		const status = await ctx.db.get(statusId);
+		if (!status) throw new Error("Status not found");
+		const channel = await ctx.db.get(status.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		return await ctx.db.patch(statusId, updates);
+	},
+});
+
+export const deleteStatus = mutation({
+	args: { statusId: v.id("statuses") },
+	handler: async (
+		ctx: MutationCtx,
+		{ statusId }: { statusId: Id<"statuses"> }
+	) => {
+		// Verify caller is admin and status belongs to channel
+		const status = await ctx.db.get(statusId);
+		if (!status) throw new Error("Status not found");
+		const channel = await ctx.db.get(status.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceRole(ctx, channel.workspaceId, "admin");
+
+		// Delete all issues in this status
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("by_status_id", (q) => q.eq("statusId", statusId))
+			.collect();
+		for (const issue of issues) {
+			const mentions = await ctx.db
+				.query("mentions")
+				.withIndex("by_issue_id", (q) => q.eq("issueId", issue._id))
+				.collect();
+			for (const mention of mentions) {
+				await ctx.db.delete(mention._id);
+			}
+			await ctx.db.delete(issue._id);
+		}
+		return await ctx.db.delete(statusId);
+	},
+});
+
+export const reorderStatuses = mutation({
+	args: {
+		statusOrders: v.array(
+			v.object({ statusId: v.id("statuses"), order: v.number() })
+		),
+	},
+	handler: async (ctx: MutationCtx, { statusOrders }) => {
+		if (statusOrders.length === 0) return true;
+
+		// Verify caller is a member and all statuses belong to the same channel
+		const firstStatus = await ctx.db.get(statusOrders[0].statusId);
+		if (!firstStatus) throw new Error("Status not found");
+		const channel = await ctx.db.get(firstStatus.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Verify all statuses belong to the same channel
+		for (const { statusId } of statusOrders) {
+			const status = await ctx.db.get(statusId);
+			if (!status) throw new Error("Status not found");
+			if (status.channelId !== channel._id) {
+				throw new Error("Status does not belong to the same channel");
+			}
+		}
+
+		for (const { statusId, order } of statusOrders) {
+			await ctx.db.patch(statusId, { order });
+		}
+		return true;
+	},
+});
+
+// ─── LINEAR-STYLE ISSUES ─────────────────────────────────────────────────────
+
+export const getIssues = query({
+	args: { channelId: v.id("channels") },
+	handler: async (
+		ctx: QueryCtx,
+		{ channelId }: { channelId: Id<"channels"> }
+	) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		return await ctx.db
+			.query("issues")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+	},
+});
+
+export const createIssue = mutation({
+	args: {
+		channelId: v.id("channels"),
+		statusId: v.id("statuses"),
+		title: v.string(),
+		description: v.optional(v.string()),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+		order: v.number(),
+	},
+	handler: async (ctx: MutationCtx, args) => {
+		const now = Date.now();
+		const channel = await ctx.db.get(args.channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		// Verify status belongs to the channel
+		const status = await ctx.db.get(args.statusId);
+		if (!status) throw new Error("Status not found");
+		if (status.channelId !== args.channelId) {
+			throw new Error("Status does not belong to issue's channel");
+		}
+
+		// Verify caller is a member of the workspace
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		const validatedAssignees =
+			args.assignees === undefined
+				? undefined
+				: (
+						await Promise.all(
+							args.assignees.map(async (assigneeId) => {
+								const assigneeMember = await ctx.db.get(assigneeId);
+								if (
+									!assigneeMember ||
+									assigneeMember.workspaceId !== channel.workspaceId
+								) {
+									return null;
+								}
+								return assigneeMember._id;
+							})
+						)
+					).filter((assigneeId): assigneeId is Id<"members"> =>
+						Boolean(assigneeId)
+					);
+
+		const issueId = await ctx.db.insert("issues", {
+			...args,
+			assignees: validatedAssignees,
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		// Notify assignees
+		if (validatedAssignees && validatedAssignees.length > 0) {
+			try {
+				const auth = await ctx.auth.getUserIdentity();
+				if (auth) {
+					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const creator = await ctx.db
+						.query("members")
+						.withIndex("by_workspace_id_user_id", (q) =>
+							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						)
+						.unique();
+
+					if (creator) {
+						for (const assigneeId of validatedAssignees) {
+							await ctx.db.insert("mentions", {
+								mentionedMemberId: assigneeId,
+								mentionerMemberId: creator._id,
+								workspaceId: channel.workspaceId,
+								channelId: args.channelId,
+								read: false,
+								createdAt: now,
+								issueId,
+								issueTitle: args.title,
+							});
+
+							await ctx.scheduler.runAfter(
+								0,
+								api.email.sendIssueAssignmentEmail,
+								{
+									assigneeId,
+									issueId,
+									assignerId: creator._id,
+								}
+							);
+						}
+					}
+				}
+			} catch (error) {
+				console.error("Error creating mentions for issue assignees:", error);
+			}
+		}
+
+		return issueId;
+	},
+});
+
+export const updateIssue = mutation({
+	args: {
+		issueId: v.id("issues"),
+		title: v.optional(v.string()),
+		description: v.optional(v.string()),
+		statusId: v.optional(v.id("statuses")),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+		order: v.optional(v.number()),
+	},
+	handler: async (ctx: MutationCtx, { issueId, ...updates }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		// Verify caller is a member of the workspace
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Verify statusId belongs to the channel if provided
+		if (updates.statusId) {
+			const status = await ctx.db.get(updates.statusId);
+			if (!status) throw new Error("Status not found");
+			if (status.channelId !== issue.channelId) {
+				throw new Error("Status does not belong to issue's channel");
+			}
+		}
+
+		const validatedAssignees =
+			updates.assignees === undefined
+				? undefined
+				: (
+						await Promise.all(
+							updates.assignees.map(async (assigneeId) => {
+								const assigneeMember = await ctx.db.get(assigneeId);
+								if (
+									!assigneeMember ||
+									assigneeMember.workspaceId !== channel.workspaceId
+								) {
+									return null;
+								}
+								return assigneeMember._id;
+							})
+						)
+					).filter((assigneeId): assigneeId is Id<"members"> =>
+						Boolean(assigneeId)
+					);
+
+		await ctx.db.patch(issueId, {
+			...updates,
+			...(updates.assignees !== undefined
+				? { assignees: validatedAssignees }
+				: {}),
+			updatedAt: Date.now(),
+		});
+
+		// Notify new assignees
+		if (validatedAssignees !== undefined) {
+			try {
+				const auth = await ctx.auth.getUserIdentity();
+				if (auth) {
+					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const mentionCreatedAt = Date.now();
+					const updater = await ctx.db
+						.query("members")
+						.withIndex("by_workspace_id_user_id", (q) =>
+							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						)
+						.unique();
+
+					if (updater) {
+						const currentAssignees = issue.assignees || [];
+						const newAssignees = validatedAssignees.filter(
+							(id) => !currentAssignees.includes(id)
+						);
+
+						for (const assigneeId of newAssignees) {
+							await ctx.db.insert("mentions", {
+								mentionedMemberId: assigneeId,
+								mentionerMemberId: updater._id,
+								workspaceId: channel.workspaceId,
+								channelId: issue.channelId,
+								read: false,
+								createdAt: mentionCreatedAt,
+								issueId,
+								issueTitle: updates.title || issue.title,
+							});
+
+							await ctx.scheduler.runAfter(
+								0,
+								api.email.sendIssueAssignmentEmail,
+								{
+									assigneeId,
+									issueId,
+									assignerId: updater._id,
+								}
+							);
+						}
+					}
+				}
+			} catch (error) {
+				console.error("Error creating mentions for issue assignees:", error);
+			}
+		}
+
+		return issueId;
+	},
+});
+
+export const moveIssueStatus = mutation({
+	args: {
+		issueId: v.id("issues"),
+		toStatusId: v.id("statuses"),
+		order: v.number(), // treated as target index within the destination status
+	},
+	handler: async (ctx: MutationCtx, { issueId, toStatusId, order }) => {
+		// Fetch the issue to determine its current status
+		const issue = await ctx.db.get(issueId);
+		if (!issue) {
+			// Nothing to do if the issue does not exist
+			return;
+		}
+
+		// Verify caller is a member of the workspace
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Verify toStatusId belongs to the issue's channel
+		const toStatus = await ctx.db.get(toStatusId);
+		if (!toStatus) throw new Error("Status not found");
+		if (toStatus.channelId !== issue.channelId) {
+			throw new Error("Status does not belong to issue's channel");
+		}
+
+		const fromStatusId = issue.statusId as Id<"statuses">;
+		const targetIndex = Math.max(0, Math.floor(order));
+		const now = Date.now();
+		// Helper to sort issues by their current order, falling back to _creationTime
+		const sortByOrder = (a: Doc<"issues">, b: Doc<"issues">) => {
+			const ao = typeof a.order === "number" ? a.order : 0;
+			const bo = typeof b.order === "number" ? b.order : 0;
+			if (ao !== bo) return ao - bo;
+			return a._creationTime - b._creationTime;
+		};
+		if (fromStatusId === toStatusId) {
+			// Reorder within the same status
+			const allIssuesInStatus = await ctx.db
+				.query("issues")
+				.withIndex("by_status_id", (q) => q.eq("statusId", fromStatusId))
+				.collect();
+			// Exclude the moved issue from the list before re-inserting
+			const otherIssues = allIssuesInStatus
+				.filter((i) => i._id !== issueId)
+				.sort(sortByOrder);
+			const clampedIndex = Math.min(targetIndex, otherIssues.length);
+			const newOrderIds: Id<"issues">[] = [];
+			for (let i = 0; i < otherIssues.length; i++) {
+				if (i === clampedIndex) {
+					newOrderIds.push(issueId);
+				}
+				newOrderIds.push(otherIssues[i]._id);
+			}
+			if (clampedIndex === otherIssues.length) {
+				newOrderIds.push(issueId);
+			}
+			// Apply contiguous order values
+			let idx = 0;
+			for (const id of newOrderIds) {
+				await ctx.db.patch(id, {
+					order: idx++,
+					updatedAt: now,
+				});
+			}
+			return;
+		}
+		// Moving across different statuses
+		// Reindex issues in the source status (excluding the moved issue)
+		const fromIssues = await ctx.db
+			.query("issues")
+			.withIndex("by_status_id", (q) => q.eq("statusId", fromStatusId))
+			.collect();
+		const remainingFromIssues = fromIssues
+			.filter((i) => i._id !== issueId)
+			.sort(sortByOrder);
+		for (let i = 0; i < remainingFromIssues.length; i++) {
+			await ctx.db.patch(remainingFromIssues[i]._id, {
+				order: i,
+				updatedAt: now,
+			});
+		}
+		// Prepare and reindex issues in the destination status, inserting the moved issue
+		const toIssues = await ctx.db
+			.query("issues")
+			.withIndex("by_status_id", (q) => q.eq("statusId", toStatusId))
+			.collect();
+		const sortedToIssues = toIssues.sort(sortByOrder);
+		const clampedDestIndex = Math.min(targetIndex, sortedToIssues.length);
+		const destOrderIds: Id<"issues">[] = [];
+		for (let i = 0; i < sortedToIssues.length; i++) {
+			if (i === clampedDestIndex) {
+				destOrderIds.push(issueId);
+			}
+			destOrderIds.push(sortedToIssues[i]._id);
+		}
+		if (clampedDestIndex === sortedToIssues.length) {
+			destOrderIds.push(issueId);
+		}
+		for (let i = 0; i < destOrderIds.length; i++) {
+			const id = destOrderIds[i];
+			if (id === issueId) {
+				await ctx.db.patch(id, {
+					statusId: toStatusId,
+					order: i,
+					updatedAt: now,
+				});
+			} else {
+				await ctx.db.patch(id, {
+					order: i,
+					updatedAt: now,
+				});
+			}
+		}
+		return;
+	},
+});
+
+export const deleteIssue = mutation({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx: MutationCtx, { issueId }: { issueId: Id<"issues"> }) => {
+		// Verify caller is a member of the workspace
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		const mentions = await ctx.db
+			.query("mentions")
+			.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
+			.collect();
+		for (const mention of mentions) {
+			await ctx.db.delete(mention._id);
+		}
+
+		return await ctx.db.delete(issueId);
+	},
+});
+
+export const getAssignedIssues = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		memberId: v.id("members"),
+	},
+	handler: async (ctx, { workspaceId, memberId }) => {
+		await assertWorkspaceMemberForRead(ctx, workspaceId);
+
+		const requestedMember = await ctx.db.get(memberId);
+		if (!requestedMember || requestedMember.workspaceId !== workspaceId) {
+			throw new Error("Member does not belong to this workspace");
+		}
+
+		const channels = await ctx.db
+			.query("channels")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+			.collect();
+
+		const assignedIssues = [];
+
+		for (const channel of channels) {
+			const issues = await ctx.db
+				.query("issues")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.collect();
+
+			const memberIssues = issues.filter(
+				(issue) =>
+					issue.assignees &&
+					Array.isArray(issue.assignees) &&
+					issue.assignees.includes(memberId)
+			);
+
+			const issuesWithContext = memberIssues.map((issue) => ({
+				...issue,
+				channelId: channel._id,
+				channelName: channel.name,
+			}));
+
+			assignedIssues.push(...issuesWithContext);
+		}
+
+		return assignedIssues;
+	},
+});
+
+// Helper for email: get issue details (internal use - no auth check for scheduled actions)
+export const _getIssueDetails = query({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx, { issueId }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) return null;
+
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) return null;
+
+		const status = await ctx.db.get(issue.statusId);
+
+		return {
+			...issue,
+			statusName: status?.name,
+			channelId: issue.channelId,
+			channelName: channel.name,
+			workspaceId: channel.workspaceId,
+		};
+	},
+});
+
+export const migrateListsToStatuses = mutation({
+	args: { channelId: v.id("channels") },
+	handler: async (
+		ctx: MutationCtx,
+		{ channelId }: { channelId: Id<"channels"> }
+	) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Skip if statuses already exist
+		const existingStatuses = await ctx.db
+			.query("statuses")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		if (existingStatuses.length > 0) return { alreadyMigrated: true };
+
+		// Get existing lists
+		const lists = await ctx.db
+			.query("lists")
+			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		// Build status definitions from lists or use defaults
+		const statusDefs =
+			lists.length > 0
+				? lists.map((list, i) => ({
+						name: list.title,
+						color: STATUS_COLORS[i % STATUS_COLORS.length],
+						order: list.order,
+					}))
+				: DEFAULT_STATUSES;
+
+		const statusIdByListId: Record<string, Id<"statuses">> = {};
+
+		for (let index = 0; index < statusDefs.length; index++) {
+			const def = statusDefs[index];
+			const statusId = await ctx.db.insert("statuses", {
+				channelId,
+				...def,
+			});
+			if (lists.length > 0) {
+				const sourceList = lists[index];
+				if (sourceList) {
+					statusIdByListId[sourceList._id] = statusId;
+				}
+			}
+		}
+
+		// Migrate cards → issues
+		for (const list of lists) {
+			const statusId = statusIdByListId[list._id];
+			if (!statusId) continue;
+
+			const cards = await ctx.db
+				.query("cards")
+				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+				.collect();
+
+			const now = Date.now();
+			for (const card of cards) {
+				if (card.parentCardId) continue; // Skip subtasks
+				await ctx.db.insert("issues", {
+					channelId,
+					statusId,
+					title: card.title,
+					description: card.description,
+					priority: mapPriorityToIssue(card.priority),
+					assignees: card.assignees,
+					labels: card.labels,
+					dueDate: card.dueDate,
+					order: card.order,
+					createdAt: card._creationTime,
+					updatedAt: now,
+				});
+			}
+		}
+
+		return { migrated: true };
+	},
+});
+
+export const getUniqueIssueLabels = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		const allLabels = new Set<string>();
+		for (const issue of issues) {
+			if (issue.labels && Array.isArray(issue.labels)) {
+				issue.labels.forEach((label) => {
+					if (label) allLabels.add(label);
+				});
+			}
+		}
+		return Array.from(allLabels);
 	},
 });
 
