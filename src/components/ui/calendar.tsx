@@ -17,14 +17,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export interface CalendarProps {
-	mode?: "single" | "range" | "multiple";
 	selected?: Date | Date[];
 	onSelect?: (date: Date) => void;
 	className?: string;
 	month?: Date;
 	defaultMonth?: Date;
 	disabled?: boolean | ((date: Date) => boolean);
-	initialFocus?: boolean;
 }
 
 function Calendar({

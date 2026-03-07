@@ -204,8 +204,6 @@ export const TaskCreateForm = ({
 							<PopoverContent align="start" className="w-auto p-0">
 								<Calendar
 									className="border rounded-md shadow-md"
-									initialFocus
-									mode="single"
 									onSelect={setDueDate}
 									selected={dueDate}
 								/>

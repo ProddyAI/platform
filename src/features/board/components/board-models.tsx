@@ -248,8 +248,6 @@ export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 						</PopoverTrigger>
 						<PopoverContent align="start" className="w-auto p-0">
 							<Calendar
-								initialFocus
-								mode="single"
 								onSelect={setDueDate}
 								selected={dueDate}
 							/>
@@ -479,8 +477,6 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 										</PopoverTrigger>
 										<PopoverContent align="start" className="w-auto p-0">
 											<Calendar
-												initialFocus
-												mode="single"
 												onSelect={setDueDate}
 												selected={dueDate}
 											/>
