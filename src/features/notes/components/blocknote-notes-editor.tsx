@@ -4,28 +4,18 @@ import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
 import { Loader2, Wand2 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import type { Note } from "../types";
 import { BlockNoteEditor } from "./blocknote-editor";
 
 interface BlockNoteNotesEditorProps {
 	note: Note;
-	onUpdate: (updates: Partial<Note>) => void;
-	onTitleChange: (title: string) => void;
-	onContentChange: (content: string) => void;
-	onSaveNote: () => void;
 	isLoading?: boolean;
-	workspaceId: Id<"workspaces">;
-	channelId: Id<"channels">;
-	toggleFullScreen?: () => void;
-	isFullScreen?: boolean;
 }
 
 export const BlockNoteNotesEditor = ({
 	note,
 	isLoading = false,
-	isFullScreen = false,
 }: BlockNoteNotesEditorProps) => {
 	const [isFormatting, setIsFormatting] = useState(false);
 	const editorRef = useRef<BlockNoteEditorType | null>(null);

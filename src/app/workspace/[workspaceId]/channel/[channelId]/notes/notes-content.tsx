@@ -78,7 +78,6 @@ export const NotesContent = ({
 		localContent,
 		localTitle,
 		isTyping,
-		handleContentChange: handleNoteContentChange,
 		handleTitleChange: handleNoteTitleChange,
 		hasUnsavedChanges,
 	} = useNoteContent({
@@ -142,17 +141,6 @@ export const NotesContent = ({
 			content: isTyping ? localContent : activeNote.content,
 		};
 	}, [activeNote, isTyping, localTitle, localContent]);
-
-	// Memoize the update callback to prevent re-renders
-	const memoizedOnUpdate = useCallback(
-		(updates: Partial<Note>) => {
-			handleUpdate(updates).catch((error) => {
-				console.error("Failed to update note:", error);
-				toast.error("Failed to update note");
-			});
-		},
-		[handleUpdate]
-	);
 
 	// Memoize the fullscreen toggle to prevent re-renders
 	const memoizedToggleFullScreen = useCallback(() => {
@@ -239,16 +227,8 @@ export const NotesContent = ({
 					<div className="flex-1 overflow-hidden">
 						{memoizedNote && activeNoteId ? (
 							<BlockNoteNotesEditor
-								channelId={channelId}
-								isFullScreen={isFullScreen}
 								isLoading={isTyping || hasUnsavedChanges}
 								note={memoizedNote}
-								onContentChange={handleNoteContentChange}
-								onSaveNote={handleSave}
-								onTitleChange={handleNoteTitleChange}
-								onUpdate={memoizedOnUpdate}
-								toggleFullScreen={memoizedToggleFullScreen}
-								workspaceId={workspaceId}
 							/>
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground">
