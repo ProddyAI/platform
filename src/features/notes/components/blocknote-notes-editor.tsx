@@ -11,14 +11,7 @@ import { BlockNoteEditor } from "./blocknote-editor";
 
 interface BlockNoteNotesEditorProps {
 	note: Note;
-	onUpdate: (updates: Partial<Note>) => void;
-	onTitleChange: (title: string) => void;
-	onContentChange: (content: string) => void;
-	onSaveNote: () => void;
 	isLoading?: boolean;
-	workspaceId: Id<"workspaces">;
-	channelId: Id<"channels">;
-	toggleFullScreen?: () => void;
 	isFullScreen?: boolean;
 }
 
