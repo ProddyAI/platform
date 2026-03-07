@@ -16,7 +16,6 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
-
 const CanvasPage = () => {
 	const channelId = useChannelId();
 	const workspaceId = useWorkspaceId();

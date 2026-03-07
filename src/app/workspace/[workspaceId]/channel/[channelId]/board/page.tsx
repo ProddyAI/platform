@@ -455,8 +455,8 @@ const BoardPage = () => {
 				labels={cardLabels}
 				members={members}
 				onOpenChange={(open: boolean) => {
-    			if (!Boolean(open)) setEditCardOpen(null);
-							}}
+					if (!open) setEditCardOpen(null);
+				}}
 				onSave={handleEditCard}
 				open={Boolean(editCardOpen)}
 				priority={cardPriority}

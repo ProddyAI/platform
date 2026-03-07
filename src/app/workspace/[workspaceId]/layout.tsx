@@ -43,8 +43,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		setIsCollapsed(!isCollapsed);
 	}, [isMobile, isCollapsed, setIsCollapsed]);
 
-	const showPanel =Boolean(parentMessageId) || Boolean(profileMemberId);
-
+	const showPanel = Boolean(parentMessageId) || Boolean(profileMemberId);
 
 	// Check if mobile on initial load and when window resizes
 	useEffect(() => {

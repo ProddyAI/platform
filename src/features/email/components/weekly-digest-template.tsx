@@ -50,13 +50,7 @@ interface WeeklyDigestTemplateProps {
 
 export const WeeklyDigestTemplate: React.FC<
 	Readonly<WeeklyDigestTemplateProps>
-> = ({
-	firstName,
-	weekRange,
-	workspaces,
-	totalStats,
-	unsubscribeUrl,
-}) => {
+> = ({ firstName, weekRange, workspaces, totalStats, unsubscribeUrl }) => {
 	const previewText = `Your weekly Proddy digest for ${weekRange}`;
 
 	return (

@@ -8,11 +8,7 @@ interface ThreadBarProps {
 	onClick?: () => void;
 }
 
-export const ThreadBar = ({
-	count,
-	timestamp,
-	onClick,
-}: ThreadBarProps) => {
+export const ThreadBar = ({ count, timestamp, onClick }: ThreadBarProps) => {
 	if (!count || !timestamp) return null;
 
 	return (

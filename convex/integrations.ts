@@ -5,7 +5,7 @@ import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
 // Supported toolkits
-const SUPPORTED_TOOLKITS = [
+const _SUPPORTED_TOOLKITS = [
 	"github",
 	"gmail",
 	"slack",
@@ -13,7 +13,6 @@ const SUPPORTED_TOOLKITS = [
 	"notion",
 	"clickup",
 ] as const;
-
 
 // ===== HELPER FUNCTIONS =====
 

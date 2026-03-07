@@ -16,7 +16,6 @@ interface User {
 	info?: UserInfo;
 }
 
-
 // Constants
 const MAX_SHOWN_OTHER_USERS = 2;
 
