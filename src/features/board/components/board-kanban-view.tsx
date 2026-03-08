@@ -73,7 +73,7 @@ interface BoardKanbanViewProps {
 	view?: "kanban" | "gantt";
 	setView?: (view: "kanban" | "gantt") => void;
 	onAddStatus?: () => void;
-	onSearch?: (query: string) => void;
+	onSearchClick?: () => void;
 }
 
 interface Member {
@@ -99,13 +99,13 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	onReorderStatuses,
 	onMoveIssueStatus,
 	onReorderStatusesPersist,
+	onSearchClick,
 	showHeader = false,
 	statusCount = 0,
 	totalIssues = 0,
 	view = "kanban",
 	setView,
 	onAddStatus,
-	onSearch,
 }) => {
 	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
 
@@ -258,7 +258,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
 						onAddStatus={onAddStatus}
-						onSearch={onSearch}
+						onSearchClick={onSearchClick}
 						setView={setView}
 						statusCount={statusCount}
 						totalIssues={totalIssues}

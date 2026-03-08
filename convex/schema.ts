@@ -189,6 +189,20 @@ const schema = defineSchema({
 		.index("by_channel_id_status_id", ["channelId", "statusId"])
 		.index("by_parent_issue_id", ["parentIssueId"]),
 
+	// Issue blocking relationships (which issue blocks which)
+	issueBlocking: defineTable({
+		channelId: v.id("channels"),
+		blockedIssueId: v.id("issues"), // The issue that is blocked
+		blockingIssueId: v.id("issues"), // The issue that is blocking
+		createdAt: v.number(),
+		createdBy: v.id("members"),
+	})
+		.index("by_channel_id", ["channelId"])
+		.index("by_blocked_issue_id", ["blockedIssueId"])
+		.index("by_blocking_issue_id", ["blockingIssueId"])
+		.index("by_channel_id_blocked_issue_id", ["channelId", "blockedIssueId"])
+		.index("by_channel_id_blocking_issue_id", ["channelId", "blockingIssueId"]),
+
 	cards: defineTable({
 		listId: v.id("lists"),
 		title: v.string(),

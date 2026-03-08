@@ -1261,6 +1261,244 @@ export const getBatchSubIssueStats = query({
 	},
 });
 
+// Search issues and statuses for the global search
+export const searchBoardContent = query({
+	args: { channelId: v.id("channels"), query: v.string() },
+	handler: async (ctx, { channelId, query }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const lowerQuery = query.toLowerCase();
+
+		// Search issues (excluding sub-issues)
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		const filteredIssues = issues
+			.filter((issue) => !issue.parentIssueId)
+			.filter(
+				(issue) =>
+					issue.title.toLowerCase().includes(lowerQuery) ||
+					issue.description?.toLowerCase().includes(lowerQuery) ||
+					issue.labels?.some((label) => label.toLowerCase().includes(lowerQuery))
+			)
+			.slice(0, 10);
+
+		// Search statuses
+		const statuses = await ctx.db
+			.query("statuses")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		const filteredStatuses = statuses
+			.filter(
+				(status) =>
+					status.name.toLowerCase().includes(lowerQuery) ||
+					status.color.toLowerCase().includes(lowerQuery)
+			)
+			.slice(0, 5);
+
+		return {
+			issues: filteredIssues.map((issue) => ({
+				...issue,
+				type: "issue" as const,
+			})),
+			statuses: filteredStatuses.map((status) => ({
+				...status,
+				type: "status" as const,
+			})),
+		};
+	},
+});
+
+// ─── ISSUE BLOCKING FUNCTIONS ────────────────────────────────────────────────
+
+export const getBlockingIssues = query({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx, { issueId }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		// Get issues that this issue is blocking (blocked by this issue)
+		const blockingRels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_blocking_issue_id", (q) =>
+				q.eq("blockingIssueId", issueId)
+			)
+			.collect();
+
+		const blockingIssues = await Promise.all(
+			blockingRels.map(async (rel) => {
+				const blockedIssue = await ctx.db.get(rel.blockedIssueId);
+				return blockedIssue;
+			})
+		);
+
+		return blockingIssues.filter((i) => i !== null);
+	},
+});
+
+export const getBlockedByIssues = query({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx, { issueId }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		// Get issues that are blocking this issue
+		const blockedByRels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_blocked_issue_id", (q) =>
+				q.eq("blockedIssueId", issueId)
+			)
+			.collect();
+
+		const blockedByIssues = await Promise.all(
+			blockedByRels.map(async (rel) => {
+				const blockingIssue = await ctx.db.get(rel.blockingIssueId);
+				return blockingIssue;
+			})
+		);
+
+		return blockedByIssues.filter((i) => i !== null);
+	},
+});
+
+export const getAllIssuesForBlocking = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		// Get all main issues (not sub-issues) in the channel
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		// Filter out sub-issues
+		return issues.filter((issue) => !issue.parentIssueId);
+	},
+});
+
+export const addIssueBlockingRelationship = mutation({
+	args: {
+		channelId: v.id("channels"),
+		blockedIssueId: v.id("issues"),
+		blockingIssueId: v.id("issues"),
+	},
+	handler: async (
+		ctx: MutationCtx,
+		{ channelId, blockedIssueId, blockingIssueId }
+	) => {
+		if (blockedIssueId === blockingIssueId) {
+			throw new Error("An issue cannot block itself");
+		}
+
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		const blockedIssue = await ctx.db.get(blockedIssueId);
+		const blockingIssue = await ctx.db.get(blockingIssueId);
+		if (!blockedIssue || !blockingIssue) {
+			throw new Error("Issue not found");
+		}
+
+		// Verify both issues belong to the same channel
+		if (blockedIssue.channelId !== channelId || blockingIssue.channelId !== channelId) {
+			throw new Error("Issues must belong to the same channel");
+		}
+
+		// Check for circular dependency
+		const existingBlocking = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_blocked_issue_id", (q) =>
+				q.eq("blockedIssueId", blockingIssueId)
+			)
+			.collect();
+
+		const hasCircular = existingBlocking.some(
+			(rel) => rel.blockingIssueId === blockedIssueId
+		);
+		if (hasCircular) {
+			throw new Error(
+				"Circular dependency detected: the issue you're blocking already blocks this issue"
+			);
+		}
+
+		// Check if relationship already exists
+		const existing = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_channel_id_blocked_issue_id", (q) =>
+				q.eq("channelId", channelId).eq("blockedIssueId", blockedIssueId)
+			)
+			.collect();
+
+		if (existing.some((rel) => rel.blockingIssueId === blockingIssueId)) {
+			return; // Already blocked by this issue
+		}
+
+		// Verify caller is a member of the workspace
+		const member = await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Create the blocking relationship
+		await ctx.db.insert("issueBlocking", {
+			channelId,
+			blockedIssueId,
+			blockingIssueId,
+			createdAt: Date.now(),
+			createdBy: member._id,
+		});
+
+		return { success: true };
+	},
+});
+
+export const removeIssueBlockingRelationship = mutation({
+	args: {
+		channelId: v.id("channels"),
+		blockedIssueId: v.id("issues"),
+		blockingIssueId: v.id("issues"),
+	},
+	handler: async (
+		ctx: MutationCtx,
+		{ channelId, blockedIssueId, blockingIssueId }
+	) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		// Verify caller is a member of the workspace
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Find and delete the blocking relationship
+		const blockingRels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_channel_id_blocked_issue_id", (q) =>
+				q.eq("channelId", channelId).eq("blockedIssueId", blockedIssueId)
+			)
+			.collect();
+
+		const relToDelete = blockingRels.find(
+			(rel) => rel.blockingIssueId === blockingIssueId
+		);
+
+		if (relToDelete) {
+			await ctx.db.delete(relToDelete._id);
+		}
+
+		return { success: true };
+	},
+});
+
 export const createSubIssue = mutation({
 	args: {
 		parentIssueId: v.id("issues"),

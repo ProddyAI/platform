@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
-import { Calendar, CalendarIcon, Check, ChevronRight, Plus, Send, Trash2, X } from "lucide-react";
+import { Calendar, CalendarIcon, Check, ChevronRight, Minus, Plus, Send, Shield, Trash2, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
@@ -116,6 +116,7 @@ interface BoardIssueDrawerProps {
 	onOpenChange: (open: boolean) => void;
 	statuses: Status[];
 	members: Member[];
+	allIssues: Issue[];
 	onDelete?: (issueId: Id<"issues">) => void;
 	onClickIssue?: (issue: Issue) => void;
 }
@@ -715,6 +716,223 @@ const SubIssuesSection = ({
 	);
 };
 
+// Blocking Section Component
+interface BlockingSectionProps {
+	issue: Issue;
+	allIssues: Issue[];
+	onClickIssue: (issue: Issue) => void;
+}
+
+const BlockingSection = ({
+	issue,
+	allIssues,
+	onClickIssue,
+}: BlockingSectionProps) => {
+	const blockingIssues = useQuery(
+		api.board.getBlockingIssues,
+		issue ? { issueId: issue._id } : "skip"
+	);
+	const blockedByIssues = useQuery(
+		api.board.getBlockedByIssues,
+		issue ? { issueId: issue._id } : "skip"
+	);
+	const addBlocking = useMutation(api.board.addIssueBlockingRelationship);
+	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
+
+	const [selectedIssueId, setSelectedIssueId] = useState<string>("");
+
+	const handleAddBlocking = async () => {
+		if (!selectedIssueId) return;
+		try {
+			await addBlocking({
+				channelId: issue.channelId,
+				blockedIssueId: selectedIssueId as Id<"issues">,
+				blockingIssueId: issue._id,
+			});
+			setSelectedIssueId("");
+		} catch (error: any) {
+			console.error("Failed to add blocking relationship:", error);
+			toast.error(error.message || "Failed to add blocking relationship");
+		}
+	};
+
+	const handleRemoveBlocking = async (blockedIssueId: Id<"issues">) => {
+		try {
+			await removeBlocking({
+				channelId: issue.channelId,
+				blockedIssueId,
+				blockingIssueId: issue._id,
+			});
+		} catch (error: any) {
+			console.error("Failed to remove blocking relationship:", error);
+			toast.error(error.message || "Failed to remove blocking relationship");
+		}
+	};
+
+	const handleRemoveBlockedBy = async (blockingIssueId: Id<"issues">) => {
+		try {
+			await removeBlocking({
+				channelId: issue.channelId,
+				blockedIssueId: issue._id,
+				blockingIssueId,
+			});
+		} catch (error: any) {
+			console.error("Failed to remove blocked by relationship:", error);
+			toast.error(error.message || "Failed to remove blocked by relationship");
+		}
+	};
+
+	// Filter out current issue and sub-issues from available issues
+	const availableIssues = allIssues.filter(
+		(i) => i._id !== issue._id && !i.parentIssueId
+	);
+
+	// Filter out issues already in blocking/blockedBy lists
+	const blockingIds = new Set(blockingIssues?.map((i) => i._id) || []);
+	const blockedByIds = new Set(blockedByIssues?.map((i) => i._id) || []);
+	const usedIssueIds = new Set([...blockingIds, ...blockedByIds, issue._id]);
+
+	const availableForBlocking = availableIssues.filter(
+		(i) => !usedIssueIds.has(i._id)
+	);
+
+	return (
+		<div className="space-y-4">
+			{/* Blocking Section (Issues this issue blocks) */}
+			<div>
+				<div className="flex items-center justify-between mb-2">
+					<div className="flex items-center gap-2">
+						<Shield className="w-4 h-4 text-orange-500" />
+						<h3 className="text-sm font-semibold">Blocking</h3>
+						{blockingIssues && blockingIssues.length > 0 && (
+							<span className="text-xs text-muted-foreground">
+								({blockingIssues.length} issue{blockingIssues.length !== 1 ? "s" : ""})
+							</span>
+						)}
+					</div>
+					{availableForBlocking.length > 0 && (
+						<div className="flex items-center gap-2">
+							<Select
+								value={selectedIssueId}
+								onValueChange={setSelectedIssueId}
+							>
+								<SelectTrigger className="h-7 w-40 text-xs">
+									<SelectValue placeholder="Select issue..." />
+								</SelectTrigger>
+								<SelectContent>
+									{availableForBlocking.map((i) => (
+										<SelectItem key={i._id} value={i._id}>
+											<span className="truncate">{i.title}</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Button
+								className="h-7 w-7"
+								disabled={!selectedIssueId}
+								onClick={handleAddBlocking}
+								size="icon"
+								variant="ghost"
+							>
+								<Plus className="w-3.5 h-3.5" />
+							</Button>
+						</div>
+					)}
+				</div>
+
+				{!blockingIssues ? (
+					<div className="text-sm text-muted-foreground">Loading...</div>
+				) : blockingIssues.length === 0 ? (
+					<div className="text-sm text-muted-foreground py-2">
+						No issues blocked by this issue
+					</div>
+				) : (
+					<div className="space-y-1.5">
+						{blockingIssues.map((blockedIssue) => (
+							<div
+								className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+								key={blockedIssue._id}
+								onClick={() => onClickIssue(blockedIssue)}
+							>
+								<div className="flex items-center gap-2 flex-1 min-w-0">
+									<div className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" />
+									<span className="text-sm truncate">
+										{formatIssueId(blockedIssue._id)} - {blockedIssue.title}
+									</span>
+								</div>
+								<Button
+									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									onClick={(e) => {
+										e.stopPropagation();
+										handleRemoveBlocking(blockedIssue._id);
+									}}
+									size="icon"
+									variant="ghost"
+									title="Remove blocking relationship"
+								>
+									<Minus className="w-3 h-3" />
+								</Button>
+							</div>
+						))}
+					</div>
+				)}
+			</div>
+
+			{/* Blocked By Section (Issues blocking this issue) */}
+			<div>
+				<div className="flex items-center justify-between mb-2">
+					<div className="flex items-center gap-2">
+						<Shield className="w-4 h-4 text-blue-500 rotate-180" />
+						<h3 className="text-sm font-semibold">Blocked By</h3>
+						{blockedByIssues && blockedByIssues.length > 0 && (
+							<span className="text-xs text-muted-foreground">
+								({blockedByIssues.length} issue{blockedByIssues.length !== 1 ? "s" : ""})
+							</span>
+						)}
+					</div>
+				</div>
+
+				{!blockedByIssues ? (
+					<div className="text-sm text-muted-foreground">Loading...</div>
+				) : blockedByIssues.length === 0 ? (
+					<div className="text-sm text-muted-foreground py-2">
+						Not blocked by any issues
+					</div>
+				) : (
+					<div className="space-y-1.5">
+						{blockedByIssues.map((blockingIssue) => (
+							<div
+								className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+								key={blockingIssue._id}
+								onClick={() => onClickIssue(blockingIssue)}
+							>
+								<div className="flex items-center gap-2 flex-1 min-w-0">
+									<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+									<span className="text-sm truncate">
+										{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
+									</span>
+								</div>
+								<Button
+									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									onClick={(e) => {
+										e.stopPropagation();
+										handleRemoveBlockedBy(blockingIssue._id);
+									}}
+									size="icon"
+									variant="ghost"
+									title="Remove blocked by relationship"
+								>
+									<Minus className="w-3 h-3" />
+								</Button>
+							</div>
+						))}
+					</div>
+				)}
+			</div>
+		</div>
+	);
+};
+
 // Discussion Section Component
 interface DiscussionSectionProps {
 	issue: Issue;
@@ -882,6 +1100,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 	onOpenChange,
 	statuses,
 	members,
+	allIssues,
 	onDelete,
 	onClickIssue,
 }) => {
@@ -1094,6 +1313,17 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 							/>
 						</div>
 					)}
+
+					<Separator className="opacity-40" />
+
+					{/* Blocking Section */}
+					<div className="px-6 py-5">
+						<BlockingSection
+							allIssues={allIssues}
+							issue={issue}
+							onClickIssue={onClickIssue!}
+						/>
+					</div>
 
 					<Separator className="opacity-40" />
 

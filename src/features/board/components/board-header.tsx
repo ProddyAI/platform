@@ -2,7 +2,6 @@ import { GanttChart, LayoutGrid, Plus, Search } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
 	Tooltip,
 	TooltipContent,
@@ -17,7 +16,7 @@ interface BoardHeaderProps {
 	view: "kanban" | "gantt";
 	setView: (view: "kanban" | "gantt") => void;
 	onAddStatus?: () => void;
-	onSearch?: (query: string) => void;
+	onSearchClick?: () => void;
 }
 
 interface StatusStatsProps {
@@ -99,21 +98,21 @@ const AddStatusButton = ({ onClick }: AddStatusButtonProps) => (
 	</TooltipProvider>
 );
 
-interface SearchInputProps {
-	value: string;
-	onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+interface SearchButtonProps {
+	onClick?: () => void;
 }
 
-const SearchInput = ({ value, onChange }: SearchInputProps) => (
-	<div className="flex-1 min-w-0 max-w-xs relative">
-		<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-		<Input
-			className="pl-8 h-8 text-sm bg-muted/40 dark:bg-gray-800/60 border-border/40 dark:border-gray-700 placeholder:text-muted-foreground/40"
-			onChange={onChange}
-			placeholder="Search issues..."
-			value={value}
-		/>
-	</div>
+const SearchButton = ({ onClick }: SearchButtonProps) => (
+	<Button
+		aria-label="Search issues"
+		className="h-8 w-8 p-0 flex-shrink-0 hover:bg-white/15 transition-colors"
+		onClick={onClick}
+		size="icon"
+		variant="ghost"
+		title="Search issues (⌘K)"
+	>
+		<Search className="w-4 h-4" />
+	</Button>
 );
 
 const BoardHeader: React.FC<BoardHeaderProps> = ({
@@ -122,23 +121,15 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 	view,
 	setView,
 	onAddStatus,
-	onSearch,
+	onSearchClick,
 }) => {
-	const [searchQuery, setSearchQuery] = useState("");
-
-	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = e.target.value;
-		setSearchQuery(value);
-		onSearch?.(value);
-	};
-
 	return (
 		<div className="flex w-full min-w-0 max-w-full items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60 dark:border-gray-800 bg-background dark:bg-gray-950 overflow-x-hidden">
 			<StatusStats statusCount={statusCount} totalIssues={totalIssues} />
 
-			<SearchInput onChange={handleSearchChange} value={searchQuery} />
-
 			<div className="flex items-center gap-2">
+				<SearchButton onClick={onSearchClick} />
+
 				{view === "kanban" && <AddStatusButton onClick={onAddStatus} />}
 
 				<ViewSwitcher setView={setView} view={view} />
