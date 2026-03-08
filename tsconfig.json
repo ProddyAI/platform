@@ -33,5 +33,5 @@
 		// "src/features/canvas/types/**/*.d.ts"
 		".next-win/types/**/*.ts"
 	],
-	"exclude": ["node_modules"]
+	"exclude": ["node_modules", "**/*.test.ts", "**/*.test.tsx"]
 }

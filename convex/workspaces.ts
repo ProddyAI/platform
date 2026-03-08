@@ -166,7 +166,7 @@ export const getInfoById = query({
 
 		return {
 			name: workspace?.name,
-			isMember: !!member,
+			isMember: Boolean(member),
 			role: member?.role,
 		};
 	},

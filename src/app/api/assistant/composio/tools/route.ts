@@ -1,11 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { type NextRequest, NextResponse } from "next/server";
 import {
 	buildActionableErrorPayload,
 	buildComposioFailureGuidance,
 	logRouteError,
-	sanitizeErrorMessage,
 } from "@/lib/assistant-error-utils";
 import { createComposioClient } from "@/lib/composio-config";
 
@@ -30,7 +29,10 @@ export async function POST(req: NextRequest) {
 		}
 
 		const composio = createComposioClient();
-		const tools = await (composio as any).getTools({ apps: appNames }, entityId);
+		const tools = await (composio as any).getTools(
+			{ apps: appNames },
+			entityId
+		);
 
 		if (!tools || Object.keys(tools).length === 0) {
 			return NextResponse.json(
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
 		}
 
 		const result = await generateText({
-			model: openai("gpt-5-mini"),
+			model: openai("gpt-4o-mini"),
 			system: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools.`,
 			messages: [{ role: "user", content: message }],
 			tools,

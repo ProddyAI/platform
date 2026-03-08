@@ -172,7 +172,7 @@ const CanvasPage = () => {
 	useEffect(() => {
 		const handleFullscreenChange = () => {
 			// Update state based on actual fullscreen status
-			setIsFullScreen(!!document.fullscreenElement);
+			setIsFullScreen(Boolean(document.fullscreenElement));
 		};
 
 		document.addEventListener("fullscreenchange", handleFullscreenChange);

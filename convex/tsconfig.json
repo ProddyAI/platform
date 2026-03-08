@@ -20,6 +20,6 @@
 		"isolatedModules": true,
 		"noEmit": true
 	},
-	"include": ["./**/*"],
+	"include": ["./**/*", "../tests/errorHandling.test.ts"],
 	"exclude": ["./_generated"]
 }

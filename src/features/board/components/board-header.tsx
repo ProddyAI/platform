@@ -1,25 +1,7 @@
-import {
-	BarChart,
-	Clock,
-	Filter,
-	GanttChart,
-	LayoutGrid,
-	Search,
-	Table,
-} from "lucide-react";
+import { GanttChart, LayoutGrid, Plus, Search, Table } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
 	Tooltip,
@@ -30,228 +12,137 @@ import {
 import { cn } from "@/lib/utils";
 
 interface BoardHeaderProps {
-	title?: string;
-	totalCards: number;
-	listsCount: number;
+	totalIssues: number;
+	statusCount: number;
 	view: "kanban" | "table" | "gantt";
 	setView: (view: "kanban" | "table" | "gantt") => void;
-	onAddList: () => void;
+	onAddStatus?: () => void;
 	onSearch?: (query: string) => void;
-	onSearchListName?: (query: string) => void;
 }
 
+interface StatusStatsProps {
+	totalIssues: number;
+	statusCount: number;
+}
+
+const StatusStats = ({ totalIssues, statusCount }: StatusStatsProps) => (
+	<div className="flex items-center gap-3 text-xs text-muted-foreground">
+		<span className="flex items-center gap-1.5">
+			<span className="w-2 h-2 rounded-full bg-primary/60" />
+			<span>
+				<strong className="text-foreground">{statusCount}</strong>{" "}
+				{statusCount === 1 ? "status" : "statuses"}
+			</span>
+		</span>
+		<span className="text-border/60">·</span>
+		<span>
+			<strong className="text-foreground">{totalIssues}</strong>{" "}
+			{totalIssues === 1 ? "issue" : "issues"}
+		</span>
+	</div>
+);
+
+interface ViewSwitcherProps {
+	view: "kanban" | "table" | "gantt";
+	setView: (view: "kanban" | "table" | "gantt") => void;
+}
+
+const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
+	<div className="flex items-center bg-muted/50 dark:bg-gray-800/60 rounded-lg p-0.5 border border-border/40 dark:border-gray-700">
+		{(
+			[
+				{ id: "kanban", icon: LayoutGrid, label: "Board" },
+				{ id: "table", icon: Table, label: "Table" },
+				{ id: "gantt", icon: GanttChart, label: "Gantt" },
+			] as const
+		).map(({ id, icon: Icon, label }) => (
+			<Button
+				aria-label={label}
+				className={cn(
+					"h-7 px-2.5 flex items-center gap-1.5 rounded-md text-xs transition-all",
+					view === id
+						? "bg-background dark:bg-gray-900 text-foreground shadow-sm"
+						: "text-muted-foreground hover:text-foreground"
+				)}
+				key={id}
+				onClick={() => setView(id)}
+				size="sm"
+				variant="ghost"
+			>
+				<Icon className="w-3.5 h-3.5" />
+				<span className="hidden sm:inline">{label}</span>
+			</Button>
+		))}
+	</div>
+);
+
+interface AddStatusButtonProps {
+	onClick?: () => void;
+}
+
+const AddStatusButton = ({ onClick }: AddStatusButtonProps) => (
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					aria-label="Add status"
+					className="h-8 gap-1.5 text-xs border-border/50 dark:border-gray-700 bg-transparent hover:bg-muted/60 dark:hover:bg-gray-800"
+					onClick={onClick}
+					size="sm"
+					variant="outline"
+				>
+					<Plus className="w-3.5 h-3.5" />
+					<span className="hidden md:inline">Add Status</span>
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>Add a new status column</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
+);
+
+interface SearchInputProps {
+	value: string;
+	onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const SearchInput = ({ value, onChange }: SearchInputProps) => (
+	<div className="flex-1 min-w-0 max-w-xs relative">
+		<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+		<Input
+			className="pl-8 h-8 text-sm bg-muted/40 dark:bg-gray-800/60 border-border/40 dark:border-gray-700 placeholder:text-muted-foreground/40"
+			onChange={onChange}
+			placeholder="Search issues..."
+			value={value}
+		/>
+	</div>
+);
+
 const BoardHeader: React.FC<BoardHeaderProps> = ({
-	totalCards,
-	listsCount,
+	totalIssues,
+	statusCount,
 	view,
 	setView,
-	onAddList,
+	onAddStatus,
 	onSearch,
-	onSearchListName,
 }) => {
 	const [searchQuery, setSearchQuery] = useState("");
-	const [listNameQuery, setListNameQuery] = useState("");
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
 		setSearchQuery(value);
-		if (onSearch) onSearch(value);
-	};
-
-	const handleListNameSearchChange = (
-		e: React.ChangeEvent<HTMLInputElement>
-	) => {
-		const value = e.target.value;
-		setListNameQuery(value);
-		if (onSearchListName) onSearchListName(value);
-	};
-
-	const handleSearch = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (onSearch) onSearch(searchQuery);
-	};
-
-	const handleListNameSearch = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (onSearchListName) onSearchListName(listNameQuery);
+		onSearch?.(value);
 	};
 
 	return (
-		<div className="flex flex-col gap-3 p-3 md:p-4 border-b dark:border-gray-800 bg-gradient-to-r from-secondary/5 to-secondary/5 dark:from-gray-900 dark:to-gray-900">
-			<div className="flex items-center justify-between">
-				<div>
-					<div className="flex items-center gap-2 md:gap-3 mt-1 text-xs md:text-sm text-muted-foreground dark:text-gray-400">
-						<div className="flex items-center gap-1">
-							<LayoutGrid className="w-3 h-3 md:w-4 md:h-4" />
-							<span>{listsCount} lists</span>
-						</div>
-						<div className="flex items-center gap-1">
-							<BarChart className="w-3 h-3 md:w-4 md:h-4" />
-							<span>{totalCards} cards</span>
-						</div>
-						<Badge
-							className="hidden sm:inline-flex bg-white/50 dark:bg-gray-800/50 dark:border-gray-700"
-							variant="outline"
-						>
-							<Clock className="w-3 h-3 mr-1" /> Updated just now
-						</Badge>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									className="h-9 px-3 bg-white dark:bg-gray-800 dark:border-gray-700"
-									onClick={onAddList}
-									size="sm"
-									variant="outline"
-								>
-									<span className="hidden md:inline mr-1">Add List</span>+
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>Add a new list to the board</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
+		<div className="flex w-full min-w-0 max-w-full items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60 dark:border-gray-800 bg-background dark:bg-gray-950 overflow-x-hidden">
+			<StatusStats statusCount={statusCount} totalIssues={totalIssues} />
 
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								className="h-9 w-9 bg-white dark:bg-gray-800 dark:border-gray-700"
-								size="icon"
-								variant="outline"
-							>
-								<Filter className="h-4 w-4" />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-56">
-							<DropdownMenuLabel>Filter Cards</DropdownMenuLabel>
-							<DropdownMenuSeparator />
-							<DropdownMenuGroup>
-								<DropdownMenuItem>
-									<span>By Priority</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem>
-									<span>By Label</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem>
-									<span>By Due Date</span>
-								</DropdownMenuItem>
-							</DropdownMenuGroup>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem>
-								<span>Clear Filters</span>
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			</div>
+			<SearchInput onChange={handleSearchChange} value={searchQuery} />
 
-			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-				<div className="flex items-center gap-2 w-full sm:w-auto">
-					<form className="relative w-full sm:w-64" onSubmit={handleSearch}>
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-500" />
-						<Input
-							className="pl-9 bg-white/80 dark:bg-gray-800/80 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500 w-full"
-							onChange={handleSearchChange}
-							placeholder="Search tasks"
-							value={searchQuery}
-						/>
-					</form>
+			<div className="flex items-center gap-2">
+				<ViewSwitcher setView={setView} view={view} />
 
-					{view === "kanban" && (
-						<form
-							className="relative w-full sm:w-64"
-							onSubmit={handleListNameSearch}
-						>
-							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-500" />
-							<Input
-								className="pl-9 bg-white/80 dark:bg-gray-800/80 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500 w-full"
-								onChange={handleListNameSearchChange}
-								placeholder="Search Cards"
-								value={listNameQuery}
-							/>
-						</form>
-					)}
-				</div>
-
-				<div className="flex flex-col">
-					<div className="flex items-center gap-1 bg-white/90 dark:bg-gray-800/90 p-1 rounded-lg border dark:border-gray-700 shadow-sm">
-						<Button
-							className={cn(
-								"px-2 md:px-3 py-1.5 flex items-center gap-1 md:gap-2 rounded-md transition-all duration-200",
-								view === "kanban"
-									? "bg-secondary/15 dark:bg-secondary/25 text-secondary dark:text-secondary-foreground font-medium shadow-sm border-secondary/20 dark:border-secondary/30 border"
-									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-							)}
-							onClick={() => setView("kanban")}
-							size="sm"
-							variant="ghost"
-						>
-							<LayoutGrid
-								className={cn(
-									"w-4 h-4",
-									view === "kanban"
-										? "text-secondary dark:text-secondary-foreground"
-										: "text-gray-500 dark:text-gray-400"
-								)}
-							/>
-							<span className="hidden sm:inline text-xs font-medium">
-								Kanban
-							</span>
-						</Button>
-
-						<Button
-							className={cn(
-								"px-2 md:px-3 py-1.5 flex items-center gap-1 md:gap-2 rounded-md transition-all duration-200",
-								view === "table"
-									? "bg-secondary/15 dark:bg-secondary/25 text-secondary dark:text-secondary-foreground font-medium shadow-sm border-secondary/20 dark:border-secondary/30 border"
-									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-							)}
-							onClick={() => setView("table")}
-							size="sm"
-							variant="ghost"
-						>
-							<Table
-								className={cn(
-									"w-4 h-4",
-									view === "table"
-										? "text-secondary dark:text-secondary-foreground"
-										: "text-gray-500 dark:text-gray-400"
-								)}
-							/>
-							<span className="hidden sm:inline text-xs font-medium">
-								Table
-							</span>
-						</Button>
-
-						<Button
-							className={cn(
-								"px-2 md:px-3 py-1.5 flex items-center gap-1 md:gap-2 rounded-md transition-all duration-200",
-								view === "gantt"
-									? "bg-secondary/15 dark:bg-secondary/25 text-secondary dark:text-secondary-foreground font-medium shadow-sm border-secondary/20 dark:border-secondary/30 border"
-									: "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-							)}
-							onClick={() => setView("gantt")}
-							size="sm"
-							variant="ghost"
-						>
-							<GanttChart
-								className={cn(
-									"w-4 h-4",
-									view === "gantt"
-										? "text-secondary dark:text-secondary-foreground"
-										: "text-gray-500 dark:text-gray-400"
-								)}
-							/>
-							<span className="hidden sm:inline text-xs font-medium">
-								Gantt
-							</span>
-						</Button>
-					</div>
-				</div>
+				{view === "kanban" && <AddStatusButton onClick={onAddStatus} />}
 			</div>
 		</div>
 	);

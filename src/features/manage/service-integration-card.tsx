@@ -161,9 +161,9 @@ export const ServiceIntegrationCard = ({
 
   // Component state and derived values
 
-  const IconComponent = toolkits[toolkit].icon;
-  const isConnected = connectedAccount && connectedAccount.status === "ACTIVE";
-  const hasAuthConfig = !!authConfig;
+	const IconComponent = toolkits[toolkit].icon;
+	const isConnected = connectedAccount && connectedAccount.status === "ACTIVE";
+	const hasAuthConfig = Boolean(authConfig);
 
   const handleCreateAuthConfig = async () => {
     setIsConnecting(true);
@@ -210,22 +210,31 @@ export const ServiceIntegrationCard = ({
         throw new Error("No redirect URL received from authorization");
       }
 
-      // Redirect to service OAuth (AgentAuth handles the full flow)
-      window.location.href = result.redirectUrl;
-    } catch (error) {
-      console.error(`[ServiceCard] Error authorizing ${toolkit}:`, error);
-      console.error(`[ServiceCard] Error details:`, {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : `Failed to authorize ${toolkits[toolkit].name}`,
-      );
-      setIsConnecting(false);
-    }
-  };
+			// Redirect to service OAuth (AgentAuth handles the full flow)
+			const newTab = window.open(
+				result.redirectUrl,
+				"_blank",
+				"noopener,noreferrer"
+			);
+			if (!newTab) {
+				toast.success(
+					`${toolkits[toolkit].name} login process started in new tab. Please allow pop-ups and try again if not opened.`
+				);
+			}
+		} catch (error) {
+			console.error(`[ServiceCard] Error authorizing ${toolkit}:`, error);
+			console.error(`[ServiceCard] Error details:`, {
+				message: error instanceof Error ? error.message : String(error),
+				stack: error instanceof Error ? error.stack : undefined,
+			});
+			toast.error(
+				error instanceof Error
+					? error.message
+					: `Failed to authorize ${toolkits[toolkit].name}`
+			);
+			setIsConnecting(false);
+		}
+	};
 
   const _handleConnect = async () => {
     await handleCreateAuthConfig();

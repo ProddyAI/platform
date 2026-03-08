@@ -2,6 +2,7 @@
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Loader, Smile, Trash, TriangleAlert, Upload, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { type PropsWithChildren, useEffect, useRef, useState } from "react";
@@ -31,6 +32,532 @@ import { useConfirm } from "@/hooks/use-confirm";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../../toolbar";
 import Topbar from "./topbar";
+
+interface ChannelIconProps {
+	iconImageUrl?: string | null;
+	icon?: string;
+	name: string;
+	size?: "sm" | "md" | "lg" | "xl";
+	imageLoadError?: boolean;
+	onImageError?: () => void;
+}
+
+const ChannelIcon = ({
+	iconImageUrl,
+	icon,
+	name,
+	size = "sm",
+	imageLoadError = false,
+	onImageError,
+}: ChannelIconProps) => {
+	const sizeClasses = {
+		sm: "h-5 w-5",
+		md: "h-6 w-6",
+		lg: "h-10 w-10",
+		xl: "h-20 w-20",
+	};
+
+	const containerSize = sizeClasses[size];
+
+	if (iconImageUrl && !imageLoadError) {
+		return (
+			<div className={`${containerSize} rounded-full overflow-hidden relative`}>
+				<Image
+					alt={`Channel icon for ${name}`}
+					className="h-full w-full object-cover"
+					fill
+					onError={onImageError}
+					src={iconImageUrl}
+				/>
+			</div>
+		);
+	}
+
+	if (icon) {
+		return (
+			<span className={size === "sm" ? "text-xl" : "text-2xl"}>{icon}</span>
+		);
+	}
+
+	return (
+		<div
+			className={`${containerSize} flex items-center justify-center rounded-full bg-gray-100`}
+		>
+			<span className="text-xs font-medium text-gray-600">
+				{name.charAt(0).toLowerCase()}
+			</span>
+		</div>
+	);
+};
+
+interface ChannelIconPreviewProps {
+	iconImageUrl?: string | null;
+	icon?: string;
+	iconPreview?: string;
+	channelName: string;
+	imageLoadError: boolean;
+	setImageLoadError: (value: boolean) => void;
+}
+
+const ChannelIconPreview = ({
+	iconImageUrl,
+	icon,
+	iconPreview,
+	channelName,
+	imageLoadError,
+	setImageLoadError,
+}: ChannelIconPreviewProps) => {
+	if (iconPreview) {
+		return (
+			<div className="h-full w-full relative">
+				<Image
+					alt="Icon preview"
+					className="h-full w-full object-cover rounded"
+					fill
+					src={iconPreview}
+				/>
+			</div>
+		);
+	}
+
+	if (icon) {
+		return <span className="text-4xl">{icon}</span>;
+	}
+
+	return (
+		<ChannelIcon
+			iconImageUrl={iconImageUrl}
+			imageLoadError={imageLoadError}
+			name={channelName}
+			onImageError={() => setImageLoadError(true)}
+			size="xl"
+		/>
+	);
+};
+
+interface ChannelIconUploaderProps {
+	icon?: string;
+	iconImage?: Id<"_storage">;
+	iconPreview?: string;
+	channelName: string;
+	imageLoadError: boolean;
+	isUploadingIcon: boolean;
+	imageInputRef: React.RefObject<HTMLInputElement>;
+	setIcon: (icon: string | undefined) => void;
+	setImageLoadError: (value: boolean) => void;
+	onIconImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+	clearIconImage: () => void;
+}
+
+const ChannelIconUploader = ({
+	icon,
+	iconImage,
+	iconPreview,
+	channelName,
+	imageLoadError,
+	isUploadingIcon,
+	imageInputRef,
+	setIcon,
+	setImageLoadError,
+	onIconImageUpload,
+	clearIconImage,
+}: ChannelIconUploaderProps) => {
+	return (
+		<div className="flex-shrink-0 relative">
+			<input
+				accept="image/*"
+				className="hidden"
+				id="icon-upload"
+				onChange={onIconImageUpload}
+				ref={imageInputRef}
+				type="file"
+			/>
+			<button
+				aria-label="Upload workspace icon"
+				className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+				disabled={isUploadingIcon}
+				onClick={() => !isUploadingIcon && imageInputRef.current?.click()}
+				type="button"
+			>
+				{iconPreview || icon ? (
+					<ChannelIconPreview
+						channelName={channelName}
+						icon={icon}
+						iconImageUrl={
+							iconPreview?.startsWith("http") ? iconPreview : undefined
+						}
+						iconPreview={
+							iconPreview && !iconPreview.startsWith("http")
+								? iconPreview
+								: undefined
+						}
+						imageLoadError={imageLoadError}
+						setImageLoadError={setImageLoadError}
+					/>
+				) : (
+					<div className="flex flex-col items-center gap-1">
+						<Upload className="h-6 w-6 text-gray-400" />
+						<span className="text-xs text-gray-500 text-center">
+							{isUploadingIcon ? "Uploading..." : "Upload"}
+						</span>
+					</div>
+				)}
+			</button>
+			{(iconPreview || icon) && (
+				<button
+					className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+					onClick={(e) => {
+						e.stopPropagation();
+						if (iconPreview || iconImage) {
+							clearIconImage();
+						}
+						if (icon) {
+							setIcon(undefined);
+						}
+					}}
+					type="button"
+				>
+					<X className="h-3.5 w-3.5" />
+				</button>
+			)}
+			<EmojiPopover
+				hint="Select emoji icon"
+				onEmojiSelect={(e) => {
+					clearIconImage();
+					setIcon(e);
+				}}
+			>
+				<button
+					className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+					type="button"
+				>
+					<Smile className="h-4 w-4" />
+				</button>
+			</EmojiPopover>
+		</div>
+	);
+};
+
+interface ChannelNameDialogProps {
+	channel: {
+		_id: Id<"channels">;
+		name: string;
+		icon?: string;
+		iconImage?: Id<"_storage">;
+		iconImageUrl?: string | null;
+	};
+	member: { _id: Id<"members">; role: string };
+	isUpdatingChannel: boolean;
+	isRemovingChannel: boolean;
+	imageInputRef: React.RefObject<HTMLInputElement>;
+	onDelete: () => void;
+	onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+	onIconImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+	clearIconImage: () => void;
+	setEditOpen: (open: boolean) => void;
+	setIcon: (icon: string | undefined) => void;
+	setValue: (value: string) => void;
+	value: string;
+	icon?: string;
+	iconImage?: Id<"_storage">;
+	iconPreview?: string;
+	imageLoadError: boolean;
+	isUploadingIcon: boolean;
+	setImageLoadError: (value: boolean) => void;
+	editOpen: boolean;
+}
+
+const ChannelNameDialog = ({
+	channel,
+	member,
+	isUpdatingChannel,
+	isRemovingChannel,
+	imageInputRef,
+	onDelete,
+	onSubmit,
+	onIconImageUpload,
+	clearIconImage,
+	setEditOpen,
+	setIcon,
+	setValue,
+	value,
+	icon,
+	iconImage,
+	iconPreview,
+	imageLoadError,
+	isUploadingIcon,
+	setImageLoadError,
+	editOpen,
+}: ChannelNameDialogProps) => {
+	const nameInputRef = useRef<HTMLInputElement>(null);
+	const isChannelEditOpen = editOpen || isUpdatingChannel;
+
+	useEffect(() => {
+		if (isChannelEditOpen) {
+			setTimeout(() => {
+				nameInputRef.current?.focus();
+			}, 0);
+		}
+	}, [isChannelEditOpen]);
+	return (
+		<Dialog onOpenChange={setEditOpen} open={isChannelEditOpen}>
+			<DialogTrigger asChild>
+				<button
+					className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+					disabled={isUpdatingChannel}
+					type="button"
+				>
+					<div className="flex w-full items-center justify-between">
+						<p className="text-sm font-semibold">Channel name and icon</p>
+						<p className="text-sm font-semibold text-[#1264A3] hover:underline">
+							Edit
+						</p>
+					</div>
+
+					<div className="flex items-center gap-3 mt-2">
+						<div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
+							<ChannelIcon
+								icon={channel.icon}
+								iconImageUrl={channel.iconImageUrl}
+								imageLoadError={imageLoadError}
+								name={channel.name}
+								onImageError={() => setImageLoadError(true)}
+								size="md"
+							/>
+						</div>
+						<div>
+							<p className="text-sm font-medium"># {channel.name}</p>
+							<p className="text-xs text-muted-foreground">
+								{channel.iconImageUrl
+									? "Custom image icon"
+									: channel.icon
+										? "Custom emoji icon"
+										: "Default letter icon"}
+							</p>
+						</div>
+					</div>
+				</button>
+			</DialogTrigger>
+
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Edit channel name and icon</DialogTitle>
+					<VisuallyHidden.Root>
+						<DialogDescription>
+							Rename this channel to match your case.
+						</DialogDescription>
+					</VisuallyHidden.Root>
+				</DialogHeader>
+
+				<form className="space-y-4" onSubmit={onSubmit}>
+					<div className="space-y-4">
+						<div className="flex flex-col gap-2">
+							<div className="flex items-center justify-between">
+								<p className="text-sm font-medium">Channel Icon</p>
+								<span className="text-xs text-muted-foreground">
+									Select emoji or upload image
+								</span>
+							</div>
+							<div className="flex items-center gap-3">
+								<ChannelIconUploader
+									channelName={channel.name}
+									clearIconImage={clearIconImage}
+									icon={icon}
+									iconImage={iconImage}
+									iconPreview={iconPreview}
+									imageInputRef={imageInputRef}
+									imageLoadError={imageLoadError}
+									isUploadingIcon={isUploadingIcon}
+									onIconImageUpload={onIconImageUpload}
+									setIcon={setIcon}
+									setImageLoadError={setImageLoadError}
+								/>
+								<div className="flex-1">
+									<label
+										className="text-sm font-medium mb-1 block"
+										htmlFor="channel-name-input"
+									>
+										Channel Name
+									</label>
+									<Input
+										disabled={isUpdatingChannel}
+										id="channel-name-input"
+										maxLength={20}
+										minLength={3}
+										onChange={(e) =>
+											setValue(
+												e.target.value.replace(/\s+/g, "-").toLowerCase()
+											)
+										}
+										placeholder="e.g. plan-budget"
+										ref={nameInputRef}
+										required
+										value={value}
+									/>
+									<p className="text-xs text-muted-foreground mt-1">
+										Max 5MB for images
+									</p>
+
+									{member.role === "admin" && (
+										<button
+											className="flex cursor-pointer items-center gap-x-2 rounded-lg border bg-white px-5 py-4 text-rose-600 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+											disabled={isRemovingChannel}
+											onClick={onDelete}
+											type="button"
+										>
+											<Trash className="size-4" />
+											<p className="text-sm font-semibold">Delete channel</p>
+										</button>
+									)}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<DialogClose asChild>
+							<Button disabled={isUpdatingChannel} variant="outline">
+								Cancel
+							</Button>
+						</DialogClose>
+						<Button disabled={isUpdatingChannel} type="submit">
+							Save
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
+interface ChannelIconDialogProps {
+	channel: {
+		_id: Id<"channels">;
+		name: string;
+		icon?: string;
+		iconImage?: Id<"_storage">;
+		iconImageUrl?: string | null;
+	};
+	iconEditOpen: boolean;
+	isUpdatingChannel: boolean;
+	onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+	onIconEditOpenChange: (open: boolean) => void;
+	setIcon: (icon: string | undefined) => void;
+	setIconImage: React.Dispatch<
+		React.SetStateAction<Id<"_storage"> | undefined>
+	>;
+	setIconPreview: React.Dispatch<React.SetStateAction<string | undefined>>;
+	icon?: string;
+}
+
+const ChannelIconDialog = ({
+	channel,
+	iconEditOpen,
+	isUpdatingChannel,
+	onSubmit,
+	onIconEditOpenChange,
+	setIcon,
+	setIconImage,
+	setIconPreview,
+	icon,
+}: ChannelIconDialogProps) => {
+	return (
+		<Dialog onOpenChange={onIconEditOpenChange} open={iconEditOpen}>
+			<DialogTrigger asChild>
+				<button
+					className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50"
+					type="button"
+				>
+					<div className="flex w-full items-center justify-between">
+						<p className="text-sm font-semibold">Channel icon</p>
+						<p className="text-sm font-semibold text-[#1264A3] hover:underline">
+							Edit
+						</p>
+					</div>
+
+					<div className="flex items-center gap-3 mt-2">
+						<div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
+							<ChannelIcon
+								icon={channel.icon}
+								iconImageUrl={channel.iconImageUrl}
+								name={channel.name}
+								size="md"
+							/>
+						</div>
+						<div>
+							<p className="text-xs text-muted-foreground">
+								{channel.iconImageUrl
+									? "Custom image icon"
+									: channel.icon
+										? "Custom emoji icon"
+										: "Default letter icon"}
+							</p>
+							<p className="text-xs text-muted-foreground">
+								Click to change the channel icon
+							</p>
+						</div>
+					</div>
+				</button>
+			</DialogTrigger>
+
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Edit channel icon</DialogTitle>
+					<DialogDescription>
+						Choose an emoji to represent this channel
+					</DialogDescription>
+				</DialogHeader>
+
+				<form className="space-y-4" onSubmit={onSubmit}>
+					<div className="space-y-4">
+						<div className="flex flex-col gap-2">
+							<div className="flex items-center justify-between">
+								<p className="text-sm font-medium">Channel Icon</p>
+								<span className="text-xs text-muted-foreground">
+									Click to select an emoji
+								</span>
+							</div>
+							<div className="flex items-center justify-center">
+								<div className="flex-shrink-0">
+									<EmojiPopover
+										hint="Select channel icon"
+										onEmojiSelect={(e) => {
+											setIconImage(() => undefined);
+											setIconPreview(() => undefined);
+											setIcon(e);
+										}}
+									>
+										<div className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-100 hover:bg-gray-200 hover:border-gray-400 transition-all">
+											{icon ? (
+												<span className="text-4xl">{icon}</span>
+											) : (
+												<div className="flex flex-col items-center">
+													<span className="text-sm text-gray-600">Select</span>
+													<span className="text-sm text-gray-600">Icon</span>
+												</div>
+											)}
+										</div>
+									</EmojiPopover>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<DialogClose asChild>
+							<Button disabled={isUpdatingChannel} variant="outline">
+								Cancel
+							</Button>
+						</DialogClose>
+						<Button disabled={isUpdatingChannel} type="submit">
+							Save
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
 const ChannelLayout = ({ children }: PropsWithChildren) => {
 	const router = useRouter();
@@ -78,12 +605,20 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		}
 	}, [channel]);
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	useEffect(() => {
+		setImageLoadError(false);
+	}, []);
+
+	useEffect(() => {
+		setImageLoadError(false);
+	}, []);
+
+	const _handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value.replace(/\s+/g, "-").toLowerCase();
 		setValue(value);
 	};
 
-	const handleEmojiSelect = (emoji: string) => {
+	const _handleEmojiSelect = (emoji: string) => {
 		setIcon(emoji);
 		setIconImage(undefined);
 		setIconPreview(undefined);
@@ -165,12 +700,88 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		}
 	};
 
-	const handleEditOpen = (value: boolean) => {
+	const handleIconImageUpload = async (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		// Validate file type
+		const allowedImageTypes = [
+			"image/jpeg",
+			"image/png",
+			"image/gif",
+			"image/webp",
+		];
+		if (!allowedImageTypes.includes(file.type)) {
+			toast.error("Please upload a JPEG, PNG, GIF, or WebP image");
+			return;
+		}
+
+		// Validate file size (max 5MB)
+		if (file.size > 5 * 1024 * 1024) {
+			toast.error("Image size must be less than 5MB");
+			return;
+		}
+
+		setIsUploadingIcon(true);
+
+		try {
+			const url = await generateUploadUrl({}, { throwError: true });
+
+			if (typeof url !== "string" || url.trim().length === 0) {
+				throw new Error("Failed to get upload URL");
+			}
+
+			const result = await fetch(url, {
+				method: "POST",
+				headers: { "Content-Type": file.type },
+				body: file,
+			});
+
+			if (!result.ok) {
+				throw new Error("Failed to upload image");
+			}
+
+			const { storageId } = await result.json();
+
+			setIconImage(storageId);
+			setIconPreview((previousPreview) => {
+				if (previousPreview && !previousPreview.startsWith("http")) {
+					URL.revokeObjectURL(previousPreview);
+				}
+				return URL.createObjectURL(file);
+			});
+			setIcon(undefined);
+
+			toast.success("Icon image uploaded successfully");
+		} catch (error) {
+			console.error("Failed to upload channel icon:", error);
+			toast.error("Failed to upload image. Please try again.");
+		} finally {
+			setIsUploadingIcon(false);
+		}
+	};
+
+	const clearIconImage = () => {
+		setIconImage(undefined);
+		setIconPreview((previousPreview) => {
+			if (previousPreview && !previousPreview.startsWith("http")) {
+				URL.revokeObjectURL(previousPreview);
+			}
+			return undefined;
+		});
+		if (imageInputRef.current) {
+			imageInputRef.current.value = "";
+		}
+	};
+
+	const _handleEditOpen = (value: boolean) => {
 		if (member?.role !== "admin") return;
 		setEditOpen(value);
 	};
 
-	const handleIconEditOpen = (value: boolean) => {
+	const _handleIconEditOpen = (value: boolean) => {
 		setIconEditOpen(value);
 	};
 
@@ -178,7 +789,13 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		e.preventDefault();
 
 		updateChannel(
-			{ id: channelId, name: value, icon, iconImage },
+			{
+				id: channelId,
+				name: value,
+				icon,
+				iconImage:
+					iconImage === undefined && channel?.iconImage ? null : iconImage,
+			},
 			{
 				onSuccess: () => {
 					toast.success("Channel updated.");
@@ -201,7 +818,13 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		}
 
 		updateChannel(
-			{ id: channelId, name: channel.name, icon },
+			{
+				id: channelId,
+				name: channel.name,
+				icon,
+				iconImage:
+					iconImage === undefined && channel.iconImage ? null : iconImage,
+			},
 			{
 				onSuccess: () => {
 					toast.success("Channel icon updated.");
@@ -253,7 +876,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 	}
 
 	return (
-		<div className="flex h-full flex-col">
+		<div className="flex h-full flex-col w-full min-w-0 overflow-x-hidden">
 			<ConfirmDialog />
 
 			<WorkspaceToolbar>
@@ -265,24 +888,13 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 							variant="ghost"
 						>
 							<div className="flex items-center">
-								{channel.iconImageUrl && !imageLoadError ? (
-									<div className="mr-2 h-5 w-5 rounded-full overflow-hidden">
-										<img
-											alt={`Channel icon for ${channel.name}`}
-											className="h-full w-full object-cover"
-											onError={() => setImageLoadError(true)}
-											src={channel.iconImageUrl}
-										/>
-									</div>
-								) : channel.icon ? (
-									<span className="mr-2 text-xl">{channel.icon}</span>
-								) : (
-									<div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 mr-2">
-										<span className="text-xs font-medium text-gray-600">
-											{channel.name.charAt(0).toLowerCase()}
-										</span>
-									</div>
-								)}
+								<ChannelIcon
+									icon={channel.icon}
+									iconImageUrl={channel.iconImageUrl}
+									imageLoadError={imageLoadError}
+									name={channel.name}
+									onImageError={() => setImageLoadError(true)}
+								/>
 								<span className="truncate"># {channel.name}</span>
 							</div>
 							<FaChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
@@ -292,24 +904,14 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 					<DialogContent className="overflow-hidden bg-gray-50 p-0">
 						<DialogHeader className="border-b bg-white p-4">
 							<DialogTitle className="flex items-center">
-								{channel.iconImageUrl && !imageLoadError ? (
-									<div className="mr-2 h-6 w-6 rounded-full overflow-hidden">
-										<img
-											alt={`Channel icon for ${channel.name}`}
-											className="h-full w-full object-cover"
-											onError={() => setImageLoadError(true)}
-											src={channel.iconImageUrl}
-										/>
-									</div>
-								) : channel.icon ? (
-									<span className="mr-2 text-xl">{channel.icon}</span>
-								) : (
-									<div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 mr-2">
-										<span className="text-xs font-medium text-gray-600">
-											{channel.name.charAt(0).toLowerCase()}
-										</span>
-									</div>
-								)}
+								<ChannelIcon
+									icon={channel.icon}
+									iconImageUrl={channel.iconImageUrl}
+									imageLoadError={imageLoadError}
+									name={channel.name}
+									onImageError={() => setImageLoadError(true)}
+									size="md"
+								/>
 								<span># {channel.name}</span>
 							</DialogTitle>
 
@@ -319,307 +921,42 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 						</DialogHeader>
 
 						<div className="flex flex-col gap-y-2 px-4 pb-4 pt-4">
-							{/* Admin-only dialog for editing both name and icon */}
 							{member?.role === "admin" && (
-								<Dialog
-									onOpenChange={handleEditOpen}
-									open={editOpen || isUpdatingChannel}
-								>
-									<DialogTrigger asChild>
-										<button
-											className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
-											disabled={isUpdatingChannel}
-										>
-											<div className="flex w-full items-center justify-between">
-												<p className="text-sm font-semibold">
-													Channel name and icon
-												</p>
-												<p className="text-sm font-semibold text-[#1264A3] hover:underline">
-													Edit
-												</p>
-											</div>
-
-											<div className="flex items-center gap-3 mt-2">
-												<div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
-													{channel.iconImageUrl && !imageLoadError ? (
-														<img
-															alt={`Channel icon for ${channel.name}`}
-															className="h-full w-full object-cover"
-															onError={() => setImageLoadError(true)}
-															src={channel.iconImageUrl}
-														/>
-													) : channel.icon ? (
-														<span className="text-xl">{channel.icon}</span>
-													) : (
-														<span className="text-sm font-medium text-gray-600">
-															{channel.name.charAt(0).toLowerCase()}
-														</span>
-													)}
-												</div>
-												<div>
-													<p className="text-sm font-medium">
-														# {channel.name}
-													</p>
-													<p className="text-xs text-muted-foreground">
-														{channel.iconImageUrl
-															? "Custom image icon"
-															: channel.icon
-																? "Custom emoji icon"
-																: "Default letter icon"}
-													</p>
-												</div>
-											</div>
-										</button>
-									</DialogTrigger>
-
-									<DialogContent>
-										<DialogHeader>
-											<DialogTitle>Edit channel name and icon</DialogTitle>
-
-											<VisuallyHidden.Root>
-												<DialogDescription>
-													Rename this channel to match your case.
-												</DialogDescription>
-											</VisuallyHidden.Root>
-										</DialogHeader>
-
-										<form className="space-y-4" onSubmit={handleSubmit}>
-											<div className="space-y-4">
-												<div className="flex flex-col gap-2">
-													<div className="flex items-center justify-between">
-														<label className="text-sm font-medium">
-															Channel Icon
-														</label>
-														<span className="text-xs text-muted-foreground">
-															Select emoji or upload image
-														</span>
-													</div>
-													<div className="flex items-center gap-3">
-														<div className="flex-shrink-0 relative">
-															<input
-																accept="image/*"
-																className="hidden"
-																id="icon-upload"
-																onChange={handleIconImageUpload}
-																ref={imageInputRef}
-																type="file"
-															/>
-															<div
-																className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
-																onClick={() =>
-																	!isUploadingIcon &&
-																	imageInputRef.current?.click()
-																}
-															>
-																{iconPreview || icon ? (
-																	<>
-																		{iconPreview ? (
-																			<img
-																				alt="Icon preview"
-																				className="h-full w-full object-cover rounded"
-																				src={iconPreview}
-																			/>
-																		) : (
-																			<span className="text-4xl">{icon}</span>
-																		)}
-																		<button
-																			className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-																			onClick={(e) => {
-																				e.stopPropagation();
-																				if (iconPreview || iconImage) {
-																					clearIconImage();
-																				}
-																				if (icon) {
-																					setIcon(undefined);
-																				}
-																			}}
-																			type="button"
-																		>
-																			<X className="h-3.5 w-3.5" />
-																		</button>
-																	</>
-																) : (
-																	<div className="flex flex-col items-center gap-1">
-																		<Upload className="h-6 w-6 text-gray-400" />
-																		<span className="text-xs text-gray-500 text-center">
-																			{isUploadingIcon
-																				? "Uploading..."
-																				: "Upload"}
-																		</span>
-																	</div>
-																)}
-															</div>
-															<EmojiPopover
-																hint="Select emoji icon"
-																onEmojiSelect={handleEmojiSelect}
-															>
-																<button
-																	className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-																	type="button"
-																>
-																	<Smile className="h-4 w-4" />
-																</button>
-															</EmojiPopover>
-														</div>
-														<div className="flex-1">
-															<label className="text-sm font-medium mb-1 block">
-																Channel Name
-															</label>
-															<Input
-																autoFocus
-																disabled={isUpdatingChannel}
-																maxLength={20}
-																minLength={3}
-																onChange={handleChange}
-																placeholder="e.g. plan-budget"
-																required
-																value={value}
-															/>
-															<p className="text-xs text-muted-foreground mt-1">
-																Max 5MB for images
-															</p>
-
-															{member?.role === "admin" && (
-																<button
-																	className="flex cursor-pointer items-center gap-x-2 rounded-lg border bg-white px-5 py-4 text-rose-600 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
-																	disabled={isRemovingChannel}
-																	onClick={handleDelete}
-																>
-																	<Trash className="size-4" />
-																	<p className="text-sm font-semibold">
-																		Delete channel
-																	</p>
-																</button>
-															)}
-														</div>
-													</div>
-												</div>
-											</div>
-
-											<DialogFooter>
-												<DialogClose asChild>
-													<Button
-														disabled={isUpdatingChannel}
-														variant="outline"
-													>
-														Cancel
-													</Button>
-												</DialogClose>
-
-												<Button disabled={isUpdatingChannel} type="submit">
-													Save
-												</Button>
-											</DialogFooter>
-										</form>
-									</DialogContent>
-								</Dialog>
+								<ChannelNameDialog
+									channel={channel}
+									clearIconImage={clearIconImage}
+									editOpen={editOpen}
+									icon={icon}
+									iconImage={iconImage}
+									iconPreview={iconPreview}
+									imageInputRef={imageInputRef}
+									imageLoadError={imageLoadError}
+									isRemovingChannel={isRemovingChannel}
+									isUpdatingChannel={isUpdatingChannel}
+									isUploadingIcon={isUploadingIcon}
+									member={member}
+									onDelete={handleDelete}
+									onIconImageUpload={handleIconImageUpload}
+									onSubmit={handleSubmit}
+									setEditOpen={setEditOpen}
+									setIcon={setIcon}
+									setImageLoadError={setImageLoadError}
+									setValue={setValue}
+									value={value}
+								/>
 							)}
 
-							<Dialog
-								onOpenChange={handleIconEditOpen}
-								open={iconEditOpen || (isUpdatingChannel && !editOpen)}
-							>
-								<DialogTrigger asChild>
-									<button className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50">
-										<div className="flex w-full items-center justify-between">
-											<p className="text-sm font-semibold">Channel icon</p>
-											<p className="text-sm font-semibold text-[#1264A3] hover:underline">
-												Edit
-											</p>
-										</div>
-
-										<div className="flex items-center gap-3 mt-2">
-											<div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 border border-gray-200 overflow-hidden">
-												{channel.iconImageUrl && !imageLoadError ? (
-													<img
-														alt={`Channel icon for ${channel.name}`}
-														className="h-full w-full object-cover"
-														onError={() => setImageLoadError(true)}
-														src={channel.iconImageUrl}
-													/>
-												) : channel.icon ? (
-													<span className="text-xl">{channel.icon}</span>
-												) : (
-													<span className="text-sm font-medium text-gray-600">
-														{channel.name.charAt(0).toLowerCase()}
-													</span>
-												)}
-											</div>
-											<div>
-												<p className="text-xs text-muted-foreground">
-													{channel.iconImageUrl
-														? "Custom image icon"
-														: channel.icon
-															? "Custom emoji icon"
-															: "Default letter icon"}
-												</p>
-												<p className="text-xs text-muted-foreground">
-													Click to change the channel icon
-												</p>
-											</div>
-										</div>
-									</button>
-								</DialogTrigger>
-
-								<DialogContent>
-									<DialogHeader>
-										<DialogTitle>Edit channel icon</DialogTitle>
-										<DialogDescription>
-											Choose an emoji to represent this channel
-										</DialogDescription>
-									</DialogHeader>
-
-									<form className="space-y-4" onSubmit={handleIconSubmit}>
-										<div className="space-y-4">
-											<div className="flex flex-col gap-2">
-												<div className="flex items-center justify-between">
-													<label className="text-sm font-medium">
-														Channel Icon
-													</label>
-													<span className="text-xs text-muted-foreground">
-														Click to select an emoji
-													</span>
-												</div>
-												<div className="flex items-center justify-center">
-													<div className="flex-shrink-0">
-														<EmojiPopover
-															hint="Select channel icon"
-															onEmojiSelect={handleEmojiSelect}
-														>
-															<div className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-100 hover:bg-gray-200 hover:border-gray-400 transition-all">
-																{icon ? (
-																	<span className="text-4xl">{icon}</span>
-																) : (
-																	<div className="flex flex-col items-center">
-																		<span className="text-sm text-gray-600">
-																			Select
-																		</span>
-																		<span className="text-sm text-gray-600">
-																			Icon
-																		</span>
-																	</div>
-																)}
-															</div>
-														</EmojiPopover>
-													</div>
-												</div>
-											</div>
-										</div>
-
-										<DialogFooter>
-											<DialogClose asChild>
-												<Button disabled={isUpdatingChannel} variant="outline">
-													Cancel
-												</Button>
-											</DialogClose>
-
-											<Button disabled={isUpdatingChannel} type="submit">
-												Save
-											</Button>
-										</DialogFooter>
-									</form>
-								</DialogContent>
-							</Dialog>
+							<ChannelIconDialog
+								channel={channel}
+								icon={icon}
+								iconEditOpen={iconEditOpen}
+								isUpdatingChannel={isUpdatingChannel}
+								onIconEditOpenChange={setIconEditOpen}
+								onSubmit={handleIconSubmit}
+								setIcon={setIcon}
+								setIconImage={setIconImage}
+								setIconPreview={setIconPreview}
+							/>
 						</div>
 					</DialogContent>
 				</Dialog>
@@ -627,7 +964,9 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 			<Topbar />
 
-			<div className="flex-1 overflow-y-auto">{children}</div>
+			<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+				{children}
+			</div>
 		</div>
 	);
 };

@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	closestCenter,
 	DndContext,
@@ -13,55 +15,105 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import {
-	horizontalListSortingStrategy,
+	arrayMove,
+	rectSortingStrategy,
 	SortableContext,
 	sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-import { useMutation } from "convex/react";
-import { CheckSquare, MoveRight, Trash, X } from "lucide-react";
-import React from "react";
-import { api } from "@/../convex/_generated/api";
+import React, { useCallback, useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import BoardCard from "./board-card";
-import BoardList from "./board-list";
+import BoardHeader from "./board-header";
+import type { IssuePriority } from "./board-issue-row";
+import BoardIssueRow from "./board-issue-row";
+import BoardStatusColumn from "./board-status-column";
 
-interface BoardKanbanViewProps {
-	lists: any[];
-	cardsByList: Record<string, any[]>;
-	onEditList: (list: any) => void;
-	onDeleteList: (list: any) => void;
-	onAddCard: (listId: Id<"lists">) => void;
-	onEditCard: (card: any) => void;
-	onDeleteCard: (cardId: Id<"cards">) => void;
-	handleDragEnd: (event: DragEndEvent) => void;
-	members?: any[];
+interface Status {
+	_id: Id<"statuses">;
+	name: string;
+	color: string;
+	order: number;
+	channelId: Id<"channels">;
 }
 
+interface Issue {
+	_id: Id<"issues">;
+	channelId: Id<"channels">;
+	statusId: Id<"statuses">;
+	title: string;
+	description?: string;
+	priority?: IssuePriority;
+	assignees?: Id<"members">[];
+	labels?: string[];
+	dueDate?: number;
+	createdAt: number;
+	updatedAt: number;
+	order: number;
+}
+
+interface BoardKanbanViewProps {
+	statuses: Status[];
+	issues: Issue[];
+	members?: Member[];
+	onClickIssue: (issue: Issue) => void;
+	onCreateIssue: (statusId: Id<"statuses">, title: string) => Promise<void>;
+	onEditStatus: (status: Status) => void;
+	onDeleteStatus: (status: Status) => void;
+	onReorderStatuses: (newOrder: Status[]) => void;
+	onMoveIssueStatus?: (
+		issueId: Id<"issues">,
+		toStatusId: Id<"statuses">,
+		order: number
+	) => Promise<void>;
+	onReorderStatusesPersist?: (
+		statusOrders: { statusId: Id<"statuses">; order: number }[]
+	) => Promise<void>;
+	showHeader?: boolean;
+	statusCount?: number;
+	totalIssues?: number;
+	view?: "kanban" | "table" | "gantt";
+	setView?: (view: "kanban" | "table" | "gantt") => void;
+	onAddStatus?: () => void;
+	onSearch?: (query: string) => void;
+}
+
+interface Member {
+	_id: Id<"members">;
+	user?: {
+		name?: string;
+		image?: string;
+	};
+}
+
+type ActiveItem =
+	| { type: "status"; item: Status }
+	| { type: "issue"; item: Issue };
+
 const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
-	lists,
-	cardsByList,
-	onEditList,
-	onDeleteList,
-	onAddCard,
-	onEditCard,
-	onDeleteCard,
-	handleDragEnd,
+	statuses,
+	issues,
 	members = [],
+	onClickIssue,
+	onCreateIssue,
+	onEditStatus,
+	onDeleteStatus,
+	onReorderStatuses,
+	onMoveIssueStatus,
+	onReorderStatusesPersist,
+	showHeader = false,
+	statusCount = 0,
+	totalIssues = 0,
+	view = "kanban",
+	setView,
+	onAddStatus,
+	onSearch,
 }) => {
-	// Create a map of member data for easy lookup
-	const memberDataMap = React.useMemo(() => {
+	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
+
+	const memberDataMap = useMemo(() => {
 		const map: Record<Id<"members">, { name: string; image?: string }> = {};
 		members.forEach((member) => {
 			if (member._id) {
-				map[member._id] = {
+				map[member._id as Id<"members">] = {
 					name: member.user?.name || "Unknown",
 					image: member.user?.image,
 				};
@@ -69,357 +121,214 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		});
 		return map;
 	}, [members]);
-	const [activeItem, setActiveItem] = React.useState<any>(null);
-	const [_activeId, setActiveId] = React.useState<string | null>(null);
-	const [_overId, setOverId] = React.useState<string | null>(null);
-	const [selectionMode, setSelectionMode] = React.useState(false);
-	const [selectedCardIds, setSelectedCardIds] = React.useState<
-		Set<Id<"cards">>
-	>(new Set());
-	const [bulkPriority, setBulkPriority] = React.useState<
-		"" | "lowest" | "low" | "medium" | "high" | "highest"
-	>("");
-	const [bulkListId, setBulkListId] = React.useState<Id<"lists"> | "">("");
 
-	const updateCard = useMutation(api.board.updateCard);
-	const moveCard = useMutation(api.board.moveCard);
-	const deleteCard = useMutation(api.board.deleteCard);
+	const issuesByStatus = useMemo<Record<string, Issue[]>>(() => {
+		const grouped: Record<string, Issue[]> = {};
+		for (const s of statuses) {
+			grouped[s._id] = [];
+		}
+		for (const issue of issues) {
+			if (!grouped[issue.statusId]) grouped[issue.statusId] = [];
+			grouped[issue.statusId].push(issue);
+		}
+		for (const key of Object.keys(grouped)) {
+			grouped[key].sort((a, b) => a.order - b.order);
+		}
+		return grouped;
+	}, [statuses, issues]);
 
-	// Configure sensors for better drag experience
 	const sensors = useSensors(
-		useSensor(PointerSensor, {
-			activationConstraint: {
-				distance: 5, // 5px movement required before drag starts
-			},
-		}),
+		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
 		})
 	);
 
-	// Custom collision detection strategy
-	const collisionDetectionStrategy = React.useCallback((args: any) => {
-		// First, check for intersections with droppable areas
-		const intersections = rectIntersection(args);
-		if (intersections.length > 0) {
-			return intersections;
-		}
+	const collisionDetection = useCallback(
+		(args: Parameters<typeof closestCenter>[0]) => {
+			const rects = rectIntersection(args);
+			if (rects.length > 0) return rects;
+			const pointer = pointerWithin(args);
+			if (pointer.length > 0) return pointer;
+			return closestCenter(args);
+		},
+		[]
+	);
 
-		// If no direct intersections, use pointer within
-		const pointerIntersections = pointerWithin(args);
-		if (pointerIntersections.length > 0) {
-			return pointerIntersections;
-		}
-
-		// Fallback to closest center
-		return closestCenter(args);
-	}, []);
-
-	// Handle drag start to show the overlay
 	const handleDragStart = (event: DragStartEvent) => {
 		const { active } = event;
-		setActiveId(active.id.toString());
-
-		// Find if it's a card or list
-		if (active.data.current?.type === "card") {
-			setActiveItem({
-				type: "card",
-				item: active.data.current.card,
-			});
-		} else if (active.data.current?.type === "list") {
-			setActiveItem({
-				type: "list",
-				item: active.data.current.list,
-			});
+		const current = active.data.current;
+		if (!current) return;
+		const type = current.type;
+		if (type === "status") {
+			setActiveItem({ type: "status", item: current.status });
+		} else if (type === "issue") {
+			setActiveItem({ type: "issue", item: current.issue });
 		}
 	};
 
-	// Track what we're dragging over
-	const handleDragOver = (event: DragOverEvent) => {
-		const { over } = event;
-		setOverId(over?.id.toString() || null);
-	};
+	// Required by DndContext but no custom drag-over behavior needed
+	const handleDragOver = (_event: DragOverEvent) => {};
 
-	// Reset active item after drag ends
-	const onDragEnd = (event: DragEndEvent) => {
-		if (selectionMode) {
-			setActiveItem(null);
-			setActiveId(null);
-			setOverId(null);
+	const handleDragEnd = async (event: DragEndEvent) => {
+		setActiveItem(null);
+		const { active, over } = event;
+		if (!active || !over || active.id === over.id) return;
+
+		const activeType = active.data.current?.type;
+
+		if (activeType === "status") {
+			// Normalize over.id so that if we're hovering over an inner droppable
+			// like "droppable-${statusId}", we map it back to the owning status id.
+			const overIdStr = over.id.toString();
+			const overStatusId = overIdStr.startsWith("droppable-")
+				? (overIdStr.replace("droppable-", "") as Id<"statuses">)
+				: (over.id as Id<"statuses">);
+			const oldIdx = statuses.findIndex((s) => s._id === active.id);
+			const newIdx = statuses.findIndex((s) => s._id === overStatusId);
+			if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+
+			// Capture previous state for rollback
+			const previousStatuses = [...statuses];
+			const reordered = arrayMove([...statuses], oldIdx, newIdx);
+			onReorderStatuses(reordered);
+
+			try {
+				await onReorderStatusesPersist?.(
+					reordered.map((s, idx) => ({
+						statusId: s._id,
+						order: idx,
+					}))
+				);
+			} catch (error) {
+				console.error("Error reordering statuses:", error);
+				// Rollback to previous state
+				onReorderStatuses(previousStatuses);
+			}
 			return;
 		}
-		setActiveItem(null);
-		setActiveId(null);
-		setOverId(null);
 
-		// Log the drag event for debugging
+		if (activeType === "issue") {
+			const issueId = active.id as Id<"issues">;
+			const overId = over.id.toString();
+			const overType = over.data.current?.type;
 
-		handleDragEnd(event);
-	};
+			let toStatusId: Id<"statuses"> | null = null;
+			let newOrder = 0;
 
-	const toggleSelectionMode = () => {
-		setSelectionMode((prev) => {
-			const next = !prev;
-			if (!next) {
-				setSelectedCardIds(new Set());
+			if (overId.startsWith("droppable-")) {
+				toStatusId = overId.replace("droppable-", "") as Id<"statuses">;
+				newOrder = (issuesByStatus[toStatusId] || []).length;
+			} else if (overType === "status") {
+				toStatusId = over.id as Id<"statuses">;
+				newOrder = (issuesByStatus[toStatusId] || []).length;
+			} else if (overType === "issue") {
+				const overIssue = issues.find((i) => i._id === over.id);
+				if (overIssue) {
+					toStatusId = overIssue.statusId;
+					const statusIssues = issuesByStatus[toStatusId] || [];
+					const overIdx = statusIssues.findIndex((i) => i._id === over.id);
+					newOrder = overIdx !== -1 ? overIdx : statusIssues.length;
+				}
 			}
-			return next;
-		});
-	};
 
-	const toggleSelectCard = (cardId: Id<"cards">) => {
-		setSelectedCardIds((prev) => {
-			const next = new Set(prev);
-			if (next.has(cardId)) {
-				next.delete(cardId);
-			} else {
-				next.add(cardId);
+			if (!toStatusId) return;
+
+			try {
+				await onMoveIssueStatus?.(issueId, toStatusId, newOrder);
+			} catch (error) {
+				console.error("Error moving issue:", error);
 			}
-			return next;
-		});
-	};
-
-	const clearSelection = () => {
-		setSelectedCardIds(new Set());
-	};
-
-	const selectAllCards = () => {
-		const allIds = new Set<Id<"cards">>();
-		Object.values(cardsByList).forEach((cards) => {
-			cards.forEach((card) => allIds.add(card._id));
-		});
-		setSelectedCardIds(allIds);
-	};
-
-	const handleBulkSetPriority = async () => {
-		if (!bulkPriority || selectedCardIds.size === 0) return;
-		const updates = Array.from(selectedCardIds).map((cardId) =>
-			updateCard({ cardId, priority: bulkPriority })
-		);
-		await Promise.all(updates);
-		clearSelection();
-	};
-
-	const handleBulkMove = async () => {
-		if (!bulkListId || selectedCardIds.size === 0) return;
-
-		const targetCards = cardsByList[bulkListId] || [];
-		const baseOrder = targetCards.filter(
-			(card) => !selectedCardIds.has(card._id)
-		).length;
-
-		let order = baseOrder;
-		for (const cardId of selectedCardIds) {
-			await moveCard({
-				cardId,
-				toListId: bulkListId as Id<"lists">,
-				order,
-			});
-			order += 1;
 		}
-		clearSelection();
 	};
 
-	const handleBulkDelete = async () => {
-		if (selectedCardIds.size === 0) return;
-		const confirmed = window.confirm(
-			`Delete ${selectedCardIds.size} selected card(s)? This cannot be undone.`
-		);
-		if (!confirmed) return;
-		const deletions = Array.from(selectedCardIds).map((cardId) =>
-			deleteCard({ cardId })
-		);
-		await Promise.all(deletions);
-		clearSelection();
-	};
+	const sortedStatuses = useMemo(
+		() => [...statuses].sort((a, b) => a.order - b.order),
+		[statuses]
+	);
 
-	const selectedCount = selectedCardIds.size;
+	const activeIssueStatus = useMemo(() => {
+		if (!activeItem || activeItem.type !== "issue") return undefined;
+		return statuses.find((s) => s._id === activeItem.item.statusId);
+	}, [activeItem, statuses]);
 
 	return (
-		<div className="flex flex-col h-full bg-white dark:bg-gray-900">
-			<div className="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b dark:border-gray-800">
-				<div className="flex flex-wrap items-center gap-2 p-3">
-					<Button
-						onClick={toggleSelectionMode}
-						size="sm"
-						variant={selectionMode ? "secondary" : "outline"}
-					>
-						<CheckSquare className="h-4 w-4 mr-2" />
-						{selectionMode ? "Exit Selection" : "Select Cards"}
-					</Button>
-
-					{selectionMode && (
-						<>
-							<span className="text-sm text-muted-foreground">
-								{selectedCount} selected
-							</span>
-							<Button onClick={selectAllCards} size="sm" variant="ghost">
-								Select All
-							</Button>
-							<Button onClick={clearSelection} size="sm" variant="ghost">
-								<X className="h-4 w-4 mr-1" />
-								Clear
-							</Button>
-
-							<div className="flex items-center gap-2 ml-auto">
-								<Select
-									onValueChange={(value) =>
-										setBulkPriority(
-											value as
-												| ""
-												| "lowest"
-												| "low"
-												| "medium"
-												| "high"
-												| "highest"
-										)
-									}
-									value={bulkPriority}
-								>
-									<SelectTrigger className="h-8 w-[140px]">
-										<SelectValue placeholder="Set priority" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="lowest">Lowest</SelectItem>
-										<SelectItem value="low">Low</SelectItem>
-										<SelectItem value="medium">Medium</SelectItem>
-										<SelectItem value="high">High</SelectItem>
-										<SelectItem value="highest">Highest</SelectItem>
-									</SelectContent>
-								</Select>
-								<Button
-									disabled={!bulkPriority || selectedCount === 0}
-									onClick={handleBulkSetPriority}
-									size="sm"
-									variant="outline"
-								>
-									Apply
-								</Button>
-
-								<Select
-									onValueChange={(value) => setBulkListId(value as Id<"lists">)}
-									value={bulkListId}
-								>
-									<SelectTrigger className="h-8 w-[160px]">
-										<SelectValue placeholder="Move to list" />
-									</SelectTrigger>
-									<SelectContent>
-										{lists.map((list) => (
-											<SelectItem key={list._id} value={list._id}>
-												{list.title}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-								<Button
-									disabled={!bulkListId || selectedCount === 0}
-									onClick={handleBulkMove}
-									size="sm"
-									variant="outline"
-								>
-									<MoveRight className="h-4 w-4 mr-1" />
-									Move
-								</Button>
-
-								<Button
-									disabled={selectedCount === 0}
-									onClick={handleBulkDelete}
-									size="sm"
-									variant="destructive"
-								>
-									<Trash className="h-4 w-4 mr-1" />
-									Delete
-								</Button>
-							</div>
-						</>
-					)}
+		<div className="h-full w-full min-w-0 max-w-full flex flex-col overflow-hidden">
+			{showHeader && setView && (
+				<div className="flex-shrink-0 sticky top-0 z-10">
+					<BoardHeader
+						onAddStatus={onAddStatus}
+						onSearch={onSearch}
+						setView={setView}
+						statusCount={statusCount}
+						totalIssues={totalIssues}
+						view={view}
+					/>
 				</div>
-			</div>
-			<div className="flex flex-wrap overflow-y-auto gap-4 p-4 flex-1">
-				<style jsx>{`
-        /* Custom scrollbar styling for better UX
-         * Shows styled scrollbars to indicate scrollable content
-         * instead of completely hiding them which could confuse users
-         */
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 4px;
-        }
-        .dark ::-webkit-scrollbar-track {
-          background: #1f2937;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
-        }
-        .dark ::-webkit-scrollbar-thumb {
-          background: #4b5563;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-        .dark ::-webkit-scrollbar-thumb:hover {
-          background: #6b7280;
-        }
-        /* Firefox scrollbar styling */
-        * {
-          scrollbar-width: thin;
-          scrollbar-color: #cbd5e1 #f1f5f9;
-        }
-        .dark * {
-          scrollbar-color: #4b5563 #1f2937;
-        }
-				`}</style>
+			)}
+			<div className="flex-1 w-full min-w-0 overflow-x-auto overflow-y-hidden">
 				<DndContext
-					collisionDetection={collisionDetectionStrategy}
-					onDragEnd={onDragEnd}
+					collisionDetection={collisionDetection}
+					onDragEnd={handleDragEnd}
 					onDragOver={handleDragOver}
-					onDragStart={selectionMode ? undefined : handleDragStart}
+					onDragStart={handleDragStart}
 					sensors={sensors}
 				>
 					<SortableContext
-						items={lists.map((l) => l._id)}
-						strategy={horizontalListSortingStrategy}
+						items={sortedStatuses.map((s) => s._id)}
+						strategy={rectSortingStrategy}
 					>
-						{lists.map((list) => (
-							<BoardList
-								assigneeData={memberDataMap}
-								cards={cardsByList[list._id] || []}
-								disableListDrag={selectionMode}
-								key={list._id}
-								list={list}
-								listCount={lists.length}
-								onAddCard={() => onAddCard(list._id)}
-								onDeleteCard={onDeleteCard}
-								onDeleteList={() => onDeleteList(list)}
-								onEditCard={onEditCard}
-								onEditList={() => onEditList(list)}
-								onToggleSelect={toggleSelectCard}
-								selectedCardIds={selectedCardIds}
-								selectionMode={selectionMode}
-							/>
-						))}
+						{sortedStatuses.length === 0 ? (
+							<div className="flex flex-col items-center justify-center gap-3 text-center text-muted-foreground py-20">
+								<p className="text-sm">No statuses yet.</p>
+								<p className="text-xs">
+									Add a status to start tracking issues.
+								</p>
+							</div>
+						) : (
+							<div className="flex w-max min-w-max gap-4 px-4">
+								{sortedStatuses.map((status) => (
+									<div
+										className="w-[calc(25vw-1.5rem)] flex-shrink-0 h-full max-h-full"
+										key={status._id}
+									>
+										<BoardStatusColumn
+											assigneeData={memberDataMap}
+											issues={issuesByStatus[status._id] || []}
+											onClickIssue={onClickIssue}
+											onCreateIssue={onCreateIssue}
+											onDeleteStatus={() => onDeleteStatus(status)}
+											onEditStatus={() => onEditStatus(status)}
+											status={status}
+										/>
+									</div>
+								))}
+							</div>
+						)}
 					</SortableContext>
 
-					{/* Drag overlay for visual feedback */}
 					<DragOverlay>
-						{activeItem?.type === "card" && (
-							<BoardCard
+						{activeItem?.type === "issue" && (
+							<BoardIssueRow
 								assigneeData={memberDataMap}
-								card={activeItem.item}
-								onDelete={() => {}}
-								onEdit={() => {}}
-								selectionMode={false}
+								isDragOverlay
+								issue={activeItem.item}
+								onClick={() => {
+									// No-op: drag overlay is not interactive
+								}}
+								statusColor={activeIssueStatus?.color || "#b4b4b4"}
 							/>
 						)}
-						{activeItem?.type === "list" && (
-							<div className="bg-gray-100 dark:bg-gray-800 rounded-lg shadow w-72 opacity-80 border-2 border-secondary">
-								<div className="p-3 font-bold border-b dark:border-gray-700 dark:text-gray-100">
-									{activeItem.item.title}
+						{activeItem?.type === "status" && (
+							<div className="bg-background border border-primary/40 rounded-xl shadow-xl opacity-90 p-3">
+								<div className="flex items-center gap-2">
+									<span
+										className="w-2.5 h-2.5 rounded-full"
+										style={{ backgroundColor: activeItem.item.color }}
+									/>
+									<span className="text-sm font-semibold">
+										{activeItem.item.name}
+									</span>
 								</div>
 							</div>
 						)}

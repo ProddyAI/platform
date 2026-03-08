@@ -1,6 +1,12 @@
 "use client";
 
 import {
+	DatabaseChatProvider,
+	useDatabaseChat,
+	useMessagesWithStreaming,
+} from "@dayhaysoos/convex-database-chat";
+import { useMutation } from "convex/react";
+import {
   DatabaseChatProvider,
   useDatabaseChat,
   useMessagesWithStreaming,
@@ -384,7 +390,110 @@ function MessagesList({
   );
 }
 
+type IntegrationStatusApp = {
+	app: string;
+	connected: boolean;
+	connectionId?: string;
+	entityId?: string;
+};
+
+const SUPPORTED_INTEGRATION_ORDER = [
+	"GITHUB",
+	"GMAIL",
+	"SLACK",
+	"NOTION",
+	"CLICKUP",
+	"LINEAR",
+] as const;
+
+type SupportedIntegration = (typeof SUPPORTED_INTEGRATION_ORDER)[number];
+
+const INTEGRATION_METADATA: Record<
+	SupportedIntegration,
+	{
+		name: string;
+		description: string;
+		welcomeCapability: string;
+		examplePrompt: string;
+		icon: typeof Github;
+		iconClassName: string;
+	}
+> = {
+	GITHUB: {
+		name: "GitHub",
+		description: "Repository management, issues, and pull requests",
+		welcomeCapability: "List repositories, create issues, manage pull requests",
+		examplePrompt: "List my repositories",
+		icon: Github,
+		iconClassName: "text-gray-800 dark:text-gray-200",
+	},
+	GMAIL: {
+		name: "Gmail",
+		description: "Email sending, reading, and management",
+		welcomeCapability: "Send emails, read inbox messages, and manage drafts",
+		examplePrompt: "Send an email to [email]",
+		icon: Mail,
+		iconClassName: "text-red-600",
+	},
+	SLACK: {
+		name: "Slack",
+		description: "Messages, channels, and workspace communication",
+		welcomeCapability: "Send messages, browse channels, and review discussions",
+		examplePrompt: "Post a Slack update to #team",
+		icon: MessageSquare,
+		iconClassName: "text-violet-600",
+	},
+	NOTION: {
+		name: "Notion",
+		description: "Pages, databases, and workspace knowledge",
+		welcomeCapability: "Create pages, query databases, and find Notion content",
+		examplePrompt: "Create a Notion page for sprint notes",
+		icon: FileText,
+		iconClassName: "text-slate-700 dark:text-slate-200",
+	},
+	CLICKUP: {
+		name: "ClickUp",
+		description: "Tasks, projects, and time tracking",
+		welcomeCapability: "Create tasks, manage lists, and track project work",
+		examplePrompt: "Create a ClickUp task for release QA",
+		icon: CheckSquare,
+		iconClassName: "text-pink-600",
+	},
+	LINEAR: {
+		name: "Linear",
+		description: "Issue tracking and project planning",
+		welcomeCapability: "Create issues, update projects, and review team work",
+		examplePrompt: "Create a Linear issue for onboarding bug",
+		icon: Kanban,
+		iconClassName: "text-blue-600",
+	},
+};
+
+const getIntegrationMetadata = (app: string) =>
+	INTEGRATION_METADATA[app as SupportedIntegration];
+
 export const DashboardChatbot = ({
+	workspaceId,
+	member,
+}: DashboardChatbotProps) => (
+	<DatabaseChatProvider
+		api={{
+			getMessages: api.assistantChat.getMessages,
+			listConversations: api.assistantChat.listConversations,
+			getStreamState: api.assistantChat.getStreamState,
+			getStreamDeltas: api.assistantChat.getStreamDeltas,
+			createConversation: api.assistantChat.createConversation,
+			abortStream: api.assistantChat.abortStream,
+			sendMessage: api.assistantChat.sendMessage,
+		}}
+	>
+		<DashboardChatbotBody member={member} workspaceId={workspaceId} />
+	</DatabaseChatProvider>
+);
+
+const DashboardChatbotBody = ({
+	workspaceId,
+	member,
   workspaceId,
   member,
 }: DashboardChatbotProps) => (
@@ -407,6 +516,17 @@ const DashboardChatbotBody = ({
   workspaceId,
   member,
 }: DashboardChatbotProps) => {
+	const [conversationId, setConversationId] = useState<string | null>(null);
+	const [welcomeMessage, setWelcomeMessage] = useState<Message | null>(null);
+	const [input, setInput] = useState("");
+	const [integrationStatus, setIntegrationStatus] = useState<{
+		connected: IntegrationStatusApp[];
+		totalTools: number;
+		loading: boolean;
+	}>({ connected: [], totalTools: 0, loading: true });
+	const scrollAreaRef = useRef<HTMLDivElement>(null);
+	const { toast } = useToast();
+	const router = useRouter();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [welcomeMessage, setWelcomeMessage] = useState<Message | null>(null);
   const [input, setInput] = useState("");
@@ -514,6 +634,42 @@ const DashboardChatbotBody = ({
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, [autocompleteOpen, closeAutocomplete]);
 
+	const createConversation = useMutation(api.assistantChat.createConversation);
+	const {
+		send,
+		abort,
+		isLoading: isSending,
+	} = useDatabaseChat({
+		conversationId,
+	});
+	const { allMessages, isStreaming } = useMessagesWithStreaming({
+		conversationId,
+	});
+	const isLoading = isSending || isStreaming;
+
+	const displayMessages: Message[] = allMessages.map((msg, index) => ({
+		id: String((msg as any)._id ?? index),
+		content: msg.content ?? "",
+		sender: msg.role === "user" ? "user" : "assistant",
+		role: msg.role === "user" ? "user" : "assistant",
+		timestamp: new Date((msg as any)._creationTime ?? Date.now()),
+	}));
+
+	const renderedMessages = displayMessages.length
+		? displayMessages
+		: welcomeMessage
+			? [welcomeMessage]
+			: [];
+
+	useEffect(() => {
+		if (!conversationId && workspaceId && member?.userId) {
+			createConversation({
+				workspaceId,
+				userId: member.userId,
+				title: "Assistant Chat",
+			}).then(setConversationId);
+		}
+	}, [conversationId, workspaceId, member, createConversation]);
   const createConversation = useMutation(api.assistantChat.createConversation);
   const {
     send,
@@ -551,6 +707,17 @@ const DashboardChatbotBody = ({
     }
   }, [conversationId, workspaceId, member, createConversation]);
 
+	// Update welcome message when integration status changes
+	useEffect(() => {
+		if (!integrationStatus.loading) {
+			if (!displayMessages.length) {
+				const connectedApps = integrationStatus.connected;
+				const connectedSupportedIntegrations =
+					SUPPORTED_INTEGRATION_ORDER.filter((integration) =>
+						connectedApps.some(
+							(connectedApp) => connectedApp.app === integration
+						)
+					);
   // Update welcome message when integration status changes
   useEffect(() => {
     if (!integrationStatus.loading) {
@@ -567,6 +734,16 @@ const DashboardChatbotBody = ({
 
 • **Workspace Content**: Search messages, tasks, notes, and board cards`;
 
+				if (connectedSupportedIntegrations.length > 0) {
+					content += `
+• **Connected Integrations**:`;
+					for (const integration of connectedSupportedIntegrations) {
+						const metadata = getIntegrationMetadata(integration);
+						if (!metadata) continue;
+						content += `
+• **${metadata.name}**: ${metadata.welcomeCapability}`;
+					}
+				}
         if (connectedSupportedIntegrations.length > 0) {
           content += `
 • **Connected Integrations**:`;
@@ -583,6 +760,12 @@ const DashboardChatbotBody = ({
 
 Try asking me things like:`;
 
+				for (const integration of connectedSupportedIntegrations) {
+					const metadata = getIntegrationMetadata(integration);
+					if (!metadata) continue;
+					content += `
+- "${metadata.examplePrompt}"`;
+				}
         for (const integration of connectedSupportedIntegrations) {
           const metadata = getIntegrationMetadata(integration);
           if (!metadata) continue;
@@ -596,6 +779,14 @@ Try asking me things like:`;
         content += `
 - "Show me recent messages"`;
 
+				if (connectedSupportedIntegrations.length === 0) {
+					const supportedNames = SUPPORTED_INTEGRATION_ORDER.map(
+						(integration) => {
+							const metadata = getIntegrationMetadata(integration);
+							return metadata?.name ?? integration;
+						}
+					).join(", ");
+					content += `
         if (connectedSupportedIntegrations.length === 0) {
           const supportedNames = SUPPORTED_INTEGRATION_ORDER.map(
             (integration) => {
@@ -606,8 +797,20 @@ Try asking me things like:`;
           content += `
 
 *Note: Connect supported integrations (${supportedNames}) to unlock more capabilities!*`;
+				}
+*Note: Connect supported integrations (${supportedNames}) to unlock more capabilities!*`;
         }
 
+				setWelcomeMessage({
+					id: "welcome",
+					content,
+					sender: "assistant",
+					role: "assistant",
+					timestamp: new Date(),
+				});
+			}
+		}
+	}, [integrationStatus, displayMessages.length]);
         setWelcomeMessage({
           id: "welcome",
           content,
@@ -660,9 +863,27 @@ Try asking me things like:`;
     }
   }, []);
 
+	const handleSendMessage = async () => {
+		if (!input.trim() || !conversationId) return;
   const handleSendMessage = async () => {
     if (!input.trim() || !conversationId) return;
 
+		const userQuery = input.trim();
+		setInput("");
+
+		try {
+			await send(userQuery);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error occurred";
+			console.error("Error in chatbot:", error);
+			toast({
+				title: "Assistant Error",
+				description: errorMessage,
+				variant: "destructive",
+			});
+		}
+	};
     const userQuery = input.trim();
     setInput("");
 
@@ -699,6 +920,32 @@ Try asking me things like:`;
     }
   };
 
+	const clearConversation = async () => {
+		try {
+			if (isStreaming) {
+				await abort();
+			}
+			const newConversationId = await createConversation({
+				workspaceId,
+				userId: member.userId,
+				title: "Assistant Chat",
+				forceNew: true,
+			});
+			setConversationId(newConversationId);
+			setWelcomeMessage(null);
+			toast({
+				title: "Success",
+				description: "Chat history cleared.",
+			});
+		} catch (error) {
+			console.error("Error clearing chat history:", error);
+			toast({
+				title: "Error",
+				description: "Failed to clear conversation history.",
+				variant: "destructive",
+			});
+		}
+	};
   const clearConversation = async () => {
     try {
       if (isStreaming) {
@@ -869,6 +1116,202 @@ Try asking me things like:`;
     );
   };
 
+	return (
+		<Card className="flex flex-col h-full shadow-md overflow-hidden">
+			<CardHeader className="pb-2 border-b">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<Avatar className="h-8 w-8 bg-primary/10">
+							<AvatarFallback>
+								<Bot className="h-5 w-5" />
+							</AvatarFallback>
+						</Avatar>
+						<div>
+							<CardTitle className="text-lg">Proddy AI</CardTitle>
+							<div className="flex items-center gap-2 mt-1">
+								{integrationStatus.loading ? (
+									<div className="flex items-center gap-1">
+										<Loader className="h-3 w-3 animate-spin" />
+										<span className="text-xs text-muted-foreground">
+											Checking integrations...
+										</span>
+									</div>
+								) : integrationStatus.connected.length > 0 ? (
+									<Popover>
+										<PopoverTrigger asChild>
+											<Button
+												className="h-6 px-2 text-xs hover:bg-green-50 dark:hover:bg-green-950"
+												size="sm"
+												variant="ghost"
+											>
+												<Zap className="h-3 w-3 mr-1 text-green-600" />
+												<span className="text-green-700 dark:text-green-300">
+													{integrationStatus.connected.length} integrations
+												</span>
+											</Button>
+										</PopoverTrigger>
+										<PopoverContent className="w-80 p-3">
+											<div className="space-y-3">
+												<h4 className="font-medium text-sm flex items-center gap-2">
+													<CheckCircle className="h-4 w-4 text-green-600" />
+													Connected Integrations
+												</h4>
+												<div className="space-y-2">
+													{integrationStatus.connected.map((app) => {
+														const metadata = getIntegrationMetadata(app.app);
+														const Icon = metadata?.icon ?? Zap;
+
+														return (
+															<div
+																className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border"
+																key={app.app}
+															>
+																<Icon
+																	className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
+																/>
+																<div className="flex-1">
+																	<div className="font-medium text-sm">
+																		{metadata?.name ?? app.app}
+																	</div>
+																	<div className="text-xs text-muted-foreground">
+																		{metadata?.description ??
+																			"Connected and available for assistant actions"}
+																	</div>
+																</div>
+																<CheckCircle className="h-4 w-4 text-green-600" />
+															</div>
+														);
+													})}
+												</div>
+												<div className="text-xs text-muted-foreground pt-2 border-t">
+													{integrationStatus.totalTools} tools available for
+													enhanced productivity
+												</div>
+											</div>
+										</PopoverContent>
+									</Popover>
+								) : (
+									<Badge className="text-xs px-2 py-0.5" variant="outline">
+										No integrations
+									</Badge>
+								)}
+							</div>
+						</div>
+					</div>
+					<Button
+						className="text-xs text-muted-foreground hover:text-destructive border border-gray-300"
+						onClick={clearConversation}
+						size="sm"
+						variant="ghost"
+					>
+						<Trash2 className="h-3.5 w-3.5 mr-1.5" />
+						Clear chat
+					</Button>
+				</div>
+			</CardHeader>
+			<CardContent className="flex-1 overflow-hidden p-0">
+				<ScrollArea className="h-[calc(100vh-240px)] px-4" ref={scrollAreaRef}>
+					<div className="flex flex-col gap-4 py-4 pb-10">
+						{renderedMessages.map((message) => (
+							<div
+								className={`flex ${
+									message.sender === "user" ? "justify-end" : "justify-start"
+								}`}
+								key={message.id}
+							>
+								<div
+									className={`max-w-[80%] rounded-lg px-4 py-3 ${
+										message.sender === "user"
+											? "bg-primary text-primary-foreground"
+											: "bg-muted"
+									}`}
+								>
+									{message.sender === "user" ? (
+										<p className="text-sm">{message.content}</p>
+									) : (
+										<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300 prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
+											<ReactMarkdown
+												components={{
+													// Custom link component to handle internal links
+													a: ({ href, children, ...props }) => (
+														<a
+															className="text-primary hover:text-primary/80 underline"
+															href={href}
+															rel={
+																href?.startsWith("http")
+																	? "noopener noreferrer"
+																	: undefined
+															}
+															target={
+																href?.startsWith("http") ? "_blank" : "_self"
+															}
+															{...props}
+														>
+															{children}
+														</a>
+													),
+													// Custom code block styling
+													code: ({ className, children, ...props }) => (
+														<code
+															className={`${className} bg-muted px-1 py-0.5 rounded text-sm font-mono`}
+															{...props}
+														>
+															{children}
+														</code>
+													),
+													// Custom pre block styling
+													pre: ({ children, ...props }) => (
+														<pre
+															className="bg-muted p-3 rounded-md overflow-x-auto text-sm"
+															{...props}
+														>
+															{children}
+														</pre>
+													),
+												}}
+												remarkPlugins={[remarkGfm]}
+											>
+												{message.content}
+											</ReactMarkdown>
+										</div>
+									)}
+									{message.sources && renderSourceBadges(message.sources)}
+									{message.actions && message.actions.length > 0 && (
+										<div className="flex flex-wrap gap-2 mt-3">
+											{message.actions.map((action) => (
+												<Button
+													className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
+													key={`${action.type}-${action.url}-${action.label}`}
+													onClick={() => handleNavigation(action)}
+													size="sm"
+													variant="outline"
+												>
+													{getActionIcon(action.type)}
+													<span className="ml-1.5">{action.label}</span>
+												</Button>
+											))}
+										</div>
+									)}
+									<p className="mt-2 text-right text-xs opacity-70">
+										{message.timestamp.toLocaleTimeString([], {
+											hour: "2-digit",
+											minute: "2-digit",
+										})}
+									</p>
+								</div>
+							</div>
+						))}
+						{isLoading && (
+							<div className="flex justify-start">
+								<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3">
+									<div className="flex items-start gap-2">
+										<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+											<Zap className="h-4 w-4 animate-pulse text-primary" />
+										</div>
+										<div className="min-w-0 flex-1">
+											<p className="text-sm font-medium">
+												Using tools when needed
+											</p>
   return (
     <Card className="flex flex-col h-full shadow-md overflow-hidden">
       <CardHeader className="pb-2 border-b">
@@ -1071,9 +1514,22 @@ Try asking me things like:`;
 										<div>
 											<p className="text-sm font-medium">Thinking...</p>
 											<p className="text-xs text-muted-foreground mt-1">
-												Searching workspace content for relevant information
+												Checking calendar, tasks, search, and integrations…
 											</p>
+											<div className="mt-2 flex flex-wrap gap-1">
+												{["Calendar", "Tasks", "Search", "Integrations"].map(
+													(label) => (
+														<span
+															className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+															key={label}
+														>
+															{label}
+														</span>
+													)
+												)}
+											</div>
 										</div>
+										<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
 									</div>
 								</div> */}
               </div>

@@ -150,6 +150,42 @@ const schema = defineSchema({
 		.index("by_channel_id", ["channelId"])
 		.index("by_channel_id_order", ["channelId", "order"]),
 
+	// Linear-style statuses (replace lists in Kanban view)
+	statuses: defineTable({
+		channelId: v.id("channels"),
+		name: v.string(),
+		color: v.string(),
+		order: v.number(),
+	})
+		.index("by_channel_id", ["channelId"])
+		.index("by_channel_id_order", ["channelId", "order"]),
+
+	// Linear-style issues (replace cards in Kanban view)
+	issues: defineTable({
+		channelId: v.id("channels"),
+		statusId: v.id("statuses"),
+		title: v.string(),
+		description: v.optional(v.string()),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+		order: v.number(),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_channel_id", ["channelId"])
+		.index("by_status_id", ["statusId"])
+		.index("by_channel_id_status_id", ["channelId", "statusId"]),
+
 	cards: defineTable({
 		listId: v.id("lists"),
 		title: v.string(),
@@ -269,6 +305,8 @@ const schema = defineSchema({
 		parentMessageId: v.optional(v.id("messages")),
 		cardId: v.optional(v.id("cards")),
 		cardTitle: v.optional(v.string()),
+		issueId: v.optional(v.id("issues")),
+		issueTitle: v.optional(v.string()),
 		read: v.boolean(),
 		createdAt: v.number(),
 	})
@@ -277,6 +315,7 @@ const schema = defineSchema({
 		.index("by_mentioner_member_id", ["mentionerMemberId"])
 		.index("by_message_id", ["messageId"])
 		.index("by_card_id", ["cardId"])
+		.index("by_issue_id", ["issueId"])
 		.index("by_workspace_id_mentioned_member_id", [
 			"workspaceId",
 			"mentionedMemberId",
@@ -475,6 +514,8 @@ const schema = defineSchema({
 		userId: v.id("users"),
 		conversationId: v.string(),
 		lastMessageAt: v.number(),
+		/** When "agent", conversationId is an agent threadId; when "databaseChat" or omitted, it's database-chat. */
+		source: v.optional(v.union(v.literal("agent"), v.literal("databaseChat"))),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
@@ -498,6 +539,30 @@ const schema = defineSchema({
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
 		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
+
+	/** Cache for semantic search results (5 min TTL) to reduce embedding/LLM cost. */
+	assistantSearchCache: defineTable({
+		workspaceId: v.id("workspaces"),
+		queryHash: v.string(),
+		result: v.any(),
+		expiresAt: v.number(),
+	})
+		.index("by_workspace_query", ["workspaceId", "queryHash"])
+		.index("by_expires_at", ["expiresAt"]),
+
+	/** Assistant request logs for monitoring: latency, outcome, error category. */
+	assistantRequestLogs: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		conversationId: v.string(),
+		outcome: v.union(v.literal("success"), v.literal("error")),
+		durationMs: v.number(),
+		executionPath: v.string(),
+		errorCategory: v.optional(v.string()),
+		timestamp: v.number(),
+	})
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"])
+		.index("by_user_id_timestamp", ["userId", "timestamp"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({
@@ -699,6 +764,9 @@ const schema = defineSchema({
 			dateTo: v.optional(v.number()), // Import messages until this date
 			includeFiles: v.optional(v.boolean()), // Whether to import file attachments
 			includeThreads: v.optional(v.boolean()), // Whether to import threaded messages
+			includeArchived: v.optional(v.boolean()), // Whether to import archived items
+			includeComments: v.optional(v.boolean()), // Whether to import comments
+			includeCompleted: v.optional(v.boolean()), // Whether to import completed items
 		}),
 		// Progress tracking
 		progress: v.object({

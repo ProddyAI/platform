@@ -1,7 +1,6 @@
-import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
-import { ConvexHttpClient } from "convex/browser";
-import { tool } from "ai";
+import type { Composio } from "@composio/core";
+import { jsonSchema, tool } from "ai";
+import type { ConvexHttpClient } from "convex/browser";
 import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -24,52 +23,6 @@ interface ConvexToolDefinition {
 		needsUserId?: boolean;
 	};
 	externalApp?: string;
-}
-
-/**
- * Convert JSON Schema parameters to Zod schema
- */
-function jsonSchemaToZod(jsonSchema: any): z.ZodObject<any> {
-	const shape: Record<string, z.ZodTypeAny> = {};
-
-	if (jsonSchema.properties) {
-		for (const [key, prop] of Object.entries(jsonSchema.properties) as any) {
-			let zodType: z.ZodTypeAny;
-
-			switch (prop.type) {
-				case "string":
-					zodType = z.string();
-					break;
-				case "number":
-					zodType = z.number();
-					break;
-				case "boolean":
-					zodType = z.boolean();
-					break;
-				case "array":
-					zodType = z.array(z.any());
-					break;
-				case "object":
-					zodType = z.record(z.any());
-					break;
-				default:
-					zodType = z.any();
-			}
-
-			if (prop.description) {
-				zodType = zodType.describe(prop.description);
-			}
-
-			// Make optional if not in required array
-			if (!jsonSchema.required || !jsonSchema.required.includes(key)) {
-				zodType = zodType.optional();
-			}
-
-			shape[key] = zodType;
-		}
-	}
-
-	return z.object(shape);
 }
 
 /**
@@ -117,8 +70,7 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 	},
 	{
 		name: "getMyTasksToday",
-		description:
-			"Get tasks assigned to the user that are due today.",
+		description: "Get tasks assigned to the user that are due today.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -130,8 +82,7 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 	},
 	{
 		name: "getMyTasksTomorrow",
-		description:
-			"Get tasks assigned to the user that are due tomorrow.",
+		description: "Get tasks assigned to the user that are due tomorrow.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -168,7 +119,8 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 			properties: {
 				query: {
 					type: "string",
-					description: "Channel name to search for (without # symbol). Leave empty to get all channels.",
+					description:
+						"Channel name to search for (without # symbol). Leave empty to get all channels.",
 				},
 			},
 			required: [],
@@ -186,7 +138,8 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 			properties: {
 				channelId: {
 					type: "string",
-					description: "The ID of the channel to summarize. Use searchChannels first to get the channel ID.",
+					description:
+						"The ID of the channel to summarize. Use searchChannels first to get the channel ID.",
 				},
 			},
 			required: ["channelId"],
@@ -272,11 +225,17 @@ export class UnifiedToolManager {
 		const tools: Record<string, any> = {};
 
 		for (const toolDef of INTERNAL_TOOL_DEFINITIONS) {
-			const zodSchema = jsonSchemaToZod(toolDef.parameters);
+			// Create JSON Schema with proper typing
+			const jsonSchemaObj: Record<string, any> = {
+				type: "object",
+				properties: toolDef.parameters.properties || {},
+				required: toolDef.parameters.required || [],
+				additionalProperties: false,
+			};
 
 			tools[toolDef.name] = tool({
 				description: toolDef.description,
-				parameters: zodSchema,
+				inputSchema: jsonSchema(jsonSchemaObj),
 				execute: async (params: any) => {
 					try {
 						// Inject context parameters
@@ -300,7 +259,10 @@ export class UnifiedToolManager {
 
 						return result;
 					} catch (error: any) {
-						console.error(`Error executing internal tool ${toolDef.name}:`, error);
+						console.error(
+							`Error executing internal tool ${toolDef.name}:`,
+							error
+						);
 						return {
 							success: false,
 							error: error.message || "Tool execution failed",
@@ -316,15 +278,20 @@ export class UnifiedToolManager {
 	/**
 	 * Get external Composio tools as AI SDK tools
 	 */
-	async getExternalTools(requestedApps: string[]): Promise<Record<string, any>> {
+	async getExternalTools(
+		requestedApps: string[]
+	): Promise<Record<string, any>> {
 		if (!this.composio || !this.workspaceEntityId) {
 			return {};
 		}
 
 		try {
-			const tools = await (this.composio as any).getTools({
-				apps: requestedApps,
-			}, this.workspaceEntityId);
+			const tools = await (this.composio as any).getTools(
+				{
+					apps: requestedApps,
+				},
+				this.workspaceEntityId
+			);
 
 			return tools;
 		} catch (error) {
@@ -336,11 +303,13 @@ export class UnifiedToolManager {
 	/**
 	 * Get all tools (internal + external) as AI SDK tools
 	 */
-	async getAllTools(options: {
-		includeInternal?: boolean;
-		includeExternal?: boolean;
-		requestedApps?: string[];
-	} = {}): Promise<Record<string, any>> {
+	async getAllTools(
+		options: {
+			includeInternal?: boolean;
+			includeExternal?: boolean;
+			requestedApps?: string[];
+		} = {}
+	): Promise<Record<string, any>> {
 		const {
 			includeInternal = true,
 			includeExternal = true,
