@@ -1189,7 +1189,9 @@ export const getSubIssues = query({
 
 		const subIssues = await ctx.db
 			.query("issues")
-			.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", parentIssueId))
+			.withIndex("by_parent_issue_id", (q) =>
+				q.eq("parentIssueId", parentIssueId)
+			)
 			.order("asc")
 			.collect();
 
@@ -1209,7 +1211,9 @@ export const getSubIssueStats = query({
 
 		const subIssues = await ctx.db
 			.query("issues")
-			.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", parentIssueId))
+			.withIndex("by_parent_issue_id", (q) =>
+				q.eq("parentIssueId", parentIssueId)
+			)
 			.collect();
 
 		const total = subIssues.length;
@@ -1230,10 +1234,7 @@ export const getSubIssueStats = query({
 export const getBatchSubIssueStats = query({
 	args: { issueIds: v.array(v.id("issues")) },
 	handler: async (ctx, { issueIds }) => {
-		const stats: Record<
-			string,
-			{ total: number; completed: number }
-		> = {};
+		const stats: Record<string, { total: number; completed: number }> = {};
 
 		for (const issueId of issueIds) {
 			const parentIssue = await ctx.db.get(issueId);
@@ -1244,9 +1245,7 @@ export const getBatchSubIssueStats = query({
 
 			const subIssues = await ctx.db
 				.query("issues")
-				.withIndex("by_parent_issue_id", (q) =>
-					q.eq("parentIssueId", issueId)
-				)
+				.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", issueId))
 				.collect();
 
 			const total = subIssues.length;
@@ -1283,7 +1282,9 @@ export const searchBoardContent = query({
 				(issue) =>
 					issue.title.toLowerCase().includes(lowerQuery) ||
 					issue.description?.toLowerCase().includes(lowerQuery) ||
-					issue.labels?.some((label) => label.toLowerCase().includes(lowerQuery))
+					issue.labels?.some((label) =>
+						label.toLowerCase().includes(lowerQuery)
+					)
 			)
 			.slice(0, 10);
 
@@ -1356,9 +1357,7 @@ export const getBlockedByIssues = query({
 		// Get issues that are blocking this issue
 		const blockedByRels = await ctx.db
 			.query("issueBlocking")
-			.withIndex("by_blocked_issue_id", (q) =>
-				q.eq("blockedIssueId", issueId)
-			)
+			.withIndex("by_blocked_issue_id", (q) => q.eq("blockedIssueId", issueId))
 			.collect();
 
 		const blockedByIssues = await Promise.all(
@@ -1414,7 +1413,10 @@ export const addIssueBlockingRelationship = mutation({
 		}
 
 		// Verify both issues belong to the same channel
-		if (blockedIssue.channelId !== channelId || blockingIssue.channelId !== channelId) {
+		if (
+			blockedIssue.channelId !== channelId ||
+			blockingIssue.channelId !== channelId
+		) {
 			throw new Error("Issues must belong to the same channel");
 		}
 
@@ -1614,7 +1616,10 @@ export const createSubIssue = mutation({
 					}
 				}
 			} catch (error) {
-				console.error("Error creating mentions for sub-issue assignees:", error);
+				console.error(
+					"Error creating mentions for sub-issue assignees:",
+					error
+				);
 			}
 		}
 
@@ -1808,10 +1813,10 @@ export const deleteIssueComment = mutation({
 		// Verify caller is a member of the workspace
 		const channel = await ctx.db.get(comment.issueId);
 		if (!channel) throw new Error("Issue not found");
-		
+
 		const issueChannel = await ctx.db.get(channel.channelId);
 		if (!issueChannel) throw new Error("Channel not found");
-		
+
 		await assertWorkspaceMember(ctx, issueChannel.workspaceId);
 
 		return await ctx.db.delete(commentId);

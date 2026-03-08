@@ -2,9 +2,20 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
-import { Calendar, CalendarIcon, Check, ChevronRight, Minus, Plus, Send, Shield, Trash2, X } from "lucide-react";
+import {
+	Calendar,
+	CalendarIcon,
+	Check,
+	ChevronRight,
+	Minus,
+	Plus,
+	Send,
+	Shield,
+	Trash2,
+	X,
+} from "lucide-react";
 import type React from "react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -12,6 +23,7 @@ import MemberSelector from "@/components/member-selector";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
@@ -27,7 +39,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { IssuePriority } from "./board-issue-row";
 import { formatIssueId, priorityIcon, priorityLabel } from "./board-issue-row";
@@ -506,7 +517,10 @@ const SubIssuesSection = ({
 		}
 	};
 
-	const handleToggleCompletion = async (subIssueId: Id<"issues">, isCompleted: boolean) => {
+	const handleToggleCompletion = async (
+		subIssueId: Id<"issues">,
+		isCompleted: boolean
+	) => {
 		try {
 			// Toggle status: if completed, move back to parent status; if not completed, move to a different status
 			// We'll use the first non-parent status as the "completed" status, or last status if available
@@ -522,10 +536,12 @@ const SubIssuesSection = ({
 			} else {
 				// Mark as complete - move to a different status (preferably "Done" or last status)
 				// Find a status that's different from parent's status
-				const doneStatus = statuses.find((s) => 
-					s.name.toLowerCase().includes("done") || 
-					s.name.toLowerCase().includes("complete")
-				) || statuses.find((s) => s._id !== parentIssue.statusId);
+				const doneStatus =
+					statuses.find(
+						(s) =>
+							s.name.toLowerCase().includes("done") ||
+							s.name.toLowerCase().includes("complete")
+					) || statuses.find((s) => s._id !== parentIssue.statusId);
 
 				if (doneStatus) {
 					await updateIssue({
@@ -596,8 +612,12 @@ const SubIssuesSection = ({
 							<div
 								className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
 								style={{
-									borderColor: isCompleted ? status?.color || "#00b341" : "#cbd5e1",
-									backgroundColor: isCompleted ? status?.color || "#00b341" : "transparent",
+									borderColor: isCompleted
+										? status?.color || "#00b341"
+										: "#cbd5e1",
+									backgroundColor: isCompleted
+										? status?.color || "#00b341"
+										: "transparent",
 								}}
 							>
 								{isCompleted && (
@@ -620,7 +640,10 @@ const SubIssuesSection = ({
 											member?.user?.name?.charAt(0).toUpperCase() || "?";
 
 										return (
-											<Avatar key={assigneeId} className="h-4 w-4 border border-background">
+											<Avatar
+												className="h-4 w-4 border border-background"
+												key={assigneeId}
+											>
 												<AvatarImage
 													alt={member?.user?.name}
 													src={member?.user?.image}
@@ -637,8 +660,8 @@ const SubIssuesSection = ({
 								<Button
 									className={cn(
 										"h-6 w-6",
-										isCompleted 
-											? "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20" 
+										isCompleted
+											? "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
 											: "text-muted-foreground hover:bg-muted/60"
 									)}
 									onClick={(e) => {
@@ -646,8 +669,10 @@ const SubIssuesSection = ({
 										handleToggleCompletion(subIssue._id, isCompleted);
 									}}
 									size="icon"
+									title={
+										isCompleted ? "Mark as incomplete" : "Mark as complete"
+									}
 									variant="ghost"
-									title={isCompleted ? "Mark as incomplete" : "Mark as complete"}
 								>
 									<Check className="w-3.5 h-3.5" />
 								</Button>
@@ -658,8 +683,8 @@ const SubIssuesSection = ({
 										handleDelete(subIssue._id);
 									}}
 									size="icon"
-									variant="ghost"
 									title="Delete sub-issue"
+									variant="ghost"
 								>
 									<X className="w-3 h-3" />
 								</Button>
@@ -806,15 +831,16 @@ const BlockingSection = ({
 						<h3 className="text-sm font-semibold">Blocking</h3>
 						{blockingIssues && blockingIssues.length > 0 && (
 							<span className="text-xs text-muted-foreground">
-								({blockingIssues.length} issue{blockingIssues.length !== 1 ? "s" : ""})
+								({blockingIssues.length} issue
+								{blockingIssues.length !== 1 ? "s" : ""})
 							</span>
 						)}
 					</div>
 					{availableForBlocking.length > 0 && (
 						<div className="flex items-center gap-2">
 							<Select
-								value={selectedIssueId}
 								onValueChange={setSelectedIssueId}
+								value={selectedIssueId}
 							>
 								<SelectTrigger className="h-7 w-40 text-xs">
 									<SelectValue placeholder="Select issue..." />
@@ -867,8 +893,8 @@ const BlockingSection = ({
 										handleRemoveBlocking(blockedIssue._id);
 									}}
 									size="icon"
-									variant="ghost"
 									title="Remove blocking relationship"
+									variant="ghost"
 								>
 									<Minus className="w-3 h-3" />
 								</Button>
@@ -886,7 +912,8 @@ const BlockingSection = ({
 						<h3 className="text-sm font-semibold">Blocked By</h3>
 						{blockedByIssues && blockedByIssues.length > 0 && (
 							<span className="text-xs text-muted-foreground">
-								({blockedByIssues.length} issue{blockedByIssues.length !== 1 ? "s" : ""})
+								({blockedByIssues.length} issue
+								{blockedByIssues.length !== 1 ? "s" : ""})
 							</span>
 						)}
 					</div>
@@ -919,8 +946,8 @@ const BlockingSection = ({
 										handleRemoveBlockedBy(blockingIssue._id);
 									}}
 									size="icon"
-									variant="ghost"
 									title="Remove blocked by relationship"
+									variant="ghost"
 								>
 									<Minus className="w-3 h-3" />
 								</Button>
@@ -956,7 +983,7 @@ const DiscussionSection = ({ issue, members }: DiscussionSectionProps) => {
 
 	useEffect(() => {
 		scrollToBottom();
-	}, [comments]);
+	}, [scrollToBottom]);
 
 	const handleSend = async () => {
 		if (!message.trim()) return;
@@ -1002,7 +1029,7 @@ const DiscussionSection = ({ issue, members }: DiscussionSectionProps) => {
 						const fallback = member?.user?.name?.charAt(0).toUpperCase() || "?";
 
 						return (
-							<div key={comment._id} className="flex gap-2 group">
+							<div className="flex gap-2 group" key={comment._id}>
 								<Avatar className="h-7 w-7 flex-shrink-0">
 									<AvatarImage
 										alt={member?.user?.name}
@@ -1018,7 +1045,10 @@ const DiscussionSection = ({ issue, members }: DiscussionSectionProps) => {
 											{member?.user?.name || "Unknown"}
 										</span>
 										<span className="text-[10px] text-muted-foreground">
-											{format(new Date(comment.createdAt), "MMM d, yyyy 'at' p")}
+											{format(
+												new Date(comment.createdAt),
+												"MMM d, yyyy 'at' p"
+											)}
 										</span>
 									</div>
 									<p className="text-sm text-foreground mt-0.5 break-words">
@@ -1117,13 +1147,13 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 	const [dueDate, setDueDate] = useState<Date>();
 	const [saving, setSaving] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState(false);
-	
+
 	// Fetch parent issue if this is a sub-issue
 	const parentIssue = useQuery(
 		api.board._getIssueDetails,
 		issue?.parentIssueId ? { issueId: issue.parentIssueId } : "skip"
 	);
-	
+
 	const normalizedMembers: SelectableMember[] = members.map((member) => ({
 		...member,
 		user: {
@@ -1260,18 +1290,22 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					confirmDelete={confirmDelete}
 					currentStatus={currentStatus}
 					issueId={issue._id}
+					onBackToParent={parentIssue ? handleBackToParent : undefined}
 					onClose={() => onOpenChange(false)}
 					onDelete={handleDelete}
-					parentIssue={parentIssue ? {
-						_id: parentIssue._id,
-						channelId: parentIssue.channelId,
-						statusId: parentIssue.statusId,
-						title: parentIssue.title,
-						order: parentIssue.order,
-						createdAt: parentIssue.createdAt,
-						updatedAt: parentIssue.updatedAt,
-					} : null}
-					onBackToParent={parentIssue ? handleBackToParent : undefined}
+					parentIssue={
+						parentIssue
+							? {
+									_id: parentIssue._id,
+									channelId: parentIssue.channelId,
+									statusId: parentIssue.statusId,
+									title: parentIssue.title,
+									order: parentIssue.order,
+									createdAt: parentIssue.createdAt,
+									updatedAt: parentIssue.updatedAt,
+								}
+							: null
+					}
 				/>
 
 				<div className="flex-1 overflow-y-auto">

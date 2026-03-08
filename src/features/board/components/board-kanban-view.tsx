@@ -171,7 +171,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	const handleDragOver = (_event: DragOverEvent) => {};
 
 	const handleDragEnd = async (event: DragEndEvent) => {
-		setActiveItem(null);
 		const { active, over } = event;
 		if (!active || !over || active.id === over.id) return;
 
@@ -186,7 +185,10 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 				: (over.id as Id<"statuses">);
 			const oldIdx = statuses.findIndex((s) => s._id === active.id);
 			const newIdx = statuses.findIndex((s) => s._id === overStatusId);
-			if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+			if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) {
+				setActiveItem(null);
+				return;
+			}
 
 			// Capture previous state for rollback
 			const previousStatuses = [...statuses];
@@ -204,6 +206,8 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 				console.error("Error reordering statuses:", error);
 				// Rollback to previous state
 				onReorderStatuses(previousStatuses);
+			} finally {
+				setActiveItem(null);
 			}
 			return;
 		}
@@ -232,12 +236,20 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 				}
 			}
 
-			if (!toStatusId) return;
+			if (!toStatusId) {
+				setActiveItem(null);
+				return;
+			}
 
+			// Keep the drag overlay visible during the transition
+			// The optimistic update in the parent will handle the visual update
 			try {
 				await onMoveIssueStatus?.(issueId, toStatusId, newOrder);
 			} catch (error) {
 				console.error("Error moving issue:", error);
+			} finally {
+				// Clear active item after a small delay to allow animation to complete
+				setTimeout(() => setActiveItem(null), 50);
 			}
 		}
 	};

@@ -1,4 +1,3 @@
-import { useMutation } from "convex/react";
 import {
 	addDays,
 	addWeeks,
@@ -16,19 +15,14 @@ import {
 	ArrowLeft,
 	ArrowRight,
 	Calendar,
-	GripHorizontal,
-	Pencil,
-	Trash,
 	X,
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
 import type React from "react";
 import { useMemo, useRef, useState } from "react";
-import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 interface BoardGanttViewProps {

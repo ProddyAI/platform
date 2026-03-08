@@ -1,6 +1,5 @@
 import { GanttChart, LayoutGrid, Plus, Search } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -108,8 +107,8 @@ const SearchButton = ({ onClick }: SearchButtonProps) => (
 		className="h-8 w-8 p-0 flex-shrink-0 hover:bg-white/15 transition-colors"
 		onClick={onClick}
 		size="icon"
-		variant="ghost"
 		title="Search issues (⌘K)"
+		variant="ghost"
 	>
 		<Search className="w-4 h-4" />
 	</Button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import {
 	Bell,
@@ -12,7 +13,7 @@ import {
 	Search,
 	Sparkles,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	type ChangeEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
@@ -22,7 +23,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-
+import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { MentionsNotificationDialog } from "@/components/mentions-notification-dialog";
@@ -39,6 +40,7 @@ import {
 	CommandSeparator,
 } from "@/components/ui/command";
 import { UserButton } from "@/features/auth/components/user-button";
+import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetUnreadMentionsCount } from "@/features/messages/api/use-get-unread-mentions-count";
@@ -46,12 +48,7 @@ import { useAISearch } from "@/features/workspaces/api/use-ai-search";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useSearchMessages } from "@/features/workspaces/api/use-search-messages";
 import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
-
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { useBoardSearchStore } from "@/features/board/store/use-board-search";
-import { usePathname } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "@/../convex/_generated/api";
 
 interface WorkspaceToolbarProps {
 	children: ReactNode;
@@ -360,41 +357,45 @@ const SearchDialogContent = ({
 					</CommandGroup>
 				)}
 
-				{!useAI && isBoardPage && boardSearchResults && searchQuery && !isSearching && (
-					<>
-						{boardSearchResults.issues.length > 0 && (
-							<CommandGroup heading="Issues">
-								{boardSearchResults.issues.map((issue) => (
-									<CommandItem
-										key={issue._id}
-										onSelect={onCommandSelect}
-										value={`issue:${issue._id}:${issue.channelId}`}
-									>
-										<LayoutList className="mr-2 size-4 shrink-0" />
-										<span className="truncate">{issue.title}</span>
-									</CommandItem>
-								))}
-							</CommandGroup>
-						)}
-						{boardSearchResults.statuses.length > 0 && (
-							<CommandGroup heading="Statuses">
-								{boardSearchResults.statuses.map((status) => (
-									<CommandItem
-										key={status._id}
-										onSelect={onCommandSelect}
-										value={`status:${status._id}`}
-									>
-										<div
-											className="w-2 h-2 rounded-full mr-2"
-											style={{ backgroundColor: status.color }}
-										/>
-										<span className="truncate">{status.name}</span>
-									</CommandItem>
-								))}
-							</CommandGroup>
-						)}
-					</>
-				)}
+				{!useAI &&
+					isBoardPage &&
+					boardSearchResults &&
+					searchQuery &&
+					!isSearching && (
+						<>
+							{boardSearchResults.issues.length > 0 && (
+								<CommandGroup heading="Issues">
+									{boardSearchResults.issues.map((issue) => (
+										<CommandItem
+											key={issue._id}
+											onSelect={onCommandSelect}
+											value={`issue:${issue._id}:${issue.channelId}`}
+										>
+											<LayoutList className="mr-2 size-4 shrink-0" />
+											<span className="truncate">{issue.title}</span>
+										</CommandItem>
+									))}
+								</CommandGroup>
+							)}
+							{boardSearchResults.statuses.length > 0 && (
+								<CommandGroup heading="Statuses">
+									{boardSearchResults.statuses.map((status) => (
+										<CommandItem
+											key={status._id}
+											onSelect={onCommandSelect}
+											value={`status:${status._id}`}
+										>
+											<div
+												className="w-2 h-2 rounded-full mr-2"
+												style={{ backgroundColor: status.color }}
+											/>
+											<span className="truncate">{status.name}</span>
+										</CommandItem>
+									))}
+								</CommandGroup>
+							)}
+						</>
+					)}
 
 				{!useAI && searchQuery && events.length > 0 && !isSearching && (
 					<CommandGroup heading="Calendar">
@@ -464,7 +465,7 @@ const SearchDialogContent = ({
 export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const pathname = usePathname();
+	const _pathname = usePathname();
 	const workspaceId = useWorkspaceId();
 	const [searchOpen, setSearchOpen] = useWorkspaceSearch();
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -474,8 +475,11 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	>("profile");
 
 	// Board search integration
-	const { isBoardPage, boardSearchQuery, setBoardSearchQuery } = useBoardSearchStore();
-	const channelId = usePathname().match(/\/channel\/([^/]+)/)?.[1] as Id<"channels"> | undefined;
+	const { isBoardPage, boardSearchQuery, setBoardSearchQuery } =
+		useBoardSearchStore();
+	const channelId = usePathname().match(/\/channel\/([^/]+)/)?.[1] as
+		| Id<"channels">
+		| undefined;
 
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");

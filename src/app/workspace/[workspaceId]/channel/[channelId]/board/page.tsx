@@ -26,15 +26,47 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 const BoardPage = () => {
 	const channelId = useChannelId();
 	const workspaceId = useWorkspaceId();
-	
+
 	// Board search store integration
-	const { setIsBoardPage, setBoardSearchQuery, boardSearchQuery } = useBoardSearchStore();
+	const { setIsBoardPage, setBoardSearchQuery, boardSearchQuery } =
+		useBoardSearchStore();
 
 	// ── New: issues & statuses ──────────────────────────────────────────────
 	const statuses = useQuery(api.board.getStatuses, { channelId });
 	const allIssues = useQuery(api.board.getIssues, { channelId }) || [];
 	const _uniqueIssueLabels =
 		useQuery(api.board.getUniqueIssueLabels, { channelId }) || [];
+	const [optimisticIssues, setOptimisticIssues] = useState<
+		typeof allIssues | null
+	>(null);
+
+	// Track the last update time to detect when server data changes
+	const lastServerUpdateTimeRef = useRef<number>(Date.now());
+
+	// Clear optimistic state when server data actually updates
+	useEffect(() => {
+		if (allIssues.length > 0 && optimisticIssues) {
+			// Create maps for comparison
+			const serverMap = new Map(allIssues.map((i) => [i._id, i]));
+
+			// Check if all optimistic issues exist in server data with same status/order
+			const allMatch = optimisticIssues.every((optIssue) => {
+				const serverIssue = serverMap.get(optIssue._id);
+				if (!serverIssue) return false;
+				return (
+					serverIssue.statusId === optIssue.statusId &&
+					serverIssue.order === optIssue.order
+				);
+			});
+
+			// Only clear optimistic state if server data matches our optimistic update
+			// This prevents the jarring "jump" when data syncs
+			if (allMatch) {
+				lastServerUpdateTimeRef.current = Date.now();
+				setOptimisticIssues(null);
+			}
+		}
+	}, [allIssues, optimisticIssues]);
 
 	// ── Existing: lists & cards (kept for table/gantt) ──────────────────────
 	const lists = useQuery(api.board.getLists, { channelId });
@@ -119,9 +151,6 @@ const BoardPage = () => {
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
-	const [optimisticIssues, setOptimisticIssues] = useState<
-		typeof allIssues | null
-	>(null);
 	const previousStatusOrderRef = useRef<typeof displayedStatuses | null>(null);
 
 	// ── Old card modal state (for table/gantt views) ────────────────────────
@@ -187,11 +216,6 @@ const BoardPage = () => {
 	useEffect(() => {
 		if (statuses) setOptimisticStatuses(null);
 	}, [statuses]);
-
-	useEffect(() => {
-		// Clear optimistic issue state when fresh server data arrives.
-		setOptimisticIssues(null);
-	}, []);
 
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {
@@ -389,11 +413,16 @@ const BoardPage = () => {
 			];
 		}
 
+		// Apply optimistic update immediately for smooth animation
 		setOptimisticIssues(nextIssues);
+		lastServerUpdateTimeRef.current = Date.now();
 
 		try {
 			await moveIssueStatus({ issueId, toStatusId, order });
+			// Don't clear optimistic state - let Convex's natural reactivity handle it
+			// The allIssues query will update automatically and replace optimisticIssues
 		} catch (error) {
+			// On error, revert immediately
 			setOptimisticIssues(currentIssues);
 			throw error;
 		}
@@ -444,7 +473,7 @@ const BoardPage = () => {
 		setEditCardOpen(null);
 	};
 
-	const handleDeleteCard = async (cardId: Id<"cards">) => {
+	const _handleDeleteCard = async (cardId: Id<"cards">) => {
 		await deleteCard({ cardId });
 		setEditCardOpen(null);
 	};
