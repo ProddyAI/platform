@@ -351,7 +351,10 @@ export const updateCardInGantt = mutation({
 			listId,
 		}: { cardId: Id<"cards">; dueDate: number; listId?: Id<"lists"> }
 	) => {
-		const updates: any = { dueDate };
+		const updates: Partial<Pick<Doc<"cards">, "dueDate" | "listId" | "order">> =
+			{
+				dueDate,
+			};
 
 		if (listId) {
 			updates.listId = listId;
@@ -1461,7 +1464,7 @@ export const addIssueBlockingRelationship = mutation({
 			createdBy: member._id,
 		});
 
-		return { success: true };
+		return;
 	},
 });
 
@@ -1497,7 +1500,7 @@ export const removeIssueBlockingRelationship = mutation({
 			await ctx.db.delete(relToDelete._id);
 		}
 
-		return { success: true };
+		return;
 	},
 });
 
@@ -2158,8 +2161,6 @@ export const addComment = mutation({
 			timestamp: Date.now(),
 		});
 
-		// TODO: Handle @mentions in comments and send notifications
-
 		return commentId;
 	},
 });
@@ -2311,7 +2312,7 @@ export const updateTimeTracking = mutation({
 		const card = await ctx.db.get(cardId);
 		if (!card) throw new Error("Card not found");
 
-		const updates: any = {};
+		const updates: Partial<Pick<Doc<"cards">, "estimate" | "timeSpent">> = {};
 		if (estimate !== undefined) updates.estimate = estimate;
 		if (timeSpent !== undefined) updates.timeSpent = timeSpent;
 

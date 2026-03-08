@@ -18,9 +18,17 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+type BoardMember = {
+	_id: Id<"members">;
+	user?: {
+		name?: string;
+		image?: string;
+	};
+};
+
 interface BoardSubtaskListProps {
 	parentCardId: Id<"cards">;
-	members?: any[];
+	members?: BoardMember[];
 }
 
 export const BoardSubtaskList: React.FC<BoardSubtaskListProps> = ({

@@ -30,6 +30,23 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
+type BoardMember = {
+	_id: Id<"members">;
+	user: {
+		name?: string;
+		image?: string;
+	};
+};
+
+const toSelectorMembers = (members: BoardMember[]) =>
+	members.map((member) => ({
+		...member,
+		user: {
+			...member.user,
+			name: member.user.name || "Unknown",
+		},
+	}));
+
 // ─── STATUS MODALS ────────────────────────────────────────────────────────────
 
 const STATUS_COLOR_PRESETS = [
@@ -403,7 +420,7 @@ interface BoardAddCardModalProps {
 	setDueDate: (v: Date | undefined) => void;
 	assignees: Id<"members">[];
 	setAssignees: (v: Id<"members">[]) => void;
-	members: any[];
+	members: BoardMember[];
 	labelSuggestions: string[];
 	onAdd: () => void;
 }
@@ -428,6 +445,7 @@ export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 	onAdd,
 }) => {
 	const inputRef = useRef<HTMLInputElement>(null);
+	const selectorMembers = toSelectorMembers(members);
 
 	useEffect(() => {
 		if (open) {
@@ -460,7 +478,7 @@ export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 					value={labels}
 				/>
 				<MemberSelector
-					members={members}
+					members={selectorMembers}
 					onChange={setAssignees}
 					placeholder="Assign members"
 					selectedMemberIds={assignees}
@@ -558,7 +576,7 @@ interface BoardEditCardModalProps {
 	setDueDate: (v: Date | undefined) => void;
 	assignees: Id<"members">[];
 	setAssignees: (v: Id<"members">[]) => void;
-	members: any[];
+	members: BoardMember[];
 	labelSuggestions: string[];
 	watchers?: Id<"members">[];
 	currentMemberId?: Id<"members">;
@@ -627,6 +645,7 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 		"details"
 	);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const selectorMembers = toSelectorMembers(members);
 
 	useEffect(() => {
 		if (open) {
@@ -680,7 +699,7 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 
 							<div className="flex items-center gap-2">
 								<MemberSelector
-									members={members}
+									members={selectorMembers}
 									onChange={setAssignees}
 									placeholder="Assign members"
 									selectedMemberIds={assignees}

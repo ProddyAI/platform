@@ -475,8 +475,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	>("profile");
 
 	// Board search integration
-	const { isBoardPage, boardSearchQuery, setBoardSearchQuery } =
-		useBoardSearchStore();
+	const { isBoardPage, setBoardSearchQuery } = useBoardSearchStore();
 	const channelId = usePathname().match(/\/channel\/([^/]+)/)?.[1] as
 		| Id<"channels">
 		| undefined;

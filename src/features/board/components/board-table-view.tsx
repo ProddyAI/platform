@@ -25,12 +25,40 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+type BoardListItem = {
+	_id: Id<"lists">;
+	title: string;
+};
+
+type BoardMember = {
+	_id: Id<"members">;
+	user?: {
+		name?: string;
+		image?: string;
+	};
+};
+
+type BoardTableCard = {
+	_id: Id<"cards">;
+	listId: Id<"lists">;
+	title: string;
+	description?: string;
+	priority?: "lowest" | "low" | "medium" | "high" | "highest";
+	labels?: string[];
+	dueDate?: number;
+	assignees?: Id<"members">[];
+	parentCardId?: Id<"cards">;
+	isCompleted?: boolean;
+};
+
+type CardWithListTitle = BoardTableCard & { listTitle: string };
+
 interface BoardTableViewProps {
-	lists: any[];
-	allCards: any[];
-	onEditCard: (card: any) => void;
+	lists: BoardListItem[];
+	allCards: BoardTableCard[];
+	onEditCard: (card: BoardTableCard) => void;
 	onDeleteCard: (cardId: Id<"cards">) => void;
-	members?: any[];
+	members?: BoardMember[];
 }
 
 const BoardTableView: React.FC<BoardTableViewProps> = ({
@@ -76,7 +104,7 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 	);
 
 	const subtasksByParent = useMemo(() => {
-		const map: Record<string, any[]> = {};
+		const map: Record<string, CardWithListTitle[]> = {};
 		cardsWithListTitle.forEach((card) => {
 			if (!card.parentCardId) return;
 			const parentId = card.parentCardId as string;
@@ -88,7 +116,7 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 		return map;
 	}, [cardsWithListTitle]);
 
-	const sortCards = (cards: any[]) => {
+	const sortCards = (cards: CardWithListTitle[]) => {
 		if (!sortField) return cards;
 		return [...cards].sort((a, b) => {
 			let valueA;
@@ -127,7 +155,7 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 	};
 
 	const searchLower = searchQuery.toLowerCase();
-	const matchesQuery = (card: any) => {
+	const matchesQuery = (card: CardWithListTitle) => {
 		if (!searchLower) return true;
 		return (
 			card.title.toLowerCase().includes(searchLower) ||

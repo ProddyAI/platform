@@ -25,10 +25,25 @@ interface BoardCardActivityProps {
 	cardId: Id<"cards">;
 }
 
+type CardActivity = {
+	_id: Id<"card_activity">;
+	action: string;
+	details?: string;
+	timestamp: number;
+	member: {
+		user: {
+			name?: string;
+			image?: string;
+		};
+	};
+};
+
 export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 	cardId,
 }) => {
-	const activities = useQuery(api.board.getCardActivity, { cardId });
+	const activities = useQuery(api.board.getCardActivity, {
+		cardId,
+	}) as CardActivity[] | undefined;
 
 	const getActivityIcon = (action: string) => {
 		switch (action) {
@@ -61,8 +76,12 @@ export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 		}
 	};
 
-	const getActivityText = (activity: any) => {
-		const details = activity.details ? JSON.parse(activity.details) : {};
+	const getActivityText = (activity: CardActivity) => {
+		const details: {
+			subtaskId?: string;
+			title?: string;
+			blockedByTitle?: string;
+		} = activity.details ? JSON.parse(activity.details) : {};
 
 		switch (activity.action) {
 			case "created":

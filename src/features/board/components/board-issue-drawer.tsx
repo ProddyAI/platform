@@ -101,26 +101,6 @@ interface Issue {
 	parentIssueId?: Id<"issues">;
 }
 
-interface IssueComment {
-	_id: Id<"issueComments">;
-	issueId: Id<"issues">;
-	memberId: Id<"members">;
-	workspaceId: Id<"workspaces">;
-	message: string;
-	createdAt: number;
-	updatedAt?: number;
-	member?: {
-		userId: Id<"users">;
-		workspaceId: Id<"workspaces">;
-		role: "owner" | "admin" | "member";
-		user: {
-			name?: string;
-			image?: string;
-			email?: string;
-		};
-	};
-}
-
 interface BoardIssueDrawerProps {
 	issue: Issue | null;
 	open: boolean;
@@ -139,6 +119,13 @@ const PRIORITIES: IssuePriority[] = [
 	"low",
 	"no_priority",
 ];
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+	if (error instanceof Error && error.message) {
+		return error.message;
+	}
+	return fallback;
+};
 
 interface DrawerHeaderProps {
 	currentStatus?: Status;
@@ -482,16 +469,22 @@ const SubIssuesSection = ({
 	statuses,
 	onClickIssue,
 }: SubIssuesSectionProps) => {
-	const subIssues = useQuery(
-		api.board.getSubIssues,
-		parentIssue ? { parentIssueId: parentIssue._id } : "skip"
-	);
+	const newSubIssueInputRef = useRef<HTMLInputElement>(null);
+	const subIssues = useQuery(api.board.getSubIssues, {
+		parentIssueId: parentIssue._id,
+	});
 	const createSubIssue = useMutation(api.board.createSubIssue);
 	const deleteSubIssue = useMutation(api.board.deleteSubIssue);
 	const updateIssue = useMutation(api.board.updateIssue);
 
 	const [isAdding, setIsAdding] = useState(false);
 	const [newTitle, setNewTitle] = useState("");
+
+	useEffect(() => {
+		if (isAdding) {
+			newSubIssueInputRef.current?.focus();
+		}
+	}, [isAdding]);
 
 	const handleAdd = async () => {
 		if (!newTitle.trim()) return;
@@ -697,7 +690,6 @@ const SubIssuesSection = ({
 			{isAdding && (
 				<div className="flex items-center gap-2 p-2 rounded-md border bg-card">
 					<Input
-						autoFocus
 						className="flex-1 h-8 text-sm"
 						onChange={(e) => setNewTitle(e.target.value)}
 						onKeyDown={(e) => {
@@ -709,6 +701,7 @@ const SubIssuesSection = ({
 							}
 						}}
 						placeholder="Sub-issue title..."
+						ref={newSubIssueInputRef}
 						value={newTitle}
 					/>
 					<Button
@@ -734,7 +727,8 @@ const SubIssuesSection = ({
 
 			{!isAdding && totalCount === 0 && (
 				<div className="text-center py-4 text-sm text-muted-foreground">
-					No sub-issues yet. Click "Add Sub-Issue" to break down this task.
+					No sub-issues yet. Click &quot;Add Sub-Issue&quot; to break down this
+					task.
 				</div>
 			)}
 		</div>
@@ -753,14 +747,12 @@ const BlockingSection = ({
 	allIssues,
 	onClickIssue,
 }: BlockingSectionProps) => {
-	const blockingIssues = useQuery(
-		api.board.getBlockingIssues,
-		issue ? { issueId: issue._id } : "skip"
-	);
-	const blockedByIssues = useQuery(
-		api.board.getBlockedByIssues,
-		issue ? { issueId: issue._id } : "skip"
-	);
+	const blockingIssues = useQuery(api.board.getBlockingIssues, {
+		issueId: issue._id,
+	});
+	const blockedByIssues = useQuery(api.board.getBlockedByIssues, {
+		issueId: issue._id,
+	});
 	const addBlocking = useMutation(api.board.addIssueBlockingRelationship);
 	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
 
@@ -775,9 +767,11 @@ const BlockingSection = ({
 				blockingIssueId: issue._id,
 			});
 			setSelectedIssueId("");
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Failed to add blocking relationship:", error);
-			toast.error(error.message || "Failed to add blocking relationship");
+			toast.error(
+				getErrorMessage(error, "Failed to add blocking relationship")
+			);
 		}
 	};
 
@@ -788,9 +782,11 @@ const BlockingSection = ({
 				blockedIssueId,
 				blockingIssueId: issue._id,
 			});
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Failed to remove blocking relationship:", error);
-			toast.error(error.message || "Failed to remove blocking relationship");
+			toast.error(
+				getErrorMessage(error, "Failed to remove blocking relationship")
+			);
 		}
 	};
 
@@ -801,9 +797,11 @@ const BlockingSection = ({
 				blockedIssueId: issue._id,
 				blockingIssueId,
 			});
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Failed to remove blocked by relationship:", error);
-			toast.error(error.message || "Failed to remove blocked by relationship");
+			toast.error(
+				getErrorMessage(error, "Failed to remove blocked by relationship")
+			);
 		}
 	};
 
@@ -821,9 +819,98 @@ const BlockingSection = ({
 		(i) => !usedIssueIds.has(i._id)
 	);
 
+	const renderBlockingContent = () => {
+		if (!blockingIssues) {
+			return <div className="text-sm text-muted-foreground">Loading...</div>;
+		}
+
+		if (blockingIssues.length === 0) {
+			return (
+				<div className="text-sm text-muted-foreground py-2">
+					No issues blocked by this issue
+				</div>
+			);
+		}
+
+		return (
+			<div className="space-y-1.5">
+				{blockingIssues.map((blockedIssue) => (
+					<div
+						className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+						key={blockedIssue._id}
+						onClick={() => onClickIssue(blockedIssue)}
+					>
+						<div className="flex items-center gap-2 flex-1 min-w-0">
+							<div className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" />
+							<span className="text-sm truncate">
+								{formatIssueId(blockedIssue._id)} - {blockedIssue.title}
+							</span>
+						</div>
+						<Button
+							className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+							onClick={(e) => {
+								e.stopPropagation();
+								handleRemoveBlocking(blockedIssue._id);
+							}}
+							size="icon"
+							title="Remove blocking relationship"
+							variant="ghost"
+						>
+							<Minus className="w-3 h-3" />
+						</Button>
+					</div>
+				))}
+			</div>
+		);
+	};
+
+	const renderBlockedByContent = () => {
+		if (!blockedByIssues) {
+			return <div className="text-sm text-muted-foreground">Loading...</div>;
+		}
+
+		if (blockedByIssues.length === 0) {
+			return (
+				<div className="text-sm text-muted-foreground py-2">
+					Not blocked by any issues
+				</div>
+			);
+		}
+
+		return (
+			<div className="space-y-1.5">
+				{blockedByIssues.map((blockingIssue) => (
+					<div
+						className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+						key={blockingIssue._id}
+						onClick={() => onClickIssue(blockingIssue)}
+					>
+						<div className="flex items-center gap-2 flex-1 min-w-0">
+							<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+							<span className="text-sm truncate">
+								{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
+							</span>
+						</div>
+						<Button
+							className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+							onClick={(e) => {
+								e.stopPropagation();
+								handleRemoveBlockedBy(blockingIssue._id);
+							}}
+							size="icon"
+							title="Remove blocked by relationship"
+							variant="ghost"
+						>
+							<Minus className="w-3 h-3" />
+						</Button>
+					</div>
+				))}
+			</div>
+		);
+	};
+
 	return (
 		<div className="space-y-4">
-			{/* Blocking Section (Issues this issue blocks) */}
 			<div>
 				<div className="flex items-center justify-between mb-2">
 					<div className="flex items-center gap-2">
@@ -866,45 +953,9 @@ const BlockingSection = ({
 					)}
 				</div>
 
-				{!blockingIssues ? (
-					<div className="text-sm text-muted-foreground">Loading...</div>
-				) : blockingIssues.length === 0 ? (
-					<div className="text-sm text-muted-foreground py-2">
-						No issues blocked by this issue
-					</div>
-				) : (
-					<div className="space-y-1.5">
-						{blockingIssues.map((blockedIssue) => (
-							<div
-								className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-								key={blockedIssue._id}
-								onClick={() => onClickIssue(blockedIssue)}
-							>
-								<div className="flex items-center gap-2 flex-1 min-w-0">
-									<div className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" />
-									<span className="text-sm truncate">
-										{formatIssueId(blockedIssue._id)} - {blockedIssue.title}
-									</span>
-								</div>
-								<Button
-									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-									onClick={(e) => {
-										e.stopPropagation();
-										handleRemoveBlocking(blockedIssue._id);
-									}}
-									size="icon"
-									title="Remove blocking relationship"
-									variant="ghost"
-								>
-									<Minus className="w-3 h-3" />
-								</Button>
-							</div>
-						))}
-					</div>
-				)}
+				{renderBlockingContent()}
 			</div>
 
-			{/* Blocked By Section (Issues blocking this issue) */}
 			<div>
 				<div className="flex items-center justify-between mb-2">
 					<div className="flex items-center gap-2">
@@ -919,42 +970,7 @@ const BlockingSection = ({
 					</div>
 				</div>
 
-				{!blockedByIssues ? (
-					<div className="text-sm text-muted-foreground">Loading...</div>
-				) : blockedByIssues.length === 0 ? (
-					<div className="text-sm text-muted-foreground py-2">
-						Not blocked by any issues
-					</div>
-				) : (
-					<div className="space-y-1.5">
-						{blockedByIssues.map((blockingIssue) => (
-							<div
-								className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-								key={blockingIssue._id}
-								onClick={() => onClickIssue(blockingIssue)}
-							>
-								<div className="flex items-center gap-2 flex-1 min-w-0">
-									<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-									<span className="text-sm truncate">
-										{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
-									</span>
-								</div>
-								<Button
-									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-									onClick={(e) => {
-										e.stopPropagation();
-										handleRemoveBlockedBy(blockingIssue._id);
-									}}
-									size="icon"
-									title="Remove blocked by relationship"
-									variant="ghost"
-								>
-									<Minus className="w-3 h-3" />
-								</Button>
-							</div>
-						))}
-					</div>
-				)}
+				{renderBlockedByContent()}
 			</div>
 		</div>
 	);
@@ -963,14 +979,10 @@ const BlockingSection = ({
 // Discussion Section Component
 interface DiscussionSectionProps {
 	issue: Issue;
-	members: SelectableMember[];
 }
 
-const DiscussionSection = ({ issue, members }: DiscussionSectionProps) => {
-	const comments = useQuery(
-		api.board.getIssueComments,
-		issue ? { issueId: issue._id } : "skip"
-	);
+const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
+	const comments = useQuery(api.board.getIssueComments, { issueId: issue._id });
 	const createComment = useMutation(api.board.createIssueComment);
 	const deleteComment = useMutation(api.board.deleteIssueComment);
 
@@ -1352,18 +1364,20 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 
 					{/* Blocking Section */}
 					<div className="px-6 py-5">
-						<BlockingSection
-							allIssues={allIssues}
-							issue={issue}
-							onClickIssue={onClickIssue!}
-						/>
+						{onClickIssue && (
+							<BlockingSection
+								allIssues={allIssues}
+								issue={issue}
+								onClickIssue={onClickIssue}
+							/>
+						)}
 					</div>
 
 					<Separator className="opacity-40" />
 
 					{/* Discussion Section */}
 					<div className="px-6 py-5">
-						<DiscussionSection issue={issue} members={normalizedMembers} />
+						<DiscussionSection issue={issue} />
 					</div>
 				</div>
 

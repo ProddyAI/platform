@@ -25,10 +25,34 @@ import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+type BoardListItem = {
+	_id: Id<"lists">;
+	title: string;
+};
+
+type BoardGanttCard = {
+	_id: Id<"cards">;
+	listId: Id<"lists">;
+	title: string;
+	priority?: "lowest" | "low" | "medium" | "high" | "highest";
+	description?: string;
+	labels?: string[];
+	dueDate?: number;
+	parentCardId?: Id<"cards">;
+	order?: number;
+};
+
+type BoardGanttCardWithDueDate = BoardGanttCard & {
+	dueDate: number;
+};
+
+const hasDueDate = (card: BoardGanttCard): card is BoardGanttCardWithDueDate =>
+	typeof card.dueDate === "number";
+
 interface BoardGanttViewProps {
-	lists: any[];
-	allCards: any[];
-	members?: any[];
+	lists: BoardListItem[];
+	allCards: BoardGanttCard[];
+	members?: unknown[];
 	readOnly?: boolean;
 }
 
@@ -46,24 +70,18 @@ type GanttTask = {
 	isSubtask: boolean;
 	order?: number;
 	parentTitle?: string;
-	originalCard: any;
+	originalCard: BoardGanttCard;
 };
 
-const BoardGanttView: React.FC<BoardGanttViewProps> = ({
-	lists,
-	allCards,
-	readOnly = false,
-}) => {
+const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 	const initialStartDate = useMemo(() => {
-		const earliestDueDate = allCards
-			.filter((card) => card.dueDate)
-			.reduce(
-				(earliest, card) => {
-					const dueDate = new Date(card.dueDate);
-					return earliest === null || dueDate < earliest ? dueDate : earliest;
-				},
-				null as Date | null
-			);
+		const earliestDueDate = allCards.filter(hasDueDate).reduce(
+			(earliest, card) => {
+				const dueDate = new Date(card.dueDate);
+				return earliest === null || dueDate < earliest ? dueDate : earliest;
+			},
+			null as Date | null
+		);
 
 		return earliestDueDate
 			? startOfWeek(earliestDueDate)
@@ -78,39 +96,37 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	const timelineContainerRef = useRef<HTMLDivElement>(null);
 
 	const tasks = useMemo(() => {
-		const cardById = new Map<Id<"cards">, any>();
+		const cardById = new Map<Id<"cards">, BoardGanttCard>();
 		allCards.forEach((card) => cardById.set(card._id, card));
 
-		return allCards
-			.filter((card) => card.dueDate)
-			.map((card) => {
-				const list = lists.find((l) => l._id === card.listId);
-				const dueDate = new Date(card.dueDate);
+		return allCards.filter(hasDueDate).map((card) => {
+			const list = lists.find((l) => l._id === card.listId);
+			const dueDate = new Date(card.dueDate);
 
-				const startDate = new Date(dueDate);
-				startDate.setDate(startDate.getDate() - 3);
+			const startDate = new Date(dueDate);
+			startDate.setDate(startDate.getDate() - 3);
 
-				const parentTitle = card.parentCardId
-					? cardById.get(card.parentCardId)?.title
-					: undefined;
+			const parentTitle = card.parentCardId
+				? cardById.get(card.parentCardId)?.title
+				: undefined;
 
-				return {
-					id: card._id,
-					title: card.title,
-					startDate,
-					endDate: dueDate,
-					priority: card.priority,
-					listId: card.listId,
-					listTitle: list ? list.title : "Unknown List",
-					description: card.description,
-					labels: card.labels,
-					parentCardId: card.parentCardId,
-					isSubtask: Boolean(card.parentCardId),
-					order: card.order,
-					parentTitle,
-					originalCard: card,
-				} as GanttTask;
-			});
+			return {
+				id: card._id,
+				title: card.title,
+				startDate,
+				endDate: dueDate,
+				priority: card.priority,
+				listId: card.listId,
+				listTitle: list ? list.title : "Unknown List",
+				description: card.description,
+				labels: card.labels,
+				parentCardId: card.parentCardId,
+				isSubtask: Boolean(card.parentCardId),
+				order: card.order,
+				parentTitle,
+				originalCard: card,
+			} as GanttTask;
+		});
 	}, [allCards, lists]);
 
 	const timelineDates = useMemo(() => {
@@ -119,7 +135,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	}, [currentStartDate, zoomLevel]);
 
 	const cardsByList = useMemo(() => {
-		const map: Record<string, any[]> = {};
+		const map: Record<string, BoardGanttCard[]> = {};
 		lists.forEach((list) => {
 			map[list._id] = [];
 		});
@@ -144,13 +160,19 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	const groupedTasksByList = useMemo(() => {
 		const grouped: Record<
 			string,
-			{ rows: { card: any; task?: GanttTask; level: "parent" | "subtask" }[] }
+			{
+				rows: {
+					card: BoardGanttCard;
+					task?: GanttTask;
+					level: "parent" | "subtask";
+				}[];
+			}
 		> = {};
 
 		lists.forEach((list) => {
 			const listCards = cardsByList[list._id] || [];
 			const rows: {
-				card: any;
+				card: BoardGanttCard;
 				task?: GanttTask;
 				level: "parent" | "subtask";
 			}[] = [];
