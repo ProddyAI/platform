@@ -1,14 +1,15 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
-import { Calendar, CalendarIcon, ChevronRight, Trash2, X } from "lucide-react";
+import { Calendar, CalendarIcon, Check, ChevronRight, Plus, Send, Trash2, X } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import MemberSelector from "@/components/member-selector";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import {
@@ -26,6 +27,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { IssuePriority } from "./board-issue-row";
 import { formatIssueId, priorityIcon, priorityLabel } from "./board-issue-row";
@@ -85,6 +87,27 @@ interface Issue {
 	createdAt: number;
 	updatedAt: number;
 	order: number;
+	parentIssueId?: Id<"issues">;
+}
+
+interface IssueComment {
+	_id: Id<"issueComments">;
+	issueId: Id<"issues">;
+	memberId: Id<"members">;
+	workspaceId: Id<"workspaces">;
+	message: string;
+	createdAt: number;
+	updatedAt?: number;
+	member?: {
+		userId: Id<"users">;
+		workspaceId: Id<"workspaces">;
+		role: "owner" | "admin" | "member";
+		user: {
+			name?: string;
+			image?: string;
+			email?: string;
+		};
+	};
 }
 
 interface BoardIssueDrawerProps {
@@ -94,6 +117,7 @@ interface BoardIssueDrawerProps {
 	statuses: Status[];
 	members: Member[];
 	onDelete?: (issueId: Id<"issues">) => void;
+	onClickIssue?: (issue: Issue) => void;
 }
 
 const PRIORITIES: IssuePriority[] = [
@@ -110,6 +134,8 @@ interface DrawerHeaderProps {
 	confirmDelete: boolean;
 	onDelete: () => void;
 	onClose: () => void;
+	parentIssue?: Issue | null;
+	onBackToParent?: () => void;
 }
 
 const DrawerHeader = ({
@@ -118,9 +144,22 @@ const DrawerHeader = ({
 	confirmDelete,
 	onDelete,
 	onClose,
+	parentIssue,
+	onBackToParent,
 }: DrawerHeaderProps) => (
 	<div className="flex items-center justify-between px-5 py-3 border-b border-border/50 dark:border-gray-800/80 bg-muted/20 dark:bg-gray-900/50 shrink-0">
 		<div className="flex items-center gap-1.5 text-xs text-muted-foreground overflow-hidden">
+			{parentIssue && onBackToParent && (
+				<Button
+					className="h-6 w-6 p-0 flex-shrink-0 hover:bg-muted/60"
+					onClick={onBackToParent}
+					size="icon"
+					title="Back to parent issue"
+					variant="ghost"
+				>
+					<ChevronRight className="w-3.5 h-3.5 rotate-180" />
+				</Button>
+			)}
 			{currentStatus && (
 				<>
 					<span
@@ -134,6 +173,14 @@ const DrawerHeader = ({
 			<span className="font-mono text-muted-foreground/70 flex-shrink-0">
 				{formatIssueId(issueId)}
 			</span>
+			{parentIssue && (
+				<>
+					<ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
+					<span className="truncate max-w-[150px] text-muted-foreground/90">
+						{formatIssueId(parentIssue._id)}
+					</span>
+				</>
+			)}
 		</div>
 
 		<div className="flex items-center gap-0.5 shrink-0">
@@ -368,7 +415,7 @@ const IssueContent = ({
 							</div>
 						)}
 						<div className="flex gap-2">
-							<input
+							<Input
 								className="flex-1 h-8 text-xs bg-muted/20 dark:bg-gray-800/20 border border-border/30 rounded-md px-3 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-colors"
 								onChange={(e) => onLabelInputChange(e.target.value)}
 								onKeyDown={(e) => {
@@ -409,6 +456,398 @@ const IssueContent = ({
 	);
 };
 
+// Sub-Issues Section Component
+interface SubIssuesSectionProps {
+	parentIssue: Issue;
+	members: SelectableMember[];
+	statuses: Status[];
+	onClickIssue: (issue: Issue) => void;
+}
+
+const SubIssuesSection = ({
+	parentIssue,
+	members,
+	statuses,
+	onClickIssue,
+}: SubIssuesSectionProps) => {
+	const subIssues = useQuery(
+		api.board.getSubIssues,
+		parentIssue ? { parentIssueId: parentIssue._id } : "skip"
+	);
+	const createSubIssue = useMutation(api.board.createSubIssue);
+	const deleteSubIssue = useMutation(api.board.deleteSubIssue);
+	const updateIssue = useMutation(api.board.updateIssue);
+
+	const [isAdding, setIsAdding] = useState(false);
+	const [newTitle, setNewTitle] = useState("");
+
+	const handleAdd = async () => {
+		if (!newTitle.trim()) return;
+		try {
+			await createSubIssue({
+				parentIssueId: parentIssue._id,
+				title: newTitle.trim(),
+			});
+			setNewTitle("");
+			setIsAdding(false);
+		} catch (error) {
+			console.error("Failed to create sub-issue:", error);
+			toast.error("Failed to create sub-issue");
+		}
+	};
+
+	const handleDelete = async (subIssueId: Id<"issues">) => {
+		try {
+			await deleteSubIssue({ subIssueId });
+		} catch (error) {
+			console.error("Failed to delete sub-issue:", error);
+			toast.error("Failed to delete sub-issue");
+		}
+	};
+
+	const handleToggleCompletion = async (subIssueId: Id<"issues">, isCompleted: boolean) => {
+		try {
+			// Toggle status: if completed, move back to parent status; if not completed, move to a different status
+			// We'll use the first non-parent status as the "completed" status, or last status if available
+			const subIssue = subIssues?.find((s) => s._id === subIssueId);
+			if (!subIssue) return;
+
+			if (isCompleted) {
+				// Mark as incomplete - move back to parent's status
+				await updateIssue({
+					issueId: subIssueId,
+					statusId: parentIssue.statusId,
+				});
+			} else {
+				// Mark as complete - move to a different status (preferably "Done" or last status)
+				// Find a status that's different from parent's status
+				const doneStatus = statuses.find((s) => 
+					s.name.toLowerCase().includes("done") || 
+					s.name.toLowerCase().includes("complete")
+				) || statuses.find((s) => s._id !== parentIssue.statusId);
+
+				if (doneStatus) {
+					await updateIssue({
+						issueId: subIssueId,
+						statusId: doneStatus._id,
+					});
+				}
+			}
+		} catch (error) {
+			console.error("Failed to toggle sub-issue completion:", error);
+			toast.error("Failed to update sub-issue");
+		}
+	};
+
+	if (!subIssues) {
+		return (
+			<div className="text-sm text-muted-foreground">Loading sub-issues...</div>
+		);
+	}
+
+	const completedCount = subIssues.filter(
+		(s) => s.statusId !== parentIssue.statusId
+	).length;
+	const totalCount = subIssues.length;
+
+	return (
+		<div className="space-y-3">
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-2">
+					<h3 className="text-sm font-semibold">Sub-Issues</h3>
+					{totalCount > 0 && (
+						<span className="text-xs text-muted-foreground">
+							{completedCount}/{totalCount} completed
+						</span>
+					)}
+				</div>
+				<Button
+					className="h-7 px-2"
+					onClick={() => setIsAdding(true)}
+					size="sm"
+					variant="ghost"
+				>
+					<Plus className="w-3.5 h-3.5 mr-1" />
+					Add Sub-Issue
+				</Button>
+			</div>
+
+			{totalCount > 0 && (
+				<div className="w-full bg-muted rounded-full h-1.5">
+					<div
+						className="bg-primary h-1.5 rounded-full transition-all duration-300"
+						style={{ width: `${(completedCount / totalCount) * 100}%` }}
+					/>
+				</div>
+			)}
+
+			<div className="space-y-2">
+				{subIssues.map((subIssue) => {
+					const isCompleted = subIssue.statusId !== parentIssue.statusId;
+					const status = statuses.find((s) => s._id === subIssue.statusId);
+
+					return (
+						<div
+							className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors group cursor-pointer"
+							key={subIssue._id}
+							onClick={() => onClickIssue(subIssue)}
+						>
+							<div
+								className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+								style={{
+									borderColor: isCompleted ? status?.color || "#00b341" : "#cbd5e1",
+									backgroundColor: isCompleted ? status?.color || "#00b341" : "transparent",
+								}}
+							>
+								{isCompleted && (
+									<Check className="w-3 h-3 text-white" strokeWidth={3} />
+								)}
+							</div>
+							<span
+								className={cn(
+									"flex-1 text-sm truncate",
+									isCompleted && "line-through text-muted-foreground"
+								)}
+							>
+								{subIssue.title}
+							</span>
+							{subIssue.assignees && subIssue.assignees.length > 0 && (
+								<div className="flex -space-x-1.5">
+									{subIssue.assignees.slice(0, 2).map((assigneeId) => {
+										const member = members.find((m) => m._id === assigneeId);
+										const fallback =
+											member?.user?.name?.charAt(0).toUpperCase() || "?";
+
+										return (
+											<Avatar key={assigneeId} className="h-4 w-4 border border-background">
+												<AvatarImage
+													alt={member?.user?.name}
+													src={member?.user?.image}
+												/>
+												<AvatarFallback className="text-[8px]">
+													{fallback}
+												</AvatarFallback>
+											</Avatar>
+										);
+									})}
+								</div>
+							)}
+							<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+								<Button
+									className={cn(
+										"h-6 w-6",
+										isCompleted 
+											? "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20" 
+											: "text-muted-foreground hover:bg-muted/60"
+									)}
+									onClick={(e) => {
+										e.stopPropagation();
+										handleToggleCompletion(subIssue._id, isCompleted);
+									}}
+									size="icon"
+									variant="ghost"
+									title={isCompleted ? "Mark as incomplete" : "Mark as complete"}
+								>
+									<Check className="w-3.5 h-3.5" />
+								</Button>
+								<Button
+									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									onClick={(e) => {
+										e.stopPropagation();
+										handleDelete(subIssue._id);
+									}}
+									size="icon"
+									variant="ghost"
+									title="Delete sub-issue"
+								>
+									<X className="w-3 h-3" />
+								</Button>
+							</div>
+						</div>
+					);
+				})}
+			</div>
+
+			{isAdding && (
+				<div className="flex items-center gap-2 p-2 rounded-md border bg-card">
+					<Input
+						autoFocus
+						className="flex-1 h-8 text-sm"
+						onChange={(e) => setNewTitle(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								handleAdd();
+							} else if (e.key === "Escape") {
+								setIsAdding(false);
+								setNewTitle("");
+							}
+						}}
+						placeholder="Sub-issue title..."
+						value={newTitle}
+					/>
+					<Button
+						disabled={!newTitle.trim()}
+						onClick={handleAdd}
+						size="sm"
+						variant="ghost"
+					>
+						<Plus className="w-3.5 h-3.5" />
+					</Button>
+					<Button
+						onClick={() => {
+							setIsAdding(false);
+							setNewTitle("");
+						}}
+						size="sm"
+						variant="ghost"
+					>
+						<X className="w-3.5 h-3.5" />
+					</Button>
+				</div>
+			)}
+
+			{!isAdding && totalCount === 0 && (
+				<div className="text-center py-4 text-sm text-muted-foreground">
+					No sub-issues yet. Click "Add Sub-Issue" to break down this task.
+				</div>
+			)}
+		</div>
+	);
+};
+
+// Discussion Section Component
+interface DiscussionSectionProps {
+	issue: Issue;
+	members: SelectableMember[];
+}
+
+const DiscussionSection = ({ issue, members }: DiscussionSectionProps) => {
+	const comments = useQuery(
+		api.board.getIssueComments,
+		issue ? { issueId: issue._id } : "skip"
+	);
+	const createComment = useMutation(api.board.createIssueComment);
+	const deleteComment = useMutation(api.board.deleteIssueComment);
+
+	const [message, setMessage] = useState("");
+	const messagesEndRef = useRef<HTMLDivElement>(null);
+
+	const scrollToBottom = () => {
+		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	};
+
+	useEffect(() => {
+		scrollToBottom();
+	}, [comments]);
+
+	const handleSend = async () => {
+		if (!message.trim()) return;
+		try {
+			await createComment({
+				issueId: issue._id,
+				message: message.trim(),
+			});
+			setMessage("");
+		} catch (error) {
+			console.error("Failed to send comment:", error);
+			toast.error("Failed to send comment");
+		}
+	};
+
+	const handleDelete = async (commentId: Id<"issueComments">) => {
+		try {
+			await deleteComment({ commentId });
+		} catch (error) {
+			console.error("Failed to delete comment:", error);
+			toast.error("Failed to delete comment");
+		}
+	};
+
+	if (!comments) {
+		return (
+			<div className="text-sm text-muted-foreground">Loading discussion...</div>
+		);
+	}
+
+	return (
+		<div className="space-y-3">
+			<h3 className="text-sm font-semibold">Discussion</h3>
+
+			<div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+				{comments.length === 0 ? (
+					<div className="text-center py-6 text-sm text-muted-foreground">
+						No comments yet. Start the discussion!
+					</div>
+				) : (
+					comments.map((comment) => {
+						const member = comment.member;
+						const fallback = member?.user?.name?.charAt(0).toUpperCase() || "?";
+
+						return (
+							<div key={comment._id} className="flex gap-2 group">
+								<Avatar className="h-7 w-7 flex-shrink-0">
+									<AvatarImage
+										alt={member?.user?.name}
+										src={member?.user?.image}
+									/>
+									<AvatarFallback className="text-[10px]">
+										{fallback}
+									</AvatarFallback>
+								</Avatar>
+								<div className="flex-1 min-w-0">
+									<div className="flex items-center gap-2">
+										<span className="text-xs font-medium">
+											{member?.user?.name || "Unknown"}
+										</span>
+										<span className="text-[10px] text-muted-foreground">
+											{format(new Date(comment.createdAt), "MMM d, yyyy 'at' p")}
+										</span>
+									</div>
+									<p className="text-sm text-foreground mt-0.5 break-words">
+										{comment.message}
+									</p>
+								</div>
+								<Button
+									className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+									onClick={() => handleDelete(comment._id)}
+									size="icon"
+									variant="ghost"
+								>
+									<X className="w-3 h-3" />
+								</Button>
+							</div>
+						);
+					})
+				)}
+				<div ref={messagesEndRef} />
+			</div>
+
+			<div className="flex gap-2 pt-2 border-t">
+				<Input
+					className="flex-1 h-9 text-sm"
+					onChange={(e) => setMessage(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" && !e.shiftKey) {
+							e.preventDefault();
+							handleSend();
+						}
+					}}
+					placeholder="Write a comment..."
+					value={message}
+				/>
+				<Button
+					disabled={!message.trim()}
+					onClick={handleSend}
+					size="sm"
+					variant="default"
+				>
+					<Send className="w-3.5 h-3.5" />
+				</Button>
+			</div>
+		</div>
+	);
+};
+
 interface DrawerFooterProps {
 	issueId: Id<"issues">;
 	saving: boolean;
@@ -444,6 +883,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 	statuses,
 	members,
 	onDelete,
+	onClickIssue,
 }) => {
 	const updateIssue = useMutation(api.board.updateIssue);
 	const deleteIssue = useMutation(api.board.deleteIssue);
@@ -458,6 +898,13 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 	const [dueDate, setDueDate] = useState<Date>();
 	const [saving, setSaving] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState(false);
+	
+	// Fetch parent issue if this is a sub-issue
+	const parentIssue = useQuery(
+		api.board._getIssueDetails,
+		issue?.parentIssueId ? { issueId: issue.parentIssueId } : "skip"
+	);
+	
 	const normalizedMembers: SelectableMember[] = members.map((member) => ({
 		...member,
 		user: {
@@ -559,6 +1006,30 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 		}
 	};
 
+	const handleSubIssueClick = (subIssue: Issue) => {
+		onClickIssue?.(subIssue);
+	};
+
+	const handleBackToParent = () => {
+		if (parentIssue) {
+			// Navigate to parent issue by calling onClickIssue with parent
+			onClickIssue?.({
+				_id: parentIssue._id,
+				channelId: parentIssue.channelId,
+				statusId: parentIssue.statusId,
+				title: parentIssue.title,
+				description: parentIssue.description,
+				priority: parentIssue.priority,
+				assignees: parentIssue.assignees,
+				labels: parentIssue.labels,
+				dueDate: parentIssue.dueDate,
+				order: parentIssue.order,
+				createdAt: parentIssue.createdAt,
+				updatedAt: parentIssue.updatedAt,
+			});
+		}
+	};
+
 	return (
 		<Sheet onOpenChange={onOpenChange} open={open}>
 			<SheetContent
@@ -572,6 +1043,16 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					issueId={issue._id}
 					onClose={() => onOpenChange(false)}
 					onDelete={handleDelete}
+					parentIssue={parentIssue ? {
+						_id: parentIssue._id,
+						channelId: parentIssue.channelId,
+						statusId: parentIssue.statusId,
+						title: parentIssue.title,
+						order: parentIssue.order,
+						createdAt: parentIssue.createdAt,
+						updatedAt: parentIssue.updatedAt,
+					} : null}
+					onBackToParent={parentIssue ? handleBackToParent : undefined}
 				/>
 
 				<div className="flex-1 overflow-y-auto">
@@ -599,6 +1080,27 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 						title={title}
 						updatedAt={issue.updatedAt}
 					/>
+
+					<Separator className="opacity-40" />
+
+					{/* Sub-Issues Section - only for parent issues */}
+					{!issue.parentIssueId && (
+						<div className="px-6 py-5">
+							<SubIssuesSection
+								members={normalizedMembers}
+								onClickIssue={handleSubIssueClick}
+								parentIssue={issue}
+								statuses={statuses}
+							/>
+						</div>
+					)}
+
+					<Separator className="opacity-40" />
+
+					{/* Discussion Section */}
+					<div className="px-6 py-5">
+						<DiscussionSection issue={issue} members={normalizedMembers} />
+					</div>
 				</div>
 
 				<DrawerFooter

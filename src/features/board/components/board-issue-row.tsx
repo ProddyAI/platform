@@ -10,6 +10,7 @@ import {
 	Calendar,
 	Circle,
 	Flame,
+	ListChecks,
 } from "lucide-react";
 import React from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -44,6 +45,7 @@ interface IssueRowProps {
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
 	onClick: () => void;
 	isDragOverlay?: boolean;
+	subIssueStats?: { total: number; completed: number };
 }
 
 export function priorityIcon(priority?: IssuePriority, size = "w-3.5 h-3.5") {
@@ -229,12 +231,14 @@ interface BoardIssueRowContentProps {
 	issue: IssueRowProps["issue"];
 	statusColor: string;
 	assigneeData: NonNullable<IssueRowProps["assigneeData"]>;
+	subIssueStats?: { total: number; completed: number };
 }
 
 const BoardIssueRowContent = ({
 	issue,
 	statusColor,
 	assigneeData,
+	subIssueStats,
 }: BoardIssueRowContentProps) => (
 	<>
 		<PriorityIndicator priority={issue.priority} />
@@ -248,9 +252,19 @@ const BoardIssueRowContent = ({
 			{formatIssueId(issue._id)}
 		</span>
 
-		<span className="flex-1 text-sm text-foreground truncate leading-tight">
-			{issue.title}
-		</span>
+		<div className="flex-1 min-w-0 flex flex-col gap-0.5">
+			<span className="text-sm text-foreground truncate leading-tight">
+				{issue.title}
+			</span>
+			{subIssueStats && subIssueStats.total > 0 && (
+				<div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+					<ListChecks className="w-3 h-3" />
+					<span>
+						{subIssueStats.completed}/{subIssueStats.total} sub-issues
+					</span>
+				</div>
+			)}
+		</div>
 
 		<LabelsDisplay issueId={issue._id} labels={issue.labels} />
 
@@ -266,6 +280,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	assigneeData = {},
 	onClick,
 	isDragOverlay = false,
+	subIssueStats,
 }: IssueRowProps) {
 	if (isDragOverlay) {
 		return (
@@ -279,6 +294,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 					assigneeData={assigneeData}
 					issue={issue}
 					statusColor={statusColor}
+					subIssueStats={subIssueStats}
 				/>
 			</div>
 		);
@@ -326,6 +342,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				assigneeData={assigneeData}
 				issue={issue}
 				statusColor={statusColor}
+				subIssueStats={subIssueStats}
 			/>
 		</button>
 	);

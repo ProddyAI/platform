@@ -10,7 +10,7 @@ import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
 import {
-	// Keep old card/list modals for table/gantt views
+	// Keep old card/list modals for gantt view
 	BoardAddCardModal,
 	BoardAddStatusModal,
 	BoardDeleteListModal,
@@ -18,7 +18,6 @@ import {
 	BoardEditCardModal,
 	BoardEditStatusModal,
 } from "@/features/board/components/board-models";
-import BoardTableView from "@/features/board/components/board-table-view";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -44,7 +43,7 @@ const BoardPage = () => {
 
 	useDocumentTitle(channel ? `Board – ${channel.name}` : "Board");
 
-	const [view, setView] = useState<"kanban" | "table" | "gantt">("kanban");
+	const [view, setView] = useState<"kanban" | "gantt">("kanban");
 	const [searchQuery, setSearchQuery] = useState("");
 
 	// ── Status modal state ──────────────────────────────────────────────────
@@ -541,52 +540,13 @@ const BoardPage = () => {
 
 			{view !== "kanban" && (
 				<div className="flex-1 overflow-auto min-h-0">
-					{/* ── Table view ─── */}
-					{view === "table" && (
-						<BoardTableView
-							allCards={allCards.filter((c) => {
-								if (!searchQuery) return true;
-								const searchTerm = searchQuery.toLowerCase();
-								return (
-									c.title.toLowerCase().includes(searchTerm) ||
-									c.description?.toLowerCase().includes(searchTerm)
-								);
-							})}
-							lists={lists || []}
-							members={members}
-							onDeleteCard={handleDeleteCard}
-							onEditCard={(card) => {
-								setEditCardOpen({ card });
-								setCardTitle(card.title);
-								setCardDesc(card.description || "");
-								setCardLabels((card.labels || []).join(", "));
-								setCardPriority(card.priority || "");
-								setCardDueDate(
-									card.dueDate ? new Date(card.dueDate) : undefined
-								);
-								setCardAssignees(card.assignees || []);
-							}}
-						/>
-					)}
-
 					{/* ── Gantt (legacy cards) ─── */}
 					{view === "gantt" && (
 						<BoardGanttView
 							allCards={allCards}
 							lists={lists || []}
 							members={members}
-							onDeleteCard={handleDeleteCard}
-							onEditCard={(card) => {
-								setEditCardOpen({ card });
-								setCardTitle(card.title);
-								setCardDesc(card.description || "");
-								setCardLabels((card.labels || []).join(", "));
-								setCardPriority(card.priority || "");
-								setCardDueDate(
-									card.dueDate ? new Date(card.dueDate) : undefined
-								);
-								setCardAssignees(card.assignees || []);
-							}}
+							readOnly
 						/>
 					)}
 				</div>
@@ -622,6 +582,7 @@ const BoardPage = () => {
 			<BoardIssueDrawer
 				issue={selectedIssue}
 				members={members}
+				onClickIssue={handleClickIssue}
 				onDelete={() => setSelectedIssue(null)}
 				onOpenChange={(open) => {
 					setDrawerOpen(open);

@@ -1,4 +1,4 @@
-import { GanttChart, LayoutGrid, Plus, Search, Table } from "lucide-react";
+import { GanttChart, LayoutGrid, Plus, Search } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 interface BoardHeaderProps {
 	totalIssues: number;
 	statusCount: number;
-	view: "kanban" | "table" | "gantt";
-	setView: (view: "kanban" | "table" | "gantt") => void;
+	view: "kanban" | "gantt";
+	setView: (view: "kanban" | "gantt") => void;
 	onAddStatus?: () => void;
 	onSearch?: (query: string) => void;
 }
@@ -43,8 +43,8 @@ const StatusStats = ({ totalIssues, statusCount }: StatusStatsProps) => (
 );
 
 interface ViewSwitcherProps {
-	view: "kanban" | "table" | "gantt";
-	setView: (view: "kanban" | "table" | "gantt") => void;
+	view: "kanban" | "gantt";
+	setView: (view: "kanban" | "gantt") => void;
 }
 
 const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
@@ -52,7 +52,6 @@ const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
 		{(
 			[
 				{ id: "kanban", icon: LayoutGrid, label: "Board" },
-				{ id: "table", icon: Table, label: "Table" },
 				{ id: "gantt", icon: GanttChart, label: "Gantt" },
 			] as const
 		).map(({ id, icon: Icon, label }) => (
@@ -140,9 +139,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 			<SearchInput onChange={handleSearchChange} value={searchQuery} />
 
 			<div className="flex items-center gap-2">
-				<ViewSwitcher setView={setView} view={view} />
-
 				{view === "kanban" && <AddStatusButton onClick={onAddStatus} />}
+
+				<ViewSwitcher setView={setView} view={view} />
 			</div>
 		</div>
 	);

@@ -771,10 +771,13 @@ export const getIssues = query({
 		if (!channel) throw new Error("Channel not found");
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
-		return await ctx.db
+		const issues = await ctx.db
 			.query("issues")
 			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
 			.collect();
+
+		// Filter out sub-issues (only show main issues where parentIssueId is null/undefined)
+		return issues.filter((issue) => !issue.parentIssueId);
 	},
 });
 
@@ -1135,6 +1138,31 @@ export const deleteIssue = mutation({
 		if (!channel) throw new Error("Channel not found");
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
+		// Delete all sub-issues first
+		const subIssues = await ctx.db
+			.query("issues")
+			.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", issueId))
+			.collect();
+		for (const subIssue of subIssues) {
+			const subMentions = await ctx.db
+				.query("mentions")
+				.withIndex("by_issue_id", (q) => q.eq("issueId", subIssue._id))
+				.collect();
+			for (const mention of subMentions) {
+				await ctx.db.delete(mention._id);
+			}
+			await ctx.db.delete(subIssue._id);
+		}
+
+		// Delete all issue comments
+		const comments = await ctx.db
+			.query("issueComments")
+			.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
+			.collect();
+		for (const comment of comments) {
+			await ctx.db.delete(comment._id);
+		}
+
 		const mentions = await ctx.db
 			.query("mentions")
 			.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
@@ -1144,6 +1172,411 @@ export const deleteIssue = mutation({
 		}
 
 		return await ctx.db.delete(issueId);
+	},
+});
+
+// ─── SUB-ISSUE FUNCTIONS ─────────────────────────────────────────────────────
+
+export const getSubIssues = query({
+	args: { parentIssueId: v.id("issues") },
+	handler: async (ctx, { parentIssueId }) => {
+		const parentIssue = await ctx.db.get(parentIssueId);
+		if (!parentIssue) throw new Error("Parent issue not found");
+
+		const channel = await ctx.db.get(parentIssue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const subIssues = await ctx.db
+			.query("issues")
+			.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", parentIssueId))
+			.order("asc")
+			.collect();
+
+		return subIssues;
+	},
+});
+
+// Helper query to get sub-issue stats for a parent issue
+export const getSubIssueStats = query({
+	args: { parentIssueId: v.id("issues") },
+	handler: async (ctx, { parentIssueId }) => {
+		const parentIssue = await ctx.db.get(parentIssueId);
+		if (!parentIssue) return { total: 0, completed: 0 };
+
+		const channel = await ctx.db.get(parentIssue.channelId);
+		if (!channel) return { total: 0, completed: 0 };
+
+		const subIssues = await ctx.db
+			.query("issues")
+			.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", parentIssueId))
+			.collect();
+
+		const total = subIssues.length;
+		// Consider an issue completed if it's in the "Done" status
+		// For now, we'll count any status different from parent as potentially completed
+		// A more robust solution would check for a specific "Done" status name
+		const completed = subIssues.filter((issue) => {
+			// Simple heuristic: if sub-issue has a different status than parent, consider it done
+			// This can be refined based on specific status names
+			return issue.statusId !== parentIssue.statusId;
+		}).length;
+
+		return { total, completed };
+	},
+});
+
+// Batch query to get sub-issue stats for multiple issues at once
+export const getBatchSubIssueStats = query({
+	args: { issueIds: v.array(v.id("issues")) },
+	handler: async (ctx, { issueIds }) => {
+		const stats: Record<
+			string,
+			{ total: number; completed: number }
+		> = {};
+
+		for (const issueId of issueIds) {
+			const parentIssue = await ctx.db.get(issueId);
+			if (!parentIssue) {
+				stats[issueId] = { total: 0, completed: 0 };
+				continue;
+			}
+
+			const subIssues = await ctx.db
+				.query("issues")
+				.withIndex("by_parent_issue_id", (q) =>
+					q.eq("parentIssueId", issueId)
+				)
+				.collect();
+
+			const total = subIssues.length;
+			const completed = subIssues.filter((issue) => {
+				return issue.statusId !== parentIssue.statusId;
+			}).length;
+
+			stats[issueId] = { total, completed };
+		}
+
+		return stats;
+	},
+});
+
+export const createSubIssue = mutation({
+	args: {
+		parentIssueId: v.id("issues"),
+		title: v.string(),
+		description: v.optional(v.string()),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+	},
+	handler: async (ctx: MutationCtx, args) => {
+		const parentIssue = await ctx.db.get(args.parentIssueId);
+		if (!parentIssue) throw new Error("Parent issue not found");
+
+		const channel = await ctx.db.get(parentIssue.channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		// Verify caller is a member of the workspace
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Get the next order for sub-issues
+		const existingSubIssues = await ctx.db
+			.query("issues")
+			.withIndex("by_parent_issue_id", (q) =>
+				q.eq("parentIssueId", args.parentIssueId)
+			)
+			.collect();
+
+		const order = existingSubIssues.length;
+		const now = Date.now();
+
+		// Validate assignees belong to the workspace
+		const validatedAssignees =
+			args.assignees === undefined
+				? undefined
+				: (
+						await Promise.all(
+							args.assignees.map(async (assigneeId) => {
+								const assigneeMember = await ctx.db.get(assigneeId);
+								if (
+									!assigneeMember ||
+									assigneeMember.workspaceId !== channel.workspaceId
+								) {
+									return null;
+								}
+								return assigneeMember._id;
+							})
+						)
+					).filter((assigneeId): assigneeId is Id<"members"> =>
+						Boolean(assigneeId)
+					);
+
+		// Create sub-issue with same channelId and statusId as parent
+		const subIssueId = await ctx.db.insert("issues", {
+			channelId: parentIssue.channelId,
+			statusId: parentIssue.statusId, // Inherit parent's status
+			title: args.title,
+			description: args.description,
+			priority: args.priority,
+			assignees: validatedAssignees,
+			labels: args.labels,
+			dueDate: args.dueDate,
+			order,
+			parentIssueId: args.parentIssueId,
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		// Notify assignees
+		if (validatedAssignees && validatedAssignees.length > 0) {
+			try {
+				const auth = await ctx.auth.getUserIdentity();
+				if (auth) {
+					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const creator = await ctx.db
+						.query("members")
+						.withIndex("by_workspace_id_user_id", (q) =>
+							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						)
+						.unique();
+
+					if (creator) {
+						for (const assigneeId of validatedAssignees) {
+							await ctx.db.insert("mentions", {
+								mentionedMemberId: assigneeId,
+								mentionerMemberId: creator._id,
+								workspaceId: channel.workspaceId,
+								channelId: parentIssue.channelId,
+								read: false,
+								createdAt: now,
+								issueId: subIssueId,
+								issueTitle: args.title,
+							});
+
+							await ctx.scheduler.runAfter(
+								0,
+								api.email.sendIssueAssignmentEmail,
+								{
+									assigneeId,
+									issueId: subIssueId,
+									assignerId: creator._id,
+								}
+							);
+						}
+					}
+				}
+			} catch (error) {
+				console.error("Error creating mentions for sub-issue assignees:", error);
+			}
+		}
+
+		return subIssueId;
+	},
+});
+
+export const updateSubIssue = mutation({
+	args: {
+		subIssueId: v.id("issues"),
+		title: v.optional(v.string()),
+		description: v.optional(v.string()),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+	},
+	handler: async (ctx: MutationCtx, { subIssueId, ...updates }) => {
+		const subIssue = await ctx.db.get(subIssueId);
+		if (!subIssue) throw new Error("Sub-issue not found");
+		if (!subIssue.parentIssueId) throw new Error("Not a sub-issue");
+
+		const channel = await ctx.db.get(subIssue.channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		// Verify caller is a member of the workspace
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Validate assignees
+		const validatedAssignees =
+			updates.assignees === undefined
+				? undefined
+				: (
+						await Promise.all(
+							updates.assignees.map(async (assigneeId) => {
+								const assigneeMember = await ctx.db.get(assigneeId);
+								if (
+									!assigneeMember ||
+									assigneeMember.workspaceId !== channel.workspaceId
+								) {
+									return null;
+								}
+								return assigneeMember._id;
+							})
+						)
+					).filter((assigneeId): assigneeId is Id<"members"> =>
+						Boolean(assigneeId)
+					);
+
+		await ctx.db.patch(subIssueId, {
+			...updates,
+			...(updates.assignees !== undefined
+				? { assignees: validatedAssignees }
+				: {}),
+			updatedAt: Date.now(),
+		});
+
+		return subIssueId;
+	},
+});
+
+export const deleteSubIssue = mutation({
+	args: { subIssueId: v.id("issues") },
+	handler: async (ctx: MutationCtx, { subIssueId }) => {
+		const subIssue = await ctx.db.get(subIssueId);
+		if (!subIssue) throw new Error("Sub-issue not found");
+		if (!subIssue.parentIssueId) throw new Error("Not a sub-issue");
+
+		const channel = await ctx.db.get(subIssue.channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		// Verify caller is a member of the workspace
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Delete all comments on the sub-issue
+		const comments = await ctx.db
+			.query("issueComments")
+			.withIndex("by_issue_id", (q) => q.eq("issueId", subIssueId))
+			.collect();
+		for (const comment of comments) {
+			await ctx.db.delete(comment._id);
+		}
+
+		// Delete mentions
+		const mentions = await ctx.db
+			.query("mentions")
+			.withIndex("by_issue_id", (q) => q.eq("issueId", subIssueId))
+			.collect();
+		for (const mention of mentions) {
+			await ctx.db.delete(mention._id);
+		}
+
+		return await ctx.db.delete(subIssueId);
+	},
+});
+
+// ─── ISSUE COMMENT FUNCTIONS ─────────────────────────────────────────────────
+
+export const getIssueComments = query({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx, { issueId }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const comments = await ctx.db
+			.query("issueComments")
+			.withIndex("by_issue_id_created_at", (q) => q.eq("issueId", issueId))
+			.order("asc")
+			.collect();
+
+		// Enrich comments with member and user data
+		const commentsWithMembers = await Promise.all(
+			comments.map(async (comment) => {
+				const member = await ctx.db.get(comment.memberId);
+				if (!member) return null;
+
+				const user = await ctx.db.get(member.userId);
+				return {
+					...comment,
+					member: {
+						...member,
+						user: {
+							name: user?.name,
+							image: user?.image,
+							email: user?.email,
+						},
+					},
+				};
+			})
+		);
+
+		return commentsWithMembers.filter((c) => c !== null);
+	},
+});
+
+export const createIssueComment = mutation({
+	args: {
+		issueId: v.id("issues"),
+		message: v.string(),
+	},
+	handler: async (ctx: MutationCtx, { issueId, message }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+
+		const auth = await ctx.auth.getUserIdentity();
+		if (!auth) throw new Error("Not authenticated");
+
+		const userId = auth.subject.split("|")[0] as Id<"users">;
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!member) throw new Error("Member not found");
+
+		const commentId = await ctx.db.insert("issueComments", {
+			issueId,
+			memberId: member._id,
+			workspaceId: channel.workspaceId,
+			message,
+			createdAt: Date.now(),
+		});
+
+		return commentId;
+	},
+});
+
+export const deleteIssueComment = mutation({
+	args: { commentId: v.id("issueComments") },
+	handler: async (ctx: MutationCtx, { commentId }) => {
+		const comment = await ctx.db.get(commentId);
+		if (!comment) throw new Error("Comment not found");
+
+		// Verify caller is a member of the workspace
+		const channel = await ctx.db.get(comment.issueId);
+		if (!channel) throw new Error("Issue not found");
+		
+		const issueChannel = await ctx.db.get(channel.channelId);
+		if (!issueChannel) throw new Error("Channel not found");
+		
+		await assertWorkspaceMember(ctx, issueChannel.workspaceId);
+
+		return await ctx.db.delete(commentId);
 	},
 });
 

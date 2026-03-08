@@ -70,8 +70,8 @@ interface BoardKanbanViewProps {
 	showHeader?: boolean;
 	statusCount?: number;
 	totalIssues?: number;
-	view?: "kanban" | "table" | "gantt";
-	setView?: (view: "kanban" | "table" | "gantt") => void;
+	view?: "kanban" | "gantt";
+	setView?: (view: "kanban" | "gantt") => void;
 	onAddStatus?: () => void;
 	onSearch?: (query: string) => void;
 }
