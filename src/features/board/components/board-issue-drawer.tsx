@@ -321,7 +321,6 @@ const IssueContent = ({
 						</PopoverTrigger>
 						<PopoverContent align="start" className="w-auto p-0">
 							<CalendarWidget
-								mode="single"
 								onSelect={(d) => {
 									onDueDateChange(d);
 									setTimeout(onBlur, 100);

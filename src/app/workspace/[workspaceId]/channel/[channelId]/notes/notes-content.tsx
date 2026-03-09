@@ -239,16 +239,9 @@ export const NotesContent = ({
 					<div className="flex-1 overflow-hidden">
 						{memoizedNote && activeNoteId ? (
 							<BlockNoteNotesEditor
-								channelId={channelId}
-								isFullScreen={isFullScreen}
 								isLoading={isTyping || hasUnsavedChanges}
 								note={memoizedNote}
-								onContentChange={handleNoteContentChange}
-								onSaveNote={handleSave}
-								onTitleChange={handleNoteTitleChange}
-								onUpdate={memoizedOnUpdate}
-								toggleFullScreen={memoizedToggleFullScreen}
-								workspaceId={workspaceId}
+								isFullScreen={isFullScreen}
 							/>
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground">

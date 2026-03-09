@@ -41,8 +41,6 @@ interface TestChatsHeaderProps {
 
 export const TestChatsHeader = ({
 	selectedChat,
-	onToggleSidebar,
-	sidebarCollapsed,
 	onShowDailyRecap,
 }: TestChatsHeaderProps) => {
 	const router = useRouter();

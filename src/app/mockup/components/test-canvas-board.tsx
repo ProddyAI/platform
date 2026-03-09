@@ -43,7 +43,6 @@ export const TestCanvasBoard = ({
 	onItemSelect,
 	onItemUpdate,
 	onItemCreate,
-	onItemDelete,
 }: TestCanvasBoardProps) => {
 	const [isDragging, setIsDragging] = useState(false);
 	const [_dragStart, setDragStart] = useState({ x: 0, y: 0 });
