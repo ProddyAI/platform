@@ -6,21 +6,6 @@ import { z } from "zod";
  * Zod schema for AI-powered confirmation decision
  */
 const ConfirmationAnalysisSchema = z.object({
-	requiresConfirmation: z.boolean().describe(
-		"Whether this action requires user confirmation before execution. True for high-impact, irreversible, or sensitive actions."
-	),
-	riskLevel: z.enum(["low", "medium", "high", "critical"]).describe(
-		"Risk level of the action: low (safe, read-only), medium (creates/updates data), high (deletes/sends/changes permissions), critical (bulk operations, irreversible changes)"
-	),
-	impactDescription: z.string().describe(
-		"Brief description of what this action will do and its potential impact"
-	),
-	reasoning: z.string().describe(
-		"Explanation of why confirmation is or isn't needed"
-	),
-	affectedResources: z.array(z.string()).describe(
-		"List of resources that will be affected (e.g., 'email to john@example.com', '5 GitHub issues', 'admin permissions')"
-	),
 	requiresConfirmation: z
 		.boolean()
 		.describe(
@@ -50,12 +35,6 @@ const ConfirmationAnalysisSchema = z.object({
  * Zod schema for parsing user's confirmation response
  */
 const UserConfirmationResponseSchema = z.object({
-	decision: z.enum(["confirm", "cancel", "unclear"]).describe(
-		"The user's decision: confirm (proceed), cancel (abort), or unclear (ambiguous response)"
-	),
-	reasoning: z.string().describe(
-		"Brief explanation of how the decision was determined from the user's message"
-	),
 	decision: z
 		.enum(["confirm", "cancel", "unclear"])
 		.describe(
@@ -106,10 +85,6 @@ export async function analyzeActionForConfirmation(
 	}
 
 	// Format tool calls for AI analysis
-	const toolCallsSummary = toolCalls.map(tc => {
-		const args = tc.arguments ? JSON.stringify(tc.arguments, null, 2) : "{}";
-		return `Tool: ${tc.name}\nDescription: ${tc.description || "No description"}\nArguments: ${args}`;
-	}).join('\n\n');
 	const toolCallsSummary = toolCalls
 		.map((tc) => {
 			const args = tc.arguments ? JSON.stringify(tc.arguments, null, 2) : "{}";
@@ -133,7 +108,7 @@ Analyze these planned actions and determine if user confirmation is required bef
 
 **Conservative Confirmation Policy:**
 
-✅ **ALWAYS REQUIRE CONFIRMATION FOR:**
+ **ALWAYS REQUIRE CONFIRMATION FOR:**
 
 1. **Sending/Posting/Publishing:**
    - Sending emails (Gmail)
@@ -177,7 +152,7 @@ Analyze these planned actions and determine if user confirmation is required bef
    - API key changes
    - Access token modifications
 
-❌ **NO CONFIRMATION NEEDED FOR:**
+ **NO CONFIRMATION NEEDED FOR:**
 
 1. **Read-Only Operations:**
    - Fetching/listing/getting data
