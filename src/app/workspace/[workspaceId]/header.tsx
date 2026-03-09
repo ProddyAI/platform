@@ -126,25 +126,25 @@ export const WorkspaceHeader = ({
                 //   </Button>
                 // </Hint>
               ) : (
-                // <ExpandedButton workspace={workspace} />
-                <Button
-                  className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
-                  size="lg"
-                  variant="ghost"
-                >
-                  <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
-                    {workspace.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex flex-col items-start min-w-0">
-                    <span className="text-sm md:text-base font-semibold tracking-tight truncate max-w-[100px] md:max-w-full">
-                      {workspace.name}
-                    </span>
-                    <span className="text-xs text-secondary-foreground/70 hidden md:inline-block">
-                      Active Workspace
-                    </span>
-                  </div>
-                  <ChevronDown className="ml-0.5 size-3.5 shrink-0 opacity-70 transition-transform duration-200 group-hover:rotate-180" />
-                </Button>
+                <ExpandedButton workspace={workspace} />
+                // <Button
+                //   className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
+                //   size="lg"
+                //   variant="ghost"
+                // >
+                //   <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
+                //     {workspace.name.charAt(0).toUpperCase()}
+                //   </div>
+                //   <div className="flex flex-col items-start min-w-0">
+                //     <span className="text-sm md:text-base font-semibold tracking-tight truncate max-w-[100px] md:max-w-full">
+                //       {workspace.name}
+                //     </span>
+                //     <span className="text-xs text-secondary-foreground/70 hidden md:inline-block">
+                //       Active Workspace
+                //     </span>
+                //   </div>
+                //   <ChevronDown className="ml-0.5 size-3.5 shrink-0 opacity-70 transition-transform duration-200 group-hover:rotate-180" />
+                // </Button>
               )}
             </DropdownMenuTrigger>
 
