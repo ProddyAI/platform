@@ -289,8 +289,6 @@ export const CalendarPicker = ({
 								</PopoverTrigger>
 								<PopoverContent align="start" className="w-[280px] p-0">
 									<Calendar
-										initialFocus
-										mode="single"
 										onSelect={(newDate) => {
 											if (newDate) {
 												setDate(newDate);
