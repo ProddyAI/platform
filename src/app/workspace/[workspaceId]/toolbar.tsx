@@ -99,6 +99,7 @@ interface SearchDialogContentProps {
 			_id: Id<"statuses">;
 			name: string;
 			color: string;
+			channelId: Id<"channels">;
 			type: "status";
 		}>;
 	} | null;
@@ -383,7 +384,7 @@ const SearchDialogContent = ({
 										<CommandItem
 											key={status._id}
 											onSelect={onCommandSelect}
-											value={`status:${status._id}`}
+											value={`status:${status._id}:${status.channelId}`}
 										>
 											<div
 												className="w-2 h-2 rounded-full mr-2"
@@ -465,7 +466,7 @@ const SearchDialogContent = ({
 export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const _pathname = usePathname();
+	const pathname = usePathname();
 	const workspaceId = useWorkspaceId();
 	const [searchOpen, setSearchOpen] = useWorkspaceSearch();
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -476,7 +477,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 	// Board search integration
 	const { isBoardPage, setBoardSearchQuery } = useBoardSearchStore();
-	const channelId = usePathname().match(/\/channel\/([^/]+)/)?.[1] as
+	const channelId = pathname.match(/\/channel\/([^/]+)/)?.[1] as
 		| Id<"channels">
 		| undefined;
 

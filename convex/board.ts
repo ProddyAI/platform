@@ -1195,10 +1195,14 @@ export const getSubIssues = query({
 			.withIndex("by_parent_issue_id", (q) =>
 				q.eq("parentIssueId", parentIssueId)
 			)
-			.order("asc")
 			.collect();
 
-		return subIssues;
+		return subIssues.sort((a, b) => {
+			if (a.order !== b.order) {
+				return a.order - b.order;
+			}
+			return a._creationTime - b._creationTime;
+		});
 	},
 });
 
@@ -1211,6 +1215,7 @@ export const getSubIssueStats = query({
 
 		const channel = await ctx.db.get(parentIssue.channelId);
 		if (!channel) return { total: 0, completed: 0 };
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const subIssues = await ctx.db
 			.query("issues")
@@ -1238,12 +1243,25 @@ export const getBatchSubIssueStats = query({
 	args: { issueIds: v.array(v.id("issues")) },
 	handler: async (ctx, { issueIds }) => {
 		const stats: Record<string, { total: number; completed: number }> = {};
+		const checkedWorkspaceIds = new Set<string>();
+		const uniqueIssueIds = [...new Set(issueIds)];
 
-		for (const issueId of issueIds) {
+		for (const issueId of uniqueIssueIds) {
 			const parentIssue = await ctx.db.get(issueId);
 			if (!parentIssue) {
 				stats[issueId] = { total: 0, completed: 0 };
 				continue;
+			}
+
+			const channel = await ctx.db.get(parentIssue.channelId);
+			if (!channel) {
+				stats[issueId] = { total: 0, completed: 0 };
+				continue;
+			}
+
+			if (!checkedWorkspaceIds.has(channel.workspaceId)) {
+				await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+				checkedWorkspaceIds.add(channel.workspaceId);
 			}
 
 			const subIssues = await ctx.db
@@ -1723,6 +1741,27 @@ export const deleteSubIssue = mutation({
 			await ctx.db.delete(mention._id);
 		}
 
+		// Remove blocking relationships involving this sub-issue.
+		const blockingRelations = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_blocking_issue_id", (q) =>
+				q.eq("blockingIssueId", subIssueId)
+			)
+			.collect();
+		for (const relation of blockingRelations) {
+			await ctx.db.delete(relation._id);
+		}
+
+		const blockedRelations = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_blocked_issue_id", (q) =>
+				q.eq("blockedIssueId", subIssueId)
+			)
+			.collect();
+		for (const relation of blockedRelations) {
+			await ctx.db.delete(relation._id);
+		}
+
 		return await ctx.db.delete(subIssueId);
 	},
 });
@@ -1759,7 +1798,6 @@ export const getIssueComments = query({
 						user: {
 							name: user?.name,
 							image: user?.image,
-							email: user?.email,
 						},
 					},
 				};
@@ -1881,6 +1919,28 @@ export const _getIssueDetails = query({
 
 		const channel = await ctx.db.get(issue.channelId);
 		if (!channel) return null;
+
+		const status = await ctx.db.get(issue.statusId);
+
+		return {
+			...issue,
+			statusName: status?.name,
+			channelId: issue.channelId,
+			channelName: channel.name,
+			workspaceId: channel.workspaceId,
+		};
+	},
+});
+
+export const getIssueDetails = query({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx, { issueId }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) return null;
+
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) return null;
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const status = await ctx.db.get(issue.statusId);
 

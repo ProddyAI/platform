@@ -181,7 +181,7 @@ const schema = defineSchema({
 		order: v.number(),
 		createdAt: v.number(),
 		updatedAt: v.number(),
-		// Sub-issue hierarchy field (nullable - null means main issue)
+		// Sub-issue hierarchy field (optional - absent/undefined means main issue)
 		parentIssueId: v.optional(v.id("issues")),
 	})
 		.index("by_channel_id", ["channelId"])

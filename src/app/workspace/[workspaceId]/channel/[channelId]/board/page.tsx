@@ -40,9 +40,6 @@ const BoardPage = () => {
 		typeof allIssues | null
 	>(null);
 
-	// Track the last update time to detect when server data changes
-	const lastServerUpdateTimeRef = useRef<number>(Date.now());
-
 	// Clear optimistic state when server data actually updates
 	useEffect(() => {
 		if (allIssues.length > 0 && optimisticIssues) {
@@ -62,7 +59,6 @@ const BoardPage = () => {
 			// Only clear optimistic state if server data matches our optimistic update
 			// This prevents the jarring "jump" when data syncs
 			if (allMatch) {
-				lastServerUpdateTimeRef.current = Date.now();
 				setOptimisticIssues(null);
 			}
 		}
@@ -90,8 +86,10 @@ const BoardPage = () => {
 		};
 	}, [setIsBoardPage, setBoardSearchQuery]);
 
+	const displayedIssues = optimisticIssues ?? allIssues;
+
 	// Filter issues based on global search query
-	const filteredIssues = allIssues.filter((issue) => {
+	const filteredIssues = displayedIssues.filter((issue) => {
 		if (!boardSearchQuery) return true;
 		const query = boardSearchQuery.toLowerCase();
 		return (
@@ -415,7 +413,6 @@ const BoardPage = () => {
 
 		// Apply optimistic update immediately for smooth animation
 		setOptimisticIssues(nextIssues);
-		lastServerUpdateTimeRef.current = Date.now();
 
 		try {
 			await moveIssueStatus({ issueId, toStatusId, order });

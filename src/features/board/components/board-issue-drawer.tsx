@@ -989,13 +989,9 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 	const [message, setMessage] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
-	const scrollToBottom = () => {
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	};
-
 	useEffect(() => {
-		scrollToBottom();
-	}, [scrollToBottom]);
+		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, []);
 
 	const handleSend = async () => {
 		if (!message.trim()) return;
@@ -1162,7 +1158,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 
 	// Fetch parent issue if this is a sub-issue
 	const parentIssue = useQuery(
-		api.board._getIssueDetails,
+		api.board.getIssueDetails,
 		issue?.parentIssueId ? { issueId: issue.parentIssueId } : "skip"
 	);
 
