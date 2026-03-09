@@ -36,10 +36,12 @@ interface WorkspaceHeaderProps {
 
 // Helper function to show content when workspace button is collapsed
 const CollapsedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspaces"> }>(
-	function CollapsedButton({ workspace }: { workspace: Doc<"workspaces"> }) {
+	function CollapsedButton({ workspace, ...props }: { workspace: Doc<"workspaces"> }, ref) {
   return (
     <Hint align="center" label={workspace.name} side="right">
       <Button
+        ref={ref}
+        {...props}
         className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
         size="icon"
         variant="ghost"
@@ -54,12 +56,14 @@ const CollapsedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspac
 );
 
 // Helper function to show content when workspace button is expanded
-const ExpandedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspaces"> }>(function ExpandedButton({ workspace }: { workspace: Doc<"workspaces"> }) {
+const ExpandedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspaces"> }>(function ExpandedButton({ workspace, ...props  }: { workspace: Doc<"workspaces">}, ref) {
   return (
     <Button
       className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
       size="lg"
       variant="ghost"
+      ref={ref}
+      {...props}
     >
       <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
         {workspace.name.charAt(0).toUpperCase()}
@@ -114,37 +118,8 @@ export const WorkspaceHeader = ({
             <DropdownMenuTrigger asChild>
               {isCollapsed ? (
                  <CollapsedButton workspace={workspace} />
-				// <Hint align="center" label={workspace.name} side="right">
-                //   <Button
-                //     className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
-                //     size="icon"
-                //     variant="ghost"
-                //   >
-                //     <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
-                //       {workspace.name.charAt(0).toUpperCase()}
-                //     </div>
-                //   </Button>
-                // </Hint>
               ) : (
                 <ExpandedButton workspace={workspace} />
-                // <Button
-                //   className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
-                //   size="lg"
-                //   variant="ghost"
-                // >
-                //   <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-[10px] bg-secondary text-secondary-foreground shadow-md transition-standard group-hover:shadow-lg flex-shrink-0">
-                //     {workspace.name.charAt(0).toUpperCase()}
-                //   </div>
-                //   <div className="flex flex-col items-start min-w-0">
-                //     <span className="text-sm md:text-base font-semibold tracking-tight truncate max-w-[100px] md:max-w-full">
-                //       {workspace.name}
-                //     </span>
-                //     <span className="text-xs text-secondary-foreground/70 hidden md:inline-block">
-                //       Active Workspace
-                //     </span>
-                //   </div>
-                //   <ChevronDown className="ml-0.5 size-3.5 shrink-0 opacity-70 transition-transform duration-200 group-hover:rotate-180" />
-                // </Button>
               )}
             </DropdownMenuTrigger>
 
@@ -152,6 +127,7 @@ export const WorkspaceHeader = ({
               align="start"
               className="w-64 p-2"
               side="bottom"
+              onCloseAutoFocus={(e) => e.preventDefault()}
             >
               <DropdownMenuItem className="cursor-pointer capitalize rounded-[8px] p-3 mb-1 hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground">
                 <div className="relative mr-3 flex size-10 items-center justify-center overflow-hidden rounded-[10px] bg-secondary text-xl font-semibold text-secondary-foreground shadow-md">
