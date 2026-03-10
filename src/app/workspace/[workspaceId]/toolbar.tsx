@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import {
 	Bell,
@@ -12,7 +13,7 @@ import {
 	Search,
 	Sparkles,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
 	type ChangeEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
@@ -22,7 +23,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-
+import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { MentionsNotificationDialog } from "@/components/mentions-notification-dialog";
@@ -39,6 +40,7 @@ import {
 	CommandSeparator,
 } from "@/components/ui/command";
 import { UserButton } from "@/features/auth/components/user-button";
+import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetUnreadMentionsCount } from "@/features/messages/api/use-get-unread-mentions-count";
@@ -46,7 +48,6 @@ import { useAISearch } from "@/features/workspaces/api/use-ai-search";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useSearchMessages } from "@/features/workspaces/api/use-search-messages";
 import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
-
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface WorkspaceToolbarProps {
@@ -87,6 +88,22 @@ interface SearchDialogContentProps {
 		}>;
 		events?: Array<{ _id: Id<"events">; title: string; time?: string }>;
 	};
+	boardSearchResults?: {
+		issues: Array<{
+			_id: Id<"issues">;
+			title: string;
+			channelId: Id<"channels">;
+			type: "issue";
+		}>;
+		statuses: Array<{
+			_id: Id<"statuses">;
+			name: string;
+			color: string;
+			channelId: Id<"channels">;
+			type: "status";
+		}>;
+	} | null;
+	isBoardPage: boolean;
 	channels?: Array<{ _id: Id<"channels">; name: string }>;
 	members?: Array<{ _id: Id<"members">; user: { name?: string } }>;
 	aiInputRef: React.RefObject<HTMLInputElement>;
@@ -108,6 +125,8 @@ const SearchDialogContent = ({
 	isSearching,
 	aiResult,
 	searchResults,
+	boardSearchResults,
+	isBoardPage,
 	channels,
 	members,
 	aiInputRef,
@@ -339,6 +358,46 @@ const SearchDialogContent = ({
 					</CommandGroup>
 				)}
 
+				{!useAI &&
+					isBoardPage &&
+					boardSearchResults &&
+					searchQuery &&
+					!isSearching && (
+						<>
+							{boardSearchResults.issues.length > 0 && (
+								<CommandGroup heading="Issues">
+									{boardSearchResults.issues.map((issue) => (
+										<CommandItem
+											key={issue._id}
+											onSelect={onCommandSelect}
+											value={`issue:${issue._id}:${issue.channelId}`}
+										>
+											<LayoutList className="mr-2 size-4 shrink-0" />
+											<span className="truncate">{issue.title}</span>
+										</CommandItem>
+									))}
+								</CommandGroup>
+							)}
+							{boardSearchResults.statuses.length > 0 && (
+								<CommandGroup heading="Statuses">
+									{boardSearchResults.statuses.map((status) => (
+										<CommandItem
+											key={status._id}
+											onSelect={onCommandSelect}
+											value={`status:${status._id}:${status.channelId}`}
+										>
+											<div
+												className="w-2 h-2 rounded-full mr-2"
+												style={{ backgroundColor: status.color }}
+											/>
+											<span className="truncate">{status.name}</span>
+										</CommandItem>
+									))}
+								</CommandGroup>
+							)}
+						</>
+					)}
+
 				{!useAI && searchQuery && events.length > 0 && !isSearching && (
 					<CommandGroup heading="Calendar">
 						{events.map((event) => (
@@ -366,6 +425,9 @@ const SearchDialogContent = ({
 					tasks.length === 0 &&
 					cards.length === 0 &&
 					events.length === 0 &&
+					(!boardSearchResults ||
+						(boardSearchResults.issues.length === 0 &&
+							boardSearchResults.statuses.length === 0)) &&
 					!isSearching && <CommandEmpty>No results found.</CommandEmpty>}
 
 				{!useAI && !searchQuery && (
@@ -407,6 +469,7 @@ const SearchDialogContent = ({
 export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const params = useParams<{ channelId?: string }>();
 	const workspaceId = useWorkspaceId();
 	const [searchOpen, setSearchOpen] = useWorkspaceSearch();
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -414,6 +477,13 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const [userSettingsTab, setUserSettingsTab] = useState<
 		"profile" | "notifications"
 	>("profile");
+
+	// Board search integration
+	const isBoardPage = useBoardSearchStore((state) => state.isBoardPage);
+	const setBoardSearchQuery = useBoardSearchStore(
+		(state) => state.setBoardSearchQuery
+	);
+	const channelId = params?.channelId as Id<"channels"> | undefined;
 
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
@@ -426,10 +496,18 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const { data: members } = useGetMembers({ workspaceId });
 	const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
 
+	// Board search when on board page
+	const boardSearchResults = useQuery(
+		api.board.searchBoardContent,
+		isBoardPage && channelId && searchQuery.trim()
+			? { channelId: channelId as Id<"channels">, query: searchQuery }
+			: "skip"
+	);
+
 	const { results: searchResults, isLoading: isSearching } = useSearchMessages({
 		workspaceId,
-		query: useAI ? "" : searchQuery,
-		enabled: !useAI && searchQuery.trim().length > 0,
+		query: useAI || isBoardPage ? "" : searchQuery,
+		enabled: (!useAI && !isBoardPage && searchQuery.trim().length > 0) || false,
 	});
 
 	const {
@@ -448,6 +526,17 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 			resetAISearch();
 		}
 	}, [searchOpen, resetAISearch]);
+
+	// Sync search query with board search when on board page
+	const isBoardPageRef = useRef(isBoardPage);
+	useEffect(() => {
+		isBoardPageRef.current = isBoardPage;
+	}, [isBoardPage]);
+
+	useEffect(() => {
+		if (!isBoardPageRef.current) return;
+		setBoardSearchQuery(searchQuery);
+	}, [searchQuery, setBoardSearchQuery]);
 
 	useEffect(() => {
 		if (searchOpen && useAI) {
@@ -580,6 +669,24 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					router.push(`/workspace/${workspaceId}/calendar`);
 					break;
 				}
+				case "issue": {
+					if (extra) {
+						setSearchOpen(false);
+						router.push(
+							`/workspace/${workspaceId}/channel/${extra}/board?focusIssue=${id}`
+						);
+					}
+					break;
+				}
+				case "status": {
+					if (extra) {
+						setSearchOpen(false);
+						router.push(
+							`/workspace/${workspaceId}/channel/${extra}/board?focusStatus=${id}`
+						);
+					}
+					break;
+				}
 				case "channel": {
 					onChannelClick(id as Id<"channels">);
 					break;
@@ -643,8 +750,10 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						aiInputRef={aiInputRef}
 						aiResult={aiResult}
 						aiSearchInput={aiSearchInput}
+						boardSearchResults={boardSearchResults}
 						channels={channels}
 						isAISearching={isAISearching}
+						isBoardPage={isBoardPage}
 						isSearching={isSearching}
 						members={members}
 						onAiInputChange={handleAiInputChange}

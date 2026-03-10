@@ -30,6 +30,23 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
+export type BoardMember = {
+	_id: Id<"members">;
+	user?: {
+		name?: string;
+		image?: string;
+	};
+};
+
+const toSelectorMembers = (members: BoardMember[]) =>
+	members.map((member) => ({
+		...member,
+		user: {
+			...member.user,
+			name: member.user?.name || "Unknown",
+		},
+	}));
+
 // ─── STATUS MODALS ────────────────────────────────────────────────────────────
 
 const STATUS_COLOR_PRESETS = [
@@ -403,7 +420,7 @@ interface BoardAddCardModalProps {
 	setDueDate: (v: Date | undefined) => void;
 	assignees: Id<"members">[];
 	setAssignees: (v: Id<"members">[]) => void;
-	members: any[];
+	members: BoardMember[];
 	labelSuggestions: string[];
 	onAdd: () => void;
 }
@@ -428,6 +445,7 @@ export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 	onAdd,
 }) => {
 	const inputRef = useRef<HTMLInputElement>(null);
+	const selectorMembers = toSelectorMembers(members);
 
 	useEffect(() => {
 		if (open) {
@@ -460,7 +478,7 @@ export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 					value={labels}
 				/>
 				<MemberSelector
-					members={members}
+					members={selectorMembers}
 					onChange={setAssignees}
 					placeholder="Assign members"
 					selectedMemberIds={assignees}
@@ -489,41 +507,38 @@ export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 						</Select>
 					</div>
 
-				<div>
-					<Popover>
-						<PopoverTrigger asChild>
-							<Button
-								className={cn(
-									"w-full justify-start text-left font-normal",
-									!dueDate && "text-muted-foreground"
+					<div>
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									className={cn(
+										"w-full justify-start text-left font-normal",
+										!dueDate && "text-muted-foreground"
+									)}
+									variant="outline"
+								>
+									<CalendarIcon className="mr-2 h-4 w-4" />
+									{dueDate ? format(dueDate, "PPP") : <span>Due Date</span>}
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent align="start" className="w-auto p-0">
+								<Calendar onSelect={setDueDate} selected={dueDate} />
+								{dueDate && (
+									<div className="p-2 border-t">
+										<Button
+											className="text-destructive hover:text-destructive/90"
+											onClick={() => setDueDate(undefined)}
+											size="sm"
+											variant="ghost"
+										>
+											Clear Date
+										</Button>
+									</div>
 								)}
-								variant="outline"
-							>
-								<CalendarIcon className="mr-2 h-4 w-4" />
-								{dueDate ? format(dueDate, "PPP") : <span>Due Date</span>}
-							</Button>
-						</PopoverTrigger>
-						<PopoverContent align="start" className="w-auto p-0">
-							<Calendar
-								onSelect={setDueDate}
-								selected={dueDate}
-							/>
-							{dueDate && (
-								<div className="p-2 border-t">
-									<Button
-										className="text-destructive hover:text-destructive/90"
-										onClick={() => setDueDate(undefined)}
-										size="sm"
-										variant="ghost"
-									>
-										Clear Date
-									</Button>
-								</div>
-							)}
-						</PopoverContent>
-					</Popover>
+							</PopoverContent>
+						</Popover>
+					</div>
 				</div>
-			</div>
 
 				<DialogFooter>
 					<Button onClick={onAdd}>Add</Button>
@@ -556,7 +571,7 @@ interface BoardEditCardModalProps {
 	setDueDate: (v: Date | undefined) => void;
 	assignees: Id<"members">[];
 	setAssignees: (v: Id<"members">[]) => void;
-	members: any[];
+	members: BoardMember[];
 	labelSuggestions: string[];
 	watchers?: Id<"members">[];
 	currentMemberId?: Id<"members">;
@@ -625,6 +640,7 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 		"details"
 	);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const selectorMembers = toSelectorMembers(members);
 
 	useEffect(() => {
 		if (open) {
@@ -678,7 +694,7 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 
 							<div className="flex items-center gap-2">
 								<MemberSelector
-									members={members}
+									members={selectorMembers}
 									onChange={setAssignees}
 									placeholder="Assign members"
 									selectedMemberIds={assignees}
@@ -741,10 +757,7 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent align="start" className="w-auto p-0">
-											<Calendar
-												onSelect={setDueDate}
-												selected={dueDate}
-											/>
+											<Calendar onSelect={setDueDate} selected={dueDate} />
 											{dueDate && (
 												<div className="p-2 border-t">
 													<Button

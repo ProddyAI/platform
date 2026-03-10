@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -10,7 +11,7 @@ import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
 import {
-	// Keep old card/list modals for table/gantt views
+	// Keep old card/list modals for gantt view
 	BoardAddCardModal,
 	BoardAddStatusModal,
 	BoardDeleteListModal,
@@ -18,7 +19,7 @@ import {
 	BoardEditCardModal,
 	BoardEditStatusModal,
 } from "@/features/board/components/board-models";
-import BoardTableView from "@/features/board/components/board-table-view";
+import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -26,12 +27,44 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 const BoardPage = () => {
 	const channelId = useChannelId();
 	const workspaceId = useWorkspaceId();
+	const searchParams = useSearchParams();
+
+	// Board search store integration
+	const { setIsBoardPage, setBoardSearchQuery, boardSearchQuery } =
+		useBoardSearchStore();
 
 	// ── New: issues & statuses ──────────────────────────────────────────────
 	const statuses = useQuery(api.board.getStatuses, { channelId });
-	const issues = useQuery(api.board.getIssues, { channelId }) || [];
+	const allIssues = useQuery(api.board.getIssues, { channelId }) || [];
 	const _uniqueIssueLabels =
 		useQuery(api.board.getUniqueIssueLabels, { channelId }) || [];
+	const [optimisticIssues, setOptimisticIssues] = useState<
+		typeof allIssues | null
+	>(null);
+
+	// Clear optimistic state when server data actually updates
+	useEffect(() => {
+		if (allIssues.length > 0 && optimisticIssues) {
+			// Create maps for comparison
+			const serverMap = new Map(allIssues.map((i) => [i._id, i]));
+
+			// Check if all optimistic issues exist in server data with same status/order
+			const allMatch = optimisticIssues.every((optIssue) => {
+				const serverIssue = serverMap.get(optIssue._id);
+				if (!serverIssue) return false;
+				return (
+					serverIssue.statusId === optIssue.statusId &&
+					serverIssue.order === optIssue.order
+				);
+			});
+
+			// Only clear optimistic state if server data matches our optimistic update
+			// This prevents the jarring "jump" when data syncs
+			if (allMatch) {
+				setOptimisticIssues(null);
+			}
+		}
+	}, [allIssues, optimisticIssues]);
 
 	// ── Existing: lists & cards (kept for table/gantt) ──────────────────────
 	const lists = useQuery(api.board.getLists, { channelId });
@@ -44,8 +77,30 @@ const BoardPage = () => {
 
 	useDocumentTitle(channel ? `Board – ${channel.name}` : "Board");
 
-	const [view, setView] = useState<"kanban" | "table" | "gantt">("kanban");
-	const [searchQuery, setSearchQuery] = useState("");
+	const [view, setView] = useState<"kanban" | "gantt">("kanban");
+
+	// Set board page flag for global search
+	useEffect(() => {
+		setIsBoardPage(true);
+		return () => {
+			setIsBoardPage(false);
+			setBoardSearchQuery("");
+		};
+	}, [setIsBoardPage, setBoardSearchQuery]);
+
+	const displayedIssues = optimisticIssues ?? allIssues;
+	const isFilteredBoardView = boardSearchQuery.trim().length > 0;
+
+	// Filter issues based on global search query
+	const filteredIssues = displayedIssues.filter((issue) => {
+		if (!boardSearchQuery) return true;
+		const query = boardSearchQuery.toLowerCase();
+		return (
+			issue.title.toLowerCase().includes(query) ||
+			issue.description?.toLowerCase().includes(query) ||
+			issue.labels?.some((label) => label.toLowerCase().includes(query))
+		);
+	});
 
 	// ── Status modal state ──────────────────────────────────────────────────
 	const [addStatusOpen, setAddStatusOpen] = useState(false);
@@ -70,6 +125,11 @@ const BoardPage = () => {
 
 	// ── Issue drawer state ──────────────────────────────────────────────────
 	const [drawerOpen, setDrawerOpen] = useState(false);
+	const [focusedStatusId, setFocusedStatusId] = useState<Id<"statuses"> | null>(
+		null
+	);
+	const handledFocusIssueRef = useRef<string | null>(null);
+	const handledFocusStatusRef = useRef<string | null>(null);
 	const [selectedIssue, setSelectedIssue] = useState<{
 		_id: Id<"issues">;
 		title: string;
@@ -97,9 +157,6 @@ const BoardPage = () => {
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
-	const [optimisticIssues, setOptimisticIssues] = useState<
-		typeof issues | null
-	>(null);
 	const previousStatusOrderRef = useRef<typeof displayedStatuses | null>(null);
 
 	// ── Old card modal state (for table/gantt views) ────────────────────────
@@ -167,9 +224,34 @@ const BoardPage = () => {
 	}, [statuses]);
 
 	useEffect(() => {
-		// Clear optimistic issue state when fresh server data arrives.
-		setOptimisticIssues(null);
-	}, []);
+		const focusIssue = searchParams.get("focusIssue");
+		if (!focusIssue || handledFocusIssueRef.current === focusIssue) return;
+		if (allIssues.length === 0) return;
+
+		const issue = allIssues.find((candidate) => candidate._id === focusIssue);
+		if (issue) {
+			handledFocusIssueRef.current = focusIssue;
+			setSelectedIssue(issue);
+			setDrawerOpen(true);
+		}
+	}, [allIssues, searchParams]);
+
+	useEffect(() => {
+		const focusStatus = searchParams.get("focusStatus");
+		if (!focusStatus || handledFocusStatusRef.current === focusStatus) return;
+		if (!displayedStatuses.some((status) => status._id === focusStatus)) return;
+
+		handledFocusStatusRef.current = focusStatus;
+		setFocusedStatusId(focusStatus as Id<"statuses">);
+
+		const timeoutId = window.setTimeout(() => {
+			setFocusedStatusId((current) =>
+				current === focusStatus ? null : current
+			);
+		}, 2500);
+
+		return () => window.clearTimeout(timeoutId);
+	}, [displayedStatuses, searchParams]);
 
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {
@@ -214,7 +296,7 @@ const BoardPage = () => {
 		const previousOptimisticStatuses = optimisticStatuses;
 		const previousOptimisticIssues = optimisticIssues;
 		const baseStatuses = optimisticStatuses ?? statuses ?? [];
-		const baseIssues = optimisticIssues ?? issues;
+		const baseIssues = optimisticIssues ?? allIssues;
 
 		setOptimisticStatuses(
 			baseStatuses
@@ -238,7 +320,7 @@ const BoardPage = () => {
 
 	// ── Issue handlers ──────────────────────────────────────────────────────
 	const handleCreateIssue = async (statusId: Id<"statuses">, title: string) => {
-		const statusIssues = (optimisticIssues ?? issues).filter(
+		const statusIssues = (optimisticIssues ?? allIssues).filter(
 			(i) => i.statusId === statusId
 		);
 		await createIssue({
@@ -286,7 +368,7 @@ const BoardPage = () => {
 		toStatusId: Id<"statuses">,
 		order: number
 	) => {
-		const currentIssues = optimisticIssues ?? issues;
+		const currentIssues = optimisticIssues ?? allIssues;
 		const movingIssue = currentIssues.find((issue) => issue._id === issueId);
 		if (!movingIssue) return;
 
@@ -367,28 +449,21 @@ const BoardPage = () => {
 			];
 		}
 
+		// Apply optimistic update immediately for smooth animation
 		setOptimisticIssues(nextIssues);
 
 		try {
 			await moveIssueStatus({ issueId, toStatusId, order });
+			// Don't clear optimistic state - let Convex's natural reactivity handle it
+			// The allIssues query will update automatically and replace optimisticIssues
 		} catch (error) {
+			// On error, revert immediately
 			setOptimisticIssues(currentIssues);
 			throw error;
 		}
 	};
 
-	// ── Search filter ───────────────────────────────────────────────────────
-	const displayedIssues = optimisticIssues ?? issues;
-
-	const filteredIssues = displayedIssues.filter((issue) => {
-		if (!searchQuery) return true;
-		const query = searchQuery.toLowerCase();
-		return (
-			issue.title.toLowerCase().includes(query) ||
-			issue.description?.toLowerCase().includes(query) ||
-			issue.labels?.some((label) => label.toLowerCase().includes(query))
-		);
-	});
+	// ── Search filter is now handled by global search via boardSearchQuery ──
 
 	// ── Old card/list handlers (table + gantt views) ─────────────────────────
 	const handleAddCard = async (listId: Id<"lists">) => {
@@ -433,7 +508,7 @@ const BoardPage = () => {
 		setEditCardOpen(null);
 	};
 
-	const handleDeleteCard = async (cardId: Id<"cards">) => {
+	const _handleDeleteCard = async (cardId: Id<"cards">) => {
 		await deleteCard({ cardId });
 		setEditCardOpen(null);
 	};
@@ -481,6 +556,8 @@ const BoardPage = () => {
 					</div>
 				) : (
 					<BoardKanbanView
+						disableIssueDrag={isFilteredBoardView}
+						focusedStatusId={focusedStatusId}
 						issues={filteredIssues}
 						members={members}
 						onAddStatus={() => {
@@ -515,7 +592,15 @@ const BoardPage = () => {
 								throw error;
 							}
 						}}
-						onSearch={setSearchQuery}
+						onSearchClick={() => {
+							// Trigger global search open
+							const event = new KeyboardEvent("keydown", {
+								key: "k",
+								ctrlKey: true,
+								bubbles: true,
+							});
+							document.dispatchEvent(event);
+						}}
 						setView={setView}
 						showHeader
 						statusCount={displayedStatuses.length}
@@ -531,7 +616,15 @@ const BoardPage = () => {
 						setStatusColor("#5e6ad2");
 						setAddStatusOpen(true);
 					}}
-					onSearch={setSearchQuery}
+					onSearchClick={() => {
+						// Trigger global search open
+						const event = new KeyboardEvent("keydown", {
+							key: "k",
+							ctrlKey: true,
+							bubbles: true,
+						});
+						document.dispatchEvent(event);
+					}}
 					setView={setView}
 					statusCount={displayedStatuses.length}
 					totalIssues={allCards.length}
@@ -541,52 +634,13 @@ const BoardPage = () => {
 
 			{view !== "kanban" && (
 				<div className="flex-1 overflow-auto min-h-0">
-					{/* ── Table view ─── */}
-					{view === "table" && (
-						<BoardTableView
-							allCards={allCards.filter((c) => {
-								if (!searchQuery) return true;
-								const searchTerm = searchQuery.toLowerCase();
-								return (
-									c.title.toLowerCase().includes(searchTerm) ||
-									c.description?.toLowerCase().includes(searchTerm)
-								);
-							})}
-							lists={lists || []}
-							members={members}
-							onDeleteCard={handleDeleteCard}
-							onEditCard={(card) => {
-								setEditCardOpen({ card });
-								setCardTitle(card.title);
-								setCardDesc(card.description || "");
-								setCardLabels((card.labels || []).join(", "));
-								setCardPriority(card.priority || "");
-								setCardDueDate(
-									card.dueDate ? new Date(card.dueDate) : undefined
-								);
-								setCardAssignees(card.assignees || []);
-							}}
-						/>
-					)}
-
 					{/* ── Gantt (legacy cards) ─── */}
 					{view === "gantt" && (
 						<BoardGanttView
 							allCards={allCards}
 							lists={lists || []}
 							members={members}
-							onDeleteCard={handleDeleteCard}
-							onEditCard={(card) => {
-								setEditCardOpen({ card });
-								setCardTitle(card.title);
-								setCardDesc(card.description || "");
-								setCardLabels((card.labels || []).join(", "));
-								setCardPriority(card.priority || "");
-								setCardDueDate(
-									card.dueDate ? new Date(card.dueDate) : undefined
-								);
-								setCardAssignees(card.assignees || []);
-							}}
+							readOnly
 						/>
 					)}
 				</div>
@@ -620,8 +674,10 @@ const BoardPage = () => {
 
 			{/* ── Issue drawer ───────────────────────────────────────────────── */}
 			<BoardIssueDrawer
+				allIssues={allIssues}
 				issue={selectedIssue}
 				members={members}
+				onClickIssue={handleClickIssue}
 				onDelete={() => setSelectedIssue(null)}
 				onOpenChange={(open) => {
 					setDrawerOpen(open);
