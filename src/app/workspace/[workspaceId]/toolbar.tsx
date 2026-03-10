@@ -479,7 +479,10 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	>("profile");
 
 	// Board search integration
-	const { isBoardPage, setBoardSearchQuery } = useBoardSearchStore();
+	const isBoardPage = useBoardSearchStore((state) => state.isBoardPage);
+	const setBoardSearchQuery = useBoardSearchStore(
+		(state) => state.setBoardSearchQuery
+	);
 	const channelId = params?.channelId as Id<"channels"> | undefined;
 
 	// Search state

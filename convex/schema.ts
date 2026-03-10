@@ -201,6 +201,11 @@ const schema = defineSchema({
 		.index("by_blocked_issue_id", ["blockedIssueId"])
 		.index("by_blocking_issue_id", ["blockingIssueId"])
 		.index("by_channel_id_blocked_issue_id", ["channelId", "blockedIssueId"])
+		.index("by_channel_id_blocked_issue_id_blocking_issue_id", [
+			"channelId",
+			"blockedIssueId",
+			"blockingIssueId",
+		])
 		.index("by_channel_id_blocking_issue_id", ["channelId", "blockingIssueId"]),
 
 	cards: defineTable({

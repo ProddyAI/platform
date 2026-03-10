@@ -1537,12 +1537,15 @@ export const addIssueBlockingRelationship = mutation({
 		// Check if relationship already exists
 		const existing = await ctx.db
 			.query("issueBlocking")
-			.withIndex("by_channel_id_blocked_issue_id", (q) =>
-				q.eq("channelId", channelId).eq("blockedIssueId", blockedIssueId)
+			.withIndex("by_channel_id_blocked_issue_id_blocking_issue_id", (q) =>
+				q
+					.eq("channelId", channelId)
+					.eq("blockedIssueId", blockedIssueId)
+					.eq("blockingIssueId", blockingIssueId)
 			)
 			.collect();
 
-		if (existing.some((rel) => rel.blockingIssueId === blockingIssueId)) {
+		if (existing.length > 0) {
 			return; // Already blocked by this issue
 		}
 

@@ -40,15 +40,39 @@ type CardActivity = {
 
 const isCardActivityArray = (value: unknown): value is CardActivity[] => {
 	if (!Array.isArray(value)) return false;
-	return value.every(
-		(item) =>
-			typeof item === "object" &&
-			item !== null &&
-			"_id" in item &&
-			"action" in item &&
-			"timestamp" in item &&
-			"member" in item
-	);
+	return value.every((item) => {
+		if (typeof item !== "object" || item === null) return false;
+		const activity = item as Record<string, unknown>;
+		if (typeof activity._id !== "string") return false;
+		if (typeof activity.action !== "string") return false;
+		if (typeof activity.timestamp !== "number") return false;
+		if (
+			activity.details !== undefined &&
+			typeof activity.details !== "string"
+		) {
+			return false;
+		}
+
+		const member = activity.member;
+		if (typeof member !== "object" || member === null) return false;
+		const memberRecord = member as Record<string, unknown>;
+
+		const user = memberRecord.user;
+		if (typeof user !== "object" || user === null) return false;
+		const userRecord = user as Record<string, unknown>;
+
+		if (userRecord.name !== undefined && typeof userRecord.name !== "string") {
+			return false;
+		}
+		if (
+			userRecord.image !== undefined &&
+			typeof userRecord.image !== "string"
+		) {
+			return false;
+		}
+
+		return true;
+	});
 };
 
 export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
