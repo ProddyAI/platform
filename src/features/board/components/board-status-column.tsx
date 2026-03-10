@@ -60,6 +60,9 @@ interface BoardStatusColumnProps {
 	onClickIssue: (issue: Issue) => void;
 	onCreateIssue: (statusId: Id<"statuses">, title: string) => Promise<void>;
 	disableColumnDrag?: boolean;
+	subIssueStatsMap?: Record<string, { total: number; completed: number }>;
+	disableIssueDrag?: boolean;
+	isFocused?: boolean;
 }
 
 const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
@@ -71,6 +74,9 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	onClickIssue,
 	onCreateIssue,
 	disableColumnDrag = false,
+	subIssueStatsMap,
+	disableIssueDrag = false,
+	isFocused = false,
 }) => {
 	const [creating, setCreating] = useState(false);
 	const [newTitle, setNewTitle] = useState("");
@@ -141,7 +147,9 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 			className={cn(
 				"flex flex-col bg-background dark:bg-gray-900 rounded-xl border border-border/70 dark:border-gray-800 shadow-sm w-full",
 				isDragging && "opacity-50 shadow-xl border-dashed",
-				isDockedEmpty ? "h-auto" : "h-full"
+				isDockedEmpty ? "h-auto" : "h-full",
+				isFocused &&
+					"ring-2 ring-primary/60 ring-offset-2 ring-offset-background"
 			)}
 		>
 			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70 dark:border-gray-800 rounded-t-xl bg-muted/50 dark:bg-gray-800/40 flex-shrink-0">
@@ -226,10 +234,12 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						{issues.map((issue) => (
 							<BoardIssueRow
 								assigneeData={assigneeData}
+								disableDrag={disableIssueDrag}
 								issue={issue}
 								key={issue._id}
 								onClick={() => onClickIssue(issue)}
 								statusColor={status.color}
+								subIssueStats={subIssueStatsMap?.[issue._id]}
 							/>
 						))}
 

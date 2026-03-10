@@ -4,7 +4,6 @@ import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
 import { Loader2, Wand2 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import type { Note } from "../types";
 import { BlockNoteEditor } from "./blocknote-editor";

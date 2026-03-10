@@ -42,6 +42,16 @@ interface ChannelIconProps {
 	onImageError?: () => void;
 }
 
+const emojiSizeClasses: Record<
+	NonNullable<ChannelIconProps["size"]>,
+	string
+> = {
+	sm: "h-5 w-5 text-base",
+	md: "h-6 w-6 text-lg",
+	lg: "h-10 w-10 text-3xl",
+	xl: "h-20 w-20 text-6xl",
+};
+
 const ChannelIcon = ({
 	iconImageUrl,
 	icon,
@@ -75,7 +85,11 @@ const ChannelIcon = ({
 
 	if (icon) {
 		return (
-			<span className={size === "sm" ? "text-xl" : "text-2xl"}>{icon}</span>
+			<span
+				className={`${emojiSizeClasses[size] ?? emojiSizeClasses.sm} inline-flex items-center justify-center leading-none`}
+			>
+				{icon}
+			</span>
 		);
 	}
 
@@ -811,7 +825,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 							size="sm"
 							variant="ghost"
 						>
-							<div className="flex items-center">
+							<div className="flex min-w-0 items-center gap-2">
 								<ChannelIcon
 									icon={channel.icon}
 									iconImageUrl={channel.iconImageUrl}
@@ -827,7 +841,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 
 					<DialogContent className="overflow-hidden bg-gray-50 p-0">
 						<DialogHeader className="border-b bg-white p-4">
-							<DialogTitle className="flex items-center">
+							<DialogTitle className="flex items-center gap-2">
 								<ChannelIcon
 									icon={channel.icon}
 									iconImageUrl={channel.iconImageUrl}

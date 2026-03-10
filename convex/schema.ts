@@ -181,10 +181,32 @@ const schema = defineSchema({
 		order: v.number(),
 		createdAt: v.number(),
 		updatedAt: v.number(),
+		// Sub-issue hierarchy field (optional - absent/undefined means main issue)
+		parentIssueId: v.optional(v.id("issues")),
 	})
 		.index("by_channel_id", ["channelId"])
 		.index("by_status_id", ["statusId"])
-		.index("by_channel_id_status_id", ["channelId", "statusId"]),
+		.index("by_channel_id_status_id", ["channelId", "statusId"])
+		.index("by_parent_issue_id", ["parentIssueId"]),
+
+	// Issue blocking relationships (which issue blocks which)
+	issueBlocking: defineTable({
+		channelId: v.id("channels"),
+		blockedIssueId: v.id("issues"), // The issue that is blocked
+		blockingIssueId: v.id("issues"), // The issue that is blocking
+		createdAt: v.number(),
+		createdBy: v.id("members"),
+	})
+		.index("by_channel_id", ["channelId"])
+		.index("by_blocked_issue_id", ["blockedIssueId"])
+		.index("by_blocking_issue_id", ["blockingIssueId"])
+		.index("by_channel_id_blocked_issue_id", ["channelId", "blockedIssueId"])
+		.index("by_channel_id_blocked_issue_id_blocking_issue_id", [
+			"channelId",
+			"blockedIssueId",
+			"blockingIssueId",
+		])
+		.index("by_channel_id_blocking_issue_id", ["channelId", "blockingIssueId"]),
 
 	cards: defineTable({
 		listId: v.id("lists"),
@@ -228,6 +250,34 @@ const schema = defineSchema({
 		.index("by_card_id", ["cardId"])
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id", ["workspaceId"]),
+
+	// Issue comments for discussions on issues
+	issueComments: defineTable(
+		v.union(
+			v.object({
+				issueId: v.id("issues"),
+				memberId: v.id("members"),
+				workspaceId: v.id("workspaces"),
+				content: v.string(),
+				message: v.optional(v.string()),
+				createdAt: v.number(),
+				updatedAt: v.optional(v.number()),
+			}),
+			v.object({
+				issueId: v.id("issues"),
+				memberId: v.id("members"),
+				workspaceId: v.id("workspaces"),
+				message: v.string(),
+				content: v.optional(v.string()),
+				createdAt: v.number(),
+				updatedAt: v.optional(v.number()),
+			})
+		)
+	)
+		.index("by_issue_id", ["issueId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_issue_id_created_at", ["issueId", "createdAt"]),
 
 	// Card activity log for audit trail
 	card_activity: defineTable({
