@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -26,6 +27,7 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 const BoardPage = () => {
 	const channelId = useChannelId();
 	const workspaceId = useWorkspaceId();
+	const searchParams = useSearchParams();
 
 	// Board search store integration
 	const { setIsBoardPage, setBoardSearchQuery, boardSearchQuery } =
@@ -123,6 +125,11 @@ const BoardPage = () => {
 
 	// ── Issue drawer state ──────────────────────────────────────────────────
 	const [drawerOpen, setDrawerOpen] = useState(false);
+	const [focusedStatusId, setFocusedStatusId] = useState<Id<"statuses"> | null>(
+		null
+	);
+	const handledFocusIssueRef = useRef<string | null>(null);
+	const handledFocusStatusRef = useRef<string | null>(null);
 	const [selectedIssue, setSelectedIssue] = useState<{
 		_id: Id<"issues">;
 		title: string;
@@ -215,6 +222,36 @@ const BoardPage = () => {
 	useEffect(() => {
 		if (statuses) setOptimisticStatuses(null);
 	}, [statuses]);
+
+	useEffect(() => {
+		const focusIssue = searchParams.get("focusIssue");
+		if (!focusIssue || handledFocusIssueRef.current === focusIssue) return;
+		if (allIssues.length === 0) return;
+
+		const issue = allIssues.find((candidate) => candidate._id === focusIssue);
+		if (issue) {
+			handledFocusIssueRef.current = focusIssue;
+			setSelectedIssue(issue);
+			setDrawerOpen(true);
+		}
+	}, [allIssues, searchParams]);
+
+	useEffect(() => {
+		const focusStatus = searchParams.get("focusStatus");
+		if (!focusStatus || handledFocusStatusRef.current === focusStatus) return;
+		if (!displayedStatuses.some((status) => status._id === focusStatus)) return;
+
+		handledFocusStatusRef.current = focusStatus;
+		setFocusedStatusId(focusStatus as Id<"statuses">);
+
+		const timeoutId = window.setTimeout(() => {
+			setFocusedStatusId((current) =>
+				current === focusStatus ? null : current
+			);
+		}, 2500);
+
+		return () => window.clearTimeout(timeoutId);
+	}, [displayedStatuses, searchParams]);
 
 	// ── Status handlers ─────────────────────────────────────────────────────
 	const handleAddStatus = async () => {
@@ -520,6 +557,7 @@ const BoardPage = () => {
 				) : (
 					<BoardKanbanView
 						disableIssueDrag={isFilteredBoardView}
+						focusedStatusId={focusedStatusId}
 						issues={filteredIssues}
 						members={members}
 						onAddStatus={() => {

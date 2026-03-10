@@ -62,6 +62,7 @@ interface BoardStatusColumnProps {
 	disableColumnDrag?: boolean;
 	subIssueStatsMap?: Record<string, { total: number; completed: number }>;
 	disableIssueDrag?: boolean;
+	isFocused?: boolean;
 }
 
 const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
@@ -75,6 +76,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	disableColumnDrag = false,
 	subIssueStatsMap,
 	disableIssueDrag = false,
+	isFocused = false,
 }) => {
 	const [creating, setCreating] = useState(false);
 	const [newTitle, setNewTitle] = useState("");
@@ -145,7 +147,9 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 			className={cn(
 				"flex flex-col bg-background dark:bg-gray-900 rounded-xl border border-border/70 dark:border-gray-800 shadow-sm w-full",
 				isDragging && "opacity-50 shadow-xl border-dashed",
-				isDockedEmpty ? "h-auto" : "h-full"
+				isDockedEmpty ? "h-auto" : "h-full",
+				isFocused &&
+					"ring-2 ring-primary/60 ring-offset-2 ring-offset-background"
 			)}
 		>
 			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70 dark:border-gray-800 rounded-t-xl bg-muted/50 dark:bg-gray-800/40 flex-shrink-0">

@@ -77,6 +77,7 @@ interface BoardKanbanViewProps {
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
 	disableIssueDrag?: boolean;
+	focusedStatusId?: Id<"statuses"> | null;
 }
 
 interface Member {
@@ -110,6 +111,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	setView,
 	onAddStatus,
 	disableIssueDrag = false,
+	focusedStatusId = null,
 }) => {
 	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
 	const issueIds = useMemo(() => issues.map((issue) => issue._id), [issues]);
@@ -327,6 +329,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 										<BoardStatusColumn
 											assigneeData={memberDataMap}
 											disableIssueDrag={disableIssueDrag}
+											isFocused={focusedStatusId === status._id}
 											issues={issuesByStatus[status._id] || []}
 											onClickIssue={onClickIssue}
 											onCreateIssue={onCreateIssue}

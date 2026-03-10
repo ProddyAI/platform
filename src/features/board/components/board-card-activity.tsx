@@ -27,7 +27,19 @@ interface BoardCardActivityProps {
 
 type CardActivity = {
 	_id: Id<"card_activity">;
-	action: string;
+	action:
+		| "created"
+		| "updated"
+		| "moved"
+		| "assigned"
+		| "unassigned"
+		| "completed"
+		| "reopened"
+		| "commented"
+		| "priority_changed"
+		| "due_date_changed"
+		| "blocked"
+		| "unblocked";
 	details?: string;
 	timestamp: number;
 	member: {
@@ -87,7 +99,7 @@ export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 		? rawActivities
 		: undefined;
 
-	const getActivityIcon = (action: string) => {
+	const getActivityIcon = (action: CardActivity["action"]) => {
 		switch (action) {
 			case "created":
 				return <Plus className="w-3.5 h-3.5 text-green-600" />;
@@ -185,7 +197,11 @@ export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 
 			{/* Activity list */}
 			<ScrollArea className="h-[300px] rounded-md border p-3">
-				{hasInvalidActivityData ? (
+				{rawActivities === undefined ? (
+					<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+						Loading activity...
+					</div>
+				) : hasInvalidActivityData ? (
 					<div className="flex items-center justify-center h-full text-sm text-destructive">
 						Unable to render activity: invalid activity data.
 					</div>
