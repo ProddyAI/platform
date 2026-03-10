@@ -5,6 +5,83 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getUserEmailFromMemberId, getUserNameFromMemberId } from "./utils";
 
+const DONE_STATUS_KEYWORDS = [
+	"done",
+	"completed",
+	"complete",
+	"closed",
+	"resolved",
+];
+
+const isDoneStatusName = (name: string) => {
+	const normalized = name.trim().toLowerCase();
+	return DONE_STATUS_KEYWORDS.some((keyword) => normalized === keyword);
+};
+
+const getCompletedStatusIdsForChannel = async (
+	ctx: QueryCtx,
+	channelId: Id<"channels">
+): Promise<Set<Id<"statuses">>> => {
+	const statuses = await ctx.db
+		.query("statuses")
+		.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+		.collect();
+
+	return new Set(
+		statuses
+			.filter((status) => isDoneStatusName(status.name))
+			.map((status) => status._id)
+	);
+};
+
+const deleteIssueCascade = async (
+	ctx: MutationCtx,
+	issueId: Id<"issues">
+): Promise<void> => {
+	const childIssues = await ctx.db
+		.query("issues")
+		.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", issueId))
+		.collect();
+
+	for (const childIssue of childIssues) {
+		await deleteIssueCascade(ctx, childIssue._id);
+	}
+
+	const comments = await ctx.db
+		.query("issueComments")
+		.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
+		.collect();
+	for (const comment of comments) {
+		await ctx.db.delete(comment._id);
+	}
+
+	const mentions = await ctx.db
+		.query("mentions")
+		.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
+		.collect();
+	for (const mention of mentions) {
+		await ctx.db.delete(mention._id);
+	}
+
+	const blockingRelations = await ctx.db
+		.query("issueBlocking")
+		.withIndex("by_blocking_issue_id", (q) => q.eq("blockingIssueId", issueId))
+		.collect();
+	for (const relation of blockingRelations) {
+		await ctx.db.delete(relation._id);
+	}
+
+	const blockedRelations = await ctx.db
+		.query("issueBlocking")
+		.withIndex("by_blocked_issue_id", (q) => q.eq("blockedIssueId", issueId))
+		.collect();
+	for (const relation of blockedRelations) {
+		await ctx.db.delete(relation._id);
+	}
+
+	await ctx.db.delete(issueId);
+};
+
 // LISTS
 export const createList = mutation({
 	args: { channelId: v.id("channels"), title: v.string(), order: v.number() },
@@ -1141,40 +1218,8 @@ export const deleteIssue = mutation({
 		if (!channel) throw new Error("Channel not found");
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
-		// Delete all sub-issues first
-		const subIssues = await ctx.db
-			.query("issues")
-			.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", issueId))
-			.collect();
-		for (const subIssue of subIssues) {
-			const subMentions = await ctx.db
-				.query("mentions")
-				.withIndex("by_issue_id", (q) => q.eq("issueId", subIssue._id))
-				.collect();
-			for (const mention of subMentions) {
-				await ctx.db.delete(mention._id);
-			}
-			await ctx.db.delete(subIssue._id);
-		}
-
-		// Delete all issue comments
-		const comments = await ctx.db
-			.query("issueComments")
-			.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
-			.collect();
-		for (const comment of comments) {
-			await ctx.db.delete(comment._id);
-		}
-
-		const mentions = await ctx.db
-			.query("mentions")
-			.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
-			.collect();
-		for (const mention of mentions) {
-			await ctx.db.delete(mention._id);
-		}
-
-		return await ctx.db.delete(issueId);
+		await deleteIssueCascade(ctx, issueId);
+		return;
 	},
 });
 
@@ -1224,15 +1269,15 @@ export const getSubIssueStats = query({
 			)
 			.collect();
 
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx,
+			parentIssue.channelId
+		);
+
 		const total = subIssues.length;
-		// Consider an issue completed if it's in the "Done" status
-		// For now, we'll count any status different from parent as potentially completed
-		// A more robust solution would check for a specific "Done" status name
-		const completed = subIssues.filter((issue) => {
-			// Simple heuristic: if sub-issue has a different status than parent, consider it done
-			// This can be refined based on specific status names
-			return issue.statusId !== parentIssue.statusId;
-		}).length;
+		const completed = subIssues.filter((issue) =>
+			completedStatusIds.has(issue.statusId)
+		).length;
 
 		return { total, completed };
 	},
@@ -1244,6 +1289,7 @@ export const getBatchSubIssueStats = query({
 	handler: async (ctx, { issueIds }) => {
 		const stats: Record<string, { total: number; completed: number }> = {};
 		const checkedWorkspaceIds = new Set<string>();
+		const completedStatusIdsByChannel = new Map<string, Set<Id<"statuses">>>();
 		const uniqueIssueIds = [...new Set(issueIds)];
 
 		for (const issueId of uniqueIssueIds) {
@@ -1269,10 +1315,24 @@ export const getBatchSubIssueStats = query({
 				.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", issueId))
 				.collect();
 
+			let completedStatusIds = completedStatusIdsByChannel.get(
+				parentIssue.channelId
+			);
+			if (!completedStatusIds) {
+				completedStatusIds = await getCompletedStatusIdsForChannel(
+					ctx,
+					parentIssue.channelId
+				);
+				completedStatusIdsByChannel.set(
+					parentIssue.channelId,
+					completedStatusIds
+				);
+			}
+
 			const total = subIssues.length;
-			const completed = subIssues.filter((issue) => {
-				return issue.statusId !== parentIssue.statusId;
-			}).length;
+			const completed = subIssues.filter((issue) =>
+				completedStatusIds.has(issue.statusId)
+			).length;
 
 			stats[issueId] = { total, completed };
 		}
@@ -1441,21 +1501,37 @@ export const addIssueBlockingRelationship = mutation({
 			throw new Error("Issues must belong to the same channel");
 		}
 
-		// Check for circular dependency
-		const existingBlocking = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_blocked_issue_id", (q) =>
-				q.eq("blockedIssueId", blockingIssueId)
-			)
-			.collect();
+		// Check for circular dependency (multi-hop)
+		const visited = new Set<string>();
+		const queue: Id<"issues">[] = [blockedIssueId];
+		while (queue.length > 0) {
+			const currentIssueId = queue.shift();
+			if (!currentIssueId) continue;
 
-		const hasCircular = existingBlocking.some(
-			(rel) => rel.blockingIssueId === blockedIssueId
-		);
-		if (hasCircular) {
-			throw new Error(
-				"Circular dependency detected: the issue you're blocking already blocks this issue"
-			);
+			const visitedKey = String(currentIssueId);
+			if (visited.has(visitedKey)) {
+				continue;
+			}
+			visited.add(visitedKey);
+
+			const outboundBlocking = await ctx.db
+				.query("issueBlocking")
+				.withIndex("by_blocked_issue_id", (q) =>
+					q.eq("blockedIssueId", currentIssueId)
+				)
+				.collect();
+
+			for (const rel of outboundBlocking) {
+				if (rel.blockingIssueId === blockingIssueId) {
+					throw new Error(
+						"Circular dependency detected: the issue you're blocking already blocks this issue"
+					);
+				}
+
+				if (!visited.has(String(rel.blockingIssueId))) {
+					queue.push(rel.blockingIssueId);
+				}
+			}
 		}
 
 		// Check if relationship already exists
@@ -1543,6 +1619,9 @@ export const createSubIssue = mutation({
 	handler: async (ctx: MutationCtx, args) => {
 		const parentIssue = await ctx.db.get(args.parentIssueId);
 		if (!parentIssue) throw new Error("Parent issue not found");
+		if (parentIssue.parentIssueId) {
+			throw new Error("Cannot create subtask of a subtask");
+		}
 
 		const channel = await ctx.db.get(parentIssue.channelId);
 		if (!channel) throw new Error("Channel not found");
@@ -1723,46 +1802,8 @@ export const deleteSubIssue = mutation({
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
-		// Delete all comments on the sub-issue
-		const comments = await ctx.db
-			.query("issueComments")
-			.withIndex("by_issue_id", (q) => q.eq("issueId", subIssueId))
-			.collect();
-		for (const comment of comments) {
-			await ctx.db.delete(comment._id);
-		}
-
-		// Delete mentions
-		const mentions = await ctx.db
-			.query("mentions")
-			.withIndex("by_issue_id", (q) => q.eq("issueId", subIssueId))
-			.collect();
-		for (const mention of mentions) {
-			await ctx.db.delete(mention._id);
-		}
-
-		// Remove blocking relationships involving this sub-issue.
-		const blockingRelations = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_blocking_issue_id", (q) =>
-				q.eq("blockingIssueId", subIssueId)
-			)
-			.collect();
-		for (const relation of blockingRelations) {
-			await ctx.db.delete(relation._id);
-		}
-
-		const blockedRelations = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_blocked_issue_id", (q) =>
-				q.eq("blockedIssueId", subIssueId)
-			)
-			.collect();
-		for (const relation of blockedRelations) {
-			await ctx.db.delete(relation._id);
-		}
-
-		return await ctx.db.delete(subIssueId);
+		await deleteIssueCascade(ctx, subIssueId);
+		return;
 	},
 });
 
@@ -1791,8 +1832,11 @@ export const getIssueComments = query({
 				if (!member) return null;
 
 				const user = await ctx.db.get(member.userId);
+				const normalizedContent = comment.content ?? comment.message ?? "";
 				return {
 					...comment,
+					content: normalizedContent,
+					message: normalizedContent,
 					member: {
 						...member,
 						user: {
@@ -1837,7 +1881,7 @@ export const createIssueComment = mutation({
 			issueId,
 			memberId: member._id,
 			workspaceId: channel.workspaceId,
-			message,
+			content: message,
 			createdAt: Date.now(),
 		});
 

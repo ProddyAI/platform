@@ -20,7 +20,9 @@ import {
 	SortableContext,
 	sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
+import { useQuery } from "convex/react";
 import React, { useCallback, useMemo } from "react";
+import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import BoardHeader from "./board-header";
 import type { IssuePriority } from "./board-issue-row";
@@ -74,6 +76,7 @@ interface BoardKanbanViewProps {
 	setView?: (view: "kanban" | "gantt") => void;
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
+	disableIssueDrag?: boolean;
 }
 
 interface Member {
@@ -106,8 +109,14 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	view = "kanban",
 	setView,
 	onAddStatus,
+	disableIssueDrag = false,
 }) => {
 	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
+	const issueIds = useMemo(() => issues.map((issue) => issue._id), [issues]);
+	const subIssueStatsMap = useQuery(
+		api.board.getBatchSubIssueStats,
+		issueIds.length > 0 ? { issueIds } : "skip"
+	);
 
 	const memberDataMap = useMemo(() => {
 		const map: Record<Id<"members">, { name: string; image?: string }> = {};
@@ -160,6 +169,10 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		const current = active.data.current;
 		if (!current) return;
 		const type = current.type;
+		if (type === "issue" && disableIssueDrag) {
+			setActiveItem(null);
+			return;
+		}
 		if (type === "status") {
 			setActiveItem({ type: "status", item: current.status });
 		} else if (type === "issue") {
@@ -172,9 +185,16 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
-		if (!active || !over || active.id === over.id) return;
+		if (!active || !over || active.id === over.id) {
+			setActiveItem(null);
+			return;
+		}
 
 		const activeType = active.data.current?.type;
+		if (activeType === "issue" && disableIssueDrag) {
+			setActiveItem(null);
+			return;
+		}
 
 		if (activeType === "status") {
 			// Normalize over.id so that if we're hovering over an inner droppable
@@ -306,12 +326,14 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 									>
 										<BoardStatusColumn
 											assigneeData={memberDataMap}
+											disableIssueDrag={disableIssueDrag}
 											issues={issuesByStatus[status._id] || []}
 											onClickIssue={onClickIssue}
 											onCreateIssue={onCreateIssue}
 											onDeleteStatus={() => onDeleteStatus(status)}
 											onEditStatus={() => onEditStatus(status)}
 											status={status}
+											subIssueStatsMap={subIssueStatsMap}
 										/>
 									</div>
 								))}
@@ -329,6 +351,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 									// No-op: drag overlay is not interactive
 								}}
 								statusColor={activeIssueStatus?.color || "#b4b4b4"}
+								subIssueStats={subIssueStatsMap?.[activeItem.item._id]}
 							/>
 						)}
 						{activeItem?.type === "status" && (

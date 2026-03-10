@@ -127,6 +127,19 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 	return fallback;
 };
 
+const DONE_STATUS_KEYWORDS = [
+	"done",
+	"completed",
+	"complete",
+	"closed",
+	"resolved",
+];
+
+const getDoneStatus = (statuses: Status[]) =>
+	statuses.find((status) =>
+		DONE_STATUS_KEYWORDS.includes(status.name.trim().toLowerCase())
+	);
+
 interface DrawerHeaderProps {
 	currentStatus?: Status;
 	issueId: Id<"issues">;
@@ -514,33 +527,29 @@ const SubIssuesSection = ({
 		isCompleted: boolean
 	) => {
 		try {
-			// Toggle status: if completed, move back to parent status; if not completed, move to a different status
-			// We'll use the first non-parent status as the "completed" status, or last status if available
 			const subIssue = subIssues?.find((s) => s._id === subIssueId);
 			if (!subIssue) return;
 
+			const doneStatus = getDoneStatus(statuses);
+			if (!doneStatus) {
+				toast.error("No completed status configured");
+				return;
+			}
+
 			if (isCompleted) {
-				// Mark as incomplete - move back to parent's status
+				if (subIssue.statusId !== doneStatus._id) {
+					return;
+				}
+
 				await updateIssue({
 					issueId: subIssueId,
 					statusId: parentIssue.statusId,
 				});
 			} else {
-				// Mark as complete - move to a different status (preferably "Done" or last status)
-				// Find a status that's different from parent's status
-				const doneStatus =
-					statuses.find(
-						(s) =>
-							s.name.toLowerCase().includes("done") ||
-							s.name.toLowerCase().includes("complete")
-					) || statuses.find((s) => s._id !== parentIssue.statusId);
-
-				if (doneStatus) {
-					await updateIssue({
-						issueId: subIssueId,
-						statusId: doneStatus._id,
-					});
-				}
+				await updateIssue({
+					issueId: subIssueId,
+					statusId: doneStatus._id,
+				});
 			}
 		} catch (error) {
 			console.error("Failed to toggle sub-issue completion:", error);
@@ -554,8 +563,9 @@ const SubIssuesSection = ({
 		);
 	}
 
-	const completedCount = subIssues.filter(
-		(s) => s.statusId !== parentIssue.statusId
+	const doneStatusId = getDoneStatus(statuses)?._id;
+	const completedCount = subIssues.filter((s) =>
+		Boolean(doneStatusId && s.statusId === doneStatusId)
 	).length;
 	const totalCount = subIssues.length;
 
@@ -592,7 +602,9 @@ const SubIssuesSection = ({
 
 			<div className="space-y-2">
 				{subIssues.map((subIssue) => {
-					const isCompleted = subIssue.statusId !== parentIssue.statusId;
+					const isCompleted = Boolean(
+						doneStatusId && subIssue.statusId === doneStatusId
+					);
 					const status = statuses.find((s) => s._id === subIssue.statusId);
 
 					return (
@@ -600,6 +612,14 @@ const SubIssuesSection = ({
 							className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors group cursor-pointer"
 							key={subIssue._id}
 							onClick={() => onClickIssue(subIssue)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									onClickIssue(subIssue);
+								}
+							}}
+							role="button"
+							tabIndex={0}
 						>
 							<div
 								className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
@@ -660,6 +680,7 @@ const SubIssuesSection = ({
 										e.stopPropagation();
 										handleToggleCompletion(subIssue._id, isCompleted);
 									}}
+									onKeyDown={(e) => e.stopPropagation()}
 									size="icon"
 									title={
 										isCompleted ? "Mark as incomplete" : "Mark as complete"
@@ -674,6 +695,7 @@ const SubIssuesSection = ({
 										e.stopPropagation();
 										handleDelete(subIssue._id);
 									}}
+									onKeyDown={(e) => e.stopPropagation()}
 									size="icon"
 									title="Delete sub-issue"
 									variant="ghost"
@@ -1059,7 +1081,7 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 										</span>
 									</div>
 									<p className="text-sm text-foreground mt-0.5 break-words">
-										{comment.message}
+										{comment.content}
 									</p>
 								</div>
 								<Button

@@ -42,6 +42,16 @@ interface ChannelIconProps {
 	onImageError?: () => void;
 }
 
+const emojiSizeClasses: Record<
+	NonNullable<ChannelIconProps["size"]>,
+	string
+> = {
+	sm: "h-5 w-5 text-base",
+	md: "h-6 w-6 text-lg",
+	lg: "h-10 w-10 text-3xl",
+	xl: "h-20 w-20 text-6xl",
+};
+
 const ChannelIcon = ({
 	iconImageUrl,
 	icon,
@@ -76,15 +86,7 @@ const ChannelIcon = ({
 	if (icon) {
 		return (
 			<span
-				className={`${
-					size === "sm"
-						? "h-5 w-5 text-base"
-						: size === "md"
-							? "h-6 w-6 text-lg"
-							: size === "lg"
-								? "h-10 w-10 text-3xl"
-								: "h-20 w-20 text-6xl"
-				} inline-flex items-center justify-center leading-none`}
+				className={`${emojiSizeClasses[size] ?? emojiSizeClasses.sm} inline-flex items-center justify-center leading-none`}
 			>
 				{icon}
 			</span>

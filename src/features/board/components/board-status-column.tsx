@@ -7,7 +7,6 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useQuery } from "convex/react";
 import {
 	GripVertical,
 	MoreHorizontal,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
-import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +60,8 @@ interface BoardStatusColumnProps {
 	onClickIssue: (issue: Issue) => void;
 	onCreateIssue: (statusId: Id<"statuses">, title: string) => Promise<void>;
 	disableColumnDrag?: boolean;
+	subIssueStatsMap?: Record<string, { total: number; completed: number }>;
+	disableIssueDrag?: boolean;
 }
 
 const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
@@ -73,17 +73,12 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	onClickIssue,
 	onCreateIssue,
 	disableColumnDrag = false,
+	subIssueStatsMap,
+	disableIssueDrag = false,
 }) => {
 	const [creating, setCreating] = useState(false);
 	const [newTitle, setNewTitle] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
-
-	// Fetch sub-issue stats for all issues in this status
-	const issueIds = issues.map((i) => i._id);
-	const subIssueStats = useQuery(
-		api.board.getBatchSubIssueStats,
-		issueIds.length > 0 ? { issueIds } : "skip"
-	);
 
 	const {
 		attributes,
@@ -235,11 +230,12 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						{issues.map((issue) => (
 							<BoardIssueRow
 								assigneeData={assigneeData}
+								disableDrag={disableIssueDrag}
 								issue={issue}
 								key={issue._id}
 								onClick={() => onClickIssue(issue)}
 								statusColor={status.color}
-								subIssueStats={subIssueStats?.[issue._id]}
+								subIssueStats={subIssueStatsMap?.[issue._id]}
 							/>
 						))}
 

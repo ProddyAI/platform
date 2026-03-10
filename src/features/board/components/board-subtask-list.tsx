@@ -17,14 +17,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-
-type BoardMember = {
-	_id: Id<"members">;
-	user?: {
-		name?: string;
-		image?: string;
-	};
-};
+import type { BoardMember } from "./board-models";
 
 interface BoardSubtaskListProps {
 	parentCardId: Id<"cards">;

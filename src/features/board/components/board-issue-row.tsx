@@ -46,6 +46,7 @@ interface IssueRowProps {
 	onClick: () => void;
 	isDragOverlay?: boolean;
 	subIssueStats?: { total: number; completed: number };
+	disableDrag?: boolean;
 }
 
 export function priorityIcon(priority?: IssuePriority, size = "w-3.5 h-3.5") {
@@ -281,6 +282,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	onClick,
 	isDragOverlay = false,
 	subIssueStats,
+	disableDrag = false,
 }: IssueRowProps) {
 	if (isDragOverlay) {
 		return (
@@ -311,6 +313,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	} = useSortable({
 		id: issue._id,
 		data: { type: "issue", issue },
+		disabled: disableDrag,
 	});
 
 	const style = {
@@ -331,7 +334,8 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 			{...attributes}
 			{...listeners}
 			className={cn(
-				"group flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/60 dark:hover:bg-gray-800/60 cursor-pointer transition-colors duration-100 border border-transparent hover:border-border/40 select-none",
+				"group flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/60 dark:hover:bg-gray-800/60 transition-colors duration-100 border border-transparent hover:border-border/40 select-none",
+				disableDrag ? "cursor-pointer" : "cursor-grab",
 				isDragging && "opacity-40"
 			)}
 			onClick={() => {

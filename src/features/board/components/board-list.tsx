@@ -125,23 +125,23 @@ const BoardList: React.FC<BoardListProps> = ({
 		<>
 			<style jsx>{`
                 /* Custom scrollbar styling for list cards */
-                ::-webkit-scrollbar {
+				.board-list-scroll::-webkit-scrollbar {
                     width: 6px;
                 }
-                ::-webkit-scrollbar-track {
+				.board-list-scroll::-webkit-scrollbar-track {
                     background: transparent;
                 }
-                ::-webkit-scrollbar-thumb {
+				.board-list-scroll::-webkit-scrollbar-thumb {
                     background: #cbd5e1;
                     border-radius: 3px;
                 }
-                .dark ::-webkit-scrollbar-thumb {
+				.dark .board-list-scroll::-webkit-scrollbar-thumb {
                     background: #4b5563;
                 }
-                ::-webkit-scrollbar-thumb:hover {
+				.board-list-scroll::-webkit-scrollbar-thumb:hover {
                     background: #94a3b8;
                 }
-                .dark ::-webkit-scrollbar-thumb:hover {
+				.dark .board-list-scroll::-webkit-scrollbar-thumb:hover {
                     background: #6b7280;
                 }
             `}</style>
@@ -235,7 +235,7 @@ const BoardList: React.FC<BoardListProps> = ({
 
 				<div
 					className={cn(
-						"transition-colors duration-200 flex-1 flex flex-col",
+						"transition-colors duration-200 flex-1 flex flex-col overflow-y-auto board-list-scroll",
 						isOver
 							? "bg-secondary/10 ring-2 ring-secondary/40"
 							: "bg-transparent"

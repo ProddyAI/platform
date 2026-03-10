@@ -11,7 +11,7 @@ import {
 	Search,
 	Trash,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,18 +24,11 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import type { BoardMember } from "./board-models";
 
 type BoardListItem = {
 	_id: Id<"lists">;
 	title: string;
-};
-
-type BoardMember = {
-	_id: Id<"members">;
-	user?: {
-		name?: string;
-		image?: string;
-	};
 };
 
 type BoardTableCard = {
@@ -116,56 +109,64 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 		return map;
 	}, [cardsWithListTitle]);
 
-	const sortCards = (cards: CardWithListTitle[]) => {
-		if (!sortField) return cards;
-		return [...cards].sort((a, b) => {
-			let valueA;
-			let valueB;
+	const sortCards = useCallback(
+		(cards: CardWithListTitle[]) => {
+			if (!sortField) return cards;
+			return [...cards].sort((a, b) => {
+				let valueA;
+				let valueB;
 
-			switch (sortField) {
-				case "title":
-					valueA = a.title.toLowerCase();
-					valueB = b.title.toLowerCase();
-					break;
-				case "list":
-					valueA = a.listTitle.toLowerCase();
-					valueB = b.listTitle.toLowerCase();
-					break;
-				case "priority": {
-					const priorityOrder = {
-						highest: 5,
-						high: 4,
-						medium: 3,
-						low: 2,
-						lowest: 1,
-						undefined: 0,
-					};
-					valueA = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
-					valueB = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
-					break;
+				switch (sortField) {
+					case "title":
+						valueA = a.title.toLowerCase();
+						valueB = b.title.toLowerCase();
+						break;
+					case "list":
+						valueA = a.listTitle.toLowerCase();
+						valueB = b.listTitle.toLowerCase();
+						break;
+					case "priority": {
+						const priorityOrder = {
+							highest: 5,
+							high: 4,
+							medium: 3,
+							low: 2,
+							lowest: 1,
+							undefined: 0,
+						};
+						valueA =
+							priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
+						valueB =
+							priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
+						break;
+					}
+					default:
+						return 0;
 				}
-				default:
-					return 0;
-			}
 
-			if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
-			if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;
-			return 0;
-		});
-	};
+				if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
+				if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;
+				return 0;
+			});
+		},
+		[sortDirection, sortField]
+	);
 
 	const searchLower = searchQuery.toLowerCase();
-	const matchesQuery = (card: CardWithListTitle) => {
-		if (!searchLower) return true;
-		return (
-			card.title.toLowerCase().includes(searchLower) ||
-			card.description?.toLowerCase().includes(searchLower) ||
-			card.listTitle.toLowerCase().includes(searchLower) ||
-			card.labels?.some((label: string) =>
-				label.toLowerCase().includes(searchLower)
-			)
-		);
-	};
+	const matchesQuery = useCallback(
+		(card: CardWithListTitle) => {
+			if (!searchLower) return true;
+			return (
+				card.title.toLowerCase().includes(searchLower) ||
+				card.description?.toLowerCase().includes(searchLower) ||
+				card.listTitle.toLowerCase().includes(searchLower) ||
+				card.labels?.some((label: string) =>
+					label.toLowerCase().includes(searchLower)
+				)
+			);
+		},
+		[searchLower]
+	);
 
 	const sortedParents = useMemo(
 		() => sortCards(parentCards),

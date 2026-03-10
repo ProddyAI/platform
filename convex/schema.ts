@@ -251,7 +251,9 @@ const schema = defineSchema({
 		issueId: v.id("issues"),
 		memberId: v.id("members"),
 		workspaceId: v.id("workspaces"),
-		message: v.string(),
+		// Keep both fields temporarily for backward compatibility with legacy rows.
+		content: v.optional(v.string()),
+		message: v.optional(v.string()),
 		createdAt: v.number(),
 		updatedAt: v.optional(v.number()),
 	})

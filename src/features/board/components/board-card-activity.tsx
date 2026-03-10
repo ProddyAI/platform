@@ -38,12 +38,28 @@ type CardActivity = {
 	};
 };
 
+const isCardActivityArray = (value: unknown): value is CardActivity[] => {
+	if (!Array.isArray(value)) return false;
+	return value.every(
+		(item) =>
+			typeof item === "object" &&
+			item !== null &&
+			"_id" in item &&
+			"action" in item &&
+			"timestamp" in item &&
+			"member" in item
+	);
+};
+
 export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 	cardId,
 }) => {
-	const activities = useQuery(api.board.getCardActivity, {
+	const rawActivities = useQuery(api.board.getCardActivity, {
 		cardId,
-	}) as CardActivity[] | undefined;
+	});
+	const activities = isCardActivityArray(rawActivities)
+		? rawActivities
+		: undefined;
 
 	const getActivityIcon = (action: string) => {
 		switch (action) {
@@ -77,11 +93,23 @@ export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 	};
 
 	const getActivityText = (activity: CardActivity) => {
-		const details: {
+		let details: {
 			subtaskId?: string;
 			title?: string;
 			blockedByTitle?: string;
-		} = activity.details ? JSON.parse(activity.details) : {};
+		} = {};
+
+		if (activity.details) {
+			try {
+				details = JSON.parse(activity.details);
+			} catch (error) {
+				console.warn("Failed to parse card activity details", {
+					activityId: activity._id,
+					action: activity.action,
+					error,
+				});
+			}
+		}
 
 		switch (activity.action) {
 			case "created":

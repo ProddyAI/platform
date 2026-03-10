@@ -87,6 +87,7 @@ const BoardPage = () => {
 	}, [setIsBoardPage, setBoardSearchQuery]);
 
 	const displayedIssues = optimisticIssues ?? allIssues;
+	const isFilteredBoardView = boardSearchQuery.trim().length > 0;
 
 	// Filter issues based on global search query
 	const filteredIssues = displayedIssues.filter((issue) => {
@@ -518,6 +519,7 @@ const BoardPage = () => {
 					</div>
 				) : (
 					<BoardKanbanView
+						disableIssueDrag={isFilteredBoardView}
 						issues={filteredIssues}
 						members={members}
 						onAddStatus={() => {

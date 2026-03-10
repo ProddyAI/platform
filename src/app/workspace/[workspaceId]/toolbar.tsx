@@ -13,7 +13,7 @@ import {
 	Search,
 	Sparkles,
 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
 	type ChangeEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
@@ -425,6 +425,9 @@ const SearchDialogContent = ({
 					tasks.length === 0 &&
 					cards.length === 0 &&
 					events.length === 0 &&
+					(!boardSearchResults ||
+						(boardSearchResults.issues.length === 0 &&
+							boardSearchResults.statuses.length === 0)) &&
 					!isSearching && <CommandEmpty>No results found.</CommandEmpty>}
 
 				{!useAI && !searchQuery && (
@@ -466,7 +469,7 @@ const SearchDialogContent = ({
 export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const pathname = usePathname();
+	const params = useParams<{ channelId?: string }>();
 	const workspaceId = useWorkspaceId();
 	const [searchOpen, setSearchOpen] = useWorkspaceSearch();
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -477,9 +480,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 	// Board search integration
 	const { isBoardPage, setBoardSearchQuery } = useBoardSearchStore();
-	const channelId = pathname.match(/\/channel\/([^/]+)/)?.[1] as
-		| Id<"channels">
-		| undefined;
+	const channelId = params?.channelId as Id<"channels"> | undefined;
 
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
@@ -524,11 +525,15 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	}, [searchOpen, resetAISearch]);
 
 	// Sync search query with board search when on board page
+	const isBoardPageRef = useRef(isBoardPage);
 	useEffect(() => {
-		if (isBoardPage) {
-			setBoardSearchQuery(searchQuery);
-		}
-	}, [isBoardPage, searchQuery, setBoardSearchQuery]);
+		isBoardPageRef.current = isBoardPage;
+	}, [isBoardPage]);
+
+	useEffect(() => {
+		if (!isBoardPageRef.current) return;
+		setBoardSearchQuery(searchQuery);
+	}, [searchQuery, setBoardSearchQuery]);
 
 	useEffect(() => {
 		if (searchOpen && useAI) {

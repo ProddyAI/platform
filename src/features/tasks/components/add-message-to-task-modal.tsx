@@ -171,10 +171,7 @@ export const AddMessageToTaskModal = ({
 									</Button>
 								</PopoverTrigger>
 								<PopoverContent className="w-auto p-0">
-									<Calendar
-										onSelect={setDueDate}
-										selected={dueDate}
-									/>
+									<Calendar onSelect={setDueDate} selected={dueDate} />
 								</PopoverContent>
 							</Popover>
 						</div>

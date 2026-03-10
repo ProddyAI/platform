@@ -30,9 +30,9 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-type BoardMember = {
+export type BoardMember = {
 	_id: Id<"members">;
-	user: {
+	user?: {
 		name?: string;
 		image?: string;
 	};
@@ -43,7 +43,7 @@ const toSelectorMembers = (members: BoardMember[]) =>
 		...member,
 		user: {
 			...member.user,
-			name: member.user.name || "Unknown",
+			name: member.user?.name || "Unknown",
 		},
 	}));
 
@@ -507,41 +507,38 @@ export const BoardAddCardModal: React.FC<BoardAddCardModalProps> = ({
 						</Select>
 					</div>
 
-				<div>
-					<Popover>
-						<PopoverTrigger asChild>
-							<Button
-								className={cn(
-									"w-full justify-start text-left font-normal",
-									!dueDate && "text-muted-foreground"
+					<div>
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									className={cn(
+										"w-full justify-start text-left font-normal",
+										!dueDate && "text-muted-foreground"
+									)}
+									variant="outline"
+								>
+									<CalendarIcon className="mr-2 h-4 w-4" />
+									{dueDate ? format(dueDate, "PPP") : <span>Due Date</span>}
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent align="start" className="w-auto p-0">
+								<Calendar onSelect={setDueDate} selected={dueDate} />
+								{dueDate && (
+									<div className="p-2 border-t">
+										<Button
+											className="text-destructive hover:text-destructive/90"
+											onClick={() => setDueDate(undefined)}
+											size="sm"
+											variant="ghost"
+										>
+											Clear Date
+										</Button>
+									</div>
 								)}
-								variant="outline"
-							>
-								<CalendarIcon className="mr-2 h-4 w-4" />
-								{dueDate ? format(dueDate, "PPP") : <span>Due Date</span>}
-							</Button>
-						</PopoverTrigger>
-						<PopoverContent align="start" className="w-auto p-0">
-							<Calendar
-								onSelect={setDueDate}
-								selected={dueDate}
-							/>
-							{dueDate && (
-								<div className="p-2 border-t">
-									<Button
-										className="text-destructive hover:text-destructive/90"
-										onClick={() => setDueDate(undefined)}
-										size="sm"
-										variant="ghost"
-									>
-										Clear Date
-									</Button>
-								</div>
-							)}
-						</PopoverContent>
-					</Popover>
+							</PopoverContent>
+						</Popover>
+					</div>
 				</div>
-			</div>
 
 				<DialogFooter>
 					<Button onClick={onAdd}>Add</Button>
@@ -760,10 +757,7 @@ export const BoardEditCardModal: React.FC<BoardEditCardModalProps> = ({
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent align="start" className="w-auto p-0">
-											<Calendar
-												onSelect={setDueDate}
-												selected={dueDate}
-											/>
+											<Calendar onSelect={setDueDate} selected={dueDate} />
 											{dueDate && (
 												<div className="p-2 border-t">
 													<Button

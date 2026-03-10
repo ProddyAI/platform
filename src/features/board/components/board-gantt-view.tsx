@@ -20,7 +20,7 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import type React from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -92,6 +92,10 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 		useState<Date>(initialStartDate);
 	const [zoomLevel, setZoomLevel] = useState<number>(14);
 	const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
+
+	useEffect(() => {
+		setCurrentStartDate(initialStartDate);
+	}, [initialStartDate]);
 
 	const timelineContainerRef = useRef<HTMLDivElement>(null);
 
@@ -517,9 +521,16 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 														key={row.task.id}
 														style={{ height: rowHeight }}
 													>
-														<div
+														<button
+															aria-label={`Open task ${row.task.title}`}
 															className="absolute h-[24px] top-[5px] rounded-md border-2 shadow-sm cursor-default"
 															onClick={() => setSelectedTask(row.task || null)}
+															onKeyDown={(e) => {
+																if (e.key === "Enter" || e.key === " ") {
+																	e.preventDefault();
+																	setSelectedTask(row.task || null);
+																}
+															}}
 															style={{
 																...style,
 																backgroundColor: getSolidPriorityColor(
@@ -529,13 +540,14 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 																	row.task.priority
 																),
 															}}
+															type="button"
 														>
 															<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
 																<span className="text-xs font-semibold truncate text-white drop-shadow-sm">
 																	{row.task.title}
 																</span>
 															</div>
-														</div>
+														</button>
 													</div>
 												);
 											})}
