@@ -71,7 +71,6 @@ export const TestBoardKanbanView = ({
 	onDeleteCard,
 	onAddCard,
 	onMoveCard,
-	handleDragEnd,
 }: TestBoardKanbanViewProps) => {
 	const router = useRouter();
 

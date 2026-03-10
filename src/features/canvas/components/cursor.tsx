@@ -97,7 +97,7 @@ export const Cursor = memo(({ connectionId }: CursorProps) => {
 	// If no cursor position is available, don't render anything
 	if (!other?.cursor) return null;
 
-	const { cursor, info } = other;
+	const { cursor } = other;
 	const { x, y } = cursor;
 
 	// Calculate width based on name length to ensure it fits

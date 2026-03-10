@@ -49,7 +49,6 @@ export const ChatInput = ({
 	channelId,
 	conversationId,
 	channelName,
-	memberName,
 }: ChatInputProps) => {
 	const [editorKey, setEditorKey] = useState(0);
 	const [isPending, setIsPending] = useState(false);

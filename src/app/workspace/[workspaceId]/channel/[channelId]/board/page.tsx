@@ -693,7 +693,7 @@ const BoardPage = () => {
 				labelSuggestions={uniqueLabels}
 				labels={cardLabels}
 				members={members}
-				onOpenChange={(open) => {
+				onOpenChange={(open: boolean) => {
 					if (!open) setEditCardOpen(null);
 				}}
 				onSave={handleEditCard}
