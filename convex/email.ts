@@ -11,6 +11,31 @@ import {
 	query,
 } from "./_generated/server";
 
+// Helper function to fetch with timeout
+async function fetchWithTimeout(
+	url: string,
+	options: RequestInit = {},
+	timeoutMs = 10000
+): Promise<Response> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+	try {
+		const response = await fetch(url, {
+			...options,
+			signal: controller.signal,
+		});
+		return response;
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			throw new Error(`Request timeout after ${timeoutMs}ms`);
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}
+
 // Get weekly digest data for a user across all their workspaces
 export const getUserWeeklyDigest = query({
 	args: {
@@ -320,7 +345,7 @@ export const sendDirectMessageEmail = action({
 			const apiUrl = `${baseUrl}/api/email/direct-message`;
 
 			try {
-				const response: Response = await fetch(apiUrl, {
+				const response: Response = await fetchWithTimeout(apiUrl, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -438,7 +463,7 @@ export const sendMentionEmail = action({
 			const apiUrl = `${baseUrl}/api/email/mention`;
 
 			try {
-				const response: Response = await fetch(apiUrl, {
+				const response: Response = await fetchWithTimeout(apiUrl, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -563,7 +588,7 @@ export const sendThreadReplyEmail = action({
 			const apiUrl = `${baseUrl}/api/email/thread-reply`;
 
 			try {
-				const response: Response = await fetch(apiUrl, {
+				const response: Response = await fetchWithTimeout(apiUrl, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -692,7 +717,7 @@ export const sendWeeklyDigestEmails = action({
 						digestData.totalStats.totalTasks > 0
 					) {
 						// Call the email API
-						const emailResponse = await fetch(
+						const emailResponse = await fetchWithTimeout(
 							`${process.env.SITE_URL}/api/email/weekly-digest`,
 							{
 								method: "POST",
@@ -911,7 +936,7 @@ export const sendWeeklyDigests = internalMutation({
 					digestData.totalStats.totalTasks > 0
 				) {
 					// Call the email API
-					const emailResponse = await fetch(
+					const emailResponse = await fetchWithTimeout(
 						`${process.env.SITE_URL}/api/email/weekly-digest`,
 						{
 							method: "POST",
@@ -1043,7 +1068,7 @@ export const sendCardAssignmentEmail = action({
 			const apiUrl = `${baseUrl}/api/email/assignee`;
 
 			try {
-				const response: Response = await fetch(apiUrl, {
+				const response: Response = await fetchWithTimeout(apiUrl, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -1086,6 +1111,95 @@ export const sendCardAssignmentEmail = action({
 			}
 		} catch (error) {
 			console.error("Error in sendCardAssignmentEmail:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
+// Action to send email notification for issue assignment
+export const sendIssueAssignmentEmail = action({
+	args: {
+		assigneeId: v.id("members"),
+		issueId: v.id("issues"),
+		assignerId: v.id("members"),
+	},
+	handler: async (
+		ctx: ActionCtx,
+		{
+			assigneeId,
+			issueId,
+			assignerId,
+		}: {
+			assigneeId: Id<"members">;
+			issueId: Id<"issues">;
+			assignerId: Id<"members">;
+		}
+	): Promise<EmailNotificationResult> => {
+		try {
+			const issue = await ctx.runQuery(api.board._getIssueDetails, { issueId });
+			if (!issue) {
+				return { success: false, error: "Issue not found" };
+			}
+
+			const assigneeEmail: string | null = await ctx.runQuery(
+				api.board._getMemberEmail,
+				{ memberId: assigneeId }
+			);
+			if (!assigneeEmail) return { success: true, skipped: true };
+
+			const assigneeName: string | null = await ctx.runQuery(
+				api.board._getMemberName,
+				{ memberId: assigneeId }
+			);
+
+			const assignerName: string | null = await ctx.runQuery(
+				api.board._getMemberName,
+				{ memberId: assignerId }
+			);
+
+			const baseUrl = process.env.SITE_URL;
+			const workspaceUrl = `${baseUrl}/workspace/${issue.workspaceId}/channel/${issue.channelId}/board`;
+			const apiUrl = `${baseUrl}/api/email/assignee`;
+
+			const response: Response = await fetchWithTimeout(apiUrl, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					to: assigneeEmail,
+					userId: assigneeId,
+					firstName: assigneeName || "User",
+					type: "issue_assignment",
+					cardTitle: issue.title,
+					cardDescription: issue.description,
+					dueDate: issue.dueDate,
+					priority: issue.priority,
+					listName: issue.statusName || "Board",
+					channelName: issue.channelName,
+					assignedBy: assignerName || "A team member",
+					workspaceUrl,
+					workspaceName: "Proddy",
+				}),
+			});
+
+			if (!response.ok) {
+				const errorBody = await response.text();
+				console.error("Issue assignment email API error:", {
+					status: response.status,
+					statusText: response.statusText,
+					body: errorBody,
+				});
+				return {
+					success: false,
+					error: `Email API error: ${response.status} ${response.statusText}${errorBody ? ` - ${errorBody}` : ""}`,
+				};
+			}
+
+			logger.info("Issue assignment email sent successfully");
+			return { success: true };
+		} catch (error) {
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
@@ -1256,20 +1370,23 @@ export const sendImportCompletionEmail = internalAction({
 			try {
 				const supportEmail = process.env.SUPPORT_EMAIL || "support@proddy.tech";
 
-				const response = await fetch("https://api.resend.com/emails", {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${apiKey}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						from: fromEmail,
-						to: args.email,
-						replyTo: supportEmail,
-						subject,
-						html: htmlContent,
-					}),
-				});
+				const response = await fetchWithTimeout(
+					"https://api.resend.com/emails",
+					{
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${apiKey}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							from: fromEmail,
+							to: args.email,
+							replyTo: supportEmail,
+							subject,
+							html: htmlContent,
+						}),
+					}
+				);
 
 				if (!response.ok) {
 					const errorData = await response.json();

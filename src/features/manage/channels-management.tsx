@@ -78,7 +78,6 @@ interface ChannelsManagementProps {
 
 export const ChannelsManagement = ({
 	workspaceId,
-	currentMember,
 }: ChannelsManagementProps) => {
 	const { data: channels, isLoading } = useGetChannels({ workspaceId });
 	const [editChannelName, setEditChannelName] = useState("");

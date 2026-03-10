@@ -16,10 +16,6 @@ interface User {
 	info?: UserInfo;
 }
 
-interface CurrentUser extends User {
-	presence?: any;
-}
-
 // Constants
 const MAX_SHOWN_OTHER_USERS = 2;
 

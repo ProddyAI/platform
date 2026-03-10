@@ -5,7 +5,7 @@ import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
 // Supported toolkits
-const SUPPORTED_TOOLKITS = [
+const _SUPPORTED_TOOLKITS = [
 	"github",
 	"gmail",
 	"slack",
@@ -13,8 +13,6 @@ const SUPPORTED_TOOLKITS = [
 	"notion",
 	"clickup",
 ] as const;
-
-type SupportedToolkit = (typeof SUPPORTED_TOOLKITS)[number];
 
 // ===== HELPER FUNCTIONS =====
 
@@ -246,6 +244,19 @@ export const getMyActiveConnectedAppNames = query({
 			.filter((q) => q.eq(q.field("status"), "ACTIVE"))
 			.collect();
 
+		console.log(
+			"[getMyActiveConnectedAppNames] User accounts:",
+			userAccounts.length
+		);
+		console.log(
+			"[getMyActiveConnectedAppNames] User account details:",
+			userAccounts.map((acc) => ({
+				toolkit: acc.toolkit,
+				status: acc.status,
+				memberId: acc.memberId,
+			}))
+		);
+
 		// Get workspace-level accounts (legacy without memberId)
 		const allWorkspaceAccounts = await ctx.db
 			.query("connected_accounts")
@@ -259,9 +270,27 @@ export const getMyActiveConnectedAppNames = query({
 			(acc) => !acc.memberId
 		);
 
+		console.log(
+			"[getMyActiveConnectedAppNames] Workspace accounts:",
+			workspaceAccounts.length
+		);
+		console.log(
+			"[getMyActiveConnectedAppNames] Workspace account details:",
+			workspaceAccounts.map((acc) => ({
+				toolkit: acc.toolkit,
+				status: acc.status,
+				memberId: acc.memberId,
+			}))
+		);
+
 		// Combine both and extract unique toolkit names
 		const allAccounts = [...userAccounts, ...workspaceAccounts];
 		const toolkitNames = [...new Set(allAccounts.map((acc) => acc.toolkit))];
+
+		console.log(
+			"[getMyActiveConnectedAppNames] All toolkit names:",
+			toolkitNames
+		);
 
 		// Map toolkit names to uppercase app names for assistant
 		const appNames = toolkitNames.map((toolkit) => toolkit.toUpperCase());

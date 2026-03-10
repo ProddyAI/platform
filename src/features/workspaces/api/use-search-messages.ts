@@ -107,6 +107,6 @@ export const useSearchMessages = ({
 		results,
 		isLoading,
 		debouncedQuery,
-		hasTextResults: !!hasTextResults,
+		hasTextResults: Boolean(hasTextResults),
 	};
 };

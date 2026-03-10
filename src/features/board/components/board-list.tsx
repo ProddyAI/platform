@@ -26,13 +26,34 @@ import {
 import { cn } from "@/lib/utils";
 import BoardCard from "./board-card";
 
+type BoardListItem = {
+	_id: Id<"lists">;
+	title: string;
+};
+
+type BoardListCard = {
+	_id: Id<"cards">;
+	listId: Id<"lists">;
+	title: string;
+	description?: string;
+	labels?: string[];
+	priority?: "lowest" | "low" | "medium" | "high" | "highest";
+	dueDate?: number;
+	assignees?: Id<"members">[];
+	subtaskStats?: {
+		completed: number;
+		total: number;
+		percentage: number;
+	};
+};
+
 interface BoardListProps {
-	list: any;
-	cards: any[];
+	list: BoardListItem;
+	cards: BoardListCard[];
 	onEditList: () => void;
 	onDeleteList: () => void;
 	onAddCard: () => void;
-	onEditCard: (card: any) => void;
+	onEditCard: (card: BoardListCard) => void;
 	onDeleteCard: (cardId: Id<"cards">) => void;
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
 	listCount?: number;
@@ -57,7 +78,6 @@ const BoardList: React.FC<BoardListProps> = ({
 	onToggleSelect,
 	disableListDrag = false,
 }) => {
-	// Make the list sortable
 	const {
 		attributes,
 		listeners,
@@ -74,7 +94,6 @@ const BoardList: React.FC<BoardListProps> = ({
 		disabled: disableListDrag,
 	});
 
-	// Make the list a drop target for cards
 	const { setNodeRef: setDroppableRef, isOver } = useDroppable({
 		id: `droppable-${list._id}`,
 		data: {
@@ -90,7 +109,6 @@ const BoardList: React.FC<BoardListProps> = ({
 		transition,
 	};
 
-	// Get priority counts
 	const priorityCounts = {
 		highest: cards.filter((c) => c.priority === "highest").length,
 		high: cards.filter((c) => c.priority === "high").length,
@@ -99,7 +117,6 @@ const BoardList: React.FC<BoardListProps> = ({
 		lowest: cards.filter((c) => c.priority === "lowest").length,
 	};
 
-	// Responsive width: 4 lists (XL), 3 lists (LG), 2 lists (MD), 1 list (SM)
 	const getWidthClass = () => {
 		return "w-[calc(25%-12px)] min-w-[280px] max-w-[400px] xl:w-[calc(25%-12px)] lg:w-[calc(33.333%-10.667px)] md:w-[calc(50%-8px)] sm:w-full";
 	};
@@ -108,23 +125,23 @@ const BoardList: React.FC<BoardListProps> = ({
 		<>
 			<style jsx>{`
                 /* Custom scrollbar styling for list cards */
-                ::-webkit-scrollbar {
+				.board-list-scroll::-webkit-scrollbar {
                     width: 6px;
                 }
-                ::-webkit-scrollbar-track {
+				.board-list-scroll::-webkit-scrollbar-track {
                     background: transparent;
                 }
-                ::-webkit-scrollbar-thumb {
+				.board-list-scroll::-webkit-scrollbar-thumb {
                     background: #cbd5e1;
                     border-radius: 3px;
                 }
-                .dark ::-webkit-scrollbar-thumb {
+				.dark .board-list-scroll::-webkit-scrollbar-thumb {
                     background: #4b5563;
                 }
-                ::-webkit-scrollbar-thumb:hover {
+				.board-list-scroll::-webkit-scrollbar-thumb:hover {
                     background: #94a3b8;
                 }
-                .dark ::-webkit-scrollbar-thumb:hover {
+				.dark .board-list-scroll::-webkit-scrollbar-thumb:hover {
                     background: #6b7280;
                 }
             `}</style>
@@ -139,7 +156,6 @@ const BoardList: React.FC<BoardListProps> = ({
 						"opacity-70 border-2 border-dashed border-secondary shadow-lg"
 				)}
 			>
-				{/* List Header */}
 				<div className="p-3 font-bold border-b dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-lg dark:text-gray-100">
 					<div className="flex items-center gap-2">
 						<div
@@ -178,7 +194,6 @@ const BoardList: React.FC<BoardListProps> = ({
 					</div>
 				</div>
 
-				{/* List Stats */}
 				{cards.length > 0 && (
 					<div className="px-3 py-1.5 bg-muted/50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex items-center justify-between text-[10px] text-muted-foreground">
 						<div className="flex items-center gap-1">
@@ -218,10 +233,9 @@ const BoardList: React.FC<BoardListProps> = ({
 					</div>
 				)}
 
-				{/* Cards Container - expanded to push Add Card button to bottom */}
 				<div
 					className={cn(
-						"transition-colors duration-200 flex-1 flex flex-col",
+						"transition-colors duration-200 flex-1 flex flex-col overflow-y-auto board-list-scroll",
 						isOver
 							? "bg-secondary/10 ring-2 ring-secondary/40"
 							: "bg-transparent"
@@ -266,7 +280,6 @@ const BoardList: React.FC<BoardListProps> = ({
 					</SortableContext>
 				</div>
 
-				{/* Add Card Button - stays at bottom */}
 				<div className="p-2 bg-white dark:bg-gray-800 rounded-b-lg border-t dark:border-gray-700 mt-auto">
 					<Button
 						className="w-full bg-white dark:bg-gray-800 hover:bg-secondary/5 dark:hover:bg-secondary/10 transition-colors dark:border-gray-600"

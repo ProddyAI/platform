@@ -148,6 +148,16 @@ const baseConfig = withPWA({
 				hostname: "getstream.io",
 				pathname: "/**",
 			},
+			{
+				protocol: "https",
+				hostname: "*.convex.cloud",
+				pathname: "/**",
+			},
+			{
+				protocol: "https",
+				hostname: "*.convex.dev",
+				pathname: "/**",
+			},
 		],
 	},
 	async headers() {

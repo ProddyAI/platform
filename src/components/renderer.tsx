@@ -19,7 +19,7 @@ const Renderer = ({ value, calendarEvent }: RendererProps) => {
 	const [isEmpty, setIsEmpty] = useState(false);
 	const rendererRef = useRef<HTMLDivElement>(null);
 	const workspaceId = useWorkspaceId();
-	const { data: members } = useGetMembers({ workspaceId });
+	useGetMembers({ workspaceId });
 
 	// Check if this is a unified message (canvas or note type)
 	const isUnifiedMessage = () => {

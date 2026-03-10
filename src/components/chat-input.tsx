@@ -49,7 +49,6 @@ export const ChatInput = ({
 	channelId,
 	conversationId,
 	channelName,
-	memberName,
 }: ChatInputProps) => {
 	const [editorKey, setEditorKey] = useState(0);
 	const [isPending, setIsPending] = useState(false);
@@ -181,7 +180,7 @@ export const ChatInput = ({
 			) : null}
 			<Editor
 				disabled={isPending}
-				disableMentions={!!conversationId}
+				disableMentions={Boolean(conversationId)}
 				innerRef={innerRef}
 				key={editorKey}
 				onSubmit={handleSubmit}

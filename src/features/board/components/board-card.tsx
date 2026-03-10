@@ -26,8 +26,23 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+type BoardCardItem = {
+	_id: Id<"cards">;
+	title: string;
+	description?: string;
+	labels?: string[];
+	priority?: "lowest" | "low" | "medium" | "high" | "highest";
+	dueDate?: number;
+	assignees?: Id<"members">[];
+	subtaskStats?: {
+		completed: number;
+		total: number;
+		percentage: number;
+	};
+};
+
 interface BoardCardProps {
-	card: any;
+	card: BoardCardItem;
 	onEdit: () => void;
 	onDelete: () => void;
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
@@ -73,7 +88,6 @@ const BoardCard: React.FC<BoardCardProps> = ({
 		}
 	};
 
-	// Get priority color for card styling
 	const getPriorityColor = () => {
 		switch (card.priority) {
 			case "highest":
@@ -91,7 +105,6 @@ const BoardCard: React.FC<BoardCardProps> = ({
 		}
 	};
 
-	// Get priority icon
 	const getPriorityIcon = () => {
 		switch (card.priority) {
 			case "highest":
@@ -109,12 +122,10 @@ const BoardCard: React.FC<BoardCardProps> = ({
 		}
 	};
 
-	// Format due date if exists
 	const formattedDueDate = card.dueDate
 		? formatDistanceToNow(new Date(card.dueDate), { addSuffix: true })
 		: null;
 
-	// Determine if card is overdue
 	const isOverdue = card.dueDate && new Date(card.dueDate) < new Date();
 
 	return (
@@ -132,7 +143,6 @@ const BoardCard: React.FC<BoardCardProps> = ({
 			)}
 			onClick={selectionMode ? handleToggleSelect : undefined}
 		>
-			{/* Card Header */}
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2 min-w-0">
 					{selectionMode && (
@@ -175,14 +185,12 @@ const BoardCard: React.FC<BoardCardProps> = ({
 				</div>
 			</div>
 
-			{/* Card Description */}
 			{card.description && (
 				<div className="text-xs text-muted-foreground dark:text-gray-400 line-clamp-2 bg-muted/30 dark:bg-gray-700/30 p-1.5 rounded-sm">
 					{card.description}
 				</div>
 			)}
 
-			{/* Card Labels */}
 			{Array.isArray(card.labels) && card.labels.length > 0 && (
 				<div className="flex flex-wrap gap-1">
 					{card.labels.map((label: string, i: number) => (
@@ -197,7 +205,6 @@ const BoardCard: React.FC<BoardCardProps> = ({
 				</div>
 			)}
 
-			{/* Subtask Progress */}
 			{card.subtaskStats && card.subtaskStats.total > 0 && (
 				<div className="space-y-1">
 					<div className="flex items-center justify-between text-xs">
@@ -215,9 +222,7 @@ const BoardCard: React.FC<BoardCardProps> = ({
 				</div>
 			)}
 
-			{/* Card Footer */}
 			<div className="flex items-center justify-between mt-1 pt-1 border-t border-dashed border-muted dark:border-gray-700">
-				{/* Priority Badge */}
 				{card.priority && (
 					<div className="flex items-center gap-1">
 						{getPriorityIcon()}
@@ -227,7 +232,6 @@ const BoardCard: React.FC<BoardCardProps> = ({
 					</div>
 				)}
 
-				{/* Due Date */}
 				{formattedDueDate && (
 					<div
 						className={cn(
@@ -242,36 +246,33 @@ const BoardCard: React.FC<BoardCardProps> = ({
 					</div>
 				)}
 
-				{/* Assignees */}
 				{card.assignees && card.assignees.length > 0 ? (
 					<div className="flex -space-x-2">
-						{card.assignees
-							.slice(0, 3)
-							.map((assigneeId: Id<"members">, _index: number) => {
-								const assignee = assigneeData[assigneeId];
-								const fallback = assignee?.name?.charAt(0).toUpperCase() || "?";
+						{card.assignees.slice(0, 3).map((assigneeId: Id<"members">) => {
+							const assignee = assigneeData[assigneeId];
+							const fallback = assignee?.name?.charAt(0).toUpperCase() || "?";
 
-								return (
-									<TooltipProvider key={assigneeId}>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Avatar className="h-5 w-5 border border-background">
-													<AvatarImage
-														alt={assignee?.name}
-														src={assignee?.image}
-													/>
-													<AvatarFallback className="text-[10px]">
-														{fallback}
-													</AvatarFallback>
-												</Avatar>
-											</TooltipTrigger>
-											<TooltipContent>
-												<p>{assignee?.name || "Unknown user"}</p>
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								);
-							})}
+							return (
+								<TooltipProvider key={assigneeId}>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<Avatar className="h-5 w-5 border border-background">
+												<AvatarImage
+													alt={assignee?.name}
+													src={assignee?.image}
+												/>
+												<AvatarFallback className="text-[10px]">
+													{fallback}
+												</AvatarFallback>
+											</Avatar>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>{assignee?.name || "Unknown user"}</p>
+										</TooltipContent>
+									</Tooltip>
+								</TooltipProvider>
+							);
+						})}
 
 						{card.assignees.length > 3 && (
 							<TooltipProvider>

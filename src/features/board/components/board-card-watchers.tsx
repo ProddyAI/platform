@@ -19,12 +19,13 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { BoardMember } from "./board-models";
 
 interface BoardCardWatchersProps {
 	cardId: Id<"cards">;
 	watchers: Id<"members">[];
 	currentMemberId?: Id<"members">;
-	members: any[];
+	members: BoardMember[];
 }
 
 export const BoardCardWatchers: React.FC<BoardCardWatchersProps> = ({

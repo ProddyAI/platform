@@ -11,7 +11,7 @@ import {
 	Search,
 	Trash,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,13 +24,34 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import type { BoardMember } from "./board-models";
+
+type BoardListItem = {
+	_id: Id<"lists">;
+	title: string;
+};
+
+type BoardTableCard = {
+	_id: Id<"cards">;
+	listId: Id<"lists">;
+	title: string;
+	description?: string;
+	priority?: "lowest" | "low" | "medium" | "high" | "highest";
+	labels?: string[];
+	dueDate?: number;
+	assignees?: Id<"members">[];
+	parentCardId?: Id<"cards">;
+	isCompleted?: boolean;
+};
+
+type CardWithListTitle = BoardTableCard & { listTitle: string };
 
 interface BoardTableViewProps {
-	lists: any[];
-	allCards: any[];
-	onEditCard: (card: any) => void;
+	lists: BoardListItem[];
+	allCards: BoardTableCard[];
+	onEditCard: (card: BoardTableCard) => void;
 	onDeleteCard: (cardId: Id<"cards">) => void;
-	members?: any[];
+	members?: BoardMember[];
 }
 
 const BoardTableView: React.FC<BoardTableViewProps> = ({
@@ -76,7 +97,7 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 	);
 
 	const subtasksByParent = useMemo(() => {
-		const map: Record<string, any[]> = {};
+		const map: Record<string, CardWithListTitle[]> = {};
 		cardsWithListTitle.forEach((card) => {
 			if (!card.parentCardId) return;
 			const parentId = card.parentCardId as string;
@@ -88,56 +109,64 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 		return map;
 	}, [cardsWithListTitle]);
 
-	const sortCards = (cards: any[]) => {
-		if (!sortField) return cards;
-		return [...cards].sort((a, b) => {
-			let valueA;
-			let valueB;
+	const sortCards = useCallback(
+		(cards: CardWithListTitle[]) => {
+			if (!sortField) return cards;
+			return [...cards].sort((a, b) => {
+				let valueA: string | number;
+				let valueB: string | number;
 
-			switch (sortField) {
-				case "title":
-					valueA = a.title.toLowerCase();
-					valueB = b.title.toLowerCase();
-					break;
-				case "list":
-					valueA = a.listTitle.toLowerCase();
-					valueB = b.listTitle.toLowerCase();
-					break;
-				case "priority": {
-					const priorityOrder = {
-						highest: 5,
-						high: 4,
-						medium: 3,
-						low: 2,
-						lowest: 1,
-						undefined: 0,
-					};
-					valueA = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
-					valueB = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
-					break;
+				switch (sortField) {
+					case "title":
+						valueA = a.title.toLowerCase();
+						valueB = b.title.toLowerCase();
+						break;
+					case "list":
+						valueA = a.listTitle.toLowerCase();
+						valueB = b.listTitle.toLowerCase();
+						break;
+					case "priority": {
+						const priorityOrder = {
+							highest: 5,
+							high: 4,
+							medium: 3,
+							low: 2,
+							lowest: 1,
+							undefined: 0,
+						};
+						valueA =
+							priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
+						valueB =
+							priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
+						break;
+					}
+					default:
+						return 0;
 				}
-				default:
-					return 0;
-			}
 
-			if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
-			if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;
-			return 0;
-		});
-	};
+				if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
+				if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;
+				return 0;
+			});
+		},
+		[sortDirection, sortField]
+	);
 
 	const searchLower = searchQuery.toLowerCase();
-	const matchesQuery = (card: any) => {
-		if (!searchLower) return true;
-		return (
-			card.title.toLowerCase().includes(searchLower) ||
-			card.description?.toLowerCase().includes(searchLower) ||
-			card.listTitle.toLowerCase().includes(searchLower) ||
-			card.labels?.some((label: string) =>
-				label.toLowerCase().includes(searchLower)
-			)
-		);
-	};
+	const matchesQuery = useCallback(
+		(card: CardWithListTitle) => {
+			if (!searchLower) return true;
+			return (
+				card.title.toLowerCase().includes(searchLower) ||
+				card.description?.toLowerCase().includes(searchLower) ||
+				card.listTitle.toLowerCase().includes(searchLower) ||
+				card.labels?.some((label: string) =>
+					label.toLowerCase().includes(searchLower)
+				)
+			);
+		},
+		[searchLower]
+	);
 
 	const sortedParents = useMemo(
 		() => sortCards(parentCards),

@@ -98,7 +98,7 @@ export const SelectionModal = () => {
 			// Set summary data and open modal
 			setSummaryData({
 				summary,
-				isCached: !!data.cached,
+				isCached: Boolean(data.cached),
 			});
 			setIsModalOpen(true);
 

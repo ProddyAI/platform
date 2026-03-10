@@ -91,7 +91,7 @@ export const Header = () => {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [isModulesOpen, setIsModulesOpen] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
-	const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
+	const { data: currentUser } = useCurrentUser();
 
 	// Handle scroll effect for sticky header
 	useEffect(() => {
