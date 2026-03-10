@@ -113,8 +113,8 @@ const BoardTableView: React.FC<BoardTableViewProps> = ({
 		(cards: CardWithListTitle[]) => {
 			if (!sortField) return cards;
 			return [...cards].sort((a, b) => {
-				let valueA;
-				let valueB;
+				let valueA: string | number;
+				let valueB: string | number;
 
 				switch (sortField) {
 					case "title":

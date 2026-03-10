@@ -92,16 +92,28 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 		useState<Date>(initialStartDate);
 	const [zoomLevel, setZoomLevel] = useState<number>(14);
 	const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
+	const previousInitialStartRef = useRef<number>(initialStartDate.getTime());
 
 	useEffect(() => {
-		setCurrentStartDate(initialStartDate);
+		const nextInitialTime = initialStartDate.getTime();
+		setCurrentStartDate((prev) => {
+			if (prev.getTime() !== previousInitialStartRef.current) {
+				previousInitialStartRef.current = nextInitialTime;
+				return prev;
+			}
+
+			previousInitialStartRef.current = nextInitialTime;
+			return prev.getTime() === nextInitialTime ? prev : initialStartDate;
+		});
 	}, [initialStartDate]);
 
 	const timelineContainerRef = useRef<HTMLDivElement>(null);
 
 	const tasks = useMemo(() => {
 		const cardById = new Map<Id<"cards">, BoardGanttCard>();
-		allCards.forEach((card) => cardById.set(card._id, card));
+		allCards.forEach((card) => {
+			cardById.set(card._id, card);
+		});
 
 		return allCards.filter(hasDueDate).map((card) => {
 			const list = lists.find((l) => l._id === card.listId);

@@ -667,19 +667,20 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					break;
 				}
 				case "issue": {
-					// For issues, we navigate to board page
-					// The issue will be highlighted/opened via a future enhancement
 					if (extra) {
 						setSearchOpen(false);
-						router.push(`/workspace/${workspaceId}/channel/${extra}/board`);
+						router.push(
+							`/workspace/${workspaceId}/channel/${extra}/board?focusIssue=${id}`
+						);
 					}
 					break;
 				}
 				case "status": {
-					// For statuses, navigate to board page
 					if (extra) {
 						setSearchOpen(false);
-						router.push(`/workspace/${workspaceId}/channel/${extra}/board`);
+						router.push(
+							`/workspace/${workspaceId}/channel/${extra}/board?focusStatus=${id}`
+						);
 					}
 					break;
 				}

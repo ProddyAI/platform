@@ -57,6 +57,8 @@ export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 	const rawActivities = useQuery(api.board.getCardActivity, {
 		cardId,
 	});
+	const hasInvalidActivityData =
+		rawActivities !== undefined && !isCardActivityArray(rawActivities);
 	const activities = isCardActivityArray(rawActivities)
 		? rawActivities
 		: undefined;
@@ -159,7 +161,11 @@ export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 
 			{/* Activity list */}
 			<ScrollArea className="h-[300px] rounded-md border p-3">
-				{activities && activities.length > 0 ? (
+				{hasInvalidActivityData ? (
+					<div className="flex items-center justify-center h-full text-sm text-destructive">
+						Unable to render activity: invalid activity data.
+					</div>
+				) : activities && activities.length > 0 ? (
 					<div className="space-y-3">
 						{activities.map((activity) => (
 							<div className="flex gap-2" key={activity._id}>

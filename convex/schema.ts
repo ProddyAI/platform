@@ -247,16 +247,28 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"]),
 
 	// Issue comments for discussions on issues
-	issueComments: defineTable({
-		issueId: v.id("issues"),
-		memberId: v.id("members"),
-		workspaceId: v.id("workspaces"),
-		// Keep both fields temporarily for backward compatibility with legacy rows.
-		content: v.optional(v.string()),
-		message: v.optional(v.string()),
-		createdAt: v.number(),
-		updatedAt: v.optional(v.number()),
-	})
+	issueComments: defineTable(
+		v.union(
+			v.object({
+				issueId: v.id("issues"),
+				memberId: v.id("members"),
+				workspaceId: v.id("workspaces"),
+				content: v.string(),
+				message: v.optional(v.string()),
+				createdAt: v.number(),
+				updatedAt: v.optional(v.number()),
+			}),
+			v.object({
+				issueId: v.id("issues"),
+				memberId: v.id("members"),
+				workspaceId: v.id("workspaces"),
+				message: v.string(),
+				content: v.optional(v.string()),
+				createdAt: v.number(),
+				updatedAt: v.optional(v.number()),
+			})
+		)
+	)
 		.index("by_issue_id", ["issueId"])
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id", ["workspaceId"])
