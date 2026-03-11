@@ -23,10 +23,13 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 
+// Single source of truth for supported toolkits
+type Toolkit = "github" | "gmail" | "slack" | "linear" | "notion" | "clickup";
+
 type AuthConfig = {
   _id: Id<"auth_configs">;
   workspaceId: Id<"workspaces">;
-  toolkit: "github" | "gmail" | "slack" | "jira" | "notion" | "clickup";
+  toolkit: Toolkit;
   name: string;
   type:
     | "use_composio_managed_auth"
@@ -68,14 +71,21 @@ type CurrentMember = {
 
 interface ServiceIntegrationCardProps {
   workspaceId: Id<"workspaces">;
-  toolkit: "github" | "gmail" | "slack" | "linear" | "notion" | "clickup";
+  toolkit: Toolkit;
   authConfig?: AuthConfig;
   connectedAccount?: ConnectedAccount;
   currentMember: CurrentMember;
   onConnectionChange?: () => void;
 }
 
-const toolkits = {
+type ToolkitConfig = {
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  name: string;
+  description: string;
+};
+
+const toolkits: Record<Toolkit, ToolkitConfig> = {
   github: {
     icon: FaGithub,
     color: "bg-slate-700 hover:bg-slate-600",
@@ -185,7 +195,7 @@ export const ServiceIntegrationCard = ({
       });
 
       if (!response.ok) {
-        let errorDetails;
+        let errorDetails: Record<string, any> | { error: string };
         try {
           errorDetails = await response.json();
           console.error(`[ServiceCard] API error response:`, errorDetails);
@@ -198,7 +208,7 @@ export const ServiceIntegrationCard = ({
           errorDetails = { error: errorText || `HTTP ${response.status}` };
         }
         throw new Error(
-          errorDetails.error ||
+          errorDetails?.error ||
             `Failed to authorize toolkit (HTTP ${response.status})`,
         );
       }
@@ -264,9 +274,9 @@ export const ServiceIntegrationCard = ({
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error: Record<string, any> | { error: string } = await response.json();
         console.error(`[ServiceCard] Disconnect failed:`, error);
-        throw new Error(error.error || "Failed to disconnect account");
+        throw new Error(error?.error || "Failed to disconnect account");
       }
 
       const _result = await response.json();
@@ -305,14 +315,19 @@ export const ServiceIntegrationCard = ({
         throw new Error("Failed to refresh connection status");
       }
 
-      const status = await response.json();
+      const status: {
+        connected: boolean;
+        connectionId?: string;
+        status?: string;
+        error?: string;
+      } = await response.json();
       setConnectionStatus(status);
 
       if (status.connected) {
         toast.success(`${toolkits[toolkit].name} connection is active`);
       } else {
         toast.warning(
-          `${toolkits[toolkit].name} connection is not active. ${status.error || ""}`,
+          `${toolkits[toolkit].name} connection is not active. ${status?.error || ""}`,
         );
       }
 

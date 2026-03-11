@@ -36,7 +36,7 @@ interface WorkspaceHeaderProps {
 
 // Helper function to show content when workspace button is collapsed
 const CollapsedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspaces"> }>(
-	function CollapsedButton({ workspace, ...props }: { workspace: Doc<"workspaces"> }, ref) {
+	function CollapsedButton({ workspace, ...props }, ref) {
   return (
     <Hint align="center" label={workspace.name} side="right">
       <Button
@@ -56,7 +56,8 @@ const CollapsedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspac
 );
 
 // Helper function to show content when workspace button is expanded
-const ExpandedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspaces"> }>(function ExpandedButton({ workspace, ...props  }: { workspace: Doc<"workspaces">}, ref) {
+const ExpandedButton = forwardRef<HTMLButtonElement, { workspace: Doc<"workspaces"> }>(
+  function ExpandedButton({ workspace, ...props  }, ref) {
   return (
     <Button
       className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-secondary-foreground hover:bg-accent/10 transition-standard"
@@ -174,7 +175,6 @@ export const WorkspaceHeader = ({
           </DropdownMenu>
 
           <Dialog onOpenChange={setSwitchOpen} open={switchOpen}>
-            {" "}
             {/* updated here */}
             <DialogContent className="overflow-hidden p-0 rounded-[12px] border-0 shadow-xl">
               <DialogHeader className="border-b p-5 bg-muted/30">
@@ -189,6 +189,7 @@ export const WorkspaceHeader = ({
               <div className="flex flex-col gap-y-3 p-5">
                 {workspaces?.map((item) => (
                   <button
+                    type="button"
                     className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border bg-card px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group"
                     key={item._id}
                     onClick={() => onWorkspaceClick(item._id)}
@@ -215,6 +216,7 @@ export const WorkspaceHeader = ({
                 ))}
 
                 <button
+                  type = "button" 
                   className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border border-dashed bg-card/50 px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group mt-2"
                   onClick={() => {
                     setSwitchOpen(false); // updated here

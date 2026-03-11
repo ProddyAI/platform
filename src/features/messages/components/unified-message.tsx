@@ -46,29 +46,33 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
   const channelId = useChannelId();
   const [participantNames, setParticipantNames] = useState<string[]>([]);
 
-  // Get members from the database to display real names for live sessions
-  const members = useQuery(api.members.get, { workspaceId });
-
-  // Update participant names when members data is available
-  useEffect(() => {
-    if (members && data.participants) {
-      const memberMap = new Map();
-      members.forEach((member) => {
-        memberMap.set(member.user._id, member.user.name);
-      });
-
-      const names = data.participants.map(
-        (id) => memberMap.get(id) || "Unknown user",
-      );
-
-      setParticipantNames(names);
-    }
-  }, [members, data.participants]);
-
   // Determine if this is a canvas or note type
   const isCanvas = data.type.includes("canvas");
   const isLive = data.type.includes("live");
   const isExport = data.type.includes("export");
+
+  // Get members from the database to display real names for live sessions (only when needed)
+  const members = isLive ? useQuery(api.members.get, { workspaceId }) : null;
+
+  // Update participant names when members data is available
+  useEffect(() => {
+    if (!members || !data.participants) {
+      // Reset participant names if members are not available or participants are absent
+      setParticipantNames([]);
+      return;
+    }
+
+    const memberMap = new Map();
+    members.forEach((member) => {
+      memberMap.set(member.user._id, member.user.name);
+    });
+
+    const names = data.participants.map(
+      (id) => memberMap.get(id) || "Unknown user",
+    );
+
+    setParticipantNames(names);
+  }, [members, data.participants]);
 
   // Get the appropriate icon
   const Icon = isCanvas ? PaintBucket : FileText;
