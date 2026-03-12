@@ -10,6 +10,7 @@ import BoardGanttView from "@/features/board/components/board-gantt-view";
 import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
+import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import {
 	// Keep old card/list modals for gantt view
 	BoardAddCardModal,
@@ -124,8 +125,7 @@ const BoardPage = () => {
 	const [statusColor, setStatusColor] = useState("#5e6ad2");
 
 	// ── Issue drawer state ──────────────────────────────────────────────────
-	const [drawerOpen, setDrawerOpen] = useState(false);
-	const [focusedStatusId, setFocusedStatusId] = useState<Id<"statuses"> | null>(
+	const [drawerOpen, setDrawerOpen] = useState(false); const [linkageDiagramOpen, setLinkageDiagramOpen] = useState(false); const [focusedStatusId, setFocusedStatusId] = useState<Id<"statuses"> | null>(
 		null
 	);
 	const handledFocusIssueRef = useRef<string | null>(null);
@@ -148,12 +148,12 @@ const BoardPage = () => {
 	// ── Optimistic statuses (for drag reorder) ──────────────────────────────
 	const [optimisticStatuses, setOptimisticStatuses] = useState<
 		| {
-				_id: Id<"statuses">;
-				name: string;
-				color: string;
-				order: number;
-				channelId: Id<"channels">;
-		  }[]
+			_id: Id<"statuses">;
+			name: string;
+			color: string;
+			order: number;
+			channelId: Id<"channels">;
+		}[]
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
@@ -600,8 +600,7 @@ const BoardPage = () => {
 								bubbles: true,
 							});
 							document.dispatchEvent(event);
-						}}
-						setView={setView}
+						}} onLinkageDiagramClick={() => setLinkageDiagramOpen(true)} setView={setView}
 						showHeader
 						statusCount={displayedStatuses.length}
 						statuses={displayedStatuses}
@@ -625,6 +624,7 @@ const BoardPage = () => {
 						});
 						document.dispatchEvent(event);
 					}}
+					onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
 					setView={setView}
 					statusCount={displayedStatuses.length}
 					totalIssues={allCards.length}
@@ -685,6 +685,12 @@ const BoardPage = () => {
 				}}
 				open={drawerOpen}
 				statuses={displayedStatuses}
+			/>
+
+			<BoardLinkageDiagram
+				channelId={channelId}
+				onOpenChange={setLinkageDiagramOpen}
+				open={linkageDiagramOpen}
 			/>
 
 			{/* ── Legacy card modals (table/gantt) ──────────────────────────── */}

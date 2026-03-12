@@ -1,16 +1,16 @@
-import { v } from "convex/values";
-import { api } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
-import { getUserEmailFromMemberId, getUserNameFromMemberId } from "./utils";
+import { v } from 'convex/values';
+import { api } from './_generated/api';
+import type { Doc, Id } from './_generated/dataModel';
+import type { MutationCtx, QueryCtx } from './_generated/server';
+import { mutation, query } from './_generated/server';
+import { getUserEmailFromMemberId, getUserNameFromMemberId } from './utils';
 
 const DONE_STATUS_KEYWORDS = [
-	"done",
-	"completed",
-	"complete",
-	"closed",
-	"resolved",
+	'done',
+	'completed',
+	'complete',
+	'closed',
+	'resolved',
 ];
 
 const isDoneStatusName = (name: string) => {
@@ -20,27 +20,27 @@ const isDoneStatusName = (name: string) => {
 
 const getCompletedStatusIdsForChannel = async (
 	ctx: QueryCtx,
-	channelId: Id<"channels">
-): Promise<Set<Id<"statuses">>> => {
+	channelId: Id<'channels'>,
+): Promise<Set<Id<'statuses'>>> => {
 	const statuses = await ctx.db
-		.query("statuses")
-		.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+		.query('statuses')
+		.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 		.collect();
 
 	return new Set(
 		statuses
 			.filter((status) => isDoneStatusName(status.name))
-			.map((status) => status._id)
+			.map((status) => status._id),
 	);
 };
 
 const deleteIssueCascade = async (
 	ctx: MutationCtx,
-	issueId: Id<"issues">
+	issueId: Id<'issues'>,
 ): Promise<void> => {
 	const childIssues = await ctx.db
-		.query("issues")
-		.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", issueId))
+		.query('issues')
+		.withIndex('by_parent_issue_id', (q) => q.eq('parentIssueId', issueId))
 		.collect();
 
 	for (const childIssue of childIssues) {
@@ -48,32 +48,32 @@ const deleteIssueCascade = async (
 	}
 
 	const comments = await ctx.db
-		.query("issueComments")
-		.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
+		.query('issueComments')
+		.withIndex('by_issue_id', (q) => q.eq('issueId', issueId))
 		.collect();
 	for (const comment of comments) {
 		await ctx.db.delete(comment._id);
 	}
 
 	const mentions = await ctx.db
-		.query("mentions")
-		.withIndex("by_issue_id", (q) => q.eq("issueId", issueId))
+		.query('mentions')
+		.withIndex('by_issue_id', (q) => q.eq('issueId', issueId))
 		.collect();
 	for (const mention of mentions) {
 		await ctx.db.delete(mention._id);
 	}
 
 	const blockingRelations = await ctx.db
-		.query("issueBlocking")
-		.withIndex("by_blocking_issue_id", (q) => q.eq("blockingIssueId", issueId))
+		.query('issueBlocking')
+		.withIndex('by_blocking_issue_id', (q) => q.eq('blockingIssueId', issueId))
 		.collect();
 	for (const relation of blockingRelations) {
 		await ctx.db.delete(relation._id);
 	}
 
 	const blockedRelations = await ctx.db
-		.query("issueBlocking")
-		.withIndex("by_blocked_issue_id", (q) => q.eq("blockedIssueId", issueId))
+		.query('issueBlocking')
+		.withIndex('by_blocked_issue_id', (q) => q.eq('blockedIssueId', issueId))
 		.collect();
 	for (const relation of blockedRelations) {
 		await ctx.db.delete(relation._id);
@@ -84,18 +84,18 @@ const deleteIssueCascade = async (
 
 // LISTS
 export const createList = mutation({
-	args: { channelId: v.id("channels"), title: v.string(), order: v.number() },
+	args: { channelId: v.id('channels'), title: v.string(), order: v.number() },
 	handler: async (
 		ctx: MutationCtx,
-		args: { channelId: Id<"channels">; title: string; order: number }
+		args: { channelId: Id<'channels'>; title: string; order: number },
 	) => {
-		return await ctx.db.insert("lists", args);
+		return await ctx.db.insert('lists', args);
 	},
 });
 
 export const updateList = mutation({
 	args: {
-		listId: v.id("lists"),
+		listId: v.id('lists'),
 		title: v.optional(v.string()),
 		order: v.optional(v.number()),
 	},
@@ -104,19 +104,19 @@ export const updateList = mutation({
 		{
 			listId,
 			...updates
-		}: { listId: Id<"lists">; title?: string; order?: number }
+		}: { listId: Id<'lists'>; title?: string; order?: number },
 	) => {
 		return await ctx.db.patch(listId, updates);
 	},
 });
 
 export const deleteList = mutation({
-	args: { listId: v.id("lists") },
-	handler: async (ctx: MutationCtx, { listId }: { listId: Id<"lists"> }) => {
+	args: { listId: v.id('lists') },
+	handler: async (ctx: MutationCtx, { listId }: { listId: Id<'lists'> }) => {
 		// Delete all cards in the list
 		const cards = await ctx.db
-			.query("cards")
-			.withIndex("by_list_id", (q) => q.eq("listId", listId))
+			.query('cards')
+			.withIndex('by_list_id', (q) => q.eq('listId', listId))
 			.collect();
 		for (const card of cards) {
 			await ctx.db.delete(card._id);
@@ -128,11 +128,11 @@ export const deleteList = mutation({
 
 export const reorderLists = mutation({
 	args: {
-		listOrders: v.array(v.object({ listId: v.id("lists"), order: v.number() })),
+		listOrders: v.array(v.object({ listId: v.id('lists'), order: v.number() })),
 	},
 	handler: async (
 		ctx: MutationCtx,
-		{ listOrders }: { listOrders: { listId: Id<"lists">; order: number }[] }
+		{ listOrders }: { listOrders: { listId: Id<'lists'>; order: number }[] },
 	) => {
 		for (const { listId, order } of listOrders) {
 			await ctx.db.patch(listId, { order });
@@ -144,80 +144,80 @@ export const reorderLists = mutation({
 // CARDS
 export const createCard = mutation({
 	args: {
-		listId: v.id("lists"),
+		listId: v.id('lists'),
 		title: v.string(),
 		description: v.optional(v.string()),
 		order: v.number(),
 		labels: v.optional(v.array(v.string())),
 		priority: v.optional(
 			v.union(
-				v.literal("lowest"),
-				v.literal("low"),
-				v.literal("medium"),
-				v.literal("high"),
-				v.literal("highest")
-			)
+				v.literal('lowest'),
+				v.literal('low'),
+				v.literal('medium'),
+				v.literal('high'),
+				v.literal('highest'),
+			),
 		),
 		dueDate: v.optional(v.number()),
-		assignees: v.optional(v.array(v.id("members"))),
-		parentCardId: v.optional(v.id("cards")),
+		assignees: v.optional(v.array(v.id('members'))),
+		parentCardId: v.optional(v.id('cards')),
 		isCompleted: v.optional(v.boolean()),
 		estimate: v.optional(v.number()),
 		timeSpent: v.optional(v.number()),
-		watchers: v.optional(v.array(v.id("members"))),
-		blockedBy: v.optional(v.array(v.id("cards"))),
+		watchers: v.optional(v.array(v.id('members'))),
+		blockedBy: v.optional(v.array(v.id('cards'))),
 	},
 	handler: async (
 		ctx: MutationCtx,
 		args: {
-			listId: Id<"lists">;
+			listId: Id<'lists'>;
 			title: string;
 			description?: string;
 			order: number;
 			labels?: string[];
-			priority?: "lowest" | "low" | "medium" | "high" | "highest";
+			priority?: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
 			dueDate?: number;
-			assignees?: Id<"members">[];
-			parentCardId?: Id<"cards">;
+			assignees?: Id<'members'>[];
+			parentCardId?: Id<'cards'>;
 			isCompleted?: boolean;
 			estimate?: number;
 			timeSpent?: number;
-			watchers?: Id<"members">[];
-			blockedBy?: Id<"cards">[];
-		}
+			watchers?: Id<'members'>[];
+			blockedBy?: Id<'cards'>[];
+		},
 	) => {
 		// Get the list to find the channel and workspace
 		const list = await ctx.db.get(args.listId);
-		if (!list) throw new Error("List not found");
+		if (!list) throw new Error('List not found');
 
 		const channel = await ctx.db.get(list.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		// Insert the card
-		const cardId = await ctx.db.insert("cards", args);
+		const cardId = await ctx.db.insert('cards', args);
 
 		// Create mentions for assignees if any
 		if (args.assignees && args.assignees.length > 0) {
 			try {
 				// Get the current user/member who is creating the card
 				const auth = await ctx.auth.getUserIdentity();
-				if (!auth) throw new Error("Not authenticated");
+				if (!auth) throw new Error('Not authenticated');
 
-				const userId = auth.subject.split("|")[0] as Id<"users">;
+				const userId = auth.subject.split('|')[0] as Id<'users'>;
 
 				const creator = await ctx.db
-					.query("members")
-					.withIndex("by_workspace_id_user_id", (q) =>
-						q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+					.query('members')
+					.withIndex('by_workspace_id_user_id', (q) =>
+						q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 					)
 					.unique();
 
-				if (!creator) throw new Error("Creator not found");
+				if (!creator) throw new Error('Creator not found');
 
 				// Create a mention for each assignee
 				for (const assigneeId of args.assignees) {
 					// Create a mention
-					await ctx.db.insert("mentions", {
+					await ctx.db.insert('mentions', {
 						mentionedMemberId: assigneeId,
 						mentionerMemberId: creator._id,
 						workspaceId: channel.workspaceId,
@@ -236,7 +236,7 @@ export const createCard = mutation({
 					});
 				}
 			} catch (error) {
-				console.error("Error creating mentions for card assignees:", error);
+				console.error('Error creating mentions for card assignees:', error);
 				// Don't throw the error, as we still want to return the card ID
 			}
 		}
@@ -247,28 +247,28 @@ export const createCard = mutation({
 
 export const updateCard = mutation({
 	args: {
-		cardId: v.id("cards"),
+		cardId: v.id('cards'),
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
 		order: v.optional(v.number()),
-		listId: v.optional(v.id("lists")),
+		listId: v.optional(v.id('lists')),
 		labels: v.optional(v.array(v.string())),
 		priority: v.optional(
 			v.union(
-				v.literal("lowest"),
-				v.literal("low"),
-				v.literal("medium"),
-				v.literal("high"),
-				v.literal("highest")
-			)
+				v.literal('lowest'),
+				v.literal('low'),
+				v.literal('medium'),
+				v.literal('high'),
+				v.literal('highest'),
+			),
 		),
 		dueDate: v.optional(v.number()),
-		assignees: v.optional(v.array(v.id("members"))),
+		assignees: v.optional(v.array(v.id('members'))),
 		isCompleted: v.optional(v.boolean()),
 		estimate: v.optional(v.number()),
 		timeSpent: v.optional(v.number()),
-		watchers: v.optional(v.array(v.id("members"))),
-		blockedBy: v.optional(v.array(v.id("cards"))),
+		watchers: v.optional(v.array(v.id('members'))),
+		blockedBy: v.optional(v.array(v.id('cards'))),
 	},
 	handler: async (
 		ctx: MutationCtx,
@@ -276,32 +276,32 @@ export const updateCard = mutation({
 			cardId,
 			...updates
 		}: {
-			cardId: Id<"cards">;
+			cardId: Id<'cards'>;
 			title?: string;
 			description?: string;
 			order?: number;
-			listId?: Id<"lists">;
+			listId?: Id<'lists'>;
 			labels?: string[];
-			priority?: "lowest" | "low" | "medium" | "high" | "highest";
+			priority?: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
 			dueDate?: number;
-			assignees?: Id<"members">[];
+			assignees?: Id<'members'>[];
 			isCompleted?: boolean;
 			estimate?: number;
 			timeSpent?: number;
-			watchers?: Id<"members">[];
-			blockedBy?: Id<"cards">[];
-		}
+			watchers?: Id<'members'>[];
+			blockedBy?: Id<'cards'>[];
+		},
 	) => {
 		// Get the current card to check for changes in assignees
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error("Card not found");
+		if (!card) throw new Error('Card not found');
 
 		// Get the list to find the channel and workspace
 		const list = await ctx.db.get(updates.listId || card.listId);
-		if (!list) throw new Error("List not found");
+		if (!list) throw new Error('List not found');
 
 		const channel = await ctx.db.get(list.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		// Update the card
 		await ctx.db.patch(cardId, updates);
@@ -311,29 +311,29 @@ export const updateCard = mutation({
 			try {
 				// Get the current user/member who is updating the card
 				const auth = await ctx.auth.getUserIdentity();
-				if (!auth) throw new Error("Not authenticated");
+				if (!auth) throw new Error('Not authenticated');
 
-				const userId = auth.subject.split("|")[0] as Id<"users">;
+				const userId = auth.subject.split('|')[0] as Id<'users'>;
 
 				const updater = await ctx.db
-					.query("members")
-					.withIndex("by_workspace_id_user_id", (q) =>
-						q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+					.query('members')
+					.withIndex('by_workspace_id_user_id', (q) =>
+						q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 					)
 					.unique();
 
-				if (!updater) throw new Error("Updater not found");
+				if (!updater) throw new Error('Updater not found');
 
 				// Find new assignees (those in updates.assignees but not in card.assignees)
 				const currentAssignees = card.assignees || [];
 				const newAssignees = updates.assignees.filter(
-					(assigneeId) => !currentAssignees.includes(assigneeId)
+					(assigneeId) => !currentAssignees.includes(assigneeId),
 				);
 
 				// Create mentions for new assignees
 				for (const assigneeId of newAssignees) {
 					// Create a mention
-					await ctx.db.insert("mentions", {
+					await ctx.db.insert('mentions', {
 						mentionedMemberId: assigneeId,
 						mentionerMemberId: updater._id,
 						workspaceId: channel.workspaceId,
@@ -352,7 +352,7 @@ export const updateCard = mutation({
 					});
 				}
 			} catch (error) {
-				console.error("Error creating mentions for card assignees:", error);
+				console.error('Error creating mentions for card assignees:', error);
 				// Don't throw the error, as we still want to return the card ID
 			}
 		}
@@ -366,12 +366,12 @@ export const updateCard = mutation({
 });
 
 export const deleteCard = mutation({
-	args: { cardId: v.id("cards") },
-	handler: async (ctx: MutationCtx, { cardId }: { cardId: Id<"cards"> }) => {
+	args: { cardId: v.id('cards') },
+	handler: async (ctx: MutationCtx, { cardId }: { cardId: Id<'cards'> }) => {
 		// Delete all subtasks first
 		const subtasks = await ctx.db
-			.query("cards")
-			.withIndex("by_parent_card_id", (q) => q.eq("parentCardId", cardId))
+			.query('cards')
+			.withIndex('by_parent_card_id', (q) => q.eq('parentCardId', cardId))
 			.collect();
 		for (const subtask of subtasks) {
 			await ctx.db.delete(subtask._id);
@@ -379,8 +379,8 @@ export const deleteCard = mutation({
 
 		// Delete all comments
 		const comments = await ctx.db
-			.query("card_comments")
-			.withIndex("by_card_id", (q) => q.eq("cardId", cardId))
+			.query('card_comments')
+			.withIndex('by_card_id', (q) => q.eq('cardId', cardId))
 			.collect();
 		for (const comment of comments) {
 			await ctx.db.delete(comment._id);
@@ -388,8 +388,8 @@ export const deleteCard = mutation({
 
 		// Delete all activity
 		const activities = await ctx.db
-			.query("card_activity")
-			.withIndex("by_card_id", (q) => q.eq("cardId", cardId))
+			.query('card_activity')
+			.withIndex('by_card_id', (q) => q.eq('cardId', cardId))
 			.collect();
 		for (const activity of activities) {
 			await ctx.db.delete(activity._id);
@@ -401,14 +401,14 @@ export const deleteCard = mutation({
 });
 
 export const moveCard = mutation({
-	args: { cardId: v.id("cards"), toListId: v.id("lists"), order: v.number() },
+	args: { cardId: v.id('cards'), toListId: v.id('lists'), order: v.number() },
 	handler: async (
 		ctx: MutationCtx,
 		{
 			cardId,
 			toListId,
 			order,
-		}: { cardId: Id<"cards">; toListId: Id<"lists">; order: number }
+		}: { cardId: Id<'cards'>; toListId: Id<'lists'>; order: number },
 	) => {
 		return await ctx.db.patch(cardId, { listId: toListId, order });
 	},
@@ -416,9 +416,9 @@ export const moveCard = mutation({
 
 export const updateCardInGantt = mutation({
 	args: {
-		cardId: v.id("cards"),
+		cardId: v.id('cards'),
 		dueDate: v.number(),
-		listId: v.optional(v.id("lists")),
+		listId: v.optional(v.id('lists')),
 	},
 	handler: async (
 		ctx: MutationCtx,
@@ -426,9 +426,9 @@ export const updateCardInGantt = mutation({
 			cardId,
 			dueDate,
 			listId,
-		}: { cardId: Id<"cards">; dueDate: number; listId?: Id<"lists"> }
+		}: { cardId: Id<'cards'>; dueDate: number; listId?: Id<'lists'> },
 	) => {
-		const updates: Partial<Pick<Doc<"cards">, "dueDate" | "listId" | "order">> =
+		const updates: Partial<Pick<Doc<'cards'>, 'dueDate' | 'listId' | 'order'>> =
 			{
 				dueDate,
 			};
@@ -438,8 +438,8 @@ export const updateCardInGantt = mutation({
 
 			// If we're changing the list, put the card at the end of the new list
 			const cards = await ctx.db
-				.query("cards")
-				.withIndex("by_list_id", (q) => q.eq("listId", listId))
+				.query('cards')
+				.withIndex('by_list_id', (q) => q.eq('listId', listId))
 				.collect();
 
 			updates.order = cards.length;
@@ -451,25 +451,25 @@ export const updateCardInGantt = mutation({
 
 // QUERIES
 export const getLists = query({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (
 		ctx: QueryCtx,
-		{ channelId }: { channelId: Id<"channels"> }
+		{ channelId }: { channelId: Id<'channels'> },
 	) => {
 		return await ctx.db
-			.query("lists")
-			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
+			.query('lists')
+			.withIndex('by_channel_id_order', (q) => q.eq('channelId', channelId))
 			.collect();
 	},
 });
 
 export const getCards = query({
-	args: { listId: v.id("lists") },
-	handler: async (ctx: QueryCtx, { listId }: { listId: Id<"lists"> }) => {
+	args: { listId: v.id('lists') },
+	handler: async (ctx: QueryCtx, { listId }: { listId: Id<'lists'> }) => {
 		const cards = await ctx.db
-			.query("cards")
-			.withIndex("by_list_id", (q) => q.eq("listId", listId))
-			.order("asc")
+			.query('cards')
+			.withIndex('by_list_id', (q) => q.eq('listId', listId))
+			.order('asc')
 			.collect();
 
 		// Filter out subtasks (only show parent cards at top level)
@@ -479,8 +479,8 @@ export const getCards = query({
 		const cardsWithStats = await Promise.all(
 			parentCards.map(async (card) => {
 				const subtasks = await ctx.db
-					.query("cards")
-					.withIndex("by_parent_card_id", (q) => q.eq("parentCardId", card._id))
+					.query('cards')
+					.withIndex('by_parent_card_id', (q) => q.eq('parentCardId', card._id))
 					.collect();
 
 				const completedCount = subtasks.filter((s) => s.isCompleted).length;
@@ -495,7 +495,7 @@ export const getCards = query({
 							totalCount > 0 ? (completedCount / totalCount) * 100 : 0,
 					},
 				};
-			})
+			}),
 		);
 
 		return cardsWithStats;
@@ -503,17 +503,17 @@ export const getCards = query({
 });
 
 export const getAllCardsForChannel = query({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (ctx, { channelId }) => {
 		const lists = await ctx.db
-			.query("lists")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.query('lists')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 			.collect();
 		const allCards = [];
 		for (const list of lists) {
 			const cards = await ctx.db
-				.query("cards")
-				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+				.query('cards')
+				.withIndex('by_list_id', (q) => q.eq('listId', list._id))
 				.collect();
 			allCards.push(...cards);
 		}
@@ -522,18 +522,18 @@ export const getAllCardsForChannel = query({
 });
 
 export const getUniqueLabels = query({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (ctx, { channelId }) => {
 		const lists = await ctx.db
-			.query("lists")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.query('lists')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 			.collect();
 		const allLabels = new Set<string>();
 
 		for (const list of lists) {
 			const cards = await ctx.db
-				.query("cards")
-				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+				.query('cards')
+				.withIndex('by_list_id', (q) => q.eq('listId', list._id))
 				.collect();
 
 			// Collect all labels
@@ -551,12 +551,12 @@ export const getUniqueLabels = query({
 });
 
 export const getCardsWithDueDate = query({
-	args: { workspaceId: v.id("workspaces") },
+	args: { workspaceId: v.id('workspaces') },
 	handler: async (ctx, { workspaceId }) => {
 		// Get all channels in the workspace
 		const channels = await ctx.db
-			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+			.query('channels')
+			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', workspaceId))
 			.collect();
 
 		const cardsWithDueDate = [];
@@ -564,15 +564,15 @@ export const getCardsWithDueDate = query({
 		// For each channel, get all lists and cards
 		for (const channel of channels) {
 			const lists = await ctx.db
-				.query("lists")
-				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.query('lists')
+				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
 				.collect();
 
 			for (const list of lists) {
 				const cards = await ctx.db
-					.query("cards")
-					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
-					.filter((q) => q.neq(q.field("dueDate"), undefined))
+					.query('cards')
+					.withIndex('by_list_id', (q) => q.eq('listId', list._id))
+					.filter((q) => q.neq(q.field('dueDate'), undefined))
 					.collect();
 
 				// Add channel and list info to each card
@@ -593,7 +593,7 @@ export const getCardsWithDueDate = query({
 
 // Get members for a channel's workspace (for assignee selection)
 export const getMembersForChannel = query({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (ctx, { channelId }) => {
 		// First get the channel to find its workspace
 		const channel = await ctx.db.get(channelId);
@@ -603,8 +603,8 @@ export const getMembersForChannel = query({
 
 		// Get all members in the workspace
 		const members = await ctx.db
-			.query("members")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+			.query('members')
+			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', workspaceId))
 			.collect();
 
 		// Populate user data for each member
@@ -629,38 +629,38 @@ export const getMembersForChannel = query({
 // ─── LINEAR-STYLE STATUSES ───────────────────────────────────────────────────
 
 const DEFAULT_STATUSES = [
-	{ name: "To-do", color: "#b4b4b4", order: 0 },
-	{ name: "In Progress", color: "#f2c94c", order: 1 },
-	{ name: "In Review", color: "#6938ef", order: 2 },
-	{ name: "Done", color: "#00b341", order: 3 },
+	{ name: 'To-do', color: '#b4b4b4', order: 0 },
+	{ name: 'In Progress', color: '#f2c94c', order: 1 },
+	{ name: 'In Review', color: '#6938ef', order: 2 },
+	{ name: 'Done', color: '#00b341', order: 3 },
 ];
 
 const STATUS_COLORS = [
-	"#b4b4b4",
-	"#5e6ad2",
-	"#f2c94c",
-	"#6938ef",
-	"#00b341",
-	"#eb5757",
-	"#4ea7fc",
-	"#e07b39",
+	'#b4b4b4',
+	'#5e6ad2',
+	'#f2c94c',
+	'#6938ef',
+	'#00b341',
+	'#eb5757',
+	'#4ea7fc',
+	'#e07b39',
 ];
 
 function mapPriorityToIssue(
-	priority?: "lowest" | "low" | "medium" | "high" | "highest"
-): "urgent" | "high" | "medium" | "low" | "no_priority" | undefined {
+	priority?: 'lowest' | 'low' | 'medium' | 'high' | 'highest',
+): 'urgent' | 'high' | 'medium' | 'low' | 'no_priority' | undefined {
 	if (!priority) return undefined;
 	switch (priority) {
-		case "highest":
-			return "urgent";
-		case "high":
-			return "high";
-		case "medium":
-			return "medium";
-		case "low":
-			return "low";
-		case "lowest":
-			return "no_priority";
+		case 'highest':
+			return 'urgent';
+		case 'high':
+			return 'high';
+		case 'medium':
+			return 'medium';
+		case 'low':
+			return 'low';
+		case 'lowest':
+			return 'no_priority';
 		default:
 			return undefined;
 	}
@@ -669,79 +669,79 @@ function mapPriorityToIssue(
 // Helper to assert that the caller is a member of the workspace
 async function assertWorkspaceMember(
 	ctx: MutationCtx,
-	workspaceId: Id<"workspaces">
-): Promise<Doc<"members">> {
+	workspaceId: Id<'workspaces'>,
+): Promise<Doc<'members'>> {
 	const auth = await ctx.auth.getUserIdentity();
-	if (!auth) throw new Error("Not authenticated");
+	if (!auth) throw new Error('Not authenticated');
 
-	const userId = auth.subject.split("|")[0] as Id<"users">;
+	const userId = auth.subject.split('|')[0] as Id<'users'>;
 	const member = await ctx.db
-		.query("members")
-		.withIndex("by_workspace_id_user_id", (q) =>
-			q.eq("workspaceId", workspaceId).eq("userId", userId)
+		.query('members')
+		.withIndex('by_workspace_id_user_id', (q) =>
+			q.eq('workspaceId', workspaceId).eq('userId', userId),
 		)
 		.unique();
 
-	if (!member) throw new Error("Not a member of this workspace");
+	if (!member) throw new Error('Not a member of this workspace');
 	return member;
 }
 
 async function assertWorkspaceMemberForRead(
 	ctx: QueryCtx,
-	workspaceId: Id<"workspaces">
-): Promise<Doc<"members">> {
+	workspaceId: Id<'workspaces'>,
+): Promise<Doc<'members'>> {
 	const auth = await ctx.auth.getUserIdentity();
-	if (!auth) throw new Error("Not authenticated");
+	if (!auth) throw new Error('Not authenticated');
 
-	const userId = auth.subject.split("|")[0] as Id<"users">;
+	const userId = auth.subject.split('|')[0] as Id<'users'>;
 	const member = await ctx.db
-		.query("members")
-		.withIndex("by_workspace_id_user_id", (q) =>
-			q.eq("workspaceId", workspaceId).eq("userId", userId)
+		.query('members')
+		.withIndex('by_workspace_id_user_id', (q) =>
+			q.eq('workspaceId', workspaceId).eq('userId', userId),
 		)
 		.unique();
 
-	if (!member) throw new Error("Not a member of this workspace");
+	if (!member) throw new Error('Not a member of this workspace');
 	return member;
 }
 
 // Helper to assert that the caller has a specific role in the workspace
 async function assertWorkspaceRole(
 	ctx: MutationCtx,
-	workspaceId: Id<"workspaces">,
-	requiredRole: "admin" | "member"
-): Promise<Doc<"members">> {
+	workspaceId: Id<'workspaces'>,
+	requiredRole: 'admin' | 'member',
+): Promise<Doc<'members'>> {
 	const member = await assertWorkspaceMember(ctx, workspaceId);
 	if (
-		requiredRole === "admin" &&
-		member.role !== "admin" &&
-		member.role !== "owner"
+		requiredRole === 'admin' &&
+		member.role !== 'admin' &&
+		member.role !== 'owner'
 	) {
-		throw new Error("Admin role required");
+		throw new Error('Admin role required');
 	}
 	return member;
 }
 
 export const getStatuses = query({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (
 		ctx: QueryCtx,
-		{ channelId }: { channelId: Id<"channels"> }
+		{ channelId }: { channelId: Id<'channels'> },
 	) => {
 		const channel = await ctx.db.get(channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		return await ctx.db
-			.query("statuses")
-			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
+			.query('statuses')
+			.withIndex('by_channel_id_order', (q) => q.eq('channelId', channelId))
 			.collect();
 	},
 });
 
 export const createStatus = mutation({
 	args: {
-		channelId: v.id("channels"),
+		channelId: v.id('channels'),
 		name: v.string(),
 		color: v.string(),
 		order: v.number(),
@@ -749,16 +749,16 @@ export const createStatus = mutation({
 	handler: async (ctx: MutationCtx, args) => {
 		// Verify caller is a member of the workspace
 		const channel = await ctx.db.get(args.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
-		return await ctx.db.insert("statuses", args);
+		return await ctx.db.insert('statuses', args);
 	},
 });
 
 export const updateStatus = mutation({
 	args: {
-		statusId: v.id("statuses"),
+		statusId: v.id('statuses'),
 		name: v.optional(v.string()),
 		color: v.optional(v.string()),
 		order: v.optional(v.number()),
@@ -766,9 +766,9 @@ export const updateStatus = mutation({
 	handler: async (ctx: MutationCtx, { statusId, ...updates }) => {
 		// Verify caller is a member and status belongs to channel
 		const status = await ctx.db.get(statusId);
-		if (!status) throw new Error("Status not found");
+		if (!status) throw new Error('Status not found');
 		const channel = await ctx.db.get(status.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		return await ctx.db.patch(statusId, updates);
@@ -776,27 +776,27 @@ export const updateStatus = mutation({
 });
 
 export const deleteStatus = mutation({
-	args: { statusId: v.id("statuses") },
+	args: { statusId: v.id('statuses') },
 	handler: async (
 		ctx: MutationCtx,
-		{ statusId }: { statusId: Id<"statuses"> }
+		{ statusId }: { statusId: Id<'statuses'> },
 	) => {
 		// Verify caller is admin and status belongs to channel
 		const status = await ctx.db.get(statusId);
-		if (!status) throw new Error("Status not found");
+		if (!status) throw new Error('Status not found');
 		const channel = await ctx.db.get(status.channelId);
-		if (!channel) throw new Error("Channel not found");
-		await assertWorkspaceRole(ctx, channel.workspaceId, "admin");
+		if (!channel) throw new Error('Channel not found');
+		await assertWorkspaceRole(ctx, channel.workspaceId, 'admin');
 
 		// Delete all issues in this status
 		const issues = await ctx.db
-			.query("issues")
-			.withIndex("by_status_id", (q) => q.eq("statusId", statusId))
+			.query('issues')
+			.withIndex('by_status_id', (q) => q.eq('statusId', statusId))
 			.collect();
 		for (const issue of issues) {
 			const mentions = await ctx.db
-				.query("mentions")
-				.withIndex("by_issue_id", (q) => q.eq("issueId", issue._id))
+				.query('mentions')
+				.withIndex('by_issue_id', (q) => q.eq('issueId', issue._id))
 				.collect();
 			for (const mention of mentions) {
 				await ctx.db.delete(mention._id);
@@ -810,7 +810,7 @@ export const deleteStatus = mutation({
 export const reorderStatuses = mutation({
 	args: {
 		statusOrders: v.array(
-			v.object({ statusId: v.id("statuses"), order: v.number() })
+			v.object({ statusId: v.id('statuses'), order: v.number() }),
 		),
 	},
 	handler: async (ctx: MutationCtx, { statusOrders }) => {
@@ -818,17 +818,17 @@ export const reorderStatuses = mutation({
 
 		// Verify caller is a member and all statuses belong to the same channel
 		const firstStatus = await ctx.db.get(statusOrders[0].statusId);
-		if (!firstStatus) throw new Error("Status not found");
+		if (!firstStatus) throw new Error('Status not found');
 		const channel = await ctx.db.get(firstStatus.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Verify all statuses belong to the same channel
 		for (const { statusId } of statusOrders) {
 			const status = await ctx.db.get(statusId);
-			if (!status) throw new Error("Status not found");
+			if (!status) throw new Error('Status not found');
 			if (status.channelId !== channel._id) {
-				throw new Error("Status does not belong to the same channel");
+				throw new Error('Status does not belong to the same channel');
 			}
 		}
 
@@ -842,18 +842,18 @@ export const reorderStatuses = mutation({
 // ─── LINEAR-STYLE ISSUES ─────────────────────────────────────────────────────
 
 export const getIssues = query({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (
 		ctx: QueryCtx,
-		{ channelId }: { channelId: Id<"channels"> }
+		{ channelId }: { channelId: Id<'channels'> },
 	) => {
 		const channel = await ctx.db.get(channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const issues = await ctx.db
-			.query("issues")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.query('issues')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 			.collect();
 
 		// Filter out sub-issues (only show main issues where parentIssueId is null/undefined)
@@ -863,20 +863,20 @@ export const getIssues = query({
 
 export const createIssue = mutation({
 	args: {
-		channelId: v.id("channels"),
-		statusId: v.id("statuses"),
+		channelId: v.id('channels'),
+		statusId: v.id('statuses'),
 		title: v.string(),
 		description: v.optional(v.string()),
 		priority: v.optional(
 			v.union(
-				v.literal("urgent"),
-				v.literal("high"),
-				v.literal("medium"),
-				v.literal("low"),
-				v.literal("no_priority")
-			)
+				v.literal('urgent'),
+				v.literal('high'),
+				v.literal('medium'),
+				v.literal('low'),
+				v.literal('no_priority'),
+			),
 		),
-		assignees: v.optional(v.array(v.id("members"))),
+		assignees: v.optional(v.array(v.id('members'))),
 		labels: v.optional(v.array(v.string())),
 		dueDate: v.optional(v.number()),
 		order: v.number(),
@@ -884,11 +884,11 @@ export const createIssue = mutation({
 	handler: async (ctx: MutationCtx, args) => {
 		const now = Date.now();
 		const channel = await ctx.db.get(args.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		// Verify status belongs to the channel
 		const status = await ctx.db.get(args.statusId);
-		if (!status) throw new Error("Status not found");
+		if (!status) throw new Error('Status not found');
 		if (status.channelId !== args.channelId) {
 			throw new Error("Status does not belong to issue's channel");
 		}
@@ -910,13 +910,13 @@ export const createIssue = mutation({
 									return null;
 								}
 								return assigneeMember._id;
-							})
+							}),
 						)
-					).filter((assigneeId): assigneeId is Id<"members"> =>
-						Boolean(assigneeId)
+					).filter((assigneeId): assigneeId is Id<'members'> =>
+						Boolean(assigneeId),
 					);
 
-		const issueId = await ctx.db.insert("issues", {
+		const issueId = await ctx.db.insert('issues', {
 			...args,
 			assignees: validatedAssignees,
 			createdAt: now,
@@ -928,17 +928,17 @@ export const createIssue = mutation({
 			try {
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
-					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const userId = auth.subject.split('|')[0] as Id<'users'>;
 					const creator = await ctx.db
-						.query("members")
-						.withIndex("by_workspace_id_user_id", (q) =>
-							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						.query('members')
+						.withIndex('by_workspace_id_user_id', (q) =>
+							q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 						)
 						.unique();
 
 					if (creator) {
 						for (const assigneeId of validatedAssignees) {
-							await ctx.db.insert("mentions", {
+							await ctx.db.insert('mentions', {
 								mentionedMemberId: assigneeId,
 								mentionerMemberId: creator._id,
 								workspaceId: channel.workspaceId,
@@ -956,13 +956,13 @@ export const createIssue = mutation({
 									assigneeId,
 									issueId,
 									assignerId: creator._id,
-								}
+								},
 							);
 						}
 					}
 				}
 			} catch (error) {
-				console.error("Error creating mentions for issue assignees:", error);
+				console.error('Error creating mentions for issue assignees:', error);
 			}
 		}
 
@@ -972,30 +972,30 @@ export const createIssue = mutation({
 
 export const updateIssue = mutation({
 	args: {
-		issueId: v.id("issues"),
+		issueId: v.id('issues'),
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
-		statusId: v.optional(v.id("statuses")),
+		statusId: v.optional(v.id('statuses')),
 		priority: v.optional(
 			v.union(
-				v.literal("urgent"),
-				v.literal("high"),
-				v.literal("medium"),
-				v.literal("low"),
-				v.literal("no_priority")
-			)
+				v.literal('urgent'),
+				v.literal('high'),
+				v.literal('medium'),
+				v.literal('low'),
+				v.literal('no_priority'),
+			),
 		),
-		assignees: v.optional(v.array(v.id("members"))),
+		assignees: v.optional(v.array(v.id('members'))),
 		labels: v.optional(v.array(v.string())),
 		dueDate: v.optional(v.number()),
 		order: v.optional(v.number()),
 	},
 	handler: async (ctx: MutationCtx, { issueId, ...updates }) => {
 		const issue = await ctx.db.get(issueId);
-		if (!issue) throw new Error("Issue not found");
+		if (!issue) throw new Error('Issue not found');
 
 		const channel = await ctx.db.get(issue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
@@ -1003,7 +1003,7 @@ export const updateIssue = mutation({
 		// Verify statusId belongs to the channel if provided
 		if (updates.statusId) {
 			const status = await ctx.db.get(updates.statusId);
-			if (!status) throw new Error("Status not found");
+			if (!status) throw new Error('Status not found');
 			if (status.channelId !== issue.channelId) {
 				throw new Error("Status does not belong to issue's channel");
 			}
@@ -1023,10 +1023,10 @@ export const updateIssue = mutation({
 									return null;
 								}
 								return assigneeMember._id;
-							})
+							}),
 						)
-					).filter((assigneeId): assigneeId is Id<"members"> =>
-						Boolean(assigneeId)
+					).filter((assigneeId): assigneeId is Id<'members'> =>
+						Boolean(assigneeId),
 					);
 
 		await ctx.db.patch(issueId, {
@@ -1042,23 +1042,23 @@ export const updateIssue = mutation({
 			try {
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
-					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const userId = auth.subject.split('|')[0] as Id<'users'>;
 					const mentionCreatedAt = Date.now();
 					const updater = await ctx.db
-						.query("members")
-						.withIndex("by_workspace_id_user_id", (q) =>
-							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						.query('members')
+						.withIndex('by_workspace_id_user_id', (q) =>
+							q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 						)
 						.unique();
 
 					if (updater) {
 						const currentAssignees = issue.assignees || [];
 						const newAssignees = validatedAssignees.filter(
-							(id) => !currentAssignees.includes(id)
+							(id) => !currentAssignees.includes(id),
 						);
 
 						for (const assigneeId of newAssignees) {
-							await ctx.db.insert("mentions", {
+							await ctx.db.insert('mentions', {
 								mentionedMemberId: assigneeId,
 								mentionerMemberId: updater._id,
 								workspaceId: channel.workspaceId,
@@ -1076,13 +1076,13 @@ export const updateIssue = mutation({
 									assigneeId,
 									issueId,
 									assignerId: updater._id,
-								}
+								},
 							);
 						}
 					}
 				}
 			} catch (error) {
-				console.error("Error creating mentions for issue assignees:", error);
+				console.error('Error creating mentions for issue assignees:', error);
 			}
 		}
 
@@ -1092,8 +1092,8 @@ export const updateIssue = mutation({
 
 export const moveIssueStatus = mutation({
 	args: {
-		issueId: v.id("issues"),
-		toStatusId: v.id("statuses"),
+		issueId: v.id('issues'),
+		toStatusId: v.id('statuses'),
 		order: v.number(), // treated as target index within the destination status
 	},
 	handler: async (ctx: MutationCtx, { issueId, toStatusId, order }) => {
@@ -1106,38 +1106,38 @@ export const moveIssueStatus = mutation({
 
 		// Verify caller is a member of the workspace
 		const channel = await ctx.db.get(issue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Verify toStatusId belongs to the issue's channel
 		const toStatus = await ctx.db.get(toStatusId);
-		if (!toStatus) throw new Error("Status not found");
+		if (!toStatus) throw new Error('Status not found');
 		if (toStatus.channelId !== issue.channelId) {
 			throw new Error("Status does not belong to issue's channel");
 		}
 
-		const fromStatusId = issue.statusId as Id<"statuses">;
+		const fromStatusId = issue.statusId as Id<'statuses'>;
 		const targetIndex = Math.max(0, Math.floor(order));
 		const now = Date.now();
 		// Helper to sort issues by their current order, falling back to _creationTime
-		const sortByOrder = (a: Doc<"issues">, b: Doc<"issues">) => {
-			const ao = typeof a.order === "number" ? a.order : 0;
-			const bo = typeof b.order === "number" ? b.order : 0;
+		const sortByOrder = (a: Doc<'issues'>, b: Doc<'issues'>) => {
+			const ao = typeof a.order === 'number' ? a.order : 0;
+			const bo = typeof b.order === 'number' ? b.order : 0;
 			if (ao !== bo) return ao - bo;
 			return a._creationTime - b._creationTime;
 		};
 		if (fromStatusId === toStatusId) {
 			// Reorder within the same status
 			const allIssuesInStatus = await ctx.db
-				.query("issues")
-				.withIndex("by_status_id", (q) => q.eq("statusId", fromStatusId))
+				.query('issues')
+				.withIndex('by_status_id', (q) => q.eq('statusId', fromStatusId))
 				.collect();
 			// Exclude the moved issue from the list before re-inserting
 			const otherIssues = allIssuesInStatus
 				.filter((i) => i._id !== issueId)
 				.sort(sortByOrder);
 			const clampedIndex = Math.min(targetIndex, otherIssues.length);
-			const newOrderIds: Id<"issues">[] = [];
+			const newOrderIds: Id<'issues'>[] = [];
 			for (let i = 0; i < otherIssues.length; i++) {
 				if (i === clampedIndex) {
 					newOrderIds.push(issueId);
@@ -1160,8 +1160,8 @@ export const moveIssueStatus = mutation({
 		// Moving across different statuses
 		// Reindex issues in the source status (excluding the moved issue)
 		const fromIssues = await ctx.db
-			.query("issues")
-			.withIndex("by_status_id", (q) => q.eq("statusId", fromStatusId))
+			.query('issues')
+			.withIndex('by_status_id', (q) => q.eq('statusId', fromStatusId))
 			.collect();
 		const remainingFromIssues = fromIssues
 			.filter((i) => i._id !== issueId)
@@ -1174,12 +1174,12 @@ export const moveIssueStatus = mutation({
 		}
 		// Prepare and reindex issues in the destination status, inserting the moved issue
 		const toIssues = await ctx.db
-			.query("issues")
-			.withIndex("by_status_id", (q) => q.eq("statusId", toStatusId))
+			.query('issues')
+			.withIndex('by_status_id', (q) => q.eq('statusId', toStatusId))
 			.collect();
 		const sortedToIssues = toIssues.sort(sortByOrder);
 		const clampedDestIndex = Math.min(targetIndex, sortedToIssues.length);
-		const destOrderIds: Id<"issues">[] = [];
+		const destOrderIds: Id<'issues'>[] = [];
 		for (let i = 0; i < sortedToIssues.length; i++) {
 			if (i === clampedDestIndex) {
 				destOrderIds.push(issueId);
@@ -1209,13 +1209,13 @@ export const moveIssueStatus = mutation({
 });
 
 export const deleteIssue = mutation({
-	args: { issueId: v.id("issues") },
-	handler: async (ctx: MutationCtx, { issueId }: { issueId: Id<"issues"> }) => {
+	args: { issueId: v.id('issues') },
+	handler: async (ctx: MutationCtx, { issueId }: { issueId: Id<'issues'> }) => {
 		// Verify caller is a member of the workspace
 		const issue = await ctx.db.get(issueId);
-		if (!issue) throw new Error("Issue not found");
+		if (!issue) throw new Error('Issue not found');
 		const channel = await ctx.db.get(issue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		await deleteIssueCascade(ctx, issueId);
@@ -1226,19 +1226,19 @@ export const deleteIssue = mutation({
 // ─── SUB-ISSUE FUNCTIONS ─────────────────────────────────────────────────────
 
 export const getSubIssues = query({
-	args: { parentIssueId: v.id("issues") },
+	args: { parentIssueId: v.id('issues') },
 	handler: async (ctx, { parentIssueId }) => {
 		const parentIssue = await ctx.db.get(parentIssueId);
-		if (!parentIssue) throw new Error("Parent issue not found");
+		if (!parentIssue) throw new Error('Parent issue not found');
 
 		const channel = await ctx.db.get(parentIssue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const subIssues = await ctx.db
-			.query("issues")
-			.withIndex("by_parent_issue_id", (q) =>
-				q.eq("parentIssueId", parentIssueId)
+			.query('issues')
+			.withIndex('by_parent_issue_id', (q) =>
+				q.eq('parentIssueId', parentIssueId),
 			)
 			.collect();
 
@@ -1253,7 +1253,7 @@ export const getSubIssues = query({
 
 // Helper query to get sub-issue stats for a parent issue
 export const getSubIssueStats = query({
-	args: { parentIssueId: v.id("issues") },
+	args: { parentIssueId: v.id('issues') },
 	handler: async (ctx, { parentIssueId }) => {
 		const parentIssue = await ctx.db.get(parentIssueId);
 		if (!parentIssue) return { total: 0, completed: 0 };
@@ -1263,20 +1263,20 @@ export const getSubIssueStats = query({
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const subIssues = await ctx.db
-			.query("issues")
-			.withIndex("by_parent_issue_id", (q) =>
-				q.eq("parentIssueId", parentIssueId)
+			.query('issues')
+			.withIndex('by_parent_issue_id', (q) =>
+				q.eq('parentIssueId', parentIssueId),
 			)
 			.collect();
 
 		const completedStatusIds = await getCompletedStatusIdsForChannel(
 			ctx,
-			parentIssue.channelId
+			parentIssue.channelId,
 		);
 
 		const total = subIssues.length;
 		const completed = subIssues.filter((issue) =>
-			completedStatusIds.has(issue.statusId)
+			completedStatusIds.has(issue.statusId),
 		).length;
 
 		return { total, completed };
@@ -1285,11 +1285,11 @@ export const getSubIssueStats = query({
 
 // Batch query to get sub-issue stats for multiple issues at once
 export const getBatchSubIssueStats = query({
-	args: { issueIds: v.array(v.id("issues")) },
+	args: { issueIds: v.array(v.id('issues')) },
 	handler: async (ctx, { issueIds }) => {
 		const stats: Record<string, { total: number; completed: number }> = {};
 		const checkedWorkspaceIds = new Set<string>();
-		const completedStatusIdsByChannel = new Map<string, Set<Id<"statuses">>>();
+		const completedStatusIdsByChannel = new Map<string, Set<Id<'statuses'>>>();
 		const uniqueIssueIds = [...new Set(issueIds)];
 
 		for (const issueId of uniqueIssueIds) {
@@ -1311,27 +1311,27 @@ export const getBatchSubIssueStats = query({
 			}
 
 			const subIssues = await ctx.db
-				.query("issues")
-				.withIndex("by_parent_issue_id", (q) => q.eq("parentIssueId", issueId))
+				.query('issues')
+				.withIndex('by_parent_issue_id', (q) => q.eq('parentIssueId', issueId))
 				.collect();
 
 			let completedStatusIds = completedStatusIdsByChannel.get(
-				parentIssue.channelId
+				parentIssue.channelId,
 			);
 			if (!completedStatusIds) {
 				completedStatusIds = await getCompletedStatusIdsForChannel(
 					ctx,
-					parentIssue.channelId
+					parentIssue.channelId,
 				);
 				completedStatusIdsByChannel.set(
 					parentIssue.channelId,
-					completedStatusIds
+					completedStatusIds,
 				);
 			}
 
 			const total = subIssues.length;
 			const completed = subIssues.filter((issue) =>
-				completedStatusIds.has(issue.statusId)
+				completedStatusIds.has(issue.statusId),
 			).length;
 
 			stats[issueId] = { total, completed };
@@ -1343,18 +1343,18 @@ export const getBatchSubIssueStats = query({
 
 // Search issues and statuses for the global search
 export const searchBoardContent = query({
-	args: { channelId: v.id("channels"), query: v.string() },
+	args: { channelId: v.id('channels'), query: v.string() },
 	handler: async (ctx, { channelId, query }) => {
 		const channel = await ctx.db.get(channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const lowerQuery = query.toLowerCase();
 
 		// Search issues (excluding sub-issues)
 		const issues = await ctx.db
-			.query("issues")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.query('issues')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 			.collect();
 
 		const filteredIssues = issues
@@ -1364,33 +1364,33 @@ export const searchBoardContent = query({
 					issue.title.toLowerCase().includes(lowerQuery) ||
 					issue.description?.toLowerCase().includes(lowerQuery) ||
 					issue.labels?.some((label) =>
-						label.toLowerCase().includes(lowerQuery)
-					)
+						label.toLowerCase().includes(lowerQuery),
+					),
 			)
 			.slice(0, 10);
 
 		// Search statuses
 		const statuses = await ctx.db
-			.query("statuses")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.query('statuses')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 			.collect();
 
 		const filteredStatuses = statuses
 			.filter(
 				(status) =>
 					status.name.toLowerCase().includes(lowerQuery) ||
-					status.color.toLowerCase().includes(lowerQuery)
+					status.color.toLowerCase().includes(lowerQuery),
 			)
 			.slice(0, 5);
 
 		return {
 			issues: filteredIssues.map((issue) => ({
 				...issue,
-				type: "issue" as const,
+				type: 'issue' as const,
 			})),
 			statuses: filteredStatuses.map((status) => ({
 				...status,
-				type: "status" as const,
+				type: 'status' as const,
 			})),
 		};
 	},
@@ -1399,19 +1399,19 @@ export const searchBoardContent = query({
 // ─── ISSUE BLOCKING FUNCTIONS ────────────────────────────────────────────────
 
 export const getBlockingIssues = query({
-	args: { issueId: v.id("issues") },
+	args: { issueId: v.id('issues') },
 	handler: async (ctx, { issueId }) => {
 		const issue = await ctx.db.get(issueId);
-		if (!issue) throw new Error("Issue not found");
+		if (!issue) throw new Error('Issue not found');
 		const channel = await ctx.db.get(issue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		// Get issues that this issue is blocking (blocked by this issue)
 		const blockingRels = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_blocking_issue_id", (q) =>
-				q.eq("blockingIssueId", issueId)
+			.query('issueBlocking')
+			.withIndex('by_blocking_issue_id', (q) =>
+				q.eq('blockingIssueId', issueId),
 			)
 			.collect();
 
@@ -1419,7 +1419,7 @@ export const getBlockingIssues = query({
 			blockingRels.map(async (rel) => {
 				const blockedIssue = await ctx.db.get(rel.blockedIssueId);
 				return blockedIssue;
-			})
+			}),
 		);
 
 		return blockingIssues.filter((i) => i !== null);
@@ -1427,25 +1427,25 @@ export const getBlockingIssues = query({
 });
 
 export const getBlockedByIssues = query({
-	args: { issueId: v.id("issues") },
+	args: { issueId: v.id('issues') },
 	handler: async (ctx, { issueId }) => {
 		const issue = await ctx.db.get(issueId);
-		if (!issue) throw new Error("Issue not found");
+		if (!issue) throw new Error('Issue not found');
 		const channel = await ctx.db.get(issue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		// Get issues that are blocking this issue
 		const blockedByRels = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_blocked_issue_id", (q) => q.eq("blockedIssueId", issueId))
+			.query('issueBlocking')
+			.withIndex('by_blocked_issue_id', (q) => q.eq('blockedIssueId', issueId))
 			.collect();
 
 		const blockedByIssues = await Promise.all(
 			blockedByRels.map(async (rel) => {
 				const blockingIssue = await ctx.db.get(rel.blockingIssueId);
 				return blockingIssue;
-			})
+			}),
 		);
 
 		return blockedByIssues.filter((i) => i !== null);
@@ -1453,16 +1453,16 @@ export const getBlockedByIssues = query({
 });
 
 export const getAllIssuesForBlocking = query({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (ctx, { channelId }) => {
 		const channel = await ctx.db.get(channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		// Get all main issues (not sub-issues) in the channel
 		const issues = await ctx.db
-			.query("issues")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.query('issues')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 			.collect();
 
 		// Filter out sub-issues
@@ -1470,27 +1470,41 @@ export const getAllIssuesForBlocking = query({
 	},
 });
 
+export const getAllBlockingRelationshipsForChannel = query({
+	args: { channelId: v.id('channels') },
+	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error('Channel not found');
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		return await ctx.db
+			.query('issueBlocking')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
+			.collect();
+	},
+});
+
 export const addIssueBlockingRelationship = mutation({
 	args: {
-		channelId: v.id("channels"),
-		blockedIssueId: v.id("issues"),
-		blockingIssueId: v.id("issues"),
+		channelId: v.id('channels'),
+		blockedIssueId: v.id('issues'),
+		blockingIssueId: v.id('issues'),
 	},
 	handler: async (
 		ctx: MutationCtx,
-		{ channelId, blockedIssueId, blockingIssueId }
+		{ channelId, blockedIssueId, blockingIssueId },
 	) => {
 		if (blockedIssueId === blockingIssueId) {
-			throw new Error("An issue cannot block itself");
+			throw new Error('An issue cannot block itself');
 		}
 
 		const channel = await ctx.db.get(channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		const blockedIssue = await ctx.db.get(blockedIssueId);
 		const blockingIssue = await ctx.db.get(blockingIssueId);
 		if (!blockedIssue || !blockingIssue) {
-			throw new Error("Issue not found");
+			throw new Error('Issue not found');
 		}
 
 		// Verify both issues belong to the same channel
@@ -1498,12 +1512,12 @@ export const addIssueBlockingRelationship = mutation({
 			blockedIssue.channelId !== channelId ||
 			blockingIssue.channelId !== channelId
 		) {
-			throw new Error("Issues must belong to the same channel");
+			throw new Error('Issues must belong to the same channel');
 		}
 
 		// Check for circular dependency (multi-hop)
 		const visited = new Set<string>();
-		const queue: Id<"issues">[] = [blockedIssueId];
+		const queue: Id<'issues'>[] = [blockedIssueId];
 		while (queue.length > 0) {
 			const currentIssueId = queue.shift();
 			if (!currentIssueId) continue;
@@ -1515,16 +1529,16 @@ export const addIssueBlockingRelationship = mutation({
 			visited.add(visitedKey);
 
 			const outboundBlocking = await ctx.db
-				.query("issueBlocking")
-				.withIndex("by_blocked_issue_id", (q) =>
-					q.eq("blockedIssueId", currentIssueId)
+				.query('issueBlocking')
+				.withIndex('by_blocked_issue_id', (q) =>
+					q.eq('blockedIssueId', currentIssueId),
 				)
 				.collect();
 
 			for (const rel of outboundBlocking) {
 				if (rel.blockingIssueId === blockingIssueId) {
 					throw new Error(
-						"Circular dependency detected: the issue you're blocking already blocks this issue"
+						"Circular dependency detected: the issue you're blocking already blocks this issue",
 					);
 				}
 
@@ -1536,12 +1550,12 @@ export const addIssueBlockingRelationship = mutation({
 
 		// Check if relationship already exists
 		const existing = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_channel_id_blocked_issue_id_blocking_issue_id", (q) =>
+			.query('issueBlocking')
+			.withIndex('by_channel_id_blocked_issue_id_blocking_issue_id', (q) =>
 				q
-					.eq("channelId", channelId)
-					.eq("blockedIssueId", blockedIssueId)
-					.eq("blockingIssueId", blockingIssueId)
+					.eq('channelId', channelId)
+					.eq('blockedIssueId', blockedIssueId)
+					.eq('blockingIssueId', blockingIssueId),
 			)
 			.collect();
 
@@ -1553,7 +1567,7 @@ export const addIssueBlockingRelationship = mutation({
 		const member = await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Create the blocking relationship
-		await ctx.db.insert("issueBlocking", {
+		await ctx.db.insert('issueBlocking', {
 			channelId,
 			blockedIssueId,
 			blockingIssueId,
@@ -1567,30 +1581,30 @@ export const addIssueBlockingRelationship = mutation({
 
 export const removeIssueBlockingRelationship = mutation({
 	args: {
-		channelId: v.id("channels"),
-		blockedIssueId: v.id("issues"),
-		blockingIssueId: v.id("issues"),
+		channelId: v.id('channels'),
+		blockedIssueId: v.id('issues'),
+		blockingIssueId: v.id('issues'),
 	},
 	handler: async (
 		ctx: MutationCtx,
-		{ channelId, blockedIssueId, blockingIssueId }
+		{ channelId, blockedIssueId, blockingIssueId },
 	) => {
 		const channel = await ctx.db.get(channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Find and delete the blocking relationship
 		const blockingRels = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_channel_id_blocked_issue_id", (q) =>
-				q.eq("channelId", channelId).eq("blockedIssueId", blockedIssueId)
+			.query('issueBlocking')
+			.withIndex('by_channel_id_blocked_issue_id', (q) =>
+				q.eq('channelId', channelId).eq('blockedIssueId', blockedIssueId),
 			)
 			.collect();
 
 		const relToDelete = blockingRels.find(
-			(rel) => rel.blockingIssueId === blockingIssueId
+			(rel) => rel.blockingIssueId === blockingIssueId,
 		);
 
 		if (relToDelete) {
@@ -1603,40 +1617,40 @@ export const removeIssueBlockingRelationship = mutation({
 
 export const createSubIssue = mutation({
 	args: {
-		parentIssueId: v.id("issues"),
+		parentIssueId: v.id('issues'),
 		title: v.string(),
 		description: v.optional(v.string()),
 		priority: v.optional(
 			v.union(
-				v.literal("urgent"),
-				v.literal("high"),
-				v.literal("medium"),
-				v.literal("low"),
-				v.literal("no_priority")
-			)
+				v.literal('urgent'),
+				v.literal('high'),
+				v.literal('medium'),
+				v.literal('low'),
+				v.literal('no_priority'),
+			),
 		),
-		assignees: v.optional(v.array(v.id("members"))),
+		assignees: v.optional(v.array(v.id('members'))),
 		labels: v.optional(v.array(v.string())),
 		dueDate: v.optional(v.number()),
 	},
 	handler: async (ctx: MutationCtx, args) => {
 		const parentIssue = await ctx.db.get(args.parentIssueId);
-		if (!parentIssue) throw new Error("Parent issue not found");
+		if (!parentIssue) throw new Error('Parent issue not found');
 		if (parentIssue.parentIssueId) {
-			throw new Error("Cannot create subtask of a subtask");
+			throw new Error('Cannot create subtask of a subtask');
 		}
 
 		const channel = await ctx.db.get(parentIssue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Get the next order for sub-issues
 		const existingSubIssues = await ctx.db
-			.query("issues")
-			.withIndex("by_parent_issue_id", (q) =>
-				q.eq("parentIssueId", args.parentIssueId)
+			.query('issues')
+			.withIndex('by_parent_issue_id', (q) =>
+				q.eq('parentIssueId', args.parentIssueId),
 			)
 			.collect();
 
@@ -1658,14 +1672,14 @@ export const createSubIssue = mutation({
 									return null;
 								}
 								return assigneeMember._id;
-							})
+							}),
 						)
-					).filter((assigneeId): assigneeId is Id<"members"> =>
-						Boolean(assigneeId)
+					).filter((assigneeId): assigneeId is Id<'members'> =>
+						Boolean(assigneeId),
 					);
 
 		// Create sub-issue with same channelId and statusId as parent
-		const subIssueId = await ctx.db.insert("issues", {
+		const subIssueId = await ctx.db.insert('issues', {
 			channelId: parentIssue.channelId,
 			statusId: parentIssue.statusId, // Inherit parent's status
 			title: args.title,
@@ -1685,17 +1699,17 @@ export const createSubIssue = mutation({
 			try {
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
-					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const userId = auth.subject.split('|')[0] as Id<'users'>;
 					const creator = await ctx.db
-						.query("members")
-						.withIndex("by_workspace_id_user_id", (q) =>
-							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						.query('members')
+						.withIndex('by_workspace_id_user_id', (q) =>
+							q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 						)
 						.unique();
 
 					if (creator) {
 						for (const assigneeId of validatedAssignees) {
-							await ctx.db.insert("mentions", {
+							await ctx.db.insert('mentions', {
 								mentionedMemberId: assigneeId,
 								mentionerMemberId: creator._id,
 								workspaceId: channel.workspaceId,
@@ -1713,15 +1727,15 @@ export const createSubIssue = mutation({
 									assigneeId,
 									issueId: subIssueId,
 									assignerId: creator._id,
-								}
+								},
 							);
 						}
 					}
 				}
 			} catch (error) {
 				console.error(
-					"Error creating mentions for sub-issue assignees:",
-					error
+					'Error creating mentions for sub-issue assignees:',
+					error,
 				);
 			}
 		}
@@ -1732,29 +1746,29 @@ export const createSubIssue = mutation({
 
 export const updateSubIssue = mutation({
 	args: {
-		subIssueId: v.id("issues"),
+		subIssueId: v.id('issues'),
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
 		priority: v.optional(
 			v.union(
-				v.literal("urgent"),
-				v.literal("high"),
-				v.literal("medium"),
-				v.literal("low"),
-				v.literal("no_priority")
-			)
+				v.literal('urgent'),
+				v.literal('high'),
+				v.literal('medium'),
+				v.literal('low'),
+				v.literal('no_priority'),
+			),
 		),
-		assignees: v.optional(v.array(v.id("members"))),
+		assignees: v.optional(v.array(v.id('members'))),
 		labels: v.optional(v.array(v.string())),
 		dueDate: v.optional(v.number()),
 	},
 	handler: async (ctx: MutationCtx, { subIssueId, ...updates }) => {
 		const subIssue = await ctx.db.get(subIssueId);
-		if (!subIssue) throw new Error("Sub-issue not found");
-		if (!subIssue.parentIssueId) throw new Error("Not a sub-issue");
+		if (!subIssue) throw new Error('Sub-issue not found');
+		if (!subIssue.parentIssueId) throw new Error('Not a sub-issue');
 
 		const channel = await ctx.db.get(subIssue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
@@ -1774,10 +1788,10 @@ export const updateSubIssue = mutation({
 									return null;
 								}
 								return assigneeMember._id;
-							})
+							}),
 						)
-					).filter((assigneeId): assigneeId is Id<"members"> =>
-						Boolean(assigneeId)
+					).filter((assigneeId): assigneeId is Id<'members'> =>
+						Boolean(assigneeId),
 					);
 
 		await ctx.db.patch(subIssueId, {
@@ -1793,14 +1807,14 @@ export const updateSubIssue = mutation({
 });
 
 export const deleteSubIssue = mutation({
-	args: { subIssueId: v.id("issues") },
+	args: { subIssueId: v.id('issues') },
 	handler: async (ctx: MutationCtx, { subIssueId }) => {
 		const subIssue = await ctx.db.get(subIssueId);
-		if (!subIssue) throw new Error("Sub-issue not found");
-		if (!subIssue.parentIssueId) throw new Error("Not a sub-issue");
+		if (!subIssue) throw new Error('Sub-issue not found');
+		if (!subIssue.parentIssueId) throw new Error('Not a sub-issue');
 
 		const channel = await ctx.db.get(subIssue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
@@ -1813,19 +1827,19 @@ export const deleteSubIssue = mutation({
 // ─── ISSUE COMMENT FUNCTIONS ─────────────────────────────────────────────────
 
 export const getIssueComments = query({
-	args: { issueId: v.id("issues") },
+	args: { issueId: v.id('issues') },
 	handler: async (ctx, { issueId }) => {
 		const issue = await ctx.db.get(issueId);
-		if (!issue) throw new Error("Issue not found");
+		if (!issue) throw new Error('Issue not found');
 
 		const channel = await ctx.db.get(issue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const comments = await ctx.db
-			.query("issueComments")
-			.withIndex("by_issue_id_created_at", (q) => q.eq("issueId", issueId))
-			.order("asc")
+			.query('issueComments')
+			.withIndex('by_issue_id_created_at', (q) => q.eq('issueId', issueId))
+			.order('asc')
 			.collect();
 
 		// Enrich comments with member and user data
@@ -1835,7 +1849,7 @@ export const getIssueComments = query({
 				if (!member) return null;
 
 				const user = await ctx.db.get(member.userId);
-				const normalizedContent = comment.content ?? comment.message ?? "";
+				const normalizedContent = comment.content ?? comment.message ?? '';
 				return {
 					...comment,
 					content: normalizedContent,
@@ -1848,7 +1862,7 @@ export const getIssueComments = query({
 						},
 					},
 				};
-			})
+			}),
 		);
 
 		return commentsWithMembers.filter((c) => c !== null);
@@ -1857,30 +1871,30 @@ export const getIssueComments = query({
 
 export const createIssueComment = mutation({
 	args: {
-		issueId: v.id("issues"),
+		issueId: v.id('issues'),
 		message: v.string(),
 	},
 	handler: async (ctx: MutationCtx, { issueId, message }) => {
 		const issue = await ctx.db.get(issueId);
-		if (!issue) throw new Error("Issue not found");
+		if (!issue) throw new Error('Issue not found');
 
 		const channel = await ctx.db.get(issue.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		const auth = await ctx.auth.getUserIdentity();
-		if (!auth) throw new Error("Not authenticated");
+		if (!auth) throw new Error('Not authenticated');
 
-		const userId = auth.subject.split("|")[0] as Id<"users">;
+		const userId = auth.subject.split('|')[0] as Id<'users'>;
 		const member = await ctx.db
-			.query("members")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+			.query('members')
+			.withIndex('by_workspace_id_user_id', (q) =>
+				q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 			)
 			.unique();
 
-		if (!member) throw new Error("Member not found");
+		if (!member) throw new Error('Member not found');
 
-		const commentId = await ctx.db.insert("issueComments", {
+		const commentId = await ctx.db.insert('issueComments', {
 			issueId,
 			memberId: member._id,
 			workspaceId: channel.workspaceId,
@@ -1893,17 +1907,17 @@ export const createIssueComment = mutation({
 });
 
 export const deleteIssueComment = mutation({
-	args: { commentId: v.id("issueComments") },
+	args: { commentId: v.id('issueComments') },
 	handler: async (ctx: MutationCtx, { commentId }) => {
 		const comment = await ctx.db.get(commentId);
-		if (!comment) throw new Error("Comment not found");
+		if (!comment) throw new Error('Comment not found');
 
 		// Verify caller is a member of the workspace
 		const channel = await ctx.db.get(comment.issueId);
-		if (!channel) throw new Error("Issue not found");
+		if (!channel) throw new Error('Issue not found');
 
 		const issueChannel = await ctx.db.get(channel.channelId);
-		if (!issueChannel) throw new Error("Channel not found");
+		if (!issueChannel) throw new Error('Channel not found');
 
 		await assertWorkspaceMember(ctx, issueChannel.workspaceId);
 
@@ -1913,35 +1927,35 @@ export const deleteIssueComment = mutation({
 
 export const getAssignedIssues = query({
 	args: {
-		workspaceId: v.id("workspaces"),
-		memberId: v.id("members"),
+		workspaceId: v.id('workspaces'),
+		memberId: v.id('members'),
 	},
 	handler: async (ctx, { workspaceId, memberId }) => {
 		await assertWorkspaceMemberForRead(ctx, workspaceId);
 
 		const requestedMember = await ctx.db.get(memberId);
 		if (!requestedMember || requestedMember.workspaceId !== workspaceId) {
-			throw new Error("Member does not belong to this workspace");
+			throw new Error('Member does not belong to this workspace');
 		}
 
 		const channels = await ctx.db
-			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+			.query('channels')
+			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', workspaceId))
 			.collect();
 
 		const assignedIssues = [];
 
 		for (const channel of channels) {
 			const issues = await ctx.db
-				.query("issues")
-				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.query('issues')
+				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
 				.collect();
 
 			const memberIssues = issues.filter(
 				(issue) =>
 					issue.assignees &&
 					Array.isArray(issue.assignees) &&
-					issue.assignees.includes(memberId)
+					issue.assignees.includes(memberId),
 			);
 
 			const issuesWithContext = memberIssues.map((issue) => ({
@@ -1959,7 +1973,7 @@ export const getAssignedIssues = query({
 
 // Helper for email: get issue details (internal use - no auth check for scheduled actions)
 export const _getIssueDetails = query({
-	args: { issueId: v.id("issues") },
+	args: { issueId: v.id('issues') },
 	handler: async (ctx, { issueId }) => {
 		const issue = await ctx.db.get(issueId);
 		if (!issue) return null;
@@ -1980,7 +1994,7 @@ export const _getIssueDetails = query({
 });
 
 export const getIssueDetails = query({
-	args: { issueId: v.id("issues") },
+	args: { issueId: v.id('issues') },
 	handler: async (ctx, { issueId }) => {
 		const issue = await ctx.db.get(issueId);
 		if (!issue) return null;
@@ -2002,27 +2016,27 @@ export const getIssueDetails = query({
 });
 
 export const migrateListsToStatuses = mutation({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (
 		ctx: MutationCtx,
-		{ channelId }: { channelId: Id<"channels"> }
+		{ channelId }: { channelId: Id<'channels'> },
 	) => {
 		const channel = await ctx.db.get(channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Skip if statuses already exist
 		const existingStatuses = await ctx.db
-			.query("statuses")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.query('statuses')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 			.collect();
 
 		if (existingStatuses.length > 0) return { alreadyMigrated: true };
 
 		// Get existing lists
 		const lists = await ctx.db
-			.query("lists")
-			.withIndex("by_channel_id_order", (q) => q.eq("channelId", channelId))
+			.query('lists')
+			.withIndex('by_channel_id_order', (q) => q.eq('channelId', channelId))
 			.collect();
 
 		// Build status definitions from lists or use defaults
@@ -2035,11 +2049,11 @@ export const migrateListsToStatuses = mutation({
 					}))
 				: DEFAULT_STATUSES;
 
-		const statusIdByListId: Record<string, Id<"statuses">> = {};
+		const statusIdByListId: Record<string, Id<'statuses'>> = {};
 
 		for (let index = 0; index < statusDefs.length; index++) {
 			const def = statusDefs[index];
-			const statusId = await ctx.db.insert("statuses", {
+			const statusId = await ctx.db.insert('statuses', {
 				channelId,
 				...def,
 			});
@@ -2057,14 +2071,14 @@ export const migrateListsToStatuses = mutation({
 			if (!statusId) continue;
 
 			const cards = await ctx.db
-				.query("cards")
-				.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+				.query('cards')
+				.withIndex('by_list_id', (q) => q.eq('listId', list._id))
 				.collect();
 
 			const now = Date.now();
 			for (const card of cards) {
 				if (card.parentCardId) continue; // Skip subtasks
-				await ctx.db.insert("issues", {
+				await ctx.db.insert('issues', {
 					channelId,
 					statusId,
 					title: card.title,
@@ -2085,15 +2099,15 @@ export const migrateListsToStatuses = mutation({
 });
 
 export const getUniqueIssueLabels = query({
-	args: { channelId: v.id("channels") },
+	args: { channelId: v.id('channels') },
 	handler: async (ctx, { channelId }) => {
 		const channel = await ctx.db.get(channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
 		const issues = await ctx.db
-			.query("issues")
-			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.query('issues')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
 			.collect();
 
 		const allLabels = new Set<string>();
@@ -2113,32 +2127,32 @@ export const getUniqueIssueLabels = query({
 // SUBTASK MUTATIONS
 export const createSubtask = mutation({
 	args: {
-		parentCardId: v.id("cards"),
+		parentCardId: v.id('cards'),
 		title: v.string(),
 		description: v.optional(v.string()),
-		assignees: v.optional(v.array(v.id("members"))),
+		assignees: v.optional(v.array(v.id('members'))),
 	},
 	handler: async (ctx: MutationCtx, args) => {
 		const parentCard = await ctx.db.get(args.parentCardId);
-		if (!parentCard) throw new Error("Parent card not found");
+		if (!parentCard) throw new Error('Parent card not found');
 
 		// Prevent nested subtasks (subtasks of subtasks)
 		if (parentCard.parentCardId) {
-			throw new Error("Cannot create subtasks of subtasks");
+			throw new Error('Cannot create subtasks of subtasks');
 		}
 
 		// Get the highest order for existing subtasks
 		const existingSubtasks = await ctx.db
-			.query("cards")
-			.withIndex("by_parent_card_id", (q) =>
-				q.eq("parentCardId", args.parentCardId)
+			.query('cards')
+			.withIndex('by_parent_card_id', (q) =>
+				q.eq('parentCardId', args.parentCardId),
 			)
 			.collect();
 
 		const order = existingSubtasks.length;
 
 		// Create subtask with parent's listId and new fields
-		const subtaskId = await ctx.db.insert("cards", {
+		const subtaskId = await ctx.db.insert('cards', {
 			listId: parentCard.listId,
 			title: args.title,
 			description: args.description,
@@ -2151,24 +2165,24 @@ export const createSubtask = mutation({
 		// Log activity
 		const auth = await ctx.auth.getUserIdentity();
 		if (auth) {
-			const userId = auth.subject.split("|")[0] as Id<"users">;
+			const userId = auth.subject.split('|')[0] as Id<'users'>;
 			const list = await ctx.db.get(parentCard.listId);
 			if (list) {
 				const channel = await ctx.db.get(list.channelId);
 				if (channel) {
 					const creator = await ctx.db
-						.query("members")
-						.withIndex("by_workspace_id_user_id", (q) =>
-							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						.query('members')
+						.withIndex('by_workspace_id_user_id', (q) =>
+							q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 						)
 						.unique();
 
 					if (creator) {
-						await ctx.db.insert("card_activity", {
+						await ctx.db.insert('card_activity', {
 							cardId: args.parentCardId,
 							memberId: creator._id,
 							workspaceId: channel.workspaceId,
-							action: "created",
+							action: 'created',
 							details: JSON.stringify({ subtaskId, title: args.title }),
 							timestamp: Date.now(),
 						});
@@ -2182,10 +2196,10 @@ export const createSubtask = mutation({
 });
 
 export const toggleCardCompletion = mutation({
-	args: { cardId: v.id("cards") },
+	args: { cardId: v.id('cards') },
 	handler: async (ctx: MutationCtx, { cardId }) => {
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error("Card not found");
+		if (!card) throw new Error('Card not found');
 
 		const newCompletedState = !card.isCompleted;
 		await ctx.db.patch(cardId, { isCompleted: newCompletedState });
@@ -2197,20 +2211,20 @@ export const toggleCardCompletion = mutation({
 			if (channel) {
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
-					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const userId = auth.subject.split('|')[0] as Id<'users'>;
 					const member = await ctx.db
-						.query("members")
-						.withIndex("by_workspace_id_user_id", (q) =>
-							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						.query('members')
+						.withIndex('by_workspace_id_user_id', (q) =>
+							q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 						)
 						.unique();
 
 					if (member) {
-						await ctx.db.insert("card_activity", {
+						await ctx.db.insert('card_activity', {
 							cardId,
 							memberId: member._id,
 							workspaceId: channel.workspaceId,
-							action: newCompletedState ? "completed" : "reopened",
+							action: newCompletedState ? 'completed' : 'reopened',
 							timestamp: Date.now(),
 						});
 					}
@@ -2225,33 +2239,33 @@ export const toggleCardCompletion = mutation({
 // COMMENT MUTATIONS
 export const addComment = mutation({
 	args: {
-		cardId: v.id("cards"),
+		cardId: v.id('cards'),
 		content: v.string(),
 	},
 	handler: async (ctx: MutationCtx, { cardId, content }) => {
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error("Card not found");
+		if (!card) throw new Error('Card not found');
 
 		const list = await ctx.db.get(card.listId);
-		if (!list) throw new Error("List not found");
+		if (!list) throw new Error('List not found');
 
 		const channel = await ctx.db.get(list.channelId);
-		if (!channel) throw new Error("Channel not found");
+		if (!channel) throw new Error('Channel not found');
 
 		const auth = await ctx.auth.getUserIdentity();
-		if (!auth) throw new Error("Not authenticated");
+		if (!auth) throw new Error('Not authenticated');
 
-		const userId = auth.subject.split("|")[0] as Id<"users">;
+		const userId = auth.subject.split('|')[0] as Id<'users'>;
 		const member = await ctx.db
-			.query("members")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+			.query('members')
+			.withIndex('by_workspace_id_user_id', (q) =>
+				q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 			)
 			.unique();
 
-		if (!member) throw new Error("Member not found");
+		if (!member) throw new Error('Member not found');
 
-		const commentId = await ctx.db.insert("card_comments", {
+		const commentId = await ctx.db.insert('card_comments', {
 			cardId,
 			memberId: member._id,
 			workspaceId: channel.workspaceId,
@@ -2260,11 +2274,11 @@ export const addComment = mutation({
 		});
 
 		// Log activity
-		await ctx.db.insert("card_activity", {
+		await ctx.db.insert('card_activity', {
 			cardId,
 			memberId: member._id,
 			workspaceId: channel.workspaceId,
-			action: "commented",
+			action: 'commented',
 			timestamp: Date.now(),
 		});
 
@@ -2274,10 +2288,10 @@ export const addComment = mutation({
 
 // WATCHER MUTATIONS
 export const addWatcher = mutation({
-	args: { cardId: v.id("cards"), memberId: v.id("members") },
+	args: { cardId: v.id('cards'), memberId: v.id('members') },
 	handler: async (ctx: MutationCtx, { cardId, memberId }) => {
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error("Card not found");
+		if (!card) throw new Error('Card not found');
 
 		const currentWatchers = card.watchers || [];
 		if (currentWatchers.includes(memberId)) {
@@ -2291,10 +2305,10 @@ export const addWatcher = mutation({
 });
 
 export const removeWatcher = mutation({
-	args: { cardId: v.id("cards"), memberId: v.id("members") },
+	args: { cardId: v.id('cards'), memberId: v.id('members') },
 	handler: async (ctx: MutationCtx, { cardId, memberId }) => {
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error("Card not found");
+		if (!card) throw new Error('Card not found');
 
 		const currentWatchers = card.watchers || [];
 		await ctx.db.patch(cardId, {
@@ -2305,22 +2319,22 @@ export const removeWatcher = mutation({
 
 // BLOCKING RELATIONSHIP MUTATIONS
 export const addBlockingRelationship = mutation({
-	args: { cardId: v.id("cards"), blockedByCardId: v.id("cards") },
+	args: { cardId: v.id('cards'), blockedByCardId: v.id('cards') },
 	handler: async (ctx: MutationCtx, { cardId, blockedByCardId }) => {
 		if (cardId === blockedByCardId) {
-			throw new Error("A card cannot block itself");
+			throw new Error('A card cannot block itself');
 		}
 
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error("Card not found");
+		if (!card) throw new Error('Card not found');
 
 		const blockerCard = await ctx.db.get(blockedByCardId);
-		if (!blockerCard) throw new Error("Blocker card not found");
+		if (!blockerCard) throw new Error('Blocker card not found');
 
 		// Check for circular dependencies (simple check)
 		const blockerBlockedBy = blockerCard.blockedBy || [];
 		if (blockerBlockedBy.includes(cardId)) {
-			throw new Error("Circular dependency detected");
+			throw new Error('Circular dependency detected');
 		}
 
 		const currentBlockedBy = card.blockedBy || [];
@@ -2339,20 +2353,20 @@ export const addBlockingRelationship = mutation({
 			if (channel) {
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
-					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const userId = auth.subject.split('|')[0] as Id<'users'>;
 					const member = await ctx.db
-						.query("members")
-						.withIndex("by_workspace_id_user_id", (q) =>
-							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						.query('members')
+						.withIndex('by_workspace_id_user_id', (q) =>
+							q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 						)
 						.unique();
 
 					if (member) {
-						await ctx.db.insert("card_activity", {
+						await ctx.db.insert('card_activity', {
 							cardId,
 							memberId: member._id,
 							workspaceId: channel.workspaceId,
-							action: "blocked",
+							action: 'blocked',
 							details: JSON.stringify({
 								blockedByCardId,
 								blockedByTitle: blockerCard.title,
@@ -2367,10 +2381,10 @@ export const addBlockingRelationship = mutation({
 });
 
 export const removeBlockingRelationship = mutation({
-	args: { cardId: v.id("cards"), blockedByCardId: v.id("cards") },
+	args: { cardId: v.id('cards'), blockedByCardId: v.id('cards') },
 	handler: async (ctx: MutationCtx, { cardId, blockedByCardId }) => {
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error("Card not found");
+		if (!card) throw new Error('Card not found');
 
 		const currentBlockedBy = card.blockedBy || [];
 		await ctx.db.patch(cardId, {
@@ -2384,20 +2398,20 @@ export const removeBlockingRelationship = mutation({
 			if (channel) {
 				const auth = await ctx.auth.getUserIdentity();
 				if (auth) {
-					const userId = auth.subject.split("|")[0] as Id<"users">;
+					const userId = auth.subject.split('|')[0] as Id<'users'>;
 					const member = await ctx.db
-						.query("members")
-						.withIndex("by_workspace_id_user_id", (q) =>
-							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+						.query('members')
+						.withIndex('by_workspace_id_user_id', (q) =>
+							q.eq('workspaceId', channel.workspaceId).eq('userId', userId),
 						)
 						.unique();
 
 					if (member) {
-						await ctx.db.insert("card_activity", {
+						await ctx.db.insert('card_activity', {
 							cardId,
 							memberId: member._id,
 							workspaceId: channel.workspaceId,
-							action: "unblocked",
+							action: 'unblocked',
 							details: JSON.stringify({ blockedByCardId }),
 							timestamp: Date.now(),
 						});
@@ -2411,15 +2425,15 @@ export const removeBlockingRelationship = mutation({
 // TIME TRACKING MUTATIONS
 export const updateTimeTracking = mutation({
 	args: {
-		cardId: v.id("cards"),
+		cardId: v.id('cards'),
 		estimate: v.optional(v.number()),
 		timeSpent: v.optional(v.number()),
 	},
 	handler: async (ctx: MutationCtx, { cardId, estimate, timeSpent }) => {
 		const card = await ctx.db.get(cardId);
-		if (!card) throw new Error("Card not found");
+		if (!card) throw new Error('Card not found');
 
-		const updates: Partial<Pick<Doc<"cards">, "estimate" | "timeSpent">> = {};
+		const updates: Partial<Pick<Doc<'cards'>, 'estimate' | 'timeSpent'>> = {};
 		if (estimate !== undefined) updates.estimate = estimate;
 		if (timeSpent !== undefined) updates.timeSpent = timeSpent;
 
@@ -2430,26 +2444,26 @@ export const updateTimeTracking = mutation({
 
 // SUBTASK QUERIES
 export const getSubtasks = query({
-	args: { parentCardId: v.id("cards") },
+	args: { parentCardId: v.id('cards') },
 	handler: async (ctx: QueryCtx, { parentCardId }) => {
 		return await ctx.db
-			.query("cards")
-			.withIndex("by_parent_card_id", (q) => q.eq("parentCardId", parentCardId))
-			.order("asc")
+			.query('cards')
+			.withIndex('by_parent_card_id', (q) => q.eq('parentCardId', parentCardId))
+			.order('asc')
 			.collect();
 	},
 });
 
 export const getCardWithSubtasks = query({
-	args: { cardId: v.id("cards") },
+	args: { cardId: v.id('cards') },
 	handler: async (ctx: QueryCtx, { cardId }) => {
 		const card = await ctx.db.get(cardId);
 		if (!card) return null;
 
 		const subtasks = await ctx.db
-			.query("cards")
-			.withIndex("by_parent_card_id", (q) => q.eq("parentCardId", cardId))
-			.order("asc")
+			.query('cards')
+			.withIndex('by_parent_card_id', (q) => q.eq('parentCardId', cardId))
+			.order('asc')
 			.collect();
 
 		// Calculate completion stats
@@ -2470,12 +2484,12 @@ export const getCardWithSubtasks = query({
 
 // COMMENT QUERIES
 export const getComments = query({
-	args: { cardId: v.id("cards") },
+	args: { cardId: v.id('cards') },
 	handler: async (ctx: QueryCtx, { cardId }) => {
 		const comments = await ctx.db
-			.query("card_comments")
-			.withIndex("by_card_id", (q) => q.eq("cardId", cardId))
-			.order("asc")
+			.query('card_comments')
+			.withIndex('by_card_id', (q) => q.eq('cardId', cardId))
+			.order('asc')
 			.collect();
 
 		// Populate member data
@@ -2495,7 +2509,7 @@ export const getComments = query({
 						},
 					},
 				};
-			})
+			}),
 		);
 
 		return commentsWithMembers.filter((c) => c !== null);
@@ -2504,7 +2518,7 @@ export const getComments = query({
 
 // BLOCKING RELATIONSHIP QUERIES
 export const getBlockingCards = query({
-	args: { cardId: v.id("cards") },
+	args: { cardId: v.id('cards') },
 	handler: async (ctx: QueryCtx, { cardId }) => {
 		const card = await ctx.db.get(cardId);
 		if (!card || !card.blockedBy) return [];
@@ -2519,7 +2533,7 @@ export const getBlockingCards = query({
 					...blockerCard,
 					listTitle: list?.title,
 				};
-			})
+			}),
 		);
 
 		return blockingCards.filter((c) => c !== null);
@@ -2528,12 +2542,12 @@ export const getBlockingCards = query({
 
 // ACTIVITY LOG QUERIES
 export const getCardActivity = query({
-	args: { cardId: v.id("cards") },
+	args: { cardId: v.id('cards') },
 	handler: async (ctx: QueryCtx, { cardId }) => {
 		const activities = await ctx.db
-			.query("card_activity")
-			.withIndex("by_card_id_timestamp", (q) => q.eq("cardId", cardId))
-			.order("desc")
+			.query('card_activity')
+			.withIndex('by_card_id_timestamp', (q) => q.eq('cardId', cardId))
+			.order('desc')
 			.collect();
 
 		// Populate member data
@@ -2553,7 +2567,7 @@ export const getCardActivity = query({
 						},
 					},
 				};
-			})
+			}),
 		);
 
 		return activitiesWithMembers.filter((a) => a !== null);
@@ -2562,7 +2576,7 @@ export const getCardActivity = query({
 
 // Helper query to get card details for email
 export const _getCardDetails = query({
-	args: { cardId: v.id("cards") },
+	args: { cardId: v.id('cards') },
 	handler: async (ctx, { cardId }) => {
 		const card = await ctx.db.get(cardId);
 		if (!card) return null;
@@ -2587,7 +2601,7 @@ export const _getCardDetails = query({
 
 // Helper query to get member email
 export const _getMemberEmail = query({
-	args: { memberId: v.id("members") },
+	args: { memberId: v.id('members') },
 	handler: async (ctx, { memberId }) => {
 		return await getUserEmailFromMemberId(ctx, memberId);
 	},
@@ -2596,14 +2610,14 @@ export const _getMemberEmail = query({
 // Query to get all cards assigned to a specific member across all channels in a workspace
 export const getAssignedCards = query({
 	args: {
-		workspaceId: v.id("workspaces"),
-		memberId: v.id("members"),
+		workspaceId: v.id('workspaces'),
+		memberId: v.id('members'),
 	},
 	handler: async (ctx, { workspaceId, memberId }) => {
 		// Get all channels in the workspace
 		const channels = await ctx.db
-			.query("channels")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+			.query('channels')
+			.withIndex('by_workspace_id', (q) => q.eq('workspaceId', workspaceId))
 			.collect();
 
 		const assignedCards = [];
@@ -2611,15 +2625,15 @@ export const getAssignedCards = query({
 		// For each channel, get all lists and cards
 		for (const channel of channels) {
 			const lists = await ctx.db
-				.query("lists")
-				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
+				.query('lists')
+				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
 				.collect();
 
 			for (const list of lists) {
 				// Get all cards in the list
 				const cards = await ctx.db
-					.query("cards")
-					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
+					.query('cards')
+					.withIndex('by_list_id', (q) => q.eq('listId', list._id))
 					.collect();
 
 				// Filter cards that have the member as an assignee
@@ -2627,7 +2641,7 @@ export const getAssignedCards = query({
 					(card) =>
 						card.assignees &&
 						Array.isArray(card.assignees) &&
-						card.assignees.includes(memberId)
+						card.assignees.includes(memberId),
 				);
 
 				// Add channel and list info to each card
@@ -2648,7 +2662,7 @@ export const getAssignedCards = query({
 
 // Helper query to get member name
 export const _getMemberName = query({
-	args: { memberId: v.id("members") },
+	args: { memberId: v.id('members') },
 	handler: async (ctx, { memberId }) => {
 		return await getUserNameFromMemberId(ctx, memberId);
 	},

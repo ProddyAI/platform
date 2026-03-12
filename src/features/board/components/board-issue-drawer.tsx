@@ -778,6 +778,7 @@ const BlockingSection = ({
 	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
 
 	const [selectedIssueId, setSelectedIssueId] = useState<string>("");
+	const [selectedBlockedById, setSelectedBlockedById] = useState<string>("");
 
 	const handleAddBlocking = async () => {
 		if (!selectedIssueId) return;
@@ -822,6 +823,23 @@ const BlockingSection = ({
 			console.error("Failed to remove blocked by relationship:", error);
 			toast.error(
 				getErrorMessage(error, "Failed to remove blocked by relationship")
+			);
+		}
+	};
+
+	const handleAddBlockedBy = async () => {
+		if (!selectedBlockedById) return;
+		try {
+			await addBlocking({
+				channelId: issue.channelId,
+				blockedIssueId: issue._id,
+				blockingIssueId: selectedBlockedById as Id<"issues">,
+			});
+			setSelectedBlockedById("");
+		} catch (error: unknown) {
+			console.error("Failed to add blocked by relationship:", error);
+			toast.error(
+				getErrorMessage(error, "Failed to add blocked by relationship")
 			);
 		}
 	};
@@ -989,6 +1007,34 @@ const BlockingSection = ({
 							</span>
 						)}
 					</div>
+					{availableForBlocking.length > 0 && (
+						<div className="flex items-center gap-2">
+							<Select
+								onValueChange={setSelectedBlockedById}
+								value={selectedBlockedById}
+							>
+								<SelectTrigger className="h-7 w-40 text-xs">
+									<SelectValue placeholder="Select issue..." />
+								</SelectTrigger>
+								<SelectContent>
+									{availableForBlocking.map((i) => (
+										<SelectItem key={i._id} value={i._id}>
+											<span className="truncate">{i.title}</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Button
+								className="h-7 w-7"
+								disabled={!selectedBlockedById}
+								onClick={handleAddBlockedBy}
+								size="icon"
+								variant="ghost"
+							>
+								<Plus className="w-3.5 h-3.5" />
+							</Button>
+						</div>
+					)}
 				</div>
 
 				{renderBlockedByContent()}
@@ -1325,14 +1371,14 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					parentIssue={
 						parentIssue
 							? {
-									_id: parentIssue._id,
-									channelId: parentIssue.channelId,
-									statusId: parentIssue.statusId,
-									title: parentIssue.title,
-									order: parentIssue.order,
-									createdAt: parentIssue.createdAt,
-									updatedAt: parentIssue.updatedAt,
-								}
+								_id: parentIssue._id,
+								channelId: parentIssue.channelId,
+								statusId: parentIssue.statusId,
+								title: parentIssue.title,
+								order: parentIssue.order,
+								createdAt: parentIssue.createdAt,
+								updatedAt: parentIssue.updatedAt,
+							}
 							: null
 					}
 				/>

@@ -76,6 +76,7 @@ interface BoardKanbanViewProps {
 	setView?: (view: "kanban" | "gantt") => void;
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
+	onLinkageDiagramClick?: () => void;
 	disableIssueDrag?: boolean;
 	focusedStatusId?: Id<"statuses"> | null;
 }
@@ -104,6 +105,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	onMoveIssueStatus,
 	onReorderStatusesPersist,
 	onSearchClick,
+	onLinkageDiagramClick,
 	showHeader = false,
 	statusCount = 0,
 	totalIssues = 0,
@@ -183,7 +185,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	};
 
 	// Required by DndContext but no custom drag-over behavior needed
-	const handleDragOver = (_event: DragOverEvent) => {};
+	const handleDragOver = (_event: DragOverEvent) => { };
 
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -292,6 +294,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
 						onAddStatus={onAddStatus}
+						onLinkageDiagramClick={onLinkageDiagramClick}
 						onSearchClick={onSearchClick}
 						setView={setView}
 						statusCount={statusCount}
