@@ -90,6 +90,52 @@ export const CalendarPreviewWidget = ({
 		router.push(`/workspace/${workspaceId}/calendar`);
 	};
 
+	const EventCard = ({ event }: { event: CalendarEvent }) => (
+		<Card className="overflow-hidden border-2" key={event._id}>
+			<CardContent className="p-3">
+				<div className="flex items-center justify-between">
+					<h5 className="font-medium">{event.title}</h5>
+					<Badge
+						className="text-xs border-2"
+						variant={!event.time ? "outline" : "secondary"}
+					>
+						{!event.time ? "All day" : event.time}
+					</Badge>
+				</div>
+				<Button
+					className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+					onClick={() => handleViewEvent(event._id)}
+					size="sm"
+					variant="ghost"
+				>
+					View details
+				</Button>
+			</CardContent>
+		</Card>
+	);
+
+	const EmptyState = () => (
+		<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
+			<CalendarIcon className="mb-2 h-10 w-10 text-muted-foreground" />
+			<h3 className="text-lg font-medium">No upcoming events</h3>
+			<p className="text-sm text-muted-foreground">
+				Schedule events to see them here
+			</p>
+			<Button
+				className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
+				onClick={handleViewCalendar}
+				size="sm"
+				variant="default"
+			>
+				View Calendar <ArrowRight className="ml-2 h-3.5 w-3.5" />
+			</Button>
+		</div>
+	);
+
+	const EmptyDay = () => (
+		<p className="text-sm text-muted-foreground">No events scheduled</p>
+	);
+
 	// Group events by day
 	const eventsByDay = useMemo(() => {
 		const grouped = new Map();
@@ -166,56 +212,17 @@ export const CalendarPreviewWidget = ({
 
 								{dayData.events.length > 0 ? (
 									dayData.events.map((event: CalendarEvent) => (
-										<Card className="overflow-hidden border-2" key={event._id}>
-											<CardContent className="p-3">
-												<div className="space-y-1">
-													<div className="flex items-center justify-between">
-														<h5 className="font-medium">{event.title}</h5>
-														<Badge
-															className="text-xs border-2"
-															variant={!event.time ? "outline" : "secondary"}
-														>
-															{!event.time ? "All day" : event.time}
-														</Badge>
-													</div>
-													{/* Location is not available in the current event structure */}
-													<Button
-														className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-														onClick={() => handleViewEvent(event._id)}
-														size="sm"
-														variant="ghost"
-													>
-														View details
-													</Button>
-												</div>
-											</CardContent>
-										</Card>
+										<EventCard event={event} key={event._id} />
 									))
 								) : (
-									<p className="text-sm text-muted-foreground">
-										No events scheduled
-									</p>
+									<EmptyDay />
 								)}
 							</div>
 						))}
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-					<CalendarIcon className="mb-2 h-10 w-10 text-muted-foreground" />
-					<h3 className="text-lg font-medium">No upcoming events</h3>
-					<p className="text-sm text-muted-foreground">
-						Schedule events to see them here
-					</p>
-					<Button
-						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
-						onClick={handleViewCalendar}
-						size="sm"
-						variant="default"
-					>
-						View Calendar <ArrowRight className="ml-2 h-3.5 w-3.5" />
-					</Button>
-				</div>
+				<EmptyState />
 			)}
 		</div>
 	);

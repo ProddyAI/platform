@@ -777,9 +777,7 @@ const BlockingSection = ({
 	const addBlocking = useMutation(api.board.addIssueBlockingRelationship);
 	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
 
-	const [selectedIssueId, setSelectedIssueId] = useState<string>("");
-
-	const handleAddBlocking = async () => {
+	const handleSelectBlocking = async (selectedIssueId: string) => {
 		if (!selectedIssueId) return;
 		try {
 			await addBlocking({
@@ -787,7 +785,6 @@ const BlockingSection = ({
 				blockedIssueId: selectedIssueId as Id<"issues">,
 				blockingIssueId: issue._id,
 			});
-			setSelectedIssueId("");
 		} catch (error: unknown) {
 			console.error("Failed to add blocking relationship:", error);
 			toast.error(
@@ -822,6 +819,22 @@ const BlockingSection = ({
 			console.error("Failed to remove blocked by relationship:", error);
 			toast.error(
 				getErrorMessage(error, "Failed to remove blocked by relationship")
+			);
+		}
+	};
+
+	const handleSelectBlockedBy = async (selectedBlockedById: string) => {
+		if (!selectedBlockedById) return;
+		try {
+			await addBlocking({
+				channelId: issue.channelId,
+				blockedIssueId: issue._id,
+				blockingIssueId: selectedBlockedById as Id<"issues">,
+			});
+		} catch (error: unknown) {
+			console.error("Failed to add blocked by relationship:", error);
+			toast.error(
+				getErrorMessage(error, "Failed to add blocked by relationship")
 			);
 		}
 	};
@@ -945,32 +958,18 @@ const BlockingSection = ({
 						)}
 					</div>
 					{availableForBlocking.length > 0 && (
-						<div className="flex items-center gap-2">
-							<Select
-								onValueChange={setSelectedIssueId}
-								value={selectedIssueId}
-							>
-								<SelectTrigger className="h-7 w-40 text-xs">
-									<SelectValue placeholder="Select issue..." />
-								</SelectTrigger>
-								<SelectContent>
-									{availableForBlocking.map((i) => (
-										<SelectItem key={i._id} value={i._id}>
-											<span className="truncate">{i.title}</span>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Button
-								className="h-7 w-7"
-								disabled={!selectedIssueId}
-								onClick={handleAddBlocking}
-								size="icon"
-								variant="ghost"
-							>
-								<Plus className="w-3.5 h-3.5" />
-							</Button>
-						</div>
+						<Select onValueChange={handleSelectBlocking} value="">
+							<SelectTrigger className="h-7 w-44 text-xs">
+								<SelectValue placeholder="Add blocking issue..." />
+							</SelectTrigger>
+							<SelectContent>
+								{availableForBlocking.map((i) => (
+									<SelectItem key={i._id} value={i._id}>
+										<span className="truncate">{i.title}</span>
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					)}
 				</div>
 
@@ -989,6 +988,20 @@ const BlockingSection = ({
 							</span>
 						)}
 					</div>
+					{availableForBlocking.length > 0 && (
+						<Select onValueChange={handleSelectBlockedBy} value="">
+							<SelectTrigger className="h-7 w-44 text-xs">
+								<SelectValue placeholder="Add blocked by issue..." />
+							</SelectTrigger>
+							<SelectContent>
+								{availableForBlocking.map((i) => (
+									<SelectItem key={i._id} value={i._id}>
+										<span className="truncate">{i.title}</span>
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
 				</div>
 
 				{renderBlockedByContent()}
@@ -1325,14 +1338,14 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					parentIssue={
 						parentIssue
 							? {
-									_id: parentIssue._id,
-									channelId: parentIssue.channelId,
-									statusId: parentIssue.statusId,
-									title: parentIssue.title,
-									order: parentIssue.order,
-									createdAt: parentIssue.createdAt,
-									updatedAt: parentIssue.updatedAt,
-								}
+								_id: parentIssue._id,
+								channelId: parentIssue.channelId,
+								statusId: parentIssue.statusId,
+								title: parentIssue.title,
+								order: parentIssue.order,
+								createdAt: parentIssue.createdAt,
+								updatedAt: parentIssue.updatedAt,
+							}
 							: null
 					}
 				/>

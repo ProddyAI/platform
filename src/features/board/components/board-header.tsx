@@ -1,4 +1,4 @@
-import { GanttChart, LayoutGrid, Plus, Search } from "lucide-react";
+import { GanttChart, LayoutGrid, Network, Plus, Search } from "lucide-react";
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ interface BoardHeaderProps {
 	setView: (view: "kanban" | "gantt") => void;
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
+	onLinkageDiagramClick?: () => void;
 }
 
 interface StatusStatsProps {
@@ -114,6 +115,23 @@ const SearchButton = ({ onClick }: SearchButtonProps) => (
 	</Button>
 );
 
+interface LinkageDiagramButtonProps {
+	onClick?: () => void;
+}
+
+const LinkageDiagramButton = ({ onClick }: LinkageDiagramButtonProps) => (
+	<Button
+		aria-label="View linkage diagram"
+		className="h-8 w-8 p-0 flex-shrink-0 hover:bg-white/15 transition-colors"
+		onClick={onClick}
+		size="icon"
+		title="View issue linkage diagram"
+		variant="ghost"
+	>
+		<Network className="w-4 h-4" />
+	</Button>
+);
+
 const BoardHeader: React.FC<BoardHeaderProps> = ({
 	totalIssues,
 	statusCount,
@@ -121,6 +139,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 	setView,
 	onAddStatus,
 	onSearchClick,
+	onLinkageDiagramClick,
 }) => {
 	return (
 		<div className="flex w-full min-w-0 max-w-full items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60 dark:border-gray-800 bg-background dark:bg-gray-950 overflow-x-hidden">
@@ -128,6 +147,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 
 			<div className="flex items-center gap-2">
 				<SearchButton onClick={onSearchClick} />
+				<LinkageDiagramButton onClick={onLinkageDiagramClick} />
 
 				{view === "kanban" && <AddStatusButton onClick={onAddStatus} />}
 
