@@ -7,10 +7,12 @@ import {
 	CalendarIcon,
 	Check,
 	ChevronRight,
+	Loader2,
 	Minus,
 	Plus,
 	Send,
 	Shield,
+	Sparkles,
 	Trash2,
 	X,
 } from "lucide-react";
@@ -763,6 +765,13 @@ interface BlockingSectionProps {
 	onClickIssue: (issue: Issue) => void;
 }
 
+interface AIBlockingSuggestion {
+	issueId: string;
+	title: string;
+	reason: string;
+	confidence: "low" | "medium" | "high";
+}
+
 const BlockingSection = ({
 	issue,
 	allIssues,
@@ -777,7 +786,12 @@ const BlockingSection = ({
 	const addBlocking = useMutation(api.board.addIssueBlockingRelationship);
 	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
 
-	const handleSelectBlocking = async (selectedIssueId: string) => {
+	const [selectedIssueId, setSelectedIssueId] = useState<string>("");
+	const [aiSuggestions, setAiSuggestions] = useState<AIBlockingSuggestion[]>([]);
+	const [aiSuggestionsRequested, setAiSuggestionsRequested] = useState(false);
+	const [aiLoading, setAiLoading] = useState(false);
+
+	const handleAddBlocking = async () => {
 		if (!selectedIssueId) return;
 		try {
 			await addBlocking({
@@ -785,11 +799,28 @@ const BlockingSection = ({
 				blockedIssueId: selectedIssueId as Id<"issues">,
 				blockingIssueId: issue._id,
 			});
+			setSelectedIssueId("");
 		} catch (error: unknown) {
 			console.error("Failed to add blocking relationship:", error);
 			toast.error(
 				getErrorMessage(error, "Failed to add blocking relationship")
 			);
+		}
+	};
+
+	const handleAddBlockingSuggestion = async (blockedIssueId: string) => {
+		try {
+			await addBlocking({
+				channelId: issue.channelId,
+				blockedIssueId: blockedIssueId as Id<"issues">,
+				blockingIssueId: issue._id,
+			});
+			setAiSuggestions((current) =>
+				current.filter((suggestion) => suggestion.issueId !== blockedIssueId)
+			);
+		} catch (error: unknown) {
+			console.error("Failed to apply AI blocking suggestion:", error);
+			toast.error(getErrorMessage(error, "Failed to apply AI suggestion"));
 		}
 	};
 
@@ -852,6 +883,58 @@ const BlockingSection = ({
 	const availableForBlocking = availableIssues.filter(
 		(i) => !usedIssueIds.has(i._id)
 	);
+
+	const fetchAiSuggestions = async () => {
+		setAiSuggestionsRequested(true);
+		setAiLoading(true);
+		try {
+			const response = await fetch("/api/smart/linkage/suggestions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					channelId: issue.channelId,
+					issueId: issue._id,
+				}),
+			});
+
+			const data = (await response.json().catch(() => null)) as
+				| { error?: string; suggestions?: AIBlockingSuggestion[] }
+				| null;
+
+			if (!response.ok) {
+				throw new Error(data?.error || "Failed to fetch AI suggestions");
+			}
+
+			const availableIds = new Set(availableForBlocking.map((item) => item._id));
+			const nextSuggestions = (data?.suggestions || []).filter((suggestion) =>
+				availableIds.has(suggestion.issueId as Id<"issues">)
+			);
+			setAiSuggestions(nextSuggestions);
+		} catch (error: unknown) {
+			console.error("Failed to fetch AI blocking suggestions:", error);
+			toast.error(
+				getErrorMessage(error, "Failed to fetch AI blocking suggestions")
+			);
+			setAiSuggestions([]);
+		} finally {
+			setAiLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		if (aiSuggestions.length === 0) return;
+
+		const availableIds = new Set(availableForBlocking.map((item) => item._id));
+		const filtered = aiSuggestions.filter((suggestion) =>
+			availableIds.has(suggestion.issueId as Id<"issues">)
+		);
+
+		if (filtered.length !== aiSuggestions.length) {
+			setAiSuggestions(filtered);
+		}
+	}, [availableForBlocking, aiSuggestions]);
 
 	const renderBlockingContent = () => {
 		if (!blockingIssues) {
@@ -957,21 +1040,105 @@ const BlockingSection = ({
 							</span>
 						)}
 					</div>
-					{availableForBlocking.length > 0 && (
-						<Select onValueChange={handleSelectBlocking} value="">
-							<SelectTrigger className="h-7 w-44 text-xs">
-								<SelectValue placeholder="Add blocking issue..." />
-							</SelectTrigger>
-							<SelectContent>
-								{availableForBlocking.map((i) => (
-									<SelectItem key={i._id} value={i._id}>
-										<span className="truncate">{i.title}</span>
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					)}
+					<div className="flex items-center gap-2">
+						{availableForBlocking.length > 0 && (
+							<>
+								<Button
+									className="h-7 px-2 text-xs"
+									disabled={aiLoading}
+									onClick={fetchAiSuggestions}
+									size="sm"
+									variant="outline"
+								>
+									{aiLoading ? (
+										<Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+									) : (
+										<Sparkles className="w-3.5 h-3.5 mr-1 text-amber-500" />
+									)}
+									AI Suggest
+								</Button>
+								<Select
+									onValueChange={setSelectedIssueId}
+									value={selectedIssueId}
+								>
+									<SelectTrigger className="h-7 w-40 text-xs">
+										<SelectValue placeholder="Select issue..." />
+									</SelectTrigger>
+									<SelectContent>
+										{availableForBlocking.map((i) => (
+											<SelectItem key={i._id} value={i._id}>
+												<span className="truncate">{i.title}</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<Button
+									className="h-7 w-7"
+									disabled={!selectedIssueId}
+									onClick={handleAddBlocking}
+									size="icon"
+									variant="ghost"
+								>
+									<Plus className="w-3.5 h-3.5" />
+								</Button>
+							</>
+						)}
+					</div>
 				</div>
+
+				{aiLoading && (
+					<div className="flex items-center gap-2 rounded-md border border-dashed border-border/60 bg-muted/20 px-3 py-2 mb-3 text-xs text-muted-foreground">
+						<Loader2 className="w-3.5 h-3.5 animate-spin" />
+						Analyzing likely dependency suggestions...
+					</div>
+				)}
+
+				{!aiLoading && aiSuggestions.length > 0 && (
+					<div className="space-y-2 mb-3">
+						{aiSuggestions.map((suggestion) => (
+							<div
+								className="rounded-md border border-amber-200/60 bg-amber-50/40 dark:bg-amber-950/10 px-3 py-2"
+								key={suggestion.issueId}
+							>
+								<div className="flex items-start justify-between gap-3">
+									<div className="min-w-0 flex-1">
+										<div className="flex items-center gap-2 mb-1">
+											<Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+											<span className="text-sm font-medium truncate">
+												{suggestion.title}
+											</span>
+											<span className="text-[10px] uppercase tracking-wide text-amber-700/80 dark:text-amber-300/80">
+												{suggestion.confidence}
+											</span>
+										</div>
+										<p className="text-xs text-muted-foreground">
+											{suggestion.reason}
+										</p>
+									</div>
+									<Button
+										className="h-7 px-2 text-xs flex-shrink-0"
+										onClick={() =>
+											handleAddBlockingSuggestion(suggestion.issueId)
+										}
+										size="sm"
+										variant="secondary"
+									>
+										Add
+									</Button>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+
+				{aiSuggestionsRequested &&
+					!aiLoading &&
+					aiSuggestions.length === 0 &&
+					availableForBlocking.length > 0 && (
+						<div className="rounded-md border border-dashed border-border/60 bg-muted/20 px-3 py-2 mb-3 text-xs text-muted-foreground">
+							AI did not find a strong blocking suggestion right now.
+						</div>
+					)}
 
 				{renderBlockingContent()}
 			</div>
