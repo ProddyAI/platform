@@ -77,6 +77,8 @@ interface BoardKanbanViewProps {
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
 	onLinkageDiagramClick?: () => void;
+	onToggleDiagram?: () => void;
+	diagramOpen?: boolean;
 	disableIssueDrag?: boolean;
 	focusedStatusId?: Id<"statuses"> | null;
 }
@@ -112,6 +114,8 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	view = "kanban",
 	setView,
 	onAddStatus,
+	onToggleDiagram,
+	diagramOpen,
 	disableIssueDrag = false,
 	focusedStatusId = null,
 }) => {
@@ -293,9 +297,11 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			{showHeader && setView && (
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
+						diagramOpen={diagramOpen}
 						onAddStatus={onAddStatus}
 						onLinkageDiagramClick={onLinkageDiagramClick}
 						onSearchClick={onSearchClick}
+						onToggleDiagram={onToggleDiagram}
 						setView={setView}
 						statusCount={statusCount}
 						totalIssues={totalIssues}

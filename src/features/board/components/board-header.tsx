@@ -1,4 +1,11 @@
-import { GanttChart, LayoutGrid, Network, Plus, Search } from "lucide-react";
+import {
+	GanttChart,
+	GitBranch,
+	LayoutGrid,
+	Network,
+	Plus,
+	Search,
+} from "lucide-react";
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +24,8 @@ interface BoardHeaderProps {
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
 	onLinkageDiagramClick?: () => void;
+	onToggleDiagram?: () => void;
+	diagramOpen?: boolean;
 }
 
 interface StatusStatsProps {
@@ -140,6 +149,8 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 	onAddStatus,
 	onSearchClick,
 	onLinkageDiagramClick,
+	onToggleDiagram,
+	diagramOpen,
 }) => {
 	return (
 		<div className="flex w-full min-w-0 max-w-full items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60 dark:border-gray-800 bg-background dark:bg-gray-950 overflow-x-hidden">
@@ -148,6 +159,29 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 			<div className="flex items-center gap-2">
 				<SearchButton onClick={onSearchClick} />
 				<LinkageDiagramButton onClick={onLinkageDiagramClick} />
+				{onToggleDiagram && (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									aria-label="Toggle dependency map"
+									className={cn(
+										"h-8 w-8 p-0 flex-shrink-0 transition-colors",
+										diagramOpen
+											? "bg-orange-500/10 text-orange-500 hover:bg-orange-500/20"
+											: "hover:bg-muted/60",
+									)}
+									onClick={onToggleDiagram}
+									size="icon"
+									variant="ghost"
+								>
+									<GitBranch className="w-4 h-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Dependency map</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				)}
 
 				{view === "kanban" && <AddStatusButton onClick={onAddStatus} />}
 

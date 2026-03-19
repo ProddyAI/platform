@@ -600,7 +600,10 @@ const BoardPage = () => {
 								bubbles: true,
 							});
 							document.dispatchEvent(event);
-						}} onLinkageDiagramClick={() => setLinkageDiagramOpen(true)} setView={setView}
+						}}
+						onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
+						onToggleDiagram={() => setDiagramOpen((prev) => !prev)}
+						setView={setView}
 						showHeader
 						statusCount={displayedStatuses.length}
 						statuses={displayedStatuses}
@@ -610,6 +613,7 @@ const BoardPage = () => {
 				)
 			) : (
 				<BoardHeader
+					diagramOpen={diagramOpen}
 					onAddStatus={() => {
 						setStatusName("");
 						setStatusColor("#5e6ad2");
@@ -625,6 +629,7 @@ const BoardPage = () => {
 						document.dispatchEvent(event);
 					}}
 					onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
+					onToggleDiagram={() => setDiagramOpen((prev) => !prev)}
 					setView={setView}
 					statusCount={displayedStatuses.length}
 					totalIssues={allCards.length}

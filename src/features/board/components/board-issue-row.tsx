@@ -10,6 +10,7 @@ import {
 	Calendar,
 	Circle,
 	Flame,
+	Link2,
 	ListChecks,
 } from "lucide-react";
 import React from "react";
@@ -40,6 +41,7 @@ interface IssueRowProps {
 		labels?: string[];
 		dueDate?: number;
 		order: number;
+		blockingCount?: number;
 	};
 	statusColor: string;
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
@@ -171,6 +173,31 @@ const DueDateDisplay = ({ dueDate }: DueDateDisplayProps) => {
 	);
 };
 
+interface BlockingBadgeProps {
+	count?: number;
+}
+
+const BlockingBadge = ({ count }: BlockingBadgeProps) => {
+	if (!count || count === 0) return null;
+	return (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<span className="hidden sm:flex flex-shrink-0 items-center gap-1 text-[10px] text-orange-500 leading-tight">
+						<Link2 className="w-3 h-3" />
+						{count}
+					</span>
+				</TooltipTrigger>
+				<TooltipContent side="top">
+					<p>
+						Blocking {count} issue{count !== 1 ? "s" : ""}
+					</p>
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
+	);
+};
+
 interface AssigneesDisplayProps {
 	assignees?: Id<"members">[];
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
@@ -270,6 +297,8 @@ const BoardIssueRowContent = ({
 		<LabelsDisplay issueId={issue._id} labels={issue.labels} />
 
 		<DueDateDisplay dueDate={issue.dueDate} />
+
+		<BlockingBadge count={issue.blockingCount} />
 
 		<AssigneesDisplay assigneeData={assigneeData} assignees={issue.assignees} />
 	</>

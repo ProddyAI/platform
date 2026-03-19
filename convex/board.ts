@@ -1530,20 +1530,20 @@ export const addIssueBlockingRelationship = mutation({
 
 			const outboundBlocking = await ctx.db
 				.query('issueBlocking')
-				.withIndex('by_blocked_issue_id', (q) =>
-					q.eq('blockedIssueId', currentIssueId),
+				.withIndex('by_blocking_issue_id', (q) =>
+					q.eq('blockingIssueId', currentIssueId),
 				)
 				.collect();
 
 			for (const rel of outboundBlocking) {
-				if (rel.blockingIssueId === blockingIssueId) {
+				if (rel.blockedIssueId === blockingIssueId) {
 					throw new Error(
 						"Circular dependency detected: the issue you're blocking already blocks this issue",
 					);
 				}
 
-				if (!visited.has(String(rel.blockingIssueId))) {
-					queue.push(rel.blockingIssueId);
+				if (!visited.has(String(rel.blockedIssueId))) {
+					queue.push(rel.blockedIssueId);
 				}
 			}
 		}
