@@ -1484,6 +1484,35 @@ export const getAllBlockingRelationshipsForChannel = query({
 	},
 });
 
+export const getChannelBlockingEdges = query({
+	args: { channelId: v.id('channels') },
+	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error('Channel not found');
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const rels = await ctx.db
+			.query('issueBlocking')
+			.withIndex('by_channel_id', (q) => q.eq('channelId', channelId))
+			.collect();
+
+		return Promise.all(
+			rels.map(async (rel) => {
+				const [blocking, blocked] = await Promise.all([
+					ctx.db.get(rel.blockingIssueId),
+					ctx.db.get(rel.blockedIssueId),
+				]);
+				return {
+					blockingIssueId: rel.blockingIssueId,
+					blockedIssueId: rel.blockedIssueId,
+					blockingTitle: blocking?.title ?? String(rel.blockingIssueId),
+					blockedTitle: blocked?.title ?? String(rel.blockedIssueId),
+				};
+			}),
+		);
+	},
+});
+
 export const addIssueBlockingRelationship = mutation({
 	args: {
 		channelId: v.id('channels'),

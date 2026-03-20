@@ -6,7 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
 import BoardGanttView from "@/features/board/components/board-gantt-view";
+import { BoardDependencyDiagram } from "@/features/board/components/board-dependency-diagram";
 import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
@@ -24,6 +26,7 @@ import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { GitBranch } from "lucide-react";
 
 const BoardPage = () => {
 	const channelId = useChannelId();
@@ -42,6 +45,12 @@ const BoardPage = () => {
 	const [optimisticIssues, setOptimisticIssues] = useState<
 		typeof allIssues | null
 	>(null);
+	const [diagramOpen, setDiagramOpen] = useState(false);
+	const blockingEdges =
+		useQuery(
+			api.board.getChannelBlockingEdges,
+			diagramOpen ? { channelId } : "skip"
+		) ?? [];
 
 	// Clear optimistic state when server data actually updates
 	useEffect(() => {
@@ -549,6 +558,29 @@ const BoardPage = () => {
 
 	return (
 		<div className="h-full w-full max-w-full flex flex-col bg-background dark:bg-gray-950 overflow-x-hidden overflow-y-hidden min-w-0">
+			{diagramOpen && (
+				<div className="border-b border-border/50 px-6 py-4 bg-muted/10 flex-shrink-0">
+					<div className="flex items-center justify-between mb-3">
+						<div className="flex items-center gap-2">
+							<GitBranch className="w-4 h-4 text-orange-500" />
+							<span className="text-sm font-semibold">Dependency Map</span>
+							<span className="text-xs text-muted-foreground">
+								({blockingEdges.length} relationship
+								{blockingEdges.length !== 1 ? "s" : ""})
+							</span>
+						</div>
+						<Button
+							className="h-7 px-2 text-xs"
+							onClick={() => setDiagramOpen(false)}
+							size="sm"
+							variant="ghost"
+						>
+							Close
+						</Button>
+					</div>
+					<BoardDependencyDiagram edges={blockingEdges} />
+				</div>
+			)}
 			{view === "kanban" ? (
 				statuses === undefined ? (
 					<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
