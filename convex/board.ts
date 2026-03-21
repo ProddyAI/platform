@@ -1341,6 +1341,62 @@ export const getBatchSubIssueStats = query({
 	},
 });
 
+// Batch query to get blocking counts for multiple issues
+export const getBatchBlockingStats = query({
+	args: { issueIds: v.array(v.id('issues')) },
+	handler: async (ctx, { issueIds }) => {
+		const stats: Record<
+			string,
+			{ blockingCount: number; blockedByCount: number }
+		> = {};
+		const checkedWorkspaceIds = new Set<string>();
+		const uniqueIssueIds = [...new Set(issueIds)];
+
+		for (const issueId of uniqueIssueIds) {
+			const issue = await ctx.db.get(issueId);
+			if (!issue) {
+				stats[issueId] = { blockingCount: 0, blockedByCount: 0 };
+				continue;
+			}
+
+			const channel = await ctx.db.get(issue.channelId);
+			if (!channel) {
+				stats[issueId] = { blockingCount: 0, blockedByCount: 0 };
+				continue;
+			}
+
+			if (!checkedWorkspaceIds.has(channel.workspaceId)) {
+				await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+				checkedWorkspaceIds.add(channel.workspaceId);
+			}
+
+			// Count issues that this one is blocking
+			const blockingCount = (
+				await ctx.db
+					.query('issueBlocking')
+					.withIndex('by_blocking_issue_id', (q) =>
+						q.eq('blockingIssueId', issueId),
+					)
+					.collect()
+			).length;
+
+			// Count issues that are blocking this one
+			const blockedByCount = (
+				await ctx.db
+					.query('issueBlocking')
+					.withIndex('by_blocked_issue_id', (q) =>
+						q.eq('blockedIssueId', issueId),
+					)
+					.collect()
+			).length;
+
+			stats[issueId] = { blockingCount, blockedByCount };
+		}
+
+		return stats;
+	},
+});
+
 // Search issues and statuses for the global search
 export const searchBoardContent = query({
 	args: { channelId: v.id('channels'), query: v.string() },

@@ -48,7 +48,7 @@ export function BoardDependencyDiagram({
 			const toId = e.blockedIssueId.replace(/[^a-zA-Z0-9]/g, "_");
 			const fromTitle = e.blockingTitle.replace(/"/g, "'");
 			const toTitle = e.blockedTitle.replace(/"/g, "'");
-			
+
 			const key = `${fromId}->${toId}`;
 			if (!seen.has(key)) {
 				seen.add(key);

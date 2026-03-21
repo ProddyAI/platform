@@ -10,6 +10,7 @@ import {
 	Calendar,
 	Circle,
 	Flame,
+	GitBranch,
 	Link2,
 	ListChecks,
 } from "lucide-react";
@@ -41,8 +42,9 @@ interface IssueRowProps {
 		labels?: string[];
 		dueDate?: number;
 		order: number;
-		blockingCount?: number;
 	};
+	blockingCount?: number;
+	blockedByCount?: number;
 	statusColor: string;
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
 	onClick: () => void;
@@ -98,7 +100,14 @@ interface PriorityIndicatorProps {
 	priority?: IssuePriority;
 }
 
-const PriorityIndicator = ({ priority }: PriorityIndicatorProps) => (
+const IssueIcon = ({ statusColor }: { statusColor: string }) => (
+	<span
+		className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
+		style={{ backgroundColor: statusColor }}
+	/>
+);
+
+const PriorityIndicator = ({ priority }: { priority?: IssuePriority }) => (
 	<TooltipProvider>
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -260,6 +269,8 @@ interface BoardIssueRowContentProps {
 	statusColor: string;
 	assigneeData: NonNullable<IssueRowProps["assigneeData"]>;
 	subIssueStats?: { total: number; completed: number };
+	blockingCount?: number;
+	blockedByCount?: number;
 }
 
 const BoardIssueRowContent = ({
@@ -267,39 +278,41 @@ const BoardIssueRowContent = ({
 	statusColor,
 	assigneeData,
 	subIssueStats,
+	blockingCount,
+	blockedByCount,
 }: BoardIssueRowContentProps) => (
 	<>
 		<PriorityIndicator priority={issue.priority} />
 
-		<span
-			className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
-			style={{ backgroundColor: statusColor }}
-		/>
-
-		<span className="flex-shrink-0 text-[10px] font-mono text-muted-foreground/60 w-12 leading-tight">
-			{formatIssueId(issue._id)}
-		</span>
-
-		<div className="flex-1 min-w-0 flex flex-col gap-0.5">
-			<span className="text-sm text-foreground truncate leading-tight">
+		<IssueIcon statusColor={statusColor} />
+		<div className="flex-1 min-w-0 flex items-center gap-2">
+			<span className="text-[11px] font-mono text-muted-foreground/50 shrink-0">
+				#{issue._id.slice(-5).toUpperCase()}
+			</span>
+			<span className="text-sm font-medium text-foreground truncate block">
 				{issue.title}
 			</span>
-			{subIssueStats && subIssueStats.total > 0 && (
-				<div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-					<ListChecks className="w-3 h-3" />
-					<span>
-						{subIssueStats.completed}/{subIssueStats.total} sub-issues
-					</span>
-				</div>
-			)}
 		</div>
 
 		<LabelsDisplay issueId={issue._id} labels={issue.labels} />
 
 		<DueDateDisplay dueDate={issue.dueDate} />
-
-		<BlockingBadge count={issue.blockingCount} />
-
+		{blockingCount && blockingCount > 0 && (
+			<BlockingBadge count={blockingCount} />
+		)}
+		{blockedByCount && blockedByCount > 0 && (
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 text-[10px] font-medium border border-red-500/20">
+							<GitBranch className="w-3 h-3 rotate-180" />
+							<span>{blockedByCount}</span>
+						</div>
+					</TooltipTrigger>
+					<TooltipContent>Blocked by {blockedByCount} items</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		)}
 		<AssigneesDisplay assigneeData={assigneeData} assignees={issue.assignees} />
 	</>
 );
@@ -311,6 +324,8 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	onClick,
 	isDragOverlay = false,
 	subIssueStats,
+	blockingCount,
+	blockedByCount,
 	disableDrag = false,
 }: IssueRowProps) {
 	if (isDragOverlay) {
@@ -376,6 +391,8 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 				issue={issue}
 				statusColor={statusColor}
 				subIssueStats={subIssueStats}
+				blockingCount={blockingCount}
+				blockedByCount={blockedByCount}
 			/>
 		</button>
 	);

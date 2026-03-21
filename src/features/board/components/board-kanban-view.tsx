@@ -125,6 +125,10 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		api.board.getBatchSubIssueStats,
 		issueIds.length > 0 ? { issueIds } : "skip"
 	);
+	const blockingStatsMap = useQuery(
+		api.board.getBatchBlockingStats,
+		issueIds.length > 0 ? { issueIds } : "skip"
+	);
 
 	const memberDataMap = useMemo(() => {
 		const map: Record<Id<"members">, { name: string; image?: string }> = {};
@@ -346,6 +350,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 											onEditStatus={() => onEditStatus(status)}
 											status={status}
 											subIssueStatsMap={subIssueStatsMap}
+											blockingStatsMap={blockingStatsMap}
 										/>
 									</div>
 								))}

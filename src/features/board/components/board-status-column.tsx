@@ -60,6 +60,7 @@ interface BoardStatusColumnProps {
 	onClickIssue: (issue: Issue) => void;
 	onCreateIssue: (statusId: Id<"statuses">, title: string) => Promise<void>;
 	disableColumnDrag?: boolean;
+	blockingStatsMap?: Record<string, { blockingCount: number; blockedByCount: number }>;
 	subIssueStatsMap?: Record<string, { total: number; completed: number }>;
 	disableIssueDrag?: boolean;
 	isFocused?: boolean;
@@ -75,6 +76,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	onCreateIssue,
 	disableColumnDrag = false,
 	subIssueStatsMap,
+	blockingStatsMap,
 	disableIssueDrag = false,
 	isFocused = false,
 }) => {
@@ -240,6 +242,8 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 								onClick={() => onClickIssue(issue)}
 								statusColor={status.color}
 								subIssueStats={subIssueStatsMap?.[issue._id]}
+								blockingCount={blockingStatsMap?.[issue._id]?.blockingCount}
+								blockedByCount={blockingStatsMap?.[issue._id]?.blockedByCount}
 							/>
 						))}
 
