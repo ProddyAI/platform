@@ -247,6 +247,16 @@ export async function POST(req: NextRequest) {
 					.trim(),
 			}));
 
+		// Track AI usage for this workspace
+		try {
+			await convex.mutation(api.usageTracking.recordAIRequestPublic, {
+				workspaceId: workspaceId as Id<"workspaces">,
+				featureType: "aiRequest",
+			});
+		} catch (trackErr) {
+			console.warn("[UsageTracking] Failed to record AI request:", trackErr);
+		}
+
 		// Stream response with AI SDK
 		const result = await streamText({
 			model: openai("gpt-4o-mini"),

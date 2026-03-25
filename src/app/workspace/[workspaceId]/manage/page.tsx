@@ -1,9 +1,10 @@
 "use client";
 
-import { Database, Loader, Plug, Settings, Shield, Users } from "lucide-react";
+import { CreditCard, Database, Loader, Plug, Settings, Shield, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BillingSection } from "@/features/billing/components/BillingSection";
 import { ImportDataManagement } from "@/features/manage/import-data-management";
 import { IntegrationsManagement } from "@/features/manage/integrations-management";
 import { MembersManagement } from "@/features/manage/members-management";
@@ -85,7 +86,7 @@ const ManagePage = () => {
 					) : (
 						/* For admins and owners, show all tabs */
 						<Tabs className="w-full" defaultValue="workspace">
-							<TabsList className="grid w-full grid-cols-4 mb-8">
+							<TabsList className="grid w-full grid-cols-5 mb-8">
 								<TabsTrigger value="workspace">
 									<Settings className="h-4 w-4 mr-2" />
 									Workspace
@@ -93,6 +94,10 @@ const ManagePage = () => {
 								<TabsTrigger value="members">
 									<Users className="h-4 w-4 mr-2" />
 									Members
+								</TabsTrigger>
+								<TabsTrigger value="billing">
+									<CreditCard className="h-4 w-4 mr-2" />
+									Billing
 								</TabsTrigger>
 								<TabsTrigger value="integrations">
 									<Plug className="h-4 w-4 mr-2" />
@@ -122,6 +127,13 @@ const ManagePage = () => {
 									currentMember={member}
 									workspaceId={workspaceId}
 								/>
+							</TabsContent>
+
+							<TabsContent
+								className="bg-background rounded-lg p-6 shadow-sm border"
+								value="billing"
+							>
+								<BillingSection workspaceId={workspaceId} />
 							</TabsContent>
 
 							<TabsContent

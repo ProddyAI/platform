@@ -1,8 +1,19 @@
 import { openai } from "@ai-sdk/openai";
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { generateText } from "ai";
+import { ConvexHttpClient } from "convex/browser";
 import { format } from "date-fns";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+
+function createConvexClient(): ConvexHttpClient {
+	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
+	}
+	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+}
 
 // Load environment variables
 dotenv.config();
@@ -118,7 +129,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { messages, date, channelName } = requestData;
+		const { messages, date, channelName, workspaceId } = requestData;
 
 		if (!messages || !Array.isArray(messages)) {
 			console.error("Invalid messages format:", messages);
@@ -218,6 +229,21 @@ Your recap should be comprehensive but well-organized, making it easy for someon
 
 			// Prune cache if needed
 			pruneCache();
+
+			// Track AI summary/recap usage
+			if (workspaceId) {
+				try {
+					const trackingConvex = createConvexClient();
+					const trackingToken = convexAuthNextjsToken();
+					if (trackingToken) trackingConvex.setAuth(trackingToken);
+					await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
+						workspaceId: workspaceId as Id<"workspaces">,
+						featureType: "aiSummary",
+					});
+				} catch (trackErr) {
+					console.warn("[UsageTracking] Failed to record AI recap:", trackErr);
+				}
+			}
 
 			return NextResponse.json({ recap: text, date });
 		} catch (_aiError) {

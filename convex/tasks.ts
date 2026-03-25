@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
 	type MutationCtx,
@@ -169,6 +169,13 @@ export const createTask = mutation({
 			userId,
 			workspaceId: args.workspaceId,
 		});
+
+		// Track usage
+		await ctx.scheduler.runAfter(
+			0,
+			internal.usageTracking.recordTaskCreated,
+			{ userId, workspaceId: args.workspaceId }
+		);
 
 		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexTask, {
 			taskId,

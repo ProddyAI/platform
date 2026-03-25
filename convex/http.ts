@@ -1,3 +1,4 @@
+import Stripe from "stripe";
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -158,6 +159,93 @@ http.route({
 				},
 			});
 		}
+	}),
+});
+
+// ─── Stripe Webhook ─────────────────────────────────────────────────────────
+
+http.route({
+	path: "/stripe/webhook",
+	method: "POST",
+	handler: httpAction(async (ctx, request) => {
+		const stripeKey = process.env.STRIPE_SECRET_KEY;
+		const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+		if (!stripeKey || !webhookSecret) {
+			return new Response("Stripe not configured", { status: 500 });
+		}
+
+		const stripe = new Stripe(stripeKey);
+		const body = await request.text();
+		const signature = request.headers.get("stripe-signature");
+		if (!signature) {
+			return new Response("Missing stripe-signature header", { status: 400 });
+		}
+
+		let event: Stripe.Event;
+		try {
+			event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Unknown error";
+			console.error("Stripe webhook signature verification failed:", message);
+			return new Response("Invalid signature", { status: 400 });
+		}
+
+		switch (event.type) {
+			case "checkout.session.completed": {
+				const session = event.data.object as Stripe.Checkout.Session;
+				const workspaceId = session.metadata?.convexWorkspaceId;
+				const planName = session.metadata?.planName;
+				if (!workspaceId || !planName) {
+					// Try subscription metadata
+					break;
+				}
+				const subscriptionId =
+					typeof session.subscription === "string"
+						? session.subscription
+						: session.subscription?.id;
+				if (subscriptionId) {
+					await ctx.runMutation(internal.stripe.updateSubscription, {
+						workspaceId: workspaceId as Id<"workspaces">,
+						stripeSubscriptionId: subscriptionId,
+						plan: planName as "pro" | "enterprise",
+					});
+				}
+				break;
+			}
+
+			case "customer.subscription.updated": {
+				const subscription = event.data.object as Stripe.Subscription;
+				const workspaceId =
+					subscription.metadata?.convexWorkspaceId;
+				const planName = subscription.metadata?.planName;
+				if (!workspaceId || !planName) break;
+
+				if (
+					subscription.status === "active" ||
+					subscription.status === "trialing"
+				) {
+					await ctx.runMutation(internal.stripe.updateSubscription, {
+						workspaceId: workspaceId as Id<"workspaces">,
+						stripeSubscriptionId: subscription.id,
+						plan: planName as "pro" | "enterprise",
+					});
+				}
+				break;
+			}
+
+			case "customer.subscription.deleted": {
+				const subscription = event.data.object as Stripe.Subscription;
+				const workspaceId =
+					subscription.metadata?.convexWorkspaceId;
+				if (!workspaceId) break;
+				await ctx.runMutation(internal.stripe.cancelSubscription, {
+					workspaceId: workspaceId as Id<"workspaces">,
+				});
+				break;
+			}
+		}
+
+		return new Response("ok", { status: 200 });
 	}),
 });
 

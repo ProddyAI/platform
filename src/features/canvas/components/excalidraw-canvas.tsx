@@ -16,6 +16,7 @@ import {
 	normalizeMermaidCode,
 } from "@/features/canvas/diagram-ai/mermaid";
 import { LiveParticipants } from "@/features/live/components/live-participants";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { generateUserColor } from "@/lib/placeholder-image";
 import {
 	useBroadcastEvent,
@@ -151,6 +152,7 @@ function getCommonBoundsFallback(elements: any[]) {
 }
 
 export const ExcalidrawCanvas = () => {
+	const workspaceId = useWorkspaceId();
 	const saveTimerRef = useRef<number | null>(null);
 	const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
 	const excalidrawHostRef = useRef<HTMLDivElement | null>(null);
@@ -345,7 +347,7 @@ export const ExcalidrawCanvas = () => {
 			const res = await fetch("/api/smart/diagram", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ prompt }),
+				body: JSON.stringify({ prompt, workspaceId }),
 			});
 
 			const body = await res.json().catch(() => ({}));

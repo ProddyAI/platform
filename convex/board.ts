@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -118,6 +118,15 @@ export const createCard = mutation({
 
 		// Insert the card
 		const cardId = await ctx.db.insert("cards", args);
+
+		// Track board card usage
+		const boardUserId = (await ctx.auth.getUserIdentity())?.subject.split("|")[0];
+		if (boardUserId && channel?.workspaceId) {
+			await ctx.scheduler.runAfter(0, internal.usageTracking.recordBoardCreated, {
+				userId: boardUserId as Id<"users">,
+				workspaceId: channel.workspaceId,
+			});
+		}
 
 		// Create mentions for assignees if any
 		if (args.assignees && args.assignees.length > 0) {
