@@ -31,6 +31,7 @@ import type * as chatbotQueries from "../chatbotQueries.js";
 import type * as conversations from "../conversations.js";
 import type * as crons from "../crons.js";
 import type * as direct from "../direct.js";
+import type * as dodo from "../dodo.js";
 import type * as email from "../email.js";
 import type * as emailVerification from "../emailVerification.js";
 import type * as http from "../http.js";
@@ -42,6 +43,7 @@ import type * as messages from "../messages.js";
 import type * as notes from "../notes.js";
 import type * as notifications from "../notifications.js";
 import type * as passwordManagement from "../passwordManagement.js";
+import type * as payments from "../payments.js";
 import type * as plans from "../plans.js";
 import type * as preferences from "../preferences.js";
 import type * as presence from "../presence.js";
@@ -51,7 +53,6 @@ import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
 import type * as richText from "../richText.js";
 import type * as search from "../search.js";
-import type * as stripe from "../stripe.js";
 import type * as tasks from "../tasks.js";
 import type * as testComposio from "../testComposio.js";
 import type * as threadTitles from "../threadTitles.js";
@@ -61,6 +62,7 @@ import type * as usageTracking from "../usageTracking.js";
 import type * as userStatus from "../userStatus.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
+import type * as webhooks from "../webhooks.js";
 import type * as workspaceInvites from "../workspaceInvites.js";
 import type * as workspaces from "../workspaces.js";
 
@@ -94,6 +96,7 @@ declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
   crons: typeof crons;
   direct: typeof direct;
+  dodo: typeof dodo;
   email: typeof email;
   emailVerification: typeof emailVerification;
   http: typeof http;
@@ -105,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   notes: typeof notes;
   notifications: typeof notifications;
   passwordManagement: typeof passwordManagement;
+  payments: typeof payments;
   plans: typeof plans;
   preferences: typeof preferences;
   presence: typeof presence;
@@ -114,7 +118,6 @@ declare const fullApi: ApiFromModules<{
   reactions: typeof reactions;
   richText: typeof richText;
   search: typeof search;
-  stripe: typeof stripe;
   tasks: typeof tasks;
   testComposio: typeof testComposio;
   threadTitles: typeof threadTitles;
@@ -124,6 +127,7 @@ declare const fullApi: ApiFromModules<{
   userStatus: typeof userStatus;
   users: typeof users;
   utils: typeof utils;
+  webhooks: typeof webhooks;
   workspaceInvites: typeof workspaceInvites;
   workspaces: typeof workspaces;
 }>;
@@ -976,6 +980,79 @@ export declare const components: {
           }>;
           start: number;
         }>
+      >;
+    };
+  };
+  dodopayments: {
+    lib: {
+      checkout: FunctionReference<
+        "action",
+        "internal",
+        {
+          apiKey: string;
+          environment: "test_mode" | "live_mode";
+          payload: {
+            allowed_payment_method_types?: Array<string>;
+            billing_address?: {
+              city?: string;
+              country: string;
+              state?: string;
+              street?: string;
+              zipcode?: string;
+            };
+            billing_currency?: string;
+            confirm?: boolean;
+            customer?:
+              | { email: string; name?: string; phone_number?: string }
+              | { customer_id: string };
+            customization?: {
+              force_language?: string;
+              show_on_demand_tag?: boolean;
+              show_order_details?: boolean;
+              theme?: string;
+            };
+            discount_code?: string;
+            feature_flags?: {
+              allow_currency_selection?: boolean;
+              allow_discount_code?: boolean;
+              allow_phone_number_collection?: boolean;
+              allow_tax_id?: boolean;
+              always_create_new_customer?: boolean;
+            };
+            force_3ds?: boolean;
+            metadata?: Record<string, string>;
+            product_cart: Array<{
+              addons?: Array<{ addon_id: string; quantity: number }>;
+              amount?: number;
+              product_id: string;
+              quantity: number;
+            }>;
+            return_url?: string;
+            show_saved_payment_methods?: boolean;
+            subscription_data?: {
+              on_demand?: {
+                adaptive_currency_fees_inclusive?: boolean;
+                mandate_only: boolean;
+                product_currency?: string;
+                product_description?: string;
+                product_price?: number;
+              };
+              trial_period_days?: number;
+            };
+          };
+        },
+        { checkout_url: string }
+      >;
+      customerPortal: FunctionReference<
+        "action",
+        "internal",
+        {
+          apiKey: string;
+          dodoCustomerId: string;
+          environment: "test_mode" | "live_mode";
+          send_email?: boolean;
+        },
+        { portal_url: string }
       >;
     };
   };

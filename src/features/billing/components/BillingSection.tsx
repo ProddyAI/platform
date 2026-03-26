@@ -22,10 +22,10 @@ interface BillingSectionProps {
 }
 
 export function BillingSection({ workspaceId }: BillingSectionProps) {
-	const subscription = useQuery(api.stripe.getSubscriptionStatus, {
+	const subscription = useQuery(api.payments.getSubscriptionStatus, {
 		workspaceId,
 	});
-	const createPortal = useAction(api.stripe.createPortalSession);
+	const createPortal = useAction(api.payments.getCustomerPortal);
 	const [portalLoading, setPortalLoading] = useState(false);
 	const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -38,12 +38,12 @@ export function BillingSection({ workspaceId }: BillingSectionProps) {
 	}
 
 	const currentPlan = PLANS[(subscription.plan as PlanName) ?? "free"];
-	const isPaid = subscription.plan !== "free" && subscription.stripeSubscriptionId;
+	const isPaid = subscription.plan !== "free" && (subscription as any).dodoSubscriptionId;
 
 	const handleManageBilling = async () => {
 		setPortalLoading(true);
 		try {
-			const url = await createPortal({ workspaceId });
+			const url = await createPortal({ send_email: false });
 			window.open(url, "_blank");
 		} catch (err) {
 			console.error("Failed to open billing portal:", err);

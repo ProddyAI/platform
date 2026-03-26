@@ -1,8 +1,7 @@
 ---
 description: 'Removes AI-generated code slop and enforces consistent style'
 argument-hint: Review and clean AI-generated changes
-tools:
-  ['search', 'deepwiki/*', 'context7/*', 'memory/*', 'read', 'web/githubRepo']
+tools: ['search', 'read', 'web/githubRepo']
 ---
 
 # Remove AI code slop

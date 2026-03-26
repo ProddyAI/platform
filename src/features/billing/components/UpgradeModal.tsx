@@ -44,7 +44,7 @@ export function UpgradeModal({
 	open,
 	onOpenChange,
 }: UpgradeModalProps) {
-	const createCheckout = useAction(api.stripe.createCheckoutSession);
+	const createCheckout = useAction(api.payments.createCheckoutSession);
 	const [loading, setLoading] = useState(false);
 	const [seatCount, setSeatCount] = useState(1);
 
