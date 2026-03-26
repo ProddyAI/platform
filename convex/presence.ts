@@ -13,7 +13,7 @@ export const heartbeat = mutation({
 		sessionId: v.string(),
 		interval: v.number(),
 	},
-	handler: async (ctx, { roomId, userId, sessionId, interval }) => {
+	handler: async (ctx, { roomId, sessionId, interval }) => {
 		// Check authentication
 		const authUserId = await getAuthUserId(ctx);
 		if (!authUserId) {

@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
@@ -57,7 +58,7 @@ export const update = mutation({
 		id: v.id("channels"),
 		name: v.string(),
 		icon: v.optional(v.string()),
-		iconImage: v.optional(v.id("_storage")),
+		iconImage: v.optional(v.union(v.id("_storage"), v.null())),
 		enabledFeatures: v.optional(
 			v.array(
 				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
@@ -98,7 +99,7 @@ export const update = mutation({
 		const updateData: {
 			name: string;
 			icon?: string;
-			iconImage?: typeof args.iconImage;
+			iconImage?: Id<"_storage">;
 			enabledFeatures?: typeof args.enabledFeatures;
 		} = {
 			name: parsedName,
@@ -108,8 +109,8 @@ export const update = mutation({
 			updateData.icon = args.icon;
 		}
 
-		if (args.iconImage !== undefined) {
-			updateData.iconImage = args.iconImage;
+		if ("iconImage" in args) {
+			updateData.iconImage = args.iconImage ?? undefined;
 		}
 
 		if (args.enabledFeatures !== undefined) {

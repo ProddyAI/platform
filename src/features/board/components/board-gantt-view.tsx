@@ -1,4 +1,3 @@
-import { useMutation } from "convex/react";
 import {
 	addDays,
 	addWeeks,
@@ -16,27 +15,45 @@ import {
 	ArrowLeft,
 	ArrowRight,
 	Calendar,
-	GripHorizontal,
-	Pencil,
-	Trash,
 	X,
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
 import type React from "react";
-import { useMemo, useRef, useState } from "react";
-import { api } from "@/../convex/_generated/api";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
+type BoardListItem = {
+	_id: Id<"lists">;
+	title: string;
+};
+
+type BoardGanttCard = {
+	_id: Id<"cards">;
+	listId: Id<"lists">;
+	title: string;
+	priority?: "lowest" | "low" | "medium" | "high" | "highest";
+	description?: string;
+	labels?: string[];
+	dueDate?: number;
+	parentCardId?: Id<"cards">;
+	order?: number;
+};
+
+type BoardGanttCardWithDueDate = BoardGanttCard & {
+	dueDate: number;
+};
+
+const hasDueDate = (card: BoardGanttCard): card is BoardGanttCardWithDueDate =>
+	typeof card.dueDate === "number";
+
 interface BoardGanttViewProps {
-	lists: any[];
-	allCards: any[];
-	onEditCard: (card: any) => void;
-	onDeleteCard: (cardId: Id<"cards">) => void;
-	members?: any[];
+	lists: BoardListItem[];
+	allCards: BoardGanttCard[];
+	members?: unknown[];
+	readOnly?: boolean;
 }
 
 type GanttTask = {
@@ -53,25 +70,18 @@ type GanttTask = {
 	isSubtask: boolean;
 	order?: number;
 	parentTitle?: string;
-	originalCard: any;
+	originalCard: BoardGanttCard;
 };
 
-const BoardGanttView: React.FC<BoardGanttViewProps> = ({
-	lists,
-	allCards,
-	onEditCard,
-	onDeleteCard,
-}) => {
+const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 	const initialStartDate = useMemo(() => {
-		const earliestDueDate = allCards
-			.filter((card) => card.dueDate)
-			.reduce(
-				(earliest, card) => {
-					const dueDate = new Date(card.dueDate);
-					return earliest === null || dueDate < earliest ? dueDate : earliest;
-				},
-				null as Date | null
-			);
+		const earliestDueDate = allCards.filter(hasDueDate).reduce(
+			(earliest, card) => {
+				const dueDate = new Date(card.dueDate);
+				return earliest === null || dueDate < earliest ? dueDate : earliest;
+			},
+			null as Date | null
+		);
 
 		return earliestDueDate
 			? startOfWeek(earliestDueDate)
@@ -82,50 +92,57 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 		useState<Date>(initialStartDate);
 	const [zoomLevel, setZoomLevel] = useState<number>(14);
 	const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
-	const [draggingTask, setDraggingTask] = useState<GanttTask | null>(null);
-	const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-	const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-	const [isDragging, setIsDragging] = useState(false);
-	const [dragStartDate, setDragStartDate] = useState<Date | null>(null);
+	const previousInitialStartRef = useRef<number>(initialStartDate.getTime());
+
+	useEffect(() => {
+		const nextInitialTime = initialStartDate.getTime();
+		setCurrentStartDate((prev) => {
+			if (prev.getTime() !== previousInitialStartRef.current) {
+				previousInitialStartRef.current = nextInitialTime;
+				return prev;
+			}
+
+			previousInitialStartRef.current = nextInitialTime;
+			return prev.getTime() === nextInitialTime ? prev : initialStartDate;
+		});
+	}, [initialStartDate]);
 
 	const timelineContainerRef = useRef<HTMLDivElement>(null);
-	const updateCardInGantt = useMutation(api.board.updateCardInGantt);
-	const { toast } = useToast();
 
 	const tasks = useMemo(() => {
-		const cardById = new Map<Id<"cards">, any>();
-		allCards.forEach((card) => cardById.set(card._id, card));
+		const cardById = new Map<Id<"cards">, BoardGanttCard>();
+		allCards.forEach((card) => {
+			cardById.set(card._id, card);
+		});
 
-		return allCards
-			.filter((card) => card.dueDate)
-			.map((card) => {
-				const list = lists.find((l) => l._id === card.listId);
-				const dueDate = new Date(card.dueDate);
+		return allCards.filter(hasDueDate).map((card) => {
+			const list = lists.find((l) => l._id === card.listId);
+			const dueDate = new Date(card.dueDate);
 
-				const startDate = new Date(dueDate);
-				startDate.setDate(startDate.getDate() - 3);
+			const startDate = new Date(dueDate);
+			startDate.setDate(startDate.getDate() - 3);
 
-				const parentTitle = card.parentCardId
-					? cardById.get(card.parentCardId)?.title
-					: undefined;
+			const parentTitle = card.parentCardId
+				? cardById.get(card.parentCardId)?.title
+				: undefined;
 
-				return {
-					id: card._id,
-					title: card.title,
-					startDate,
-					endDate: dueDate,
-					priority: card.priority,
-					listId: card.listId,
-					listTitle: list ? list.title : "Unknown List",
-					description: card.description,
-					labels: card.labels,
-					parentCardId: card.parentCardId,
-					isSubtask: Boolean(card.parentCardId),
-					order: card.order,
-					parentTitle,
-					originalCard: card,
-				} as GanttTask;
-			});
+			return {
+				id: card._id,
+				title: card.title,
+				startDate,
+				endDate: dueDate,
+				priority: card.priority,
+				listId: card.listId,
+				listTitle: list ? list.title : "Unknown List",
+				description: card.description,
+				labels: card.labels,
+				parentCardId: card.parentCardId,
+				isSubtask: Boolean(card.parentCardId),
+				order: card.order,
+				parentTitle,
+				originalCard: card,
+			} as GanttTask;
+		});
 	}, [allCards, lists]);
 
 	const timelineDates = useMemo(() => {
@@ -134,7 +151,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	}, [currentStartDate, zoomLevel]);
 
 	const cardsByList = useMemo(() => {
-		const map: Record<string, any[]> = {};
+		const map: Record<string, BoardGanttCard[]> = {};
 		lists.forEach((list) => {
 			map[list._id] = [];
 		});
@@ -159,13 +176,19 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	const groupedTasksByList = useMemo(() => {
 		const grouped: Record<
 			string,
-			{ rows: { card: any; task?: GanttTask; level: "parent" | "subtask" }[] }
+			{
+				rows: {
+					card: BoardGanttCard;
+					task?: GanttTask;
+					level: "parent" | "subtask";
+				}[];
+			}
 		> = {};
 
 		lists.forEach((list) => {
 			const listCards = cardsByList[list._id] || [];
 			const rows: {
-				card: any;
+				card: BoardGanttCard;
 				task?: GanttTask;
 				level: "parent" | "subtask";
 			}[] = [];
@@ -312,128 +335,6 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 				(task.startDate <= timelineStart && task.endDate >= timelineEnd)
 					? "block"
 					: "none",
-		};
-	};
-
-	const handleDragStart = (e: React.MouseEvent, task: GanttTask) => {
-		e.stopPropagation();
-
-		setDraggingTask(task);
-		setDragStartDate(new Date(task.endDate));
-
-		const taskElement = e.currentTarget as HTMLElement;
-		const rect = taskElement.getBoundingClientRect();
-		setDragOffset({
-			x: e.clientX - rect.left,
-			y: e.clientY - rect.top,
-		});
-
-		setDragPosition({
-			x: e.clientX,
-			y: e.clientY,
-		});
-
-		setIsDragging(true);
-
-		document.addEventListener("mousemove", handleDragMove);
-		document.addEventListener("mouseup", handleDragEnd);
-	};
-
-	const handleDragMove = (e: MouseEvent) => {
-		if (!isDragging || !draggingTask || !timelineContainerRef.current) return;
-
-		setDragPosition({
-			x: e.clientX,
-			y: e.clientY,
-		});
-	};
-
-	const handleDragEnd = (e: MouseEvent) => {
-		if (
-			!isDragging ||
-			!draggingTask ||
-			!timelineContainerRef.current ||
-			!dragStartDate
-		) {
-			cleanupDrag();
-			return;
-		}
-
-		const timelineRect = timelineContainerRef.current.getBoundingClientRect();
-		const timelineWidth = timelineRect.width - 250;
-		const timelineLeft = timelineRect.left + 250;
-
-		const relativePosition = Math.max(
-			0,
-			Math.min(1, (e.clientX - timelineLeft) / timelineWidth)
-		);
-
-		const dayOffset = Math.floor(relativePosition * zoomLevel);
-		const newDueDate = addDays(currentStartDate, dayOffset);
-
-		if (newDueDate.getTime() !== draggingTask.endDate.getTime()) {
-			updateCardInGantt({
-				cardId: draggingTask.id,
-				dueDate: newDueDate.getTime(),
-			})
-				.then(() => {
-					toast({
-						title: "Due date updated",
-						description: `"${draggingTask.title}" due date changed to ${format(newDueDate, "MMM d, yyyy")}`,
-					});
-				})
-				.catch((error) => {
-					toast({
-						title: "Error updating due date",
-						description: error.message,
-						variant: "destructive",
-					});
-				});
-		}
-
-		cleanupDrag();
-	};
-
-	const cleanupDrag = () => {
-		setIsDragging(false);
-		setDraggingTask(null);
-		setDragStartDate(null);
-
-		document.removeEventListener("mousemove", handleDragMove);
-		document.removeEventListener("mouseup", handleDragEnd);
-	};
-
-	const getDraggingTaskPosition = () => {
-		if (!isDragging || !draggingTask || !timelineContainerRef.current) {
-			return null;
-		}
-
-		const timelineRect = timelineContainerRef.current.getBoundingClientRect();
-		const timelineWidth = timelineRect.width - 250;
-		const timelineLeft = timelineRect.left + 250;
-
-		const relativePosition = Math.max(
-			0,
-			Math.min(1, (dragPosition.x - timelineLeft) / timelineWidth)
-		);
-
-		const dayOffset = Math.floor(relativePosition * zoomLevel);
-		const taskDuration = differenceInDays(
-			draggingTask.endDate,
-			draggingTask.startDate
-		);
-
-		const startPosition = ((dayOffset - taskDuration) / zoomLevel) * 100;
-		const boundedStartPosition = Math.max(0, startPosition);
-
-		return {
-			left: `${boundedStartPosition}%`,
-			width: `${Math.max(3, ((taskDuration + 1) / zoomLevel) * 100)}%`,
-			position: "absolute" as const,
-			top: `${dragPosition.y - dragOffset.y}px`,
-			zIndex: 50,
-			opacity: 0.7,
-			pointerEvents: "none" as const,
 		};
 	};
 
@@ -632,12 +533,16 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 														key={row.task.id}
 														style={{ height: rowHeight }}
 													>
-														<div
-															className="absolute h-[24px] top-[5px] rounded-md border-2 shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]"
+														<button
+															aria-label={`Open task ${row.task.title}`}
+															className="absolute h-[24px] top-[5px] rounded-md border-2 shadow-sm cursor-default"
 															onClick={() => setSelectedTask(row.task || null)}
-															onMouseDown={(e) =>
-																handleDragStart(e, row.task as GanttTask)
-															}
+															onKeyDown={(e) => {
+																if (e.key === "Enter" || e.key === " ") {
+																	e.preventDefault();
+																	setSelectedTask(row.task || null);
+																}
+															}}
 															style={{
 																...style,
 																backgroundColor: getSolidPriorityColor(
@@ -647,14 +552,14 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 																	row.task.priority
 																),
 															}}
+															type="button"
 														>
 															<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
 																<span className="text-xs font-semibold truncate text-white drop-shadow-sm">
 																	{row.task.title}
 																</span>
-																<GripHorizontal className="ml-auto h-3 w-3 text-white/70 opacity-70 hover:opacity-100" />
 															</div>
-														</div>
+														</button>
 													</div>
 												);
 											})}
@@ -665,26 +570,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 						);
 					})}
 
-					{/* Dragging task overlay */}
-					{isDragging && draggingTask && (
-						<div
-							className="absolute rounded-md border-2 shadow-lg opacity-80"
-							style={Object.assign(
-								{
-									backgroundColor: getSolidPriorityColor(draggingTask.priority),
-									borderColor: getSolidPriorityColor(draggingTask.priority),
-									height: "30px",
-								},
-								getDraggingTaskPosition() || {}
-							)}
-						>
-							<div className="absolute inset-0 flex items-center px-2 overflow-hidden">
-								<span className="text-xs font-semibold truncate text-white drop-shadow-sm">
-									{draggingTask.title}
-								</span>
-							</div>
-						</div>
-					)}
+					{/* Dragging task overlay removed for read-only mode */}
 				</div>
 			</div>
 
@@ -778,28 +664,13 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 								</div>
 							)}
 
-							<div className="pt-2 flex gap-2">
-								<Button
-									className="flex-1"
-									onClick={() => onEditCard(selectedTask.originalCard)}
-									size="sm"
-									variant="outline"
-								>
-									<Pencil className="h-3.5 w-3.5 mr-1" />
-									Edit
-								</Button>
-								<Button
-									className="flex-1"
-									onClick={() => {
-										onDeleteCard(selectedTask.id);
-										setSelectedTask(null);
-									}}
-									size="sm"
-									variant="outline"
-								>
-									<Trash className="h-3.5 w-3.5 mr-1" />
-									Delete
-								</Button>
+							<div className="pt-2">
+								<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
+									View Mode
+								</div>
+								<p className="text-sm text-muted-foreground">
+									Gantt view is read-only. Switch to Board view to edit tasks.
+								</p>
 							</div>
 						</div>
 					</div>

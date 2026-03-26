@@ -144,7 +144,7 @@ export const NotesContent = ({
 	}, [activeNote, isTyping, localTitle, localContent]);
 
 	// Memoize the update callback to prevent re-renders
-	const memoizedOnUpdate = useCallback(
+	const _memoizedOnUpdate = useCallback(
 		(updates: Partial<Note>) => {
 			handleUpdate(updates).catch((error) => {
 				console.error("Failed to update note:", error);
@@ -239,16 +239,9 @@ export const NotesContent = ({
 					<div className="flex-1 overflow-hidden">
 						{memoizedNote && activeNoteId ? (
 							<BlockNoteNotesEditor
-								channelId={channelId}
 								isFullScreen={isFullScreen}
 								isLoading={isTyping || hasUnsavedChanges}
 								note={memoizedNote}
-								onContentChange={handleNoteContentChange}
-								onSaveNote={handleSave}
-								onTitleChange={handleNoteTitleChange}
-								onUpdate={memoizedOnUpdate}
-								toggleFullScreen={memoizedToggleFullScreen}
-								workspaceId={workspaceId}
 							/>
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground">

@@ -189,6 +189,64 @@ const schema = defineSchema({
 		.index("by_channel_id", ["channelId"])
 		.index("by_channel_id_order", ["channelId", "order"]),
 
+	// Linear-style statuses (replace lists in Kanban view)
+	statuses: defineTable({
+		channelId: v.id("channels"),
+		name: v.string(),
+		color: v.string(),
+		order: v.number(),
+	})
+		.index("by_channel_id", ["channelId"])
+		.index("by_channel_id_order", ["channelId", "order"]),
+
+	// Linear-style issues (replace cards in Kanban view)
+	issues: defineTable({
+		channelId: v.id("channels"),
+		statusId: v.id("statuses"),
+		title: v.string(),
+		description: v.optional(v.string()),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+		order: v.number(),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+		// Sub-issue hierarchy field (optional - absent/undefined means main issue)
+		parentIssueId: v.optional(v.id("issues")),
+	})
+		.index("by_channel_id", ["channelId"])
+		.index("by_status_id", ["statusId"])
+		.index("by_channel_id_status_id", ["channelId", "statusId"])
+		.index("by_parent_issue_id", ["parentIssueId"]),
+
+	// Issue blocking relationships (which issue blocks which)
+	issueBlocking: defineTable({
+		channelId: v.id("channels"),
+		blockedIssueId: v.id("issues"), // The issue that is blocked
+		blockingIssueId: v.id("issues"), // The issue that is blocking
+		createdAt: v.number(),
+		createdBy: v.id("members"),
+	})
+		.index("by_channel_id", ["channelId"])
+		.index("by_blocked_issue_id", ["blockedIssueId"])
+		.index("by_blocking_issue_id", ["blockingIssueId"])
+		.index("by_channel_id_blocked_issue_id", ["channelId", "blockedIssueId"])
+		.index("by_channel_id_blocked_issue_id_blocking_issue_id", [
+			"channelId",
+			"blockedIssueId",
+			"blockingIssueId",
+		])
+		.index("by_channel_id_blocking_issue_id", ["channelId", "blockingIssueId"]),
+
 	cards: defineTable({
 		listId: v.id("lists"),
 		title: v.string(),
@@ -231,6 +289,34 @@ const schema = defineSchema({
 		.index("by_card_id", ["cardId"])
 		.index("by_member_id", ["memberId"])
 		.index("by_workspace_id", ["workspaceId"]),
+
+	// Issue comments for discussions on issues
+	issueComments: defineTable(
+		v.union(
+			v.object({
+				issueId: v.id("issues"),
+				memberId: v.id("members"),
+				workspaceId: v.id("workspaces"),
+				content: v.string(),
+				message: v.optional(v.string()),
+				createdAt: v.number(),
+				updatedAt: v.optional(v.number()),
+			}),
+			v.object({
+				issueId: v.id("issues"),
+				memberId: v.id("members"),
+				workspaceId: v.id("workspaces"),
+				message: v.string(),
+				content: v.optional(v.string()),
+				createdAt: v.number(),
+				updatedAt: v.optional(v.number()),
+			})
+		)
+	)
+		.index("by_issue_id", ["issueId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_issue_id_created_at", ["issueId", "createdAt"]),
 
 	// Card activity log for audit trail
 	card_activity: defineTable({
@@ -308,6 +394,8 @@ const schema = defineSchema({
 		parentMessageId: v.optional(v.id("messages")),
 		cardId: v.optional(v.id("cards")),
 		cardTitle: v.optional(v.string()),
+		issueId: v.optional(v.id("issues")),
+		issueTitle: v.optional(v.string()),
 		read: v.boolean(),
 		createdAt: v.number(),
 	})
@@ -316,6 +404,7 @@ const schema = defineSchema({
 		.index("by_mentioner_member_id", ["mentionerMemberId"])
 		.index("by_message_id", ["messageId"])
 		.index("by_card_id", ["cardId"])
+		.index("by_issue_id", ["issueId"])
 		.index("by_workspace_id_mentioned_member_id", [
 			"workspaceId",
 			"mentionedMemberId",
@@ -717,6 +806,9 @@ const schema = defineSchema({
 			dateTo: v.optional(v.number()), // Import messages until this date
 			includeFiles: v.optional(v.boolean()), // Whether to import file attachments
 			includeThreads: v.optional(v.boolean()), // Whether to import threaded messages
+			includeArchived: v.optional(v.boolean()), // Whether to import archived items
+			includeComments: v.optional(v.boolean()), // Whether to import comments
+			includeCompleted: v.optional(v.boolean()), // Whether to import completed items
 		}),
 		// Progress tracking
 		progress: v.object({

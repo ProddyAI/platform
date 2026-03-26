@@ -16,15 +16,6 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
-// Interface for saved canvas data
-interface SavedCanvas {
-	id: Id<"messages">;
-	canvasName: string;
-	roomId: string;
-	savedCanvasId: string;
-	creationTime: number;
-}
-
 const CanvasPage = () => {
 	const channelId = useChannelId();
 	const workspaceId = useWorkspaceId();

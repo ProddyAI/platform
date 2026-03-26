@@ -17,10 +17,11 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import type { BoardMember } from "./board-models";
 
 interface BoardSubtaskListProps {
 	parentCardId: Id<"cards">;
-	members?: any[];
+	members?: BoardMember[];
 }
 
 export const BoardSubtaskList: React.FC<BoardSubtaskListProps> = ({

@@ -43,8 +43,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		setIsCollapsed(!isCollapsed);
 	}, [isMobile, isCollapsed, setIsCollapsed]);
 
-	const showPanel =Boolean(parentMessageId) || Boolean(profileMemberId);
-
+	const showPanel = Boolean(parentMessageId) || Boolean(profileMemberId);
 
 	// Check if mobile on initial load and when window resizes
 	useEffect(() => {
@@ -97,8 +96,8 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 			</Script>
 			<MessageSelectionProvider>
 				<WorkspacePresenceTracker workspaceId={workspaceId}>
-					<div className="h-full flex flex-col">
-						<div className="flex h-full">
+					<div className="h-full w-full min-w-0 flex flex-col overflow-hidden">
+						<div className="flex h-full min-w-0 overflow-hidden">
 							{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}
 							<div
 								className={cn(
@@ -149,7 +148,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 							)}
 
 							{/* Main content area - remove overflow-auto to prevent toolbar scrolling */}
-							<div className="flex-1 h-full flex flex-col pb-24 md:pb-0">
+							<div className="flex-1 h-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-0">
 								{children}
 							</div>
 

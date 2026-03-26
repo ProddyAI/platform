@@ -36,22 +36,14 @@ export const StreamAudioRoom = ({
 	const [isLeavingConfirmed, setIsLeavingConfirmed] = useState(false);
 
 	// Use our custom hook to manage the audio room
-	const {
-		client,
-		call,
-		currentUser,
-		isConnecting,
-		isConnected,
-		error,
-		connectToAudioRoom,
-		disconnectFromAudioRoom,
-	} = useAudioRoom({
-		roomId,
-		workspaceId,
-		channelId,
-		canvasName,
-		shouldConnect,
-	});
+	const { client, call, currentUser, isConnecting, isConnected, error } =
+		useAudioRoom({
+			roomId,
+			workspaceId,
+			channelId,
+			canvasName,
+			shouldConnect,
+		});
 
 	// Allow other parts of the UI (e.g. Excalidraw toolbar) to toggle audio.
 	useEffect(() => {

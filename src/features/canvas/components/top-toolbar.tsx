@@ -35,11 +35,8 @@ export const TopToolbar = ({
 	canvasState,
 	setCanvasState,
 	onColorChange,
-	currentColor,
 	strokeWidth = 16,
 	onStrokeWidthChange,
-	toggleFullScreen,
-	isFullScreen,
 }: TopToolbarProps) => {
 	// Get and update presence
 	const [, updateMyPresence] = useMyPresence();

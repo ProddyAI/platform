@@ -25,12 +25,81 @@ interface BoardCardActivityProps {
 	cardId: Id<"cards">;
 }
 
+type CardActivity = {
+	_id: Id<"card_activity">;
+	action:
+		| "created"
+		| "updated"
+		| "moved"
+		| "assigned"
+		| "unassigned"
+		| "completed"
+		| "reopened"
+		| "commented"
+		| "priority_changed"
+		| "due_date_changed"
+		| "blocked"
+		| "unblocked";
+	details?: string;
+	timestamp: number;
+	member: {
+		user: {
+			name?: string;
+			image?: string;
+		};
+	};
+};
+
+const isCardActivityArray = (value: unknown): value is CardActivity[] => {
+	if (!Array.isArray(value)) return false;
+	return value.every((item) => {
+		if (typeof item !== "object" || item === null) return false;
+		const activity = item as Record<string, unknown>;
+		if (typeof activity._id !== "string") return false;
+		if (typeof activity.action !== "string") return false;
+		if (typeof activity.timestamp !== "number") return false;
+		if (
+			activity.details !== undefined &&
+			typeof activity.details !== "string"
+		) {
+			return false;
+		}
+
+		const member = activity.member;
+		if (typeof member !== "object" || member === null) return false;
+		const memberRecord = member as Record<string, unknown>;
+
+		const user = memberRecord.user;
+		if (typeof user !== "object" || user === null) return false;
+		const userRecord = user as Record<string, unknown>;
+
+		if (userRecord.name !== undefined && typeof userRecord.name !== "string") {
+			return false;
+		}
+		if (
+			userRecord.image !== undefined &&
+			typeof userRecord.image !== "string"
+		) {
+			return false;
+		}
+
+		return true;
+	});
+};
+
 export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 	cardId,
 }) => {
-	const activities = useQuery(api.board.getCardActivity, { cardId });
+	const rawActivities = useQuery(api.board.getCardActivity, {
+		cardId,
+	});
+	const hasInvalidActivityData =
+		rawActivities !== undefined && !isCardActivityArray(rawActivities);
+	const activities = isCardActivityArray(rawActivities)
+		? rawActivities
+		: undefined;
 
-	const getActivityIcon = (action: string) => {
+	const getActivityIcon = (action: CardActivity["action"]) => {
 		switch (action) {
 			case "created":
 				return <Plus className="w-3.5 h-3.5 text-green-600" />;
@@ -61,8 +130,24 @@ export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 		}
 	};
 
-	const getActivityText = (activity: any) => {
-		const details = activity.details ? JSON.parse(activity.details) : {};
+	const getActivityText = (activity: CardActivity) => {
+		let details: {
+			subtaskId?: string;
+			title?: string;
+			blockedByTitle?: string;
+		} = {};
+
+		if (activity.details) {
+			try {
+				details = JSON.parse(activity.details);
+			} catch (error) {
+				console.warn("Failed to parse card activity details", {
+					activityId: activity._id,
+					action: activity.action,
+					error,
+				});
+			}
+		}
 
 		switch (activity.action) {
 			case "created":
@@ -112,7 +197,15 @@ export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 
 			{/* Activity list */}
 			<ScrollArea className="h-[300px] rounded-md border p-3">
-				{activities && activities.length > 0 ? (
+				{rawActivities === undefined ? (
+					<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+						Loading activity...
+					</div>
+				) : hasInvalidActivityData ? (
+					<div className="flex items-center justify-center h-full text-sm text-destructive">
+						Unable to render activity: invalid activity data.
+					</div>
+				) : activities && activities.length > 0 ? (
 					<div className="space-y-3">
 						{activities.map((activity) => (
 							<div className="flex gap-2" key={activity._id}>

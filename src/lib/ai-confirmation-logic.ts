@@ -108,7 +108,7 @@ Analyze these planned actions and determine if user confirmation is required bef
 
 **Conservative Confirmation Policy:**
 
-✅ **ALWAYS REQUIRE CONFIRMATION FOR:**
+ **ALWAYS REQUIRE CONFIRMATION FOR:**
 
 1. **Sending/Posting/Publishing:**
    - Sending emails (Gmail)
@@ -152,7 +152,7 @@ Analyze these planned actions and determine if user confirmation is required bef
    - API key changes
    - Access token modifications
 
-❌ **NO CONFIRMATION NEEDED FOR:**
+ **NO CONFIRMATION NEEDED FOR:**
 
 1. **Read-Only Operations:**
    - Fetching/listing/getting data
