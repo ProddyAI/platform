@@ -26,7 +26,7 @@ function isNonEmptyString(value: unknown): value is string {
 	return typeof value === "string" && value.trim().length > 0;
 }
 
-async function createAuthenticatedConvexClient() {
+function createAuthenticatedConvexClient() {
 	if (!isAuthenticatedNextjs()) {
 		return {
 			error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
@@ -74,8 +74,7 @@ async function parseLinkagePayload(req: NextRequest) {
 		return {
 			error: NextResponse.json(
 				{
-					error:
-						"channelId, blockedIssueId, and blockingIssueId are required",
+					error: "channelId, blockedIssueId, and blockingIssueId are required",
 				},
 				{ status: 400 }
 			),
@@ -104,7 +103,7 @@ async function parseLinkagePayload(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
 	try {
-		const auth = await createAuthenticatedConvexClient();
+		const auth = createAuthenticatedConvexClient();
 		if (auth.error || !auth.convex) return auth.error;
 
 		const channelId = req.nextUrl.searchParams.get("channelId");
@@ -134,7 +133,10 @@ export async function GET(req: NextRequest) {
 		return NextResponse.json({ edges, mermaid });
 	} catch (error) {
 		console.error("[Smart Linkage] Error:", error);
-		return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+		return NextResponse.json(
+			{ error: "Internal server error" },
+			{ status: 500 }
+		);
 	}
 }
 
@@ -146,7 +148,7 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
 	try {
-		const auth = await createAuthenticatedConvexClient();
+		const auth = createAuthenticatedConvexClient();
 		if (auth.error || !auth.convex) return auth.error;
 
 		const parsed = await parseLinkagePayload(req);
@@ -161,7 +163,8 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ success: true });
 	} catch (error) {
 		console.error("[Smart Linkage] POST error:", error);
-		const message = error instanceof Error ? error.message : "Internal server error";
+		const message =
+			error instanceof Error ? error.message : "Internal server error";
 		return NextResponse.json({ error: message }, { status: 500 });
 	}
 }
@@ -174,7 +177,7 @@ export async function POST(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
 	try {
-		const auth = await createAuthenticatedConvexClient();
+		const auth = createAuthenticatedConvexClient();
 		if (auth.error || !auth.convex) return auth.error;
 
 		const parsed = await parseLinkagePayload(req);
@@ -189,7 +192,8 @@ export async function DELETE(req: NextRequest) {
 		return NextResponse.json({ success: true });
 	} catch (error) {
 		console.error("[Smart Linkage] DELETE error:", error);
-		const message = error instanceof Error ? error.message : "Internal server error";
+		const message =
+			error instanceof Error ? error.message : "Internal server error";
 		return NextResponse.json({ error: message }, { status: 500 });
 	}
 }

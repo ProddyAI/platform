@@ -29,7 +29,7 @@ function createConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 }
 
-async function createAuthenticatedConvexClient() {
+function createAuthenticatedConvexClient() {
 	if (!isAuthenticatedNextjs()) {
 		return {
 			error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
@@ -69,13 +69,14 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const auth = await createAuthenticatedConvexClient();
+		const auth = createAuthenticatedConvexClient();
 		if (auth.error || !auth.convex) return auth.error;
 
 		const body = await req.json().catch(() => null);
 		const channelId =
 			typeof body?.channelId === "string" ? body.channelId.trim() : "";
-		const issueId = typeof body?.issueId === "string" ? body.issueId.trim() : "";
+		const issueId =
+			typeof body?.issueId === "string" ? body.issueId.trim() : "";
 
 		if (!channelId || !issueId) {
 			return NextResponse.json(

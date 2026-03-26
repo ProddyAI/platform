@@ -613,63 +613,60 @@ const SubIssuesSection = ({
 						<div
 							className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors group cursor-pointer"
 							key={subIssue._id}
-							onClick={() => onClickIssue(subIssue)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									e.preventDefault();
-									onClickIssue(subIssue);
-								}
-							}}
-							role="button"
-							tabIndex={0}
 						>
-							<div
-								className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-								style={{
-									borderColor: isCompleted
-										? status?.color || "#00b341"
-										: "#cbd5e1",
-									backgroundColor: isCompleted
-										? status?.color || "#00b341"
-										: "transparent",
-								}}
+							<button
+								className="flex min-w-0 flex-1 items-center gap-2 text-left"
+								onClick={() => onClickIssue(subIssue)}
+								type="button"
 							>
-								{isCompleted && (
-									<Check className="w-3 h-3 text-white" strokeWidth={3} />
-								)}
-							</div>
-							<span
-								className={cn(
-									"flex-1 text-sm truncate",
-									isCompleted && "line-through text-muted-foreground"
-								)}
-							>
-								{subIssue.title}
-							</span>
-							{subIssue.assignees && subIssue.assignees.length > 0 && (
-								<div className="flex -space-x-1.5">
-									{subIssue.assignees.slice(0, 2).map((assigneeId) => {
-										const member = members.find((m) => m._id === assigneeId);
-										const fallback =
-											member?.user?.name?.charAt(0).toUpperCase() || "?";
-
-										return (
-											<Avatar
-												className="h-4 w-4 border border-background"
-												key={assigneeId}
-											>
-												<AvatarImage
-													alt={member?.user?.name}
-													src={member?.user?.image}
-												/>
-												<AvatarFallback className="text-[8px]">
-													{fallback}
-												</AvatarFallback>
-											</Avatar>
-										);
-									})}
+								<div
+									className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+									style={{
+										borderColor: isCompleted
+											? status?.color || "#00b341"
+											: "#cbd5e1",
+										backgroundColor: isCompleted
+											? status?.color || "#00b341"
+											: "transparent",
+									}}
+								>
+									{isCompleted && (
+										<Check className="w-3 h-3 text-white" strokeWidth={3} />
+									)}
 								</div>
-							)}
+								<span
+									className={cn(
+										"flex-1 text-sm truncate",
+										isCompleted && "line-through text-muted-foreground"
+									)}
+								>
+									{subIssue.title}
+								</span>
+								{subIssue.assignees && subIssue.assignees.length > 0 && (
+									<div className="flex -space-x-1.5">
+										{subIssue.assignees.slice(0, 2).map((assigneeId) => {
+											const member = members.find((m) => m._id === assigneeId);
+											const fallback =
+												member?.user?.name?.charAt(0).toUpperCase() || "?";
+
+											return (
+												<Avatar
+													className="h-4 w-4 border border-background"
+													key={assigneeId}
+												>
+													<AvatarImage
+														alt={member?.user?.name}
+														src={member?.user?.image}
+													/>
+													<AvatarFallback className="text-[8px]">
+														{fallback}
+													</AvatarFallback>
+												</Avatar>
+											);
+										})}
+									</div>
+								)}
+							</button>
 							<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
 								<Button
 									className={cn(
@@ -772,6 +769,48 @@ interface AIBlockingSuggestion {
 	confidence: "low" | "medium" | "high";
 }
 
+interface BlockingSuggestionListProps {
+	suggestions: AIBlockingSuggestion[];
+	onAddSuggestion: (issueId: string) => void;
+}
+
+const BlockingSuggestionList = ({
+	suggestions,
+	onAddSuggestion,
+}: BlockingSuggestionListProps) => (
+	<div className="mb-3 space-y-2">
+		{suggestions.map((suggestion) => (
+			<div
+				className="rounded-md border border-amber-200/60 bg-amber-50/40 px-3 py-2 dark:bg-amber-950/10"
+				key={suggestion.issueId}
+			>
+				<div className="flex items-start justify-between gap-3">
+					<div className="min-w-0 flex-1 space-y-1">
+						<p className="flex items-center gap-2">
+							<Sparkles className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
+							<span className="truncate text-sm font-medium">
+								{suggestion.title}
+							</span>
+							<span className="text-[10px] uppercase tracking-wide text-amber-700/80 dark:text-amber-300/80">
+								{suggestion.confidence}
+							</span>
+						</p>
+						<p className="text-xs text-muted-foreground">{suggestion.reason}</p>
+					</div>
+					<Button
+						className="h-7 flex-shrink-0 px-2 text-xs"
+						onClick={() => onAddSuggestion(suggestion.issueId)}
+						size="sm"
+						variant="secondary"
+					>
+						Add
+					</Button>
+				</div>
+			</div>
+		))}
+	</div>
+);
+
 const BlockingSection = ({
 	issue,
 	allIssues,
@@ -787,7 +826,9 @@ const BlockingSection = ({
 	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
 
 	const [selectedIssueId, setSelectedIssueId] = useState<string>("");
-	const [aiSuggestions, setAiSuggestions] = useState<AIBlockingSuggestion[]>([]);
+	const [aiSuggestions, setAiSuggestions] = useState<AIBlockingSuggestion[]>(
+		[]
+	);
 	const [aiSuggestionsRequested, setAiSuggestionsRequested] = useState(false);
 	const [aiLoading, setAiLoading] = useState(false);
 
@@ -899,15 +940,18 @@ const BlockingSection = ({
 				}),
 			});
 
-			const data = (await response.json().catch(() => null)) as
-				| { error?: string; suggestions?: AIBlockingSuggestion[] }
-				| null;
+			const data = (await response.json().catch(() => null)) as {
+				error?: string;
+				suggestions?: AIBlockingSuggestion[];
+			} | null;
 
 			if (!response.ok) {
 				throw new Error(data?.error || "Failed to fetch AI suggestions");
 			}
 
-			const availableIds = new Set(availableForBlocking.map((item) => item._id));
+			const availableIds = new Set(
+				availableForBlocking.map((item) => item._id)
+			);
 			const nextSuggestions = (data?.suggestions || []).filter((suggestion) =>
 				availableIds.has(suggestion.issueId as Id<"issues">)
 			);
@@ -955,14 +999,17 @@ const BlockingSection = ({
 					<div
 						className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
 						key={blockedIssue._id}
-						onClick={() => onClickIssue(blockedIssue)}
 					>
-						<div className="flex items-center gap-2 flex-1 min-w-0">
+						<button
+							className="flex min-w-0 flex-1 items-center gap-2 text-left"
+							onClick={() => onClickIssue(blockedIssue)}
+							type="button"
+						>
 							<div className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" />
 							<span className="text-sm truncate">
 								{formatIssueId(blockedIssue._id)} - {blockedIssue.title}
 							</span>
-						</div>
+						</button>
 						<Button
 							className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 							onClick={(e) => {
@@ -1000,14 +1047,17 @@ const BlockingSection = ({
 					<div
 						className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
 						key={blockingIssue._id}
-						onClick={() => onClickIssue(blockingIssue)}
 					>
-						<div className="flex items-center gap-2 flex-1 min-w-0">
+						<button
+							className="flex min-w-0 flex-1 items-center gap-2 text-left"
+							onClick={() => onClickIssue(blockingIssue)}
+							type="button"
+						>
 							<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
 							<span className="text-sm truncate">
 								{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
 							</span>
-						</div>
+						</button>
 						<Button
 							className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 							onClick={(e) => {
@@ -1094,41 +1144,10 @@ const BlockingSection = ({
 				)}
 
 				{!aiLoading && aiSuggestions.length > 0 && (
-					<div className="space-y-2 mb-3">
-						{aiSuggestions.map((suggestion) => (
-							<div
-								className="rounded-md border border-amber-200/60 bg-amber-50/40 dark:bg-amber-950/10 px-3 py-2"
-								key={suggestion.issueId}
-							>
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0 flex-1">
-										<div className="flex items-center gap-2 mb-1">
-											<Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-											<span className="text-sm font-medium truncate">
-												{suggestion.title}
-											</span>
-											<span className="text-[10px] uppercase tracking-wide text-amber-700/80 dark:text-amber-300/80">
-												{suggestion.confidence}
-											</span>
-										</div>
-										<p className="text-xs text-muted-foreground">
-											{suggestion.reason}
-										</p>
-									</div>
-									<Button
-										className="h-7 px-2 text-xs flex-shrink-0"
-										onClick={() =>
-											handleAddBlockingSuggestion(suggestion.issueId)
-										}
-										size="sm"
-										variant="secondary"
-									>
-										Add
-									</Button>
-								</div>
-							</div>
-						))}
-					</div>
+					<BlockingSuggestionList
+						onAddSuggestion={handleAddBlockingSuggestion}
+						suggestions={aiSuggestions}
+					/>
 				)}
 
 				{aiSuggestionsRequested &&
@@ -1505,14 +1524,14 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					parentIssue={
 						parentIssue
 							? {
-								_id: parentIssue._id,
-								channelId: parentIssue.channelId,
-								statusId: parentIssue.statusId,
-								title: parentIssue.title,
-								order: parentIssue.order,
-								createdAt: parentIssue.createdAt,
-								updatedAt: parentIssue.updatedAt,
-							}
+									_id: parentIssue._id,
+									channelId: parentIssue.channelId,
+									statusId: parentIssue.statusId,
+									title: parentIssue.title,
+									order: parentIssue.order,
+									createdAt: parentIssue.createdAt,
+									updatedAt: parentIssue.updatedAt,
+								}
 							: null
 					}
 				/>

@@ -107,7 +107,7 @@ const IssueIcon = ({ statusColor }: { statusColor: string }) => (
 	/>
 );
 
-const PriorityIndicator = ({ priority }: { priority?: IssuePriority }) => (
+const PriorityIndicator = ({ priority }: PriorityIndicatorProps) => (
 	<TooltipProvider>
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -119,6 +119,32 @@ const PriorityIndicator = ({ priority }: { priority?: IssuePriority }) => (
 		</Tooltip>
 	</TooltipProvider>
 );
+
+interface SubIssueStatsBadgeProps {
+	stats?: { total: number; completed: number };
+}
+
+const SubIssueStatsBadge = ({ stats }: SubIssueStatsBadgeProps) => {
+	if (!stats || stats.total === 0) return null;
+
+	return (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<span className="hidden sm:flex flex-shrink-0 items-center gap-1 text-[10px] text-muted-foreground/70 leading-tight">
+						<ListChecks className="w-3 h-3" />
+						{stats.completed}/{stats.total}
+					</span>
+				</TooltipTrigger>
+				<TooltipContent side="top">
+					<p>
+						Sub-issues complete: {stats.completed}/{stats.total}
+					</p>
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
+	);
+};
 
 interface LabelsDisplayProps {
 	labels?: string[];
@@ -207,6 +233,28 @@ const BlockingBadge = ({ count }: BlockingBadgeProps) => {
 	);
 };
 
+interface BlockedByBadgeProps {
+	count?: number;
+}
+
+const BlockedByBadge = ({ count }: BlockedByBadgeProps) => {
+	if (!count || count === 0) return null;
+
+	return (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<div className="flex items-center gap-1 rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-500">
+						<GitBranch className="w-3 h-3 rotate-180" />
+						<span>{count}</span>
+					</div>
+				</TooltipTrigger>
+				<TooltipContent>Blocked by {count} items</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
+	);
+};
+
 interface AssigneesDisplayProps {
 	assignees?: Id<"members">[];
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
@@ -287,7 +335,7 @@ const BoardIssueRowContent = ({
 		<IssueIcon statusColor={statusColor} />
 		<div className="flex-1 min-w-0 flex items-center gap-2">
 			<span className="text-[11px] font-mono text-muted-foreground/50 shrink-0">
-				#{issue._id.slice(-5).toUpperCase()}
+				{formatIssueId(issue._id)}
 			</span>
 			<span className="text-sm font-medium text-foreground truncate block">
 				{issue.title}
@@ -297,22 +345,11 @@ const BoardIssueRowContent = ({
 		<LabelsDisplay issueId={issue._id} labels={issue.labels} />
 
 		<DueDateDisplay dueDate={issue.dueDate} />
+		<SubIssueStatsBadge stats={subIssueStats} />
 		{blockingCount && blockingCount > 0 && (
 			<BlockingBadge count={blockingCount} />
 		)}
-		{blockedByCount && blockedByCount > 0 && (
-			<TooltipProvider>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 text-[10px] font-medium border border-red-500/20">
-							<GitBranch className="w-3 h-3 rotate-180" />
-							<span>{blockedByCount}</span>
-						</div>
-					</TooltipTrigger>
-					<TooltipContent>Blocked by {blockedByCount} items</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
-		)}
+		<BlockedByBadge count={blockedByCount} />
 		<AssigneesDisplay assigneeData={assigneeData} assignees={issue.assignees} />
 	</>
 );
@@ -328,6 +365,20 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	blockedByCount,
 	disableDrag = false,
 }: IssueRowProps) {
+	const {
+		attributes,
+		listeners,
+		setActivatorNodeRef,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({
+		id: issue._id,
+		data: { type: "issue", issue },
+		disabled: disableDrag || isDragOverlay,
+	});
+
 	if (isDragOverlay) {
 		return (
 			<div
@@ -345,20 +396,6 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 			</div>
 		);
 	}
-
-	const {
-		attributes,
-		listeners,
-		setActivatorNodeRef,
-		setNodeRef,
-		transform,
-		transition,
-		isDragging,
-	} = useSortable({
-		id: issue._id,
-		data: { type: "issue", issue },
-		disabled: disableDrag,
-	});
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -388,11 +425,11 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 		>
 			<BoardIssueRowContent
 				assigneeData={assigneeData}
+				blockedByCount={blockedByCount}
+				blockingCount={blockingCount}
 				issue={issue}
 				statusColor={statusColor}
 				subIssueStats={subIssueStats}
-				blockingCount={blockingCount}
-				blockedByCount={blockedByCount}
 			/>
 		</button>
 	);
