@@ -29,11 +29,61 @@ interface ResolvedSuggestion {
 	confidence: "low" | "medium" | "high";
 }
 
+interface CachedSuggestionsEntry {
+	suggestions: ResolvedSuggestion[];
+	timestamp: number;
+}
+
 const confidenceRank = {
 	high: 3,
 	medium: 2,
 	low: 1,
 } as const;
+
+const linkageSuggestionsCache = new Map<string, CachedSuggestionsEntry>();
+const LINKAGE_SUGGESTIONS_CACHE_TTL = 1000 * 60;
+const LINKAGE_SUGGESTIONS_CACHE_SIZE = 100;
+
+function pruneLinkageSuggestionsCache() {
+	if (linkageSuggestionsCache.size <= LINKAGE_SUGGESTIONS_CACHE_SIZE) {
+		return;
+	}
+
+	const entries = Array.from(linkageSuggestionsCache.entries());
+	entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+	const now = Date.now();
+	for (const [key, value] of entries) {
+		if (
+			now - value.timestamp > LINKAGE_SUGGESTIONS_CACHE_TTL ||
+			linkageSuggestionsCache.size > LINKAGE_SUGGESTIONS_CACHE_SIZE
+		) {
+			linkageSuggestionsCache.delete(key);
+		}
+
+		if (linkageSuggestionsCache.size <= LINKAGE_SUGGESTIONS_CACHE_SIZE) {
+			break;
+		}
+	}
+}
+
+function getCachedLinkageSuggestions(cacheKey: string) {
+	const cached = linkageSuggestionsCache.get(cacheKey);
+	if (!cached) {
+		return null;
+	}
+
+	if (Date.now() - cached.timestamp > LINKAGE_SUGGESTIONS_CACHE_TTL) {
+		linkageSuggestionsCache.delete(cacheKey);
+		return null;
+	}
+
+	return cached.suggestions;
+}
+
+function isLikelyConvexId(value: string): boolean {
+	return /^[a-z0-9]{32}$/.test(value);
+}
 
 function truncatePromptText(value: string | undefined, maxLength = 220) {
 	const trimmed = value?.trim();
@@ -105,6 +155,13 @@ export async function POST(req: NextRequest) {
 		if (!channelId || !issueId) {
 			return NextResponse.json(
 				{ error: "channelId and issueId are required" },
+				{ status: 400 }
+			);
+		}
+
+		if (!isLikelyConvexId(channelId) || !isLikelyConvexId(issueId)) {
+			return NextResponse.json(
+				{ error: "invalid channelId or issueId" },
 				{ status: 400 }
 			);
 		}
@@ -190,6 +247,15 @@ ${candidateContext}`,
 		const candidateMap = new Map(
 			candidateIssues.map((candidate) => [String(candidate._id), candidate])
 		);
+		const cacheKey = `${channelId}:${issueId}`;
+		const cachedSuggestions = getCachedLinkageSuggestions(cacheKey);
+
+		if (cachedSuggestions) {
+			const suggestions = cachedSuggestions
+				.filter((suggestion) => candidateMap.has(suggestion.issueId))
+				.slice(0, 3);
+			return NextResponse.json({ suggestions });
+		}
 
 		const suggestions = object.suggestions
 			.map((suggestion) => {
@@ -225,6 +291,12 @@ ${candidateContext}`,
 				return deduped;
 			}, [])
 			.slice(0, 3);
+
+		linkageSuggestionsCache.set(cacheKey, {
+			suggestions,
+			timestamp: Date.now(),
+		});
+		pruneLinkageSuggestionsCache();
 
 		return NextResponse.json({ suggestions });
 	} catch (error) {

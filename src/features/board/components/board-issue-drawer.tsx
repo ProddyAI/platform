@@ -831,6 +831,7 @@ const BlockingSection = ({
 	);
 	const [aiSuggestionsRequested, setAiSuggestionsRequested] = useState(false);
 	const [aiLoading, setAiLoading] = useState(false);
+	const aiRequestRef = useRef(0);
 	const previousIssueIdRef = useRef(issue._id);
 
 	const handleAddBlocking = async () => {
@@ -916,17 +917,25 @@ const BlockingSection = ({
 	const availableIssues = allIssues.filter(
 		(i) => i._id !== issue._id && !i.parentIssueId
 	);
+	const linkageListsLoaded =
+		blockingIssues !== undefined && blockedByIssues !== undefined;
 
 	// Filter out issues already in blocking/blockedBy lists
 	const blockingIds = new Set(blockingIssues?.map((i) => i._id) || []);
 	const blockedByIds = new Set(blockedByIssues?.map((i) => i._id) || []);
 	const usedIssueIds = new Set([...blockingIds, ...blockedByIds, issue._id]);
 
-	const availableForBlocking = availableIssues.filter(
-		(i) => !usedIssueIds.has(i._id)
-	);
+	const availableForBlocking = linkageListsLoaded
+		? availableIssues.filter((i) => !usedIssueIds.has(i._id))
+		: [];
 
 	const fetchAiSuggestions = async () => {
+		if (!linkageListsLoaded) {
+			return;
+		}
+
+		const requestId = aiRequestRef.current + 1;
+		aiRequestRef.current = requestId;
 		setAiSuggestionsRequested(true);
 		setAiLoading(true);
 		try {
@@ -956,15 +965,24 @@ const BlockingSection = ({
 			const nextSuggestions = (data?.suggestions || []).filter((suggestion) =>
 				availableIds.has(suggestion.issueId as Id<"issues">)
 			);
+			if (requestId !== aiRequestRef.current) {
+				return;
+			}
 			setAiSuggestions(nextSuggestions);
 		} catch (error: unknown) {
+			if (requestId !== aiRequestRef.current) {
+				return;
+			}
 			console.error("Failed to fetch AI blocking suggestions:", error);
 			toast.error(
 				getErrorMessage(error, "Failed to fetch AI blocking suggestions")
 			);
 			setAiSuggestions([]);
+			setAiSuggestionsRequested(false);
 		} finally {
-			setAiLoading(false);
+			if (requestId === aiRequestRef.current) {
+				setAiLoading(false);
+			}
 		}
 	};
 
@@ -974,6 +992,7 @@ const BlockingSection = ({
 		}
 
 		previousIssueIdRef.current = issue._id;
+		aiRequestRef.current += 1;
 		setSelectedIssueId("");
 		setAiSuggestions([]);
 		setAiSuggestionsRequested(false);

@@ -391,6 +391,8 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 			>
 				<BoardIssueRowContent
 					assigneeData={assigneeData}
+					blockedByCount={blockedByCount}
+					blockingCount={blockingCount}
 					issue={issue}
 					statusColor={statusColor}
 					subIssueStats={subIssueStats}
