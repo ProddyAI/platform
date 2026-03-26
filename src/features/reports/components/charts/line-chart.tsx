@@ -185,6 +185,7 @@ export const LineChart = ({
 					preserveAspectRatio="xMidYMid meet"
 					viewBox="0 0 100 100"
 				>
+					<title>Line chart</title>
 					{/* Grid lines */}
 					{showGrid && (
 						<>
@@ -242,12 +243,28 @@ export const LineChart = ({
 										cx={point.x}
 										cy={point.y}
 										data-point-index={point.index}
-										onClick={() =>
-											onPointClick?.(point.label, point.value, point.index)
+										aria-disabled={!onPointClick}
+										onClick={
+											onPointClick
+												? () =>
+														onPointClick(
+															point.label,
+															point.value,
+															point.index
+														)
+												: undefined
 										}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												onPointClick?.(point.label, point.value, point.index);
+											}
+										}}
 										onMouseEnter={() => setHoveredIndex(point.index)}
 										onMouseLeave={() => setHoveredIndex(null)}
 										r={isHovered ? "3" : "2"}
+										role="button"
+										tabIndex={0}
 									/>
 
 									{isHovered && (
@@ -280,21 +297,24 @@ export const LineChart = ({
 
 			{/* X-axis labels */}
 			{showLabels && (
-				<div className="flex justify-between mt-2 flex-shrink-0 px-4">
+				<ul className="flex justify-between mt-2 flex-shrink-0 px-4">
 					{data.map((item, index) => (
-						<div
+						<li
 							className={cn(
 								"text-xs text-muted-foreground px-1 text-center",
 								hoveredIndex === index && "font-medium text-foreground"
 							)}
 							key={item.label}
+							onBlur={() => setHoveredIndex(null)}
+							onFocus={() => setHoveredIndex(index)}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
+							tabIndex={0}
 						>
 							{item.label}
-						</div>
+						</li>
 					))}
-				</div>
+				</ul>
 			)}
 		</div>
 	);

@@ -166,6 +166,7 @@ export const PieChart = ({
 					style={{ overflow: "visible", isolation: "isolate" }}
 					viewBox="0 0 140 145"
 				>
+					<title>Pie chart</title>
 					<defs>
 						{/* Side - solid darker shade for 3D depth effect */}
 						{segments.map((segment) => (
@@ -383,17 +384,35 @@ export const PieChart = ({
 										onSegmentClick && "cursor-pointer"
 									)}
 									key={`top-${segment.index}`}
-									onClick={() =>
-										onSegmentClick?.(
-											segment.label,
-											segment.value,
-											segment.index
-										)
+									onBlur={handleMouseLeave}
+									aria-disabled={!onSegmentClick}
+									onClick={
+										onSegmentClick
+											? () =>
+													onSegmentClick(
+														segment.label,
+														segment.value,
+														segment.index
+													)
+											: undefined
 									}
+									onFocus={(e) => handleMouseEnter(segment.index, e)}
+									onKeyDown={(event) => {
+										if (event.key === "Enter" || event.key === " ") {
+											event.preventDefault();
+											onSegmentClick?.(
+												segment.label,
+												segment.value,
+												segment.index
+											);
+										}
+									}}
 									onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
 									onMouseLeave={handleMouseLeave}
 									onMouseMove={handleMouseMove}
+									role="button"
 									style={{ pointerEvents: "all" }}
+									tabIndex={0}
 								>
 									<path
 										d={topPath}
@@ -448,17 +467,35 @@ export const PieChart = ({
 											onSegmentClick && "cursor-pointer"
 										)}
 										key={`top-hovered-${segment.index}`}
-										onClick={() =>
-											onSegmentClick?.(
-												segment.label,
-												segment.value,
-												segment.index
-											)
+										onBlur={handleMouseLeave}
+										aria-disabled={!onSegmentClick}
+										onClick={
+											onSegmentClick
+												? () =>
+														onSegmentClick(
+															segment.label,
+															segment.value,
+															segment.index
+														)
+												: undefined
 										}
+										onFocus={(e) => handleMouseEnter(segment.index, e)}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												onSegmentClick?.(
+													segment.label,
+													segment.value,
+													segment.index
+												);
+											}
+										}}
 										onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
 										onMouseLeave={handleMouseLeave}
 										onMouseMove={handleMouseMove}
+										role="button"
 										style={{ pointerEvents: "all" }}
+										tabIndex={0}
 									>
 										<path
 											d={topPath}
@@ -525,17 +562,39 @@ export const PieChart = ({
 									onSegmentClick && "cursor-pointer"
 								)}
 								key={segment.index}
-								onClick={() =>
-									onSegmentClick?.(segment.label, segment.value, segment.index)
+								onBlur={handleMouseLeave}
+								aria-disabled={!onSegmentClick}
+								onClick={
+									onSegmentClick
+										? () =>
+												onSegmentClick(
+													segment.label,
+													segment.value,
+													segment.index
+												)
+										: undefined
 								}
+								onFocus={(e) => handleMouseEnter(segment.index, e)}
+								onKeyDown={(event) => {
+									if (event.key === "Enter" || event.key === " ") {
+										event.preventDefault();
+										onSegmentClick?.(
+											segment.label,
+											segment.value,
+											segment.index
+										);
+									}
+								}}
 								onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
 								onMouseLeave={handleMouseLeave}
 								onMouseMove={handleMouseMove}
+								role="button"
 								style={{
 									boxShadow: isHovered
 										? `0 0 0 1px ${segment.color}40`
 										: "none",
 								}}
+								tabIndex={0}
 							>
 								{/* Color indicator */}
 								<div

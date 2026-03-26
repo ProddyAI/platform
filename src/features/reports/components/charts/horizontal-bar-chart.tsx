@@ -54,9 +54,22 @@ export const HorizontalBarChart = ({
 						<div
 							className="space-y-1"
 							key={item.id ?? item.label}
-							onClick={() => onBarClick?.(item.label, item.value, index)}
+							aria-disabled={!onBarClick}
+							onClick={
+								onBarClick
+									? () => onBarClick(item.label, item.value, index)
+									: undefined
+							}
+							onKeyDown={(event) => {
+								if (event.key === "Enter" || event.key === " ") {
+									event.preventDefault();
+									onBarClick?.(item.label, item.value, index);
+								}
+							}}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
+							role="button"
+							tabIndex={0}
 						>
 							<div className="flex justify-between items-center">
 								<span className="text-sm truncate">{item.label}</span>

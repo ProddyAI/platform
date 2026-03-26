@@ -205,7 +205,7 @@ export const TaskCategorySelector = ({
 							</div>
 
 							<div className="grid gap-2">
-								<label className="text-sm font-medium">Color</label>
+								<div className="text-sm font-medium">Color</div>
 								<div className="grid grid-cols-5 gap-2">
 									{CATEGORY_COLORS.map((color) => (
 										<button

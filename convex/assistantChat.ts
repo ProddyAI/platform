@@ -567,7 +567,7 @@ export const sendMessage = action({
 									fullArgs.userId = resolvedUserId;
 								}
 
-								let result;
+								let result: unknown;
 								if (tool.handlerType === "query") {
 									result = await ctx.runQuery(tool.handler as any, fullArgs);
 								} else {

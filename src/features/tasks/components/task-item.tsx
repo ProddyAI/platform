@@ -159,6 +159,7 @@ export const TaskItem = ({
 					aria-label={completed ? "Mark as incomplete" : "Mark as complete"}
 					className="mt-0.5 flex-shrink-0 focus:outline-none group/checkbox"
 					onClick={handleToggleCompletion}
+					type="button"
 				>
 					{getStatusIcon(completed)}
 				</button>

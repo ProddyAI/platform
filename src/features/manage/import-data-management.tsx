@@ -132,9 +132,8 @@ export const ImportDataManagement = ({
 	});
 
 	// Hooks
-	const { data: connections, isLoading: isLoadingConnections } =
-		useGetImportConnections({ workspaceId });
-	const { data: jobs, isLoading: isLoadingJobs } = useGetImportJobs({
+	const { data: connections } = useGetImportConnections({ workspaceId });
+	const { data: jobs } = useGetImportJobs({
 		workspaceId,
 		limit: 10,
 	});

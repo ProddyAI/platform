@@ -95,10 +95,23 @@ export const BarChart = ({
 						data-bar-id={item.id ?? item.label}
 						data-bar-index={index}
 						key={item.id ?? item.label}
-						onClick={() => onBarClick?.(item.label, item.value, index)}
+						aria-disabled={!onBarClick}
+						onClick={
+							onBarClick
+								? () => onBarClick(item.label, item.value, index)
+								: undefined
+						}
+						onKeyDown={(event) => {
+							if (event.key === "Enter" || event.key === " ") {
+								event.preventDefault();
+								onBarClick?.(item.label, item.value, index);
+							}
+						}}
 						onMouseEnter={() => setHoveredIndex(index)}
 						onMouseLeave={() => setHoveredIndex(null)}
+						role="button"
 						style={{ height: chartHeight }}
+						tabIndex={0}
 					>
 						<div
 							className={cn(

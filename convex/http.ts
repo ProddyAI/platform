@@ -163,7 +163,7 @@ http.route({
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-			let tokenResponse;
+			let tokenResponse: Response | undefined;
 			try {
 				tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
 					method: "POST",
@@ -185,6 +185,10 @@ http.route({
 				throw error;
 			} finally {
 				clearTimeout(timeoutId);
+			}
+
+			if (!tokenResponse) {
+				throw new Error("OAuth token exchange failed");
 			}
 
 			const tokenData = await tokenResponse.json();
