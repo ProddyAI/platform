@@ -22,6 +22,30 @@ const suggestionSchema = z.object({
 	),
 });
 
+interface ResolvedSuggestion {
+	issueId: string;
+	title: string;
+	reason: string;
+	confidence: "low" | "medium" | "high";
+}
+
+const confidenceRank = {
+	high: 3,
+	medium: 2,
+	low: 1,
+} as const;
+
+function truncatePromptText(value: string | undefined, maxLength = 220) {
+	const trimmed = value?.trim();
+	if (!trimmed) {
+		return "None";
+	}
+
+	return trimmed.length > maxLength
+		? `${trimmed.slice(0, maxLength - 1)}…`
+		: trimmed;
+}
+
 function createConvexClient(): ConvexHttpClient {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
 		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
@@ -85,10 +109,22 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const [issue, allIssues, edges] = await Promise.all([
-			auth.convex.query(api.board.getIssueDetails, {
-				issueId: issueId as Id<"issues">,
-			}),
+		const issue = await auth.convex.query(api.board.getIssueDetails, {
+			issueId: issueId as Id<"issues">,
+		});
+
+		if (!issue) {
+			return NextResponse.json({ error: "Issue not found" }, { status: 404 });
+		}
+
+		if (String(issue.channelId) !== channelId) {
+			return NextResponse.json(
+				{ error: "Issue does not belong to the requested channel" },
+				{ status: 400 }
+			);
+		}
+
+		const [allIssues, edges] = await Promise.all([
 			auth.convex.query(api.board.getAllIssuesForBlocking, {
 				channelId: channelId as Id<"channels">,
 			}),
@@ -96,10 +132,6 @@ export async function POST(req: NextRequest) {
 				channelId: channelId as Id<"channels">,
 			}),
 		]);
-
-		if (!issue) {
-			return NextResponse.json({ error: "Issue not found" }, { status: 404 });
-		}
 
 		const relatedIssueIds = new Set<string>();
 		for (const edge of edges) {
@@ -124,7 +156,7 @@ export async function POST(req: NextRequest) {
 
 		const currentIssueContext = [
 			`Current issue title: ${issue.title}`,
-			`Current issue description: ${issue.description || "None"}`,
+			`Current issue description: ${truncatePromptText(issue.description)}`,
 			`Current issue priority: ${issue.priority || "no_priority"}`,
 			`Existing relationship count in channel: ${edges.length}`,
 		].join("\n");
@@ -173,6 +205,25 @@ ${candidateContext}`,
 			.filter((suggestion): suggestion is NonNullable<typeof suggestion> =>
 				Boolean(suggestion)
 			)
+			.reduce<ResolvedSuggestion[]>((deduped, suggestion) => {
+				const existingIndex = deduped.findIndex(
+					(existing) => existing.issueId === suggestion.issueId
+				);
+
+				if (existingIndex === -1) {
+					deduped.push(suggestion);
+					return deduped;
+				}
+
+				if (
+					confidenceRank[suggestion.confidence] >
+					confidenceRank[deduped[existingIndex].confidence]
+				) {
+					deduped[existingIndex] = suggestion;
+				}
+
+				return deduped;
+			}, [])
 			.slice(0, 3);
 
 		return NextResponse.json({ suggestions });

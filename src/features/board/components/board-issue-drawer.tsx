@@ -831,6 +831,7 @@ const BlockingSection = ({
 	);
 	const [aiSuggestionsRequested, setAiSuggestionsRequested] = useState(false);
 	const [aiLoading, setAiLoading] = useState(false);
+	const previousIssueIdRef = useRef(issue._id);
 
 	const handleAddBlocking = async () => {
 		if (!selectedIssueId) return;
@@ -966,6 +967,18 @@ const BlockingSection = ({
 			setAiLoading(false);
 		}
 	};
+
+	useEffect(() => {
+		if (previousIssueIdRef.current === issue._id) {
+			return;
+		}
+
+		previousIssueIdRef.current = issue._id;
+		setSelectedIssueId("");
+		setAiSuggestions([]);
+		setAiSuggestionsRequested(false);
+		setAiLoading(false);
+	}, [issue._id]);
 
 	useEffect(() => {
 		if (aiSuggestions.length === 0) return;

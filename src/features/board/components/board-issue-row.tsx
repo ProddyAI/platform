@@ -89,6 +89,10 @@ export function formatIssueId(id: string): string {
 	return `#${id.slice(-5).toUpperCase()}`;
 }
 
+function formatIssueCountLabel(prefix: string, count: number): string {
+	return `${prefix} ${count} issue${count !== 1 ? "s" : ""}`;
+}
+
 function isOverdue(dueDate?: number): boolean {
 	if (dueDate === undefined) return false;
 	const dueDateEndOfDay = new Date(dueDate);
@@ -224,9 +228,7 @@ const BlockingBadge = ({ count }: BlockingBadgeProps) => {
 					</span>
 				</TooltipTrigger>
 				<TooltipContent side="top">
-					<p>
-						Blocking {count} issue{count !== 1 ? "s" : ""}
-					</p>
+					<p>{formatIssueCountLabel("Blocking", count)}</p>
 				</TooltipContent>
 			</Tooltip>
 		</TooltipProvider>
@@ -249,7 +251,9 @@ const BlockedByBadge = ({ count }: BlockedByBadgeProps) => {
 						<span>{count}</span>
 					</div>
 				</TooltipTrigger>
-				<TooltipContent>Blocked by {count} items</TooltipContent>
+				<TooltipContent>
+					{formatIssueCountLabel("Blocked by", count)}
+				</TooltipContent>
 			</Tooltip>
 		</TooltipProvider>
 	);
@@ -346,9 +350,7 @@ const BoardIssueRowContent = ({
 
 		<DueDateDisplay dueDate={issue.dueDate} />
 		<SubIssueStatsBadge stats={subIssueStats} />
-		{blockingCount && blockingCount > 0 && (
-			<BlockingBadge count={blockingCount} />
-		)}
+		<BlockingBadge count={blockingCount} />
 		<BlockedByBadge count={blockedByCount} />
 		<AssigneesDisplay assigneeData={assigneeData} assignees={issue.assignees} />
 	</>
