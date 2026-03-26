@@ -272,6 +272,7 @@ export const LiveSidebar = ({
 					) : (
 						<div className="space-y-1">
 							{filteredItems.map((item) => (
+								// biome-ignore lint/a11y/useSemanticElements
 								<div
 									className={cn(
 										"p-3 rounded-lg cursor-pointer transition-colors group",
@@ -281,6 +282,12 @@ export const LiveSidebar = ({
 									)}
 									key={item._id}
 									onClick={() => handleItemClick(item)}
+									onKeyDown={(event) => {
+										if (event.key === "Enter" || event.key === " ") {
+											event.preventDefault();
+											handleItemClick(item);
+										}
+									}}
 									onMouseEnter={() => setHoveredItemId(item._id)}
 									onMouseLeave={() => {
 										// Don't hide if dropdown is open for this item
@@ -288,6 +295,8 @@ export const LiveSidebar = ({
 											setHoveredItemId(null);
 										}
 									}}
+									role="button"
+									tabIndex={0}
 								>
 									<div className="flex items-start justify-between gap-2">
 										<div className="flex-1 min-w-0">

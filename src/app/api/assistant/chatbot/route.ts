@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
 		let useComposio: boolean = false;
 		let connectedApps: AvailableApp[] = [];
 		let composioTools: any[] = []; // Keep as any[] for OpenAI compatibility
-		let composioClient: Composio | null = null; // Store composio client for reuse
+		let composioClient: Composio<any> | null = null; // Store composio client for reuse
 		let userId: string = ""; // Composio uses userId as entity identifier
 
 		// Detect if query needs external tools (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)

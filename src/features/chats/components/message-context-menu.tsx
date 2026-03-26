@@ -37,11 +37,14 @@ export const MessageContextMenu = ({
 		<div
 			className="context-menu fixed border border-gray-200 dark:border-gray-600 rounded-lg shadow-2xl z-[9999999] min-w-[180px] overflow-hidden bg-white dark:bg-[#1a1a1a]"
 			onClick={(e) => e.stopPropagation()}
+			onKeyDown={(e) => e.stopPropagation()}
+			role="dialog"
 			style={{
 				left: `${contextMenu.x}px`,
 				top: `${contextMenu.y}px`,
 				pointerEvents: "auto",
 			}}
+			tabIndex={-1}
 		>
 			{/* Message Actions Section */}
 			<div>
@@ -53,12 +56,14 @@ export const MessageContextMenu = ({
 							: "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
 					)}
 					onClick={() => handleAction("select")}
+					type="button"
 				>
 					{isSelected ? "✓ Selected" : "Select Message"}
 				</button>
 				<button
 					className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 					onClick={() => handleAction("copy")}
+					type="button"
 				>
 					Copy Message
 				</button>
@@ -70,6 +75,7 @@ export const MessageContextMenu = ({
 			<button
 				className="w-full px-4 py-2.5 text-left text-sm bg-primary text-white hover:bg-primary/90 dark:bg-purple-600 dark:hover:bg-purple-700 flex items-center gap-2 font-medium transition-colors"
 				onClick={() => handleAction("addToTask")}
+				type="button"
 			>
 				<Plus className="h-4 w-4" />
 				Add as Task
@@ -84,6 +90,7 @@ export const MessageContextMenu = ({
 						<button
 							className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 							onClick={() => handleAction("edit")}
+							type="button"
 						>
 							Edit
 						</button>
@@ -92,6 +99,7 @@ export const MessageContextMenu = ({
 						<button
 							className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 transition-colors"
 							onClick={() => handleAction("delete")}
+							type="button"
 						>
 							Delete
 						</button>
@@ -108,6 +116,7 @@ export const MessageContextMenu = ({
 					<button
 						className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 						onClick={() => handleAction("reply")}
+						type="button"
 					>
 						Reply in Thread
 					</button>

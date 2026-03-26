@@ -24,7 +24,7 @@ import {
 	Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@/../convex/_generated/api";
@@ -230,13 +230,13 @@ const DashboardChatbotBody = ({
 		return { type, startIndex, query, cursorIndex } as const;
 	};
 
-	const closeAutocomplete = () => {
+	const closeAutocomplete = useCallback(() => {
 		setAutocompleteOpen(false);
 		setActiveAutocomplete(null);
 		setAutocompleteQuery("");
 		setAutocompleteStartIndex(null);
 		setAutocompleteCursorIndex(null);
-	};
+	}, []);
 
 	const replaceAutocompleteToken = (replacement: string) => {
 		const start = autocompleteStartIndex;

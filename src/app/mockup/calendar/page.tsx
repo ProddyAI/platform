@@ -561,6 +561,7 @@ const TestCalendarPage = () => {
 
 			{/* Event Details Modal/Sidebar would go here */}
 			{selectedEvent && (
+				// biome-ignore lint/a11y/useSemanticElements
 				<div
 					className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
 					onClick={() => setSelectedEvent(null)}

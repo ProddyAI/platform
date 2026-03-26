@@ -544,6 +544,7 @@ export const DashboardWidgets = ({
 											)}
 											key={widget.id}
 											onClick={() => toggleWidgetSelection(widget.id)}
+											type="button"
 										>
 											<div className="flex-1">
 												<h4 className="font-medium mb-1">{widget.title}</h4>

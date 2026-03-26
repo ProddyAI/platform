@@ -526,11 +526,22 @@ export const ChannelsManagement = ({
 										ref={editImageInputRef}
 										type="file"
 									/>
+									// biome-ignore lint/a11y/useSemanticElements
 									<div
 										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 										onClick={() =>
 											!isUploadingEdit && editImageInputRef.current?.click()
 										}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												if (!isUploadingEdit) {
+													editImageInputRef.current?.click();
+												}
+											}
+										}}
+										role="button"
+										tabIndex={0}
 									>
 										{editChannelIconPreview || editChannelIcon ? (
 											<>
@@ -559,6 +570,7 @@ export const ChannelsManagement = ({
 															setEditChannelIcon(undefined);
 														}
 													}}
+													type="button"
 												>
 													<X className="h-3.5 w-3.5" />
 												</button>

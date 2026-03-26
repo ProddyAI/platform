@@ -294,7 +294,7 @@ export async function POST(req: NextRequest) {
 				if (memberId) {
 					try {
 						// Get or create auth config for this toolkit
-						let authConfigId;
+						let authConfigId: Id<"auth_configs"> | undefined;
 						try {
 							const existingAuthConfig = await convex.query(
 								api.integrations.getAuthConfigByToolkit,
@@ -321,6 +321,12 @@ export async function POST(req: NextRequest) {
 									isComposioManaged: true,
 									createdBy: memberId as Id<"members">,
 								}
+							);
+						}
+
+						if (!authConfigId) {
+							throw new Error(
+								"Failed to resolve auth config id for connected account"
 							);
 						}
 

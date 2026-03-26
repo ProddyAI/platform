@@ -43,6 +43,7 @@ const AnimatedArrow: React.FC<AnimatedArrowProps> = ({
 
 	return (
 		<svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-20">
+			<title>Connection path</title>
 			<path
 				d={path}
 				fill="none"

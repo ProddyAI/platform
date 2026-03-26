@@ -141,12 +141,11 @@ export const Header = () => {
 					{/* Desktop Navigation */}
 					<nav className="hidden md:flex items-center gap-8">
 						{/* Features dropdown */}
+						// biome-ignore lint/a11y/useSemanticElements
 						<div
 							className="relative"
-							onMouseEnter={() => setIsModulesOpen(true)}
-							onMouseLeave={() => setIsModulesOpen(false)}
-							onFocus={() => setIsModulesOpen(true)}
 							onBlur={() => setIsModulesOpen(false)}
+							onFocus={() => setIsModulesOpen(true)}
 							onKeyDown={(event) => {
 								if (event.key === "Escape") {
 									setIsModulesOpen(false);
@@ -156,6 +155,8 @@ export const Header = () => {
 									setIsModulesOpen((prev) => !prev);
 								}
 							}}
+							onMouseEnter={() => setIsModulesOpen(true)}
+							onMouseLeave={() => setIsModulesOpen(false)}
 							role="button"
 							tabIndex={0}
 						>

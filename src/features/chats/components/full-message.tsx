@@ -68,10 +68,11 @@ export const FullMessage = ({
 					isAuthor && "flex-row-reverse"
 				)}
 				onContextMenu={handleContextMenu}
+				role="group"
 			>
 				{/* Avatar */}
 				<div className="flex-shrink-0">
-					<button onClick={() => onOpenProfile(memberId)}>
+					<button onClick={() => onOpenProfile(memberId)} type="button">
 						<Avatar className="h-8 w-8 md:h-10 md:w-10">
 							<AvatarImage alt={authorName} src={authorImage} />
 							<AvatarFallback>{avatarFallback}</AvatarFallback>
@@ -96,11 +97,15 @@ export const FullMessage = ({
 						<button
 							className="font-medium text-sm hover:underline transition-all duration-200"
 							onClick={() => onOpenProfile(memberId)}
+							type="button"
 						>
 							{authorName}
 						</button>
 						<Hint label={formatFullTime(new Date(createdAt))}>
-							<button className="text-xs text-muted-foreground hover:underline transition-all duration-200">
+							<button
+								className="text-xs text-muted-foreground hover:underline transition-all duration-200"
+								type="button"
+							>
 								{format(new Date(createdAt), "h:mm a")}
 							</button>
 						</Hint>

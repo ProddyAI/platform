@@ -90,12 +90,12 @@ export const BarChart = ({
 				const isHovered = hoveredIndex === index;
 
 				return (
-					<div
+					<button
+						aria-disabled={!onBarClick}
 						className="relative flex flex-col items-center justify-end flex-1 group"
 						data-bar-id={item.id ?? item.label}
 						data-bar-index={index}
 						key={item.id ?? item.label}
-						aria-disabled={!onBarClick}
 						onClick={
 							onBarClick
 								? () => onBarClick(item.label, item.value, index)
@@ -109,9 +109,9 @@ export const BarChart = ({
 						}}
 						onMouseEnter={() => setHoveredIndex(index)}
 						onMouseLeave={() => setHoveredIndex(null)}
-						role="button"
 						style={{ height: chartHeight }}
 						tabIndex={0}
+						type="button"
 					>
 						<div
 							className={cn(
@@ -133,7 +133,7 @@ export const BarChart = ({
 								{item.label}
 							</div>
 						)}
-					</div>
+					</button>
 				);
 			})}
 

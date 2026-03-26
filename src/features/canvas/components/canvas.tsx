@@ -61,6 +61,7 @@ export const Canvas = ({
 	savedCanvasName,
 	toggleFullScreen,
 	isFullScreen,
+	workspaceId,
 }: CanvasProps) => {
 	// Use canvasId if provided, otherwise fall back to boardId for backward compatibility
 	const effectiveId = canvasId || boardId;

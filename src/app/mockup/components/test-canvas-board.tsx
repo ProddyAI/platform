@@ -173,7 +173,7 @@ export const TestCanvasBoard = ({
 		const isSelected = selectedItemId === item.id;
 
 		return (
-			<div
+			<button
 				className={cn(
 					"absolute cursor-pointer border-2 transition-all",
 					isSelected
@@ -193,7 +193,6 @@ export const TestCanvasBoard = ({
 					}
 				}}
 				onMouseDown={(e) => handleItemMouseDown(e, item)}
-				role="button"
 				style={{
 					left: item.x,
 					top: item.y,
@@ -206,7 +205,7 @@ export const TestCanvasBoard = ({
 					transform: `scale(${zoom / 100})`,
 					transformOrigin: "top left",
 				}}
-				tabIndex={0}
+				type="button"
 			>
 				<div className="w-full h-full flex items-center justify-center p-2 text-center overflow-hidden">
 					{item.type === "note" ? (
@@ -227,7 +226,7 @@ export const TestCanvasBoard = ({
 						<div className="absolute -top-1 -left-1 w-3 h-3 bg-primary border border-background rounded-sm cursor-nw-resize" />
 					</>
 				)}
-			</div>
+			</button>
 		);
 	};
 

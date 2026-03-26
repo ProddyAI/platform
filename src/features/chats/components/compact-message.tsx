@@ -67,14 +67,20 @@ export const CompactMessage = ({
 					{isAuthor ? (
 						// For self messages, show timestamp on the right (due to flex-row-reverse)
 						<Hint label={formatFullTime(new Date(createdAt))}>
-							<button className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
+							<button
+								className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100"
+								type="button"
+							>
 								{format(new Date(createdAt), "h:mm a")}
 							</button>
 						</Hint>
 					) : (
 						// For other messages, show timestamp on the left
 						<Hint label={formatFullTime(new Date(createdAt))}>
-							<button className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100">
+							<button
+								className="text-center text-xs md:text-sm leading-[22px] text-muted-foreground opacity-0 hover:underline group-hover:opacity-100"
+								type="button"
+							>
 								{format(new Date(createdAt), "h:mm a")}
 							</button>
 						</Hint>

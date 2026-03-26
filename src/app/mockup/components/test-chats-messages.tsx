@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { Calendar, MoreHorizontal, Plus, Reply, Smile } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,9 +76,9 @@ export const TestChatsMessages = ({
 			.toUpperCase();
 	};
 
-	const scrollToBottom = () => {
+	const scrollToBottom = useCallback(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	};
+	}, []);
 
 	const handleAddToTask = (message: ChatMessage) => {
 		setSelectedMessage(message);
@@ -112,9 +112,9 @@ export const TestChatsMessages = ({
 		});
 	};
 
-	const handleCloseContextMenu = () => {
+	const handleCloseContextMenu = useCallback(() => {
 		setContextMenu({ show: false, x: 0, y: 0, message: null });
-	};
+	}, []);
 
 	const handleContextMenuAction = (action: string) => {
 		if (!contextMenu.message) return;
@@ -230,7 +230,7 @@ export const TestChatsMessages = ({
 							isCurrentUser && "flex justify-end"
 						)}
 					>
-						<div
+						<button
 							className={cn(
 								"max-w-md rounded-lg px-3 py-2 text-sm cursor-pointer",
 								isCurrentUser
@@ -238,9 +238,10 @@ export const TestChatsMessages = ({
 									: "bg-muted"
 							)}
 							onContextMenu={(e) => handleContextMenu(e, message)}
+							type="button"
 						>
 							{message.content}
-						</div>
+						</button>
 
 						{/* Message Actions */}
 						<div
@@ -262,6 +263,7 @@ export const TestChatsMessages = ({
 												className="hover:bg-muted rounded p-1 text-sm"
 												key={emoji}
 												onClick={() => onReaction(message.id, emoji)}
+												type="button"
 											>
 												{emoji}
 											</button>
@@ -324,6 +326,7 @@ export const TestChatsMessages = ({
 									)}
 									key={reaction.emoji}
 									onClick={() => onReaction(message.id, reaction.emoji)}
+									type="button"
 								>
 									<span>{reaction.emoji}</span>
 									<span>{reaction.users.length}</span>
@@ -372,20 +375,25 @@ export const TestChatsMessages = ({
 				<div
 					className="fixed bg-white border rounded-lg shadow-lg py-1 z-50 min-w-[160px]"
 					onClick={(e) => e.stopPropagation()}
+					onKeyDown={(e) => e.stopPropagation()}
+					role="dialog"
 					style={{
 						left: contextMenu.x,
 						top: contextMenu.y,
 					}}
+					tabIndex={-1}
 				>
 					<button
 						className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
 						onClick={() => handleContextMenuAction("copy")}
+						type="button"
 					>
 						Copy Message
 					</button>
 					<button
 						className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
 						onClick={() => handleContextMenuAction("forward")}
+						type="button"
 					>
 						Forward
 					</button>
@@ -393,6 +401,7 @@ export const TestChatsMessages = ({
 					<button
 						className="w-full px-3 py-2 text-left text-sm bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 font-medium"
 						onClick={() => handleContextMenuAction("addToTask")}
+						type="button"
 					>
 						<Plus className="h-4 w-4" />
 						Add to Task
@@ -401,6 +410,7 @@ export const TestChatsMessages = ({
 					<button
 						className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
 						onClick={() => handleContextMenuAction("pin")}
+						type="button"
 					>
 						Pin Message
 					</button>
@@ -409,12 +419,14 @@ export const TestChatsMessages = ({
 							<button
 								className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
 								onClick={() => handleContextMenuAction("edit")}
+								type="button"
 							>
 								Edit
 							</button>
 							<button
 								className="w-full px-3 py-2 text-left text-sm hover:bg-muted text-destructive"
 								onClick={() => handleContextMenuAction("delete")}
+								type="button"
 							>
 								Delete
 							</button>

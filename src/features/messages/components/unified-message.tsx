@@ -51,12 +51,12 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 	const isLive = data.type.includes("live");
 	const isExport = data.type.includes("export");
 
-	// Get members from the database to display real names for live sessions (only when needed)
-	const members = isLive ? useQuery(api.members.get, { workspaceId }) : null;
+	// Get members from the database to display real names for live sessions
+	const members = useQuery(api.members.get, { workspaceId });
 
 	// Update participant names when members data is available
 	useEffect(() => {
-		if (!members || !data.participants) {
+		if (!isLive || !members || !data.participants) {
 			// Reset participant names if members are not available or participants are absent
 			setParticipantNames([]);
 			return;
@@ -72,7 +72,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 		);
 
 		setParticipantNames(names);
-	}, [members, data.participants]);
+	}, [members, data.participants, isLive]);
 
 	// Get the appropriate icon
 	const Icon = isCanvas ? PaintBucket : FileText;

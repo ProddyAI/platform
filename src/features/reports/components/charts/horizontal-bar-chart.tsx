@@ -51,10 +51,10 @@ export const HorizontalBarChart = ({
 					const isHovered = hoveredIndex === index;
 
 					return (
-						<div
+						<button
+							aria-disabled={!onBarClick}
 							className="space-y-1"
 							key={item.id ?? item.label}
-							aria-disabled={!onBarClick}
 							onClick={
 								onBarClick
 									? () => onBarClick(item.label, item.value, index)
@@ -68,8 +68,8 @@ export const HorizontalBarChart = ({
 							}}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
-							role="button"
 							tabIndex={0}
+							type="button"
 						>
 							<div className="flex justify-between items-center">
 								<span className="text-sm truncate">{item.label}</span>
@@ -95,7 +95,7 @@ export const HorizontalBarChart = ({
 									}}
 								/>
 							</div>
-						</div>
+						</button>
 					);
 				})}
 			</div>

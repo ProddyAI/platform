@@ -233,7 +233,9 @@ export const LineChart = ({
 
 							return (
 								<g key={point.index}>
+									// biome-ignore lint/a11y/useSemanticElements
 									<circle
+										aria-disabled={!onPointClick}
 										className={cn(
 											"stroke-white transition-all duration-200",
 											isHovered ? "stroke-[3.5]" : "stroke-[2.5]",
@@ -243,15 +245,10 @@ export const LineChart = ({
 										cx={point.x}
 										cy={point.y}
 										data-point-index={point.index}
-										aria-disabled={!onPointClick}
 										onClick={
 											onPointClick
 												? () =>
-														onPointClick(
-															point.label,
-															point.value,
-															point.index
-														)
+														onPointClick(point.label, point.value, point.index)
 												: undefined
 										}
 										onKeyDown={(event) => {
@@ -309,7 +306,6 @@ export const LineChart = ({
 							onFocus={() => setHoveredIndex(index)}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
-							tabIndex={0}
 						>
 							{item.label}
 						</li>

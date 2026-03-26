@@ -111,6 +111,7 @@ export const MessageContent = ({
 									)
 						)}
 						onContextMenu={onContextMenu}
+						role="group"
 					>
 						{isEditing ? (
 							<Editor
