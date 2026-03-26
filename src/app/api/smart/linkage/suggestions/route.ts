@@ -81,8 +81,16 @@ function getCachedLinkageSuggestions(cacheKey: string) {
 	return cached.suggestions;
 }
 
-function isLikelyConvexId(value: string): boolean {
-	return /^[a-z0-9]{32}$/.test(value);
+function isConvexArgumentValidationError(error: unknown): boolean {
+	if (!(error instanceof Error)) {
+		return false;
+	}
+
+	return (
+		error.message.includes("ArgumentValidationError") ||
+		error.message.includes("does not match validator") ||
+		error.message.includes("Value does not match validator")
+	);
 }
 
 function truncatePromptText(value: string | undefined, maxLength = 220) {
@@ -159,16 +167,17 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		if (!isLikelyConvexId(channelId) || !isLikelyConvexId(issueId)) {
-			return NextResponse.json(
-				{ error: "invalid channelId or issueId" },
-				{ status: 400 }
-			);
+		let issue;
+		try {
+			issue = await auth.convex.query(api.board.getIssueDetails, {
+				issueId: issueId as Id<"issues">,
+			});
+		} catch (error) {
+			if (isConvexArgumentValidationError(error)) {
+				return NextResponse.json({ error: "invalid issueId" }, { status: 400 });
+			}
+			throw error;
 		}
-
-		const issue = await auth.convex.query(api.board.getIssueDetails, {
-			issueId: issueId as Id<"issues">,
-		});
 
 		if (!issue) {
 			return NextResponse.json({ error: "Issue not found" }, { status: 404 });
@@ -211,6 +220,19 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ suggestions: [] });
 		}
 
+		const cacheKey = `${channelId}:${issueId}`;
+		const cachedSuggestions = getCachedLinkageSuggestions(cacheKey);
+
+		if (cachedSuggestions) {
+			const candidateMap = new Map(
+				candidateIssues.map((candidate) => [String(candidate._id), candidate])
+			);
+			const suggestions = cachedSuggestions
+				.filter((suggestion) => candidateMap.has(suggestion.issueId))
+				.slice(0, 3);
+			return NextResponse.json({ suggestions });
+		}
+
 		const currentIssueContext = [
 			`Current issue title: ${issue.title}`,
 			`Current issue description: ${truncatePromptText(issue.description)}`,
@@ -247,15 +269,6 @@ ${candidateContext}`,
 		const candidateMap = new Map(
 			candidateIssues.map((candidate) => [String(candidate._id), candidate])
 		);
-		const cacheKey = `${channelId}:${issueId}`;
-		const cachedSuggestions = getCachedLinkageSuggestions(cacheKey);
-
-		if (cachedSuggestions) {
-			const suggestions = cachedSuggestions
-				.filter((suggestion) => candidateMap.has(suggestion.issueId))
-				.slice(0, 3);
-			return NextResponse.json({ suggestions });
-		}
 
 		const suggestions = object.suggestions
 			.map((suggestion) => {
