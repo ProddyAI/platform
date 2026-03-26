@@ -250,7 +250,9 @@ export const getMyAssignedCardsInRange = query({
 			channelIds.map(async (id) => ctx.db.get(id as Id<"channels">))
 		);
 		const channelMap = new Map(
-			channels.filter(Boolean).map((c) => [String(c?._id), c!])
+			channels
+				.filter(isDefined)
+				.map((channel) => [String(channel._id), channel])
 		);
 
 		const inRange = cards

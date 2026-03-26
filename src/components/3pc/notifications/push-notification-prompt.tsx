@@ -14,7 +14,7 @@ import {
 import { useAdBlockerDetectionContext } from "@/lib/ad-blocker-context";
 import { logger } from "@/lib/logger";
 
-export type PushNotificationPromptProps = {};
+export type PushNotificationPromptProps = Record<string, never>;
 
 export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 	const [permission, setPermission] =

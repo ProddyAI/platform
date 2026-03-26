@@ -34,8 +34,9 @@ function extractTextFromRichText(body: string): string {
 	}
 
 	// Check cache first
-	if (extractionCache.has(body)) {
-		return extractionCache.get(body)!;
+	const cached = extractionCache.get(body);
+	if (cached !== undefined) {
+		return cached;
 	}
 
 	const trimmedBody = body.trim();
@@ -118,9 +119,19 @@ function pruneCache() {
 
 export async function POST(req: NextRequest) {
 	try {
-		let requestData;
+		let requestData: {
+			messages?: MessageData[];
+			date?: string;
+			channelName?: string;
+			workspaceId?: Id<"workspaces">;
+		} | null = null;
 		try {
-			requestData = await req.json();
+			requestData = (await req.json()) as {
+				messages?: MessageData[];
+				date?: string;
+				channelName?: string;
+				workspaceId?: Id<"workspaces">;
+			};
 		} catch (parseError) {
 			console.error("Error parsing JSON:", parseError);
 			return NextResponse.json(
@@ -129,7 +140,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { messages, date, channelName, workspaceId } = requestData;
+		const { messages, date, channelName, workspaceId } = requestData ?? {};
 
 		if (!messages || !Array.isArray(messages)) {
 			console.error("Invalid messages format:", messages);

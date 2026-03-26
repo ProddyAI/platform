@@ -10,6 +10,7 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
+import Image from "next/image";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
@@ -534,9 +535,11 @@ export const ChannelsManagement = ({
 										{editChannelIconPreview || editChannelIcon ? (
 											<>
 												{editChannelIconPreview ? (
-													<img
+													<Image
 														alt="Icon preview"
-														className="h-full w-full object-cover"
+														className="object-cover"
+														fill
+														sizes="80px"
 														src={editChannelIconPreview}
 													/>
 												) : (

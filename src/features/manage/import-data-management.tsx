@@ -291,7 +291,7 @@ export const ImportDataManagement = ({
 	};
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6" data-member-role={currentMember.role}>
 			{/* Header */}
 			<div>
 				<h3 className="text-lg font-medium">Import Data</h3>

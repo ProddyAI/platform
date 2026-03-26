@@ -23,9 +23,15 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		let requestData;
+		let requestData: {
+			prompt?: string;
+			workspaceId?: Id<"workspaces">;
+		} | null = null;
 		try {
-			requestData = await req.json();
+			requestData = (await req.json()) as {
+				prompt?: string;
+				workspaceId?: Id<"workspaces">;
+			};
 		} catch (parseError) {
 			console.error("Error parsing JSON:", parseError);
 			return NextResponse.json(
@@ -34,10 +40,8 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { prompt } = requestData;
-		const workspaceId = requestData?.workspaceId as
-			| Id<"workspaces">
-			| undefined;
+		const prompt = requestData?.prompt;
+		const workspaceId = requestData?.workspaceId;
 
 		if (!prompt) {
 			console.error("Missing prompt in request");

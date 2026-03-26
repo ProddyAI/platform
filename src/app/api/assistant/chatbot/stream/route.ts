@@ -19,6 +19,9 @@ import { UnifiedToolManager } from "@/lib/unified-tool-manager";
 
 export const dynamic = "force-dynamic";
 
+const CONTROL_CHARS_PATTERN = "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]";
+const CONTROL_CHARS_REGEX = new RegExp(CONTROL_CHARS_PATTERN, "g");
+
 /**
  * Create a Convex HTTP client
  */
@@ -242,9 +245,7 @@ export async function POST(req: NextRequest) {
 			})
 			.map((msg: any) => ({
 				role: msg.role as "user" | "assistant",
-				content: msg.content
-					.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
-					.trim(),
+				content: msg.content.replace(CONTROL_CHARS_REGEX, "").trim(),
 			}));
 
 		// Track AI usage for this workspace

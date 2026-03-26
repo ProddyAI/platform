@@ -214,13 +214,14 @@ export const CanvasSidebar = ({
 												? "bg-primary/10 border-primary/20 shadow-sm"
 												: "bg-white border-border hover:bg-muted/50"
 										)}
-										onClick={() =>
+										onClick={() => {
+											if (!canvas.roomId || !canvas.canvasName) return;
 											onCanvasSelect(
 												canvas.savedCanvasId || canvas._id,
-												canvas.roomId!,
-												canvas.canvasName!
-											)
-										}
+												canvas.roomId,
+												canvas.canvasName
+											);
+										}}
 									>
 										<div className="flex items-start justify-between">
 											<div className="flex-1 min-w-0">

@@ -2,6 +2,7 @@
 
 import { Smile, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -265,9 +266,11 @@ export const CreateChannelModal = () => {
 										{iconPreview || icon ? (
 											<>
 												{iconPreview ? (
-													<img
+													<Image
 														alt="Channel icon preview"
-														className="h-full w-full object-cover rounded-sm"
+														className="object-cover rounded-sm"
+														fill
+														sizes="80px"
 														src={iconPreview}
 													/>
 												) : (

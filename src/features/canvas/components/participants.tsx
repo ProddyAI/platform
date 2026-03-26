@@ -10,12 +10,6 @@ interface UserInfo {
 	picture?: string;
 }
 
-interface User {
-	memberId?: string;
-	userId?: string;
-	info?: UserInfo;
-}
-
 // Constants
 const MAX_SHOWN_OTHER_USERS = 2;
 

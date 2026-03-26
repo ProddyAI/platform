@@ -1,6 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -202,11 +203,13 @@ export const ChannelItem = ({
 	const renderIcon = () => {
 		if (iconImageUrl && !imageLoadError) {
 			return (
-				<img
+				<Image
 					alt={`Channel icon for ${label}`}
-					className="h-full w-full object-cover rounded-full"
+					className="h-full w-full rounded-full object-cover"
+					height={28}
 					onError={() => setImageLoadError(true)}
 					src={iconImageUrl}
+					width={28}
 				/>
 			);
 		}

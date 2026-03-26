@@ -139,8 +139,9 @@ function extractTextFromRichText(body: string): string {
 	}
 
 	// Check cache first
-	if (extractionCache.has(body)) {
-		return extractionCache.get(body)!;
+	const cached = extractionCache.get(body);
+	if (cached !== undefined) {
+		return cached;
 	}
 
 	const trimmedBody = body.trim();
@@ -213,9 +214,19 @@ function pruneCache() {
 
 export async function POST(req: NextRequest) {
 	try {
-		let requestData;
+		let requestData: {
+			messages?: MessageData[];
+			workspaceId?: Id<"workspaces">;
+			channel?: string;
+			channelId?: Id<"channels">;
+		} | null = null;
 		try {
-			requestData = await req.json();
+			requestData = (await req.json()) as {
+				messages?: MessageData[];
+				workspaceId?: Id<"workspaces">;
+				channel?: string;
+				channelId?: Id<"channels">;
+			};
 		} catch (_parseError) {
 			return NextResponse.json(
 				{ error: "Invalid JSON in request" },
@@ -227,19 +238,15 @@ export async function POST(req: NextRequest) {
 		let channelLabel: string | null = null;
 
 		// Back-compat: accept explicit messages.
-		if (Array.isArray((requestData as any)?.messages)) {
-			messages = (requestData as any).messages as MessageData[];
+		if (Array.isArray(requestData?.messages)) {
+			messages = requestData.messages as MessageData[];
 		}
 
 		// New mode: accept workspaceId + channel / channelId and fetch from DB.
 		if (!messages) {
-			const workspaceId = (requestData as any)?.workspaceId as
-				| Id<"workspaces">
-				| undefined;
-			const channel = (requestData as any)?.channel as string | undefined;
-			const channelId = (requestData as any)?.channelId as
-				| Id<"channels">
-				| undefined;
+			const workspaceId = requestData?.workspaceId;
+			const channel = requestData?.channel;
+			const channelId = requestData?.channelId;
 			const limitRaw = (requestData as any)?.limit;
 			const limit =
 				typeof limitRaw === "number" && Number.isFinite(limitRaw)

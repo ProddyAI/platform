@@ -25,7 +25,6 @@ export const CompactMessage = ({
 	createdAt,
 	image,
 	isEditing,
-	memberId,
 	reactions,
 	setEditingId,
 	updatedAt,

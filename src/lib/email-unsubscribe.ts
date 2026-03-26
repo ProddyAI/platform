@@ -8,7 +8,13 @@ export type EmailType =
 	| "weeklyDigest";
 
 function getUnsubscribeSecret(): string {
-	return process.env.NEXT_PUBLIC_EMAIL_UNSUBSCRIBE_SECRET!;
+	const secret = process.env.NEXT_PUBLIC_EMAIL_UNSUBSCRIBE_SECRET;
+	if (!secret) {
+		throw new Error(
+			"NEXT_PUBLIC_EMAIL_UNSUBSCRIBE_SECRET environment variable is required"
+		);
+	}
+	return secret;
 }
 
 export function generateUnsubscribeUrl(

@@ -7,7 +7,7 @@ import { generateText } from "ai";
 import { v } from "convex/values";
 import OpenAI from "openai";
 import { api, internal } from "./_generated/api";
-import type { Id, TableNames } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
 // Define types for chat messages and responses
@@ -31,17 +31,6 @@ type NavigationAction = {
 	url: string;
 	noteId?: string;
 	channelId?: string;
-};
-
-type GenerateResponseResult = {
-	response: string;
-	sources?: Array<{
-		id: Id<TableNames>;
-		type: string;
-		text: string;
-	}>;
-	actions?: NavigationAction[];
-	error?: string;
 };
 
 type LLMMessage = {
@@ -2816,12 +2805,11 @@ ${channelBlocks}`;
 						? (c.channelName as string)
 						: undefined,
 			}));
-			const cardsDueToday = mappedCards.filter(
-				(c) =>
-					typeof c?.dueDate === "number" &&
-					c.dueDate! >= todayFrom &&
-					c.dueDate! <= todayTo
-			);
+			const cardsDueToday = mappedCards.filter((c) => {
+				const dueDate = c.dueDate;
+				if (typeof dueDate !== "number") return false;
+				return dueDate >= todayFrom && dueDate <= todayTo;
+			});
 			const cardsUndated = mappedCards
 				.filter((c) => typeof c?.dueDate !== "number")
 				.slice(0, 10);
@@ -2936,7 +2924,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		let isIndexing = false;
 		try {
 			const ragResponse = await ctx.runAction(api.ragchat.semanticSearch, {
-				workspaceId: args.workspaceId!,
+				workspaceId,
 				userId: args.userId,
 				query: args.query,
 				limit: 5,
@@ -2952,7 +2940,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 			if (errorMessage.includes("No compatible namespace found")) {
 				try {
 					await ctx.runMutation(api.ragchat.autoInitializeWorkspace, {
-						workspaceId: args.workspaceId!,
+						workspaceId,
 						limit: 1000,
 					});
 					isIndexing = true;

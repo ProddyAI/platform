@@ -1073,14 +1073,12 @@ export const getMentionedMessages = query({
 							return acc;
 						}
 
-						return [
-							...acc,
-							{
-								...reaction,
-								count: 1,
-								memberIds: [reaction.memberId],
-							},
-						];
+						acc.push({
+							...reaction,
+							count: 1,
+							memberIds: [reaction.memberId],
+						});
+						return acc;
 					},
 					[] as Array<
 						Omit<Doc<"reactions">, "memberId"> & {

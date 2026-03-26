@@ -48,11 +48,20 @@ async function identifyCustomer(
 	return { dodoCustomerId };
 }
 
+const dodoApiKey = process.env.DODO_PAYMENTS_API_KEY;
+if (!dodoApiKey) {
+	throw new Error("DODO_PAYMENTS_API_KEY environment variable is required");
+}
+
+const dodoEnvironment =
+	process.env.DODO_PAYMENTS_ENVIRONMENT === "live_mode"
+		? "live_mode"
+		: "test_mode";
+
 export const dodo = new DodoPayments((components as any).dodopayments, {
 	identify: identifyCustomer,
-	apiKey: process.env.DODO_PAYMENTS_API_KEY!,
-	environment:
-		process.env.DODO_PAYMENTS_ENVIRONMENT || `test_mode` || `live_mode`,
+	apiKey: dodoApiKey,
+	environment: dodoEnvironment,
 } as DodoPaymentsClientConfig);
 
 // Export API surface for use in Convex actions
