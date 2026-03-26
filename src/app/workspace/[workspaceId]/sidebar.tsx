@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	Activity,
 	AlertTriangle,
 	BarChart,
 	Bot,
@@ -8,6 +9,7 @@ import {
 	ChartNoAxesGantt,
 	CheckSquare,
 	ChevronDown,
+	CreditCard,
 	Hash,
 	LayoutDashboard,
 	Loader,
@@ -533,8 +535,26 @@ export const WorkspaceSidebar = ({
 								/>
 							</MobileCloseWrapper>
 						)}
-						<MobileCloseWrapper onClose={onMobileClose}>
+						<MobileCloseWrapper onClose={onMobileClose}>						<SidebarItem
+							href={`/workspace/${workspaceId}/usage`}
+							icon={Activity}
+							id="usage"
+							isActive={pathname.includes("/usage")}
+							isCollapsed={isCollapsed}
+							label="Usage"
+						/>
+					</MobileCloseWrapper>
+					<MobileCloseWrapper onClose={onMobileClose}>
 							<SidebarItem
+								href={`/workspace/${workspaceId}/billing`}
+								icon={CreditCard}
+								id="billing"
+								isActive={pathname.includes("/billing")}
+								isCollapsed={isCollapsed}
+								label="Billing"
+							/>
+					</MobileCloseWrapper>
+					<MobileCloseWrapper onClose={onMobileClose}>							<SidebarItem
 								href={`/workspace/${workspaceId}/manage`}
 								icon={Settings}
 								id="manage"

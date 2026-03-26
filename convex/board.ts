@@ -196,6 +196,15 @@ export const createCard = mutation({
 		// Insert the card
 		const cardId = await ctx.db.insert('cards', args);
 
+		// Track board card usage
+		const boardUserId = (await ctx.auth.getUserIdentity())?.subject.split("|")[0];
+		if (boardUserId && channel?.workspaceId) {
+			await ctx.scheduler.runAfter(0, internal.usageTracking.recordBoardCreated, {
+				userId: boardUserId as Id<"users">,
+				workspaceId: channel.workspaceId,
+			});
+		}
+
 		// Create mentions for assignees if any
 		if (args.assignees && args.assignees.length > 0) {
 			try {

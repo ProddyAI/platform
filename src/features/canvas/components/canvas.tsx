@@ -430,6 +430,7 @@ export const Canvas = ({
 					onGenerateFlowchart={handleGenerateFlowchart}
 					redo={history.redo}
 					undo={history.undo}
+					workspaceId={workspaceId}
 				/>
 
 				<svg

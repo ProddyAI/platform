@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { internalQuery, mutation, query } from "./_generated/server";
 import { prosemirrorSync } from "./prosemirror";
 
@@ -46,6 +47,12 @@ export const create = mutation({
 			tags: args.tags,
 			createdAt: now,
 			updatedAt: now,
+		});
+
+		// Track note usage
+		await ctx.scheduler.runAfter(0, internal.usageTracking.recordNoteCreated, {
+			userId: userId as Id<"users">,
+			workspaceId: args.workspaceId,
 		});
 
 		// Create the prosemirror document for collaborative editing

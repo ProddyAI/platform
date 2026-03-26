@@ -1,22 +1,11 @@
-import { openai } from "@ai-sdk/openai";
-import { saveMessage } from "@convex-dev/agent";
+
+import OpenAI from "openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { generateText, jsonSchema, stepCountIs, tool } from "ai";
 import { v } from "convex/values";
-import {
-	type AssistantExternalApp,
-	buildAssistantResponseMetadata,
-	buildAssistantSystemPrompt,
-	classifyAssistantQuery,
-} from "../src/lib/assistant-orchestration";
+import { createFunctionHandle } from "convex/server";
 import { api, components, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
-import { proddyAgent } from "./assistant/agent";
-import { buildThreadContextPrompt } from "./assistant/context";
-import {
-	categorizeError,
-	handleAssistantError,
-} from "./assistant/errorHandling";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 
@@ -34,73 +23,39 @@ type ToolDefinition = {
 		needsWorkspaceId?: boolean;
 		needsUserId?: boolean;
 	};
-	externalApp?: AssistantExternalApp;
 };
 
-function buildAiTools(
-	toolDefinitions: ToolDefinition[],
-	ctx: { runQuery: any; runMutation: any; runAction: any },
-	workspaceId: string,
-	userId: string
-): Record<string, any> {
-	const tools: Record<string, any> = {};
+// System prompt for Proddy AI assistant
+const SYSTEM_PROMPT = `You are Proddy, a personal work assistant for team workspaces.
 
-	console.log(
-		"[buildAiTools] Starting with",
-		toolDefinitions.length,
-		"tool definitions"
-	);
+Your role:
+- Help users manage their calendar, meetings, tasks, and workspace activities
+- Provide summaries of channels and conversations
+- Answer questions about workspace data
+- Be concise, actionable, and friendly
 
-	for (const toolDef of toolDefinitions) {
-		// Create JSON Schema with proper typing
-		const jsonSchemaObj: Record<string, any> = {
-			type: "object",
-			properties: toolDef.parameters.properties || {},
-			required: toolDef.parameters.required || [],
-			additionalProperties: false,
-		};
+Guidelines:
+- Use the available tools to fetch real-time data
+- Format responses with clear headings and bullet points
+- When showing dates/times, use readable formats
+- If you don't have information, say so clearly
+- Never invent data - only use what the tools return
 
-		console.log(`[buildAiTools] Creating tool: ${toolDef.name}`, {
-			hasProperties: Object.keys(jsonSchemaObj.properties).length > 0,
-			required: jsonSchemaObj.required,
-		});
+Available capabilities:
+- Calendar: View today's/tomorrow's/next week's meetings
+- Tasks: Check tasks due today/tomorrow or all tasks
+- Channels: Search channels, get channel summaries
+- Boards: View assigned cards across all boards
+- Workspace: Get overview statistics
+- Search: Semantic search across messages, notes, tasks
 
-		tools[toolDef.name] = tool({
-			description: toolDef.description,
-			inputSchema: jsonSchema(jsonSchemaObj),
-			execute: async (params: any) => {
-				console.log(`[buildAiTools] Executing tool: ${toolDef.name}`, {
-					params,
-				});
-				const fullArgs: Record<string, unknown> = { ...params };
-				if (toolDef.contextParams?.needsWorkspaceId) {
-					fullArgs.workspaceId = workspaceId;
-				}
-				if (toolDef.contextParams?.needsUserId) {
-					fullArgs.userId = userId;
-				}
-
-				if (toolDef.handlerType === "query") {
-					return await ctx.runQuery(toolDef.handler as any, fullArgs);
-				}
-				if (toolDef.handlerType === "mutation") {
-					return await ctx.runMutation(toolDef.handler as any, fullArgs);
-				}
-				return await ctx.runAction(toolDef.handler as any, fullArgs);
-			},
-		} as any);
-	}
-
-	console.log("[buildAiTools] Complete. Built tools:", Object.keys(tools));
-	return tools;
-}
+When a user asks about their schedule, tasks, or workspace, use the appropriate tools to fetch current data.`;
 
 // Define tools that AI can use (handles are created inside the action)
 const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "getMyCalendarToday",
-		description:
-			"Get the user's calendar events for today. Returns all meetings and events scheduled for the current day.",
+		description: "Get the user's calendar events for today. Returns all meetings and events scheduled for the current day.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -112,8 +67,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyCalendarTomorrow",
-		description:
-			"Get the user's calendar events for tomorrow. Returns all meetings and events scheduled for the next day.",
+		description: "Get the user's calendar events for tomorrow. Returns all meetings and events scheduled for the next day.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -124,22 +78,8 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
-		name: "getMyCalendarThisWeek",
-		description:
-			"Get the user's calendar events for this week (the next 7 days starting from today). Use this when the user asks about 'this week' or 'upcoming week'.",
-		parameters: {
-			type: "object" as const,
-			properties: {},
-			required: [],
-		},
-		handlerType: "query" as const,
-		handler: api.assistantTools.getMyCalendarThisWeek,
-		contextParams: { needsWorkspaceId: true, needsUserId: true },
-	},
-	{
 		name: "getMyCalendarNextWeek",
-		description:
-			"Get the user's calendar events for next week (7-14 days from now). Returns all meetings scheduled in the upcoming week.",
+		description: "Get the user's calendar events for next week (7-14 days from now). Returns all meetings scheduled in the upcoming week.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -151,8 +91,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyTasksToday",
-		description:
-			"Get tasks assigned to the user that are due today. Returns incomplete tasks with today's due date.",
+		description: "Get tasks assigned to the user that are due today. Returns incomplete tasks with today's due date.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -164,8 +103,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyTasksTomorrow",
-		description:
-			"Get tasks assigned to the user that are due tomorrow. Returns incomplete tasks with tomorrow's due date.",
+		description: "Get tasks assigned to the user that are due tomorrow. Returns incomplete tasks with tomorrow's due date.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -176,29 +114,12 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
-		name: "getMyTasksThisWeek",
-		description:
-			"Get tasks assigned to the user that are due this week (next 7 days). Returns incomplete tasks due within the current week. Use this when user asks about 'this week' or 'upcoming' tasks.",
-		parameters: {
-			type: "object" as const,
-			properties: {},
-			required: [],
-		},
-		handlerType: "query" as const,
-		handler: api.assistantTools.getMyTasksThisWeek,
-		contextParams: { needsWorkspaceId: true, needsUserId: true },
-	},
-	{
 		name: "getMyAllTasks",
-		description:
-			"Get all tasks assigned to the user. Can optionally include completed tasks. Use this for general task queries like 'what are my tasks' or 'show all my work'.",
+		description: "Get all tasks assigned to the user. Can optionally include completed tasks. Use this for general task queries like 'what are my tasks' or 'show all my work'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				includeCompleted: {
-					type: "boolean",
-					description: "Whether to include completed tasks (default: false)",
-				},
+				includeCompleted: { type: "boolean", description: "Whether to include completed tasks (default: false)" },
 			},
 			required: [],
 		},
@@ -208,16 +129,11 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "searchChannels",
-		description:
-			"Search for channels in the workspace by name. Returns matching channels with their IDs. Only use this for finding/browsing channel information within the workspace. For Slack operations (posting messages, replying), use runSlackTool instead.",
+		description: "Search for channels in the workspace by name. Returns matching channels with their IDs. ALWAYS use this first when the user mentions a channel by name (e.g., '#general', '#engineering') to get the channel ID before calling other channel tools.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				query: {
-					type: "string",
-					description:
-						"Channel name to search for (without # symbol). Leave empty to get all channels.",
-				},
+				query: { type: "string", description: "Channel name to search for (without # symbol). Leave empty to get all channels." },
 			},
 			required: [],
 		},
@@ -227,20 +143,12 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getChannelSummary",
-		description:
-			"Get a summary of recent messages in a specific channel. Requires a channel ID - if user provides a channel name (e.g., '#general'), FIRST call searchChannels to find the ID, then use that ID here.",
+		description: "Get a summary of recent messages in a specific channel. Requires a channel ID - if user provides a channel name (e.g., '#general'), FIRST call searchChannels to find the ID, then use that ID here.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				channelId: {
-					type: "string",
-					description:
-						"Channel ID (get this from searchChannels if you only have the channel name)",
-				},
-				limit: {
-					type: "number",
-					description: "Max number of messages to analyze (default: 40)",
-				},
+				channelId: { type: "string", description: "Channel ID (get this from searchChannels if you only have the channel name)" },
+				limit: { type: "number", description: "Max number of messages to analyze (default: 40)" },
 			},
 			required: ["channelId"],
 		},
@@ -250,8 +158,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getWorkspaceOverview",
-		description:
-			"Get high-level overview statistics for the workspace. Returns counts of channels, members, tasks, and upcoming events.",
+		description: "Get high-level overview statistics for the workspace. Returns counts of channels, members, tasks, and upcoming events.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -263,8 +170,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyCards",
-		description:
-			"Get all cards (from Kanban boards) assigned to the user across all channels. Returns card details including board/list location.",
+		description: "Get all cards (from Kanban boards) assigned to the user across all channels. Returns card details including board/list location.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -276,16 +182,12 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "semanticSearch",
-		description:
-			"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use this for general questions that don't fit other tools.",
+		description: "Perform semantic search across all workspace content (messages, notes, tasks, cards). Use this for general questions that don't fit other tools.",
 		parameters: {
 			type: "object" as const,
 			properties: {
 				query: { type: "string", description: "Search query" },
-				limit: {
-					type: "number",
-					description: "Max results to return (default: 10)",
-				},
+				limit: { type: "number", description: "Max results to return (default: 10)" },
 			},
 			required: ["query"],
 		},
@@ -295,146 +197,100 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "runGmailTool",
-		description:
-			"Use Gmail to send emails, read inbox messages, or search email threads. Provide a clear instruction like 'send email to alice@example.com about the roadmap'.",
+		description: "Use Gmail to send emails, read inbox messages, or search email threads. Provide a clear instruction like 'send email to alice@example.com about the roadmap'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: {
-					type: "string",
-					description: "What you want Gmail to do",
-				},
+				instruction: { type: "string", description: "What you want Gmail to do" },
 			},
 			required: ["instruction"],
 		},
 		handlerType: "action" as const,
 		handler: api.assistantComposioTools.runGmailTool,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
-		externalApp: "GMAIL",
 	},
 	{
 		name: "runSlackTool",
-		description:
-			"Use Slack to post messages, find channels, reply in threads, or get channel info. This is your PRIMARY tool for any Slack operations - use it to send messages directly to Slack channels. Provide a clear instruction like 'post in #general that the deploy is done' or 'send a hi to any channel in slack'.",
+		description: "Use Slack to post messages, reply in threads, or get channel info. Provide a clear instruction like 'post in #general that the deploy is done'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: {
-					type: "string",
-					description: "What you want Slack to do",
-				},
+				instruction: { type: "string", description: "What you want Slack to do" },
 			},
 			required: ["instruction"],
 		},
 		handlerType: "action" as const,
 		handler: api.assistantComposioTools.runSlackTool,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
-		externalApp: "SLACK",
 	},
 	{
 		name: "runGithubTool",
-		description:
-			"Use GitHub to create issues, comment on PRs, or search repositories. Provide a clear instruction like 'create an issue in repo X about bug Y'.",
+		description: "Use GitHub to create issues, comment on PRs, or search repositories. Provide a clear instruction like 'create an issue in repo X about bug Y'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: {
-					type: "string",
-					description: "What you want GitHub to do",
-				},
+				instruction: { type: "string", description: "What you want GitHub to do" },
 			},
 			required: ["instruction"],
 		},
 		handlerType: "action" as const,
 		handler: api.assistantComposioTools.runGithubTool,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
-		externalApp: "GITHUB",
 	},
 	{
 		name: "runNotionTool",
-		description:
-			"Use Notion to create or update pages and databases. Provide a clear instruction like 'create a page titled Q1 Plan with these bullets'.",
+		description: "Use Notion to create or update pages and databases. Provide a clear instruction like 'create a page titled Q1 Plan with these bullets'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: {
-					type: "string",
-					description: "What you want Notion to do",
-				},
+				instruction: { type: "string", description: "What you want Notion to do" },
 			},
 			required: ["instruction"],
 		},
 		handlerType: "action" as const,
 		handler: api.assistantComposioTools.runNotionTool,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
-		externalApp: "NOTION",
 	},
 	{
 		name: "runClickupTool",
-		description:
-			"Use ClickUp to create or update tasks. Provide a clear instruction like 'create a task in List A titled Fix onboarding bug'.",
+		description: "Use ClickUp to create or update tasks. Provide a clear instruction like 'create a task in List A titled Fix onboarding bug'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: {
-					type: "string",
-					description: "What you want ClickUp to do",
-				},
+				instruction: { type: "string", description: "What you want ClickUp to do" },
 			},
 			required: ["instruction"],
 		},
 		handlerType: "action" as const,
 		handler: api.assistantComposioTools.runClickupTool,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
-		externalApp: "CLICKUP",
 	},
 	{
 		name: "runLinearTool",
-		description:
-			"Use Linear to create or update issues. Provide a clear instruction like 'create a bug issue in Team X titled Login fails on Safari'.",
+		description: "Use Linear to create or update issues. Provide a clear instruction like 'create a bug issue in Team X titled Login fails on Safari'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: {
-					type: "string",
-					description: "What you want Linear to do",
-				},
+				instruction: { type: "string", description: "What you want Linear to do" },
 			},
 			required: ["instruction"],
 		},
 		handlerType: "action" as const,
 		handler: api.assistantComposioTools.runLinearTool,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
-		externalApp: "LINEAR",
 	},
 ];
-
-function selectToolsForQuery(
-	toolDefinitions: ToolDefinition[],
-	requestedExternalApps: AssistantExternalApp[]
-): ToolDefinition[] {
-	const internalTools = toolDefinitions.filter((tool) => !tool.externalApp);
-	if (requestedExternalApps.length === 0) {
-		return internalTools;
-	}
-
-	const appSet = new Set(requestedExternalApps);
-	const matchingExternalTools = toolDefinitions.filter(
-		(tool) => tool.externalApp && appSet.has(tool.externalApp)
-	);
-	return [...internalTools, ...matchingExternalTools];
-}
 
 // =============================================================================
 // Chat Integration with database-chat component
 // =============================================================================
 
 export const createConversation = mutation({
-	args: {
+	args: { 
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
 		title: v.optional(v.string()),
-		forceNew: v.optional(v.boolean()),
+		forceNew: v.optional(v.boolean())
 	},
 	returns: v.string(),
 	handler: async (ctx, args) => {
@@ -449,21 +305,19 @@ export const createConversation = mutation({
 			return existing.conversationId;
 		}
 
-		// Use agent thread as conversation (unified agent-based architecture)
-		const thread = await ctx.runMutation(
-			components.agent.threads.createThread,
+		const conversationId = await ctx.runMutation(
+			components.databaseChat.conversations.create,
 			{
-				userId: args.userId,
+				externalId: `workspace_${args.workspaceId}_user_${args.userId}_${Date.now()}`,
 				title: args.title ?? "Chat with Proddy",
 			}
 		);
-		const conversationId = thread._id;
 
 		if (existing && args.forceNew) {
+			// Update existing record instead of creating duplicate
 			await ctx.db.patch(existing._id, {
 				conversationId,
 				lastMessageAt: Date.now(),
-				source: "agent",
 			});
 		} else {
 			await ctx.db.insert("assistantConversations", {
@@ -471,7 +325,6 @@ export const createConversation = mutation({
 				userId: args.userId,
 				conversationId,
 				lastMessageAt: Date.now(),
-				source: "agent",
 			});
 		}
 
@@ -479,49 +332,10 @@ export const createConversation = mutation({
 	},
 });
 
-/** Map agent MessageDoc to UI shape { role, content, _creationTime } */
-function agentMessageToUI(doc: {
-	_creationTime: number;
-	message?: {
-		role?: string;
-		content?: string | Array<{ type: string; text?: string }>;
-	};
-}): { role: string; content: string; _creationTime: number } {
-	const role = doc.message?.role ?? "user";
-	let content = "";
-	if (typeof doc.message?.content === "string") {
-		content = doc.message.content;
-	} else if (Array.isArray(doc.message?.content)) {
-		content = doc.message.content
-			.map((p) => (p.type === "text" && p.text ? p.text : ""))
-			.join("");
-	}
-	return { role, content, _creationTime: doc._creationTime };
-}
-
 export const getMessages = query({
 	args: { conversationId: v.string() },
 	returns: v.array(v.any()),
 	handler: async (ctx, args) => {
-		const meta = await ctx.runQuery(
-			api.assistantConversations.getByConversationId,
-			{ conversationId: args.conversationId }
-		);
-		if (!meta) return [];
-
-		if (meta.source === "agent") {
-			const result = await ctx.runQuery(
-				components.agent.messages.listMessagesByThreadId,
-				{
-					threadId: args.conversationId,
-					order: "asc",
-					paginationOpts: { numItems: 100, cursor: null },
-					excludeToolMessages: true,
-				}
-			);
-			return result.page.map(agentMessageToUI);
-		}
-
 		return await ctx.runQuery(components.databaseChat.messages.list, {
 			conversationId: args.conversationId as any,
 		});
@@ -532,21 +346,6 @@ export const listConversations = query({
 	args: { workspaceId: v.id("workspaces"), userId: v.id("users") },
 	returns: v.array(v.any()),
 	handler: async (ctx, args) => {
-		const row = await ctx.db
-			.query("assistantConversations")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
-			)
-			.unique();
-		if (row) {
-			return [
-				{
-					_id: row.conversationId,
-					title: "Chat with Proddy",
-					updatedAt: row.lastMessageAt,
-				},
-			];
-		}
 		return await ctx.runQuery(components.databaseChat.conversations.list, {
 			externalId: `workspace_${args.workspaceId}_user_${args.userId}`,
 		});
@@ -556,11 +355,6 @@ export const listConversations = query({
 export const getStreamState = query({
 	args: { conversationId: v.string() },
 	handler: async (ctx, args) => {
-		const meta = await ctx.runQuery(
-			api.assistantConversations.getByConversationId,
-			{ conversationId: args.conversationId }
-		);
-		if (meta?.source === "agent") return null;
 		return await ctx.runQuery(components.databaseChat.stream.getStream, {
 			conversationId: args.conversationId as any,
 		});
@@ -580,18 +374,10 @@ export const getStreamDeltas = query({
 export const abortStream = mutation({
 	args: { conversationId: v.string(), reason: v.optional(v.string()) },
 	handler: async (ctx, args) => {
-		const meta = await ctx.runQuery(
-			api.assistantConversations.getByConversationId,
-			{ conversationId: args.conversationId }
-		);
-		if (meta?.source === "agent") return;
-		return await ctx.runMutation(
-			components.databaseChat.stream.abortByConversation,
-			{
-				conversationId: args.conversationId as any,
-				reason: args.reason ?? "User cancelled",
-			}
-		);
+		return await ctx.runMutation(components.databaseChat.stream.abortByConversation, {
+			conversationId: args.conversationId as any,
+			reason: args.reason ?? "User cancelled",
+		});
 	},
 });
 
@@ -610,31 +396,16 @@ export const sendMessage = action({
 		success: v.boolean(),
 		content: v.optional(v.string()),
 		error: v.optional(v.string()),
-		metadata: v.optional(v.any()),
 	}),
 	handler: async (
 		ctx,
 		args
-	): Promise<{
-		success: boolean;
-		content?: string;
-		error?: string;
-		metadata?: unknown;
-	}> => {
-		console.log("[sendMessage] Starting handler");
-		console.log("[sendMessage] args:", {
-			conversationId: args.conversationId,
-			messageLength: args.message.length,
-			hasWorkspaceId: !!args.workspaceId,
-			hasUserId: !!args.userId,
-		});
-
+	): Promise<{ success: boolean; content?: string; error?: string }> => {
 		const apiKey = process.env.OPENAI_API_KEY;
 		if (!apiKey) {
 			return { success: false, error: "OPENAI_API_KEY not configured" };
 		}
 
-		console.log("[sendMessage] API Key configured, fetching conversation meta");
 		const conversationMeta = await ctx.runQuery(
 			api.assistantConversations.getByConversationId,
 			{ conversationId: args.conversationId }
@@ -652,152 +423,19 @@ export const sendMessage = action({
 			};
 		}
 
-		const startMs = Date.now();
-
-		console.log("[sendMessage] Fetching connected apps");
-		// Get connected apps for this user
-		let connectedAppNames = await ctx.runQuery(
-			api.integrations.getMyActiveConnectedAppNames,
-			{ workspaceId: resolvedWorkspaceId }
-		);
-		if (connectedAppNames.length === 0) {
-			console.log(
-				"[sendMessage] No connected apps in DB. Checking Composio directly..."
-			);
-			const composioConnectedApps = await ctx.runAction(
-				api.assistantComposioTools.getConnectedAppNamesFromComposio,
-				{
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-				}
-			);
-			if (Array.isArray(composioConnectedApps)) {
-				connectedAppNames = composioConnectedApps;
-			}
-		}
-		console.log("[sendMessage] Connected apps:", connectedAppNames);
-		console.log(
-			"[sendMessage] Connected apps count:",
-			connectedAppNames.length
-		);
-
-		const queryIntent = classifyAssistantQuery(args.message);
-		const selectedToolDefinitions = selectToolsForQuery(
-			TOOL_DEFINITIONS,
-			queryIntent.requestedExternalApps
-		);
-
-		console.log("[sendMessage] User message:", args.message);
-		console.log("[sendMessage] Query classified:", {
-			mode: queryIntent.mode,
-			requiresExternalTools: queryIntent.requiresExternalTools,
-			requestedExternalApps: queryIntent.requestedExternalApps,
-			selectedToolsCount: selectedToolDefinitions.length,
-			selectedToolNames: selectedToolDefinitions.map((t) => t.name),
-			externalToolNames: selectedToolDefinitions
-				.filter((t) => t.externalApp)
-				.map((t) => t.name),
-		});
-
-		// Agent-backed conversation: use @convex-dev/agent thread and tools
-		if (conversationMeta?.source === "agent") {
-			try {
-				const threadContext = await ctx.runQuery(
-					api.assistant.context.getThreadContext,
-					{ threadId: args.conversationId }
-				);
-				const { messageId: promptMessageId } = await saveMessage(
-					ctx,
-					components.agent,
-					{
-						threadId: args.conversationId,
-						userId: resolvedUserId,
-						prompt: args.message,
-					}
-				);
-				let systemPrompt = buildAssistantSystemPrompt({
-					externalToolsAllowed: queryIntent.requiresExternalTools,
-					connectedApps: connectedAppNames,
-				});
-				if (threadContext?.recentTools?.length) {
-					systemPrompt += buildThreadContextPrompt(threadContext);
-				}
-				const result = await proddyAgent.generateText(
-					{
-						...ctx,
-						workspaceId: resolvedWorkspaceId,
-						userId: resolvedUserId,
-					},
-					{
-						threadId: args.conversationId,
-						userId: resolvedUserId,
-					},
-					{ promptMessageId, system: systemPrompt } as any
-				);
-				await ctx.runMutation(api.assistantConversations.upsertConversation, {
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: args.conversationId,
-					lastMessageAt: Date.now(),
-				});
-				const metadata = buildAssistantResponseMetadata({
-					assistantType: "convex",
-					executionPath: "convex-assistant",
-					intent: queryIntent,
-					tools: {
-						internalEnabled: true,
-						externalEnabled: selectedToolDefinitions.some((t) =>
-							Boolean(t.externalApp)
-						),
-						externalUsed: false,
-						connectedApps: connectedAppNames,
-					},
-				});
-				await ctx.runMutation(
-					(internal as any)["assistant/monitoring"].logRequestInternal,
-					{
-						workspaceId: resolvedWorkspaceId,
-						userId: resolvedUserId,
-						conversationId: args.conversationId,
-						outcome: "success",
-						durationMs: Date.now() - startMs,
-						executionPath: "convex-assistant",
-						timestamp: Date.now(),
-					}
-				);
-				return {
-					success: true,
-					content: result.text ?? "",
-					metadata,
-				};
-			} catch (error) {
-				console.error("[sendMessage] Agent error:", error);
-				await ctx.runMutation(
-					(internal as any)["assistant/monitoring"].logRequestInternal,
-					{
-						workspaceId: resolvedWorkspaceId,
-						userId: resolvedUserId,
-						conversationId: args.conversationId,
-						outcome: "error",
-						durationMs: Date.now() - startMs,
-						executionPath: "convex-assistant",
-						errorCategory: categorizeError(error),
-						timestamp: Date.now(),
-					}
-				);
-				const handled = await handleAssistantError(error, {
-					query: args.message,
-					attemptCount: 0,
-				});
-				return {
-					success: false,
-					error: handled.message,
-				};
-			}
+		// Record AI usage
+		try {
+			await ctx.runMutation(internal.usageTracking.recordAIRequest, {
+				userId: resolvedUserId as Id<"users">,
+				workspaceId: resolvedWorkspaceId as Id<"workspaces">,
+				featureType: "aiRequest",
+			});
+		} catch (e) {
+			console.warn("[UsageTracking] Failed to record AI request:", e);
 		}
 
 		try {
-			// Save user message (database-chat path)
+			// Save user message
 			await ctx.runMutation(components.databaseChat.messages.add, {
 				conversationId: args.conversationId as any,
 				role: "user",
@@ -811,140 +449,102 @@ export const sendMessage = action({
 			);
 
 			// Build messages array with system prompt
-			const systemPrompt = buildAssistantSystemPrompt({
-				externalToolsAllowed: queryIntent.requiresExternalTools,
-				connectedApps: connectedAppNames,
-			});
-			console.log("[sendMessage] System prompt length:", systemPrompt.length);
-			console.log("[sendMessage] System prompt:", systemPrompt);
-
 			const messages = [
-				{
-					role: "system",
-					content: systemPrompt,
-				},
-				...rawMessages.map((m: any) => ({
-					role: m.role,
-					content: m.content,
+				{ role: "system", content: SYSTEM_PROMPT },
+				...rawMessages.map((m: any) => ({ 
+					role: m.role, 
+					content: m.content 
 				})),
 			];
 
 			// Create stream for delta-based streaming
-			const streamId = await ctx.runMutation(
-				components.databaseChat.stream.create,
-				{
-					conversationId: args.conversationId as any,
-				}
-			);
+			const streamId = await ctx.runMutation(components.databaseChat.stream.create, {
+				conversationId: args.conversationId as any,
+			});
 
-			const aiTools = buildAiTools(
-				selectedToolDefinitions,
-				ctx,
-				resolvedWorkspaceId,
-				resolvedUserId
-			);
+			const openai = new OpenAI({
+				apiKey: apiKey,
+			});
 
-			console.log("[sendMessage] buildAiTools completed");
-			console.log("[sendMessage] aiTools keys:", Object.keys(aiTools));
-			console.log("[sendMessage] aiTools count:", Object.keys(aiTools).length);
-			console.log(
-				"[sendMessage] External tools in aiTools:",
-				Object.keys(aiTools).filter((key) => {
-					const toolDef = selectedToolDefinitions.find((t) => t.name === key);
-					return toolDef?.externalApp;
-				})
-			);
-			console.log("[sendMessage] messages array length:", messages.length);
-			console.log(
-				"[sendMessage] messages:",
-				JSON.stringify(messages.slice(0, 2), null, 2)
-			);
+			// Format tools for OpenAI
+			const openaiTools: OpenAI.Chat.ChatCompletionTool[] = TOOL_DEFINITIONS.map((t) => ({
+				type: "function" as const,
+				function: {
+					name: t.name,
+					description: t.description,
+					parameters: t.parameters,
+				},
+			}));
 
-			let result;
-			try {
-				console.log("[sendMessage] Calling generateText...");
-				result = await generateText({
-					model: openai("gpt-4o-mini"),
-					messages: messages as any,
-					tools: aiTools,
-					temperature: 0.7,
-					stopWhen: stepCountIs(5), // Allow up to 5 steps for tool calls and follow-up responses
-				});
-				console.log("[sendMessage] generateText completed successfully");
-			} catch (generateError: any) {
-				console.error("[sendMessage] generateText error:", generateError);
-				console.error(
-					"[sendMessage] generateText error message:",
-					generateError?.message
-				);
-				console.error(
-					"[sendMessage] generateText error stack:",
-					generateError?.stack
-				);
-				throw generateError;
-			}
+			// Call OpenAI with tools
+			const completion = await openai.chat.completions.create({
+				model: "gpt-4o-mini",
+				messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
+				tools: openaiTools,
+				temperature: 0.7,
+				max_tokens: 2000,
+			});
 
-			console.log("[sendMessage] generateText result received");
-			console.log(
-				"[sendMessage] result.text length:",
-				result.text?.length ?? 0
-			);
-			console.log("[sendMessage] result.text:", result.text);
-			console.log("[sendMessage] result.usage:", result.usage);
-			console.log(
-				"[sendMessage] result.steps count:",
-				Array.isArray(result.steps) ? result.steps.length : 0
-			);
-			console.log("[sendMessage] result keys:", Object.keys(result));
+			let responseText = completion.choices[0]?.message?.content || "No response generated";
+			const toolCalls = completion.choices[0]?.message?.tool_calls;
 
-			// Log steps in detail
-			if (Array.isArray(result.steps)) {
-				result.steps.forEach((step, idx) => {
-					console.log(`[sendMessage] Step ${idx}:`, {
-						text: step.text,
-						toolCalls: step.toolCalls?.length ?? 0,
-						toolResults: step.toolResults?.length ?? 0,
-						finishReason: step.finishReason,
-						usage: step.usage,
-					});
-					if (step.toolCalls) {
-						step.toolCalls.forEach((call, callIdx) => {
-							console.log(`[sendMessage]   Tool call ${callIdx}:`, {
-								toolName: call.toolName,
-								input: call.input,
-							});
-						});
-					}
-					if (step.toolResults) {
-						step.toolResults.forEach((res, resIdx) => {
-							console.log(`[sendMessage]   Tool result ${resIdx}:`, {
-								toolName: res.toolName,
-								output: res.output,
-							});
-						});
-					}
-				});
-			}
+			// Execute tool calls if any
+			if (toolCalls && toolCalls.length > 0) {
+				for (const toolCall of toolCalls) {
+					if (toolCall.type === "function") {
+						try {
+							const toolName = toolCall.function.name;
+							const toolArgs = JSON.parse(toolCall.function.arguments);
+							
+							// Find the tool definition
+							const tool = TOOL_DEFINITIONS.find((t) => t.name === toolName);
+							if (tool) {
+								// Inject context parameters based on tool's needs
+								const fullArgs: Record<string, any> = { ...toolArgs };
+								
+								if (tool.contextParams?.needsWorkspaceId) {
+									fullArgs.workspaceId = resolvedWorkspaceId;
+								}
+								if (tool.contextParams?.needsUserId) {
+									fullArgs.userId = resolvedUserId;
+								}
 
-			const responseText = result.text || "No response generated";
-			let externalToolUsed = false;
-			const steps = Array.isArray(result.steps) ? result.steps : [];
-			for (const step of steps) {
-				const stepToolCalls = step.toolCalls ?? [];
-				for (const toolCall of stepToolCalls) {
-					const toolDef = selectedToolDefinitions.find(
-						(t) => t.name === toolCall.toolName
-					);
-					if (toolDef?.externalApp) {
-						externalToolUsed = true;
+								let result;
+								if (tool.handlerType === "query") {
+									result = await ctx.runQuery(tool.handler as any, fullArgs);
+								} else {
+									result = await ctx.runAction(tool.handler as any, fullArgs);
+								}
+
+								// Call again with tool result
+								const followUpMessages = [
+									...messages,
+									completion.choices[0].message,
+									{
+										role: "tool" as const,
+										tool_call_id: toolCall.id,
+										content: JSON.stringify(result),
+									},
+								];
+
+								const followUpCompletion = await openai.chat.completions.create({
+									model: "gpt-4o-mini",
+									messages: followUpMessages as any,
+									temperature: 0.7,
+									max_tokens: 2000,
+								});
+
+								responseText = followUpCompletion.choices[0]?.message?.content || responseText;
+							}
+						} catch (error) {
+							console.error(`Tool execution error for ${toolCall.function.name}:`, error);
+						}
 					}
 				}
 			}
 
 			// Finish streaming
-			await ctx.runMutation(components.databaseChat.stream.finish, {
-				streamId,
-			});
+			await ctx.runMutation(components.databaseChat.stream.finish, { streamId });
 
 			// Save assistant response
 			await ctx.runMutation(components.databaseChat.messages.add, {
@@ -960,59 +560,12 @@ export const sendMessage = action({
 				lastMessageAt: Date.now(),
 			});
 
-			const metadata = buildAssistantResponseMetadata({
-				assistantType: "convex",
-				executionPath: "convex-assistant",
-				intent: queryIntent,
-				tools: {
-					internalEnabled: true,
-					externalEnabled: selectedToolDefinitions.some((tool) =>
-						Boolean(tool.externalApp)
-					),
-					externalUsed: externalToolUsed,
-					connectedApps: connectedAppNames,
-				},
-			});
-
-			await ctx.runMutation(
-				(internal as any)["assistant/monitoring"].logRequestInternal,
-				{
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: args.conversationId,
-					outcome: "success",
-					durationMs: Date.now() - startMs,
-					executionPath: "convex-assistant",
-					timestamp: Date.now(),
-				}
-			);
-			return { success: true, content: responseText, metadata };
+			return { success: true, content: responseText };
 		} catch (error) {
-			console.error("[sendMessage] Error occurred:", error);
-			console.error(
-				"[sendMessage] Error stack:",
-				error instanceof Error ? error.stack : "No stack"
-			);
-			await ctx.runMutation(
-				(internal as any)["assistant/monitoring"].logRequestInternal,
-				{
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: args.conversationId,
-					outcome: "error",
-					durationMs: Date.now() - startMs,
-					executionPath: "convex-assistant",
-					errorCategory: categorizeError(error),
-					timestamp: Date.now(),
-				}
-			);
-			const handled = await handleAssistantError(error, {
-				query: args.message,
-				attemptCount: 0,
-			});
+			console.error("[Assistant] Error:", error);
 			return {
 				success: false,
-				error: handled.message,
+				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
 	},

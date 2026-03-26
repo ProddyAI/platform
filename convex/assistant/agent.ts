@@ -3,12 +3,12 @@
  * Uses thread-based conversations with workspace and Composio tools.
  */
 
-import { openai } from "@ai-sdk/openai";
-import { Agent } from "@convex-dev/agent";
-import { stepCountIs } from "ai";
-import { components } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
-import { type AssistantCtx, allTools } from "./tools";
+import { openai } from '@ai-sdk/openai';
+import { Agent } from '@convex-dev/agent';
+import { stepCountIs } from 'ai';
+import { components } from '../_generated/api';
+import type { Id } from '../_generated/dataModel';
+import { type AssistantCtx, allTools } from './tools';
 
 const BASE_INSTRUCTIONS = `You are Proddy, a personal work assistant for team workspaces.
 
@@ -27,8 +27,8 @@ Guidelines:
 
 /** Custom context for tool handlers (workspaceId, userId). */
 export type ProddyAgentContext = {
-	workspaceId: Id<"workspaces">;
-	userId: Id<"users">;
+	workspaceId: Id<'workspaces'>;
+	userId: Id<'users'>;
 };
 
 /**
@@ -36,9 +36,9 @@ export type ProddyAgentContext = {
  * Pass { ...ctx, workspaceId, userId } when calling generateText / continueThread.
  */
 export const proddyAgent: Agent<ProddyAgentContext> =
-	new Agent<ProddyAgentContext>(components.agent, {
-		name: "Proddy Assistant",
-		languageModel: openai.chat("gpt-4o-mini"),
+	new Agent<ProddyAgentContext>((components as any).agent, {
+		name: 'Proddy Assistant',
+		languageModel: openai.chat('gpt-4o-mini'),
 		instructions: BASE_INSTRUCTIONS,
 		tools: allTools,
 		stopWhen: stepCountIs(5),

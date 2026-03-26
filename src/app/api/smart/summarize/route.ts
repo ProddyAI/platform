@@ -366,6 +366,22 @@ Output format (Markdown, no intro text):
 				timestamp: Date.now(),
 			});
 
+			// Track AI summary usage
+			const trackingWorkspaceId = (requestData as any)?.workspaceId as Id<"workspaces"> | undefined;
+			if (trackingWorkspaceId) {
+				const trackingConvex = createConvexClient();
+				try {
+					const trackingToken = convexAuthNextjsToken();
+					if (trackingToken) trackingConvex.setAuth(trackingToken);
+					await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
+						workspaceId: trackingWorkspaceId,
+						featureType: "aiSummary",
+					});
+				} catch (trackErr) {
+					console.warn("[UsageTracking] Failed to record AI summary:", trackErr);
+				}
+			}
+
 			// Prune cache if needed
 			pruneCache();
 

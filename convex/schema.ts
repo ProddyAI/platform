@@ -41,7 +41,45 @@ const schema = defineSchema({
 				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
 			)
 		),
-	}).index("by_user_id", ["userId"]),
+		plan: v.optional(
+			v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise"))
+		),
+		stripeCustomerId: v.optional(v.string()),
+		stripeSubscriptionId: v.optional(v.string()),
+	}).index("by_user_id", ["userId"]).index("by_plan", ["plan"]),
+
+	// Usage tracking - rolling monthly counts per workspace
+	usageStats: defineTable({
+		userId: v.id("users"),
+		workspaceId: v.id("workspaces"),
+		/** ISO calendar month string: "YYYY-MM" */
+		month: v.string(),
+		// AI feature counters
+		aiRequestCount: v.optional(v.number()),
+		aiDiagramCount: v.optional(v.number()),
+		aiSummaryCount: v.optional(v.number()),
+		// Collaboration feature counters
+		messageCount: v.optional(v.number()),
+		taskCount: v.optional(v.number()),
+		eventCount: v.optional(v.number()),
+		channelCount: v.optional(v.number()),
+		boardCount: v.optional(v.number()),
+		noteCount: v.optional(v.number()),
+		// Legacy field names (from prior implementation)
+		aiCostUSD: v.optional(v.number()),
+		diagramsGenerated: v.optional(v.number()),
+		messagesCreated: v.optional(v.number()),
+		tasksCreated: v.optional(v.number()),
+		eventsCreated: v.optional(v.number()),
+		channelsCreated: v.optional(v.number()),
+		boardsCreated: v.optional(v.number()),
+		notesCreated: v.optional(v.number()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_workspace_month", ["userId", "workspaceId", "month"])
+		.index("by_workspace_month", ["workspaceId", "month"])
+		.index("by_user_month", ["userId", "month"]),
 
 	members: defineTable({
 		userId: v.id("users"),
@@ -102,9 +140,10 @@ const schema = defineSchema({
 		title: v.string(),
 		date: v.number(), // timestamp for the event date
 		time: v.optional(v.string()), // optional time string
-		messageId: v.id("messages"),
+		messageId: v.optional(v.id("messages")),
 		memberId: v.id("members"),
 		workspaceId: v.id("workspaces"),
+		taskId: v.optional(v.id("tasks")),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_date", ["date"])
@@ -469,9 +508,6 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
-						inviteSent: v.optional(v.boolean()), // Default: true - when invite link is sent
-						workspaceJoin: v.optional(v.boolean()), // Default: true - when someone joins workspace
-						onlineStatus: v.optional(v.boolean()), // Default: false - online/offline status changes
 					})
 				),
 			})
@@ -564,55 +600,11 @@ const schema = defineSchema({
 		userId: v.id("users"),
 		conversationId: v.string(),
 		lastMessageAt: v.number(),
-		/** When "agent", conversationId is an agent threadId; when "databaseChat" or omitted, it's database-chat. */
-		source: v.optional(v.union(v.literal("agent"), v.literal("databaseChat"))),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
 		.index("by_conversation_id", ["conversationId"]),
-
-	assistantToolAuditEvents: defineTable({
-		workspaceId: v.id("workspaces"),
-		memberId: v.optional(v.id("members")),
-		userId: v.optional(v.id("users")),
-		toolName: v.string(),
-		toolkit: v.optional(v.string()),
-		argumentsSnapshot: v.optional(v.any()),
-		outcome: v.union(v.literal("success"), v.literal("error")),
-		error: v.optional(v.string()),
-		executionPath: v.string(),
-		toolCallId: v.optional(v.string()),
-		timestamp: v.number(),
-	})
-		.index("by_workspace_id", ["workspaceId"])
-		.index("by_member_id", ["memberId"])
-		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
-		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
-
-	/** Cache for semantic search results (5 min TTL) to reduce embedding/LLM cost. */
-	assistantSearchCache: defineTable({
-		workspaceId: v.id("workspaces"),
-		queryHash: v.string(),
-		result: v.any(),
-		expiresAt: v.number(),
-	})
-		.index("by_workspace_query", ["workspaceId", "queryHash"])
-		.index("by_expires_at", ["expiresAt"]),
-
-	/** Assistant request logs for monitoring: latency, outcome, error category. */
-	assistantRequestLogs: defineTable({
-		workspaceId: v.id("workspaces"),
-		userId: v.id("users"),
-		conversationId: v.string(),
-		outcome: v.union(v.literal("success"), v.literal("error")),
-		durationMs: v.number(),
-		executionPath: v.string(),
-		errorCategory: v.optional(v.string()),
-		timestamp: v.number(),
-	})
-		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"])
-		.index("by_user_id_timestamp", ["userId", "timestamp"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({

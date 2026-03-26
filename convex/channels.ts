@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 
 // Helper query to get a channel by ID (for internal use)
@@ -167,6 +168,12 @@ export const create = mutation({
 			>,
 			icon: args.icon,
 			iconImage: args.iconImage,
+		});
+
+		// Track channel usage
+		await ctx.scheduler.runAfter(0, internal.usageTracking.recordChannelCreated, {
+			userId,
+			workspaceId: args.workspaceId,
 		});
 
 		return channelId;

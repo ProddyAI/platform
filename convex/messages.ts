@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, type QueryCtx, query } from "./_generated/server";
 
@@ -315,6 +315,12 @@ export const create = mutation({
 			parentMessageId: args.parentMessageId,
 			calendarEvent: args.calendarEvent,
 			tags: args.tags,
+		});
+
+		// Track message usage
+		await ctx.scheduler.runAfter(0, internal.usageTracking.recordMessageCreated, {
+			userId,
+			workspaceId: args.workspaceId,
 		});
 
 		// If this is a reply to a thread, send an email notification
