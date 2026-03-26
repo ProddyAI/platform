@@ -3,7 +3,7 @@
  * Free → Pro → Enterprise
  */
 
-export type PlanName = 'free' | 'pro' | 'enterprise';
+export type PlanName = "free" | "pro" | "enterprise";
 
 export interface PlanLimits {
 	/** Max AI chat requests per month (-1 = unlimited) */
@@ -37,9 +37,9 @@ export interface PlanConfig {
 
 export const PLANS: Record<PlanName, PlanConfig> = {
 	free: {
-		name: 'free',
-		label: 'Free',
-		description: 'For individuals and small teams just getting started.',
+		name: "free",
+		label: "Free",
+		description: "For individuals and small teams just getting started.",
 		pricePerSeatMonthly: 0,
 		limits: {
 			aiRequestsPerMonth: 50,
@@ -53,9 +53,9 @@ export const PLANS: Record<PlanName, PlanConfig> = {
 		},
 	},
 	pro: {
-		name: 'pro',
-		label: 'Pro',
-		description: 'For growing teams that need more power and flexibility.',
+		name: "pro",
+		label: "Pro",
+		description: "For growing teams that need more power and flexibility.",
 		pricePerSeatMonthly: 5,
 		// TODO: Replace with your Dodo Payments product ID from dashboard
 		dodoProductId: process.env.DODO_PAYMENTS_PRODUCTID_PRO,
@@ -71,11 +71,11 @@ export const PLANS: Record<PlanName, PlanConfig> = {
 		},
 	},
 	enterprise: {
-		name: 'enterprise',
-		label: 'Enterprise',
-		description: 'Unlimited usage for large organisations.',
+		name: "enterprise",
+		label: "Enterprise",
+		description: "Unlimited usage for large organisations.",
 		pricePerSeatMonthly: 0,
-		priceDisplayLabel: '$8\u201312/user',
+		priceDisplayLabel: "$8\u201312/user",
 		limits: {
 			aiRequestsPerMonth: -1,
 			aiDiagramGenerationsPerMonth: -1,
@@ -91,7 +91,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
 
 /** Return the plan config for a given plan name, defaulting to "free". */
 export function getPlanConfig(planName?: PlanName | null): PlanConfig {
-	return PLANS[planName ?? 'free'] ?? PLANS.free;
+	return PLANS[planName ?? "free"] ?? PLANS.free;
 }
 
 /** Returns true when a limit value means "unlimited". */

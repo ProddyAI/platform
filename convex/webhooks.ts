@@ -7,9 +7,8 @@
 //   (e.g., setting the same dodoSubscriptionId repeatedly is safe).
 // - For stronger idempotency, introduce a dedicated events table keyed by event_id.
 
-import { internalMutation } from './_generated/server';
-import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
+import { v } from "convex/values";
+import { internalMutation } from "./_generated/server";
 
 // Store payment info (no-op for schema-light approach, but kept for audit/extension)
 export const createPayment = internalMutation({
@@ -32,14 +31,14 @@ export const createPayment = internalMutation({
 // Activate a subscription for a workspace (sets dodoSubscriptionId and optional plan)
 export const createSubscription = internalMutation({
 	args: {
-		workspaceId: v.optional(v.id('workspaces')),
+		workspaceId: v.optional(v.id("workspaces")),
 		subscriptionId: v.string(),
 		status: v.string(),
-		plan: v.optional(v.union(v.literal('pro'), v.literal('enterprise'))),
+		plan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 		raw: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		if (!args.workspaceId) return { ok: true, reason: 'no_workspace_context' };
+		if (!args.workspaceId) return { ok: true, reason: "no_workspace_context" };
 
 		const patch: Record<string, any> = {
 			dodoSubscriptionId: args.subscriptionId,
@@ -55,14 +54,14 @@ export const createSubscription = internalMutation({
 // Update subscription (kept minimal; ensures stored subscription id is consistent)
 export const updateSubscription = internalMutation({
 	args: {
-		workspaceId: v.optional(v.id('workspaces')),
+		workspaceId: v.optional(v.id("workspaces")),
 		subscriptionId: v.string(),
 		status: v.string(),
-		plan: v.optional(v.union(v.literal('pro'), v.literal('enterprise'))),
+		plan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 		raw: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		if (!args.workspaceId) return { ok: true, reason: 'no_workspace_context' };
+		if (!args.workspaceId) return { ok: true, reason: "no_workspace_context" };
 
 		const patch: Record<string, any> = {
 			dodoSubscriptionId: args.subscriptionId,
@@ -78,15 +77,15 @@ export const updateSubscription = internalMutation({
 // Cancel subscription (clears dodoSubscriptionId and resets plan to free)
 export const cancelSubscription = internalMutation({
 	args: {
-		workspaceId: v.optional(v.id('workspaces')),
+		workspaceId: v.optional(v.id("workspaces")),
 		raw: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		if (!args.workspaceId) return { ok: true, reason: 'no_workspace_context' };
+		if (!args.workspaceId) return { ok: true, reason: "no_workspace_context" };
 
 		await ctx.db.patch(args.workspaceId, {
 			dodoSubscriptionId: undefined,
-			plan: 'free',
+			plan: "free",
 		});
 		return { ok: true };
 	},

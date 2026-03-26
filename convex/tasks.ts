@@ -171,11 +171,10 @@ export const createTask = mutation({
 		});
 
 		// Track usage
-		await ctx.scheduler.runAfter(
-			0,
-			internal.usageTracking.recordTaskCreated,
-			{ userId, workspaceId: args.workspaceId }
-		);
+		await ctx.scheduler.runAfter(0, internal.usageTracking.recordTaskCreated, {
+			userId,
+			workspaceId: args.workspaceId,
+		});
 
 		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexTask, {
 			taskId,

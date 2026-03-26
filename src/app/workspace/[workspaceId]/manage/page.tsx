@@ -1,6 +1,14 @@
 "use client";
 
-import { CreditCard, Database, Loader, Plug, Settings, Shield, Users } from "lucide-react";
+import {
+	CreditCard,
+	Database,
+	Loader,
+	Plug,
+	Settings,
+	Shield,
+	Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

@@ -1,6 +1,6 @@
+import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
-import { openai } from "@ai-sdk/openai";
 import { v } from "convex/values";
 import { api, components, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
@@ -467,7 +467,10 @@ export const triggerBulkIndexing = mutation({
 			workspaceId: args.workspaceId,
 			limit: args.limit ?? 1000,
 		});
-		return { scheduled: true, message: "Re-indexing workspace content. This may take a few minutes." };
+		return {
+			scheduled: true,
+			message: "Re-indexing workspace content. This may take a few minutes.",
+		};
 	},
 });
 

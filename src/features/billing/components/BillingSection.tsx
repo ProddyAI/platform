@@ -38,7 +38,8 @@ export function BillingSection({ workspaceId }: BillingSectionProps) {
 	}
 
 	const currentPlan = PLANS[(subscription.plan as PlanName) ?? "free"];
-	const isPaid = subscription.plan !== "free" && (subscription as any).dodoSubscriptionId;
+	const isPaid =
+		subscription.plan !== "free" && (subscription as any).dodoSubscriptionId;
 
 	const handleManageBilling = async () => {
 		setPortalLoading(true);
@@ -71,9 +72,7 @@ export function BillingSection({ workspaceId }: BillingSectionProps) {
 						<div className="flex items-center justify-between">
 							<div className="space-y-1">
 								<div className="flex items-center gap-2">
-									<h3 className="text-2xl font-bold">
-										{currentPlan.label}
-									</h3>
+									<h3 className="text-2xl font-bold">{currentPlan.label}</h3>
 									<Badge
 										variant={
 											currentPlan.name === "enterprise"
@@ -83,11 +82,11 @@ export function BillingSection({ workspaceId }: BillingSectionProps) {
 													: "outline"
 										}
 									>
-									{currentPlan.priceDisplayLabel
-										? currentPlan.priceDisplayLabel
-										: currentPlan.name === "free"
-											? "Free"
-											: `$${currentPlan.pricePerSeatMonthly}/user/month`}
+										{currentPlan.priceDisplayLabel
+											? currentPlan.priceDisplayLabel
+											: currentPlan.name === "free"
+												? "Free"
+												: `$${currentPlan.pricePerSeatMonthly}/user/month`}
 									</Badge>
 								</div>
 								<p className="text-sm text-muted-foreground">
@@ -98,9 +97,9 @@ export function BillingSection({ workspaceId }: BillingSectionProps) {
 							<div className="flex gap-2">
 								{isPaid && (
 									<Button
-										variant="outline"
-										onClick={handleManageBilling}
 										disabled={portalLoading}
+										onClick={handleManageBilling}
+										variant="outline"
 									>
 										{portalLoading ? (
 											<Loader className="size-4 animate-spin mr-2" />
@@ -138,48 +137,57 @@ export function BillingSection({ workspaceId }: BillingSectionProps) {
 								const isCurrent = subscription.plan === planName;
 								return (
 									<div
-										key={planName}
 										className={`rounded-lg border p-4 ${
 											isCurrent
 												? "border-primary bg-primary/5"
 												: "border-border"
 										}`}
+										key={planName}
 									>
 										<div className="mb-3">
 											<h4 className="font-semibold">{plan.label}</h4>
 											<p className="text-2xl font-bold mt-1">
-											{plan.priceDisplayLabel
-												? plan.priceDisplayLabel
-												: plan.pricePerSeatMonthly === 0
-													? "Free"
-													: `$${plan.pricePerSeatMonthly}`}
-											{!plan.priceDisplayLabel && plan.pricePerSeatMonthly > 0 && (
-												<span className="text-sm font-normal text-muted-foreground">
-													/user/mo
-													</span>
-												)}
+												{plan.priceDisplayLabel
+													? plan.priceDisplayLabel
+													: plan.pricePerSeatMonthly === 0
+														? "Free"
+														: `$${plan.pricePerSeatMonthly}`}
+												{!plan.priceDisplayLabel &&
+													plan.pricePerSeatMonthly > 0 && (
+														<span className="text-sm font-normal text-muted-foreground">
+															/user/mo
+														</span>
+													)}
 											</p>
 										</div>
 										<p className="text-sm text-muted-foreground mb-3">
 											{plan.description}
 										</p>
 										{isCurrent ? (
-											<Badge variant="outline" className="w-full justify-center">
+											<Badge
+												className="w-full justify-center"
+												variant="outline"
+											>
 												Current Plan
 											</Badge>
 										) : (
 											<Button
-												variant={planName === "pro" ? "default" : "outline"}
 												className="w-full"
-												size="sm"
+												disabled={
+													planName === "free" && subscription.plan !== "free"
+												}
 												onClick={() => {
 													if (planName === "enterprise") {
-														window.open("mailto:sales@proddy.app?subject=Enterprise Plan Inquiry", "_blank");
+														window.open(
+															"mailto:sales@proddy.app?subject=Enterprise Plan Inquiry",
+															"_blank"
+														);
 													} else if (planName !== "free") {
 														setUpgradeOpen(true);
 													}
 												}}
-												disabled={planName === "free" && subscription.plan !== "free"}
+												size="sm"
+												variant={planName === "pro" ? "default" : "outline"}
 											>
 												{planName === "free"
 													? "Downgrade"
@@ -197,10 +205,10 @@ export function BillingSection({ workspaceId }: BillingSectionProps) {
 			</div>
 
 			<UpgradeModal
-				workspaceId={workspaceId}
 				currentPlan={(subscription.plan as PlanName) ?? "free"}
-				open={upgradeOpen}
 				onOpenChange={setUpgradeOpen}
+				open={upgradeOpen}
+				workspaceId={workspaceId}
 			/>
 		</>
 	);

@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import {
 	internalMutation,
 	internalQuery,
@@ -345,13 +344,19 @@ export const getWorkspaceUsage = query({
 
 		for (const row of rows) {
 			totals.aiRequestCount += row.aiRequestCount ?? 0;
-			totals.aiDiagramCount += (row.aiDiagramCount ?? 0) + ((row as any).diagramsGenerated ?? 0);
+			totals.aiDiagramCount +=
+				(row.aiDiagramCount ?? 0) + ((row as any).diagramsGenerated ?? 0);
 			totals.aiSummaryCount += row.aiSummaryCount ?? 0;
-			totals.messageCount += (row.messageCount ?? 0) + ((row as any).messagesCreated ?? 0);
-			totals.taskCount += (row.taskCount ?? 0) + ((row as any).tasksCreated ?? 0);
-			totals.channelCount += (row.channelCount ?? 0) + ((row as any).channelsCreated ?? 0);
-			totals.boardCount += (row.boardCount ?? 0) + ((row as any).boardsCreated ?? 0);
-			totals.noteCount += (row.noteCount ?? 0) + ((row as any).notesCreated ?? 0);
+			totals.messageCount +=
+				(row.messageCount ?? 0) + ((row as any).messagesCreated ?? 0);
+			totals.taskCount +=
+				(row.taskCount ?? 0) + ((row as any).tasksCreated ?? 0);
+			totals.channelCount +=
+				(row.channelCount ?? 0) + ((row as any).channelsCreated ?? 0);
+			totals.boardCount +=
+				(row.boardCount ?? 0) + ((row as any).boardsCreated ?? 0);
+			totals.noteCount +=
+				(row.noteCount ?? 0) + ((row as any).notesCreated ?? 0);
 		}
 
 		return {
@@ -361,14 +366,29 @@ export const getWorkspaceUsage = query({
 				label: plan.label,
 			},
 			ai: {
-				requests: { used: totals.aiRequestCount, limit: plan.limits.aiRequestsPerMonth },
-				diagrams: { used: totals.aiDiagramCount, limit: plan.limits.aiDiagramGenerationsPerMonth },
-				summaries: { used: totals.aiSummaryCount, limit: plan.limits.aiSummaryRequestsPerMonth },
+				requests: {
+					used: totals.aiRequestCount,
+					limit: plan.limits.aiRequestsPerMonth,
+				},
+				diagrams: {
+					used: totals.aiDiagramCount,
+					limit: plan.limits.aiDiagramGenerationsPerMonth,
+				},
+				summaries: {
+					used: totals.aiSummaryCount,
+					limit: plan.limits.aiSummaryRequestsPerMonth,
+				},
 			},
 			collaboration: {
-				messages: { used: totals.messageCount, limit: plan.limits.messagesPerMonth },
+				messages: {
+					used: totals.messageCount,
+					limit: plan.limits.messagesPerMonth,
+				},
 				tasks: { used: totals.taskCount, limit: plan.limits.tasksPerMonth },
-				channels: { used: totals.channelCount, limit: plan.limits.channelsPerMonth },
+				channels: {
+					used: totals.channelCount,
+					limit: plan.limits.channelsPerMonth,
+				},
 				boards: { used: totals.boardCount, limit: plan.limits.boardsPerMonth },
 				notes: { used: totals.noteCount, limit: plan.limits.notesPerMonth },
 			},

@@ -1,8 +1,6 @@
-
-import OpenAI from "openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { createFunctionHandle } from "convex/server";
+import OpenAI from "openai";
 import { api, components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
@@ -55,7 +53,8 @@ When a user asks about their schedule, tasks, or workspace, use the appropriate 
 const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "getMyCalendarToday",
-		description: "Get the user's calendar events for today. Returns all meetings and events scheduled for the current day.",
+		description:
+			"Get the user's calendar events for today. Returns all meetings and events scheduled for the current day.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -67,7 +66,8 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyCalendarTomorrow",
-		description: "Get the user's calendar events for tomorrow. Returns all meetings and events scheduled for the next day.",
+		description:
+			"Get the user's calendar events for tomorrow. Returns all meetings and events scheduled for the next day.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -79,7 +79,8 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyCalendarNextWeek",
-		description: "Get the user's calendar events for next week (7-14 days from now). Returns all meetings scheduled in the upcoming week.",
+		description:
+			"Get the user's calendar events for next week (7-14 days from now). Returns all meetings scheduled in the upcoming week.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -91,7 +92,8 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyTasksToday",
-		description: "Get tasks assigned to the user that are due today. Returns incomplete tasks with today's due date.",
+		description:
+			"Get tasks assigned to the user that are due today. Returns incomplete tasks with today's due date.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -103,7 +105,8 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyTasksTomorrow",
-		description: "Get tasks assigned to the user that are due tomorrow. Returns incomplete tasks with tomorrow's due date.",
+		description:
+			"Get tasks assigned to the user that are due tomorrow. Returns incomplete tasks with tomorrow's due date.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -115,11 +118,15 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyAllTasks",
-		description: "Get all tasks assigned to the user. Can optionally include completed tasks. Use this for general task queries like 'what are my tasks' or 'show all my work'.",
+		description:
+			"Get all tasks assigned to the user. Can optionally include completed tasks. Use this for general task queries like 'what are my tasks' or 'show all my work'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				includeCompleted: { type: "boolean", description: "Whether to include completed tasks (default: false)" },
+				includeCompleted: {
+					type: "boolean",
+					description: "Whether to include completed tasks (default: false)",
+				},
 			},
 			required: [],
 		},
@@ -129,11 +136,16 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "searchChannels",
-		description: "Search for channels in the workspace by name. Returns matching channels with their IDs. ALWAYS use this first when the user mentions a channel by name (e.g., '#general', '#engineering') to get the channel ID before calling other channel tools.",
+		description:
+			"Search for channels in the workspace by name. Returns matching channels with their IDs. ALWAYS use this first when the user mentions a channel by name (e.g., '#general', '#engineering') to get the channel ID before calling other channel tools.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				query: { type: "string", description: "Channel name to search for (without # symbol). Leave empty to get all channels." },
+				query: {
+					type: "string",
+					description:
+						"Channel name to search for (without # symbol). Leave empty to get all channels.",
+				},
 			},
 			required: [],
 		},
@@ -143,12 +155,20 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getChannelSummary",
-		description: "Get a summary of recent messages in a specific channel. Requires a channel ID - if user provides a channel name (e.g., '#general'), FIRST call searchChannels to find the ID, then use that ID here.",
+		description:
+			"Get a summary of recent messages in a specific channel. Requires a channel ID - if user provides a channel name (e.g., '#general'), FIRST call searchChannels to find the ID, then use that ID here.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				channelId: { type: "string", description: "Channel ID (get this from searchChannels if you only have the channel name)" },
-				limit: { type: "number", description: "Max number of messages to analyze (default: 40)" },
+				channelId: {
+					type: "string",
+					description:
+						"Channel ID (get this from searchChannels if you only have the channel name)",
+				},
+				limit: {
+					type: "number",
+					description: "Max number of messages to analyze (default: 40)",
+				},
 			},
 			required: ["channelId"],
 		},
@@ -158,7 +178,8 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getWorkspaceOverview",
-		description: "Get high-level overview statistics for the workspace. Returns counts of channels, members, tasks, and upcoming events.",
+		description:
+			"Get high-level overview statistics for the workspace. Returns counts of channels, members, tasks, and upcoming events.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -170,7 +191,8 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "getMyCards",
-		description: "Get all cards (from Kanban boards) assigned to the user across all channels. Returns card details including board/list location.",
+		description:
+			"Get all cards (from Kanban boards) assigned to the user across all channels. Returns card details including board/list location.",
 		parameters: {
 			type: "object" as const,
 			properties: {},
@@ -182,12 +204,16 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "semanticSearch",
-		description: "Perform semantic search across all workspace content (messages, notes, tasks, cards). Use this for general questions that don't fit other tools.",
+		description:
+			"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use this for general questions that don't fit other tools.",
 		parameters: {
 			type: "object" as const,
 			properties: {
 				query: { type: "string", description: "Search query" },
-				limit: { type: "number", description: "Max results to return (default: 10)" },
+				limit: {
+					type: "number",
+					description: "Max results to return (default: 10)",
+				},
 			},
 			required: ["query"],
 		},
@@ -197,11 +223,15 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "runGmailTool",
-		description: "Use Gmail to send emails, read inbox messages, or search email threads. Provide a clear instruction like 'send email to alice@example.com about the roadmap'.",
+		description:
+			"Use Gmail to send emails, read inbox messages, or search email threads. Provide a clear instruction like 'send email to alice@example.com about the roadmap'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: { type: "string", description: "What you want Gmail to do" },
+				instruction: {
+					type: "string",
+					description: "What you want Gmail to do",
+				},
 			},
 			required: ["instruction"],
 		},
@@ -211,11 +241,15 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "runSlackTool",
-		description: "Use Slack to post messages, reply in threads, or get channel info. Provide a clear instruction like 'post in #general that the deploy is done'.",
+		description:
+			"Use Slack to post messages, reply in threads, or get channel info. Provide a clear instruction like 'post in #general that the deploy is done'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: { type: "string", description: "What you want Slack to do" },
+				instruction: {
+					type: "string",
+					description: "What you want Slack to do",
+				},
 			},
 			required: ["instruction"],
 		},
@@ -225,11 +259,15 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "runGithubTool",
-		description: "Use GitHub to create issues, comment on PRs, or search repositories. Provide a clear instruction like 'create an issue in repo X about bug Y'.",
+		description:
+			"Use GitHub to create issues, comment on PRs, or search repositories. Provide a clear instruction like 'create an issue in repo X about bug Y'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: { type: "string", description: "What you want GitHub to do" },
+				instruction: {
+					type: "string",
+					description: "What you want GitHub to do",
+				},
 			},
 			required: ["instruction"],
 		},
@@ -239,11 +277,15 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "runNotionTool",
-		description: "Use Notion to create or update pages and databases. Provide a clear instruction like 'create a page titled Q1 Plan with these bullets'.",
+		description:
+			"Use Notion to create or update pages and databases. Provide a clear instruction like 'create a page titled Q1 Plan with these bullets'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: { type: "string", description: "What you want Notion to do" },
+				instruction: {
+					type: "string",
+					description: "What you want Notion to do",
+				},
 			},
 			required: ["instruction"],
 		},
@@ -253,11 +295,15 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "runClickupTool",
-		description: "Use ClickUp to create or update tasks. Provide a clear instruction like 'create a task in List A titled Fix onboarding bug'.",
+		description:
+			"Use ClickUp to create or update tasks. Provide a clear instruction like 'create a task in List A titled Fix onboarding bug'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: { type: "string", description: "What you want ClickUp to do" },
+				instruction: {
+					type: "string",
+					description: "What you want ClickUp to do",
+				},
 			},
 			required: ["instruction"],
 		},
@@ -267,11 +313,15 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 	{
 		name: "runLinearTool",
-		description: "Use Linear to create or update issues. Provide a clear instruction like 'create a bug issue in Team X titled Login fails on Safari'.",
+		description:
+			"Use Linear to create or update issues. Provide a clear instruction like 'create a bug issue in Team X titled Login fails on Safari'.",
 		parameters: {
 			type: "object" as const,
 			properties: {
-				instruction: { type: "string", description: "What you want Linear to do" },
+				instruction: {
+					type: "string",
+					description: "What you want Linear to do",
+				},
 			},
 			required: ["instruction"],
 		},
@@ -286,11 +336,11 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 // =============================================================================
 
 export const createConversation = mutation({
-	args: { 
+	args: {
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
 		title: v.optional(v.string()),
-		forceNew: v.optional(v.boolean())
+		forceNew: v.optional(v.boolean()),
 	},
 	returns: v.string(),
 	handler: async (ctx, args) => {
@@ -374,10 +424,13 @@ export const getStreamDeltas = query({
 export const abortStream = mutation({
 	args: { conversationId: v.string(), reason: v.optional(v.string()) },
 	handler: async (ctx, args) => {
-		return await ctx.runMutation(components.databaseChat.stream.abortByConversation, {
-			conversationId: args.conversationId as any,
-			reason: args.reason ?? "User cancelled",
-		});
+		return await ctx.runMutation(
+			components.databaseChat.stream.abortByConversation,
+			{
+				conversationId: args.conversationId as any,
+				reason: args.reason ?? "User cancelled",
+			}
+		);
 	},
 });
 
@@ -451,30 +504,34 @@ export const sendMessage = action({
 			// Build messages array with system prompt
 			const messages = [
 				{ role: "system", content: SYSTEM_PROMPT },
-				...rawMessages.map((m: any) => ({ 
-					role: m.role, 
-					content: m.content 
+				...rawMessages.map((m: any) => ({
+					role: m.role,
+					content: m.content,
 				})),
 			];
 
 			// Create stream for delta-based streaming
-			const streamId = await ctx.runMutation(components.databaseChat.stream.create, {
-				conversationId: args.conversationId as any,
-			});
+			const streamId = await ctx.runMutation(
+				components.databaseChat.stream.create,
+				{
+					conversationId: args.conversationId as any,
+				}
+			);
 
 			const openai = new OpenAI({
 				apiKey: apiKey,
 			});
 
 			// Format tools for OpenAI
-			const openaiTools: OpenAI.Chat.ChatCompletionTool[] = TOOL_DEFINITIONS.map((t) => ({
-				type: "function" as const,
-				function: {
-					name: t.name,
-					description: t.description,
-					parameters: t.parameters,
-				},
-			}));
+			const openaiTools: OpenAI.Chat.ChatCompletionTool[] =
+				TOOL_DEFINITIONS.map((t) => ({
+					type: "function" as const,
+					function: {
+						name: t.name,
+						description: t.description,
+						parameters: t.parameters,
+					},
+				}));
 
 			// Call OpenAI with tools
 			const completion = await openai.chat.completions.create({
@@ -485,7 +542,8 @@ export const sendMessage = action({
 				max_tokens: 2000,
 			});
 
-			let responseText = completion.choices[0]?.message?.content || "No response generated";
+			let responseText =
+				completion.choices[0]?.message?.content || "No response generated";
 			const toolCalls = completion.choices[0]?.message?.tool_calls;
 
 			// Execute tool calls if any
@@ -495,13 +553,13 @@ export const sendMessage = action({
 						try {
 							const toolName = toolCall.function.name;
 							const toolArgs = JSON.parse(toolCall.function.arguments);
-							
+
 							// Find the tool definition
 							const tool = TOOL_DEFINITIONS.find((t) => t.name === toolName);
 							if (tool) {
 								// Inject context parameters based on tool's needs
 								const fullArgs: Record<string, any> = { ...toolArgs };
-								
+
 								if (tool.contextParams?.needsWorkspaceId) {
 									fullArgs.workspaceId = resolvedWorkspaceId;
 								}
@@ -527,24 +585,33 @@ export const sendMessage = action({
 									},
 								];
 
-								const followUpCompletion = await openai.chat.completions.create({
-									model: "gpt-4o-mini",
-									messages: followUpMessages as any,
-									temperature: 0.7,
-									max_tokens: 2000,
-								});
+								const followUpCompletion = await openai.chat.completions.create(
+									{
+										model: "gpt-4o-mini",
+										messages: followUpMessages as any,
+										temperature: 0.7,
+										max_tokens: 2000,
+									}
+								);
 
-								responseText = followUpCompletion.choices[0]?.message?.content || responseText;
+								responseText =
+									followUpCompletion.choices[0]?.message?.content ||
+									responseText;
 							}
 						} catch (error) {
-							console.error(`Tool execution error for ${toolCall.function.name}:`, error);
+							console.error(
+								`Tool execution error for ${toolCall.function.name}:`,
+								error
+							);
 						}
 					}
 				}
 			}
 
 			// Finish streaming
-			await ctx.runMutation(components.databaseChat.stream.finish, { streamId });
+			await ctx.runMutation(components.databaseChat.stream.finish, {
+				streamId,
+			});
 
 			// Save assistant response
 			await ctx.runMutation(components.databaseChat.messages.add, {

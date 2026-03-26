@@ -44,9 +44,13 @@ const schema = defineSchema({
 		plan: v.optional(
 			v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise"))
 		),
-		stripeCustomerId: v.optional(v.string()),
-		stripeSubscriptionId: v.optional(v.string()),
-	}).index("by_user_id", ["userId"]).index("by_plan", ["plan"]),
+		dodoCustomerId: v.optional(v.string()),
+		dodoSubscriptionId: v.optional(v.string()),
+	})
+		.index("by_user_id", ["userId"])
+		.index("by_plan", ["plan"])
+		.index("by_dodo_subscription_id", ["dodoSubscriptionId"])
+		.index("by_dodo_customer_id", ["dodoCustomerId"]),
 
 	// Usage tracking - rolling monthly counts per workspace
 	usageStats: defineTable({
@@ -65,15 +69,6 @@ const schema = defineSchema({
 		channelCount: v.optional(v.number()),
 		boardCount: v.optional(v.number()),
 		noteCount: v.optional(v.number()),
-		// Legacy field names (from prior implementation)
-		aiCostUSD: v.optional(v.number()),
-		diagramsGenerated: v.optional(v.number()),
-		messagesCreated: v.optional(v.number()),
-		tasksCreated: v.optional(v.number()),
-		eventsCreated: v.optional(v.number()),
-		channelsCreated: v.optional(v.number()),
-		boardsCreated: v.optional(v.number()),
-		notesCreated: v.optional(v.number()),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
@@ -496,6 +491,9 @@ const schema = defineSchema({
 						assignee: v.optional(v.boolean()), // Default: true
 						threadReply: v.optional(v.boolean()), // Default: true
 						directMessage: v.optional(v.boolean()), // Default: true
+						inviteSent: v.optional(v.boolean()), // Default: true
+						onlineStatus: v.optional(v.boolean()), // Default: true
+						workspaceJoin: v.optional(v.boolean()), // Default: true
 						weeklyDigest: v.optional(v.boolean()), // Default: false
 						weeklyDigestDay: v.optional(
 							v.union(
@@ -600,11 +598,30 @@ const schema = defineSchema({
 		userId: v.id("users"),
 		conversationId: v.string(),
 		lastMessageAt: v.number(),
+		source: v.optional(v.string()),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
 		.index("by_conversation_id", ["conversationId"]),
+
+	assistantToolAuditEvents: defineTable({
+		workspaceId: v.id("workspaces"),
+		memberId: v.optional(v.id("members")),
+		userId: v.optional(v.id("users")),
+		toolName: v.string(),
+		toolkit: v.optional(v.string()),
+		argumentsSnapshot: v.optional(v.any()),
+		outcome: v.union(v.literal("success"), v.literal("error")),
+		error: v.optional(v.string()),
+		executionPath: v.string(),
+		toolCallId: v.optional(v.string()),
+		timestamp: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_member_id", ["memberId"])
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({

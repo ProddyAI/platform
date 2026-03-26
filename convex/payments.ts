@@ -3,40 +3,39 @@
 // - Convex Component: https://docs.dodopayments.com/developer-resources/convex-component
 // - Checkout Sessions: https://docs.dodopayments.com/developer-resources/checkout-session
 
-import { action, internalQuery, query } from './_generated/server';
-import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
-import { internal } from './_generated/api';
-import { checkout, customerPortal } from './dodo';
-import { PLANS, type PlanName } from './plans';
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import { action, internalQuery, query } from "./_generated/server";
+import { checkout, customerPortal } from "./dodo";
+import { PLANS, type PlanName } from "./plans";
 
 // Internal query: check if current user is admin/owner of the workspace
 export const checkWorkspaceAdmin = internalQuery({
-	args: { workspaceId: v.id('workspaces') },
+	args: { workspaceId: v.id("workspaces") },
 	handler: async (ctx, { workspaceId }) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) return false;
 
-		const baseUserId = (identity.subject || '').split('|')[0];
+		const baseUserId = (identity.subject || "").split("|")[0];
 		const member = await ctx.db
-			.query('members')
-			.withIndex('by_workspace_id_user_id', (q: any) =>
-				q.eq('workspaceId', workspaceId).eq('userId', baseUserId),
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q: any) =>
+				q.eq("workspaceId", workspaceId).eq("userId", baseUserId)
 			)
 			.unique();
-		return member && (member.role === 'admin' || member.role === 'owner');
+		return member && (member.role === "admin" || member.role === "owner");
 	},
 });
 
 // Query: subscription status for UI
 export const getSubscriptionStatus = query({
-	args: { workspaceId: v.id('workspaces') },
+	args: { workspaceId: v.id("workspaces") },
 	handler: async (ctx, { workspaceId }) => {
 		const workspace = await ctx.db.get(workspaceId);
 		if (!workspace) return null;
 
 		return {
-			plan: (workspace.plan as PlanName) ?? 'free',
+			plan: (workspace.plan as PlanName) ?? "free",
 			dodoSubscriptionId: workspace.dodoSubscriptionId ?? null,
 		};
 	},
@@ -45,29 +44,29 @@ export const getSubscriptionStatus = query({
 // Action: create Dodo checkout session from a plan & seat quantity
 export const createCheckoutSession = action({
 	args: {
-		workspaceId: v.id('workspaces'),
-		planName: v.union(v.literal('pro'), v.literal('enterprise')),
+		workspaceId: v.id("workspaces"),
+		planName: v.union(v.literal("pro"), v.literal("enterprise")),
 		quantity: v.number(),
 	},
 	handler: async (
 		ctx,
-		{ workspaceId, planName, quantity },
+		{ workspaceId, planName, quantity }
 	): Promise<string> => {
 		const isAdmin = await ctx.runQuery(internal.payments.checkWorkspaceAdmin, {
 			workspaceId,
 		});
-		if (!isAdmin) throw new Error('Only workspace admins can manage billing');
+		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
 		const plan = PLANS[planName];
 		if (!plan?.dodoProductId) {
 			throw new Error(
-				`Missing Dodo product mapping for plan "${planName}". Set PLANS.${planName}.dodoProductId`,
+				`Missing Dodo product mapping for plan "${planName}". Set PLANS.${planName}.dodoProductId`
 			);
 		}
 
 		const seatCount = Math.max(1, quantity);
 		const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-		if (!siteUrl) throw new Error('SITE_URL not configured');
+		if (!siteUrl) throw new Error("SITE_URL not configured");
 
 		// Build Checkout Session payload
 		const session = await checkout(ctx, {
@@ -84,7 +83,7 @@ export const createCheckoutSession = action({
 					plan: planName,
 				},
 				return_url: `${siteUrl}/workspace/${workspaceId}/billing`,
-				billing_currency: 'USD',
+				billing_currency: "USD",
 				feature_flags: {
 					allow_discount_code: true,
 				},
@@ -92,7 +91,7 @@ export const createCheckoutSession = action({
 		});
 
 		if (!session?.checkout_url) {
-			throw new Error('Checkout session did not return a checkout_url');
+			throw new Error("Checkout session did not return a checkout_url");
 		}
 		return session.checkout_url;
 	},
@@ -109,7 +108,7 @@ export const getCustomerPortal = action({
 			send_email: args.send_email ?? false,
 		});
 		if (!portal?.portal_url) {
-			throw new Error('Customer portal did not return a portal_url');
+			throw new Error("Customer portal did not return a portal_url");
 		}
 		return portal.portal_url;
 	},

@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
 		}
 
 		const { prompt } = requestData;
-		const workspaceId = requestData?.workspaceId as Id<"workspaces"> | undefined;
+		const workspaceId = requestData?.workspaceId as
+			| Id<"workspaces">
+			| undefined;
 
 		if (!prompt) {
 			console.error("Missing prompt in request");
@@ -119,12 +121,18 @@ Generate the Mermaid flowchart code:`;
 					const trackingConvex = createConvexClient();
 					const trackingToken = convexAuthNextjsToken();
 					if (trackingToken) trackingConvex.setAuth(trackingToken);
-					await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
-						workspaceId,
-						featureType: "aiDiagram",
-					});
+					await trackingConvex.mutation(
+						api.usageTracking.recordAIRequestPublic,
+						{
+							workspaceId,
+							featureType: "aiDiagram",
+						}
+					);
 				} catch (trackErr) {
-					console.warn("[UsageTracking] Failed to record AI flowchart:", trackErr);
+					console.warn(
+						"[UsageTracking] Failed to record AI flowchart:",
+						trackErr
+					);
 				}
 			}
 

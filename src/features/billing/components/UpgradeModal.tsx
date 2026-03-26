@@ -5,7 +5,7 @@ import { Check, Loader, Minus, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { PLANS, type PlanName, isUnlimited } from "@/../convex/plans";
+import { isUnlimited, PLANS, type PlanName } from "@/../convex/plans";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -22,16 +22,17 @@ interface UpgradeModalProps {
 	onOpenChange: (open: boolean) => void;
 }
 
-const FEATURE_LABELS: { key: keyof typeof PLANS.free.limits; label: string }[] = [
-	{ key: "aiRequestsPerMonth", label: "AI Requests" },
-	{ key: "aiDiagramGenerationsPerMonth", label: "Diagram Generations" },
-	{ key: "aiSummaryRequestsPerMonth", label: "Summaries" },
-	{ key: "messagesPerMonth", label: "Messages" },
-	{ key: "tasksPerMonth", label: "Tasks" },
-	{ key: "channelsPerMonth", label: "Channels" },
-	{ key: "boardsPerMonth", label: "Boards" },
-	{ key: "notesPerMonth", label: "Notes" },
-];
+const FEATURE_LABELS: { key: keyof typeof PLANS.free.limits; label: string }[] =
+	[
+		{ key: "aiRequestsPerMonth", label: "AI Requests" },
+		{ key: "aiDiagramGenerationsPerMonth", label: "Diagram Generations" },
+		{ key: "aiSummaryRequestsPerMonth", label: "Summaries" },
+		{ key: "messagesPerMonth", label: "Messages" },
+		{ key: "tasksPerMonth", label: "Tasks" },
+		{ key: "channelsPerMonth", label: "Channels" },
+		{ key: "boardsPerMonth", label: "Boards" },
+		{ key: "notesPerMonth", label: "Notes" },
+	];
 
 function formatLimit(value: number): string {
 	if (isUnlimited(value)) return "Unlimited";
@@ -69,11 +70,14 @@ export function UpgradeModal({
 	};
 
 	const handleContactSales = () => {
-		window.open("mailto:sales@proddy.app?subject=Enterprise Plan Inquiry", "_blank");
+		window.open(
+			"mailto:sales@proddy.app?subject=Enterprise Plan Inquiry",
+			"_blank"
+		);
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
@@ -107,11 +111,11 @@ export function UpgradeModal({
 								<label className="text-sm font-medium">Number of users</label>
 								<div className="flex items-center gap-3">
 									<Button
-										variant="outline"
-										size="icon"
 										className="h-8 w-8"
-										onClick={() => setSeatCount(Math.max(1, seatCount - 1))}
 										disabled={seatCount <= 1}
+										onClick={() => setSeatCount(Math.max(1, seatCount - 1))}
+										size="icon"
+										variant="outline"
 									>
 										<Minus className="size-4" />
 									</Button>
@@ -119,11 +123,11 @@ export function UpgradeModal({
 										{seatCount}
 									</span>
 									<Button
-										variant="outline"
-										size="icon"
 										className="h-8 w-8"
-										onClick={() => setSeatCount(Math.min(5, seatCount + 1))}
 										disabled={seatCount >= 5}
+										onClick={() => setSeatCount(Math.min(5, seatCount + 1))}
+										size="icon"
+										variant="outline"
 									>
 										<Plus className="size-4" />
 									</Button>
@@ -138,7 +142,7 @@ export function UpgradeModal({
 
 							<ul className="space-y-2">
 								{FEATURE_LABELS.map(({ key, label }) => (
-									<li key={key} className="flex items-center gap-2 text-sm">
+									<li className="flex items-center gap-2 text-sm" key={key}>
 										<Check className="size-4 text-green-500 shrink-0" />
 										<span>
 											{formatLimit(proPlan.limits[key])} {label}
@@ -149,8 +153,8 @@ export function UpgradeModal({
 
 							<Button
 								className="w-full"
-								onClick={handleUpgrade}
 								disabled={loading}
+								onClick={handleUpgrade}
 							>
 								{loading ? (
 									<>
@@ -184,7 +188,7 @@ export function UpgradeModal({
 
 							<ul className="space-y-2">
 								{FEATURE_LABELS.map(({ key, label }) => (
-									<li key={key} className="flex items-center gap-2 text-sm">
+									<li className="flex items-center gap-2 text-sm" key={key}>
 										<Check className="size-4 text-green-500 shrink-0" />
 										<span>
 											{formatLimit(enterprisePlan.limits[key])} {label}
@@ -194,9 +198,9 @@ export function UpgradeModal({
 							</ul>
 
 							<Button
-								variant="outline"
 								className="w-full"
 								onClick={handleContactSales}
+								variant="outline"
 							>
 								Contact Sales
 							</Button>

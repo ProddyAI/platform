@@ -1,8 +1,8 @@
 "use node";
 
+import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { v } from "convex/values";
 import OpenAI from "openai";

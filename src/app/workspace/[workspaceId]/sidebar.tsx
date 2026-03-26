@@ -535,16 +535,18 @@ export const WorkspaceSidebar = ({
 								/>
 							</MobileCloseWrapper>
 						)}
-						<MobileCloseWrapper onClose={onMobileClose}>						<SidebarItem
-							href={`/workspace/${workspaceId}/usage`}
-							icon={Activity}
-							id="usage"
-							isActive={pathname.includes("/usage")}
-							isCollapsed={isCollapsed}
-							label="Usage"
-						/>
-					</MobileCloseWrapper>
-					<MobileCloseWrapper onClose={onMobileClose}>
+						<MobileCloseWrapper onClose={onMobileClose}>
+							{" "}
+							<SidebarItem
+								href={`/workspace/${workspaceId}/usage`}
+								icon={Activity}
+								id="usage"
+								isActive={pathname.includes("/usage")}
+								isCollapsed={isCollapsed}
+								label="Usage"
+							/>
+						</MobileCloseWrapper>
+						<MobileCloseWrapper onClose={onMobileClose}>
 							<SidebarItem
 								href={`/workspace/${workspaceId}/billing`}
 								icon={CreditCard}
@@ -553,8 +555,10 @@ export const WorkspaceSidebar = ({
 								isCollapsed={isCollapsed}
 								label="Billing"
 							/>
-					</MobileCloseWrapper>
-					<MobileCloseWrapper onClose={onMobileClose}>							<SidebarItem
+						</MobileCloseWrapper>
+						<MobileCloseWrapper onClose={onMobileClose}>
+							{" "}
+							<SidebarItem
 								href={`/workspace/${workspaceId}/manage`}
 								icon={Settings}
 								id="manage"

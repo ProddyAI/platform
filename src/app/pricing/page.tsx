@@ -237,7 +237,7 @@ function ComparisonTable() {
 										</tr>
 
 										{/* Feature rows */}
-										{section.features.map((feature, featureIndex) => (
+										{section.features.map((feature, _featureIndex) => (
 											<tr
 												className="border-b border-gray-100"
 												key={feature.name}
@@ -329,7 +329,9 @@ function StarterPlan() {
 				</li>
 				<li className="flex items-start">
 					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">500 AI summaries & diagrams / month</span>
+					<span className="text-gray-700">
+						500 AI summaries & diagrams / month
+					</span>
 				</li>
 				<li className="flex items-start">
 					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />

@@ -318,10 +318,14 @@ export const create = mutation({
 		});
 
 		// Track message usage
-		await ctx.scheduler.runAfter(0, internal.usageTracking.recordMessageCreated, {
-			userId,
-			workspaceId: args.workspaceId,
-		});
+		await ctx.scheduler.runAfter(
+			0,
+			internal.usageTracking.recordMessageCreated,
+			{
+				userId,
+				workspaceId: args.workspaceId,
+			}
+		);
 
 		// If this is a reply to a thread, send an email notification
 		if (args.parentMessageId) {

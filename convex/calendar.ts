@@ -1,20 +1,20 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
-import { paginationOptsValidator } from 'convex/server';
-import { v } from 'convex/values';
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator } from "convex/server";
+import { v } from "convex/values";
 
-import { api } from './_generated/api';
-import type { Id } from './_generated/dataModel';
-import { mutation, type QueryCtx, query } from './_generated/server';
+import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { mutation, type QueryCtx, query } from "./_generated/server";
 
 const getMember = async (
 	ctx: QueryCtx,
-	workspaceId: Id<'workspaces'>,
-	userId: Id<'users'>,
+	workspaceId: Id<"workspaces">,
+	userId: Id<"users">
 ) => {
 	return await ctx.db
-		.query('members')
-		.withIndex('by_workspace_id_user_id', (q) =>
-			q.eq('workspaceId', workspaceId).eq('userId', userId),
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
 		)
 		.unique();
 };
@@ -24,24 +24,24 @@ export const createCalendarEvent = mutation({
 		title: v.string(),
 		date: v.number(),
 		time: v.optional(v.string()),
-		messageId: v.id('messages'),
-		workspaceId: v.id('workspaces'),
+		messageId: v.id("messages"),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
-		if (!userId) throw new Error('Unauthorized.');
+		if (!userId) throw new Error("Unauthorized.");
 
 		const member = await getMember(
 			ctx,
 			args.workspaceId,
-			userId as Id<'users'>,
+			userId as Id<"users">
 		);
 
-		if (!member) throw new Error('Member not found.');
+		if (!member) throw new Error("Member not found.");
 
 		const message = await ctx.db.get(args.messageId);
-		if (!message) throw new Error('Message not found.');
+		if (!message) throw new Error("Message not found.");
 
 		// Update the message with calendar event info
 		await ctx.db.patch(args.messageId, {
@@ -52,7 +52,7 @@ export const createCalendarEvent = mutation({
 		});
 
 		// Create a calendar event
-		const calendarEventId = await ctx.db.insert('events', {
+		const calendarEventId = await ctx.db.insert("events", {
 			title: args.title,
 			date: args.date,
 			time: args.time,
@@ -70,7 +70,7 @@ export const createCalendarEvent = mutation({
 });
 
 export const getEventById = query({
-	args: { eventId: v.id('events') },
+	args: { eventId: v.id("events") },
 	handler: async (ctx, args) => {
 		return await ctx.db.get(args.eventId);
 	},
@@ -78,15 +78,15 @@ export const getEventById = query({
 
 export const getWorkspaceEvents = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
 		const limit = args.limit ?? 100;
 		return await ctx.db
-			.query('events')
-			.withIndex('by_workspace_id', (q) =>
-				q.eq('workspaceId', args.workspaceId),
+			.query("events")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
 			)
 			.take(limit);
 	},
@@ -94,22 +94,22 @@ export const getWorkspaceEvents = query({
 
 export const getCalendarEvents = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		month: v.number(), // Month number (0-11)
 		year: v.number(), // Year (e.g., 2023)
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
-		if (!userId) throw new Error('Unauthorized.');
+		if (!userId) throw new Error("Unauthorized.");
 
 		const member = await getMember(
 			ctx,
 			args.workspaceId,
-			userId as Id<'users'>,
+			userId as Id<"users">
 		);
 
-		if (!member) throw new Error('Member not found.');
+		if (!member) throw new Error("Member not found.");
 
 		// Calculate start and end timestamps for the month
 		const startDate = new Date(args.year, args.month, 1).getTime();
@@ -119,58 +119,58 @@ export const getCalendarEvents = query({
 			0,
 			23,
 			59,
-			59,
+			59
 		).getTime();
 
 		// Get all calendar events for the month
 		const events = await ctx.db
-			.query('events')
-			.withIndex('by_workspace_id', (q) =>
-				q.eq('workspaceId', args.workspaceId),
+			.query("events")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
 			)
 			.filter((q) =>
 				q.and(
-					q.gte(q.field('date'), startDate),
-					q.lte(q.field('date'), endDate),
-				),
+					q.gte(q.field("date"), startDate),
+					q.lte(q.field("date"), endDate)
+				)
 			)
 			.collect();
 
 		// Get all messages with calendar events
 		const messageIds = events
 			.map((event) => event.messageId)
-			.filter((id): id is Id<'messages'> => Boolean(id));
+			.filter((id): id is Id<"messages"> => Boolean(id));
 		const messages = await Promise.all(
 			messageIds.map(async (messageId) => {
 				const message = await ctx.db.get(messageId);
 				return message;
-			}),
+			})
 		);
 
 		// Get all members
 		const memberIds = messages
 			.map((message) => message?.memberId)
-			.filter(Boolean) as Id<'members'>[];
+			.filter(Boolean) as Id<"members">[];
 		// Convert Set to Array explicitly to avoid TypeScript iteration error
 		const uniqueMemberIds = Array.from(new Set(memberIds));
 		const members = await Promise.all(
 			uniqueMemberIds.map(async (memberId) => {
 				const member = await ctx.db.get(memberId);
 				return member;
-			}),
+			})
 		);
 
 		// Get all users
 		const userIds = members
 			.map((member) => member?.userId)
-			.filter(Boolean) as Id<'users'>[];
+			.filter(Boolean) as Id<"users">[];
 		// Convert Set to Array explicitly to avoid TypeScript iteration error
 		const uniqueUserIds = Array.from(new Set(userIds));
 		const users = await Promise.all(
 			uniqueUserIds.map(async (userId) => {
 				const user = await ctx.db.get(userId);
 				return user;
-			}),
+			})
 		);
 
 		// Create a map of user ID to user
@@ -179,14 +179,14 @@ export const getCalendarEvents = query({
 		const memberMap = new Map(members.map((member) => [member?._id, member]));
 		// Create a map of message ID to message
 		const messageMap = new Map(
-			messages.map((message) => [message?._id, message]),
+			messages.map((message) => [message?._id, message])
 		);
 
 		// Get board cards with due dates for this month
 		const channels = await ctx.db
-			.query('channels')
-			.withIndex('by_workspace_id', (q) =>
-				q.eq('workspaceId', args.workspaceId),
+			.query("channels")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
 			)
 			.collect();
 
@@ -195,32 +195,32 @@ export const getCalendarEvents = query({
 		// For each channel, get all lists and cards with due dates in the current month
 		for (const channel of channels) {
 			const lists = await ctx.db
-				.query('lists')
-				.withIndex('by_channel_id', (q) => q.eq('channelId', channel._id))
+				.query("lists")
+				.withIndex("by_channel_id", (q) => q.eq("channelId", channel._id))
 				.collect();
 
 			for (const list of lists) {
 				const cards = await ctx.db
-					.query('cards')
-					.withIndex('by_list_id', (q) => q.eq('listId', list._id))
+					.query("cards")
+					.withIndex("by_list_id", (q) => q.eq("listId", list._id))
 					.filter((q) =>
 						q.and(
-							q.neq(q.field('dueDate'), undefined),
-							q.gte(q.field('dueDate'), startDate),
-							q.lte(q.field('dueDate'), endDate),
-						),
+							q.neq(q.field("dueDate"), undefined),
+							q.gte(q.field("dueDate"), startDate),
+							q.lte(q.field("dueDate"), endDate)
+						)
 					)
 					.collect();
 
 				// Convert cards to calendar events
 				for (const card of cards) {
 					boardEvents.push({
-						_id: card._id as unknown as Id<'events'>, // Type cast for compatibility
+						_id: card._id as unknown as Id<"events">, // Type cast for compatibility
 						_creationTime: card._creationTime,
 						date: card.dueDate as number,
 						title: card.title,
 						time: undefined,
-						type: 'board-card',
+						type: "board-card",
 						boardCard: {
 							_id: card._id,
 							title: card.title,
@@ -233,7 +233,7 @@ export const getCalendarEvents = query({
 							channelName: channel.name,
 						},
 						message: {
-							_id: card._id as unknown as Id<'messages'>, // Type cast for compatibility
+							_id: card._id as unknown as Id<"messages">, // Type cast for compatibility
 							body: JSON.stringify({ ops: [{ insert: card.title }] }),
 							_creationTime: card._creationTime,
 							channelId: channel._id,
@@ -243,8 +243,8 @@ export const getCalendarEvents = query({
 							},
 						},
 						user: {
-							_id: userId as Id<'users'>,
-							name: 'Board Card',
+							_id: userId as Id<"users">,
+							name: "Board Card",
 							image: null,
 						},
 						memberId: member._id,
@@ -262,7 +262,7 @@ export const getCalendarEvents = query({
 
 			return {
 				...event,
-				type: 'calendar-event',
+				type: "calendar-event",
 				message: message
 					? {
 							_id: message._id,
@@ -285,25 +285,25 @@ export const getCalendarEvents = query({
 
 		// Get tasks with due dates for this month that belong to the current user
 		const tasks = await ctx.db
-			.query('tasks')
-			.withIndex('by_workspace_id_user_id', (q) =>
+			.query("tasks")
+			.withIndex("by_workspace_id_user_id", (q) =>
 				q
-					.eq('workspaceId', args.workspaceId)
-					.eq('userId', userId as Id<'users'>),
+					.eq("workspaceId", args.workspaceId)
+					.eq("userId", userId as Id<"users">)
 			)
 			.filter((q) =>
 				q.and(
-					q.neq(q.field('dueDate'), undefined),
-					q.gte(q.field('dueDate'), startDate),
-					q.lte(q.field('dueDate'), endDate),
-				),
+					q.neq(q.field("dueDate"), undefined),
+					q.gte(q.field("dueDate"), startDate),
+					q.lte(q.field("dueDate"), endDate)
+				)
 			)
 			.collect();
 
 		// Get categories for tasks
 		const categoryIds = tasks
 			.map((task) => task.categoryId)
-			.filter(Boolean) as Id<'categories'>[];
+			.filter(Boolean) as Id<"categories">[];
 
 		// Get unique category IDs
 		const uniqueCategoryIds = Array.from(new Set(categoryIds));
@@ -312,12 +312,12 @@ export const getCalendarEvents = query({
 		const categories = await Promise.all(
 			uniqueCategoryIds.map(async (categoryId) => {
 				return await ctx.db.get(categoryId);
-			}),
+			})
 		);
 
 		// Create a map of category ID to category
 		const categoryMap = new Map(
-			categories.map((category) => [category?._id, category]),
+			categories.map((category) => [category?._id, category])
 		);
 
 		// Convert tasks to calendar events
@@ -327,12 +327,12 @@ export const getCalendarEvents = query({
 				: null;
 
 			return {
-				_id: task._id as unknown as Id<'events'>, // Type cast for compatibility
+				_id: task._id as unknown as Id<"events">, // Type cast for compatibility
 				_creationTime: task.createdAt,
 				date: task.dueDate as number,
 				title: task.title,
 				time: undefined,
-				type: 'task',
+				type: "task",
 				task: {
 					_id: task._id,
 					title: task.title,
@@ -347,8 +347,8 @@ export const getCalendarEvents = query({
 					userId: task.userId,
 				},
 				user: {
-					_id: userId as Id<'users'>,
-					name: 'Task',
+					_id: userId as Id<"users">,
+					name: "Task",
 					image: null,
 				},
 				memberId: member._id,
@@ -363,29 +363,29 @@ export const getCalendarEvents = query({
 
 export const getMessagesWithCalendarEvents = query({
 	args: {
-		workspaceId: v.id('workspaces'),
+		workspaceId: v.id("workspaces"),
 		paginationOpts: paginationOptsValidator,
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
-		if (!userId) throw new Error('Unauthorized.');
+		if (!userId) throw new Error("Unauthorized.");
 
 		const member = await getMember(
 			ctx,
 			args.workspaceId,
-			userId as Id<'users'>,
+			userId as Id<"users">
 		);
 
-		if (!member) throw new Error('Member not found.');
+		if (!member) throw new Error("Member not found.");
 
 		// Get all messages with calendar events
 		const messages = await ctx.db
-			.query('messages')
-			.withIndex('by_workspace_id', (q) =>
-				q.eq('workspaceId', args.workspaceId),
+			.query("messages")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
 			)
-			.filter((q) => q.neq(q.field('calendarEvent'), undefined))
+			.filter((q) => q.neq(q.field("calendarEvent"), undefined))
 			.paginate(args.paginationOpts);
 
 		// Get all members
@@ -396,20 +396,20 @@ export const getMessagesWithCalendarEvents = query({
 			uniqueMemberIds.map(async (memberId) => {
 				const member = await ctx.db.get(memberId);
 				return member;
-			}),
+			})
 		);
 
 		// Get all users
 		const userIds = members
 			.map((member) => member?.userId)
-			.filter(Boolean) as Id<'users'>[];
+			.filter(Boolean) as Id<"users">[];
 		// Convert Set to Array explicitly to avoid TypeScript iteration error
 		const uniqueUserIds = Array.from(new Set(userIds));
 		const users = await Promise.all(
 			uniqueUserIds.map(async (userId) => {
 				const user = await ctx.db.get(userId);
 				return user;
-			}),
+			})
 		);
 
 		// Create a map of user ID to user

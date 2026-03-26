@@ -1,9 +1,9 @@
-import { httpRouter } from 'convex/server';
-import { internal } from './_generated/api';
-import type { Id } from './_generated/dataModel';
-import { httpAction } from './_generated/server';
-import { auth } from './auth';
-import { createDodoWebhookHandler } from '@dodopayments/convex';
+import { createDodoWebhookHandler } from "@dodopayments/convex";
+import { httpRouter } from "convex/server";
+import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { httpAction } from "./_generated/server";
+import { auth } from "./auth";
 
 const http = httpRouter();
 
@@ -13,8 +13,8 @@ auth.addHttpRoutes(http);
 // Securely handles Dodo Payments webhook events with signature verification.
 // Ensure DODO_PAYMENTS_WEBHOOK_SECRET is configured in Convex dashboard env vars.
 http.route({
-	path: '/dodopayments-webhook',
-	method: 'POST',
+	path: "/dodopayments-webhook",
+	method: "POST",
 	handler: createDodoWebhookHandler({
 		onPaymentSucceeded: async (ctx, payload) => {
 			// Persist/handle payment success if needed
@@ -26,18 +26,18 @@ http.route({
 					customerEmail: payload.data.customer?.email ?? null,
 					amount: payload.data.total_amount,
 					currency: payload.data.currency,
-					status: payload.data.status ?? 'unknown',
+					status: payload.data.status ?? "unknown",
 					raw: JSON.stringify(payload),
 				});
 			} catch (e) {
-				console.error('Dodo onPaymentSucceeded handler failed', e);
+				console.error("Dodo onPaymentSucceeded handler failed", e);
 				throw e;
 			}
 		},
 		onSubscriptionActive: async (ctx, payload) => {
 			// Map back to workspace using metadata if present
 			const workspaceId = payload.data?.metadata?.workspace_id as
-				| Id<'workspaces'>
+				| Id<"workspaces">
 				| undefined;
 
 			try {
@@ -48,13 +48,13 @@ http.route({
 					raw: JSON.stringify(payload),
 				});
 			} catch (e) {
-				console.error('Dodo onSubscriptionActive handler failed', e);
+				console.error("Dodo onSubscriptionActive handler failed", e);
 				throw e;
 			}
 		},
 		onSubscriptionUpdated: async (ctx, payload) => {
 			const workspaceId = payload.data?.metadata?.workspace_id as
-				| Id<'workspaces'>
+				| Id<"workspaces">
 				| undefined;
 
 			try {
@@ -65,13 +65,13 @@ http.route({
 					raw: JSON.stringify(payload),
 				});
 			} catch (e) {
-				console.error('Dodo onSubscriptionUpdated handler failed', e);
+				console.error("Dodo onSubscriptionUpdated handler failed", e);
 				throw e;
 			}
 		},
 		onSubscriptionCancelled: async (ctx, payload) => {
 			const workspaceId = payload.data?.metadata?.workspace_id as
-				| Id<'workspaces'>
+				| Id<"workspaces">
 				| undefined;
 
 			try {
@@ -80,7 +80,7 @@ http.route({
 					raw: JSON.stringify(payload),
 				});
 			} catch (e) {
-				console.error('Dodo onSubscriptionCancelled handler failed', e);
+				console.error("Dodo onSubscriptionCancelled handler failed", e);
 				throw e;
 			}
 		},
@@ -89,27 +89,27 @@ http.route({
 
 // Slack OAuth callback handler
 http.route({
-	path: '/import/slack/callback',
-	method: 'GET',
+	path: "/import/slack/callback",
+	method: "GET",
 	handler: httpAction(async (ctx, request) => {
 		// Early validation of SITE_URL configuration
 		const siteUrl = process.env.SITE_URL;
 		if (!siteUrl) {
-			return new Response('Configuration error', { status: 500 });
+			return new Response("Configuration error", { status: 500 });
 		}
 
 		const url = new URL(request.url);
-		const code = url.searchParams.get('code');
-		const state = url.searchParams.get('state');
-		const error = url.searchParams.get('error');
+		const code = url.searchParams.get("code");
+		const state = url.searchParams.get("state");
+		const error = url.searchParams.get("error");
 
 		// Handle OAuth error - safely parse workspaceId for redirect
 		if (error) {
-			let workspaceId = '';
+			let workspaceId = "";
 			try {
 				if (state) {
 					const parsed = JSON.parse(base64UrlDecode(state));
-					workspaceId = parsed.workspaceId || '';
+					workspaceId = parsed.workspaceId || "";
 				}
 			} catch (_e) {
 				// If state parsing fails, redirect to a safe default
@@ -128,7 +128,7 @@ http.route({
 		}
 
 		if (!code || !state) {
-			return new Response('Missing code or state parameter', { status: 400 });
+			return new Response("Missing code or state parameter", { status: 400 });
 		}
 
 		// Parse state parameter using base64-encoded JSON
@@ -141,12 +141,12 @@ http.route({
 			memberId = parsed.memberId;
 
 			if (!workspaceId || !memberId) {
-				throw new Error('Invalid state parameter');
+				throw new Error("Invalid state parameter");
 			}
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Unknown error';
-			console.error('Slack OAuth state decode failed:', message);
-			return new Response('Invalid state parameter', { status: 400 });
+			const message = error instanceof Error ? error.message : "Unknown error";
+			console.error("Slack OAuth state decode failed:", message);
+			return new Response("Invalid state parameter", { status: 400 });
 		}
 
 		try {
@@ -156,7 +156,7 @@ http.route({
 			const redirectUri = `${siteUrl}/api/import/slack/callback`;
 
 			if (!clientId || !clientSecret) {
-				throw new Error('Slack OAuth not configured');
+				throw new Error("Slack OAuth not configured");
 			}
 
 			// Create AbortController for timeout handling
@@ -165,10 +165,10 @@ http.route({
 
 			let tokenResponse;
 			try {
-				tokenResponse = await fetch('https://slack.com/api/oauth.v2.access', {
-					method: 'POST',
+				tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
+					method: "POST",
 					headers: {
-						'Content-Type': 'application/x-www-form-urlencoded',
+						"Content-Type": "application/x-www-form-urlencoded",
 					},
 					body: new URLSearchParams({
 						code,
@@ -179,8 +179,8 @@ http.route({
 					signal: controller.signal,
 				});
 			} catch (error) {
-				if (error instanceof Error && error.name === 'AbortError') {
-					throw new Error('OAuth token exchange timeout');
+				if (error instanceof Error && error.name === "AbortError") {
+					throw new Error("OAuth token exchange timeout");
 				}
 				throw error;
 			} finally {
@@ -190,7 +190,7 @@ http.route({
 			const tokenData = await tokenResponse.json();
 
 			if (!tokenData.ok) {
-				throw new Error(tokenData.error || 'Failed to exchange OAuth code');
+				throw new Error(tokenData.error || "Failed to exchange OAuth code");
 			}
 
 			// Validate required token fields
@@ -200,17 +200,17 @@ http.route({
 				!tokenData.team.id ||
 				!tokenData.team.name
 			) {
-				throw new Error('Invalid token response from Slack');
+				throw new Error("Invalid token response from Slack");
 			}
 
 			// Store the connection
 			await ctx.runMutation(internal.importIntegrations.storeSlackConnection, {
-				workspaceId: workspaceId as Id<'workspaces'>,
-				memberId: memberId as Id<'members'>,
+				workspaceId: workspaceId as Id<"workspaces">,
+				memberId: memberId as Id<"members">,
 				accessToken: tokenData.access_token,
 				refreshToken: tokenData.refresh_token || undefined,
 				expiresAt:
-					tokenData.expires_in && typeof tokenData.expires_in === 'number'
+					tokenData.expires_in && typeof tokenData.expires_in === "number"
 						? Date.now() + tokenData.expires_in * 1000
 						: undefined,
 				scope: tokenData.scope,
@@ -228,8 +228,8 @@ http.route({
 		} catch (error) {
 			// Sanitize error logging to avoid leaking sensitive data
 			const errorMessage =
-				error instanceof Error ? error.message : 'Unknown error';
-			console.error('Slack OAuth error:', errorMessage);
+				error instanceof Error ? error.message : "Unknown error";
+			console.error("Slack OAuth error:", errorMessage);
 			return new Response(null, {
 				status: 302,
 				headers: {
@@ -243,7 +243,7 @@ http.route({
 export default http;
 
 function normalizeStateParam(value: string): string {
-	if (!value.includes('%')) return value;
+	if (!value.includes("%")) return value;
 	try {
 		return decodeURIComponent(value);
 	} catch (_error) {
@@ -252,13 +252,13 @@ function normalizeStateParam(value: string): string {
 }
 
 function base64UrlDecode(value: string): string {
-	const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
-	const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
-	if (typeof atob === 'function') {
+	const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+	const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+	if (typeof atob === "function") {
 		return atob(padded);
 	}
-	if (typeof Buffer !== 'undefined') {
-		return Buffer.from(padded, 'base64').toString('utf8');
+	if (typeof Buffer !== "undefined") {
+		return Buffer.from(padded, "base64").toString("utf8");
 	}
-	throw new Error('Base64 decode not supported');
+	throw new Error("Base64 decode not supported");
 }

@@ -1,7 +1,6 @@
 import type { Composio } from "@composio/core";
 import { jsonSchema, tool } from "ai";
 import type { ConvexHttpClient } from "convex/browser";
-import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 

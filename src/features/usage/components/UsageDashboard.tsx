@@ -41,19 +41,24 @@ interface UsageRowProps {
 
 function UsageRow({ icon: Icon, label, used, limit }: UsageRowProps) {
 	const unlimited = isUnlimited(limit);
-	const pct = unlimited ? 0 : limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
+	const pct = unlimited
+		? 0
+		: limit > 0
+			? Math.min((used / limit) * 100, 100)
+			: 0;
 
-	let statusColor = "bg-emerald-500";
-	let badgeVariant: "default" | "secondary" | "destructive" | "outline" = "secondary";
+	let _statusColor = "bg-emerald-500";
+	let badgeVariant: "default" | "secondary" | "destructive" | "outline" =
+		"secondary";
 	let badgeText = "";
 
 	if (!unlimited) {
 		if (pct >= 100) {
-			statusColor = "bg-red-500";
+			_statusColor = "bg-red-500";
 			badgeVariant = "destructive";
 			badgeText = "Limit reached";
 		} else if (pct >= 80) {
-			statusColor = "bg-yellow-500";
+			_statusColor = "bg-yellow-500";
 			badgeVariant = "outline";
 			badgeText = "Approaching limit";
 		}
@@ -68,7 +73,7 @@ function UsageRow({ icon: Icon, label, used, limit }: UsageRowProps) {
 				</div>
 				<div className="flex items-center gap-2">
 					{badgeText && (
-						<Badge variant={badgeVariant} className="text-xs">
+						<Badge className="text-xs" variant={badgeVariant}>
 							{badgeText}
 						</Badge>
 					)}
@@ -82,14 +87,14 @@ function UsageRow({ icon: Icon, label, used, limit }: UsageRowProps) {
 			</div>
 			{!unlimited && (
 				<Progress
-					value={pct}
 					className="h-2"
-					// Override the indicator colour based on status
 					style={
 						{
 							"--progress-indicator": `var(--color-${pct >= 100 ? "red" : pct >= 80 ? "yellow" : "emerald"}-500)`,
 						} as React.CSSProperties
 					}
+					// Override the indicator colour based on status
+					value={pct}
 				/>
 			)}
 			{unlimited && (
@@ -143,6 +148,7 @@ export function UsageDashboard({
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-3">
 					<Badge
+						className="text-sm px-3 py-1"
 						variant={
 							planName === "enterprise"
 								? "default"
@@ -150,7 +156,6 @@ export function UsageDashboard({
 									? "secondary"
 									: "outline"
 						}
-						className="text-sm px-3 py-1"
 					>
 						{planLabel} Plan
 					</Badge>
@@ -159,7 +164,7 @@ export function UsageDashboard({
 					</span>
 				</div>
 				{anyLimitReached && planName !== "enterprise" && onUpgradeClick && (
-					<Button size="sm" onClick={onUpgradeClick}>
+					<Button onClick={onUpgradeClick} size="sm">
 						<TrendingUp className="size-4 mr-1" />
 						Upgrade to {planName === "free" ? "Pro" : "Enterprise"}
 					</Button>
@@ -181,20 +186,20 @@ export function UsageDashboard({
 					<UsageRow
 						icon={Bot}
 						label="AI Requests"
-						used={ai.requests.used}
 						limit={ai.requests.limit}
+						used={ai.requests.used}
 					/>
 					<UsageRow
 						icon={Sparkles}
 						label="Diagram Generations"
-						used={ai.diagrams.used}
 						limit={ai.diagrams.limit}
+						used={ai.diagrams.used}
 					/>
 					<UsageRow
 						icon={FileText}
 						label="Summaries"
-						used={ai.summaries.used}
 						limit={ai.summaries.limit}
+						used={ai.summaries.used}
 					/>
 				</CardContent>
 			</Card>
@@ -214,34 +219,34 @@ export function UsageDashboard({
 					<UsageRow
 						icon={MessageSquare}
 						label="Messages"
-						used={collab.messages.used}
 						limit={collab.messages.limit}
+						used={collab.messages.used}
 					/>
 					<Separator />
 					<UsageRow
 						icon={ListChecks}
 						label="Tasks"
-						used={collab.tasks.used}
 						limit={collab.tasks.limit}
+						used={collab.tasks.used}
 					/>
 					<Separator />
 					<UsageRow
 						icon={Hash}
 						label="Channels"
-						used={collab.channels.used}
 						limit={collab.channels.limit}
+						used={collab.channels.used}
 					/>
 					<UsageRow
 						icon={LayoutGrid}
 						label="Board Cards"
-						used={collab.boards.used}
 						limit={collab.boards.limit}
+						used={collab.boards.used}
 					/>
 					<UsageRow
 						icon={FileText}
 						label="Notes"
-						used={collab.notes.used}
 						limit={collab.notes.limit}
+						used={collab.notes.used}
 					/>
 				</CardContent>
 			</Card>

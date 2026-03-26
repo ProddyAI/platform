@@ -1,10 +1,7 @@
 {
 	"$schema": "node_modules/convex/schemas/convex.schema.json",
 	"node": {
-		"externalPackages": [
-			"@opentelemetry/api",
-			"@opentelemetry/instrumentation"
-		]
+		"externalPackages": ["@opentelemetry/api", "@opentelemetry/instrumentation"]
 	},
 	"aiFiles": {
 		"disableStalenessMessage": true

@@ -1338,14 +1338,14 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 					parentIssue={
 						parentIssue
 							? {
-								_id: parentIssue._id,
-								channelId: parentIssue.channelId,
-								statusId: parentIssue.statusId,
-								title: parentIssue.title,
-								order: parentIssue.order,
-								createdAt: parentIssue.createdAt,
-								updatedAt: parentIssue.updatedAt,
-							}
+									_id: parentIssue._id,
+									channelId: parentIssue.channelId,
+									statusId: parentIssue.statusId,
+									title: parentIssue.title,
+									order: parentIssue.order,
+									createdAt: parentIssue.createdAt,
+									updatedAt: parentIssue.updatedAt,
+								}
 							: null
 					}
 				/>

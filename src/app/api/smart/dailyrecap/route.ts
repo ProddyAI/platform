@@ -236,10 +236,13 @@ Your recap should be comprehensive but well-organized, making it easy for someon
 					const trackingConvex = createConvexClient();
 					const trackingToken = convexAuthNextjsToken();
 					if (trackingToken) trackingConvex.setAuth(trackingToken);
-					await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
-						workspaceId: workspaceId as Id<"workspaces">,
-						featureType: "aiSummary",
-					});
+					await trackingConvex.mutation(
+						api.usageTracking.recordAIRequestPublic,
+						{
+							workspaceId: workspaceId as Id<"workspaces">,
+							featureType: "aiSummary",
+						}
+					);
 				} catch (trackErr) {
 					console.warn("[UsageTracking] Failed to record AI recap:", trackErr);
 				}
