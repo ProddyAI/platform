@@ -24,9 +24,7 @@ export const checkWorkspaceAdmin = internalQuery({
 				q.eq('workspaceId', workspaceId).eq('userId', baseUserId),
 			)
 			.unique();
-		return (
-			member && (member.role === 'admin' || member.role === 'owner')
-		);
+		return member && (member.role === 'admin' || member.role === 'owner');
 	},
 });
 
@@ -55,10 +53,9 @@ export const createCheckoutSession = action({
 		ctx,
 		{ workspaceId, planName, quantity },
 	): Promise<string> => {
-		const isAdmin = await ctx.runQuery(
-			internal.payments.checkWorkspaceAdmin,
-			{ workspaceId },
-		);
+		const isAdmin = await ctx.runQuery(internal.payments.checkWorkspaceAdmin, {
+			workspaceId,
+		});
 		if (!isAdmin) throw new Error('Only workspace admins can manage billing');
 
 		const plan = PLANS[planName];

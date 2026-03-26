@@ -244,7 +244,7 @@ function ComparisonTable() {
 											>
 												<td className="py-3 px-4">{feature.name}</td>
 												<td className="py-3 px-4">{feature.free}</td>
-										<td className="py-3 px-4">{feature.pro}</td>
+												<td className="py-3 px-4">{feature.pro}</td>
 												<td className="py-3 px-4">{feature.enterprise}</td>
 											</tr>
 										))}
