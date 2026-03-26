@@ -82,7 +82,7 @@ export const createCheckoutSession = action({
 					workspace_id: workspaceId,
 					plan: planName,
 				},
-				return_url: `${siteUrl}/workspace/${workspaceId}/billing`,
+				return_url: `${siteUrl}/workspace/${workspaceId}/manage`,
 				billing_currency: "USD",
 				feature_flags: {
 					allow_discount_code: true,

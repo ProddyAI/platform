@@ -9,7 +9,6 @@ import {
 	ChartNoAxesGantt,
 	CheckSquare,
 	ChevronDown,
-	CreditCard,
 	Hash,
 	LayoutDashboard,
 	Loader,
@@ -547,17 +546,6 @@ export const WorkspaceSidebar = ({
 							/>
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>
-							<SidebarItem
-								href={`/workspace/${workspaceId}/billing`}
-								icon={CreditCard}
-								id="billing"
-								isActive={pathname.includes("/billing")}
-								isCollapsed={isCollapsed}
-								label="Billing"
-							/>
-						</MobileCloseWrapper>
-						<MobileCloseWrapper onClose={onMobileClose}>
-							{" "}
 							<SidebarItem
 								href={`/workspace/${workspaceId}/manage`}
 								icon={Settings}
