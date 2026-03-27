@@ -636,7 +636,6 @@ const BoardPage = () => {
 							});
 							document.dispatchEvent(event);
 						}}
-						onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
 						onToggleDiagram={() => setDiagramOpen((prev) => !prev)}
 						setView={setView}
 						showHeader
@@ -664,7 +663,6 @@ const BoardPage = () => {
 						});
 						document.dispatchEvent(event);
 					}}
-					onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
 					onToggleDiagram={() => setDiagramOpen((prev) => !prev)}
 					setView={setView}
 					statusCount={displayedStatuses.length}
