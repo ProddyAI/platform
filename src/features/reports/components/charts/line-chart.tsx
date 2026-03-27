@@ -233,7 +233,7 @@ export const LineChart = ({
 
 							return (
 								<g key={point.index}>
-									// biome-ignore lint/a11y/useSemanticElements
+
 									<circle
 										aria-disabled={!onPointClick}
 										className={cn(
@@ -248,7 +248,7 @@ export const LineChart = ({
 										onClick={
 											onPointClick
 												? () =>
-														onPointClick(point.label, point.value, point.index)
+													onPointClick(point.label, point.value, point.index)
 												: undefined
 										}
 										onKeyDown={(event) => {

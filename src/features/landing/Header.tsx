@@ -141,7 +141,7 @@ export const Header = () => {
 					{/* Desktop Navigation */}
 					<nav className="hidden md:flex items-center gap-8">
 						{/* Features dropdown */}
-						// biome-ignore lint/a11y/useSemanticElements
+
 						<div
 							className="relative"
 							onBlur={() => setIsModulesOpen(false)}
