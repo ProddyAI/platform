@@ -1,3 +1,4 @@
+import { createDodoWebhookHandler } from "@dodopayments/convex";
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -7,6 +8,84 @@ import { auth } from "./auth";
 const http = httpRouter();
 
 auth.addHttpRoutes(http);
+
+// ─── Dodo Payments Webhook ─────────────────────────────────────────────────────
+// Securely handles Dodo Payments webhook events with signature verification.
+// Ensure DODO_PAYMENTS_WEBHOOK_SECRET is configured in Convex dashboard env vars.
+http.route({
+	path: "/dodopayments-webhook",
+	method: "POST",
+	handler: createDodoWebhookHandler({
+		onPaymentSucceeded: async (ctx, payload) => {
+			// Persist/handle payment success if needed
+			// Using internal.webhooks.* mutations to avoid schema changes during migration
+			try {
+				await ctx.runMutation(internal.webhooks.createPayment, {
+					paymentId: payload.data.payment_id,
+					businessId: payload.business_id,
+					customerEmail: payload.data.customer?.email ?? null,
+					amount: payload.data.total_amount,
+					currency: payload.data.currency,
+					status: payload.data.status ?? "unknown",
+					raw: JSON.stringify(payload),
+				});
+			} catch (e) {
+				console.error("Dodo onPaymentSucceeded handler failed", e);
+				throw e;
+			}
+		},
+		onSubscriptionActive: async (ctx, payload) => {
+			// Map back to workspace using metadata if present
+			const workspaceId = payload.data?.metadata?.workspace_id as
+				| Id<"workspaces">
+				| undefined;
+
+			try {
+				await ctx.runMutation(internal.webhooks.createSubscription, {
+					workspaceId,
+					subscriptionId: payload.data.subscription_id,
+					status: payload.data.status,
+					raw: JSON.stringify(payload),
+				});
+			} catch (e) {
+				console.error("Dodo onSubscriptionActive handler failed", e);
+				throw e;
+			}
+		},
+		onSubscriptionUpdated: async (ctx, payload) => {
+			const workspaceId = payload.data?.metadata?.workspace_id as
+				| Id<"workspaces">
+				| undefined;
+
+			try {
+				await ctx.runMutation(internal.webhooks.updateSubscription, {
+					workspaceId,
+					subscriptionId: payload.data.subscription_id,
+					status: payload.data.status,
+					raw: JSON.stringify(payload),
+				});
+			} catch (e) {
+				console.error("Dodo onSubscriptionUpdated handler failed", e);
+				throw e;
+			}
+		},
+		onSubscriptionCancelled: async (ctx, payload) => {
+			const workspaceId = payload.data?.metadata?.workspace_id as
+				| Id<"workspaces">
+				| undefined;
+
+			try {
+				await ctx.runMutation(internal.webhooks.cancelSubscription, {
+					workspaceId,
+					raw: JSON.stringify(payload),
+				});
+			} catch (e) {
+				console.error("Dodo onSubscriptionCancelled handler failed", e);
+				throw e;
+			}
+		},
+	}),
+});
 
 // Slack OAuth callback handler
 http.route({
@@ -84,7 +163,7 @@ http.route({
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-			let tokenResponse;
+			let tokenResponse: Response | undefined;
 			try {
 				tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
 					method: "POST",
@@ -106,6 +185,10 @@ http.route({
 				throw error;
 			} finally {
 				clearTimeout(timeoutId);
+			}
+
+			if (!tokenResponse) {
+				throw new Error("OAuth token exchange failed");
 			}
 
 			const tokenData = await tokenResponse.json();

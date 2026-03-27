@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, type QueryCtx, query } from "./_generated/server";
 
@@ -317,6 +317,16 @@ export const create = mutation({
 			tags: args.tags,
 		});
 
+		// Track message usage
+		await ctx.scheduler.runAfter(
+			0,
+			internal.usageTracking.recordMessageCreated,
+			{
+				userId,
+				workspaceId: args.workspaceId,
+			}
+		);
+
 		// If this is a reply to a thread, send an email notification
 		if (args.parentMessageId) {
 			await ctx.scheduler.runAfter(0, api.email.sendThreadReplyEmail, {
@@ -371,12 +381,13 @@ export const create = mutation({
 
 			// Check for data-member-id attributes in HTML
 			const memberIdRegex = /data-member-id="([^"]+)"/g;
-			let match;
-			while ((match = memberIdRegex.exec(args.body)) !== null) {
+			let match: RegExpExecArray | null = memberIdRegex.exec(args.body);
+			while (match !== null) {
 				const memberId = match[1] as Id<"members">;
 				if (memberMap.has(memberId)) {
 					mentionedMemberIds.add(memberId);
 				}
+				match = memberIdRegex.exec(args.body);
 			}
 
 			// Check for @username mentions in text or Quill Delta format
@@ -388,12 +399,13 @@ export const create = mutation({
 						if (op.insert && typeof op.insert === "string") {
 							// Check for data-member-id in HTML
 							const memberIdRegex = /data-member-id="([^"]+)"/g;
-							let match;
-							while ((match = memberIdRegex.exec(op.insert)) !== null) {
+							let match: RegExpExecArray | null = memberIdRegex.exec(op.insert);
+							while (match !== null) {
 								const memberId = match[1] as Id<"members">;
 								if (memberMap.has(memberId)) {
 									mentionedMemberIds.add(memberId);
 								}
+								match = memberIdRegex.exec(op.insert);
 							}
 
 							// Check for @username mentions
@@ -586,7 +598,9 @@ export const getUserMessages = query({
 
 		// Get all members and users in one go
 		const memberIds = new Set<Id<"members">>();
-		messages.forEach((message) => memberIds.add(message.memberId));
+		messages.forEach((message) => {
+			memberIds.add(message.memberId);
+		});
 		conversations.forEach((conversation) => {
 			memberIds.add(conversation.memberOneId);
 			memberIds.add(conversation.memberTwoId);
@@ -763,7 +777,9 @@ export const getThreadMessages = query({
 
 		// Get all members and users in one go
 		const memberIds = new Set<Id<"members">>();
-		threadMessages.forEach((message) => memberIds.add(message.memberId));
+		threadMessages.forEach((message) => {
+			memberIds.add(message.memberId);
+		});
 		parentMessages.forEach((message) => {
 			if (message?.memberId) memberIds.add(message.memberId);
 		});
@@ -1063,14 +1079,12 @@ export const getMentionedMessages = query({
 							return acc;
 						}
 
-						return [
-							...acc,
-							{
-								...reaction,
-								count: 1,
-								memberIds: [reaction.memberId],
-							},
-						];
+						acc.push({
+							...reaction,
+							count: 1,
+							memberIds: [reaction.memberId],
+						});
+						return acc;
 					},
 					[] as Array<
 						Omit<Doc<"reactions">, "memberId"> & {

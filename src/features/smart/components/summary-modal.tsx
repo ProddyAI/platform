@@ -70,6 +70,9 @@ export const SummaryModal = ({
 			<div
 				className="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900"
 				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+				role="dialog"
+				tabIndex={-1}
 			>
 				{/* Header */}
 				<div className="mb-4">
@@ -86,6 +89,7 @@ export const SummaryModal = ({
 						<button
 							className="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800"
 							onClick={onClose}
+							type="button"
 						>
 							<X className="h-5 w-5" />
 						</button>

@@ -93,7 +93,10 @@ export function findIntersectingLayersWithRectangle(
 		if (!layer) return false;
 
 		// Get layer properties safely
-		let layerX, layerY, layerWidth, layerHeight;
+		let layerX: number | undefined;
+		let layerY: number | undefined;
+		let layerWidth: number | undefined;
+		let layerHeight: number | undefined;
 
 		try {
 			// Try to get properties using get method first (for LiveObjects)
@@ -115,6 +118,15 @@ export function findIntersectingLayersWithRectangle(
 		}
 
 		// Check for intersection with tolerance
+		if (
+			typeof layerX !== "number" ||
+			typeof layerY !== "number" ||
+			typeof layerWidth !== "number" ||
+			typeof layerHeight !== "number"
+		) {
+			return false;
+		}
+
 		const intersects =
 			layerX + layerWidth + tolerance >= minX &&
 			layerX - tolerance <= maxX &&

@@ -22,8 +22,9 @@ function extractTextFromRichText(body: string): string {
 	}
 
 	// Check cache first
-	if (extractionCache.has(body)) {
-		return extractionCache.get(body)!;
+	const cached = extractionCache.get(body);
+	if (cached !== undefined) {
+		return cached;
 	}
 
 	const trimmedBody = body.trim();
@@ -113,9 +114,15 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Parse request data
-		let requestData;
+		let requestData: {
+			messages?: MessageData[];
+			channelName?: string;
+		} | null = null;
 		try {
-			requestData = await req.json();
+			requestData = (await req.json()) as {
+				messages?: MessageData[];
+				channelName?: string;
+			};
 		} catch (_parseError) {
 			return NextResponse.json(
 				{ error: "Invalid JSON in request" },
@@ -123,7 +130,8 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { messages, channelName } = requestData;
+		const messages = requestData?.messages;
+		const channelName = requestData?.channelName;
 
 		// Use channelName as the context - this API now only handles channel suggestions
 		const contextName = channelName || "channel";
@@ -256,7 +264,7 @@ Let's discuss this in our next meeting. ||| I've completed the task you assigned
 
 			const userContent = `Channel name: ${channelName || "General"}\n\nRecent conversation:\n${chatHistory}\n\nGenerate 3 contextually relevant message suggestions:`;
 
-			let text;
+			let text = "";
 			try {
 				const response = await generateText({
 					model: openai("gpt-4o-mini"),

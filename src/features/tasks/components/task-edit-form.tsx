@@ -149,9 +149,9 @@ export const TaskEditForm = ({
 				</div>
 
 				<div>
-					<label className="text-sm font-medium block mb-2">
+					<div className="text-sm font-medium block mb-2">
 						Category (optional)
-					</label>
+					</div>
 					<TaskCategorySelector
 						onChange={setCategoryId}
 						value={categoryId}

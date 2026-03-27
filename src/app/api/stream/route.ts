@@ -8,7 +8,7 @@ const apiSecret = process.env.STREAM_API_SECRET;
 export async function POST(req: NextRequest) {
 	try {
 		// Get the user ID from the request
-		const { userId, userName, userImage } = await req.json();
+		const { userId } = await req.json();
 
 		if (!userId) {
 			return NextResponse.json(

@@ -141,10 +141,24 @@ export const Header = () => {
 					{/* Desktop Navigation */}
 					<nav className="hidden md:flex items-center gap-8">
 						{/* Features dropdown */}
+						// biome-ignore lint/a11y/useSemanticElements
 						<div
 							className="relative"
+							onBlur={() => setIsModulesOpen(false)}
+							onFocus={() => setIsModulesOpen(true)}
+							onKeyDown={(event) => {
+								if (event.key === "Escape") {
+									setIsModulesOpen(false);
+								}
+								if (event.key === "Enter" || event.key === " ") {
+									event.preventDefault();
+									setIsModulesOpen((prev) => !prev);
+								}
+							}}
 							onMouseEnter={() => setIsModulesOpen(true)}
 							onMouseLeave={() => setIsModulesOpen(false)}
+							role="button"
+							tabIndex={0}
 						>
 							<Link
 								className={cn(
@@ -327,6 +341,7 @@ export const Header = () => {
 						aria-label={isMenuOpen ? "Close menu" : "Open menu"}
 						className="md:hidden p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
 						onClick={toggleMenu}
+						type="button"
 					>
 						{isMenuOpen ? <X size={24} /> : <Menu size={24} />}
 					</button>

@@ -237,7 +237,26 @@ export const getNotificationPreferences = query({
 			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
-		const notifications = preferences?.settings?.notifications;
+		const notifications = preferences?.settings?.notifications as
+			| {
+					mentions?: boolean;
+					assignee?: boolean;
+					threadReply?: boolean;
+					directMessage?: boolean;
+					weeklyDigest?: boolean;
+					weeklyDigestDay?:
+						| "monday"
+						| "tuesday"
+						| "wednesday"
+						| "thursday"
+						| "friday"
+						| "saturday"
+						| "sunday";
+					inviteSent?: boolean;
+					workspaceJoin?: boolean;
+					onlineStatus?: boolean;
+			  }
+			| undefined;
 
 		// Return with defaults
 		return {
@@ -663,7 +682,26 @@ export const getNotificationPreferencesByUserId = query({
 			.withIndex("by_user_id", (q) => q.eq("userId", args.userId))
 			.unique();
 
-		const notifications = preferences?.settings?.notifications;
+		const notifications = preferences?.settings?.notifications as
+			| {
+					mentions?: boolean;
+					assignee?: boolean;
+					threadReply?: boolean;
+					directMessage?: boolean;
+					weeklyDigest?: boolean;
+					weeklyDigestDay?:
+						| "monday"
+						| "tuesday"
+						| "wednesday"
+						| "thursday"
+						| "friday"
+						| "saturday"
+						| "sunday";
+					inviteSent?: boolean;
+					workspaceJoin?: boolean;
+					onlineStatus?: boolean;
+			  }
+			| undefined;
 
 		// Return with defaults
 		return {

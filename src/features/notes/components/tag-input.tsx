@@ -92,6 +92,7 @@ export const TagInput = ({
 					<button
 						className="hover:bg-black/10 rounded-full p-0.5 transition-colors"
 						onClick={() => removeTag(tag)}
+						type="button"
 					>
 						<X className="h-2.5 w-2.5" />
 					</button>

@@ -70,11 +70,15 @@ const TestBoardPage = () => {
 	};
 
 	const handleCreateCard = (newCard: any) => {
+		if (!selectedListId) {
+			return;
+		}
+
 		const cardWithId = {
 			...newCard,
 			_id: `card-${Date.now()}`,
 			listId: selectedListId,
-			position: cardsByList[selectedListId!]?.length || 0,
+			position: cardsByList[selectedListId]?.length || 0,
 			_creationTime: Date.now(),
 		};
 		setCards((prev) => [...prev, cardWithId]);

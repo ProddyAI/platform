@@ -18,12 +18,14 @@ import type { Point } from "../types/canvas";
 type FlowchartGeneratorProps = {
 	onGenerateFlowchart: (mermaidCode: string, position: Point) => void;
 	camera: { x: number; y: number };
+	workspaceId?: string;
 	children: React.ReactNode;
 };
 
 export const FlowchartGenerator = ({
 	onGenerateFlowchart,
 	camera,
+	workspaceId,
 	children,
 }: FlowchartGeneratorProps) => {
 	const [isOpen, setIsOpen] = useState(false);
@@ -46,6 +48,7 @@ export const FlowchartGenerator = ({
 				},
 				body: JSON.stringify({
 					prompt: prompt.trim(),
+					workspaceId,
 				}),
 			});
 

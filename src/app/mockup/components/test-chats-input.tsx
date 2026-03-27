@@ -222,6 +222,7 @@ export const TestChatsInput = ({
 												getConfidenceColor(reply.confidence)
 											)}
 											onClick={() => handleSmartReply(reply)}
+											type="button"
 										>
 											{reply.text}
 										</button>
@@ -298,6 +299,7 @@ export const TestChatsInput = ({
 										className="w-full flex items-center gap-3 p-3 hover:bg-muted transition-colors text-left"
 										key={member._id}
 										onClick={() => handleMentionSelect(member)}
+										type="button"
 									>
 										<Avatar className="h-8 w-8">
 											<AvatarFallback className="text-xs">

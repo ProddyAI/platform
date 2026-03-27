@@ -142,8 +142,11 @@ const ContactPage = () => {
 								<div className="flex space-x-4">
 									<a
 										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
-										href="#"
+										href="https://www.facebook.com"
+										rel="noreferrer"
+										target="_blank"
 									>
+										<span className="sr-only">Facebook</span>
 										<svg
 											aria-hidden="true"
 											className="h-5 w-5 text-gray-600"
@@ -159,8 +162,11 @@ const ContactPage = () => {
 									</a>
 									<a
 										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
-										href="#"
+										href="https://x.com"
+										rel="noreferrer"
+										target="_blank"
 									>
+										<span className="sr-only">X</span>
 										<svg
 											aria-hidden="true"
 											className="h-5 w-5 text-gray-600"
@@ -172,8 +178,11 @@ const ContactPage = () => {
 									</a>
 									<a
 										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
-										href="#"
+										href="https://www.instagram.com"
+										rel="noreferrer"
+										target="_blank"
 									>
+										<span className="sr-only">Instagram</span>
 										<svg
 											aria-hidden="true"
 											className="h-5 w-5 text-gray-600"
@@ -189,8 +198,11 @@ const ContactPage = () => {
 									</a>
 									<a
 										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
-										href="#"
+										href="https://github.com"
+										rel="noreferrer"
+										target="_blank"
 									>
+										<span className="sr-only">GitHub</span>
 										<svg
 											aria-hidden="true"
 											className="h-5 w-5 text-gray-600"
@@ -349,6 +361,7 @@ const ContactPage = () => {
 														viewBox="0 0 24 24"
 														xmlns="http://www.w3.org/2000/svg"
 													>
+														<title>Loading</title>
 														<circle
 															className="opacity-25"
 															cx="12"

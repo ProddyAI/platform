@@ -4,7 +4,7 @@ import { Loader, Undo2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import VerificationInput from "react-verification-input";
 import { toast } from "sonner";
 
@@ -76,20 +76,23 @@ const JoinWorkspaceIdPage = () => {
 		verifyInvite();
 	}, [inviteHash, isLoading, isMember, workspaceId, router]);
 
-	const handleComplete = (value: string) => {
-		mutate(
-			{ workspaceId, joinCode: value },
-			{
-				onSuccess: (id) => {
-					router.replace(`/workspace/${id}`);
-					toast.success("Workspace joined.");
-				},
-				onError: () => {
-					toast.error("Failed to join workspace.");
-				},
-			}
-		);
-	};
+	const handleComplete = useCallback(
+		(value: string) => {
+			mutate(
+				{ workspaceId, joinCode: value },
+				{
+					onSuccess: (id) => {
+						router.replace(`/workspace/${id}`);
+						toast.success("Workspace joined.");
+					},
+					onError: () => {
+						toast.error("Failed to join workspace.");
+					},
+				}
+			);
+		},
+		[mutate, router, workspaceId]
+	);
 
 	// Auto-join if code is provided in URL
 	useEffect(() => {

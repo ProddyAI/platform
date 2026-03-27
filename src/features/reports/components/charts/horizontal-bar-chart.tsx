@@ -51,12 +51,25 @@ export const HorizontalBarChart = ({
 					const isHovered = hoveredIndex === index;
 
 					return (
-						<div
+						<button
+							aria-disabled={!onBarClick}
 							className="space-y-1"
 							key={item.id ?? item.label}
-							onClick={() => onBarClick?.(item.label, item.value, index)}
+							onClick={
+								onBarClick
+									? () => onBarClick(item.label, item.value, index)
+									: undefined
+							}
+							onKeyDown={(event) => {
+								if (event.key === "Enter" || event.key === " ") {
+									event.preventDefault();
+									onBarClick?.(item.label, item.value, index);
+								}
+							}}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
+							tabIndex={0}
+							type="button"
 						>
 							<div className="flex justify-between items-center">
 								<span className="text-sm truncate">{item.label}</span>
@@ -82,7 +95,7 @@ export const HorizontalBarChart = ({
 									}}
 								/>
 							</div>
-						</div>
+						</button>
 					);
 				})}
 			</div>

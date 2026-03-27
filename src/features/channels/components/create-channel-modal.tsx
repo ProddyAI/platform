@@ -1,6 +1,7 @@
 "use client";
 
 import { Smile, Upload, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -265,9 +266,11 @@ export const CreateChannelModal = () => {
 										{iconPreview || icon ? (
 											<>
 												{iconPreview ? (
-													<img
+													<Image
 														alt="Channel icon preview"
-														className="h-full w-full object-cover rounded-sm"
+														className="object-cover rounded-sm"
+														fill
+														sizes="80px"
 														src={iconPreview}
 													/>
 												) : (

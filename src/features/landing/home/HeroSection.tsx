@@ -142,6 +142,7 @@ export const HeroSection = () => {
 									});
 								}
 							}}
+							type="button"
 						>
 							<span className="text-sm font-medium mb-2">Discover More</span>
 							<ChevronDown className="size-5 animate-bounce" />

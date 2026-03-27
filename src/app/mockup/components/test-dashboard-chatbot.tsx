@@ -2,7 +2,7 @@
 
 import { Bot, Calendar, Send, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,7 +166,7 @@ export const TestDashboardChatbot = () => {
 	const [input, setInput] = useState("");
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-	const scrollToBottom = () => {
+	const scrollToBottom = useCallback(() => {
 		if (scrollAreaRef.current) {
 			const scrollContainer = scrollAreaRef.current.querySelector(
 				"[data-radix-scroll-area-viewport]"
@@ -175,7 +175,7 @@ export const TestDashboardChatbot = () => {
 				scrollContainer.scrollTop = scrollContainer.scrollHeight;
 			}
 		}
-	};
+	}, []);
 
 	useEffect(() => {
 		scrollToBottom();

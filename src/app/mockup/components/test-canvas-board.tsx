@@ -49,27 +49,7 @@ export const TestCanvasBoard = ({
 	const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 	const canvasRef = useRef<HTMLDivElement>(null);
 
-	const handleCanvasClick = (e: React.MouseEvent) => {
-		// Only deselect if we're in select mode and clicking on empty canvas
-		// Don't deselect when using other tools
-		if (selectedTool === "select") {
-			// Check if we clicked on an empty area (not on an item)
-			const target = e.target as HTMLElement;
-			if (
-				target === canvasRef.current ||
-				target.closest("[data-canvas-item]") === null
-			) {
-				onItemSelect(null);
-			}
-			return;
-		}
-
-		const rect = canvasRef.current?.getBoundingClientRect();
-		if (!rect) return;
-
-		const x = (e.clientX - rect.left) / (zoom / 100);
-		const y = (e.clientY - rect.top) / (zoom / 100);
-
+	const createItemAt = (x: number, y: number) => {
 		// Create new item based on selected tool
 		let itemType: CanvasItem["type"] = "text";
 		if (
@@ -102,6 +82,30 @@ export const TestCanvasBoard = ({
 		};
 
 		onItemCreate(newItem);
+	};
+
+	const handleCanvasClick = (e: React.MouseEvent) => {
+		// Only deselect if we're in select mode and clicking on empty canvas
+		// Don't deselect when using other tools
+		if (selectedTool === "select") {
+			// Check if we clicked on an empty area (not on an item)
+			const target = e.target as HTMLElement;
+			if (
+				target === canvasRef.current ||
+				target.closest("[data-canvas-item]") === null
+			) {
+				onItemSelect(null);
+			}
+			return;
+		}
+
+		const rect = canvasRef.current?.getBoundingClientRect();
+		if (!rect) return;
+
+		const x = (e.clientX - rect.left) / (zoom / 100);
+		const y = (e.clientY - rect.top) / (zoom / 100);
+
+		createItemAt(x, y);
 	};
 
 	const getDefaultContent = (tool: string): string => {
@@ -169,7 +173,7 @@ export const TestCanvasBoard = ({
 		const isSelected = selectedItemId === item.id;
 
 		return (
-			<div
+			<button
 				className={cn(
 					"absolute cursor-pointer border-2 transition-all",
 					isSelected
@@ -182,6 +186,12 @@ export const TestCanvasBoard = ({
 				data-canvas-item={item.id}
 				key={item.id}
 				onDoubleClick={() => handleItemDoubleClick(item)}
+				onKeyDown={(event) => {
+					if (event.key === "Enter" || event.key === " ") {
+						event.preventDefault();
+						handleItemDoubleClick(item);
+					}
+				}}
 				onMouseDown={(e) => handleItemMouseDown(e, item)}
 				style={{
 					left: item.x,
@@ -195,6 +205,7 @@ export const TestCanvasBoard = ({
 					transform: `scale(${zoom / 100})`,
 					transformOrigin: "top left",
 				}}
+				type="button"
 			>
 				<div className="w-full h-full flex items-center justify-center p-2 text-center overflow-hidden">
 					{item.type === "note" ? (
@@ -215,7 +226,7 @@ export const TestCanvasBoard = ({
 						<div className="absolute -top-1 -left-1 w-3 h-3 bg-primary border border-background rounded-sm cursor-nw-resize" />
 					</>
 				)}
-			</div>
+			</button>
 		);
 	};
 
@@ -224,10 +235,29 @@ export const TestCanvasBoard = ({
 			<div
 				className="w-full h-full relative overflow-auto cursor-crosshair"
 				onClick={handleCanvasClick}
+				onKeyDown={(event) => {
+					if (event.key !== "Enter" && event.key !== " ") {
+						return;
+					}
+					event.preventDefault();
+
+					if (selectedTool === "select") {
+						onItemSelect(null);
+						return;
+					}
+
+					const rect = canvasRef.current?.getBoundingClientRect();
+					if (!rect) return;
+
+					const x = rect.width / 2;
+					const y = rect.height / 2;
+					createItemAt(x / (zoom / 100), y / (zoom / 100));
+				}}
 				onMouseLeave={handleMouseUp}
 				onMouseMove={handleMouseMove}
 				onMouseUp={handleMouseUp}
 				ref={canvasRef}
+				role="application"
 				style={{
 					backgroundImage: `
             radial-gradient(circle, #e5e7eb 1px, transparent 1px)

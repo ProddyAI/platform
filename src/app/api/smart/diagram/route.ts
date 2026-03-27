@@ -1,9 +1,20 @@
 import { openai } from "@ai-sdk/openai";
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { generateText } from "ai";
+import { ConvexHttpClient } from "convex/browser";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 
 dotenv.config();
+
+function createConvexClient(): ConvexHttpClient {
+	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
+	}
+	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+}
 
 export async function POST(req: NextRequest) {
 	try {
@@ -16,6 +27,7 @@ export async function POST(req: NextRequest) {
 
 		const body = await req.json().catch(() => null);
 		const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+		const workspaceId = body?.workspaceId as Id<"workspaces"> | undefined;
 
 		if (!prompt) {
 			return NextResponse.json(
@@ -69,6 +81,21 @@ Mermaid:`;
 				{ error: "Empty Mermaid response" },
 				{ status: 502 }
 			);
+		}
+
+		// Track AI diagram usage
+		if (workspaceId) {
+			try {
+				const trackingConvex = createConvexClient();
+				const trackingToken = convexAuthNextjsToken();
+				if (trackingToken) trackingConvex.setAuth(trackingToken);
+				await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
+					workspaceId,
+					featureType: "aiDiagram",
+				});
+			} catch (trackErr) {
+				console.warn("[UsageTracking] Failed to record AI diagram:", trackErr);
+			}
 		}
 
 		return NextResponse.json({ mermaid });

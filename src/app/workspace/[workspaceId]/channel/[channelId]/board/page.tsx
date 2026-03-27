@@ -134,7 +134,9 @@ const BoardPage = () => {
 	const [statusColor, setStatusColor] = useState("#5e6ad2");
 
 	// ── Issue drawer state ──────────────────────────────────────────────────
-	const [drawerOpen, setDrawerOpen] = useState(false); const [linkageDiagramOpen, setLinkageDiagramOpen] = useState(false); const [focusedStatusId, setFocusedStatusId] = useState<Id<"statuses"> | null>(
+	const [drawerOpen, setDrawerOpen] = useState(false);
+	const [linkageDiagramOpen, setLinkageDiagramOpen] = useState(false);
+	const [focusedStatusId, setFocusedStatusId] = useState<Id<"statuses"> | null>(
 		null
 	);
 	const handledFocusIssueRef = useRef<string | null>(null);
@@ -157,12 +159,12 @@ const BoardPage = () => {
 	// ── Optimistic statuses (for drag reorder) ──────────────────────────────
 	const [optimisticStatuses, setOptimisticStatuses] = useState<
 		| {
-			_id: Id<"statuses">;
-			name: string;
-			color: string;
-			order: number;
-			channelId: Id<"channels">;
-		}[]
+				_id: Id<"statuses">;
+				name: string;
+				color: string;
+				order: number;
+				channelId: Id<"channels">;
+		  }[]
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
@@ -609,6 +611,7 @@ const BoardPage = () => {
 							setStatusColor(status.color);
 							setEditStatusOpen(true);
 						}}
+						onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
 						onMoveIssueStatus={handleMoveIssueStatus}
 						onReorderStatuses={handleReorderStatuses}
 						onReorderStatusesPersist={async (statusOrders) => {
@@ -651,6 +654,7 @@ const BoardPage = () => {
 						setStatusColor("#5e6ad2");
 						setAddStatusOpen(true);
 					}}
+					onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
 					onSearchClick={() => {
 						// Trigger global search open
 						const event = new KeyboardEvent("keydown", {

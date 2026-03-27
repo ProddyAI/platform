@@ -1,5 +1,5 @@
 import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
+import { OpenAIProvider } from "@composio/openai";
 import { logger } from "./logger";
 
 // Type definitions for Composio tools
@@ -692,15 +692,15 @@ export const APP_CONFIGS = {
 	},
 } as const;
 
-// Initialize Composio client with Vercel AI SDK provider
-export function createComposioClient(): Composio<VercelProvider> {
+// Initialize Composio client with OpenAI provider
+export function createComposioClient(): Composio<OpenAIProvider> {
 	if (!process.env.COMPOSIO_API_KEY) {
 		throw new Error("COMPOSIO_API_KEY environment variable is required");
 	}
 
 	return new Composio({
 		apiKey: process.env.COMPOSIO_API_KEY,
-		provider: new VercelProvider(),
+		provider: new OpenAIProvider(),
 	});
 }
 

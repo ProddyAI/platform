@@ -1,6 +1,17 @@
 import { openai } from "@ai-sdk/openai";
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { generateText } from "ai";
+import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+
+function createConvexClient(): ConvexHttpClient {
+	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
+	}
+	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+}
 
 export async function POST(req: NextRequest) {
 	try {
@@ -12,9 +23,15 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		let requestData;
+		let requestData: {
+			prompt?: string;
+			workspaceId?: Id<"workspaces">;
+		} | null = null;
 		try {
-			requestData = await req.json();
+			requestData = (await req.json()) as {
+				prompt?: string;
+				workspaceId?: Id<"workspaces">;
+			};
 		} catch (parseError) {
 			console.error("Error parsing JSON:", parseError);
 			return NextResponse.json(
@@ -23,7 +40,8 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { prompt } = requestData;
+		const prompt = requestData?.prompt;
+		const workspaceId = requestData?.workspaceId;
 
 		if (!prompt) {
 			console.error("Missing prompt in request");
@@ -99,6 +117,27 @@ Generate the Mermaid flowchart code:`;
 				!mermaidCode.startsWith("graph")
 			) {
 				mermaidCode = `flowchart TD\n${mermaidCode}`;
+			}
+
+			// Track AI flowchart usage
+			if (workspaceId) {
+				try {
+					const trackingConvex = createConvexClient();
+					const trackingToken = convexAuthNextjsToken();
+					if (trackingToken) trackingConvex.setAuth(trackingToken);
+					await trackingConvex.mutation(
+						api.usageTracking.recordAIRequestPublic,
+						{
+							workspaceId,
+							featureType: "aiDiagram",
+						}
+					);
+				} catch (trackErr) {
+					console.warn(
+						"[UsageTracking] Failed to record AI flowchart:",
+						trackErr
+					);
+				}
 			}
 
 			return NextResponse.json({

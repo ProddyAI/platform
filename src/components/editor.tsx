@@ -630,7 +630,9 @@ const Editor = ({
 									onClick={() => {
 										setImage(null);
 
-										imageElementRef.current!.value = "";
+										if (imageElementRef.current) {
+											imageElementRef.current.value = "";
+										}
 									}}
 									type="button"
 								>

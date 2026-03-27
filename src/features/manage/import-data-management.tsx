@@ -132,9 +132,8 @@ export const ImportDataManagement = ({
 	});
 
 	// Hooks
-	const { data: connections, isLoading: isLoadingConnections } =
-		useGetImportConnections({ workspaceId });
-	const { data: jobs, isLoading: isLoadingJobs } = useGetImportJobs({
+	const { data: connections } = useGetImportConnections({ workspaceId });
+	const { data: jobs } = useGetImportJobs({
 		workspaceId,
 		limit: 10,
 	});
@@ -291,7 +290,7 @@ export const ImportDataManagement = ({
 	};
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6" data-member-role={currentMember.role}>
 			{/* Header */}
 			<div>
 				<h3 className="text-lg font-medium">Import Data</h3>

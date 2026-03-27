@@ -109,6 +109,7 @@ export const Footer = () => {
 									<button
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
 										onClick={() => showTidioChat()}
+										type="button"
 									>
 										Support
 									</button>

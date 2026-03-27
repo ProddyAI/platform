@@ -15,9 +15,15 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		let requestData;
+		let requestData: {
+			content?: string;
+			title?: string;
+		} | null = null;
 		try {
-			requestData = await req.json();
+			requestData = (await req.json()) as {
+				content?: string;
+				title?: string;
+			};
 		} catch (parseError) {
 			console.error("Error parsing JSON:", parseError);
 			return NextResponse.json(
@@ -26,7 +32,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { content, title } = requestData;
+		const { content, title } = requestData ?? {};
 
 		if (!content) {
 			console.error("Missing content in request");
