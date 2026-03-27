@@ -241,7 +241,6 @@ export const Header = () => {
 								)}
 							</AnimatePresence>
 						</div>
-
 						{/* <Link
               href="/why-proddy"
               className={cn(
@@ -251,7 +250,6 @@ export const Header = () => {
             >
               Why Proddy?
             </Link> */}
-
 						<Link
 							className={cn(
 								"text-sm font-medium transition-colors duration-200 flex items-center gap-1",
@@ -266,7 +264,6 @@ export const Header = () => {
 								New
 							</span>
 						</Link>
-
 						<Link
 							className={cn(
 								"text-sm font-medium transition-colors duration-200",
@@ -278,7 +275,6 @@ export const Header = () => {
 						>
 							Pricing/-
 						</Link>
-
 						<Link
 							className={cn(
 								"text-sm font-medium transition-colors duration-200 flex items-center gap-1",

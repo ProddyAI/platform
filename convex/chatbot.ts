@@ -1125,11 +1125,7 @@ function renderAgendaDigest(opts: {
 			return `${c.title}${channelPart} — no due date`;
 		})
 	);
-	if (
-		opts.mentionsCount &&
-		opts.mentionsSummary &&
-		opts.mentionsSummary.trim()
-	) {
+	if (opts.mentionsCount && opts.mentionsSummary?.trim()) {
 		lines.push("");
 		lines.push("🔔 Mentions");
 		lines.push(opts.mentionsSummary.trim());

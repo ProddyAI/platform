@@ -57,7 +57,7 @@ export const CanvasWidget = ({
 
 	// Extract canvas items from messages
 	const canvasItems = useMemo(() => {
-		if (!channels || !messages || !messages.page) return [];
+		if (!channels || !messages?.page) return [];
 
 		const canvasMessages = [];
 

@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 		convex.setAuth(token);
 
 		const currentUser = await convex.query(api.users.current);
-		if (!currentUser || !currentUser.email) {
+		if (!currentUser?.email) {
 			console.error("[Invite Verify] User not found or email missing");
 			return NextResponse.json(
 				{ error: "User not found or email missing" },
