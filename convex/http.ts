@@ -9,6 +9,16 @@ const http = httpRouter();
 
 auth.addHttpRoutes(http);
 
+const parsePlanFromMetadata = (
+	metadata: Record<string, unknown> | undefined
+): "pro" | "enterprise" | undefined => {
+	const plan = metadata?.plan;
+	if (plan === "pro" || plan === "enterprise") {
+		return plan;
+	}
+	return undefined;
+};
+
 // ─── Dodo Payments Webhook ─────────────────────────────────────────────────────
 // Securely handles Dodo Payments webhook events with signature verification.
 // Ensure DODO_PAYMENTS_WEBHOOK_SECRET is configured in Convex dashboard env vars.
@@ -39,12 +49,16 @@ http.route({
 			const workspaceId = payload.data?.metadata?.workspace_id as
 				| Id<"workspaces">
 				| undefined;
+			const plan = parsePlanFromMetadata(
+				payload.data?.metadata as Record<string, unknown> | undefined
+			);
 
 			try {
 				await ctx.runMutation(internal.webhooks.createSubscription, {
 					workspaceId,
 					subscriptionId: payload.data.subscription_id,
 					status: payload.data.status,
+					plan,
 					raw: JSON.stringify(payload),
 				});
 			} catch (e) {
@@ -56,12 +70,16 @@ http.route({
 			const workspaceId = payload.data?.metadata?.workspace_id as
 				| Id<"workspaces">
 				| undefined;
+			const plan = parsePlanFromMetadata(
+				payload.data?.metadata as Record<string, unknown> | undefined
+			);
 
 			try {
 				await ctx.runMutation(internal.webhooks.updateSubscription, {
 					workspaceId,
 					subscriptionId: payload.data.subscription_id,
 					status: payload.data.status,
+					plan,
 					raw: JSON.stringify(payload),
 				});
 			} catch (e) {
@@ -116,8 +134,8 @@ http.route({
 			}
 
 			const redirectPath = workspaceId
-				? `/workspace/${workspaceId}/manage?tab=import&error=${encodeURIComponent(error)}`
-				: `/manage?error=${encodeURIComponent(error)}`;
+				? `/workspace/${workspaceId}/manage?error=${encodeURIComponent(error)}#import`
+				: `/manage?error=${encodeURIComponent(error)}#import`;
 
 			return new Response(null, {
 				status: 302,
@@ -200,8 +218,7 @@ http.route({
 			// Validate required token fields
 			if (
 				!tokenData.access_token ||
-				!tokenData.team ||
-				!tokenData.team.id ||
+				!tokenData.team?.id ||
 				!tokenData.team.name
 			) {
 				throw new Error("Invalid token response from Slack");
@@ -226,7 +243,7 @@ http.route({
 			return new Response(null, {
 				status: 302,
 				headers: {
-					Location: `${siteUrl}/workspace/${workspaceId}/manage?tab=import&success=slack_connected`,
+					Location: `${siteUrl}/workspace/${workspaceId}/manage?success=slack_connected#import`,
 				},
 			});
 		} catch (error) {
@@ -237,7 +254,7 @@ http.route({
 			return new Response(null, {
 				status: 302,
 				headers: {
-					Location: `${siteUrl}/workspace/${workspaceId}/manage?tab=import&error=${encodeURIComponent(errorMessage)}`,
+					Location: `${siteUrl}/workspace/${workspaceId}/manage?error=${encodeURIComponent(errorMessage)}#import`,
 				},
 			});
 		}

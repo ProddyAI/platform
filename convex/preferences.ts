@@ -89,7 +89,7 @@ export const getLastActiveWorkspace = query({
 			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
-		if (!userPrefs || !userPrefs.lastActiveWorkspaceId) {
+		if (!userPrefs?.lastActiveWorkspaceId) {
 			return null;
 		}
 
@@ -293,7 +293,7 @@ export const getWorkspacePreferences = query({
 			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
-		if (!userPrefs || !userPrefs.workspacePreferences) {
+		if (!userPrefs?.workspacePreferences) {
 			return null;
 		}
 

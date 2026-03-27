@@ -263,7 +263,6 @@ export const LineChart = ({
 										role="button"
 										tabIndex={0}
 									/>
-
 									{isHovered && (
 										<line
 											className="stroke-secondary/30 stroke-[0.5] stroke-dashed pointer-events-none"

@@ -176,7 +176,7 @@ export const PerformanceMetricsDashboard = ({
 
 	// Mock data for task completion trend
 	const taskCompletionTrend = useMemo(() => {
-		if (!taskData || !taskData.tasksByDate || !hasTaskData) return [];
+		if (!taskData?.tasksByDate || !hasTaskData) return [];
 
 		return taskData.tasksByDate.map((item) => ({
 			label: format(new Date(item.date), "MMM dd"),

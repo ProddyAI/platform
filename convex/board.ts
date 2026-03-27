@@ -2536,7 +2536,7 @@ export const getBlockingCards = query({
 	args: { cardId: v.id("cards") },
 	handler: async (ctx: QueryCtx, { cardId }) => {
 		const card = await ctx.db.get(cardId);
-		if (!card || !card.blockedBy) return [];
+		if (!card?.blockedBy) return [];
 
 		const blockingCards = await Promise.all(
 			card.blockedBy.map(async (blockerCardId) => {

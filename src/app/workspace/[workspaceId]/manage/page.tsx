@@ -9,7 +9,7 @@ import {
 	Shield,
 	Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingSection } from "@/features/billing/components/BillingSection";
@@ -23,12 +23,75 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../toolbar";
 
+const MANAGE_TABS = [
+	"workspace",
+	"members",
+	"billing",
+	"integrations",
+	"import",
+] as const;
+
+type ManageTab = (typeof MANAGE_TABS)[number];
+
+function getTabFromLocation(): ManageTab {
+	if (typeof window === "undefined") return "workspace";
+
+	const hashTab = window.location.hash.replace("#", "");
+	if (MANAGE_TABS.includes(hashTab as ManageTab)) {
+		return hashTab as ManageTab;
+	}
+
+	const params = new URLSearchParams(window.location.search);
+	const queryTab = params.get("tab");
+	if (queryTab && MANAGE_TABS.includes(queryTab as ManageTab)) {
+		return queryTab as ManageTab;
+	}
+
+	// Payment providers may return status params. Default to billing tab in that flow.
+	if (
+		params.has("subscription_id") ||
+		params.has("status") ||
+		params.has("email")
+	) {
+		return "billing";
+	}
+
+	return "workspace";
+}
+
 const ManagePage = () => {
 	// Set document title
 	useDocumentTitle("Manage Workspace");
 
 	const workspaceId = useWorkspaceId();
-	const _router = useRouter();
+	const [activeTab, setActiveTab] = useState<ManageTab>("workspace");
+
+	useEffect(() => {
+		const syncTabFromUrl = () => {
+			setActiveTab(getTabFromLocation());
+		};
+
+		syncTabFromUrl();
+		window.addEventListener("hashchange", syncTabFromUrl);
+
+		return () => {
+			window.removeEventListener("hashchange", syncTabFromUrl);
+		};
+	}, []);
+
+	const handleTabChange = (value: string) => {
+		const nextTab = value as ManageTab;
+		if (!MANAGE_TABS.includes(nextTab)) return;
+
+		setActiveTab(nextTab);
+		if (typeof window !== "undefined") {
+			window.history.replaceState(
+				null,
+				"",
+				`${window.location.pathname}${window.location.search}#${nextTab}`
+			);
+		}
+	};
 
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
 		workspaceId,
@@ -93,7 +156,11 @@ const ManagePage = () => {
 						</div>
 					) : (
 						/* For admins and owners, show all tabs */
-						<Tabs className="w-full" defaultValue="workspace">
+						<Tabs
+							className="w-full"
+							onValueChange={handleTabChange}
+							value={activeTab}
+						>
 							<TabsList className="grid w-full grid-cols-5 mb-8">
 								<TabsTrigger value="workspace">
 									<Settings className="h-4 w-4 mr-2" />

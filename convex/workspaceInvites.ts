@@ -239,7 +239,7 @@ export const getJoinCodeForVerification = action({
 		const user = await ctx.runQuery(internal.workspaceInvites.getUserById, {
 			userId,
 		});
-		if (!user || !user.email) {
+		if (!user?.email) {
 			throw new Error("Unauthorized. User email not found.");
 		}
 

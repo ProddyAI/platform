@@ -539,7 +539,7 @@ export const notifyImportComplete = internalAction({
 			id: member.userId,
 		});
 
-		if (!user || !user.email) return;
+		if (!user?.email) return;
 
 		// Only send email for terminal states
 		if (

@@ -113,7 +113,7 @@ export function UsageDashboard({
 }: UsageDashboardProps) {
 	const usage = useQuery(api.usageTracking.getWorkspaceUsage, { workspaceId });
 
-	if (!usage || !usage.plan || !usage.ai || !usage.collaboration) {
+	if (!usage?.plan || !usage.ai || !usage.collaboration) {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<div className="flex items-center gap-2 text-muted-foreground">

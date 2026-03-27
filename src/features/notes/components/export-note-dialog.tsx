@@ -71,7 +71,7 @@ export const ExportNoteDialog = ({
 	};
 
 	const convertBlockToMarkdown = (block: any): string => {
-		if (!block || !block.type) return "";
+		if (!block?.type) return "";
 
 		switch (block.type) {
 			case "paragraph":
@@ -141,7 +141,7 @@ export const ExportNoteDialog = ({
 	};
 
 	const convertBlockToHTML = (block: any): string => {
-		if (!block || !block.type) return "";
+		if (!block?.type) return "";
 
 		switch (block.type) {
 			case "paragraph":

@@ -213,7 +213,7 @@ export const changePassword = mutation({
 		}
 
 		const user = await ctx.db.get(userId);
-		if (!user || !user.email) {
+		if (!user?.email) {
 			throw new Error("User not found");
 		}
 
