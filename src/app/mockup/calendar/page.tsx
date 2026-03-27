@@ -286,11 +286,10 @@ const TestCalendarPage = () => {
 							<div className="grid h-[calc(100%-1rem)] grid-cols-7 grid-rows-6 gap-px bg-muted">
 								{weeks.flat().map((dayObj, index) => (
 									<div
-										className={`relative bg-background p-1 ${
-											dayObj.isCurrentMonth
+										className={`relative bg-background p-1 ${dayObj.isCurrentMonth
 												? ""
 												: "text-muted-foreground opacity-50"
-										}`}
+											}`}
 										key={
 											dayObj.day !== null
 												? `day-${dayObj.day}`
@@ -300,15 +299,14 @@ const TestCalendarPage = () => {
 										{dayObj.day && (
 											<>
 												<div
-													className={`absolute right-1 top-1 text-xs ${
-														dayObj.day &&
-														new Date().getDate() === dayObj.day &&
-														new Date().getMonth() === currentDate.getMonth() &&
-														new Date().getFullYear() ===
+													className={`absolute right-1 top-1 text-xs ${dayObj.day &&
+															new Date().getDate() === dayObj.day &&
+															new Date().getMonth() === currentDate.getMonth() &&
+															new Date().getFullYear() ===
 															currentDate.getFullYear()
 															? "h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white -mt-0.5 -mr-0.5"
 															: ""
-													}`}
+														}`}
 												>
 													{dayObj.day}
 												</div>
@@ -319,7 +317,7 @@ const TestCalendarPage = () => {
 															.filter(
 																(event) =>
 																	filterOptions[
-																		event.type as keyof typeof filterOptions
+																	event.type as keyof typeof filterOptions
 																	]
 															)
 															.map((event) => (
@@ -561,7 +559,7 @@ const TestCalendarPage = () => {
 
 			{/* Event Details Modal/Sidebar would go here */}
 			{selectedEvent && (
-				// biome-ignore lint/a11y/useSemanticElements
+
 				<div
 					className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
 					onClick={() => setSelectedEvent(null)}

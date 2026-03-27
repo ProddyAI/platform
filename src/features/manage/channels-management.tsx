@@ -526,7 +526,7 @@ export const ChannelsManagement = ({
 										ref={editImageInputRef}
 										type="file"
 									/>
-									// biome-ignore lint/a11y/useSemanticElements
+
 									<div
 										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 										onClick={() =>
