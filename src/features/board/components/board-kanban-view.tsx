@@ -341,6 +341,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 									>
 										<BoardStatusColumn
 											assigneeData={memberDataMap}
+											blockingStatsMap={blockingStatsMap}
 											disableIssueDrag={disableIssueDrag}
 											isFocused={focusedStatusId === status._id}
 											issues={issuesByStatus[status._id] || []}
@@ -350,7 +351,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 											onEditStatus={() => onEditStatus(status)}
 											status={status}
 											subIssueStatsMap={subIssueStatsMap}
-											blockingStatsMap={blockingStatsMap}
 										/>
 									</div>
 								))}
@@ -362,6 +362,12 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 						{activeItem?.type === "issue" && (
 							<BoardIssueRow
 								assigneeData={memberDataMap}
+								blockedByCount={
+									blockingStatsMap?.[activeItem.item._id]?.blockedByCount
+								}
+								blockingCount={
+									blockingStatsMap?.[activeItem.item._id]?.blockingCount
+								}
 								isDragOverlay
 								issue={activeItem.item}
 								onClick={() => {

@@ -165,11 +165,12 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 							<TooltipTrigger asChild>
 								<Button
 									aria-label="Toggle dependency map"
+									aria-pressed={diagramOpen}
 									className={cn(
 										"h-8 w-8 p-0 flex-shrink-0 transition-colors",
 										diagramOpen
 											? "bg-orange-500/10 text-orange-500 hover:bg-orange-500/20"
-											: "hover:bg-muted/60",
+											: "hover:bg-muted/60"
 									)}
 									onClick={onToggleDiagram}
 									size="icon"

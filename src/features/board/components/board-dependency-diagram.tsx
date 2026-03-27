@@ -1,7 +1,9 @@
 "use client";
 
+import DOMPurify from "dompurify";
 import mermaid from "mermaid";
 import { useEffect, useRef } from "react";
+import { createMermaidDependencyDiagram } from "@/features/board/lib/dependency-diagram";
 
 export interface BlockingEdge {
 	blockingIssueId: string;
@@ -16,9 +18,7 @@ interface BoardDependencyDiagramProps {
 
 let mermaidInitialized = false;
 
-export function BoardDependencyDiagram({
-	edges,
-}: BoardDependencyDiagramProps) {
+export function BoardDependencyDiagram({ edges }: BoardDependencyDiagramProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const renderCountRef = useRef(0);
 	const latestRenderIdRef = useRef<string>("");
@@ -30,8 +30,12 @@ export function BoardDependencyDiagram({
 			mermaid.initialize({
 				startOnLoad: false,
 				theme: "neutral",
-				securityLevel: "loose",
+				securityLevel: "strict",
 				fontFamily: "inherit",
+				flowchart: {
+					htmlLabels: false,
+					useMaxWidth: true,
+				},
 			});
 			mermaidInitialized = true;
 		}
@@ -41,22 +45,7 @@ export function BoardDependencyDiagram({
 			return;
 		}
 
-		const seen = new Set<string>();
-		const lines: string[] = [];
-		for (const e of edges) {
-			const fromId = e.blockingIssueId.replace(/[^a-zA-Z0-9]/g, "_");
-			const toId = e.blockedIssueId.replace(/[^a-zA-Z0-9]/g, "_");
-			const fromTitle = e.blockingTitle.replace(/"/g, "'");
-			const toTitle = e.blockedTitle.replace(/"/g, "'");
-
-			const key = `${fromId}->${toId}`;
-			if (!seen.has(key)) {
-				seen.add(key);
-				lines.push(`  ${fromId}["${fromTitle}"] --> ${toId}["${toTitle}"]`);
-			}
-		}
-
-		const diagram = `graph LR\n${lines.join("\n")}`;
+		const diagram = createMermaidDependencyDiagram(edges);
 		renderCountRef.current += 1;
 		const id = `dep-diagram-${renderCountRef.current}-${Math.random()
 			.toString(36)
@@ -66,19 +55,15 @@ export function BoardDependencyDiagram({
 		mermaid
 			.render(id, diagram)
 			.then(({ svg }) => {
-				if (
-					containerRef.current &&
-					latestRenderIdRef.current === id
-				) {
-					containerRef.current.innerHTML = svg;
+				if (containerRef.current && latestRenderIdRef.current === id) {
+					containerRef.current.innerHTML = DOMPurify.sanitize(svg, {
+						USE_PROFILES: { svg: true, svgFilters: true },
+					});
 				}
 			})
 			.catch((err) => {
 				console.error("[BoardDependencyDiagram] render error:", err);
-				if (
-					containerRef.current &&
-					latestRenderIdRef.current === id
-				) {
+				if (containerRef.current && latestRenderIdRef.current === id) {
 					containerRef.current.innerHTML =
 						'<p class="text-sm text-destructive">Failed to render diagram.</p>';
 				}
@@ -95,8 +80,8 @@ export function BoardDependencyDiagram({
 
 	return (
 		<div
-			ref={containerRef}
 			className="w-full overflow-x-auto rounded-md bg-muted/20 p-4 min-h-[80px]"
+			ref={containerRef}
 		/>
 	);
 }

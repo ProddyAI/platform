@@ -1,14 +1,15 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import { GitBranch } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import BoardGanttView from "@/features/board/components/board-gantt-view";
 import { BoardDependencyDiagram } from "@/features/board/components/board-dependency-diagram";
+import BoardGanttView from "@/features/board/components/board-gantt-view";
 import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
@@ -26,7 +27,6 @@ import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { GitBranch } from "lucide-react";
 
 const BoardPage = () => {
 	const channelId = useChannelId();
@@ -46,11 +46,12 @@ const BoardPage = () => {
 		typeof allIssues | null
 	>(null);
 	const [diagramOpen, setDiagramOpen] = useState(false);
-	const blockingEdges =
-		useQuery(
-			api.board.getChannelBlockingEdges,
-			diagramOpen ? { channelId } : "skip"
-		) ?? [];
+	const blockingEdges = useQuery(
+		api.board.getChannelBlockingEdges,
+		diagramOpen ? { channelId } : "skip"
+	);
+	const isBlockingEdgesLoading = diagramOpen && blockingEdges === undefined;
+	const blockingEdgesCount = blockingEdges?.length ?? 0;
 
 	// Clear optimistic state when server data actually updates
 	useEffect(() => {
@@ -567,8 +568,8 @@ const BoardPage = () => {
 							<GitBranch className="w-4 h-4 text-orange-500" />
 							<span className="text-sm font-semibold">Dependency Map</span>
 							<span className="text-xs text-muted-foreground">
-								({blockingEdges.length} relationship
-								{blockingEdges.length !== 1 ? "s" : ""})
+								({blockingEdgesCount} relationship
+								{blockingEdgesCount !== 1 ? "s" : ""})
 							</span>
 						</div>
 						<Button
@@ -580,7 +581,13 @@ const BoardPage = () => {
 							Close
 						</Button>
 					</div>
-					<BoardDependencyDiagram edges={blockingEdges} />
+					{isBlockingEdgesLoading ? (
+						<div className="flex min-h-[80px] items-center justify-center text-sm text-muted-foreground">
+							Loading dependency map...
+						</div>
+					) : (
+						<BoardDependencyDiagram edges={blockingEdges ?? []} />
+					)}
 				</div>
 			)}
 			{view === "kanban" ? (

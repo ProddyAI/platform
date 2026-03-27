@@ -6,6 +6,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { createMermaidDependencyDiagram } from "@/features/board/lib/dependency-diagram";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,51 @@ function createConvexClient(): ConvexHttpClient {
 
 function isNonEmptyString(value: unknown): value is string {
 	return typeof value === "string" && value.trim().length > 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isConvexArgumentValidationError(error: unknown): boolean {
+	if (!(error instanceof Error)) {
+		return false;
+	}
+
+	return (
+		error.message.includes("ArgumentValidationError") ||
+		error.message.includes("does not match validator") ||
+		error.message.includes("Value does not match validator")
+	);
+}
+
+function mapLinkageError(error: unknown) {
+	if (isConvexArgumentValidationError(error)) {
+		return { message: "Invalid linkage identifiers", status: 400 };
+	}
+
+	if (!(error instanceof Error)) {
+		return { message: "Internal server error", status: 500 };
+	}
+
+	switch (error.message) {
+		case "Not authenticated":
+			return { message: error.message, status: 401 };
+		case "Not a member of this workspace":
+			return { message: error.message, status: 403 };
+		case "Channel not found":
+		case "Issue not found":
+			return { message: error.message, status: 404 };
+		case "An issue cannot block itself":
+		case "Issues must belong to the same channel":
+			return { message: error.message, status: 400 };
+		default:
+			if (error.message.startsWith("Circular dependency detected")) {
+				return { message: error.message, status: 409 };
+			}
+
+			return { message: "Internal server error", status: 500 };
+	}
 }
 
 function createAuthenticatedConvexClient() {
@@ -65,6 +111,16 @@ async function parseLinkagePayload(req: NextRequest) {
 		};
 	}
 
+	if (!isRecord(body)) {
+		return {
+			error: NextResponse.json(
+				{ error: "JSON body must be an object" },
+				{ status: 400 }
+			),
+			payload: null,
+		};
+	}
+
 	const { channelId, blockedIssueId, blockingIssueId } = body as LinkagePayload;
 	if (
 		!isNonEmptyString(channelId) ||
@@ -99,7 +155,7 @@ async function parseLinkagePayload(req: NextRequest) {
  * Response shape: { edges: BlockingEdge[], mermaid: string }
  *
  * edges[n]: { blockingIssueId, blockedIssueId, blockingTitle, blockedTitle }
- * mermaid: ready-to-render "graph LR\n  ..." string, or "" if no edges
+ * mermaid: ready-to-render "flowchart LR\n  ..." string, or "" if no edges
  */
 export async function GET(req: NextRequest) {
 	try {
@@ -118,17 +174,7 @@ export async function GET(req: NextRequest) {
 			channelId: channelId as Id<"channels">,
 		});
 
-		let mermaid = "";
-		if (edges.length > 0) {
-			const lines = edges.map((e) => {
-				const fromId = e.blockingIssueId.replace(/[^a-zA-Z0-9]/g, "_");
-				const toId = e.blockedIssueId.replace(/[^a-zA-Z0-9]/g, "_");
-				const fromTitle = e.blockingTitle.replace(/"/g, "'");
-				const toTitle = e.blockedTitle.replace(/"/g, "'");
-				return `  ${fromId}["${fromTitle}"] --> ${toId}["${toTitle}"]`;
-			});
-			mermaid = `graph LR\n${lines.join("\n")}`;
-		}
+		const mermaid = createMermaidDependencyDiagram(edges);
 
 		return NextResponse.json({ edges, mermaid });
 	} catch (error) {
@@ -163,9 +209,11 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ success: true });
 	} catch (error) {
 		console.error("[Smart Linkage] POST error:", error);
-		const message =
-			error instanceof Error ? error.message : "Internal server error";
-		return NextResponse.json({ error: message }, { status: 500 });
+		const mapped = mapLinkageError(error);
+		return NextResponse.json(
+			{ error: mapped.message },
+			{ status: mapped.status }
+		);
 	}
 }
 
@@ -192,8 +240,10 @@ export async function DELETE(req: NextRequest) {
 		return NextResponse.json({ success: true });
 	} catch (error) {
 		console.error("[Smart Linkage] DELETE error:", error);
-		const message =
-			error instanceof Error ? error.message : "Internal server error";
-		return NextResponse.json({ error: message }, { status: 500 });
+		const mapped = mapLinkageError(error);
+		return NextResponse.json(
+			{ error: mapped.message },
+			{ status: mapped.status }
+		);
 	}
 }

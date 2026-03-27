@@ -8,7 +8,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
-import type { Id } from "@/../convex/_generated/dataModel";
+import type { Doc, Id } from "@/../convex/_generated/dataModel";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,13 @@ interface CachedSuggestionsEntry {
 	suggestions: ResolvedSuggestion[];
 	timestamp: number;
 }
+
+type IssueDetails = Doc<"issues"> & {
+	statusName?: string;
+	channelId: Id<"channels">;
+	channelName: string;
+	workspaceId: Id<"workspaces">;
+};
 
 const confidenceRank = {
 	high: 3,
@@ -100,8 +107,33 @@ function truncatePromptText(value: string | undefined, maxLength = 220) {
 	}
 
 	return trimmed.length > maxLength
-		? `${trimmed.slice(0, maxLength - 1)}…`
+		? `${trimmed.slice(0, maxLength - 3)}...`
 		: trimmed;
+}
+
+function buildSuggestionPrompt(
+	issue: IssueDetails,
+	edgesCount: number,
+	candidateIssues: Doc<"issues">[]
+) {
+	return JSON.stringify(
+		{
+			currentIssue: {
+				id: String(issue._id),
+				title: truncatePromptText(issue.title, 160),
+				description: truncatePromptText(issue.description),
+				priority: issue.priority || "no_priority",
+				existingRelationshipCount: edgesCount,
+			},
+			candidateIssues: candidateIssues.map((candidate) => ({
+				id: String(candidate._id),
+				title: truncatePromptText(candidate.title, 160),
+				description: truncatePromptText(candidate.description),
+			})),
+		},
+		null,
+		2
+	);
 }
 
 function createConvexClient(): ConvexHttpClient {
@@ -167,7 +199,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		let issue;
+		let issue: IssueDetails | null;
 		try {
 			issue = await auth.convex.query(api.board.getIssueDetails, {
 				issueId: issueId as Id<"issues">,
@@ -230,23 +262,13 @@ export async function POST(req: NextRequest) {
 			const suggestions = cachedSuggestions
 				.filter((suggestion) => candidateMap.has(suggestion.issueId))
 				.slice(0, 3);
-			return NextResponse.json({ suggestions });
+
+			if (suggestions.length === cachedSuggestions.length) {
+				return NextResponse.json({ suggestions });
+			}
+
+			linkageSuggestionsCache.delete(cacheKey);
 		}
-
-		const currentIssueContext = [
-			`Current issue title: ${issue.title}`,
-			`Current issue description: ${truncatePromptText(issue.description)}`,
-			`Current issue priority: ${issue.priority || "no_priority"}`,
-			`Existing relationship count in channel: ${edges.length}`,
-		].join("\n");
-
-		const candidateContext = candidateIssues
-			.map((candidate, index) => {
-				const description =
-					candidate.description?.trim().slice(0, 220) || "No description";
-				return `${index + 1}. id=${candidate._id}\ntitle=${candidate.title}\ndescription=${description}`;
-			})
-			.join("\n\n");
 
 		const { object } = await generateObject({
 			model: openai("gpt-4o-mini"),
@@ -254,16 +276,14 @@ export async function POST(req: NextRequest) {
 			temperature: 0.2,
 			system: `You suggest issue dependency relationships for a project board.
 
+You will receive a JSON object with currentIssue and candidateIssues.
 Pick up to 3 candidate issues that the CURRENT issue is likely blocking.
-Only suggest issues from the provided candidate list.
+Only suggest issue IDs that appear in candidateIssues.
 Do not invent issue IDs.
 Prefer suggestions where sequencing or dependency is clear from the titles/descriptions.
 If there is weak evidence, return fewer suggestions or an empty list.
 Keep reasons concise and practical.`,
-			prompt: `${currentIssueContext}
-
-Candidate issues the current issue could block:
-${candidateContext}`,
+			prompt: buildSuggestionPrompt(issue, edges.length, candidateIssues),
 		});
 
 		const candidateMap = new Map(
