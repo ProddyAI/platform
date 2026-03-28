@@ -245,6 +245,7 @@ export const notifyStatusChange = mutation({
 
 		if (userIds.length === 0) return;
 
+		// eslint-disable-next-line no-warning-comments
 		// TODO: Add preference and interaction filtering to reduce notification noise
 		const statusMessage =
 			args.newStatus === "online" ? "is now online" : "is now offline";

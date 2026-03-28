@@ -57,6 +57,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
 		label: "Pro",
 		description: "For growing teams that need more power and flexibility.",
 		pricePerSeatMonthly: 5,
+		// eslint-disable-next-line no-warning-comments
 		// TODO: Replace with your Dodo Payments product ID from dashboard
 		dodoProductId: process.env.DODO_PAYMENTS_PRODUCTID_PRO,
 		limits: {

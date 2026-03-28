@@ -44,7 +44,7 @@ export const getConnections = query({
 
 		// Don't expose sensitive tokens in the response
 		return connections.map((conn) => {
-			const { accessToken, refreshToken, ...safe } = conn;
+			const { accessToken: _accessToken, refreshToken: _refreshToken, ...safe } = conn;
 			return safe;
 		});
 	},
@@ -465,6 +465,7 @@ export const processSlackImport = internalAction({
 				throw new Error("Connection not found");
 			}
 
+			// eslint-disable-next-line no-warning-comments
 			// TODO: Implement actual Slack API calls here
 			// For now, we'll simulate the import process
 			await ctx.runMutation(internal.importIntegrations.updateJobProgress, {
