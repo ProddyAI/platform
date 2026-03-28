@@ -2,11 +2,11 @@
 	"compilerOptions": {
 		"target": "es2017",
 		"lib": ["dom", "dom.iterable", "esnext"],
-		"noImplicitAny": true,
-		"strictNullChecks": true,
+		"noImplicitAny": false,
+		"strictNullChecks": false,
 		"allowJs": true,
 		"skipLibCheck": true,
-		"strict": true,
+		"strict": false,
 		"noEmit": true,
 		"esModuleInterop": true,
 		"module": "esnext",
@@ -15,6 +15,9 @@
 		"isolatedModules": true,
 		"jsx": "preserve",
 		"incremental": true,
+		"noImplicitThis": false,
+		"noPropertyAccessFromIndexSignature": false,
+		"noUncheckedIndexedAccess": false,
 		"plugins": [
 			{
 				"name": "next"

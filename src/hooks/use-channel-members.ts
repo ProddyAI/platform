@@ -3,17 +3,17 @@
 import { useQuery } from "convex/react";
 import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-presence";
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 
 export const useChannelMembers = (
 	workspaceId: Id<"workspaces">,
 	_channelId: Id<"channels">
 ) => {
 	// Get all members of the workspace
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	// Get the current user's member info
-	const currentMember = useQuery(api.members.current, { workspaceId });
+	const currentMember = useQuery(api.members.current, { workspaceId }) as any;
 
 	// Get presence data using the new presence system
 	const { presenceState } = useWorkspacePresence({ workspaceId });

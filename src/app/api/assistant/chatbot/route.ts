@@ -152,7 +152,10 @@ export async function POST(req: NextRequest) {
 			});
 
 			if (!member) {
-				return NextResponse.json({ error: "Member not found" }, { status: 404 });
+				return NextResponse.json(
+					{ error: "Member not found" },
+					{ status: 404 }
+				);
 			}
 
 			if (member.userId !== currentUser._id) {

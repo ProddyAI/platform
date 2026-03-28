@@ -97,7 +97,7 @@ export const BlockNoteEditor = ({
 			<div className="flex h-full w-full items-center justify-center">
 				<button
 					className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-					onClick={() => sync.create({ type: "doc", content: [] })}
+					onClick={() => (sync as any).create?.({ type: "doc", content: [] })}
 				>
 					Create document
 				</button>

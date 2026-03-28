@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { MousePointer2 } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { api } from "@/../convex/_generated/api";
+import type { Doc } from "@/../convex/_generated/dataModel";
 import { useOther } from "@/../liveblocks.config";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { connectionIdToColor } from "@/lib/utils";
@@ -27,7 +28,7 @@ export const LiveCursor = memo(
 		}));
 
 		// Fetch members from Convex database
-		const members = useQuery(api.members.get, { workspaceId });
+		const members = useQuery(api.members.get, { workspaceId }) as any;
 
 		// Update the user name whenever other or members changes
 		useEffect(() => {

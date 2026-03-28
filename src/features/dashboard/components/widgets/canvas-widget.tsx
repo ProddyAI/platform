@@ -29,6 +29,16 @@ interface CanvasWidgetProps {
 	controls?: React.ReactNode;
 }
 
+interface CanvasItem {
+	_id: Id<"messages">;
+	title: string;
+	description: string;
+	updatedAt: number;
+	channelId?: Id<"channels">;
+	channelName: string;
+	roomId?: string;
+}
+
 export const CanvasWidget = ({
 	workspaceId,
 	isEditMode,
@@ -59,7 +69,7 @@ export const CanvasWidget = ({
 	const canvasItems = useMemo(() => {
 		if (!channels || !messages || !messages.page) return [];
 
-		const canvasMessages = [];
+		const canvasMessages: CanvasItem[] = [];
 
 		// Filter messages to find canvas-related messages
 		for (const message of messages.page) {

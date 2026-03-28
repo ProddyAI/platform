@@ -907,6 +907,24 @@ const schema = defineSchema({
 		.index("by_idempotency_key", ["idempotencyKey"])
 		.index("by_internal_message_id", ["internalMessageId"]),
 
+	// Import issue metadata - Track external Linear issue mappings
+	import_issue_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(), // External Linear issue ID
+		idempotencyKey: v.string(), // For deduplication
+		platform: v.literal("linear"),
+		internalIssueId: v.id("issues"),
+		authorMemberId: v.optional(v.id("members")),
+		timestamp: v.number(),
+		metadata: v.optional(v.any()), // Platform-specific metadata
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_platform_external_id", ["platform", "externalId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_internal_issue_id", ["internalIssueId"]),
+
 	// Import file metadata - Track external file mappings
 	import_file_metadata: defineTable({
 		workspaceId: v.id("workspaces"),

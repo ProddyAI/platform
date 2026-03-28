@@ -132,7 +132,8 @@ export async function POST(req: NextRequest) {
 			// Verify authentication and member ownership
 			const verifyResult = await verifyMemberOwnership(memberId, convex);
 			if (!verifyResult.success) {
-				return verifyResult.response;
+				return (verifyResult as { success: false; response: NextResponse })
+					.response;
 			}
 
 			const entityId = `member_${memberId}`;
@@ -249,7 +250,8 @@ export async function POST(req: NextRequest) {
 			// Verify authentication and member ownership
 			const verifyResult = await verifyMemberOwnership(memberId, convex);
 			if (!verifyResult.success) {
-				return verifyResult.response;
+				return (verifyResult as { success: false; response: NextResponse })
+					.response;
 			}
 
 			// Use member-scoped entity ID for user-specific connections
@@ -617,7 +619,8 @@ export async function DELETE(req: NextRequest) {
 		// Verify authentication and member ownership
 		const verifyResult = await verifyMemberOwnership(memberId, convex);
 		if (!verifyResult.success) {
-			return verifyResult.response;
+			return (verifyResult as { success: false; response: NextResponse })
+				.response;
 		}
 
 		const { apiClient } = initializeComposio();

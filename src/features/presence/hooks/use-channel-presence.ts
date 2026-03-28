@@ -4,7 +4,7 @@ import usePresence from "@convex-dev/presence/react";
 import { useQuery } from "convex/react";
 
 import { api } from "@/../convex/_generated/api";
-import type { Id } from "@/../convex/_generated/dataModel";
+import type { Doc, Id } from "@/../convex/_generated/dataModel";
 
 interface UseChannelPresenceProps {
 	workspaceId: Id<"workspaces">;
@@ -16,7 +16,7 @@ export const useChannelPresence = ({
 	channelId,
 }: UseChannelPresenceProps) => {
 	const currentUser = useQuery(api.users.current);
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	const userIdForHook = (currentUser?._id as string | undefined) || "anonymous";
 

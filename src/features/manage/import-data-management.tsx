@@ -292,12 +292,13 @@ export const ImportDataManagement = ({
 
 	const getConnectionForPlatform = (platformId: string) => {
 		return connections?.find(
-			(c) => c.platform === platformId && c.status === "active"
+			(c: Doc<"import_connections">) =>
+				c.platform === platformId && c.status === "active"
 		);
 	};
 
 	const getLatestJobForPlatform = (platformId: string) => {
-		return jobs?.find((j) => j.platform === platformId);
+		return jobs?.find((j: Doc<"import_jobs">) => j.platform === platformId);
 	};
 
 	const formatDate = (timestamp: number) => {
@@ -504,7 +505,7 @@ export const ImportDataManagement = ({
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{jobs.map((job) => (
+									{jobs.map((job: Doc<"import_jobs">) => (
 										<TableRow key={job._id}>
 											<TableCell className="font-medium">
 												{PLATFORMS.find((p) => p.id === job.platform)?.name ||
@@ -675,40 +676,53 @@ export const ImportDataManagement = ({
 
 						{selectedPlatform === "linear" && (
 							<>
-								<div className="flex items-center space-x-2">
-									<Checkbox
-										checked={importConfig.includeCompleted}
-										id="linearIncludeArchived"
-										onCheckedChange={(checked) =>
-											setImportConfig((prev) => ({
-												...prev,
-												includeCompleted: checked as boolean,
-											}))
-										}
-									/>
-									<Label htmlFor="linearIncludeArchived">
-										Include completed issues
-									</Label>
+								<div className="space-y-3">
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											checked={importConfig.includeCompleted}
+											id="linearIncludeArchived"
+											onCheckedChange={(checked) =>
+												setImportConfig((prev) => ({
+													...prev,
+													includeCompleted: checked as boolean,
+												}))
+											}
+										/>
+										<Label htmlFor="linearIncludeArchived">
+											Include completed issues
+										</Label>
+									</div>
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											checked={importConfig.includeComments}
+											id="linearIncludeComments"
+											onCheckedChange={(checked) =>
+												setImportConfig((prev) => ({
+													...prev,
+													includeComments: checked as boolean,
+												}))
+											}
+										/>
+										<Label htmlFor="linearIncludeComments">
+											Include issue comments
+										</Label>
+									</div>
 								</div>
-								<div className="flex items-center space-x-2">
-									<Checkbox
-										checked={importConfig.includeComments}
-										id="linearIncludeComments"
-										onCheckedChange={(checked) =>
-											setImportConfig((prev) => ({
-												...prev,
-												includeComments: checked as boolean,
-											}))
-										}
-									/>
-									<Label htmlFor="linearIncludeComments">
-										Include issue comments
+								<div className="space-y-2">
+									<Label className="text-sm font-medium">
+										Select Teams to Import
 									</Label>
+									<p className="text-xs text-muted-foreground">
+										Each Linear team will be imported as a separate channel in
+										the Boards page. All issues will be created with proper
+										statuses, priorities, and assignees.
+									</p>
+									<div className="text-xs text-muted-foreground">
+										<strong>Note:</strong> Linear states (Todo, In Progress,
+										Done, etc.) will be automatically mapped to existing channel
+										statuses.
+									</div>
 								</div>
-								<p className="text-sm text-muted-foreground">
-									The import will include all teams and issues from your Linear
-									workspace.
-								</p>
 							</>
 						)}
 					</div>

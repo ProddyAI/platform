@@ -3,6 +3,7 @@
  * Run with: bun test convex/assistant/errorHandling.test.ts
  */
 
+import { describe, expect, it } from "bun:test";
 import {
 	categorizeError,
 	formatUserFriendlyError,

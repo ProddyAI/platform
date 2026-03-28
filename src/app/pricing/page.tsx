@@ -15,29 +15,29 @@ const PricingPage = () => {
 			<Header />
 
 			{/* Hero Section */}
-			<HeroSection/>
+			<HeroSection />
 
 			{/* Pricing Section */}
 			<section className="py-16 bg-gray-50">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
 						{/* Free Plan */}
-						<FreePlan/>
+						<FreePlan />
 
 						{/* Starter Plan */}
-						<StarterPlan/>
+						<StarterPlan />
 
 						{/* Pro Plan */}
-						<ProPlan/>
+						<ProPlan />
 
 						{/* Enterprise Plan */}
-						<EnterprisePlan/>
+						<EnterprisePlan />
 					</div>
 				</div>
 			</section>
 
 			{/*Comparison Table */}
-			<ComparisonTable/>
+			<ComparisonTable />
 
 			{/* CTA Section */}
 			<CTASection />
@@ -439,7 +439,7 @@ function ComparisonTable() {
 										</tr>
 
 										{/* Feature rows */}
-										{section.features.map((feature, featureIndex) => (
+										{section.features.map((feature, _featureIndex) => (
 											<tr
 												className="border-b border-gray-100"
 												key={feature.name}

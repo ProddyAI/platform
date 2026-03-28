@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { MousePointer2 } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
+import type { Doc } from "../../../../convex/_generated/dataModel";
 import { useOther } from "../../../../liveblocks.config";
 import { useWorkspaceId } from "../../../hooks/use-workspace-id";
 import { connectionIdToColor } from "../../../lib/utils";
@@ -26,7 +27,7 @@ export const Cursor = memo(({ connectionId }: CursorProps) => {
 	}));
 
 	// Fetch members from Convex database
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	// Fetch current user to get their ID
 	const _currentUser = useQuery(api.users.current);

@@ -16,17 +16,23 @@ const MultiStepPlanSchema = z.object({
 			z.object({
 				stepNumber: z
 					.number()
-					.describe("Step number in sequence (1, 2, 3, ...)"),
-				action: z.string().describe("What needs to be done in this step"),
+					.describe("Step number in sequence (1, 2, 3, ...)")
+					.optional(),
+				action: z
+					.string()
+					.describe("What needs to be done in this step")
+					.optional(),
 				toolsNeeded: z
 					.array(z.string())
-					.describe("Tools that will be used in this step"),
-				reasoning: z.string().describe("Why this step is necessary"),
+					.describe("Tools that will be used in this step")
+					.optional(),
+				reasoning: z.string().describe("Why this step is necessary").optional(),
 				dependsOn: z
 					.array(z.number())
 					.describe(
 						"Which previous steps must complete before this one (empty for step 1)"
-					),
+					)
+					.optional(),
 			})
 		)
 		.describe("List of steps in execution order"),
@@ -190,7 +196,7 @@ Provide your plan:`,
 
 		return {
 			requiresMultiStep: result.object.requiresMultiStep,
-			steps: result.object.steps,
+			steps: result.object.steps as any,
 			overallGoal: result.object.overallGoal,
 			estimatedComplexity: result.object.estimatedComplexity,
 		};

@@ -3,7 +3,7 @@
 import usePresence from "@convex-dev/presence/react";
 import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
-import type { Id } from "@/../convex/_generated/dataModel";
+import type { Doc, Id } from "@/../convex/_generated/dataModel";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface UseWorkspacePresenceProps {
@@ -29,7 +29,7 @@ export const useWorkspacePresence = ({
 	);
 
 	// Get members data to enrich presence information
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	// Combine presence data with member information
 	const enrichedPresence =

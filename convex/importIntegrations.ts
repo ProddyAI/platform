@@ -582,6 +582,90 @@ export const startSlackImport = mutation({
 });
 
 /**
+ * Find duplicate imported channels for a workspace
+ */
+export const findDuplicateChannels = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+	},
+	handler: async (ctx, args): Promise<unknown> => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!member) throw new Error("Not a member of this workspace");
+
+		// Use internal query to find duplicates
+		const duplicates: unknown = await ctx.runQuery(
+			internal.importIntegrations._findDuplicateChannels as any,
+			{
+				workspaceId: args.workspaceId,
+				platform: args.platform,
+			}
+		);
+		return duplicates;
+	},
+});
+
+/**
+ * Clean up duplicate imported channels for a workspace
+ * Keeps the oldest channel and removes duplicates
+ * Reassigns messages from duplicate channels to the kept channel
+ */
+export const cleanupDuplicateChannels = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+	},
+	handler: async (ctx, args): Promise<unknown> => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!member) throw new Error("Not a member of this workspace");
+
+		// Use internal mutation to cleanup duplicates
+		const cleanedUp: unknown = await ctx.runMutation(
+			internal.importIntegrations._cleanupDuplicateChannels as any,
+			{
+				workspaceId: args.workspaceId,
+				platform: args.platform,
+			}
+		);
+		return cleanedUp;
+	},
+});
+
+/**
  * Start a Todoist import job
  */
 export const startTodoistImport = mutation({
@@ -682,9 +766,10 @@ export const startLinearImport = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
 		config: v.object({
-			teams: v.optional(v.array(v.string())),
+			teams: v.optional(v.array(v.string())), // Linear team IDs to import
 			includeArchived: v.optional(v.boolean()),
 			includeComments: v.optional(v.boolean()),
+			channels: v.optional(v.array(v.string())), // Specific channel IDs to create
 		}),
 	},
 	handler: async (ctx, args) => {
@@ -1502,6 +1587,148 @@ export const updateImportedChannelName = internalMutation({
 });
 
 /**
+ * Find duplicate channels for a workspace (internal only)
+ * Returns groups of channels with the same external ID
+ */
+export const _findDuplicateChannels = internalQuery({
+	args: {
+		workspaceId: v.id("workspaces"),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+	},
+	handler: async (ctx, args) => {
+		// Get all import channel metadata for this workspace and platform
+		const allMetadata = await ctx.db
+			.query("import_channel_metadata")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) => q.eq(q.field("platform"), args.platform))
+			.collect();
+
+		// Group by external ID to find duplicates
+		const externalIdMap = new Map<string, typeof allMetadata>();
+		for (const metadata of allMetadata) {
+			const existing = externalIdMap.get(metadata.externalId) || [];
+			existing.push(metadata);
+			externalIdMap.set(metadata.externalId, existing);
+		}
+
+		// Return only groups with duplicates
+		const duplicates: Array<{
+			externalId: string;
+			metadataRecords: typeof allMetadata;
+		}> = [];
+		for (const [externalId, metadataRecords] of externalIdMap.entries()) {
+			if (metadataRecords.length > 1) {
+				duplicates.push({ externalId, metadataRecords });
+			}
+		}
+
+		return duplicates;
+	},
+});
+
+/**
+ * Clean up duplicate channels (internal only)
+ * Keeps the oldest channel and removes duplicates
+ * Also cleans up duplicate import_channel_metadata records
+ */
+export const _cleanupDuplicateChannels = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+	},
+	handler: async (ctx, args) => {
+		// Get all import channel metadata for this workspace and platform
+		const allMetadata = await ctx.db
+			.query("import_channel_metadata")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) => q.eq(q.field("platform"), args.platform))
+			.collect();
+
+		// Group by external ID to find duplicates
+		const externalIdMap = new Map<
+			string,
+			Array<(typeof allMetadata)[number]>
+		>();
+		for (const metadata of allMetadata) {
+			const existing = externalIdMap.get(metadata.externalId) || [];
+			existing.push(metadata);
+			externalIdMap.set(metadata.externalId, existing);
+		}
+
+		const cleanedUp = {
+			channelsDeleted: 0,
+			metadataDeleted: 0,
+			messagesReassigned: 0,
+		};
+
+		// Process each group of duplicates
+		for (const [_externalId, metadataRecords] of externalIdMap.entries()) {
+			if (metadataRecords.length <= 1) continue;
+
+			// Sort by importedAt (oldest first) to keep the original
+			metadataRecords.sort((a, b) => a.importedAt - b.importedAt);
+
+			// Keep the oldest record
+			const keepRecord = metadataRecords[0];
+			const duplicateRecords = metadataRecords.slice(1);
+
+			// For each duplicate, reassign messages and delete
+			for (const duplicateRecord of duplicateRecords) {
+				// Find all messages in the duplicate channel
+				const duplicateMessages = await ctx.db
+					.query("messages")
+					.withIndex("by_workspace_id", (q) =>
+						q.eq("workspaceId", args.workspaceId)
+					)
+					.filter((q) =>
+						q.and(
+							q.eq(q.field("channelId"), duplicateRecord.internalChannelId),
+							q.eq(q.field("tags"), ["imported", args.platform])
+						)
+					)
+					.collect();
+
+				// Reassign messages to the kept channel
+				for (const message of duplicateMessages) {
+					await ctx.db.patch(message._id, {
+						channelId: keepRecord.internalChannelId,
+					});
+					cleanedUp.messagesReassigned++;
+				}
+
+				// Delete the duplicate channel
+				await ctx.db.delete(duplicateRecord.internalChannelId);
+				cleanedUp.channelsDeleted++;
+
+				// Delete the duplicate metadata record
+				await ctx.db.delete(duplicateRecord._id);
+				cleanedUp.metadataDeleted++;
+			}
+		}
+
+		return cleanedUp;
+	},
+});
+
+/**
  * Get connection with access token (internal only)
  */
 export const getConnectionWithToken = internalQuery({
@@ -1543,6 +1770,7 @@ export const storeImportResult = internalMutation({
 /**
  * Store an imported channel (internal only)
  * Uses idempotency key to prevent duplicates
+ * Returns existing channel if already imported
  */
 export const storeImportedChannel = internalMutation({
 	args: {
@@ -1556,11 +1784,38 @@ export const storeImportedChannel = internalMutation({
 		metadata: v.optional(v.any()),
 	},
 	handler: async (ctx, args) => {
-		// Check for existing channel by idempotency key
-		// For now, we'll create a new channel in the channels table
-		// In production, you'd check for existing channels first
+		// Check for existing channel by idempotency key first
+		const existingMetadata = await ctx.db
+			.query("import_channel_metadata")
+			.withIndex("by_idempotency_key", (q) =>
+				q.eq("idempotencyKey", args.idempotencyKey)
+			)
+			.first();
 
-		// Create channel with external metadata
+		if (existingMetadata) {
+			// Channel already exists, update its metadata
+			await ctx.db.patch(existingMetadata._id, {
+				name: args.name,
+				type: args.type,
+				description: args.description,
+				metadata: args.metadata,
+				importedAt: Date.now(),
+			});
+
+			// Also update the internal channel name if it changed
+			const internalChannel = await ctx.db.get(
+				existingMetadata.internalChannelId
+			);
+			if (internalChannel && internalChannel.name !== args.name) {
+				await ctx.db.patch(existingMetadata.internalChannelId, {
+					name: args.name,
+				});
+			}
+
+			return existingMetadata.internalChannelId;
+		}
+
+		// Create new channel
 		const channelId = await ctx.db.insert("channels", {
 			workspaceId: args.workspaceId,
 			name: args.name,
@@ -1632,6 +1887,95 @@ export const storeImportedMessage = internalMutation({
 		});
 
 		return messageId;
+	},
+});
+
+/**
+ * Store an imported Linear issue as a proper issue record (internal only)
+ * Uses idempotency key to prevent duplicates
+ */
+export const storeImportedLinearIssue = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		channelId: v.id("channels"),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		title: v.string(),
+		description: v.optional(v.string()),
+		statusId: v.id("statuses"),
+		priority: v.optional(
+			v.union(
+				v.literal("urgent"),
+				v.literal("high"),
+				v.literal("medium"),
+				v.literal("low"),
+				v.literal("no_priority")
+			)
+		),
+		assignees: v.optional(v.array(v.id("members"))),
+		labels: v.optional(v.array(v.string())),
+		dueDate: v.optional(v.number()),
+		order: v.number(),
+		metadata: v.optional(v.any()),
+	},
+	handler: async (ctx, args) => {
+		// Check for existing issue by idempotency key
+		const existingMetadata = await ctx.db
+			.query("import_issue_metadata")
+			.withIndex("by_idempotency_key", (q) =>
+				q.eq("idempotencyKey", args.idempotencyKey)
+			)
+			.first();
+
+		if (existingMetadata) {
+			// Issue already exists, update it
+			const existingIssue = await ctx.db.get(existingMetadata.internalIssueId);
+			if (existingIssue) {
+				// Update the issue
+				await ctx.db.patch(existingMetadata.internalIssueId, {
+					title: args.title,
+					description: args.description,
+					statusId: args.statusId,
+					priority: args.priority,
+					assignees: args.assignees,
+					labels: args.labels,
+					dueDate: args.dueDate,
+					updatedAt: Date.now(),
+				});
+				return existingMetadata.internalIssueId;
+			}
+		}
+
+		// Create new issue
+		const issueId = await ctx.db.insert("issues", {
+			channelId: args.channelId,
+			statusId: args.statusId,
+			title: args.title,
+			description: args.description,
+			priority: args.priority,
+			assignees: args.assignees,
+			labels: args.labels,
+			dueDate: args.dueDate,
+			order: args.order,
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
+		});
+
+		// Store metadata about the external issue
+		await ctx.db.insert("import_issue_metadata", {
+			workspaceId: args.workspaceId,
+			jobId: undefined,
+			externalId: args.externalId,
+			idempotencyKey: args.idempotencyKey,
+			platform: "linear",
+			internalIssueId: issueId,
+			authorMemberId: undefined,
+			timestamp: Date.now(),
+			metadata: args.metadata,
+			importedAt: Date.now(),
+		});
+
+		return issueId;
 	},
 });
 
@@ -1797,5 +2141,31 @@ export const getMessageByExternalId = internalQuery({
 
 		// Return the internal message
 		return await ctx.db.get(metadata.internalMessageId);
+	},
+});
+
+/**
+ * Get Linear issue by external ID (internal only)
+ * Used to check for existing issues before importing (idempotency)
+ */
+export const getLinearIssueByExternalId = internalQuery({
+	args: {
+		workspaceId: v.id("workspaces"),
+		externalId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Check if issue with this external ID already exists
+		const metadata = await ctx.db
+			.query("import_issue_metadata")
+			.withIndex("by_platform_external_id", (q) =>
+				q.eq("platform", "linear").eq("externalId", args.externalId)
+			)
+			.first();
+
+		if (!metadata) return null;
+
+		// Return the internal issue
+		const issue = await ctx.db.get(metadata.internalIssueId);
+		return issue ?? null;
 	},
 });

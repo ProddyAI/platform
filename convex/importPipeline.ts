@@ -633,7 +633,7 @@ export function generateIdempotencyKey(
 	platform: ImportPlatform,
 	workspaceId: string,
 	externalId: string,
-	type: "user" | "channel" | "message" | "file"
+	type: "user" | "channel" | "message" | "file" | "issue" | "comment"
 ): string {
 	return `${platform}:${workspaceId}:${type}:${externalId}`;
 }
@@ -644,7 +644,7 @@ export function generateIdempotencyKey(
 export function parseIdempotencyKey(key: string): {
 	platform: ImportPlatform;
 	workspaceId: string;
-	type: "user" | "channel" | "message" | "file";
+	type: "user" | "channel" | "message" | "file" | "issue" | "comment";
 	externalId: string;
 } | null {
 	const parts = key.split(":");

@@ -4,6 +4,7 @@ import { shallow } from "@liveblocks/client";
 import { useQuery } from "convex/react";
 import { memo, useEffect } from "react";
 import { api } from "@/../convex/_generated/api";
+import type { Doc } from "@/../convex/_generated/dataModel";
 import {
 	useOthers,
 	useOthersConnectionIds,
@@ -37,7 +38,7 @@ const Cursors = ({ variant }: { variant: "canvas" | "notes" }) => {
 
 const DrawingPaths = () => {
 	const workspaceId = useWorkspaceId();
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	// Create a map of Convex users by their ID for quick lookup
 	const userMap = new Map();
@@ -61,13 +62,14 @@ const DrawingPaths = () => {
 	return (
 		<>
 			{others.map(([key, other]) => {
-				if (other?.pencilDraft) {
+				const drawing = other as any;
+				if (drawing?.pencilDraft) {
 					// Get real user name from Convex if available
-					const defaultName = `${other.connectionId}`;
-					const userId = other.id;
+					const defaultName = `${drawing.connectionId}`;
+					const userId = drawing.id;
 
 					// Determine the user name
-					let _userName = other.info?.name || defaultName;
+					let _userName = drawing.info?.name || defaultName;
 
 					if (members && userId) {
 						const memberByUserId = members.find((m) => m.user._id === userId);
@@ -79,8 +81,8 @@ const DrawingPaths = () => {
 					return (
 						<g key={key}>
 							<Path
-								fill={other.penColor ? colorToCSS(other.penColor) : "#000"}
-								points={other.pencilDraft}
+								fill={drawing.penColor ? colorToCSS(drawing.penColor) : "#000"}
+								points={drawing.pencilDraft}
 								x={0}
 								y={0}
 							/>
@@ -104,7 +106,7 @@ export const LiveCursorsPresence = memo(
 		const workspaceId = useWorkspaceId();
 
 		// Get members from Convex database
-		const members = useQuery(api.members.get, { workspaceId });
+		const members = useQuery(api.members.get, { workspaceId }) as any;
 
 		useEffect(() => {
 			// Create a map of Convex users by their ID for quick lookup

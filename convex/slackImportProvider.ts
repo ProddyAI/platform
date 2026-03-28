@@ -959,19 +959,23 @@ async function storeChannel(
 	)) as any;
 
 	if (existingChannel) {
-		// Update channel name if it changed
-		if (existingChannel.name !== channel.name) {
-			await ctx.runMutation(
-				internal.importIntegrations.updateImportedChannelName,
-				{
-					channelId: existingChannel._id,
-					name: channel.name,
-				}
-			);
-		}
+		// Channel exists, update metadata via storeImportedChannel
+		const channelId = await ctx.runMutation<string>(
+			internal.importIntegrations.storeImportedChannel,
+			{
+				workspaceId: ctx.workspaceId,
+				memberId: ctx.memberId,
+				externalId: channel.externalId,
+				idempotencyKey,
+				name: channel.name,
+				type: channel.type,
+				description: channel.description,
+				metadata: channel.metadata,
+			}
+		);
 		// Store in map for message lookup
-		ctx.channelMap.set(channel.externalId, existingChannel._id);
-		return existingChannel._id;
+		ctx.channelMap.set(channel.externalId, channelId);
+		return channelId;
 	}
 
 	// Create channel in database
