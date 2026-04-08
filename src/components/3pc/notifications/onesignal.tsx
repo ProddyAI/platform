@@ -19,6 +19,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 		window.OneSignalDeferred = window.OneSignalDeferred || [];
 
 		window.OneSignalDeferred.push(async (OneSignal: OneSignalInterface) => {
+			if (!OneSignal || typeof OneSignal.init !== "function") return;
 			await OneSignal.init({
 				appId,
 				serviceWorkerPath: "/OneSignalSDK.sw.js",
@@ -39,6 +40,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 		window.OneSignalDeferred = window.OneSignalDeferred || [];
 
 		window.OneSignalDeferred.push(async (OneSignal: OneSignalInterface) => {
+			if (!OneSignal || typeof OneSignal.login !== "function") return;
 			await OneSignal.login(userId);
 			if (process.env.NODE_ENV === "development") {
 				logger.debug("OneSignal user logged in");
@@ -50,6 +52,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 			if (oneSignalLoadFailedRef.current) return;
 			window.OneSignalDeferred = window.OneSignalDeferred || [];
 			window.OneSignalDeferred.push(async (OneSignal: OneSignalInterface) => {
+				if (!OneSignal || typeof OneSignal.logout !== "function") return;
 				await OneSignal.logout();
 				if (process.env.NODE_ENV === "development") {
 					logger.debug("OneSignal user logged out");
@@ -65,17 +68,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 			onError={() => {
 				logger.warn("OneSignal SDK failed to load");
 				oneSignalLoadFailedRef.current = true;
-				const queuedCallbacks = window.OneSignalDeferred || [];
 				window.OneSignalDeferred = [];
-				for (const callback of queuedCallbacks) {
-					try {
-						callback({} as OneSignalInterface);
-					} catch (_error) {
-						logger.error(
-							"OneSignal deferred callback failed after SDK load error"
-						);
-					}
-				}
 			}}
 			src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
 			strategy="afterInteractive"
