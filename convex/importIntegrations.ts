@@ -44,7 +44,11 @@ export const getConnections = query({
 
 		// Don't expose sensitive tokens in the response
 		return connections.map((conn) => {
-			const { accessToken: _accessToken, refreshToken: _refreshToken, ...safe } = conn;
+			const {
+				accessToken: _accessToken,
+				refreshToken: _refreshToken,
+				...safe
+			} = conn;
 			return safe;
 		});
 	},

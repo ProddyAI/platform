@@ -272,7 +272,6 @@ export const LiveSidebar = ({
 					) : (
 						<div className="space-y-1">
 							{filteredItems.map((item) => (
-
 								<div
 									className={cn(
 										"p-3 rounded-lg cursor-pointer transition-colors group",

@@ -43,98 +43,98 @@ export const CardAssignmentTemplate: React.FC<
 	workspaceName = "Proddy",
 	unsubscribeUrl,
 }) => {
-		const previewText = `${assignedBy} assigned you to "${cardTitle}"`;
+	const previewText = `${assignedBy} assigned you to "${cardTitle}"`;
 
-		return (
-			<Html>
-				<Head />
-				<Preview>{previewText}</Preview>
-				<Body style={main}>
-					<Container style={container}>
-						<Img
-							alt="Proddy"
-							height="40"
-							src={process.env.NEXT_PUBLIC_LOGO_URL!}
-							style={logo}
-							width="40"
-						/>
-						<Heading style={heading}>Card Assignment</Heading>
-						<Section style={section}>
-							<Text style={text}>Hi {firstName},</Text>
-							<Text style={text}>
-								{assignedBy} has assigned you to a card in {workspaceName}.
-							</Text>
+	return (
+		<Html>
+			<Head />
+			<Preview>{previewText}</Preview>
+			<Body style={main}>
+				<Container style={container}>
+					<Img
+						alt="Proddy"
+						height="40"
+						src={process.env.NEXT_PUBLIC_LOGO_URL!}
+						style={logo}
+						width="40"
+					/>
+					<Heading style={heading}>Card Assignment</Heading>
+					<Section style={section}>
+						<Text style={text}>Hi {firstName},</Text>
+						<Text style={text}>
+							{assignedBy} has assigned you to a card in {workspaceName}.
+						</Text>
 
-							<Section style={cardContainer}>
-								<Text style={cardTitle ? cardTitleStyle : {}}>{cardTitle}</Text>
+						<Section style={cardContainer}>
+							<Text style={cardTitle ? cardTitleStyle : {}}>{cardTitle}</Text>
 
-								{cardDescription && (
-									<Text style={cardDescriptionStyle}>{cardDescription}</Text>
+							{cardDescription && (
+								<Text style={cardDescriptionStyle}>{cardDescription}</Text>
+							)}
+
+							<Section style={metadataContainer}>
+								{listName && (
+									<Text style={metadataItem}>
+										<strong>List:</strong> {listName}
+									</Text>
 								)}
 
-								<Section style={metadataContainer}>
-									{listName && (
-										<Text style={metadataItem}>
-											<strong>List:</strong> {listName}
-										</Text>
-									)}
+								{channelName && (
+									<Text style={metadataItem}>
+										<strong>Channel:</strong> {channelName}
+									</Text>
+								)}
 
-									{channelName && (
-										<Text style={metadataItem}>
-											<strong>Channel:</strong> {channelName}
-										</Text>
-									)}
+								{priority && (
+									<Text style={metadataItem}>
+										<strong>Priority:</strong> {priority}
+									</Text>
+								)}
 
-									{priority && (
-										<Text style={metadataItem}>
-											<strong>Priority:</strong> {priority}
-										</Text>
-									)}
-
-									{dueDate && (
-										<Text style={metadataItem}>
-											<strong>Due Date:</strong> {dueDate}
-										</Text>
-									)}
-								</Section>
-							</Section>
-
-							<Section style={buttonContainer}>
-								<Button
-									href={workspaceUrl}
-									style={{
-										...button,
-										paddingLeft: "20px",
-										paddingRight: "20px",
-										paddingTop: "12px",
-										paddingBottom: "12px",
-									}}
-								>
-									View Card
-								</Button>
+								{dueDate && (
+									<Text style={metadataItem}>
+										<strong>Due Date:</strong> {dueDate}
+									</Text>
+								)}
 							</Section>
 						</Section>
 
-						<Hr style={hr} />
+						<Section style={buttonContainer}>
+							<Button
+								href={workspaceUrl}
+								style={{
+									...button,
+									paddingLeft: "20px",
+									paddingRight: "20px",
+									paddingTop: "12px",
+									paddingBottom: "12px",
+								}}
+							>
+								View Card
+							</Button>
+						</Section>
+					</Section>
 
-						<Text style={footer}>
-							This email was sent from Proddy, your team collaboration platform.
-							If you didn't expect this email, you can safely ignore it.
+					<Hr style={hr} />
+
+					<Text style={footer}>
+						This email was sent from Proddy, your team collaboration platform.
+						If you didn't expect this email, you can safely ignore it.
+					</Text>
+
+					{unsubscribeUrl && (
+						<Text style={unsubscribeText}>
+							Don't want to receive task assignment notifications?{" "}
+							<Link href={unsubscribeUrl} style={unsubscribeLink}>
+								Unsubscribe from these emails
+							</Link>
 						</Text>
-
-						{unsubscribeUrl && (
-							<Text style={unsubscribeText}>
-								Don't want to receive task assignment notifications?{" "}
-								<Link href={unsubscribeUrl} style={unsubscribeLink}>
-									Unsubscribe from these emails
-								</Link>
-							</Text>
-						)}
-					</Container>
-				</Body>
-			</Html>
-		);
-	};
+					)}
+				</Container>
+			</Body>
+		</Html>
+	);
+};
 
 // Styles
 const main = {

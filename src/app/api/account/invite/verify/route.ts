@@ -117,8 +117,12 @@ export async function POST(req: Request) {
 		);
 
 		if (!process.env.NEXT_PUBLIC_EMAIL_INVITE_SECRET) {
-			console.error("[Invite Verify] NEXT_PUBLIC_EMAIL_INVITE_SECRET not configured");
-			throw new Error("NEXT_PUBLIC_EMAIL_INVITE_SECRET environment variable is required");
+			console.error(
+				"[Invite Verify] NEXT_PUBLIC_EMAIL_INVITE_SECRET not configured"
+			);
+			throw new Error(
+				"NEXT_PUBLIC_EMAIL_INVITE_SECRET environment variable is required"
+			);
 		}
 
 		if (!joinCode) {

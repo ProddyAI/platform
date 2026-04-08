@@ -126,30 +126,30 @@ export const PieChart = ({
 	let cumulativePercentage = 0;
 	const segments: PieSegment[] = isAllZero
 		? [
-			{
-				label: "No Data",
-				value: 0,
-				color: greyColor,
-				percentage: 100,
-				startAngle: 0,
-				endAngle: 100,
-				index: 0,
-			},
-		]
+				{
+					label: "No Data",
+					value: 0,
+					color: greyColor,
+					percentage: 100,
+					startAngle: 0,
+					endAngle: 100,
+					index: 0,
+				},
+			]
 		: data.map((item, index) => {
-			const percentage = (item.value / total) * 100;
-			const startAngle = cumulativePercentage;
-			cumulativePercentage += percentage;
-			const endAngle = cumulativePercentage;
+				const percentage = (item.value / total) * 100;
+				const startAngle = cumulativePercentage;
+				cumulativePercentage += percentage;
+				const endAngle = cumulativePercentage;
 
-			return {
-				...item,
-				percentage,
-				startAngle,
-				endAngle,
-				index,
-			};
-		});
+				return {
+					...item,
+					percentage,
+					startAngle,
+					endAngle,
+					index,
+				};
+			});
 
 	return (
 		<div
@@ -251,8 +251,8 @@ export const PieChart = ({
 
 							const midAngleRad =
 								((segment.startAngle + segment.endAngle) / 2 / 100) *
-								Math.PI *
-								2 -
+									Math.PI *
+									2 -
 								Math.PI / 2;
 							const offsetX = ejectAmount * Math.cos(midAngleRad);
 							const offsetY = ejectAmount * Math.sin(midAngleRad);
@@ -311,8 +311,8 @@ export const PieChart = ({
 
 								const midAngleRad =
 									((segment.startAngle + segment.endAngle) / 2 / 100) *
-									Math.PI *
-									2 -
+										Math.PI *
+										2 -
 									Math.PI / 2;
 								const offsetX = ejectAmount * Math.cos(midAngleRad);
 								const offsetY = ejectAmount * Math.sin(midAngleRad);
@@ -370,8 +370,8 @@ export const PieChart = ({
 
 							const midAngleRad =
 								((segment.startAngle + segment.endAngle) / 2 / 100) *
-								Math.PI *
-								2 -
+									Math.PI *
+									2 -
 								Math.PI / 2;
 							const offsetX = ejectAmount * Math.cos(midAngleRad);
 							const offsetY = ejectAmount * Math.sin(midAngleRad);
@@ -390,7 +390,6 @@ export const PieChart = ({
 							);
 
 							return (
-
 								<g
 									aria-disabled={!onSegmentClick}
 									className={cn(
@@ -402,11 +401,11 @@ export const PieChart = ({
 									onClick={
 										onSegmentClick
 											? () =>
-												onSegmentClick(
-													segment.label,
-													segment.value,
-													segment.index
-												)
+													onSegmentClick(
+														segment.label,
+														segment.value,
+														segment.index
+													)
 											: undefined
 									}
 									onFocus={(e) => handleMouseEnter(segment.index, e)}
@@ -454,8 +453,8 @@ export const PieChart = ({
 
 								const midAngleRad =
 									((segment.startAngle + segment.endAngle) / 2 / 100) *
-									Math.PI *
-									2 -
+										Math.PI *
+										2 -
 									Math.PI / 2;
 								const offsetX = ejectAmount * Math.cos(midAngleRad);
 								const offsetY = ejectAmount * Math.sin(midAngleRad);
@@ -474,7 +473,6 @@ export const PieChart = ({
 								);
 
 								return (
-
 									<g
 										aria-disabled={!onSegmentClick}
 										className={cn(
@@ -486,11 +484,11 @@ export const PieChart = ({
 										onClick={
 											onSegmentClick
 												? () =>
-													onSegmentClick(
-														segment.label,
-														segment.value,
-														segment.index
-													)
+														onSegmentClick(
+															segment.label,
+															segment.value,
+															segment.index
+														)
 												: undefined
 										}
 										onFocus={(e) => handleMouseEnter(segment.index, e)}
@@ -581,11 +579,11 @@ export const PieChart = ({
 								onClick={
 									onSegmentClick
 										? () =>
-											onSegmentClick(
-												segment.label,
-												segment.value,
-												segment.index
-											)
+												onSegmentClick(
+													segment.label,
+													segment.value,
+													segment.index
+												)
 										: undefined
 								}
 								onFocus={(e) => handleMouseEnter(segment.index, e)}

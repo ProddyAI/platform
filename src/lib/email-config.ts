@@ -4,8 +4,7 @@
  */
 
 export function getEmailConfig() {
-	const fromAddress =
-		process.env.RESEND_FROM_EMAIL!;
+	const fromAddress = process.env.RESEND_FROM_EMAIL!;
 	const replyToAddress = process.env.NEXT_PUBLIC_SUPPORT_EMAIL!;
 
 	return {

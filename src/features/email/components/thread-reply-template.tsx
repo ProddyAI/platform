@@ -37,79 +37,79 @@ export const ThreadReplyTemplate: React.FC<
 	workspaceName = "Proddy",
 	unsubscribeUrl,
 }) => {
-		const previewText = `${replierName} replied to your message in ${channelName}`;
+	const previewText = `${replierName} replied to your message in ${channelName}`;
 
-		return (
-			<Html>
-				<Head />
-				<Preview>{previewText}</Preview>
-				<Body style={main}>
-					<Container style={container}>
-						<Img
-							alt="Proddy"
-							height="40"
-							src={process.env.NEXT_PUBLIC_LOGO_URL!}
-							style={logo}
-							width="40"
-						/>
-						<Heading style={heading}>New Reply to Your Message</Heading>
-						<Section style={section}>
-							<Text style={text}>Hi {firstName},</Text>
-							<Text style={text}>
-								<strong>{replierName}</strong> replied to your message in{" "}
-								{channelName}.
-							</Text>
-
-							<Section style={messageContainer}>
-								<Text style={originalMessageText}>
-									<strong>Your message:</strong>
-								</Text>
-								<Text style={messageText}>"{originalMessagePreview}"</Text>
-
-								<Hr style={messageDivider} />
-
-								<Text style={replyMessageText}>
-									<strong>Reply from {replierName}:</strong>
-								</Text>
-								<Text style={messageText}>"{replyMessagePreview}"</Text>
-							</Section>
-
-							<Section style={buttonContainer}>
-								<Button
-									href={workspaceUrl}
-									style={{
-										...button,
-										paddingLeft: "20px",
-										paddingRight: "20px",
-										paddingTop: "12px",
-										paddingBottom: "12px",
-									}}
-								>
-									View Thread
-								</Button>
-							</Section>
-						</Section>
-
-						<Hr style={hr} />
-
-						<Text style={footer}>
-							This email was sent from {workspaceName}, your team collaboration
-							platform. If you didn't expect this email, you can safely ignore it.
+	return (
+		<Html>
+			<Head />
+			<Preview>{previewText}</Preview>
+			<Body style={main}>
+				<Container style={container}>
+					<Img
+						alt="Proddy"
+						height="40"
+						src={process.env.NEXT_PUBLIC_LOGO_URL!}
+						style={logo}
+						width="40"
+					/>
+					<Heading style={heading}>New Reply to Your Message</Heading>
+					<Section style={section}>
+						<Text style={text}>Hi {firstName},</Text>
+						<Text style={text}>
+							<strong>{replierName}</strong> replied to your message in{" "}
+							{channelName}.
 						</Text>
 
-						{unsubscribeUrl && (
-							<Text style={unsubscribeText}>
-								Don't want to receive thread reply notifications?{" "}
-								<Link href={unsubscribeUrl} style={unsubscribeLink}>
-									Unsubscribe from these emails
-								</Link>
+						<Section style={messageContainer}>
+							<Text style={originalMessageText}>
+								<strong>Your message:</strong>
 							</Text>
-						)}
-					</Container>
-				</Body>
-			</Html>
-		);
-	};
+							<Text style={messageText}>"{originalMessagePreview}"</Text>
+
+							<Hr style={messageDivider} />
+
+							<Text style={replyMessageText}>
+								<strong>Reply from {replierName}:</strong>
+							</Text>
+							<Text style={messageText}>"{replyMessagePreview}"</Text>
+						</Section>
+
+						<Section style={buttonContainer}>
+							<Button
+								href={workspaceUrl}
+								style={{
+									...button,
+									paddingLeft: "20px",
+									paddingRight: "20px",
+									paddingTop: "12px",
+									paddingBottom: "12px",
+								}}
+							>
+								View Thread
+							</Button>
+						</Section>
+					</Section>
+
+					<Hr style={hr} />
+
+					<Text style={footer}>
+						This email was sent from {workspaceName}, your team collaboration
+						platform. If you didn't expect this email, you can safely ignore it.
+					</Text>
+
+					{unsubscribeUrl && (
+						<Text style={unsubscribeText}>
+							Don't want to receive thread reply notifications?{" "}
+							<Link href={unsubscribeUrl} style={unsubscribeLink}>
+								Unsubscribe from these emails
+							</Link>
+						</Text>
+					)}
+				</Container>
+			</Body>
+		</Html>
+	);
+};
 
 // Styles
 const main = {

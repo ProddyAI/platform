@@ -321,7 +321,8 @@ const ContactPage = () => {
 														General Inquiry
 													</SelectItem>
 													<SelectItem value="support">
-														Technical Support ({process.env.NEXT_PUBLIC_SUPPORT_EMAIL})
+														Technical Support (
+														{process.env.NEXT_PUBLIC_SUPPORT_EMAIL})
 													</SelectItem>
 													<SelectItem value="sales">Sales Question</SelectItem>
 													<SelectItem value="feedback">Feedback</SelectItem>
