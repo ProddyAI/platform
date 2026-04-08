@@ -1286,7 +1286,7 @@ export const sendImportCompletionEmail = internalAction({
 		try {
 			const apiKey = process.env.RESEND_API_KEY;
 			const fromEmail =
-				process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
+				process.env.RESEND_FROM_EMAIL;
 
 			if (!apiKey) {
 				console.error("Resend email not configured");
@@ -1360,7 +1360,7 @@ export const sendImportCompletionEmail = internalAction({
 			}
 
 			try {
-				const supportEmail = process.env.SUPPORT_EMAIL || "support@proddy.tech";
+				const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
 
 				const response = await fetchWithTimeout(
 					"https://api.resend.com/emails",

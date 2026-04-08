@@ -9,7 +9,7 @@ interface OneSignalTrackingProps {
 }
 
 export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
-	const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+	const appId = process.env.ONESIGNAL_APP_ID;
 	const initializedRef = useRef(false);
 	const oneSignalLoadFailedRef = useRef(false);
 

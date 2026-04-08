@@ -335,6 +335,28 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 // Chat Integration with database-chat component
 // =============================================================================
 
+async function getDatabaseChatConversation(
+	ctx: any,
+	conversationId: string | null | undefined
+) {
+	if (!conversationId) {
+		return null;
+	}
+
+	try {
+		return await ctx.runQuery(components.databaseChat.conversations.get, {
+			conversationId: conversationId as any,
+		});
+	} catch (error) {
+		console.warn(
+			"[Assistant] Stored database-chat conversation ID is invalid:",
+			conversationId,
+			error
+		);
+		return null;
+	}
+}
+
 export const createConversation = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -351,8 +373,13 @@ export const createConversation = mutation({
 			)
 			.unique();
 
-		if (existing?.conversationId && !args.forceNew) {
-			return existing.conversationId;
+		const existingConversation =
+			!args.forceNew && existing?.conversationId
+				? await getDatabaseChatConversation(ctx, existing.conversationId)
+				: null;
+
+		if (existingConversation) {
+			return existingConversation._id;
 		}
 
 		const conversationId = await ctx.runMutation(
@@ -386,8 +413,16 @@ export const getMessages = query({
 	args: { conversationId: v.string() },
 	returns: v.array(v.any()),
 	handler: async (ctx, args) => {
+		const conversation = await getDatabaseChatConversation(
+			ctx,
+			args.conversationId
+		);
+		if (!conversation) {
+			return [];
+		}
+
 		return await ctx.runQuery(components.databaseChat.messages.list, {
-			conversationId: args.conversationId as any,
+			conversationId: conversation._id,
 		});
 	},
 });
@@ -405,8 +440,16 @@ export const listConversations = query({
 export const getStreamState = query({
 	args: { conversationId: v.string() },
 	handler: async (ctx, args) => {
+		const conversation = await getDatabaseChatConversation(
+			ctx,
+			args.conversationId
+		);
+		if (!conversation) {
+			return null;
+		}
+
 		return await ctx.runQuery(components.databaseChat.stream.getStream, {
-			conversationId: args.conversationId as any,
+			conversationId: conversation._id,
 		});
 	},
 });
@@ -423,11 +466,20 @@ export const getStreamDeltas = query({
 
 export const abortStream = mutation({
 	args: { conversationId: v.string(), reason: v.optional(v.string()) },
+	returns: v.boolean(),
 	handler: async (ctx, args) => {
+		const conversation = await getDatabaseChatConversation(
+			ctx,
+			args.conversationId
+		);
+		if (!conversation) {
+			return false;
+		}
+
 		return await ctx.runMutation(
 			components.databaseChat.stream.abortByConversation,
 			{
-				conversationId: args.conversationId as any,
+				conversationId: conversation._id,
 				reason: args.reason ?? "User cancelled",
 			}
 		);
@@ -476,6 +528,24 @@ export const sendMessage = action({
 			};
 		}
 
+		let activeConversationId = args.conversationId;
+		const existingConversation = await getDatabaseChatConversation(
+			ctx,
+			activeConversationId
+		);
+
+		if (!existingConversation) {
+			activeConversationId = await ctx.runMutation(
+				api.assistantChat.createConversation,
+				{
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					title: "Assistant Chat",
+					forceNew: true,
+				}
+			);
+		}
+
 		// Record AI usage
 		try {
 			await ctx.runMutation(internal.usageTracking.recordAIRequest, {
@@ -490,7 +560,7 @@ export const sendMessage = action({
 		try {
 			// Save user message
 			await ctx.runMutation(components.databaseChat.messages.add, {
-				conversationId: args.conversationId as any,
+				conversationId: activeConversationId as any,
 				role: "user",
 				content: args.message,
 			});
@@ -498,7 +568,7 @@ export const sendMessage = action({
 			// Get conversation history
 			const rawMessages = await ctx.runQuery(
 				components.databaseChat.messages.list,
-				{ conversationId: args.conversationId as any }
+				{ conversationId: activeConversationId as any }
 			);
 
 			// Build messages array with system prompt
@@ -514,7 +584,7 @@ export const sendMessage = action({
 			const streamId = await ctx.runMutation(
 				components.databaseChat.stream.create,
 				{
-					conversationId: args.conversationId as any,
+					conversationId: activeConversationId as any,
 				}
 			);
 
@@ -615,7 +685,7 @@ export const sendMessage = action({
 
 			// Save assistant response
 			await ctx.runMutation(components.databaseChat.messages.add, {
-				conversationId: args.conversationId as any,
+				conversationId: activeConversationId as any,
 				role: "assistant",
 				content: responseText,
 			});
@@ -623,7 +693,7 @@ export const sendMessage = action({
 			await ctx.runMutation(api.assistantConversations.upsertConversation, {
 				workspaceId: resolvedWorkspaceId,
 				userId: resolvedUserId,
-				conversationId: args.conversationId,
+				conversationId: activeConversationId,
 				lastMessageAt: Date.now(),
 			});
 

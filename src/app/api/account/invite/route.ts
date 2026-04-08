@@ -40,9 +40,9 @@ export async function POST(req: Request) {
 		}
 		convex.setAuth(token);
 
-		if (!process.env.INVITE_SECRET) {
-			console.error("[Invite Send] INVITE_SECRET not configured");
-			throw new Error("INVITE_SECRET environment variable is required");
+		if (!process.env.NEXT_PUBLIC_EMAIL_INVITE_SECRET) {
+			console.error("[Invite Send] NEXT_PUBLIC_EMAIL_INVITE_SECRET not configured");
+			throw new Error("NEXT_PUBLIC_EMAIL_INVITE_SECRET environment variable is required");
 		}
 
 		if (!process.env.NEXT_PUBLIC_APP_URL) {
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
 			convex.query(api.workspaceInvites.getWorkspaceJoinCode, { workspaceId }),
 		]);
 
-		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.INVITE_SECRET}`;
+		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.NEXT_PUBLIC_EMAIL_INVITE_SECRET}`;
 		const hash = crypto.createHash("sha256").update(raw).digest("hex");
 
 		console.log("[Invite Send] Creating invite for workspace:", workspaceId);
