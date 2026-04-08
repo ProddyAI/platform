@@ -1257,7 +1257,6 @@ function buildImportEmailHtml(
 					</div>
 					<div class="footer">
 						<p>© 2026 Proddy. All rights reserved.</p>
-						<p>Questions? Contact us at support@proddy.tech</p>
 					</div>
 				</div>
 			</body>

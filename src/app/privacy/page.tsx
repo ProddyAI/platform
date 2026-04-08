@@ -222,9 +222,9 @@ const PrivacyPage = () => {
 								<strong>Email:</strong>{" "}
 								<a
 									className="text-primary hover:underline"
-									href="mailto:support@proddy.tech"
+									href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL}`}
 								>
-									support@proddy.tech
+									{process.env.NEXT_PUBLIC_SUPPORT_EMAIL}
 								</a>
 							</p>
 						</div>

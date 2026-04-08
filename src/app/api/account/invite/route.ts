@@ -122,9 +122,9 @@ export async function POST(req: Request) {
 
 		// Create the invite email template
 		const emailTemplate = InviteMailTemplate({
-			senderName: inviteDetails.senderName ?? "Team Member",
-			senderEmail: inviteDetails.senderEmail ?? "team@proddy.tech",
-			workspaceName: inviteDetails.workspaceName ?? "Workspace",
+			senderName: inviteDetails.senderName!,
+			senderEmail: inviteDetails.senderEmail!,
+			workspaceName: inviteDetails.workspaceName!,
 			inviteLink,
 		});
 

@@ -178,10 +178,10 @@ function generateSuccessPage(emailTypeName: string): string {
         <p>You will no longer receive these types of email notifications from Proddy.</p>
         
         <div style="margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://proddy.tech"}" class="button">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL!}" class="button">
             Return to Proddy
           </a>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://proddy.tech"}/settings/notifications" class="button button-secondary">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL!}/settings/notifications" class="button button-secondary">
             Manage Email Preferences
           </a>
         </div>
@@ -275,7 +275,7 @@ function generateErrorPage(errorMessage: string): string {
         <p>Please contact support if you continue to experience issues.</p>
         
         <div style="margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://proddy.tech"}" class="button">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL!}" class="button">
             Return to Proddy
           </a>
         </div>

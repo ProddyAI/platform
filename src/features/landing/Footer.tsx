@@ -177,9 +177,9 @@ export const Footer = () => {
 						<div className="flex flex-wrap gap-6 mt-4 md:mt-0">
 							<a
 								className="text-sm text-gray-500 hover:text-primary transition-colors"
-								href="mailto:support@proddy.tech"
+								href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL}`}
 							>
-								support@proddy.tech
+								{process.env.NEXT_PUBLIC_SUPPORT_EMAIL}
 							</a>
 							<Link
 								className="text-sm text-gray-500 hover:text-primary transition-colors"
