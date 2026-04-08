@@ -249,6 +249,26 @@ export const createCard = mutation({
 						cardId,
 						assignerId: creator._id,
 					});
+
+					const assigneeMember = await ctx.db.get(assigneeId);
+					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
+						await ctx.scheduler.runAfter(
+							0,
+							internal.notifications.sendPushNotification,
+							{
+								userIds: [assigneeMember.userId],
+								title: "New task assignment",
+								message: `You were assigned to ${args.title}`,
+								notificationType: "assignee",
+								data: {
+									cardId,
+									channelId: list.channelId,
+									workspaceId: channel.workspaceId,
+									type: "card_assignment",
+								},
+							}
+						);
+					}
 				}
 			} catch (error) {
 				console.error("Error creating mentions for card assignees:", error);
@@ -365,6 +385,26 @@ export const updateCard = mutation({
 						cardId,
 						assignerId: updater._id,
 					});
+
+					const assigneeMember = await ctx.db.get(assigneeId);
+					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
+						await ctx.scheduler.runAfter(
+							0,
+							internal.notifications.sendPushNotification,
+							{
+								userIds: [assigneeMember.userId],
+								title: "New task assignment",
+								message: `You were assigned to ${updates.title || card.title}`,
+								notificationType: "assignee",
+								data: {
+									cardId,
+									channelId: list.channelId,
+									workspaceId: channel.workspaceId,
+									type: "card_assignment",
+								},
+							}
+						);
+					}
 				}
 			} catch (error) {
 				console.error("Error creating mentions for card assignees:", error);

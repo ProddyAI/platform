@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 
 import { mutation, query } from "./_generated/server";
 import { createDefaultCategoriesForWorkspace } from "./tasks";
@@ -44,6 +45,28 @@ export const join = mutation({
 			workspaceId: workspace._id,
 			role: "member",
 		});
+
+		const workspaceMembers = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspace._id))
+			.collect();
+		const recipientUserIds = workspaceMembers
+			.map((m) => m.userId)
+			.filter((memberUserId) => memberUserId !== userId);
+
+		if (recipientUserIds.length > 0) {
+			await ctx.scheduler.runAfter(0, internal.notifications.sendPushNotification, {
+				userIds: recipientUserIds,
+				title: "New workspace member",
+				message: "Someone joined your workspace",
+				notificationType: "workspaceJoin",
+				data: {
+					workspaceId: workspace._id,
+					userId,
+					type: "workspace_join",
+				},
+			});
+		}
 
 		return workspace._id;
 	},

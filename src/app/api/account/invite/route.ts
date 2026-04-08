@@ -118,6 +118,16 @@ export async function POST(req: Request) {
 			expiresAt: Date.now() + 1000 * 60 * 60 * 48, // 48 hours
 		});
 
+		// Best-effort push notification for existing workspace members.
+		try {
+			await convex.mutation(api.notifications.notifyInviteSent, {
+				workspaceId,
+				invitedEmail: email.toLowerCase(),
+			});
+		} catch (pushError) {
+			console.error("[Invite Send] Push scheduling failed:", pushError);
+		}
+
 		const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/join/${workspaceId}?invite=${hash}`;
 		console.log(
 			"[Invite Send] Generated invite link for workspace:",
