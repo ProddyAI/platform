@@ -731,7 +731,8 @@ const schema = defineSchema({
 			v.literal("user_invite"),
 			v.literal("workspace_invite"),
 			v.literal("email_invite"),
-			v.literal("password_reset") // For password reset rate limiting
+			v.literal("password_reset"), // For password reset rate limiting
+			v.literal("auto_invite") // For automatic invites during imports
 		),
 		expiresAt: v.number(), // When this rate limit entry expires
 		createdAt: v.number(),

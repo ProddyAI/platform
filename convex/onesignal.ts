@@ -63,6 +63,7 @@ export const sendImportNotification = internalAction({
 				include_aliases: {
 					external_user_id: [args.userId],
 				},
+				target_channel: "push",
 				data: {
 					type: "import_completion",
 					workspaceId: args.workspaceId,

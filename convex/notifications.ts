@@ -268,3 +268,58 @@ export const notifyStatusChange = mutation({
 		);
 	},
 });
+
+/**
+ * Trigger notification when a user is auto-invited during an import
+ */
+export const notifyAutoInvite = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		newMemberId: v.id("members"),
+		source: v.string(), // e.g., "Linear Import"
+	},
+	handler: async (ctx, args) => {
+		// Get workspace details
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) throw new Error("Workspace not found");
+
+		// Get new member details
+		const newMember = await ctx.db.get(args.newMemberId);
+		if (!newMember) throw new Error("Member not found");
+
+		const newUser = await ctx.db.get(newMember.userId);
+		if (!newUser) throw new Error("User not found");
+
+		// Get all members in the workspace (excluding the new member)
+		const members = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+
+		const userIds = members
+			.map((m) => m.userId)
+			.filter((id) => id !== newMember.userId);
+
+		if (userIds.length === 0) return;
+
+		// Schedule internal notification
+		await ctx.scheduler.runAfter(
+			0,
+			internal.notifications.sendPushNotification,
+			{
+				userIds,
+				title: `${newUser.name} joined ${workspace.name}`,
+				message: `Auto-invited from ${args.source}`,
+				notificationType: "workspaceJoin",
+				data: {
+					workspaceId: args.workspaceId,
+					newMemberId: args.newMemberId,
+					source: args.source,
+					type: "auto_invite",
+				},
+			}
+		);
+	},
+});

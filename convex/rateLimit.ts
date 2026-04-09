@@ -21,6 +21,10 @@ const RATE_LIMITS = {
 	// Password reset: 3 attempts per hour per email
 	PASSWORD_RESET_PER_HOUR: 3,
 	PASSWORD_RESET_WINDOW_MS: 60 * 60 * 1000, // 1 hour
+
+	// Auto-invites during imports: 50 per workspace per hour
+	AUTO_INVITES_PER_HOUR: 50,
+	AUTO_INVITE_WINDOW_MS: 60 * 60 * 1000, // 1 hour
 };
 
 /**
@@ -341,5 +345,106 @@ export const cleanupExpiredLimits = internalMutation({
 		}
 
 		return { deleted: expiredLimits.length };
+	},
+});
+
+/**
+ * Validate auto-invite rate limit for workspace during imports
+ * Returns { allowed: true } if within limits, or { allowed: false, reason: string } if exceeded
+ * Internal version that doesn't require auth - used by import jobs
+ */
+export const _validateAutoInviteRateLimitInternal = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+	},
+	handler: async (ctx, args) => {
+		const now = Date.now();
+
+		// Check workspace auto-invite rate limit
+		const autoInviteLimits = await ctx.db
+			.query("rateLimits")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("type"), "auto_invite"),
+					q.gt(q.field("expiresAt"), now)
+				)
+			)
+			.take(RATE_LIMITS.AUTO_INVITES_PER_HOUR);
+
+		if (autoInviteLimits.length >= RATE_LIMITS.AUTO_INVITES_PER_HOUR) {
+			const oldestExpiry = Math.min(...autoInviteLimits.map((l) => l.expiresAt));
+			const minutesRemaining = Math.ceil((oldestExpiry - now) / 1000 / 60);
+			return {
+				allowed: false,
+				reason: `Auto-invite rate limit exceeded. Workspace has reached the maximum number of automatic invites (${RATE_LIMITS.AUTO_INVITES_PER_HOUR} per hour). Try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? "s" : ""}.`,
+			};
+		}
+
+		// All checks passed - record the rate limit entry
+		await ctx.db.insert("rateLimits", {
+			userId: args.userId,
+			workspaceId: args.workspaceId,
+			type: "auto_invite",
+			expiresAt: now + RATE_LIMITS.AUTO_INVITE_WINDOW_MS,
+			createdAt: now,
+		});
+
+		return { allowed: true };
+	},
+});
+
+/**
+ * Validate auto-invite rate limit for workspace during imports
+ * Returns { allowed: true } if within limits, or { allowed: false, reason: string } if exceeded
+ */
+export const validateAutoInviteRateLimit = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		const now = Date.now();
+
+		// Check workspace auto-invite rate limit
+		const autoInviteLimits = await ctx.db
+			.query("rateLimits")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("type"), "auto_invite"),
+					q.gt(q.field("expiresAt"), now)
+				)
+			)
+			.take(RATE_LIMITS.AUTO_INVITES_PER_HOUR);
+
+		if (autoInviteLimits.length >= RATE_LIMITS.AUTO_INVITES_PER_HOUR) {
+			const oldestExpiry = Math.min(...autoInviteLimits.map((l) => l.expiresAt));
+			const minutesRemaining = Math.ceil((oldestExpiry - now) / 1000 / 60);
+			return {
+				allowed: false,
+				reason: `Auto-invite rate limit exceeded. Workspace has reached the maximum number of automatic invites (${RATE_LIMITS.AUTO_INVITES_PER_HOUR} per hour). Try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? "s" : ""}.`,
+			};
+		}
+
+		// All checks passed - record the rate limit entry
+		await ctx.db.insert("rateLimits", {
+			userId,
+			workspaceId: args.workspaceId,
+			type: "auto_invite",
+			expiresAt: now + RATE_LIMITS.AUTO_INVITE_WINDOW_MS,
+			createdAt: now,
+		});
+
+		return { allowed: true };
 	},
 });

@@ -61,6 +61,8 @@ import { useInitiateTodoistOAuth } from "@/features/imports/api/use-initiate-tod
 import { useStartLinearImport } from "@/features/imports/api/use-start-linear-import";
 import { useStartSlackImport } from "@/features/imports/api/use-start-slack-import";
 import { useStartTodoistImport } from "@/features/imports/api/use-start-todoist-import";
+import { useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
 
 interface ImportDataManagementProps {
 	workspaceId: Id<"workspaces">;
@@ -135,6 +137,7 @@ export const ImportDataManagement = ({
 		includeCompleted: true,
 		includeComments: true,
 		channels: [] as string[],
+		targetChannelId: undefined as string | undefined,
 	});
 
 	// Hooks
@@ -152,6 +155,11 @@ export const ImportDataManagement = ({
 	const startLinearImport = useStartLinearImport();
 	const disconnectImport = useDisconnectImport();
 	const cancelImportJob = useCancelImportJob();
+
+	// Fetch channels for Linear import target selection
+	const channels = useQuery(api.channels.get, {
+		workspaceId,
+	});
 
 	const handleConnect = async (platformId: string) => {
 		if (platformId === "slack") {
@@ -239,6 +247,9 @@ export const ImportDataManagement = ({
 						config: {
 							includeArchived: importConfig.includeCompleted,
 							includeComments: importConfig.includeComments,
+							targetChannelId: importConfig.targetChannelId as
+								| Id<"channels">
+								| undefined,
 						},
 					},
 					{ throwError: true }
@@ -708,15 +719,37 @@ export const ImportDataManagement = ({
 										</Label>
 									</div>
 								</div>
-								<div className="space-y-2">
-									<Label className="text-sm font-medium">
-										Select Teams to Import
-									</Label>
+
+								<div className="space-y-2 pt-2">
+									<Label htmlFor="targetChannel">Import Destination</Label>
+									<select
+										className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+										id="targetChannel"
+										value={importConfig.targetChannelId || ""}
+										onChange={(e) =>
+											setImportConfig((prev) => ({
+												...prev,
+												targetChannelId: e.target.value || undefined,
+											}))
+										}
+									>
+										<option value="">
+											Create new channels (one per Linear team)
+										</option>
+										{channels?.map((channel) => (
+											<option key={channel._id} value={channel._id}>
+												Import into: {channel.name}
+											</option>
+										))}
+									</select>
 									<p className="text-xs text-muted-foreground">
-										Each Linear team will be imported as a separate channel in
-										the Boards page. All issues will be created with proper
-										statuses, priorities, and assignees.
+										{importConfig.targetChannelId
+											? "All Linear teams and issues will be imported into the selected channel."
+											: "Each Linear team will be created as a separate channel in the Boards page."}
 									</p>
+								</div>
+
+								<div className="space-y-2 pt-2">
 									<div className="text-xs text-muted-foreground">
 										<strong>Note:</strong> Linear states (Todo, In Progress,
 										Done, etc.) will be automatically mapped to existing channel

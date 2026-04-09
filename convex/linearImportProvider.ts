@@ -5,7 +5,7 @@
  * Handles teams, projects, issues, and comments import.
  */
 
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
 	chunkArray,
@@ -64,7 +64,7 @@ interface LinearIssueComment {
 interface LinearUser {
 	id: string;
 	name: string;
-	email: string;
+	email?: string;
 	avatarUrl?: string;
 }
 
@@ -106,6 +106,12 @@ export class LinearImportProvider {
 		query: string,
 		variables?: Record<string, unknown>
 	): Promise<T> {
+		await ctx.log("info", "Making Linear API call", {
+			query: query.substring(0, 100),
+			tokenLength: ctx.accessToken?.length,
+			tokenPreview: ctx.accessToken ? ctx.accessToken.substring(0, 20) + "..." : "missing",
+		});
+
 		return withRetry(
 			async () => {
 				if (await ctx.isCancelled()) {
@@ -125,6 +131,10 @@ export class LinearImportProvider {
 
 				if (!response.ok) {
 					const errorText = await response.text();
+					await ctx.log("error", "Linear API error", {
+						status: response.status,
+						body: errorText.substring(0, 500),
+					});
 					if (response.status === 429) {
 						this.rateLimiter.recordRateLimit(60);
 						throw new Error(`Rate limited: ${errorText}`);
@@ -135,6 +145,9 @@ export class LinearImportProvider {
 				const data = (await response.json()) as LinearGraphQLResponse<T>;
 
 				if (data.errors) {
+					await ctx.log("error", "Linear GraphQL error", {
+						errors: data.errors,
+					});
 					throw new Error(`GraphQL error: ${data.errors[0].message}`);
 				}
 
@@ -164,11 +177,16 @@ export class LinearImportProvider {
 	 */
 	async validateConnection(ctx: ImportContext): Promise<void> {
 		try {
-			await this.graphqlCall<{ organization: { id: string; name: string } }>(
-				ctx,
-				`{ organization { id name } }`
-			);
+			await ctx.log("info", "Validating Linear connection...");
+			const result = await this.graphqlCall<{
+				organization: { id: string; name: string };
+			}>(ctx, `{ organization { id name } }`);
+			await ctx.log("info", `Connected to organization: ${result.organization.name}`);
 		} catch (error) {
+			await ctx.log(
+				"error",
+				`Failed to validate Linear connection: ${error instanceof Error ? error.message : "Unknown error"}`
+			);
 			throw new Error(
 				`Failed to validate Linear connection: ${error instanceof Error ? error.message : "Unknown error"}`
 			);
@@ -224,8 +242,12 @@ export class LinearImportProvider {
 	async fetchAllIssues(ctx: ImportContext): Promise<LinearIssue[]> {
 		const allIssues: LinearIssue[] = [];
 		let cursor: string | undefined;
+		let pageCount = 0;
 
 		do {
+			pageCount++;
+			await ctx.log("info", `Fetching issues page ${pageCount}...`);
+			
 			const result = await this.graphqlCall<{
 				issues: {
 					nodes: Array<{
@@ -284,14 +306,20 @@ export class LinearImportProvider {
 			}));
 
 			allIssues.push(...issues);
+			await ctx.log("info", `Fetched ${issues.length} issues on page ${pageCount} (total: ${allIssues.length})`);
+			
 			cursor = result.issues.pageInfo.hasNextPage
 				? result.issues.pageInfo.endCursor
 				: undefined;
 		} while (cursor);
 
+		await ctx.log("info", `Finished fetching issues: ${allIssues.length} total issues across ${pageCount} pages`);
+
 		// Filter by completed status if configured
 		if (!ctx.config.includeArchived) {
-			return allIssues.filter((issue) => !issue.completedAt);
+			const filteredIssues = allIssues.filter((issue) => !issue.completedAt);
+			await ctx.log("info", `Filtered out archived/completed issues: ${allIssues.length} -> ${filteredIssues.length}`);
+			return filteredIssues;
 		}
 
 		return allIssues;
@@ -307,16 +335,12 @@ export class LinearImportProvider {
 		try {
 			const result = await this.graphqlCall<{
 				team?: {
-					workflows: {
+					states: {
 						nodes: Array<{
-							states: {
-								nodes: Array<{
-									id: string;
-									name: string;
-									type: string;
-									color: string;
-								}>;
-							};
+							id: string;
+							name: string;
+							type: string;
+							color: string;
 						}>;
 					};
 				};
@@ -324,13 +348,9 @@ export class LinearImportProvider {
 				ctx,
 				`query TeamWorkflowStates($teamId: String!) {
 					team(id: $teamId) {
-						workflows {
+						states {
 							nodes {
-								states {
-									nodes {
-										id name type color
-									}
-								}
+								id name type color
 							}
 						}
 					}
@@ -339,14 +359,12 @@ export class LinearImportProvider {
 			);
 
 			const states =
-				result.team?.workflows?.nodes.flatMap((workflow) =>
-					workflow.states.nodes.map((state) => ({
-						id: state.id,
-						name: state.name,
-						type: state.type as LinearState["type"],
-						color: state.color,
-					}))
-				) || [];
+				result.team?.states?.nodes.map((state) => ({
+					id: state.id,
+					name: state.name,
+					type: state.type as LinearState["type"],
+					color: state.color,
+				})) || [];
 
 			return states;
 		} catch (error) {
@@ -415,8 +433,11 @@ interface LinearImportContext extends ImportContext {
 	teamMap: Map<string, string>; // Linear team ID -> channel ID
 	projectMap: Map<string, string>; // Linear project ID -> channel ID
 	issueMap: Map<string, string>; // Linear issue ID -> issue ID
-	userMap: Map<string, string>; // Linear user ID -> member name
+	userMap: Map<string, string>; // Linear user ID -> user name
+	memberMap: Map<string, Id<"members">>; // Linear user ID -> member ID
 	statusMap: Map<string, Id<"statuses">>; // Linear state ID -> status ID
+	stateNameMap: Map<string, string>; // Linear state ID -> state name
+	targetChannelId?: Id<"channels">; // Target channel to import into (if specified)
 }
 
 /**
@@ -442,7 +463,10 @@ export async function executeLinearImport(
 		projectMap: new Map(),
 		issueMap: new Map(),
 		userMap: new Map(),
+		memberMap: new Map(),
 		statusMap: new Map(),
+		stateNameMap: new Map(),
+		targetChannelId: ctx.config.targetChannelId as Id<"channels"> | undefined,
 	};
 
 	try {
@@ -456,14 +480,64 @@ export async function executeLinearImport(
 		await ctx.updateProgress({ currentStep: "Fetching workspace info..." });
 		const _workspace = await provider.fetchWorkspace(ctx);
 
-		// Step 3: Fetch users
+		// Step 3: Fetch users and map to members
 		await ctx.updateProgress({ currentStep: "Fetching users..." });
 		const users = await provider.fetchUsers(ctx);
 		result.usersMatched = users.length;
-		users.forEach((user) => {
+		
+		// Build user and member maps
+		for (const user of users) {
 			linearCtx.userMap.set(user.id, user.name);
-		});
-		await ctx.log("info", `Fetched ${users.length} users`);
+
+			// Try to find matching member by name first
+			try {
+				const memberByName = await ctx.runQuery(
+					internal.importIntegrations._getMemberByName,
+					{ workspaceId: ctx.workspaceId, name: user.name }
+				) as any;
+
+				if (memberByName && memberByName.member && !memberByName.conflict) {
+					linearCtx.memberMap.set(user.id, memberByName.member._id);
+					await ctx.log("info", `Mapped Linear user ${user.name} to member ${memberByName.member._id} (by name, ${memberByName.matchType} match)`);
+				} else if (memberByName && memberByName.conflict) {
+					await ctx.log("warn", `Name conflict for Linear user ${user.name}: possible matches are ${memberByName.possibleMatches?.join(", ")}. Falling back to email.`);
+				}
+
+				// If name matching failed or had conflicts, try email with auto-invite
+				if ((!memberByName || memberByName.conflict) && user.email) {
+					// Filter out null avatar URLs
+					const cleanAvatarUrl = user.avatarUrl && user.avatarUrl !== null && user.avatarUrl !== 'null' 
+						? user.avatarUrl 
+						: undefined;
+					
+					const memberResult = await ctx.runMutation(
+						internal.importIntegrations._getOrCreateMemberByEmail,
+						{
+							workspaceId: ctx.workspaceId,
+							email: user.email,
+							name: user.name,
+							avatarUrl: cleanAvatarUrl,
+							importSource: "Linear Import",
+							importJobUserId: (ctx as any).userId
+						}
+					) as any;
+
+					if (memberResult && memberResult.member) {
+						linearCtx.memberMap.set(user.id, memberResult.member._id);
+						if (memberResult.created) {
+							await ctx.log("info", `Auto-invited Linear user ${user.name} (${user.email}) as member ${memberResult.member._id} with role ${memberResult.role}`);
+						} else {
+							await ctx.log("info", `Found existing member for Linear user ${user.name}: ${memberResult.member._id}`);
+						}
+					} else if (memberResult && memberResult.reason) {
+						await ctx.log("warn", `Failed to auto-invite Linear user ${user.name}: ${memberResult.reason}`);
+					}
+				}
+			} catch (error) {
+				await ctx.log("warn", `Failed to find/create member for Linear user ${user.name}: ${error instanceof Error ? error.message : "Unknown error"}`);
+			}
+		}
+		await ctx.log("info", `Fetched ${users.length} users, matched ${linearCtx.memberMap.size} to members`);
 
 		// Step 4: Fetch teams
 		await ctx.updateProgress({ currentStep: "Fetching teams..." });
@@ -494,9 +568,11 @@ export async function executeLinearImport(
 			if (await ctx.isCancelled()) throw new Error("Import cancelled");
 
 			try {
+				await ctx.log("info", `Processing team ${team.name} (${team.id})`);
 				const channelId = await storeTeam(linearCtx, team);
 				linearCtx.teamMap.set(team.id, channelId);
 				result.itemsCreated.push(channelId);
+				await ctx.log("info", `Team ${team.name} -> Channel ${channelId} (total channels: ${result.itemsCreated.length})`);
 
 				// Fetch and cache workflow states for this team
 				const states = await provider.fetchWorkflowStates(ctx, team.id);
@@ -505,14 +581,16 @@ export async function executeLinearImport(
 					`Fetched ${states.length} states for team ${team.name}`
 				);
 
-				// Map Linear states to channel statuses
+				// Map Linear states to channel statuses and cache state names
 				for (const state of states) {
-					await getOrCreateStatusForState(
+					const statusId = await getOrCreateStatusForState(
 						linearCtx,
 						channelId as Id<"channels">,
 						state.id,
 						state.name
 					);
+					// Cache the state name for later lookup during issue processing
+					linearCtx.stateNameMap.set(state.id, state.name);
 				}
 
 				await ctx.updateProgress({
@@ -534,7 +612,16 @@ export async function executeLinearImport(
 			subItemsTotal: issues.length,
 			currentStep: `Found ${issues.length} issues`,
 		});
+		
 		await ctx.log("info", `Fetched ${issues.length} issues`);
+		await ctx.log("info", `Team map contents: ${Array.from(linearCtx.teamMap.entries()).map(([k, v]) => `${k}→${v}`).join(", ") || "EMPTY"}`);
+		await ctx.log("info", `Channels created during import: ${result.itemsCreated.length}`);
+		
+		if (linearCtx.teamMap.size === 0) {
+			const errorMsg = `No teams/channels were created! Import will fail to assign issues.`;
+			result.warnings?.push(errorMsg);
+			await ctx.log("warn", errorMsg);
+		}
 
 		// Process issues in batches
 		const issueBatches = chunkArray(
@@ -555,14 +642,20 @@ export async function executeLinearImport(
 				}
 			}
 
+			const processedInBatch = result.messagesCreated;
 			await ctx.updateProgress({
-				subItemsImported: result.messagesCreated,
-				currentStep: `Processed ${result.messagesCreated}/${issues.length} issues`,
+				subItemsImported: processedInBatch,
+				currentStep: `Processed ${processedInBatch}/${issues.length} issues`,
 			});
+			
+			await ctx.log("info", `Processed batch: ${processedInBatch}/${issues.length} issues total`);
 		}
 
 		// Step 8: Final summary
 		const duration = Date.now() - startTime;
+		const issuesCreated = result.messagesCreated;
+		const issuesSkipped = issues.length - issuesCreated;
+		
 		await ctx.updateProgress({
 			currentStep: `Import completed in ${formatDuration(duration)}`,
 		});
@@ -570,7 +663,9 @@ export async function executeLinearImport(
 		await ctx.log("info", "Linear import completed", {
 			duration: formatDuration(duration),
 			teams: result.itemsCreated.length,
-			issues: result.messagesCreated,
+			issuesCreated,
+			issuesSkipped,
+			issuesTotal: issues.length,
 			users: result.usersMatched,
 			errors: result.errors?.length || 0,
 		});
@@ -586,11 +681,19 @@ export async function executeLinearImport(
 
 /**
  * Store a team in the database (idempotent)
+ * If a target channel is specified, uses that channel instead of creating new ones
  */
 async function storeTeam(
 	ctx: LinearImportContext,
 	team: LinearTeam
 ): Promise<string> {
+	// If target channel is specified, use it for all teams
+	if (ctx.targetChannelId) {
+		ctx.teamMap.set(team.id, ctx.targetChannelId);
+		await ctx.log("info", `Using target channel ${ctx.targetChannelId} for team ${team.name}`);
+		return ctx.targetChannelId;
+	}
+
 	const idempotencyKey = generateIdempotencyKey(
 		"linear",
 		ctx.workspaceId,
@@ -604,6 +707,7 @@ async function storeTeam(
 	)) as any;
 
 	if (existingChannel) {
+		await ctx.log("info", `Found existing channel for team ${team.name}: ${existingChannel._id}`);
 		if (existingChannel.name !== team.name) {
 			await ctx.runMutation(
 				internal.importIntegrations.updateImportedChannelName,
@@ -617,6 +721,7 @@ async function storeTeam(
 		return existingChannel._id;
 	}
 
+	await ctx.log("info", `Creating new channel for team ${team.name}`);
 	const channelId = await ctx.runMutation<string>(
 		internal.importIntegrations.storeImportedChannel,
 		{
@@ -626,10 +731,13 @@ async function storeTeam(
 			idempotencyKey,
 			name: team.name,
 			type: "team",
+			platform: "linear" as const,
 			metadata: { key: team.key },
 		}
 	);
 
+	ctx.teamMap.set(team.id, channelId);
+	await ctx.log("info", `Created channel ${channelId} for team ${team.name}`);
 	return channelId;
 }
 
@@ -649,9 +757,11 @@ async function getOrCreateStatusForState(
 	}
 
 	// Try to find existing status by name (case-insensitive)
-	const statusesResult = await ctx.runQuery(api.board.getStatuses, {
-		channelId,
-	});
+	// Use internal query to avoid authentication requirements during import
+	const statusesResult = await ctx.runQuery(
+		internal.importIntegrations.getStatusesByChannelId,
+		{ channelId }
+	);
 	const statuses = statusesResult as Array<{
 		_id: Id<"statuses">;
 		name: string;
@@ -659,40 +769,49 @@ async function getOrCreateStatusForState(
 		order: number;
 		channelId: Id<"channels">;
 	}>;
-	const normalizedStateName = stateName.toLowerCase().trim();
 
-	// Try to find matching status
-	let status = statuses.find((s) => {
-		const normalizedName = s.name.toLowerCase().trim();
-		return (
-			normalizedName === normalizedStateName ||
-			(normalizedStateName.includes("todo") &&
-				normalizedName.includes("todo")) ||
-			(normalizedStateName.includes("progress") &&
-				normalizedName.includes("progress")) ||
-			(normalizedStateName.includes("done") &&
-				normalizedName.includes("done")) ||
-			(normalizedStateName.includes("backlog") &&
-				normalizedName.includes("backlog"))
-		);
-	});
-
-	// If no matching status found, use the first available status or create one
-	if (!status) {
-		// Use default status (first one)
-		if (statuses.length > 0) {
-			status = statuses[0];
-		} else {
-			// Create a default status if none exist
-			// This shouldn't happen as channels should have at least one status
-			status = {
-				_id: "" as Id<"statuses">,
+	if (statuses.length === 0) {
+		// No statuses exist for this channel, create a default one
+		const statusId = await ctx.runMutation(
+			internal.importIntegrations.createDefaultStatus,
+			{
+				channelId,
 				name: "Todo",
 				color: "#5e6ad2",
-				order: 0,
-				channelId,
-			};
-		}
+			}
+		) as Id<"statuses">;
+		ctx.statusMap.set(stateId, statusId);
+		return statusId;
+	}
+
+	const normalizedStateName = stateName.toLowerCase().trim();
+
+	// Try to find matching status with exact or fuzzy match
+	let status = statuses.find((s) => {
+		const normalizedName = s.name.toLowerCase().trim();
+		// Exact match
+		if (normalizedName === normalizedStateName) return true;
+		
+		// Fuzzy match for common state types
+		const todoMatch = normalizedName.includes("todo") || normalizedName.includes("to do") || normalizedName === "tbd";
+		const inProgressMatch = normalizedName.includes("progress") || normalizedName.includes("in progress") || normalizedName === "in_review";
+		const doneMatch = normalizedName.includes("done") || normalizedName.includes("complete") || normalizedName === "done";
+		const backlogMatch = normalizedName.includes("backlog") || normalizedName.includes("triage");
+		
+		if (normalizedStateName.includes("todo") && todoMatch) return true;
+		if (normalizedStateName.includes("progress") && inProgressMatch) return true;
+		if (normalizedStateName.includes("done") && doneMatch) return true;
+		if (normalizedStateName.includes("backlog") && backlogMatch) return true;
+		if (normalizedStateName.includes("triage") && backlogMatch) return true;
+		
+		return false;
+	});
+
+	// If no matching status found, use the first status (lowest order) as default
+	if (!status) {
+		// Sort by order to get the first/default status
+		const sortedStatuses = [...statuses].sort((a, b) => a.order - b.order);
+		status = sortedStatuses[0];
 	}
 
 	// Cache the mapping
@@ -738,6 +857,7 @@ async function storeIssue(
 
 	if (existingIssue) {
 		ctx.issueMap.set(issue.id, (existingIssue as any)._id);
+		await ctx.log("info", `Skipped existing issue ${issue.identifier} (already imported)`);
 		return;
 	}
 
@@ -746,27 +866,35 @@ async function storeIssue(
 	if (!channelId) {
 		const warning = `Team not found for issue ${issue.identifier}: teamId=${issue.teamId}`;
 		result.warnings?.push(warning);
-		await ctx.log("warn", warning);
+		await ctx.log("warn", `${warning}. Available teams: ${Array.from(ctx.teamMap.entries()).map(([k, v]) => `${k}→${v}`).join(", ")}`);
 		return;
 	}
 
 	// Get or create status for this issue's state
+	// Use cached state name if available, otherwise use the state ID as fallback
+	const cachedStateName = ctx.stateNameMap.get(issue.stateId);
 	const statusId = await getOrCreateStatusForState(
 		ctx,
 		channelId as Id<"channels">,
 		issue.stateId,
-		"Todo" // Default state name - will be looked up from cached states
+		cachedStateName || "Todo"
 	);
 
 	// Map Linear priority to our system
 	const priority = mapLinearPriority(issue.priority);
 
-	// Find member for assignee if exists
+	// Find member for assignee using the memberMap
 	let assignees: Id<"members">[] | undefined;
 	if (issue.assigneeId) {
-		// In a full implementation, you'd map Linear user IDs to member IDs
-		// For now, we'll leave it empty or try to match by email
-		assignees = undefined;
+		const memberId = ctx.memberMap.get(issue.assigneeId);
+		if (memberId) {
+			assignees = [memberId];
+			await ctx.log("info", `Assigned issue ${issue.identifier} to member ${memberId}`);
+		} else {
+			const warning = `Could not find member for Linear user ID: ${issue.assigneeId} (issue: ${issue.identifier})`;
+			result.warnings?.push(warning);
+			await ctx.log("warn", warning);
+		}
 	}
 
 	// Create labels from Linear metadata
@@ -807,6 +935,8 @@ async function storeIssue(
 
 	ctx.issueMap.set(issue.id, issueId);
 	result.messagesCreated++;
+	
+	await ctx.log("info", `Imported issue ${issue.identifier} with ${assignees?.length || 0} assignees`);
 }
 
 /**

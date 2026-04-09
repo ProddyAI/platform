@@ -59,6 +59,8 @@ export interface ImportConfig {
 	includeComments?: boolean;
 	/** Include archived items (Linear-specific) */
 	includeArchived?: boolean;
+	/** Target channel to import into (Linear-specific) */
+	targetChannelId?: string;
 	/** Platform-specific config */
 	platformConfig?: Record<string, unknown>;
 }

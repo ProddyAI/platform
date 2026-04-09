@@ -376,16 +376,28 @@ http.route({
 			});
 
 			if (!tokenResponse.ok) {
-				throw new Error("Failed to exchange OAuth code");
+				const errorText = await tokenResponse.text();
+				console.error("[LinearOAuth] Token exchange failed:", {
+					status: tokenResponse.status,
+					body: errorText,
+				});
+				throw new Error(`Failed to exchange OAuth code: ${tokenResponse.status}`);
 			}
 
 			const tokenData = await tokenResponse.json();
 
+			console.log("[LinearOAuth] Full token response:", JSON.stringify(tokenData, null, 2));
+
 			if (!tokenData.access_token) {
-				throw new Error("Invalid token response");
+				console.error("[LinearOAuth] Token response missing access_token:", tokenData);
+				throw new Error("Invalid token response: missing access_token");
 			}
 
-			// Get organization info
+			console.log("[LinearOAuth] Token received successfully");
+			console.log("[LinearOAuth] Access token (first 20 chars):", tokenData.access_token.substring(0, 20));
+			console.log("[LinearOAuth] Access token length:", tokenData.access_token.length);
+
+			// Verify the token works by fetching organization info
 			const orgResponse = await fetch("https://api.linear.app/graphql", {
 				method: "POST",
 				headers: {
@@ -397,22 +409,35 @@ http.route({
 				}),
 			});
 
+			if (!orgResponse.ok) {
+				const orgError = await orgResponse.text();
+				console.error("[LinearOAuth] Org fetch failed:", orgError);
+				throw new Error(`Failed to verify token: ${orgResponse.status}`);
+			}
+
 			const orgData = await orgResponse.json();
 			const org = orgData.data?.organization || {};
+
+			if (!org.id) {
+				console.error("[LinearOAuth] No organization found in response");
+				throw new Error("Could not fetch organization info");
+			}
+
+			console.log("[LinearOAuth] Organization:", org.name);
 
 			// Store the connection
 			await ctx.runMutation(internal.importIntegrations.storeLinearConnection, {
 				workspaceId: workspaceId as Id<"workspaces">,
 				memberId: memberId as Id<"members">,
 				accessToken: tokenData.access_token,
-				refreshToken: tokenData.refresh_token,
-				expiresAt: tokenData.expires_in
-					? Date.now() + tokenData.expires_in * 1000
-					: undefined,
+				refreshToken: tokenData.refresh_token || undefined,
+				expiresAt: undefined, // Linear tokens don't expire
 				scope: tokenData.scope || "read",
-				organizationId: org.id || "unknown",
+				organizationId: org.id,
 				organizationName: org.name || "Linear Organization",
 			});
+
+			console.log("[LinearOAuth] Connection stored successfully");
 
 			return new Response(null, {
 				status: 302,

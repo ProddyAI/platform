@@ -9,6 +9,7 @@ type RequestType = {
 		teams?: string[];
 		includeArchived?: boolean;
 		includeComments?: boolean;
+		targetChannelId?: Id<"channels">;
 	};
 };
 type ResponseType = Id<"import_jobs"> | null;

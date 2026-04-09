@@ -442,6 +442,16 @@ export const storeLinearConnection = internalMutation({
 		organizationName: v.string(),
 	},
 	handler: async (ctx, args) => {
+		console.log("[LinearOAuth] Storing connection:", {
+			workspaceId: args.workspaceId,
+			memberId: args.memberId,
+			organizationId: args.organizationId,
+			organizationName: args.organizationName,
+			tokenLength: args.accessToken.length,
+			tokenPreview: args.accessToken.substring(0, 20) + "...",
+			hasRefreshToken: !!args.refreshToken,
+		});
+
 		// Check if connection already exists
 		const existing = await ctx.db
 			.query("import_connections")
@@ -770,6 +780,7 @@ export const startLinearImport = mutation({
 			includeArchived: v.optional(v.boolean()),
 			includeComments: v.optional(v.boolean()),
 			channels: v.optional(v.array(v.string())), // Specific channel IDs to create
+			targetChannelId: v.optional(v.id("channels")), // Target channel to import into
 		}),
 	},
 	handler: async (ctx, args) => {
@@ -800,6 +811,14 @@ export const startLinearImport = mutation({
 
 		if (connection.status !== "active") {
 			throw new Error("You need to connect to Linear before importing data");
+		}
+
+		// Validate target channel if provided
+		if (args.config.targetChannelId) {
+			const targetChannel = await ctx.db.get(args.config.targetChannelId);
+			if (!targetChannel || targetChannel.workspaceId !== args.workspaceId) {
+				throw new Error("Invalid target channel selected");
+			}
 		}
 
 		// Check for existing jobs to prevent duplicate imports
@@ -1312,20 +1331,40 @@ export const processLinearImport = internalAction({
 			}
 
 			if (!connection.accessToken) {
-				throw new Error("Access token not found");
+				console.error("[LinearImport] Access token missing in connection:", {
+					connectionId: connection._id,
+					platform: connection.platform,
+					status: connection.status,
+					hasToken: !!connection.accessToken,
+				});
+				throw new Error("Access token not found. Please reconnect to Linear.");
 			}
 
+			console.log("[LinearImport] Connection found:", {
+				connectionId: connection._id,
+				platform: connection.platform,
+				status: connection.status,
+				organizationName: connection.teamName,
+				tokenLength: connection.accessToken.length,
+			});
+
 			// Create import context
+			const member = await ctx.runQuery(internal.members._getMemberById, {
+				id: job.memberId,
+			});
+
 			const importContext: any = {
 				accessToken: connection.accessToken,
 				config: {
 					includeArchived: (job.config as any).includeArchived,
 					includeComments: (job.config as any).includeComments,
+					targetChannelId: (job.config as any).targetChannelId, // Target channel to import into
 				},
 				progress: job.progress,
 				jobId: args.jobId,
 				workspaceId: job.workspaceId,
 				memberId: job.memberId,
+				userId: member?.userId, // Add userId for rate limiting
 				isCancelled: async () => {
 					const currentJob = await ctx.runQuery(
 						internal.importIntegrations._getJob,
@@ -1780,6 +1819,14 @@ export const storeImportedChannel = internalMutation({
 		idempotencyKey: v.string(),
 		name: v.string(),
 		type: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
 		description: v.optional(v.string()),
 		metadata: v.optional(v.any()),
 	},
@@ -1828,7 +1875,7 @@ export const storeImportedChannel = internalMutation({
 			jobId: undefined, // Will be set by caller if needed
 			externalId: args.externalId,
 			idempotencyKey: args.idempotencyKey,
-			platform: "slack",
+			platform: args.platform,
 			internalChannelId: channelId,
 			name: args.name,
 			type: args.type,
@@ -2167,5 +2214,386 @@ export const getLinearIssueByExternalId = internalQuery({
 		// Return the internal issue
 		const issue = await ctx.db.get(metadata.internalIssueId);
 		return issue ?? null;
+	},
+});
+
+/**
+ * Get member by email (internal only)
+ * Used during import to map external users to members
+ */
+export const _getMemberByEmail = internalQuery({
+	args: {
+		workspaceId: v.id("workspaces"),
+		email: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Find user by email
+		const user = await ctx.db
+			.query("users")
+			.withIndex("email", (q) => q.eq("email", args.email))
+			.first();
+
+		if (!user) {
+			return null;
+		}
+
+		// Find member in the workspace
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", user._id)
+			)
+			.first();
+
+		return member;
+	},
+});
+
+/**
+ * Get member by name with fuzzy matching (internal only)
+ * Used during Linear import to match users by name with case-insensitive partial matching
+ * Includes conflict resolution when multiple users match
+ */
+export const _getMemberByName = internalQuery({
+	args: {
+		workspaceId: v.id("workspaces"),
+		name: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Get all users to perform fuzzy matching
+		const allUsers = await ctx.db.query("users").collect();
+		
+		const normalizedName = args.name.toLowerCase().trim();
+		
+		// Find exact match first (case-insensitive)
+		const exactMatch = allUsers.find(
+			(u) => u.name && u.name.toLowerCase() === normalizedName
+		);
+		
+		if (exactMatch) {
+			// Find member in the workspace
+			const member = await ctx.db
+				.query("members")
+				.withIndex("by_workspace_id_user_id", (q) =>
+					q.eq("workspaceId", args.workspaceId).eq("userId", exactMatch._id)
+				)
+				.first();
+			
+			return member ? { member, matchType: "exact" as const, conflict: false } : null;
+		}
+		
+		// Find partial matches (name contains the search term or vice versa)
+		const partialMatches = allUsers.filter((u) => {
+			if (!u.name) return false;
+			const userName = u.name.toLowerCase();
+			return (
+				userName.includes(normalizedName) ||
+				normalizedName.includes(userName)
+			);
+		});
+		
+		// Conflict resolution: if multiple partial matches, return null
+		// to let the caller handle the ambiguity
+		if (partialMatches.length === 0) {
+			return null;
+		}
+		
+		if (partialMatches.length === 1) {
+			const user = partialMatches[0];
+			const member = await ctx.db
+				.query("members")
+				.withIndex("by_workspace_id_user_id", (q) =>
+					q.eq("workspaceId", args.workspaceId).eq("userId", user._id)
+				)
+				.first();
+			
+			return member ? { member, matchType: "partial" as const, conflict: false } : null;
+		}
+		
+		// Multiple matches found - return conflict information
+		const membersInWorkspace = [];
+		for (const user of partialMatches) {
+			const member = await ctx.db
+				.query("members")
+				.withIndex("by_workspace_id_user_id", (q) =>
+					q.eq("workspaceId", args.workspaceId).eq("userId", user._id)
+				)
+				.first();
+			
+			if (member) {
+				membersInWorkspace.push({ member, userName: user.name });
+			}
+		}
+		
+		// If only one member is in the workspace, use that
+		if (membersInWorkspace.length === 1) {
+			return { 
+				member: membersInWorkspace[0].member, 
+				matchType: "partial" as const, 
+				conflict: false 
+			};
+		}
+		
+		// Return conflict information
+		return { 
+			member: null, 
+			matchType: "partial" as const, 
+			conflict: true,
+			possibleMatches: membersInWorkspace.map(m => m.userName)
+		};
+	},
+});
+
+/**
+ * Result type for member creation
+ */
+type MemberCreationResult = {
+	member: any | null;
+	created: boolean;
+	createdUser: boolean;
+	reason?: string;
+	role?: "owner" | "admin" | "member";
+};
+
+/**
+ * Get or create member by email with auto-invite, rate limiting, notifications, and avatar import (internal only)
+ * Used during Linear import to auto-invite users if they don't exist
+ */
+export const _getOrCreateMemberByEmail = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		email: v.string(),
+		name: v.string(),
+		avatarUrl: v.optional(v.string()),
+		linearRole: v.optional(v.string()), // Linear role (admin, member, etc.)
+		importSource: v.optional(v.string()), // e.g., "Linear Import"
+		importJobUserId: v.optional(v.id("users")), // User who started the import (for rate limiting)
+	},
+	handler: async (ctx, args): Promise<MemberCreationResult> => {
+		// Validate inputs
+		if (!args.email || !args.email.includes("@")) {
+			return { 
+				member: null, 
+				created: false, 
+				createdUser: false,
+				reason: `Invalid email address: ${args.email}` 
+			};
+		}
+		
+		if (!args.name || args.name.trim().length === 0) {
+			return { 
+				member: null, 
+				created: false, 
+				createdUser: false,
+				reason: "Name is required" 
+			};
+		}
+		
+		const normalizedEmail = args.email.toLowerCase();
+		
+		// Check rate limit for auto-invites (only if userId provided)
+		if (args.importJobUserId) {
+			try {
+				const rateLimitResult: { allowed: boolean; reason?: string } = await ctx.runMutation(
+					internal.rateLimit._validateAutoInviteRateLimitInternal,
+					{ 
+						workspaceId: args.workspaceId,
+						userId: args.importJobUserId
+					}
+				);
+				
+				if (!rateLimitResult.allowed) {
+					return { 
+						member: null, 
+						created: false, 
+						createdUser: false,
+						reason: rateLimitResult.reason 
+					};
+				}
+			} catch (_error) {
+				// If rate limiting fails, continue without it (graceful degradation)
+			}
+		}
+		
+		// First, try to find existing user by email
+		let user = await ctx.db
+			.query("users")
+			.withIndex("email", (q) => q.eq("email", normalizedEmail))
+			.first();
+
+		let createdNewUser = false;
+		
+		// If user doesn't exist, create them
+		if (!user) {
+			// Validate name length
+			const userName = args.name.trim().substring(0, 100);
+			
+			// Handle avatar URL - just store the external URL since we can't download in mutations
+			const imageValue: string | undefined = (args.avatarUrl && args.avatarUrl.startsWith("http")) 
+				? args.avatarUrl 
+				: undefined;
+			
+			const userId = await ctx.db.insert("users", {
+				email: normalizedEmail,
+				name: userName,
+				image: imageValue,
+			});
+			
+			user = await ctx.db.get(userId);
+			createdNewUser = true;
+		}
+
+		if (!user) {
+			return { member: null, created: false, createdUser: false, reason: "Failed to create user" };
+		}
+
+		// Check if member already exists
+		let member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", user._id)
+			)
+			.first();
+
+		let createdNewMember = false;
+		
+		// If not a member, create them
+		if (!member) {
+			// Map Linear role to our role system
+			let role: "owner" | "admin" | "member" = "member";
+			if (args.linearRole) {
+				const linearRoleLower = args.linearRole.toLowerCase();
+				if (linearRoleLower.includes("owner") || linearRoleLower.includes("admin")) {
+					role = "admin"; // Map Linear owner/admin to our admin role
+				}
+			}
+			
+			const memberId = await ctx.db.insert("members", {
+				workspaceId: args.workspaceId,
+				userId: user._id,
+				role,
+			});
+			
+			member = await ctx.db.get(memberId);
+			createdNewMember = true;
+		}
+		
+		// Send notification if new member was created
+		// Note: Actual notification is sent via the import completion notification
+		// to avoid circular dependency issues during Convex codegen
+		if (createdNewMember && member) {
+			console.log(`[AutoInvite] New member created: ${member._id} for workspace ${args.workspaceId}`);
+		}
+
+		return { 
+			member, 
+			created: createdNewMember, 
+			createdUser: createdNewUser,
+			role: member?.role
+		};
+	},
+});
+
+/**
+ * Get statuses for a channel (internal only)
+ * Used during import to avoid authentication requirements
+ */
+export const getStatusesByChannelId = internalQuery({
+	args: {
+		channelId: v.id("channels"),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("statuses")
+			.withIndex("by_channel_id_order", (q) => q.eq("channelId", args.channelId))
+			.collect();
+	},
+});
+
+/**
+ * Create a default status for a channel (internal only)
+ * Used during import when no statuses exist
+ */
+export const createDefaultStatus = internalMutation({
+	args: {
+		channelId: v.id("channels"),
+		name: v.string(),
+		color: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Get the channel to find workspace
+		const channel = await ctx.db.get(args.channelId);
+		if (!channel) {
+			throw new Error("Channel not found");
+		}
+
+		// Get the highest order value for existing statuses
+		const existingStatuses = await ctx.db
+			.query("statuses")
+			.withIndex("by_channel_id_order", (q) =>
+				q.eq("channelId", args.channelId)
+			)
+			.collect();
+
+		const maxOrder =
+			existingStatuses.reduce(
+				(max, status) => Math.max(max, status.order),
+				-1
+			) + 1;
+
+		// Create the new status
+		const statusId = await ctx.db.insert("statuses", {
+			channelId: args.channelId,
+			name: args.name,
+			color: args.color,
+			order: maxOrder,
+		});
+
+		return statusId;
+	},
+});
+
+/**
+ * Disconnect Linear connection (delete the import connection)
+ */
+export const disconnectLinear = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		// Verify user is a member of the workspace
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.unique();
+
+		if (!member) throw new Error("Not a member of this workspace");
+
+		// Find the Linear connection
+		const connection = await ctx.db
+			.query("import_connections")
+			.withIndex("by_member_platform", (q) =>
+				q.eq("memberId", member._id).eq("platform", "linear")
+			)
+			.first();
+
+		if (!connection) {
+			throw new Error("No Linear connection found");
+		}
+
+		// Delete the connection
+		await ctx.db.delete(connection._id);
+
+		console.log("[LinearDisconnect] Connection deleted:", {
+			connectionId: connection._id,
+			organizationName: connection.teamName,
+		});
+
+		return { success: true };
 	},
 });
