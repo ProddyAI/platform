@@ -34,6 +34,53 @@ const getCompletedStatusIdsForChannel = async (
 	);
 };
 
+const richTextBodyFromPlainText = (text: string) => {
+	return JSON.stringify({
+		ops: [{ insert: text }],
+	});
+};
+
+const maybePostProjectStatusChangeMessage = async (
+	ctx: MutationCtx,
+	{
+		workspaceId,
+		boardChannelId,
+		memberId,
+		issueTitle,
+		fromStatus,
+		toStatus,
+	}: {
+		workspaceId: Id<"workspaces">;
+		boardChannelId: Id<"channels">;
+		memberId: Id<"members">;
+		issueTitle: string;
+		fromStatus: string;
+		toStatus: string;
+	}
+) => {
+	const project = await ctx.db
+		.query("projects")
+		.withIndex("by_workspace_id_board_channel_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("boardChannelId", boardChannelId)
+		)
+		.unique();
+
+	if (!project?.connectedChannelId) {
+		return;
+	}
+
+	const body = richTextBodyFromPlainText(
+		`Status update: "${issueTitle}" moved from ${fromStatus} to ${toStatus}.`
+	);
+
+	await ctx.db.insert("messages", {
+		body,
+		memberId,
+		workspaceId,
+		channelId: project.connectedChannelId,
+	});
+};
+
 const deleteIssueCascade = async (
 	ctx: MutationCtx,
 	issueId: Id<"issues">
@@ -1053,7 +1100,10 @@ export const updateIssue = mutation({
 		if (!channel) throw new Error("Channel not found");
 
 		// Verify caller is a member of the workspace
-		await assertWorkspaceMember(ctx, channel.workspaceId);
+		const actorMember = await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		let previousStatusName: string | undefined;
+		let nextStatusName: string | undefined;
 
 		// Verify statusId belongs to the channel if provided
 		if (updates.statusId) {
@@ -1061,6 +1111,12 @@ export const updateIssue = mutation({
 			if (!status) throw new Error("Status not found");
 			if (status.channelId !== issue.channelId) {
 				throw new Error("Status does not belong to issue's channel");
+			}
+
+			nextStatusName = status.name;
+			if (updates.statusId !== issue.statusId) {
+				const currentStatus = await ctx.db.get(issue.statusId);
+				previousStatusName = currentStatus?.name;
 			}
 		}
 
@@ -1141,6 +1197,26 @@ export const updateIssue = mutation({
 			}
 		}
 
+		if (
+			updates.statusId &&
+			updates.statusId !== issue.statusId &&
+			nextStatusName &&
+			previousStatusName
+		) {
+			try {
+				await maybePostProjectStatusChangeMessage(ctx, {
+					workspaceId: channel.workspaceId,
+					boardChannelId: issue.channelId,
+					memberId: actorMember._id,
+					issueTitle: updates.title || issue.title,
+					fromStatus: previousStatusName,
+					toStatus: nextStatusName,
+				});
+			} catch (error) {
+				console.error("Failed to post project status update message:", error);
+			}
+		}
+
 		return issueId;
 	},
 });
@@ -1162,7 +1238,7 @@ export const moveIssueStatus = mutation({
 		// Verify caller is a member of the workspace
 		const channel = await ctx.db.get(issue.channelId);
 		if (!channel) throw new Error("Channel not found");
-		await assertWorkspaceMember(ctx, channel.workspaceId);
+		const actorMember = await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Verify toStatusId belongs to the issue's channel
 		const toStatus = await ctx.db.get(toStatusId);
@@ -1174,6 +1250,7 @@ export const moveIssueStatus = mutation({
 		const fromStatusId = issue.statusId as Id<"statuses">;
 		const targetIndex = Math.max(0, Math.floor(order));
 		const now = Date.now();
+		const fromStatus = await ctx.db.get(fromStatusId);
 		// Helper to sort issues by their current order, falling back to _creationTime
 		const sortByOrder = (a: Doc<"issues">, b: Doc<"issues">) => {
 			const ao = typeof a.order === "number" ? a.order : 0;
@@ -1258,6 +1335,19 @@ export const moveIssueStatus = mutation({
 					updatedAt: now,
 				});
 			}
+		}
+
+		try {
+			await maybePostProjectStatusChangeMessage(ctx, {
+				workspaceId: channel.workspaceId,
+				boardChannelId: issue.channelId,
+				memberId: actorMember._id,
+				issueTitle: issue.title,
+				fromStatus: fromStatus?.name || "Unknown",
+				toStatus: toStatus.name,
+			});
+		} catch (error) {
+			console.error("Failed to post project status update message:", error);
 		}
 		return;
 	},

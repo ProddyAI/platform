@@ -1,15 +1,15 @@
 import { useMutation } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
+
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 type RequestType = {
-	name: string;
-	id: Id<"channels">;
-	icon?: string;
-	iconImage?: Id<"_storage"> | null;
+	projectId: Id<"projects">;
+	channelId?: Id<"channels"> | null;
 };
-type ResponseType = Id<"channels"> | null;
+
+type ResponseType = Id<"projects"> | null;
 
 type Options = {
 	onSuccess?: (data: ResponseType) => void;
@@ -18,7 +18,7 @@ type Options = {
 	throwError?: boolean;
 };
 
-export const useUpdateChannel = () => {
+export const useSetProjectConnectedChannel = () => {
 	const [data, setData] = useState<ResponseType>(null);
 	const [error, setError] = useState<Error | null>(null);
 	const [status, setStatus] = useState<
@@ -30,7 +30,7 @@ export const useUpdateChannel = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.channels.update);
+	const mutation = useMutation(api.projects.setConnectedChannel);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {
@@ -40,14 +40,19 @@ export const useUpdateChannel = () => {
 				setStatus("pending");
 
 				const response = await mutation(values);
+				setData(response);
+				setStatus("success");
 				options?.onSuccess?.(response);
 
 				return response;
-			} catch (error) {
+			} catch (err) {
 				setStatus("error");
-				options?.onError?.(error as Error);
+				setError(err as Error);
+				options?.onError?.(err as Error);
 
-				if (!options?.throwError) throw error;
+				if (options?.throwError) {
+					throw err;
+				}
 			} finally {
 				setStatus("settled");
 				options?.onSettled?.();

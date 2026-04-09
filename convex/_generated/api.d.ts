@@ -47,6 +47,7 @@ import type * as payments from "../payments.js";
 import type * as plans from "../plans.js";
 import type * as preferences from "../preferences.js";
 import type * as presence from "../presence.js";
+import type * as projects from "../projects.js";
 import type * as prosemirror from "../prosemirror.js";
 import type * as ragchat from "../ragchat.js";
 import type * as rateLimit from "../rateLimit.js";
@@ -111,6 +112,7 @@ declare const fullApi: ApiFromModules<{
   plans: typeof plans;
   preferences: typeof preferences;
   presence: typeof presence;
+  projects: typeof projects;
   prosemirror: typeof prosemirror;
   ragchat: typeof ragchat;
   rateLimit: typeof rateLimit;

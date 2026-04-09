@@ -11,6 +11,8 @@ import {
 	ChevronDown,
 	Hash,
 	LayoutDashboard,
+	LayoutGrid,
+	Link2,
 	Loader,
 	MessageSquareText,
 	PanelLeftClose,
@@ -30,9 +32,13 @@ import { useCreateChannelModal } from "@/features/channels/store/use-create-chan
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useInviteMemberModal } from "@/features/members/store/use-invite-member-modal";
+import { useGetProjects } from "@/features/projects/api/use-get-projects";
+import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
+import { useCreateProjectModal } from "@/features/projects/store/use-create-project-modal";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useMemberId } from "@/hooks/use-member-id";
+import { useProjectId } from "@/hooks/use-project-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { cn } from "@/lib/utils";
 
@@ -172,6 +178,7 @@ export const WorkspaceSidebar = ({
 }) => {
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
+	const projectId = useProjectId();
 	const memberId = useMemberId();
 	const pathname = usePathname();
 	// Track which sections are expanded
@@ -179,6 +186,7 @@ export const WorkspaceSidebar = ({
 		Record<string, boolean>
 	>({
 		Channels: true, // Channels expanded by default
+		Projects: true,
 		Members: false, // Members collapsed by default
 		Planning: false,
 		Messages: false,
@@ -186,11 +194,13 @@ export const WorkspaceSidebar = ({
 	});
 
 	const [_open, setOpen] = useCreateChannelModal();
+	const [_createProjectOpen, setCreateProjectOpen] = useCreateProjectModal();
+	const [, setConnectProjectChannelModal] = useConnectProjectChannelModal();
 	const [_inviteOpen, setInviteOpen] = useInviteMemberModal();
 
 	const handleSectionToggle = (label: string) => {
-		// Channels and Members are mutually exclusive
-		const topSections = ["Channels", "Members"];
+		// Channels, Projects, and Members are mutually exclusive
+		const topSections = ["Channels", "Projects", "Members"];
 		// Planning, Messages, Settings can all be open simultaneously
 		const bottomSections = ["Planning", "Messages", "Settings"];
 
@@ -228,11 +238,20 @@ export const WorkspaceSidebar = ({
 	const { data: channels, isLoading: channelsLoading } = useGetChannels({
 		workspaceId,
 	});
+	const { data: projects, isLoading: projectsLoading } = useGetProjects({
+		workspaceId,
+	});
 	const { data: members, isLoading: membersLoading } = useGetMembers({
 		workspaceId,
 	});
 
-	if (memberLoading || workspaceLoading || channelsLoading || membersLoading) {
+	if (
+		memberLoading ||
+		workspaceLoading ||
+		channelsLoading ||
+		projectsLoading ||
+		membersLoading
+	) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center bg-primary">
 				<Loader className="size-6 animate-spin text-secondary-foreground animate-pulse-subtle" />
@@ -250,6 +269,8 @@ export const WorkspaceSidebar = ({
 			</div>
 		);
 	}
+
+	const chatChannels = (channels || []).filter((item) => item.type !== "board");
 
 	return (
 		<div
@@ -327,7 +348,7 @@ export const WorkspaceSidebar = ({
 				</div>
 
 				{/* Channels Section */}
-				{channels && channels.length > 0 && (
+				{chatChannels.length > 0 && (
 					<div className="mt-2">
 						<DroppableItem
 							hint="Channels"
@@ -337,7 +358,7 @@ export const WorkspaceSidebar = ({
 							label="Channels"
 							onToggle={handleSectionToggle}
 						>
-							{channels.map((item) => (
+							{chatChannels.map((item) => (
 								<MobileCloseWrapper key={item._id} onClose={onMobileClose}>
 									<ChannelItem
 										icon={item.icon}
@@ -373,6 +394,86 @@ export const WorkspaceSidebar = ({
 										<>
 											<PlusIcon className="size-4 text-secondary-foreground/80" />
 											<span className="truncate min-w-0">New Channel</span>
+										</>
+									)}
+								</div>
+							)}
+						</DroppableItem>
+					</div>
+				)}
+
+				{/* Projects Section */}
+				{projects && (
+					<div className="mt-2">
+						<DroppableItem
+							hint="Projects"
+							icon={LayoutGrid}
+							isCollapsed={isCollapsed}
+							isExpanded={expandedSections.Projects}
+							label="Projects"
+							onToggle={handleSectionToggle}
+						>
+							{projects.map((project) => (
+								<div className="space-y-1" key={project._id}>
+									<MobileCloseWrapper onClose={onMobileClose}>
+										<SidebarItem
+											href={`/workspace/${workspaceId}/project/${project._id}/board`}
+											icon={LayoutGrid}
+											id={`project-${project._id}`}
+											isActive={
+												projectId === project._id ||
+												pathname.includes(`/project/${project._id}`)
+											}
+											isCollapsed={isCollapsed}
+											label={project.name}
+										/>
+									</MobileCloseWrapper>
+
+									{(member.role === "admin" || member.role === "owner") &&
+										!isCollapsed && (
+											<button
+												className="group flex w-full cursor-pointer items-center gap-2 rounded-[10px] px-3 py-1.5 text-xs font-medium text-secondary-foreground/70 transition-standard hover:bg-secondary-foreground/10"
+												onClick={() =>
+													setConnectProjectChannelModal({
+														open: true,
+														projectId: project._id,
+													})
+												}
+												type="button"
+											>
+												<Link2 className="size-3.5 flex-shrink-0" />
+												<span className="truncate min-w-0">
+													{project.connectedChannelName
+														? `Connected: #${project.connectedChannelName}`
+														: "Connect status updates"}
+												</span>
+											</button>
+										)}
+								</div>
+							))}
+
+							{(member.role === "admin" || member.role === "owner") && (
+								<div
+									className={cn(
+										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
+										isCollapsed
+											? "justify-center px-1 md:px-2 py-2 md:py-2.5"
+											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
+									)}
+									onClick={() => setCreateProjectOpen(true)}
+								>
+									{isCollapsed ? (
+										<div className="relative flex-shrink-0">
+											<Hint align="center" label="New Project" side="right">
+												<div className="flex items-center justify-center">
+													<PlusIcon className="size-4 text-secondary-foreground/80" />
+												</div>
+											</Hint>
+										</div>
+									) : (
+										<>
+											<PlusIcon className="size-4 text-secondary-foreground/80" />
+											<span className="truncate min-w-0">New Project</span>
 										</>
 									)}
 								</div>
@@ -466,6 +567,16 @@ export const WorkspaceSidebar = ({
 								isActive={pathname.includes("/calendar")}
 								isCollapsed={isCollapsed}
 								label="Calendar"
+							/>
+						</MobileCloseWrapper>
+						<MobileCloseWrapper onClose={onMobileClose}>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/issues`}
+								icon={LayoutGrid}
+								id="issues"
+								isActive={pathname.includes("/issues")}
+								isCollapsed={isCollapsed}
+								label="Issue"
 							/>
 						</MobileCloseWrapper>
 					</DroppableItem>

@@ -222,9 +222,9 @@ const PrivacyPage = () => {
 								<strong>Email:</strong>{" "}
 								<a
 									className="text-primary hover:underline"
-									href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL}`}
+									href={`mailto:${process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL}`}
 								>
-									{process.env.NEXT_PUBLIC_SUPPORT_EMAIL}
+									{process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL}
 								</a>
 							</p>
 						</div>

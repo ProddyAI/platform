@@ -109,9 +109,9 @@ const ContactPage = () => {
 										<h3 className="font-medium text-gray-900">Email</h3>
 										<a
 											className="text-primary hover:underline block mb-1"
-											href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL}`}
+											href={`mailto:${process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL}`}
 										>
-											{process.env.NEXT_PUBLIC_SUPPORT_EMAIL}
+											{process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL}
 										</a>
 									</div>
 								</div>
@@ -322,7 +322,7 @@ const ContactPage = () => {
 													</SelectItem>
 													<SelectItem value="support">
 														Technical Support (
-														{process.env.NEXT_PUBLIC_SUPPORT_EMAIL})
+														{process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL})
 													</SelectItem>
 													<SelectItem value="sales">Sales Question</SelectItem>
 													<SelectItem value="feedback">Feedback</SelectItem>

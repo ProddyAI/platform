@@ -1,6 +1,7 @@
 import {
 	CalendarIcon,
 	FileText,
+	Hash,
 	ImageIcon,
 	PaintBucket,
 	Smile,
@@ -10,12 +11,13 @@ import Image from "next/image";
 import Quill, { type QuillOptions } from "quill";
 import type { Delta, Op } from "quill/core";
 import "quill/dist/quill.snow.css";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import {
 	type MutableRefObject,
 	useEffect,
 	useLayoutEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -25,7 +27,14 @@ import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { useCurrentUser } from "@/features/auth/api/use-current-user";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useCreateNote } from "@/features/notes/api/use-create-note";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -45,6 +54,14 @@ type EditorValue = {
 		date: Date;
 		time?: string;
 	};
+};
+
+type CanvasReference = {
+	messageId: Id<"messages">;
+	canvasName: string;
+	roomId: string;
+	savedCanvasId?: string;
+	createdAt: number;
 };
 
 interface EditorProps {
@@ -87,6 +104,14 @@ const Editor = ({
 		date: Date;
 		time?: string;
 	} | null>(null);
+	const [notesModalOpen, setNotesModalOpen] = useState(false);
+	const [canvasModalOpen, setCanvasModalOpen] = useState(false);
+	const [newNoteTitle, setNewNoteTitle] = useState("");
+	const [newCanvasTitle, setNewCanvasTitle] = useState("");
+	const [isCreatingCanvas, setIsCreatingCanvas] = useState(false);
+	const [isCreatingNote, setIsCreatingNote] = useState(false);
+	const [isSharingCanvas, setIsSharingCanvas] = useState(false);
+	const [isSharingNote, setIsSharingNote] = useState(false);
 	const mentionPickerRef = useRef<HTMLDivElement>(null);
 
 	// Refs for TEXT_CHANGE handler so it sees latest values without being in effect deps (which would remount editor on @/#/!)
@@ -122,11 +147,13 @@ const Editor = ({
 		if (!mentionPickerOpen) return;
 
 		const handleClickOutside = (e: MouseEvent) => {
-			// If the click is outside the mention picker and not on the @ button, close it
+			// If the click is outside the picker and not on an autocomplete action button, close it.
 			if (
 				mentionPickerRef.current &&
 				!mentionPickerRef.current.contains(e.target as Node) &&
-				!(e.target as HTMLElement).closest('button[data-mention-button="true"]')
+				!(e.target as HTMLElement).closest(
+					'button[data-autocomplete-button="true"]'
+				)
 			) {
 				setMentionPickerOpen(false);
 				setActiveAutocomplete(null);
@@ -470,103 +497,236 @@ const Editor = ({
 		setMentionPickerOpen(false);
 	};
 
-	// Get current user
-	const { data: currentUser } = useCurrentUser();
-
 	// Create message mutation
 	const createMessage = useMutation(api.messages.create);
 
 	// Create note mutation
 	const { mutate: createNote } = useCreateNote();
 
-	// State to track if we're creating a canvas or note
-	const [isCreatingCanvas, setIsCreatingCanvas] = useState(false);
-	const [isCreatingNote, setIsCreatingNote] = useState(false);
+	const notes = useQuery(
+		api.notes.list,
+		workspaceId && channelId ? { workspaceId, channelId } : "skip"
+	);
 
-	// Function to create a new canvas with a live message
-	const navigateToCanvas = async () => {
-		if (!workspaceId || !channelId || !currentUser) {
-			console.error("Cannot create canvas: missing required data");
+	const channelMessages = useQuery(
+		api.messages.get,
+		channelId
+			? {
+					channelId,
+					paginationOpts: {
+						numItems: 100,
+						cursor: null,
+					},
+				}
+			: "skip"
+	);
+
+	const canvasReferences = useMemo<CanvasReference[]>(() => {
+		if (!channelMessages?.page) {
+			return [];
+		}
+
+		const byRoomId = new Map<string, CanvasReference>();
+
+		for (const message of channelMessages.page) {
+			try {
+				const parsed = JSON.parse(message.body) as {
+					type?: string;
+					canvasName?: string;
+					roomId?: string;
+					savedCanvasId?: string;
+				};
+
+				if (
+					(parsed.type === "canvas" || parsed.type === "canvas-live") &&
+					parsed.roomId
+				) {
+					const existing = byRoomId.get(parsed.roomId);
+					if (!existing || existing.createdAt < message._creationTime) {
+						byRoomId.set(parsed.roomId, {
+							messageId: message._id,
+							canvasName: parsed.canvasName || "Untitled Canvas",
+							roomId: parsed.roomId,
+							savedCanvasId: parsed.savedCanvasId,
+							createdAt: message._creationTime,
+						});
+					}
+				}
+			} catch (_error) {
+				// Ignore non-JSON message bodies.
+			}
+		}
+
+		return [...byRoomId.values()].sort((a, b) => b.createdAt - a.createdAt);
+	}, [channelMessages]);
+
+	const createNoteReferenceMessage = async (
+		noteId: Id<"notes">,
+		noteTitle: string
+	) => {
+		if (!channelId) {
+			throw new Error("Channel is required");
+		}
+
+		await createMessage({
+			workspaceId,
+			channelId,
+			body: JSON.stringify({
+				type: "note",
+				noteId,
+				noteTitle,
+				previewContent: `Shared note: ${noteTitle}`,
+			}),
+		});
+	};
+
+	const createCanvasReferenceMessage = async ({
+		canvasName,
+		roomId,
+		savedCanvasId,
+	}: {
+		canvasName: string;
+		roomId: string;
+		savedCanvasId?: string;
+	}) => {
+		if (!channelId) {
+			throw new Error("Channel is required");
+		}
+
+		await createMessage({
+			workspaceId,
+			channelId,
+			body: JSON.stringify({
+				type: "canvas",
+				canvasName,
+				roomId,
+				savedCanvasId,
+			}),
+			tags: [],
+		});
+	};
+
+	const handleSelectExistingNote = async (
+		noteId: Id<"notes">,
+		noteTitle: string
+	) => {
+		if (!workspaceId || !channelId) {
+			toast.error("Missing channel context");
 			return;
 		}
 
 		try {
-			// Show loading state
-			setIsCreatingCanvas(true);
-
-			// Generate a unique room ID for the canvas
-			const timestamp = Date.now();
-			const roomId = `canvas-${channelId}-${timestamp}`;
-
-			// Create a live message in the channel
-			await createMessage({
-				workspaceId: workspaceId,
-				channelId: channelId as Id<"channels">,
-				body: JSON.stringify({
-					type: "canvas-live",
-					roomId: roomId,
-					participants: [currentUser._id],
-				}),
-			});
-
-			// Navigate to the canvas page with the room ID and new=true to force a new canvas
-			// Use router.push for client-side navigation without page reload
-			const url = `/workspace/${workspaceId}/channel/${channelId}/canvas?roomId=${roomId}&new=true&t=${timestamp}`;
-			router.push(url);
+			setIsSharingNote(true);
+			await createNoteReferenceMessage(noteId, noteTitle || "Untitled Note");
+			setNotesModalOpen(false);
+			toast.success("Note shared in channel");
 		} catch (error) {
-			console.error("Error creating canvas:", error);
-			toast.error("Failed to create canvas");
-			setIsCreatingCanvas(false);
+			console.error("Error sharing note:", error);
+			toast.error("Failed to share note");
+		} finally {
+			setIsSharingNote(false);
 		}
 	};
 
-	// Function to create a new note
-	const createNewNote = async () => {
-		if (!workspaceId || !channelId || !currentUser) {
-			console.error("Cannot create note: missing required data");
+	const handleCreateNoteFromModal = async () => {
+		if (!workspaceId || !channelId) {
+			toast.error("Missing channel context");
+			return;
+		}
+
+		const title = newNoteTitle.trim();
+		if (!title) {
+			toast.error("Please enter a note title");
 			return;
 		}
 
 		try {
-			// Show loading state
 			setIsCreatingNote(true);
-
-			// Create a new note with default values
-			const defaultTitle = "Untitled Note";
 			const defaultContent = JSON.stringify({ ops: [{ insert: "\n" }] });
-
-			// Create the note in the database
 			const newNoteId = await createNote({
-				title: defaultTitle,
+				title,
 				content: defaultContent,
 				workspaceId,
 				channelId,
 			});
 
-			if (newNoteId) {
-				// Create a message in the channel with the new note information
-				await createMessage({
-					workspaceId,
-					channelId,
-					body: JSON.stringify({
-						type: "note",
-						noteId: newNoteId,
-						noteTitle: defaultTitle,
-						previewContent: "New note created",
-					}),
-				});
-
-				// Navigate to the notes page
-				const url = `/workspace/${workspaceId}/channel/${channelId}/notes?noteId=${newNoteId}`;
-				router.push(url);
-
-				toast.success("Note created and shared in channel");
+			if (!newNoteId) {
+				throw new Error("Failed to create note");
 			}
+
+			await createNoteReferenceMessage(newNoteId, title);
+			setNotesModalOpen(false);
+			setNewNoteTitle("");
+			router.push(
+				`/workspace/${workspaceId}/channel/${channelId}/notes?noteId=${newNoteId}&t=${Date.now()}`
+			);
+			toast.success("Note created and shared in channel");
 		} catch (error) {
 			console.error("Error creating note:", error);
 			toast.error("Failed to create note");
 		} finally {
 			setIsCreatingNote(false);
+		}
+	};
+
+	const handleSelectExistingCanvas = async (canvas: CanvasReference) => {
+		if (!workspaceId || !channelId) {
+			toast.error("Missing channel context");
+			return;
+		}
+
+		try {
+			setIsSharingCanvas(true);
+			await createCanvasReferenceMessage({
+				canvasName: canvas.canvasName,
+				roomId: canvas.roomId,
+				savedCanvasId: canvas.savedCanvasId,
+			});
+			setCanvasModalOpen(false);
+			toast.success("Canvas shared in channel");
+		} catch (error) {
+			console.error("Error sharing canvas:", error);
+			toast.error("Failed to share canvas");
+		} finally {
+			setIsSharingCanvas(false);
+		}
+	};
+
+	const handleCreateCanvasFromModal = async () => {
+		if (!workspaceId || !channelId) {
+			toast.error("Missing channel context");
+			return;
+		}
+
+		const title = newCanvasTitle.trim();
+		if (!title) {
+			toast.error("Please enter a canvas title");
+			return;
+		}
+
+		try {
+			setIsCreatingCanvas(true);
+			const timestamp = Date.now();
+			const savedCanvasId = `${channelId}-${timestamp}`;
+			const roomId = `canvas-${savedCanvasId}`;
+
+			await createCanvasReferenceMessage({
+				canvasName: title,
+				roomId,
+				savedCanvasId,
+			});
+
+			setCanvasModalOpen(false);
+			setNewCanvasTitle("");
+			router.push(
+				`/workspace/${workspaceId}/channel/${channelId}/canvas?roomId=${roomId}&canvasName=${encodeURIComponent(title)}&t=${timestamp}`
+			);
+			toast.success("Canvas created and shared in channel");
+		} catch (error) {
+			console.error("Error creating canvas:", error);
+			toast.error("Failed to create canvas");
+		} finally {
+			setIsCreatingCanvas(false);
 		}
 	};
 
@@ -577,6 +737,145 @@ const Editor = ({
 				onSelect={handleCalendarSelect}
 				open={calendarPickerOpen}
 			/>
+
+			<Dialog
+				onOpenChange={(open) => {
+					setNotesModalOpen(open);
+					if (!open) {
+						setNewNoteTitle("");
+					}
+				}}
+				open={notesModalOpen}
+			>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Channel Notes</DialogTitle>
+						<DialogDescription>
+							Select an existing note or create a new one.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="max-h-[260px] space-y-2 overflow-y-auto">
+						{!channelId ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								This action is available in channel chats only.
+							</p>
+						) : notes === undefined ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								Loading notes...
+							</p>
+						) : notes.length === 0 ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								No notes found in this channel.
+							</p>
+						) : (
+							notes.map((note) => (
+								<Button
+									className="h-auto w-full justify-start px-3 py-2"
+									disabled={isSharingNote || isCreatingNote}
+									key={note._id}
+									onClick={() =>
+										handleSelectExistingNote(
+											note._id,
+											note.title || "Untitled Note"
+										)
+									}
+									variant="outline"
+								>
+									<FileText className="mr-2 h-4 w-4" />
+									<span className="truncate">
+										{note.title || "Untitled Note"}
+									</span>
+								</Button>
+							))
+						)}
+					</div>
+
+					<div className="space-y-2 border-t pt-3">
+						<p className="text-xs text-muted-foreground">Create new note</p>
+						<div className="flex gap-2">
+							<Input
+								disabled={isCreatingNote || isSharingNote}
+								onChange={(e) => setNewNoteTitle(e.target.value)}
+								placeholder="Note title"
+								value={newNoteTitle}
+							/>
+							<Button
+								disabled={isCreatingNote || isSharingNote || !channelId}
+								onClick={handleCreateNoteFromModal}
+							>
+								{isCreatingNote ? "Creating..." : "Create"}
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				onOpenChange={(open) => {
+					setCanvasModalOpen(open);
+					if (!open) {
+						setNewCanvasTitle("");
+					}
+				}}
+				open={canvasModalOpen}
+			>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Channel Canvases</DialogTitle>
+						<DialogDescription>
+							Select an existing canvas or create a new one.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="max-h-[260px] space-y-2 overflow-y-auto">
+						{!channelId ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								This action is available in channel chats only.
+							</p>
+						) : channelMessages === undefined ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								Loading canvases...
+							</p>
+						) : canvasReferences.length === 0 ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								No canvases found in this channel.
+							</p>
+						) : (
+							canvasReferences.map((canvas) => (
+								<Button
+									className="h-auto w-full justify-start px-3 py-2"
+									disabled={isSharingCanvas || isCreatingCanvas}
+									key={canvas.roomId}
+									onClick={() => handleSelectExistingCanvas(canvas)}
+									variant="outline"
+								>
+									<PaintBucket className="mr-2 h-4 w-4" />
+									<span className="truncate">{canvas.canvasName}</span>
+								</Button>
+							))
+						)}
+					</div>
+
+					<div className="space-y-2 border-t pt-3">
+						<p className="text-xs text-muted-foreground">Create new canvas</p>
+						<div className="flex gap-2">
+							<Input
+								disabled={isCreatingCanvas || isSharingCanvas}
+								onChange={(e) => setNewCanvasTitle(e.target.value)}
+								placeholder="Canvas title"
+								value={newCanvasTitle}
+							/>
+							<Button
+								disabled={isCreatingCanvas || isSharingCanvas || !channelId}
+								onClick={handleCreateCanvasFromModal}
+							>
+								{isCreatingCanvas ? "Creating..." : "Create"}
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 
 			<input
 				accept="image/*"
@@ -619,6 +918,51 @@ const Editor = ({
 					disabled && "opacity-50"
 				)}
 			>
+				{variant === "create" && (
+					<div className="flex items-center justify-end gap-x-1 border-b px-1.5 py-1 md:px-2 md:py-1.5">
+						<Hint label="Calendar">
+							<Button
+								disabled={disabled}
+								onClick={() => setCalendarPickerOpen(true)}
+								size="iconSm"
+								variant="ghost"
+							>
+								<CalendarIcon className="size-3.5 md:size-4" />
+							</Button>
+						</Hint>
+						{channelId && (
+							<>
+								<Hint label="Notes">
+									<Button
+										disabled={disabled || isCreatingNote || isSharingNote}
+										onClick={() => {
+											setNewNoteTitle("");
+											setNotesModalOpen(true);
+										}}
+										size="iconSm"
+										variant="ghost"
+									>
+										<FileText className="size-3.5 md:size-4" />
+									</Button>
+								</Hint>
+								<Hint label="Canvas">
+									<Button
+										disabled={disabled || isCreatingCanvas || isSharingCanvas}
+										onClick={() => {
+											setNewCanvasTitle("");
+											setCanvasModalOpen(true);
+										}}
+										size="iconSm"
+										variant="ghost"
+									>
+										<PaintBucket className="size-3.5 md:size-4" />
+									</Button>
+								</Hint>
+							</>
+						)}
+					</div>
+				)}
+
 				<div className="h-full" ref={containerRef} />
 
 				{image !== null && (
@@ -682,20 +1026,10 @@ const Editor = ({
 									<ImageIcon className="size-3.5 md:size-4" />
 								</Button>
 							</Hint>
-							<Hint label="Calendar">
-								<Button
-									disabled={disabled}
-									onClick={() => setCalendarPickerOpen(true)}
-									size="iconSm"
-									variant="ghost"
-								>
-									<CalendarIcon className="size-3.5 md:size-4" />
-								</Button>
-							</Hint>
 							{!disableMentions && (
 								<Hint label="Mention User">
 									<Button
-										data-mention-button="true"
+										data-autocomplete-button="true"
 										disabled={disabled}
 										onClick={() => {
 											// Just open the mention picker directly
@@ -733,38 +1067,29 @@ const Editor = ({
 									</Button>
 								</Hint>
 							)}
-							{channelId && (
-								<>
-									<Hint label="New Canvas">
-										<Button
-											disabled={disabled || isCreatingCanvas}
-											onClick={navigateToCanvas}
-											size="iconSm"
-											variant="ghost"
-										>
-											{isCreatingCanvas ? (
-												<div className="animate-spin h-3.5 w-3.5 md:h-4 md:w-4 border-2 border-secondary border-t-transparent rounded-full" />
-											) : (
-												<PaintBucket className="size-3.5 md:size-4" />
-											)}
-										</Button>
-									</Hint>
-									<Hint label="New Note">
-										<Button
-											disabled={disabled || isCreatingNote}
-											onClick={createNewNote}
-											size="iconSm"
-											variant="ghost"
-										>
-											{isCreatingNote ? (
-												<div className="animate-spin h-3.5 w-3.5 md:h-4 md:w-4 border-2 border-secondary border-t-transparent rounded-full" />
-											) : (
-												<FileText className="size-3.5 md:size-4" />
-											)}
-										</Button>
-									</Hint>
-								</>
-							)}
+							<Hint label="Mention Channel">
+								<Button
+									data-autocomplete-button="true"
+									disabled={disabled}
+									onClick={() => {
+										setActiveAutocomplete("channel");
+										setMentionPickerOpen(true);
+										setMentionSearchQuery("");
+
+										const quill = quillRef.current;
+										if (quill) {
+											const position =
+												quill.getSelection()?.index || quill.getText().length;
+											quill.insertText(position, "#");
+											quill.focus();
+										}
+									}}
+									size="iconSm"
+									variant="ghost"
+								>
+									<Hash className="size-3.5 md:size-4" />
+								</Button>
+							</Hint>
 						</>
 					)}
 

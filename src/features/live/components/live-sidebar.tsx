@@ -201,7 +201,7 @@ export const LiveSidebar = ({
 	return (
 		<div
 			className={cn(
-				"w-64 md:w-80 border-r bg-muted/30 dark:bg-[hsl(var(--card-accent))] flex flex-col hidden lg:flex",
+				"w-64 md:w-80 border-r bg-muted/30 dark:bg-[hsl(var(--card-accent))] hidden lg:flex flex-col",
 				className
 			)}
 		>

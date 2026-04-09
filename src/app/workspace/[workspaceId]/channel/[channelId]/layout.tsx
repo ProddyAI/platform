@@ -31,7 +31,6 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../../toolbar";
-import Topbar from "./topbar";
 
 interface ChannelIconProps {
 	iconImageUrl?: string | null;
@@ -899,8 +898,6 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 					</DialogContent>
 				</Dialog>
 			</WorkspaceToolbar>
-
-			<Topbar />
 
 			<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
 				{children}

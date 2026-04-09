@@ -36,11 +36,6 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
-		enabledFeatures: v.optional(
-			v.array(
-				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
-			)
-		),
 		plan: v.optional(
 			v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise"))
 		),
@@ -88,14 +83,27 @@ const schema = defineSchema({
 	channels: defineTable({
 		name: v.string(),
 		workspaceId: v.id("workspaces"),
-		enabledFeatures: v.optional(
-			v.array(
-				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
-			)
-		),
 		icon: v.optional(v.string()), // Store emoji as string
 		iconImage: v.optional(v.id("_storage")), // Store uploaded image
+		type: v.optional(v.union(v.literal("chat"), v.literal("board"))),
 	}).index("by_workspace_id", ["workspaceId"]),
+
+	projects: defineTable({
+		name: v.string(),
+		workspaceId: v.id("workspaces"),
+		boardChannelId: v.id("channels"),
+		connectedChannelId: v.optional(v.id("channels")),
+		createdBy: v.id("members"),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_workspace_id_board_channel_id", [
+			"workspaceId",
+			"boardChannelId",
+		])
+		.index("by_board_channel_id", ["boardChannelId"])
+		.index("by_connected_channel_id", ["connectedChannelId"]),
 
 	conversations: defineTable({
 		workspaceId: v.id("workspaces"),
@@ -178,25 +186,32 @@ const schema = defineSchema({
 
 	lists: defineTable({
 		channelId: v.id("channels"),
+		projectId: v.optional(v.id("projects")),
 		title: v.string(),
 		order: v.number(),
 	})
 		.index("by_channel_id", ["channelId"])
-		.index("by_channel_id_order", ["channelId", "order"]),
+		.index("by_channel_id_order", ["channelId", "order"])
+		.index("by_project_id", ["projectId"])
+		.index("by_project_id_order", ["projectId", "order"]),
 
 	// Linear-style statuses (replace lists in Kanban view)
 	statuses: defineTable({
 		channelId: v.id("channels"),
+		projectId: v.optional(v.id("projects")),
 		name: v.string(),
 		color: v.string(),
 		order: v.number(),
 	})
 		.index("by_channel_id", ["channelId"])
-		.index("by_channel_id_order", ["channelId", "order"]),
+		.index("by_channel_id_order", ["channelId", "order"])
+		.index("by_project_id", ["projectId"])
+		.index("by_project_id_order", ["projectId", "order"]),
 
 	// Linear-style issues (replace cards in Kanban view)
 	issues: defineTable({
 		channelId: v.id("channels"),
+		projectId: v.optional(v.id("projects")),
 		statusId: v.id("statuses"),
 		title: v.string(),
 		description: v.optional(v.string()),
@@ -219,19 +234,23 @@ const schema = defineSchema({
 		parentIssueId: v.optional(v.id("issues")),
 	})
 		.index("by_channel_id", ["channelId"])
+		.index("by_project_id", ["projectId"])
 		.index("by_status_id", ["statusId"])
 		.index("by_channel_id_status_id", ["channelId", "statusId"])
+		.index("by_project_id_status_id", ["projectId", "statusId"])
 		.index("by_parent_issue_id", ["parentIssueId"]),
 
 	// Issue blocking relationships (which issue blocks which)
 	issueBlocking: defineTable({
 		channelId: v.id("channels"),
+		projectId: v.optional(v.id("projects")),
 		blockedIssueId: v.id("issues"), // The issue that is blocked
 		blockingIssueId: v.id("issues"), // The issue that is blocking
 		createdAt: v.number(),
 		createdBy: v.id("members"),
 	})
 		.index("by_channel_id", ["channelId"])
+		.index("by_project_id", ["projectId"])
 		.index("by_blocked_issue_id", ["blockedIssueId"])
 		.index("by_blocking_issue_id", ["blockingIssueId"])
 		.index("by_channel_id_blocked_issue_id", ["channelId", "blockedIssueId"])

@@ -20,6 +20,7 @@ import {
 	type ReactNode,
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -483,7 +484,11 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const setBoardSearchQuery = useBoardSearchStore(
 		(state) => state.setBoardSearchQuery
 	);
+	const boardSearchChannelId = useBoardSearchStore(
+		(state) => state.boardSearchChannelId
+	);
 	const channelId = params?.channelId as Id<"channels"> | undefined;
+	const activeBoardChannelId = channelId ?? boardSearchChannelId ?? undefined;
 
 	// Search state
 	const [searchQuery, setSearchQuery] = useState("");
@@ -494,13 +499,41 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const { data: workspace } = useGetWorkspace({ id: workspaceId });
 	const { data: channels } = useGetChannels({ workspaceId });
 	const { data: members } = useGetMembers({ workspaceId });
+	const projects = useQuery(api.projects.get, { workspaceId });
 	const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
+
+	const searchableChannels = useMemo(
+		() => (channels || []).filter((channel) => channel.type !== "board"),
+		[channels]
+	);
+
+	const projectIdByBoardChannelId = useMemo(() => {
+		const mapping = new Map<Id<"channels">, Id<"projects">>();
+
+		for (const project of projects || []) {
+			mapping.set(project.boardChannelId, project._id);
+		}
+
+		return mapping;
+	}, [projects]);
+
+	const getBoardRoute = useCallback(
+		(channelId: Id<"channels">, focusParam?: string) => {
+			const projectId = projectIdByBoardChannelId.get(channelId);
+			const baseRoute = projectId
+				? `/workspace/${workspaceId}/project/${projectId}/board`
+				: `/workspace/${workspaceId}/issues`;
+
+			return focusParam ? `${baseRoute}?${focusParam}` : baseRoute;
+		},
+		[projectIdByBoardChannelId, workspaceId]
+	);
 
 	// Board search when on board page
 	const boardSearchResults = useQuery(
 		api.board.searchBoardContent,
-		isBoardPage && channelId && searchQuery.trim()
-			? { channelId: channelId as Id<"channels">, query: searchQuery }
+		isBoardPage && activeBoardChannelId && searchQuery.trim()
+			? { channelId: activeBoardChannelId, query: searchQuery }
 			: "skip"
 	);
 
@@ -568,9 +601,19 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const onChannelClick = useCallback(
 		(channelId: Id<"channels">) => {
 			setSearchOpen(false);
+
+			const selectedChannel = searchableChannels.find(
+				(channel) => channel._id === channelId
+			);
+
+			if (selectedChannel?.type === "board") {
+				router.push(getBoardRoute(channelId));
+				return;
+			}
+
 			router.push(`/workspace/${workspaceId}/channel/${channelId}/chats`);
 		},
-		[router, setSearchOpen, workspaceId]
+		[getBoardRoute, router, searchableChannels, setSearchOpen, workspaceId]
 	);
 
 	const onMemberClick = useCallback(
@@ -660,7 +703,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				case "card": {
 					if (extra) {
 						setSearchOpen(false);
-						router.push(`/workspace/${workspaceId}/channel/${extra}/board`);
+						router.push(getBoardRoute(extra as Id<"channels">));
 					}
 					break;
 				}
@@ -673,7 +716,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					if (extra) {
 						setSearchOpen(false);
 						router.push(
-							`/workspace/${workspaceId}/channel/${extra}/board?focusIssue=${id}`
+							getBoardRoute(extra as Id<"channels">, `focusIssue=${id}`)
 						);
 					}
 					break;
@@ -682,7 +725,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					if (extra) {
 						setSearchOpen(false);
 						router.push(
-							`/workspace/${workspaceId}/channel/${extra}/board?focusStatus=${id}`
+							getBoardRoute(extra as Id<"channels">, `focusStatus=${id}`)
 						);
 					}
 					break;
@@ -700,6 +743,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 			}
 		},
 		[
+			getBoardRoute,
 			onChannelClick,
 			onMemberClick,
 			onMessageClick,
@@ -751,7 +795,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						aiResult={aiResult}
 						aiSearchInput={aiSearchInput}
 						boardSearchResults={boardSearchResults}
-						channels={channels}
+						channels={searchableChannels}
 						isAISearching={isAISearching}
 						isBoardPage={isBoardPage}
 						isSearching={isSearching}

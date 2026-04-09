@@ -131,7 +131,7 @@ export const generateAndSendOTP = action({
 				Authorization: `Bearer ${resendApiKey}`,
 			},
 			body: JSON.stringify({
-				from: process.env.NEXT_PUBLIC_EMAIL_SENDER!,
+				from: process.env.RESEND_FROM_EMAIL!,
 				to: [email],
 				subject: "Verify your email - Proddy",
 				html: `

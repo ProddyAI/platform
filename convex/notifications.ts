@@ -43,26 +43,23 @@ export const sendPushNotification = internalAction({
 
 		try {
 			// Send notification via OneSignal REST API
-			const response = await fetch(
-				"https://api.onesignal.com/notifications",
-				{
-					method: "POST",
-					headers: {
-						authorization: `Key ${oneSignalApiKey}`,
-						"content-type": "application/json; charset=utf-8",
+			const response = await fetch("https://api.onesignal.com/notifications", {
+				method: "POST",
+				headers: {
+					authorization: `Key ${oneSignalApiKey}`,
+					"content-type": "application/json; charset=utf-8",
+				},
+				body: JSON.stringify({
+					app_id: oneSignalAppId,
+					include_aliases: {
+						external_id: filteredUserIds,
 					},
-					body: JSON.stringify({
-						app_id: oneSignalAppId,
-						include_aliases: {
-							external_id: filteredUserIds,
-						},
-						target_channel: "push",
-						headings: { en: args.title },
-						contents: { en: args.message },
-						data: args.data || {},
-					}),
-				}
-			);
+					target_channel: "push",
+					headings: { en: args.title },
+					contents: { en: args.message },
+					data: args.data || {},
+				}),
+			});
 
 			const responseText = await response.text();
 			let result: Record<string, any> = {};

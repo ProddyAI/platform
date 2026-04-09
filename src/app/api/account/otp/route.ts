@@ -27,6 +27,35 @@ const getResend = () => {
 	return resend;
 };
 
+const getErrorMessage = (error: unknown) => {
+	if (error instanceof Error && error.message.trim()) {
+		return error.message;
+	}
+
+	if (typeof error === "string" && error.trim()) {
+		return error;
+	}
+
+	if (error && typeof error === "object") {
+		const maybeMessage =
+			"message" in error && typeof error.message === "string"
+				? error.message
+				: "";
+
+		if (maybeMessage.trim()) {
+			return maybeMessage;
+		}
+
+		try {
+			return JSON.stringify(error);
+		} catch {
+			return "Unknown error";
+		}
+	}
+
+	return "Unknown error";
+};
+
 export async function POST(req: Request) {
 	try {
 		const { email } = await req.json();
@@ -45,6 +74,8 @@ export async function POST(req: Request) {
 			);
 		}
 
+		const normalizedEmail = email.toLowerCase().trim();
+
 		const convex = createConvexClient();
 		const resendClient = getResend();
 
@@ -52,7 +83,7 @@ export async function POST(req: Request) {
 		const result = await convex.action(
 			api.emailVerification.generateOTPForEmail,
 			{
-				email: email.toLowerCase(),
+				email: normalizedEmail,
 			}
 		);
 
@@ -65,30 +96,36 @@ export async function POST(req: Request) {
 
 		// Send email using React Email template
 		const emailTemplate = OTPVerificationMail({
-			email: email.toLowerCase(),
+			email: normalizedEmail,
 			otp: result.otp,
 		});
 
 		const { fromAddress, replyToAddress } = getEmailConfig();
 
-		await resendClient.emails.send({
+		const { error } = await resendClient.emails.send({
 			from: fromAddress,
-			to: email.toLowerCase(),
+			to: normalizedEmail,
 			subject: "Verify your email - Proddy",
 			react: emailTemplate,
 			replyTo: replyToAddress,
 		});
 
+		if (error) {
+			throw new Error(`Failed to send OTP email: ${getErrorMessage(error)}`);
+		}
+
 		return NextResponse.json({ success: true });
 	} catch (err) {
 		// Log error without sensitive information
+		const errorMessage = getErrorMessage(err);
+
 		logger.error("OTP send failed", {
-			error: err instanceof Error ? err.message : "Unknown error",
+			error: errorMessage,
 		});
 
 		// Handle specific error messages
 		if (err instanceof Error) {
-			const message = err.message || "Failed to send OTP";
+			const message = err.message.trim() || errorMessage;
 			const lowerMessage = message.toLowerCase();
 
 			// Map rate limiting errors to 429 Too Many Requests
@@ -103,6 +140,6 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: message }, { status: 500 });
 		}
 
-		return NextResponse.json({ error: "Failed to send OTP" }, { status: 500 });
+		return NextResponse.json({ error: errorMessage }, { status: 500 });
 	}
 }

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useGetCalendarEvents } from "@/features/calendar/api/use-get-calendar-events";
 import type { CalendarFilterOptions } from "@/features/calendar/components/calendar-filter";
 import { CalendarHeader } from "@/features/calendar/components/calendar-header";
+import { useGetProjects } from "@/features/projects/api/use-get-projects";
 import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -106,6 +107,17 @@ const CalendarPage = () => {
 		month: getMonth(currentDate),
 		year: getYear(currentDate),
 	});
+	const { data: projects } = useGetProjects({ workspaceId });
+
+	const projectIdByBoardChannelId = useMemo(() => {
+		const mapping = new Map<Id<"channels">, Id<"projects">>();
+
+		for (const project of projects || []) {
+			mapping.set(project.boardChannelId, project._id);
+		}
+
+		return mapping;
+	}, [projects]);
 
 	// Filter state
 	const [filterOptions, setFilterOptions] = useState<CalendarFilterOptions>({
@@ -177,6 +189,16 @@ const CalendarPage = () => {
 		},
 		{}
 	);
+
+	const getBoardCardHref = (boardChannelId: Id<"channels">) => {
+		const projectId = projectIdByBoardChannelId.get(boardChannelId);
+
+		if (!projectId) {
+			return `/workspace/${workspaceId}/issues`;
+		}
+
+		return `/workspace/${workspaceId}/project/${projectId}/board`;
+	};
 
 	// Generate calendar days for the current month
 	const generateCalendarDays = (): CalendarDay[][] => {
@@ -309,7 +331,9 @@ const CalendarPage = () => {
 																}`}
 																href={
 																	event.type === "board-card" && event.boardCard
-																		? `/workspace/${workspaceId}/channel/${event.boardCard.channelId}/board`
+																		? getBoardCardHref(
+																				event.boardCard.channelId
+																			)
 																		: event.type === "task" && event.task
 																			? `/workspace/${workspaceId}/tasks`
 																			: event.message?.channelId

@@ -1358,7 +1358,7 @@ export const sendImportCompletionEmail = internalAction({
 			}
 
 			try {
-				const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
+				const supportEmail = process.env.RESEND_FROM_EMAIL;
 
 				const response = await fetchWithTimeout(
 					"https://api.resend.com/emails",
