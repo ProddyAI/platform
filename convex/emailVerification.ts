@@ -1,6 +1,12 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalMutation, mutation, query } from "./_generated/server";
+import {
+	action,
+	internalAction,
+	internalMutation,
+	mutation,
+	query,
+} from "./_generated/server";
 
 // Generate a 6-digit OTP using crypto-secure random (V8-compatible)
 function createOTPCode(): string {
@@ -77,7 +83,7 @@ export const generateOTPInternal = internalMutation({
 });
 
 // Action to generate OTP (used by Next.js API route for email sending)
-export const generateOTPForEmail = action({
+export const generateOTPForEmail = internalAction({
 	args: {
 		email: v.string(),
 	},
@@ -225,6 +231,28 @@ export const verifyOTP = mutation({
 	},
 });
 
+// Internal mutation to consume verified OTP records after successful signup
+export const consumeVerifiedOTPsInternal = internalMutation({
+	args: {
+		email: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const email = args.email.toLowerCase().trim();
+
+		const verifiedOTPs = await ctx.db
+			.query("emailVerifications")
+			.withIndex("by_email", (q) => q.eq("email", email))
+			.filter((q) => q.eq(q.field("verified"), true))
+			.collect();
+
+		for (const otp of verifiedOTPs) {
+			await ctx.db.delete(otp._id);
+		}
+
+		return { deletedCount: verifiedOTPs.length };
+	},
+});
+
 // Check if email has a verified OTP
 export const hasVerifiedOTP = query({
 	args: {
@@ -232,14 +260,19 @@ export const hasVerifiedOTP = query({
 	},
 	handler: async (ctx, args) => {
 		const email = args.email.toLowerCase().trim();
+		const now = Date.now();
 
 		const verifiedOTP = await ctx.db
 			.query("emailVerifications")
 			.withIndex("by_email", (q) => q.eq("email", email))
 			.filter((q) => q.eq(q.field("verified"), true))
+			.filter((q) => q.gte(q.field("expiresAt"), now))
 			.first();
 
-		return { verified: Boolean(verifiedOTP) };
+		return {
+			verified: Boolean(verifiedOTP),
+			expiresAt: verifiedOTP?.expiresAt ?? null,
+		};
 	},
 });
 

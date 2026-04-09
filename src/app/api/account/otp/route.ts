@@ -1,30 +1,14 @@
 import { ConvexHttpClient } from "convex/browser";
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
-import { OTPVerificationMail } from "@/features/email/components/otp-verification-mail";
-import { getEmailConfig } from "@/lib/email-config";
 import { logger } from "@/lib/logger";
-
-let resend: Resend | null = null;
 
 const createConvexClient = () => {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
 		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
 	}
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
-};
-
-const getResend = () => {
-	if (!resend) {
-		const resendApiKey = process.env.RESEND_API_KEY;
-		if (!resendApiKey) {
-			throw new Error("RESEND_API_KEY environment variable is required");
-		}
-		resend = new Resend(resendApiKey);
-	}
-	return resend;
 };
 
 const getErrorMessage = (error: unknown) => {
@@ -37,23 +21,59 @@ const getErrorMessage = (error: unknown) => {
 	}
 
 	if (error && typeof error === "object") {
-		const maybeMessage =
-			"message" in error && typeof error.message === "string"
-				? error.message
-				: "";
+		const maybeMessage = Reflect.get(error, "message");
 
-		if (maybeMessage.trim()) {
+		if (typeof maybeMessage === "string" && maybeMessage.trim()) {
 			return maybeMessage;
 		}
 
+		const maybeCause = Reflect.get(error, "cause");
+		if (typeof maybeCause === "string" && maybeCause.trim()) {
+			return maybeCause;
+		}
+
 		try {
-			return JSON.stringify(error);
+			const serialized = JSON.stringify(error);
+			if (serialized && serialized !== "{}") {
+				return serialized;
+			}
 		} catch {
-			return "Unknown error";
+			// Fall through to own-property extraction.
+		}
+
+		try {
+			const ownProps = Object.getOwnPropertyNames(error);
+			if (ownProps.length > 0) {
+				const extracted = Object.fromEntries(
+					ownProps.map((prop) => [prop, Reflect.get(error, prop)])
+				);
+				const serialized = JSON.stringify(extracted);
+				if (serialized && serialized !== "{}") {
+					return serialized;
+				}
+			}
+		} catch {
+			// Ignore and return generic fallback below.
 		}
 	}
 
 	return "Unknown error";
+};
+
+const sendOtpWithLegacyAction = async (
+	convex: ConvexHttpClient,
+	email: string
+) => {
+	const legacyResult = await convex.action(
+		api.emailVerification.generateAndSendOTP,
+		{
+			email,
+		}
+	);
+
+	if (!legacyResult.success) {
+		throw new Error("Failed to generate OTP");
+	}
 };
 
 export async function POST(req: Request) {
@@ -77,42 +97,7 @@ export async function POST(req: Request) {
 		const normalizedEmail = email.toLowerCase().trim();
 
 		const convex = createConvexClient();
-		const resendClient = getResend();
-
-		// Generate OTP in Convex (secure - OTP only returned internally)
-		const result = await convex.action(
-			api.emailVerification.generateOTPForEmail,
-			{
-				email: normalizedEmail,
-			}
-		);
-
-		if (!result.success || !result.otp) {
-			return NextResponse.json(
-				{ error: "Failed to generate OTP" },
-				{ status: 500 }
-			);
-		}
-
-		// Send email using React Email template
-		const emailTemplate = OTPVerificationMail({
-			email: normalizedEmail,
-			otp: result.otp,
-		});
-
-		const { fromAddress, replyToAddress } = getEmailConfig();
-
-		const { error } = await resendClient.emails.send({
-			from: fromAddress,
-			to: normalizedEmail,
-			subject: "Verify your email - Proddy",
-			react: emailTemplate,
-			replyTo: replyToAddress,
-		});
-
-		if (error) {
-			throw new Error(`Failed to send OTP email: ${getErrorMessage(error)}`);
-		}
+		await sendOtpWithLegacyAction(convex, normalizedEmail);
 
 		return NextResponse.json({ success: true });
 	} catch (err) {
