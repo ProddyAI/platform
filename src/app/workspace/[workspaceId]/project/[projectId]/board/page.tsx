@@ -46,7 +46,12 @@ const ProjectBoardPage = () => {
 			</WorkspaceToolbar>
 
 			<div className="flex-1 min-h-0 overflow-hidden">
-				<BoardPageContent channelId={project.boardChannelId} />
+				<BoardPageContent
+					channelId={project.boardChannelId}
+					isProjectChannelConnected={Boolean(project.connectedChannelId)}
+					projectConnectedChannelName={project.connectedChannelName}
+					projectId={projectId}
+				/>
 			</div>
 		</div>
 	);

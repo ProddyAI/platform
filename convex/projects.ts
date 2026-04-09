@@ -96,7 +96,18 @@ export const get = query({
 		const channels = await Promise.all(
 			Array.from(channelIds).map(async (channelId) => {
 				const channel = await ctx.db.get(channelId);
-				return channel;
+				if (!channel) {
+					return null;
+				}
+
+				const iconImageUrl = channel.iconImage
+					? await ctx.storage.getUrl(channel.iconImage)
+					: undefined;
+
+				return {
+					...channel,
+					iconImageUrl,
+				};
 			})
 		);
 
@@ -115,6 +126,12 @@ export const get = query({
 					channelMap.get(project.boardChannelId)?.name ?? "Unknown board",
 				connectedChannelName: project.connectedChannelId
 					? channelMap.get(project.connectedChannelId)?.name
+					: undefined,
+				connectedChannelIcon: project.connectedChannelId
+					? channelMap.get(project.connectedChannelId)?.icon
+					: undefined,
+				connectedChannelIconImageUrl: project.connectedChannelId
+					? channelMap.get(project.connectedChannelId)?.iconImageUrl
 					: undefined,
 			}))
 			.sort((a, b) => a.name.localeCompare(b.name));
@@ -137,10 +154,16 @@ export const getById = query({
 				: null,
 		]);
 
+		const connectedChannelIconImageUrl = connectedChannel?.iconImage
+			? await ctx.storage.getUrl(connectedChannel.iconImage)
+			: undefined;
+
 		return {
 			...project,
 			boardChannelName: boardChannel?.name,
 			connectedChannelName: connectedChannel?.name,
+			connectedChannelIcon: connectedChannel?.icon,
+			connectedChannelIconImageUrl,
 		};
 	},
 });

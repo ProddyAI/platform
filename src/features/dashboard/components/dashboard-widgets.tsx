@@ -87,8 +87,8 @@ const AVAILABLE_WIDGETS = [
 	{ id: "tasks", title: "Tasks", description: "Your assigned tasks" },
 	{
 		id: "cards",
-		title: "Assigned Cards",
-		description: "Cards assigned to you",
+		title: "Assigned Issues",
+		description: "Issues assigned to you",
 	},
 	{ id: "calendar", title: "Calendar Preview", description: "Upcoming events" },
 	{ id: "notes", title: "Notes", description: "Recent notes" },

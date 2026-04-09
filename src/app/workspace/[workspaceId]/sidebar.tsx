@@ -12,14 +12,15 @@ import {
 	Hash,
 	LayoutDashboard,
 	LayoutGrid,
-	Link2,
 	Loader,
 	MessageSquareText,
 	PanelLeftClose,
 	PanelLeftOpen,
 	PlusIcon,
 	SendHorizonal,
+	SlidersHorizontal,
 	Settings,
+	FolderKanban,
 	Users,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -33,7 +34,6 @@ import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useInviteMemberModal } from "@/features/members/store/use-invite-member-modal";
 import { useGetProjects } from "@/features/projects/api/use-get-projects";
-import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useCreateProjectModal } from "@/features/projects/store/use-create-project-modal";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useChannelId } from "@/hooks/use-channel-id";
@@ -43,7 +43,7 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { cn } from "@/lib/utils";
 
 import { WorkspaceHeader } from "./header";
-import { ChannelItem, MemberItem, SidebarItem } from "./options";
+import { ChannelItem, MemberItem, ProjectItem, SidebarItem } from "./options";
 
 interface MobileCloseWrapperProps {
 	children: React.ReactNode;
@@ -195,7 +195,6 @@ export const WorkspaceSidebar = ({
 
 	const [_open, setOpen] = useCreateChannelModal();
 	const [_createProjectOpen, setCreateProjectOpen] = useCreateProjectModal();
-	const [, setConnectProjectChannelModal] = useConnectProjectChannelModal();
 	const [_inviteOpen, setInviteOpen] = useInviteMemberModal();
 
 	const handleSectionToggle = (label: string) => {
@@ -407,19 +406,19 @@ export const WorkspaceSidebar = ({
 					<div className="mt-2">
 						<DroppableItem
 							hint="Projects"
-							icon={LayoutGrid}
+							icon={FolderKanban}
 							isCollapsed={isCollapsed}
 							isExpanded={expandedSections.Projects}
 							label="Projects"
 							onToggle={handleSectionToggle}
 						>
 							{projects.map((project) => (
-								<div className="space-y-1" key={project._id}>
+								<div key={project._id}>
 									<MobileCloseWrapper onClose={onMobileClose}>
-										<SidebarItem
-											href={`/workspace/${workspaceId}/project/${project._id}/board`}
-											icon={LayoutGrid}
-											id={`project-${project._id}`}
+										<ProjectItem
+											icon={project.connectedChannelIcon}
+											iconImageUrl={project.connectedChannelIconImageUrl}
+											id={project._id}
 											isActive={
 												projectId === project._id ||
 												pathname.includes(`/project/${project._id}`)
@@ -428,27 +427,6 @@ export const WorkspaceSidebar = ({
 											label={project.name}
 										/>
 									</MobileCloseWrapper>
-
-									{(member.role === "admin" || member.role === "owner") &&
-										!isCollapsed && (
-											<button
-												className="group flex w-full cursor-pointer items-center gap-2 rounded-[10px] px-3 py-1.5 text-xs font-medium text-secondary-foreground/70 transition-standard hover:bg-secondary-foreground/10"
-												onClick={() =>
-													setConnectProjectChannelModal({
-														open: true,
-														projectId: project._id,
-													})
-												}
-												type="button"
-											>
-												<Link2 className="size-3.5 flex-shrink-0" />
-												<span className="truncate min-w-0">
-													{project.connectedChannelName
-														? `Connected: #${project.connectedChannelName}`
-														: "Connect status updates"}
-												</span>
-											</button>
-										)}
 								</div>
 							))}
 
@@ -659,7 +637,7 @@ export const WorkspaceSidebar = ({
 						<MobileCloseWrapper onClose={onMobileClose}>
 							<SidebarItem
 								href={`/workspace/${workspaceId}/manage`}
-								icon={Settings}
+								icon={SlidersHorizontal}
 								id="manage"
 								isActive={pathname.includes("/manage")}
 								isCollapsed={isCollapsed}

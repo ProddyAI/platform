@@ -67,6 +67,36 @@ export const ChatInput = ({
 		conversationId,
 	});
 
+	const extractPlainText = (rawBody: string) => {
+		try {
+			const parsed = JSON.parse(rawBody) as {
+				ops?: Array<{ insert?: string | Record<string, unknown> }>;
+			};
+
+			if (!parsed.ops) return "";
+
+			return parsed.ops
+				.map((op) => (typeof op.insert === "string" ? op.insert : ""))
+				.join("")
+				.replace(/\n/g, " ")
+				.trim();
+		} catch {
+			return "";
+		}
+	};
+
+	const buildFileBodyPayload = (rawBody: string, file: File) => {
+		const caption = extractPlainText(rawBody);
+
+		return JSON.stringify({
+			type: "file",
+			fileName: file.name,
+			fileType: file.type || "application/octet-stream",
+			fileSize: file.size,
+			caption,
+		});
+	};
+
 	const handleSubmit = async ({
 		body,
 		image,
@@ -127,14 +157,44 @@ export const ChatInput = ({
 				const { storageId } = await result.json();
 
 				values.image = storageId;
+
+				if (!image.type.startsWith("image/")) {
+					values.body = buildFileBodyPayload(body, image);
+				}
 			}
 
 			const messageId = await createMessage(values, { throwError: true });
 
 			// Create calendar event in the calendar events table if needed
 			if (calendarEvent && messageId) {
+				const calendarTitle = (() => {
+					try {
+						const parsedBody = JSON.parse(values.body) as {
+							ops?: Array<{ insert?: string | Record<string, unknown> }>;
+							caption?: string;
+						};
+
+						if (Array.isArray(parsedBody.ops)) {
+							const text = parsedBody.ops
+								.map((op) => (typeof op.insert === "string" ? op.insert : ""))
+								.join("")
+								.trim();
+
+							if (text) return text.substring(0, 50);
+						}
+
+						if (parsedBody.caption) {
+							return parsedBody.caption.substring(0, 50);
+						}
+					} catch {
+						// Fall through to default title.
+					}
+
+					return "Calendar event";
+				})();
+
 				await createCalendarEvent({
-					title: JSON.parse(body).ops[0].insert.substring(0, 50),
+					title: calendarTitle,
 					date: calendarEvent.date.getTime(),
 					time: calendarEvent.time,
 					messageId,
@@ -179,6 +239,8 @@ export const ChatInput = ({
 				/>
 			) : null}
 			<Editor
+				channelId={channelId}
+				conversationId={conversationId}
 				disabled={isPending}
 				disableMentions={Boolean(conversationId)}
 				innerRef={innerRef}
