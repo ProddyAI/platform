@@ -46,9 +46,9 @@ const assertWorkspaceMember = async (
 const assertWorkspaceMemberForRead = async (
 	ctx: QueryCtx,
 	workspaceId: Id<"workspaces">
-): Promise<Doc<"members">> => {
+): Promise<Doc<"members"> | null> => {
 	const userId = await getAuthUserId(ctx);
-	if (!userId) throw new Error("Unauthorized.");
+	if (!userId) return null;
 
 	const member = await ctx.db
 		.query("members")
@@ -57,7 +57,7 @@ const assertWorkspaceMemberForRead = async (
 		)
 		.unique();
 
-	if (!member) throw new Error("Unauthorized.");
+	if (!member) return null;
 	return member;
 };
 
@@ -73,9 +73,12 @@ const assertWorkspaceAdmin = async (
 };
 
 export const get = query({
-	args: { workspaceId: v.id("workspaces") },
+	args: { workspaceId: v.optional(v.id("workspaces")) },
 	handler: async (ctx, { workspaceId }) => {
-		await assertWorkspaceMemberForRead(ctx, workspaceId);
+		if (!workspaceId) return [];
+
+		const member = await assertWorkspaceMemberForRead(ctx, workspaceId);
+		if (!member) return [];
 
 		const projects = await ctx.db
 			.query("projects")
@@ -124,7 +127,8 @@ export const getById = query({
 		const project = await ctx.db.get(id);
 		if (!project) return null;
 
-		await assertWorkspaceMemberForRead(ctx, project.workspaceId);
+		const member = await assertWorkspaceMemberForRead(ctx, project.workspaceId);
+		if (!member) return null;
 
 		const [boardChannel, connectedChannel] = await Promise.all([
 			ctx.db.get(project.boardChannelId),
