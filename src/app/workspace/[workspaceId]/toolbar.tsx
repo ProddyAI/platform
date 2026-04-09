@@ -499,7 +499,10 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const { data: workspace } = useGetWorkspace({ id: workspaceId });
 	const { data: channels } = useGetChannels({ workspaceId });
 	const { data: members } = useGetMembers({ workspaceId });
-	const projects = useQuery(api.projects.get, { workspaceId });
+	const projects = useQuery(
+		api.projects.get,
+		workspaceId ? { workspaceId } : "skip"
+	);
 	const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
 
 	const searchableChannels = useMemo(

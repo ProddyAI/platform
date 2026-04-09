@@ -62,7 +62,10 @@ export const MentionsNotificationDialog = ({
 	const markAllDirectMessagesAsReadMutation = useMarkAllDirectMessagesAsRead();
 	const [activeTab, setActiveTab] = useState("all");
 	const { isAdBlockerActive } = useAdBlockerDetectionContext();
-	const projects = useQuery(api.projects.get, { workspaceId });
+	const projects = useQuery(
+		api.projects.get,
+		workspaceId ? { workspaceId } : "skip"
+	);
 
 	const projectIdByBoardChannelId = useMemo(() => {
 		const mapping = new Map<Id<"channels">, Id<"projects">>();
