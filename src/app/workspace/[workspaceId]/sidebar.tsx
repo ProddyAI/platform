@@ -9,6 +9,7 @@ import {
 	ChartNoAxesGantt,
 	CheckSquare,
 	ChevronDown,
+	FolderKanban,
 	Hash,
 	LayoutDashboard,
 	LayoutGrid,
@@ -18,9 +19,8 @@ import {
 	PanelLeftOpen,
 	PlusIcon,
 	SendHorizonal,
-	SlidersHorizontal,
 	Settings,
-	FolderKanban,
+	SlidersHorizontal,
 	Users,
 } from "lucide-react";
 import { usePathname } from "next/navigation";

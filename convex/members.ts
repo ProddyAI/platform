@@ -109,9 +109,7 @@ export const get = query({
 
 		const data = await ctx.db
 			.query("members")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", workspaceId)
-			)
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.collect();
 
 		const members = [];

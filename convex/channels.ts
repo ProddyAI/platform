@@ -248,9 +248,7 @@ export const get = query({
 
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", workspaceId)
-			)
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.collect();
 
 		// Convert iconImage storage IDs to URLs

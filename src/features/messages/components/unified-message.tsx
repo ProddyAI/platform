@@ -196,10 +196,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 					size="sm"
 					variant="default"
 				>
-<<<<<<< HEAD
-=======
 					{isFile && <Download className="mr-1 h-3 w-3" />}
->>>>>>> 2871ffb932bd262687abb95b7aa9ef762c092630
 					{getButtonText()}
 				</Button>
 			</div>

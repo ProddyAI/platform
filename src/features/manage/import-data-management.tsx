@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import {
 	AlertCircle,
 	CheckCircle2,
@@ -21,6 +22,7 @@ import {
 	SiTodoist,
 } from "react-icons/si";
 import { toast } from "sonner";
+import { api } from "@/../convex/_generated/api";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,8 +63,6 @@ import { useInitiateTodoistOAuth } from "@/features/imports/api/use-initiate-tod
 import { useStartLinearImport } from "@/features/imports/api/use-start-linear-import";
 import { useStartSlackImport } from "@/features/imports/api/use-start-slack-import";
 import { useStartTodoistImport } from "@/features/imports/api/use-start-todoist-import";
-import { useQuery } from "convex/react";
-import { api } from "@/../convex/_generated/api";
 
 interface ImportDataManagementProps {
 	workspaceId: Id<"workspaces">;
@@ -724,13 +724,13 @@ export const ImportDataManagement = ({
 									<select
 										className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 										id="targetChannel"
-										value={importConfig.targetChannelId || ""}
 										onChange={(e) =>
 											setImportConfig((prev) => ({
 												...prev,
 												targetChannelId: e.target.value || undefined,
 											}))
 										}
+										value={importConfig.targetChannelId || ""}
 									>
 										<option value="">
 											Create new channels (one per Linear team)

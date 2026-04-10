@@ -2273,14 +2273,14 @@ export const _getMemberByName = internalQuery({
 	handler: async (ctx, args) => {
 		// Get all users to perform fuzzy matching
 		const allUsers = await ctx.db.query("users").collect();
-		
+
 		const normalizedName = args.name.toLowerCase().trim();
-		
+
 		// Find exact match first (case-insensitive)
 		const exactMatch = allUsers.find(
 			(u) => u.name && u.name.toLowerCase() === normalizedName
 		);
-		
+
 		if (exactMatch) {
 			// Find member in the workspace
 			const member = await ctx.db
@@ -2289,26 +2289,27 @@ export const _getMemberByName = internalQuery({
 					q.eq("workspaceId", args.workspaceId).eq("userId", exactMatch._id)
 				)
 				.first();
-			
-			return member ? { member, matchType: "exact" as const, conflict: false } : null;
+
+			return member
+				? { member, matchType: "exact" as const, conflict: false }
+				: null;
 		}
-		
+
 		// Find partial matches (name contains the search term or vice versa)
 		const partialMatches = allUsers.filter((u) => {
 			if (!u.name) return false;
 			const userName = u.name.toLowerCase();
 			return (
-				userName.includes(normalizedName) ||
-				normalizedName.includes(userName)
+				userName.includes(normalizedName) || normalizedName.includes(userName)
 			);
 		});
-		
+
 		// Conflict resolution: if multiple partial matches, return null
 		// to let the caller handle the ambiguity
 		if (partialMatches.length === 0) {
 			return null;
 		}
-		
+
 		if (partialMatches.length === 1) {
 			const user = partialMatches[0];
 			const member = await ctx.db
@@ -2317,10 +2318,12 @@ export const _getMemberByName = internalQuery({
 					q.eq("workspaceId", args.workspaceId).eq("userId", user._id)
 				)
 				.first();
-			
-			return member ? { member, matchType: "partial" as const, conflict: false } : null;
+
+			return member
+				? { member, matchType: "partial" as const, conflict: false }
+				: null;
 		}
-		
+
 		// Multiple matches found - return conflict information
 		const membersInWorkspace = [];
 		for (const user of partialMatches) {
@@ -2330,27 +2333,27 @@ export const _getMemberByName = internalQuery({
 					q.eq("workspaceId", args.workspaceId).eq("userId", user._id)
 				)
 				.first();
-			
+
 			if (member) {
 				membersInWorkspace.push({ member, userName: user.name });
 			}
 		}
-		
+
 		// If only one member is in the workspace, use that
 		if (membersInWorkspace.length === 1) {
-			return { 
-				member: membersInWorkspace[0].member, 
-				matchType: "partial" as const, 
-				conflict: false 
+			return {
+				member: membersInWorkspace[0].member,
+				matchType: "partial" as const,
+				conflict: false,
 			};
 		}
-		
+
 		// Return conflict information
-		return { 
-			member: null, 
-			matchType: "partial" as const, 
+		return {
+			member: null,
+			matchType: "partial" as const,
 			conflict: true,
-			possibleMatches: membersInWorkspace.map(m => m.userName)
+			possibleMatches: membersInWorkspace.map((m) => m.userName),
 		};
 	},
 });
@@ -2383,49 +2386,50 @@ export const _getOrCreateMemberByEmail = internalMutation({
 	handler: async (ctx, args): Promise<MemberCreationResult> => {
 		// Validate inputs
 		if (!args.email || !args.email.includes("@")) {
-			return { 
-				member: null, 
-				created: false, 
+			return {
+				member: null,
+				created: false,
 				createdUser: false,
-				reason: `Invalid email address: ${args.email}` 
+				reason: `Invalid email address: ${args.email}`,
 			};
 		}
-		
+
 		if (!args.name || args.name.trim().length === 0) {
-			return { 
-				member: null, 
-				created: false, 
+			return {
+				member: null,
+				created: false,
 				createdUser: false,
-				reason: "Name is required" 
+				reason: "Name is required",
 			};
 		}
-		
+
 		const normalizedEmail = args.email.toLowerCase();
-		
+
 		// Check rate limit for auto-invites (only if userId provided)
 		if (args.importJobUserId) {
 			try {
-				const rateLimitResult: { allowed: boolean; reason?: string } = await ctx.runMutation(
-					internal.rateLimit._validateAutoInviteRateLimitInternal,
-					{ 
-						workspaceId: args.workspaceId,
-						userId: args.importJobUserId
-					}
-				);
-				
+				const rateLimitResult: { allowed: boolean; reason?: string } =
+					await ctx.runMutation(
+						internal.rateLimit._validateAutoInviteRateLimitInternal,
+						{
+							workspaceId: args.workspaceId,
+							userId: args.importJobUserId,
+						}
+					);
+
 				if (!rateLimitResult.allowed) {
-					return { 
-						member: null, 
-						created: false, 
+					return {
+						member: null,
+						created: false,
 						createdUser: false,
-						reason: rateLimitResult.reason 
+						reason: rateLimitResult.reason,
 					};
 				}
 			} catch (_error) {
 				// If rate limiting fails, continue without it (graceful degradation)
 			}
 		}
-		
+
 		// First, try to find existing user by email
 		let user = await ctx.db
 			.query("users")
@@ -2433,29 +2437,35 @@ export const _getOrCreateMemberByEmail = internalMutation({
 			.first();
 
 		let createdNewUser = false;
-		
+
 		// If user doesn't exist, create them
 		if (!user) {
 			// Validate name length
 			const userName = args.name.trim().substring(0, 100);
-			
+
 			// Handle avatar URL - just store the external URL since we can't download in mutations
-			const imageValue: string | undefined = (args.avatarUrl && args.avatarUrl.startsWith("http")) 
-				? args.avatarUrl 
-				: undefined;
-			
+			const imageValue: string | undefined =
+				args.avatarUrl && args.avatarUrl.startsWith("http")
+					? args.avatarUrl
+					: undefined;
+
 			const userId = await ctx.db.insert("users", {
 				email: normalizedEmail,
 				name: userName,
 				image: imageValue,
 			});
-			
+
 			user = await ctx.db.get(userId);
 			createdNewUser = true;
 		}
 
 		if (!user) {
-			return { member: null, created: false, createdUser: false, reason: "Failed to create user" };
+			return {
+				member: null,
+				created: false,
+				createdUser: false,
+				reason: "Failed to create user",
+			};
 		}
 
 		// Check if member already exists
@@ -2467,40 +2477,45 @@ export const _getOrCreateMemberByEmail = internalMutation({
 			.first();
 
 		let createdNewMember = false;
-		
+
 		// If not a member, create them
 		if (!member) {
 			// Map Linear role to our role system
 			let role: "owner" | "admin" | "member" = "member";
 			if (args.linearRole) {
 				const linearRoleLower = args.linearRole.toLowerCase();
-				if (linearRoleLower.includes("owner") || linearRoleLower.includes("admin")) {
+				if (
+					linearRoleLower.includes("owner") ||
+					linearRoleLower.includes("admin")
+				) {
 					role = "admin"; // Map Linear owner/admin to our admin role
 				}
 			}
-			
+
 			const memberId = await ctx.db.insert("members", {
 				workspaceId: args.workspaceId,
 				userId: user._id,
 				role,
 			});
-			
+
 			member = await ctx.db.get(memberId);
 			createdNewMember = true;
 		}
-		
+
 		// Send notification if new member was created
 		// Note: Actual notification is sent via the import completion notification
 		// to avoid circular dependency issues during Convex codegen
 		if (createdNewMember && member) {
-			console.log(`[AutoInvite] New member created: ${member._id} for workspace ${args.workspaceId}`);
+			console.log(
+				`[AutoInvite] New member created: ${member._id} for workspace ${args.workspaceId}`
+			);
 		}
 
-		return { 
-			member, 
-			created: createdNewMember, 
+		return {
+			member,
+			created: createdNewMember,
 			createdUser: createdNewUser,
-			role: member?.role
+			role: member?.role,
 		};
 	},
 });
@@ -2516,7 +2531,9 @@ export const getStatusesByChannelId = internalQuery({
 	handler: async (ctx, args) => {
 		return await ctx.db
 			.query("statuses")
-			.withIndex("by_channel_id_order", (q) => q.eq("channelId", args.channelId))
+			.withIndex("by_channel_id_order", (q) =>
+				q.eq("channelId", args.channelId)
+			)
 			.collect();
 	},
 });

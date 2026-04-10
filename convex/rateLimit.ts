@@ -376,7 +376,9 @@ export const _validateAutoInviteRateLimitInternal = internalMutation({
 			.take(RATE_LIMITS.AUTO_INVITES_PER_HOUR);
 
 		if (autoInviteLimits.length >= RATE_LIMITS.AUTO_INVITES_PER_HOUR) {
-			const oldestExpiry = Math.min(...autoInviteLimits.map((l) => l.expiresAt));
+			const oldestExpiry = Math.min(
+				...autoInviteLimits.map((l) => l.expiresAt)
+			);
 			const minutesRemaining = Math.ceil((oldestExpiry - now) / 1000 / 60);
 			return {
 				allowed: false,
@@ -428,7 +430,9 @@ export const validateAutoInviteRateLimit = mutation({
 			.take(RATE_LIMITS.AUTO_INVITES_PER_HOUR);
 
 		if (autoInviteLimits.length >= RATE_LIMITS.AUTO_INVITES_PER_HOUR) {
-			const oldestExpiry = Math.min(...autoInviteLimits.map((l) => l.expiresAt));
+			const oldestExpiry = Math.min(
+				...autoInviteLimits.map((l) => l.expiresAt)
+			);
 			const minutesRemaining = Math.ceil((oldestExpiry - now) / 1000 / 60);
 			return {
 				allowed: false,

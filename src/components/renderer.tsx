@@ -16,7 +16,9 @@ interface RendererProps {
 	};
 }
 
-type UnifiedMessagePayload = React.ComponentProps<typeof UnifiedMessage>["data"];
+type UnifiedMessagePayload = React.ComponentProps<
+	typeof UnifiedMessage
+>["data"];
 
 const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 	const [isEmpty, setIsEmpty] = useState(false);

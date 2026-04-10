@@ -109,7 +109,9 @@ export class LinearImportProvider {
 		await ctx.log("info", "Making Linear API call", {
 			query: query.substring(0, 100),
 			tokenLength: ctx.accessToken?.length,
-			tokenPreview: ctx.accessToken ? ctx.accessToken.substring(0, 20) + "..." : "missing",
+			tokenPreview: ctx.accessToken
+				? ctx.accessToken.substring(0, 20) + "..."
+				: "missing",
 		});
 
 		return withRetry(
@@ -181,7 +183,10 @@ export class LinearImportProvider {
 			const result = await this.graphqlCall<{
 				organization: { id: string; name: string };
 			}>(ctx, `{ organization { id name } }`);
-			await ctx.log("info", `Connected to organization: ${result.organization.name}`);
+			await ctx.log(
+				"info",
+				`Connected to organization: ${result.organization.name}`
+			);
 		} catch (error) {
 			await ctx.log(
 				"error",
@@ -247,7 +252,7 @@ export class LinearImportProvider {
 		do {
 			pageCount++;
 			await ctx.log("info", `Fetching issues page ${pageCount}...`);
-			
+
 			const result = await this.graphqlCall<{
 				issues: {
 					nodes: Array<{
@@ -306,19 +311,28 @@ export class LinearImportProvider {
 			}));
 
 			allIssues.push(...issues);
-			await ctx.log("info", `Fetched ${issues.length} issues on page ${pageCount} (total: ${allIssues.length})`);
-			
+			await ctx.log(
+				"info",
+				`Fetched ${issues.length} issues on page ${pageCount} (total: ${allIssues.length})`
+			);
+
 			cursor = result.issues.pageInfo.hasNextPage
 				? result.issues.pageInfo.endCursor
 				: undefined;
 		} while (cursor);
 
-		await ctx.log("info", `Finished fetching issues: ${allIssues.length} total issues across ${pageCount} pages`);
+		await ctx.log(
+			"info",
+			`Finished fetching issues: ${allIssues.length} total issues across ${pageCount} pages`
+		);
 
 		// Filter by completed status if configured
 		if (!ctx.config.includeArchived) {
 			const filteredIssues = allIssues.filter((issue) => !issue.completedAt);
-			await ctx.log("info", `Filtered out archived/completed issues: ${allIssues.length} -> ${filteredIssues.length}`);
+			await ctx.log(
+				"info",
+				`Filtered out archived/completed issues: ${allIssues.length} -> ${filteredIssues.length}`
+			);
 			return filteredIssues;
 		}
 
@@ -484,33 +498,42 @@ export async function executeLinearImport(
 		await ctx.updateProgress({ currentStep: "Fetching users..." });
 		const users = await provider.fetchUsers(ctx);
 		result.usersMatched = users.length;
-		
+
 		// Build user and member maps
 		for (const user of users) {
 			linearCtx.userMap.set(user.id, user.name);
 
 			// Try to find matching member by name first
 			try {
-				const memberByName = await ctx.runQuery(
+				const memberByName = (await ctx.runQuery(
 					internal.importIntegrations._getMemberByName,
 					{ workspaceId: ctx.workspaceId, name: user.name }
-				) as any;
+				)) as any;
 
 				if (memberByName && memberByName.member && !memberByName.conflict) {
 					linearCtx.memberMap.set(user.id, memberByName.member._id);
-					await ctx.log("info", `Mapped Linear user ${user.name} to member ${memberByName.member._id} (by name, ${memberByName.matchType} match)`);
+					await ctx.log(
+						"info",
+						`Mapped Linear user ${user.name} to member ${memberByName.member._id} (by name, ${memberByName.matchType} match)`
+					);
 				} else if (memberByName && memberByName.conflict) {
-					await ctx.log("warn", `Name conflict for Linear user ${user.name}: possible matches are ${memberByName.possibleMatches?.join(", ")}. Falling back to email.`);
+					await ctx.log(
+						"warn",
+						`Name conflict for Linear user ${user.name}: possible matches are ${memberByName.possibleMatches?.join(", ")}. Falling back to email.`
+					);
 				}
 
 				// If name matching failed or had conflicts, try email with auto-invite
 				if ((!memberByName || memberByName.conflict) && user.email) {
 					// Filter out null avatar URLs
-					const cleanAvatarUrl = user.avatarUrl && user.avatarUrl !== null && user.avatarUrl !== 'null' 
-						? user.avatarUrl 
-						: undefined;
-					
-					const memberResult = await ctx.runMutation(
+					const cleanAvatarUrl =
+						user.avatarUrl &&
+						user.avatarUrl !== null &&
+						user.avatarUrl !== "null"
+							? user.avatarUrl
+							: undefined;
+
+					const memberResult = (await ctx.runMutation(
 						internal.importIntegrations._getOrCreateMemberByEmail,
 						{
 							workspaceId: ctx.workspaceId,
@@ -518,26 +541,41 @@ export async function executeLinearImport(
 							name: user.name,
 							avatarUrl: cleanAvatarUrl,
 							importSource: "Linear Import",
-							importJobUserId: (ctx as any).userId
+							importJobUserId: (ctx as any).userId,
 						}
-					) as any;
+					)) as any;
 
 					if (memberResult && memberResult.member) {
 						linearCtx.memberMap.set(user.id, memberResult.member._id);
 						if (memberResult.created) {
-							await ctx.log("info", `Auto-invited Linear user ${user.name} (${user.email}) as member ${memberResult.member._id} with role ${memberResult.role}`);
+							await ctx.log(
+								"info",
+								`Auto-invited Linear user ${user.name} (${user.email}) as member ${memberResult.member._id} with role ${memberResult.role}`
+							);
 						} else {
-							await ctx.log("info", `Found existing member for Linear user ${user.name}: ${memberResult.member._id}`);
+							await ctx.log(
+								"info",
+								`Found existing member for Linear user ${user.name}: ${memberResult.member._id}`
+							);
 						}
 					} else if (memberResult && memberResult.reason) {
-						await ctx.log("warn", `Failed to auto-invite Linear user ${user.name}: ${memberResult.reason}`);
+						await ctx.log(
+							"warn",
+							`Failed to auto-invite Linear user ${user.name}: ${memberResult.reason}`
+						);
 					}
 				}
 			} catch (error) {
-				await ctx.log("warn", `Failed to find/create member for Linear user ${user.name}: ${error instanceof Error ? error.message : "Unknown error"}`);
+				await ctx.log(
+					"warn",
+					`Failed to find/create member for Linear user ${user.name}: ${error instanceof Error ? error.message : "Unknown error"}`
+				);
 			}
 		}
-		await ctx.log("info", `Fetched ${users.length} users, matched ${linearCtx.memberMap.size} to members`);
+		await ctx.log(
+			"info",
+			`Fetched ${users.length} users, matched ${linearCtx.memberMap.size} to members`
+		);
 
 		// Step 4: Fetch teams
 		await ctx.updateProgress({ currentStep: "Fetching teams..." });
@@ -572,7 +610,10 @@ export async function executeLinearImport(
 				const channelId = await storeTeam(linearCtx, team);
 				linearCtx.teamMap.set(team.id, channelId);
 				result.itemsCreated.push(channelId);
-				await ctx.log("info", `Team ${team.name} -> Channel ${channelId} (total channels: ${result.itemsCreated.length})`);
+				await ctx.log(
+					"info",
+					`Team ${team.name} -> Channel ${channelId} (total channels: ${result.itemsCreated.length})`
+				);
 
 				// Fetch and cache workflow states for this team
 				const states = await provider.fetchWorkflowStates(ctx, team.id);
@@ -612,11 +653,21 @@ export async function executeLinearImport(
 			subItemsTotal: issues.length,
 			currentStep: `Found ${issues.length} issues`,
 		});
-		
+
 		await ctx.log("info", `Fetched ${issues.length} issues`);
-		await ctx.log("info", `Team map contents: ${Array.from(linearCtx.teamMap.entries()).map(([k, v]) => `${k}→${v}`).join(", ") || "EMPTY"}`);
-		await ctx.log("info", `Channels created during import: ${result.itemsCreated.length}`);
-		
+		await ctx.log(
+			"info",
+			`Team map contents: ${
+				Array.from(linearCtx.teamMap.entries())
+					.map(([k, v]) => `${k}→${v}`)
+					.join(", ") || "EMPTY"
+			}`
+		);
+		await ctx.log(
+			"info",
+			`Channels created during import: ${result.itemsCreated.length}`
+		);
+
 		if (linearCtx.teamMap.size === 0) {
 			const errorMsg = `No teams/channels were created! Import will fail to assign issues.`;
 			result.warnings?.push(errorMsg);
@@ -647,15 +698,18 @@ export async function executeLinearImport(
 				subItemsImported: processedInBatch,
 				currentStep: `Processed ${processedInBatch}/${issues.length} issues`,
 			});
-			
-			await ctx.log("info", `Processed batch: ${processedInBatch}/${issues.length} issues total`);
+
+			await ctx.log(
+				"info",
+				`Processed batch: ${processedInBatch}/${issues.length} issues total`
+			);
 		}
 
 		// Step 8: Final summary
 		const duration = Date.now() - startTime;
 		const issuesCreated = result.messagesCreated;
 		const issuesSkipped = issues.length - issuesCreated;
-		
+
 		await ctx.updateProgress({
 			currentStep: `Import completed in ${formatDuration(duration)}`,
 		});
@@ -690,7 +744,10 @@ async function storeTeam(
 	// If target channel is specified, use it for all teams
 	if (ctx.targetChannelId) {
 		ctx.teamMap.set(team.id, ctx.targetChannelId);
-		await ctx.log("info", `Using target channel ${ctx.targetChannelId} for team ${team.name}`);
+		await ctx.log(
+			"info",
+			`Using target channel ${ctx.targetChannelId} for team ${team.name}`
+		);
 		return ctx.targetChannelId;
 	}
 
@@ -707,7 +764,10 @@ async function storeTeam(
 	)) as any;
 
 	if (existingChannel) {
-		await ctx.log("info", `Found existing channel for team ${team.name}: ${existingChannel._id}`);
+		await ctx.log(
+			"info",
+			`Found existing channel for team ${team.name}: ${existingChannel._id}`
+		);
 		if (existingChannel.name !== team.name) {
 			await ctx.runMutation(
 				internal.importIntegrations.updateImportedChannelName,
@@ -772,14 +832,14 @@ async function getOrCreateStatusForState(
 
 	if (statuses.length === 0) {
 		// No statuses exist for this channel, create a default one
-		const statusId = await ctx.runMutation(
+		const statusId = (await ctx.runMutation(
 			internal.importIntegrations.createDefaultStatus,
 			{
 				channelId,
 				name: "Todo",
 				color: "#5e6ad2",
 			}
-		) as Id<"statuses">;
+		)) as Id<"statuses">;
 		ctx.statusMap.set(stateId, statusId);
 		return statusId;
 	}
@@ -791,19 +851,30 @@ async function getOrCreateStatusForState(
 		const normalizedName = s.name.toLowerCase().trim();
 		// Exact match
 		if (normalizedName === normalizedStateName) return true;
-		
+
 		// Fuzzy match for common state types
-		const todoMatch = normalizedName.includes("todo") || normalizedName.includes("to do") || normalizedName === "tbd";
-		const inProgressMatch = normalizedName.includes("progress") || normalizedName.includes("in progress") || normalizedName === "in_review";
-		const doneMatch = normalizedName.includes("done") || normalizedName.includes("complete") || normalizedName === "done";
-		const backlogMatch = normalizedName.includes("backlog") || normalizedName.includes("triage");
-		
+		const todoMatch =
+			normalizedName.includes("todo") ||
+			normalizedName.includes("to do") ||
+			normalizedName === "tbd";
+		const inProgressMatch =
+			normalizedName.includes("progress") ||
+			normalizedName.includes("in progress") ||
+			normalizedName === "in_review";
+		const doneMatch =
+			normalizedName.includes("done") ||
+			normalizedName.includes("complete") ||
+			normalizedName === "done";
+		const backlogMatch =
+			normalizedName.includes("backlog") || normalizedName.includes("triage");
+
 		if (normalizedStateName.includes("todo") && todoMatch) return true;
-		if (normalizedStateName.includes("progress") && inProgressMatch) return true;
+		if (normalizedStateName.includes("progress") && inProgressMatch)
+			return true;
 		if (normalizedStateName.includes("done") && doneMatch) return true;
 		if (normalizedStateName.includes("backlog") && backlogMatch) return true;
 		if (normalizedStateName.includes("triage") && backlogMatch) return true;
-		
+
 		return false;
 	});
 
@@ -857,7 +928,10 @@ async function storeIssue(
 
 	if (existingIssue) {
 		ctx.issueMap.set(issue.id, (existingIssue as any)._id);
-		await ctx.log("info", `Skipped existing issue ${issue.identifier} (already imported)`);
+		await ctx.log(
+			"info",
+			`Skipped existing issue ${issue.identifier} (already imported)`
+		);
 		return;
 	}
 
@@ -866,7 +940,12 @@ async function storeIssue(
 	if (!channelId) {
 		const warning = `Team not found for issue ${issue.identifier}: teamId=${issue.teamId}`;
 		result.warnings?.push(warning);
-		await ctx.log("warn", `${warning}. Available teams: ${Array.from(ctx.teamMap.entries()).map(([k, v]) => `${k}→${v}`).join(", ")}`);
+		await ctx.log(
+			"warn",
+			`${warning}. Available teams: ${Array.from(ctx.teamMap.entries())
+				.map(([k, v]) => `${k}→${v}`)
+				.join(", ")}`
+		);
 		return;
 	}
 
@@ -889,7 +968,10 @@ async function storeIssue(
 		const memberId = ctx.memberMap.get(issue.assigneeId);
 		if (memberId) {
 			assignees = [memberId];
-			await ctx.log("info", `Assigned issue ${issue.identifier} to member ${memberId}`);
+			await ctx.log(
+				"info",
+				`Assigned issue ${issue.identifier} to member ${memberId}`
+			);
 		} else {
 			const warning = `Could not find member for Linear user ID: ${issue.assigneeId} (issue: ${issue.identifier})`;
 			result.warnings?.push(warning);
@@ -935,8 +1017,11 @@ async function storeIssue(
 
 	ctx.issueMap.set(issue.id, issueId);
 	result.messagesCreated++;
-	
-	await ctx.log("info", `Imported issue ${issue.identifier} with ${assignees?.length || 0} assignees`);
+
+	await ctx.log(
+		"info",
+		`Imported issue ${issue.identifier} with ${assignees?.length || 0} assignees`
+	);
 }
 
 /**

@@ -481,21 +481,35 @@ http.route({
 					status: tokenResponse.status,
 					body: errorText,
 				});
-				throw new Error(`Failed to exchange OAuth code: ${tokenResponse.status}`);
+				throw new Error(
+					`Failed to exchange OAuth code: ${tokenResponse.status}`
+				);
 			}
 
 			const tokenData = await tokenResponse.json();
 
-			console.log("[LinearOAuth] Full token response:", JSON.stringify(tokenData, null, 2));
+			console.log(
+				"[LinearOAuth] Full token response:",
+				JSON.stringify(tokenData, null, 2)
+			);
 
 			if (!tokenData.access_token) {
-				console.error("[LinearOAuth] Token response missing access_token:", tokenData);
+				console.error(
+					"[LinearOAuth] Token response missing access_token:",
+					tokenData
+				);
 				throw new Error("Invalid token response: missing access_token");
 			}
 
 			console.log("[LinearOAuth] Token received successfully");
-			console.log("[LinearOAuth] Access token (first 20 chars):", tokenData.access_token.substring(0, 20));
-			console.log("[LinearOAuth] Access token length:", tokenData.access_token.length);
+			console.log(
+				"[LinearOAuth] Access token (first 20 chars):",
+				tokenData.access_token.substring(0, 20)
+			);
+			console.log(
+				"[LinearOAuth] Access token length:",
+				tokenData.access_token.length
+			);
 
 			// Verify the token works by fetching organization info
 			const orgResponse = await fetch("https://api.linear.app/graphql", {

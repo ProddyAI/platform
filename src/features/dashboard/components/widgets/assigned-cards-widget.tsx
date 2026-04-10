@@ -45,20 +45,20 @@ export const AssignedCardsWidget = ({
 	// Sort board cards by due date and creation time
 	const sortedCards = assignedCards
 		? [...assignedCards]
-			.sort((a, b) => {
-				// Sort by due date if available
-				if (a.dueDate && b.dueDate) {
-					return a.dueDate - b.dueDate;
-				}
+				.sort((a, b) => {
+					// Sort by due date if available
+					if (a.dueDate && b.dueDate) {
+						return a.dueDate - b.dueDate;
+					}
 
-				// If only one has a due date, prioritize it
-				if (a.dueDate) return -1;
-				if (b.dueDate) return 1;
+					// If only one has a due date, prioritize it
+					if (a.dueDate) return -1;
+					if (b.dueDate) return 1;
 
-				// Finally sort by creation time
-				return b._creationTime - a._creationTime;
-			})
-			.slice(0, 10)
+					// Finally sort by creation time
+					return b._creationTime - a._creationTime;
+				})
+				.slice(0, 10)
 		: []; // Limit to 10 cards for the widget
 
 	// Handle viewing a board card
@@ -95,20 +95,20 @@ export const AssignedCardsWidget = ({
 				{isEditMode
 					? controls
 					: channels &&
-					channels.length > 0 && (
-						<Button
-							className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-							onClick={() =>
-								router.push(
-									`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
-								)
-							}
-							size="sm"
-							variant="ghost"
-						>
-							View all
-						</Button>
-					)}
+						channels.length > 0 && (
+							<Button
+								className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+								onClick={() =>
+									router.push(
+										`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
+									)
+								}
+								size="sm"
+								variant="ghost"
+							>
+								View all
+							</Button>
+						)}
 			</div>
 
 			{sortedCards.length > 0 ? (

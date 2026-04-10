@@ -1238,7 +1238,7 @@ export const moveIssueStatus = mutation({
 		// Verify caller is a member of the workspace
 		const channel = await ctx.db.get(issue.channelId);
 		if (!channel) throw new Error("Channel not found");
-		await assertWorkspaceMember(ctx, channel.workspaceId);
+		const actorMember = await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Verify toStatusId belongs to the issue's channel
 		const toStatus = await ctx.db.get(toStatusId);

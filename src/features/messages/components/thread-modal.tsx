@@ -189,7 +189,8 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 					type: "file",
 					content: parsed.fileName || "File attachment",
 					caption:
-						typeof parsed.caption === "string" && parsed.caption.trim().length > 0
+						typeof parsed.caption === "string" &&
+						parsed.caption.trim().length > 0
 							? parsed.caption
 							: undefined,
 					fileUrl: image,
@@ -339,45 +340,48 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 									{parsedParentBody.isSpecial ? (
 										<div className="space-y-2">
 											<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-2 border border-primary/20">
-											{parsedParentBody.type === "canvas" ? (
-												<span className="text-sm font-medium flex items-center gap-1.5">
-													<Paintbrush className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-													{parsedParentBody.content}
-												</span>
-											) : parsedParentBody.type === "file" ? (
-												<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-													<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
-														<File className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
-														<span className="truncate">{parsedParentBody.content}</span>
+												{parsedParentBody.type === "canvas" ? (
+													<span className="text-sm font-medium flex items-center gap-1.5">
+														<Paintbrush className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+														{parsedParentBody.content}
 													</span>
-													{parsedParentBody.fileUrl && (
-														<Button
-															onClick={() =>
-																window.open(
-																	parsedParentBody.fileUrl,
-																	"_blank",
-																	"noopener,noreferrer"
-																)
-															}
-															size="iconSm"
-															variant="ghost"
-														>
-															<Download className="h-4 w-4" />
-														</Button>
-													)}
-												</div>
-											) : (
-												<span className="text-sm font-medium flex items-center gap-1.5">
-													<FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-													{parsedParentBody.content}
-												</span>
-											)}
+												) : parsedParentBody.type === "file" ? (
+													<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+														<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
+															<File className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+															<span className="truncate">
+																{parsedParentBody.content}
+															</span>
+														</span>
+														{parsedParentBody.fileUrl && (
+															<Button
+																onClick={() =>
+																	window.open(
+																		parsedParentBody.fileUrl,
+																		"_blank",
+																		"noopener,noreferrer"
+																	)
+																}
+																size="iconSm"
+																variant="ghost"
+															>
+																<Download className="h-4 w-4" />
+															</Button>
+														)}
+													</div>
+												) : (
+													<span className="text-sm font-medium flex items-center gap-1.5">
+														<FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+														{parsedParentBody.content}
+													</span>
+												)}
 											</div>
-											{parsedParentBody.type === "file" && parsedParentBody.caption && (
-												<p className="text-xs text-muted-foreground break-words">
-													{parsedParentBody.caption}
-												</p>
-											)}
+											{parsedParentBody.type === "file" &&
+												parsedParentBody.caption && (
+													<p className="text-xs text-muted-foreground break-words">
+														{parsedParentBody.caption}
+													</p>
+												)}
 										</div>
 									) : (
 										<p className="text-sm break-words">
@@ -445,45 +449,48 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 															{parsedReplyBody.isSpecial ? (
 																<div className="space-y-2">
 																	<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-2 border border-primary/20">
-																	{parsedReplyBody.type === "canvas" ? (
-																		<span className="text-sm font-medium flex items-center gap-1.5">
-																			<Paintbrush className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-																			{parsedReplyBody.content}
-																		</span>
-																	) : parsedReplyBody.type === "file" ? (
-																		<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-																			<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
-																				<File className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
-																				<span className="truncate">{parsedReplyBody.content}</span>
+																		{parsedReplyBody.type === "canvas" ? (
+																			<span className="text-sm font-medium flex items-center gap-1.5">
+																				<Paintbrush className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+																				{parsedReplyBody.content}
 																			</span>
-																			{parsedReplyBody.fileUrl && (
-																				<Button
-																					onClick={() =>
-																						window.open(
-																							parsedReplyBody.fileUrl,
-																							"_blank",
-																							"noopener,noreferrer"
-																						)
-																					}
-																					size="iconSm"
-																					variant="ghost"
-																				>
-																					<Download className="h-4 w-4" />
-																				</Button>
-																			)}
-																		</div>
-																	) : (
-																		<span className="text-sm font-medium flex items-center gap-1.5">
-																			<FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-																			{parsedReplyBody.content}
-																		</span>
-																	)}
+																		) : parsedReplyBody.type === "file" ? (
+																			<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+																				<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
+																					<File className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+																					<span className="truncate">
+																						{parsedReplyBody.content}
+																					</span>
+																				</span>
+																				{parsedReplyBody.fileUrl && (
+																					<Button
+																						onClick={() =>
+																							window.open(
+																								parsedReplyBody.fileUrl,
+																								"_blank",
+																								"noopener,noreferrer"
+																							)
+																						}
+																						size="iconSm"
+																						variant="ghost"
+																					>
+																						<Download className="h-4 w-4" />
+																					</Button>
+																				)}
+																			</div>
+																		) : (
+																			<span className="text-sm font-medium flex items-center gap-1.5">
+																				<FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+																				{parsedReplyBody.content}
+																			</span>
+																		)}
 																	</div>
-																	{parsedReplyBody.type === "file" && parsedReplyBody.caption && (
-																		<p className="text-xs text-muted-foreground break-words">
-																			{parsedReplyBody.caption}
-																		</p>
-																	)}
+																	{parsedReplyBody.type === "file" &&
+																		parsedReplyBody.caption && (
+																			<p className="text-xs text-muted-foreground break-words">
+																				{parsedReplyBody.caption}
+																			</p>
+																		)}
 																</div>
 															) : (
 																<p className="text-sm break-words">

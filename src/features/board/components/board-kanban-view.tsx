@@ -299,9 +299,9 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			{showHeader && setView && (
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
-						onAddStatus={onAddStatus}
 						connectedChannelName={connectedChannelName}
 						isProjectChannelConnected={isProjectChannelConnected}
+						onAddStatus={onAddStatus}
 						onConnectChannelClick={onConnectChannelClick}
 						onLinkageDiagramClick={onLinkageDiagramClick}
 						onSearchClick={onSearchClick}
