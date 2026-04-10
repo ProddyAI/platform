@@ -42,7 +42,7 @@ Collaborate with your team using real-time messaging, boards, notes, calendar, a
    In the [Convex dashboard](https://dashboard.convex.dev/), open your project → **Settings** → **Environment Variables**, and add the variables listed in `.env.convex.example`.
 
 5. **Run the app**
-   - Terminal 1 (Next.js): `bun next` → open [http://localhost:3000](http://localhost:3000)
+   - Terminal 1 (Next.js): `bun next` → open [https://localhost:3000](https://localhost:3000)
    - Terminal 2 (Convex): `bun convex`
 
 6. You’re set to contribute.
