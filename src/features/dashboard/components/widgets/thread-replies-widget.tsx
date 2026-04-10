@@ -30,38 +30,6 @@ interface ThreadRepliesWidgetProps {
 	controls?: React.ReactNode;
 }
 
-// Define the actual structure returned by the API
-interface ThreadReplyMessage {
-	message: {
-		_id: Id<"messages">;
-		_creationTime: number;
-		body: string;
-		memberId: Id<"members">;
-		channelId?: Id<"channels">;
-		parentMessageId?: Id<"messages">;
-		workspaceId: Id<"workspaces">;
-	};
-	parentMessage: {
-		_id: Id<"messages">;
-		body: string;
-	};
-	parentUser: {
-		name: string;
-		image?: string;
-		_id: Id<"users">;
-	};
-	currentUser: {
-		name: string;
-		image?: string;
-		_id: Id<"users">;
-	};
-	context: {
-		name: string;
-		type: "channel" | "conversation";
-		id: Id<"channels"> | Id<"conversations">;
-	};
-}
-
 export const ThreadRepliesWidget = ({
 	workspaceId,
 	isEditMode,

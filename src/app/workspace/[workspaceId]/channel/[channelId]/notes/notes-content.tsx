@@ -78,7 +78,6 @@ export const NotesContent = ({
 		localContent,
 		localTitle,
 		isTyping,
-		handleContentChange: handleNoteContentChange,
 		handleTitleChange: handleNoteTitleChange,
 		hasUnsavedChanges,
 	} = useNoteContent({

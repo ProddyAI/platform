@@ -328,6 +328,7 @@ const TestCalendarPage = () => {
 																	key={event.id}
 																	onClick={() => handleEventClick(event)}
 																	title={`${event.title} - ${format(event.date, "h:mm a")} (Click to view related tasks)`}
+																	type="button"
 																>
 																	<div className="flex items-center gap-1">
 																		{getPriorityIcon(event.priority)}
@@ -563,6 +564,18 @@ const TestCalendarPage = () => {
 				<div
 					className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
 					onClick={() => setSelectedEvent(null)}
+					onKeyDown={(event) => {
+						if (
+							event.key === "Escape" ||
+							event.key === "Enter" ||
+							event.key === " "
+						) {
+							event.preventDefault();
+							setSelectedEvent(null);
+						}
+					}}
+					role="button"
+					tabIndex={0}
 				>
 					<Card
 						className="w-full max-w-md mx-4"

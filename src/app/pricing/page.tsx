@@ -20,15 +20,12 @@ const PricingPage = () => {
 			{/* Pricing Section */}
 			<section className="py-16 bg-gray-50">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+					<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8">
 						{/* Free Plan */}
 						<FreePlan />
 
-						{/* Starter Plan */}
-						<StarterPlan />
-
 						{/* Pro Plan */}
-						<ProPlan />
+						<StarterPlan />
 
 						{/* Enterprise Plan */}
 						<EnterprisePlan />
@@ -88,316 +85,117 @@ function HeroSection() {
 function ComparisonTable() {
 	const pricingData = [
 		{
-			category: "Task & Messaging Integration",
+			category: "AI Usage Limits (Monthly)",
 			features: [
 				{
-					name: "Add chat messages to tasks/calendar",
-					free: "Limited",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
+					name: "AI chat requests",
+					free: "50",
+					pro: "1,000",
+					enterprise: "Unlimited",
 				},
 				{
-					name: "Convert chats into tasks (with context)",
-					free: "Limited",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
+					name: "AI diagram generations",
+					free: "10",
+					pro: "500",
+					enterprise: "Unlimited",
 				},
 				{
-					name: "AI summarization of chats/tasks",
-					free: "Basic (5 / month)",
-					starter: "Standard (20 / month)",
-					pro: "Unlimited (GPT-4)",
-					enterprise: "Unlimited + custom",
-				},
-				{
-					name: "Automated chat replies",
-					free: "✕",
-					starter: "Basic",
-					pro: "Advanced",
-					enterprise: "Full",
-				},
-			],
-		},
-		{
-			category: "AI-Powered Collaboration",
-			features: [
-				{
-					name: "AI notes & diagramming",
-					free: "Limited cleanup",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-				{
-					name: "Contextual AI assistant (workspace Q&A)",
-					free: "Basic bots",
-					starter: "Standard models",
-					pro: "GPT-4 quality",
-					enterprise: "Custom agents",
-				},
-				{
-					name: "AI workflows (create issues, emails, tasks)",
-					free: "✕",
-					starter: "Basic (email only)",
-					pro: "Advanced",
-					enterprise: "Full",
-				},
-			],
-		},
-		{
-			category: "Audio & Video Enhancements",
-			features: [
-				{
-					name: "In-app audio calls (Notes & Canvas)",
-					free: "✓",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-				{
-					name: "Video calls (max resolution)",
-					free: "Voice only",
-					starter: "720p",
-					pro: "1080p",
-					enterprise: "4K+",
-				},
-				{
-					name: "Meeting minutes/month",
-					free: "2,000",
-					starter: "5,000",
-					pro: "Unlimited",
+					name: "AI summary requests",
+					free: "10",
+					pro: "500",
 					enterprise: "Unlimited",
 				},
 			],
 		},
 		{
-			category: "Smart Summaries & Dashboards",
+			category: "Communication Limits (Monthly)",
 			features: [
 				{
-					name: "Weekly activity digest",
-					free: "✓",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-				{
-					name: "Custom dashboards",
-					free: "Up to 3",
-					starter: "Up to 10",
-					pro: "Unlimited",
+					name: "Messages sent",
+					free: "1,000",
+					pro: "50,000",
 					enterprise: "Unlimited",
 				},
 				{
-					name: "Dashboard widgets",
-					free: "Limited",
-					starter: "Standard",
-					pro: "All widgets",
-					enterprise: "All widgets",
-				},
-				{
-					name: "Real-time activity feed",
-					free: "✕",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
+					name: "Channels created",
+					free: "5",
+					pro: "50",
+					enterprise: "Unlimited",
 				},
 			],
 		},
 		{
-			category: "Views & Layouts",
+			category: "Work Management Limits (Monthly)",
 			features: [
 				{
-					name: "Kanban / Table / Calendar views",
-					free: "✓",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-				{
-					name: "Gantt (timeline) view",
-					free: "✕",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-				{
-					name: "Unified calendar (tasks/notes/events)",
-					free: "Tasks only",
-					starter: "Tasks + calendar",
-					pro: "All items",
-					enterprise: "All items",
-				},
-				{
-					name: "Workspace switching / invite code",
-					free: "✕",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-			],
-		},
-		{
-			category: "Canvas & Notes",
-			features: [
-				{
-					name: "Free-form Canvas (whiteboard)",
-					free: "PNG export only",
-					starter: "PNG/PDF export",
-					pro: "PNG/PDF export",
-					enterprise: "PNG/PDF export",
-				},
-				{
-					name: "Real-time collaborative editing",
-					free: "✓",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-				{
-					name: "Enhanced notes editor",
-					free: "Spellcheck only",
-					starter: "AI cleanup",
-					pro: "AI + formatting",
-					enterprise: "AI + formatting",
-				},
-				{
-					name: "Role-based navigation",
-					free: "Admin + Member",
-					starter: "Admin + Contributor",
-					pro: "Full roles",
-					enterprise: "Full roles + SSO",
-				},
-			],
-		},
-		{
-			category: "Integrations & Automations",
-			features: [
-				{
-					name: "Third-party integrations (GitHub, Jira, Slack)",
-					free: "Up to 2",
-					starter: "Up to 5–10",
-					pro: "Unlimited",
+					name: "Tasks created",
+					free: "50",
+					pro: "1,000",
 					enterprise: "Unlimited",
 				},
 				{
-					name: "Zapier/Webhook automations",
-					free: "✕",
-					starter: "Basic triggers",
-					pro: "Advanced flows",
-					enterprise: "All workflows",
-				},
-				{
-					name: "Shared email/chat (Gmail/Slack)",
-					free: "Read-only",
-					starter: "Standard",
-					pro: "Full",
-					enterprise: "Full + SAML SSO",
-				},
-			],
-		},
-		{
-			category: "Productivity & Mobility",
-			features: [
-				{
-					name: "PWA / mobile access",
-					free: "✓",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-				{
-					name: "Offline support",
-					free: "✕",
-					starter: "Basic",
-					pro: "Full",
-					enterprise: "Full",
-				},
-				{
-					name: "Real-time updates across devices",
-					free: "✓",
-					starter: "✓",
-					pro: "✓",
-					enterprise: "✓",
-				},
-			],
-		},
-		{
-			category: "Calendar & Scheduling",
-			features: [
-				{
-					name: "Unified calendar integrations",
-					free: "Tasks only",
-					starter: "Tasks + events",
-					pro: "All tools",
-					enterprise: "All tools",
-				},
-				{
-					name: "Contextual AI scheduling",
-					free: "✕",
-					starter: "Basic AI",
-					pro: "Advanced AI",
-					enterprise: "Enterprise AI",
-				},
-			],
-		},
-		{
-			category: "Limits & Capacities",
-			features: [
-				{
-					name: "Workspaces / Projects",
-					free: "1 WS, 5 projects",
-					starter: "3 WS, 50 projects",
-					pro: "20 WS, 200 projects",
+					name: "Board cards created",
+					free: "2",
+					pro: "20",
 					enterprise: "Unlimited",
 				},
 				{
-					name: "Storage per workspace",
-					free: "5 GB",
-					starter: "50 GB",
-					pro: "200 GB",
-					enterprise: "1 TB+",
+					name: "Notes created",
+					free: "20",
+					pro: "500",
+					enterprise: "Unlimited",
+				},
+			],
+		},
+		{
+			category: "Billing & Access",
+			features: [
+				{
+					name: "Price per user",
+					free: "$0/month",
+					pro: "$5/month",
+					enterprise: "Custom pricing",
 				},
 				{
-					name: "AI usage (monthly quota)",
-					free: "Basic only",
-					starter: "Limited (GPT-4/Pro)",
-					pro: "High (GPT-4/Pro)",
-					enterprise: "Unlimited/custom",
+					name: "Customer portal access",
+					free: "No",
+					pro: "Yes",
+					enterprise: "Yes",
 				},
 				{
-					name: "Customer support / SLA",
-					free: "Community email",
-					starter: "Email support",
-					pro: "Priority support",
+					name: "Seat-based billing",
+					free: "No",
+					pro: "Yes",
+					enterprise: "Yes",
+				},
+				{
+					name: "Subscription management",
+					free: "No",
+					pro: "Self-service",
+					enterprise: "Dedicated support",
+				},
+			],
+		},
+		{
+			category: "Support",
+			features: [
+				{
+					name: "Customer support",
+					free: "Community",
+					pro: "Email priority",
 					enterprise: "Dedicated SLA",
 				},
-			],
-		},
-		{
-			category: "Security & Admin (additional)",
-			features: [
 				{
-					name: "Role-based access & permissions",
-					free: "Basic roles",
-					starter: "Admin + Contributor",
-					pro: "Granular",
-					enterprise: "Granular + custom policies",
+					name: "Webhook-driven updates",
+					free: "No",
+					pro: "Yes",
+					enterprise: "Yes",
 				},
 				{
-					name: "Audit logs & exports",
-					free: "✕",
-					starter: "Basic",
-					pro: "Advanced",
-					enterprise: "Enterprise-grade",
-				},
-				{
-					name: "Data residency & retention controls",
-					free: "✕",
-					starter: "✕",
-					pro: "Optional",
-					enterprise: "Custom",
+					name: "Plan enforcement",
+					free: "✓",
+					pro: "✓",
+					enterprise: "✓",
 				},
 			],
 		},
@@ -421,7 +219,7 @@ function ComparisonTable() {
 								<tr>
 									<th className="py-4 px-4 text-left font-medium">Feature</th>
 									<th className="py-4 px-4 text-left font-medium">Free</th>
-									<th className="py-4 px-4 text-left font-medium">Starter</th>
+
 									<th className="py-4 px-4 text-left font-medium">Pro</th>
 									<th className="py-4 px-4 text-left font-medium">
 										Enterprise
@@ -433,7 +231,7 @@ function ComparisonTable() {
 									<Fragment key={section.category}>
 										{/* Category header row */}
 										<tr className="bg-gray-50">
-											<td className="py-3 px-4 font-semibold" colSpan={5}>
+											<td className="py-3 px-4 font-semibold" colSpan={4}>
 												{section.category}
 											</td>
 										</tr>
@@ -446,7 +244,6 @@ function ComparisonTable() {
 											>
 												<td className="py-3 px-4">{feature.name}</td>
 												<td className="py-3 px-4">{feature.free}</td>
-												<td className="py-3 px-4">{feature.starter}</td>
 												<td className="py-3 px-4">{feature.pro}</td>
 												<td className="py-3 px-4">{feature.enterprise}</td>
 											</tr>
@@ -513,92 +310,47 @@ function StarterPlan() {
 	return (
 		<motion.div
 			animate={{ opacity: 1, y: 0 }}
-			className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 relative"
+			className="bg-white rounded-xl shadow-sm p-8 border border-primary/20 relative ring-1 ring-primary/20"
 			initial={{ opacity: 0, y: 20 }}
 			transition={{ duration: 0.5, delay: 0.4 }}
 		>
-			<h3 className="text-lg font-semibold mb-2">Starter</h3>
+			<h3 className="text-lg font-semibold mb-2">Pro</h3>
 			<div className="mb-6">
 				<span className="text-4xl font-bold">$5</span>
 				<span className="text-gray-500 ml-2">/user/month</span>
-				<span className="text-xs text-gray-500 ml-2">billed annually</span>
 			</div>
 			<p className="text-gray-600 mb-6">
-				Everything in Free, plus team workspaces and more storage.
+				Everything in Free, plus higher limits and AI access for growing teams.
 			</p>
 			<ul className="space-y-3 mb-8">
 				<li className="flex items-start">
 					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">Unlimited tasks & projects</span>
+					<span className="text-gray-700">1,000 AI chat requests / month</span>
 				</li>
 				<li className="flex items-start">
 					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">10–20 GB storage per user</span>
+					<span className="text-gray-700">
+						500 AI summaries & diagrams / month
+					</span>
 				</li>
 				<li className="flex items-start">
 					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">Up to 5–10 integrations</span>
+					<span className="text-gray-700">50,000 messages / month</span>
 				</li>
 				<li className="flex items-start">
 					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">Basic AI summaries (20 / month)</span>
+					<span className="text-gray-700">1,000 tasks & 500 notes / month</span>
 				</li>
 				<li className="flex items-start">
 					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">Group calls up to 720p</span>
+					<span className="text-gray-700">50 channels & 20 boards / month</span>
+				</li>
+				<li className="flex items-start">
+					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+					<span className="text-gray-700">Priority email support</span>
 				</li>
 			</ul>
 			<Button className="w-full" disabled variant="outline">
-				Available after beta
-			</Button>
-		</motion.div>
-	);
-}
-
-function ProPlan() {
-	return (
-		<motion.div
-			animate={{ opacity: 1, y: 0 }}
-			className="bg-white rounded-xl shadow-sm p-8 border border-primary/20 relative ring-1 ring-primary/20"
-			initial={{ opacity: 0, y: 20 }}
-			transition={{ duration: 0.5, delay: 0.5 }}
-		>
-			<h3 className="text-lg font-semibold mb-2">Pro</h3>
-			<div className="mb-6">
-				<span className="text-4xl font-bold">$12</span>
-				<span className="text-gray-500 ml-2">/user/month</span>
-				<span className="text-xs text-gray-500 ml-2">billed annually</span>
-			</div>
-			<p className="text-gray-600 mb-6">
-				Advanced AI and security controls for growing teams.
-			</p>
-			<ul className="space-y-3 mb-8">
-				<li className="flex items-start">
-					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">Unlimited storage</span>
-				</li>
-				<li className="flex items-start">
-					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">Unlimited integrations</span>
-				</li>
-				<li className="flex items-start">
-					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">Unlimited GPT-4 summaries & Q&A</span>
-				</li>
-				<li className="flex items-start">
-					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">HD video calls (1080p)</span>
-				</li>
-				<li className="flex items-start">
-					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">SAML SSO + granular permissions</span>
-				</li>
-				<li className="flex items-start">
-					<Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-					<span className="text-gray-700">Priority support</span>
-				</li>
-			</ul>
-			<Button className="w-full" disabled>
 				Available after beta
 			</Button>
 		</motion.div>

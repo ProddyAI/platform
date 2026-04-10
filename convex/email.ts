@@ -310,7 +310,7 @@ export const sendDirectMessageEmail = action({
 			const sender = await ctx.runQuery(api.members.getMemberById, {
 				memberId: message.memberId,
 			});
-			if (!sender || !sender.user) {
+			if (!sender?.user) {
 				console.error("Sender not found:", message.memberId);
 				return { success: false, error: "Sender not found" };
 			}
@@ -324,7 +324,7 @@ export const sendDirectMessageEmail = action({
 			const recipient = await ctx.runQuery(api.members.getMemberById, {
 				memberId: recipientMemberId,
 			});
-			if (!recipient || !recipient.user || !recipient.user.email) {
+			if (!recipient?.user?.email) {
 				return { success: true, skipped: true };
 			}
 
@@ -410,11 +410,7 @@ export const sendMentionEmail = action({
 			const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
 				memberId: mention.mentionedMemberId,
 			});
-			if (
-				!mentionedMember ||
-				!mentionedMember.user ||
-				!mentionedMember.user.email
-			) {
+			if (!mentionedMember?.user?.email) {
 				return { success: true, skipped: true };
 			}
 
@@ -422,7 +418,7 @@ export const sendMentionEmail = action({
 			const mentioner = await ctx.runQuery(api.members.getMemberById, {
 				memberId: mention.mentionerMemberId,
 			});
-			if (!mentioner || !mentioner.user) {
+			if (!mentioner?.user) {
 				console.error("Mentioner not found:", mention.mentionerMemberId);
 				return { success: false, error: "Mentioner not found" };
 			}
@@ -539,11 +535,7 @@ export const sendThreadReplyEmail = action({
 			const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
 				memberId: parentMessage.memberId,
 			});
-			if (
-				!originalAuthor ||
-				!originalAuthor.user ||
-				!originalAuthor.user.email
-			) {
+			if (!originalAuthor?.user?.email) {
 				return { success: true, skipped: true };
 			}
 
@@ -551,7 +543,7 @@ export const sendThreadReplyEmail = action({
 			const replier = await ctx.runQuery(api.members.getMemberById, {
 				memberId: replyMessage.memberId,
 			});
-			if (!replier || !replier.user) {
+			if (!replier?.user) {
 				console.error("Replier not found:", replyMessage.memberId);
 				return { success: false, error: "Replier not found" };
 			}
@@ -1265,7 +1257,6 @@ function buildImportEmailHtml(
 					</div>
 					<div class="footer">
 						<p>© 2026 Proddy. All rights reserved.</p>
-						<p>Questions? Contact us at support@proddy.tech</p>
 					</div>
 				</div>
 			</body>
@@ -1293,8 +1284,7 @@ export const sendImportCompletionEmail = internalAction({
 	handler: async (_ctx, args) => {
 		try {
 			const apiKey = process.env.RESEND_API_KEY;
-			const fromEmail =
-				process.env.RESEND_FROM_EMAIL || "Proddy <support@proddy.tech>";
+			const fromEmail = process.env.RESEND_FROM_EMAIL;
 
 			if (!apiKey) {
 				console.error("Resend email not configured");
@@ -1368,7 +1358,7 @@ export const sendImportCompletionEmail = internalAction({
 			}
 
 			try {
-				const supportEmail = process.env.SUPPORT_EMAIL || "support@proddy.tech";
+				const supportEmail = process.env.RESEND_FROM_EMAIL;
 
 				const response = await fetchWithTimeout(
 					"https://api.resend.com/emails",

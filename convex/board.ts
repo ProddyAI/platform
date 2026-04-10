@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -32,6 +32,53 @@ const getCompletedStatusIdsForChannel = async (
 			.filter((status) => isDoneStatusName(status.name))
 			.map((status) => status._id)
 	);
+};
+
+const richTextBodyFromPlainText = (text: string) => {
+	return JSON.stringify({
+		ops: [{ insert: text }],
+	});
+};
+
+const maybePostProjectStatusChangeMessage = async (
+	ctx: MutationCtx,
+	{
+		workspaceId,
+		boardChannelId,
+		memberId,
+		issueTitle,
+		fromStatus,
+		toStatus,
+	}: {
+		workspaceId: Id<"workspaces">;
+		boardChannelId: Id<"channels">;
+		memberId: Id<"members">;
+		issueTitle: string;
+		fromStatus: string;
+		toStatus: string;
+	}
+) => {
+	const project = await ctx.db
+		.query("projects")
+		.withIndex("by_workspace_id_board_channel_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("boardChannelId", boardChannelId)
+		)
+		.unique();
+
+	if (!project?.connectedChannelId) {
+		return;
+	}
+
+	const body = richTextBodyFromPlainText(
+		`Status update: "${issueTitle}" moved from ${fromStatus} to ${toStatus}.`
+	);
+
+	await ctx.db.insert("messages", {
+		body,
+		memberId,
+		workspaceId,
+		channelId: project.connectedChannelId,
+	});
 };
 
 const deleteIssueCascade = async (
@@ -196,6 +243,21 @@ export const createCard = mutation({
 		// Insert the card
 		const cardId = await ctx.db.insert("cards", args);
 
+		// Track board card usage
+		const boardUserId = (await ctx.auth.getUserIdentity())?.subject.split(
+			"|"
+		)[0];
+		if (boardUserId && channel?.workspaceId) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.usageTracking.recordBoardCreated,
+				{
+					userId: boardUserId as Id<"users">,
+					workspaceId: channel.workspaceId,
+				}
+			);
+		}
+
 		// Create mentions for assignees if any
 		if (args.assignees && args.assignees.length > 0) {
 			try {
@@ -234,6 +296,26 @@ export const createCard = mutation({
 						cardId,
 						assignerId: creator._id,
 					});
+
+					const assigneeMember = await ctx.db.get(assigneeId);
+					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
+						await ctx.scheduler.runAfter(
+							0,
+							internal.notifications.sendPushNotification,
+							{
+								userIds: [assigneeMember.userId],
+								title: "New task assignment",
+								message: `You were assigned to ${args.title}`,
+								notificationType: "assignee",
+								data: {
+									cardId,
+									channelId: list.channelId,
+									workspaceId: channel.workspaceId,
+									type: "card_assignment",
+								},
+							}
+						);
+					}
 				}
 			} catch (error) {
 				console.error("Error creating mentions for card assignees:", error);
@@ -350,6 +432,26 @@ export const updateCard = mutation({
 						cardId,
 						assignerId: updater._id,
 					});
+
+					const assigneeMember = await ctx.db.get(assigneeId);
+					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
+						await ctx.scheduler.runAfter(
+							0,
+							internal.notifications.sendPushNotification,
+							{
+								userIds: [assigneeMember.userId],
+								title: "New task assignment",
+								message: `You were assigned to ${updates.title || card.title}`,
+								notificationType: "assignee",
+								data: {
+									cardId,
+									channelId: list.channelId,
+									workspaceId: channel.workspaceId,
+									type: "card_assignment",
+								},
+							}
+						);
+					}
 				}
 			} catch (error) {
 				console.error("Error creating mentions for card assignees:", error);
@@ -998,7 +1100,10 @@ export const updateIssue = mutation({
 		if (!channel) throw new Error("Channel not found");
 
 		// Verify caller is a member of the workspace
-		await assertWorkspaceMember(ctx, channel.workspaceId);
+		const actorMember = await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		let previousStatusName: string | undefined;
+		let nextStatusName: string | undefined;
 
 		// Verify statusId belongs to the channel if provided
 		if (updates.statusId) {
@@ -1006,6 +1111,12 @@ export const updateIssue = mutation({
 			if (!status) throw new Error("Status not found");
 			if (status.channelId !== issue.channelId) {
 				throw new Error("Status does not belong to issue's channel");
+			}
+
+			nextStatusName = status.name;
+			if (updates.statusId !== issue.statusId) {
+				const currentStatus = await ctx.db.get(issue.statusId);
+				previousStatusName = currentStatus?.name;
 			}
 		}
 
@@ -1086,6 +1197,26 @@ export const updateIssue = mutation({
 			}
 		}
 
+		if (
+			updates.statusId &&
+			updates.statusId !== issue.statusId &&
+			nextStatusName &&
+			previousStatusName
+		) {
+			try {
+				await maybePostProjectStatusChangeMessage(ctx, {
+					workspaceId: channel.workspaceId,
+					boardChannelId: issue.channelId,
+					memberId: actorMember._id,
+					issueTitle: updates.title || issue.title,
+					fromStatus: previousStatusName,
+					toStatus: nextStatusName,
+				});
+			} catch (error) {
+				console.error("Failed to post project status update message:", error);
+			}
+		}
+
 		return issueId;
 	},
 });
@@ -1119,6 +1250,7 @@ export const moveIssueStatus = mutation({
 		const fromStatusId = issue.statusId as Id<"statuses">;
 		const targetIndex = Math.max(0, Math.floor(order));
 		const now = Date.now();
+		const fromStatus = await ctx.db.get(fromStatusId);
 		// Helper to sort issues by their current order, falling back to _creationTime
 		const sortByOrder = (a: Doc<"issues">, b: Doc<"issues">) => {
 			const ao = typeof a.order === "number" ? a.order : 0;
@@ -1203,6 +1335,19 @@ export const moveIssueStatus = mutation({
 					updatedAt: now,
 				});
 			}
+		}
+
+		try {
+			await maybePostProjectStatusChangeMessage(ctx, {
+				workspaceId: channel.workspaceId,
+				boardChannelId: issue.channelId,
+				memberId: actorMember._id,
+				issueTitle: issue.title,
+				fromStatus: fromStatus?.name || "Unknown",
+				toStatus: toStatus.name,
+			});
+		} catch (error) {
+			console.error("Failed to post project status update message:", error);
 		}
 		return;
 	},
@@ -2521,7 +2666,7 @@ export const getBlockingCards = query({
 	args: { cardId: v.id("cards") },
 	handler: async (ctx: QueryCtx, { cardId }) => {
 		const card = await ctx.db.get(cardId);
-		if (!card || !card.blockedBy) return [];
+		if (!card?.blockedBy) return [];
 
 		const blockingCards = await Promise.all(
 			card.blockedBy.map(async (blockerCardId) => {

@@ -17,6 +17,7 @@ type ToolbarProps = {
 	effectiveId?: string;
 	onGenerateFlowchart?: (mermaidCode: string, position: Point) => void;
 	camera?: { x: number; y: number };
+	workspaceId?: string;
 };
 
 export const Toolbar = ({
@@ -28,6 +29,7 @@ export const Toolbar = ({
 	effectiveId,
 	onGenerateFlowchart,
 	camera = { x: 0, y: 0 },
+	workspaceId,
 }: ToolbarProps = {}) => {
 	// Handle color change
 	const handleColorChange = useCallback(
@@ -141,6 +143,7 @@ export const Toolbar = ({
 					<FlowchartGenerator
 						camera={camera}
 						onGenerateFlowchart={onGenerateFlowchart}
+						workspaceId={workspaceId}
 					>
 						<ToolButton
 							icon={Sparkles}

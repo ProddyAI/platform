@@ -36,12 +36,40 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
-		enabledFeatures: v.optional(
-			v.array(
-				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
-			)
+		plan: v.optional(
+			v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise"))
 		),
-	}).index("by_user_id", ["userId"]),
+		dodoCustomerId: v.optional(v.string()),
+		dodoSubscriptionId: v.optional(v.string()),
+	})
+		.index("by_user_id", ["userId"])
+		.index("by_plan", ["plan"])
+		.index("by_dodo_subscription_id", ["dodoSubscriptionId"])
+		.index("by_dodo_customer_id", ["dodoCustomerId"]),
+
+	// Usage tracking - rolling monthly counts per workspace
+	usageStats: defineTable({
+		userId: v.id("users"),
+		workspaceId: v.id("workspaces"),
+		/** ISO calendar month string: "YYYY-MM" */
+		month: v.string(),
+		// AI feature counters
+		aiRequestCount: v.optional(v.number()),
+		aiDiagramCount: v.optional(v.number()),
+		aiSummaryCount: v.optional(v.number()),
+		// Collaboration feature counters
+		messageCount: v.optional(v.number()),
+		taskCount: v.optional(v.number()),
+		eventCount: v.optional(v.number()),
+		channelCount: v.optional(v.number()),
+		boardCount: v.optional(v.number()),
+		noteCount: v.optional(v.number()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_workspace_month", ["userId", "workspaceId", "month"])
+		.index("by_workspace_month", ["workspaceId", "month"])
+		.index("by_user_month", ["userId", "month"]),
 
 	members: defineTable({
 		userId: v.id("users"),
@@ -55,14 +83,27 @@ const schema = defineSchema({
 	channels: defineTable({
 		name: v.string(),
 		workspaceId: v.id("workspaces"),
-		enabledFeatures: v.optional(
-			v.array(
-				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
-			)
-		),
 		icon: v.optional(v.string()), // Store emoji as string
 		iconImage: v.optional(v.id("_storage")), // Store uploaded image
+		type: v.optional(v.union(v.literal("chat"), v.literal("board"))),
 	}).index("by_workspace_id", ["workspaceId"]),
+
+	projects: defineTable({
+		name: v.string(),
+		workspaceId: v.id("workspaces"),
+		boardChannelId: v.id("channels"),
+		connectedChannelId: v.optional(v.id("channels")),
+		createdBy: v.id("members"),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_workspace_id_board_channel_id", [
+			"workspaceId",
+			"boardChannelId",
+		])
+		.index("by_board_channel_id", ["boardChannelId"])
+		.index("by_connected_channel_id", ["connectedChannelId"]),
 
 	conversations: defineTable({
 		workspaceId: v.id("workspaces"),
@@ -102,9 +143,10 @@ const schema = defineSchema({
 		title: v.string(),
 		date: v.number(), // timestamp for the event date
 		time: v.optional(v.string()), // optional time string
-		messageId: v.id("messages"),
+		messageId: v.optional(v.id("messages")),
 		memberId: v.id("members"),
 		workspaceId: v.id("workspaces"),
+		taskId: v.optional(v.id("tasks")),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_date", ["date"])
@@ -144,25 +186,32 @@ const schema = defineSchema({
 
 	lists: defineTable({
 		channelId: v.id("channels"),
+		projectId: v.optional(v.id("projects")),
 		title: v.string(),
 		order: v.number(),
 	})
 		.index("by_channel_id", ["channelId"])
-		.index("by_channel_id_order", ["channelId", "order"]),
+		.index("by_channel_id_order", ["channelId", "order"])
+		.index("by_project_id", ["projectId"])
+		.index("by_project_id_order", ["projectId", "order"]),
 
 	// Linear-style statuses (replace lists in Kanban view)
 	statuses: defineTable({
 		channelId: v.id("channels"),
+		projectId: v.optional(v.id("projects")),
 		name: v.string(),
 		color: v.string(),
 		order: v.number(),
 	})
 		.index("by_channel_id", ["channelId"])
-		.index("by_channel_id_order", ["channelId", "order"]),
+		.index("by_channel_id_order", ["channelId", "order"])
+		.index("by_project_id", ["projectId"])
+		.index("by_project_id_order", ["projectId", "order"]),
 
 	// Linear-style issues (replace cards in Kanban view)
 	issues: defineTable({
 		channelId: v.id("channels"),
+		projectId: v.optional(v.id("projects")),
 		statusId: v.id("statuses"),
 		title: v.string(),
 		description: v.optional(v.string()),
@@ -185,19 +234,23 @@ const schema = defineSchema({
 		parentIssueId: v.optional(v.id("issues")),
 	})
 		.index("by_channel_id", ["channelId"])
+		.index("by_project_id", ["projectId"])
 		.index("by_status_id", ["statusId"])
 		.index("by_channel_id_status_id", ["channelId", "statusId"])
+		.index("by_project_id_status_id", ["projectId", "statusId"])
 		.index("by_parent_issue_id", ["parentIssueId"]),
 
 	// Issue blocking relationships (which issue blocks which)
 	issueBlocking: defineTable({
 		channelId: v.id("channels"),
+		projectId: v.optional(v.id("projects")),
 		blockedIssueId: v.id("issues"), // The issue that is blocked
 		blockingIssueId: v.id("issues"), // The issue that is blocking
 		createdAt: v.number(),
 		createdBy: v.id("members"),
 	})
 		.index("by_channel_id", ["channelId"])
+		.index("by_project_id", ["projectId"])
 		.index("by_blocked_issue_id", ["blockedIssueId"])
 		.index("by_blocking_issue_id", ["blockingIssueId"])
 		.index("by_channel_id_blocked_issue_id", ["channelId", "blockedIssueId"])
@@ -457,6 +510,9 @@ const schema = defineSchema({
 						assignee: v.optional(v.boolean()), // Default: true
 						threadReply: v.optional(v.boolean()), // Default: true
 						directMessage: v.optional(v.boolean()), // Default: true
+						inviteSent: v.optional(v.boolean()), // Default: true
+						onlineStatus: v.optional(v.boolean()), // Default: true
+						workspaceJoin: v.optional(v.boolean()), // Default: true
 						weeklyDigest: v.optional(v.boolean()), // Default: false
 						weeklyDigestDay: v.optional(
 							v.union(
@@ -469,9 +525,6 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
-						inviteSent: v.optional(v.boolean()), // Default: true - when invite link is sent
-						workspaceJoin: v.optional(v.boolean()), // Default: true - when someone joins workspace
-						onlineStatus: v.optional(v.boolean()), // Default: false - online/offline status changes
 					})
 				),
 			})
@@ -564,8 +617,7 @@ const schema = defineSchema({
 		userId: v.id("users"),
 		conversationId: v.string(),
 		lastMessageAt: v.number(),
-		/** When "agent", conversationId is an agent threadId; when "databaseChat" or omitted, it's database-chat. */
-		source: v.optional(v.union(v.literal("agent"), v.literal("databaseChat"))),
+		source: v.optional(v.string()),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
@@ -587,20 +639,10 @@ const schema = defineSchema({
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_member_id", ["memberId"])
-		.index("by_workspace_id_member_id", ["workspaceId", "memberId"])
-		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"]),
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"])
+		.index("by_workspace_id_member_id", ["workspaceId", "memberId"]),
 
-	/** Cache for semantic search results (5 min TTL) to reduce embedding/LLM cost. */
-	assistantSearchCache: defineTable({
-		workspaceId: v.id("workspaces"),
-		queryHash: v.string(),
-		result: v.any(),
-		expiresAt: v.number(),
-	})
-		.index("by_workspace_query", ["workspaceId", "queryHash"])
-		.index("by_expires_at", ["expiresAt"]),
-
-	/** Assistant request logs for monitoring: latency, outcome, error category. */
 	assistantRequestLogs: defineTable({
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
@@ -611,6 +653,8 @@ const schema = defineSchema({
 		errorCategory: v.optional(v.string()),
 		timestamp: v.number(),
 	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"])
 		.index("by_user_id_timestamp", ["userId", "timestamp"]),
 

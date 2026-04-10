@@ -72,6 +72,9 @@ export const TestNotesHeader = ({
 
 				{/* Right side - Actions */}
 				<div className="flex items-center gap-2">
+					<Button onClick={onToggleSidebar} size="sm" variant="ghost">
+						{sidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
+					</Button>
 					{selectedNote?.isShared && (
 						<Button size="sm" variant="ghost">
 							<Share className="h-4 w-4 mr-2" />

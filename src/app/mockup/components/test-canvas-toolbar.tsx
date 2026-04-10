@@ -118,9 +118,9 @@ export const TestCanvasToolbar = ({
 
 					<div className="space-y-3">
 						<div>
-							<label className="text-xs font-medium text-muted-foreground mb-2 block">
+							<div className="text-xs font-medium text-muted-foreground mb-2 block">
 								Background Color
-							</label>
+							</div>
 							<div className="grid grid-cols-6 gap-1">
 								{colors.map((color) => (
 									<button
@@ -133,15 +133,16 @@ export const TestCanvasToolbar = ({
 										key={color}
 										onClick={() => handleColorChange(color)}
 										style={{ backgroundColor: color }}
+										type="button"
 									/>
 								))}
 							</div>
 						</div>
 
 						<div>
-							<label className="text-xs font-medium text-muted-foreground mb-1 block">
+							<div className="text-xs font-medium text-muted-foreground mb-1 block">
 								Position
-							</label>
+							</div>
 							<div className="grid grid-cols-2 gap-2">
 								<div className="text-xs">
 									<span className="text-muted-foreground">X:</span>{" "}
@@ -155,9 +156,9 @@ export const TestCanvasToolbar = ({
 						</div>
 
 						<div>
-							<label className="text-xs font-medium text-muted-foreground mb-1 block">
+							<div className="text-xs font-medium text-muted-foreground mb-1 block">
 								Size
-							</label>
+							</div>
 							<div className="grid grid-cols-2 gap-2">
 								<div className="text-xs">
 									<span className="text-muted-foreground">W:</span>{" "}

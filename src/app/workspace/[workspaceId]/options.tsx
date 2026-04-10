@@ -1,6 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -202,11 +203,13 @@ export const ChannelItem = ({
 	const renderIcon = () => {
 		if (iconImageUrl && !imageLoadError) {
 			return (
-				<img
+				<Image
 					alt={`Channel icon for ${label}`}
-					className="h-full w-full object-cover rounded-full"
+					className="h-full w-full rounded-full object-cover"
+					height={28}
 					onError={() => setImageLoadError(true)}
 					src={iconImageUrl}
+					width={28}
 				/>
 			);
 		}
@@ -224,6 +227,86 @@ export const ChannelItem = ({
 		<Link
 			className="w-full"
 			href={`/workspace/${workspaceId}/channel/${id}/chats`}
+		>
+			<div
+				className={cn(
+					"group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2 md:py-2.5 text-sm font-medium transition-standard",
+					isActive
+						? "bg-secondary-foreground/20 text-secondary-foreground shadow-sm hover:bg-secondary-foreground/30"
+						: "text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1",
+					isCollapsed && "justify-center px-1 md:px-2"
+				)}
+			>
+				{isCollapsed ? (
+					<div className="relative flex-shrink-0">
+						<Hint align="center" label={label} side="right">
+							<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden">
+								{renderIcon()}
+							</div>
+						</Hint>
+					</div>
+				) : (
+					<>
+						<div className="flex h-6 md:h-7 w-6 md:w-7 items-center justify-center rounded-full bg-gray-100 transition-transform duration-200 group-hover:scale-110 overflow-hidden mr-2 md:mr-3 flex-shrink-0">
+							{renderIcon()}
+						</div>
+						<span className="truncate min-w-0">{label}</span>
+					</>
+				)}
+			</div>
+		</Link>
+	);
+};
+
+// ProjectItem Component
+interface ProjectItemProps {
+	id: Id<"projects">;
+	label: string;
+	icon?: string;
+	iconImageUrl?: string | null;
+	isActive?: boolean;
+	isCollapsed?: boolean;
+}
+
+export const ProjectItem = ({
+	id,
+	label,
+	icon,
+	iconImageUrl,
+	isActive = false,
+	isCollapsed = false,
+}: ProjectItemProps) => {
+	const workspaceId = useWorkspaceId();
+	const projectFallback = label.charAt(0).toLowerCase();
+	const [imageLoadError, setImageLoadError] = useState(false);
+
+	const renderIcon = () => {
+		if (iconImageUrl && !imageLoadError) {
+			return (
+				<Image
+					alt={`Project icon for ${label}`}
+					className="h-full w-full rounded-full object-cover"
+					height={28}
+					onError={() => setImageLoadError(true)}
+					src={iconImageUrl}
+					width={28}
+				/>
+			);
+		}
+		if (icon) {
+			return <span className="text-base">{icon}</span>;
+		}
+		return (
+			<span className="text-xs font-medium text-gray-600">
+				{projectFallback}
+			</span>
+		);
+	};
+
+	return (
+		<Link
+			className="w-full"
+			href={`/workspace/${workspaceId}/project/${id}/board`}
 		>
 			<div
 				className={cn(

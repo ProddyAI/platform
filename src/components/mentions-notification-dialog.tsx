@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import {
 	AlertTriangle,
@@ -17,7 +18,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -60,6 +62,20 @@ export const MentionsNotificationDialog = ({
 	const markAllDirectMessagesAsReadMutation = useMarkAllDirectMessagesAsRead();
 	const [activeTab, setActiveTab] = useState("all");
 	const { isAdBlockerActive } = useAdBlockerDetectionContext();
+	const projects = useQuery(
+		api.projects.get,
+		workspaceId ? { workspaceId } : "skip"
+	);
+
+	const projectIdByBoardChannelId = useMemo(() => {
+		const mapping = new Map<Id<"channels">, Id<"projects">>();
+
+		for (const project of projects || []) {
+			mapping.set(project.boardChannelId, project._id);
+		}
+
+		return mapping;
+	}, [projects]);
 
 	// Combine mentions and direct messages
 	const allNotifications = [
@@ -133,9 +149,17 @@ export const MentionsNotificationDialog = ({
 				return `/workspace/${workspaceId}/member/${mention.source.id}`;
 			case "thread":
 				return `/workspace/${workspaceId}/channel/${mention.source.id}`;
-			case "card":
-				// For cards, we link to the channel's board page
-				return `/workspace/${workspaceId}/channel/${mention.source.id}/board`;
+			case "card": {
+				// Prefer project board route when the board channel has a project mapping.
+				const projectId = projectIdByBoardChannelId.get(
+					mention.source.id as Id<"channels">
+				);
+				if (projectId) {
+					return `/workspace/${workspaceId}/project/${projectId}/board`;
+				}
+
+				return `/workspace/${workspaceId}/issues`;
+			}
 			default:
 				return `/workspace/${workspaceId}`;
 		}

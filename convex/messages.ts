@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, type QueryCtx, query } from "./_generated/server";
 
@@ -317,12 +317,45 @@ export const create = mutation({
 			tags: args.tags,
 		});
 
+		// Track message usage
+		await ctx.scheduler.runAfter(
+			0,
+			internal.usageTracking.recordMessageCreated,
+			{
+				userId,
+				workspaceId: args.workspaceId,
+			}
+		);
+
 		// If this is a reply to a thread, send an email notification
 		if (args.parentMessageId) {
 			await ctx.scheduler.runAfter(0, api.email.sendThreadReplyEmail, {
 				messageId,
 				parentMessageId: args.parentMessageId,
 			});
+
+			const parentMessage = await ctx.db.get(args.parentMessageId);
+			if (parentMessage) {
+				const parentAuthor = await ctx.db.get(parentMessage.memberId);
+				if (parentAuthor?.userId && parentAuthor.userId !== userId) {
+					await ctx.scheduler.runAfter(
+						0,
+						internal.notifications.sendPushNotification,
+						{
+							userIds: [parentAuthor.userId],
+							title: "New thread reply",
+							message: "Someone replied to your thread",
+							notificationType: "threadReply",
+							data: {
+								workspaceId: args.workspaceId,
+								messageId,
+								parentMessageId: args.parentMessageId,
+								type: "thread_reply",
+							},
+						}
+					);
+				}
+			}
 		}
 
 		// If this is a direct message, send an email notification
@@ -330,6 +363,33 @@ export const create = mutation({
 			await ctx.scheduler.runAfter(0, api.email.sendDirectMessageEmail, {
 				messageId,
 			});
+
+			const conversation = await ctx.db.get(args.conversationId);
+			if (conversation) {
+				const recipientMemberId =
+					conversation.memberOneId === member._id
+						? conversation.memberTwoId
+						: conversation.memberOneId;
+				const recipientMember = await ctx.db.get(recipientMemberId);
+				if (recipientMember?.userId && recipientMember.userId !== userId) {
+					await ctx.scheduler.runAfter(
+						0,
+						internal.notifications.sendPushNotification,
+						{
+							userIds: [recipientMember.userId],
+							title: "New direct message",
+							message: "You received a direct message",
+							notificationType: "directMessage",
+							data: {
+								workspaceId: args.workspaceId,
+								messageId,
+								conversationId: args.conversationId,
+								type: "direct_message",
+							},
+						}
+					);
+				}
+			}
 		}
 
 		// Process mentions in the message (skip for direct messages)
@@ -371,12 +431,13 @@ export const create = mutation({
 
 			// Check for data-member-id attributes in HTML
 			const memberIdRegex = /data-member-id="([^"]+)"/g;
-			let match;
-			while ((match = memberIdRegex.exec(args.body)) !== null) {
+			let match: RegExpExecArray | null = memberIdRegex.exec(args.body);
+			while (match !== null) {
 				const memberId = match[1] as Id<"members">;
 				if (memberMap.has(memberId)) {
 					mentionedMemberIds.add(memberId);
 				}
+				match = memberIdRegex.exec(args.body);
 			}
 
 			// Check for @username mentions in text or Quill Delta format
@@ -388,12 +449,13 @@ export const create = mutation({
 						if (op.insert && typeof op.insert === "string") {
 							// Check for data-member-id in HTML
 							const memberIdRegex = /data-member-id="([^"]+)"/g;
-							let match;
-							while ((match = memberIdRegex.exec(op.insert)) !== null) {
+							let match: RegExpExecArray | null = memberIdRegex.exec(op.insert);
+							while (match !== null) {
 								const memberId = match[1] as Id<"members">;
 								if (memberMap.has(memberId)) {
 									mentionedMemberIds.add(memberId);
 								}
+								match = memberIdRegex.exec(op.insert);
 							}
 
 							// Check for @username mentions
@@ -437,6 +499,26 @@ export const create = mutation({
 				await ctx.scheduler.runAfter(0, api.email.sendMentionEmail, {
 					mentionId,
 				});
+
+				const mentionedMember = memberMap.get(mentionedMemberId);
+				if (mentionedMember?.userId && mentionedMember.userId !== userId) {
+					await ctx.scheduler.runAfter(
+						0,
+						internal.notifications.sendPushNotification,
+						{
+							userIds: [mentionedMember.userId],
+							title: "You were mentioned",
+							message: "Someone mentioned you in a message",
+							notificationType: "mentions",
+							data: {
+								workspaceId: args.workspaceId,
+								messageId,
+								mentionId,
+								type: "mention",
+							},
+						}
+					);
+				}
 			}
 		} catch (_error) {
 			// Don't throw the error, as we still want to return the message ID
@@ -586,7 +668,9 @@ export const getUserMessages = query({
 
 		// Get all members and users in one go
 		const memberIds = new Set<Id<"members">>();
-		messages.forEach((message) => memberIds.add(message.memberId));
+		messages.forEach((message) => {
+			memberIds.add(message.memberId);
+		});
 		conversations.forEach((conversation) => {
 			memberIds.add(conversation.memberOneId);
 			memberIds.add(conversation.memberTwoId);
@@ -763,7 +847,9 @@ export const getThreadMessages = query({
 
 		// Get all members and users in one go
 		const memberIds = new Set<Id<"members">>();
-		threadMessages.forEach((message) => memberIds.add(message.memberId));
+		threadMessages.forEach((message) => {
+			memberIds.add(message.memberId);
+		});
 		parentMessages.forEach((message) => {
 			if (message?.memberId) memberIds.add(message.memberId);
 		});
@@ -1063,14 +1149,12 @@ export const getMentionedMessages = query({
 							return acc;
 						}
 
-						return [
-							...acc,
-							{
-								...reaction,
-								count: 1,
-								memberIds: [reaction.memberId],
-							},
-						];
+						acc.push({
+							...reaction,
+							count: 1,
+							memberIds: [reaction.memberId],
+						});
+						return acc;
 					},
 					[] as Array<
 						Omit<Doc<"reactions">, "memberId"> & {

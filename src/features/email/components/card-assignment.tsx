@@ -54,7 +54,7 @@ export const CardAssignmentTemplate: React.FC<
 					<Img
 						alt="Proddy"
 						height="40"
-						src="https://proddy.tech/logo-nobg.png"
+						src={process.env.NEXT_PUBLIC_LOGO_URL!}
 						style={logo}
 						width="40"
 					/>

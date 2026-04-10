@@ -77,6 +77,9 @@ interface BoardKanbanViewProps {
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
 	onLinkageDiagramClick?: () => void;
+	onConnectChannelClick?: () => void;
+	isProjectChannelConnected?: boolean;
+	connectedChannelName?: string;
 	disableIssueDrag?: boolean;
 	focusedStatusId?: Id<"statuses"> | null;
 }
@@ -106,6 +109,9 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	onReorderStatusesPersist,
 	onSearchClick,
 	onLinkageDiagramClick,
+	onConnectChannelClick,
+	isProjectChannelConnected,
+	connectedChannelName,
 	showHeader = false,
 	statusCount = 0,
 	totalIssues = 0,
@@ -294,6 +300,9 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
 						onAddStatus={onAddStatus}
+						connectedChannelName={connectedChannelName}
+						isProjectChannelConnected={isProjectChannelConnected}
+						onConnectChannelClick={onConnectChannelClick}
 						onLinkageDiagramClick={onLinkageDiagramClick}
 						onSearchClick={onSearchClick}
 						setView={setView}

@@ -1,9 +1,8 @@
 "use client";
 
-import { FileText, LayoutGrid, MessageSquare, PaintBucket } from "lucide-react";
+import { LayoutGrid, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useGetChannel } from "@/features/channels/api/use-get-channel";
 
 // Removed Tabs import to use simpler navigation
 // import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,10 +14,6 @@ const Topbar = () => {
 	const pathname = usePathname();
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
-	const { data: channel } = useGetChannel({ id: channelId });
-	const enabledFeatures = new Set(
-		(channel?.enabledFeatures ?? []) as Array<"canvas" | "notes" | "boards">
-	);
 
 	const tabs = [
 		{
@@ -27,36 +22,12 @@ const Topbar = () => {
 			href: `/workspace/${workspaceId}/channel/${channelId}/chats`,
 			active: pathname.includes(`/channel/${channelId}/chats`),
 		},
-		...(enabledFeatures.has("canvas")
-			? [
-					{
-						label: "Canvas",
-						icon: PaintBucket,
-						href: `/workspace/${workspaceId}/channel/${channelId}/canvas`,
-						active: pathname.includes(`/channel/${channelId}/canvas`),
-					},
-				]
-			: []),
-		...(enabledFeatures.has("notes")
-			? [
-					{
-						label: "Notes",
-						icon: FileText,
-						href: `/workspace/${workspaceId}/channel/${channelId}/notes`,
-						active: pathname.includes(`/channel/${channelId}/notes`),
-					},
-				]
-			: []),
-		...(enabledFeatures.has("boards")
-			? [
-					{
-						label: "Boards",
-						icon: LayoutGrid,
-						href: `/workspace/${workspaceId}/channel/${channelId}/board`,
-						active: pathname.includes(`/channel/${channelId}/board`),
-					},
-				]
-			: []),
+		{
+			label: "Boards",
+			icon: LayoutGrid,
+			href: `/workspace/${workspaceId}/channel/${channelId}/board`,
+			active: pathname.includes(`/channel/${channelId}/board`),
+		},
 	];
 
 	return (

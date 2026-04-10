@@ -330,7 +330,7 @@ export const getConnectedAccountsPublic = query({
 			// Return only this member's connected accounts
 			const connectedAccounts = await ctx.db
 				.query("connected_accounts")
-				.withIndex("by_member_id", (q) => q.eq("memberId", args.memberId!))
+				.withIndex("by_member_id", (q) => q.eq("memberId", args.memberId))
 				.collect();
 			return connectedAccounts;
 		} else {

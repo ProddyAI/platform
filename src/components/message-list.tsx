@@ -111,6 +111,7 @@ export const MessageList = ({
 					messages: formattedMessages,
 					date: dateKey,
 					channelName,
+					workspaceId,
 				}),
 			});
 

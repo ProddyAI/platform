@@ -239,7 +239,7 @@ export const getJoinCodeForVerification = action({
 		const user = await ctx.runQuery(internal.workspaceInvites.getUserById, {
 			userId,
 		});
-		if (!user || !user.email) {
+		if (!user?.email) {
 			throw new Error("Unauthorized. User email not found.");
 		}
 
@@ -303,6 +303,34 @@ export const consumeInvite = mutation({
 			userId: userId,
 			role: "member",
 		});
+
+		const workspaceMembers = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", invite.workspaceId)
+			)
+			.collect();
+		const recipientUserIds = workspaceMembers
+			.map((m) => m.userId)
+			.filter((memberUserId) => memberUserId !== userId);
+
+		if (recipientUserIds.length > 0) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.notifications.sendPushNotification,
+				{
+					userIds: recipientUserIds,
+					title: "New workspace member",
+					message: "Someone joined your workspace",
+					notificationType: "workspaceJoin",
+					data: {
+						workspaceId: invite.workspaceId,
+						userId,
+						type: "workspace_join",
+					},
+				}
+			);
+		}
 
 		return { success: true };
 	},

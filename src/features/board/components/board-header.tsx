@@ -1,4 +1,4 @@
-import { GanttChart, LayoutGrid, Network, Plus, Search } from "lucide-react";
+import { GanttChart, LayoutGrid, Link2, Network, Plus, Search } from "lucide-react";
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,9 @@ interface BoardHeaderProps {
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
 	onLinkageDiagramClick?: () => void;
+	onConnectChannelClick?: () => void;
+	isProjectChannelConnected?: boolean;
+	connectedChannelName?: string;
 }
 
 interface StatusStatsProps {
@@ -132,6 +135,38 @@ const LinkageDiagramButton = ({ onClick }: LinkageDiagramButtonProps) => (
 	</Button>
 );
 
+interface ConnectChannelButtonProps {
+	onClick?: () => void;
+	isConnected?: boolean;
+	channelName?: string;
+}
+
+const ConnectChannelButton = ({
+	onClick,
+	isConnected = false,
+	channelName,
+}: ConnectChannelButtonProps) => (
+	<Button
+		aria-label="Connect project channel"
+		className={cn(
+			"h-8 w-8 p-0 flex-shrink-0 transition-colors",
+			isConnected
+				? "text-emerald-500 hover:bg-emerald-500/10"
+				: "hover:bg-white/15"
+		)}
+		onClick={onClick}
+		size="icon"
+		title={
+			isConnected && channelName
+				? `Connected to #${channelName}. Update connection`
+				: "Connect status updates channel"
+		}
+		variant="ghost"
+	>
+		<Link2 className="w-4 h-4" />
+	</Button>
+);
+
 const BoardHeader: React.FC<BoardHeaderProps> = ({
 	totalIssues,
 	statusCount,
@@ -140,6 +175,9 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 	onAddStatus,
 	onSearchClick,
 	onLinkageDiagramClick,
+	onConnectChannelClick,
+	isProjectChannelConnected,
+	connectedChannelName,
 }) => {
 	return (
 		<div className="flex w-full min-w-0 max-w-full items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60 dark:border-gray-800 bg-background dark:bg-gray-950 overflow-x-hidden">
@@ -148,6 +186,13 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 			<div className="flex items-center gap-2">
 				<SearchButton onClick={onSearchClick} />
 				<LinkageDiagramButton onClick={onLinkageDiagramClick} />
+				{onConnectChannelClick && (
+					<ConnectChannelButton
+						channelName={connectedChannelName}
+						isConnected={isProjectChannelConnected}
+						onClick={onConnectChannelClick}
+					/>
+				)}
 
 				{view === "kanban" && <AddStatusButton onClick={onAddStatus} />}
 

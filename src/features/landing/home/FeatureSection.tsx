@@ -67,6 +67,7 @@ export const FeatureSection = () => {
 									)}
 									key={feature.id}
 									onMouseEnter={() => setActiveTab(feature.id)}
+									type="button"
 								>
 									<div
 										className={cn("p-2 rounded-lg text-white", feature.color)}

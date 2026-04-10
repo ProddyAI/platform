@@ -62,7 +62,7 @@ export const WeeklyDigestTemplate: React.FC<
 					<Img
 						alt="Proddy"
 						height="40"
-						src="https://proddy.tech/logo-nobg.png"
+						src={process.env.NEXT_PUBLIC_LOGO_URL!}
 						style={logo}
 						width="40"
 					/>
@@ -171,8 +171,11 @@ export const WeeklyDigestTemplate: React.FC<
 								preferences in your account settings.
 							</Text>
 							<Text style={footerText}>
-								<Link href="https://proddy.tech" style={link}>
-									Visit Proddy
+								<Link
+									href={process.env.NEXT_PUBLIC_APP_URL + "/workspace"}
+									style={link}
+								>
+									Visit Proddy Dashboard
 								</Link>
 								{" • "}
 								<Link href={unsubscribeUrl} style={link}>

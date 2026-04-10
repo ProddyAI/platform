@@ -20,8 +20,7 @@ export const LiveParticipants = ({
 	className,
 }: LiveParticipantsProps) => {
 	// Fetch real participants from the database
-	const { participants, currentParticipant, participantCount, isLoading } =
-		useChannelParticipants();
+	const { participants, isLoading } = useChannelParticipants();
 
 	// If still loading, show nothing
 	if (isLoading) return null;
@@ -31,7 +30,11 @@ export const LiveParticipants = ({
 	// Use canvas-style display for both variants when inside LiveHeader
 	// This ensures consistent appearance.
 	return (
-		<div className={`flex items-center gap-2 ${className}`}>
+		<div
+			className={`flex items-center gap-2 ${className}`}
+			data-fullscreen={isFullScreen}
+			data-variant={variant}
+		>
 			{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
 				const backgroundColor = generateUserColor(
 					user.userId || user.info.name || "User"

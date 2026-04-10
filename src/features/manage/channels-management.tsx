@@ -10,6 +10,7 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
+import Image from "next/image";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
@@ -36,7 +37,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import {
 	Table,
 	TableBody,
@@ -50,26 +50,6 @@ import { useRemoveChannel } from "@/features/channels/api/use-remove-channel";
 import { useUpdateChannel } from "@/features/channels/api/use-update-channel";
 import { useCreateChannelModal } from "@/features/channels/store/use-create-channel-modal";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
-
-const FEATURE_OPTIONS = [
-	{
-		id: "canvas",
-		label: "Canvas",
-		description: "Show the Canvas tab in this channel.",
-	},
-	{
-		id: "notes",
-		label: "Notes",
-		description: "Show the Notes tab in this channel.",
-	},
-	{
-		id: "boards",
-		label: "Boards",
-		description: "Show the Boards tab in this channel.",
-	},
-] as const;
-
-type FeatureKey = (typeof FEATURE_OPTIONS)[number]["id"];
 
 interface ChannelsManagementProps {
 	workspaceId: Id<"workspaces">;
@@ -90,9 +70,6 @@ export const ChannelsManagement = ({
 	const [editChannelIconPreview, setEditChannelIconPreview] = useState<
 		string | undefined
 	>(undefined);
-	const [editEnabledFeatures, setEditEnabledFeatures] = useState<FeatureKey[]>(
-		[]
-	);
 	const [editChannelId, setEditChannelId] = useState<Id<"channels"> | null>(
 		null
 	);
@@ -278,14 +255,6 @@ export const ChannelsManagement = ({
 		}
 	};
 
-	const toggleEditFeature = (feature: FeatureKey) => {
-		setEditEnabledFeatures((prev) =>
-			prev.includes(feature)
-				? prev.filter((item) => item !== feature)
-				: [...prev, feature]
-		);
-	};
-
 	const handleUpdateChannel = async () => {
 		if (!editChannelId) return;
 
@@ -302,7 +271,6 @@ export const ChannelsManagement = ({
 				name: editChannelName,
 				icon: editChannelIcon,
 				iconImage: editChannelIconImage,
-				enabledFeatures: editEnabledFeatures,
 			});
 
 			toast.success("Channel updated");
@@ -310,7 +278,6 @@ export const ChannelsManagement = ({
 			setEditChannelIcon(undefined);
 			setEditChannelIconImage(undefined);
 			setEditChannelIconPreview(undefined);
-			setEditEnabledFeatures([]);
 			setEditChannelId(null);
 			setEditDialogOpen(false);
 		} catch (error) {
@@ -413,7 +380,6 @@ export const ChannelsManagement = ({
 		setEditChannelIcon(channel.icon);
 		setEditChannelIconImage(channel.iconImage);
 		setEditChannelIconPreview(channel.iconImageUrl || undefined);
-		setEditEnabledFeatures((channel.enabledFeatures ?? []) as FeatureKey[]);
 		setEditDialogOpen(true);
 	};
 
@@ -525,18 +491,31 @@ export const ChannelsManagement = ({
 										ref={editImageInputRef}
 										type="file"
 									/>
+
 									<div
 										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 										onClick={() =>
 											!isUploadingEdit && editImageInputRef.current?.click()
 										}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												if (!isUploadingEdit) {
+													editImageInputRef.current?.click();
+												}
+											}
+										}}
+										role="button"
+										tabIndex={0}
 									>
 										{editChannelIconPreview || editChannelIcon ? (
 											<>
 												{editChannelIconPreview ? (
-													<img
+													<Image
 														alt="Icon preview"
-														className="h-full w-full object-cover"
+														className="object-cover"
+														fill
+														sizes="80px"
 														src={editChannelIconPreview}
 													/>
 												) : (
@@ -556,6 +535,7 @@ export const ChannelsManagement = ({
 															setEditChannelIcon(undefined);
 														}
 													}}
+													type="button"
 												>
 													<X className="h-3.5 w-3.5" />
 												</button>
@@ -602,41 +582,6 @@ export const ChannelsManagement = ({
 										Max 5MB for images
 									</p>
 								</div>
-							</div>
-						</div>
-
-						<div className="space-y-3">
-							<div>
-								<Label className="text-sm font-medium">Channel Features</Label>
-								<p className="text-xs text-muted-foreground">
-									Show or hide optional tabs for this channel.
-								</p>
-							</div>
-							<div className="space-y-3">
-								{FEATURE_OPTIONS.map((feature) => {
-									const isEnabled = editEnabledFeatures.includes(feature.id);
-
-									return (
-										<div
-											className="flex items-center justify-between gap-4 rounded-lg border border-border/70 p-3"
-											key={feature.id}
-										>
-											<div>
-												<div className="text-sm font-medium">
-													{feature.label}
-												</div>
-												<p className="text-xs text-muted-foreground">
-													{feature.description}
-												</p>
-											</div>
-											<Switch
-												checked={isEnabled}
-												disabled={isUpdating}
-												onCheckedChange={() => toggleEditFeature(feature.id)}
-											/>
-										</div>
-									);
-								})}
 							</div>
 						</div>
 					</div>

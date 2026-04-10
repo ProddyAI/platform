@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-
 import { mutation, query } from "./_generated/server";
 
 // Helper query to get a channel by ID (for internal use)
@@ -44,7 +44,34 @@ export const remove = mutation({
 				.collect(),
 		]);
 
+		const projectsAsBoardChannel = await ctx.db
+			.query("projects")
+			.withIndex("by_board_channel_id", (q) => q.eq("boardChannelId", args.id))
+			.collect();
+
+		const projectsAsConnectedChannel = await ctx.db
+			.query("projects")
+			.withIndex("by_connected_channel_id", (q) =>
+				q.eq("connectedChannelId", args.id)
+			)
+			.collect();
+
 		for (const message of messages) await ctx.db.delete(message._id);
+
+		for (const project of projectsAsConnectedChannel) {
+			if (project.boardChannelId === args.id) {
+				continue;
+			}
+
+			await ctx.db.patch(project._id, {
+				connectedChannelId: undefined,
+				updatedAt: Date.now(),
+			});
+		}
+
+		for (const project of projectsAsBoardChannel) {
+			await ctx.db.delete(project._id);
+		}
 
 		await ctx.db.delete(args.id);
 
@@ -58,11 +85,6 @@ export const update = mutation({
 		name: v.string(),
 		icon: v.optional(v.string()),
 		iconImage: v.optional(v.union(v.id("_storage"), v.null())),
-		enabledFeatures: v.optional(
-			v.array(
-				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
-			)
-		),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -99,7 +121,6 @@ export const update = mutation({
 			name: string;
 			icon?: string;
 			iconImage?: Id<"_storage">;
-			enabledFeatures?: typeof args.enabledFeatures;
 		} = {
 			name: parsedName,
 		};
@@ -110,10 +131,6 @@ export const update = mutation({
 
 		if ("iconImage" in args) {
 			updateData.iconImage = args.iconImage ?? undefined;
-		}
-
-		if (args.enabledFeatures !== undefined) {
-			updateData.enabledFeatures = args.enabledFeatures;
 		}
 
 		await ctx.db.patch(args.id, updateData);
@@ -128,11 +145,6 @@ export const create = mutation({
 		workspaceId: v.id("workspaces"),
 		icon: v.optional(v.string()),
 		iconImage: v.optional(v.id("_storage")),
-		enabledFeatures: v.optional(
-			v.array(
-				v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
-			)
-		),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -161,13 +173,20 @@ export const create = mutation({
 		const channelId = await ctx.db.insert("channels", {
 			name: parsedName,
 			workspaceId: args.workspaceId,
-			enabledFeatures: (args.enabledFeatures ??
-				workspace.enabledFeatures ?? ["canvas", "notes", "boards"]) as Array<
-				"canvas" | "notes" | "boards"
-			>,
 			icon: args.icon,
 			iconImage: args.iconImage,
+			type: "chat",
 		});
+
+		// Track channel usage
+		await ctx.scheduler.runAfter(
+			0,
+			internal.usageTracking.recordChannelCreated,
+			{
+				userId,
+				workspaceId: args.workspaceId,
+			}
+		);
 
 		return channelId;
 	},
@@ -209,17 +228,19 @@ export const getById = query({
 
 export const get = query({
 	args: {
-		workspaceId: v.id("workspaces"),
+		workspaceId: v.optional(v.id("workspaces")),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) return [];
+		if (!args.workspaceId) return [];
+		const workspaceId = args.workspaceId;
 
 		const member = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+				q.eq("workspaceId", workspaceId).eq("userId", userId)
 			)
 			.unique();
 
@@ -228,7 +249,7 @@ export const get = query({
 		const channels = await ctx.db
 			.query("channels")
 			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+				q.eq("workspaceId", workspaceId)
 			)
 			.collect();
 

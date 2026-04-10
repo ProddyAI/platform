@@ -137,7 +137,9 @@ export const getCalendarEvents = query({
 			.collect();
 
 		// Get all messages with calendar events
-		const messageIds = events.map((event) => event.messageId);
+		const messageIds = events
+			.map((event) => event.messageId)
+			.filter((id): id is Id<"messages"> => Boolean(id));
 		const messages = await Promise.all(
 			messageIds.map(async (messageId) => {
 				const message = await ctx.db.get(messageId);

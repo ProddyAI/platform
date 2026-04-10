@@ -8,7 +8,6 @@ type RequestType = {
 	workspaceId: Id<"workspaces">;
 	icon?: string;
 	iconImage?: Id<"_storage">;
-	enabledFeatures?: Array<"canvas" | "notes" | "boards">;
 };
 type ResponseType = Id<"channels"> | null;
 

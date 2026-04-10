@@ -1,13 +1,8 @@
 import { ConvexHttpClient } from "convex/browser";
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { z } from "zod";
 import { api } from "@/../convex/_generated/api";
-import { OTPVerificationMail } from "@/features/email/components/otp-verification-mail";
-import { getEmailConfig } from "@/lib/email-config";
 import { logger } from "@/lib/logger";
-
-let resend: Resend | null = null;
 
 const createConvexClient = () => {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
@@ -16,15 +11,69 @@ const createConvexClient = () => {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 };
 
-const getResend = () => {
-	if (!resend) {
-		const resendApiKey = process.env.RESEND_API_KEY;
-		if (!resendApiKey) {
-			throw new Error("RESEND_API_KEY environment variable is required");
-		}
-		resend = new Resend(resendApiKey);
+const getErrorMessage = (error: unknown) => {
+	if (error instanceof Error && error.message.trim()) {
+		return error.message;
 	}
-	return resend;
+
+	if (typeof error === "string" && error.trim()) {
+		return error;
+	}
+
+	if (error && typeof error === "object") {
+		const maybeMessage = Reflect.get(error, "message");
+
+		if (typeof maybeMessage === "string" && maybeMessage.trim()) {
+			return maybeMessage;
+		}
+
+		const maybeCause = Reflect.get(error, "cause");
+		if (typeof maybeCause === "string" && maybeCause.trim()) {
+			return maybeCause;
+		}
+
+		try {
+			const serialized = JSON.stringify(error);
+			if (serialized && serialized !== "{}") {
+				return serialized;
+			}
+		} catch {
+			// Fall through to own-property extraction.
+		}
+
+		try {
+			const ownProps = Object.getOwnPropertyNames(error);
+			if (ownProps.length > 0) {
+				const extracted = Object.fromEntries(
+					ownProps.map((prop) => [prop, Reflect.get(error, prop)])
+				);
+				const serialized = JSON.stringify(extracted);
+				if (serialized && serialized !== "{}") {
+					return serialized;
+				}
+			}
+		} catch {
+			// Ignore and return generic fallback below.
+		}
+	}
+
+	return "Unknown error";
+};
+
+const sendOtpWithLegacyAction = async (
+	convex: ConvexHttpClient,
+	email: string
+) => {
+	const legacyResult = await convex.action(
+		api.emailVerification.generateAndSendOTP,
+		{
+			email,
+		}
+	);
+
+	if (!legacyResult.success) {
+		throw new Error("Failed to generate OTP");
+	}
 };
 
 export async function POST(req: Request) {
@@ -45,50 +94,23 @@ export async function POST(req: Request) {
 			);
 		}
 
+		const normalizedEmail = email.toLowerCase().trim();
+
 		const convex = createConvexClient();
-		const resendClient = getResend();
-
-		// Generate OTP in Convex (secure - OTP only returned internally)
-		const result = await convex.action(
-			api.emailVerification.generateOTPForEmail,
-			{
-				email: email.toLowerCase(),
-			}
-		);
-
-		if (!result.success || !result.otp) {
-			return NextResponse.json(
-				{ error: "Failed to generate OTP" },
-				{ status: 500 }
-			);
-		}
-
-		// Send email using React Email template
-		const emailTemplate = OTPVerificationMail({
-			email: email.toLowerCase(),
-			otp: result.otp,
-		});
-
-		const { fromAddress, replyToAddress } = getEmailConfig();
-
-		await resendClient.emails.send({
-			from: fromAddress,
-			to: email.toLowerCase(),
-			subject: "Verify your email - Proddy",
-			react: emailTemplate,
-			replyTo: replyToAddress,
-		});
+		await sendOtpWithLegacyAction(convex, normalizedEmail);
 
 		return NextResponse.json({ success: true });
 	} catch (err) {
 		// Log error without sensitive information
+		const errorMessage = getErrorMessage(err);
+
 		logger.error("OTP send failed", {
-			error: err instanceof Error ? err.message : "Unknown error",
+			error: errorMessage,
 		});
 
 		// Handle specific error messages
 		if (err instanceof Error) {
-			const message = err.message || "Failed to send OTP";
+			const message = err.message.trim() || errorMessage;
 			const lowerMessage = message.toLowerCase();
 
 			// Map rate limiting errors to 429 Too Many Requests
@@ -103,6 +125,6 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: message }, { status: 500 });
 		}
 
-		return NextResponse.json({ error: "Failed to send OTP" }, { status: 500 });
+		return NextResponse.json({ error: errorMessage }, { status: 500 });
 	}
 }

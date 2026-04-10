@@ -185,6 +185,7 @@ export const LineChart = ({
 					preserveAspectRatio="xMidYMid meet"
 					viewBox="0 0 100 100"
 				>
+					<title>Line chart</title>
 					{/* Grid lines */}
 					{showGrid && (
 						<>
@@ -233,6 +234,7 @@ export const LineChart = ({
 							return (
 								<g key={point.index}>
 									<circle
+										aria-disabled={!onPointClick}
 										className={cn(
 											"stroke-white transition-all duration-200",
 											isHovered ? "stroke-[3.5]" : "stroke-[2.5]",
@@ -242,14 +244,24 @@ export const LineChart = ({
 										cx={point.x}
 										cy={point.y}
 										data-point-index={point.index}
-										onClick={() =>
-											onPointClick?.(point.label, point.value, point.index)
+										onClick={
+											onPointClick
+												? () =>
+														onPointClick(point.label, point.value, point.index)
+												: undefined
 										}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												onPointClick?.(point.label, point.value, point.index);
+											}
+										}}
 										onMouseEnter={() => setHoveredIndex(point.index)}
 										onMouseLeave={() => setHoveredIndex(null)}
 										r={isHovered ? "3" : "2"}
+										role="button"
+										tabIndex={0}
 									/>
-
 									{isHovered && (
 										<line
 											className="stroke-secondary/30 stroke-[0.5] stroke-dashed pointer-events-none"
@@ -280,21 +292,23 @@ export const LineChart = ({
 
 			{/* X-axis labels */}
 			{showLabels && (
-				<div className="flex justify-between mt-2 flex-shrink-0 px-4">
+				<ul className="flex justify-between mt-2 flex-shrink-0 px-4">
 					{data.map((item, index) => (
-						<div
+						<li
 							className={cn(
 								"text-xs text-muted-foreground px-1 text-center",
 								hoveredIndex === index && "font-medium text-foreground"
 							)}
 							key={item.label}
+							onBlur={() => setHoveredIndex(null)}
+							onFocus={() => setHoveredIndex(index)}
 							onMouseEnter={() => setHoveredIndex(index)}
 							onMouseLeave={() => setHoveredIndex(null)}
 						>
 							{item.label}
-						</div>
+						</li>
 					))}
-				</div>
+				</ul>
 			)}
 		</div>
 	);

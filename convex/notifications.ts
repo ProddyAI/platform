@@ -43,31 +43,37 @@ export const sendPushNotification = internalAction({
 
 		try {
 			// Send notification via OneSignal REST API
-			const response = await fetch(
-				"https://onesignal.com/api/v1/notifications",
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Basic ${oneSignalApiKey}`,
+			const response = await fetch("https://api.onesignal.com/notifications", {
+				method: "POST",
+				headers: {
+					authorization: `Key ${oneSignalApiKey}`,
+					"content-type": "application/json; charset=utf-8",
+				},
+				body: JSON.stringify({
+					app_id: oneSignalAppId,
+					include_aliases: {
+						external_id: filteredUserIds,
 					},
-					body: JSON.stringify({
-						app_id: oneSignalAppId,
-						include_aliases: {
-							external_id: filteredUserIds,
-						},
-						target_channel: "push",
-						headings: { en: args.title },
-						contents: { en: args.message },
-						data: args.data || {},
-					}),
-				}
-			);
+					target_channel: "push",
+					headings: { en: args.title },
+					contents: { en: args.message },
+					data: args.data || {},
+				}),
+			});
 
-			const result = await response.json();
+			const responseText = await response.text();
+			let result: Record<string, any> = {};
+			try {
+				result = responseText ? JSON.parse(responseText) : {};
+			} catch {
+				result = { raw: responseText };
+			}
 
 			if (!response.ok) {
-				console.error(`OneSignal error: status ${response.status}`);
+				console.error("OneSignal push request failed", {
+					status: response.status,
+					result,
+				});
 				return {
 					success: false,
 					status: response.status,
@@ -75,11 +81,20 @@ export const sendPushNotification = internalAction({
 				};
 			}
 
+			const recipients = Number(
+				result.recipients ?? result.recipients_count ?? 0
+			);
+			if (recipients === 0) {
+				console.warn("OneSignal accepted request but sent to 0 recipients", {
+					result,
+				});
+			}
+
 			// Sanitize response: only expose safe summary fields
 			return {
 				success: true,
 				id: result.id,
-				recipients: result.recipients || result.recipients_count || 0,
+				recipients,
 			};
 		} catch (_error) {
 			console.error("Push notification failed");
@@ -245,6 +260,7 @@ export const notifyStatusChange = mutation({
 
 		if (userIds.length === 0) return;
 
+		// eslint-disable-next-line no-warning-comments
 		// TODO: Add preference and interaction filtering to reduce notification noise
 		const statusMessage =
 			args.newStatus === "online" ? "is now online" : "is now offline";

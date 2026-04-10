@@ -264,7 +264,9 @@ export const getActiveUsersCount = query({
 				)
 			)
 			.collect();
-		messages.forEach((message) => activeUserIds.add(message.memberId));
+		messages.forEach((message) => {
+			activeUserIds.add(message.memberId);
+		});
 
 		// Add users who added reactions in the time period
 		const reactions = await ctx.db
@@ -279,7 +281,9 @@ export const getActiveUsersCount = query({
 				)
 			)
 			.collect();
-		reactions.forEach((reaction) => activeUserIds.add(reaction.memberId));
+		reactions.forEach((reaction) => {
+			activeUserIds.add(reaction.memberId);
+		});
 
 		// Add users who had channel sessions in the time period
 		const channelSessions = await ctx.db
@@ -294,7 +298,9 @@ export const getActiveUsersCount = query({
 				)
 			)
 			.collect();
-		channelSessions.forEach((session) => activeUserIds.add(session.memberId));
+		channelSessions.forEach((session) => {
+			activeUserIds.add(session.memberId);
+		});
 
 		// Add users who had any user activities in the time period
 		const userActivities = await ctx.db
@@ -309,7 +315,9 @@ export const getActiveUsersCount = query({
 				)
 			)
 			.collect();
-		userActivities.forEach((activity) => activeUserIds.add(activity.memberId));
+		userActivities.forEach((activity) => {
+			activeUserIds.add(activity.memberId);
+		});
 
 		// ALSO add currently logged-in users (users who are online right now)
 		// Get all user IDs from workspace members
@@ -447,7 +455,9 @@ export const getWorkspaceOverview = query({
 		const activeUserIds = new Set<Id<"members">>();
 
 		// Add users who sent messages in the time period
-		messages.forEach((message) => activeUserIds.add(message.memberId));
+		messages.forEach((message) => {
+			activeUserIds.add(message.memberId);
+		});
 
 		// Add users who added reactions in the time period
 		const reactions = await ctx.db
@@ -462,7 +472,9 @@ export const getWorkspaceOverview = query({
 				)
 			)
 			.collect();
-		reactions.forEach((reaction) => activeUserIds.add(reaction.memberId));
+		reactions.forEach((reaction) => {
+			activeUserIds.add(reaction.memberId);
+		});
 
 		// Add users who had channel sessions in the time period
 		const channelSessions = await ctx.db
@@ -477,7 +489,9 @@ export const getWorkspaceOverview = query({
 				)
 			)
 			.collect();
-		channelSessions.forEach((session) => activeUserIds.add(session.memberId));
+		channelSessions.forEach((session) => {
+			activeUserIds.add(session.memberId);
+		});
 
 		// Add users who had any user activities in the time period
 		const userActivities = await ctx.db
@@ -492,7 +506,9 @@ export const getWorkspaceOverview = query({
 				)
 			)
 			.collect();
-		userActivities.forEach((activity) => activeUserIds.add(activity.memberId));
+		userActivities.forEach((activity) => {
+			activeUserIds.add(activity.memberId);
+		});
 
 		// ALSO add currently logged-in users (users who are online right now)
 		// Get all user IDs from workspace members

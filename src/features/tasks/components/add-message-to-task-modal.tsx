@@ -152,7 +152,7 @@ export const AddMessageToTaskModal = ({
 						</div>
 
 						<div className="space-y-2">
-							<label className="text-sm font-medium">Due Date</label>
+							<div className="text-sm font-medium">Due Date</div>
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button
@@ -177,7 +177,7 @@ export const AddMessageToTaskModal = ({
 						</div>
 
 						<div className="space-y-2">
-							<label className="text-sm font-medium">Priority</label>
+							<div className="text-sm font-medium">Priority</div>
 							<Select
 								onValueChange={(value: any) => setPriority(value)}
 								value={priority}
@@ -194,7 +194,7 @@ export const AddMessageToTaskModal = ({
 						</div>
 
 						<div className="space-y-2">
-							<label className="text-sm font-medium">Category</label>
+							<div className="text-sm font-medium">Category</div>
 							<TaskCategorySelector
 								onChange={setCategoryId}
 								value={categoryId}

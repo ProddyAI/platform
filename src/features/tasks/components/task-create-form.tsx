@@ -262,9 +262,9 @@ export const TaskCreateForm = ({
 				</div>
 
 				<div className="pt-2">
-					<label className="text-sm font-medium block mb-2 text-gray-700">
+					<div className="text-sm font-medium block mb-2 text-gray-700">
 						Category (optional)
-					</label>
+					</div>
 					<TaskCategorySelector
 						onChange={setCategoryId}
 						value={categoryId}

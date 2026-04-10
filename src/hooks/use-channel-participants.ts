@@ -26,16 +26,14 @@ export const useChannelParticipants = () => {
 
 	const currentUserId = currentMember?.userId;
 
-	if (isLoading) {
-		return {
-			participants: [],
-			currentParticipant: null,
-			participantCount: 0,
-			isLoading: true,
-		};
-	}
-
 	const { participants, participantCount } = useMemo(() => {
+		if (isLoading) {
+			return {
+				participants: [],
+				participantCount: 0,
+			};
+		}
+
 		const online = (presenceState || []).filter((p) => p.online);
 		const seen = new Set<string>();
 
@@ -73,31 +71,32 @@ export const useChannelParticipants = () => {
 			participants: othersOnly,
 			participantCount: online.length,
 		};
-	}, [presenceState, currentUserId]);
+	}, [presenceState, currentUserId, isLoading]);
 
 	// Current user info (useful for some callers)
-	const currentParticipant = currentMember
-		? {
-				memberId: currentMember._id,
-				userId: currentMember.userId,
-				info: {
-					name:
-						members?.find((m) => m._id === currentMember._id)?.user?.name ||
-						"You",
-					picture: getUserImageUrl(
-						members?.find((m) => m._id === currentMember._id)?.user?.name ||
+	const currentParticipant =
+		!isLoading && currentMember
+			? {
+					memberId: currentMember._id,
+					userId: currentMember.userId,
+					info: {
+						name:
+							members?.find((m) => m._id === currentMember._id)?.user?.name ||
 							"You",
-						members?.find((m) => m._id === currentMember._id)?.user?.image,
-						currentMember.userId
-					),
-				},
-			}
-		: null;
+						picture: getUserImageUrl(
+							members?.find((m) => m._id === currentMember._id)?.user?.name ||
+								"You",
+							members?.find((m) => m._id === currentMember._id)?.user?.image,
+							currentMember.userId
+						),
+					},
+				}
+			: null;
 
 	return {
 		participants,
 		currentParticipant,
 		participantCount,
-		isLoading: false,
+		isLoading,
 	};
 };

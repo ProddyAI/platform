@@ -1,3 +1,4 @@
+import { createDodoWebhookHandler } from "@dodopayments/convex";
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -7,6 +8,102 @@ import { auth } from "./auth";
 const http = httpRouter();
 
 auth.addHttpRoutes(http);
+
+const parsePlanFromMetadata = (
+	metadata: Record<string, unknown> | undefined
+): "pro" | "enterprise" | undefined => {
+	const plan = metadata?.plan;
+	if (plan === "pro" || plan === "enterprise") {
+		return plan;
+	}
+	return undefined;
+};
+
+// ─── Dodo Payments Webhook ─────────────────────────────────────────────────────
+// Securely handles Dodo Payments webhook events with signature verification.
+// Ensure DODO_PAYMENTS_WEBHOOK_SECRET is configured in Convex dashboard env vars.
+http.route({
+	path: "/dodopayments-webhook",
+	method: "POST",
+	handler: createDodoWebhookHandler({
+		onPaymentSucceeded: async (ctx, payload) => {
+			// Persist/handle payment success if needed
+			// Using internal.webhooks.* mutations to avoid schema changes during migration
+			try {
+				await ctx.runMutation(internal.webhooks.createPayment, {
+					paymentId: payload.data.payment_id,
+					businessId: payload.business_id,
+					customerEmail: payload.data.customer?.email ?? null,
+					amount: payload.data.total_amount,
+					currency: payload.data.currency,
+					status: payload.data.status ?? "unknown",
+					raw: JSON.stringify(payload),
+				});
+			} catch (e) {
+				console.error("Dodo onPaymentSucceeded handler failed", e);
+				throw e;
+			}
+		},
+		onSubscriptionActive: async (ctx, payload) => {
+			// Map back to workspace using metadata if present
+			const workspaceId = payload.data?.metadata?.workspace_id as
+				| Id<"workspaces">
+				| undefined;
+			const plan = parsePlanFromMetadata(
+				payload.data?.metadata as Record<string, unknown> | undefined
+			);
+
+			try {
+				await ctx.runMutation(internal.webhooks.createSubscription, {
+					workspaceId,
+					subscriptionId: payload.data.subscription_id,
+					status: payload.data.status,
+					plan,
+					raw: JSON.stringify(payload),
+				});
+			} catch (e) {
+				console.error("Dodo onSubscriptionActive handler failed", e);
+				throw e;
+			}
+		},
+		onSubscriptionUpdated: async (ctx, payload) => {
+			const workspaceId = payload.data?.metadata?.workspace_id as
+				| Id<"workspaces">
+				| undefined;
+			const plan = parsePlanFromMetadata(
+				payload.data?.metadata as Record<string, unknown> | undefined
+			);
+
+			try {
+				await ctx.runMutation(internal.webhooks.updateSubscription, {
+					workspaceId,
+					subscriptionId: payload.data.subscription_id,
+					status: payload.data.status,
+					plan,
+					raw: JSON.stringify(payload),
+				});
+			} catch (e) {
+				console.error("Dodo onSubscriptionUpdated handler failed", e);
+				throw e;
+			}
+		},
+		onSubscriptionCancelled: async (ctx, payload) => {
+			const workspaceId = payload.data?.metadata?.workspace_id as
+				| Id<"workspaces">
+				| undefined;
+
+			try {
+				await ctx.runMutation(internal.webhooks.cancelSubscription, {
+					workspaceId,
+					raw: JSON.stringify(payload),
+				});
+			} catch (e) {
+				console.error("Dodo onSubscriptionCancelled handler failed", e);
+				throw e;
+			}
+		},
+	}),
+});
 
 // Slack OAuth callback handler
 http.route({
@@ -37,8 +134,8 @@ http.route({
 			}
 
 			const redirectPath = workspaceId
-				? `/workspace/${workspaceId}/manage?tab=import&error=${encodeURIComponent(error)}`
-				: `/manage?error=${encodeURIComponent(error)}`;
+				? `/workspace/${workspaceId}/manage?error=${encodeURIComponent(error)}#import`
+				: `/manage?error=${encodeURIComponent(error)}#import`;
 
 			return new Response(null, {
 				status: 302,
@@ -84,7 +181,7 @@ http.route({
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-			let tokenResponse;
+			let tokenResponse: Response | undefined;
 			try {
 				tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
 					method: "POST",
@@ -108,6 +205,10 @@ http.route({
 				clearTimeout(timeoutId);
 			}
 
+			if (!tokenResponse) {
+				throw new Error("OAuth token exchange failed");
+			}
+
 			const tokenData = await tokenResponse.json();
 
 			if (!tokenData.ok) {
@@ -117,8 +218,7 @@ http.route({
 			// Validate required token fields
 			if (
 				!tokenData.access_token ||
-				!tokenData.team ||
-				!tokenData.team.id ||
+				!tokenData.team?.id ||
 				!tokenData.team.name
 			) {
 				throw new Error("Invalid token response from Slack");
@@ -143,7 +243,7 @@ http.route({
 			return new Response(null, {
 				status: 302,
 				headers: {
-					Location: `${siteUrl}/workspace/${workspaceId}/manage?tab=import&success=slack_connected`,
+					Location: `${siteUrl}/workspace/${workspaceId}/manage?success=slack_connected#import`,
 				},
 			});
 		} catch (error) {
@@ -154,7 +254,7 @@ http.route({
 			return new Response(null, {
 				status: 302,
 				headers: {
-					Location: `${siteUrl}/workspace/${workspaceId}/manage?tab=import&error=${encodeURIComponent(errorMessage)}`,
+					Location: `${siteUrl}/workspace/${workspaceId}/manage?error=${encodeURIComponent(errorMessage)}#import`,
 				},
 			});
 		}

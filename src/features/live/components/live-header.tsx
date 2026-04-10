@@ -160,6 +160,7 @@ export const LiveHeader = ({
 										className="text-lg font-semibold text-left truncate hover:text-primary transition-colors"
 										onClick={() => setIsEditing(true)}
 										title="Click to edit title"
+										type="button"
 									>
 										{title ||
 											`Untitled ${type === "notes" ? "Note" : "Canvas"}`}
@@ -171,7 +172,10 @@ export const LiveHeader = ({
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger asChild>
-												<button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-help flex-shrink-0">
+												<button
+													className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-help flex-shrink-0"
+													type="button"
+												>
 													<Info className="h-4 w-4" />
 												</button>
 											</TooltipTrigger>

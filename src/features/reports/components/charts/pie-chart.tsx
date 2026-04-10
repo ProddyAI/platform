@@ -52,7 +52,10 @@ export const PieChart = ({
 	}, []);
 
 	const handleMouseEnter = useCallback(
-		(index: number, event: React.MouseEvent) => {
+		(
+			index: number,
+			event: React.MouseEvent<Element> | React.FocusEvent<Element>
+		) => {
 			if (hoverTimeoutRef.current) {
 				clearTimeout(hoverTimeoutRef.current);
 			}
@@ -61,9 +64,18 @@ export const PieChart = ({
 			// Calculate tooltip position relative to viewport
 			const rect = containerRef.current?.getBoundingClientRect();
 			if (rect) {
+				const targetRect = event.currentTarget.getBoundingClientRect();
+				const x =
+					"clientX" in event
+						? event.clientX
+						: targetRect.left + targetRect.width / 2;
+				const y =
+					"clientY" in event
+						? event.clientY
+						: targetRect.top + targetRect.height / 2;
 				setTooltipPosition({
-					x: event.clientX,
-					y: event.clientY,
+					x,
+					y,
 				});
 			}
 		},
@@ -166,6 +178,7 @@ export const PieChart = ({
 					style={{ overflow: "visible", isolation: "isolate" }}
 					viewBox="0 0 140 145"
 				>
+					<title>Pie chart</title>
 					<defs>
 						{/* Side - solid darker shade for 3D depth effect */}
 						{segments.map((segment) => (
@@ -378,22 +391,40 @@ export const PieChart = ({
 
 							return (
 								<g
+									aria-disabled={!onSegmentClick}
 									className={cn(
 										"transition-all duration-300 ease-out",
 										onSegmentClick && "cursor-pointer"
 									)}
 									key={`top-${segment.index}`}
-									onClick={() =>
-										onSegmentClick?.(
-											segment.label,
-											segment.value,
-											segment.index
-										)
+									onBlur={handleMouseLeave}
+									onClick={
+										onSegmentClick
+											? () =>
+													onSegmentClick(
+														segment.label,
+														segment.value,
+														segment.index
+													)
+											: undefined
 									}
+									onFocus={(e) => handleMouseEnter(segment.index, e)}
+									onKeyDown={(event) => {
+										if (event.key === "Enter" || event.key === " ") {
+											event.preventDefault();
+											onSegmentClick?.(
+												segment.label,
+												segment.value,
+												segment.index
+											);
+										}
+									}}
 									onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
 									onMouseLeave={handleMouseLeave}
 									onMouseMove={handleMouseMove}
+									role="button"
 									style={{ pointerEvents: "all" }}
+									tabIndex={0}
 								>
 									<path
 										d={topPath}
@@ -443,22 +474,40 @@ export const PieChart = ({
 
 								return (
 									<g
+										aria-disabled={!onSegmentClick}
 										className={cn(
 											"transition-all duration-300 ease-out",
 											onSegmentClick && "cursor-pointer"
 										)}
 										key={`top-hovered-${segment.index}`}
-										onClick={() =>
-											onSegmentClick?.(
-												segment.label,
-												segment.value,
-												segment.index
-											)
+										onBlur={handleMouseLeave}
+										onClick={
+											onSegmentClick
+												? () =>
+														onSegmentClick(
+															segment.label,
+															segment.value,
+															segment.index
+														)
+												: undefined
 										}
+										onFocus={(e) => handleMouseEnter(segment.index, e)}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												onSegmentClick?.(
+													segment.label,
+													segment.value,
+													segment.index
+												);
+											}
+										}}
 										onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
 										onMouseLeave={handleMouseLeave}
 										onMouseMove={handleMouseMove}
+										role="button"
 										style={{ pointerEvents: "all" }}
+										tabIndex={0}
 									>
 										<path
 											d={topPath}
@@ -518,16 +567,36 @@ export const PieChart = ({
 						const isHovered = hoveredIndex === segment.index;
 
 						return (
-							<div
+							<button
+								aria-disabled={!onSegmentClick}
 								className={cn(
 									"flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all duration-300",
 									isHovered && "bg-muted/50 scale-105",
 									onSegmentClick && "cursor-pointer"
 								)}
 								key={segment.index}
-								onClick={() =>
-									onSegmentClick?.(segment.label, segment.value, segment.index)
+								onBlur={handleMouseLeave}
+								onClick={
+									onSegmentClick
+										? () =>
+												onSegmentClick(
+													segment.label,
+													segment.value,
+													segment.index
+												)
+										: undefined
 								}
+								onFocus={(e) => handleMouseEnter(segment.index, e)}
+								onKeyDown={(event) => {
+									if (event.key === "Enter" || event.key === " ") {
+										event.preventDefault();
+										onSegmentClick?.(
+											segment.label,
+											segment.value,
+											segment.index
+										);
+									}
+								}}
 								onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
 								onMouseLeave={handleMouseLeave}
 								onMouseMove={handleMouseMove}
@@ -536,6 +605,8 @@ export const PieChart = ({
 										? `0 0 0 1px ${segment.color}40`
 										: "none",
 								}}
+								tabIndex={0}
+								type="button"
 							>
 								{/* Color indicator */}
 								<div
@@ -574,7 +645,7 @@ export const PieChart = ({
 								>
 									{formatValue(segment.value)}
 								</div>
-							</div>
+							</button>
 						);
 					})}
 				</div>

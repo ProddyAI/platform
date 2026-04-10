@@ -44,7 +44,7 @@ const AudioControlsInner = () => {
 	}, []);
 
 	// Don't render if microphone state is not available yet
-	if (!microphoneState || !microphoneState.microphone) {
+	if (!microphoneState?.microphone) {
 		return null;
 	}
 

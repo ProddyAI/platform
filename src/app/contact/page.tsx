@@ -109,9 +109,9 @@ const ContactPage = () => {
 										<h3 className="font-medium text-gray-900">Email</h3>
 										<a
 											className="text-primary hover:underline block mb-1"
-											href="mailto:support@proddy.tech"
+											href={`mailto:${process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL}`}
 										>
-											support@proddy.tech
+											{process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL}
 										</a>
 									</div>
 								</div>
@@ -142,8 +142,11 @@ const ContactPage = () => {
 								<div className="flex space-x-4">
 									<a
 										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
-										href="#"
+										href="https://www.facebook.com"
+										rel="noreferrer"
+										target="_blank"
 									>
+										<span className="sr-only">Facebook</span>
 										<svg
 											aria-hidden="true"
 											className="h-5 w-5 text-gray-600"
@@ -159,8 +162,11 @@ const ContactPage = () => {
 									</a>
 									<a
 										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
-										href="#"
+										href="https://x.com"
+										rel="noreferrer"
+										target="_blank"
 									>
+										<span className="sr-only">X</span>
 										<svg
 											aria-hidden="true"
 											className="h-5 w-5 text-gray-600"
@@ -172,8 +178,11 @@ const ContactPage = () => {
 									</a>
 									<a
 										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
-										href="#"
+										href="https://www.instagram.com"
+										rel="noreferrer"
+										target="_blank"
 									>
+										<span className="sr-only">Instagram</span>
 										<svg
 											aria-hidden="true"
 											className="h-5 w-5 text-gray-600"
@@ -189,8 +198,11 @@ const ContactPage = () => {
 									</a>
 									<a
 										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
-										href="#"
+										href="https://github.com"
+										rel="noreferrer"
+										target="_blank"
 									>
+										<span className="sr-only">GitHub</span>
 										<svg
 											aria-hidden="true"
 											className="h-5 w-5 text-gray-600"
@@ -309,7 +321,8 @@ const ContactPage = () => {
 														General Inquiry
 													</SelectItem>
 													<SelectItem value="support">
-														Technical Support (support@proddy.tech)
+														Technical Support (
+														{process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL})
 													</SelectItem>
 													<SelectItem value="sales">Sales Question</SelectItem>
 													<SelectItem value="feedback">Feedback</SelectItem>
@@ -349,6 +362,7 @@ const ContactPage = () => {
 														viewBox="0 0 24 24"
 														xmlns="http://www.w3.org/2000/svg"
 													>
+														<title>Loading</title>
 														<circle
 															className="opacity-25"
 															cx="12"

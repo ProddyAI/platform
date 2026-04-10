@@ -40,9 +40,13 @@ export async function POST(req: Request) {
 		}
 		convex.setAuth(token);
 
-		if (!process.env.INVITE_SECRET) {
-			console.error("[Invite Send] INVITE_SECRET not configured");
-			throw new Error("INVITE_SECRET environment variable is required");
+		if (!process.env.NEXT_PUBLIC_EMAIL_INVITE_SECRET) {
+			console.error(
+				"[Invite Send] NEXT_PUBLIC_EMAIL_INVITE_SECRET not configured"
+			);
+			throw new Error(
+				"NEXT_PUBLIC_EMAIL_INVITE_SECRET environment variable is required"
+			);
 		}
 
 		if (!process.env.NEXT_PUBLIC_APP_URL) {
@@ -102,7 +106,7 @@ export async function POST(req: Request) {
 			convex.query(api.workspaceInvites.getWorkspaceJoinCode, { workspaceId }),
 		]);
 
-		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.INVITE_SECRET}`;
+		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.NEXT_PUBLIC_EMAIL_INVITE_SECRET}`;
 		const hash = crypto.createHash("sha256").update(raw).digest("hex");
 
 		console.log("[Invite Send] Creating invite for workspace:", workspaceId);
@@ -114,6 +118,16 @@ export async function POST(req: Request) {
 			expiresAt: Date.now() + 1000 * 60 * 60 * 48, // 48 hours
 		});
 
+		// Best-effort push notification for existing workspace members.
+		try {
+			await convex.mutation(api.notifications.notifyInviteSent, {
+				workspaceId,
+				invitedEmail: email.toLowerCase(),
+			});
+		} catch (pushError) {
+			console.error("[Invite Send] Push scheduling failed:", pushError);
+		}
+
 		const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/join/${workspaceId}?invite=${hash}`;
 		console.log(
 			"[Invite Send] Generated invite link for workspace:",
@@ -122,9 +136,9 @@ export async function POST(req: Request) {
 
 		// Create the invite email template
 		const emailTemplate = InviteMailTemplate({
-			senderName: inviteDetails.senderName ?? "Team Member",
-			senderEmail: inviteDetails.senderEmail ?? "team@proddy.tech",
-			workspaceName: inviteDetails.workspaceName ?? "Workspace",
+			senderName: inviteDetails.senderName!,
+			senderEmail: inviteDetails.senderEmail!,
+			workspaceName: inviteDetails.workspaceName!,
 			inviteLink,
 		});
 

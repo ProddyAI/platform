@@ -56,7 +56,6 @@ interface BoardListProps {
 	onEditCard: (card: BoardListCard) => void;
 	onDeleteCard: (cardId: Id<"cards">) => void;
 	assigneeData?: Record<Id<"members">, { name: string; image?: string }>;
-	listCount?: number;
 	selectionMode?: boolean;
 	selectedCardIds?: Set<Id<"cards">>;
 	onToggleSelect?: (cardId: Id<"cards">) => void;
@@ -72,7 +71,6 @@ const BoardList: React.FC<BoardListProps> = ({
 	onEditCard,
 	onDeleteCard,
 	assigneeData = {},
-	listCount = 0,
 	selectionMode = false,
 	selectedCardIds,
 	onToggleSelect,

@@ -36,7 +36,7 @@ export type ProddyAgentContext = {
  * Pass { ...ctx, workspaceId, userId } when calling generateText / continueThread.
  */
 export const proddyAgent: Agent<ProddyAgentContext> =
-	new Agent<ProddyAgentContext>(components.agent, {
+	new Agent<ProddyAgentContext>((components as any).agent, {
 		name: "Proddy Assistant",
 		languageModel: openai.chat("gpt-4o-mini"),
 		instructions: BASE_INSTRUCTIONS,

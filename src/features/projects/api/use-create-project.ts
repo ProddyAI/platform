@@ -4,14 +4,13 @@ import { useCallback, useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
-type FeatureKey = "canvas" | "notes" | "boards";
-
 type RequestType = {
-	id: Id<"workspaces">;
-	enabledFeatures: FeatureKey[];
+	workspaceId: Id<"workspaces">;
+	name: string;
+	connectedChannelId?: Id<"channels">;
 };
 
-type ResponseType = Id<"workspaces"> | null;
+type ResponseType = Id<"projects"> | null;
 
 type Options = {
 	onSuccess?: (data: ResponseType) => void;
@@ -20,7 +19,7 @@ type Options = {
 	throwError?: boolean;
 };
 
-export const useUpdateWorkspaceFeatures = () => {
+export const useCreateProject = () => {
 	const [data, setData] = useState<ResponseType>(null);
 	const [error, setError] = useState<Error | null>(null);
 	const [status, setStatus] = useState<
@@ -32,7 +31,7 @@ export const useUpdateWorkspaceFeatures = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.workspaces.updateEnabledFeatures);
+	const mutation = useMutation(api.projects.create);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {
@@ -42,14 +41,19 @@ export const useUpdateWorkspaceFeatures = () => {
 				setStatus("pending");
 
 				const response = await mutation(values);
+				setData(response);
+				setStatus("success");
 				options?.onSuccess?.(response);
 
 				return response;
-			} catch (error) {
+			} catch (err) {
 				setStatus("error");
-				options?.onError?.(error as Error);
+				setError(err as Error);
+				options?.onError?.(err as Error);
 
-				if (!options?.throwError) throw error;
+				if (options?.throwError) {
+					throw err;
+				}
 			} finally {
 				setStatus("settled");
 				options?.onSettled?.();

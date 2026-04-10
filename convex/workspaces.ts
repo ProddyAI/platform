@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 
 import { mutation, query } from "./_generated/server";
 import { createDefaultCategoriesForWorkspace } from "./tasks";
@@ -44,6 +45,32 @@ export const join = mutation({
 			workspaceId: workspace._id,
 			role: "member",
 		});
+
+		const workspaceMembers = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspace._id))
+			.collect();
+		const recipientUserIds = workspaceMembers
+			.map((m) => m.userId)
+			.filter((memberUserId) => memberUserId !== userId);
+
+		if (recipientUserIds.length > 0) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.notifications.sendPushNotification,
+				{
+					userIds: recipientUserIds,
+					title: "New workspace member",
+					message: "Someone joined your workspace",
+					notificationType: "workspaceJoin",
+					data: {
+						workspaceId: workspace._id,
+						userId,
+						type: "workspace_join",
+					},
+				}
+			);
+		}
 
 		return workspace._id;
 	},
@@ -96,7 +123,6 @@ export const create = mutation({
 			name: args.name,
 			userId,
 			joinCode,
-			enabledFeatures: ["canvas", "notes", "boards"],
 		});
 
 		await ctx.db.insert("members", {
@@ -108,7 +134,6 @@ export const create = mutation({
 		await ctx.db.insert("channels", {
 			name: "general",
 			workspaceId,
-			enabledFeatures: ["canvas", "notes", "boards"],
 		});
 
 		// Create default task categories for the workspace
@@ -217,36 +242,6 @@ export const update = mutation({
 
 		await ctx.db.patch(args.id, {
 			name: args.name,
-		});
-
-		return args.id;
-	},
-});
-
-export const updateEnabledFeatures = mutation({
-	args: {
-		id: v.id("workspaces"),
-		enabledFeatures: v.array(
-			v.union(v.literal("canvas"), v.literal("notes"), v.literal("boards"))
-		),
-	},
-	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-
-		if (!userId) throw new Error("Unauthorized.");
-
-		const member = await ctx.db
-			.query("members")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.id).eq("userId", userId)
-			)
-			.unique();
-
-		if (!member || (member.role !== "admin" && member.role !== "owner"))
-			throw new Error("Unauthorized.");
-
-		await ctx.db.patch(args.id, {
-			enabledFeatures: args.enabledFeatures,
 		});
 
 		return args.id;

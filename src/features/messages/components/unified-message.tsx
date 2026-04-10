@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { FileText, PaintBucket, Users } from "lucide-react";
+import { Download, File, FileText, PaintBucket, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/../convex/_generated/api";
@@ -19,7 +19,8 @@ interface UnifiedMessageProps {
 			| "canvas-live"
 			| "note-live"
 			| "canvas-export"
-			| "note-export";
+			| "note-export"
+			| "file";
 		// Canvas specific
 		canvasName?: string;
 		roomId?: string;
@@ -38,6 +39,11 @@ interface UnifiedMessageProps {
 		jsonData?: any;
 		exportData?: string;
 		fileSize?: string;
+		// File specific
+		fileName?: string;
+		fileType?: string;
+		fileUrl?: string;
+		caption?: string;
 	};
 }
 
@@ -49,17 +55,16 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 	// Determine if this is a canvas or note type
 	const isCanvas = data.type.includes("canvas");
+	const isFile = data.type === "file";
 	const isLive = data.type.includes("live");
 	const isExport = data.type.includes("export");
 
-	// Get members from the database to display real names for live sessions (only when needed)
-	const members = (
-		isLive ? useQuery(api.members.get, { workspaceId }) : null
-	) as any;
+	// Get members from the database to display real names for live sessions
+	const members = useQuery(api.members.get, { workspaceId });
 
 	// Update participant names when members data is available
 	useEffect(() => {
-		if (!members || !data.participants) {
+		if (!isLive || !members || !data.participants) {
 			// Reset participant names if members are not available or participants are absent
 			setParticipantNames([]);
 			return;
@@ -75,10 +80,10 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 		);
 
 		setParticipantNames(names);
-	}, [members, data.participants]);
+	}, [members, data.participants, isLive]);
 
 	// Get the appropriate icon
-	const Icon = isCanvas ? PaintBucket : FileText;
+	const Icon = isFile ? File : isCanvas ? PaintBucket : FileText;
 
 	const getParticipantText = () => {
 		if (participantNames.length === 0) return "Session in progress";
@@ -88,6 +93,10 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 	// Get the title
 	const getTitle = () => {
+		if (isFile) {
+			return data.fileName || "File attachment";
+		}
+
 		if (isLive) {
 			return isCanvas ? "Live Canvas Session" : `Live Note: ${data.noteTitle}`;
 		}
@@ -101,6 +110,10 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 	// Get the button text
 	const getButtonText = () => {
+		if (isFile) {
+			return "Open File";
+		}
+
 		if (isLive) {
 			return isCanvas ? "Join Canvas" : "Join Note";
 		}
@@ -112,6 +125,13 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 	// Handle click action
 	const handleClick = () => {
+		if (isFile) {
+			if (data.fileUrl) {
+				window.open(data.fileUrl, "_blank", "noopener,noreferrer");
+			}
+			return;
+		}
+
 		if (!workspaceId || !channelId) return;
 
 		let url = "";
@@ -151,6 +171,13 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 							{getTitle()}
 						</CardTitle>
 
+						{isFile && (
+							<div className="text-xs text-gray-600 dark:!text-gray-100 mt-0.5 truncate">
+								{data.fileType || "Unknown type"}
+								{data.fileSize ? ` - ${data.fileSize}` : ""}
+							</div>
+						)}
+
 						{/* Show participants for live sessions */}
 						{isLive && (
 							<div className="flex items-center text-xs text-gray-600 dark:!text-gray-100 mt-0.5">
@@ -169,6 +196,10 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 					size="sm"
 					variant="default"
 				>
+<<<<<<< HEAD
+=======
+					{isFile && <Download className="mr-1 h-3 w-3" />}
+>>>>>>> 2871ffb932bd262687abb95b7aa9ef762c092630
 					{getButtonText()}
 				</Button>
 			</div>

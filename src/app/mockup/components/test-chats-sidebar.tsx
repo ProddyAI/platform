@@ -191,6 +191,7 @@ export const TestChatsSidebar = ({
 									onMarkAsRead(chat.id);
 								}
 							}}
+							type="button"
 						>
 							<div className="flex items-start gap-3">
 								<div className="relative">

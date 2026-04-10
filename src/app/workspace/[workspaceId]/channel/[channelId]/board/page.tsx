@@ -1,34 +1,10 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { api } from "@/../convex/_generated/api";
-import type { Id } from "@/../convex/_generated/dataModel";
-import BoardGanttView from "@/features/board/components/board-gantt-view";
-import BoardHeader from "@/features/board/components/board-header";
-import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
-import BoardKanbanView from "@/features/board/components/board-kanban-view";
-import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
-import {
-	// Keep old card/list modals for gantt view
-	BoardAddCardModal,
-	BoardAddStatusModal,
-	BoardDeleteListModal,
-	BoardDeleteStatusModal,
-	BoardEditCardModal,
-	BoardEditStatusModal,
-} from "@/features/board/components/board-models";
-import { useBoardSearchStore } from "@/features/board/store/use-board-search";
+import BoardPageContent from "@/features/board/components/board-page-content";
 import { useChannelId } from "@/hooks/use-channel-id";
-import { useDocumentTitle } from "@/hooks/use-document-title";
-import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
-const BoardPage = () => {
+const ChannelBoardPage = () => {
 	const channelId = useChannelId();
-	const workspaceId = useWorkspaceId();
-	const searchParams = useSearchParams();
 
 	// Board search store integration
 	const { setIsBoardPage, setBoardSearchQuery, boardSearchQuery } =
@@ -761,6 +737,7 @@ const BoardPage = () => {
 			/>
 		</div>
 	);
+	return <BoardPageContent channelId={channelId} />;
 };
 
-export default BoardPage;
+export default ChannelBoardPage;

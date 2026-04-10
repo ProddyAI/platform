@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 		convex.setAuth(token);
 
 		const currentUser = await convex.query(api.users.current);
-		if (!currentUser || !currentUser.email) {
+		if (!currentUser?.email) {
 			console.error("[Invite Verify] User not found or email missing");
 			return NextResponse.json(
 				{ error: "User not found or email missing" },
@@ -116,9 +116,13 @@ export async function POST(req: Request) {
 			{ workspaceId: workspaceId as Id<"workspaces"> }
 		);
 
-		if (!process.env.INVITE_SECRET) {
-			console.error("[Invite Verify] INVITE_SECRET not configured");
-			throw new Error("INVITE_SECRET environment variable is required");
+		if (!process.env.NEXT_PUBLIC_EMAIL_INVITE_SECRET) {
+			console.error(
+				"[Invite Verify] NEXT_PUBLIC_EMAIL_INVITE_SECRET not configured"
+			);
+			throw new Error(
+				"NEXT_PUBLIC_EMAIL_INVITE_SECRET environment variable is required"
+			);
 		}
 
 		if (!joinCode) {
@@ -132,7 +136,7 @@ export async function POST(req: Request) {
 			);
 		}
 
-		const raw = `${joinCode}:${email}:${process.env.INVITE_SECRET}`;
+		const raw = `${joinCode}:${email}:${process.env.NEXT_PUBLIC_EMAIL_INVITE_SECRET}`;
 		const expectedHash = crypto.createHash("sha256").update(raw).digest("hex");
 
 		if (expectedHash !== invite) {

@@ -68,7 +68,8 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 
 				// Emit nodes
 				for (const issue of topLevelIssues) {
-					const nodeId = idMap.get(issue._id)!;
+					const nodeId = idMap.get(issue._id);
+					if (!nodeId) continue;
 					// Sanitize label: replace quotes and brackets that would break Mermaid syntax
 					const rawLabel = `${formatIssueId(issue._id)}: ${issue.title}`;
 					const label = rawLabel

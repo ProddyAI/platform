@@ -66,9 +66,9 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 
 		// Combined regex for all inline formatting
 		const combinedRegex = /(\*\*(.*?)\*\*|\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`)/g;
-		let match: RegExpExecArray | null;
+		let match: RegExpExecArray | null = combinedRegex.exec(text);
 
-		while ((match = combinedRegex.exec(text)) !== null) {
+		while (match !== null) {
 			// Add text before the match
 			if (match.index > currentIndex) {
 				parts.push(text.substring(currentIndex, match.index));
@@ -91,6 +91,7 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 						className="text-blue-600 hover:text-blue-800 underline font-medium"
 						key={`link-${lineIndex}-${match.index}`}
 						onClick={() => match?.[4] && handleLinkClick(match[4])}
+						type="button"
 					>
 						{match?.[3]}
 					</button>
@@ -108,6 +109,7 @@ export const TestNotesEditor = ({ note, onUpdate }: TestNotesEditorProps) => {
 			}
 
 			currentIndex = match.index + match[0].length;
+			match = combinedRegex.exec(text);
 		}
 
 		// Add remaining text
