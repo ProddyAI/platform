@@ -184,13 +184,21 @@ export const WorkspaceSidebar = ({
 	// Track which sections are expanded
 	const [expandedSections, setExpandedSections] = useState<
 		Record<string, boolean>
-	>({
-		Channels: true, // Channels expanded by default
-		Projects: true,
-		Members: false, // Members collapsed by default
-		Planning: false,
-		Messages: false,
-		Settings: false,
+	>(() => {
+		const activeTopSection = memberId
+			? "Members"
+			: projectId
+				? "Projects"
+				: "Channels";
+
+		return {
+			Channels: activeTopSection === "Channels",
+			Projects: activeTopSection === "Projects",
+			Members: activeTopSection === "Members",
+			Planning: false,
+			Messages: false,
+			Settings: false,
+		};
 	});
 
 	const [_open, setOpen] = useCreateChannelModal();
