@@ -396,7 +396,10 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
-		.index("by_category_id", ["categoryId"]),
+		.index("by_category_id", ["categoryId"])
+		// Hybrid RAG enrichment indexes — enable O(log n) metadata lookups
+		.index("by_workspace_id_status", ["workspaceId", "status"])
+		.index("by_workspace_id_due_date", ["workspaceId", "dueDate"]),
 
 	mentions: defineTable({
 		messageId: v.optional(v.id("messages")),

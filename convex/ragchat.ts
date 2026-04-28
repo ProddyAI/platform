@@ -505,17 +505,31 @@ export const semanticSearch = action({
 	},
 	handler: async (ctx, args) => {
 		const userId = args.userId ?? (await getAuthUserId(ctx));
-		if (!userId) throw new Error("Unauthorized");
 
-		const member = await ctx.runQuery(api.members.current, {
-			workspaceId: args.workspaceId,
-		});
-		if (!member) throw new Error("User is not a member of this workspace");
+		// --- Dashboard / local testing bypass ---
+		// Convex action runtimes do NOT set NODE_ENV, so we rely on an explicit
+		// env var instead.  Set CONVEX_SKIP_AUTH=true in your .env.local to allow
+		// unauthenticated calls from the Convex Dashboard during local testing.
+		// Remove (or leave unset) the variable before deploying to production.
+		const skipAuth = process.env.CONVEX_SKIP_AUTH === "true";
+		if (!userId && !skipAuth) throw new Error("Unauthorized");
 
-		const channels = await ctx.runQuery(api.channels.get, {
-			workspaceId: args.workspaceId,
-		});
-		const channelIds = channels.map((c: { _id: string }) => c._id);
+		// When a real userId is present, enforce workspace membership and scope
+		// channel filters to channels the user can see.
+		// When bypassing auth (Dashboard testing), channelIds stays empty which
+		// is fine — the NO_CHANNEL_FILTER_VALUE filter still returns results.
+		let channelIds: string[] = [];
+		if (userId) {
+			const member = await ctx.runQuery(api.members.current, {
+				workspaceId: args.workspaceId,
+			});
+			if (!member) throw new Error("User is not a member of this workspace");
+
+			const channels = await ctx.runQuery(api.channels.get, {
+				workspaceId: args.workspaceId,
+			});
+			channelIds = channels.map((c: { _id: string }) => c._id);
+		}
 
 		const filters: Array<{
 			name: "workspaceId" | "contentType" | "channelId";
