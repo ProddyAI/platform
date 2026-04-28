@@ -49,6 +49,7 @@ import { CalendarPicker } from "./calendar-picker";
 import { ChannelPicker } from "./channel-picker";
 import { EmojiPopover } from "./emoji-popover";
 import { Hint } from "./hint";
+import { HuddleModal } from "./meet/HuddleModal";
 import { MentionPicker } from "./mention-picker";
 
 type EditorValue = {
@@ -115,7 +116,7 @@ const Editor = ({
 	const [isToolbarVisible, setIsToolbarVisible] = useState(true);
 	const [calendarPickerOpen, setCalendarPickerOpen] = useState(false);
 	const [filesModalOpen, setFilesModalOpen] = useState(false);
-	const [meetsModalOpen, setMeetsModalOpen] = useState(false);
+	const [isHuddleOpen, setIsHuddleOpen] = useState(false);
 	const [mentionPickerOpen, setMentionPickerOpen] = useState(false);
 	const [lastKeyWasExclamation, setLastKeyWasExclamation] = useState(false);
 	const [activeAutocomplete, setActiveAutocomplete] = useState<
@@ -832,6 +833,15 @@ const Editor = ({
 				open={calendarPickerOpen}
 			/>
 
+			{channelId ? (
+				<HuddleModal
+					channelId={channelId}
+					onOpenChange={setIsHuddleOpen}
+					open={isHuddleOpen}
+					workspaceId={workspaceId}
+				/>
+			) : null}
+
 			<Dialog onOpenChange={setFilesModalOpen} open={filesModalOpen}>
 				<DialogContent className="sm:max-w-lg">
 					<DialogHeader>
@@ -880,18 +890,6 @@ const Editor = ({
 							))
 						)}
 					</div>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog onOpenChange={setMeetsModalOpen} open={meetsModalOpen}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Meets coming soon</DialogTitle>
-						<DialogDescription>
-							We are building native meetings for chat contexts. You will be able to
-							start and join calls from here soon.
-						</DialogDescription>
-					</DialogHeader>
 				</DialogContent>
 			</Dialog>
 
@@ -1125,8 +1123,8 @@ const Editor = ({
 						</Hint>
 						<Hint label="Meets">
 							<Button
-								disabled={disabled}
-								onClick={() => setMeetsModalOpen(true)}
+								disabled={disabled || !channelId}
+								onClick={() => setIsHuddleOpen(true)}
 								size="iconSm"
 								variant="ghost"
 							>

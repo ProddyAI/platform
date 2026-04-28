@@ -10,6 +10,11 @@
 
 import type * as aiSearch from "../aiSearch.js";
 import type * as analytics from "../analytics.js";
+import type * as assistantChat from "../assistantChat.js";
+import type * as assistantComposioTools from "../assistantComposioTools.js";
+import type * as assistantConversations from "../assistantConversations.js";
+import type * as assistantToolAudits from "../assistantToolAudits.js";
+import type * as assistantTools from "../assistantTools.js";
 import type * as assistant_agent from "../assistant/agent.js";
 import type * as assistant_context from "../assistant/context.js";
 import type * as assistant_errorHandling from "../assistant/errorHandling.js";
@@ -17,11 +22,6 @@ import type * as assistant_monitoring from "../assistant/monitoring.js";
 import type * as assistant_tools_composioTools from "../assistant/tools/composioTools.js";
 import type * as assistant_tools_index from "../assistant/tools/index.js";
 import type * as assistant_tools_internalTools from "../assistant/tools/internalTools.js";
-import type * as assistantChat from "../assistantChat.js";
-import type * as assistantComposioTools from "../assistantComposioTools.js";
-import type * as assistantConversations from "../assistantConversations.js";
-import type * as assistantToolAudits from "../assistantToolAudits.js";
-import type * as assistantTools from "../assistantTools.js";
 import type * as auth from "../auth.js";
 import type * as board from "../board.js";
 import type * as calendar from "../calendar.js";
@@ -54,6 +54,7 @@ import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
 import type * as richText from "../richText.js";
 import type * as search from "../search.js";
+import type * as stream from "../stream.js";
 import type * as tasks from "../tasks.js";
 import type * as threadTitles from "../threadTitles.js";
 import type * as typing from "../typing.js";
@@ -75,6 +76,11 @@ import type {
 declare const fullApi: ApiFromModules<{
   aiSearch: typeof aiSearch;
   analytics: typeof analytics;
+  assistantChat: typeof assistantChat;
+  assistantComposioTools: typeof assistantComposioTools;
+  assistantConversations: typeof assistantConversations;
+  assistantToolAudits: typeof assistantToolAudits;
+  assistantTools: typeof assistantTools;
   "assistant/agent": typeof assistant_agent;
   "assistant/context": typeof assistant_context;
   "assistant/errorHandling": typeof assistant_errorHandling;
@@ -82,11 +88,6 @@ declare const fullApi: ApiFromModules<{
   "assistant/tools/composioTools": typeof assistant_tools_composioTools;
   "assistant/tools/index": typeof assistant_tools_index;
   "assistant/tools/internalTools": typeof assistant_tools_internalTools;
-  assistantChat: typeof assistantChat;
-  assistantComposioTools: typeof assistantComposioTools;
-  assistantConversations: typeof assistantConversations;
-  assistantToolAudits: typeof assistantToolAudits;
-  assistantTools: typeof assistantTools;
   auth: typeof auth;
   board: typeof board;
   calendar: typeof calendar;
@@ -119,6 +120,7 @@ declare const fullApi: ApiFromModules<{
   reactions: typeof reactions;
   richText: typeof richText;
   search: typeof search;
+  stream: typeof stream;
   tasks: typeof tasks;
   threadTitles: typeof threadTitles;
   typing: typeof typing;
