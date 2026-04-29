@@ -23,6 +23,179 @@ type ToolDefinition = {
 	};
 };
 
+function dedupeSourceRefs(sourceRefs: string[]) {
+	const seen = new Set<string>();
+	const unique: string[] = [];
+	for (const sourceRef of sourceRefs) {
+		const cleaned = sourceRef.trim();
+		if (!cleaned || seen.has(cleaned)) continue;
+		seen.add(cleaned);
+		unique.push(cleaned);
+	}
+	return unique;
+}
+
+function createLabeledSourceRef(label: string, value: unknown) {
+	const normalized = String(value ?? "").replace(/\s+/g, " ").trim();
+	if (!normalized) return null;
+	return `${label}: ${normalized}`;
+}
+
+function collectSourceRefsFromToolResult(toolName: string, result: unknown) {
+	if (!result || typeof result !== "object") {
+		return [] as string[];
+	}
+
+	if (toolName === "semanticSearch" && Array.isArray((result as any).results)) {
+		return dedupeSourceRefs(
+			(result as any).results.flatMap((item: any) =>
+				Array.isArray(item?.sourceRefs) ? item.sourceRefs : []
+			)
+		);
+	}
+
+	if (
+		(toolName === "getMyTasksToday" ||
+			toolName === "getMyTasksTomorrow" ||
+			toolName === "getMyAllTasks") &&
+		Array.isArray((result as any).tasks)
+	) {
+		return dedupeSourceRefs(
+			(result as any).tasks
+				.map((task: any) => createLabeledSourceRef("Task", task?.title))
+				.filter(Boolean) as string[]
+		);
+	}
+
+	if (
+		(toolName === "getMyCalendarToday" ||
+			toolName === "getMyCalendarTomorrow" ||
+			toolName === "getMyCalendarNextWeek") &&
+		Array.isArray((result as any).events)
+	) {
+		return dedupeSourceRefs(
+			(result as any).events
+				.map((event: any) => createLabeledSourceRef("Calendar Event", event?.title))
+				.filter(Boolean) as string[]
+		);
+	}
+
+	if (toolName === "getMyCards" && Array.isArray((result as any).cards)) {
+		return dedupeSourceRefs(
+			(result as any).cards
+				.map((card: any) => {
+					const location =
+						card?.channelName && card?.listName
+							? ` (${card.channelName} / ${card.listName})`
+							: "";
+					return createLabeledSourceRef("Board Card", `${card?.title ?? ""}${location}`);
+				})
+				.filter(Boolean) as string[]
+		);
+	}
+
+	if (toolName === "getChannelSummary") {
+		const channelName = String((result as any).channelName ?? "").trim();
+		return channelName ? [`Channel Messages: #${channelName}`] : [];
+	}
+
+	if (
+		(toolName === "getRecentNotes" || toolName === "searchNotes") &&
+		Array.isArray((result as any).notes)
+	) {
+		return dedupeSourceRefs(
+			(result as any).notes.flatMap((note: any) => {
+				if (Array.isArray(note?.sourceRefs)) {
+					return note.sourceRefs;
+				}
+				const refs = [createLabeledSourceRef("Note", note?.title)].filter(Boolean);
+				if (note?.channelName) {
+					refs.push(`Channel: #${String(note.channelName).trim()}`);
+				}
+				return refs as string[];
+			})
+		);
+	}
+
+	if (toolName === "searchChannels" && Array.isArray((result as any).channels)) {
+		return dedupeSourceRefs(
+			(result as any).channels
+				.map((channel: any) =>
+					createLabeledSourceRef("Channel", `#${String(channel?.name ?? "").trim()}`)
+				)
+				.filter(Boolean) as string[]
+		);
+	}
+
+	if (toolName === "getWorkspaceOverview") {
+		return ["Workspace Overview"];
+	}
+
+	return [];
+}
+
+function createFallbackResponseFromToolResult(toolName: string, result: unknown) {
+	if (!result || typeof result !== "object") {
+		return null;
+	}
+
+	if (toolName === "getChannelSummary") {
+		const channelName = String((result as any).channelName ?? "").trim();
+		const messageCount = Number((result as any).messageCount ?? 0);
+		const summary = String((result as any).summary ?? "").trim();
+
+		if (!channelName) return null;
+		if (messageCount === 0) {
+			return `No messages found in #${channelName}.`;
+		}
+
+		const snippets = summary
+			.split("\n")
+			.map((line) => line.trim())
+			.filter(Boolean)
+			.slice(0, 5)
+			.map((line) => `- ${line.length > 180 ? `${line.slice(0, 177)}...` : line}`);
+
+		if (snippets.length === 0) {
+			return `I found ${messageCount} recent messages in #${channelName}.`;
+		}
+
+		return [`Recent updates in #${channelName}`, ...snippets].join("\n");
+	}
+
+	if (toolName === "getRecentNotes" && Array.isArray((result as any).notes)) {
+		const notes = (result as any).notes as Array<any>;
+		if (notes.length === 0) {
+			return "I couldn't find any notes in this workspace yet.";
+		}
+
+		return [
+			"Recent notes",
+			...notes.slice(0, 6).map((note) => {
+				const channelSuffix = note?.channelName ? ` (#${note.channelName})` : "";
+				return `- ${String(note?.title ?? "Untitled note").trim()}${channelSuffix}`;
+			}),
+		].join("\n");
+	}
+
+	if (toolName === "searchNotes" && Array.isArray((result as any).notes)) {
+		const notes = (result as any).notes as Array<any>;
+		if (notes.length === 0) {
+			return "I couldn't find any notes matching that query.";
+		}
+
+		return [
+			"Matching notes",
+			...notes.slice(0, 6).map((note) => {
+				const channelSuffix = note?.channelName ? ` (#${note.channelName})` : "";
+				return `- ${String(note?.title ?? "Untitled note").trim()}${channelSuffix}`;
+			}),
+		].join("\n");
+	}
+
+	return null;
+}
+
 // System prompt for Proddy AI assistant
 const SYSTEM_PROMPT = `You are Proddy, a personal work assistant for team workspaces.
 
@@ -38,10 +211,13 @@ Guidelines:
 - When showing dates/times, use readable formats
 - If you don't have information, say so clearly
 - Never invent data - only use what the tools return
+- If a tool returns notes, messages, or summaries, use that returned data directly and do not say you lack access
+- Never answer with "No response generated"
 
 Available capabilities:
 - Calendar: View today's/tomorrow's/next week's meetings
 - Tasks: Check tasks due today/tomorrow or all tasks
+- Notes: List recent notes and search notes by topic
 - Channels: Search channels, get channel summaries
 - Boards: View assigned cards across all boards
 - Workspace: Get overview statistics
@@ -133,6 +309,46 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		handlerType: "query" as const,
 		handler: api.assistantTools.getMyAllTasks,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getRecentNotes",
+		description:
+			"Get recent notes in the workspace. Use this when the user asks whether there are notes, asks for recent notes, or wants a list of notes.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				limit: {
+					type: "number",
+					description: "Max number of recent notes to return (default: 10)",
+				},
+			},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getRecentNotes,
+		contextParams: { needsWorkspaceId: true },
+	},
+	{
+		name: "searchNotes",
+		description:
+			"Search notes in the workspace by topic or keyword. Use this when the user asks for notes about something specific like onboarding, release planning, or documentation.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				query: {
+					type: "string",
+					description: "Topic or keyword to search for in notes",
+				},
+				limit: {
+					type: "number",
+					description: "Max number of matching notes to return (default: 10)",
+				},
+			},
+			required: ["query"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.searchNotes,
+		contextParams: { needsWorkspaceId: true },
 	},
 	{
 		name: "searchChannels",
@@ -615,6 +831,48 @@ export const sendMessage = action({
 			let responseText =
 				completion.choices[0]?.message?.content || "No response generated";
 			const toolCalls = completion.choices[0]?.message?.tool_calls;
+			const collectedSourceRefs: string[] = [];
+
+			// If the model returns empty content and no tools, fall back to RAG search.
+			// This makes keyword-only queries (e.g. "onboarding") still produce something useful.
+			if (
+				(!completion.choices[0]?.message?.content ||
+					!completion.choices[0].message.content.trim()) &&
+				(!toolCalls || toolCalls.length === 0)
+			) {
+				try {
+					const search = (await ctx.runAction(api.assistantTools.semanticSearch, {
+						workspaceId: resolvedWorkspaceId,
+						query: args.message,
+						limit: 5,
+					})) as any;
+					const results = Array.isArray(search?.results) ? search.results : [];
+					if (results.length) {
+						for (const r of results) {
+							if (Array.isArray(r?.sourceRefs)) {
+								for (const ref of r.sourceRefs) {
+									if (typeof ref === "string" && ref.trim())
+										collectedSourceRefs.push(ref.trim());
+								}
+							}
+						}
+						const lines = results
+							.slice(0, 5)
+							.map((r: any, i: number) => {
+								const text = String(r?.text ?? "").trim();
+								const snippet = text.length > 160 ? `${text.slice(0, 160)}…` : text;
+								return `- (${i + 1}) ${snippet || "(no snippet)"}`;
+							})
+							.join("\n");
+						responseText = `I found a few relevant items:\n${lines}`.trim();
+					} else {
+						responseText =
+							"I couldn't find anything relevant in your workspace yet.";
+					}
+				} catch {
+					// Keep the original placeholder if search fails.
+				}
+			}
 
 			// Execute tool calls if any
 			if (toolCalls && toolCalls.length > 0) {
@@ -644,6 +902,10 @@ export const sendMessage = action({
 									result = await ctx.runAction(tool.handler as any, fullArgs);
 								}
 
+								for (const ref of collectSourceRefsFromToolResult(toolName, result)) {
+									collectedSourceRefs.push(ref);
+								}
+
 								// Call again with tool result
 								const followUpMessages = [
 									...messages,
@@ -664,8 +926,13 @@ export const sendMessage = action({
 									}
 								);
 
+								const followUpText =
+									followUpCompletion.choices[0]?.message?.content?.trim() || "";
+								const fallbackText =
+									createFallbackResponseFromToolResult(toolName, result);
 								responseText =
-									followUpCompletion.choices[0]?.message?.content ||
+									followUpText ||
+									fallbackText ||
 									responseText;
 							}
 						} catch (error) {
@@ -676,6 +943,14 @@ export const sendMessage = action({
 						}
 					}
 				}
+			}
+
+			// Append a compact Sources section for visibility in the UI.
+			if (collectedSourceRefs.length) {
+				const unique = dedupeSourceRefs(collectedSourceRefs).slice(0, 5);
+				responseText = `${responseText.trim()}\n\nSources:\n${unique
+					.map((s) => `- ${s}`)
+					.join("\n")}`.trim();
 			}
 
 			// Finish streaming

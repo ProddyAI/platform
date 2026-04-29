@@ -2916,7 +2916,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		// ---------------------------------------------------------------------
 		// 4. FALLBACK → KNOWLEDGE BASE (RAG) – used by assistant/chatbot only
 		// ---------------------------------------------------------------------
-		let ragResults: Array<{ text: string }> = [];
+		let ragResults: Array<{ text: string; sourceRefs: string[] }> = [];
 		let isIndexing = false;
 		try {
 			const ragResponse = await ctx.runAction(api.ragchat.semanticSearch, {
@@ -2925,10 +2925,75 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 				query: args.query,
 				limit: 5,
 			});
+			const entriesById = new Map(
+				(ragResponse.entries ?? []).map((entry: any) => [entry.entryId, entry])
+			);
+			const dedupe = (items: string[]): string[] => {
+				const seen = new Set<string>();
+				const out: string[] = [];
+				for (const item of items) {
+					const cleaned = String(item ?? "").trim();
+					if (!cleaned || seen.has(cleaned)) continue;
+					seen.add(cleaned);
+					out.push(cleaned);
+				}
+				return out;
+			};
 			ragResults = ragResponse.results.map(
-				(r: { content: Array<{ text: string }> }) => ({
-					text: r.content.map((c) => c.text).join("\n"),
-				})
+				(r: { entryId: string; content: Array<{ text: string; metadata?: any }> }) => {
+					const entry = entriesById.get(r.entryId);
+					const firstContent = r.content?.[0];
+					const chunkMeta =
+						firstContent?.metadata && typeof firstContent.metadata === "object"
+							? firstContent.metadata
+							: {};
+					const entryMeta =
+						entry?.metadata && typeof entry.metadata === "object"
+							? entry.metadata
+							: {};
+					const contentType =
+						typeof chunkMeta.contentType === "string"
+							? chunkMeta.contentType
+							: typeof entryMeta.sourceType === "string"
+								? entryMeta.sourceType
+								: "content";
+					const sourceRefs = dedupe([
+						`source:${contentType}`,
+						entry?.title ? `title:${String(entry.title)}` : "",
+						entry?.key ? `entity:${String(entry.key)}` : "",
+						typeof entryMeta.parentTaskId === "string"
+							? `parentTask:${entryMeta.parentTaskId}`
+							: "",
+						typeof entryMeta.linkedIssueId === "string"
+							? `linkedIssue:${entryMeta.linkedIssueId}`
+							: "",
+						typeof entryMeta.issueId === "string"
+							? `issue:${entryMeta.issueId}`
+							: "",
+						typeof entryMeta.dependencyId === "string"
+							? `dependency:${entryMeta.dependencyId}`
+							: "",
+						typeof entryMeta.relatedEntityId === "string"
+							? `relatedEntity:${entryMeta.relatedEntityId}`
+							: "",
+						typeof entryMeta.channelId === "string"
+							? `workspaceContext:channel:${entryMeta.channelId}`
+							: "",
+						typeof entryMeta.documentId === "string"
+							? `document:${entryMeta.documentId}`
+							: "",
+						typeof chunkMeta.documentReference === "string"
+							? `documentRef:${chunkMeta.documentReference}`
+							: "",
+						typeof chunkMeta.sourceChain === "string"
+							? `sourceChain:${chunkMeta.sourceChain}`
+							: "",
+					]);
+					return {
+						text: r.content.map((c) => c.text).join("\n"),
+						sourceRefs,
+					};
+				}
 			);
 		} catch (error) {
 			const errorMessage =
@@ -2951,7 +3016,12 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		}
 
 		const ragContext = ragResults
-			.map((c, i) => `[Doc ${i + 1}] ${c.text ?? ""}`)
+			.map((c, i) => {
+				const citation = c.sourceRefs.length
+					? `Sources: ${c.sourceRefs.join(" | ")}`
+					: "Sources: unknown";
+				return `[Doc ${i + 1}] ${citation}\n${c.text ?? ""}`;
+			})
 			.join("\n\n");
 
 		if (!ragContext) {
@@ -3007,7 +3077,13 @@ Context:\n${combinedContext}`;
 				systemPrompt: "",
 				recentMessages: recentChatMessages,
 			});
-			const sources = [...(ragResults.length > 0 ? ["Knowledge Base"] : [])];
+			const uniqueSourceRefs = Array.from(
+				new Set(ragResults.flatMap((r) => r.sourceRefs))
+			).slice(0, 20);
+			const sources =
+				uniqueSourceRefs.length > 0
+					? uniqueSourceRefs
+					: [...(ragResults.length > 0 ? ["Knowledge Base"] : [])];
 			return { answer, sources };
 		} catch (error) {
 			console.error("LLM generation error in chatbot:", error);

@@ -14,7 +14,6 @@ import {
 	ExternalLink,
 	FileText,
 	Github,
-	Info,
 	Kanban,
 	Loader,
 	Mail,
@@ -159,6 +158,54 @@ const INTEGRATION_METADATA: Record<
 const getIntegrationMetadata = (app: string) =>
 	INTEGRATION_METADATA[app as SupportedIntegration];
 
+const SOURCES_HEADING = "\nSources:\n";
+
+function inferSourceType(sourceText: string) {
+	const prefix = sourceText.split(":")[0]?.trim().toLowerCase();
+	switch (prefix) {
+		case "task":
+			return "task";
+		case "note":
+			return "note";
+		case "message":
+		case "channel messages":
+			return "message";
+		case "board card":
+			return "card";
+		case "calendar event":
+			return "event";
+		case "channel":
+			return "channel";
+		default:
+			return "source";
+	}
+}
+
+function parseAssistantMessageContent(content: string) {
+	const markerIndex = content.lastIndexOf(SOURCES_HEADING);
+	if (markerIndex < 0) {
+		return { body: content, sources: [] as NonNullable<Message["sources"]> };
+	}
+
+	const body = content.slice(0, markerIndex).trimEnd();
+	const rawSources = content
+		.slice(markerIndex + SOURCES_HEADING.length)
+		.split("\n")
+		.map((line) => line.trim())
+		.filter((line) => line.startsWith("- "))
+		.map((line) => line.slice(2).trim())
+		.filter(Boolean);
+
+	return {
+		body,
+		sources: rawSources.map((sourceText, index) => ({
+			id: `source-${index}-${sourceText}`,
+			type: inferSourceType(sourceText),
+			text: sourceText,
+		})),
+	};
+}
+
 export const DashboardChatbot = ({
 	workspaceId,
 	member,
@@ -302,13 +349,22 @@ const DashboardChatbotBody = ({
 	});
 	const isLoading = isSending || isStreaming;
 
-	const displayMessages: Message[] = allMessages.map((msg, index) => ({
-		id: String((msg as any)._id ?? index),
-		content: msg.content ?? "",
-		sender: msg.role === "user" ? "user" : "assistant",
-		role: msg.role === "user" ? "user" : "assistant",
-		timestamp: new Date((msg as any)._creationTime ?? Date.now()),
-	}));
+	const displayMessages: Message[] = allMessages.map((msg, index) => {
+		const sender = msg.role === "user" ? "user" : "assistant";
+		const parsed =
+			sender === "assistant"
+				? parseAssistantMessageContent(msg.content ?? "")
+				: { body: msg.content ?? "", sources: [] };
+
+		return {
+			id: String((msg as any)._id ?? index),
+			content: parsed.body,
+			sender,
+			role: sender,
+			timestamp: new Date((msg as any)._creationTime ?? Date.now()),
+			sources: parsed.sources,
+		};
+	});
 
 	const renderedMessages = displayMessages.length
 		? displayMessages
@@ -541,25 +597,6 @@ Try asking me things like:`;
 		}
 	};
 
-	// Helper function to clean and format source text
-	const cleanSourceText = (text: string, _type: string) => {
-		// Remove markdown formatting for cleaner display
-		let cleaned = text
-			.replace(/#{1,6}\s/g, "") // Remove markdown headers
-			.replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold formatting
-			.replace(/\*(.*?)\*/g, "$1") // Remove italic formatting
-			.replace(/\n+/g, " ") // Replace newlines with spaces
-			.trim();
-
-		// Truncate if too long
-		if (cleaned.length > 100) {
-			cleaned = `${cleaned.substring(0, 100)}...`;
-		}
-
-		return cleaned;
-	};
-
-	// Helper function to get source type display name
 	const getSourceTypeDisplay = (type: string) => {
 		switch (type.toLowerCase()) {
 			case "message":
@@ -592,54 +629,26 @@ Try asking me things like:`;
 		}
 	};
 
-	// Helper function to render source badges
 	const renderSourceBadges = (sources: Message["sources"]) => {
 		if (!sources || sources.length === 0) return null;
 
-		// Group sources by type
-		const sourcesByType: Record<string, number> = {};
-		sources.forEach((source) => {
-			sourcesByType[source.type] = (sourcesByType[source.type] || 0) + 1;
-		});
-
 		return (
-			<div className="flex flex-wrap gap-1.5 mt-3 mb-1">
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button className="h-6 px-2 text-xs" size="sm" variant="outline">
-							<Info className="h-3 w-3 mr-1" />
-							Sources ({sources.length})
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-96 p-3">
-						<div className="space-y-2">
-							<h4 className="font-medium text-sm">
-								Sources used for this response:
-							</h4>
-							<div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-								{sources.map((source) => (
-									<div
-										className="text-xs p-2 bg-muted/50 rounded border"
-										key={source.id}
-									>
-										<div className="font-semibold text-primary mb-1">
-											{getSourceTypeDisplay(source.type)}
-										</div>
-										<div className="text-muted-foreground leading-relaxed">
-											{cleanSourceText(source.text, source.type)}
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
-					</PopoverContent>
-				</Popover>
-
-				{Object.entries(sourcesByType).map(([type, count]) => (
-					<Badge className="text-xs px-2 py-0.5" key={type} variant="outline">
-						{getSourceTypeDisplay(type)}: {count}
-					</Badge>
-				))}
+			<div className="mt-3 rounded-md border border-border/70 bg-background/70 p-3">
+				<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+					Sources
+				</p>
+				<div className="mt-2 flex flex-wrap gap-1.5">
+					{sources.map((source) => (
+						<Badge
+							className="max-w-full whitespace-normal break-words text-xs leading-relaxed"
+							key={source.id}
+							variant="secondary"
+						>
+							<span className="font-medium">{getSourceTypeDisplay(source.type)}:</span>
+							<span className="ml-1">{source.text.replace(/^[^:]+:\s*/, "")}</span>
+						</Badge>
+					))}
+				</div>
 			</div>
 		);
 	};

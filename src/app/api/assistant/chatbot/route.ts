@@ -21,6 +21,60 @@ export const dynamic = "force-dynamic";
 
 const CONTROL_CHARS_PATTERN = "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]";
 const CONTROL_CHARS_REGEX = new RegExp(CONTROL_CHARS_PATTERN, "g");
+const SOURCES_HEADING = "\nSources:\n";
+
+type AssistantSource = {
+	id: string;
+	type: string;
+	text: string;
+};
+
+function inferSourceType(sourceText: string) {
+	const prefix = sourceText.split(":")[0]?.trim().toLowerCase();
+	switch (prefix) {
+		case "task":
+			return "task";
+		case "note":
+			return "note";
+		case "message":
+		case "channel messages":
+			return "message";
+		case "board card":
+			return "card";
+		case "calendar event":
+			return "event";
+		case "channel":
+			return "channel";
+		default:
+			return "source";
+	}
+}
+
+function parseAssistantResponse(content: string): {
+	body: string;
+	sources: AssistantSource[];
+} {
+	const markerIndex = content.lastIndexOf(SOURCES_HEADING);
+	if (markerIndex < 0) {
+		return { body: content, sources: [] };
+	}
+
+	const body = content.slice(0, markerIndex).trimEnd();
+	const sources = content
+		.slice(markerIndex + SOURCES_HEADING.length)
+		.split("\n")
+		.map((line) => line.trim())
+		.filter((line) => line.startsWith("- "))
+		.map((line) => line.slice(2).trim())
+		.filter(Boolean)
+		.map((sourceText, index) => ({
+			id: `source-${index}-${sourceText}`,
+			type: inferSourceType(sourceText),
+			text: sourceText,
+		}));
+
+	return { body, sources };
+}
 
 /**
  * Create a Convex HTTP client configured from the NEXT_PUBLIC_CONVEX_URL environment variable.
@@ -430,12 +484,14 @@ export async function POST(req: NextRequest) {
 				);
 			}
 
-			const responseText = result.content || "No response generated";
+			const rawResponseText = result.content || "No response generated";
+			const { body: responseText, sources } =
+				parseAssistantResponse(rawResponseText);
 
 			return NextResponse.json({
 				success: true,
 				response: responseText,
-				sources: [],
+				sources,
 				actions: [],
 				toolResults: [],
 				assistantType: "ai-tools",

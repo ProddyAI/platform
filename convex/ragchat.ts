@@ -39,6 +39,36 @@ function extractTextFromRichText(body: string): string {
 	return body.trim();
 }
 
+function createContentTitle(
+	contentType: "message" | "task" | "note" | "card" | "event",
+	text: string,
+	fallbackId?: string
+) {
+	const normalized = text.replace(/\s+/g, " ").trim();
+	if (normalized) {
+		const clipped =
+			normalized.length > 80
+				? `${normalized.slice(0, 77).trimEnd()}...`
+				: normalized;
+		return clipped;
+	}
+
+	switch (contentType) {
+		case "message":
+			return fallbackId ? `Message ${fallbackId}` : "Message";
+		case "task":
+			return fallbackId ? `Task ${fallbackId}` : "Task";
+		case "note":
+			return fallbackId ? `Note ${fallbackId}` : "Note";
+		case "card":
+			return fallbackId ? `Board Card ${fallbackId}` : "Board Card";
+		case "event":
+			return fallbackId ? `Calendar Event ${fallbackId}` : "Calendar Event";
+		default:
+			return fallbackId ?? "Workspace Item";
+	}
+}
+
 export const indexContent = action({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -75,11 +105,24 @@ export const indexContent = action({
 			{ name: "contentType", value: args.contentType },
 			{ name: "channelId", value: channelIdFilterValue },
 		];
+		const metadataInput =
+			args.metadata && typeof args.metadata === "object" ? args.metadata : {};
+		const entryTitle =
+			typeof (metadataInput as { title?: unknown }).title === "string"
+				? String((metadataInput as { title?: unknown }).title).trim()
+				: undefined;
+		const entryMetadata = {
+			sourceType: args.contentType,
+			sourceId: args.contentId,
+			...metadataInput,
+		};
 		await rag.add(ctx, {
 			namespace: args.workspaceId,
 			key: args.contentId,
 			text: args.text,
 			filterValues,
+			title: entryTitle,
+			metadata: entryMetadata,
 		});
 	},
 });
@@ -173,12 +216,14 @@ export const autoIndexMessage = action({
 			id: args.messageId,
 		});
 		if (message) {
+			const messageText = extractTextFromRichText(message.body);
 			await ctx.runAction(api.ragchat.indexContent, {
 				workspaceId: message.workspaceId,
 				contentId: message._id,
 				contentType: "message",
-				text: extractTextFromRichText(message.body),
+				text: messageText,
 				metadata: {
+					title: createContentTitle("message", messageText, message._id),
 					channelId: message.channelId,
 					memberId: message.memberId,
 					conversationId: message.conversationId,
@@ -195,12 +240,14 @@ export const autoIndexNote = action({
 			noteId: args.noteId,
 		});
 		if (note) {
+			const noteText = `${note.title}: ${extractTextFromRichText(note.content)}`;
 			await ctx.runAction(api.ragchat.indexContent, {
 				workspaceId: note.workspaceId,
 				contentId: note._id,
 				contentType: "note",
-				text: `${note.title}: ${extractTextFromRichText(note.content)}`,
+				text: noteText,
 				metadata: {
+					title: createContentTitle("note", note.title || noteText, note._id),
 					channelId: note.channelId,
 					memberId: note.memberId,
 				},
@@ -242,6 +289,7 @@ export const autoIndexTask = action({
 				contentType: "task",
 				text: task.title + (task.description ? `: ${task.description}` : ""),
 				metadata: {
+					title: task.title,
 					userId: task.userId,
 					status: task.status,
 					completed: task.completed,
@@ -265,6 +313,7 @@ export const autoIndexCard = action({
 				contentType: "card",
 				text: card.title + (card.description ? `: ${card.description}` : ""),
 				metadata: {
+					title: card.title,
 					listId: card.listId,
 					channelId: list.channelId,
 				},
@@ -288,6 +337,7 @@ export const autoIndexCalendarEvent = action({
 					contentType: "event",
 					text,
 					metadata: {
+						title: event.title,
 						date: event.date,
 						memberId: event.memberId,
 					},
@@ -342,6 +392,7 @@ export const bulkIndexWorkspace = action({
 					contentType: "message",
 					text: extractTextFromRichText(message.body),
 					metadata: {
+						title: `Message ${message._id}`,
 						channelId: message.channelId,
 						memberId: message.memberId,
 						conversationId: message.conversationId,
@@ -366,6 +417,7 @@ export const bulkIndexWorkspace = action({
 					contentType: "note",
 					text: `${note.title}: ${extractTextFromRichText(note.content)}`,
 					metadata: {
+						title: note.title,
 						channelId: note.channelId,
 						memberId: note.memberId,
 					},
@@ -389,6 +441,7 @@ export const bulkIndexWorkspace = action({
 					contentType: "task",
 					text: task.title + (task.description ? `: ${task.description}` : ""),
 					metadata: {
+						title: task.title,
 						userId: task.userId,
 						status: task.status,
 						completed: task.completed,
@@ -414,6 +467,7 @@ export const bulkIndexWorkspace = action({
 					contentType: "card",
 					text: card.title + (card.description ? `: ${card.description}` : ""),
 					metadata: {
+						title: card.title,
 						listId: card.listId,
 						channelId: list.channelId,
 					},

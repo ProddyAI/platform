@@ -7,6 +7,7 @@
 
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
 import { action, query } from "./_generated/server";
 
 // Helper functions
@@ -427,6 +428,117 @@ export const getMyAllTasks = query({
 });
 
 // =============================================================================
+// NOTES TOOLS
+// =============================================================================
+
+export const getRecentNotes = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+	},
+	returns: v.object({
+		notes: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				channelName: v.optional(v.string()),
+				updatedAt: v.optional(v.number()),
+			})
+		),
+		count: v.number(),
+	}),
+	handler: async (ctx, args) => {
+		const notes = await ctx.db
+			.query("notes")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.order("desc")
+			.take(args.limit ?? 10);
+
+		const typedNotes = notes as Doc<"notes">[];
+		const channelIds = Array.from(
+			new Set(typedNotes.map((note) => note.channelId))
+		) as Id<"channels">[];
+		const channels = await Promise.all(
+			channelIds.map((channelId) => ctx.db.get(channelId))
+		);
+		const channelMap = new Map(
+			channels
+				.filter((channel): channel is Doc<"channels"> => Boolean(channel))
+				.map((channel) => [channel._id, channel.name] as const)
+		);
+
+		return {
+			notes: typedNotes.map((note) => ({
+				id: note._id,
+				title: note.title,
+				channelName: channelMap.get(note.channelId),
+				updatedAt: note.updatedAt,
+			})),
+			count: notes.length,
+		};
+	},
+});
+
+export const searchNotes = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		query: v.string(),
+		limit: v.optional(v.number()),
+	},
+	returns: v.object({
+		notes: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				channelName: v.optional(v.string()),
+				sourceRefs: v.array(v.string()),
+			})
+		),
+		count: v.number(),
+	}),
+	handler: async (ctx, args) => {
+		const noteResults = (await ctx.runQuery(api.search.searchNotes, {
+			workspaceId: args.workspaceId,
+			query: args.query,
+			limit: args.limit ?? 10,
+		})) as Array<{
+			_id: Id<"notes">;
+			title: string;
+			channelId: Id<"channels">;
+		}>;
+
+		const channelIds = Array.from(
+			new Set(noteResults.map((note) => note.channelId))
+		) as Id<"channels">[];
+		const channels = await Promise.all(
+			channelIds.map((channelId) => ctx.db.get(channelId))
+		);
+		const channelMap = new Map(
+			channels
+				.filter((channel): channel is Doc<"channels"> => Boolean(channel))
+				.map((channel) => [channel._id, channel.name] as const)
+		);
+
+		return {
+			notes: noteResults.map((note) => ({
+				id: note._id,
+				title: note.title,
+				channelName: channelMap.get(note.channelId),
+				sourceRefs: [
+					`Note: ${note.title}`,
+					...(channelMap.get(note.channelId)
+						? [`Channel: #${channelMap.get(note.channelId)}`]
+						: []),
+				],
+			})),
+			count: noteResults.length,
+		};
+	},
+});
+
+// =============================================================================
 // CHANNEL & MESSAGING TOOLS
 // =============================================================================
 
@@ -701,6 +813,7 @@ export const semanticSearch: ReturnType<typeof action> = action({
 				text: v.string(),
 				type: v.string(),
 				score: v.number(),
+				sourceRefs: v.array(v.string()),
 			})
 		),
 		count: v.number(),
@@ -709,7 +822,13 @@ export const semanticSearch: ReturnType<typeof action> = action({
 		ctx,
 		args
 	): Promise<{
-		results: Array<{ id: string; text: string; type: string; score: number }>;
+		results: Array<{
+			id: string;
+			text: string;
+			type: string;
+			score: number;
+			sourceRefs: string[];
+		}>;
 		count: number;
 	}> => {
 		// Use existing RAG semantic search
@@ -723,19 +842,89 @@ export const semanticSearch: ReturnType<typeof action> = action({
 				score: number;
 				content: Array<{ text: string; metadata?: Record<string, unknown> }>;
 			}>;
+			entries?: Array<{
+				entryId: string;
+				key?: string;
+				title?: string;
+				metadata?: Record<string, unknown>;
+			}>;
+		};
+
+		const entriesById = new Map(
+			(searchResult.entries ?? []).map((entry) => [entry.entryId, entry] as const)
+		);
+		const createSnippet = (text: string) => {
+			const normalized = text.replace(/\s+/g, " ").trim();
+			if (!normalized) return "";
+			return normalized.length > 80
+				? `${normalized.slice(0, 77).trimEnd()}...`
+				: normalized;
+		};
+		const getSourceTypeLabel = (contentType: string) => {
+			switch (contentType) {
+				case "task":
+					return "Task";
+				case "note":
+					return "Note";
+				case "message":
+					return "Message";
+				case "card":
+					return "Board Card";
+				case "event":
+					return "Calendar Event";
+				default:
+					return "Workspace Item";
+			}
+		};
+		const dedupe = (items: string[]): string[] => {
+			const seen = new Set<string>();
+			const out: string[] = [];
+			for (const item of items) {
+				const cleaned = item.trim();
+				if (!cleaned) continue;
+				if (seen.has(cleaned)) continue;
+				seen.add(cleaned);
+				out.push(cleaned);
+			}
+			return out;
 		};
 
 		const mappedResults = searchResult.results.map((r) => {
 			const firstContent = r.content?.[0];
+			const entry = entriesById.get(r.entryId);
 			const contentType =
 				firstContent && typeof firstContent.metadata?.contentType === "string"
 					? String(firstContent.metadata?.contentType)
-					: "content";
+					: typeof entry?.metadata?.sourceType === "string"
+						? String(entry.metadata?.sourceType)
+						: "content";
+			const contentMeta =
+				firstContent?.metadata && typeof firstContent.metadata === "object"
+					? firstContent.metadata
+					: {};
+			const entryMeta =
+				entry?.metadata && typeof entry.metadata === "object" ? entry.metadata : {};
+			const sourceTypeLabel = getSourceTypeLabel(contentType);
+			const primaryLabel =
+				entry?.title?.trim() ||
+				createSnippet(firstContent?.text ?? "") ||
+				String(entry?.key ?? "").trim() ||
+				r.entryId;
+			const sourceRefs = dedupe([
+				`${sourceTypeLabel}: ${primaryLabel}`,
+				typeof contentMeta.documentReference === "string"
+					? `Document Ref: ${contentMeta.documentReference}`
+					: "",
+				typeof contentMeta.sourceChain === "string"
+					? `Source Chain: ${contentMeta.sourceChain}`
+					: "",
+			]);
 			return {
 				id: r.entryId,
 				text: firstContent?.text ?? "",
 				type: contentType,
 				score: r.score ?? 0,
+				sourceRefs,
 			};
 		});
 
