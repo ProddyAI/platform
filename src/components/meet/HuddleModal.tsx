@@ -13,12 +13,11 @@ import { Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
 	Dialog,
+	DialogClose,
 	DialogContent,
 	DialogDescription,
-	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
@@ -177,15 +176,26 @@ export function HuddleModal({
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="max-w-2xl overflow-hidden rounded-xl border-border bg-card p-0 text-foreground shadow-xl">
-				<DialogHeader className="space-y-1 border-b border-border px-6 py-5 text-left">
-					<DialogTitle>Start meeting</DialogTitle>
-					<DialogDescription>
-						Check your camera and mic before you join.
-					</DialogDescription>
-				</DialogHeader>
+			<DialogContent className="max-w-[460px] rounded-xl border bg-background p-0 shadow-sm [&>button:last-child]:hidden">
+				<div className="space-y-4 p-5 text-foreground">
+					<div className="mb-3 flex items-center justify-between">
+						<div>
+							<DialogTitle className="text-lg font-semibold">
+								Join meeting
+							</DialogTitle>
+							<DialogDescription>
+								Check your camera and microphone
+							</DialogDescription>
+						</div>
+						<DialogClose
+							className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+							type="button"
+						>
+							<span aria-hidden="true">x</span>
+							<span className="sr-only">Close</span>
+						</DialogClose>
+					</div>
 
-				<div className="space-y-5 p-6">
 					{preview.status === "ready" && preview.client && preview.call ? (
 						<StreamVideo client={preview.client}>
 							<StreamCall call={preview.call}>
@@ -260,9 +270,9 @@ function HuddlePreview({
 	};
 
 	return (
-		<div className="space-y-5">
-			<div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
-				<div className="aspect-video w-full bg-muted/30 [&_.str-video__video-preview-container]:h-full [&_.str-video__video-preview-container]:w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover">
+		<div className="space-y-4">
+			<div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl border bg-muted">
+				<div className="h-full w-full [&_.str-video__video-preview-container]:h-full [&_.str-video__video-preview-container]:w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover">
 					<VideoPreview
 						DisabledVideoPreview={() => (
 							<PreviewAvatar
@@ -279,52 +289,55 @@ function HuddlePreview({
 						className="h-full w-full"
 					/>
 				</div>
-				<div className="flex items-center justify-between border-t border-border px-4 py-3">
-					<div className="min-w-0">
-						<p className="truncate font-medium text-foreground text-sm">
-							{displayName}
-						</p>
-					</div>
-					<div className="flex items-center gap-2">
-						<ControlButton
-							disabled={isBusy}
-							icon={
-								isMicMuted ? (
-									<MicOff className="h-5 w-5" />
-								) : (
-									<Mic className="h-5 w-5" />
-								)
-							}
-							isActive={!isMicMuted}
-							isDestructive={isMicMuted}
-							label={isMicMuted ? "Unmute microphone" : "Mute microphone"}
-							onClick={() => runControl(() => microphone.toggle())}
-						/>
-						<ControlButton
-							disabled={isBusy}
-							icon={
-								isCameraMuted ? (
-									<VideoOff className="h-5 w-5" />
-								) : (
-									<Video className="h-5 w-5" />
-								)
-							}
-							isActive={!isCameraMuted}
-							isDestructive={isCameraMuted}
-							label={isCameraMuted ? "Turn camera on" : "Turn camera off"}
-							onClick={() => runControl(() => camera.toggle())}
-						/>
-					</div>
+				<div className="absolute bottom-3 left-3 rounded-full bg-background/80 px-3 py-1 text-xs text-foreground backdrop-blur">
+					{displayName}
 				</div>
 			</div>
 
-			<div className="flex items-center justify-end gap-3">
-				<Button onClick={onCancel} type="button" variant="outline">
+			<div className="flex justify-center gap-3">
+				<ControlButton
+					disabled={isBusy}
+					icon={
+						isMicMuted ? (
+							<MicOff className="h-5 w-5" />
+						) : (
+							<Mic className="h-5 w-5" />
+						)
+					}
+					isActive={!isMicMuted}
+					label={isMicMuted ? "Unmute microphone" : "Mute microphone"}
+					onClick={() => runControl(() => microphone.toggle())}
+				/>
+				<ControlButton
+					disabled={isBusy}
+					icon={
+						isCameraMuted ? (
+							<VideoOff className="h-5 w-5" />
+						) : (
+							<Video className="h-5 w-5" />
+						)
+					}
+					isActive={!isCameraMuted}
+					label={isCameraMuted ? "Turn camera on" : "Turn camera off"}
+					onClick={() => runControl(() => camera.toggle())}
+				/>
+			</div>
+
+			<div className="flex justify-end gap-2">
+				<button
+					className="rounded-md bg-muted px-4 py-2 text-sm text-foreground transition hover:bg-accent"
+					onClick={onCancel}
+					type="button"
+				>
 					Cancel
-				</Button>
-				<Button onClick={handleStart} type="button">
-					Start meeting
-				</Button>
+				</button>
+				<button
+					className="rounded-md bg-primary px-4 py-2 text-sm text-white transition hover:opacity-90"
+					onClick={handleStart}
+					type="button"
+				>
+					Join meeting
+				</button>
 			</div>
 		</div>
 	);
@@ -334,14 +347,12 @@ function ControlButton({
 	disabled,
 	icon,
 	isActive,
-	isDestructive,
 	label,
 	onClick,
 }: {
 	disabled?: boolean;
 	icon: React.ReactNode;
 	isActive: boolean;
-	isDestructive?: boolean;
 	label: string;
 	onClick: () => void;
 }) {
@@ -349,12 +360,8 @@ function ControlButton({
 		<button
 			aria-label={label}
 			className={cn(
-				"flex h-11 w-11 items-center justify-center rounded-full border text-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60",
-				isDestructive
-					? "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15"
-					: isActive
-						? "border-border bg-background text-foreground hover:bg-background/80"
-						: "border-border bg-background text-muted-foreground hover:bg-background/80"
+				"flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60",
+				isActive ? "bg-primary text-white hover:bg-primary/90" : "text-muted-foreground"
 			)}
 			disabled={disabled}
 			onClick={onClick}
@@ -378,8 +385,8 @@ function PreviewFallback({
 	onCancel: () => void;
 }) {
 	return (
-		<div className="space-y-5">
-			<div className="flex aspect-video items-center justify-center rounded-xl border border-border bg-background shadow-sm">
+		<div className="space-y-4">
+			<div className="flex aspect-video items-center justify-center rounded-xl border bg-muted">
 				{isLoading ? (
 					<p className="text-muted-foreground text-sm">Preparing your preview...</p>
 				) : (
@@ -389,13 +396,21 @@ function PreviewFallback({
 					/>
 				)}
 			</div>
-			<div className="flex items-center justify-end gap-3">
-				<Button onClick={onCancel} type="button" variant="outline">
+			<div className="flex justify-end gap-2">
+				<button
+					className="rounded-md bg-muted px-4 py-2 text-sm text-foreground transition hover:bg-accent"
+					onClick={onCancel}
+					type="button"
+				>
 					Cancel
-				</Button>
-				<Button disabled type="button">
-					Start meeting
-				</Button>
+				</button>
+				<button
+					className="rounded-md bg-primary px-4 py-2 text-sm text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+					disabled
+					type="button"
+				>
+					Join meeting
+				</button>
 			</div>
 		</div>
 	);
@@ -410,12 +425,12 @@ function PreviewAvatar({
 }) {
 	return (
 		<div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center">
-			<div className="flex h-20 w-20 items-center justify-center rounded-full border border-border bg-card font-semibold text-2xl text-foreground shadow-sm">
+			<div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 font-semibold text-lg text-foreground">
 				{getInitials(label)}
 			</div>
 			<div className="space-y-1">
-				<p className="font-medium text-foreground text-sm">{label}</p>
-				<p className="text-muted-foreground text-sm">{subtitle}</p>
+				<p className="text-sm text-foreground">{label}</p>
+				<p className="text-muted-foreground text-xs">{subtitle}</p>
 			</div>
 		</div>
 	);

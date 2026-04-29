@@ -12,6 +12,7 @@ import { TidioChat } from "@/components/3pc/tidio-chat";
 import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
 import { JotaiProvider } from "@/components/jotai-provider";
 import { ModalProvider } from "@/components/modal-provider";
+import { MiniPlayer } from "@/components/meet/MiniPlayer";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config";
 import { ConvexClientProvider } from "@/config/convex-client-provider";
@@ -95,6 +96,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 									<ClarityTracking />
 									<ApolloTracking />
 									<GoogleAnalyticsTracking />
+									<MiniPlayer />
 									{children}
 								</UsetifulProvider>
 							</JotaiProvider>
