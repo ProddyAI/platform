@@ -47,7 +47,41 @@ const DashboardPage = () => {
 		};
 	}, [member, currentUser]);
 
-	if (!workspaceId || memberLoading || userLoading || !enhancedMember) {
+	if (memberLoading || userLoading) {
+		return (
+			<div className="flex h-full items-center justify-center">
+				<Loader className="size-6 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
+
+	if (currentUser === null) {
+		return (
+			<div className="flex h-full flex-col items-center justify-center gap-y-4">
+				<p className="text-sm text-muted-foreground">
+					Your session has expired. Please sign in again.
+				</p>
+				<Button onClick={() => window.location.href = "/auth/signin"} variant="outline">
+					Sign In
+				</Button>
+			</div>
+		);
+	}
+
+	if (member === null) {
+		return (
+			<div className="flex h-full flex-col items-center justify-center gap-y-4">
+				<p className="text-sm text-muted-foreground">
+					You are not a member of this workspace.
+				</p>
+				<Button onClick={() => window.location.href = "/workspace"} variant="outline">
+					Go to Workspaces
+				</Button>
+			</div>
+		);
+	}
+
+	if (!workspaceId || !enhancedMember) {
 		return (
 			<div className="flex h-full items-center justify-center">
 				<Loader className="size-6 animate-spin text-muted-foreground" />

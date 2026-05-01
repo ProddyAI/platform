@@ -16,16 +16,8 @@ interface ComposioConnection {
  */
 type ConnectedAccountDeleteResult = boolean | undefined | { success: boolean };
 
-if (!process.env.OPENAI_API_KEY) {
-	throw new Error("OPENAI_API_KEY is required");
-}
-
-if (!process.env.COMPOSIO_API_KEY) {
-	throw new Error("COMPOSIO_API_KEY is required");
-}
-
 export const composio = new Composio({
-	apiKey: process.env.COMPOSIO_API_KEY,
+	apiKey: process.env.COMPOSIO_API_KEY || "dummy_composio_key_for_build",
 	provider: new VercelProvider(),
 });
 

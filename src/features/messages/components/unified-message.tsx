@@ -124,6 +124,8 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 	// Handle click action
 	const handleClick = () => {
+		console.log("UnifiedMessage: Button clicked", { type: data.type, noteId: data.noteId, roomId: data.roomId });
+
 		if (isFile) {
 			if (data.fileUrl) {
 				window.open(data.fileUrl, "_blank", "noopener,noreferrer");
@@ -131,28 +133,32 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 			return;
 		}
 
-		if (!workspaceId || !channelId) return;
+		if (!workspaceId || !channelId) {
+			console.error("UnifiedMessage: Missing workspaceId or channelId", { workspaceId, channelId });
+			return;
+		}
 
 		let url = "";
 
 		if (isCanvas) {
-			if (isLive) {
-				// For live canvas, navigate to canvas with room ID
-				url = `/workspace/${workspaceId}/channel/${channelId}/canvas?roomId=${data.roomId}&t=${Date.now()}`;
-			} else {
-				// For regular canvas, navigate with canvas name and room ID
-				url = `/workspace/${workspaceId}/channel/${channelId}/canvas?roomId=${data.roomId}&canvasName=${encodeURIComponent(data.canvasName || "")}&t=${Date.now()}`;
+			const id = data.roomId || data.savedCanvasId;
+			if (!id) {
+				console.error("UnifiedMessage: Missing roomId for canvas");
+				return;
 			}
+			url = `/workspace/${workspaceId}/channel/${channelId}/canvas?roomId=${id}&t=${Date.now()}`;
 		} else {
-			// For notes (live or regular)
-			if (isLive) {
-				url = `/workspace/${workspaceId}/channel/${channelId}/notes?noteId=${data.noteId}&t=${Date.now()}`;
-			} else {
-				url = `/workspace/${workspaceId}/channel/${channelId}/notes?noteId=${data.noteId}`;
+			const id = data.noteId || data.roomId;
+			if (!id) {
+				console.error("UnifiedMessage: Missing noteId for note");
+				return;
 			}
+			// Use the correct noteId parameter
+			url = `/workspace/${workspaceId}/channel/${channelId}/notes?noteId=${id}&t=${Date.now()}`;
 		}
 
-		router.push(url);
+		console.log("UnifiedMessage: Forcing navigation to", url);
+		window.location.href = url;
 	};
 
 	return (

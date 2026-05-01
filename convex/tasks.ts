@@ -552,3 +552,39 @@ export const createTaskFromMessage = mutation({
 		return taskId;
 	},
 });
+
+export const createBulkFromAI = mutation({
+	args: {
+		workspaceId: v.id('workspaces'),
+		tasks: v.array(v.object({
+			title: v.string(),
+			assigneeUserId: v.optional(v.id('users')),
+			priority: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
+		}))
+	},
+	handler: async (ctx, args) => {
+		const currentUserId = await getAuthUserId(ctx);
+		if (!currentUserId) throw new Error('Unauthorized');
+		
+		const now = Date.now();
+		const taskIds = [];
+		
+		for (const task of args.tasks) {
+			const targetUserId = task.assigneeUserId || currentUserId;
+			const taskId = await ctx.db.insert('tasks', {
+				title: task.title,
+				description: 'Auto-generated from AI Meeting Notes',
+				completed: false,
+				status: 'not_started',
+				priority: task.priority || 'medium',
+				tags: ['AI', 'Meeting'],
+				createdAt: now,
+				updatedAt: now,
+				userId: targetUserId,
+				workspaceId: args.workspaceId,
+			});
+			taskIds.push(taskId);
+		}
+		return taskIds;
+	}
+});

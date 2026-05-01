@@ -15,7 +15,7 @@ export const useCurrentMember = ({ workspaceId }: UseCurrentMemberProps) => {
 		workspaceId ? { workspaceId } : "skip"
 	);
 
-	const isLoading = data === undefined;
+	const isLoading = workspaceId !== undefined && data === undefined;
 
 	return { data, isLoading };
 };

@@ -893,6 +893,26 @@ const schema = defineSchema({
 		.index("by_connection_id", ["connectionId"])
 		.index("by_status", ["status"])
 		.index("by_workspace_status", ["workspaceId", "status"]),
+
+	meetingNotes: defineTable({
+		roomId: v.string(),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
+		transcript: v.string(),
+		summary: v.optional(v.string()),
+		actionItems: v.optional(v.array(v.string())),
+		decisions: v.optional(v.array(v.string())),
+		status: v.union(
+			v.literal("recording"),
+			v.literal("generating"),
+			v.literal("completed"),
+			v.literal("failed")
+		),
+		userId: v.id("users"),
+		createdAt: v.number(),
+	})
+		.index("by_room", ["roomId"])
+		.index("by_workspace", ["workspaceId"]),
 });
 
 export default schema;
