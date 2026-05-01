@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
@@ -13,8 +13,8 @@ type FilterTypes = {
 };
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: openai.embedding("text-embedding-3-small") as any,
-	embeddingDimension: 1536,
+	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004") as any,
+	embeddingDimension: 768,
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
@@ -56,31 +56,36 @@ export const indexContent = action({
 	handler: async (ctx, args) => {
 		if (!args.text || args.text.trim().length < 3) return;
 		if (!process.env.OPENAI_API_KEY) return;
-		const channelIdFilterValue = (() => {
-			const metadata = args.metadata as unknown;
-			if (!metadata || typeof metadata !== "object") {
+		try {
+			const channelIdFilterValue = (() => {
+				const metadata = args.metadata as unknown;
+				if (!metadata || typeof metadata !== "object") {
+					return NO_CHANNEL_FILTER_VALUE;
+				}
+				const maybeChannelId = (metadata as { channelId?: unknown }).channelId;
+				if (typeof maybeChannelId === "string" && maybeChannelId.length > 0) {
+					return maybeChannelId;
+				}
 				return NO_CHANNEL_FILTER_VALUE;
-			}
-			const maybeChannelId = (metadata as { channelId?: unknown }).channelId;
-			if (typeof maybeChannelId === "string" && maybeChannelId.length > 0) {
-				return maybeChannelId;
-			}
-			return NO_CHANNEL_FILTER_VALUE;
-		})();
-		const filterValues: Array<{
-			name: "workspaceId" | "contentType" | "channelId";
-			value: string;
-		}> = [
-			{ name: "workspaceId", value: args.workspaceId as string },
-			{ name: "contentType", value: args.contentType },
-			{ name: "channelId", value: channelIdFilterValue },
-		];
-		await rag.add(ctx, {
-			namespace: args.workspaceId,
-			key: args.contentId,
-			text: args.text,
-			filterValues,
-		});
+			})();
+			const filterValues: Array<{
+				name: "workspaceId" | "contentType" | "channelId";
+				value: string;
+			}> = [
+				{ name: "workspaceId", value: args.workspaceId as string },
+				{ name: "contentType", value: args.contentType },
+				{ name: "channelId", value: channelIdFilterValue },
+			];
+			await rag.add(ctx, {
+				namespace: args.workspaceId,
+				key: args.contentId,
+				text: args.text,
+				filterValues,
+			});
+		} catch (e) {
+			// Embedding model errors should not crash the app
+			console.error("indexContent failed (non-fatal):", e);
+		}
 	},
 });
 
@@ -191,20 +196,25 @@ export const autoIndexMessage = action({
 export const autoIndexNote = action({
 	args: { noteId: v.id("notes") },
 	handler: async (ctx, args) => {
-		const note = await ctx.runQuery(internal.notes._getNoteById, {
-			noteId: args.noteId,
-		});
-		if (note) {
-			await ctx.runAction(api.ragchat.indexContent, {
-				workspaceId: note.workspaceId,
-				contentId: note._id,
-				contentType: "note",
-				text: `${note.title}: ${extractTextFromRichText(note.content)}`,
-				metadata: {
-					channelId: note.channelId,
-					memberId: note.memberId,
-				},
+		try {
+			const note = await ctx.runQuery(internal.notes._getNoteById, {
+				noteId: args.noteId,
 			});
+			if (note) {
+				await ctx.runAction(api.ragchat.indexContent, {
+					workspaceId: note.workspaceId,
+					contentId: note._id,
+					contentType: "note",
+					text: `${note.title}: ${extractTextFromRichText(note.content)}`,
+					metadata: {
+						channelId: note.channelId,
+						memberId: note.memberId,
+					},
+				});
+			}
+		} catch (e) {
+			// Don't let embedding model errors crash the entire note flow
+			console.error("autoIndexNote failed (non-fatal):", e);
 		}
 	},
 });

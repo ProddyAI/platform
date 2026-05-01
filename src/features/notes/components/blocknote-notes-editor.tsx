@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { Note } from "../types";
 import { BlockNoteEditor } from "./blocknote-editor";
+import { useEffect } from "react";
 
 interface BlockNoteNotesEditorProps {
 	note: Note;
@@ -24,6 +25,33 @@ export const BlockNoteNotesEditor = ({
 
 	const handleEditorReady = useCallback((editor: BlockNoteEditorType) => {
 		editorRef.current = editor;
+	}, []);
+
+	useEffect(() => {
+		const handleInsertNotes = async (e: Event) => {
+			if (!editorRef.current) return;
+			
+			const customEvent = e as CustomEvent;
+			const { content } = customEvent.detail || {};
+			if (!content) return;
+			
+			try {
+				const blocks = await editorRef.current.tryParseMarkdownToBlocks(content);
+				if (blocks && blocks.length > 0) {
+					// Insert at the end of the document
+					editorRef.current.insertBlocks(blocks, editorRef.current.document[editorRef.current.document.length - 1], "after");
+					toast.success("Inserted AI notes into document!");
+				}
+			} catch (error) {
+				console.error("Failed to insert AI notes", error);
+				toast.error("Failed to insert AI notes into editor");
+			}
+		};
+
+		window.addEventListener("proddy:insert-ai-notes", handleInsertNotes);
+		return () => {
+			window.removeEventListener("proddy:insert-ai-notes", handleInsertNotes);
+		};
 	}, []);
 
 	const handleFormatNote = async () => {

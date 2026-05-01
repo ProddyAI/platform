@@ -62,9 +62,11 @@ function getConvexClient(): ConvexHttpClient {
 }
 
 export async function POST(req: NextRequest) {
+	console.log("[Liveblocks Auth] Incoming request");
 	try {
 		// Parse the request body
 		const rawBody: unknown = await req.json();
+		console.log("[Liveblocks Auth] Request body:", rawBody);
 		const body: LiveblocksAuthRequestBody = isRecord(rawBody)
 			? {
 					room: readString(rawBody, "room"),

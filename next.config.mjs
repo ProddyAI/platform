@@ -202,6 +202,16 @@ const baseConfig = withPWA({
 		// Ensure Convex URL is available in client bundle
 		NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
 	},
+	experimental: {
+		serverComponentsExternalPackages: ["yjs"],
+	},
+	webpack: (config) => {
+		config.resolve.alias = {
+			...config.resolve.alias,
+			yjs: "yjs",
+		};
+		return config;
+	},
 	eslint: {
 		ignoreDuringBuilds: true,
 	},

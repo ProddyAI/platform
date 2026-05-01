@@ -656,6 +656,8 @@ export const WorkspaceSidebar = ({
 				</div>
 			</div>
 
+
+
 			{/* Collapse/Expand Button - Hidden in mobile overlay */}
 			{!onMobileClose && (
 				<div className="mt-auto mb-4 flex justify-center">

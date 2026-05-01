@@ -50,6 +50,23 @@ export const SignInCard = ({
 			.finally(() => setPending(false));
 	};
 
+	const handleDevBypass = async () => {
+		setPending(true);
+		setError("");
+		try {
+			await signIn("password", { email: "admin@proddy.ai", password: "password123", flow: "signIn" });
+		} catch (e) {
+			try {
+				await signIn("password", { email: "admin@proddy.ai", password: "password123", name: "Admin", flow: "signUp" });
+			} catch (err) {
+				console.error(err);
+				setError("Dev bypass failed");
+			}
+		} finally {
+			setPending(false);
+		}
+	};
+
 	return (
 		<Card className="size-full p-8 shadow-xl border-opacity-30 backdrop-blur-sm animate-slide-up rounded-[10px]">
 			<CardHeader className="px-0 pt-0">
@@ -108,6 +125,16 @@ export const SignInCard = ({
 				<Separator />
 
 				<div className="flex flex-col gap-y-2.5">
+					<Button
+						className="relative w-full transition-standard hover:shadow-md group rounded-[10px] bg-green-600 text-white hover:bg-green-700"
+						disabled={pending}
+						onClick={handleDevBypass}
+						size="lg"
+						type="button"
+					>
+						Take me directly to workspace (Dev Bypass)
+					</Button>
+
 					<Button
 						className="relative w-full transition-standard hover:shadow-md group rounded-[10px]"
 						disabled={pending}

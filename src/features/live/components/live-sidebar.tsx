@@ -9,6 +9,7 @@ import {
 	Plus,
 	Search,
 	Trash2,
+	Brain,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -47,7 +48,7 @@ interface LiveSidebarProps {
 	onToggleCollapse: () => void;
 
 	// Action props
-	onCreateItem: () => void;
+	onCreateItem: (isAI?: boolean) => void;
 	onDeleteItem?: (itemId: string) => void;
 	onRenameItem?: (itemId: string, newName: string) => void;
 
@@ -190,7 +191,7 @@ export const LiveSidebar = ({
 				</div>
 
 				<div className="p-2">
-					<Button className="w-full h-8 p-0" onClick={onCreateItem} size="sm">
+					<Button className="w-full h-8 p-0" onClick={() => onCreateItem(false)} size="sm">
 						<Plus className="h-4 w-4" />
 					</Button>
 				</div>
@@ -238,9 +239,32 @@ export const LiveSidebar = ({
 							value={searchQuery}
 						/>
 					</div>
-					<Button onClick={onCreateItem} size="sm">
-						<Plus className="h-4 w-4" />
-					</Button>
+					{type === "notes" ? (
+						<div className="flex gap-1.5">
+							<Button
+								onClick={() => onCreateItem(false)}
+								size="sm"
+								variant="outline"
+								className="h-9 px-2"
+								title="New Note"
+							>
+								<Plus className="h-4 w-4" />
+							</Button>
+							<Button
+								onClick={() => onCreateItem(true)}
+								size="sm"
+								className="h-9 px-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-md gap-1.5 font-medium"
+								title="Create AI Meeting Note"
+							>
+								<Brain className="h-4 w-4" />
+								<span className="text-xs">AI Note</span>
+							</Button>
+						</div>
+					) : (
+						<Button onClick={() => onCreateItem(false)} size="sm">
+							<Plus className="h-4 w-4" />
+						</Button>
+					)}
 				</div>
 			</div>
 
@@ -260,7 +284,7 @@ export const LiveSidebar = ({
 							{!searchQuery && (
 								<Button
 									className="mt-2"
-									onClick={onCreateItem}
+									onClick={() => onCreateItem(false)}
 									size="sm"
 									variant="outline"
 								>

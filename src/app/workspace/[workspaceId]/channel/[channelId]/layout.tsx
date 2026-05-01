@@ -31,6 +31,8 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../../toolbar";
+import { AiNotemaker } from "@/components/AiNotemaker";
+import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
 
 interface ChannelIconProps {
 	iconImageUrl?: string | null;
@@ -582,6 +584,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
 		workspaceId,
 	});
+	const { isExpanded, isOpen } = useAiNotemakerStore();
 	const [ConfirmDialog, confirm] = useConfirm(
 		"Delete this channel?",
 		"You are about to delete this channel and any of its associated messages. This action is irreversible."
@@ -899,8 +902,17 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 				</Dialog>
 			</WorkspaceToolbar>
 
-			<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
-				{children}
+			<div className="flex-1 flex min-h-0 min-w-0">
+				{!isExpanded && (
+					<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+						{children}
+					</div>
+				)}
+				{isOpen && (
+					<div className={isExpanded ? "w-full h-full" : "hidden lg:flex w-[380px] border-l border-border"}>
+						<AiNotemaker channelId={channelId as string} workspaceId={workspaceId as string} />
+					</div>
+				)}
 			</div>
 		</div>
 	);

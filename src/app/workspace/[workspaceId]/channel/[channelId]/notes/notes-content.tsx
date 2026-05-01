@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Plus } from "lucide-react";
+import { Brain, FileText, Plus } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -30,7 +30,7 @@ interface NotesContentProps {
 	setShowExportDialog: (value: boolean) => void;
 	pageContainerRef: React.RefObject<HTMLDivElement>;
 	onNoteSelect: (noteId: Id<"notes">) => void;
-	onCreateNote: () => Promise<void>;
+	onCreateNote: (isAI?: boolean) => Promise<void>;
 	onDeleteNote: (noteId: Id<"notes">) => Promise<void>;
 	onUpdateNote: (noteId: Id<"notes">, updates: Partial<Note>) => Promise<void>;
 }
@@ -53,6 +53,8 @@ export const NotesContent = ({
 }: NotesContentProps) => {
 	// Local state for sidebar
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+	// Local state for AI panel visibility
+	const [showAIPanel, setShowAIPanel] = useState(false);
 	// Live note session hook - now inside RoomProvider context
 	// Use a stable dummy ID that exists in the database to avoid server errors
 	const dummyNoteId = "kn7cvx952gp794j4vzvxxqqgk57k9yhh" as Id<"notes">;
@@ -253,16 +255,16 @@ export const NotesContent = ({
 										Select a note from the sidebar or create a new one
 									</div>
 									<Button
-										className="gap-2"
+										className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg"
 										onClick={() => {
-											onCreateNote().catch((error) => {
+											onCreateNote(true).catch((error) => {
 												console.error("Failed to create note:", error);
 												toast.error("Failed to create note");
 											});
 										}}
 									>
-										<Plus className="h-4 w-4" />
-										Create Note
+										<Brain className="h-4 w-4" />
+										Start AI Meeting Note
 									</Button>
 								</div>
 							</div>
@@ -274,11 +276,13 @@ export const NotesContent = ({
 			{/* Audio Room Component */}
 			{activeNote && (
 				<StreamAudioRoom
+					key={activeNote._id}
 					canvasName={activeNote.title || "Notes Audio Room"}
 					channelId={channelId}
 					isFullScreen={isFullScreen}
 					roomId={activeNote._id}
 					workspaceId={workspaceId}
+					initialShowNotes={activeNote.tags?.includes("AI")}
 				/>
 			)}
 

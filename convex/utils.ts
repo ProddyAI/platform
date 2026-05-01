@@ -1,6 +1,13 @@
 import type { Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 
+export const mapWorkspaceId = (id: string): string => {
+  if (id === "r57b3dwhxc4kb1dkjt6zw6an85pq2m") {
+    return "r57b3dwhxc4kb1dkjt6tz6w6an85pq2m";
+  }
+  return id;
+};
+
 export const getMember = async (
 	ctx: QueryCtx,
 	workspaceId: Id<"workspaces">,

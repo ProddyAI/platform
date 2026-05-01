@@ -10,6 +10,12 @@ type WorkspaceIdParams = {
 
 export const useWorkspaceId = () => {
 	const params = useParams<WorkspaceIdParams>();
+	const workspaceId = params.workspaceId;
 
-	return params.workspaceId;
+	// Treat "create" as an invalid workspace ID to prevent Convex validation errors
+	if (workspaceId === "create" as any) {
+		return undefined;
+	}
+
+	return workspaceId;
 };
