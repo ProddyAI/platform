@@ -41,6 +41,11 @@ export type AssistantIntent = {
 	requestedExternalApps: AssistantExternalApp[];
 };
 
+type AssistantConversationMessage = {
+	role?: string;
+	content?: string;
+};
+
 const EXTERNAL_APP_PATTERNS: Array<{
 	app: AssistantExternalApp;
 	pattern: RegExp;
@@ -93,7 +98,69 @@ Guidelines:
 - Format responses with clear headings and bullet points
 - When showing dates/times, use readable formats
 - If you don't have information, say so clearly
-- Never invent data; only use tool outputs and user-provided context`;
+- Never invent data; only use tool outputs and user-provided context
+- For workspace questions about notes, tasks, channels, or general activity, prefer direct workspace retrieval tools first and use semantic search only as a fallback
+- For notes, include the note title and channel when available, plus enough snippet context to be useful
+- For task lists, keep the answer compact and put overdue, in-progress, on-hold, urgent, or blocking work first
+- For broad catch-up questions like "what happened in general", summarize concrete updates instead of giving an apology when data exists
+- For short follow-ups like "what about release?", reuse the most recent resolved workspace topic from the conversation when it is relevant
+- Never respond with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."`;
+
+function extractFollowUpSubject(message: string) {
+	const normalized = message.trim().toLowerCase();
+	const match = normalized.match(
+		/^(?:what about|how about|and|for|about)\s+(.+?)(?:\?+)?$/
+	);
+	return match?.[1]?.trim() ?? null;
+}
+
+function isShortFollowUp(message: string) {
+	const trimmed = message.trim();
+	if (!trimmed) return false;
+	if (trimmed.split(/\s+/).length <= 4) return true;
+	return /^(what about|how about|and|about)\b/i.test(trimmed);
+}
+
+export function buildFollowUpContextHint(options: {
+	message: string;
+	conversationHistory?: AssistantConversationMessage[];
+}) {
+	const subject = extractFollowUpSubject(options.message);
+	if (!subject && !isShortFollowUp(options.message)) {
+		return "";
+	}
+
+	const history = (options.conversationHistory ?? [])
+		.filter((entry) => typeof entry.content === "string" && entry.content.trim())
+		.slice(-6);
+	if (history.length === 0) {
+		return "";
+	}
+
+	const lastUserTopic = [...history]
+		.reverse()
+		.find(
+			(entry) =>
+				entry.role === "user" &&
+				typeof entry.content === "string" &&
+				entry.content.trim().toLowerCase() !== options.message.trim().toLowerCase()
+		)?.content;
+	const lastAssistantAnswer = [...history]
+		.reverse()
+		.find((entry) => entry.role === "assistant")?.content;
+
+	const hints = [
+		subject ? `Short follow-up subject: ${subject}` : "",
+		lastUserTopic ? `Most recent user topic: ${lastUserTopic.trim()}` : "",
+		lastAssistantAnswer
+			? `Most recent assistant answer: ${lastAssistantAnswer.trim().slice(0, 220)}`
+			: "",
+	].filter(Boolean);
+
+	return hints.length > 0
+		? `Follow-up continuity hint:\n${hints.join("\n")}`
+		: "";
+}
 
 export function classifyAssistantQuery(message: string): AssistantIntent {
 	const normalized = message.toLowerCase();
@@ -120,6 +187,8 @@ export function buildAssistantSystemPrompt(options?: {
 	workspaceContext?: string;
 	connectedApps?: string[];
 	externalToolsAllowed?: boolean;
+	conversationHistory?: AssistantConversationMessage[];
+	latestUserMessage?: string;
 }): string {
 	const connectedApps = options?.connectedApps ?? [];
 	const externalToolsAllowed = options?.externalToolsAllowed ?? false;
@@ -165,8 +234,15 @@ NEVER say you can't access these apps - you have active connections and tools to
 	const contextLine = options?.workspaceContext?.trim()
 		? `Workspace context: ${options.workspaceContext.trim()}`
 		: "";
+	const followUpHint =
+		options?.latestUserMessage && options.latestUserMessage.trim()
+			? buildFollowUpContextHint({
+					message: options.latestUserMessage,
+					conversationHistory: options.conversationHistory,
+				})
+			: "";
 
-	return [BASE_SYSTEM_PROMPT, policyLine, contextLine]
+	return [BASE_SYSTEM_PROMPT, policyLine, contextLine, followUpHint]
 		.filter(Boolean)
 		.join("\n\n");
 }

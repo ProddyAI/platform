@@ -8,6 +8,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { buildAssistantSystemPrompt } from "@/lib/assistant-orchestration";
 import {
 	type AvailableApp,
 	createComposioClient,
@@ -324,7 +325,14 @@ export async function POST(req: NextRequest) {
 				const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
 					{
 						role: "system",
-						content: `You are Proddy AI, an intelligent workspace assistant with access to ${connectedApps.join(", ")} integrations. Help the user accomplish their tasks using these tools when appropriate. For workspace-related queries (messages, tasks, notes), acknowledge that you can help but may need to access workspace data. ${workspaceContext || ""}`,
+						content: buildAssistantSystemPrompt({
+							workspaceContext:
+								typeof workspaceContext === "string" ? workspaceContext : "",
+							connectedApps,
+							externalToolsAllowed: true,
+							conversationHistory: sanitizedHistory,
+							latestUserMessage: message,
+						}),
 					},
 					// Add sanitized conversation history
 					...sanitizedHistory,
@@ -344,7 +352,8 @@ export async function POST(req: NextRequest) {
 				});
 
 				let responseText =
-					completion.choices[0]?.message?.content || "No response generated";
+					completion.choices[0]?.message?.content ||
+					"I couldn't find anything relevant yet.";
 				let toolResults: any[] = [];
 				let sources: any[] = [];
 
@@ -484,7 +493,8 @@ export async function POST(req: NextRequest) {
 				);
 			}
 
-			const rawResponseText = result.content || "No response generated";
+			const rawResponseText =
+				result.content || "I couldn't find anything relevant yet.";
 			const { body: responseText, sources } =
 				parseAssistantResponse(rawResponseText);
 

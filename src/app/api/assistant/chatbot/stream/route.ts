@@ -266,6 +266,8 @@ export async function POST(req: NextRequest) {
 					typeof workspaceContext === "string" ? workspaceContext : "",
 				connectedApps,
 				externalToolsAllowed: true,
+				conversationHistory: sanitizedHistory,
+				latestUserMessage: message,
 			}),
 			messages: [
 				...sanitizedHistory,

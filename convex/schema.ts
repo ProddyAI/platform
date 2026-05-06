@@ -618,6 +618,17 @@ const schema = defineSchema({
 		conversationId: v.string(),
 		lastMessageAt: v.number(),
 		source: v.optional(v.string()),
+		pendingTaskDraft: v.optional(
+			v.object({
+				title: v.string(),
+				description: v.optional(v.string()),
+				dueDate: v.optional(v.number()),
+				priority: v.optional(
+					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+				),
+				updatedAt: v.number(),
+			})
+		),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])

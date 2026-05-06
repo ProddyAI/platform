@@ -4,6 +4,13 @@ import OpenAI from "openai";
 import { api, components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
+import { buildChannelSummaryFallback } from "./assistant/channelSummaryFallback";
+import {
+	formatPendingTaskDraftConfirmation,
+	isPendingTaskCancellation,
+	isPendingTaskConfirmation,
+} from "./assistant/taskDrafts";
+import { resolveAssistantToolLoop } from "./assistant/toolLoop";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 
@@ -36,7 +43,9 @@ function dedupeSourceRefs(sourceRefs: string[]) {
 }
 
 function createLabeledSourceRef(label: string, value: unknown) {
-	const normalized = String(value ?? "").replace(/\s+/g, " ").trim();
+	const normalized = String(value ?? "")
+		.replace(/\s+/g, " ")
+		.trim();
 	if (!normalized) return null;
 	return `${label}: ${normalized}`;
 }
@@ -57,7 +66,8 @@ function collectSourceRefsFromToolResult(toolName: string, result: unknown) {
 	if (
 		(toolName === "getMyTasksToday" ||
 			toolName === "getMyTasksTomorrow" ||
-			toolName === "getMyAllTasks") &&
+			toolName === "getMyAllTasks" ||
+			toolName === "searchTasks") &&
 		Array.isArray((result as any).tasks)
 	) {
 		return dedupeSourceRefs(
@@ -75,7 +85,9 @@ function collectSourceRefsFromToolResult(toolName: string, result: unknown) {
 	) {
 		return dedupeSourceRefs(
 			(result as any).events
-				.map((event: any) => createLabeledSourceRef("Calendar Event", event?.title))
+				.map((event: any) =>
+					createLabeledSourceRef("Calendar Event", event?.title)
+				)
 				.filter(Boolean) as string[]
 		);
 	}
@@ -88,7 +100,10 @@ function collectSourceRefsFromToolResult(toolName: string, result: unknown) {
 						card?.channelName && card?.listName
 							? ` (${card.channelName} / ${card.listName})`
 							: "";
-					return createLabeledSourceRef("Board Card", `${card?.title ?? ""}${location}`);
+					return createLabeledSourceRef(
+						"Board Card",
+						`${card?.title ?? ""}${location}`
+					);
 				})
 				.filter(Boolean) as string[]
 		);
@@ -108,7 +123,9 @@ function collectSourceRefsFromToolResult(toolName: string, result: unknown) {
 				if (Array.isArray(note?.sourceRefs)) {
 					return note.sourceRefs;
 				}
-				const refs = [createLabeledSourceRef("Note", note?.title)].filter(Boolean);
+				const refs = [createLabeledSourceRef("Note", note?.title)].filter(
+					Boolean
+				);
 				if (note?.channelName) {
 					refs.push(`Channel: #${String(note.channelName).trim()}`);
 				}
@@ -117,11 +134,17 @@ function collectSourceRefsFromToolResult(toolName: string, result: unknown) {
 		);
 	}
 
-	if (toolName === "searchChannels" && Array.isArray((result as any).channels)) {
+	if (
+		toolName === "searchChannels" &&
+		Array.isArray((result as any).channels)
+	) {
 		return dedupeSourceRefs(
 			(result as any).channels
 				.map((channel: any) =>
-					createLabeledSourceRef("Channel", `#${String(channel?.name ?? "").trim()}`)
+					createLabeledSourceRef(
+						"Channel",
+						`#${String(channel?.name ?? "").trim()}`
+					)
 				)
 				.filter(Boolean) as string[]
 		);
@@ -131,10 +154,17 @@ function collectSourceRefsFromToolResult(toolName: string, result: unknown) {
 		return ["Workspace Overview"];
 	}
 
+	if (toolName === "getWorkspaceGeneralSummary") {
+		return ["Workspace Activity Summary"];
+	}
+
 	return [];
 }
 
-function createFallbackResponseFromToolResult(toolName: string, result: unknown) {
+function createFallbackResponseFromToolResult(
+	toolName: string,
+	result: unknown
+) {
 	if (!result || typeof result !== "object") {
 		return null;
 	}
@@ -142,25 +172,42 @@ function createFallbackResponseFromToolResult(toolName: string, result: unknown)
 	if (toolName === "getChannelSummary") {
 		const channelName = String((result as any).channelName ?? "").trim();
 		const messageCount = Number((result as any).messageCount ?? 0);
-		const summary = String((result as any).summary ?? "").trim();
+		const recentMessages = Array.isArray((result as any).recentMessages)
+			? ((result as any).recentMessages as Array<any>)
+			: [];
 
 		if (!channelName) return null;
-		if (messageCount === 0) {
-			return `No messages found in #${channelName}.`;
+		return buildChannelSummaryFallback({
+			channelName,
+			messageCount,
+			recentMessages: recentMessages.map((message) => ({
+				id: String(message?.id ?? ""),
+				body: String(message?.body ?? ""),
+				authorName: message?.authorName
+					? String(message.authorName)
+					: undefined,
+				creationTime: Number(message?.creationTime ?? 0),
+			})),
+		});
+	}
+
+	if (toolName === "getChannelDebug") {
+		const channelName =
+			String((result as any).channelName ?? "").trim() || "unknown";
+		const recentMessages = Array.isArray((result as any).recentMessages)
+			? ((result as any).recentMessages as Array<any>)
+			: [];
+		if (recentMessages.length === 0) {
+			return `Debug view: the assistant sees no recent messages in #${channelName}.`;
 		}
-
-		const snippets = summary
-			.split("\n")
-			.map((line) => line.trim())
-			.filter(Boolean)
-			.slice(0, 5)
-			.map((line) => `- ${line.length > 180 ? `${line.slice(0, 177)}...` : line}`);
-
-		if (snippets.length === 0) {
-			return `I found ${messageCount} recent messages in #${channelName}.`;
-		}
-
-		return [`Recent updates in #${channelName}`, ...snippets].join("\n");
+		return [
+			`Debug view for #${channelName}`,
+			...recentMessages.slice(-8).map((message) => {
+				const author = String(message?.authorName ?? "").trim();
+				const body = String(message?.body ?? "").trim();
+				return `- ${author ? `${author}: ` : ""}${body}`;
+			}),
+		].join("\n");
 	}
 
 	if (toolName === "getRecentNotes" && Array.isArray((result as any).notes)) {
@@ -172,7 +219,9 @@ function createFallbackResponseFromToolResult(toolName: string, result: unknown)
 		return [
 			"Recent notes",
 			...notes.slice(0, 6).map((note) => {
-				const channelSuffix = note?.channelName ? ` (#${note.channelName})` : "";
+				const channelSuffix = note?.channelName
+					? ` (#${note.channelName})`
+					: "";
 				return `- ${String(note?.title ?? "Untitled note").trim()}${channelSuffix}`;
 			}),
 		].join("\n");
@@ -187,17 +236,105 @@ function createFallbackResponseFromToolResult(toolName: string, result: unknown)
 		return [
 			"Matching notes",
 			...notes.slice(0, 6).map((note) => {
-				const channelSuffix = note?.channelName ? ` (#${note.channelName})` : "";
-				return `- ${String(note?.title ?? "Untitled note").trim()}${channelSuffix}`;
+				const channelSuffix = note?.channelName
+					? ` (#${note.channelName})`
+					: "";
+				const snippet = String(note?.snippet ?? "").trim();
+				return `- ${String(note?.title ?? "Untitled note").trim()}${channelSuffix}${snippet ? `: ${snippet}` : ""}`;
 			}),
 		].join("\n");
+	}
+
+	if (
+		(toolName === "getMyAllTasks" || toolName === "searchTasks") &&
+		Array.isArray((result as any).tasks)
+	) {
+		const tasks = (result as any).tasks as Array<any>;
+		if (tasks.length === 0) {
+			return "I couldn't find anything relevant yet.";
+		}
+
+		return [
+			"Top tasks",
+			...tasks.slice(0, 6).map((task) => {
+				const flags = [task?.status, task?.priority]
+					.filter(Boolean)
+					.join(" • ");
+				return `- ${String(task?.title ?? "Untitled task").trim()}${flags ? ` (${flags})` : ""}`;
+			}),
+		].join("\n");
+	}
+
+	if (toolName === "getWorkspaceGeneralSummary") {
+		const summary = result as any;
+		const messages = Array.isArray(summary?.recentMessages)
+			? summary.recentMessages.slice(0, 3)
+			: [];
+		const tasks = Array.isArray(summary?.highPriorityTasks)
+			? summary.highPriorityTasks.slice(0, 3)
+			: [];
+		const notes = Array.isArray(summary?.recentNotes)
+			? summary.recentNotes.slice(0, 2)
+			: [];
+		const lines = ["Workspace catch-up"];
+
+		if (messages.length > 0) {
+			lines.push(
+				...messages.map(
+					(message: any) =>
+						`- #${message.channelName}: ${String(message.body ?? "").trim()}`
+				)
+			);
+		}
+
+		if (tasks.length > 0) {
+			lines.push(
+				...tasks.map((task: any) => {
+					const flags = [task?.status, task?.priority]
+						.filter(Boolean)
+						.join(" • ");
+					return `- Task: ${String(task?.title ?? "").trim()}${flags ? ` (${flags})` : ""}`;
+				})
+			);
+		}
+
+		if (notes.length > 0) {
+			lines.push(
+				...notes.map((note: any) => {
+					const channelSuffix = note?.channelName
+						? ` (#${note.channelName})`
+						: "";
+					return `- Note: ${String(note?.title ?? "").trim()}${channelSuffix}`;
+				})
+			);
+		}
+
+		return lines.length > 1
+			? lines.join("\n")
+			: "I couldn't find anything relevant yet.";
+	}
+
+	if (toolName === "draftTaskForConfirmation") {
+		return String((result as any).confirmationMessage ?? "").trim() || null;
 	}
 
 	return null;
 }
 
-// System prompt for Proddy AI assistant
-const SYSTEM_PROMPT = `You are Proddy, a personal work assistant for team workspaces.
+function buildSystemPrompt(options?: {
+	hasPendingTaskDraft?: boolean;
+	pendingTaskDraftSummary?: string;
+}) {
+	const pendingTaskInstructions =
+		options?.hasPendingTaskDraft && options.pendingTaskDraftSummary
+			? `You currently have a pending task draft for this user:
+${options.pendingTaskDraftSummary}
+
+If the user wants changes, update the draft by calling draftTaskForConfirmation again with the revised fields.
+Do not create the task in the same turn as drafting it. Wait for an explicit confirmation reply in a later user message.`
+			: "";
+
+	return `You are Proddy, a personal work assistant for team workspaces.
 
 Your role:
 - Help users manage their calendar, meetings, tasks, and workspace activities
@@ -212,18 +349,28 @@ Guidelines:
 - If you don't have information, say so clearly
 - Never invent data - only use what the tools return
 - If a tool returns notes, messages, or summaries, use that returned data directly and do not say you lack access
-- Never answer with "No response generated"
+- Prefer direct workspace tools for notes, tasks, channel activity, and general catch-up; use semantic search only as a fallback
+- For note matches, include titles, channel names when available, and a useful snippet
+- For task lists, keep the answer compact and put overdue, in-progress, on-hold, urgent, or blocking work first
+- For task creation requests, first draft the task with draftTaskForConfirmation and ask the user to confirm or change it before anything is created
+- For broad catch-up questions like "what happened in general", summarize concrete updates when data exists
+- Reuse recent conversation context for short follow-ups like "what about release?"
+- Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."
 
 Available capabilities:
 - Calendar: View today's/tomorrow's/next week's meetings
-- Tasks: Check tasks due today/tomorrow or all tasks
+- Tasks: Check tasks due today/tomorrow or all tasks, and search tasks by topic
+- Task drafting: Prepare a task draft for confirmation before creating anything
 - Notes: List recent notes and search notes by topic
 - Channels: Search channels, get channel summaries
 - Boards: View assigned cards across all boards
-- Workspace: Get overview statistics
-- Search: Semantic search across messages, notes, tasks
+- Workspace: Get overview statistics and a general workspace catch-up summary
+- Search: Semantic search across messages, notes, tasks as fallback only
+
+${pendingTaskInstructions}
 
 When a user asks about their schedule, tasks, or workspace, use the appropriate tools to fetch current data.`;
+}
 
 // Define tools that AI can use (handles are created inside the action)
 const TOOL_DEFINITIONS: ToolDefinition[] = [
@@ -295,7 +442,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "getMyAllTasks",
 		description:
-			"Get all tasks assigned to the user. Can optionally include completed tasks. Use this for general task queries like 'what are my tasks' or 'show all my work'.",
+			"Get all tasks assigned to the user. Results are ranked for visible triage, so overdue, in-progress, on-hold, and higher-priority work appears first.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -311,9 +458,61 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
+		name: "searchTasks",
+		description:
+			"Search tasks directly in the workspace database by keyword or topic. Use this before semantic search for task/topic questions like 'what is blocked for release' or 'tasks about onboarding'.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				query: {
+					type: "string",
+					description: "Keyword or topic to search for in tasks",
+				},
+				limit: {
+					type: "number",
+					description: "Max number of matching tasks to return (default: 12)",
+				},
+			},
+			required: ["query"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.searchTasks,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "draftTaskForConfirmation",
+		description:
+			"Draft a task for the current user and save it for confirmation. Use this for any request to create a task. This tool does not create the task yet; it prepares a preview so the user can confirm or request changes first.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				title: {
+					type: "string",
+					description: "The task title.",
+				},
+				description: {
+					type: "string",
+					description: "Optional task description.",
+				},
+				dueDate: {
+					type: "number",
+					description: "Optional due date as a Unix timestamp in milliseconds.",
+				},
+				priority: {
+					type: "string",
+					description: "Optional priority. Must be one of: low, medium, high.",
+				},
+			},
+			required: ["title"],
+		},
+		handlerType: "mutation" as const,
+		handler: api.assistantConversations.savePendingTaskDraft,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
 		name: "getRecentNotes",
 		description:
-			"Get recent notes in the workspace. Use this when the user asks whether there are notes, asks for recent notes, or wants a list of notes.",
+			"Get recent notes in the workspace. Use this first when the user asks whether there are notes, asks for recent notes, or wants a list of notes.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -331,7 +530,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "searchNotes",
 		description:
-			"Search notes in the workspace by topic or keyword. Use this when the user asks for notes about something specific like onboarding, release planning, or documentation.",
+			"Search notes directly in the workspace database by topic or keyword. Use this before semantic search for notes about onboarding, release planning, documentation, and similar topics.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -388,8 +587,31 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 			},
 			required: ["channelId"],
 		},
-		handlerType: "action" as const,
+		handlerType: "query" as const,
 		handler: api.assistantTools.getChannelSummary,
+		contextParams: { needsWorkspaceId: true },
+	},
+	{
+		name: "getChannelDebug",
+		description:
+			"Return the raw recent messages the assistant can see for a channel. Use this only when debugging why a channel summary appears empty.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				channelId: {
+					type: "string",
+					description: "The ID of the channel to inspect.",
+				},
+				limit: {
+					type: "number",
+					description:
+						"Maximum number of raw messages to return (default: 20).",
+				},
+			},
+			required: ["channelId"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getChannelDebug,
 		contextParams: { needsWorkspaceId: true },
 	},
 	{
@@ -403,6 +625,19 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		},
 		handlerType: "query" as const,
 		handler: api.assistantTools.getWorkspaceOverview,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getWorkspaceGeneralSummary",
+		description:
+			"Get a compact catch-up summary across recent channel activity, high-priority tasks, and recent notes. Use this first for broad workspace questions like 'what happened in general'.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getWorkspaceGeneralSummary,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
@@ -421,7 +656,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "semanticSearch",
 		description:
-			"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use this for general questions that don't fit other tools.",
+			"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use this only after direct notes, tasks, channel, or general summary tools do not provide enough information.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -762,6 +997,15 @@ export const sendMessage = action({
 			);
 		}
 
+		const latestConversationMeta = await ctx.runQuery(
+			api.assistantConversations.getByWorkspaceAndUser,
+			{
+				workspaceId: resolvedWorkspaceId,
+				userId: resolvedUserId,
+			}
+		);
+		const pendingTaskDraft = latestConversationMeta?.pendingTaskDraft;
+
 		// Record AI usage
 		try {
 			await ctx.runMutation(internal.usageTracking.recordAIRequest, {
@@ -781,6 +1025,56 @@ export const sendMessage = action({
 				content: args.message,
 			});
 
+			if (pendingTaskDraft && isPendingTaskConfirmation(args.message)) {
+				const created = await ctx.runMutation(
+					api.assistantConversations.createTaskFromPendingDraft,
+					{
+						workspaceId: resolvedWorkspaceId,
+						userId: resolvedUserId,
+					}
+				);
+				const responseText = `Created the task "${created.title}".`;
+
+				await ctx.runMutation(components.databaseChat.messages.add, {
+					conversationId: activeConversationId as any,
+					role: "assistant",
+					content: responseText,
+				});
+				await ctx.runMutation(api.assistantConversations.upsertConversation, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: activeConversationId,
+					lastMessageAt: Date.now(),
+				});
+
+				return { success: true, content: responseText };
+			}
+
+			if (pendingTaskDraft && isPendingTaskCancellation(args.message)) {
+				await ctx.runMutation(
+					api.assistantConversations.clearPendingTaskDraft,
+					{
+						workspaceId: resolvedWorkspaceId,
+						userId: resolvedUserId,
+					}
+				);
+				const responseText = "Canceled the pending task draft.";
+
+				await ctx.runMutation(components.databaseChat.messages.add, {
+					conversationId: activeConversationId as any,
+					role: "assistant",
+					content: responseText,
+				});
+				await ctx.runMutation(api.assistantConversations.upsertConversation, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: activeConversationId,
+					lastMessageAt: Date.now(),
+				});
+
+				return { success: true, content: responseText };
+			}
+
 			// Get conversation history
 			const rawMessages = await ctx.runQuery(
 				components.databaseChat.messages.list,
@@ -789,7 +1083,15 @@ export const sendMessage = action({
 
 			// Build messages array with system prompt
 			const messages = [
-				{ role: "system", content: SYSTEM_PROMPT },
+				{
+					role: "system",
+					content: buildSystemPrompt({
+						hasPendingTaskDraft: Boolean(pendingTaskDraft),
+						pendingTaskDraftSummary: pendingTaskDraft
+							? formatPendingTaskDraftConfirmation(pendingTaskDraft)
+							: undefined,
+					}),
+				},
 				...rawMessages.map((m: any) => ({
 					role: m.role,
 					content: m.content,
@@ -829,23 +1131,26 @@ export const sendMessage = action({
 			});
 
 			let responseText =
-				completion.choices[0]?.message?.content || "No response generated";
+				completion.choices[0]?.message?.content ||
+				"I couldn't find anything relevant yet.";
 			const toolCalls = completion.choices[0]?.message?.tool_calls;
 			const collectedSourceRefs: string[] = [];
 
 			// If the model returns empty content and no tools, fall back to RAG search.
 			// This makes keyword-only queries (e.g. "onboarding") still produce something useful.
 			if (
-				(!completion.choices[0]?.message?.content ||
-					!completion.choices[0].message.content.trim()) &&
+				!completion.choices[0]?.message?.content?.trim() &&
 				(!toolCalls || toolCalls.length === 0)
 			) {
 				try {
-					const search = (await ctx.runAction(api.assistantTools.semanticSearch, {
-						workspaceId: resolvedWorkspaceId,
-						query: args.message,
-						limit: 5,
-					})) as any;
+					const search = (await ctx.runAction(
+						api.assistantTools.semanticSearch,
+						{
+							workspaceId: resolvedWorkspaceId,
+							query: args.message,
+							limit: 5,
+						}
+					)) as any;
 					const results = Array.isArray(search?.results) ? search.results : [];
 					if (results.length) {
 						for (const r of results) {
@@ -860,7 +1165,8 @@ export const sendMessage = action({
 							.slice(0, 5)
 							.map((r: any, i: number) => {
 								const text = String(r?.text ?? "").trim();
-								const snippet = text.length > 160 ? `${text.slice(0, 160)}…` : text;
+								const snippet =
+									text.length > 160 ? `${text.slice(0, 160)}…` : text;
 								return `- (${i + 1}) ${snippet || "(no snippet)"}`;
 							})
 							.join("\n");
@@ -874,75 +1180,79 @@ export const sendMessage = action({
 				}
 			}
 
-			// Execute tool calls if any
+			// Execute tool calls, allowing multi-step chains like
+			// searchChannels -> getChannelSummary before the assistant answers.
 			if (toolCalls && toolCalls.length > 0) {
-				for (const toolCall of toolCalls) {
-					if (toolCall.type === "function") {
-						try {
-							const toolName = toolCall.function.name;
-							const toolArgs = JSON.parse(toolCall.function.arguments);
+				const loopResult = await resolveAssistantToolLoop({
+					initialAssistantMessage: completion.choices[0].message,
+					baseMessages: messages as Array<{
+						role: "system" | "user" | "assistant";
+						content: string;
+					}>,
+					initialResponseText: responseText,
+					createCompletion: async (followUpMessages) => {
+						const followUpCompletion = await openai.chat.completions.create({
+							model: "gpt-4o-mini",
+							messages: followUpMessages as any,
+							tools: openaiTools,
+							temperature: 0.7,
+							max_tokens: 2000,
+						});
 
-							// Find the tool definition
-							const tool = TOOL_DEFINITIONS.find((t) => t.name === toolName);
-							if (tool) {
-								// Inject context parameters based on tool's needs
-								const fullArgs: Record<string, any> = { ...toolArgs };
-
-								if (tool.contextParams?.needsWorkspaceId) {
-									fullArgs.workspaceId = resolvedWorkspaceId;
-								}
-								if (tool.contextParams?.needsUserId) {
-									fullArgs.userId = resolvedUserId;
-								}
-
-								let result: unknown;
-								if (tool.handlerType === "query") {
-									result = await ctx.runQuery(tool.handler as any, fullArgs);
-								} else {
-									result = await ctx.runAction(tool.handler as any, fullArgs);
-								}
-
-								for (const ref of collectSourceRefsFromToolResult(toolName, result)) {
-									collectedSourceRefs.push(ref);
-								}
-
-								// Call again with tool result
-								const followUpMessages = [
-									...messages,
-									completion.choices[0].message,
-									{
-										role: "tool" as const,
-										tool_call_id: toolCall.id,
-										content: JSON.stringify(result),
-									},
-								];
-
-								const followUpCompletion = await openai.chat.completions.create(
-									{
-										model: "gpt-4o-mini",
-										messages: followUpMessages as any,
-										temperature: 0.7,
-										max_tokens: 2000,
-									}
-								);
-
-								const followUpText =
-									followUpCompletion.choices[0]?.message?.content?.trim() || "";
-								const fallbackText =
-									createFallbackResponseFromToolResult(toolName, result);
-								responseText =
-									followUpText ||
-									fallbackText ||
-									responseText;
-							}
-						} catch (error) {
-							console.error(
-								`Tool execution error for ${toolCall.function.name}:`,
-								error
-							);
+						return followUpCompletion.choices[0]?.message ?? {};
+					},
+					executeToolCall: async (toolCall) => {
+						const toolName = toolCall.function?.name ?? "";
+						const tool = TOOL_DEFINITIONS.find((t) => t.name === toolName);
+						if (!tool) {
+							return {
+								result: {
+									success: false,
+									error: `Unknown tool: ${toolName}`,
+								},
+								fallbackText: null,
+								sourceRefs: [],
+							};
 						}
-					}
+
+						const parsedArgs = JSON.parse(toolCall.function?.arguments ?? "{}");
+						const fullArgs: Record<string, any> = { ...parsedArgs };
+
+						if (tool.contextParams?.needsWorkspaceId) {
+							fullArgs.workspaceId = resolvedWorkspaceId;
+						}
+						if (tool.contextParams?.needsUserId) {
+							fullArgs.userId = resolvedUserId;
+						}
+
+						let result: unknown;
+						if (tool.handlerType === "query") {
+							result = await ctx.runQuery(tool.handler as any, fullArgs);
+						} else if (tool.handlerType === "mutation") {
+							result = await ctx.runMutation(tool.handler as any, fullArgs);
+						} else {
+							result = await ctx.runAction(tool.handler as any, fullArgs);
+						}
+
+						return {
+							result,
+							sourceRefs: collectSourceRefsFromToolResult(toolName, result),
+							fallbackText: createFallbackResponseFromToolResult(
+								toolName,
+								result
+							),
+						};
+					},
+				});
+
+				for (const ref of loopResult.sourceRefs) {
+					collectedSourceRefs.push(ref);
 				}
+				responseText = loopResult.responseText;
+				console.info("[Assistant] Executed tool chain", {
+					tools: loopResult.executedTools.map((tool) => tool.name),
+					workspaceId: String(resolvedWorkspaceId),
+				});
 			}
 
 			// Append a compact Sources section for visibility in the UI.

@@ -94,7 +94,7 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 	{
 		name: "getMyAllTasks",
 		description:
-			"Get all tasks assigned to the user. Can optionally include completed tasks.",
+			"Get all tasks assigned to the user. Results are already ranked for visible triage, with overdue, in-progress, and on-hold work first.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -108,6 +108,68 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 		handlerType: "query" as const,
 		handler: api.assistantTools.getMyAllTasks,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "searchTasks",
+		description:
+			"Search the user's tasks directly in the workspace database by keyword or topic. Use this before semantic search for task questions such as 'what is blocked for release' or 'tasks about onboarding'.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				query: {
+					type: "string",
+					description: "Keyword or topic to search for in task titles/descriptions.",
+				},
+				limit: {
+					type: "number",
+					description: "Maximum number of tasks to return (default: 12).",
+				},
+			},
+			required: ["query"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.searchTasks,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getRecentNotes",
+		description:
+			"Get recent notes directly from the workspace. Use this first for questions like 'are there any notes for me' or 'show me recent notes'.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				limit: {
+					type: "number",
+					description: "Maximum number of notes to return (default: 10).",
+				},
+			},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getRecentNotes,
+		contextParams: { needsWorkspaceId: true },
+	},
+	{
+		name: "searchNotes",
+		description:
+			"Search notes directly in the workspace database by keyword or topic. Use this before semantic search for note questions such as 'what notes mention onboarding'.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				query: {
+					type: "string",
+					description: "Keyword or topic to search for in notes.",
+				},
+				limit: {
+					type: "number",
+					description: "Maximum number of matching notes to return (default: 10).",
+				},
+			},
+			required: ["query"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.searchNotes,
+		contextParams: { needsWorkspaceId: true },
 	},
 	{
 		name: "searchChannels",
@@ -148,6 +210,41 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true },
 	},
 	{
+		name: "getChannelDebug",
+		description:
+			"Return the raw recent messages the assistant can see for a channel. Use this only when debugging why a channel summary appears empty.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				channelId: {
+					type: "string",
+					description: "The ID of the channel to inspect.",
+				},
+				limit: {
+					type: "number",
+					description: "Maximum number of raw messages to return (default: 20).",
+				},
+			},
+			required: ["channelId"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getChannelDebug,
+		contextParams: { needsWorkspaceId: true },
+	},
+	{
+		name: "getWorkspaceGeneralSummary",
+		description:
+			"Get a compact workspace catch-up summary with recent channel activity, urgent tasks, and recent notes. Use this first for questions like 'what happened in general' or broad workspace catch-up requests.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getWorkspaceGeneralSummary,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
 		name: "getWorkspaceOverview",
 		description:
 			"Get a comprehensive overview of the workspace including recent activity, tasks, and meetings.",
@@ -176,7 +273,7 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 	{
 		name: "semanticSearch",
 		description:
-			"Perform semantic search across workspace content (messages, notes, tasks, etc.). Use for finding relevant information.",
+			"Perform semantic search across workspace content (messages, notes, tasks, etc.). Use only as a fallback after direct notes, tasks, and channel tools do not provide enough information, or when the query is broad and unstructured.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -187,7 +284,7 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 			},
 			required: ["query"],
 		},
-		handlerType: "query" as const,
+		handlerType: "action" as const,
 		handler: api.assistantTools.semanticSearch,
 		contextParams: { needsWorkspaceId: true },
 	},
