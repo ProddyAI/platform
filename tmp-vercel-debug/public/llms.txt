@@ -1,0 +1,21 @@
+# Proddy
+
+> AI-powered productivity suite that unifies messaging, tasks, calendars, canvases, and notes into one seamless work management platform.
+
+## About
+Proddy is an AI-powered productivity suite that unifies canvas, meetings, messaging, notes, and more into a single work management ecosystem. It combines real-time communication, task tracking, calendars, boards, canvases, and notes, with AI-powered features to streamline collaboration from discussion to execution. Available during a free public beta.
+
+## Key Information
+- Modules include Messaging, Tasks, Calendar, Boards, Canvas, Notes, Reports, and Dashboard.
+- AI-powered features include Reply Suggestions, Daily Recap, Text to Diagram, and Notes Formatter.
+- Free public beta with no credit card required and full platform access during the beta.
+
+## Products/Services
+- Messaging: Real-time team communication with rich text formatting, threads, searchable history, file sharing, and AI-powered features.
+- All-in-one Work Management Suite: Unified platform with integrated modules (Messages, Tasks, Calendar, Boards, Canvas, Notes, Reports, Dashboard) to streamline workflows.
+
+## Links
+- [Get Started Free]( /auth/signup): Start building with Proddy today during our public beta — no credit card required.
+- [Learn More]( /pricing): Free during public beta — full platform access.
+
+---

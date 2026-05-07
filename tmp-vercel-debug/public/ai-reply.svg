@@ -1,0 +1,51 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f8fafc"/>
+
+  <!-- Chat Interface -->
+  <rect x="40" y="40" width="320" height="220" rx="16" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Header -->
+  <rect x="40" y="40" width="320" height="50" fill="#3b82f6" style="border-radius: 16px 16px 0 0"/>
+  <circle cx="70" cy="65" r="8" fill="white" opacity="0.8"/>
+  <rect x="90" y="60" width="80" height="4" rx="2" fill="white" opacity="0.9"/>
+  <rect x="90" y="68" width="60" height="3" rx="1.5" fill="white" opacity="0.7"/>
+
+  <!-- Messages -->
+  <!-- Incoming message -->
+  <rect x="60" y="110" width="180" height="40" rx="20" fill="#f1f5f9"/>
+  <rect x="75" y="122" width="120" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="75" y="130" width="90" height="3" rx="1.5" fill="#64748b"/>
+
+  <!-- Outgoing message -->
+  <rect x="160" y="165" width="180" height="40" rx="20" fill="#3b82f6"/>
+  <rect x="175" y="177" width="110" height="3" rx="1.5" fill="white"/>
+  <rect x="175" y="185" width="80" height="3" rx="1.5" fill="white"/>
+
+  <!-- AI Suggestions Panel -->
+  <rect x="60" y="220" width="280" height="30" rx="8" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="1"/>
+
+  <!-- AI Icon -->
+  <circle cx="80" cy="235" r="8" fill="#3b82f6"/>
+  <path d="M76 232 L80 236 L84 232" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Suggestion buttons -->
+  <rect x="100" y="227" width="60" height="16" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <rect x="108" y="231" width="30" height="2" rx="1" fill="#3b82f6"/>
+  <rect x="108" y="235" width="20" height="2" rx="1" fill="#3b82f6"/>
+
+  <rect x="170" y="227" width="60" height="16" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <rect x="178" y="231" width="35" height="2" rx="1" fill="#3b82f6"/>
+  <rect x="178" y="235" width="25" height="2" rx="1" fill="#3b82f6"/>
+
+  <rect x="240" y="227" width="60" height="16" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <rect x="248" y="231" width="40" height="2" rx="1" fill="#3b82f6"/>
+  <rect x="248" y="235" width="30" height="2" rx="1" fill="#3b82f6"/>
+
+  <!-- Sparkle effects -->
+  <g opacity="0.6">
+    <path d="M320 80 L322 85 L327 87 L322 89 L320 94 L318 89 L313 87 L318 85 Z" fill="#fbbf24"/>
+    <path d="M340 120 L341 123 L344 124 L341 125 L340 128 L339 125 L336 124 L339 123 Z" fill="#f59e0b"/>
+    <path d="M310 180 L311.5 183 L314.5 184.5 L311.5 186 L310 189 L308.5 186 L305.5 184.5 L308.5 183 Z" fill="#fbbf24"/>
+  </g>
+</svg>

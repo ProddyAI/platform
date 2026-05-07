@@ -19,6 +19,7 @@ import type * as assistant_agent from "../assistant/agent.js";
 import type * as assistant_channelSummaryFallback from "../assistant/channelSummaryFallback.js";
 import type * as assistant_context from "../assistant/context.js";
 import type * as assistant_errorHandling from "../assistant/errorHandling.js";
+import type * as assistant_hybridRetrieval from "../assistant/hybridRetrieval.js";
 import type * as assistant_monitoring from "../assistant/monitoring.js";
 import type * as assistant_taskDrafts from "../assistant/taskDrafts.js";
 import type * as assistant_toolLoop from "../assistant/toolLoop.js";
@@ -87,6 +88,7 @@ declare const fullApi: ApiFromModules<{
   "assistant/channelSummaryFallback": typeof assistant_channelSummaryFallback;
   "assistant/context": typeof assistant_context;
   "assistant/errorHandling": typeof assistant_errorHandling;
+  "assistant/hybridRetrieval": typeof assistant_hybridRetrieval;
   "assistant/monitoring": typeof assistant_monitoring;
   "assistant/taskDrafts": typeof assistant_taskDrafts;
   "assistant/toolLoop": typeof assistant_toolLoop;

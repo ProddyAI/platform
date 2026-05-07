@@ -1,0 +1,77 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f8fafc"/>
+
+  <!-- Canvas Container -->
+  <rect x="40" y="40" width="320" height="220" rx="16" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Header -->
+  <rect x="40" y="40" width="320" height="50" fill="#8b5cf6" style="border-radius: 16px 16px 0 0"/>
+  <rect x="60" y="58" width="120" height="6" rx="3" fill="white" opacity="0.9"/>
+  <rect x="60" y="68" width="90" height="4" rx="2" fill="white" opacity="0.7"/>
+
+  <!-- Tools -->
+  <rect x="300" y="55" width="16" height="16" rx="2" fill="white" opacity="0.2"/>
+  <rect x="320" y="55" width="16" height="16" rx="2" fill="white" opacity="0.2"/>
+
+  <!-- Text Input Area (Left Side) -->
+  <rect x="60" y="110" width="120" height="130" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="70" y="120" width="80" height="4" rx="2" fill="#8b5cf6"/>
+  <rect x="70" y="130" width="100" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="70" y="137" width="90" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="70" y="144" width="95" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="70" y="151" width="85" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="70" y="158" width="100" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="70" y="165" width="75" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="70" y="172" width="90" height="3" rx="1.5" fill="#64748b"/>
+  <rect x="70" y="179" width="80" height="3" rx="1.5" fill="#64748b"/>
+
+  <!-- AI Processing Arrow -->
+  <path d="M190 175 L210 175" stroke="#8b5cf6" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M205 170 L210 175 L205 180" stroke="#8b5cf6" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- AI Icon -->
+  <circle cx="200" cy="160" r="8" fill="#8b5cf6"/>
+  <path d="M196 157 Q200 152 204 157 Q202 162 200 167 Q198 162 196 157" fill="white"/>
+
+  <!-- Generated Diagram (Right Side) -->
+  <rect x="220" y="110" width="120" height="130" rx="8" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1"/>
+
+  <!-- Flowchart Elements -->
+  <!-- Start Node -->
+  <rect x="270" y="125" width="40" height="20" rx="10" fill="#8b5cf6"/>
+  <rect x="280" y="131" width="20" height="2" rx="1" fill="white"/>
+  <rect x="285" y="135" width="10" height="2" rx="1" fill="white"/>
+
+  <!-- Arrow 1 -->
+  <path d="M290 145 L290 155" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+  <path d="M287 152 L290 155 L293 152" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+
+  <!-- Process Node -->
+  <rect x="260" y="160" width="60" height="25" rx="4" fill="#a855f7"/>
+  <rect x="270" y="167" width="30" height="2" rx="1" fill="white"/>
+  <rect x="270" y="171" width="40" height="2" rx="1" fill="white"/>
+  <rect x="270" y="175" width="25" height="2" rx="1" fill="white"/>
+
+  <!-- Arrow 2 -->
+  <path d="M290 185 L290 195" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+  <path d="M287 192 L290 195 L293 192" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+
+  <!-- Decision Diamond -->
+  <path d="M290 200 L305 210 L290 220 L275 210 Z" fill="#c084fc"/>
+  <rect x="285" y="207" width="10" height="1.5" rx="0.75" fill="white"/>
+  <rect x="283" y="210" width="14" height="1.5" rx="0.75" fill="white"/>
+  <rect x="287" y="213" width="6" height="1.5" rx="0.75" fill="white"/>
+
+  <!-- Connection Lines -->
+  <path d="M305 210 L320 210 L320 170 L320 170" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+  <path d="M275 210 L250 210 L250 170 L260 170" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+
+  <!-- Sparkle effects -->
+  <g opacity="0.7">
+    <path d="M350 80 L352 85 L357 87 L352 89 L350 94 L348 89 L343 87 L348 85 Z" fill="#fbbf24"/>
+    <path d="M370 120 L371 123 L374 124 L371 125 L370 128 L369 125 L366 124 L369 123 Z" fill="#f59e0b"/>
+    <path d="M340 200 L341.5 203 L344.5 204.5 L341.5 206 L340 209 L338.5 206 L335.5 204.5 L338.5 203 Z" fill="#fbbf24"/>
+    <path d="M190 140 L191 143 L194 144 L191 145 L190 148 L189 145 L186 144 L189 143 Z" fill="#a855f7"/>
+  </g>
+</svg>

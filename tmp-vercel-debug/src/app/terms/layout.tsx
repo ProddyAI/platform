@@ -1,0 +1,11 @@
+"use client";
+
+import type { PropsWithChildren } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
+
+export default function TermsLayout({ children }: PropsWithChildren) {
+	// Set document title for the terms page
+	useDocumentTitle("Terms of Service");
+
+	return <>{children}</>;
+}

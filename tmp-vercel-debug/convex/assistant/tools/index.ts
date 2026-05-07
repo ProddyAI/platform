@@ -1,0 +1,44 @@
+/**
+ * Proddy assistant tools - internal workspace + external integrations.
+ */
+
+import * as composio from "./composioTools";
+import * as internal from "./internalTools";
+
+export type { AssistantCtx } from "./internalTools";
+
+export const internalTools: Record<string, unknown> = {
+	getMyCalendarToday: internal.getMyCalendarToday,
+	getMyCalendarTomorrow: internal.getMyCalendarTomorrow,
+	getMyCalendarThisWeek: internal.getMyCalendarThisWeek,
+	getMyCalendarNextWeek: internal.getMyCalendarNextWeek,
+	getMyTasksToday: internal.getMyTasksToday,
+	getMyTasksTomorrow: internal.getMyTasksTomorrow,
+	getMyTasksThisWeek: internal.getMyTasksThisWeek,
+	getMyAllTasks: internal.getMyAllTasks,
+	searchTasks: internal.searchTasks,
+	draftTaskForConfirmation: internal.draftTaskForConfirmation,
+	getRecentNotes: internal.getRecentNotes,
+	searchNotes: internal.searchNotes,
+	searchChannels: internal.searchChannels,
+	getChannelSummary: internal.getChannelSummary,
+	getChannelDebug: internal.getChannelDebug,
+	getWorkspaceOverview: internal.getWorkspaceOverview,
+	getWorkspaceGeneralSummary: internal.getWorkspaceGeneralSummary,
+	getMyCards: internal.getMyCards,
+	semanticSearch: internal.semanticSearch,
+};
+
+export const composioTools = {
+	runGmailTool: composio.runGmailTool,
+	runSlackTool: composio.runSlackTool,
+	runGithubTool: composio.runGithubTool,
+	runNotionTool: composio.runNotionTool,
+	runClickupTool: composio.runClickupTool,
+	runLinearTool: composio.runLinearTool,
+};
+
+export const allTools: Record<string, unknown> = {
+	...internalTools,
+	...composioTools,
+};

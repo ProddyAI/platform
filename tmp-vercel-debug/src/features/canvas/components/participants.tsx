@@ -1,0 +1,87 @@
+"use client";
+
+import { useChannelParticipants } from "../../../hooks/use-channel-participants";
+import { stringToColor } from "../../../lib/utils";
+import { UserAvatar } from "./user-avatar";
+
+// Constants
+const MAX_SHOWN_OTHER_USERS = 2;
+
+interface ParticipantsProps {
+	isFullScreen?: boolean;
+}
+
+export const Participants = ({ isFullScreen }: ParticipantsProps = {}) => {
+	// Fetch real participants from the database
+	const { participants, currentParticipant, participantCount, isLoading } =
+		useChannelParticipants();
+
+	// If still loading, show nothing
+	if (isLoading) return null;
+
+	const hasMoreUsers = participants.length > MAX_SHOWN_OTHER_USERS;
+
+	return (
+		<div
+			className={`absolute h-12 ${isFullScreen ? "top-8" : "top-32"} right-8 bg-white rounded-md p-3 flex items-center shadow-md z-50`}
+		>
+			<div className="flex items-center">
+				{participantCount > 0 && (
+					<span className="text-sm font-medium mr-2">
+						{participantCount} active
+					</span>
+				)}
+				<div className="flex gap-x-2">
+					{participants.slice(0, MAX_SHOWN_OTHER_USERS).map((user) => {
+						const userKey =
+							user.userId || user.memberId || user.info?.name || "user";
+						return (
+							<UserAvatar
+								borderColor={stringToColor(userKey)}
+								fallback={user.info?.name?.[0] || "U"}
+								key={userKey}
+								name={user.info?.name}
+								src={user.info?.picture ?? undefined}
+								userId={user.userId || user.info?.name}
+							/>
+						);
+					})}
+
+					{currentParticipant && (
+						<UserAvatar
+							borderColor={stringToColor(
+								currentParticipant.userId ||
+									currentParticipant.info?.name ||
+									"you"
+							)}
+							fallback={currentParticipant.info?.name?.[0] || "Y"}
+							name={`${currentParticipant.info?.name} (You)`}
+							src={currentParticipant.info?.picture ?? undefined}
+							userId={
+								currentParticipant.userId || currentParticipant.info?.name
+							}
+						/>
+					)}
+
+					{hasMoreUsers && (
+						<UserAvatar
+							fallback={`+${participants.length - MAX_SHOWN_OTHER_USERS}`}
+							name={`${participants.length - MAX_SHOWN_OTHER_USERS} more`}
+						/>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+};
+
+export const ParticipantsSkeleton = ({
+	isFullScreen,
+}: ParticipantsProps = {}) => {
+	return (
+		<div
+			aria-hidden
+			className={`w-[100px] absolute h-12 ${isFullScreen ? "top-8" : "top-32"} right-8 bg-white rounded-md p-3 flex items-center shadow-md z-50`}
+		/>
+	);
+};

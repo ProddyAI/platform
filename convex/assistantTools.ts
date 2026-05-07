@@ -9,6 +9,11 @@ import { v } from "convex/values";
 import { api } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { action, query } from "./_generated/server";
+import {
+	buildHybridRetrievalResults,
+	type DirectSearchAllResults,
+	type SemanticRetrievalResult,
+} from "./assistant/hybridRetrieval";
 import { extractTextFromRichText } from "./richText";
 
 // Helper functions
@@ -1157,29 +1162,62 @@ export const semanticSearch: ReturnType<typeof action> = action({
 			score: number;
 			sourceRefs: string[];
 		}>;
-		count: number;
-	}> => {
-		// Use existing RAG semantic search
-		const searchResult = (await ctx.runAction(api.ragchat.semanticSearch, {
-			workspaceId: args.workspaceId,
-			query: args.query,
-			limit: args.limit || 10,
-		})) as {
-			results: Array<{
-				entryId: string;
-				score: number;
-				content: Array<{ text: string; metadata?: Record<string, unknown> }>;
-			}>;
-			entries?: Array<{
-				entryId: string;
-				key?: string;
-				title?: string;
-				metadata?: Record<string, unknown>;
-			}>;
-		};
+			count: number;
+		}> => {
+		const requestedLimit = args.limit ?? 10;
+		const retrievalLimit = Math.max(requestedLimit * 2, 10);
+		const [directSearchResult, semanticSearchResult] = await Promise.allSettled([
+			ctx.runQuery(api.search.searchAll, {
+				workspaceId: args.workspaceId,
+				query: args.query,
+				limit: retrievalLimit,
+			}) as Promise<DirectSearchAllResults>,
+			ctx.runAction(api.ragchat.semanticSearch, {
+				workspaceId: args.workspaceId,
+				query: args.query,
+				limit: retrievalLimit,
+			}) as Promise<{
+				results: Array<{
+					entryId: string;
+					score: number;
+					content: Array<{ text: string; metadata?: Record<string, unknown> }>;
+				}>;
+				entries?: Array<{
+					entryId: string;
+					key?: string;
+					title?: string;
+					metadata?: Record<string, unknown>;
+				}>;
+			}>,
+		]);
+
+		if (directSearchResult.status === "rejected") {
+			console.warn("[Assistant Retrieval] Direct search failed", directSearchResult.reason);
+		}
+		if (semanticSearchResult.status === "rejected") {
+			console.warn(
+				"[Assistant Retrieval] Semantic search failed",
+				semanticSearchResult.reason
+			);
+		}
+
+		const directResults: DirectSearchAllResults =
+			directSearchResult.status === "fulfilled"
+				? directSearchResult.value
+				: {
+						messages: [],
+						notes: [],
+						tasks: [],
+						cards: [],
+						events: [],
+					};
+		const ragResult =
+			semanticSearchResult.status === "fulfilled"
+				? semanticSearchResult.value
+				: { results: [], entries: [] };
 
 		const entriesById = new Map(
-			(searchResult.entries ?? []).map((entry) => [entry.entryId, entry] as const)
+			(ragResult.entries ?? []).map((entry) => [entry.entryId, entry] as const)
 		);
 		const createSnippet = (text: string) => {
 			const normalized = text.replace(/\s+/g, " ").trim();
@@ -1204,20 +1242,9 @@ export const semanticSearch: ReturnType<typeof action> = action({
 					return "Workspace Item";
 			}
 		};
-		const dedupe = (items: string[]): string[] => {
-			const seen = new Set<string>();
-			const out: string[] = [];
-			for (const item of items) {
-				const cleaned = item.trim();
-				if (!cleaned) continue;
-				if (seen.has(cleaned)) continue;
-				seen.add(cleaned);
-				out.push(cleaned);
-			}
-			return out;
-		};
+		const dedupe = (items: string[]): string[] => [...new Set(items.filter(Boolean))];
 
-		const mappedResults = searchResult.results.map((r) => {
+		const semanticResults: SemanticRetrievalResult[] = ragResult.results.map((r) => {
 			const firstContent = r.content?.[0];
 			const entry = entriesById.get(r.entryId);
 			const contentType =
@@ -1254,6 +1281,12 @@ export const semanticSearch: ReturnType<typeof action> = action({
 				score: r.score ?? 0,
 				sourceRefs,
 			};
+		});
+		const mappedResults = buildHybridRetrievalResults({
+			query: args.query,
+			directResults,
+			semanticResults,
+			limit: requestedLimit,
 		});
 
 		return {

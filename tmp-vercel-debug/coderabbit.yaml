@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en
+early_access: true
+inheritance: true
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  high_level_summary_in_walkthrough: true
+  auto_apply_labels: true
+  auto_assign_reviewers: true
+  poem: false
+  path_instructions:
+    - path: src/app/**/*
+      instructions: |
+        Confirm that the code adheres to the following:
+        - Next.js App Router best practices (layout, routing, server actions).
+        - Correct Server vs Client Component usage.
+        - Optimal TypeScript usage for route handlers and components.
+    - path: src/components/**/*
+      instructions: |
+        Confirm that the code adheres to the following:
+        - Reusable and composable React components.
+        - Strongly typed props and exported types.
+        - Correct hook usage and state management patterns.
+    - path: src/features/**/*
+      instructions: |
+        Confirm that the code adheres to the following:
+        - Feature-based folder structure and modularity.
+        - Clear separation of UI, logic, and data layers.
+        - Consistent data-fetching and state patterns.
+    - path: convex/**/*
+      instructions: |
+        Confirm that the code adheres to the following:
+        - Convex best practices for queries, mutations, and actions.
+        - Proper schema definitions and validation.
+        - Efficient query patterns and indexing.
+    - path: src/lib/**/*
+      instructions: |
+        Confirm that the code adheres to the following:
+        - Pure, reusable utility functions.
+        - Strong TypeScript typing and inference.
+        - Clear documentation and usage examples.
+  disable_cache: true
+  auto_review:
+    base_branches:
+      - main
+  pre_merge_checks:
+    docstrings:
+      threshold: 48
+knowledge_base:
+  code_guidelines:
+    filePatterns:
+      - "**/.cursorrules"
+      - .github/copilot-instructions.md
+      - "**/CLAUDE.md"
+      - "**/AGENT.md"
+      - "**/.clinerules"
+      - docs/**/*.mdx
+  jira:
+    usage: disabled
+  linear:
+    usage: disabled
+  mcp:
+    usage: disabled
+issue_enrichment:
+  auto_enrich:
+    enabled: true
+  labeling:
+    auto_apply_labels: true

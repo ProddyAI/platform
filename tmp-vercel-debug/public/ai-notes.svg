@@ -1,0 +1,92 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f8fafc"/>
+
+  <!-- Notes Interface Container -->
+  <rect x="40" y="40" width="320" height="220" rx="16" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Header -->
+  <rect x="40" y="40" width="320" height="50" fill="#059669" style="border-radius: 16px 16px 0 0"/>
+  <rect x="60" y="58" width="100" height="6" rx="3" fill="white" opacity="0.9"/>
+  <rect x="60" y="68" width="80" height="4" rx="2" fill="white" opacity="0.7"/>
+
+  <!-- Format Tools -->
+  <rect x="280" y="55" width="12" height="12" rx="2" fill="white" opacity="0.2"/>
+  <rect x="296" y="55" width="12" height="12" rx="2" fill="white" opacity="0.2"/>
+  <rect x="312" y="55" width="12" height="12" rx="2" fill="white" opacity="0.2"/>
+  <rect x="328" y="55" width="12" height="12" rx="2" fill="white" opacity="0.2"/>
+
+  <!-- Raw Notes Section (Left) -->
+  <rect x="60" y="110" width="130" height="130" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="70" y="120" width="80" height="4" rx="2" fill="#6b7280"/>
+  <rect x="70" y="128" width="110" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="134" width="100" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="140" width="90" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="146" width="105" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="152" width="85" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="158" width="95" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="164" width="110" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="170" width="75" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="176" width="100" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="182" width="90" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="188" width="80" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="194" width="95" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="200" width="85" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="206" width="100" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="212" width="70" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="218" width="90" height="2" rx="1" fill="#9ca3af"/>
+  <rect x="70" y="224" width="80" height="2" rx="1" fill="#9ca3af"/>
+
+  <!-- AI Processing Arrow -->
+  <path d="M200 175 L220 175" stroke="#059669" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M215 170 L220 175 L215 180" stroke="#059669" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- AI Icon -->
+  <circle cx="210" cy="160" r="8" fill="#059669"/>
+  <path d="M206 157 Q210 152 214 157 Q212 162 210 167 Q208 162 206 157" fill="white"/>
+
+  <!-- Formatted Notes Section (Right) -->
+  <rect x="230" y="110" width="120" height="130" rx="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+
+  <!-- Title -->
+  <rect x="240" y="120" width="80" height="5" rx="2.5" fill="#059669"/>
+
+  <!-- Bullet Points -->
+  <circle cx="245" cy="135" r="2" fill="#22c55e"/>
+  <rect x="252" y="133" width="80" height="3" rx="1.5" fill="#374151"/>
+
+  <circle cx="245" cy="145" r="2" fill="#22c55e"/>
+  <rect x="252" y="143" width="70" height="3" rx="1.5" fill="#374151"/>
+
+  <circle cx="245" cy="155" r="2" fill="#22c55e"/>
+  <rect x="252" y="153" width="85" height="3" rx="1.5" fill="#374151"/>
+
+  <!-- Sub-bullets -->
+  <circle cx="255" cy="165" r="1.5" fill="#6b7280"/>
+  <rect x="260" y="163" width="60" height="2.5" rx="1.25" fill="#6b7280"/>
+
+  <circle cx="255" cy="173" r="1.5" fill="#6b7280"/>
+  <rect x="260" y="171" width="70" height="2.5" rx="1.25" fill="#6b7280"/>
+
+  <!-- Action Items Section -->
+  <rect x="240" y="185" width="100" height="3" rx="1.5" fill="#dc2626"/>
+
+  <!-- Checkboxes -->
+  <rect x="245" y="195" width="8" height="8" rx="2" fill="none" stroke="#22c55e" stroke-width="1"/>
+  <path d="M247 199 L249 201 L253 197" stroke="#22c55e" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <rect x="258" y="197" width="70" height="2.5" rx="1.25" fill="#374151"/>
+
+  <rect x="245" y="208" width="8" height="8" rx="2" fill="none" stroke="#6b7280" stroke-width="1"/>
+  <rect x="258" y="210" width="60" height="2.5" rx="1.25" fill="#374151"/>
+
+  <rect x="245" y="221" width="8" height="8" rx="2" fill="none" stroke="#6b7280" stroke-width="1"/>
+  <rect x="258" y="223" width="75" height="2.5" rx="1.25" fill="#374151"/>
+
+  <!-- Sparkle effects -->
+  <g opacity="0.7">
+    <path d="M360 80 L362 85 L367 87 L362 89 L360 94 L358 89 L353 87 L358 85 Z" fill="#fbbf24"/>
+    <path d="M380 120 L381 123 L384 124 L381 125 L380 128 L379 125 L376 124 L379 123 Z" fill="#f59e0b"/>
+    <path d="M350 200 L351.5 203 L354.5 204.5 L351.5 206 L350 209 L348.5 206 L345.5 204.5 L348.5 203 Z" fill="#fbbf24"/>
+    <path d="M200 140 L201 143 L204 144 L201 145 L200 148 L199 145 L196 144 L199 143 Z" fill="#22c55e"/>
+  </g>
+</svg>

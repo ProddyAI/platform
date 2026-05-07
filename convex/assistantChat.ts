@@ -656,7 +656,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "semanticSearch",
 		description:
-			"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use this only after direct notes, tasks, channel, or general summary tools do not provide enough information.",
+			"Perform hybrid retrieval across workspace content (messages, notes, tasks, cards, events) by combining direct keyword search with semantic search. Use this only after direct notes, tasks, channel, or general summary tools do not provide enough information.",
 		parameters: {
 			type: "object" as const,
 			properties: {

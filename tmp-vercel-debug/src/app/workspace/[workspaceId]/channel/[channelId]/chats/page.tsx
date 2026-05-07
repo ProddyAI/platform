@@ -1,0 +1,86 @@
+"use client";
+
+import { Loader, TriangleAlert } from "lucide-react";
+import { ChatInput } from "@/components/chat-input";
+import { MessageList } from "@/components/message-list";
+import { TypingIndicator } from "@/components/typing-indicator";
+import { useGetChannel } from "@/features/channels/api/use-get-channel";
+import { useGetMessages } from "@/features/messages/api/use-get-messages";
+import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicator";
+import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
+import { useChannelId } from "@/hooks/use-channel-id";
+import { useDocumentTitle } from "@/hooks/use-document-title";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
+
+const ChannelChatPage = () => {
+	// Always call hooks at the top level, never conditionally
+	const channelId = useChannelId();
+	const workspaceId = useWorkspaceId();
+
+	// Track user activity and time spent in this channel
+	useTrackActivity({
+		workspaceId,
+		channelId,
+		activityType: "channel_view",
+	});
+
+	// Pass the channelId to useGetMessages - the hook will handle undefined values
+	const { results, status, loadMore } = useGetMessages({
+		channelId: channelId,
+	});
+
+	// If channelId is undefined, this will be handled by the hook
+	const { data: channel, isLoading: channelLoading } = useGetChannel({
+		id: channelId,
+	});
+
+	// Set document title based on channel name
+	useDocumentTitle(channel ? `Chats - ${channel.name}` : "Chats");
+
+	// Get typing indicator data
+	const { typingText, isAnyoneTyping } = useTypingIndicator({
+		channelId,
+	});
+
+	if (channelLoading || status === "LoadingFirstPage") {
+		return (
+			<div className="flex h-full flex-1 items-center justify-center">
+				<Loader className="size-5 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
+
+	if (!channel) {
+		return (
+			<div className="flex h-full flex-1 flex-col items-center justify-center gap-y-2">
+				<TriangleAlert className="size-5 text-muted-foreground" />
+				<span className="text-sm text-muted-foreground">
+					Channel not found.
+				</span>
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex h-full flex-col">
+			<MessageList
+				canLoadMore={status === "CanLoadMore"}
+				channelCreationTime={channel._creationTime}
+				channelName={channel.name}
+				data={results}
+				isLoadingMore={status === "LoadingMore"}
+				loadMore={loadMore}
+			/>
+
+			<TypingIndicator isVisible={isAnyoneTyping} typingText={typingText} />
+
+			<ChatInput
+				channelId={channelId}
+				channelName={channel.name}
+				placeholder={`Message # ${channel.name}`}
+			/>
+		</div>
+	);
+};
+
+export default ChannelChatPage;

@@ -301,7 +301,7 @@ export const getMyCards = createTool({
 
 export const semanticSearch = createTool({
 	description:
-		"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use only after direct notes, tasks, channel, or general summary tools do not provide enough information.",
+		"Perform hybrid retrieval across workspace content (messages, notes, tasks, cards, events) by combining direct keyword search with semantic search. Use only after direct notes, tasks, channel, or general summary tools do not provide enough information.",
 	args: z.object({
 		query: z.string().describe("Search query"),
 		limit: z
