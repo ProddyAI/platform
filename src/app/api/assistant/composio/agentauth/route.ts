@@ -142,8 +142,16 @@ export async function POST(req: NextRequest) {
 			const entityId = `member_${memberId}`;
 
 			try {
+				// Build a callback URL that redirects back to the manage page
+				// with query params so the frontend can call `complete`
+				const appUrl =
+					process.env.NEXT_PUBLIC_APP_URL ||
+					process.env.SITE_URL ||
+					"https://localhost:3000";
+				const callbackUrl = `${appUrl}/workspace/${workspaceId}/manage?connected=true&toolkit=${encodeURIComponent(toolkit)}&memberId=${encodeURIComponent(memberId)}&userId=${encodeURIComponent(entityId)}`;
+
 				// Step 1: Create entity and initiate connection using the API client
-				const connection = await apiClient.createConnection(entityId, toolkit);
+				const connection = await apiClient.createConnection(entityId, toolkit, callbackUrl);
 
 				// The API returns a redirectUrl for OAuth
 				const redirectUrl = connection.redirectUrl;
@@ -296,14 +304,24 @@ export async function POST(req: NextRequest) {
 						// Get or create auth config for this toolkit
 						let authConfigId: Id<"auth_configs"> | undefined;
 						try {
-							const existingAuthConfig = await convex.query(
+						// First try member-scoped lookup, then fall back to workspace-scoped
+						let existingAuthConfig = await convex.query(
+							api.integrations.getMyAuthConfigByToolkit,
+							{
+								workspaceId: workspaceId as Id<"workspaces">,
+								toolkit: toolkit as any,
+							}
+						);
+						if (!existingAuthConfig) {
+							existingAuthConfig = await convex.query(
 								api.integrations.getAuthConfigByToolkit,
 								{
 									workspaceId: workspaceId as Id<"workspaces">,
 									toolkit: toolkit as any,
 								}
 							);
-							authConfigId = existingAuthConfig?._id;
+						}
+						authConfigId = existingAuthConfig?._id;
 						} catch (_error) {
 							// Auth config doesn't exist, create it
 						}
@@ -330,19 +348,40 @@ export async function POST(req: NextRequest) {
 							);
 						}
 
-						// Store connected account
-						// Use member-scoped entity ID for user-specific connections
-						await convex.mutation(api.integrations.storeConnectedAccount, {
-							workspaceId: workspaceId as Id<"workspaces">,
-							memberId: memberId as Id<"members">,
-							authConfigId: authConfigId,
-							userId: entityId,
-							composioAccountId: connectedAccount.id,
-							toolkit: toolkit as any, // Toolkit type validation
-							status: "ACTIVE",
-							metadata: connectedAccount,
-							connectedBy: memberId as Id<"members">,
-						});
+						// Check if a connected account already exists for this member+toolkit
+						const existingConnectedAccount = await convex.query(
+							api.integrations.getMyConnectedAccountByToolkit,
+							{
+								workspaceId: workspaceId as Id<"workspaces">,
+								toolkit: toolkit as string,
+							}
+						);
+
+						if (existingConnectedAccount) {
+							// Update the existing record's status and composioAccountId
+							await convex.mutation(
+								api.integrations.updateConnectedAccountStatus,
+								{
+									connectedAccountId: existingConnectedAccount._id,
+									status: "ACTIVE",
+									lastUsed: Date.now(),
+								}
+							);
+						} else {
+							// Store connected account (new record)
+							// Use member-scoped entity ID for user-specific connections
+							await convex.mutation(api.integrations.storeConnectedAccount, {
+								workspaceId: workspaceId as Id<"workspaces">,
+								memberId: memberId as Id<"members">,
+								authConfigId: authConfigId,
+								userId: entityId,
+								composioAccountId: connectedAccount.id,
+								toolkit: toolkit as any,
+								status: "ACTIVE",
+								metadata: connectedAccount,
+								connectedBy: memberId as Id<"members">,
+							});
+						}
 					} catch (error) {
 						logRouteError({
 							route: "AgentAuth",
@@ -435,44 +474,20 @@ export async function GET(req: NextRequest) {
 					}
 				);
 
-				// UPDATED: Fetch real connected accounts from Composio using member-specific entity ID
-				const { createComposioClient, getAnyConnectedApps } = await import(
-					"@/lib/composio-config"
-				);
-				const composioClient = createComposioClient();
-
-				// If memberId is provided, use member-specific entity ID
-				const entityId = memberId ? `member_${memberId}` : undefined;
-				const realConnectedApps = await getAnyConnectedApps(
-					composioClient,
-					workspaceId,
-					entityId // Pass member-specific entity ID if available
-				);
-
-				// Transform the real connected apps to match the expected format
-				const connectedAccounts = realConnectedApps
-					.filter((app: any) => app.connected)
-					.map((app: any) => ({
-						_id: app.connectionId, // Use connection ID as _id
+				// Fetch connected accounts from Convex DB (member-specific, not global Composio API)
+				// This is the source of truth — only apps the user explicitly connected appear here
+				const connectedAccountsFromDB = await convex.query(
+					api.integrations.getConnectedAccountsPublic,
+					{
 						workspaceId: workspaceId as Id<"workspaces">,
 						memberId: memberId ? (memberId as Id<"members">) : undefined,
-						authConfigId: `auth_${app.app.toLowerCase()}`, // Generate a fake auth config ID
-						userId:
-							app.entityId ||
-							(memberId ? `member_${memberId}` : `workspace_${workspaceId}`),
-						composioAccountId: app.connectionId,
-						toolkit: app.app.toLowerCase(), // Convert to lowercase to match expected format
-						status: "ACTIVE", // Since these are filtered as connected
-						metadata: {},
-						isDisabled: false,
-						connectedAt: Date.now(), // Use current time as fallback
-						connectedBy: memberId ? (memberId as Id<"members">) : undefined, // Use memberId if available, undefined for system connections
-					}));
+					}
+				);
 
 				return NextResponse.json({
 					success: true,
 					authConfigs,
-					connectedAccounts,
+					connectedAccounts: connectedAccountsFromDB,
 				});
 			} catch (convexError) {
 				logRouteError({

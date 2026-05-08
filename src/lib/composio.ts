@@ -60,7 +60,7 @@ export function initializeComposio() {
 	const composioInstance = composio;
 
 	const apiClient = {
-		async createConnection(userId: string, appName: string) {
+		async createConnection(userId: string, appName: string, callbackUrl?: string) {
 			const { APP_CONFIGS } = await import("./composio-config");
 			const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
 			const appConfig = APP_CONFIGS[appKey];
@@ -84,12 +84,15 @@ export function initializeComposio() {
 				);
 			}
 
+			const initiateOptions: Record<string, any> = { allowMultiple: true };
+			if (callbackUrl) {
+				initiateOptions.callbackUrl = callbackUrl;
+			}
+
 			const connection = (await composioInstance.connectedAccounts?.initiate?.(
 				userId,
 				authConfigId,
-				{
-					allowMultiple: true,
-				}
+				initiateOptions
 			)) as ComposioConnection | undefined;
 
 			if (!connection) {

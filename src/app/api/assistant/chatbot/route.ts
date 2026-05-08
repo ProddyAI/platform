@@ -13,7 +13,6 @@ import {
 	createComposioClient,
 	filterToolsForQuery,
 	getAllToolsForApps,
-	getAnyConnectedApps,
 	getWorkspaceEntityId,
 } from "@/lib/composio-config";
 
@@ -202,36 +201,59 @@ export async function POST(req: NextRequest) {
 		if (needsExternalTools && process.env.COMPOSIO_API_KEY) {
 			try {
 				composioClient = createComposioClient();
+				// Prefer member-scoped entity ID; fall back to workspace entity
 				userId = memberId
 					? `member_${memberId}`
 					: getWorkspaceEntityId(workspaceId);
 
-				// Get connected apps
-				const apps = await getAnyConnectedApps(
-					composioClient,
-					workspaceId,
-					userId
+				// Use Convex DB as source of truth for connected apps (same as manage page)
+				// This avoids entity ID mismatches with the live Composio API
+				const dbAccounts = await convex.query(
+					api.integrations.getConnectedAccountsPublic,
+					{
+						workspaceId: workspaceId as Id<"workspaces">,
+						memberId: memberId ? (memberId as Id<"members">) : undefined,
+					}
 				);
-				connectedApps = apps
-					.filter((app) => app.connected)
-					.map((app) => app.app);
 
-				if (connectedApps.length > 0) {
-					// Get all available tools
-					const allTools = await getAllToolsForApps(
-						composioClient,
-						userId,
-						connectedApps
-					);
+				const activeAccounts = dbAccounts.filter(
+					(acc: any) => acc.status === "ACTIVE"
+				);
 
-					// Filter tools based on query
-					composioTools = filterToolsForQuery(allTools, message, {
-						maxTools: 20, // Limit tools to avoid token overflow
-						preferDashboard: true,
-					});
+				if (activeAccounts.length > 0) {
+					// Build connected apps list from DB
+					connectedApps = [
+						...new Set(
+							activeAccounts.map((acc: any) =>
+								acc.toolkit.toUpperCase()
+							)
+						),
+					] as AvailableApp[];
 
-					if (composioTools.length > 0) {
-						useComposio = true;
+					// Use the entity ID stored in the DB record for Composio tool fetching
+					// (it's the entity ID that was used when the connection was established)
+					const firstAccount = activeAccounts[0];
+					if (firstAccount?.userId) {
+						userId = firstAccount.userId;
+					}
+
+					if (connectedApps.length > 0) {
+						// Get all available tools using the correct entity ID
+						const allTools = await getAllToolsForApps(
+							composioClient,
+							userId,
+							connectedApps
+						);
+
+						// Filter tools based on query
+						composioTools = filterToolsForQuery(allTools, message, {
+							maxTools: 20,
+							preferDashboard: true,
+						});
+
+						if (composioTools.length > 0) {
+							useComposio = true;
+						}
 					}
 				}
 			} catch (_error) {
@@ -282,7 +304,7 @@ export async function POST(req: NextRequest) {
 
 				// Create completion with tools
 				const completion = await openai.chat.completions.create({
-					model: "gpt-5-mini",
+					model: "gpt-4o-mini",
 					tools: composioTools,
 					messages,
 					temperature: 0.7,
@@ -300,11 +322,15 @@ export async function POST(req: NextRequest) {
 					completion.choices[0].message.tool_calls.length > 0
 				) {
 					try {
+						console.log(
+							`[Chatbot] Executing ${completion.choices[0].message.tool_calls.length} tool calls with entityId: ${userId}`
+						);
 						// Use Composio's provider.handleToolCalls method (matches sample code pattern)
 						const result = await composioClient.provider.handleToolCalls(
 							userId,
 							completion
 						);
+						console.log(`[Chatbot] Tool results:`, JSON.stringify(result).slice(0, 500));
 
 						// Extract tool results for display
 						toolResults = Array.isArray(result) ? result : [result];
@@ -342,7 +368,7 @@ export async function POST(req: NextRequest) {
 						];
 
 						const followUpCompletion = await openai.chat.completions.create({
-							model: "gpt-5-mini",
+							model: "gpt-4o-mini",
 							messages: followUpMessages,
 							temperature: 0.7,
 							max_tokens: 1500,
@@ -355,6 +381,7 @@ export async function POST(req: NextRequest) {
 							"[Chatbot Assistant] Tool execution failed:",
 							toolError
 						);
+						console.error("[Chatbot Assistant] userId used:", userId);
 						responseText +=
 							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";
 					}
