@@ -375,6 +375,7 @@ Your role:
 - Help users manage their calendar, meetings, tasks, and workspace activities
 - Provide summaries of channels and conversations
 - Answer questions about workspace data
+- Use connected external services (GitHub, Gmail, Slack, etc.) when asked
 - Be concise, actionable, and friendly
 
 Guidelines:
@@ -393,6 +394,7 @@ Guidelines:
 - For broad catch-up questions like "what happened in general", summarize concrete updates when data exists
 - Reuse recent conversation context for short follow-ups like "what about release?"
 - Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."
+- ALWAYS use integration tools (runGithubTool, runGmailTool, runSlackTool, etc.) when the user asks about those services — do NOT say you can't access them
 
 Available capabilities:
 - Calendar: View today's/tomorrow's/next week's meetings
@@ -411,6 +413,12 @@ ${pendingTaskInstructions}
 
 When a user asks about their schedule, tasks, or workspace, use the appropriate tools to fetch current data.`;
 }
+- GitHub: List repos, create issues, manage PRs — use runGithubTool
+- Gmail: Send emails, read inbox, search messages — use runGmailTool
+- Slack: Send messages, browse channels — use runSlackTool
+- Notion: Create/read pages and databases — use runNotionTool
+- ClickUp: Create and manage tasks — use runClickupTool
+- Linear: Create and manage issues — use runLinearTool
 
 // Define tools that AI can use (handles are created inside the action)
 const TOOL_DEFINITIONS: ToolDefinition[] = [

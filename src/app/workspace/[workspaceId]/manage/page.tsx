@@ -56,6 +56,11 @@ function getTabFromLocation(): ManageTab {
 		return "billing";
 	}
 
+	// Composio OAuth callback returns with connected=true. Default to integrations tab.
+	if (params.has("connected") && params.get("connected") === "true") {
+		return "integrations";
+	}
+
 	return "workspace";
 }
 
