@@ -3,6 +3,10 @@ type PendingTaskDraft = {
 	description?: string;
 	priority?: "low" | "medium" | "high";
 	dueDate?: number;
+	assigneeMemberId?: unknown;
+	assigneeUserId?: unknown;
+	assigneeName?: string;
+	updatedAt?: number;
 };
 
 const CONFIRMATION_PATTERNS = [
@@ -54,6 +58,10 @@ export function formatPendingTaskDraftConfirmation(draft: PendingTaskDraft) {
 		lines.push(`- Description: ${draft.description.trim()}`);
 	}
 
+	if (draft.assigneeName?.trim()) {
+		lines.push(`- Assignee: ${draft.assigneeName.trim()}`);
+	}
+
 	if (draft.priority) {
 		lines.push(`- Priority: ${draft.priority}`);
 	}
@@ -68,6 +76,65 @@ export function formatPendingTaskDraftConfirmation(draft: PendingTaskDraft) {
 	);
 
 	return lines.join("\n");
+}
+
+export function mergePendingTaskDraftUpdate(
+	existingDraft: PendingTaskDraft | undefined,
+	update: Partial<PendingTaskDraft>,
+	updatedAt: number
+) {
+	const merged: PendingTaskDraft = {
+		title: update.title?.trim() || existingDraft?.title?.trim() || "",
+		description:
+			update.description !== undefined
+				? update.description?.trim() || undefined
+				: existingDraft?.description,
+		priority:
+			update.priority !== undefined ? update.priority : existingDraft?.priority,
+		dueDate:
+			update.dueDate !== undefined ? update.dueDate : existingDraft?.dueDate,
+		assigneeMemberId:
+			update.assigneeMemberId !== undefined
+				? update.assigneeMemberId
+				: existingDraft?.assigneeMemberId,
+		assigneeUserId:
+			update.assigneeUserId !== undefined
+				? update.assigneeUserId
+				: existingDraft?.assigneeUserId,
+		assigneeName:
+			update.assigneeName !== undefined
+				? update.assigneeName?.trim() || undefined
+				: existingDraft?.assigneeName,
+		updatedAt,
+	};
+
+	if (!merged.title) {
+		throw new Error("Task title is required");
+	}
+
+	return merged;
+}
+
+export function buildTaskDraftFailureMessage(errorMessage: string) {
+	const normalized = errorMessage.trim();
+
+	if (/task title is required/i.test(normalized)) {
+		return "I need a task title before I can draft it. Tell me the title you want and I’ll prepare the draft.";
+	}
+
+	if (/accepted workspace members/i.test(normalized)) {
+		return "I can only assign tasks after they accept the invite and become a workspace member.";
+	}
+
+	if (/workspace owner/i.test(normalized)) {
+		return "I can't assign that task because the target user is the workspace owner. Only an owner or admin should assign tasks to the workspace owner directly.";
+	}
+
+	if (/original inviter|owners, admins/i.test(normalized)) {
+		return "I can only assign that task if you're an owner, an admin, or the original inviter of that member.";
+	}
+
+	return "I couldn't update the task draft just yet. Please try again with the task title and assignee details.";
 }
 
 export type { PendingTaskDraft };

@@ -136,11 +136,27 @@ export const searchTasks = createTool({
 	},
 });
 
+export const getWorkspaceMembers = createTool({
+	description:
+		"List accepted workspace members with their IDs, names, emails, and roles. Use this before drafting a task for another person so you can resolve the assignee member ID.",
+	args: z.object({}),
+	handler: async (ctx: AssistantCtx): Promise<unknown> => {
+		return await ctx.runQuery(api.members.get, {
+			workspaceId: ctx.workspaceId,
+		});
+	},
+});
+
 export const draftTaskForConfirmation = createTool({
 	description:
-		"Draft a task for the current user and save it for confirmation. Use this for task-creation requests so the user can review and change fields before anything is created.",
+		"Draft a task and save it for confirmation. Use this for task-creation requests so the user can review and change fields before anything is created. Include assigneeMemberId when the task belongs to another accepted workspace member. For follow-up edits to an existing draft, title is optional and unchanged fields should be reused from the current draft.",
 	args: z.object({
-		title: z.string().describe("The task title."),
+		title: z
+			.string()
+			.optional()
+			.describe(
+				"The task title. Optional when revising an existing pending draft."
+			),
 		description: z.string().optional().describe("Optional task description."),
 		dueDate: z
 			.number()
@@ -150,6 +166,12 @@ export const draftTaskForConfirmation = createTool({
 			.enum(["low", "medium", "high"])
 			.optional()
 			.describe("Optional task priority."),
+		assigneeMemberId: z
+			.string()
+			.optional()
+			.describe(
+				"Optional member ID for another accepted workspace member. Resolve it with getWorkspaceMembers first."
+			),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
 		return await ctx.runMutation(
@@ -161,6 +183,9 @@ export const draftTaskForConfirmation = createTool({
 				description: args.description,
 				dueDate: args.dueDate,
 				priority: args.priority,
+				assigneeMemberId: args.assigneeMemberId as
+					| Id<"members">
+					| undefined,
 			}
 		);
 	},

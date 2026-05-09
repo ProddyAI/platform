@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
+	buildTaskDraftFailureMessage,
 	formatPendingTaskDraftConfirmation,
 	isPendingTaskCancellation,
 	isPendingTaskConfirmation,
+	mergePendingTaskDraftUpdate,
 } from "./taskDrafts";
 
 describe("task draft confirmation helpers", () => {
@@ -50,5 +52,62 @@ describe("task draft confirmation helpers", () => {
 		expect(message).not.toContain("- Description:");
 		expect(message).not.toContain("- Priority:");
 		expect(message).not.toContain("- Due date:");
+	});
+
+	test("includes assignee details when present", () => {
+		const message = formatPendingTaskDraftConfirmation({
+			title: "Prepare onboarding deck",
+			assigneeName: "Alice Johnson",
+		} as any);
+
+		expect(message).toContain("- Title: Prepare onboarding deck");
+		expect(message).toContain("- Assignee: Alice Johnson");
+	});
+
+	test("merges partial updates into an existing pending draft", () => {
+		const merged = mergePendingTaskDraftUpdate(
+			{
+				title: "Mentoring",
+				assigneeName: "Alice",
+				assigneeMemberId: "member_1" as any,
+				assigneeUserId: "user_1" as any,
+				priority: "low",
+			},
+			{
+				dueDate: new Date("2026-10-24T00:00:00.000Z").getTime(),
+				priority: "medium",
+			},
+			123
+		);
+
+		expect(merged).toMatchObject({
+			title: "Mentoring",
+			assigneeName: "Alice",
+			priority: "medium",
+			dueDate: new Date("2026-10-24T00:00:00.000Z").getTime(),
+			updatedAt: 123,
+		});
+	});
+
+	test("gives a friendly title prompt when draft creation is missing a title", () => {
+		expect(buildTaskDraftFailureMessage("Task title is required")).toContain(
+			"I need a task title"
+		);
+	});
+
+	test("explains invite acceptance requirement for assignee failures", () => {
+		expect(
+			buildTaskDraftFailureMessage(
+				"Tasks can only be assigned to accepted workspace members."
+			)
+		).toContain("after they accept the invite");
+	});
+
+	test("clearly explains owner-assignment restriction", () => {
+		expect(
+			buildTaskDraftFailureMessage(
+				"Members cannot assign tasks directly to the workspace owner."
+			)
+		).toContain("workspace owner");
 	});
 });

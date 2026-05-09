@@ -127,7 +127,38 @@ describe("resolveAssistantToolLoop", () => {
 			{ name: "getChannelSummary", args: { channelId: "channel-general" } },
 		]);
 		expect(result.executedTools).toEqual(executedSteps);
-		expect(result.sourceRefs).toEqual(["Channel Messages: #general"]);
-		expect(result.responseText).toContain("Recent updates in #general");
+	expect(result.sourceRefs).toEqual(["Channel Messages: #general"]);
+	expect(result.responseText).toContain("Recent updates in #general");
+	});
+
+	test("stops and surfaces fallback text when tool execution throws", async () => {
+		const result = await resolveAssistantToolLoop({
+			initialAssistantMessage: {
+				content: "",
+				tool_calls: [
+					{
+						id: "call-draft",
+						type: "function",
+						function: {
+							name: "draftTaskForConfirmation",
+							arguments: JSON.stringify({ priority: "medium" }),
+						},
+					},
+				],
+			},
+			baseMessages: [
+				{ role: "system", content: "system prompt" },
+				{ role: "user", content: "make it medium priority" },
+			],
+			executeToolCall: async () => {
+				throw new Error("Task title is required");
+			},
+			createCompletion: async () => {
+				throw new Error("Should not request another completion");
+			},
+			initialResponseText: "I couldn't find anything relevant yet.",
+		}).catch((error) => error);
+
+		expect(result).toBeInstanceOf(Error);
 	});
 });

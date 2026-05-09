@@ -8,7 +8,11 @@ import {
 	type QueryCtx,
 	query,
 } from "./_generated/server";
-import { formatPendingTaskDraftConfirmation } from "./assistant/taskDrafts";
+import {
+	formatPendingTaskDraftConfirmation,
+	mergePendingTaskDraftUpdate,
+} from "./assistant/taskDrafts";
+import { canAssignTaskToMember } from "./assistant/taskAssignment";
 
 const TASK_PRIORITY_VALIDATOR = v.union(
 	v.literal("low"),
@@ -19,6 +23,9 @@ const TASK_PRIORITY_VALIDATOR = v.union(
 const pendingTaskDraftValidator = v.object({
 	title: v.string(),
 	description: v.optional(v.string()),
+	assigneeMemberId: v.optional(v.id("members")),
+	assigneeUserId: v.optional(v.id("users")),
+	assigneeName: v.optional(v.string()),
 	dueDate: v.optional(v.number()),
 	priority: v.optional(TASK_PRIORITY_VALIDATOR),
 	updatedAt: v.number(),
@@ -35,6 +42,29 @@ const getMember = async (
 			q.eq("workspaceId", workspaceId).eq("userId", userId)
 		)
 		.unique();
+};
+
+const wasMemberInvitedByCurrentMember = async (
+	ctx: QueryCtx | MutationCtx,
+	workspaceId: Id<"workspaces">,
+	currentMemberId: Id<"members">,
+	targetUserId: Id<"users">
+) => {
+	const targetUser = await ctx.db.get(targetUserId);
+	const email = targetUser?.email?.trim().toLowerCase();
+	if (!email) return false;
+
+	const invites = await ctx.db
+		.query("workspaceInvites")
+		.withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	return invites.some(
+		(invite) =>
+			invite.invitedBy === currentMemberId &&
+			invite.used &&
+			invite.email.trim().toLowerCase() === email
+	);
 };
 
 export const getByWorkspaceAndUser = query({
@@ -102,8 +132,9 @@ export const savePendingTaskDraft = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
-		title: v.string(),
+		title: v.optional(v.string()),
 		description: v.optional(v.string()),
+		assigneeMemberId: v.optional(v.id("members")),
 		dueDate: v.optional(v.number()),
 		priority: v.optional(TASK_PRIORITY_VALIDATOR),
 	},
@@ -127,13 +158,69 @@ export const savePendingTaskDraft = mutation({
 			throw new Error("Assistant conversation not found");
 		}
 
-		const draft = {
-			title: args.title.trim(),
-			description: args.description?.trim() || undefined,
-			dueDate: args.dueDate,
-			priority: args.priority,
-			updatedAt: Date.now(),
-		};
+		let assigneeMemberId: Id<"members"> | undefined;
+		let assigneeUserId: Id<"users"> | undefined;
+		let assigneeName: string | undefined;
+
+		if (args.assigneeMemberId) {
+			const assigneeMember = await ctx.db.get(args.assigneeMemberId);
+			if (!assigneeMember || assigneeMember.workspaceId !== args.workspaceId) {
+				throw new Error(
+					"Tasks can only be assigned to accepted workspace members."
+				);
+			}
+
+			const targetWasInvitedByCurrentMember = await wasMemberInvitedByCurrentMember(
+				ctx,
+				args.workspaceId,
+				member._id,
+				assigneeMember.userId
+			);
+			const canAssign = canAssignTaskToMember({
+				currentMemberId: member._id,
+				currentRole: member.role,
+				targetMemberId: assigneeMember._id,
+				targetWasInvitedByCurrentMember,
+			});
+
+			if (!canAssign) {
+				if (
+					assigneeMember.role === "owner" &&
+					member.role !== "owner" &&
+					member.role !== "admin"
+				) {
+					throw new Error(
+						"Members cannot assign tasks directly to the workspace owner."
+					);
+				}
+
+				throw new Error(
+					"Only owners, admins, or the original inviter can assign tasks to this member."
+				);
+			}
+
+			const assigneeUser = await ctx.db.get(assigneeMember.userId);
+			assigneeMemberId = assigneeMember._id;
+			assigneeUserId = assigneeMember.userId;
+			assigneeName =
+				assigneeUser?.name?.trim() ||
+				assigneeUser?.email?.trim() ||
+				"Assigned member";
+		}
+
+		const draft = mergePendingTaskDraftUpdate(
+			existing.pendingTaskDraft,
+			{
+				title: args.title,
+				description: args.description,
+				assigneeMemberId,
+				assigneeUserId,
+				assigneeName,
+				dueDate: args.dueDate,
+				priority: args.priority,
+			},
+			Date.now()
+		);
 
 		await ctx.db.patch(existing._id, {
 			pendingTaskDraft: draft,
@@ -180,6 +267,7 @@ export const createTaskFromPendingDraft = mutation({
 	returns: v.object({
 		taskId: v.id("tasks"),
 		title: v.string(),
+		assigneeName: v.optional(v.string()),
 	}),
 	handler: async (ctx, args) => {
 		const member = await getMember(ctx, args.workspaceId, args.userId);
@@ -198,6 +286,19 @@ export const createTaskFromPendingDraft = mutation({
 			throw new Error("No pending task draft to create");
 		}
 
+		let assigneeUserId = args.userId;
+		if (draft.assigneeMemberId) {
+			const assigneeMember = await ctx.db.get(draft.assigneeMemberId);
+			if (!assigneeMember || assigneeMember.workspaceId !== args.workspaceId) {
+				throw new Error(
+					"The selected assignee is no longer an active member of this workspace."
+				);
+			}
+			assigneeUserId = assigneeMember.userId;
+		} else if (draft.assigneeUserId) {
+			assigneeUserId = draft.assigneeUserId;
+		}
+
 		const now = Date.now();
 		const taskId = await ctx.db.insert("tasks", {
 			title: draft.title,
@@ -209,7 +310,7 @@ export const createTaskFromPendingDraft = mutation({
 			tags: [],
 			createdAt: now,
 			updatedAt: now,
-			userId: args.userId,
+			userId: assigneeUserId,
 			workspaceId: args.workspaceId,
 		});
 
@@ -219,7 +320,7 @@ export const createTaskFromPendingDraft = mutation({
 		});
 
 		await ctx.scheduler.runAfter(0, internal.usageTracking.recordTaskCreated, {
-			userId: args.userId,
+			userId: assigneeUserId,
 			workspaceId: args.workspaceId,
 		});
 		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexTask, {
@@ -229,6 +330,7 @@ export const createTaskFromPendingDraft = mutation({
 		return {
 			taskId,
 			title: draft.title,
+			assigneeName: draft.assigneeName,
 		};
 	},
 });

@@ -1,3 +1,8 @@
+import {
+	buildAssistantProfilePrompt,
+	type AssistantProfileRecord,
+} from "../../convex/assistant/profile";
+
 export const ASSISTANT_METADATA_SCHEMA_VERSION = "v1";
 
 export type AssistantExternalApp =
@@ -189,6 +194,7 @@ export function buildAssistantSystemPrompt(options?: {
 	externalToolsAllowed?: boolean;
 	conversationHistory?: AssistantConversationMessage[];
 	latestUserMessage?: string;
+	assistantProfile?: AssistantProfileRecord;
 }): string {
 	const connectedApps = options?.connectedApps ?? [];
 	const externalToolsAllowed = options?.externalToolsAllowed ?? false;
@@ -234,6 +240,9 @@ NEVER say you can't access these apps - you have active connections and tools to
 	const contextLine = options?.workspaceContext?.trim()
 		? `Workspace context: ${options.workspaceContext.trim()}`
 		: "";
+	const personalizationLine = options?.assistantProfile
+		? buildAssistantProfilePrompt(options.assistantProfile)
+		: "";
 	const followUpHint =
 		options?.latestUserMessage && options.latestUserMessage.trim()
 			? buildFollowUpContextHint({
@@ -242,7 +251,13 @@ NEVER say you can't access these apps - you have active connections and tools to
 				})
 			: "";
 
-	return [BASE_SYSTEM_PROMPT, policyLine, contextLine, followUpHint]
+	return [
+		BASE_SYSTEM_PROMPT,
+		policyLine,
+		contextLine,
+		personalizationLine,
+		followUpHint,
+	]
 		.filter(Boolean)
 		.join("\n\n");
 }

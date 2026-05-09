@@ -6,9 +6,14 @@ import type { Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
 import { buildChannelSummaryFallback } from "./assistant/channelSummaryFallback";
 import {
+	buildAssistantProfilePrompt,
+	type AssistantProfileRecord,
+} from "./assistant/profile";
+import {
 	formatPendingTaskDraftConfirmation,
 	isPendingTaskCancellation,
 	isPendingTaskConfirmation,
+	buildTaskDraftFailureMessage,
 } from "./assistant/taskDrafts";
 import { resolveAssistantToolLoop } from "./assistant/toolLoop";
 
@@ -318,21 +323,51 @@ function createFallbackResponseFromToolResult(
 		return String((result as any).confirmationMessage ?? "").trim() || null;
 	}
 
+	if (toolName === "getWorkspaceMembers" && Array.isArray(result as any)) {
+		const members = (result as any[]).slice(0, 8);
+		if (members.length === 0) {
+			return "There are no accepted workspace members available yet.";
+		}
+
+		return [
+			"Accepted workspace members",
+			...members.map((member) => {
+				const userName = String(member?.user?.name ?? "").trim() || "Unknown";
+				const role = String(member?.role ?? "member").trim();
+				return `- ${userName} (${role})`;
+			}),
+		].join("\n");
+	}
+
 	return null;
 }
 
 function buildSystemPrompt(options?: {
 	hasPendingTaskDraft?: boolean;
 	pendingTaskDraftSummary?: string;
+	pendingTaskDraftAssigneeMemberId?: string;
+	pendingTaskDraftAssigneeName?: string;
+	assistantProfile?: AssistantProfileRecord;
 }) {
 	const pendingTaskInstructions =
 		options?.hasPendingTaskDraft && options.pendingTaskDraftSummary
 			? `You currently have a pending task draft for this user:
 ${options.pendingTaskDraftSummary}
 
+${
+	options.pendingTaskDraftAssigneeMemberId
+		? `Current pending draft assignee member ID: ${options.pendingTaskDraftAssigneeMemberId}
+Current pending draft assignee name: ${options.pendingTaskDraftAssigneeName ?? "Unknown"}
+If the user asks for revisions without changing the assignee, keep assigning the task to this same member.`
+		: "If the user asks for revisions without naming a different assignee, keep this as a self-assigned draft."
+}
+
 If the user wants changes, update the draft by calling draftTaskForConfirmation again with the revised fields.
 Do not create the task in the same turn as drafting it. Wait for an explicit confirmation reply in a later user message.`
 			: "";
+	const personalizationPrompt = options?.assistantProfile
+		? buildAssistantProfilePrompt(options.assistantProfile)
+		: "";
 
 	return `You are Proddy, a personal work assistant for team workspaces.
 
@@ -353,6 +388,8 @@ Guidelines:
 - For note matches, include titles, channel names when available, and a useful snippet
 - For task lists, keep the answer compact and put overdue, in-progress, on-hold, urgent, or blocking work first
 - For task creation requests, first draft the task with draftTaskForConfirmation and ask the user to confirm or change it before anything is created
+- When a task is for another person, first use getWorkspaceMembers to find an accepted workspace member ID, then pass that member ID into draftTaskForConfirmation
+- Never assign a task to someone who has only been invited but has not joined the workspace yet
 - For broad catch-up questions like "what happened in general", summarize concrete updates when data exists
 - Reuse recent conversation context for short follow-ups like "what about release?"
 - Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."
@@ -360,12 +397,15 @@ Guidelines:
 Available capabilities:
 - Calendar: View today's/tomorrow's/next week's meetings
 - Tasks: Check tasks due today/tomorrow or all tasks, and search tasks by topic
-- Task drafting: Prepare a task draft for confirmation before creating anything
+- Task drafting: Prepare a task draft for confirmation before creating anything, including assignments to accepted workspace members
+- Members: List accepted workspace members so tasks can be assigned to the right person
 - Notes: List recent notes and search notes by topic
 - Channels: Search channels, get channel summaries
 - Boards: View assigned cards across all boards
 - Workspace: Get overview statistics and a general workspace catch-up summary
 - Search: Semantic search across messages, notes, tasks as fallback only
+
+${personalizationPrompt}
 
 ${pendingTaskInstructions}
 
@@ -480,15 +520,29 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
+		name: "getWorkspaceMembers",
+		description:
+			"List accepted workspace members with their IDs, names, emails, and roles. Use this before drafting a task for another person so you can resolve the assignee member ID. Pending invites do not appear here.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.members.get,
+		contextParams: { needsWorkspaceId: true },
+	},
+	{
 		name: "draftTaskForConfirmation",
 		description:
-			"Draft a task for the current user and save it for confirmation. Use this for any request to create a task. This tool does not create the task yet; it prepares a preview so the user can confirm or request changes first.",
+			"Draft a task and save it for confirmation. Use this for any request to create a task. This tool does not create the task yet; it prepares a preview so the user can confirm or request changes first. If the task belongs to another accepted workspace member, include assigneeMemberId. For follow-up edits to an existing draft, title is optional and unchanged fields should be reused from the current draft.",
 		parameters: {
 			type: "object" as const,
 			properties: {
 				title: {
 					type: "string",
-					description: "The task title.",
+					description:
+						"The task title. Optional when revising an existing pending draft.",
 				},
 				description: {
 					type: "string",
@@ -502,8 +556,13 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 					type: "string",
 					description: "Optional priority. Must be one of: low, medium, high.",
 				},
+				assigneeMemberId: {
+					type: "string",
+					description:
+						"Optional member ID for another accepted workspace member. Find this with getWorkspaceMembers first.",
+				},
 			},
-			required: ["title"],
+			required: [],
 		},
 		handlerType: "mutation" as const,
 		handler: api.assistantConversations.savePendingTaskDraft,
@@ -961,6 +1020,7 @@ export const sendMessage = action({
 		if (!apiKey) {
 			return { success: false, error: "OPENAI_API_KEY not configured" };
 		}
+		let streamId: string | null = null;
 
 		const conversationMeta = await ctx.runQuery(
 			api.assistantConversations.getByConversationId,
@@ -1025,6 +1085,15 @@ export const sendMessage = action({
 				content: args.message,
 			});
 
+			const assistantProfile = await ctx.runMutation(
+				api.assistantProfiles.recordSignal,
+				{
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					message: args.message,
+				}
+			);
+
 			if (pendingTaskDraft && isPendingTaskConfirmation(args.message)) {
 				const created = await ctx.runMutation(
 					api.assistantConversations.createTaskFromPendingDraft,
@@ -1033,7 +1102,12 @@ export const sendMessage = action({
 						userId: resolvedUserId,
 					}
 				);
-				const responseText = `Created the task "${created.title}".`;
+				const assigneeSuffix =
+					created.assigneeName?.trim() &&
+					pendingTaskDraft?.assigneeUserId !== resolvedUserId
+						? ` for ${created.assigneeName.trim()}`
+						: "";
+				const responseText = `Created the task "${created.title}"${assigneeSuffix}.`;
 
 				await ctx.runMutation(components.databaseChat.messages.add, {
 					conversationId: activeConversationId as any,
@@ -1090,6 +1164,10 @@ export const sendMessage = action({
 						pendingTaskDraftSummary: pendingTaskDraft
 							? formatPendingTaskDraftConfirmation(pendingTaskDraft)
 							: undefined,
+						pendingTaskDraftAssigneeMemberId:
+							pendingTaskDraft?.assigneeMemberId,
+						pendingTaskDraftAssigneeName: pendingTaskDraft?.assigneeName,
+						assistantProfile: assistantProfile ?? undefined,
 					}),
 				},
 				...rawMessages.map((m: any) => ({
@@ -1099,7 +1177,7 @@ export const sendMessage = action({
 			];
 
 			// Create stream for delta-based streaming
-			const streamId = await ctx.runMutation(
+			streamId = await ctx.runMutation(
 				components.databaseChat.stream.create,
 				{
 					conversationId: activeConversationId as any,
@@ -1215,33 +1293,51 @@ export const sendMessage = action({
 							};
 						}
 
-						const parsedArgs = JSON.parse(toolCall.function?.arguments ?? "{}");
-						const fullArgs: Record<string, any> = { ...parsedArgs };
+						try {
+							const parsedArgs = JSON.parse(
+								toolCall.function?.arguments ?? "{}"
+							);
+							const fullArgs: Record<string, any> = { ...parsedArgs };
 
-						if (tool.contextParams?.needsWorkspaceId) {
-							fullArgs.workspaceId = resolvedWorkspaceId;
-						}
-						if (tool.contextParams?.needsUserId) {
-							fullArgs.userId = resolvedUserId;
-						}
+							if (tool.contextParams?.needsWorkspaceId) {
+								fullArgs.workspaceId = resolvedWorkspaceId;
+							}
+							if (tool.contextParams?.needsUserId) {
+								fullArgs.userId = resolvedUserId;
+							}
 
-						let result: unknown;
-						if (tool.handlerType === "query") {
-							result = await ctx.runQuery(tool.handler as any, fullArgs);
-						} else if (tool.handlerType === "mutation") {
-							result = await ctx.runMutation(tool.handler as any, fullArgs);
-						} else {
-							result = await ctx.runAction(tool.handler as any, fullArgs);
-						}
+							let result: unknown;
+							if (tool.handlerType === "query") {
+								result = await ctx.runQuery(tool.handler as any, fullArgs);
+							} else if (tool.handlerType === "mutation") {
+								result = await ctx.runMutation(tool.handler as any, fullArgs);
+							} else {
+								result = await ctx.runAction(tool.handler as any, fullArgs);
+							}
 
-						return {
-							result,
-							sourceRefs: collectSourceRefsFromToolResult(toolName, result),
-							fallbackText: createFallbackResponseFromToolResult(
-								toolName,
-								result
-							),
-						};
+							return {
+								result,
+								sourceRefs: collectSourceRefsFromToolResult(toolName, result),
+								fallbackText: createFallbackResponseFromToolResult(
+									toolName,
+									result
+								),
+							};
+						} catch (error) {
+							const message =
+								error instanceof Error ? error.message : "Tool execution failed";
+							return {
+								result: {
+									success: false,
+									error: message,
+								},
+								sourceRefs: [],
+								fallbackText:
+									toolName === "draftTaskForConfirmation"
+										? buildTaskDraftFailureMessage(message)
+										: `I hit an issue while using ${toolName}. Please try again.`,
+							};
+						}
 					},
 				});
 
@@ -1285,6 +1381,34 @@ export const sendMessage = action({
 			return { success: true, content: responseText };
 		} catch (error) {
 			console.error("[Assistant] Error:", error);
+			if (streamId) {
+				try {
+					await ctx.runMutation(components.databaseChat.stream.finish, {
+						streamId,
+					});
+				} catch (streamError) {
+					console.warn("[Assistant] Failed to close stream after error:", streamError);
+				}
+			}
+			try {
+				const responseText =
+					error instanceof Error
+						? buildTaskDraftFailureMessage(error.message)
+						: "I ran into an issue while processing that request. Please try again.";
+				await ctx.runMutation(components.databaseChat.messages.add, {
+					conversationId: activeConversationId as any,
+					role: "assistant",
+					content: responseText,
+				});
+				await ctx.runMutation(api.assistantConversations.upsertConversation, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: activeConversationId,
+					lastMessageAt: Date.now(),
+				});
+			} catch (persistError) {
+				console.warn("[Assistant] Failed to persist error response:", persistError);
+			}
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

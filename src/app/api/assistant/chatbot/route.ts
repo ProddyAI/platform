@@ -167,6 +167,8 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
+		const currentUser = await convex.query(api.users.current);
+
 		// Verify authentication when memberId is provided
 		if (memberId) {
 			const isAuthenticated = await isAuthenticatedNextjs();
@@ -182,8 +184,6 @@ export async function POST(req: NextRequest) {
 			if (token && typeof token === "string") {
 				convex.setAuth(token);
 			}
-
-			const currentUser = await convex.query(api.users.current);
 			if (!currentUser) {
 				return NextResponse.json({ error: "User not found" }, { status: 404 });
 			}
@@ -321,6 +321,13 @@ export async function POST(req: NextRequest) {
 						// Strip control characters and normalize content
 						content: msg.content.replace(CONTROL_CHARS_REGEX, "").trim(),
 					}));
+				const assistantProfile = currentUser
+					? await convex.mutation(api.assistantProfiles.recordSignal, {
+							workspaceId: workspaceId as Id<"workspaces">,
+							userId: currentUser._id,
+							message,
+						})
+					: null;
 
 				const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
 					{
@@ -332,6 +339,7 @@ export async function POST(req: NextRequest) {
 							externalToolsAllowed: true,
 							conversationHistory: sanitizedHistory,
 							latestUserMessage: message,
+							assistantProfile: assistantProfile ?? undefined,
 						}),
 					},
 					// Add sanitized conversation history
@@ -456,7 +464,6 @@ export async function POST(req: NextRequest) {
 		try {
 			// Get or create conversation for this workspace/user
 			// Use memberId if available, otherwise use workspace ID
-			const currentUser = await convex.query(api.users.current);
 			if (!currentUser) {
 				return NextResponse.json(
 					{ success: false, error: "User not authenticated" },

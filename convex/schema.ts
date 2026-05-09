@@ -622,6 +622,9 @@ const schema = defineSchema({
 			v.object({
 				title: v.string(),
 				description: v.optional(v.string()),
+				assigneeMemberId: v.optional(v.id("members")),
+				assigneeUserId: v.optional(v.id("users")),
+				assigneeName: v.optional(v.string()),
 				dueDate: v.optional(v.number()),
 				priority: v.optional(
 					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
@@ -668,6 +671,58 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"])
 		.index("by_user_id_timestamp", ["userId", "timestamp"]),
+
+	assistantProfiles: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		responseStyle: v.optional(
+			v.union(
+				v.literal("concise"),
+				v.literal("balanced"),
+				v.literal("detailed")
+			)
+		),
+		actionPreference: v.optional(
+			v.union(v.literal("suggestive"), v.literal("proactive"))
+		),
+		prioritizationStrategy: v.optional(
+			v.union(
+				v.literal("balanced"),
+				v.literal("blockers_first"),
+				v.literal("deadlines_first"),
+				v.literal("meetings_first")
+			)
+		),
+		summaryFocus: v.optional(
+			v.array(
+				v.union(
+					v.literal("tasks"),
+					v.literal("channels"),
+					v.literal("notes"),
+					v.literal("general")
+				)
+			)
+		),
+		memoryBullets: v.optional(v.array(v.string())),
+		activeContexts: v.optional(
+			v.array(
+				v.object({
+					kind: v.union(v.literal("release"), v.literal("project")),
+					label: v.string(),
+					aliases: v.optional(v.array(v.string())),
+					ownerHints: v.optional(v.array(v.string())),
+					statusHint: v.optional(v.string()),
+					lastMentionedAt: v.number(),
+				})
+			)
+		),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+		lastUsedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_user_id", ["workspaceId", "userId"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({
