@@ -1662,10 +1662,12 @@ export const addIssueBlockingRelationship = mutation({
 		channelId: v.id("channels"),
 		blockedIssueId: v.id("issues"),
 		blockingIssueId: v.id("issues"),
+		reasoning: v.optional(v.string()),
+		resolutionSteps: v.optional(v.array(v.string())),
 	},
 	handler: async (
 		ctx: MutationCtx,
-		{ channelId, blockedIssueId, blockingIssueId }
+		{ channelId, blockedIssueId, blockingIssueId, reasoning, resolutionSteps }
 	) => {
 		if (blockedIssueId === blockingIssueId) {
 			throw new Error("An issue cannot block itself");
@@ -1733,6 +1735,14 @@ export const addIssueBlockingRelationship = mutation({
 			.collect();
 
 		if (existing.length > 0) {
+			const rel = existing[0];
+			if (rel && (reasoning !== undefined || resolutionSteps !== undefined)) {
+				await ctx.db.patch(rel._id, {
+					reasoning,
+					resolutionSteps,
+					updatedAt: Date.now(),
+				});
+			}
 			return; // Already blocked by this issue
 		}
 
@@ -1744,11 +1754,174 @@ export const addIssueBlockingRelationship = mutation({
 			channelId,
 			blockedIssueId,
 			blockingIssueId,
+			reasoning,
+			resolutionSteps,
+			updatedAt: Date.now(),
 			createdAt: Date.now(),
 			createdBy: member._id,
 		});
 
 		return;
+	},
+});
+
+export const applyDetectedIssueDependencies = mutation({
+	args: {
+		channelId: v.id("channels"),
+		dependencies: v.array(
+			v.object({
+				blockerId: v.id("issues"),
+				blockedId: v.id("issues"),
+				reasoning: v.string(),
+				resolutionSteps: v.array(v.string()),
+			})
+		),
+	},
+	handler: async (ctx: MutationCtx, args) => {
+		const channel = await ctx.db.get(args.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Prune relationships where blocker/blocked are already completed.
+		// This keeps the UI accurate even if prior analyses created stale edges.
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx as any,
+			args.channelId
+		);
+		const existing = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", args.channelId))
+			.take(500);
+		for (const rel of existing) {
+			const blocker = await ctx.db.get(rel.blockingIssueId);
+			const blocked = await ctx.db.get(rel.blockedIssueId);
+			const blockerDone = Boolean(blocker && completedStatusIds.has(blocker.statusId));
+			const blockedDone = Boolean(blocked && completedStatusIds.has(blocked.statusId));
+			if (!blocker || !blocked || blockerDone || blockedDone) {
+				await ctx.db.delete(rel._id);
+			}
+		}
+
+		let applied = 0;
+		for (const dep of args.dependencies) {
+			if (dep.blockerId === dep.blockedId) continue;
+			try {
+				await ctx.runMutation(api.board.addIssueBlockingRelationship, {
+					channelId: args.channelId,
+					blockedIssueId: dep.blockedId,
+					blockingIssueId: dep.blockerId,
+					reasoning: dep.reasoning,
+					resolutionSteps: dep.resolutionSteps,
+				});
+				applied++;
+			} catch (error) {
+				// Skip invalid/circular relationships; keep applying others.
+				console.warn("Skipping dependency", dep, error);
+			}
+		}
+
+		return { applied };
+	},
+});
+
+export const getActiveBlockingRelationshipsForChannel = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const completedStatusIds = await getCompletedStatusIdsForChannel(ctx, channelId);
+
+		const rels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		const filtered = [];
+		for (const rel of rels) {
+			const blocker = await ctx.db.get(rel.blockingIssueId);
+			const blocked = await ctx.db.get(rel.blockedIssueId);
+			if (!blocker || !blocked) continue;
+			if (completedStatusIds.has(blocker.statusId)) continue;
+			if (completedStatusIds.has(blocked.statusId)) continue;
+			filtered.push(rel);
+		}
+		return filtered;
+	},
+});
+
+export const getIssueDependencyStatsForChannel = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const completedStatusIds = await getCompletedStatusIdsForChannel(ctx, channelId);
+
+		const rels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		const stats: Record<string, { blockedByCount: number; blockingCount: number }> =
+			{};
+
+		for (const rel of rels) {
+			const blocker = await ctx.db.get(rel.blockingIssueId);
+			const blocked = await ctx.db.get(rel.blockedIssueId);
+			if (!blocker || !blocked) continue;
+			if (completedStatusIds.has(blocker.statusId)) continue;
+			if (completedStatusIds.has(blocked.statusId)) continue;
+
+			const blockerKey = String(rel.blockingIssueId);
+			const blockedKey = String(rel.blockedIssueId);
+
+			stats[blockerKey] ??= { blockedByCount: 0, blockingCount: 0 };
+			stats[blockedKey] ??= { blockedByCount: 0, blockingCount: 0 };
+
+			stats[blockerKey].blockingCount += 1;
+			stats[blockedKey].blockedByCount += 1;
+		}
+
+		return stats;
+	},
+});
+
+export const getBlockedByIssuesWithDetails = query({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx, { issueId }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const rels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_blocked_issue_id", (q) => q.eq("blockedIssueId", issueId))
+			.collect();
+
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx,
+			issue.channelId
+		);
+
+		const results = await Promise.all(
+			rels.map(async (rel) => {
+				const blockingIssue = await ctx.db.get(rel.blockingIssueId);
+				if (!blockingIssue) return null;
+				if (completedStatusIds.has(blockingIssue.statusId)) return null;
+				return {
+					issue: blockingIssue,
+					reasoning: rel.reasoning,
+					resolutionSteps: rel.resolutionSteps,
+				};
+			})
+		);
+
+		return results.filter((r) => r !== null);
 	},
 });
 

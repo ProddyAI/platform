@@ -1,7 +1,9 @@
 import {
+	Bot,
 	GanttChart,
 	LayoutGrid,
 	Link2,
+	Loader2,
 	Network,
 	Plus,
 	Search,
@@ -27,6 +29,8 @@ interface BoardHeaderProps {
 	onConnectChannelClick?: () => void;
 	isProjectChannelConnected?: boolean;
 	connectedChannelName?: string;
+	onAnalyzeBlockersClick?: () => void;
+	analyzeBlockersLoading?: boolean;
 }
 
 interface StatusStatsProps {
@@ -174,6 +178,41 @@ const ConnectChannelButton = ({
 	</Button>
 );
 
+interface AnalyzeBlockersButtonProps {
+	onClick?: () => void;
+	loading?: boolean;
+}
+
+const AnalyzeBlockersButton = ({ onClick, loading }: AnalyzeBlockersButtonProps) => (
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					aria-label="Analyze blockers"
+					className="h-8 gap-1.5 text-xs border-border/50 dark:border-gray-700 bg-transparent hover:bg-muted/60 dark:hover:bg-gray-800"
+					disabled={loading}
+					onClick={onClick}
+					size="sm"
+					variant="outline"
+				>
+					{loading ? (
+						<>
+							<Loader2 className="w-3.5 h-3.5 animate-spin" />
+							<span className="hidden md:inline">Analyzing…</span>
+						</>
+					) : (
+						<>
+							<Bot className="w-3.5 h-3.5" />
+							<span className="hidden md:inline">Analyze Blockers 🪄</span>
+						</>
+					)}
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>Auto-detect task dependencies on this board</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
+);
+
 const BoardHeader: React.FC<BoardHeaderProps> = ({
 	totalIssues,
 	statusCount,
@@ -185,6 +224,8 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 	onConnectChannelClick,
 	isProjectChannelConnected,
 	connectedChannelName,
+	onAnalyzeBlockersClick,
+	analyzeBlockersLoading,
 }) => {
 	return (
 		<div className="flex w-full min-w-0 max-w-full items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60 dark:border-gray-800 bg-background dark:bg-gray-950 overflow-x-hidden">
@@ -193,6 +234,12 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 			<div className="flex items-center gap-2">
 				<SearchButton onClick={onSearchClick} />
 				<LinkageDiagramButton onClick={onLinkageDiagramClick} />
+				{onAnalyzeBlockersClick && (
+					<AnalyzeBlockersButton
+						loading={analyzeBlockersLoading}
+						onClick={onAnalyzeBlockersClick}
+					/>
+				)}
 				{onConnectChannelClick && (
 					<ConnectChannelButton
 						channelName={connectedChannelName}

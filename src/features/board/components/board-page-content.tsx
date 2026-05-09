@@ -109,6 +109,34 @@ export const BoardPageContent = ({
 	useDocumentTitle(channel ? `Board – ${channel.name}` : "Board");
 
 	const [view, setView] = useState<"kanban" | "gantt">("kanban");
+	const [analyzeBlockersLoading, setAnalyzeBlockersLoading] = useState(false);
+
+	const handleAnalyzeBlockers = async () => {
+		setAnalyzeBlockersLoading(true);
+		try {
+			const res = await fetch("/api/analyze-blockers", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ channelId }),
+			});
+			const data = (await res.json()) as
+				| { ok: true; applied: number }
+				| { error: string; details?: string };
+			if (!res.ok || "error" in data) {
+				throw new Error(
+					"error" in data ? data.error : "Failed to analyze blockers"
+				);
+			}
+			toast.success(`Analyze blockers: applied ${data.applied} dependencies`);
+		} catch (error) {
+			console.error("Analyze blockers failed:", error);
+			toast.error(
+				error instanceof Error ? error.message : "Failed to analyze blockers"
+			);
+		} finally {
+			setAnalyzeBlockersLoading(false);
+		}
+	};
 
 	// Set board page flag for global search
 	useEffect(() => {
@@ -590,6 +618,7 @@ export const BoardPageContent = ({
 					</div>
 				) : (
 					<BoardKanbanView
+						channelId={channelId}
 						connectedChannelName={projectConnectedChannelName}
 						disableIssueDrag={isFilteredBoardView}
 						focusedStatusId={focusedStatusId}
@@ -643,6 +672,8 @@ export const BoardPageContent = ({
 							});
 							document.dispatchEvent(event);
 						}}
+						analyzeBlockersLoading={analyzeBlockersLoading}
+						onAnalyzeBlockersClick={handleAnalyzeBlockers}
 						setView={setView}
 						showHeader
 						statusCount={displayedStatuses.length}
@@ -673,6 +704,8 @@ export const BoardPageContent = ({
 						});
 						document.dispatchEvent(event);
 					}}
+					analyzeBlockersLoading={analyzeBlockersLoading}
+					onAnalyzeBlockersClick={handleAnalyzeBlockers}
 					setView={setView}
 					statusCount={displayedStatuses.length}
 					totalIssues={allCards.length}

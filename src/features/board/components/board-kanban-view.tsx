@@ -53,6 +53,7 @@ interface Issue {
 }
 
 interface BoardKanbanViewProps {
+	channelId: Id<"channels">;
 	statuses: Status[];
 	issues: Issue[];
 	members?: Member[];
@@ -77,6 +78,8 @@ interface BoardKanbanViewProps {
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
 	onLinkageDiagramClick?: () => void;
+	onAnalyzeBlockersClick?: () => void;
+	analyzeBlockersLoading?: boolean;
 	onConnectChannelClick?: () => void;
 	isProjectChannelConnected?: boolean;
 	connectedChannelName?: string;
@@ -97,6 +100,7 @@ type ActiveItem =
 	| { type: "issue"; item: Issue };
 
 const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
+	channelId,
 	statuses,
 	issues,
 	members = [],
@@ -109,6 +113,8 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	onReorderStatusesPersist,
 	onSearchClick,
 	onLinkageDiagramClick,
+	onAnalyzeBlockersClick,
+	analyzeBlockersLoading,
 	onConnectChannelClick,
 	isProjectChannelConnected,
 	connectedChannelName,
@@ -127,6 +133,9 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		api.board.getBatchSubIssueStats,
 		issueIds.length > 0 ? { issueIds } : "skip"
 	);
+	const dependencyStats = useQuery(api.board.getIssueDependencyStatsForChannel, {
+		channelId,
+	});
 
 	const memberDataMap = useMemo(() => {
 		const map: Record<Id<"members">, { name: string; image?: string }> = {};
@@ -299,9 +308,11 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			{showHeader && setView && (
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
+						analyzeBlockersLoading={analyzeBlockersLoading}
 						connectedChannelName={connectedChannelName}
 						isProjectChannelConnected={isProjectChannelConnected}
 						onAddStatus={onAddStatus}
+						onAnalyzeBlockersClick={onAnalyzeBlockersClick}
 						onConnectChannelClick={onConnectChannelClick}
 						onLinkageDiagramClick={onLinkageDiagramClick}
 						onSearchClick={onSearchClick}
@@ -349,6 +360,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 											onEditStatus={() => onEditStatus(status)}
 											status={status}
 											subIssueStatsMap={subIssueStatsMap}
+											dependencyStatsMap={dependencyStats ?? undefined}
 										/>
 									</div>
 								))}
