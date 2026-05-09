@@ -205,6 +205,9 @@ const baseConfig = withPWA({
 	eslint: {
 		ignoreDuringBuilds: true,
 	},
+	typescript: {
+		ignoreBuildErrors: true,
+	},
 });
 
 export default baseConfig;

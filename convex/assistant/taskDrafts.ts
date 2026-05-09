@@ -1,13 +1,16 @@
+import type { Id } from "../_generated/dataModel";
+
 type PendingTaskDraft = {
 	title: string;
 	description?: string;
 	priority?: "low" | "medium" | "high";
 	dueDate?: number;
-	assigneeMemberId?: unknown;
-	assigneeUserId?: unknown;
+	assigneeMemberId?: Id<"members">;
+	assigneeUserId?: Id<"users">;
 	assigneeName?: string;
-	updatedAt?: number;
+	updatedAt: number;
 };
+
 
 const CONFIRMATION_PATTERNS = [
 	/^yes\b/i,

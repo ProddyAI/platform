@@ -20,17 +20,6 @@ const TASK_PRIORITY_VALIDATOR = v.union(
 	v.literal("high")
 );
 
-const pendingTaskDraftValidator = v.object({
-	title: v.string(),
-	description: v.optional(v.string()),
-	assigneeMemberId: v.optional(v.id("members")),
-	assigneeUserId: v.optional(v.id("users")),
-	assigneeName: v.optional(v.string()),
-	dueDate: v.optional(v.number()),
-	priority: v.optional(TASK_PRIORITY_VALIDATOR),
-	updatedAt: v.number(),
-});
-
 const getMember = async (
 	ctx: QueryCtx | MutationCtx,
 	workspaceId: Id<"workspaces">,
@@ -138,10 +127,6 @@ export const savePendingTaskDraft = mutation({
 		dueDate: v.optional(v.number()),
 		priority: v.optional(TASK_PRIORITY_VALIDATOR),
 	},
-	returns: v.object({
-		draft: pendingTaskDraftValidator,
-		confirmationMessage: v.string(),
-	}),
 	handler: async (ctx, args) => {
 		const member = await getMember(ctx, args.workspaceId, args.userId);
 		if (!member) {

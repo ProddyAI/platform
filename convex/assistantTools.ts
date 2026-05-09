@@ -765,7 +765,7 @@ export const getChannelDebug = query({
 
 		const topLevelMessages = messages.filter((message) => !message.parentMessageId);
 		const memberIds = Array.from(
-			new Set(topLevelMessages.map((message) => message.memberId))
+			new Set(topLevelMessages.map((message: { authorName?: string | undefined; body: string; id: string; memberId: string; creationTime: number }) => message.memberId))
 		);
 		const members = await Promise.all(memberIds.map((memberId) => ctx.db.get(memberId)));
 		const memberMap = new Map(
@@ -789,7 +789,7 @@ export const getChannelDebug = query({
 
 		const recentMessages = topLevelMessages
 			.reverse()
-			.map((message) => {
+			.map((message: { authorName?: string | undefined; body: string; id: string; memberId: string; creationTime: number }) => {
 				const member = memberMap.get(message.memberId);
 				const user = member ? userMap.get(member.userId) : null;
 				return {
@@ -857,7 +857,8 @@ export const getChannelSummary = query({
 			};
 		}
 
-		const messageContext: string = debug.recentMessages
+		type ChannelMsg = { authorName?: string; body: string; id: string; memberId: string; creationTime: number };
+		const messageContext: string = (debug.recentMessages as unknown as ChannelMsg[])
 			.slice(-10)
 			.map((message) =>
 				message.authorName
@@ -870,7 +871,7 @@ export const getChannelSummary = query({
 			summary: messageContext,
 			messageCount: debug.messageCount,
 			channelName: debug.channelName,
-			recentMessages: debug.recentMessages.map((message) => ({
+			recentMessages: (debug.recentMessages as unknown as ChannelMsg[]).map((message) => ({
 				id: message.id,
 				body: message.body,
 				authorName: message.authorName,
