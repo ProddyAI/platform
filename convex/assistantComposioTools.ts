@@ -8,6 +8,7 @@ import { action } from "./_generated/server";
 
 const COMPOSIO_BASE_V1 = "https://backend.composio.dev/api/v1";
 const COMPOSIO_BASE_V2 = "https://backend.composio.dev/api/v2";
+const COMPOSIO_BASE_V3 = "https://backend.composio.dev/api/v3";
 
 async function executeComposioAction(
 	ctx: { runQuery: (query: any, args: any) => Promise<any> },
@@ -60,10 +61,12 @@ async function executeComposioAction(
 			const composioAccount = composioAccounts.find(
 				(a: any) => a.appName?.toLowerCase() === toolkit && a.status === "ACTIVE"
 			);
+			// composioAccount may be undefined if not found by entityId filter
+			let resolvedUUID: string | null = composioAccount?.id ?? null;
 
-			if (!composioAccount?.id) {
-				console.log(`[Composio] No UUID found for ${toolkit} in Composio, trying without appName filter`);
-				// Try without appName filter
+			if (!resolvedUUID) {
+				console.log(`[Composio] No UUID found for ${toolkit} with entityId filter, trying without...`);
+				// Try fetching ALL connections for this entity (no appName filter)
 				const allAcctResp = await fetch(
 					`${COMPOSIO_BASE_V1}/connectedAccounts?entityId=${entityId}`,
 					{ headers: { "X-API-Key": COMPOSIO_KEY } }
@@ -73,34 +76,65 @@ async function executeComposioAction(
 				const fallbackAccount = allComposioAccounts.find(
 					(a: any) => a.appName?.toLowerCase() === toolkit && a.status === "ACTIVE"
 				);
-				if (!fallbackAccount?.id) {
-					console.log(`[Composio] Still no ${toolkit} UUID found`);
+				if (fallbackAccount?.id) {
+					resolvedUUID = fallbackAccount.id;
+				} else if (dbAccount.composioAccountId) {
+					// Last resort: use the composioAccountId we stored in our DB
+					resolvedUUID = dbAccount.composioAccountId;
+					console.log(`[Composio] Using DB composioAccountId as UUID: ${resolvedUUID}`);
+				} else {
+					console.log(`[Composio] No UUID found for ${toolkit} anywhere, skipping`);
 					continue;
 				}
-				composioAccount.id = fallbackAccount.id;
 			}
 
-			const connectedAccountUUID: string = composioAccount.id;
+			const connectedAccountUUID: string = resolvedUUID;
 			console.log(`[Composio] ${toolkit}: UUID=${connectedAccountUUID}`);
 
-			// Fetch tools from Composio v2 API using the UUID
+			// Fetch tools from Composio v3 API (v2 is deprecated)
+			// toolkit_slug (snake_case, lowercase) scopes tools to only this app
+			const searchQuery = encodeURIComponent(message.slice(0, 100));
+			// v3 endpoint: /api/v3/tools?toolkit_slug=github&query=...
+			const toolsUrl = `${COMPOSIO_BASE_V3}/tools?toolkit_slug=${toolkit.toLowerCase()}&query=${searchQuery}&limit=20`;
+			console.log(`[Composio] Fetching tools: ${toolsUrl}`);
 			const toolsResp = await fetch(
-				`${COMPOSIO_BASE_V2}/actions?connectedAccountIds=${connectedAccountUUID}&limit=20`,
+				toolsUrl,
 				{ headers: { "X-API-Key": COMPOSIO_KEY } }
 			);
 			const toolsData = await toolsResp.json();
-			const rawTools: any[] = toolsData?.items ?? [];
-			console.log(`[Composio] ${toolkit}: ${rawTools.length} tools. First: ${rawTools.slice(0, 3).map((t: any) => t.name).join(", ")}`);
+			let rawTools: any[] = toolsData?.items ?? toolsData?.tools ?? [];
+			console.log(`[Composio] v3 tools response status=${toolsResp.status}, count=${rawTools.length}`);
+			
+			// If v3 returns 0, try without search query filter
+			if (rawTools.length === 0) {
+				console.log(`[Composio] v3 with search returned 0 for ${toolkit}, retrying without search...`);
+				const fallbackResp = await fetch(
+					`${COMPOSIO_BASE_V3}/tools?toolkit_slug=${toolkit.toLowerCase()}&limit=20`,
+					{ headers: { "X-API-Key": COMPOSIO_KEY } }
+				);
+				const fallbackData = await fallbackResp.json();
+				rawTools = fallbackData?.items ?? fallbackData?.tools ?? [];
+				console.log(`[Composio] v3 fallback count=${rawTools.length}, keys=${Object.keys(fallbackData || {}).join(",")}`);
+			}
+			console.log(`[Composio] ${toolkit}: ${rawTools.length} tools. First: ${rawTools.slice(0, 3).map((t: any) => t.name || t.slug).join(", ")}`);
 
 			for (const t of rawTools) {
-				const name: string = t.name || t.slug;
-				if (!name) continue;
+				// Prefer slug (URL-safe like GITHUB_GET_USER) over human-readable name
+				// OpenAI requires ^[a-zA-Z0-9_-]+$ — spaces are not allowed
+				const rawName: string = t.slug || t.name || t.displayName || "";
+				if (!rawName) continue;
+				// Sanitize: replace spaces and invalid chars with underscores
+				const name = rawName.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
+				// Store mapping: sanitized name → UUID for execution
 				uuidByToolName[name] = connectedAccountUUID;
+				// Also store the original slug so we can use it in execution URL
+				const execSlug = t.slug || rawName;
+				uuidByToolName[`__slug__${name}`] = execSlug;
 				tools.push({
 					type: "function",
 					function: {
 						name,
-						description: t.description || name,
+						description: (t.description || t.displayName || rawName).slice(0, 300),
 						parameters: t.inputSchema ?? t.parameters ?? { type: "object", properties: {} },
 					},
 				});
@@ -122,9 +156,13 @@ async function executeComposioAction(
 			tools,
 			tool_choice: "required",
 			messages: [
-				{
+			{
 					role: "system",
-					content: `You are a helpful assistant with direct access to ${appNames.join(", ")} via tools. ALWAYS call a tool to answer. Do not explain, just call the most appropriate tool immediately.`,
+					content: `You are a helpful assistant with direct access to ${appNames.join(", ")} via tools. 
+IMPORTANT: The user is already authenticated via OAuth — NEVER ask for a username, password, or token. 
+Always call tools that work for the "authenticated user" (e.g. list repos for authenticated user, not repos for a specific username).
+Available tools: ${tools.map(t => t.function.name).join(", ")}
+ALWAYS call the most relevant tool immediately without explaining.`,
 				},
 				{ role: "user", content: message },
 			],
@@ -139,19 +177,22 @@ async function executeComposioAction(
 			return { success: true, response: completion.choices[0]?.message?.content || "Done." };
 		}
 
-		// Execute each tool via Composio v2 API with UUID connectedAccountId
+		// Execute each tool via Composio API (try v3 first, v2 as fallback)
 		const toolMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
 
-		for (const tc of toolCalls) {
+	for (const tc of toolCalls) {
 			if (tc.type !== "function") continue;
-			const toolName = tc.function.name;
+			const toolName = tc.function.name; // sanitized name
 			const toolArgs = JSON.parse(tc.function.arguments || "{}");
 			const connectedAccountId = uuidByToolName[toolName];
-			console.log(`[Composio] Executing ${toolName}, connectedAccountId=${connectedAccountId}`);
+			// Use the original slug for API URL (sanitized name might differ from slug)
+			const execSlug = uuidByToolName[`__slug__${toolName}`] || toolName;
+			console.log(`[Composio] Executing ${toolName} (slug=${execSlug}), connectedAccountId=${connectedAccountId}`);
 
 			try {
-				const execResp = await fetch(
-					`${COMPOSIO_BASE_V2}/actions/${toolName}/execute`,
+				// Try v3 API first
+				let execResp = await fetch(
+					`${COMPOSIO_BASE_V3}/tools/${execSlug}/execute`,
 					{
 						method: "POST",
 						headers: {
@@ -159,11 +200,31 @@ async function executeComposioAction(
 							"X-API-Key": COMPOSIO_KEY,
 						},
 						body: JSON.stringify({
-							connectedAccountId,
+							connected_account_id: connectedAccountId, // v3 uses snake_case
 							input: toolArgs,
 						}),
 					}
 				);
+				
+				// Fall back to v2 if v3 returns 404
+				if (execResp.status === 404) {
+					console.log(`[Composio] v3 execute 404 for ${execSlug}, falling back to v2`);
+					execResp = await fetch(
+						`${COMPOSIO_BASE_V2}/actions/${execSlug}/execute`,
+						{
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								"X-API-Key": COMPOSIO_KEY,
+							},
+							body: JSON.stringify({
+								connectedAccountId,
+								input: toolArgs,
+							}),
+						}
+					);
+				}
+				
 				const result = await execResp.json();
 				console.log(`[Composio] ${toolName} result (${execResp.status}): ${JSON.stringify(result).slice(0, 500)}`);
 				toolMessages.push({
