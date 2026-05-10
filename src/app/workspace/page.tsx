@@ -1,9 +1,9 @@
 "use client";
 
+import { useConvexAuth } from "convex/react";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useConvexAuth } from "convex/react";
 
 import { useGetLastActiveWorkspace } from "@/features/workspaces/api/use-get-last-active-workspace";
 import { useGetWorkspaces } from "@/features/workspaces/api/use-get-workspaces";
@@ -54,19 +54,19 @@ const WorkspacePage = () => {
 		<div className="bg-primary flex h-full flex-1 flex-col items-center justify-center gap-4 text-white p-8">
 			<Loader className="size-8 animate-spin mb-4" />
 			<p className="text-xl font-bold">Loading your workspace...</p>
-			
+
 			<div className="mt-8 flex flex-col items-center gap-4">
 				<p className="text-sm text-white/70">Taking too long?</p>
 				<div className="flex gap-4">
-					<button 
-						onClick={() => setOpen(true)}
+					<button
 						className="px-4 py-2 bg-white text-primary rounded-md font-medium text-sm hover:bg-white/90"
+						onClick={() => setOpen(true)}
 					>
 						Create New Workspace
 					</button>
-					<button 
-						onClick={() => window.location.href = "/auth/signin"}
+					<button
 						className="px-4 py-2 bg-white/20 text-white rounded-md font-medium text-sm hover:bg-white/30"
+						onClick={() => (window.location.href = "/auth/signin")}
 					>
 						Back to Sign In
 					</button>
@@ -76,9 +76,9 @@ const WorkspacePage = () => {
 			<div className="bg-black/50 p-4 rounded-md text-xs text-left w-full max-w-md font-mono mt-8 space-y-1">
 				<p>Debug Info:</p>
 				<p>isLoadingWorkspaces: {String(isLoadingWorkspaces)}</p>
-				<p>workspaces count: {workspaces?.length ?? 'undefined'}</p>
+				<p>workspaces count: {workspaces?.length ?? "undefined"}</p>
 				<p>isLoadingLastActive: {String(isLoadingLastActive)}</p>
-				<p>lastActiveId: {lastActiveWorkspaceId ?? 'null'}</p>
+				<p>lastActiveId: {lastActiveWorkspaceId ?? "null"}</p>
 				<p>open modal state: {String(open)}</p>
 				<p>isAuthLoading: {String(isAuthLoading)}</p>
 				<p>isAuthenticated: {String(isAuthenticated)}</p>

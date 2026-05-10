@@ -932,7 +932,9 @@ const schema = defineSchema({
 				assignee: v.optional(v.string()),
 				assigneeUserId: v.optional(v.string()),
 				dueDate: v.optional(v.string()),
-				priority: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
+				priority: v.optional(
+					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+				),
 			})
 		),
 		decisions: v.array(v.string()),

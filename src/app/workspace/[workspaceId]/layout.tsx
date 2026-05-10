@@ -34,7 +34,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 
 	// Redirect if workspaceId is "create" (which happens if user hits /workspace/create manually)
 	useEffect(() => {
-		if (workspaceId === "create" as any) {
+		if (workspaceId === ("create" as any)) {
 			router.replace("/workspace");
 		}
 	}, [workspaceId, router]);
@@ -158,7 +158,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 
 							{/* Main content area - remove overflow-auto to prevent toolbar scrolling */}
 							<div className="flex-1 h-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-0">
-								{workspaceId === "create" as any ? (
+								{workspaceId === ("create" as any) ? (
 									<div className="flex h-full items-center justify-center">
 										<Loader className="size-6 animate-spin text-muted-foreground" />
 									</div>

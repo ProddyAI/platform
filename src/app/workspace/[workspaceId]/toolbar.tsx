@@ -40,8 +40,8 @@ import {
 	CommandList,
 	CommandSeparator,
 } from "@/components/ui/command";
-import { UserButton } from "@/features/auth/components/user-button";
 import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
+import { UserButton } from "@/features/auth/components/user-button";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
@@ -480,7 +480,8 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		"profile" | "notifications"
 	>("profile");
 
-	const { setIsOpen: setAiNotemakerOpen, generateNotes } = useAiNotemakerStore();
+	const { setIsOpen: setAiNotemakerOpen, generateNotes } =
+		useAiNotemakerStore();
 
 	// Board search integration
 	const isBoardPage = useBoardSearchStore((state) => state.isBoardPage);
@@ -826,13 +827,13 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				{/* AI Notemaker Component */}
 				<div className="hidden md:flex">
 					<Button
+						className="gap-2 h-9 bg-white/10 hover:bg-white/20 text-white border-white/20"
 						onClick={() => {
 							setAiNotemakerOpen(true);
 							generateNotes();
 						}}
-						variant="outline"
 						size="sm"
-						className="gap-2 h-9 bg-white/10 hover:bg-white/20 text-white border-white/20"
+						variant="outline"
 					>
 						<Sparkles className="size-4" />
 						<span className="hidden sm:inline">Generate AI Notes</span>

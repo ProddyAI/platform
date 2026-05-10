@@ -1,33 +1,43 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
 import {
+	CancelCallButton,
+	PaginatedGridLayout,
+	ScreenShareButton,
+	SpeakerLayout,
+	SpeakingWhileMutedNotification,
 	StreamCall,
+	StreamTheme,
 	StreamVideo,
 	StreamVideoClient,
-	SpeakerLayout,
-	PaginatedGridLayout,
-	StreamTheme,
-	SpeakingWhileMutedNotification,
 	ToggleAudioPublishingButton,
 	ToggleVideoPublishingButton,
-	ScreenShareButton,
-	CancelCallButton,
 } from "@stream-io/video-react-sdk";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
-import { Loader2, Users, Sparkles, MessageSquare, Copy, Check, Hand, LayoutGrid, Presentation } from "lucide-react";
 import { useConvexAuth, useQuery } from "convex/react";
-import { api } from "@/../convex/_generated/api";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import {
-	MeetingRecordButton,
-	MeetingReactions,
+	Check,
+	Copy,
+	Hand,
+	LayoutGrid,
+	Loader2,
+	MessageSquare,
+	Presentation,
+	Sparkles,
+	Users,
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { api } from "@/../convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import {
 	CaptionsOverlay,
 	CustomParticipantList,
-	NotesSidebar,
 	MeetingChat,
+	MeetingReactions,
+	MeetingRecordButton,
+	NotesSidebar,
 } from "./meeting-components";
 
 const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY!;
@@ -98,7 +108,10 @@ export default function MeetingPage({
 		const interval = setInterval(() => {
 			const diff = Date.now() - joinTime;
 			const hrs = String(Math.floor(diff / 3600000)).padStart(2, "0");
-			const mins = String(Math.floor((diff % 3600000) / 60000)).padStart(2, "0");
+			const mins = String(Math.floor((diff % 3600000) / 60000)).padStart(
+				2,
+				"0"
+			);
 			const secs = String(Math.floor((diff % 60000) / 1000)).padStart(2, "0");
 			setElapsed(`${hrs}:${mins}:${secs}`);
 		}, 1000);
@@ -181,7 +194,7 @@ export default function MeetingPage({
 		} catch (e) {
 			console.error("Error leaving call:", e);
 		}
-		
+
 		const returnUrl = sessionStorage.getItem(`meet-return-${params.meetingId}`);
 		sessionStorage.removeItem(`meet-join-${params.meetingId}`);
 		sessionStorage.removeItem(`meet-return-${params.meetingId}`);
@@ -228,25 +241,29 @@ export default function MeetingPage({
 		return (
 			<div className="flex h-screen w-full items-center justify-center bg-[#0a0a12] text-white">
 				<div className="bg-white rounded-2xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl">
-					<h2 className="text-2xl font-normal text-[#202124]">You left the meeting</h2>
+					<h2 className="text-2xl font-normal text-[#202124]">
+						You left the meeting
+					</h2>
 					{liveTranscript && (
-						<p className="text-sm text-gray-500">Your transcript and notes have been saved.</p>
+						<p className="text-sm text-gray-500">
+							Your transcript and notes have been saved.
+						</p>
 					)}
 					<p className="text-sm text-gray-400">Duration: {elapsed}</p>
 					<div className="flex justify-center gap-4 mt-6 pb-4">
 						<Button
-							variant="outline"
+							className="rounded-full text-[#6366f1] border-gray-300 hover:bg-indigo-50 px-6 font-medium"
 							onClick={() => {
 								setShowLeaveModal(false);
 								call?.join({ create: true });
 							}}
-							className="rounded-full text-[#6366f1] border-gray-300 hover:bg-indigo-50 px-6 font-medium"
+							variant="outline"
 						>
 							Rejoin
 						</Button>
 						<Button
-							onClick={goToWorkspace}
 							className="rounded-full bg-[#6366f1] text-white hover:bg-[#5558e6] px-6 font-medium shadow-none"
+							onClick={goToWorkspace}
 						>
 							Return to channel
 						</Button>
@@ -275,7 +292,6 @@ export default function MeetingPage({
 
 	return (
 		<div className="relative flex h-screen w-full bg-[#0a0a12] overflow-hidden text-white font-sans flex-col">
-
 			{/* Hand raised indicator */}
 			{handRaised && (
 				<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 animate-bounce shadow-lg shadow-amber-500/25">
@@ -284,12 +300,21 @@ export default function MeetingPage({
 			)}
 
 			{/* Top bar — participants ring + meeting info */}
-			<div className="absolute top-0 left-0 right-0 h-14 z-40 flex items-center justify-between px-6" style={{ background: "linear-gradient(to bottom, rgba(10,10,18,0.8), transparent)" }}>
+			<div
+				className="absolute top-0 left-0 right-0 h-14 z-40 flex items-center justify-between px-6"
+				style={{
+					background:
+						"linear-gradient(to bottom, rgba(10,10,18,0.8), transparent)",
+				}}
+			>
 				<div className="flex items-center gap-3">
 					{/* Participant avatars ring */}
 					<div className="flex -space-x-2">
 						{[user].map((u, i) => (
-							<div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-xs font-bold text-white ring-2 ring-[#0a0a12] shadow-lg">
+							<div
+								className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-xs font-bold text-white ring-2 ring-[#0a0a12] shadow-lg"
+								key={i}
+							>
 								{u?.name?.[0]?.toUpperCase() || "?"}
 							</div>
 						))}
@@ -297,7 +322,9 @@ export default function MeetingPage({
 					<div className="text-sm text-gray-300 font-medium">
 						<span className="text-white">{user?.name || "You"}</span>
 						<span className="text-gray-500 mx-2">•</span>
-						<span className="text-gray-500 text-xs">{params.meetingId.slice(0, 8)}</span>
+						<span className="text-gray-500 text-xs">
+							{params.meetingId.slice(0, 8)}
+						</span>
 					</div>
 				</div>
 
@@ -306,15 +333,15 @@ export default function MeetingPage({
 					{/* View Mode Toggle */}
 					<div className="flex items-center bg-white/5 backdrop-blur-md border border-white/10 rounded-full p-0.5">
 						<button
-							onClick={() => setViewMode("speaker")}
 							className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${viewMode === "speaker" ? "bg-indigo-500/30 text-indigo-300" : "text-gray-500 hover:text-gray-300"}`}
+							onClick={() => setViewMode("speaker")}
 							title="Speaker view"
 						>
 							<Presentation className="w-3.5 h-3.5" />
 						</button>
 						<button
-							onClick={() => setViewMode("grid")}
 							className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${viewMode === "grid" ? "bg-indigo-500/30 text-indigo-300" : "text-gray-500 hover:text-gray-300"}`}
+							onClick={() => setViewMode("grid")}
 							title="Grid view"
 						>
 							<LayoutGrid className="w-3.5 h-3.5" />
@@ -335,17 +362,28 @@ export default function MeetingPage({
 			{/* Main content area */}
 			<div className="flex-1 flex w-full p-3 gap-3 pt-16 pb-24">
 				{/* Video Area */}
-				<div className={`transition-all duration-500 ease-out flex flex-col h-full ${sidebarOpen ? "w-[70%]" : "w-full"}`}>
+				<div
+					className={`transition-all duration-500 ease-out flex flex-col h-full ${sidebarOpen ? "w-[70%]" : "w-full"}`}
+				>
 					<StreamVideo client={client}>
 						<StreamCall call={call}>
-							<StreamTheme className="h-full w-full flex-1 flex flex-col items-center justify-center rounded-2xl overflow-hidden relative" style={{ background: "linear-gradient(135deg, #0f0f1a 0%, #141428 50%, #0d1b2a 100%)" }}>
+							<StreamTheme
+								className="h-full w-full flex-1 flex flex-col items-center justify-center rounded-2xl overflow-hidden relative"
+								style={{
+									background:
+										"linear-gradient(135deg, #0f0f1a 0%, #141428 50%, #0d1b2a 100%)",
+								}}
+							>
 								{viewMode === "speaker" ? (
 									<SpeakerLayout participantsBarPosition="bottom" />
 								) : (
 									<PaginatedGridLayout />
 								)}
 								{/* Captions overlay */}
-								<CaptionsOverlay isRecording={isRecording} liveTranscript={liveTranscript} />
+								<CaptionsOverlay
+									isRecording={isRecording}
+									liveTranscript={liveTranscript}
+								/>
 							</StreamTheme>
 						</StreamCall>
 					</StreamVideo>
@@ -360,7 +398,10 @@ export default function MeetingPage({
 									<h2 className="text-base font-semibold text-white flex items-center gap-2">
 										<Users className="w-4 h-4 text-indigo-400" /> People
 									</h2>
-									<button onClick={() => setShowParticipants(false)} className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-8 w-8 flex items-center justify-center transition-colors">
+									<button
+										className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-8 w-8 flex items-center justify-center transition-colors"
+										onClick={() => setShowParticipants(false)}
+									>
 										✕
 									</button>
 								</div>
@@ -375,11 +416,11 @@ export default function MeetingPage({
 						)}
 						{showNotes && (
 							<NotesSidebar
+								isRecording={isRecording}
+								liveTranscript={liveTranscript}
+								onClose={() => setShowNotes(false)}
 								roomId={params.meetingId}
 								workspaceId={workspaceId}
-								liveTranscript={liveTranscript}
-								isRecording={isRecording}
-								onClose={() => setShowNotes(false)}
 							/>
 						)}
 						{showChat && (
@@ -407,11 +448,20 @@ export default function MeetingPage({
 					</div>
 				)}
 
-				<div className="h-[88px] flex items-center justify-between px-6" style={{ background: "rgba(10, 10, 18, 0.75)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+				<div
+					className="h-[88px] flex items-center justify-between px-6"
+					style={{
+						background: "rgba(10, 10, 18, 0.75)",
+						backdropFilter: "blur(24px)",
+						borderTop: "1px solid rgba(255,255,255,0.06)",
+					}}
+				>
 					{/* Left: Time | Meeting ID */}
 					<div className="w-1/4 flex items-center text-gray-400 font-medium text-sm truncate">
 						<TimeDisplay /> <span className="mx-3 text-gray-600">|</span>
-						<span className="text-gray-500 text-xs">{params.meetingId.slice(0, 12)}</span>
+						<span className="text-gray-500 text-xs">
+							{params.meetingId.slice(0, 12)}
+						</span>
 					</div>
 
 					{/* Center: Controls in pill */}
@@ -428,19 +478,19 @@ export default function MeetingPage({
 										<MeetingReactions />
 										{/* Hand Raise */}
 										<button
-											onClick={toggleHandRaise}
 											className={`flex items-center justify-center w-11 h-11 rounded-full transition-all text-sm font-medium ${handRaised ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30" : "bg-transparent hover:bg-white/10 text-white"}`}
+											onClick={toggleHandRaise}
 											title={handRaised ? "Lower hand" : "Raise hand"}
 										>
 											<Hand className="h-5 w-5" />
 										</button>
 										<div className="w-px h-6 bg-white/10 mx-1" />
 										<MeetingRecordButton
-											roomId={params.meetingId}
-											workspaceId={workspaceId}
-											userName={user?.name || "You"}
-											onTranscriptUpdate={handleTranscriptUpdate}
 											onRecordingChange={handleRecordingChange}
+											onTranscriptUpdate={handleTranscriptUpdate}
+											roomId={params.meetingId}
+											userName={user?.name || "You"}
+											workspaceId={workspaceId}
 										/>
 										<div className="w-px h-6 bg-white/10 mx-1" />
 										<CancelCallButton onLeave={handleLeave} />
@@ -452,22 +502,54 @@ export default function MeetingPage({
 
 					{/* Right: People, Chat, Notes, Copy Link */}
 					<div className="w-1/4 flex items-center justify-end gap-1">
-						<SidebarButton active={showParticipants} onClick={() => { setShowParticipants(!showParticipants); setShowNotes(false); setShowChat(false); }} title="People" icon={<Users className="h-5 w-5" />} />
-						<SidebarButton active={showChat} onClick={() => { setShowChat(!showChat); setShowNotes(false); setShowParticipants(false); }} title="Chat" icon={<MessageSquare className="h-5 w-5" />} />
-						<SidebarButton active={showNotes} onClick={() => { setShowNotes(!showNotes); setShowParticipants(false); setShowChat(false); }} title="AI Notes" icon={<Sparkles className="h-5 w-5" />} badge />
+						<SidebarButton
+							active={showParticipants}
+							icon={<Users className="h-5 w-5" />}
+							onClick={() => {
+								setShowParticipants(!showParticipants);
+								setShowNotes(false);
+								setShowChat(false);
+							}}
+							title="People"
+						/>
+						<SidebarButton
+							active={showChat}
+							icon={<MessageSquare className="h-5 w-5" />}
+							onClick={() => {
+								setShowChat(!showChat);
+								setShowNotes(false);
+								setShowParticipants(false);
+							}}
+							title="Chat"
+						/>
+						<SidebarButton
+							active={showNotes}
+							badge
+							icon={<Sparkles className="h-5 w-5" />}
+							onClick={() => {
+								setShowNotes(!showNotes);
+								setShowParticipants(false);
+								setShowChat(false);
+							}}
+							title="AI Notes"
+						/>
 						<button
 							className="rounded-full h-10 w-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all"
 							onClick={handleCopyLink}
 							title="Copy meeting link"
 						>
-							{linkCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+							{linkCopied ? (
+								<Check className="h-4 w-4 text-emerald-400" />
+							) : (
+								<Copy className="h-4 w-4" />
+							)}
 						</button>
 					</div>
 				</div>
 			</div>
 
 			{/* Global styles for meeting */}
-			<style jsx global>{`
+			<style global jsx>{`
 				.str-video__speaker-layout__wrapper {
 					background: transparent !important;
 				}
@@ -513,10 +595,22 @@ export default function MeetingPage({
 
 // ─── SIDEBAR BUTTON ─────────────────────────────────────────────────────────
 
-const SidebarButton = ({ active, onClick, title, icon, badge }: { active: boolean, onClick: () => void, title: string, icon: React.ReactNode, badge?: boolean }) => (
+const SidebarButton = ({
+	active,
+	onClick,
+	title,
+	icon,
+	badge,
+}: {
+	active: boolean;
+	onClick: () => void;
+	title: string;
+	icon: React.ReactNode;
+	badge?: boolean;
+}) => (
 	<button
-		onClick={onClick}
 		className={`relative rounded-full h-10 w-10 flex items-center justify-center transition-all ${active ? "bg-indigo-500/20 text-indigo-400" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
+		onClick={onClick}
 		title={title}
 	>
 		{icon}
@@ -531,7 +625,13 @@ const SidebarButton = ({ active, onClick, title, icon, badge }: { active: boolea
 const TimeDisplay = () => {
 	const [time, setTime] = useState("");
 	useEffect(() => {
-		const update = () => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+		const update = () =>
+			setTime(
+				new Date().toLocaleTimeString([], {
+					hour: "2-digit",
+					minute: "2-digit",
+				})
+			);
 		update();
 		const interval = setInterval(update, 30000);
 		return () => clearInterval(interval);

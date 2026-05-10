@@ -7,13 +7,13 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { Id } from "@/../convex/_generated/dataModel";
+import { UploadRecordingButton } from "@/features/audio/components/UploadRecordingButton";
 import { useCreateCalendarEvent } from "@/features/calendar/api/use-create-calendar-event";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
 import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicator";
 import { Suggestions } from "@/features/smart/components/suggestions";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { UploadRecordingButton } from "@/features/audio/components/UploadRecordingButton";
 
 const Editor = dynamic(() => import("@/components/editor"), {
 	ssr: false,

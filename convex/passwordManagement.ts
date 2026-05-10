@@ -533,7 +533,7 @@ export const adminForcePasswordChange = mutation({
 		const hashedPassword = await hashPassword(args.newPassword);
 		await ctx.db.patch(passwordAccount._id, { secret: hashedPassword });
 		return { success: true };
-	}
+	},
 });
 
 export const adminForceCreateWorkspace = mutation({
@@ -549,7 +549,7 @@ export const adminForceCreateWorkspace = mutation({
 		if (!user) throw new Error("User not found");
 
 		const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-		
+
 		const workspaceId = await ctx.db.insert("workspaces", {
 			name: "Proddy Team Workspace",
 			userId: user._id,
@@ -568,5 +568,5 @@ export const adminForceCreateWorkspace = mutation({
 		});
 
 		return { success: true, workspaceId };
-	}
+	},
 });

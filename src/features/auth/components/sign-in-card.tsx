@@ -54,10 +54,19 @@ export const SignInCard = ({
 		setPending(true);
 		setError("");
 		try {
-			await signIn("password", { email: "admin@proddy.ai", password: "password123", flow: "signIn" });
+			await signIn("password", {
+				email: "admin@proddy.ai",
+				password: "password123",
+				flow: "signIn",
+			});
 		} catch (e) {
 			try {
-				await signIn("password", { email: "admin@proddy.ai", password: "password123", name: "Admin", flow: "signUp" });
+				await signIn("password", {
+					email: "admin@proddy.ai",
+					password: "password123",
+					name: "Admin",
+					flow: "signUp",
+				});
 			} catch (err) {
 				console.error(err);
 				setError("Dev bypass failed");

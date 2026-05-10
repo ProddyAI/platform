@@ -39,18 +39,17 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { StartMeetingModal } from "@/features/audio/components/StartMeetingModal";
 import { useCreateNote } from "@/features/notes/api/use-create-note";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { createMentionElement } from "@/lib/mention-handler";
 import { cn } from "@/lib/utils";
-
 import { CalendarPicker } from "./calendar-picker";
 import { ChannelPicker } from "./channel-picker";
 import { EmojiPopover } from "./emoji-popover";
 import { Hint } from "./hint";
 import { MentionPicker } from "./mention-picker";
-import { StartMeetingModal } from "@/features/audio/components/StartMeetingModal";
 
 type EditorValue = {
 	image: File | null;
@@ -865,13 +864,22 @@ const Editor = ({
 										)}
 									</div>
 									<div className="min-w-0 flex-1">
-										<p className="truncate text-sm font-medium">{attachment.name}</p>
+										<p className="truncate text-sm font-medium">
+											{attachment.name}
+										</p>
 										<p className="text-xs text-muted-foreground">
-											{formatFileSize(attachment.size)} - {attachment.senderName}
+											{formatFileSize(attachment.size)} -{" "}
+											{attachment.senderName}
 										</p>
 									</div>
 									<Button
-										onClick={() => window.open(attachment.url, "_blank", "noopener,noreferrer")}
+										onClick={() =>
+											window.open(
+												attachment.url,
+												"_blank",
+												"noopener,noreferrer"
+											)
+										}
 										size="iconSm"
 										variant="ghost"
 									>
@@ -889,8 +897,8 @@ const Editor = ({
 					<DialogHeader>
 						<DialogTitle>Meets coming soon</DialogTitle>
 						<DialogDescription>
-							We are building native meetings for chat contexts. You will be able to
-							start and join calls from here soon.
+							We are building native meetings for chat contexts. You will be
+							able to start and join calls from here soon.
 						</DialogDescription>
 					</DialogHeader>
 				</DialogContent>
@@ -916,7 +924,8 @@ const Editor = ({
 					<div className="max-h-[260px] space-y-2 overflow-y-auto">
 						{!channelId ? (
 							<p className="py-4 text-center text-sm text-muted-foreground">
-								Direct chat notes are being rolled out. Channel notes are available now.
+								Direct chat notes are being rolled out. Channel notes are
+								available now.
 							</p>
 						) : notes === undefined ? (
 							<p className="py-4 text-center text-sm text-muted-foreground">
@@ -1116,7 +1125,7 @@ const Editor = ({
 						</Hint>
 						<Hint label="Files">
 							<Button
-								disabled={disabled || !channelId && !conversationId}
+								disabled={disabled || (!channelId && !conversationId)}
 								onClick={() => setFilesModalOpen(true)}
 								size="iconSm"
 								variant="ghost"
@@ -1351,10 +1360,10 @@ const Editor = ({
 					</p>
 				</div>
 			)}
-			<StartMeetingModal 
-				open={meetsModalOpen} 
-				onOpenChange={setMeetsModalOpen} 
+			<StartMeetingModal
 				conversationId={conversationId}
+				onOpenChange={setMeetsModalOpen}
+				open={meetsModalOpen}
 			/>
 		</div>
 	);

@@ -8,7 +8,7 @@ import {
 } from "@stream-io/video-react-sdk";
 import { useEffect, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
-import { Loader2, Phone, PhoneOff, FileText } from "lucide-react";
+import { FileText, Loader2, Phone, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAudioRoom } from ".."; // Import from index to get the new implementation
 import { AudioControlButton } from "./AudioControlButton";
@@ -253,12 +253,12 @@ export const StreamAudioRoom = ({
 				<StreamVideo client={client}>
 					<StreamCall call={call}>
 						<AudioRoomUI
-							roomId={roomId}
-							workspaceId={workspaceId}
 							channelId={channelId}
+							initialShowNotes={initialShowNotes}
 							isFullScreen={isFullScreen}
 							onLeaveAudio={handleLeaveAudio}
-							initialShowNotes={initialShowNotes}
+							roomId={roomId}
+							workspaceId={workspaceId}
 						/>
 					</StreamCall>
 				</StreamVideo>
@@ -312,12 +312,21 @@ interface AudioRoomUIProps {
 	initialShowNotes?: boolean;
 }
 
-const AudioRoomUI = ({ roomId, workspaceId, channelId, isFullScreen, onLeaveAudio, initialShowNotes }: AudioRoomUIProps) => {
+const AudioRoomUI = ({
+	roomId,
+	workspaceId,
+	channelId,
+	isFullScreen,
+	onLeaveAudio,
+	initialShowNotes,
+}: AudioRoomUIProps) => {
 	const { useParticipants, useMicrophoneState } = useCallStateHooks();
 	const participants = useParticipants();
 	const { isMute } = useMicrophoneState();
 	const [isLeaving, _setIsLeaving] = useState(false);
-	const [showNotesPanel, setShowNotesPanel] = useState(initialShowNotes || false);
+	const [showNotesPanel, setShowNotesPanel] = useState(
+		initialShowNotes || false
+	);
 
 	const _hasAudio = (p: StreamVideoParticipant) =>
 		p.publishedTracks.includes(SfuModels.TrackType.AUDIO);
@@ -339,11 +348,11 @@ const AudioRoomUI = ({ roomId, workspaceId, channelId, isFullScreen, onLeaveAudi
 				{showNotesPanel && (
 					<div className="h-[500px] mb-4 shadow-xl rounded-xl overflow-hidden">
 						<MeetingNotesPanel
+							channelId={channelId}
+							isAudioMuted={isMute}
+							onClose={() => setShowNotesPanel(false)}
 							roomId={roomId}
 							workspaceId={workspaceId}
-							channelId={channelId}
-							onClose={() => setShowNotesPanel(false)}
-							isAudioMuted={isMute}
 						/>
 					</div>
 				)}
@@ -353,11 +362,15 @@ const AudioRoomUI = ({ roomId, workspaceId, channelId, isFullScreen, onLeaveAudi
 					<div className="flex items-center justify-center mb-3 gap-3">
 						<AudioToolbarButton />
 						<AudioControlButton
+							className={
+								showNotesPanel
+									? "bg-indigo-100 text-indigo-700 border-indigo-200"
+									: ""
+							}
 							icon={FileText}
 							label="Meeting Notes"
 							onClick={() => setShowNotesPanel(!showNotesPanel)}
 							variant="action"
-							className={showNotesPanel ? "bg-indigo-100 text-indigo-700 border-indigo-200" : ""}
 						/>
 					</div>
 

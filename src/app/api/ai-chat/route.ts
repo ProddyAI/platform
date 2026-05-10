@@ -1,14 +1,18 @@
-import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { NextResponse } from "next/server";
 
-const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+const apiKey =
+	process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
 export async function POST(req: Request) {
 	try {
 		if (!apiKey) {
 			return NextResponse.json(
-				{ error: "AI service is not configured. Missing GOOGLE_GENERATIVE_AI_API_KEY." },
+				{
+					error:
+						"AI service is not configured. Missing GOOGLE_GENERATIVE_AI_API_KEY.",
+				},
 				{ status: 500 }
 			);
 		}
@@ -41,23 +45,27 @@ Instructions:
 3. Keep your answers concise, well-formatted, and professional.
 `;
 
-        // Format history for Gemini
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: systemPrompt }]
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Understood. I'm ready to answer questions about the meeting." }]
-                },
-                ...(history || []).map((msg: any) => ({
-                    role: msg.role === "user" ? "user" : "model",
-                    parts: [{ text: msg.content }]
-                }))
-            ],
-        });
+		// Format history for Gemini
+		const chat = model.startChat({
+			history: [
+				{
+					role: "user",
+					parts: [{ text: systemPrompt }],
+				},
+				{
+					role: "model",
+					parts: [
+						{
+							text: "Understood. I'm ready to answer questions about the meeting.",
+						},
+					],
+				},
+				...(history || []).map((msg: any) => ({
+					role: msg.role === "user" ? "user" : "model",
+					parts: [{ text: msg.content }],
+				})),
+			],
+		});
 
 		const result = await chat.sendMessage(message);
 		const responseText = result.response.text();

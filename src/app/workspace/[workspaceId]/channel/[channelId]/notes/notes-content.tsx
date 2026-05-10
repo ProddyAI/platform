@@ -276,13 +276,13 @@ export const NotesContent = ({
 			{/* Audio Room Component */}
 			{activeNote && (
 				<StreamAudioRoom
-					key={activeNote._id}
 					canvasName={activeNote.title || "Notes Audio Room"}
 					channelId={channelId}
+					initialShowNotes={activeNote.tags?.includes("AI")}
 					isFullScreen={isFullScreen}
+					key={activeNote._id}
 					roomId={activeNote._id}
 					workspaceId={workspaceId}
-					initialShowNotes={activeNote.tags?.includes("AI")}
 				/>
 			)}
 

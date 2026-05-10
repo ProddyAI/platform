@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { FileText, Plus, Brain, Loader, TriangleAlert } from "lucide-react";
+import { Brain, FileText, Loader, Plus, TriangleAlert } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -16,14 +16,18 @@ import { NotesContent } from "./notes-content";
 const NotesPage = () => {
 	const params = useParams();
 	const searchParams = useSearchParams();
-	const workspaceId = (params?.workspaceId as Id<"workspaces">) || (params as any)?.workspaceId;
-	const channelId = (params?.channelId as Id<"channels">) || (params as any)?.channelId;
+	const workspaceId =
+		(params?.workspaceId as Id<"workspaces">) || (params as any)?.workspaceId;
+	const channelId =
+		(params?.channelId as Id<"channels">) || (params as any)?.channelId;
 
 	// Get noteId from URL if present
 	const urlNoteId = searchParams.get("noteId") as Id<"notes"> | null;
 
 	// State
-	const [activeNoteId, setActiveNoteId] = useState<Id<"notes"> | null>(urlNoteId);
+	const [activeNoteId, setActiveNoteId] = useState<Id<"notes"> | null>(
+		urlNoteId
+	);
 	const [_sidebarCollapsed, _setSidebarCollapsed] = useState(false);
 	const [_searchQuery, _setSearchQuery] = useState("");
 	const [isFullScreen, setIsFullScreen] = useState(false);
@@ -97,12 +101,18 @@ const NotesPage = () => {
 			<div className="flex h-full items-center justify-center text-muted-foreground p-4">
 				<div className="text-center max-w-md">
 					<TriangleAlert className="h-10 w-10 mx-auto mb-4 text-amber-500" />
-					<h3 className="text-lg font-medium mb-2">Workspace context missing</h3>
+					<h3 className="text-lg font-medium mb-2">
+						Workspace context missing
+					</h3>
 					<p className="text-sm mb-6">
-						We couldn't determine which workspace or channel you're in. 
-						This can happen after a session timeout or direct link mismatch.
+						We couldn't determine which workspace or channel you're in. This can
+						happen after a session timeout or direct link mismatch.
 					</p>
-					<Button onClick={() => window.location.href = "/workspace"} variant="outline" className="w-full">
+					<Button
+						className="w-full"
+						onClick={() => (window.location.href = "/workspace")}
+						variant="outline"
+					>
 						Go to Workspaces
 					</Button>
 				</div>
@@ -154,7 +164,9 @@ const NotesPage = () => {
 			}
 		} catch (error: any) {
 			console.error("Failed to create note:", error);
-			toast.error(`Failed to create note: ${error?.message || "Unknown error"}`);
+			toast.error(
+				`Failed to create note: ${error?.message || "Unknown error"}`
+			);
 		}
 	};
 
@@ -188,9 +200,9 @@ const NotesPage = () => {
 							<Plus className="h-4 w-4 mr-2" />
 							Standard Note
 						</Button>
-						<Button 
-							onClick={() => handleCreateNote(true)} 
+						<Button
 							className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg"
+							onClick={() => handleCreateNote(true)}
 						>
 							<Brain className="h-4 w-4 mr-2" />
 							AI Meeting Note
@@ -203,11 +215,11 @@ const NotesPage = () => {
 
 	// Wrap the entire notes UI in LiveblocksRoom for Liveblocks presence
 	return (
-		<LiveblocksRoom
-			roomId={channelId}
-			roomType="note"
-		>
-			<div className="flex h-full w-full overflow-hidden" ref={pageContainerRef}>
+		<LiveblocksRoom roomId={channelId} roomType="note">
+			<div
+				className="flex h-full w-full overflow-hidden"
+				ref={pageContainerRef}
+			>
 				<NotesContent
 					activeNote={activeNote || null}
 					activeNoteId={activeNoteId}

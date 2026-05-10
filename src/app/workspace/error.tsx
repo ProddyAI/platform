@@ -16,7 +16,9 @@ export default function Error({
 
 	return (
 		<div className="flex h-screen flex-col items-center justify-center bg-red-50 text-red-900 p-8">
-			<h2 className="text-2xl font-bold mb-4">Something went wrong in /workspace!</h2>
+			<h2 className="text-2xl font-bold mb-4">
+				Something went wrong in /workspace!
+			</h2>
 			<p className="font-mono text-sm bg-white p-4 rounded shadow mb-4 max-w-2xl overflow-auto">
 				{error.message}
 			</p>

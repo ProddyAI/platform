@@ -1,23 +1,31 @@
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/../convex/_generated/api";
-import { Id } from "@/../convex/_generated/dataModel";
+import type { Id } from "@/../convex/_generated/dataModel";
 
-export const useMeetingTranscription = (roomId: string, workspaceId: string, channelId?: string, isRecording: boolean = false) => {
+export const useMeetingTranscription = (
+	roomId: string,
+	workspaceId: string,
+	channelId?: string,
+	isRecording: boolean = false
+) => {
 	const saveTranscriptChunk = useMutation(api.meetingNotes.saveTranscript);
 	const generateAI = useAction(api.meetingNotes.generateAIInsights);
-	
+
 	const meetingNotes = useQuery(api.meetingNotes.getByRoom, { roomId });
 
 	const [isListening, setIsListening] = useState(false);
 	const [localTranscript, setLocalTranscript] = useState("");
-	
+
 	const recognitionRef = useRef<any>(null);
 	const chunkRef = useRef("");
 	const timerRef = useRef<NodeJS.Timeout | null>(null);
 
 	useEffect(() => {
-		if (typeof window === "undefined" || !("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+		if (
+			typeof window === "undefined" ||
+			!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)
+		) {
 			console.warn("Speech Recognition API not supported in this browser.");
 			return;
 		}
@@ -32,9 +40,11 @@ export const useMeetingTranscription = (roomId: string, workspaceId: string, cha
 
 		if (isListening) return;
 
-		const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+		const SpeechRecognition =
+			(window as any).SpeechRecognition ||
+			(window as any).webkitSpeechRecognition;
 		const recognition = new SpeechRecognition();
-		
+
 		recognition.continuous = true;
 		recognition.interimResults = true;
 		recognition.lang = "en-US";
@@ -52,9 +62,9 @@ export const useMeetingTranscription = (roomId: string, workspaceId: string, cha
 			}
 
 			if (finalTranscript) {
-				setLocalTranscript(prev => prev + finalTranscript);
+				setLocalTranscript((prev) => prev + finalTranscript);
 				chunkRef.current += finalTranscript;
-				
+
 				// Debounce saving to DB
 				if (timerRef.current) clearTimeout(timerRef.current);
 				timerRef.current = setTimeout(() => {
@@ -63,7 +73,7 @@ export const useMeetingTranscription = (roomId: string, workspaceId: string, cha
 							roomId,
 							workspaceId: workspaceId as Id<"workspaces">,
 							channelId: channelId as Id<"channels">,
-							transcriptChunk: chunkRef.current.trim()
+							transcriptChunk: chunkRef.current.trim(),
 						});
 						chunkRef.current = "";
 					}
@@ -73,7 +83,7 @@ export const useMeetingTranscription = (roomId: string, workspaceId: string, cha
 
 		recognition.onerror = (event: any) => {
 			console.error("Speech recognition error", event.error);
-			if (event.error === 'not-allowed') {
+			if (event.error === "not-allowed") {
 				setIsListening(false);
 			}
 		};
@@ -108,10 +118,14 @@ export const useMeetingTranscription = (roomId: string, workspaceId: string, cha
 	}, [isRecording, saveTranscriptChunk, roomId, workspaceId, channelId]);
 
 	const triggerGenerateInsights = async () => {
-		if (meetingNotes && meetingNotes._id && meetingNotes.transcript.trim().length > 10) {
+		if (
+			meetingNotes &&
+			meetingNotes._id &&
+			meetingNotes.transcript.trim().length > 10
+		) {
 			await generateAI({
 				noteId: meetingNotes._id,
-				transcript: meetingNotes.transcript
+				transcript: meetingNotes.transcript,
 			});
 		}
 	};
@@ -119,6 +133,6 @@ export const useMeetingTranscription = (roomId: string, workspaceId: string, cha
 	return {
 		isListening,
 		meetingNotes,
-		triggerGenerateInsights
+		triggerGenerateInsights,
 	};
 };

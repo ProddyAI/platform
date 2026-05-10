@@ -1,7 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { Loader } from "lucide-react";
+import dynamic from "next/dynamic";
 
 const DashboardContent = dynamic(() => import("./dashboard-content"), {
 	ssr: false,

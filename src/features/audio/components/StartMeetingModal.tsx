@@ -1,17 +1,23 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/../convex/_generated/api";
-import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { useChannelId } from "@/hooks/use-channel-id";
+import { useMutation, useQuery } from "convex/react";
+import { CalendarIcon, Search, Users, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Search, Users, CalendarIcon, Video } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState } from "react";
 import { toast } from "sonner";
-import { Id } from "@/../convex/_generated/dataModel";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useChannelId } from "@/hooks/use-channel-id";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface StartMeetingModalProps {
 	open: boolean;
@@ -19,24 +25,33 @@ interface StartMeetingModalProps {
 	conversationId?: Id<"conversations">;
 }
 
-export const StartMeetingModal = ({ open, onOpenChange, conversationId }: StartMeetingModalProps) => {
+export const StartMeetingModal = ({
+	open,
+	onOpenChange,
+	conversationId,
+}: StartMeetingModalProps) => {
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
 	const router = useRouter();
-	
-	const [meetingType, setMeetingType] = useState<"instant" | "schedule">("instant");
+
+	const [meetingType, setMeetingType] = useState<"instant" | "schedule">(
+		"instant"
+	);
 	const [searchQuery, setSearchQuery] = useState("");
-	const [selectedMembers, setSelectedMembers] = useState<Set<Id<"users">>>(new Set());
+	const [selectedMembers, setSelectedMembers] = useState<Set<Id<"users">>>(
+		new Set()
+	);
 	const [date, setDate] = useState("");
 	const [time, setTime] = useState("");
-	
+
 	const members = useQuery(api.members.get, { workspaceId });
 	const createMessage = useMutation(api.messages.create);
 	// In a real app we might have api.meetings.schedule, but for now we'll just send a message.
-	
-	const filteredMembers = members?.filter(member => 
-		member.user?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-	) || [];
+
+	const filteredMembers =
+		members?.filter((member) =>
+			member.user?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+		) || [];
 
 	const handleToggleMember = (userId: Id<"users">) => {
 		const newSelected = new Set(selectedMembers);
@@ -52,15 +67,15 @@ export const StartMeetingModal = ({ open, onOpenChange, conversationId }: StartM
 		if (selectedMembers.size === filteredMembers.length) {
 			setSelectedMembers(new Set());
 		} else {
-			const allUserIds = new Set(filteredMembers.map(m => m.user._id));
+			const allUserIds = new Set(filteredMembers.map((m) => m.user._id));
 			setSelectedMembers(allUserIds);
 		}
 	};
 
 	const handleStartMeeting = async () => {
 		const meetingId = crypto.randomUUID();
-		const meetUrl = `/meet/${meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ''}`;
-		
+		const meetUrl = `/meet/${meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ""}`;
+
 		try {
 			if (selectedMembers.size > 0 || channelId) {
 				// Send unified message payload to chat (fire and forget to not block navigation)
@@ -75,8 +90,8 @@ export const StartMeetingModal = ({ open, onOpenChange, conversationId }: StartM
 						meetingDate: date,
 						meetingTime: time,
 						startedAt: Date.now(),
-						participants: Array.from(selectedMembers)
-					})
+						participants: Array.from(selectedMembers),
+					}),
 				}).catch(console.error);
 			}
 
@@ -94,24 +109,24 @@ export const StartMeetingModal = ({ open, onOpenChange, conversationId }: StartM
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className="sm:max-w-[450px]">
 				<DialogHeader>
 					<DialogTitle>Start a Meeting</DialogTitle>
 				</DialogHeader>
-				
+
 				<div className="flex gap-4 mb-4">
-					<Button 
-						variant={meetingType === "instant" ? "default" : "outline"}
+					<Button
 						className="flex-1 gap-2"
 						onClick={() => setMeetingType("instant")}
+						variant={meetingType === "instant" ? "default" : "outline"}
 					>
 						<Video className="w-4 h-4" /> Instant
 					</Button>
-					<Button 
-						variant={meetingType === "schedule" ? "default" : "outline"}
+					<Button
 						className="flex-1 gap-2"
 						onClick={() => setMeetingType("schedule")}
+						variant={meetingType === "schedule" ? "default" : "outline"}
 					>
 						<CalendarIcon className="w-4 h-4" /> Schedule
 					</Button>
@@ -119,17 +134,17 @@ export const StartMeetingModal = ({ open, onOpenChange, conversationId }: StartM
 
 				{meetingType === "schedule" && (
 					<div className="flex gap-2 mb-4">
-						<Input 
-							type="date" 
-							value={date} 
-							onChange={(e) => setDate(e.target.value)} 
+						<Input
 							className="flex-1"
+							onChange={(e) => setDate(e.target.value)}
+							type="date"
+							value={date}
 						/>
-						<Input 
-							type="time" 
-							value={time} 
-							onChange={(e) => setTime(e.target.value)} 
+						<Input
 							className="flex-1"
+							onChange={(e) => setTime(e.target.value)}
+							type="time"
+							value={time}
 						/>
 					</div>
 				)}
@@ -138,32 +153,43 @@ export const StartMeetingModal = ({ open, onOpenChange, conversationId }: StartM
 					<h3 className="text-sm font-medium">Invite Participants</h3>
 					<div className="relative">
 						<Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-						<Input 
-							placeholder="Search members..." 
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
+						<Input
 							className="pl-9"
+							onChange={(e) => setSearchQuery(e.target.value)}
+							placeholder="Search members..."
+							value={searchQuery}
 						/>
 					</div>
-					
+
 					<div className="flex items-center gap-2">
-						<Checkbox 
-							id="select-all" 
-							checked={selectedMembers.size > 0 && selectedMembers.size === filteredMembers.length}
+						<Checkbox
+							checked={
+								selectedMembers.size > 0 &&
+								selectedMembers.size === filteredMembers.length
+							}
+							id="select-all"
 							onCheckedChange={handleSelectAll}
 						/>
-						<label htmlFor="select-all" className="text-sm font-medium">Select All</label>
+						<label className="text-sm font-medium" htmlFor="select-all">
+							Select All
+						</label>
 					</div>
 
 					<ScrollArea className="h-[200px] border rounded-md p-2">
 						{filteredMembers.map((member) => (
-							<div key={member._id} className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-md">
-								<Checkbox 
-									id={`member-${member._id}`} 
+							<div
+								className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-md"
+								key={member._id}
+							>
+								<Checkbox
 									checked={selectedMembers.has(member.user._id)}
+									id={`member-${member._id}`}
 									onCheckedChange={() => handleToggleMember(member.user._id)}
 								/>
-								<label htmlFor={`member-${member._id}`} className="text-sm cursor-pointer flex-1">
+								<label
+									className="text-sm cursor-pointer flex-1"
+									htmlFor={`member-${member._id}`}
+								>
 									{member.user.name}
 								</label>
 							</div>
@@ -172,7 +198,9 @@ export const StartMeetingModal = ({ open, onOpenChange, conversationId }: StartM
 				</div>
 
 				<DialogFooter className="mt-6">
-					<Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+					<Button onClick={() => onOpenChange(false)} variant="outline">
+						Cancel
+					</Button>
 					<Button onClick={handleStartMeeting}>
 						{meetingType === "instant" ? "Start Meeting" : "Schedule Meeting"}
 					</Button>

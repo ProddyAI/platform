@@ -61,7 +61,10 @@ const DashboardContent = () => {
 				<p className="text-sm text-muted-foreground">
 					Your session has expired. Please sign in again.
 				</p>
-				<Button onClick={() => window.location.href = "/auth/signin"} variant="outline">
+				<Button
+					onClick={() => (window.location.href = "/auth/signin")}
+					variant="outline"
+				>
 					Sign In
 				</Button>
 			</div>
@@ -74,7 +77,10 @@ const DashboardContent = () => {
 				<p className="text-sm text-muted-foreground">
 					You are not a member of this workspace.
 				</p>
-				<Button onClick={() => window.location.href = "/workspace"} variant="outline">
+				<Button
+					onClick={() => (window.location.href = "/workspace")}
+					variant="outline"
+				>
 					Go to Workspaces
 				</Button>
 			</div>

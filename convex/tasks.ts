@@ -555,29 +555,33 @@ export const createTaskFromMessage = mutation({
 
 export const createBulkFromAI = mutation({
 	args: {
-		workspaceId: v.id('workspaces'),
-		tasks: v.array(v.object({
-			title: v.string(),
-			assigneeUserId: v.optional(v.id('users')),
-			priority: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
-		}))
+		workspaceId: v.id("workspaces"),
+		tasks: v.array(
+			v.object({
+				title: v.string(),
+				assigneeUserId: v.optional(v.id("users")),
+				priority: v.optional(
+					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+				),
+			})
+		),
 	},
 	handler: async (ctx, args) => {
 		const currentUserId = await getAuthUserId(ctx);
-		if (!currentUserId) throw new Error('Unauthorized');
-		
+		if (!currentUserId) throw new Error("Unauthorized");
+
 		const now = Date.now();
 		const taskIds = [];
-		
+
 		for (const task of args.tasks) {
 			const targetUserId = task.assigneeUserId || currentUserId;
-			const taskId = await ctx.db.insert('tasks', {
+			const taskId = await ctx.db.insert("tasks", {
 				title: task.title,
-				description: 'Auto-generated from AI Meeting Notes',
+				description: "Auto-generated from AI Meeting Notes",
 				completed: false,
-				status: 'not_started',
-				priority: task.priority || 'medium',
-				tags: ['AI', 'Meeting'],
+				status: "not_started",
+				priority: task.priority || "medium",
+				tags: ["AI", "Meeting"],
 				createdAt: now,
 				updatedAt: now,
 				userId: targetUserId,
@@ -586,5 +590,5 @@ export const createBulkFromAI = mutation({
 			taskIds.push(taskId);
 		}
 		return taskIds;
-	}
+	},
 });

@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useCallStateHooks } from "@stream-io/video-react-sdk";
+import { useAction, useMutation, useQuery } from "convex/react";
 import {
-	useCallStateHooks,
-} from "@stream-io/video-react-sdk";
-import { Loader2, X, CheckSquare, FileText, Target, Brain, Sparkles, Users, MicOff, Clock, ChevronDown, ArrowUpRight, Copy } from "lucide-react";
-import { useQuery, useMutation, useAction } from "convex/react";
+	ArrowUpRight,
+	Brain,
+	CheckSquare,
+	ChevronDown,
+	Clock,
+	Copy,
+	FileText,
+	Loader2,
+	MicOff,
+	Sparkles,
+	Target,
+	Users,
+	X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -22,7 +34,13 @@ interface RecordingButtonProps {
 	onRecordingChange: (recording: boolean) => void;
 }
 
-export const MeetingRecordButton = ({ roomId, workspaceId, userName, onTranscriptUpdate, onRecordingChange }: RecordingButtonProps) => {
+export const MeetingRecordButton = ({
+	roomId,
+	workspaceId,
+	userName,
+	onTranscriptUpdate,
+	onRecordingChange,
+}: RecordingButtonProps) => {
 	const [isRecording, setIsRecording] = useState(false);
 	const recognitionRef = useRef<any>(null);
 	const transcriptRef = useRef("");
@@ -47,9 +65,13 @@ export const MeetingRecordButton = ({ roomId, workspaceId, userName, onTranscrip
 
 	const startRecording = useCallback(async () => {
 		if (typeof window === "undefined") return;
-		const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+		const SpeechRecognition =
+			(window as any).SpeechRecognition ||
+			(window as any).webkitSpeechRecognition;
 		if (!SpeechRecognition) {
-			toast.error("Speech recognition not supported in this browser. Use Chrome.");
+			toast.error(
+				"Speech recognition not supported in this browser. Use Chrome."
+			);
 			return;
 		}
 
@@ -82,7 +104,9 @@ export const MeetingRecordButton = ({ roomId, workspaceId, userName, onTranscrip
 
 		recognition.onend = () => {
 			if (recognitionRef.current) {
-				try { recognitionRef.current.start(); } catch (e) {}
+				try {
+					recognitionRef.current.start();
+				} catch (e) {}
 			}
 		};
 
@@ -143,11 +167,13 @@ export const MeetingRecordButton = ({ roomId, workspaceId, userName, onTranscrip
 
 	return (
 		<button
-			onClick={isRecording ? stopRecording : startRecording}
 			className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${isRecording ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
+			onClick={isRecording ? stopRecording : startRecording}
 			title={isRecording ? "Stop Recording" : "Start Recording"}
 		>
-			<div className={`rounded-full ${isRecording ? "w-3 h-3 bg-white" : "w-3 h-3 bg-red-500"}`} />
+			<div
+				className={`rounded-full ${isRecording ? "w-3 h-3 bg-white" : "w-3 h-3 bg-red-500"}`}
+			/>
 			{isRecording ? "Stop" : "Record"}
 		</button>
 	);
@@ -157,7 +183,9 @@ export const MeetingRecordButton = ({ roomId, workspaceId, userName, onTranscrip
 
 export const MeetingReactions = () => {
 	const [showPicker, setShowPicker] = useState(false);
-	const [floatingReactions, setFloatingReactions] = useState<{id: number, emoji: string, x: number}[]>([]);
+	const [floatingReactions, setFloatingReactions] = useState<
+		{ id: number; emoji: string; x: number }[]
+	>([]);
 	const nextId = useRef(0);
 	const lastReactionTime = useRef(0);
 	const MAX_CONCURRENT = 10;
@@ -175,22 +203,22 @@ export const MeetingReactions = () => {
 
 		const id = nextId.current++;
 		const x = 20 + Math.random() * 60;
-		setFloatingReactions(prev => [...prev, { id, emoji, x }]);
+		setFloatingReactions((prev) => [...prev, { id, emoji, x }]);
 		setShowPicker(false);
 
 		// Remove after animation
 		setTimeout(() => {
-			setFloatingReactions(prev => prev.filter(r => r.id !== id));
+			setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
 		}, 2500);
 	};
 
 	return (
 		<>
 			{/* Floating reactions overlay */}
-			{floatingReactions.map(r => (
+			{floatingReactions.map((r) => (
 				<div
-					key={r.id}
 					className="fixed bottom-28 z-[100] pointer-events-none"
+					key={r.id}
 					style={{
 						left: `${r.x}%`,
 						animation: "floatUp 2.5s ease-out forwards",
@@ -204,11 +232,11 @@ export const MeetingReactions = () => {
 			<div className="relative">
 				{showPicker && (
 					<div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-[#2d2e31] rounded-2xl px-3 py-2 flex gap-1.5 shadow-2xl border border-white/10 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-						{emojis.map(emoji => (
+						{emojis.map((emoji) => (
 							<button
+								className="text-2xl hover:scale-125 active:scale-95 transition-transform p-1 rounded-lg hover:bg-white/10"
 								key={emoji}
 								onClick={() => sendReaction(emoji)}
-								className="text-2xl hover:scale-125 active:scale-95 transition-transform p-1 rounded-lg hover:bg-white/10"
 								title={emoji}
 							>
 								{emoji}
@@ -217,8 +245,8 @@ export const MeetingReactions = () => {
 					</div>
 				)}
 				<button
-					onClick={() => setShowPicker(!showPicker)}
 					className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${showPicker ? "bg-[#c2e7ff] text-[#001d35]" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
+					onClick={() => setShowPicker(!showPicker)}
 					title="Reactions"
 				>
 					😊
@@ -226,7 +254,7 @@ export const MeetingReactions = () => {
 			</div>
 
 			{/* CSS animation */}
-			<style jsx global>{`
+			<style global jsx>{`
 				@keyframes floatUp {
 					0% { opacity: 1; transform: translateY(0) scale(1); }
 					50% { opacity: 1; transform: translateY(-120px) scale(1.2); }
@@ -244,7 +272,10 @@ interface CaptionsOverlayProps {
 	liveTranscript: string;
 }
 
-export const CaptionsOverlay = ({ isRecording, liveTranscript }: CaptionsOverlayProps) => {
+export const CaptionsOverlay = ({
+	isRecording,
+	liveTranscript,
+}: CaptionsOverlayProps) => {
 	const [displayCaption, setDisplayCaption] = useState("");
 
 	useEffect(() => {
@@ -253,7 +284,7 @@ export const CaptionsOverlay = ({ isRecording, liveTranscript }: CaptionsOverlay
 			return;
 		}
 		// Show the last line of the transcript as the current caption
-		const lines = liveTranscript.split("\n").filter(l => l.trim());
+		const lines = liveTranscript.split("\n").filter((l) => l.trim());
 		const lastLine = lines[lines.length - 1] || "";
 		if (lastLine) {
 			setDisplayCaption(lastLine);
@@ -272,7 +303,8 @@ export const CaptionsOverlay = ({ isRecording, liveTranscript }: CaptionsOverlay
 	// Parse "Speaker: text" format
 	const colonIdx = displayCaption.indexOf(": ");
 	const speaker = colonIdx > -1 ? displayCaption.slice(0, colonIdx) : null;
-	const captionText = colonIdx > -1 ? displayCaption.slice(colonIdx + 2) : displayCaption;
+	const captionText =
+		colonIdx > -1 ? displayCaption.slice(colonIdx + 2) : displayCaption;
 
 	return (
 		<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[75%]">
@@ -294,13 +326,27 @@ export const CustomParticipantList = () => {
 
 	return (
 		<div className="flex flex-col">
-			<p className="text-[13px] font-medium text-gray-500 mb-3 px-6 mt-2">In the meeting</p>
-			{participants.map(p => {
-				const colors = ["bg-[#0b57d0]", "bg-emerald-600", "bg-purple-600", "bg-orange-600", "bg-pink-600"];
-				const colorClass = colors[p.sessionId.charCodeAt(0) % colors.length] || colors[0];
+			<p className="text-[13px] font-medium text-gray-500 mb-3 px-6 mt-2">
+				In the meeting
+			</p>
+			{participants.map((p) => {
+				const colors = [
+					"bg-[#0b57d0]",
+					"bg-emerald-600",
+					"bg-purple-600",
+					"bg-orange-600",
+					"bg-pink-600",
+				];
+				const colorClass =
+					colors[p.sessionId.charCodeAt(0) % colors.length] || colors[0];
 				return (
-					<div key={p.sessionId} className="flex items-center gap-3 px-6 py-2.5 hover:bg-white/5 cursor-pointer">
-						<div className={`w-9 h-9 rounded-full ${colorClass} text-white flex items-center justify-center text-sm font-medium shrink-0`}>
+					<div
+						className="flex items-center gap-3 px-6 py-2.5 hover:bg-white/5 cursor-pointer"
+						key={p.sessionId}
+					>
+						<div
+							className={`w-9 h-9 rounded-full ${colorClass} text-white flex items-center justify-center text-sm font-medium shrink-0`}
+						>
 							{p.name?.[0]?.toUpperCase() || "A"}
 						</div>
 						<div className="flex-1 flex flex-col min-w-0">
@@ -333,7 +379,13 @@ interface NotesSidebarProps {
 	onClose: () => void;
 }
 
-export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording, onClose }: NotesSidebarProps) => {
+export const NotesSidebar = ({
+	roomId,
+	workspaceId,
+	liveTranscript,
+	isRecording,
+	onClose,
+}: NotesSidebarProps) => {
 	const [activeTab, setActiveTab] = useState("transcript");
 	const [selectedGenIdx, setSelectedGenIdx] = useState(-1); // -1 = latest
 	const [isGenerating, setIsGenerating] = useState(false);
@@ -348,14 +400,28 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 	const saveTranscript = useMutation(api.meetingNotes.saveTranscript);
 
 	// Fetch workspace members so AI can map names to user IDs
-	const members = useQuery(api.members.get, workspaceId ? { workspaceId: workspaceId as any } : "skip");
-	const membersContext = members && members.length > 0
-		? members.map(m => `- Name: ${m.user.name || m.user.email || "Unknown"}, userId: ${m.user._id}`).join("\n")
-		: "";
+	const members = useQuery(
+		api.members.get,
+		workspaceId ? { workspaceId: workspaceId as any } : "skip"
+	);
+	const membersContext =
+		members && members.length > 0
+			? members
+					.map(
+						(m) =>
+							`- Name: ${m.user.name || m.user.email || "Unknown"}, userId: ${m.user._id}`
+					)
+					.join("\n")
+			: "";
 
-	const currentGen = selectedGenIdx === -1
-		? (generations && generations.length > 0 ? generations[generations.length - 1] : null)
-		: (generations ? generations[selectedGenIdx] : null);
+	const currentGen =
+		selectedGenIdx === -1
+			? generations && generations.length > 0
+				? generations[generations.length - 1]
+				: null
+			: generations
+				? generations[selectedGenIdx]
+				: null;
 
 	const transcript = savedNotes?.transcript || liveTranscript || "";
 
@@ -376,7 +442,9 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 	const handleGenerate = async () => {
 		const currentTranscript = transcript || liveTranscript;
 		if (!currentTranscript || currentTranscript.trim().length < 10) {
-			toast.error("Transcript too short to generate notes. Record more of the meeting.");
+			toast.error(
+				"Transcript too short to generate notes. Record more of the meeting."
+			);
 			return;
 		}
 
@@ -393,7 +461,11 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 			}
 
 			await finalizeTranscript({ roomId });
-			await generateAI({ noteId: noteId!, transcript: currentTranscript, membersContext: membersContext || undefined });
+			await generateAI({
+				noteId: noteId!,
+				transcript: currentTranscript,
+				membersContext: membersContext || undefined,
+			});
 			toast.success("AI notes generated!");
 			setSelectedGenIdx(-1);
 			setActiveTab("summary");
@@ -411,7 +483,12 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 					<Sparkles className="w-5 h-5 text-indigo-400" />
 					<h2 className="text-base font-semibold text-white">AI Notemaker</h2>
 				</div>
-				<Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-9 w-9">
+				<Button
+					className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-9 w-9"
+					onClick={onClose}
+					size="icon"
+					variant="ghost"
+				>
 					<X className="w-4 h-4" />
 				</Button>
 			</div>
@@ -419,39 +496,58 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 			{/* Generate Button */}
 			<div className="px-5 py-3 border-b border-white/10 flex items-center gap-2">
 				<Button
-					onClick={handleGenerate}
-					disabled={isGenerating || (!transcript && !liveTranscript) || savedNotes?.status === "generating"}
 					className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full h-9 text-xs font-medium gap-2"
+					disabled={
+						isGenerating ||
+						(!transcript && !liveTranscript) ||
+						savedNotes?.status === "generating"
+					}
+					onClick={handleGenerate}
 				>
 					{isGenerating || savedNotes?.status === "generating" ? (
-						<><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</>
+						<>
+							<Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...
+						</>
 					) : (
-						<><Brain className="w-3.5 h-3.5" /> Generate AI Notes</>
+						<>
+							<Brain className="w-3.5 h-3.5" /> Generate AI Notes
+						</>
 					)}
 				</Button>
 
 				{generations && generations.length > 0 && (
 					<div className="relative">
 						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
 							className="rounded-full h-9 text-xs gap-1 border-white/10 text-gray-300 hover:bg-white/10"
+							onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
+							size="sm"
+							variant="outline"
 						>
 							<Clock className="w-3.5 h-3.5" />
 							<ChevronDown className="w-3 h-3" />
 						</Button>
 						{showHistoryDropdown && (
 							<div className="absolute right-0 top-11 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-xl z-50 w-52 py-1 animate-in fade-in slide-in-from-top-2">
-								<p className="px-3 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Note History</p>
+								<p className="px-3 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+									Note History
+								</p>
 								{generations.map((gen, idx) => (
 									<button
-										key={gen._id}
-										onClick={() => { setSelectedGenIdx(idx); setShowHistoryDropdown(false); setActiveTab("summary"); }}
 										className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between ${selectedGenIdx === idx ? "bg-indigo-500/10 text-indigo-400" : "text-gray-300"}`}
+										key={gen._id}
+										onClick={() => {
+											setSelectedGenIdx(idx);
+											setShowHistoryDropdown(false);
+											setActiveTab("summary");
+										}}
 									>
 										<span>Generation #{gen.generationNumber}</span>
-										<span className="text-[10px] text-gray-500">{new Date(gen.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+										<span className="text-[10px] text-gray-500">
+											{new Date(gen.createdAt).toLocaleTimeString([], {
+												hour: "2-digit",
+												minute: "2-digit",
+											})}
+										</span>
 									</button>
 								))}
 							</div>
@@ -467,60 +563,99 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 						<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
 						<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
 					</span>
-					<span className="text-xs font-medium text-red-400">Recording & transcribing...</span>
+					<span className="text-xs font-medium text-red-400">
+						Recording & transcribing...
+					</span>
 				</div>
 			)}
 
 			{/* Tabs */}
 			<div className="flex-1 overflow-hidden flex flex-col min-h-0">
-				<Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+				<Tabs
+					className="flex-1 flex flex-col min-h-0"
+					onValueChange={setActiveTab}
+					value={activeTab}
+				>
 					<div className="px-5 pt-3 pb-1">
 						<TabsList className="bg-white/5 w-full p-1 h-10 rounded-xl grid grid-cols-4 border border-white/5">
-							<TabsTrigger value="transcript" className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium">Transcript</TabsTrigger>
-							<TabsTrigger value="summary" className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium">Summary</TabsTrigger>
-							<TabsTrigger value="tasks" className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium">Tasks</TabsTrigger>
-							<TabsTrigger value="decisions" className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium">Decisions</TabsTrigger>
+							<TabsTrigger
+								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium"
+								value="transcript"
+							>
+								Transcript
+							</TabsTrigger>
+							<TabsTrigger
+								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium"
+								value="summary"
+							>
+								Summary
+							</TabsTrigger>
+							<TabsTrigger
+								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium"
+								value="tasks"
+							>
+								Tasks
+							</TabsTrigger>
+							<TabsTrigger
+								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium"
+								value="decisions"
+							>
+								Decisions
+							</TabsTrigger>
 						</TabsList>
 					</div>
 
 					<ScrollArea className="flex-1 px-5 pb-5 mt-2">
 						{/* Transcript Tab */}
-						<TabsContent value="transcript" className="m-0">
+						<TabsContent className="m-0" value="transcript">
 							{transcript ? (
 								<div className="space-y-2">
 									{/* Copy button */}
 									<div className="flex justify-end">
 										<button
-											onClick={handleCopyTranscript}
 											className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-400 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg"
+											onClick={handleCopyTranscript}
 										>
 											{copied ? (
-												<><CheckSquare className="w-3 h-3" /> Copied!</>
+												<>
+													<CheckSquare className="w-3 h-3" /> Copied!
+												</>
 											) : (
-												<><Copy className="w-3 h-3" /> Copy Transcript</>
+												<>
+													<Copy className="w-3 h-3" /> Copy Transcript
+												</>
 											)}
 										</button>
 									</div>
-									<div ref={scrollRef} className="text-[13px] text-gray-300 leading-relaxed font-mono bg-white/5 p-4 rounded-xl border border-white/5 whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+									<div
+										className="text-[13px] text-gray-300 leading-relaxed font-mono bg-white/5 p-4 rounded-xl border border-white/5 whitespace-pre-wrap max-h-[60vh] overflow-y-auto"
+										ref={scrollRef}
+									>
 										{transcript}
 									</div>
 								</div>
 							) : (
 								<div className="flex flex-col items-center justify-center py-16 text-gray-500 text-center gap-3">
 									<MicOff className="w-8 h-8 opacity-30" />
-									<p className="text-sm">Press "Record" to start capturing the meeting transcript.</p>
+									<p className="text-sm">
+										Press "Record" to start capturing the meeting transcript.
+									</p>
 								</div>
 							)}
 						</TabsContent>
 
 						{/* Summary Tab */}
-						<TabsContent value="summary" className="m-0 space-y-4">
+						<TabsContent className="m-0 space-y-4" value="summary">
 							{currentGen ? (
 								<div className="space-y-3">
 									<div className="flex items-center gap-2 mb-1">
 										<FileText className="w-4 h-4 text-indigo-400" />
-										<h3 className="text-sm font-semibold text-white">Executive Summary</h3>
-										<span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-medium">Gen #{currentGen.generationNumber}</span>
+										<h3 className="text-sm font-semibold text-white">
+											Executive Summary
+										</h3>
+										<span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-medium">
+											Gen #{currentGen.generationNumber}
+										</span>
 									</div>
 									<p className="text-sm text-gray-300 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5">
 										{currentGen.summary}
@@ -529,7 +664,8 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 							) : savedNotes?.summary ? (
 								<div className="space-y-3">
 									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<FileText className="w-4 h-4 text-indigo-400" /> Executive Summary
+										<FileText className="w-4 h-4 text-indigo-400" /> Executive
+										Summary
 									</h3>
 									<p className="text-sm text-gray-300 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5">
 										{savedNotes.summary}
@@ -538,24 +674,34 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 							) : (
 								<div className="flex flex-col items-center justify-center py-16 text-gray-500 text-center gap-3">
 									<Brain className="w-8 h-8 opacity-30" />
-									<p className="text-sm">Generate AI notes to see the summary.</p>
+									<p className="text-sm">
+										Generate AI notes to see the summary.
+									</p>
 								</div>
 							)}
 						</TabsContent>
 
 						{/* Tasks Tab */}
-						<TabsContent value="tasks" className="m-0 space-y-3">
+						<TabsContent className="m-0 space-y-3" value="tasks">
 							{currentGen && currentGen.actionItems.length > 0 ? (
 								<>
 									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<CheckSquare className="w-4 h-4 text-orange-400" /> Action Items
-										<span className="text-[10px] bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full font-medium">{currentGen.actionItems.length}</span>
+										<CheckSquare className="w-4 h-4 text-orange-400" /> Action
+										Items
+										<span className="text-[10px] bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full font-medium">
+											{currentGen.actionItems.length}
+										</span>
 									</h3>
 									{currentGen.actionItems.map((task, i) => (
-										<div key={i} className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-1.5">
+										<div
+											className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-1.5"
+											key={i}
+										>
 											<div className="flex items-start gap-2.5">
 												<div className="mt-0.5 w-4 h-4 rounded border border-gray-600 flex-shrink-0" />
-												<p className="text-[13px] text-gray-200 font-medium leading-relaxed">{task.title}</p>
+												<p className="text-[13px] text-gray-200 font-medium leading-relaxed">
+													{task.title}
+												</p>
 											</div>
 											<div className="ml-6 flex flex-wrap gap-1.5">
 												{task.assignee && (
@@ -569,7 +715,9 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 													</span>
 												)}
 												{task.priority && (
-													<span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${task.priority === "high" ? "bg-red-500/20 text-red-400" : task.priority === "medium" ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}`}>
+													<span
+														className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${task.priority === "high" ? "bg-red-500/20 text-red-400" : task.priority === "medium" ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}`}
+													>
 														{task.priority}
 													</span>
 												)}
@@ -577,7 +725,10 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 										</div>
 									))}
 									{/* Admin Push Button */}
-									<AdminPushButton workspaceId={workspaceId} actionItems={currentGen.actionItems} />
+									<AdminPushButton
+										actionItems={currentGen.actionItems}
+										workspaceId={workspaceId}
+									/>
 								</>
 							) : (
 								<div className="flex flex-col items-center justify-center py-16 text-gray-500 text-center gap-3">
@@ -588,15 +739,21 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 						</TabsContent>
 
 						{/* Decisions Tab */}
-						<TabsContent value="decisions" className="m-0 space-y-3">
+						<TabsContent className="m-0 space-y-3" value="decisions">
 							{currentGen && currentGen.decisions.length > 0 ? (
 								<>
 									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<Target className="w-4 h-4 text-emerald-400" /> Key Decisions
-										<span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">{currentGen.decisions.length}</span>
+										<Target className="w-4 h-4 text-emerald-400" /> Key
+										Decisions
+										<span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+											{currentGen.decisions.length}
+										</span>
 									</h3>
 									{currentGen.decisions.map((decision, i) => (
-										<div key={i} className="text-sm text-gray-300 flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+										<div
+											className="text-sm text-gray-300 flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5"
+											key={i}
+										>
 											<div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
 											<span className="leading-relaxed">{decision}</span>
 										</div>
@@ -620,7 +777,12 @@ export const NotesSidebar = ({ roomId, workspaceId, liveTranscript, isRecording,
 
 interface AdminPushProps {
 	workspaceId: string;
-	actionItems: Array<{ title: string; assignee?: string; assigneeUserId?: string; priority?: string }>;
+	actionItems: Array<{
+		title: string;
+		assignee?: string;
+		assigneeUserId?: string;
+		priority?: string;
+	}>;
 }
 
 const AdminPushButton = ({ workspaceId, actionItems }: AdminPushProps) => {
@@ -632,9 +794,13 @@ const AdminPushButton = ({ workspaceId, actionItems }: AdminPushProps) => {
 		try {
 			await createBulk({
 				workspaceId: workspaceId as any,
-				tasks: actionItems.map(item => ({
-					title: item.assignee ? `${item.title} → ${item.assignee}` : item.title,
-					assigneeUserId: item.assigneeUserId ? (item.assigneeUserId as any) : undefined,
+				tasks: actionItems.map((item) => ({
+					title: item.assignee
+						? `${item.title} → ${item.assignee}`
+						: item.title,
+					assigneeUserId: item.assigneeUserId
+						? (item.assigneeUserId as any)
+						: undefined,
 					priority: (item.priority as any) || "medium",
 				})),
 			});
@@ -648,12 +814,16 @@ const AdminPushButton = ({ workspaceId, actionItems }: AdminPushProps) => {
 
 	return (
 		<Button
-			onClick={handlePush}
-			disabled={pushing}
-			variant="outline"
 			className="w-full rounded-full h-9 text-xs font-medium gap-2 border-orange-200 text-orange-700 hover:bg-orange-50 mt-2"
+			disabled={pushing}
+			onClick={handlePush}
+			variant="outline"
 		>
-			{pushing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
+			{pushing ? (
+				<Loader2 className="w-3.5 h-3.5 animate-spin" />
+			) : (
+				<ArrowUpRight className="w-3.5 h-3.5" />
+			)}
 			Push All Tasks to Dashboard
 		</Button>
 	);
@@ -666,24 +836,33 @@ interface MeetingChatProps {
 }
 
 export const MeetingChat = ({ onClose }: MeetingChatProps) => {
-	const [messages, setMessages] = useState<{ name: string; text: string; time: string }[]>([]);
+	const [messages, setMessages] = useState<
+		{ name: string; text: string; time: string }[]
+	>([]);
 	const [input, setInput] = useState("");
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const { useLocalParticipant } = useCallStateHooks();
 	const localParticipant = useLocalParticipant();
 
 	useEffect(() => {
-		if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+		if (scrollRef.current)
+			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 	}, [messages]);
 
 	const sendMessage = () => {
 		const text = input.trim();
 		if (!text) return;
-		setMessages(prev => [...prev, {
-			name: localParticipant?.name || "You",
-			text,
-			time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-		}]);
+		setMessages((prev) => [
+			...prev,
+			{
+				name: localParticipant?.name || "You",
+				text,
+				time: new Date().toLocaleTimeString([], {
+					hour: "2-digit",
+					minute: "2-digit",
+				}),
+			},
+		]);
 		setInput("");
 	};
 
@@ -691,14 +870,24 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 		<>
 			<div className="flex items-center justify-between p-5 pb-3 border-b border-white/5">
 				<h2 className="text-lg font-semibold text-white">In-call messages</h2>
-				<Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-9 w-9">
+				<Button
+					className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-9 w-9"
+					onClick={onClose}
+					size="icon"
+					variant="ghost"
+				>
 					<X className="w-4 h-4" />
 				</Button>
 			</div>
 			<div className="px-5 py-2 bg-white/5 border-b border-white/5">
-				<p className="text-[11px] text-gray-400">Messages are only visible to people in the call.</p>
+				<p className="text-[11px] text-gray-400">
+					Messages are only visible to people in the call.
+				</p>
 			</div>
-			<div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+			<div
+				className="flex-1 overflow-y-auto px-5 py-4 space-y-4"
+				ref={scrollRef}
+			>
 				{messages.length === 0 && (
 					<div className="flex flex-col items-center justify-center h-full text-gray-400 text-center gap-2 py-16">
 						<p className="text-sm">No messages yet</p>
@@ -706,16 +895,20 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 					</div>
 				)}
 				{messages.map((msg, i) => (
-					<div key={i} className="flex gap-3">
+					<div className="flex gap-3" key={i}>
 						<div className="w-8 h-8 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xs font-medium shrink-0">
 							{msg.name[0]?.toUpperCase() || "A"}
 						</div>
 						<div className="flex-1 min-w-0">
 							<div className="flex items-baseline gap-2">
-								<span className="text-[13px] font-medium text-white">{msg.name}</span>
+								<span className="text-[13px] font-medium text-white">
+									{msg.name}
+								</span>
 								<span className="text-[11px] text-gray-500">{msg.time}</span>
 							</div>
-							<p className="text-[13px] text-gray-300 mt-0.5 break-words">{msg.text}</p>
+							<p className="text-[13px] text-gray-300 mt-0.5 break-words">
+								{msg.text}
+							</p>
 						</div>
 					</div>
 				))}
@@ -723,15 +916,27 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 			<div className="p-4 border-t border-white/5">
 				<div className="flex items-center gap-2">
 					<input
+						className="flex-1 text-sm bg-white/5 border-0 rounded-full px-4 py-2.5 focus:bg-white/10 focus:ring-1 focus:ring-indigo-500 outline-none text-white placeholder:text-gray-500"
+						onChange={(e) => setInput(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") sendMessage();
+						}}
+						placeholder="Send a message to everyone"
 						type="text"
 						value={input}
-						onChange={(e) => setInput(e.target.value)}
-						onKeyDown={(e) => { if (e.key === "Enter") sendMessage(); }}
-						placeholder="Send a message to everyone"
-						className="flex-1 text-sm bg-white/5 border-0 rounded-full px-4 py-2.5 focus:bg-white/10 focus:ring-1 focus:ring-indigo-500 outline-none text-white placeholder:text-gray-500"
 					/>
-					<Button size="icon" onClick={sendMessage} disabled={!input.trim()} className="rounded-full h-9 w-9 bg-[#0b57d0] hover:bg-[#0b57d0]/90 shrink-0">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"/></svg>
+					<Button
+						className="rounded-full h-9 w-9 bg-[#0b57d0] hover:bg-[#0b57d0]/90 shrink-0"
+						disabled={!input.trim()}
+						onClick={sendMessage}
+						size="icon"
+					>
+						<svg fill="none" height="16" viewBox="0 0 24 24" width="16">
+							<path
+								d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"
+								fill="currentColor"
+							/>
+						</svg>
 					</Button>
 				</div>
 			</div>

@@ -20,8 +20,8 @@ import {
 	BoardEditCardModal,
 	BoardEditStatusModal,
 } from "@/features/board/components/board-models";
-import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
+import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
@@ -182,12 +182,12 @@ export const BoardPageContent = ({
 	// ── Optimistic statuses (for drag reorder) ──────────────────────────────
 	const [optimisticStatuses, setOptimisticStatuses] = useState<
 		| {
-			_id: Id<"statuses">;
-			name: string;
-			color: string;
-			order: number;
-			channelId: Id<"channels">;
-		}[]
+				_id: Id<"statuses">;
+				name: string;
+				color: string;
+				order: number;
+				channelId: Id<"channels">;
+		  }[]
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];

@@ -1,9 +1,17 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { Download, File, FileText, PaintBucket, Users, Clock, PhoneOff } from "lucide-react";
+import {
+	Clock,
+	Download,
+	File,
+	FileText,
+	PaintBucket,
+	PhoneOff,
+	Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -78,8 +86,8 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 	// Determine if the meeting is over
 	const meetingStatus = useMemo(() => {
 		if (!isMeeting || !data.meetingId || !meetingNotes) return null;
-		const note = meetingNotes.find((n: any) =>
-			n.roomId && n.roomId.includes(data.meetingId!)
+		const note = meetingNotes.find(
+			(n: any) => n.roomId && n.roomId.includes(data.meetingId!)
 		);
 		if (note && note.status === "completed") {
 			const duration = data.startedAt
@@ -123,7 +131,9 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 	const getTitle = () => {
 		if (isMeeting) {
 			if (meetingStatus?.ended) return "Meeting Ended";
-			return data.meetingType === "schedule" ? "Scheduled Meeting" : "Instant Meeting";
+			return data.meetingType === "schedule"
+				? "Scheduled Meeting"
+				: "Instant Meeting";
 		}
 		if (isFile) {
 			return data.fileName || "File attachment";
@@ -170,7 +180,11 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 	// Handle click action
 	const handleClick = () => {
-		console.log("UnifiedMessage: Button clicked", { type: data.type, noteId: data.noteId, roomId: data.roomId });
+		console.log("UnifiedMessage: Button clicked", {
+			type: data.type,
+			noteId: data.noteId,
+			roomId: data.roomId,
+		});
 
 		if (isFile) {
 			if (data.fileUrl) {
@@ -180,7 +194,10 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 		}
 
 		if (!workspaceId || !channelId) {
-			console.error("UnifiedMessage: Missing workspaceId or channelId", { workspaceId, channelId });
+			console.error("UnifiedMessage: Missing workspaceId or channelId", {
+				workspaceId,
+				channelId,
+			});
 			return;
 		}
 
@@ -190,7 +207,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 				router.push(`/workspace/${workspaceId}/meeting-notes`);
 				return;
 			}
-			const meetUrl = `/meet/${data.meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ''}`;
+			const meetUrl = `/meet/${data.meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ""}`;
 			console.log("UnifiedMessage: Opening meeting in new tab", meetUrl);
 			window.open(meetUrl, "_blank");
 			return;
@@ -232,7 +249,9 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 		>
 			<div className="flex items-center justify-between p-3 min-h-[60px] gap-2">
 				<div className="flex items-center space-x-2 flex-1 min-w-0">
-					<div className={`p-1.5 rounded-lg flex-shrink-0 ${meetingEnded ? "bg-gray-200 dark:bg-zinc-600" : "bg-primary/15 dark:bg-purple-400/30"}`}>
+					<div
+						className={`p-1.5 rounded-lg flex-shrink-0 ${meetingEnded ? "bg-gray-200 dark:bg-zinc-600" : "bg-primary/15 dark:bg-purple-400/30"}`}
+					>
 						{meetingEnded ? (
 							<PhoneOff className="h-4 w-4 text-gray-500 dark:text-gray-300" />
 						) : (
@@ -240,7 +259,9 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 						)}
 					</div>
 					<div className="flex-1 min-w-0">
-						<CardTitle className={`text-sm font-semibold truncate ${meetingEnded ? "!text-gray-600 dark:!text-gray-300" : "!text-gray-900 dark:!text-white"}`}>
+						<CardTitle
+							className={`text-sm font-semibold truncate ${meetingEnded ? "!text-gray-600 dark:!text-gray-300" : "!text-gray-900 dark:!text-white"}`}
+						>
 							{getTitle()}
 						</CardTitle>
 
@@ -259,7 +280,13 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 									Duration: {formatDuration(meetingStatus?.duration ?? null)}
 								</div>
 								<div className="text-[11px] text-gray-400 dark:text-gray-500">
-									Ended {meetingStatus?.createdAt ? new Date(meetingStatus.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+									Ended{" "}
+									{meetingStatus?.createdAt
+										? new Date(meetingStatus.createdAt).toLocaleTimeString([], {
+												hour: "2-digit",
+												minute: "2-digit",
+											})
+										: ""}
 								</div>
 							</div>
 						)}

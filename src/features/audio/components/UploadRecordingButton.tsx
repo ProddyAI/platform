@@ -1,12 +1,26 @@
-import { useState, useRef } from "react";
-import { Upload, Loader2, FileAudio, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import {
+	AlertCircle,
+	CheckCircle2,
+	FileAudio,
+	Loader2,
+	Sparkles,
+	Upload,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/../convex/_generated/api";
-import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { Button } from "@/components/ui/button";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
-type UploadStep = "idle" | "uploading" | "transcribing" | "generating" | "saving" | "done" | "error";
+type UploadStep =
+	| "idle"
+	| "uploading"
+	| "transcribing"
+	| "generating"
+	| "saving"
+	| "done"
+	| "error";
 
 export const UploadRecordingButton = () => {
 	const workspaceId = useWorkspaceId();
@@ -15,7 +29,9 @@ export const UploadRecordingButton = () => {
 	const [errorMsg, setErrorMsg] = useState("");
 	const fileRef = useRef<HTMLInputElement>(null);
 
-	const saveUploadTranscript = useMutation(api.meetingNotes.saveUploadTranscript);
+	const saveUploadTranscript = useMutation(
+		api.meetingNotes.saveUploadTranscript
+	);
 	const generateAI = useAction(api.meetingNotes.generateAIInsights);
 	const user = useQuery(api.users.current);
 
@@ -24,10 +40,19 @@ export const UploadRecordingButton = () => {
 		if (!file) return;
 
 		// Validate file type
-		const validTypes = ["audio/mp3", "audio/mpeg", "audio/wav", "audio/webm", "video/mp4", "video/webm", "audio/mp4", "audio/x-m4a"];
+		const validTypes = [
+			"audio/mp3",
+			"audio/mpeg",
+			"audio/wav",
+			"audio/webm",
+			"video/mp4",
+			"video/webm",
+			"audio/mp4",
+			"audio/x-m4a",
+		];
 		const ext = file.name.split(".").pop()?.toLowerCase();
 		const validExts = ["mp3", "mp4", "wav", "webm", "m4a", "ogg"];
-		
+
 		if (!validTypes.includes(file.type) && !validExts.includes(ext || "")) {
 			toast.error("Unsupported file format. Use mp3, mp4, wav, or webm.");
 			return;
@@ -54,17 +79,20 @@ export const UploadRecordingButton = () => {
 			});
 
 			const transcribeData = await transcribeRes.json();
-			if (!transcribeRes.ok) throw new Error(transcribeData.error || "Transcription failed");
+			if (!transcribeRes.ok)
+				throw new Error(transcribeData.error || "Transcription failed");
 
 			const transcript = transcribeData.transcript;
 			if (!transcript || transcript.trim().length < 10) {
-				throw new Error("Transcription returned empty or too short. Try a clearer audio file.");
+				throw new Error(
+					"Transcription returned empty or too short. Try a clearer audio file."
+				);
 			}
 
 			// Step 2: Save transcript to Convex
 			setStep("saving");
 			const roomId = `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-			
+
 			const noteId = await saveUploadTranscript({
 				roomId,
 				workspaceId: workspaceId || "",
@@ -86,7 +114,6 @@ export const UploadRecordingButton = () => {
 				setStep("idle");
 				setFileName("");
 			}, 3000);
-
 		} catch (error: any) {
 			console.error("Upload pipeline error:", error);
 			setErrorMsg(error.message || "An error occurred");
@@ -118,8 +145,10 @@ export const UploadRecordingButton = () => {
 	};
 
 	const getIcon = () => {
-		if (step === "done") return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
-		if (step === "error") return <AlertCircle className="w-4 h-4 text-red-500" />;
+		if (step === "done")
+			return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
+		if (step === "error")
+			return <AlertCircle className="w-4 h-4 text-red-500" />;
 		if (isProcessing) return <Loader2 className="w-4 h-4 animate-spin" />;
 		return <Upload className="w-4 h-4" />;
 	};
@@ -127,19 +156,19 @@ export const UploadRecordingButton = () => {
 	return (
 		<div className="relative">
 			<input
-				ref={fileRef}
-				type="file"
 				accept="audio/*,video/mp4,video/webm"
 				className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
-				onChange={handleUpload}
 				disabled={isProcessing}
+				onChange={handleUpload}
+				ref={fileRef}
 				title="Upload audio or video recording"
+				type="file"
 			/>
 			<Button
-				variant="outline"
-				size="sm"
 				className={`gap-2 pointer-events-none text-xs ${step === "done" ? "border-emerald-200 text-emerald-700 bg-emerald-50" : step === "error" ? "border-red-200 text-red-700 bg-red-50" : ""}`}
 				disabled={isProcessing}
+				size="sm"
+				variant="outline"
 			>
 				{getIcon()}
 				{stepLabels[step]}

@@ -1,10 +1,10 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
-import { action, internalMutation, mutation, query } from "./_generated/server";
-import { api, internal } from "./_generated/api";
-import { generateObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { generateObject } from "ai";
+import { v } from "convex/values";
 import { z } from "zod";
+import { api, internal } from "./_generated/api";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 
 // Use workspaceId directly — the shared mapWorkspaceId in utils.ts handles any legacy remaps
 const mapWorkspaceId = (id: string): string => id;
@@ -264,7 +264,9 @@ export const saveGeneration = internalMutation({
 				assignee: v.optional(v.string()),
 				assigneeUserId: v.optional(v.string()),
 				dueDate: v.optional(v.string()),
-				priority: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
+				priority: v.optional(
+					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+				),
 			})
 		),
 		decisions: v.array(v.string()),
@@ -284,8 +286,9 @@ export const saveGeneration = internalMutation({
 		});
 
 		// Also update the parent note with latest generation data
-		const formattedItems = args.actionItems.map(item =>
-			`- ${item.title}${item.assignee ? ` → ${item.assignee}` : ""}${item.dueDate ? ` (Due: ${item.dueDate})` : ""}`
+		const formattedItems = args.actionItems.map(
+			(item) =>
+				`- ${item.title}${item.assignee ? ` → ${item.assignee}` : ""}${item.dueDate ? ` (Due: ${item.dueDate})` : ""}`
 		);
 
 		await ctx.db.patch(args.meetingNoteId, {
@@ -337,7 +340,9 @@ export const generateAIInsights = action({
 
 		try {
 			// Fetch the note to get workspaceId, userId, and lastProcessedIndex
-			const note = await ctx.runQuery(api.meetingNotes.getById, { noteId: args.noteId });
+			const note = await ctx.runQuery(api.meetingNotes.getById, {
+				noteId: args.noteId,
+			});
 			if (!note) throw new Error("Note not found");
 
 			const lastProcessedIndex = note.lastProcessedIndex || 0;
@@ -352,7 +357,9 @@ export const generateAIInsights = action({
 					noteId: args.noteId,
 					status: "completed",
 				});
-				throw new Error("No new conversation to summarize since last generation.");
+				throw new Error(
+					"No new conversation to summarize since last generation."
+				);
 			}
 
 			// Update status to generating
@@ -362,15 +369,20 @@ export const generateAIInsights = action({
 			});
 
 			// Get existing generations to determine generation number
-			const existingGenerations = await ctx.runQuery(api.meetingNotes.getGenerations, {
-				roomId: note.roomId,
-			});
+			const existingGenerations = await ctx.runQuery(
+				api.meetingNotes.getGenerations,
+				{
+					roomId: note.roomId,
+				}
+			);
 			const generationNumber = existingGenerations.length + 1;
 
-			const membersInfo = args.membersContext ? `
+			const membersInfo = args.membersContext
+				? `
 The workspace members are:
 ${args.membersContext}
-` : "";
+`
+				: "";
 
 			const prompt = `You are an expert AI meeting assistant. Analyze the following meeting transcript and transform it into actionable intelligence.
 ${membersInfo}
@@ -389,23 +401,52 @@ Transcript:
 ${newTranscript}`;
 
 			const schema = z.object({
-				summary: z.string().describe("A concise executive summary of the meeting discussion."),
-				actionItems: z.array(z.object({
-					title: z.string().describe("The task description"),
-					assignee: z.string().optional().describe("The display name of the person assigned to the task"),
-					assigneeUserId: z.string().optional().describe("The userId of the assigned workspace member, if matched"),
-					dueDate: z.string().optional().describe("Optional due date mentioned"),
-					priority: z.enum(["low", "medium", "high"]).optional().describe("Task priority"),
-				})).describe("Action items extracted from the meeting."),
-				decisions: z.array(z.string()).describe("Key decisions made during the meeting."),
+				summary: z
+					.string()
+					.describe("A concise executive summary of the meeting discussion."),
+				actionItems: z
+					.array(
+						z.object({
+							title: z.string().describe("The task description"),
+							assignee: z
+								.string()
+								.optional()
+								.describe(
+									"The display name of the person assigned to the task"
+								),
+							assigneeUserId: z
+								.string()
+								.optional()
+								.describe(
+									"The userId of the assigned workspace member, if matched"
+								),
+							dueDate: z
+								.string()
+								.optional()
+								.describe("Optional due date mentioned"),
+							priority: z
+								.enum(["low", "medium", "high"])
+								.optional()
+								.describe("Task priority"),
+						})
+					)
+					.describe("Action items extracted from the meeting."),
+				decisions: z
+					.array(z.string())
+					.describe("Key decisions made during the meeting."),
 			});
 
 			// Try multiple models with fallback (same as generateChatNotes)
-			const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+			const models = [
+				"gemini-2.5-flash",
+				"gemini-2.0-flash",
+				"gemini-1.5-flash",
+			];
 			let lastError: any = null;
 			let object: any = null;
 
-			const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+			const apiKey =
+				process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 			if (!apiKey) {
 				throw new Error("GEMINI_API_KEY is not set.");
 			}
@@ -425,8 +466,17 @@ ${newTranscript}`;
 					lastError = e;
 					const errMsg = e?.message || "";
 					// Retry on 503 (overloaded) or 429 (quota exceeded)
-					if (errMsg.includes("503") || errMsg.includes("429") || errMsg.includes("Service Unavailable") || errMsg.includes("overloaded") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("quota")) {
-						console.log(`Model ${modelName} unavailable/quota exceeded, trying next...`);
+					if (
+						errMsg.includes("503") ||
+						errMsg.includes("429") ||
+						errMsg.includes("Service Unavailable") ||
+						errMsg.includes("overloaded") ||
+						errMsg.includes("RESOURCE_EXHAUSTED") ||
+						errMsg.includes("quota")
+					) {
+						console.log(
+							`Model ${modelName} unavailable/quota exceeded, trying next...`
+						);
 						continue;
 					}
 					throw e; // Non-retryable errors
@@ -434,21 +484,25 @@ ${newTranscript}`;
 			}
 
 			if (!object && process.env.OPENAI_API_KEY) {
-				console.log("All Gemini models failed. Falling back to OpenAI gpt-4o-mini...");
+				console.log(
+					"All Gemini models failed. Falling back to OpenAI gpt-4o-mini..."
+				);
 				try {
-					const response = await fetch("https://api.openai.com/v1/chat/completions", {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-						},
-						body: JSON.stringify({
-							model: "gpt-4o-mini",
-							response_format: { type: "json_object" },
-							messages: [
-								{
-									role: "system",
-									content: `You must respond with valid JSON matching exactly this format:
+					const response = await fetch(
+						"https://api.openai.com/v1/chat/completions",
+						{
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+							},
+							body: JSON.stringify({
+								model: "gpt-4o-mini",
+								response_format: { type: "json_object" },
+								messages: [
+									{
+										role: "system",
+										content: `You must respond with valid JSON matching exactly this format:
 {
   "summary": "Concise executive summary",
   "actionItems": [
@@ -460,16 +514,17 @@ ${newTranscript}`;
     }
   ],
   "decisions": ["Decision 1", "Decision 2"]
-}`
-								},
-								{
-									role: "user",
-									content: prompt
-								}
-							],
-							temperature: 0.2,
-						}),
-					});
+}`,
+									},
+									{
+										role: "user",
+										content: prompt,
+									},
+								],
+								temperature: 0.2,
+							}),
+						}
+					);
 
 					if (response.ok) {
 						const data = await response.json();
@@ -484,7 +539,9 @@ ${newTranscript}`;
 			}
 
 			if (!object) {
-				throw lastError || new Error("All AI models are currently unavailable.");
+				throw (
+					lastError || new Error("All AI models are currently unavailable.")
+				);
 			}
 
 			// Save as a versioned generation
@@ -503,7 +560,6 @@ ${newTranscript}`;
 				processedTranscriptStart: lastProcessedIndex,
 				processedTranscriptEnd: fullTranscript.length,
 			});
-
 		} catch (error: any) {
 			console.error("AI Generation Error", error);
 			await ctx.runMutation(internal.meetingNotes.updateStatus, {
@@ -535,7 +591,7 @@ export const saveMeetingNotes = mutation({
 			.withIndex("by_room", (q) => q.eq("roomId", args.meetingId))
 			.first();
 
-		const formattedActionItems = args.actionItems.map(a =>
+		const formattedActionItems = args.actionItems.map((a) =>
 			typeof a === "string" ? a : JSON.stringify(a)
 		);
 
@@ -603,9 +659,12 @@ export const generateChatNotes = action({
 			throw new Error("Transcript is required.");
 		}
 
-		const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+		const apiKey =
+			process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 		if (!apiKey) {
-			throw new Error("GEMINI_API_KEY is not set in Convex environment variables.");
+			throw new Error(
+				"GEMINI_API_KEY is not set in Convex environment variables."
+			);
 		}
 
 		const { GoogleGenerativeAI } = await import("@google/generative-ai");
@@ -667,8 +726,17 @@ ${args.transcript}
 			} catch (e: any) {
 				lastError = e;
 				const errMsg = e?.message || "";
-				if (errMsg.includes("503") || errMsg.includes("429") || errMsg.includes("Service Unavailable") || errMsg.includes("overloaded") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("quota")) {
-					console.log(`Model ${modelName} unavailable/quota exceeded, trying next...`);
+				if (
+					errMsg.includes("503") ||
+					errMsg.includes("429") ||
+					errMsg.includes("Service Unavailable") ||
+					errMsg.includes("overloaded") ||
+					errMsg.includes("RESOURCE_EXHAUSTED") ||
+					errMsg.includes("quota")
+				) {
+					console.log(
+						`Model ${modelName} unavailable/quota exceeded, trying next...`
+					);
 					continue;
 				}
 				throw e;
@@ -677,21 +745,25 @@ ${args.transcript}
 
 		let parsed: any = null;
 		if (!parsed && process.env.OPENAI_API_KEY) {
-			console.log("All Gemini models failed. Falling back to OpenAI gpt-4o-mini...");
+			console.log(
+				"All Gemini models failed. Falling back to OpenAI gpt-4o-mini..."
+			);
 			try {
-				const response = await fetch("https://api.openai.com/v1/chat/completions", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-					},
-					body: JSON.stringify({
-						model: "gpt-4o-mini",
-						response_format: { type: "json_object" },
-						messages: [
-							{
-								role: "system",
-								content: `You must respond with valid JSON matching exactly this format:
+				const response = await fetch(
+					"https://api.openai.com/v1/chat/completions",
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+						},
+						body: JSON.stringify({
+							model: "gpt-4o-mini",
+							response_format: { type: "json_object" },
+							messages: [
+								{
+									role: "system",
+									content: `You must respond with valid JSON matching exactly this format:
 {
   "title": "Short meeting title",
   "summary": "Concise executive summary",
@@ -704,16 +776,17 @@ ${args.transcript}
     }
   ],
   "decisions": ["Decision 1", "Decision 2"]
-}`
-							},
-							{
-								role: "user",
-								content: prompt
-							}
-						],
-						temperature: 0.2,
-					}),
-				});
+}`,
+								},
+								{
+									role: "user",
+									content: prompt,
+								},
+							],
+							temperature: 0.2,
+						}),
+					}
+				);
 
 				if (response.ok) {
 					const data = await response.json();
@@ -726,7 +799,12 @@ ${args.transcript}
 
 		if (parsed) return parsed;
 
-		throw lastError || new Error("All AI models are currently unavailable. Please try again later.");
+		throw (
+			lastError ||
+			new Error(
+				"All AI models are currently unavailable. Please try again later."
+			)
+		);
 	},
 });
 
@@ -736,16 +814,21 @@ export const chatWithNotes = action({
 	args: {
 		transcript: v.string(),
 		notes: v.string(),
-		history: v.array(v.object({
-			role: v.string(),
-			content: v.string()
-		})),
-		message: v.string()
+		history: v.array(
+			v.object({
+				role: v.string(),
+				content: v.string(),
+			})
+		),
+		message: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+		const apiKey =
+			process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 		if (!apiKey) {
-			throw new Error("GEMINI_API_KEY is not set in Convex environment variables.");
+			throw new Error(
+				"GEMINI_API_KEY is not set in Convex environment variables."
+			);
 		}
 
 		const { GoogleGenerativeAI } = await import("@google/generative-ai");
@@ -761,20 +844,27 @@ ${args.transcript}
 
 Please answer the user's latest question concisely and accurately based on the transcript and notes.`;
 
-		const chatHistory = args.history.map(m => ({
-			role: m.role === "assistant" ? "model" as const : "user" as const,
-			parts: [{ text: m.content }]
+		const chatHistory = args.history.map((m) => ({
+			role: m.role === "assistant" ? ("model" as const) : ("user" as const),
+			parts: [{ text: m.content }],
 		}));
 
 		const result = await model.generateContent({
 			contents: [
 				{ role: "user", parts: [{ text: systemContext }] },
-				{ role: "model", parts: [{ text: "I understand. I'll help you with questions about this meeting. What would you like to know?" }] },
+				{
+					role: "model",
+					parts: [
+						{
+							text: "I understand. I'll help you with questions about this meeting. What would you like to know?",
+						},
+					],
+				},
 				...chatHistory,
 				{ role: "user", parts: [{ text: args.message }] },
 			],
 		});
 
 		return result.response.text();
-	}
+	},
 });

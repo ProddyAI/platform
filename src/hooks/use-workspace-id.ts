@@ -13,7 +13,7 @@ export const useWorkspaceId = () => {
 	const workspaceId = params.workspaceId;
 
 	// Treat "create" as an invalid workspace ID to prevent Convex validation errors
-	if (workspaceId === "create" as any) {
+	if (workspaceId === ("create" as any)) {
 		return undefined;
 	}
 

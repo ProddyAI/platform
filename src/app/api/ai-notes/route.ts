@@ -1,19 +1,26 @@
-import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { NextResponse } from "next/server";
 
-const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+const apiKey =
+	process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
 
 export async function POST(req: Request) {
 	try {
 		if (!apiKey) {
-			return NextResponse.json({ error: "Missing GEMINI API Key" }, { status: 500 });
+			return NextResponse.json(
+				{ error: "Missing GEMINI API Key" },
+				{ status: 500 }
+			);
 		}
 
 		const body = await req.json();
 		const { transcript, membersContext } = body;
 
 		if (!transcript) {
-			return NextResponse.json({ error: "Transcript is required." }, { status: 400 });
+			return NextResponse.json(
+				{ error: "Transcript is required." },
+				{ status: 400 }
+			);
 		}
 
 		const genAI = new GoogleGenerativeAI(apiKey);
@@ -57,7 +64,7 @@ ${transcript}
 			generationConfig: {
 				responseMimeType: "application/json",
 				temperature: 0.2,
-			}
+			},
 		});
 
 		const responseText = result.response.text();
@@ -67,7 +74,10 @@ ${transcript}
 			return NextResponse.json({ notes: parsedNotes });
 		} catch (parseError) {
 			console.error("[AI-NOTES] Failed to parse JSON:", responseText);
-			return NextResponse.json({ error: "AI generated an invalid response format." }, { status: 500 });
+			return NextResponse.json(
+				{ error: "AI generated an invalid response format." },
+				{ status: 500 }
+			);
 		}
 	} catch (error: any) {
 		console.error("[AI-NOTES] Error:", error?.message || error);

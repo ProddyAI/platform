@@ -127,7 +127,9 @@ export const generateAndSendOTP = action({
 		// Send email using Resend
 		const resendApiKey = process.env.RESEND_API_KEY;
 		if (!resendApiKey) {
-			console.warn(`[LOCAL DEV WARNING] RESEND_API_KEY not set. OTP for ${email} is: ${result.otp}`);
+			console.warn(
+				`[LOCAL DEV WARNING] RESEND_API_KEY not set. OTP for ${email} is: ${result.otp}`
+			);
 			return { success: true };
 		}
 
@@ -211,7 +213,7 @@ export const verifyOTP = mutation({
 					expiresAt: Date.now() + 1000 * 60 * 10,
 					verified: true,
 					attempts: 0,
-					createdAt: Date.now()
+					createdAt: Date.now(),
 				});
 			}
 			return { success: true };

@@ -7,9 +7,8 @@ import {
 	getAuthUserId,
 	retrieveAccount,
 } from "@convex-dev/auth/server";
-
-import type { DataModel } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
+import type { DataModel } from "./_generated/dataModel";
 import { mutation } from "./_generated/server";
 
 /**
@@ -76,8 +75,7 @@ const CustomPassword = ConvexCredentials<DataModel>({
 
 		if (flow === "signUp") {
 			const secret = params.password;
-			const name =
-				typeof params.name === "string" ? params.name.trim() : "";
+			const name = typeof params.name === "string" ? params.name.trim() : "";
 
 			if (!secret || typeof secret !== "string") {
 				throw new Error("Password is required");

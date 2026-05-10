@@ -7,8 +7,14 @@ import { prosemirrorSync } from "./prosemirror";
 import { mapWorkspaceId } from "./utils";
 
 // Helper: find a member for this user in ANY workspace (fallback for ID mismatches)
-async function findMemberForUser(ctx: any, workspaceId: Id<"workspaces">, userId: any) {
-	console.log(`DEBUG: Checking membership for userId ${userId} in workspaceId ${workspaceId}`);
+async function findMemberForUser(
+	ctx: any,
+	workspaceId: Id<"workspaces">,
+	userId: any
+) {
+	console.log(
+		`DEBUG: Checking membership for userId ${userId} in workspaceId ${workspaceId}`
+	);
 	// 1. Try the mapped/correct workspace ID
 	let member = await ctx.db
 		.query("members")
@@ -22,14 +28,16 @@ async function findMemberForUser(ctx: any, workspaceId: Id<"workspaces">, userId
 		return member;
 	}
 
-	console.log(`DEBUG: Member not found for exact workspace, trying fallbacks...`);
+	console.log(
+		`DEBUG: Member not found for exact workspace, trying fallbacks...`
+	);
 
 	// 2. Try the "Personal" workspace if it exists (very common fallback)
 	const personalWorkspace = await ctx.db
 		.query("workspaces")
 		.filter((q: any) => q.eq(q.field("name"), "Peronal")) // Match the user's specific typo name
 		.first();
-	
+
 	if (personalWorkspace) {
 		member = await ctx.db
 			.query("members")
@@ -50,7 +58,9 @@ async function findMemberForUser(ctx: any, workspaceId: Id<"workspaces">, userId
 
 	// 4. DEV FALLBACK: Auto-join the user to this workspace if they are authenticated
 	// This solves the "multiple accounts" issue during development
-	console.log(`DEBUG: Auto-joining userId ${userId} to workspaceId ${workspaceId}`);
+	console.log(
+		`DEBUG: Auto-joining userId ${userId} to workspaceId ${workspaceId}`
+	);
 	const newMemberId = await ctx.db.insert("members", {
 		userId,
 		workspaceId,
@@ -59,8 +69,6 @@ async function findMemberForUser(ctx: any, workspaceId: Id<"workspaces">, userId
 
 	return await ctx.db.get(newMemberId);
 }
-
-
 
 // Create a new note
 export const create = mutation({
@@ -106,10 +114,14 @@ export const create = mutation({
 
 		// Track note usage (non-blocking)
 		try {
-			await ctx.scheduler.runAfter(0, internal.usageTracking.recordNoteCreated, {
-				userId: userId as Id<"users">,
-				workspaceId: workspaceId,
-			});
+			await ctx.scheduler.runAfter(
+				0,
+				internal.usageTracking.recordNoteCreated,
+				{
+					userId: userId as Id<"users">,
+					workspaceId: workspaceId,
+				}
+			);
 		} catch (e) {
 			console.error("Failed to schedule usage tracking:", e);
 		}
@@ -157,12 +169,12 @@ export const getByChannel = query({
 
 		const notes = await ctx.db
 			.query("notes")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", workspaceId)
-			)
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.collect();
-		
-		console.log(`DEBUG: getByChannel found ${notes.length} notes for ${workspaceId}`);
+
+		console.log(
+			`DEBUG: getByChannel found ${notes.length} notes for ${workspaceId}`
+		);
 
 		return notes;
 	},
@@ -194,9 +206,7 @@ export const list = query({
 		// Real search (Broad for now to ensure visibility)
 		const notes = await ctx.db
 			.query("notes")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", workspaceId)
-			)
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.collect();
 
 		return notes;
@@ -293,7 +303,11 @@ export const update = mutation({
 			throw new Error("Note not found");
 		}
 
-		const member = await findMemberForUser(ctx, existingNote.workspaceId, userId);
+		const member = await findMemberForUser(
+			ctx,
+			existingNote.workspaceId,
+			userId
+		);
 
 		if (!member) {
 			throw new Error("Unauthorized");
@@ -364,7 +378,11 @@ export const remove = mutation({
 			return args.id;
 		}
 
-		const member = await findMemberForUser(ctx, existingNote.workspaceId, userId);
+		const member = await findMemberForUser(
+			ctx,
+			existingNote.workspaceId,
+			userId
+		);
 
 		if (!member) {
 			throw new Error("Unauthorized");
