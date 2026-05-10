@@ -13,6 +13,7 @@ import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicat
 import { Suggestions } from "@/features/smart/components/suggestions";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { UploadRecordingButton } from "@/features/audio/components/UploadRecordingButton";
 
 const Editor = dynamic(() => import("@/components/editor"), {
 	ssr: false,
@@ -238,6 +239,9 @@ export const ChatInput = ({
 					onSelectSuggestion={handleSuggestionSelect}
 				/>
 			) : null}
+			<div className="flex items-center gap-2 mb-2">
+				<UploadRecordingButton />
+			</div>
 			<Editor
 				channelId={channelId}
 				conversationId={conversationId}

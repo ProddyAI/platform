@@ -5,6 +5,7 @@ import {
 	AlertTriangle,
 	BarChart,
 	Bot,
+	Brain,
 	CalendarIcon,
 	ChartNoAxesGantt,
 	CheckSquare,
@@ -543,6 +544,16 @@ export const WorkspaceSidebar = ({
 								isActive={pathname.includes("/tasks")}
 								isCollapsed={isCollapsed}
 								label="Tasks"
+							/>
+						</MobileCloseWrapper>
+						<MobileCloseWrapper onClose={onMobileClose}>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/meeting-notes`}
+								icon={Brain}
+								id="meeting-notes"
+								isActive={pathname.includes("/meeting-notes")}
+								isCollapsed={isCollapsed}
+								label="Meeting Notes"
 							/>
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>

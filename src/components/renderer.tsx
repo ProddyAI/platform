@@ -38,6 +38,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 					"note-live",
 					"note-export",
 					"file",
+					"meeting",
 				].includes(parsed.type)
 			);
 		} catch (_e) {
@@ -61,6 +62,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 				"note-live",
 				"note-export",
 				"file",
+				"meeting",
 			];
 
 			if (

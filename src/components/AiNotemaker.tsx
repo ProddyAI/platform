@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
@@ -37,8 +37,12 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 	const { results: messages, status: messagesStatus } = useGetMessages({ channelId });
 	
 	const members = useQuery(api.members.get, { workspaceId }) || [];
+	const chatNoteInfo = useQuery(api.meetingNotes.getChatNoteForChannel, channelId ? { channelId: String(channelId) } : "skip");
 	const createNote = useMutation(api.notes.create);
 	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
+	const generateChatNotesAction = useAction(api.meetingNotes.generateChatNotes);
+	const chatWithNotesAction = useAction(api.meetingNotes.chatWithNotes);
+	const saveChatToMeetingNotes = useMutation(api.meetingNotes.saveChatNotesToHistory);
 	
 	const { isOpen, setIsOpen, triggerGeneration, isExpanded: isFocusMode, setIsExpanded: setIsFocusMode } = useAiNotemakerStore();
 	const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +52,10 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 	const [notesData, setNotesData] = useState<any | null>(null);
 	const [editableTasks, setEditableTasks] = useState<any[]>([]);
 	const [transcriptString, setTranscriptString] = useState("");
+	const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
 	const [activeDropdown, setActiveDropdown] = useState<{index: number, type: 'assignee' | 'priority'} | null>(null);
+	const [showPeriodPicker, setShowPeriodPicker] = useState(false);
+	const [selectedPeriod, setSelectedPeriod] = useState<string>("24h");
 
 	// Close dropdowns on outside click
 	useEffect(() => {
@@ -83,20 +90,45 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 	useEffect(() => {
 		if (triggerGeneration > lastProcessedTrigger && messagesStatus !== "LoadingFirstPage") {
 			setLastProcessedTrigger(triggerGeneration);
-			generateAiNotes();
+			// Show period picker instead of immediately generating
+			setShowPeriodPicker(true);
+			setIsOpen(true);
 		}
-	}, [triggerGeneration, messagesStatus, lastProcessedTrigger]);
+	}, [triggerGeneration, messagesStatus, lastProcessedTrigger, setIsOpen]);
 
-	const generateAiNotes = async () => {
-		if (!messages || messages.length === 0) {
-			toast.error("No messages found in this channel to generate notes.");
+	const getFilteredMessages = (period: string) => {
+		if (!messages) return [];
+		const now = Date.now();
+		let cutoff = 0;
+		if (period === "since_last" && chatNoteInfo?.lastGeneratedAt) {
+			cutoff = chatNoteInfo.lastGeneratedAt;
+		} else {
+			const cutoffs: Record<string, number> = {
+				"1h": now - 3600000,
+				"24h": now - 86400000,
+				"7d": now - 604800000,
+				"30d": now - 2592000000,
+				"all": 0,
+				"since_last": 0, // fallback if no prior generation
+			};
+			cutoff = cutoffs[period] || 0;
+		}
+		return messages.filter(m => (m as any)._creationTime >= cutoff).reverse();
+	};
+
+	const generateAiNotes = async (period?: string) => {
+		const usePeriod = period || selectedPeriod;
+		const filtered = getFilteredMessages(usePeriod);
+		if (!filtered || filtered.length === 0) {
+			toast.error(`No messages found for the selected period (${usePeriod}).`);
 			return;
 		}
 
 		setIsLoading(true);
 		setIsOpen(true);
-		setIsFocusMode(false); // Reset focus mode on new generation
-		setChatHistory([]); // reset chat
+		setIsFocusMode(false);
+		setChatHistory([]);
+		setShowPeriodPicker(false);
 		
 		try {
 			const cleanBody = (body: string) => {
@@ -110,32 +142,47 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 				}
 			};
 
-			const transcript = messages
-				.slice(0, 50)
-				.reverse()
+			const transcript = filtered
 				.map((m) => `${m.user?.name || "Unknown"}: ${cleanBody(m.body)}`)
 				.join("\n");
 			
 			setTranscriptString(transcript);
 
-			const membersContext = members.map(m => `- ${m.user.name} (ID: ${m.user._id})`).join("\n");
+			const membersContext = members.map((m: any) => `- ${m.user?.name || 'Unknown'} (ID: ${m.user?._id || 'Unknown'})`).join("\n");
 
-			const response = await fetch("/api/ai-notes", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ transcript, membersContext }),
+			const notes = await generateChatNotesAction({
+				transcript,
+				membersContext,
 			});
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || "Failed to generate notes");
+			setNotesData(notes);
+			setGeneratedAt(new Date());
+			if (notes?.actionItems) {
+				setEditableTasks(notes.actionItems.map((item: any) => ({ ...item, selected: true })));
 			}
 
-			const data = await response.json();
-			setNotesData(data.notes);
-			if (data.notes?.actionItems) {
-				setEditableTasks(data.notes.actionItems.map((item: any) => ({ ...item, selected: true })));
+			// Save to meetingNotes table for unified history
+			try {
+				await saveChatToMeetingNotes({
+					workspaceId: String(workspaceId),
+					channelId: channelId ? String(channelId) : undefined,
+					title: notes.title || undefined,
+					transcript,
+					summary: notes.summary || "",
+					actionItems: (notes.actionItems || []).map((a: any) => {
+						let label = a.title;
+						if (a.assigneeName) label += ` → ${a.assigneeName}`;
+						if (a.priority) label += ` [${a.priority}]`;
+						return label;
+					}),
+					decisions: notes.decisions || [],
+				});
+				toast.success("✅ Notes saved to Meeting Notes history!");
+			} catch (e) {
+				console.error("Failed to save to meeting notes history:", e);
+				toast.error("Notes generated but failed to save to history.");
 			}
+
 			toast.success("AI Notes generated successfully!");
 		} catch (error) {
 			console.error("Error:", error);
@@ -153,7 +200,7 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 			const delta = JSON.stringify({ ops: [{ insert: textRep }] });
 
 			await createNote({
-				title: `AI Meeting Notes - ${new Date().toLocaleDateString()}`,
+				title: `AI Meeting Notes - ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`,
 				content: delta,
 				workspaceId,
 				channelId: channelId as any,
@@ -180,7 +227,7 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 				workspaceId,
 				tasks: selectedTasks.map((item: any) => ({
 					title: item.title,
-					assigneeUserId: item.assigneeUserId,
+					assigneeUserId: item.assigneeUserId || undefined,
 					priority: item.priority || "medium",
 				}))
 			});
@@ -202,19 +249,14 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 		setIsChatting(true);
 		
 		try {
-			const response = await fetch("/api/ai-chat", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					transcript: transcriptString,
-					notes: JSON.stringify(notesData),
-					history: chatHistory,
-					message: message
-				})
+			const response = await chatWithNotesAction({
+				transcript: transcriptString,
+				notes: JSON.stringify(notesData),
+				history: chatHistory,
+				message: message
 			});
-			if (!response.ok) throw new Error("Failed to chat");
-			const data = await response.json();
-			setChatHistory(prev => [...prev, {role: 'assistant', content: data.response}]);
+			
+			setChatHistory(prev => [...prev, {role: 'assistant', content: response}]);
 		} catch (error) {
 			toast.error("AI failed to respond.");
 		} finally {
@@ -263,7 +305,83 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 					isFocusMode && "px-8 md:px-12 lg:px-16 py-10"
 				)}>
 					<div className={cn("flex flex-col flex-1", isFocusMode && "max-w-5xl mx-auto w-full")}>
-						{isLoading ? (
+						{showPeriodPicker ? (
+						<div className="flex flex-col items-center justify-center h-full space-y-6 pt-8">
+							<div className="p-3 bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100/50 rounded-2xl shadow-sm">
+								<Sparkles className="size-8 text-blue-600" />
+							</div>
+							<div className="text-center space-y-1">
+								<h3 className="text-lg font-bold text-gray-900">Generate AI Notes</h3>
+								<p className="text-sm text-gray-500">Select the time period to analyze</p>
+							</div>
+							<div className="w-full max-w-xs space-y-2">
+								{[
+									{ key: "1h", label: "Last 1 hour", icon: "⚡" },
+									{ key: "24h", label: "Last 24 hours", icon: "📌" },
+									{ key: "7d", label: "Last 7 days", icon: "📆" },
+									{ key: "30d", label: "Last 30 days", icon: "📊" },
+									{ key: "all", label: "All messages", icon: "📋" },
+								].map(opt => {
+									const count = getFilteredMessages(opt.key).length;
+									return (
+										<button
+											key={opt.key}
+											onClick={() => { setSelectedPeriod(opt.key); generateAiNotes(opt.key); }}
+											disabled={count === 0}
+											className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+												selectedPeriod === opt.key
+													? "border-blue-300 bg-blue-50 text-blue-700"
+													: "border-gray-200 bg-white hover:border-gray-300 text-gray-700"
+											}`}
+										>
+											<div className="flex items-center gap-3">
+												<span className="text-lg">{opt.icon}</span>
+												<span className="text-sm font-medium">{opt.label}</span>
+											</div>
+											<span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${count > 0 ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-400"}`}>
+												{count} msgs
+											</span>
+										</button>
+									);
+								})}
+								{/* Since last generation — special option */}
+								{chatNoteInfo?.lastGeneratedAt && (() => {
+									const count = getFilteredMessages("since_last").length;
+									const ago = Math.round((Date.now() - chatNoteInfo.lastGeneratedAt) / 60000);
+									const agoText = ago < 60 ? `${ago}m ago` : ago < 1440 ? `${Math.round(ago / 60)}h ago` : `${Math.round(ago / 1440)}d ago`;
+									return (
+										<button
+											onClick={() => { setSelectedPeriod("since_last"); generateAiNotes("since_last"); }}
+											disabled={count === 0}
+											className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 border-indigo-200 bg-indigo-50/50 text-indigo-700 hover:border-indigo-300`}
+										>
+											<div className="flex flex-col items-start gap-0.5">
+												<div className="flex items-center gap-3">
+													<span className="text-lg">🔄</span>
+													<span className="text-sm font-medium">Since last generation</span>
+												</div>
+												<span className="text-[10px] text-indigo-400 ml-9">Generated {agoText}</span>
+											</div>
+											<span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${count > 0 ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-400"}`}>
+												{count} new
+											</span>
+										</button>
+									);
+								})()}
+							</div>
+							{chatNoteInfo?.lastGeneratedAt && (
+								<p className="text-[11px] text-gray-400 text-center">
+									✅ Last generated: {new Date(chatNoteInfo.lastGeneratedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+								</p>
+							)}
+							<button
+								onClick={() => setShowPeriodPicker(false)}
+								className="text-xs text-gray-400 hover:text-gray-600 mt-1"
+							>
+								Cancel
+							</button>
+						</div>
+					) : isLoading ? (
 							<div className="flex flex-col items-center justify-center h-full space-y-6 pt-16">
 								<div className="relative inline-flex">
 									<div className="absolute inset-0 bg-blue-100 rounded-full blur-xl animate-pulse opacity-50"></div>
@@ -283,6 +401,9 @@ export const AiNotemaker = ({ variant = "toolbar", channelId: propChannelId, wor
 										<FileText className="size-5 text-blue-600" /> 
 										Executive Summary
 									</h3>
+									{generatedAt && (
+										<p className="text-xs text-gray-400 ml-7">Generated at {generatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} on {generatedAt.toLocaleDateString()}</p>
+									)}
 									<div className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
 										<p className="text-gray-700 leading-relaxed text-[15px]">{notesData.summary}</p>
 									</div>

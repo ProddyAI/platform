@@ -1,33 +1,22 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Ensure the API key is set
 const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
-if (!apiKey) {
-    console.error("GOOGLE_GENERATIVE_AI_API_KEY and GEMINI_API_KEY are not defined in the environment variables.");
-}
-
-const genAI = new GoogleGenerativeAI(apiKey || "");
 
 export async function POST(req: Request) {
 	try {
 		if (!apiKey) {
-			return NextResponse.json(
-				{ error: "AI service is not configured. Missing GOOGLE_GENERATIVE_AI_API_KEY." },
-				{ status: 500 }
-			);
+			return NextResponse.json({ error: "Missing GEMINI API Key" }, { status: 500 });
 		}
 
 		const body = await req.json();
 		const { transcript, membersContext } = body;
 
 		if (!transcript) {
-			return NextResponse.json(
-				{ error: "Transcript is required." },
-				{ status: 400 }
-			);
+			return NextResponse.json({ error: "Transcript is required." }, { status: 400 });
 		}
 
+		const genAI = new GoogleGenerativeAI(apiKey);
 		const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 		const prompt = `
@@ -64,28 +53,26 @@ ${transcript}
 `;
 
 		const result = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: {
-                responseMimeType: "application/json",
-            }
-        });
-        
+			contents: [{ role: "user", parts: [{ text: prompt }] }],
+			generationConfig: {
+				responseMimeType: "application/json",
+				temperature: 0.2,
+			}
+		});
+
 		const responseText = result.response.text();
-		
+
 		try {
 			const parsedNotes = JSON.parse(responseText);
 			return NextResponse.json({ notes: parsedNotes });
 		} catch (parseError) {
-			console.error("Failed to parse Gemini JSON response:", responseText);
-			return NextResponse.json(
-				{ error: "AI generated an invalid response format." },
-				{ status: 500 }
-			);
+			console.error("[AI-NOTES] Failed to parse JSON:", responseText);
+			return NextResponse.json({ error: "AI generated an invalid response format." }, { status: 500 });
 		}
-	} catch (error) {
-		console.error("Error in AI Notes generation:", error);
+	} catch (error: any) {
+		console.error("[AI-NOTES] Error:", error?.message || error);
 		return NextResponse.json(
-			{ error: "Failed to generate meeting notes." },
+			{ error: error?.message || "Failed to generate meeting notes." },
 			{ status: 500 }
 		);
 	}

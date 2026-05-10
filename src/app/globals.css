@@ -1,9 +1,9 @@
+/* Import react-day-picker styles */
+@import 'react-day-picker/style.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import react-day-picker styles */
-@import 'react-day-picker/style.css';
 
 /* Sidebar scrollbar styling to match purple background */
 .sidebar-scrollbar::-webkit-scrollbar {

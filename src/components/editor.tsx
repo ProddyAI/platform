@@ -50,6 +50,7 @@ import { ChannelPicker } from "./channel-picker";
 import { EmojiPopover } from "./emoji-popover";
 import { Hint } from "./hint";
 import { MentionPicker } from "./mention-picker";
+import { StartMeetingModal } from "@/features/audio/components/StartMeetingModal";
 
 type EditorValue = {
 	image: File | null;
@@ -1350,6 +1351,11 @@ const Editor = ({
 					</p>
 				</div>
 			)}
+			<StartMeetingModal 
+				open={meetsModalOpen} 
+				onOpenChange={setMeetsModalOpen} 
+				conversationId={conversationId}
+			/>
 		</div>
 	);
 };

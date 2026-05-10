@@ -23,10 +23,12 @@ export default function AutoLogin() {
                 try {
                     // Try to sign in
                     await signIn("password", { email: "admin@proddy.ai", password: "password123", flow: "signIn" });
+                    window.location.href = "/workspace";
                 } catch (e) {
                     // If it fails, sign up
                     try {
                         await signIn("password", { email: "admin@proddy.ai", password: "password123", name: "Admin", flow: "signUp" });
+                        window.location.href = "/workspace";
                     } catch (err: any) {
                         console.error("Auto login failed:", err);
                         setErrorMsg(err.message || String(err));
