@@ -59,7 +59,7 @@ export const SignInCard = ({
 				password: "password123",
 				flow: "signIn",
 			});
-		} catch (e) {
+		} catch (_e) {
 			try {
 				await signIn("password", {
 					email: "admin@proddy.ai",

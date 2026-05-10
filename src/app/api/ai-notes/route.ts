@@ -72,7 +72,7 @@ ${transcript}
 		try {
 			const parsedNotes = JSON.parse(responseText);
 			return NextResponse.json({ notes: parsedNotes });
-		} catch (parseError) {
+		} catch (_parseError) {
 			console.error("[AI-NOTES] Failed to parse JSON:", responseText);
 			return NextResponse.json(
 				{ error: "AI generated an invalid response format." },

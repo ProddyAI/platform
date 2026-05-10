@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/../convex/_generated/api";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -175,7 +174,7 @@ function NoteCard({
 	const date = new Date(note.createdAt);
 	const isChat = note.roomId.startsWith("chat-");
 	const isUpload = note.source === "upload";
-	const isLive = !isChat && !isUpload;
+	const _isLive = !isChat && !isUpload;
 	const hasGenerations = generations && generations.length > 0;
 
 	const sourceLabel = isChat
@@ -205,7 +204,7 @@ function NoteCard({
 			const firstSentence = summary.split(/[.!?]/)[0]?.trim();
 			if (firstSentence && firstSentence.length > 10) {
 				return firstSentence.length > 60
-					? firstSentence.slice(0, 57) + "..."
+					? `${firstSentence.slice(0, 57)}...`
 					: firstSentence;
 			}
 		}

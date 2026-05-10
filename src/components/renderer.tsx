@@ -229,7 +229,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 		return () => {
 			if (container) container.innerHTML = "";
 		};
-	}, [value, image, calendarEvent, isUnifiedMessage]);
+	}, [value, calendarEvent, isUnifiedMessage]);
 
 	// If this is a unified message (canvas or note type), render the UnifiedMessage component
 	if (isUnifiedMessage()) {

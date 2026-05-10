@@ -1,12 +1,5 @@
 import { useAction, useMutation, useQuery } from "convex/react";
-import {
-	AlertCircle,
-	CheckCircle2,
-	FileAudio,
-	Loader2,
-	Sparkles,
-	Upload,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -26,14 +19,14 @@ export const UploadRecordingButton = () => {
 	const workspaceId = useWorkspaceId();
 	const [step, setStep] = useState<UploadStep>("idle");
 	const [fileName, setFileName] = useState("");
-	const [errorMsg, setErrorMsg] = useState("");
+	const [_errorMsg, setErrorMsg] = useState("");
 	const fileRef = useRef<HTMLInputElement>(null);
 
 	const saveUploadTranscript = useMutation(
 		api.meetingNotes.saveUploadTranscript
 	);
 	const generateAI = useAction(api.meetingNotes.generateAIInsights);
-	const user = useQuery(api.users.current);
+	const _user = useQuery(api.users.current);
 
 	const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];

@@ -14,7 +14,6 @@ import {
 	MicOff,
 	Sparkles,
 	Target,
-	Users,
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -106,7 +105,7 @@ export const MeetingRecordButton = ({
 			if (recognitionRef.current) {
 				try {
 					recognitionRef.current.start();
-				} catch (e) {}
+				} catch (_e) {}
 			}
 		};
 
@@ -120,7 +119,7 @@ export const MeetingRecordButton = ({
 		saveTimerRef.current = setInterval(() => {
 			flushTranscript();
 		}, 10000);
-	}, [onTranscriptUpdate, onRecordingChange, flushTranscript]);
+	}, [onTranscriptUpdate, onRecordingChange, flushTranscript, userName]);
 
 	const stopRecording = useCallback(async () => {
 		if (recognitionRef.current) {
@@ -429,7 +428,7 @@ export const NotesSidebar = ({
 		if (scrollRef.current) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
-	}, [liveTranscript]);
+	}, []);
 
 	const handleCopyTranscript = () => {
 		if (!transcript) return;
@@ -847,7 +846,7 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 	useEffect(() => {
 		if (scrollRef.current)
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-	}, [messages]);
+	}, []);
 
 	const sendMessage = () => {
 		const text = input.trim();

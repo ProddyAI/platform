@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalQuery, mutation, query } from "./_generated/server";
 import { prosemirrorSync } from "./prosemirror";
@@ -159,7 +159,7 @@ export const getByChannel = query({
 		}
 
 		const workspaceId = mapWorkspaceId(args.workspaceId) as Id<"workspaces">;
-		const channelId = args.channelId as Id<"channels">;
+		const _channelId = args.channelId as Id<"channels">;
 
 		const member = await findMemberForUser(ctx, workspaceId, userId);
 
@@ -195,7 +195,7 @@ export const list = query({
 		}
 
 		const workspaceId = mapWorkspaceId(args.workspaceId) as Id<"workspaces">;
-		const channelId = args.channelId as Id<"channels">;
+		const _channelId = args.channelId as Id<"channels">;
 
 		const member = await findMemberForUser(ctx, workspaceId, userId);
 

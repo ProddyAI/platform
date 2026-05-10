@@ -562,7 +562,7 @@ export const adminForceCreateWorkspace = mutation({
 			role: "owner",
 		});
 
-		const channelId = await ctx.db.insert("channels", {
+		const _channelId = await ctx.db.insert("channels", {
 			name: "general",
 			workspaceId,
 		});

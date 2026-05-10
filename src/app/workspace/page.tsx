@@ -47,7 +47,6 @@ const WorkspacePage = () => {
 		isLoadingLastActive,
 		open,
 		setOpen,
-		router,
 	]);
 
 	return (

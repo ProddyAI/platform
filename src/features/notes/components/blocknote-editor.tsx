@@ -5,7 +5,6 @@ import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
-import { Loader } from "lucide-react";
 import { useEffect } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";

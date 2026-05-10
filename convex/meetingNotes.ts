@@ -48,7 +48,7 @@ export const saveTranscript = mutation({
 		if (existingNote) {
 			// Append chunk
 			await ctx.db.patch(existingNote._id, {
-				transcript: existingNote.transcript + "\n" + args.transcriptChunk,
+				transcript: `${existingNote.transcript}\n${args.transcriptChunk}`,
 			});
 			return existingNote._id;
 		} else {
@@ -654,7 +654,7 @@ export const generateChatNotes = action({
 		transcript: v.string(),
 		membersContext: v.string(),
 	},
-	handler: async (ctx, args) => {
+	handler: async (_ctx, args) => {
 		if (!args.transcript || args.transcript.trim().length === 0) {
 			throw new Error("Transcript is required.");
 		}
@@ -822,7 +822,7 @@ export const chatWithNotes = action({
 		),
 		message: v.string(),
 	},
-	handler: async (ctx, args) => {
+	handler: async (_ctx, args) => {
 		const apiKey =
 			process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 		if (!apiKey) {

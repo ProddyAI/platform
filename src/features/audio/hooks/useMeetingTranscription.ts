@@ -15,7 +15,7 @@ export const useMeetingTranscription = (
 	const meetingNotes = useQuery(api.meetingNotes.getByRoom, { roomId });
 
 	const [isListening, setIsListening] = useState(false);
-	const [localTranscript, setLocalTranscript] = useState("");
+	const [_localTranscript, setLocalTranscript] = useState("");
 
 	const recognitionRef = useRef<any>(null);
 	const chunkRef = useRef("");
@@ -50,14 +50,14 @@ export const useMeetingTranscription = (
 		recognition.lang = "en-US";
 
 		recognition.onresult = (event: any) => {
-			let interimTranscript = "";
+			let _interimTranscript = "";
 			let finalTranscript = "";
 
 			for (let i = event.resultIndex; i < event.results.length; ++i) {
 				if (event.results[i].isFinal) {
-					finalTranscript += event.results[i][0].transcript + " ";
+					finalTranscript += `${event.results[i][0].transcript} `;
 				} else {
-					interimTranscript += event.results[i][0].transcript;
+					_interimTranscript += event.results[i][0].transcript;
 				}
 			}
 
@@ -93,7 +93,7 @@ export const useMeetingTranscription = (
 			if (isRecording) {
 				try {
 					recognition.start();
-				} catch (e) {
+				} catch (_e) {
 					setIsListening(false);
 				}
 			} else {
@@ -115,14 +115,17 @@ export const useMeetingTranscription = (
 				recognitionRef.current.stop();
 			}
 		};
-	}, [isRecording, saveTranscriptChunk, roomId, workspaceId, channelId]);
+	}, [
+		isRecording,
+		saveTranscriptChunk,
+		roomId,
+		workspaceId,
+		channelId,
+		isListening,
+	]);
 
 	const triggerGenerateInsights = async () => {
-		if (
-			meetingNotes &&
-			meetingNotes._id &&
-			meetingNotes.transcript.trim().length > 10
-		) {
+		if (meetingNotes?._id && meetingNotes.transcript.trim().length > 10) {
 			await generateAI({
 				noteId: meetingNotes._id,
 				transcript: meetingNotes.transcript,

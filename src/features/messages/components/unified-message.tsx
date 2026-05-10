@@ -86,8 +86,8 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 	// Determine if the meeting is over
 	const meetingStatus = useMemo(() => {
 		if (!isMeeting || !data.meetingId || !meetingNotes) return null;
-		const note = meetingNotes.find(
-			(n: any) => n.roomId && n.roomId.includes(data.meetingId!)
+		const note = meetingNotes.find((n: any) =>
+			n.roomId?.includes(data.meetingId!)
 		);
 		if (note && note.status === "completed") {
 			const duration = data.startedAt

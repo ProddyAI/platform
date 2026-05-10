@@ -28,7 +28,7 @@ export default function AutoLogin() {
 						flow: "signIn",
 					});
 					window.location.href = "/workspace";
-				} catch (e) {
+				} catch (_e) {
 					// If it fails, sign up
 					try {
 						await signIn("password", {

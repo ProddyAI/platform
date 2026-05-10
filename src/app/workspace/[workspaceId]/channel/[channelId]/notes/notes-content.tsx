@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, FileText, Plus } from "lucide-react";
+import { Brain, FileText } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -54,7 +54,7 @@ export const NotesContent = ({
 	// Local state for sidebar
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 	// Local state for AI panel visibility
-	const [showAIPanel, setShowAIPanel] = useState(false);
+	const [_showAIPanel, _setShowAIPanel] = useState(false);
 	// Live note session hook - now inside RoomProvider context
 	// Use a stable dummy ID that exists in the database to avoid server errors
 	const dummyNoteId = "kn7cvx952gp794j4vzvxxqqgk57k9yhh" as Id<"notes">;

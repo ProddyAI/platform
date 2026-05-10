@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
-import { CalendarIcon, Search, Users, Video } from "lucide-react";
+import { CalendarIcon, Search, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,7 +32,7 @@ export const StartMeetingModal = ({
 }: StartMeetingModalProps) => {
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
-	const router = useRouter();
+	const _router = useRouter();
 
 	const [meetingType, setMeetingType] = useState<"instant" | "schedule">(
 		"instant"

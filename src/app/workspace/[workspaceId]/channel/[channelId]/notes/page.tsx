@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { Brain, FileText, Loader, Plus, TriangleAlert } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";

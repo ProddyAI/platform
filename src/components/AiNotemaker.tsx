@@ -2,8 +2,6 @@
 
 import { useAction, useMutation, useQuery } from "convex/react";
 import {
-	ArrowRight,
-	Bot,
 	CheckCircle2,
 	ChevronDown,
 	FileText,
@@ -110,7 +108,7 @@ export const AiNotemaker = ({
 		if (chatEndRef.current) {
 			chatEndRef.current.scrollIntoView({ behavior: "smooth" });
 		}
-	}, [chatHistory, isChatting]);
+	}, []);
 
 	useEffect(() => {
 		if (
@@ -250,7 +248,7 @@ export const AiNotemaker = ({
 				tags: ["AI", "Meeting"],
 			});
 			toast.success("Notes saved to channel library!");
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to save note to Convex.");
 		} finally {
 			setIsSaving(false);
@@ -276,7 +274,7 @@ export const AiNotemaker = ({
 			toast.success(
 				`${selectedTasks.length} Tasks successfully created and assigned!`
 			);
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to assign tasks.");
 		} finally {
 			setIsCreatingTasks(false);
@@ -304,7 +302,7 @@ export const AiNotemaker = ({
 				...prev,
 				{ role: "assistant", content: response },
 			]);
-		} catch (error) {
+		} catch (_error) {
 			toast.error("AI failed to respond.");
 		} finally {
 			setIsChatting(false);
