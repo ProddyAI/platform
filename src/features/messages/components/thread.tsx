@@ -87,6 +87,36 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 		parentMessageId: messageId,
 	});
 
+	const extractPlainText = (rawBody: string) => {
+		try {
+			const parsed = JSON.parse(rawBody) as {
+				ops?: Array<{ insert?: string | Record<string, unknown> }>;
+			};
+
+			if (!parsed.ops) return "";
+
+			return parsed.ops
+				.map((op) => (typeof op.insert === "string" ? op.insert : ""))
+				.join("")
+				.replace(/\n/g, " ")
+				.trim();
+		} catch {
+			return "";
+		}
+	};
+
+	const buildFileBodyPayload = (rawBody: string, file: File) => {
+		const caption = extractPlainText(rawBody);
+
+		return JSON.stringify({
+			type: "file",
+			fileName: file.name,
+			fileType: file.type || "application/octet-stream",
+			fileSize: file.size,
+			caption,
+		});
+	};
+
 	const canLoadMore = status === "CanLoadMore";
 	const isLoadingMore = status === "LoadingMore";
 
@@ -130,6 +160,10 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 				const { storageId } = await result.json();
 
 				values.image = storageId;
+
+				if (!image.type.startsWith("image/")) {
+					values.body = buildFileBodyPayload(body, image);
+				}
 			}
 
 			await createMessage(values, { throwError: true });
@@ -358,6 +392,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 				<div className="px-4">
 					<Editor
+						channelId={channelId}
 						disabled={isPending}
 						innerRef={innerRef}
 						key={editorKey}

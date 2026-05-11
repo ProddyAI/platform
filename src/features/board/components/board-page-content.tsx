@@ -20,17 +20,27 @@ import {
 	BoardEditCardModal,
 	BoardEditStatusModal,
 } from "@/features/board/components/board-models";
+import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface BoardPageContentProps {
 	channelId: Id<"channels">;
+	projectId?: Id<"projects">;
+	projectConnectedChannelName?: string;
+	isProjectChannelConnected?: boolean;
 }
 
-export const BoardPageContent = ({ channelId }: BoardPageContentProps) => {
+export const BoardPageContent = ({
+	channelId,
+	projectId,
+	projectConnectedChannelName,
+	isProjectChannelConnected = false,
+}: BoardPageContentProps) => {
 	const workspaceId = useWorkspaceId();
 	const searchParams = useSearchParams();
+	const [, setConnectProjectChannelModal] = useConnectProjectChannelModal();
 
 	// Board search store integration
 	const {
@@ -81,6 +91,20 @@ export const BoardPageContent = ({ channelId }: BoardPageContentProps) => {
 	const members = useQuery(api.board.getMembersForChannel, { channelId }) || [];
 	const channel = useQuery(api.channels.getById, { id: channelId });
 	const currentMember = useQuery(api.members.current, { workspaceId });
+	const canManageProjectConnection =
+		Boolean(projectId) &&
+		(currentMember?.role === "admin" || currentMember?.role === "owner");
+
+	const handleConnectProjectChannel = () => {
+		if (!projectId) {
+			return;
+		}
+
+		setConnectProjectChannelModal({
+			open: true,
+			projectId,
+		});
+	};
 
 	useDocumentTitle(channel ? `Board – ${channel.name}` : "Board");
 
@@ -158,12 +182,12 @@ export const BoardPageContent = ({ channelId }: BoardPageContentProps) => {
 	// ── Optimistic statuses (for drag reorder) ──────────────────────────────
 	const [optimisticStatuses, setOptimisticStatuses] = useState<
 		| {
-				_id: Id<"statuses">;
-				name: string;
-				color: string;
-				order: number;
-				channelId: Id<"channels">;
-		  }[]
+			_id: Id<"statuses">;
+			name: string;
+			color: string;
+			order: number;
+			channelId: Id<"channels">;
+		}[]
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
@@ -566,8 +590,10 @@ export const BoardPageContent = ({ channelId }: BoardPageContentProps) => {
 					</div>
 				) : (
 					<BoardKanbanView
+						connectedChannelName={projectConnectedChannelName}
 						disableIssueDrag={isFilteredBoardView}
 						focusedStatusId={focusedStatusId}
+						isProjectChannelConnected={isProjectChannelConnected}
 						issues={filteredIssues}
 						members={members}
 						onAddStatus={() => {
@@ -576,6 +602,11 @@ export const BoardPageContent = ({ channelId }: BoardPageContentProps) => {
 							setAddStatusOpen(true);
 						}}
 						onClickIssue={handleClickIssue}
+						onConnectChannelClick={
+							canManageProjectConnection
+								? handleConnectProjectChannel
+								: undefined
+						}
 						onCreateIssue={handleCreateIssue}
 						onDeleteStatus={(status) => {
 							setStatusToDelete(status);
@@ -622,11 +653,16 @@ export const BoardPageContent = ({ channelId }: BoardPageContentProps) => {
 				)
 			) : (
 				<BoardHeader
+					connectedChannelName={projectConnectedChannelName}
+					isProjectChannelConnected={isProjectChannelConnected}
 					onAddStatus={() => {
 						setStatusName("");
 						setStatusColor("#5e6ad2");
 						setAddStatusOpen(true);
 					}}
+					onConnectChannelClick={
+						canManageProjectConnection ? handleConnectProjectChannel : undefined
+					}
 					onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
 					onSearchClick={() => {
 						// Trigger global search open

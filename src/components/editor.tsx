@@ -1,10 +1,14 @@
 import {
 	CalendarIcon,
+	Download,
+	File,
 	FileText,
+	FolderOpen,
 	Hash,
 	ImageIcon,
 	PaintBucket,
 	Smile,
+	Video,
 	XIcon,
 } from "lucide-react";
 import Image from "next/image";
@@ -74,7 +78,20 @@ interface EditorProps {
 	variant?: "create" | "update";
 	disableMentions?: boolean;
 	onTextChange?: () => void;
+	channelId?: Id<"channels">;
+	conversationId?: Id<"conversations">;
 }
+
+type AttachmentReference = {
+	messageId: Id<"messages">;
+	url: string;
+	name: string;
+	type: string;
+	size?: number;
+	createdAt: number;
+	senderName: string;
+	isImage: boolean;
+};
 
 const Editor = ({
 	onCancel,
@@ -86,14 +103,19 @@ const Editor = ({
 	variant = "create",
 	disableMentions = false,
 	onTextChange,
+	channelId: providedChannelId,
+	conversationId,
 }: EditorProps) => {
 	const router = useRouter();
 	const workspaceId = useWorkspaceId();
-	const channelId = useChannelId();
+	const routeChannelId = useChannelId();
+	const channelId = providedChannelId ?? routeChannelId;
 	const [text, setText] = useState("");
 	const [image, setImage] = useState<File | null>(null);
 	const [isToolbarVisible, setIsToolbarVisible] = useState(true);
 	const [calendarPickerOpen, setCalendarPickerOpen] = useState(false);
+	const [filesModalOpen, setFilesModalOpen] = useState(false);
+	const [meetsModalOpen, setMeetsModalOpen] = useState(false);
 	const [mentionPickerOpen, setMentionPickerOpen] = useState(false);
 	const [lastKeyWasExclamation, setLastKeyWasExclamation] = useState(false);
 	const [activeAutocomplete, setActiveAutocomplete] = useState<
@@ -321,9 +343,16 @@ const Editor = ({
 	const toggleToolbar = () => {
 		setIsToolbarVisible((current) => !current);
 
-		const toolbarElement = containerRef.current?.querySelector(".ql-toolbar");
+		const toolbarFormatGroups =
+			containerRef.current?.querySelectorAll<HTMLElement>(
+				".ql-toolbar .ql-formats"
+			);
 
-		if (toolbarElement) toolbarElement.classList.toggle("hidden");
+		if (!toolbarFormatGroups?.length) return;
+
+		for (const group of toolbarFormatGroups) {
+			group.classList.toggle("hidden");
+		}
 	};
 
 	const onEmojiSelect = (emoji: string) => {
@@ -508,13 +537,14 @@ const Editor = ({
 		workspaceId && channelId ? { workspaceId, channelId } : "skip"
 	);
 
-	const channelMessages = useQuery(
+	const contextMessages = useQuery(
 		api.messages.get,
-		channelId
+		channelId || conversationId
 			? {
 					channelId,
+					conversationId,
 					paginationOpts: {
-						numItems: 100,
+						numItems: 200,
 						cursor: null,
 					},
 				}
@@ -522,13 +552,13 @@ const Editor = ({
 	);
 
 	const canvasReferences = useMemo<CanvasReference[]>(() => {
-		if (!channelMessages?.page) {
+		if (!contextMessages?.page) {
 			return [];
 		}
 
 		const byRoomId = new Map<string, CanvasReference>();
 
-		for (const message of channelMessages.page) {
+		for (const message of contextMessages.page) {
 			try {
 				const parsed = JSON.parse(message.body) as {
 					type?: string;
@@ -558,19 +588,73 @@ const Editor = ({
 		}
 
 		return [...byRoomId.values()].sort((a, b) => b.createdAt - a.createdAt);
-	}, [channelMessages]);
+	}, [contextMessages]);
+
+	const attachmentReferences = useMemo<AttachmentReference[]>(() => {
+		if (!contextMessages?.page) {
+			return [];
+		}
+
+		const attachments: AttachmentReference[] = [];
+
+		for (const message of contextMessages.page) {
+			if (!message.image) continue;
+
+			let fileName = "Image attachment";
+			let fileType = "image/*";
+			let fileSize: number | undefined;
+
+			try {
+				const parsed = JSON.parse(message.body) as {
+					type?: string;
+					fileName?: string;
+					fileType?: string;
+					fileSize?: number;
+				};
+
+				if (parsed.type === "file") {
+					fileName = parsed.fileName || fileName;
+					fileType = parsed.fileType || "application/octet-stream";
+					fileSize = parsed.fileSize;
+				}
+			} catch (_error) {
+				// Non-JSON body means a regular message with an uploaded image attachment.
+			}
+
+			attachments.push({
+				messageId: message._id,
+				url: message.image,
+				name: fileName,
+				type: fileType,
+				size: fileSize,
+				createdAt: message._creationTime,
+				senderName: message.user?.name || "Unknown",
+				isImage: fileType.startsWith("image/"),
+			});
+		}
+
+		return attachments;
+	}, [contextMessages]);
+
+	const formatFileSize = (bytes?: number) => {
+		if (!bytes || Number.isNaN(bytes)) return "Unknown size";
+		if (bytes < 1024) return `${bytes} B`;
+		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+	};
 
 	const createNoteReferenceMessage = async (
 		noteId: Id<"notes">,
 		noteTitle: string
 	) => {
-		if (!channelId) {
-			throw new Error("Channel is required");
+		if (!channelId && !conversationId) {
+			throw new Error("A chat context is required");
 		}
 
 		await createMessage({
 			workspaceId,
 			channelId,
+			conversationId,
 			body: JSON.stringify({
 				type: "note",
 				noteId,
@@ -589,13 +673,14 @@ const Editor = ({
 		roomId: string;
 		savedCanvasId?: string;
 	}) => {
-		if (!channelId) {
-			throw new Error("Channel is required");
+		if (!channelId && !conversationId) {
+			throw new Error("A chat context is required");
 		}
 
 		await createMessage({
 			workspaceId,
 			channelId,
+			conversationId,
 			body: JSON.stringify({
 				type: "canvas",
 				canvasName,
@@ -683,7 +768,7 @@ const Editor = ({
 				savedCanvasId: canvas.savedCanvasId,
 			});
 			setCanvasModalOpen(false);
-			toast.success("Canvas shared in channel");
+			toast.success("Canvas shared in chat");
 		} catch (error) {
 			console.error("Error sharing canvas:", error);
 			toast.error("Failed to share canvas");
@@ -693,8 +778,8 @@ const Editor = ({
 	};
 
 	const handleCreateCanvasFromModal = async () => {
-		if (!workspaceId || !channelId) {
-			toast.error("Missing channel context");
+		if (!workspaceId || (!channelId && !conversationId)) {
+			toast.error("Missing chat context");
 			return;
 		}
 
@@ -707,7 +792,8 @@ const Editor = ({
 		try {
 			setIsCreatingCanvas(true);
 			const timestamp = Date.now();
-			const savedCanvasId = `${channelId}-${timestamp}`;
+			const contextSeed = channelId || conversationId;
+			const savedCanvasId = `${contextSeed}-${timestamp}`;
 			const roomId = `canvas-${savedCanvasId}`;
 
 			await createCanvasReferenceMessage({
@@ -718,10 +804,18 @@ const Editor = ({
 
 			setCanvasModalOpen(false);
 			setNewCanvasTitle("");
-			router.push(
-				`/workspace/${workspaceId}/channel/${channelId}/canvas?roomId=${roomId}&canvasName=${encodeURIComponent(title)}&t=${timestamp}`
+
+			if (channelId) {
+				router.push(
+					`/workspace/${workspaceId}/channel/${channelId}/canvas?roomId=${roomId}&canvasName=${encodeURIComponent(title)}&t=${timestamp}`
+				);
+			}
+
+			toast.success(
+				channelId
+					? "Canvas created and shared in channel"
+					: "Canvas created and shared in direct chat"
 			);
-			toast.success("Canvas created and shared in channel");
 		} catch (error) {
 			console.error("Error creating canvas:", error);
 			toast.error("Failed to create canvas");
@@ -738,6 +832,69 @@ const Editor = ({
 				open={calendarPickerOpen}
 			/>
 
+			<Dialog onOpenChange={setFilesModalOpen} open={filesModalOpen}>
+				<DialogContent className="sm:max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Files in this chat</DialogTitle>
+						<DialogDescription>
+							View all files sent and received in this conversation.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="max-h-[360px] space-y-2 overflow-y-auto">
+						{contextMessages === undefined ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								Loading files...
+							</p>
+						) : attachmentReferences.length === 0 ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								No files found in this chat yet.
+							</p>
+						) : (
+							attachmentReferences.map((attachment) => (
+								<div
+									className="flex items-center gap-3 rounded-md border px-3 py-2"
+									key={attachment.messageId}
+								>
+									<div className="flex size-9 items-center justify-center rounded-md bg-muted">
+										{attachment.isImage ? (
+											<ImageIcon className="size-4" />
+										) : (
+											<File className="size-4" />
+										)}
+									</div>
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-sm font-medium">{attachment.name}</p>
+										<p className="text-xs text-muted-foreground">
+											{formatFileSize(attachment.size)} - {attachment.senderName}
+										</p>
+									</div>
+									<Button
+										onClick={() => window.open(attachment.url, "_blank", "noopener,noreferrer")}
+										size="iconSm"
+										variant="ghost"
+									>
+										<Download className="size-4" />
+									</Button>
+								</div>
+							))
+						)}
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog onOpenChange={setMeetsModalOpen} open={meetsModalOpen}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Meets coming soon</DialogTitle>
+						<DialogDescription>
+							We are building native meetings for chat contexts. You will be able to
+							start and join calls from here soon.
+						</DialogDescription>
+					</DialogHeader>
+				</DialogContent>
+			</Dialog>
+
 			<Dialog
 				onOpenChange={(open) => {
 					setNotesModalOpen(open);
@@ -749,7 +906,7 @@ const Editor = ({
 			>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Channel Notes</DialogTitle>
+						<DialogTitle>Notes</DialogTitle>
 						<DialogDescription>
 							Select an existing note or create a new one.
 						</DialogDescription>
@@ -758,7 +915,7 @@ const Editor = ({
 					<div className="max-h-[260px] space-y-2 overflow-y-auto">
 						{!channelId ? (
 							<p className="py-4 text-center text-sm text-muted-foreground">
-								This action is available in channel chats only.
+								Direct chat notes are being rolled out. Channel notes are available now.
 							</p>
 						) : notes === undefined ? (
 							<p className="py-4 text-center text-sm text-muted-foreground">
@@ -822,24 +979,20 @@ const Editor = ({
 			>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Channel Canvases</DialogTitle>
+						<DialogTitle>Canvases</DialogTitle>
 						<DialogDescription>
 							Select an existing canvas or create a new one.
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="max-h-[260px] space-y-2 overflow-y-auto">
-						{!channelId ? (
-							<p className="py-4 text-center text-sm text-muted-foreground">
-								This action is available in channel chats only.
-							</p>
-						) : channelMessages === undefined ? (
+						{contextMessages === undefined ? (
 							<p className="py-4 text-center text-sm text-muted-foreground">
 								Loading canvases...
 							</p>
 						) : canvasReferences.length === 0 ? (
 							<p className="py-4 text-center text-sm text-muted-foreground">
-								No canvases found in this channel.
+								No canvases found in this chat.
 							</p>
 						) : (
 							canvasReferences.map((canvas) => (
@@ -867,7 +1020,11 @@ const Editor = ({
 								value={newCanvasTitle}
 							/>
 							<Button
-								disabled={isCreatingCanvas || isSharingCanvas || !channelId}
+								disabled={
+									isCreatingCanvas ||
+									isSharingCanvas ||
+									(!channelId && !conversationId)
+								}
 								onClick={handleCreateCanvasFromModal}
 							>
 								{isCreatingCanvas ? "Creating..." : "Create"}
@@ -878,7 +1035,7 @@ const Editor = ({
 			</Dialog>
 
 			<input
-				accept="image/*"
+				accept="*/*"
 				className="hidden"
 				onChange={(e) => setImage(e.target.files?.[0] ?? null)}
 				ref={imageElementRef}
@@ -914,12 +1071,12 @@ const Editor = ({
 
 			<div
 				className={cn(
-					"flex flex-col overflow-hidden rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 transition focus-within:border-slate-300 dark:focus-within:border-gray-600 focus-within:shadow-sm",
+					"chat-editor-compose relative flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition focus-within:border-slate-300 focus-within:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:focus-within:border-gray-600",
 					disabled && "opacity-50"
 				)}
 			>
 				{variant === "create" && (
-					<div className="flex items-center justify-end gap-x-1 border-b px-1.5 py-1 md:px-2 md:py-1.5">
+					<div className="absolute right-1.5 top-5 z-[6] flex -translate-y-1/2 items-center gap-x-1 md:right-2">
 						<Hint label="Calendar">
 							<Button
 								disabled={disabled}
@@ -930,36 +1087,52 @@ const Editor = ({
 								<CalendarIcon className="size-3.5 md:size-4" />
 							</Button>
 						</Hint>
-						{channelId && (
-							<>
-								<Hint label="Notes">
-									<Button
-										disabled={disabled || isCreatingNote || isSharingNote}
-										onClick={() => {
-											setNewNoteTitle("");
-											setNotesModalOpen(true);
-										}}
-										size="iconSm"
-										variant="ghost"
-									>
-										<FileText className="size-3.5 md:size-4" />
-									</Button>
-								</Hint>
-								<Hint label="Canvas">
-									<Button
-										disabled={disabled || isCreatingCanvas || isSharingCanvas}
-										onClick={() => {
-											setNewCanvasTitle("");
-											setCanvasModalOpen(true);
-										}}
-										size="iconSm"
-										variant="ghost"
-									>
-										<PaintBucket className="size-3.5 md:size-4" />
-									</Button>
-								</Hint>
-							</>
-						)}
+						<Hint label="Notes">
+							<Button
+								disabled={disabled || isCreatingNote || isSharingNote}
+								onClick={() => {
+									setNewNoteTitle("");
+									setNotesModalOpen(true);
+								}}
+								size="iconSm"
+								variant="ghost"
+							>
+								<FileText className="size-3.5 md:size-4" />
+							</Button>
+						</Hint>
+						<Hint label="Canvas">
+							<Button
+								disabled={disabled || isCreatingCanvas || isSharingCanvas}
+								onClick={() => {
+									setNewCanvasTitle("");
+									setCanvasModalOpen(true);
+								}}
+								size="iconSm"
+								variant="ghost"
+							>
+								<PaintBucket className="size-3.5 md:size-4" />
+							</Button>
+						</Hint>
+						<Hint label="Files">
+							<Button
+								disabled={disabled || !channelId && !conversationId}
+								onClick={() => setFilesModalOpen(true)}
+								size="iconSm"
+								variant="ghost"
+							>
+								<FolderOpen className="size-3.5 md:size-4" />
+							</Button>
+						</Hint>
+						<Hint label="Meets">
+							<Button
+								disabled={disabled}
+								onClick={() => setMeetsModalOpen(true)}
+								size="iconSm"
+								variant="ghost"
+							>
+								<Video className="size-3.5 md:size-4" />
+							</Button>
+						</Hint>
 					</div>
 				)}
 
@@ -967,8 +1140,8 @@ const Editor = ({
 
 				{image !== null && (
 					<div className="p-2">
-						<div className="group/image relative flex size-[62px] items-center justify-center">
-							<Hint label="Remove image">
+						<div className="group/image relative flex min-h-[62px] items-center justify-center rounded-xl border bg-muted/40 px-3 py-2">
+							<Hint label="Remove file">
 								<button
 									className="absolute -right-2 -top-2 md:-right-2.5 md:-top-2.5 z-[4] hidden size-5 md:size-6 items-center justify-center rounded-full border-2 border-white bg-black/70 text-white hover:bg-black group-hover/image:flex"
 									onClick={() => {
@@ -984,12 +1157,26 @@ const Editor = ({
 								</button>
 							</Hint>
 
-							<Image
-								alt="Uploaded image"
-								className="overflow-hidden rounded-xl border object-cover"
-								fill
-								src={URL.createObjectURL(image)}
-							/>
+							{image.type.startsWith("image/") ? (
+								<div className="relative flex size-[62px] items-center justify-center">
+									<Image
+										alt="Uploaded image"
+										className="overflow-hidden rounded-xl border object-cover"
+										fill
+										src={URL.createObjectURL(image)}
+									/>
+								</div>
+							) : (
+								<div className="flex items-center gap-2 text-sm">
+									<File className="size-4 text-muted-foreground" />
+									<div className="min-w-0">
+										<p className="truncate font-medium">{image.name}</p>
+										<p className="text-xs text-muted-foreground">
+											{formatFileSize(image.size)}
+										</p>
+									</div>
+								</div>
+							)}
 						</div>
 					</div>
 				)}
@@ -1016,7 +1203,7 @@ const Editor = ({
 
 					{variant === "create" && (
 						<>
-							<Hint label="Image">
+							<Hint label="Attach file">
 								<Button
 									disabled={disabled}
 									onClick={() => imageElementRef.current?.click()}

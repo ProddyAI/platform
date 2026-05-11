@@ -9,13 +9,16 @@ import { addMentionClickHandlers } from "@/lib/mention-handler";
 
 interface RendererProps {
 	value: string;
+	image?: string | null;
 	calendarEvent?: {
 		date: number;
 		time?: string;
 	};
 }
 
-const Renderer = ({ value, calendarEvent }: RendererProps) => {
+type UnifiedMessagePayload = React.ComponentProps<typeof UnifiedMessage>["data"];
+
+const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 	const [isEmpty, setIsEmpty] = useState(false);
 	const rendererRef = useRef<HTMLDivElement>(null);
 	const workspaceId = useWorkspaceId();
@@ -34,6 +37,7 @@ const Renderer = ({ value, calendarEvent }: RendererProps) => {
 					"note",
 					"note-live",
 					"note-export",
+					"file",
 				].includes(parsed.type)
 			);
 		} catch (_e) {
@@ -44,7 +48,38 @@ const Renderer = ({ value, calendarEvent }: RendererProps) => {
 	// Get parsed message data
 	const getMessageData = () => {
 		try {
-			return JSON.parse(value);
+			const parsed = JSON.parse(value) as {
+				type?: unknown;
+				[key: string]: unknown;
+			};
+
+			const validTypes: UnifiedMessagePayload["type"][] = [
+				"canvas",
+				"canvas-live",
+				"canvas-export",
+				"note",
+				"note-live",
+				"note-export",
+				"file",
+			];
+
+			if (
+				typeof parsed.type !== "string" ||
+				!validTypes.includes(parsed.type as UnifiedMessagePayload["type"])
+			) {
+				return null;
+			}
+
+			const unifiedPayload = parsed as unknown as UnifiedMessagePayload;
+
+			if (unifiedPayload.type === "file" && image) {
+				return {
+					...unifiedPayload,
+					fileUrl: image,
+				};
+			}
+
+			return unifiedPayload;
 		} catch (_e) {
 			return null;
 		}
@@ -190,7 +225,7 @@ const Renderer = ({ value, calendarEvent }: RendererProps) => {
 		return () => {
 			if (container) container.innerHTML = "";
 		};
-	}, [value, calendarEvent, isUnifiedMessage]);
+	}, [value, image, calendarEvent, isUnifiedMessage]);
 
 	// If this is a unified message (canvas or note type), render the UnifiedMessage component
 	if (isUnifiedMessage()) {
