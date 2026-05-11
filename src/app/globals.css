@@ -318,6 +318,16 @@
 	background-color: #f8f8f8 !important;
 }
 
+.chat-editor-compose .ql-toolbar {
+	border-bottom: 1px solid #e5e7eb !important;
+	min-height: 40px;
+	padding-right: clamp(8.5rem, 34vw, 12rem) !important;
+}
+
+.dark .chat-editor-compose .ql-toolbar {
+	border-bottom-color: hsl(var(--border)) !important;
+}
+
 .ql-toolbar .ql-formats:not(:last-child) {
 	border-right: 1px solid #dcdcdc !important;
 	padding-right: 12px !important;

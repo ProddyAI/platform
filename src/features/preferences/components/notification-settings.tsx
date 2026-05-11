@@ -3,9 +3,12 @@
 import {
 	Bell,
 	BellOff,
+	Check,
 	Calendar,
+	Loader2,
 	Mail,
 	MessageSquare,
+	Send,
 	Shield,
 	UserCheck,
 	UserPlus,
@@ -14,8 +17,11 @@ import {
 	VolumeX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PushNotificationPrompt } from "@/components/3pc/notifications";
+import { useAction, useMutation } from "convex/react";
+import { api } from "@/../convex/_generated/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -33,76 +39,162 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import {
-	useNotificationPreferences,
-	useUserPreferences,
-} from "../api/use-user-preferences";
+import { useNotificationPreferences } from "../api/use-user-preferences";
 
 export const NotificationSettings = () => {
-	const { updateSettings } = useUserPreferences();
 	const { data: notifications, isLoading } = useNotificationPreferences();
 	const [isUpdating, setIsUpdating] = useState(false);
+	const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 	const [allNotificationsEnabled, setAllNotificationsEnabled] = useState(true);
+	const [testPushState, setTestPushState] = useState<
+		"idle" | "sending" | "sent" | "error"
+	>("idle");
+	const [permissionState, setPermissionState] = useState<
+		"default" | "granted" | "denied"
+	>("default");
+
+	const updateSettings = useMutation(api.preferences.updateUserPreferences);
+	const updateBrowserPref = useMutation((api as any).preferences.updateBrowserPref);
+	const updateEmailPref = useMutation((api as any).preferences.updateEmailPref);
+	const updateChannelToggle = useMutation((api as any).preferences.updateChannelToggle);
+	const sendTestPush = useAction((api as any).notifications.sendTestPushNotification);
+
+	const browserPrefs = notifications?.notificationBrowserPrefs || {
+		mentions: true,
+		assignee: true,
+		threadReply: true,
+		directMessage: true,
+		inviteSent: true,
+		workspaceJoin: false,
+		onlineStatus: true,
+	};
+	const emailPrefs = notifications?.notificationEmailPrefs || {
+		mentions: false,
+		assignee: false,
+		threadReply: false,
+		directMessage: false,
+		inviteSent: false,
+		workspaceJoin: false,
+		onlineStatus: false,
+	};
+	const browserNotificationsEnabled =
+		notifications?.browserNotificationsEnabled ?? true;
+	const emailNotificationsEnabled = notifications?.emailNotificationsEnabled ?? false;
+	const notificationSummaryMode =
+		notifications?.notificationSummaryMode ?? "realtime";
 
 	// Calculate if all notifications are enabled
 	useEffect(() => {
 		if (notifications) {
 			const allEnabled =
-				notifications.mentions &&
-				notifications.assignee &&
-				notifications.threadReply &&
-				notifications.directMessage &&
-				notifications.inviteSent &&
-				notifications.workspaceJoin;
+				(browserPrefs.mentions ?? true) &&
+				(browserPrefs.assignee ?? true) &&
+				(browserPrefs.threadReply ?? true) &&
+				(browserPrefs.directMessage ?? true) &&
+				(browserPrefs.inviteSent ?? true) &&
+				(browserPrefs.workspaceJoin ?? false);
 			setAllNotificationsEnabled(allEnabled);
 		}
-	}, [notifications]);
+	}, [notifications, browserPrefs]);
 
-	const handleMasterToggle = async (enabled: boolean) => {
+	useEffect(() => {
+		if (typeof Notification !== "undefined") {
+			setPermissionState(Notification.permission);
+		}
+	}, []);
+
+	const showSaved = () => {
+		setSaveStatus("saved");
+		window.setTimeout(() => setSaveStatus("idle"), 1200);
+	};
+
+	const withSaveState = async (callback: () => Promise<void>) => {
 		setIsUpdating(true);
+		setSaveStatus("saving");
 		try {
-			await updateSettings({
-				notifications: {
-					...notifications,
-					mentions: enabled,
-					assignee: enabled,
-					threadReply: enabled,
-					directMessage: enabled,
-					inviteSent: enabled,
-					workspaceJoin: enabled,
-					// Keep weekly digest and onlineStatus separate as they're different from instant notifications
-				},
-			});
+			await callback();
+			showSaved();
 		} finally {
 			setIsUpdating(false);
 		}
 	};
 
-	const handleNotificationToggle = async (type: string, enabled: boolean) => {
-		setIsUpdating(true);
-		try {
-			await updateSettings({
-				notifications: {
-					...notifications,
-					[type]: enabled,
-				},
+	const handleMasterToggle = async (enabled: boolean) => {
+		await withSaveState(async () => {
+			const keys = [
+				"mentions",
+				"assignee",
+				"threadReply",
+				"directMessage",
+				"inviteSent",
+				"workspaceJoin",
+			];
+			await Promise.all(
+				keys.map((key) => updateBrowserPref({ notificationKey: key, enabled }))
+			);
+		});
+	};
+
+	const handleBrowserToggle = async (type: string, enabled: boolean) => {
+		await withSaveState(async () => {
+			await updateBrowserPref({
+				notificationKey: type,
+				enabled,
 			});
-		} finally {
-			setIsUpdating(false);
-		}
+		});
+	};
+
+	const handleEmailToggle = async (type: string, enabled: boolean) => {
+		await withSaveState(async () => {
+			await updateEmailPref({
+				notificationKey: type,
+				enabled,
+			});
+		});
+	};
+
+	const handleChannelToggle = async (channel: "browser" | "email", enabled: boolean) => {
+		await withSaveState(async () => {
+			await updateChannelToggle({ channel, enabled });
+		});
 	};
 
 	const handleWeeklyDigestDayChange = async (day: string) => {
-		setIsUpdating(true);
-		try {
+		await withSaveState(async () => {
 			await updateSettings({
-				notifications: {
-					...notifications,
-					weeklyDigestDay: day as any,
+				settings: {
+					notifications: {
+						...notifications,
+						weeklyDigestDay: day as any,
+					},
 				},
 			});
-		} finally {
-			setIsUpdating(false);
+		});
+	};
+
+	const handleSummaryModeChange = async (mode: "realtime" | "batched30m") => {
+		await withSaveState(async () => {
+			await updateSettings({
+				settings: {
+					notifications: {
+						...notifications,
+						notificationSummaryMode: mode,
+					},
+				},
+			});
+		});
+	};
+
+	const handleTestPush = async () => {
+		try {
+			setTestPushState("sending");
+			await window.OneSignal?.Notifications.requestPermission();
+			await (window as any).OneSignal?.User?.pushSubscription?.optIn?.();
+			await sendTestPush({});
+			setTestPushState("sent");
+			window.setTimeout(() => setTestPushState("idle"), 1500);
+		} catch {
+			setTestPushState("error");
 		}
 	};
 
@@ -129,6 +221,8 @@ export const NotificationSettings = () => {
 			description: "Get notified when someone mentions you in a message",
 			icon: MessageSquare,
 			enabled: notifications?.mentions ?? true,
+			browserEnabled: browserPrefs.mentions ?? true,
+			emailEnabled: emailPrefs.mentions ?? false,
 		},
 		{
 			key: "assignee",
@@ -136,6 +230,8 @@ export const NotificationSettings = () => {
 			description: "Get notified when you are assigned to a task or card",
 			icon: UserPlus,
 			enabled: notifications?.assignee ?? true,
+			browserEnabled: browserPrefs.assignee ?? true,
+			emailEnabled: emailPrefs.assignee ?? false,
 		},
 		{
 			key: "threadReply",
@@ -144,6 +240,8 @@ export const NotificationSettings = () => {
 				"Get notified when someone replies to a thread you participated in",
 			icon: MessageSquare,
 			enabled: notifications?.threadReply ?? true,
+			browserEnabled: browserPrefs.threadReply ?? true,
+			emailEnabled: emailPrefs.threadReply ?? false,
 		},
 		{
 			key: "directMessage",
@@ -151,6 +249,8 @@ export const NotificationSettings = () => {
 			description: "Get notified when you receive a direct message",
 			icon: Mail,
 			enabled: notifications?.directMessage ?? true,
+			browserEnabled: browserPrefs.directMessage ?? true,
+			emailEnabled: emailPrefs.directMessage ?? false,
 		},
 		{
 			key: "inviteSent",
@@ -158,6 +258,8 @@ export const NotificationSettings = () => {
 			description: "Get notified when an invite link is sent to the workspace",
 			icon: Mail,
 			enabled: notifications?.inviteSent ?? true,
+			browserEnabled: browserPrefs.inviteSent ?? true,
+			emailEnabled: emailPrefs.inviteSent ?? false,
 		},
 		{
 			key: "workspaceJoin",
@@ -166,6 +268,8 @@ export const NotificationSettings = () => {
 				"Get notified when someone joins a workspace (if you are online)",
 			icon: Users,
 			enabled: notifications?.workspaceJoin ?? true,
+			browserEnabled: browserPrefs.workspaceJoin ?? false,
+			emailEnabled: emailPrefs.workspaceJoin ?? false,
 		},
 	];
 
@@ -174,8 +278,98 @@ export const NotificationSettings = () => {
 
 	return (
 		<div className="space-y-6">
-			{/* Push Notification Prompt */}
-			<PushNotificationPrompt />
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center gap-2">
+						<Bell className="h-5 w-5" />
+						Browser Push Notifications
+					</CardTitle>
+					<CardDescription>
+						Check permission status and send a test push notification.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="flex items-center justify-between">
+						<Label className="text-sm font-medium">Permission Status</Label>
+						<Badge
+							variant={
+								permissionState === "granted"
+									? "default"
+									: permissionState === "denied"
+										? "destructive"
+										: "secondary"
+							}
+						>
+							{permissionState === "granted"
+								? "Allowed"
+								: permissionState === "denied"
+									? "Blocked"
+									: "Not enabled"}
+						</Badge>
+					</div>
+					<div className="flex items-center gap-3">
+						<Button disabled={testPushState === "sending"} onClick={handleTestPush}>
+							{testPushState === "sending" ? (
+								<>
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									Sending...
+								</>
+							) : (
+								<>
+									<Send className="mr-2 h-4 w-4" />
+									Send Test Notification
+								</>
+							)}
+						</Button>
+						{testPushState === "sent" && (
+							<span className="text-sm text-green-600">Success ✅</span>
+						)}
+						{testPushState === "error" && (
+							<span className="text-sm text-red-600">Error ❌</span>
+						)}
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center gap-2">
+						<Mail className="h-5 w-5" />
+						Delivery Channels
+					</CardTitle>
+					<CardDescription>
+						Control where notifications are delivered.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="flex items-center justify-between">
+						<Label className="text-sm font-medium">Browser Notifications</Label>
+						<Switch
+							checked={browserNotificationsEnabled}
+							disabled={isUpdating}
+							onCheckedChange={(enabled) =>
+								handleChannelToggle("browser", enabled)
+							}
+						/>
+					</div>
+					<div className="flex items-center justify-between">
+						<Label className="text-sm font-medium">Email Notifications</Label>
+						<Switch
+							checked={emailNotificationsEnabled}
+							disabled={isUpdating}
+							onCheckedChange={(enabled) => handleChannelToggle("email", enabled)}
+						/>
+					</div>
+					{!browserNotificationsEnabled && (
+						<Alert>
+							<BellOff className="h-4 w-4" />
+							<AlertDescription>
+								Browser channel is off. Push notifications will not be delivered.
+							</AlertDescription>
+						</Alert>
+					)}
+				</CardContent>
+			</Card>
 
 			{/* Master Notification Toggle */}
 			<Card>
@@ -212,7 +406,7 @@ export const NotificationSettings = () => {
 						<Switch
 							checked={allNotificationsEnabled}
 							className="data-[state=checked]:bg-green-600"
-							disabled={isUpdating}
+							disabled={isUpdating || !browserNotificationsEnabled}
 							onCheckedChange={handleMasterToggle}
 						/>
 					</div>
@@ -227,6 +421,10 @@ export const NotificationSettings = () => {
 							</AlertDescription>
 						</Alert>
 					)}
+					<div className="mt-3 text-xs text-muted-foreground">
+						{saveStatus === "saving" && "Saving..."}
+						{saveStatus === "saved" && "Saved ✅"}
+					</div>
 				</CardContent>
 			</Card>
 
@@ -255,13 +453,28 @@ export const NotificationSettings = () => {
 										{notification.description}
 									</p>
 								</div>
-								<Switch
-									checked={notification.enabled}
-									disabled={isUpdating}
-									onCheckedChange={(enabled) =>
-										handleNotificationToggle(notification.key, enabled)
-									}
-								/>
+								<div className="flex items-center gap-4">
+									<div className="flex items-center gap-2">
+										<Label className="text-xs text-muted-foreground">Browser</Label>
+										<Switch
+											checked={notification.browserEnabled}
+											disabled={isUpdating || !browserNotificationsEnabled}
+											onCheckedChange={(enabled) =>
+												handleBrowserToggle(notification.key, enabled)
+											}
+										/>
+									</div>
+									<div className="flex items-center gap-2">
+										<Label className="text-xs text-muted-foreground">Email</Label>
+										<Switch
+											checked={notification.emailEnabled}
+											disabled={isUpdating || !emailNotificationsEnabled}
+											onCheckedChange={(enabled) =>
+												handleEmailToggle(notification.key, enabled)
+											}
+										/>
+									</div>
+								</div>
 							</div>
 							{index < notificationTypes.length - 1 && (
 								<Separator className="mt-4" />
@@ -284,10 +497,10 @@ export const NotificationSettings = () => {
 							</p>
 						</div>
 						<Switch
-							checked={notifications?.onlineStatus ?? false}
-							disabled={isUpdating}
+							checked={browserPrefs.onlineStatus ?? true}
+							disabled={isUpdating || !browserNotificationsEnabled}
 							onCheckedChange={(enabled) =>
-								handleNotificationToggle("onlineStatus", enabled)
+								handleBrowserToggle("onlineStatus", enabled)
 							}
 						/>
 					</div>
@@ -310,7 +523,16 @@ export const NotificationSettings = () => {
 								checked={weeklyDigestEnabled}
 								disabled={isUpdating}
 								onCheckedChange={(enabled) =>
-									handleNotificationToggle("weeklyDigest", enabled)
+									withSaveState(async () => {
+										await updateSettings({
+											settings: {
+												notifications: {
+													...notifications,
+													weeklyDigest: enabled,
+												},
+											},
+										});
+									})
 								}
 							/>
 						</div>
@@ -345,6 +567,34 @@ export const NotificationSettings = () => {
 
 					<Separator />
 
+					<div className="space-y-4">
+						<div className="flex items-center justify-between">
+							<div className="space-y-1">
+								<Label className="text-base font-medium">Notification Timing</Label>
+								<p className="text-sm text-muted-foreground">
+									Choose between immediate delivery and batched summaries.
+								</p>
+							</div>
+							<Select
+								disabled={isUpdating}
+								onValueChange={(value) =>
+									handleSummaryModeChange(value as "realtime" | "batched30m")
+								}
+								value={notificationSummaryMode}
+							>
+								<SelectTrigger className="w-48">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="realtime">Real-time</SelectItem>
+									<SelectItem value="batched30m">Batched (30 min)</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+
+					<Separator />
+
 					{/* Privacy Notice */}
 					<div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/20">
 						<div className="flex items-start gap-3">
@@ -354,12 +604,26 @@ export const NotificationSettings = () => {
 									Email Notifications
 								</h4>
 								<p className="text-sm text-blue-700 dark:text-blue-300">
-									These settings control email notifications only. You can still
-									receive in-app notifications regardless of these settings.
-									Unsubscribe links are included in all emails.
+									Enable email notifications above to receive instant emails and
+									weekly digest updates. Unsubscribe links are included in all
+									emails.
 								</p>
 							</div>
 						</div>
+					</div>
+					<div className="text-xs text-muted-foreground">
+						{saveStatus === "saving" && (
+							<span className="inline-flex items-center gap-1">
+								<Loader2 className="h-3 w-3 animate-spin" />
+								Saving...
+							</span>
+						)}
+						{saveStatus === "saved" && (
+							<span className="inline-flex items-center gap-1 text-green-600">
+								<Check className="h-3 w-3" />
+								Saved ✅
+							</span>
+						)}
 					</div>
 				</CardContent>
 			</Card>

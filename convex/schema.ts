@@ -18,6 +18,7 @@ const schema = defineSchema({
 		bio: v.optional(v.string()),
 		location: v.optional(v.string()),
 		website: v.optional(v.string()),
+		onesignalExternalId: v.optional(v.string()),
 	}).index("email", ["email"]),
 
 	// Email OTP verifications
@@ -525,6 +526,33 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
+						notificationBrowserPrefs: v.optional(
+							v.object({
+								mentions: v.optional(v.boolean()),
+								assignee: v.optional(v.boolean()),
+								threadReply: v.optional(v.boolean()),
+								directMessage: v.optional(v.boolean()),
+								inviteSent: v.optional(v.boolean()),
+								workspaceJoin: v.optional(v.boolean()),
+								onlineStatus: v.optional(v.boolean()),
+							})
+						),
+						notificationEmailPrefs: v.optional(
+							v.object({
+								mentions: v.optional(v.boolean()),
+								assignee: v.optional(v.boolean()),
+								threadReply: v.optional(v.boolean()),
+								directMessage: v.optional(v.boolean()),
+								inviteSent: v.optional(v.boolean()),
+								workspaceJoin: v.optional(v.boolean()),
+								onlineStatus: v.optional(v.boolean()),
+							})
+						),
+						browserNotificationsEnabled: v.optional(v.boolean()),
+						emailNotificationsEnabled: v.optional(v.boolean()),
+						notificationSummaryMode: v.optional(
+							v.union(v.literal("realtime"), v.literal("batched30m"))
+						),
 					})
 				),
 			})

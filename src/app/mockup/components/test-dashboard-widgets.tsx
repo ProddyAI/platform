@@ -377,13 +377,13 @@ export const TestDashboardWidgets = () => {
 				</CardContent>
 			</Card>
 
-			{/* Assigned Cards Widget */}
+			{/* Assigned Issues Widget */}
 			<Card>
 				<CardHeader className="pb-3">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-2">
 							<FileText className="h-5 w-5 text-primary" />
-							<CardTitle className="text-lg">Assigned Cards</CardTitle>
+							<CardTitle className="text-lg">Assigned Issues</CardTitle>
 							<Badge variant="secondary">3</Badge>
 						</div>
 						<Button

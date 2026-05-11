@@ -84,7 +84,11 @@ export const MessageContent = ({
 			body.includes('"type":"canvas-live"') ||
 			body.includes('"type":"note-live"') ||
 			body.includes('"type":"canvas-export"') ||
-			body.includes('"type":"note-export"'));
+			body.includes('"type":"note-export"') ||
+			body.includes('"type":"file"'));
+
+	const isFileMessage =
+		body && typeof body === "string" && body.includes('"type":"file"');
 
 	return (
 		<div
@@ -135,8 +139,8 @@ export const MessageContent = ({
 										"text-white [&_.ql-editor]:text-white [&_.ql-editor_*]:text-white [&_p]:text-white [&_span]:text-white [&_div]:text-white [&_strong]:text-white [&_em]:text-white [&_u]:text-white [&_s]:text-white [&_a]:text-white [&_li]:text-white [&_ol]:text-white [&_ul]:text-white [&_blockquote]:text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_h4]:text-white [&_h5]:text-white [&_h6]:text-white"
 								)}
 							>
-								<Renderer calendarEvent={calendarEvent} value={body} />
-								<Thumbnail url={image} />
+								<Renderer calendarEvent={calendarEvent} image={image} value={body} />
+								{!isFileMessage && <Thumbnail url={image} />}
 
 								{calendarEvent && (
 									<div

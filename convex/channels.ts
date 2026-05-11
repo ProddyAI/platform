@@ -228,17 +228,19 @@ export const getById = query({
 
 export const get = query({
 	args: {
-		workspaceId: v.id("workspaces"),
+		workspaceId: v.optional(v.id("workspaces")),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
 		if (!userId) return [];
+		if (!args.workspaceId) return [];
+		const workspaceId = args.workspaceId;
 
 		const member = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+				q.eq("workspaceId", workspaceId).eq("userId", userId)
 			)
 			.unique();
 
@@ -247,7 +249,7 @@ export const get = query({
 		const channels = await ctx.db
 			.query("channels")
 			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", args.workspaceId)
+				q.eq("workspaceId", workspaceId)
 			)
 			.collect();
 

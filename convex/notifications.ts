@@ -1,7 +1,16 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import { internalAction, mutation } from "./_generated/server";
+import { api, internal } from "./_generated/api";
+import { action, internalAction, mutation } from "./_generated/server";
+
+type NotificationType =
+	| "mentions"
+	| "assignee"
+	| "threadReply"
+	| "directMessage"
+	| "inviteSent"
+	| "workspaceJoin"
+	| "onlineStatus";
 
 /**
  * Send a push notification to specific users
@@ -23,37 +32,83 @@ export const sendPushNotification = internalAction({
 		),
 		data: v.optional(v.record(v.string(), v.any())),
 	},
-	handler: async (_ctx, args) => {
+	handler: async (ctx, args) => {
 		// Get OneSignal API key from environment
 		const oneSignalApiKey = process.env.ONESIGNAL_REST_API_KEY;
 		const oneSignalAppId = process.env.ONESIGNAL_APP_ID;
 
 		if (!oneSignalApiKey || !oneSignalAppId) {
-			console.warn("OneSignal not configured");
+			console.warn("🔔 OneSignal not configured - missing API key or app ID");
 			return { success: false, error: "OneSignal not configured" };
 		}
 
-		// For now, notify all users (actual preference filtering would require DB access)
-		// In a production system, you might want to handle preferences differently
-		const filteredUserIds = args.userIds;
+		const filteredUserIds: string[] = [];
+
+		for (const userId of args.userIds) {
+			const user = await ctx.runQuery(internal.users._getUserById, { id: userId });
+			const notifications = await ctx.runQuery(
+				api.preferences.getNotificationPreferencesByUserId,
+				{ userId }
+			);
+
+			const browserEnabled = notifications?.browserNotificationsEnabled ?? true;
+			const browserPrefs = notifications?.notificationBrowserPrefs;
+			const legacyPref = notifications?.[args.notificationType as NotificationType];
+			const browserPref =
+				browserPrefs?.[args.notificationType as NotificationType] ?? legacyPref ?? true;
+
+			// Safety fallback: if new browser prefs are absent on legacy docs, preserve old push behavior.
+			const allowPush = !browserPrefs
+				? browserEnabled !== false
+				: browserEnabled && browserPref;
+
+			if (!allowPush) {
+				continue;
+			}
+
+			const emailEnabled = notifications?.emailNotificationsEnabled ?? false;
+			const emailPref =
+				notifications?.notificationEmailPrefs?.[
+					args.notificationType as NotificationType
+				] ?? false;
+			if (!emailEnabled || !emailPref) {
+				// Email is currently scaffolded; keep explicit check to enforce channel preference semantics.
+			}
+
+			const oneSignalExternalId = (user as any)?.onesignalExternalId;
+			if (!oneSignalExternalId && browserPrefs) {
+				console.warn("❌ User not subscribed to OneSignal", { userId });
+				continue;
+			}
+
+			filteredUserIds.push(oneSignalExternalId || userId);
+		}
 
 		if (filteredUserIds.length === 0) {
+			console.log("🔔 No users to notify - empty user list");
 			return { success: true, message: "No users to notify" };
 		}
 
 		try {
+			// Log before sending
+			console.log("🔔 Sending push notification to:", filteredUserIds.length, "users");
+			console.log("🔔 User IDs:", filteredUserIds.slice(0, 3), filteredUserIds.length > 3 ? `... +${filteredUserIds.length - 3} more` : "");
+			console.log("🔔 OneSignal App ID:", oneSignalAppId);
+			console.log("🔔 Notification type:", args.notificationType);
+			console.log("🔔 Title:", args.title);
+			console.log("🔔 API Key available:", !!oneSignalApiKey);
+			console.log("🔔 API Key (first 20 chars):", oneSignalApiKey?.substring(0, 20));
+
 			// Send notification via OneSignal REST API
 			const response = await fetch("https://api.onesignal.com/notifications", {
 				method: "POST",
 				headers: {
-					authorization: `Key ${oneSignalApiKey}`,
+					"Authorization": oneSignalApiKey,
 					"content-type": "application/json; charset=utf-8",
 				},
 				body: JSON.stringify({
 					app_id: oneSignalAppId,
-					include_aliases: {
-						external_id: filteredUserIds,
-					},
+					include_external_user_ids: filteredUserIds,
 					target_channel: "push",
 					headings: { en: args.title },
 					contents: { en: args.message },
@@ -69,9 +124,15 @@ export const sendPushNotification = internalAction({
 				result = { raw: responseText };
 			}
 
+			// Log response details
+			console.log("🔔 OneSignal HTTP status:", response.status);
+			console.log("🔔 OneSignal response:", result);
+
 			if (!response.ok) {
-				console.error("OneSignal push request failed", {
+				console.error("❌ OneSignal push request failed", {
 					status: response.status,
+					userCount: filteredUserIds.length,
+					errorMessage: result.errors || result.error_message,
 					result,
 				});
 				return {
@@ -84,10 +145,19 @@ export const sendPushNotification = internalAction({
 			const recipients = Number(
 				result.recipients ?? result.recipients_count ?? 0
 			);
+			
+			console.log("🔔 OneSignal recipients count:", recipients);
+			console.log("🔔 Notification ID:", result.id);
+			
 			if (recipients === 0) {
-				console.warn("OneSignal accepted request but sent to 0 recipients", {
+				console.warn("⚠️ OneSignal accepted request but 0 recipients reached", {
+					userCount: filteredUserIds.length,
+					notificationId: result.id,
 					result,
+					diagnostic: "Possible causes: (1) Users haven't called OneSignal.login() on frontend, (2) User IDs don't match between frontend and backend",
 				});
+			} else {
+				console.log("✅ OneSignal notification sent successfully to", recipients, "recipient(s)");
 			}
 
 			// Sanitize response: only expose safe summary fields
@@ -96,10 +166,47 @@ export const sendPushNotification = internalAction({
 				id: result.id,
 				recipients,
 			};
-		} catch (_error) {
-			console.error("Push notification failed");
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			console.error("❌ OneSignal push notification failed with exception:", {
+				error: errorMessage,
+				userCount: filteredUserIds.length,
+				title: args.title,
+				notificationType: args.notificationType,
+			});
 			return { success: false, message: "Push notification failed" };
 		}
+	},
+});
+
+export const sendTestPushNotification: any = action({
+	args: {},
+	handler: async (ctx) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		const result: any = await ctx.runAction((internal as any).notifications.sendPushNotification, {
+			userIds: [userId],
+			title: "Test notification",
+			message: "Your browser push notifications are working.",
+			notificationType: "mentions",
+			data: {
+				type: "test_push",
+				userId,
+			},
+		});
+
+		console.log("🔔 Test push notification", {
+			userId,
+			recipients: (result as any)?.recipients ?? 0,
+			oneSignalResponse: result,
+		});
+
+		return {
+			success: !!(result as any)?.success,
+			recipients: (result as any)?.recipients ?? 0,
+			response: result,
+		};
 	},
 });
 
@@ -133,7 +240,7 @@ export const notifyInviteSent = mutation({
 
 		// Schedule internal notification
 		await ctx.scheduler.runAfter(
-			0,
+			2000,
 			internal.notifications.sendPushNotification,
 			{
 				userIds,
@@ -189,7 +296,7 @@ export const notifyWorkspaceJoin = mutation({
 
 		// Schedule internal notification
 		await ctx.scheduler.runAfter(
-			0,
+			2000,
 			internal.notifications.sendPushNotification,
 			{
 				userIds: onlineUserIds,
@@ -267,7 +374,7 @@ export const notifyStatusChange = mutation({
 
 		// Schedule internal notification
 		await ctx.scheduler.runAfter(
-			0,
+			2000,
 			internal.notifications.sendPushNotification,
 			{
 				userIds,

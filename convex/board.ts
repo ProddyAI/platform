@@ -300,7 +300,7 @@ export const createCard = mutation({
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
 						await ctx.scheduler.runAfter(
-							0,
+							2000,
 							internal.notifications.sendPushNotification,
 							{
 								userIds: [assigneeMember.userId],
@@ -436,7 +436,7 @@ export const updateCard = mutation({
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
 						await ctx.scheduler.runAfter(
-							0,
+							2000,
 							internal.notifications.sendPushNotification,
 							{
 								userIds: [assigneeMember.userId],

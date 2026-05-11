@@ -1,9 +1,15 @@
 import GitHub from "@auth/core/providers/github";
 import Google from "@auth/core/providers/google";
-import { Password } from "@convex-dev/auth/providers/Password";
-import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
+import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
+import {
+	convexAuth,
+	createAccount,
+	getAuthUserId,
+	retrieveAccount,
+} from "@convex-dev/auth/server";
 
 import type { DataModel } from "./_generated/dataModel";
+import { api, internal } from "./_generated/api";
 import { mutation } from "./_generated/server";
 
 /**
@@ -52,25 +58,90 @@ async function verifyPasswordPBKDF2(
 	return computedHash === hash;
 }
 
-const CustomPassword = Password<DataModel>({
-	profile(params) {
-		// Validate email exists and is a string
+const CustomPassword = ConvexCredentials<DataModel>({
+	id: "password",
+	authorize: async (params, ctx) => {
+		const flow = params.flow;
 		const emailInput = params.email;
+
 		if (!emailInput || typeof emailInput !== "string") {
 			throw new Error("Email is required");
 		}
 
-		// Normalize email to lowercase to prevent lookup issues during signup
+		// Normalize email to lowercase to prevent lookup issues during auth flows.
 		const email = emailInput.toLowerCase().trim();
-
 		if (!email) {
 			throw new Error("Email cannot be empty");
 		}
 
-		return {
-			email: email,
-			name: params.name as string,
-		};
+		if (flow === "signUp") {
+			const secret = params.password;
+			const name =
+				typeof params.name === "string" ? params.name.trim() : "";
+
+			if (!secret || typeof secret !== "string") {
+				throw new Error("Password is required");
+			}
+
+			if (secret.length < 8) {
+				throw new Error("Password must be at least 8 characters.");
+			}
+
+			if (!name) {
+				throw new Error("Name is required");
+			}
+
+			// Critical security check: enforce OTP verification on the server.
+			const verifiedOtpStatus = await ctx.runQuery(
+				api.emailVerification.hasVerifiedOTP,
+				{ email }
+			);
+
+			if (!verifiedOtpStatus?.verified) {
+				throw new Error(
+					"Email verification required. Please verify your OTP before signing up."
+				);
+			}
+
+			const created = await createAccount(ctx, {
+				provider: "password",
+				account: { id: email, secret },
+				profile: { email, name },
+				shouldLinkViaEmail: false,
+				shouldLinkViaPhone: false,
+			});
+
+			// Consume verified OTP records after successful account creation.
+			await ctx.runMutation(
+				internal.emailVerification.consumeVerifiedOTPsInternal,
+				{ email }
+			);
+
+			return { userId: created.user._id };
+		}
+
+		if (flow === "signIn") {
+			const secret = params.password;
+
+			if (!secret || typeof secret !== "string") {
+				throw new Error("Password is required");
+			}
+
+			const retrieved = await retrieveAccount(ctx, {
+				provider: "password",
+				account: { id: email, secret },
+			});
+
+			if (retrieved === null) {
+				throw new Error("Invalid credentials");
+			}
+
+			return { userId: retrieved.user._id };
+		}
+
+		throw new Error(
+			'Missing `flow` param, it must be either "signUp" or "signIn".'
+		);
 	},
 	crypto: {
 		hashSecret: async (secret: string) => {
