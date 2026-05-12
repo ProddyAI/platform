@@ -98,12 +98,12 @@ const CalendarPage = () => {
 
 	// Track user activity and time spent on calendar page
 	useTrackActivity({
-		workspaceId,
+		workspaceId: workspaceId ?? null,
 		activityType: "calendar_view",
 	});
 
 	const { data: events, isLoading } = useGetCalendarEvents({
-		workspaceId,
+		workspaceId: workspaceId as any,
 		month: getMonth(currentDate),
 		year: getYear(currentDate),
 	});

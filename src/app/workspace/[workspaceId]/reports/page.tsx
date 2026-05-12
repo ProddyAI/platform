@@ -91,7 +91,7 @@ const ReportsPage = () => {
 
 	// Track page view
 	useTrackActivity({
-		workspaceId,
+		workspaceId: workspaceId ?? null,
 		activityType: "reports_page_view",
 	});
 

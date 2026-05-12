@@ -30,7 +30,7 @@ const IssuesPage = () => {
 		api.board.getAssignedIssues,
 		currentMember
 			? {
-					workspaceId,
+					workspaceId: workspaceId as any,
 					memberId: currentMember._id,
 				}
 			: "skip"

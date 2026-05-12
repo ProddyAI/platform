@@ -54,7 +54,7 @@ const MemberIdPage = () => {
 	useEffect(() => {
 		mutate(
 			{
-				workspaceId,
+				workspaceId: workspaceId as any,
 				memberId,
 			},
 			{

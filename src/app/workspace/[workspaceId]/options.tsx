@@ -103,7 +103,7 @@ export const MemberItem = ({
 	// Get the user's status using the enhanced status system
 	const { status } = useUserStatus({
 		userId: member?.userId,
-		workspaceId,
+		workspaceId: workspaceId as any,
 	});
 
 	// Generate background color for avatar fallback

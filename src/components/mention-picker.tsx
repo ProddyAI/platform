@@ -36,7 +36,7 @@ export const MentionPicker = ({
 	searchQuery,
 }: MentionPickerProps) => {
 	const workspaceId = useWorkspaceId();
-	const { data: members, isLoading } = useGetMembers({ workspaceId });
+	const { data: members, isLoading } = useGetMembers({ workspaceId: workspaceId as any });
 	const [filteredMembers, setFilteredMembers] = useState<MemberWithPresence[]>(
 		[]
 	);
@@ -45,7 +45,7 @@ export const MentionPicker = ({
 
 	// Get presence information for all users
 	const userIds = members?.map((m) => m.userId) || [];
-	const { getUserStatus } = useMultipleUserStatuses(userIds, workspaceId);
+	const { getUserStatus } = useMultipleUserStatuses(userIds, workspaceId as any);
 
 	// Initialize search term from the searchQuery prop
 	useEffect(() => {

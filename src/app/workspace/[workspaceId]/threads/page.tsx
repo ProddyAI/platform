@@ -79,7 +79,7 @@ export default function ThreadsPage() {
 
 	// Get all thread titles for this workspace
 	const threadTitles = useQuery(api.threadTitles.getByWorkspaceId, {
-		workspaceId,
+		workspaceId: workspaceId as any,
 	});
 
 	// Get thread reply counts

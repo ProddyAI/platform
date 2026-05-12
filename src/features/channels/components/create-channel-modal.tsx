@@ -165,7 +165,7 @@ export const CreateChannelModal = () => {
 		mutate(
 			{
 				name,
-				workspaceId,
+				workspaceId: workspaceId as any,
 				icon,
 				iconImage,
 			},

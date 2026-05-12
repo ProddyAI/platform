@@ -40,7 +40,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	}, [workspaceId, router]);
 
 	// Use the Convex-backed sidebar collapsed state
-	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({ workspaceId });
+	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({ workspaceId: workspaceId as any });
 
 	// Handle mobile menu toggle
 	const handleMobileMenuToggle = useCallback(() => {
@@ -104,7 +104,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 				`}
 			</Script>
 			<MessageSelectionProvider>
-				<WorkspacePresenceTracker workspaceId={workspaceId}>
+				<WorkspacePresenceTracker workspaceId={workspaceId as any}>
 					<div className="h-full w-full min-w-0 flex flex-col overflow-hidden">
 						<div className="flex h-full min-w-0 overflow-hidden">
 							{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}

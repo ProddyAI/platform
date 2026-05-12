@@ -458,7 +458,7 @@ const Editor = ({
 			const mentionHTML = createMentionElement(
 				memberId,
 				memberName,
-				workspaceId
+				workspaceId as any
 			);
 
 			// Insert the mention HTML at the cursor position
@@ -477,7 +477,7 @@ const Editor = ({
 			const mentionHTML = createMentionElement(
 				memberId,
 				memberName,
-				workspaceId
+				workspaceId as any
 			);
 
 			// Insert the mention HTML at the cursor position
@@ -652,7 +652,7 @@ const Editor = ({
 		}
 
 		await createMessage({
-			workspaceId,
+			workspaceId: workspaceId as any,
 			channelId,
 			conversationId,
 			body: JSON.stringify({
@@ -678,7 +678,7 @@ const Editor = ({
 		}
 
 		await createMessage({
-			workspaceId,
+			workspaceId: workspaceId as any,
 			channelId,
 			conversationId,
 			body: JSON.stringify({
@@ -731,7 +731,7 @@ const Editor = ({
 			const newNoteId = await createNote({
 				title,
 				content: defaultContent,
-				workspaceId,
+				workspaceId: workspaceId as any,
 				channelId,
 			});
 

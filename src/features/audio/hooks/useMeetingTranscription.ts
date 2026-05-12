@@ -20,7 +20,7 @@ export const useMeetingTranscription = (
 	const [isListening, setIsListening] = useState(false);
 	const [_localTranscript, setLocalTranscript] = useState("");
 
-	const recognitionRef = useRef<SpeechRecognition | null>(null);
+	const recognitionRef = useRef<any | null>(null);
 	const chunkRef = useRef("");
 	const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -52,7 +52,7 @@ export const useMeetingTranscription = (
 		recognition.interimResults = true;
 		recognition.lang = "en-US";
 
-		recognition.onresult = (event: SpeechRecognitionEvent) => {
+		recognition.onresult = (event: any) => {
 			let _interimTranscript = "";
 			let finalTranscript = "";
 
@@ -84,7 +84,7 @@ export const useMeetingTranscription = (
 			}
 		};
 
-		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+		recognition.onerror = (event: any) => {
 			console.error("Speech recognition error", event.error);
 			if (event.error === "not-allowed") {
 				setIsListening(false);

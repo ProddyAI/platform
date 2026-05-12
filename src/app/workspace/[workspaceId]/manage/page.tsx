@@ -97,7 +97,7 @@ const ManagePage = () => {
 		workspaceId,
 	});
 	const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
-		id: workspaceId,
+		id: workspaceId as any,
 	});
 
 	if (memberLoading || workspaceLoading) {
@@ -150,7 +150,7 @@ const ManagePage = () => {
 							<div className="bg-background rounded-lg p-6 shadow-sm border">
 								<IntegrationsManagement
 									currentMember={member}
-									workspaceId={workspaceId}
+									workspaceId={workspaceId as any}
 								/>
 							</div>
 						</div>
@@ -200,7 +200,7 @@ const ManagePage = () => {
 							>
 								<MembersManagement
 									currentMember={member}
-									workspaceId={workspaceId}
+									workspaceId={workspaceId as any}
 								/>
 							</TabsContent>
 
@@ -208,7 +208,7 @@ const ManagePage = () => {
 								className="bg-background rounded-lg p-6 shadow-sm border"
 								value="billing"
 							>
-								<BillingSection workspaceId={workspaceId} />
+								<BillingSection workspaceId={workspaceId as any} />
 							</TabsContent>
 
 							<TabsContent
@@ -217,7 +217,7 @@ const ManagePage = () => {
 							>
 								<IntegrationsManagement
 									currentMember={member}
-									workspaceId={workspaceId}
+									workspaceId={workspaceId as any}
 								/>
 							</TabsContent>
 
@@ -227,7 +227,7 @@ const ManagePage = () => {
 							>
 								<ImportDataManagement
 									currentMember={member}
-									workspaceId={workspaceId}
+									workspaceId={workspaceId as any}
 								/>
 							</TabsContent>
 						</Tabs>

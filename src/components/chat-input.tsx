@@ -115,7 +115,7 @@ export const ChatInput = ({
 			innerRef.current?.enable(false);
 
 			const values: CreateMessageValues = {
-				workspaceId,
+				workspaceId: workspaceId as any,
 				body,
 				image: undefined,
 			};
@@ -199,7 +199,7 @@ export const ChatInput = ({
 					date: calendarEvent.date.getTime(),
 					time: calendarEvent.time,
 					messageId,
-					workspaceId,
+					workspaceId: workspaceId as any,
 				});
 			}
 

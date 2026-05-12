@@ -44,7 +44,7 @@ export const StartMeetingModal = ({
 	const [date, setDate] = useState("");
 	const [time, setTime] = useState("");
 
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId: workspaceId as any });
 	const createMessage = useMutation(api.messages.create);
 	// In a real app we might have api.meetings.schedule, but for now we'll just send a message.
 
@@ -74,13 +74,13 @@ export const StartMeetingModal = ({
 
 	const handleStartMeeting = async () => {
 		const meetingId = crypto.randomUUID();
-		const meetUrl = `/meet/${meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ""}`;
+		const meetUrl = `/meet/${meetingId}?workspaceId=${workspaceId as any}${channelId ? `&channelId=${channelId}` : ""}`;
 
 		try {
 			if (selectedMembers.size > 0 || channelId) {
 				// Send unified message payload to chat (fire and forget to not block navigation)
 				createMessage({
-					workspaceId,
+					workspaceId: workspaceId as any,
 					channelId,
 					conversationId,
 					body: JSON.stringify({

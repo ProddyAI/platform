@@ -88,7 +88,7 @@ export const UploadRecordingButton = () => {
 
 			const noteId = await saveUploadTranscript({
 				roomId,
-				workspaceId: workspaceId || "",
+				workspaceId: workspaceId as any,
 				transcript,
 			});
 

@@ -211,7 +211,7 @@ export const AiNotemaker = ({
 
 			try {
 				await saveChatToMeetingNotes({
-					workspaceId: workspaceId as Id<"workspaces">,
+					workspaceId: workspaceId as any,
 					channelId: channelId,
 					title: notes.title || undefined,
 					transcript,
@@ -278,7 +278,7 @@ export const AiNotemaker = ({
 			await createNote({
 				title: `AI Meeting Notes - ${new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`,
 				content: delta,
-				workspaceId,
+				workspaceId: workspaceId as any,
 				channelId: channelId as any,
 				icon: "✨",
 				tags: ["AI", "Meeting"],
@@ -300,7 +300,7 @@ export const AiNotemaker = ({
 		setIsCreatingTasks(true);
 		try {
 			await createBulkTasks({
-				workspaceId,
+				workspaceId: workspaceId as any,
 				tasks: selectedTasks.map((item: any) => ({
 					title: item.title,
 					assigneeUserId: item.assigneeUserId || undefined,
@@ -712,9 +712,9 @@ export const AiNotemaker = ({
 																							}}
 																						>
 																							<div className="size-4 rounded-full bg-blue-100 flex items-center justify-center text-[8px] font-bold text-blue-700">
-																								{m.user.name[0].toUpperCase()}
+																								{(m.user.name || "U")[0].toUpperCase()}
 																							</div>
-																							{m.user.name}
+																							{m.user.name || "Unknown"}
 																						</div>
 																					))}
 																				</div>

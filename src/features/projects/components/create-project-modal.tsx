@@ -35,7 +35,7 @@ export const CreateProjectModal = () => {
 	const [name, setName] = useState("");
 	const [connectedChannelId, setConnectedChannelId] = useState<string>("none");
 
-	const { data: channels } = useGetChannels({ workspaceId });
+	const { data: channels } = useGetChannels({ workspaceId: workspaceId as any });
 	const { isPending, mutate } = useCreateProject();
 
 	const chatChannels = (channels || []).filter(
@@ -53,7 +53,7 @@ export const CreateProjectModal = () => {
 
 		mutate(
 			{
-				workspaceId,
+				workspaceId: workspaceId as any,
 				name,
 				connectedChannelId:
 					connectedChannelId !== "none"

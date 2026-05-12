@@ -133,7 +133,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 			const values: CreateMessageValues = {
 				channelId,
-				workspaceId,
+				workspaceId: workspaceId as any,
 				parentMessageId: messageId,
 				body,
 				image: undefined,
@@ -196,7 +196,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 	const handleSaveTitle = async () => {
 		if (titleInput.trim()) {
 			try {
-				await updateTitle(messageId, titleInput.trim(), workspaceId);
+				await updateTitle(messageId, titleInput.trim(), workspaceId as any);
 				setIsEditingTitle(false);
 				toast.success("Thread title saved");
 			} catch (_error) {

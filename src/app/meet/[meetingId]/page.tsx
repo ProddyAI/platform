@@ -425,7 +425,7 @@ export default function MeetingPage({
 											<X className="w-4 h-4" />
 										</Button>
 									</div>
-									<MeetingChat />
+									<MeetingChat onClose={() => setShowChat(false)} />
 								</>
 							)}
 						</div>
@@ -525,7 +525,7 @@ function BottomBarControls({
 		useCallStateHooks();
 	const { isMute: micMuted, microphone } = useMicrophoneState();
 	const { isMute: camMuted, camera } = useCameraState();
-	const { isSharing: isScreenSharing, screenShare } = useScreenShareState();
+	const { isEnabled: isScreenSharing, screenShare } = useScreenShareState();
 
 	return (
 		<div className="flex items-center gap-3 bg-white/5 p-1.5 rounded-full border border-white/10 shadow-inner">

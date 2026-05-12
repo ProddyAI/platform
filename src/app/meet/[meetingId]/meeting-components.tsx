@@ -49,7 +49,7 @@ export const MeetingRecordButton = ({
 	onRecordingChange,
 }: RecordingButtonProps) => {
 	const [isRecording, setIsRecording] = useState(false);
-	const recognitionRef = useRef<window.SpeechRecognition | null>(null);
+	const recognitionRef = useRef<any | null>(null);
 	const transcriptRef = useRef("");
 	const saveTranscript = useMutation(api.meetingNotes.saveTranscript);
 	const saveBufferRef = useRef("");
@@ -61,7 +61,7 @@ export const MeetingRecordButton = ({
 			try {
 				await saveTranscript({
 					roomId,
-					workspaceId,
+					workspaceId: workspaceId as any,
 					transcriptChunk: saveBufferRef.current.trim(),
 				});
 				saveBufferRef.current = "";
@@ -88,7 +88,7 @@ export const MeetingRecordButton = ({
 		recognition.interimResults = true;
 		recognition.lang = "en-US";
 
-		recognition.onresult = (event: SpeechRecognitionEvent) => {
+		recognition.onresult = (event: any) => {
 			for (let i = event.resultIndex; i < event.results.length; ++i) {
 				if (event.results[i].isFinal) {
 					const rawText = event.results[i][0].transcript.trim();
@@ -108,7 +108,7 @@ export const MeetingRecordButton = ({
 			}
 		};
 
-		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+		recognition.onerror = (event: any) => {
 			if (event.error === "not-allowed") {
 				toast.error("Microphone permission denied");
 				setIsRecording(false);
@@ -417,7 +417,7 @@ export const CustomParticipantList = () => {
 								{p.isLocalParticipant ? "Meeting host" : "Contributor"}
 							</span>
 						</div>
-						{p.isMuted && (
+						{!p.audioStream && (
 							<div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center">
 								<MicOff className="w-3.5 h-3.5 text-red-500" />
 							</div>

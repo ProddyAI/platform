@@ -19,7 +19,7 @@ const DashboardContent = () => {
 
 	// Track user activity and time spent on dashboard
 	useTrackActivity({
-		workspaceId,
+		workspaceId: workspaceId ?? null,
 		activityType: "dashboard_view",
 	});
 
