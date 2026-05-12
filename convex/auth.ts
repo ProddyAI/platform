@@ -90,17 +90,15 @@ const CustomPassword = ConvexCredentials<DataModel>({
 			}
 
 			// Critical security check: enforce OTP verification on the server.
-			if (email !== "admin@proddy.ai") {
-				const verifiedOtpStatus = await ctx.runQuery(
-					api.emailVerification.hasVerifiedOTP,
-					{ email }
-				);
+			const verifiedOtpStatus = await ctx.runQuery(
+				api.emailVerification.hasVerifiedOTP,
+				{ email }
+			);
 
-				if (!verifiedOtpStatus?.verified) {
-					throw new Error(
-						"Email verification required. Please verify your OTP before signing up."
-					);
-				}
+			if (!verifiedOtpStatus?.verified) {
+				throw new Error(
+					"Email verification required. Please verify your OTP before signing up."
+				);
 			}
 
 			const created = await createAccount(ctx, {

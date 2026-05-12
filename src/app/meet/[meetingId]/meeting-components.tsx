@@ -9,19 +9,27 @@ import {
 	ChevronDown,
 	Clock,
 	Copy,
+	Download,
+	FileDown,
 	FileText,
 	Loader2,
 	MicOff,
+	Printer,
 	Sparkles,
 	Target,
+	Users,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { useBroadcastEvent, useEventListener } from "@/../liveblocks.config";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VoiceWaveform } from "@/features/audio/components/voice-waveform";
+import { exportToPDF, exportToWord } from "@/lib/export-utils";
 
 // ─── RECORDING BUTTON ───────────────────────────────────────────────────────
 
@@ -41,11 +49,12 @@ export const MeetingRecordButton = ({
 	onRecordingChange,
 }: RecordingButtonProps) => {
 	const [isRecording, setIsRecording] = useState(false);
-	const recognitionRef = useRef<any>(null);
+	const recognitionRef = useRef<window.SpeechRecognition | null>(null);
 	const transcriptRef = useRef("");
 	const saveTranscript = useMutation(api.meetingNotes.saveTranscript);
 	const saveBufferRef = useRef("");
 	const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const broadcast = useBroadcastEvent();
 
 	const flushTranscript = useCallback(async () => {
 		if (saveBufferRef.current.trim().length > 0) {
@@ -79,7 +88,7 @@ export const MeetingRecordButton = ({
 		recognition.interimResults = true;
 		recognition.lang = "en-US";
 
-		recognition.onresult = (event: any) => {
+		recognition.onresult = (event: SpeechRecognitionEvent) => {
 			for (let i = event.resultIndex; i < event.results.length; ++i) {
 				if (event.results[i].isFinal) {
 					const rawText = event.results[i][0].transcript.trim();
@@ -88,16 +97,26 @@ export const MeetingRecordButton = ({
 						transcriptRef.current += (transcriptRef.current ? "\n" : "") + text;
 						saveBufferRef.current += (saveBufferRef.current ? "\n" : "") + text;
 						onTranscriptUpdate(transcriptRef.current);
+
+						// Broadcast transcript chunk to other participants
+						broadcast({
+							type: "TRANSCRIPT_UPDATE",
+							chunk: text,
+						});
 					}
 				}
 			}
 		};
 
-		recognition.onerror = (event: any) => {
+		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
 			if (event.error === "not-allowed") {
 				toast.error("Microphone permission denied");
 				setIsRecording(false);
 				onRecordingChange(false);
+				// Stop the recognition and clear the onend handler to prevent loop
+				recognition.onend = null;
+				recognition.stop();
+				recognitionRef.current = null;
 			}
 		};
 
@@ -165,16 +184,19 @@ export const MeetingRecordButton = ({
 	}, []);
 
 	return (
-		<button
-			className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${isRecording ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
-			onClick={isRecording ? stopRecording : startRecording}
-			title={isRecording ? "Stop Recording" : "Start Recording"}
-		>
-			<div
-				className={`rounded-full ${isRecording ? "w-3 h-3 bg-white" : "w-3 h-3 bg-red-500"}`}
-			/>
-			{isRecording ? "Stop" : "Record"}
-		</button>
+		<div className="flex items-center gap-3">
+			{isRecording && <VoiceWaveform isRecording={isRecording} />}
+			<button
+				className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${isRecording ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
+				onClick={isRecording ? stopRecording : startRecording}
+				title={isRecording ? "Stop Recording" : "Start Recording"}
+			>
+				<div
+					className={`rounded-full ${isRecording ? "w-2.5 h-2.5 bg-white animate-pulse" : "w-3 h-3 bg-red-500"}`}
+				/>
+				{isRecording ? "Stop" : "Record"}
+			</button>
+		</div>
 	);
 };
 
@@ -185,30 +207,46 @@ export const MeetingReactions = () => {
 	const [floatingReactions, setFloatingReactions] = useState<
 		{ id: number; emoji: string; x: number }[]
 	>([]);
+	const MAX_CONCURRENT = 10;
 	const nextId = useRef(0);
 	const lastReactionTime = useRef(0);
-	const MAX_CONCURRENT = 10;
+	const broadcast = useBroadcastEvent();
+
+	const handleAddReaction = useCallback(
+		(emoji: string, isExternal = false) => {
+			const id = nextId.current++;
+			const x = 20 + Math.random() * 60;
+			setFloatingReactions((prev) => [...prev, { id, emoji, x }]);
+
+			if (!isExternal) {
+				broadcast({ type: "REACTION", emoji });
+			}
+
+			// Remove after animation
+			setTimeout(() => {
+				setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
+			}, 2500);
+		},
+		[broadcast]
+	);
+
+	useEventListener(({ event }) => {
+		if (event.type === "REACTION") {
+			handleAddReaction(event.emoji, true);
+		}
+	});
 
 	const emojis = ["👍", "❤️", "😂", "🎉", "👏", "🔥", "✨", "🤔", "😍", "💯"];
 
 	const sendReaction = (emoji: string) => {
-		// Debounce: 300ms between reactions
 		const now = Date.now();
 		if (now - lastReactionTime.current < 300) return;
 		lastReactionTime.current = now;
 
-		// Cap concurrent floating emojis
 		if (floatingReactions.length >= MAX_CONCURRENT) return;
 
-		const id = nextId.current++;
-		const x = 20 + Math.random() * 60;
-		setFloatingReactions((prev) => [...prev, { id, emoji, x }]);
+		handleAddReaction(emoji);
 		setShowPicker(false);
-
-		// Remove after animation
-		setTimeout(() => {
-			setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
-		}, 2500);
 	};
 
 	return (
@@ -252,7 +290,6 @@ export const MeetingReactions = () => {
 				</button>
 			</div>
 
-			{/* CSS animation */}
 			<style global jsx>{`
 				@keyframes floatUp {
 					0% { opacity: 1; transform: translateY(0) scale(1); }
@@ -269,13 +306,22 @@ export const MeetingReactions = () => {
 interface CaptionsOverlayProps {
 	isRecording: boolean;
 	liveTranscript: string;
+	onExternalTranscript?: (chunk: string) => void;
 }
 
 export const CaptionsOverlay = ({
 	isRecording,
 	liveTranscript,
+	onExternalTranscript,
 }: CaptionsOverlayProps) => {
 	const [displayCaption, setDisplayCaption] = useState("");
+
+	useEventListener(({ event }) => {
+		if (event.type === "TRANSCRIPT_UPDATE") {
+			setDisplayCaption(event.chunk);
+			onExternalTranscript?.(event.chunk);
+		}
+	});
 
 	useEffect(() => {
 		if (!isRecording || !liveTranscript) {
@@ -306,12 +352,27 @@ export const CaptionsOverlay = ({
 		colonIdx > -1 ? displayCaption.slice(colonIdx + 2) : displayCaption;
 
 	return (
-		<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[75%]">
-			<div className="bg-[#0a0a12]/80 backdrop-blur-2xl border border-white/10 text-white px-5 py-3 rounded-2xl text-sm leading-relaxed shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
-				{speaker && (
-					<span className="text-indigo-400 font-bold mr-1.5">{speaker}:</span>
-				)}
-				<span className="text-gray-100">{captionText}</span>
+		<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[85%] w-auto">
+			<div className="bg-[#0a0a12]/80 backdrop-blur-3xl border border-white/10 text-white px-6 py-4 rounded-2xl text-base leading-relaxed shadow-2xl animate-in fade-in zoom-in duration-500 overflow-hidden group">
+				<div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-transparent to-purple-500/10 opacity-50" />
+				<div className="relative flex flex-col gap-1">
+					{speaker && (
+						<span className="text-indigo-400 font-bold text-xs uppercase tracking-widest mb-0.5 opacity-80">
+							{speaker}
+						</span>
+					)}
+					<div className="flex flex-wrap gap-x-1.5 items-center">
+						{captionText.split(" ").map((word, i) => (
+							<span
+								className="animate-in fade-in slide-in-from-bottom-1 duration-300"
+								key={i}
+								style={{ animationDelay: `${i * 100}ms` }}
+							>
+								{word}
+							</span>
+						))}
+					</div>
+				</div>
 			</div>
 		</div>
 	);
@@ -392,7 +453,10 @@ export const NotesSidebar = ({
 	const [copied, setCopied] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
-	const savedNotes = useQuery(api.meetingNotes.getByRoom, { roomId });
+	const savedNotes = useQuery(api.meetingNotes.getByRoom, {
+		roomId,
+		workspaceId: workspaceId as Id<"workspaces">,
+	});
 	const generations = useQuery(api.meetingNotes.getGenerations, { roomId });
 	const generateAI = useAction(api.meetingNotes.generateAIInsights);
 	const finalizeTranscript = useMutation(api.meetingNotes.finalizeTranscript);
@@ -401,7 +465,7 @@ export const NotesSidebar = ({
 	// Fetch workspace members so AI can map names to user IDs
 	const members = useQuery(
 		api.members.get,
-		workspaceId ? { workspaceId: workspaceId as any } : "skip"
+		workspaceId ? { workspaceId: workspaceId as Id<"workspaces"> } : "skip"
 	);
 	const membersContext =
 		members && members.length > 0
@@ -422,7 +486,9 @@ export const NotesSidebar = ({
 				? generations[selectedGenIdx]
 				: null;
 
-	const transcript = savedNotes?.transcript || liveTranscript || "";
+	const transcript = isRecording
+		? liveTranscript || savedNotes?.transcript || ""
+		: savedNotes?.transcript || liveTranscript || "";
 
 	useEffect(() => {
 		if (scrollRef.current) {
@@ -454,7 +520,7 @@ export const NotesSidebar = ({
 			if (!noteId) {
 				noteId = await saveTranscript({
 					roomId,
-					workspaceId,
+					workspaceId: workspaceId as Id<"workspaces">,
 					transcriptChunk: currentTranscript,
 				});
 			}
@@ -468,10 +534,34 @@ export const NotesSidebar = ({
 			toast.success("AI notes generated!");
 			setSelectedGenIdx(-1);
 			setActiveTab("summary");
-		} catch (e: any) {
-			toast.error(e.message || "Failed to generate notes");
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : "Failed to generate notes");
 		} finally {
 			setIsGenerating(false);
+		}
+	};
+
+	const handleExport = (format: "pdf" | "word") => {
+		if (!currentGen) {
+			toast.error("No notes to export yet.");
+			return;
+		}
+
+		const data = {
+			title: `Meeting Notes #${currentGen.generationNumber}`,
+			summary: currentGen.summary,
+			actionItems: currentGen.actionItems.map(
+				(a: any) =>
+					`${a.title}${a.assignee ? ` (Assigned to: ${a.assignee})` : ""}`
+			),
+			decisions: currentGen.decisions,
+			date: new Date(currentGen.createdAt).toLocaleString(),
+		};
+
+		if (format === "pdf") {
+			exportToPDF(data);
+		} else {
+			exportToWord(data);
 		}
 	};
 
@@ -492,65 +582,86 @@ export const NotesSidebar = ({
 				</Button>
 			</div>
 
-			{/* Generate Button */}
-			<div className="px-5 py-3 border-b border-white/10 flex items-center gap-2">
-				<Button
-					className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full h-9 text-xs font-medium gap-2"
-					disabled={
-						isGenerating ||
-						(!transcript && !liveTranscript) ||
-						savedNotes?.status === "generating"
-					}
-					onClick={handleGenerate}
-				>
-					{isGenerating || savedNotes?.status === "generating" ? (
-						<>
-							<Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...
-						</>
-					) : (
-						<>
-							<Brain className="w-3.5 h-3.5" /> Generate AI Notes
-						</>
-					)}
-				</Button>
+			{/* Generate & Export Buttons */}
+			<div className="px-5 py-3 border-b border-white/10 flex flex-col gap-2">
+				<div className="flex items-center gap-2 w-full">
+					<Button
+						className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full h-9 text-xs font-medium gap-2 shadow-lg shadow-indigo-500/20"
+						disabled={
+							isGenerating ||
+							(!transcript && !liveTranscript) ||
+							savedNotes?.status === "generating"
+						}
+						onClick={handleGenerate}
+					>
+						{isGenerating || savedNotes?.status === "generating" ? (
+							<>
+								<Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...
+							</>
+						) : (
+							<>
+								<Brain className="w-3.5 h-3.5" /> Generate AI Notes
+							</>
+						)}
+					</Button>
 
-				{generations && generations.length > 0 && (
-					<div className="relative">
+					{generations && generations.length > 0 && (
+						<div className="relative">
+							<Button
+								className="rounded-full h-9 text-xs gap-1 border-white/10 text-gray-300 hover:bg-white/10"
+								onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
+								size="sm"
+								variant="outline"
+							>
+								<Clock className="w-3.5 h-3.5" />
+								<ChevronDown className="w-3 h-3" />
+							</Button>
+							{showHistoryDropdown && (
+								<div className="absolute right-0 top-11 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-xl z-50 w-52 py-1 animate-in fade-in slide-in-from-top-2">
+									<p className="px-3 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+										Note History
+									</p>
+									{generations.map((gen, idx) => (
+										<button
+											className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between ${selectedGenIdx === idx ? "bg-indigo-500/10 text-indigo-400" : "text-gray-300"}`}
+											key={gen._id}
+											onClick={() => {
+												setSelectedGenIdx(idx);
+												setShowHistoryDropdown(false);
+												setActiveTab("summary");
+											}}
+										>
+											<span>Generation #{gen.generationNumber}</span>
+											<span className="text-[10px] text-gray-500">
+												{new Date(gen.createdAt).toLocaleTimeString([], {
+													hour: "2-digit",
+													minute: "2-digit",
+												})}
+											</span>
+										</button>
+									))}
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+
+				{currentGen && (
+					<div className="flex items-center gap-2">
 						<Button
-							className="rounded-full h-9 text-xs gap-1 border-white/10 text-gray-300 hover:bg-white/10"
-							onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
-							size="sm"
+							className="flex-1 h-9 text-[11px] font-bold gap-2 border-indigo-500/20 bg-indigo-500/5 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-xl transition-all shadow-sm"
+							onClick={() => handleExport("pdf")}
 							variant="outline"
 						>
-							<Clock className="w-3.5 h-3.5" />
-							<ChevronDown className="w-3 h-3" />
+							<FileDown className="w-3.5 h-3.5" /> Export PDF
 						</Button>
-						{showHistoryDropdown && (
-							<div className="absolute right-0 top-11 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-xl z-50 w-52 py-1 animate-in fade-in slide-in-from-top-2">
-								<p className="px-3 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-									Note History
-								</p>
-								{generations.map((gen, idx) => (
-									<button
-										className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between ${selectedGenIdx === idx ? "bg-indigo-500/10 text-indigo-400" : "text-gray-300"}`}
-										key={gen._id}
-										onClick={() => {
-											setSelectedGenIdx(idx);
-											setShowHistoryDropdown(false);
-											setActiveTab("summary");
-										}}
-									>
-										<span>Generation #{gen.generationNumber}</span>
-										<span className="text-[10px] text-gray-500">
-											{new Date(gen.createdAt).toLocaleTimeString([], {
-												hour: "2-digit",
-												minute: "2-digit",
-											})}
-										</span>
-									</button>
-								))}
-							</div>
-						)}
+						<Button
+							className="flex-1 h-9 text-[11px] font-bold gap-2 border-emerald-500/20 bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-sm"
+							onClick={() => handleExport("word")}
+							variant="outline"
+						>
+							<Download className="w-3.5 h-3.5" /> Export Word
+						</Button>
 					</div>
 				)}
 			</div>
@@ -792,20 +903,20 @@ const AdminPushButton = ({ workspaceId, actionItems }: AdminPushProps) => {
 		setPushing(true);
 		try {
 			await createBulk({
-				workspaceId: workspaceId as any,
+				workspaceId: workspaceId as Id<"workspaces">,
 				tasks: actionItems.map((item) => ({
 					title: item.assignee
 						? `${item.title} → ${item.assignee}`
 						: item.title,
 					assigneeUserId: item.assigneeUserId
-						? (item.assigneeUserId as any)
+						? (item.assigneeUserId as Id<"users">)
 						: undefined,
-					priority: (item.priority as any) || "medium",
+					priority: (item.priority as "low" | "medium" | "high") || "medium",
 				})),
 			});
 			toast.success(`${actionItems.length} tasks pushed to dashboard!`);
-		} catch (e: any) {
-			toast.error(e.message || "Failed to push tasks");
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : "Failed to push tasks");
 		} finally {
 			setPushing(false);
 		}
@@ -842,6 +953,20 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const { useLocalParticipant } = useCallStateHooks();
 	const localParticipant = useLocalParticipant();
+	const broadcast = useBroadcastEvent();
+
+	useEventListener(({ event }) => {
+		if (event.type === "CHAT_MESSAGE") {
+			setMessages((prev) => [
+				...prev,
+				{
+					name: event.name,
+					text: event.text,
+					time: event.time,
+				},
+			]);
+		}
+	});
 
 	useEffect(() => {
 		if (scrollRef.current)
@@ -851,17 +976,20 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 	const sendMessage = () => {
 		const text = input.trim();
 		if (!text) return;
-		setMessages((prev) => [
-			...prev,
-			{
-				name: localParticipant?.name || "You",
-				text,
-				time: new Date().toLocaleTimeString([], {
-					hour: "2-digit",
-					minute: "2-digit",
-				}),
-			},
-		]);
+		const name = localParticipant?.name || "You";
+		const time = new Date().toLocaleTimeString([], {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
+		const newMessage = { name, text, time };
+
+		setMessages((prev) => [...prev, newMessage]);
+		broadcast({
+			type: "CHAT_MESSAGE",
+			name,
+			text,
+			time,
+		});
 		setInput("");
 	};
 

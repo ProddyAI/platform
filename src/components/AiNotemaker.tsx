@@ -4,6 +4,8 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import {
 	CheckCircle2,
 	ChevronDown,
+	Download,
+	FileDown,
 	FileText,
 	Loader2,
 	Maximize2,
@@ -18,12 +20,14 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
 import { useGetMessages } from "@/features/messages/api/use-get-messages";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { exportToPDF, exportToWord } from "@/lib/export-utils";
 import { cn } from "@/lib/utils";
 
 export const AiNotemaker = ({
@@ -37,8 +41,12 @@ export const AiNotemaker = ({
 }) => {
 	const hookChannelId = useChannelId();
 	const hookWorkspaceId = useWorkspaceId();
-	const channelId = (propChannelId || hookChannelId) as any;
-	const workspaceId = (propWorkspaceId || hookWorkspaceId) as any;
+	const channelId = (propChannelId || hookChannelId) as
+		| Id<"channels">
+		| undefined;
+	const workspaceId = (propWorkspaceId || hookWorkspaceId) as
+		| Id<"workspaces">
+		| undefined;
 	const { results: messages, status: messagesStatus } = useGetMessages({
 		channelId,
 	});
@@ -46,7 +54,9 @@ export const AiNotemaker = ({
 	const members = useQuery(api.members.get, { workspaceId }) || [];
 	const chatNoteInfo = useQuery(
 		api.meetingNotes.getChatNoteForChannel,
-		channelId ? { channelId: String(channelId) } : "skip"
+		channelId && workspaceId
+			? { channelId: String(channelId), workspaceId }
+			: "skip"
 	);
 	const createNote = useMutation(api.notes.create);
 	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
@@ -139,7 +149,7 @@ export const AiNotemaker = ({
 			};
 			cutoff = cutoffs[period] || 0;
 		}
-		return messages.filter((m) => (m as any)._creationTime >= cutoff).reverse();
+		return messages.filter((m) => m._creationTime >= cutoff).reverse();
 	};
 
 	const generateAiNotes = async (period?: string) => {
@@ -162,7 +172,7 @@ export const AiNotemaker = ({
 					const parsed = JSON.parse(body);
 					if (parsed.ops)
 						return parsed.ops
-							.map((op: any) =>
+							.map((op: { insert?: string }) =>
 								typeof op.insert === "string" ? op.insert : ""
 							)
 							.join("");
@@ -199,20 +209,25 @@ export const AiNotemaker = ({
 				);
 			}
 
-			// Save to meetingNotes table for unified history
 			try {
 				await saveChatToMeetingNotes({
-					workspaceId: String(workspaceId),
-					channelId: channelId ? String(channelId) : undefined,
+					workspaceId: workspaceId as Id<"workspaces">,
+					channelId: channelId,
 					title: notes.title || undefined,
 					transcript,
 					summary: notes.summary || "",
-					actionItems: (notes.actionItems || []).map((a: any) => {
-						let label = a.title;
-						if (a.assigneeName) label += ` → ${a.assigneeName}`;
-						if (a.priority) label += ` [${a.priority}]`;
-						return label;
-					}),
+					actionItems: (notes.actionItems || []).map(
+						(a: {
+							title: string;
+							assigneeName?: string;
+							priority?: string;
+						}) => {
+							let label = a.title;
+							if (a.assigneeName) label += ` → ${a.assigneeName}`;
+							if (a.priority) label += ` [${a.priority}]`;
+							return label;
+						}
+					),
 					decisions: notes.decisions || [],
 				});
 				toast.success("✅ Notes saved to Meeting Notes history!");
@@ -229,6 +244,27 @@ export const AiNotemaker = ({
 			);
 		} finally {
 			setIsLoading(false);
+		}
+	};
+
+	const handleExport = (format: "pdf" | "word") => {
+		if (!notesData) return;
+
+		const data = {
+			title: notesData.title || "Meeting Notes",
+			summary: notesData.summary,
+			actionItems: (notesData.actionItems || []).map(
+				(a: any) =>
+					`${a.title}${a.assigneeName ? ` (Assigned to: ${a.assigneeName})` : ""}`
+			),
+			decisions: notesData.decisions || [],
+			date: generatedAt?.toLocaleString() || new Date().toLocaleString(),
+		};
+
+		if (format === "pdf") {
+			exportToPDF(data);
+		} else {
+			exportToWord(data);
 		}
 	};
 
@@ -523,8 +559,8 @@ export const AiNotemaker = ({
 											on {generatedAt.toLocaleDateString()}
 										</p>
 									)}
-									<div className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-										<p className="text-gray-700 leading-relaxed text-[15px]">
+									<div className="bg-indigo-50/30 border border-indigo-100/50 rounded-2xl p-5 ml-7">
+										<p className="text-gray-700 text-[15px] leading-relaxed font-medium">
 											{notesData.summary}
 										</p>
 									</div>
@@ -790,6 +826,38 @@ export const AiNotemaker = ({
 										</div>
 									)}
 								</div>
+
+								{/* Export Options (at the end of the intelligence section) */}
+								{notesData && (
+									<div className="flex items-center gap-3 bg-indigo-50/50 backdrop-blur-sm p-5 rounded-2xl border border-indigo-100/50 group hover:bg-indigo-50 transition-all duration-300">
+										<div className="flex-1">
+											<p className="text-sm font-bold text-indigo-900">
+												Export your intelligence
+											</p>
+											<p className="text-xs text-indigo-600/70">
+												Download these notes as a professional MoM document
+											</p>
+										</div>
+										<div className="flex items-center gap-2">
+											<Button
+												className="h-10 px-4 rounded-xl gap-2 bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 shadow-sm transition-all active:scale-95"
+												onClick={() => handleExport("pdf")}
+												variant="outline"
+											>
+												<FileDown className="size-4 text-red-500" />
+												<span className="font-semibold">PDF</span>
+											</Button>
+											<Button
+												className="h-10 px-4 rounded-xl gap-2 bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 shadow-sm transition-all active:scale-95"
+												onClick={() => handleExport("word")}
+												variant="outline"
+											>
+												<Download className="size-4 text-blue-500" />
+												<span className="font-semibold">Word</span>
+											</Button>
+										</div>
+									</div>
+								)}
 
 								{/* Chat History Divider */}
 								{chatHistory.length > 0 && (

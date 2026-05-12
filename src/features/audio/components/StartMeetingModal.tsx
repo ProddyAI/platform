@@ -95,8 +95,13 @@ export const StartMeetingModal = ({
 				}).catch(console.error);
 			}
 
+			if (meetingType === "schedule" && (!date || !time)) {
+				toast.error("Please select a date and time for the scheduled meeting.");
+				return;
+			}
+
 			if (meetingType === "instant") {
-				window.open(meetUrl, "_blank");
+				window.open(meetUrl, "_blank", "noopener,noreferrer");
 				onOpenChange(false);
 			} else {
 				toast.success("Meeting scheduled successfully!");

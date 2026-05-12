@@ -38,9 +38,9 @@ export default function AutoLogin() {
 							flow: "signUp",
 						});
 						window.location.href = "/workspace";
-					} catch (err: any) {
+					} catch (err) {
 						console.error("Auto login failed:", err);
-						setErrorMsg(err.message || String(err));
+						setErrorMsg(err instanceof Error ? err.message : String(err));
 					}
 				}
 			};

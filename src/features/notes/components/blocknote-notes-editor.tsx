@@ -38,12 +38,24 @@ export const BlockNoteNotesEditor = ({
 				const blocks =
 					await editorRef.current.tryParseMarkdownToBlocks(content);
 				if (blocks && blocks.length > 0) {
-					// Insert at the end of the document
-					editorRef.current.insertBlocks(
-						blocks,
-						editorRef.current.document[editorRef.current.document.length - 1],
-						"after"
-					);
+					// Insert at the end of the document, handle empty document case
+					const lastBlock =
+						editorRef.current.document.length > 0
+							? editorRef.current.document[
+									editorRef.current.document.length - 1
+								]
+							: undefined;
+
+					if (lastBlock) {
+						editorRef.current.insertBlocks(blocks, lastBlock, "after");
+					} else {
+						// For empty documents, just insert the blocks
+						editorRef.current.insertBlocks(
+							blocks,
+							editorRef.current.document[0],
+							"before"
+						);
+					}
 					toast.success("Inserted AI notes into document!");
 				}
 			} catch (error) {

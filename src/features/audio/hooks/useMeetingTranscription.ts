@@ -12,12 +12,15 @@ export const useMeetingTranscription = (
 	const saveTranscriptChunk = useMutation(api.meetingNotes.saveTranscript);
 	const generateAI = useAction(api.meetingNotes.generateAIInsights);
 
-	const meetingNotes = useQuery(api.meetingNotes.getByRoom, { roomId });
+	const meetingNotes = useQuery(api.meetingNotes.getByRoom, {
+		roomId,
+		workspaceId: workspaceId as Id<"workspaces">,
+	});
 
 	const [isListening, setIsListening] = useState(false);
 	const [_localTranscript, setLocalTranscript] = useState("");
 
-	const recognitionRef = useRef<any>(null);
+	const recognitionRef = useRef<SpeechRecognition | null>(null);
 	const chunkRef = useRef("");
 	const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -49,7 +52,7 @@ export const useMeetingTranscription = (
 		recognition.interimResults = true;
 		recognition.lang = "en-US";
 
-		recognition.onresult = (event: any) => {
+		recognition.onresult = (event: SpeechRecognitionEvent) => {
 			let _interimTranscript = "";
 			let finalTranscript = "";
 
@@ -81,7 +84,7 @@ export const useMeetingTranscription = (
 			}
 		};
 
-		recognition.onerror = (event: any) => {
+		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
 			console.error("Speech recognition error", event.error);
 			if (event.error === "not-allowed") {
 				setIsListening(false);

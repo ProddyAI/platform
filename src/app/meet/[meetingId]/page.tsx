@@ -10,8 +10,7 @@ import {
 	StreamTheme,
 	StreamVideo,
 	StreamVideoClient,
-	ToggleAudioPublishingButton,
-	ToggleVideoPublishingButton,
+	useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
@@ -23,14 +22,22 @@ import {
 	LayoutGrid,
 	Loader2,
 	MessageSquare,
+	Mic,
+	MicOff,
+	MonitorUp,
+	PhoneOff,
 	Presentation,
 	Sparkles,
 	Users,
+	Video,
+	VideoOff,
+	X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { LiveblocksRoom } from "@/features/live/components/liveblocks-room";
 import {
 	CaptionsOverlay,
 	CustomParticipantList,
@@ -58,7 +65,6 @@ export default function MeetingPage({
 	const workspaceId = searchParams.get("workspaceId") || "";
 	const channelId = searchParams.get("channelId") || "";
 
-	// UI State
 	const [showNotes, setShowNotes] = useState(false);
 	const [showParticipants, setShowParticipants] = useState(false);
 	const [showChat, setShowChat] = useState(false);
@@ -67,12 +73,10 @@ export default function MeetingPage({
 	const [handRaised, setHandRaised] = useState(false);
 	const [viewMode, setViewMode] = useState<"speaker" | "grid">("speaker");
 
-	// Recording State
 	const [isRecording, setIsRecording] = useState(false);
 	const [liveTranscript, setLiveTranscript] = useState("");
 	const liveTranscriptRef = useRef("");
 
-	// Meeting Timer — persists across page refresh via sessionStorage
 	const [joinTime] = useState(() => {
 		if (typeof window !== "undefined") {
 			const stored = sessionStorage.getItem(`meet-join-${params.meetingId}`);
@@ -86,11 +90,15 @@ export default function MeetingPage({
 	const [elapsed, setElapsed] = useState("00:00:00");
 
 	const handleTranscriptUpdate = useCallback((transcript: string) => {
-		// Store in ref immediately (no re-render)
 		liveTranscriptRef.current = transcript;
 	}, []);
 
-	// Sync ref → state every 3 seconds to update captions without excessive re-renders
+	const handleExternalTranscript = useCallback((chunk: string) => {
+		liveTranscriptRef.current +=
+			(liveTranscriptRef.current ? "\n" : "") + chunk;
+		setLiveTranscript(liveTranscriptRef.current);
+	}, []);
+
 	useEffect(() => {
 		if (!isRecording) return;
 		const interval = setInterval(() => {
@@ -103,7 +111,6 @@ export default function MeetingPage({
 		setIsRecording(recording);
 	}, []);
 
-	// Elapsed time ticker
 	useEffect(() => {
 		const interval = setInterval(() => {
 			const diff = Date.now() - joinTime;
@@ -118,7 +125,6 @@ export default function MeetingPage({
 		return () => clearInterval(interval);
 	}, [joinTime]);
 
-	// Store return URL on mount
 	useEffect(() => {
 		if (workspaceId && typeof window !== "undefined") {
 			const returnUrl = channelId
@@ -128,7 +134,6 @@ export default function MeetingPage({
 		}
 	}, [workspaceId, channelId, params.meetingId]);
 
-	// Stream Video init
 	useEffect(() => {
 		if (isLoading) return;
 		if (!isAuthenticated) {
@@ -176,7 +181,6 @@ export default function MeetingPage({
 		initStream();
 		return () => {
 			mounted = false;
-			// Cleanup: disconnect Stream client on unmount
 			if (callRef.current) {
 				callRef.current.leave().catch(() => {});
 			}
@@ -186,7 +190,6 @@ export default function MeetingPage({
 		};
 	}, [isAuthenticated, isLoading, user, params.meetingId, router]);
 
-	// Leave flow
 	const handleLeave = async () => {
 		try {
 			if (call) await call.leave();
@@ -199,10 +202,12 @@ export default function MeetingPage({
 		sessionStorage.removeItem(`meet-join-${params.meetingId}`);
 		sessionStorage.removeItem(`meet-return-${params.meetingId}`);
 
-		if (window.opener) {
+		// Attempt to close if it's a popup/new tab
+		if (window.opener || window.history.length === 1) {
 			window.close();
 		}
-		// Always redirect — window.close() may fail in some browsers
+
+		// If still open, redirect
 		if (returnUrl) {
 			router.push(returnUrl);
 		} else {
@@ -228,7 +233,6 @@ export default function MeetingPage({
 		}
 	};
 
-	// Hand raise
 	const toggleHandRaise = () => {
 		setHandRaised(!handRaised);
 		if (!handRaised) {
@@ -236,36 +240,42 @@ export default function MeetingPage({
 		}
 	};
 
-	// Leave modal
 	if (showLeaveModal) {
 		return (
-			<div className="flex h-screen w-full items-center justify-center bg-[#0a0a12] text-white">
-				<div className="bg-white rounded-2xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl">
-					<h2 className="text-2xl font-normal text-[#202124]">
-						You left the meeting
-					</h2>
-					{liveTranscript && (
-						<p className="text-sm text-gray-500">
-							Your transcript and notes have been saved.
+			<div className="flex h-screen w-full items-center justify-center bg-[#050505] text-white">
+				<div className="bg-[#12121a] border border-white/10 rounded-[32px] p-10 max-w-md w-full text-center space-y-8 shadow-2xl animate-in fade-in zoom-in duration-500">
+					<div className="mx-auto w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center border border-indigo-500/20">
+						<PhoneOff className="w-8 h-8 text-indigo-400" />
+					</div>
+					<div className="space-y-2">
+						<h2 className="text-3xl font-bold tracking-tight">Meeting Ended</h2>
+						{liveTranscript && (
+							<p className="text-gray-400 text-sm">
+								Your transcript and AI intelligence have been safely saved to
+								your workspace.
+							</p>
+						)}
+						<p className="text-xs font-mono text-indigo-500/60 uppercase tracking-widest pt-2">
+							Duration: {elapsed}
 						</p>
-					)}
-					<p className="text-sm text-gray-400">Duration: {elapsed}</p>
-					<div className="flex justify-center gap-4 mt-6 pb-4">
+					</div>
+
+					<div className="flex flex-col gap-3 pt-4">
 						<Button
-							className="rounded-full text-[#6366f1] border-gray-300 hover:bg-indigo-50 px-6 font-medium"
+							className="rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white h-12 font-bold shadow-lg shadow-indigo-500/20"
+							onClick={goToWorkspace}
+						>
+							Return to Workspace
+						</Button>
+						<Button
+							className="rounded-2xl border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 h-12 font-semibold"
 							onClick={() => {
 								setShowLeaveModal(false);
 								call?.join({ create: true });
 							}}
 							variant="outline"
 						>
-							Rejoin
-						</Button>
-						<Button
-							className="rounded-full bg-[#6366f1] text-white hover:bg-[#5558e6] px-6 font-medium shadow-none"
-							onClick={goToWorkspace}
-						>
-							Return to channel
+							Rejoin Meeting
 						</Button>
 					</div>
 				</div>
@@ -273,7 +283,6 @@ export default function MeetingPage({
 		);
 	}
 
-	// Loading
 	if (isLoading || !user || !client || !call) {
 		return (
 			<div className="flex h-screen items-center justify-center bg-[#0a0a12] text-white">
@@ -291,350 +300,334 @@ export default function MeetingPage({
 	const sidebarOpen = showNotes || showParticipants || showChat;
 
 	return (
-		<div className="relative flex h-screen w-full bg-[#0a0a12] overflow-hidden text-white font-sans flex-col">
-			{/* Hand raised indicator */}
-			{handRaised && (
-				<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 animate-bounce shadow-lg shadow-amber-500/25">
-					<Hand className="w-4 h-4" /> Your hand is raised
-				</div>
-			)}
-
-			{/* Top bar — participants ring + meeting info */}
-			<div
-				className="absolute top-0 left-0 right-0 h-14 z-40 flex items-center justify-between px-6"
-				style={{
-					background:
-						"linear-gradient(to bottom, rgba(10,10,18,0.8), transparent)",
-				}}
-			>
-				<div className="flex items-center gap-3">
-					{/* Participant avatars ring */}
-					<div className="flex -space-x-2">
-						{[user].map((u, i) => (
-							<div
-								className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-xs font-bold text-white ring-2 ring-[#0a0a12] shadow-lg"
-								key={i}
-							>
-								{u?.name?.[0]?.toUpperCase() || "?"}
-							</div>
-						))}
-					</div>
-					<div className="text-sm text-gray-300 font-medium">
-						<span className="text-white">{user?.name || "You"}</span>
-						<span className="text-gray-500 mx-2">•</span>
-						<span className="text-gray-500 text-xs">
-							{params.meetingId.slice(0, 8)}
-						</span>
-					</div>
-				</div>
-
-				{/* Timer + View Toggle + Recording */}
-				<div className="flex items-center gap-2">
-					{/* View Mode Toggle */}
-					<div className="flex items-center bg-white/5 backdrop-blur-md border border-white/10 rounded-full p-0.5">
-						<button
-							className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${viewMode === "speaker" ? "bg-indigo-500/30 text-indigo-300" : "text-gray-500 hover:text-gray-300"}`}
-							onClick={() => setViewMode("speaker")}
-							title="Speaker view"
-						>
-							<Presentation className="w-3.5 h-3.5" />
-						</button>
-						<button
-							className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${viewMode === "grid" ? "bg-indigo-500/30 text-indigo-300" : "text-gray-500 hover:text-gray-300"}`}
-							onClick={() => setViewMode("grid")}
-							title="Grid view"
-						>
-							<LayoutGrid className="w-3.5 h-3.5" />
-						</button>
-					</div>
-					{isRecording && (
-						<div className="flex items-center gap-1.5 bg-red-500/20 border border-red-500/30 text-red-400 px-3 py-1 rounded-full text-xs font-semibold">
-							<div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-							REC
-						</div>
-					)}
-					<div className="bg-white/5 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-xs font-mono text-gray-300 tracking-wider">
-						⏱ {elapsed}
-					</div>
-				</div>
-			</div>
-
-			{/* Main content area */}
-			<div className="flex-1 flex w-full p-3 gap-3 pt-16 pb-24">
-				{/* Video Area */}
-				<div
-					className={`transition-all duration-500 ease-out flex flex-col h-full ${sidebarOpen ? "w-[70%]" : "w-full"}`}
-				>
-					<StreamVideo client={client}>
-						<StreamCall call={call}>
-							<StreamTheme
-								className="h-full w-full flex-1 flex flex-col items-center justify-center rounded-2xl overflow-hidden relative"
-								style={{
-									background:
-										"linear-gradient(135deg, #0f0f1a 0%, #141428 50%, #0d1b2a 100%)",
-								}}
-							>
-								{viewMode === "speaker" ? (
-									<SpeakerLayout participantsBarPosition="bottom" />
-								) : (
-									<PaginatedGridLayout />
-								)}
-								{/* Captions overlay */}
-								<CaptionsOverlay
-									isRecording={isRecording}
-									liveTranscript={liveTranscript}
-								/>
-							</StreamTheme>
-						</StreamCall>
-					</StreamVideo>
-				</div>
-
-				{/* Right Sidebar */}
-				{sidebarOpen && (
-					<div className="w-[30%] bg-[#12121f] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col relative animate-in slide-in-from-right-4 duration-300 text-white shadow-2xl border border-white/5">
-						{showParticipants && (
-							<>
-								<div className="flex items-center justify-between p-5 pb-2 border-b border-white/5">
-									<h2 className="text-base font-semibold text-white flex items-center gap-2">
-										<Users className="w-4 h-4 text-indigo-400" /> People
-									</h2>
-									<button
-										className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-8 w-8 flex items-center justify-center transition-colors"
-										onClick={() => setShowParticipants(false)}
-									>
-										✕
-									</button>
-								</div>
-								<div className="flex-1 overflow-y-auto pb-4">
-									<StreamVideo client={client}>
-										<StreamCall call={call}>
-											<CustomParticipantList />
-										</StreamCall>
-									</StreamVideo>
-								</div>
-							</>
-						)}
-						{showNotes && (
-							<NotesSidebar
-								isRecording={isRecording}
-								liveTranscript={liveTranscript}
-								onClose={() => setShowNotes(false)}
-								roomId={params.meetingId}
-								workspaceId={workspaceId}
-							/>
-						)}
-						{showChat && (
-							<StreamVideo client={client}>
-								<StreamCall call={call}>
-									<MeetingChat onClose={() => setShowChat(false)} />
-								</StreamCall>
-							</StreamVideo>
-						)}
+		<LiveblocksRoom roomId={`meeting-${params.meetingId}`} roomType="note">
+			<div className="relative flex h-screen w-full bg-[#0a0a12] overflow-hidden text-white font-sans flex-col">
+				{handRaised && (
+					<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 animate-bounce shadow-lg shadow-amber-500/25">
+						<Hand className="w-4 h-4" /> Your hand is raised
 					</div>
 				)}
-			</div>
 
-			{/* Bottom Bar — Glassmorphic */}
-			<div className="absolute bottom-0 left-0 right-0 z-50">
-				{/* AI Summary Strip */}
-				{isRecording && liveTranscript && (
-					<div className="mx-auto max-w-2xl mb-2 px-4">
-						<div className="bg-indigo-500/10 backdrop-blur-xl border border-indigo-500/20 rounded-2xl px-4 py-2 flex items-center gap-2 text-xs">
-							<Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0 animate-pulse" />
-							<span className="text-indigo-200 truncate">
-								{liveTranscript.split("\n").slice(-1)[0] || "Listening..."}
+				<div
+					className="absolute top-0 left-0 right-0 h-14 z-40 flex items-center justify-between px-6"
+					style={{
+						background:
+							"linear-gradient(to bottom, rgba(10,10,18,0.8), transparent)",
+					}}
+				>
+					<div className="flex items-center gap-3">
+						<div className="flex -space-x-2">
+							{[user].map((u, i) => (
+								<div
+									className="w-8 h-8 rounded-full border-2 border-[#0a0a12] bg-indigo-500 flex items-center justify-center text-[10px] font-bold shadow-lg"
+									key={i}
+								>
+									{u.name?.[0]?.toUpperCase() || "A"}
+								</div>
+							))}
+						</div>
+						<div className="h-4 w-px bg-white/20 mx-1" />
+						<div className="flex flex-col">
+							<span className="text-[13px] font-semibold tracking-tight">
+								{params.meetingId.slice(0, 8)}...
+							</span>
+							<span className="text-[10px] text-indigo-400 font-medium tracking-wider uppercase">
+								{elapsed}
 							</span>
 						</div>
 					</div>
-				)}
 
-				<div
-					className="h-[88px] flex items-center justify-between px-6"
-					style={{
-						background: "rgba(10, 10, 18, 0.75)",
-						backdropFilter: "blur(24px)",
-						borderTop: "1px solid rgba(255,255,255,0.06)",
-					}}
-				>
-					{/* Left: Time | Meeting ID */}
-					<div className="w-1/4 flex items-center text-gray-400 font-medium text-sm truncate">
-						<TimeDisplay /> <span className="mx-3 text-gray-600">|</span>
-						<span className="text-gray-500 text-xs">
-							{params.meetingId.slice(0, 12)}
-						</span>
+					<div className="flex items-center gap-2 bg-white/5 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+						<div className="flex items-center gap-1.5 px-2">
+							<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+							<span className="text-[11px] font-bold text-emerald-500 uppercase tracking-widest">
+								Live
+							</span>
+						</div>
+						<div className="h-3 w-px bg-white/10" />
+						<Button
+							className="h-7 text-[10px] gap-1.5 bg-white/10 hover:bg-white/20 text-white border-none rounded-full px-3"
+							onClick={handleCopyLink}
+							size="sm"
+							variant="outline"
+						>
+							{linkCopied ? (
+								<Check className="w-3 h-3" />
+							) : (
+								<Copy className="w-3 h-3" />
+							)}
+							Copy Link
+						</Button>
 					</div>
+				</div>
 
-					{/* Center: Controls in pill */}
-					<div className="flex-1 flex items-center justify-center">
+				<div className="flex-1 flex min-h-0 pt-14">
+					<div className="flex-1 relative bg-[#050505]">
 						<StreamVideo client={client}>
 							<StreamCall call={call}>
 								<StreamTheme>
-									<div className="flex items-center gap-1 bg-white/[0.07] backdrop-blur-xl rounded-full px-2 py-1.5 border border-white/[0.06] shadow-2xl">
-										<SpeakingWhileMutedNotification />
-										<ToggleAudioPublishingButton />
-										<ToggleVideoPublishingButton />
-										<ScreenShareButton />
-										<div className="w-px h-6 bg-white/10 mx-1" />
-										<MeetingReactions />
-										{/* Hand Raise */}
-										<button
-											className={`flex items-center justify-center w-11 h-11 rounded-full transition-all text-sm font-medium ${handRaised ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30" : "bg-transparent hover:bg-white/10 text-white"}`}
-											onClick={toggleHandRaise}
-											title={handRaised ? "Lower hand" : "Raise hand"}
-										>
-											<Hand className="h-5 w-5" />
-										</button>
-										<div className="w-px h-6 bg-white/10 mx-1" />
-										<MeetingRecordButton
-											onRecordingChange={handleRecordingChange}
-											onTranscriptUpdate={handleTranscriptUpdate}
-											roomId={params.meetingId}
-											userName={user?.name || "You"}
-											workspaceId={workspaceId}
-										/>
-										<div className="w-px h-6 bg-white/10 mx-1" />
-										<CancelCallButton onLeave={handleLeave} />
+									<div className="h-full w-full p-4 flex flex-col">
+										<div className="flex-1 min-h-0 relative rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+											{viewMode === "speaker" ? (
+												<SpeakerLayout />
+											) : (
+												<PaginatedGridLayout />
+											)}
+											<CaptionsOverlay
+												isRecording={isRecording}
+												liveTranscript={liveTranscript}
+												onExternalTranscript={handleExternalTranscript}
+											/>
+											<MeetingReactions />
+											<SpeakingWhileMutedNotification />
+										</div>
 									</div>
 								</StreamTheme>
 							</StreamCall>
 						</StreamVideo>
 					</div>
 
-					{/* Right: People, Chat, Notes, Copy Link */}
-					<div className="w-1/4 flex items-center justify-end gap-1">
-						<SidebarButton
-							active={showParticipants}
-							icon={<Users className="h-5 w-5" />}
-							onClick={() => {
-								setShowParticipants(!showParticipants);
-								setShowNotes(false);
-								setShowChat(false);
-							}}
-							title="People"
-						/>
-						<SidebarButton
-							active={showChat}
-							icon={<MessageSquare className="h-5 w-5" />}
+					{sidebarOpen && (
+						<div className="w-[380px] bg-[#0a0a12] border-l border-white/10 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+							{showNotes && (
+								<NotesSidebar
+									isRecording={isRecording}
+									liveTranscript={liveTranscript}
+									onClose={() => setShowNotes(false)}
+									roomId={params.meetingId}
+									workspaceId={workspaceId}
+								/>
+							)}
+							{showParticipants && (
+								<>
+									<div className="p-5 border-b border-white/10 flex items-center justify-between">
+										<h2 className="text-base font-semibold">Participants</h2>
+										<Button
+											onClick={() => setShowParticipants(false)}
+											size="icon"
+											variant="ghost"
+										>
+											<X className="w-4 h-4" />
+										</Button>
+									</div>
+									<CustomParticipantList />
+								</>
+							)}
+							{showChat && (
+								<>
+									<div className="p-5 border-b border-white/10 flex items-center justify-between">
+										<h2 className="text-base font-semibold">Chat</h2>
+										<Button
+											onClick={() => setShowChat(false)}
+											size="icon"
+											variant="ghost"
+										>
+											<X className="w-4 h-4" />
+										</Button>
+									</div>
+									<MeetingChat />
+								</>
+							)}
+						</div>
+					)}
+				</div>
+
+				<div className="h-20 bg-[#0a0a12] border-t border-white/10 flex items-center justify-between px-8 z-40">
+					<div className="flex items-center gap-4 w-1/3">
+						<div className="bg-white/5 rounded-2xl px-4 py-2 border border-white/5 flex items-center gap-3">
+							<Presentation className="w-4 h-4 text-indigo-400" />
+							<div className="flex flex-col">
+								<span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
+									Project Space
+								</span>
+								<span className="text-xs font-semibold text-white">
+									{params.meetingId.slice(0, 12)}
+								</span>
+							</div>
+						</div>
+					</div>
+
+					<div className="flex items-center gap-3">
+						<StreamVideo client={client}>
+							<StreamCall call={call}>
+								<BottomBarControls
+									handleLeave={handleLeave}
+									handleRecordingChange={handleRecordingChange}
+									handleTranscriptUpdate={handleTranscriptUpdate}
+									handRaised={handRaised}
+									isRecording={isRecording}
+									params={params}
+									toggleHandRaise={toggleHandRaise}
+									user={user}
+									workspaceId={workspaceId}
+								/>
+							</StreamCall>
+						</StreamVideo>
+					</div>
+
+					<div className="flex items-center justify-end gap-2 w-1/3">
+						<Button
+							className={`w-11 h-11 rounded-2xl border-none transition-all ${showChat ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "bg-white/5 hover:bg-white/10 text-gray-400"}`}
 							onClick={() => {
 								setShowChat(!showChat);
 								setShowNotes(false);
 								setShowParticipants(false);
 							}}
-							title="Chat"
-						/>
-						<SidebarButton
-							active={showNotes}
-							badge
-							icon={<Sparkles className="h-5 w-5" />}
+							size="icon"
+							variant="outline"
+						>
+							<MessageSquare className="w-5 h-5" />
+						</Button>
+						<Button
+							className={`w-11 h-11 rounded-2xl border-none transition-all ${showParticipants ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "bg-white/5 hover:bg-white/10 text-gray-400"}`}
 							onClick={() => {
-								setShowNotes(!showNotes);
-								setShowParticipants(false);
+								setShowParticipants(!showParticipants);
+								setShowNotes(false);
 								setShowChat(false);
 							}}
-							title="AI Notes"
-						/>
-						<button
-							className="rounded-full h-10 w-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-							onClick={handleCopyLink}
-							title="Copy meeting link"
+							size="icon"
+							variant="outline"
 						>
-							{linkCopied ? (
-								<Check className="h-4 w-4 text-emerald-400" />
-							) : (
-								<Copy className="h-4 w-4" />
-							)}
-						</button>
+							<Users className="w-5 h-5" />
+						</Button>
+						<div className="w-px h-6 bg-white/10 mx-1" />
+						<Button
+							className={`px-5 h-11 rounded-2xl border-none transition-all gap-2 font-semibold ${showNotes ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400"}`}
+							onClick={() => {
+								setShowNotes(!showNotes);
+								setShowChat(false);
+								setShowParticipants(false);
+							}}
+							variant="outline"
+						>
+							<Sparkles className="w-4 h-4" />
+							AI Notes
+						</Button>
 					</div>
 				</div>
 			</div>
+		</LiveblocksRoom>
+	);
+}
 
-			{/* Global styles for meeting */}
+function BottomBarControls({
+	handRaised,
+	toggleHandRaise,
+	isRecording,
+	handleRecordingChange,
+	handleTranscriptUpdate,
+	params,
+	user,
+	workspaceId,
+	handleLeave,
+}: any) {
+	const { useMicrophoneState, useCameraState, useScreenShareState } =
+		useCallStateHooks();
+	const { isMute: micMuted, microphone } = useMicrophoneState();
+	const { isMute: camMuted, camera } = useCameraState();
+	const { isSharing: isScreenSharing, screenShare } = useScreenShareState();
+
+	return (
+		<div className="flex items-center gap-3 bg-white/5 p-1.5 rounded-full border border-white/10 shadow-inner">
+			<Button
+				className={`w-11 h-11 rounded-full border-none transition-all ${micMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#3c4043] hover:bg-[#4d5154]"} text-white`}
+				onClick={() => microphone.toggle()}
+				size="icon"
+				variant="outline"
+			>
+				{micMuted ? (
+					<MicOff className="w-5 h-5" />
+				) : (
+					<Mic className="w-5 h-5" />
+				)}
+			</Button>
+
+			<Button
+				className={`w-11 h-11 rounded-full border-none transition-all ${camMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#3c4043] hover:bg-[#4d5154]"} text-white`}
+				onClick={() => camera.toggle()}
+				size="icon"
+				variant="outline"
+			>
+				{camMuted ? (
+					<VideoOff className="w-5 h-5" />
+				) : (
+					<Video className="w-5 h-5" />
+				)}
+			</Button>
+
+			<Button
+				className={`w-11 h-11 rounded-full border-none transition-all ${isScreenSharing ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20" : "bg-[#3c4043] hover:bg-[#4d5154]"} text-white`}
+				onClick={() => screenShare.toggle()}
+				size="icon"
+				variant="outline"
+			>
+				<MonitorUp className="w-5 h-5" />
+			</Button>
+
+			<Button
+				className={`w-11 h-11 rounded-full border-none transition-all ${handRaised ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
+				onClick={toggleHandRaise}
+				size="icon"
+				variant="outline"
+			>
+				<Hand className="w-5 h-5" />
+			</Button>
+
+			<MeetingRecordButton
+				onRecordingChange={handleRecordingChange}
+				onTranscriptUpdate={handleTranscriptUpdate}
+				roomId={params.meetingId}
+				userName={user.name || "Anonymous"}
+				workspaceId={workspaceId}
+			/>
+
+			<Button
+				className="bg-red-500 hover:bg-red-600 text-white w-14 h-11 rounded-full shadow-lg shadow-red-500/20 border-none flex items-center justify-center"
+				onClick={handleLeave}
+				size="icon"
+			>
+				<PhoneOff className="w-5 h-5" />
+			</Button>
+
 			<style global jsx>{`
-				.str-video__speaker-layout__wrapper {
-					background: transparent !important;
+				/* Speaker Aura Highlight */
+				.str-video__participant-tile--speaking {
+					box-shadow: 0 0 0 4px #6366f1 !important;
+					border-radius: 24px !important;
+					position: relative;
 				}
-				.str-video__participant-view {
-					border-radius: 16px !important;
+				.str-video__participant-tile--speaking::after {
+					content: "";
+					position: absolute;
+					inset: -10px;
+					border-radius: 32px;
+					background: radial-gradient(
+						circle at center,
+						rgba(99, 102, 241, 0.3) 0%,
+						transparent 70%
+					);
+					z-index: -1;
+					animation: speakerPulse 2s infinite ease-in-out;
+				}
+				@keyframes speakerPulse {
+					0%,
+					100% {
+						opacity: 0.4;
+						transform: scale(1);
+					}
+					50% {
+						opacity: 0.8;
+						transform: scale(1.05);
+					}
+				}
+				/* Video Tile Customization */
+				.str-video__participant-tile {
+					border-radius: 24px !important;
 					overflow: hidden !important;
-					border: 2px solid rgba(255,255,255,0.05) !important;
-					transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
-				}
-				.str-video__participant-view--speaking {
-					border-color: rgba(99, 102, 241, 0.5) !important;
-					box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3), 0 0 30px rgba(99, 102, 241, 0.1) !important;
-				}
-				.str-video__call-controls__button {
-					border-radius: 9999px !important;
-					width: 44px !important;
-					height: 44px !important;
-					background: transparent !important;
-					transition: all 0.2s ease !important;
-				}
-				.str-video__call-controls__button:hover {
-					background: rgba(255,255,255,0.1) !important;
-				}
-				.str-video__call-controls__button--active {
-					background: rgba(255,255,255,0.15) !important;
-				}
-				.str-video__call-controls__button--variant-cancel {
-					background: #ef4444 !important;
-				}
-				.str-video__call-controls__button--variant-cancel:hover {
-					background: #dc2626 !important;
-				}
-				.str-video__participant-view__name-container {
-					background: rgba(10,10,18,0.7) !important;
-					backdrop-filter: blur(8px) !important;
-					border-radius: 8px !important;
-					padding: 4px 10px !important;
+					background: #12121a !important;
+					border: 1px solid rgba(255, 255, 255, 0.05) !important;
 				}
 			`}</style>
 		</div>
 	);
 }
-
-// ─── SIDEBAR BUTTON ─────────────────────────────────────────────────────────
-
-const SidebarButton = ({
-	active,
-	onClick,
-	title,
-	icon,
-	badge,
-}: {
-	active: boolean;
-	onClick: () => void;
-	title: string;
-	icon: React.ReactNode;
-	badge?: boolean;
-}) => (
-	<button
-		className={`relative rounded-full h-10 w-10 flex items-center justify-center transition-all ${active ? "bg-indigo-500/20 text-indigo-400" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-		onClick={onClick}
-		title={title}
-	>
-		{icon}
-		{badge && (
-			<span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-[#0a0a12]" />
-		)}
-	</button>
-);
-
-// ─── TIME DISPLAY ───────────────────────────────────────────────────────────
-
-const TimeDisplay = () => {
-	const [time, setTime] = useState("");
-	useEffect(() => {
-		const update = () =>
-			setTime(
-				new Date().toLocaleTimeString([], {
-					hour: "2-digit",
-					minute: "2-digit",
-				})
-			);
-		update();
-		const interval = setInterval(update, 30000);
-		return () => clearInterval(interval);
-	}, []);
-	return <span className="text-gray-300">{time}</span>;
-};

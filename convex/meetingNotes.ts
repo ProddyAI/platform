@@ -4,17 +4,22 @@ import { generateObject } from "ai";
 import { v } from "convex/values";
 import { z } from "zod";
 import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
-
-// Use workspaceId directly — the shared mapWorkspaceId in utils.ts handles any legacy remaps
-const mapWorkspaceId = (id: string): string => id;
+import { getMember, mapWorkspaceId } from "./utils";
 
 // ─── QUERIES ─────────────────────────────────────────────────────────────────
 
 // Get last generation info for a channel (used by period picker)
 export const getChatNoteForChannel = query({
-	args: { channelId: v.string() },
+	args: { channelId: v.string(), workspaceId: v.id("workspaces") },
 	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) return null;
+
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member) return null;
+
 		const roomId = `chat-${args.channelId}`;
 		const note = await ctx.db
 			.query("meetingNotes")
@@ -31,13 +36,17 @@ export const getChatNoteForChannel = query({
 export const saveTranscript = mutation({
 	args: {
 		roomId: v.string(),
-		workspaceId: v.string(),
-		channelId: v.optional(v.string()),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
 		transcriptChunk: v.string(),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized: Not a member of this workspace");
 
 		// Find existing note for this room
 		const existingNote = await ctx.db
@@ -46,6 +55,11 @@ export const saveTranscript = mutation({
 			.first();
 
 		if (existingNote) {
+			// Verify the note belongs to this workspace
+			if (existingNote.workspaceId !== args.workspaceId) {
+				throw new Error("Unauthorized: Room does not belong to this workspace");
+			}
+
 			// Append chunk
 			await ctx.db.patch(existingNote._id, {
 				transcript: `${existingNote.transcript}\n${args.transcriptChunk}`,
@@ -55,8 +69,8 @@ export const saveTranscript = mutation({
 			// Create new note
 			const newNoteId = await ctx.db.insert("meetingNotes", {
 				roomId: args.roomId,
-				workspaceId: mapWorkspaceId(args.workspaceId) as any,
-				channelId: args.channelId as any,
+				workspaceId: args.workspaceId,
+				channelId: args.channelId,
 				transcript: args.transcriptChunk,
 				status: "recording",
 				userId,
@@ -101,15 +115,23 @@ export const finalizeTranscript = mutation({
 export const getByRoom = query({
 	args: {
 		roomId: v.string(),
+		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return null;
 
-		return await ctx.db
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member) return null;
+
+		const note = await ctx.db
 			.query("meetingNotes")
 			.withIndex("by_room", (q) => q.eq("roomId", args.roomId))
 			.first();
+
+		if (!note || note.workspaceId !== args.workspaceId) return null;
+
+		return note;
 	},
 });
 
@@ -174,8 +196,8 @@ export const getByWorkspace = query({
 // Save channel-generated AI notes to meetingNotes for unified history
 export const saveChatNotesToHistory = mutation({
 	args: {
-		workspaceId: v.string(),
-		channelId: v.optional(v.string()),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
 		title: v.optional(v.string()),
 		transcript: v.string(),
 		summary: v.string(),
@@ -185,6 +207,10 @@ export const saveChatNotesToHistory = mutation({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized: Not a member of this workspace");
 
 		const mappedWorkspaceId = mapWorkspaceId(args.workspaceId);
 		// Use stable roomId based on channelId so we can find & update existing records
@@ -197,6 +223,11 @@ export const saveChatNotesToHistory = mutation({
 			.first();
 
 		if (existingNote) {
+			// Verify the note belongs to this workspace
+			if (existingNote.workspaceId !== args.workspaceId) {
+				throw new Error("Unauthorized: Room does not belong to this workspace");
+			}
+
 			// Update existing record instead of creating a duplicate
 			await ctx.db.patch(existingNote._id, {
 				title: args.title || existingNote.title,
@@ -214,8 +245,8 @@ export const saveChatNotesToHistory = mutation({
 			const noteId = await ctx.db.insert("meetingNotes", {
 				roomId,
 				title: args.title || undefined,
-				workspaceId: mappedWorkspaceId as any,
-				channelId: args.channelId as any,
+				workspaceId: args.workspaceId,
+				channelId: args.channelId,
 				transcript: args.transcript,
 				summary: args.summary,
 				actionItems: args.actionItems,
@@ -442,7 +473,7 @@ ${newTranscript}`;
 				"gemini-2.0-flash",
 				"gemini-1.5-flash",
 			];
-			let lastError: any = null;
+			let lastError: unknown = null;
 			let object: any = null;
 
 			const apiKey =
@@ -462,9 +493,9 @@ ${newTranscript}`;
 					});
 					object = result.object;
 					break; // Success — stop trying
-				} catch (e: any) {
+				} catch (e) {
 					lastError = e;
-					const errMsg = e?.message || "";
+					const errMsg = e instanceof Error ? e.message : String(e);
 					// Retry on 503 (overloaded) or 429 (quota exceeded)
 					if (
 						errMsg.includes("503") ||
@@ -549,7 +580,7 @@ ${newTranscript}`;
 				meetingNoteId: args.noteId,
 				generationNumber,
 				summary: object.summary,
-				actionItems: object.actionItems.map((item: any) => ({
+				actionItems: (object.actionItems as any[]).map((item: any) => ({
 					title: item.title,
 					assignee: item.assignee || undefined,
 					assigneeUserId: item.assigneeUserId || undefined,
@@ -560,13 +591,15 @@ ${newTranscript}`;
 				processedTranscriptStart: lastProcessedIndex,
 				processedTranscriptEnd: fullTranscript.length,
 			});
-		} catch (error: any) {
+		} catch (error) {
 			console.error("AI Generation Error", error);
 			await ctx.runMutation(internal.meetingNotes.updateStatus, {
 				noteId: args.noteId,
 				status: "failed",
 			});
-			throw new Error(error.message || "Failed to generate AI notes");
+			throw new Error(
+				error instanceof Error ? error.message : "Failed to generate AI notes"
+			);
 		}
 	},
 });
@@ -576,7 +609,7 @@ ${newTranscript}`;
 export const saveMeetingNotes = mutation({
 	args: {
 		meetingId: v.string(),
-		workspaceId: v.string(),
+		workspaceId: v.id("workspaces"),
 		transcript: v.string(),
 		summary: v.string(),
 		actionItems: v.array(v.any()),
@@ -585,6 +618,10 @@ export const saveMeetingNotes = mutation({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
+
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized: Not a member of this workspace");
 
 		const existingNote = await ctx.db
 			.query("meetingNotes")
@@ -596,6 +633,11 @@ export const saveMeetingNotes = mutation({
 		);
 
 		if (existingNote) {
+			// Verify the note belongs to this workspace
+			if (existingNote.workspaceId !== args.workspaceId) {
+				throw new Error("Unauthorized: Room does not belong to this workspace");
+			}
+
 			await ctx.db.patch(existingNote._id, {
 				transcript: args.transcript,
 				summary: args.summary,
@@ -607,7 +649,7 @@ export const saveMeetingNotes = mutation({
 		} else {
 			return await ctx.db.insert("meetingNotes", {
 				roomId: args.meetingId,
-				workspaceId: mapWorkspaceId(args.workspaceId) as any,
+				workspaceId: args.workspaceId,
 				transcript: args.transcript,
 				summary: args.summary,
 				actionItems: formattedActionItems,
@@ -626,16 +668,20 @@ export const saveMeetingNotes = mutation({
 export const saveUploadTranscript = mutation({
 	args: {
 		roomId: v.string(),
-		workspaceId: v.string(),
+		workspaceId: v.id("workspaces"),
 		transcript: v.string(),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member)
+			throw new Error("Unauthorized: Not a member of this workspace");
+
 		const noteId = await ctx.db.insert("meetingNotes", {
 			roomId: args.roomId,
-			workspaceId: mapWorkspaceId(args.workspaceId) as any,
+			workspaceId: args.workspaceId,
 			transcript: args.transcript,
 			status: "completed",
 			userId,
@@ -707,7 +753,7 @@ ${args.transcript}
 
 		// Try primary model, fallback to secondary on 503
 		const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-		let lastError: any = null;
+		let lastError: unknown = null;
 
 		for (const modelName of models) {
 			try {
@@ -723,9 +769,9 @@ ${args.transcript}
 				const responseText = result.response.text();
 				const parsed = JSON.parse(responseText);
 				return parsed;
-			} catch (e: any) {
+			} catch (e) {
 				lastError = e;
-				const errMsg = e?.message || "";
+				const errMsg = e instanceof Error ? e.message : String(e);
 				if (
 					errMsg.includes("503") ||
 					errMsg.includes("429") ||

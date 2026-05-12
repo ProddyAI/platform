@@ -903,7 +903,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 			</WorkspaceToolbar>
 
 			<div className="flex-1 flex min-h-0 min-w-0">
-				{!isExpanded && (
+				{(!isExpanded || !isOpen) && (
 					<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
 						{children}
 					</div>

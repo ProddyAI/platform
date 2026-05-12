@@ -8,9 +8,9 @@ import { mapWorkspaceId } from "./utils";
 
 // Helper: find a member for this user in ANY workspace (fallback for ID mismatches)
 async function findMemberForUser(
-	ctx: any,
+	ctx: any, // Context type varies in Convex but we can use GenericQueryCtx or similar
 	workspaceId: Id<"workspaces">,
-	userId: any
+	userId: Id<"users">
 ) {
 	console.log(
 		`DEBUG: Checking membership for userId ${userId} in workspaceId ${workspaceId}`
@@ -316,7 +316,14 @@ export const update = mutation({
 		const now = Date.now();
 
 		// Prepare update object
-		const updateObj: any = { updatedAt: now };
+		const updateObj: {
+			updatedAt: number;
+			title?: string;
+			content?: string;
+			icon?: string | undefined;
+			coverImage?: Id<"_storage"> | undefined;
+			tags?: string[];
+		} = { updatedAt: now };
 
 		// Handle each field, properly dealing with null values
 		if (args.title !== undefined) {

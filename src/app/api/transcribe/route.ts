@@ -14,10 +14,6 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "No file provided" }, { status: 400 });
 		}
 
-		console.log(
-			`Transcribing file: ${file.name} (${file.type}, ${file.size} bytes)`
-		);
-
 		// Limit to 100MB for inline processing
 		if (file.size > 100 * 1024 * 1024) {
 			return NextResponse.json(

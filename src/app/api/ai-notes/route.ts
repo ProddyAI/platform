@@ -79,10 +79,18 @@ ${transcript}
 				{ status: 500 }
 			);
 		}
-	} catch (error: any) {
-		console.error("[AI-NOTES] Error:", error?.message || error);
+	} catch (error) {
+		console.error(
+			"[AI-NOTES] Error:",
+			error instanceof Error ? error.message : error
+		);
 		return NextResponse.json(
-			{ error: error?.message || "Failed to generate meeting notes." },
+			{
+				error:
+					error instanceof Error
+						? error.message
+						: "Failed to generate meeting notes.",
+			},
 			{ status: 500 }
 		);
 	}

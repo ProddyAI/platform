@@ -42,19 +42,6 @@ export const LiveblocksRoom = ({
 		workspaceId ? { workspaceId } : "skip"
 	);
 
-	// DEBUG LOGS - Check browser console
-	console.log("[LiveblocksRoom] Render:", {
-		roomId: normalizedRoomId,
-		key,
-		workspaceId,
-		authStatus:
-			currentUser === undefined
-				? "Loading User"
-				: currentMember === undefined
-					? "Loading Member"
-					: "Auth Ready",
-	});
-
 	// Don't connect to the room if the ID is missing or "undefined" (which happens during initial mount)
 	if (
 		!normalizedRoomId ||

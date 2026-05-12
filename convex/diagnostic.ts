@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { internalMutation, internalQuery, query } from "./_generated/server";
 
-export const checkNotes = query({
+export const checkNotes = internalQuery({
 	args: {},
 	handler: async (ctx) => {
 		const allNotes = await ctx.db.query("notes").collect();
@@ -14,19 +15,18 @@ export const checkNotes = query({
 	},
 });
 
-export const checkWorkspaces = query({
+export const checkWorkspaces = internalQuery({
 	args: {},
 	handler: async (ctx) => {
 		const workspaces = await ctx.db.query("workspaces").collect();
 		return workspaces.map((w) => ({
 			id: w._id,
 			name: w.name,
-			slug: (w as any).slug,
 		}));
 	},
 });
 
-export const checkMembers = query({
+export const checkMembers = internalQuery({
 	args: {},
 	handler: async (ctx) => {
 		const members = await ctx.db.query("members").collect();
@@ -46,7 +46,8 @@ export const checkCurrentUser = query({
 		return userId || "NOT_LOGGED_IN";
 	},
 });
-export const checkUsers = query({
+
+export const checkUsers = internalQuery({
 	args: {},
 	handler: async (ctx) => {
 		const users = await ctx.db.query("users").collect();
@@ -57,20 +58,21 @@ export const checkUsers = query({
 		}));
 	},
 });
-export const fixNoteIds = mutation({
+
+export const fixNoteIds = internalMutation({
 	args: {},
 	handler: async (ctx) => {
-		const typoId = "r57b3dwhxc4kb1dkjt6zw6an85pq2m";
-		const correctId = "r57b3dwhxc4kb1dkjt6tz6w6an85pq2m";
+		const typoId = "r57b3dwhxc4kb1dkjt6zw6an85pq2m" as Id<"workspaces">;
+		const correctId = "r57b3dwhxc4kb1dkjt6tz6w6an85pq2m" as Id<"workspaces">;
 
 		const notes = await ctx.db
 			.query("notes")
-			.filter((q) => q.eq(q.field("workspaceId"), typoId as any))
+			.filter((q) => q.eq(q.field("workspaceId"), typoId))
 			.collect();
 
 		let count = 0;
 		for (const note of notes) {
-			await ctx.db.patch(note._id, { workspaceId: correctId as any });
+			await ctx.db.patch(note._id, { workspaceId: correctId });
 			count++;
 		}
 

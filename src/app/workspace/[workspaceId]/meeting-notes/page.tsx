@@ -7,6 +7,8 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Clock,
+	Download,
+	FileDown,
 	FileText,
 	MessageSquare,
 	Mic,
@@ -16,10 +18,13 @@ import {
 	Upload,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { exportToPDF, exportToWord } from "@/lib/export-utils";
 
 export default function MeetingNotesPage() {
 	const workspaceId = useWorkspaceId();
@@ -171,6 +176,34 @@ function NoteCard({
 				? generations[selectedGen]
 				: null;
 
+	const handleExport = (format: "pdf" | "word") => {
+		if (!currentGen && !note.summary) {
+			toast.error("No notes to export for this meeting.");
+			return;
+		}
+
+		const data = {
+			title:
+				note.title ||
+				`Meeting Notes - ${new Date(note.createdAt).toLocaleDateString()}`,
+			summary: currentGen?.summary || note.summary || "",
+			actionItems: (currentGen?.actionItems || note.actionItems || []).map(
+				(a: any) =>
+					typeof a === "string"
+						? a
+						: `${a.title}${a.assignee ? ` (Assigned to: ${a.assignee})` : ""}`
+			),
+			decisions: currentGen?.decisions || note.decisions || [],
+			date: new Date(note.createdAt).toLocaleString(),
+		};
+
+		if (format === "pdf") {
+			exportToPDF(data);
+		} else {
+			exportToWord(data);
+		}
+	};
+
 	const date = new Date(note.createdAt);
 	const isChat = note.roomId.startsWith("chat-");
 	const isUpload = note.source === "upload";
@@ -265,6 +298,28 @@ function NoteCard({
 					<ChevronRight className="w-4 h-4 text-gray-400" />
 				)}
 			</button>
+
+			{/* Export Buttons (Inline) */}
+			{isExpanded && (currentGen || note.summary) && (
+				<div className="px-5 py-2 bg-white dark:bg-zinc-950 flex items-center gap-2 border-b border-gray-100 dark:border-zinc-800">
+					<Button
+						className="h-8 text-[11px] font-medium gap-1.5 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg transition-all"
+						onClick={() => handleExport("pdf")}
+						size="sm"
+						variant="outline"
+					>
+						<FileDown className="w-3.5 h-3.5 text-red-500" /> Export PDF
+					</Button>
+					<Button
+						className="h-8 text-[11px] font-medium gap-1.5 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg transition-all"
+						onClick={() => handleExport("word")}
+						size="sm"
+						variant="outline"
+					>
+						<Download className="w-3.5 h-3.5 text-blue-500" /> Export Word
+					</Button>
+				</div>
+			)}
 
 			{/* Expanded Content */}
 			{isExpanded && (

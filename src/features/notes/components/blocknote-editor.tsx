@@ -83,8 +83,6 @@ export const BlockNoteEditor = ({
 		}
 	}, [sync.editor, updateMyPresence, onEditorReady]);
 
-	// Removed blocking sync loader
-
 	if (!sync.editor) {
 		return (
 			<div className="flex h-full w-full items-center justify-center">
