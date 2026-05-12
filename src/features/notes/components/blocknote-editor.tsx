@@ -4,8 +4,11 @@ import { useBlockNoteSync } from "@convex-dev/prosemirror-sync/blocknote";
 import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
+import { Loader } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useUpdateMyPresence } from "@/../liveblocks.config";
@@ -69,7 +72,39 @@ export const BlockNoteEditor = ({
 			editor.onEditorContentChange(handleChange);
 			editor.onEditorSelectionChange(handleSelectionChange);
 
+			// Listen for AI note insertion events
+			const handleAiInsertion = async (e: any) => {
+				const { content } = e.detail;
+				if (content && editor) {
+					try {
+						// Parse markdown to blocks
+						const blocks = await editor.tryParseMarkdownToBlocks(content);
+						
+						// Insert at the end of the document
+						const lastBlock = editor.topLevelBlocks[editor.topLevelBlocks.length - 1];
+						editor.insertBlocks(
+							blocks,
+							lastBlock,
+							"after"
+						);
+						toast.success("AI notes inserted into editor");
+					} catch (err) {
+						console.error("Failed to parse/insert AI notes:", err);
+						// Fallback to simple text if parsing fails
+						const lastBlock = editor.topLevelBlocks[editor.topLevelBlocks.length - 1];
+						editor.insertBlocks(
+							[{ content: content }],
+							lastBlock,
+							"after"
+						);
+					}
+				}
+			};
+
+			window.addEventListener("proddy:insert-ai-notes", handleAiInsertion);
+
 			return () => {
+				window.removeEventListener("proddy:insert-ai-notes", handleAiInsertion);
 				// Clear timeout on cleanup
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
@@ -86,13 +121,18 @@ export const BlockNoteEditor = ({
 	if (!sync.editor) {
 		return (
 			<div className="flex h-full w-full items-center justify-center">
-				<button
-					className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-					onClick={() => sync.create?.({ type: "doc", content: [] })}
-					type="button"
-				>
-					Create document
-				</button>
+				<div className="flex flex-col items-center gap-y-4">
+					<Loader className="size-6 animate-spin text-muted-foreground" />
+					<p className="text-sm text-muted-foreground">Initializing editor...</p>
+					{sync.create && (
+						<Button
+							onClick={() => sync.create?.({ type: "doc", content: [] })}
+							variant="outline"
+						>
+							Click to create if it takes too long
+						</Button>
+					)}
+				</div>
 			</div>
 		);
 	}

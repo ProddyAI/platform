@@ -56,18 +56,7 @@ async function findMemberForUser(
 
 	if (member) return member;
 
-	// 4. DEV FALLBACK: Auto-join the user to this workspace if they are authenticated
-	// This solves the "multiple accounts" issue during development
-	console.log(
-		`DEBUG: Auto-joining userId ${userId} to workspaceId ${workspaceId}`
-	);
-	const newMemberId = await ctx.db.insert("members", {
-		userId,
-		workspaceId,
-		role: "owner", // Give owner permissions in dev
-	});
-
-	return await ctx.db.get(newMemberId);
+	return null;
 }
 
 // Create a new note

@@ -88,6 +88,7 @@ export const useMeetingTranscription = (
 			console.error("Speech recognition error", event.error);
 			if (event.error === "not-allowed") {
 				setIsListening(false);
+				recognition.onend = null;
 			}
 		};
 

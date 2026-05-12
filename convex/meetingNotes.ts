@@ -140,7 +140,16 @@ export const getById = query({
 		noteId: v.id("meetingNotes"),
 	},
 	handler: async (ctx, args) => {
-		return await ctx.db.get(args.noteId);
+		const userId = await getAuthUserId(ctx);
+		if (!userId) return null;
+
+		const note = await ctx.db.get(args.noteId);
+		if (!note) return null;
+
+		const member = await getMember(ctx, note.workspaceId, userId);
+		if (!member) return null;
+
+		return note;
 	},
 });
 
@@ -160,6 +169,9 @@ export const getGenerations = query({
 
 		if (!note) return [];
 
+		const member = await getMember(ctx, note.workspaceId, userId);
+		if (!member) return [];
+
 		return await ctx.db
 			.query("meetingNoteGenerations")
 			.withIndex("by_meeting_note", (q) => q.eq("meetingNoteId", note._id))
@@ -173,7 +185,19 @@ export const getGeneration = query({
 		generationId: v.id("meetingNoteGenerations"),
 	},
 	handler: async (ctx, args) => {
-		return await ctx.db.get(args.generationId);
+		const userId = await getAuthUserId(ctx);
+		if (!userId) return null;
+
+		const generation = await ctx.db.get(args.generationId);
+		if (!generation) return null;
+
+		const note = await ctx.db.get(generation.meetingNoteId);
+		if (!note) return null;
+
+		const member = await getMember(ctx, note.workspaceId, userId);
+		if (!member) return null;
+
+		return generation;
 	},
 });
 
@@ -185,6 +209,9 @@ export const getByWorkspace = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return [];
+
+		const member = await getMember(ctx, args.workspaceId, userId);
+		if (!member) return [];
 
 		return await ctx.db
 			.query("meetingNotes")

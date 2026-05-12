@@ -31,10 +31,10 @@ const WorkspacePage = () => {
 		if (workspaces?.length) {
 			if (lastActiveWorkspaceId) {
 				// If user has a last active workspace, redirect to dashboard
-				window.location.href = `/workspace/${lastActiveWorkspaceId}/dashboard`;
+				router.push(`/workspace/${lastActiveWorkspaceId}/dashboard`);
 			} else {
 				// If no last active workspace, redirect to the first one's dashboard
-				window.location.href = `/workspace/${workspaces[0]._id}/dashboard`;
+				router.push(`/workspace/${workspaces[0]._id}/dashboard`);
 			}
 		} else if (!open) {
 			// If user has no workspaces, open the create workspace modal
@@ -65,7 +65,7 @@ const WorkspacePage = () => {
 					</button>
 					<button
 						className="px-4 py-2 bg-white/20 text-white rounded-md font-medium text-sm hover:bg-white/30"
-						onClick={() => (window.location.href = "/auth/signin")}
+						onClick={() => router.push("/auth/signin")}
 					>
 						Back to Sign In
 					</button>
