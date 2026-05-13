@@ -89,16 +89,12 @@ interface CalendarDay {
 	events?: CalendarEvent[];
 }
 
-const CalendarPage = () => {
-	// Set document title
-	useDocumentTitle("Calendar");
-
+const CalendarContent = ({
+	workspaceId,
+}: {
+	workspaceId: Id<"workspaces">;
+}) => {
 	const [currentDate, setCurrentDate] = useState(new Date());
-	const workspaceId = useWorkspaceId();
-
-	if (!workspaceId) {
-		return null;
-	}
 
 	// Track user activity and time spent on calendar page
 	useTrackActivity({
@@ -474,6 +470,18 @@ const CalendarPage = () => {
 			</div>
 		</>
 	);
+};
+
+const CalendarPage = () => {
+	// Set document title
+	useDocumentTitle("Calendar");
+	const workspaceId = useWorkspaceId();
+
+	if (!workspaceId) {
+		return null;
+	}
+
+	return <CalendarContent workspaceId={workspaceId as Id<"workspaces">} />;
 };
 
 export default CalendarPage;

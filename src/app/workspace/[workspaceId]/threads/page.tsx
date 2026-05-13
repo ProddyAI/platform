@@ -63,16 +63,7 @@ interface ThreadMessage {
 	};
 }
 
-export default function ThreadsPage() {
-	// Set document title
-	useDocumentTitle("Threads");
-
-	const workspaceId = useWorkspaceId();
-
-	if (!workspaceId) {
-		return null;
-	}
-
+const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	const threads = useGetThreadMessages() as ThreadMessage[] | undefined;
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeFilter, setActiveFilter] = useState<
@@ -210,6 +201,125 @@ export default function ThreadsPage() {
 			},
 			{} as Record<string, ThreadMessage[]>
 		) || {};
+
+	function renderThreadCard(thread: ThreadMessage) {
+		const parsedParentBody = parseMessageBody(thread.parentMessage.body);
+		const threadReplyCount =
+			threadReplyCounts?.find(
+				(tc: any) => tc.parentMessageId === thread.message.parentMessageId
+			)?.count || 0;
+
+		return (
+			<Card
+				className="group hover:shadow-md transition-all duration-200 cursor-pointer border-2"
+				key={thread.message._id}
+				onClick={() => handleOpenThread(thread)}
+			>
+				<CardContent className="p-4">
+					<div className="flex items-start justify-between mb-3">
+						<div className="flex items-center gap-2 flex-1 min-w-0">
+							<Avatar className="h-8 w-8 flex-shrink-0">
+								<AvatarImage src={thread.parentUser.image} />
+								<AvatarFallback>
+									{thread.parentUser.name.charAt(0)}
+								</AvatarFallback>
+							</Avatar>
+							<div className="flex-1 min-w-0">
+								<div className="flex items-center gap-2">
+									<span className="font-semibold text-sm truncate">
+										{thread.parentUser.name}
+									</span>
+									<Badge
+										className={`rounded-full text-xs flex-shrink-0 ${
+											thread.context.type === "channel"
+												? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
+												: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300"
+										}`}
+										variant="outline"
+									>
+										{thread.context.type === "channel" ? (
+											<span className="flex items-center gap-1">
+												<Hash className="h-3 w-3" />
+												{thread.context.name}
+											</span>
+										) : (
+											<span className="flex items-center gap-1">
+												<User className="h-3 w-3" />
+												{thread.context.name}
+											</span>
+										)}
+									</Badge>
+								</div>
+								<span className="text-xs text-muted-foreground">
+									{formatDistanceToNow(new Date(thread.message._creationTime), {
+										addSuffix: true,
+									})}
+								</span>
+							</div>
+						</div>
+					</div>
+
+					<div className="mb-3">
+						{parsedParentBody.isSpecial ? (
+							<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-3 border border-primary/20">
+								{parsedParentBody.type === "canvas" ? (
+									<PaintBucket className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+								) : (
+									<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+								)}
+								<span className="font-semibold text-sm truncate">
+									{parsedParentBody.content}
+								</span>
+							</div>
+						) : (
+							<h3 className="font-semibold text-sm line-clamp-2 text-foreground">
+								{titleMap.get(thread.message._id.toString()) ||
+									parsedParentBody.content}
+							</h3>
+						)}
+					</div>
+
+					<div className="flex items-start gap-2 p-2 rounded-md bg-muted/30">
+						<Avatar className="h-6 w-6 flex-shrink-0">
+							<AvatarImage src={thread.currentUser.image} />
+							<AvatarFallback className="text-xs">
+								{thread.currentUser.name.charAt(0)}
+							</AvatarFallback>
+						</Avatar>
+						<div className="flex-1 min-w-0">
+							<span className="font-medium text-xs text-muted-foreground">
+								{thread.currentUser.name}
+							</span>
+							<p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+								{parseMessageBody(thread.message.body).content}
+							</p>
+						</div>
+					</div>
+
+					<div className="flex items-center justify-between mt-3 pt-3 border-t">
+						<div className="flex items-center gap-1 text-xs text-muted-foreground">
+							<MessageCircle className="h-3.5 w-3.5" />
+							<span>
+								{threadReplyCount}{" "}
+								{threadReplyCount === 1 ? "reply" : "replies"}
+							</span>
+						</div>
+						<Button
+							className="h-7 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+							onClick={(e) => {
+								e.stopPropagation();
+								handleOpenThread(thread);
+							}}
+							size="sm"
+							variant="ghost"
+						>
+							Open
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	// We'll use a consistent structure with conditional rendering for the content
 	return (
@@ -372,123 +482,17 @@ export default function ThreadsPage() {
 			)}
 		</>
 	);
+};
 
-	function renderThreadCard(thread: ThreadMessage) {
-		const parsedParentBody = parseMessageBody(thread.parentMessage.body);
-		const threadReplyCount =
-			threadReplyCounts?.find(
-				(tc: any) => tc.parentMessageId === thread.message.parentMessageId
-			)?.count || 0;
+export default function ThreadsPage() {
+	// Set document title
+	useDocumentTitle("Threads");
 
-		return (
-			<Card
-				className="group hover:shadow-md transition-all duration-200 cursor-pointer border-2"
-				key={thread.message._id}
-				onClick={() => handleOpenThread(thread)}
-			>
-				<CardContent className="p-4">
-					<div className="flex items-start justify-between mb-3">
-						<div className="flex items-center gap-2 flex-1 min-w-0">
-							<Avatar className="h-8 w-8 flex-shrink-0">
-								<AvatarImage src={thread.parentUser.image} />
-								<AvatarFallback>
-									{thread.parentUser.name.charAt(0)}
-								</AvatarFallback>
-							</Avatar>
-							<div className="flex-1 min-w-0">
-								<div className="flex items-center gap-2">
-									<span className="font-semibold text-sm truncate">
-										{thread.parentUser.name}
-									</span>
-									<Badge
-										className={`rounded-full text-xs flex-shrink-0 ${
-											thread.context.type === "channel"
-												? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
-												: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300"
-										}`}
-										variant="outline"
-									>
-										{thread.context.type === "channel" ? (
-											<span className="flex items-center gap-1">
-												<Hash className="h-3 w-3" />
-												{thread.context.name}
-											</span>
-										) : (
-											<span className="flex items-center gap-1">
-												<User className="h-3 w-3" />
-												{thread.context.name}
-											</span>
-										)}
-									</Badge>
-								</div>
-								<span className="text-xs text-muted-foreground">
-									{formatDistanceToNow(new Date(thread.message._creationTime), {
-										addSuffix: true,
-									})}
-								</span>
-							</div>
-						</div>
-					</div>
+	const workspaceId = useWorkspaceId();
 
-					<div className="mb-3">
-						{parsedParentBody.isSpecial ? (
-							<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-3 border border-primary/20">
-								{parsedParentBody.type === "canvas" ? (
-									<PaintBucket className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-								) : (
-									<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-								)}
-								<span className="font-semibold text-sm truncate">
-									{parsedParentBody.content}
-								</span>
-							</div>
-						) : (
-							<h3 className="font-semibold text-sm line-clamp-2 text-foreground">
-								{titleMap.get(thread.message._id.toString()) ||
-									parsedParentBody.content}
-							</h3>
-						)}
-					</div>
-
-					<div className="flex items-start gap-2 p-2 rounded-md bg-muted/30">
-						<Avatar className="h-6 w-6 flex-shrink-0">
-							<AvatarImage src={thread.currentUser.image} />
-							<AvatarFallback className="text-xs">
-								{thread.currentUser.name.charAt(0)}
-							</AvatarFallback>
-						</Avatar>
-						<div className="flex-1 min-w-0">
-							<span className="font-medium text-xs text-muted-foreground">
-								{thread.currentUser.name}
-							</span>
-							<p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-								{parseMessageBody(thread.message.body).content}
-							</p>
-						</div>
-					</div>
-
-					<div className="flex items-center justify-between mt-3 pt-3 border-t">
-						<div className="flex items-center gap-1 text-xs text-muted-foreground">
-							<MessageCircle className="h-3.5 w-3.5" />
-							<span>
-								{threadReplyCount}{" "}
-								{threadReplyCount === 1 ? "reply" : "replies"}
-							</span>
-						</div>
-						<Button
-							className="h-7 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-							onClick={(e) => {
-								e.stopPropagation();
-								handleOpenThread(thread);
-							}}
-							size="sm"
-							variant="ghost"
-						>
-							Open
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
-		);
+	if (!workspaceId) {
+		return null;
 	}
+
+	return <ThreadsContent workspaceId={workspaceId as Id<"workspaces">} />;
 }

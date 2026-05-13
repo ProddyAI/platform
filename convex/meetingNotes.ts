@@ -99,6 +99,10 @@ export const finalizeTranscript = mutation({
 
 		if (!note) throw new Error("No transcript found for this room");
 
+		// Verify membership
+		const member = await getMember(ctx, note.workspaceId, userId);
+		if (!member) throw new Error("Unauthorized: Not a member of this workspace");
+
 		// Only update status, don't change transcript
 		if (note.status === "recording") {
 			await ctx.db.patch(note._id, {
@@ -224,6 +228,7 @@ export const getByWorkspace = query({
 export const saveChatNotesToHistory = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
 		conversationId: v.optional(v.id("conversations")),
 		title: v.optional(v.string()),
 		transcript: v.string(),

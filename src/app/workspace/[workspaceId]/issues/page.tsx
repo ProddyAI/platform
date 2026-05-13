@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { ArrowRight, LayoutGrid, Loader } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
+import type { Id } from "@/../convex/_generated/dataModel";
 
 import { api } from "@/../convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
@@ -15,15 +16,7 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 import { WorkspaceToolbar } from "../toolbar";
 
-const IssuesPage = () => {
-	useDocumentTitle("Issue");
-
-	const workspaceId = useWorkspaceId();
-
-	if (!workspaceId) {
-		return null;
-	}
-
+const IssuesContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	const { data: currentMember, isLoading: isMemberLoading } = useCurrentMember({
 		workspaceId,
 	});
@@ -129,6 +122,17 @@ const IssuesPage = () => {
 			</div>
 		</div>
 	);
+};
+
+const IssuesPage = () => {
+	useDocumentTitle("Issue");
+	const workspaceId = useWorkspaceId();
+
+	if (!workspaceId) {
+		return null;
+	}
+
+	return <IssuesContent workspaceId={workspaceId as Id<"workspaces">} />;
 };
 
 export default IssuesPage;

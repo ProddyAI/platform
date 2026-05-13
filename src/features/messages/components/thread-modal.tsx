@@ -227,6 +227,11 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 		body: string;
 		image: File | null;
 	}) => {
+		if (!workspaceId) {
+			toast.error("Workspace not found");
+			return;
+		}
+
 		try {
 			let storageId: Id<"_storage"> | undefined;
 
@@ -254,7 +259,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 			await createMessage(
 				{
-					workspaceId: workspaceId as Id<"workspaces">,
+					workspaceId,
 					channelId: thread.message.channelId,
 					conversationId: thread.message.conversationId,
 					parentMessageId: thread.message.parentMessageId,

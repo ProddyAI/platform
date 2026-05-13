@@ -18,12 +18,9 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../toolbar";
 
-const TasksPage = () => {
-	useDocumentTitle("Tasks");
+import type { Id } from "@/../convex/_generated/dataModel";
 
-	const workspaceId = useWorkspaceId();
-	if (!workspaceId) return null;
-
+const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	useTrackActivity({
 		workspaceId: workspaceId,
 		activityType: "tasks_view",
@@ -152,8 +149,8 @@ const TasksPage = () => {
 					break;
 				case "priority": {
 					const priorityValues = { high: 3, medium: 2, low: 1, undefined: 0 };
-					const aPriority = priorityValues[a.priority || "undefined"];
-					const bPriority = priorityValues[b.priority || "undefined"];
+					const aPriority = priorityValues[a.priority || "undefined" as keyof typeof priorityValues];
+					const bPriority = priorityValues[b.priority || "undefined" as keyof typeof priorityValues];
 					comparison = bPriority - aPriority;
 					break;
 				}
@@ -276,6 +273,15 @@ const TasksPage = () => {
 			</div>
 		</div>
 	);
+};
+
+const TasksPage = () => {
+	useDocumentTitle("Tasks");
+
+	const workspaceId = useWorkspaceId();
+	if (!workspaceId) return null;
+
+	return <TasksContent workspaceId={workspaceId as Id<"workspaces">} />;
 };
 
 export default TasksPage;

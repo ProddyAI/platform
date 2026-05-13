@@ -164,9 +164,17 @@ export const MeetingRecordButton = ({
 				recognitionRef.current = null;
 			}
 			if (saveTimerRef.current) clearInterval(saveTimerRef.current);
-			// Attempt sync flush — best effort on unload
+			
+			// Attempt to flush the last chunk of transcript
 			if (saveBufferRef.current.trim().length > 0) {
-				navigator.sendBeacon?.("/api/log", saveBufferRef.current);
+				// Use beacon for best-effort delivery of remaining transcript
+				// Note: In a real app, you'd have an endpoint designed for this
+				const blob = new Blob([JSON.stringify({
+					roomId,
+					workspaceId,
+					transcriptChunk: saveBufferRef.current.trim()
+				})], { type: 'application/json' });
+				navigator.sendBeacon?.("/api/transcript-flush", blob);
 			}
 		};
 

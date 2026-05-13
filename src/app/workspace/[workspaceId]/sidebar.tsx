@@ -25,6 +25,7 @@ import {
 	Users,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { useState } from "react";
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
