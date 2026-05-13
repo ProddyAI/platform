@@ -5,7 +5,7 @@ import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
-import { Loader } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -25,7 +25,7 @@ export const BlockNoteEditor = ({
 	const updateMyPresence = useUpdateMyPresence();
 
 	const sync = useBlockNoteSync(api.prosemirror, noteId, {
-		snapshotDebounceMs: 1000,
+		snapshotDebounceMs: 2000,
 	});
 
 	// Update presence when editor changes
@@ -51,7 +51,7 @@ export const BlockNoteEditor = ({
 						isEditing: true,
 						lastActivity: Date.now(),
 					});
-				}, 100); // Throttle to max 10 updates per second
+				}, 100);
 			};
 
 			// Listen for selection changes
@@ -64,18 +64,16 @@ export const BlockNoteEditor = ({
 						isEditing: false,
 						lastActivity: Date.now(),
 					});
-				}, 100); // Throttle to max 10 updates per second
+				}, 100);
 			};
 
 			editor.onEditorContentChange(handleChange);
 			editor.onEditorSelectionChange(handleSelectionChange);
 
 			return () => {
-				// Clear timeout on cleanup
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
 				}
-				// Cleanup listeners if needed
 				updateMyPresence({
 					isEditing: false,
 					lastActivity: Date.now(),
@@ -87,7 +85,10 @@ export const BlockNoteEditor = ({
 	if (sync.isLoading) {
 		return (
 			<div className="flex h-full w-full items-center justify-center">
-				<Loader className="size-5 animate-spin" />
+				<div className="flex flex-col items-center gap-3 text-muted-foreground">
+					<Loader2 className="size-6 animate-spin text-violet-500" />
+					<span className="text-sm">Loading note...</span>
+				</div>
 			</div>
 		);
 	}
@@ -95,22 +96,40 @@ export const BlockNoteEditor = ({
 	if (!sync.editor) {
 		return (
 			<div className="flex h-full w-full items-center justify-center">
-				<button
-					className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-					onClick={() => sync.create({ type: "doc", content: [] })}
-					type="button"
-				>
-					Create document
-				</button>
+				<div className="text-center space-y-3">
+					<p className="text-sm text-muted-foreground">
+						Editor could not be initialized.
+					</p>
+					<button
+						className="px-4 py-2 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 transition-colors"
+						onClick={() => sync.create({ type: "doc", content: [] })}
+						type="button"
+					>
+						Initialize Editor
+					</button>
+				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className={className} style={{ height: "100%", overflow: "hidden" }}>
+		<div
+			className={className}
+			style={{
+				height: "100%",
+				overflow: "hidden",
+				display: "flex",
+				flexDirection: "column",
+			}}
+		>
 			<BlockNoteView
 				editor={sync.editor}
-				style={{ height: "100%" }}
+				style={{
+					flex: 1,
+					minHeight: 0,
+					overflowY: "auto",
+					// Custom scrollbar styles applied via CSS
+				}}
 				theme="light"
 			/>
 		</div>
