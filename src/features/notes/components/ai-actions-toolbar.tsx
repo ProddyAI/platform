@@ -81,7 +81,7 @@ export const AIActionsToolbar = ({
 	className,
 }: AIActionsToolbarProps) => {
 	const [activeAction, setActiveAction] = useState<AIAction | null>(null);
-	const [streamedText, setStreamedText] = useState("");
+	const [_streamedText, setStreamedText] = useState("");
 	const [isStreaming, setIsStreaming] = useState(false);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -135,7 +135,8 @@ export const AIActionsToolbar = ({
 				if (!response.ok) {
 					const errorData = await response.json().catch(() => ({}));
 					throw new Error(
-						(errorData as { error?: string }).error || `Request failed: ${response.status}`
+						(errorData as { error?: string }).error ||
+							`Request failed: ${response.status}`
 					);
 				}
 
@@ -160,7 +161,8 @@ export const AIActionsToolbar = ({
 				// Parse accumulated markdown into blocks and insert
 				if (accumulated.trim()) {
 					try {
-						const newBlocks = await editor.tryParseMarkdownToBlocks(accumulated);
+						const newBlocks =
+							await editor.tryParseMarkdownToBlocks(accumulated);
 
 						if (newBlocks && newBlocks.length > 0) {
 							editor.transact(() => {
@@ -273,7 +275,9 @@ export const AIActionsToolbar = ({
 					<DropdownMenuContent align="start">
 						{AI_ACTIONS.map((action, index) => (
 							<>
-								{index > 0 && index === 2 && <DropdownMenuSeparator key={`sep-${action.id}`} />}
+								{index > 0 && index === 2 && (
+									<DropdownMenuSeparator key={`sep-${action.id}`} />
+								)}
 								<DropdownMenuItem
 									className="gap-2"
 									key={action.id}
