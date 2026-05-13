@@ -291,11 +291,15 @@ export const createCard = mutation({
 					});
 
 					// Send email notification
-					await ctx.scheduler.runAfter(0, api.email.sendCardAssignmentEmail, {
-						assigneeId,
-						cardId,
-						assignerId: creator._id,
-					});
+					await ctx.scheduler.runAfter(
+						0,
+						api.emailActions.sendCardAssignmentEmail,
+						{
+							assigneeId,
+							cardId,
+							assignerId: creator._id,
+						}
+					);
 
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
@@ -427,11 +431,15 @@ export const updateCard = mutation({
 					});
 
 					// Send email notification
-					await ctx.scheduler.runAfter(0, api.email.sendCardAssignmentEmail, {
-						assigneeId,
-						cardId,
-						assignerId: updater._id,
-					});
+					await ctx.scheduler.runAfter(
+						0,
+						api.emailActions.sendCardAssignmentEmail,
+						{
+							assigneeId,
+							cardId,
+							assignerId: updater._id,
+						}
+					);
 
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
@@ -1053,7 +1061,7 @@ export const createIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								api.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId,
@@ -1182,7 +1190,7 @@ export const updateIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								api.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId,
@@ -1867,7 +1875,7 @@ export const createSubIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								api.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId: subIssueId,

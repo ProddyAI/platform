@@ -45,7 +45,9 @@ export const sendPushNotification = internalAction({
 		const filteredUserIds: string[] = [];
 
 		for (const userId of args.userIds) {
-			const user = await ctx.runQuery(internal.users._getUserById, { id: userId });
+			const user = await ctx.runQuery(internal.users._getUserById, {
+				id: userId,
+			});
 			const notifications = await ctx.runQuery(
 				api.preferences.getNotificationPreferencesByUserId,
 				{ userId }
@@ -53,9 +55,12 @@ export const sendPushNotification = internalAction({
 
 			const browserEnabled = notifications?.browserNotificationsEnabled ?? true;
 			const browserPrefs = notifications?.notificationBrowserPrefs;
-			const legacyPref = notifications?.[args.notificationType as NotificationType];
+			const legacyPref =
+				notifications?.[args.notificationType as NotificationType];
 			const browserPref =
-				browserPrefs?.[args.notificationType as NotificationType] ?? legacyPref ?? true;
+				browserPrefs?.[args.notificationType as NotificationType] ??
+				legacyPref ??
+				true;
 
 			// Safety fallback: if new browser prefs are absent on legacy docs, preserve old push behavior.
 			const allowPush = !browserPrefs
@@ -91,19 +96,32 @@ export const sendPushNotification = internalAction({
 
 		try {
 			// Log before sending
-			console.log("🔔 Sending push notification to:", filteredUserIds.length, "users");
-			console.log("🔔 User IDs:", filteredUserIds.slice(0, 3), filteredUserIds.length > 3 ? `... +${filteredUserIds.length - 3} more` : "");
+			console.log(
+				"🔔 Sending push notification to:",
+				filteredUserIds.length,
+				"users"
+			);
+			console.log(
+				"🔔 User IDs:",
+				filteredUserIds.slice(0, 3),
+				filteredUserIds.length > 3
+					? `... +${filteredUserIds.length - 3} more`
+					: ""
+			);
 			console.log("🔔 OneSignal App ID:", oneSignalAppId);
 			console.log("🔔 Notification type:", args.notificationType);
 			console.log("🔔 Title:", args.title);
 			console.log("🔔 API Key available:", !!oneSignalApiKey);
-			console.log("🔔 API Key (first 20 chars):", oneSignalApiKey?.substring(0, 20));
+			console.log(
+				"🔔 API Key (first 20 chars):",
+				oneSignalApiKey?.substring(0, 20)
+			);
 
 			// Send notification via OneSignal REST API
 			const response = await fetch("https://api.onesignal.com/notifications", {
 				method: "POST",
 				headers: {
-					"Authorization": oneSignalApiKey,
+					Authorization: oneSignalApiKey,
 					"content-type": "application/json; charset=utf-8",
 				},
 				body: JSON.stringify({
@@ -145,19 +163,24 @@ export const sendPushNotification = internalAction({
 			const recipients = Number(
 				result.recipients ?? result.recipients_count ?? 0
 			);
-			
+
 			console.log("🔔 OneSignal recipients count:", recipients);
 			console.log("🔔 Notification ID:", result.id);
-			
+
 			if (recipients === 0) {
 				console.warn("⚠️ OneSignal accepted request but 0 recipients reached", {
 					userCount: filteredUserIds.length,
 					notificationId: result.id,
 					result,
-					diagnostic: "Possible causes: (1) Users haven't called OneSignal.login() on frontend, (2) User IDs don't match between frontend and backend",
+					diagnostic:
+						"Possible causes: (1) Users haven't called OneSignal.login() on frontend, (2) User IDs don't match between frontend and backend",
 				});
 			} else {
-				console.log("✅ OneSignal notification sent successfully to", recipients, "recipient(s)");
+				console.log(
+					"✅ OneSignal notification sent successfully to",
+					recipients,
+					"recipient(s)"
+				);
 			}
 
 			// Sanitize response: only expose safe summary fields
@@ -167,7 +190,8 @@ export const sendPushNotification = internalAction({
 				recipients,
 			};
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
 			console.error("❌ OneSignal push notification failed with exception:", {
 				error: errorMessage,
 				userCount: filteredUserIds.length,
@@ -185,16 +209,19 @@ export const sendTestPushNotification: any = action({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 
-		const result: any = await ctx.runAction((internal as any).notifications.sendPushNotification, {
-			userIds: [userId],
-			title: "Test notification",
-			message: "Your browser push notifications are working.",
-			notificationType: "mentions",
-			data: {
-				type: "test_push",
-				userId,
-			},
-		});
+		const result: any = await ctx.runAction(
+			(internal as any).notifications.sendPushNotification,
+			{
+				userIds: [userId],
+				title: "Test notification",
+				message: "Your browser push notifications are working.",
+				notificationType: "mentions",
+				data: {
+					type: "test_push",
+					userId,
+				},
+			}
+		);
 
 		console.log("🔔 Test push notification", {
 			userId,

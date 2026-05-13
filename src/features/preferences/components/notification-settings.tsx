@@ -1,10 +1,11 @@
 "use client";
 
+import { useAction, useMutation } from "convex/react";
 import {
 	Bell,
 	BellOff,
-	Check,
 	Calendar,
+	Check,
 	Loader2,
 	Mail,
 	MessageSquare,
@@ -17,7 +18,7 @@ import {
 	VolumeX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAction, useMutation } from "convex/react";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,9 @@ import { useNotificationPreferences } from "../api/use-user-preferences";
 export const NotificationSettings = () => {
 	const { data: notifications, isLoading } = useNotificationPreferences();
 	const [isUpdating, setIsUpdating] = useState(false);
-	const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+	const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+		"idle"
+	);
 	const [allNotificationsEnabled, setAllNotificationsEnabled] = useState(true);
 	const [testPushState, setTestPushState] = useState<
 		"idle" | "sending" | "sent" | "error"
@@ -54,10 +57,16 @@ export const NotificationSettings = () => {
 	>("default");
 
 	const updateSettings = useMutation(api.preferences.updateUserPreferences);
-	const updateBrowserPref = useMutation((api as any).preferences.updateBrowserPref);
+	const updateBrowserPref = useMutation(
+		(api as any).preferences.updateBrowserPref
+	);
 	const updateEmailPref = useMutation((api as any).preferences.updateEmailPref);
-	const updateChannelToggle = useMutation((api as any).preferences.updateChannelToggle);
-	const sendTestPush = useAction((api as any).notifications.sendTestPushNotification);
+	const updateChannelToggle = useMutation(
+		(api as any).preferences.updateChannelToggle
+	);
+	const sendTestPush = useAction(
+		(api as any).notifications.sendTestPushNotification
+	);
 
 	const browserPrefs = notifications?.notificationBrowserPrefs || {
 		mentions: true,
@@ -69,17 +78,18 @@ export const NotificationSettings = () => {
 		onlineStatus: true,
 	};
 	const emailPrefs = notifications?.notificationEmailPrefs || {
-		mentions: false,
-		assignee: false,
-		threadReply: false,
-		directMessage: false,
-		inviteSent: false,
-		workspaceJoin: false,
+		mentions: true,
+		assignee: true,
+		threadReply: true,
+		directMessage: true,
+		inviteSent: true,
+		workspaceJoin: true,
 		onlineStatus: false,
 	};
 	const browserNotificationsEnabled =
 		notifications?.browserNotificationsEnabled ?? true;
-	const emailNotificationsEnabled = notifications?.emailNotificationsEnabled ?? false;
+	const emailNotificationsEnabled =
+		notifications?.emailNotificationsEnabled ?? true;
 	const notificationSummaryMode =
 		notifications?.notificationSummaryMode ?? "realtime";
 
@@ -114,6 +124,11 @@ export const NotificationSettings = () => {
 		try {
 			await callback();
 			showSaved();
+			toast.success("Notification preferences saved");
+		} catch (error) {
+			console.error("Failed to save notification preferences", error);
+			toast.error("Failed to save notification preferences");
+			throw error;
 		} finally {
 			setIsUpdating(false);
 		}
@@ -153,7 +168,10 @@ export const NotificationSettings = () => {
 		});
 	};
 
-	const handleChannelToggle = async (channel: "browser" | "email", enabled: boolean) => {
+	const handleChannelToggle = async (
+		channel: "browser" | "email",
+		enabled: boolean
+	) => {
 		await withSaveState(async () => {
 			await updateChannelToggle({ channel, enabled });
 		});
@@ -192,9 +210,12 @@ export const NotificationSettings = () => {
 			await (window as any).OneSignal?.User?.pushSubscription?.optIn?.();
 			await sendTestPush({});
 			setTestPushState("sent");
+			toast.success("Test notification sent");
 			window.setTimeout(() => setTestPushState("idle"), 1500);
-		} catch {
+		} catch (error) {
+			console.error("Failed to send test notification", error);
 			setTestPushState("error");
+			toast.error("Failed to send test notification");
 		}
 	};
 
@@ -308,7 +329,10 @@ export const NotificationSettings = () => {
 						</Badge>
 					</div>
 					<div className="flex items-center gap-3">
-						<Button disabled={testPushState === "sending"} onClick={handleTestPush}>
+						<Button
+							disabled={testPushState === "sending"}
+							onClick={handleTestPush}
+						>
 							{testPushState === "sending" ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -357,14 +381,17 @@ export const NotificationSettings = () => {
 						<Switch
 							checked={emailNotificationsEnabled}
 							disabled={isUpdating}
-							onCheckedChange={(enabled) => handleChannelToggle("email", enabled)}
+							onCheckedChange={(enabled) =>
+								handleChannelToggle("email", enabled)
+							}
 						/>
 					</div>
 					{!browserNotificationsEnabled && (
 						<Alert>
 							<BellOff className="h-4 w-4" />
 							<AlertDescription>
-								Browser channel is off. Push notifications will not be delivered.
+								Browser channel is off. Push notifications will not be
+								delivered.
 							</AlertDescription>
 						</Alert>
 					)}
@@ -455,7 +482,9 @@ export const NotificationSettings = () => {
 								</div>
 								<div className="flex items-center gap-4">
 									<div className="flex items-center gap-2">
-										<Label className="text-xs text-muted-foreground">Browser</Label>
+										<Label className="text-xs text-muted-foreground">
+											Browser
+										</Label>
 										<Switch
 											checked={notification.browserEnabled}
 											disabled={isUpdating || !browserNotificationsEnabled}
@@ -465,7 +494,9 @@ export const NotificationSettings = () => {
 										/>
 									</div>
 									<div className="flex items-center gap-2">
-										<Label className="text-xs text-muted-foreground">Email</Label>
+										<Label className="text-xs text-muted-foreground">
+											Email
+										</Label>
 										<Switch
 											checked={notification.emailEnabled}
 											disabled={isUpdating || !emailNotificationsEnabled}
@@ -570,7 +601,9 @@ export const NotificationSettings = () => {
 					<div className="space-y-4">
 						<div className="flex items-center justify-between">
 							<div className="space-y-1">
-								<Label className="text-base font-medium">Notification Timing</Label>
+								<Label className="text-base font-medium">
+									Notification Timing
+								</Label>
 								<p className="text-sm text-muted-foreground">
 									Choose between immediate delivery and batched summaries.
 								</p>

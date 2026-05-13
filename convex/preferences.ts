@@ -62,12 +62,12 @@ const defaultBrowserPrefs: Record<NotificationKey, boolean> = {
 };
 
 const defaultEmailPrefs: Record<NotificationKey, boolean> = {
-	mentions: false,
-	assignee: false,
-	threadReply: false,
-	directMessage: false,
-	inviteSent: false,
-	workspaceJoin: false,
+	mentions: true,
+	assignee: true,
+	threadReply: true,
+	directMessage: true,
+	inviteSent: true,
+	workspaceJoin: true,
 	onlineStatus: false,
 };
 
@@ -92,7 +92,7 @@ const buildNotificationDefaults = (notifications?: Record<string, any>) => {
 			...(legacy.notificationEmailPrefs || {}),
 		},
 		browserNotificationsEnabled: legacy.browserNotificationsEnabled ?? true,
-		emailNotificationsEnabled: legacy.emailNotificationsEnabled ?? false,
+		emailNotificationsEnabled: legacy.emailNotificationsEnabled ?? true,
 		notificationSummaryMode: legacy.notificationSummaryMode ?? "realtime",
 	};
 };
@@ -352,7 +352,8 @@ export const updateBrowserPref = mutation({
 			.unique();
 
 		const merged = buildNotificationDefaults(
-			(existingPrefs?.settings?.notifications as Record<string, any>) || undefined
+			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+				undefined
 		);
 		const nextNotifications = {
 			...merged,
@@ -395,7 +396,8 @@ export const updateEmailPref = mutation({
 			.unique();
 
 		const merged = buildNotificationDefaults(
-			(existingPrefs?.settings?.notifications as Record<string, any>) || undefined
+			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+				undefined
 		);
 		const nextNotifications = {
 			...merged,
@@ -438,7 +440,8 @@ export const updateChannelToggle = mutation({
 			.unique();
 
 		const merged = buildNotificationDefaults(
-			(existingPrefs?.settings?.notifications as Record<string, any>) || undefined
+			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+				undefined
 		);
 		const nextNotifications = {
 			...merged,
@@ -447,7 +450,9 @@ export const updateChannelToggle = mutation({
 					? args.enabled
 					: merged.browserNotificationsEnabled,
 			emailNotificationsEnabled:
-				args.channel === "email" ? args.enabled : merged.emailNotificationsEnabled,
+				args.channel === "email"
+					? args.enabled
+					: merged.emailNotificationsEnabled,
 		};
 
 		if (existingPrefs) {

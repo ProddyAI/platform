@@ -1,7 +1,9 @@
 "use client";
 
+import { useMutation } from "convex/react";
 import Script from "next/script";
 import { useEffect, useRef } from "react";
+import { api } from "@/../convex/_generated/api";
 import { logger } from "@/lib/logger";
 
 interface OneSignalTrackingProps {
@@ -12,20 +14,25 @@ type OneSignalInterface = any;
 
 export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+	const setOneSignalExternalId = useMutation(
+		(api as any).users.setOneSignalExternalId
+	);
 	const sdkLoadedRef = useRef(false);
 	const initAttemptedRef = useRef(false);
 	const currentUserRef = useRef<string | undefined>();
 	const loginInFlightRef = useRef(false);
 
 	// Wait for OneSignal SDK to be available on window
-	const waitForOneSignal = async (maxWaitMs = 10000): Promise<OneSignalInterface | null> => {
+	const waitForOneSignal = async (
+		maxWaitMs = 10000
+	): Promise<OneSignalInterface | null> => {
 		const startTime = Date.now();
 		while (Date.now() - startTime < maxWaitMs) {
 			if (window.OneSignal) {
 				logger.debug("✅ OneSignal SDK found on window");
 				return window.OneSignal;
 			}
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await new Promise((resolve) => setTimeout(resolve, 100));
 		}
 		logger.error("❌ OneSignal SDK not available after waiting");
 		return null;
@@ -56,7 +63,10 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				}
 
 				// Check if already initialized by another instance
-				if (OneSignal.User?.externalId || (window as any).__oneSignalInitialized) {
+				if (
+					OneSignal.User?.externalId ||
+					(window as any).__oneSignalInitialized
+				) {
 					logger.debug("🔔 OneSignal already initialized");
 					(window as any).__oneSignalInitialized = true;
 					sdkLoadedRef.current = true;
@@ -80,9 +90,11 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				(window as any).__oneSignalInitialized = true;
 				sdkLoadedRef.current = true;
 				logger.debug("✅ OneSignal SDK initialized successfully");
-
 			} catch (error) {
-				logger.error("❌ OneSignal init failed:", error instanceof Error ? error.message : String(error));
+				logger.error(
+					"❌ OneSignal init failed:",
+					error instanceof Error ? error.message : String(error)
+				);
 				sdkLoadedRef.current = false;
 			}
 		};
@@ -96,13 +108,24 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	useEffect(() => {
 		// Debug: log userId on every effect run
 		console.log("🔍 [OneSignal Login Effect] userId prop:", userId);
-		console.log("🔍 [OneSignal Login Effect] sdkLoadedRef:", sdkLoadedRef.current);
-		console.log("🔍 [OneSignal Login Effect] window.OneSignal exists:", !!window.OneSignal);
-		console.log("🔍 [OneSignal Login Effect] currentUserRef:", currentUserRef.current);
-	
+		console.log(
+			"🔍 [OneSignal Login Effect] sdkLoadedRef:",
+			sdkLoadedRef.current
+		);
+		console.log(
+			"🔍 [OneSignal Login Effect] window.OneSignal exists:",
+			!!window.OneSignal
+		);
+		console.log(
+			"🔍 [OneSignal Login Effect] currentUserRef:",
+			currentUserRef.current
+		);
+
 		// If no userId, skip
 		if (!userId) {
-			console.warn("❌ [OneSignal Login Effect] No userId provided, skipping login");
+			console.warn(
+				"❌ [OneSignal Login Effect] No userId provided, skipping login"
+			);
 			logger.debug("🔔 No userId provided, skipping login");
 			currentUserRef.current = undefined;
 			return;
@@ -128,33 +151,45 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				let waitAttempts = 0;
 				const maxWaitMs = 15000;
 				const startTime = Date.now();
-				
-				while (!initCompleted && (Date.now() - startTime) < maxWaitMs) {
+
+				while (!initCompleted && Date.now() - startTime < maxWaitMs) {
 					waitAttempts++;
-					console.log(`⏳ [OneSignal Login] Waiting for init to complete (attempt ${waitAttempts})...`);
-					await new Promise(resolve => setTimeout(resolve, 100));
+					console.log(
+						`⏳ [OneSignal Login] Waiting for init to complete (attempt ${waitAttempts})...`
+					);
+					await new Promise((resolve) => setTimeout(resolve, 100));
 					initCompleted = sdkLoadedRef.current;
 				}
 
 				if (!initCompleted) {
-					console.error("❌ [OneSignal Login] OneSignal init did not complete after waiting");
+					console.error(
+						"❌ [OneSignal Login] OneSignal init did not complete after waiting"
+					);
 					logger.error("❌ OneSignal init did not complete, aborting login");
 					return;
 				}
 
-				console.log(`✅ [OneSignal Login] Init completed, proceeding with login`);
+				console.log(
+					`✅ [OneSignal Login] Init completed, proceeding with login`
+				);
 
 				// Now check SDK is available
 				const OneSignal: any = window.OneSignal as any;
 				if (!OneSignal) {
-					console.error("❌ [OneSignal Login] OneSignal SDK not available on window");
+					console.error(
+						"❌ [OneSignal Login] OneSignal SDK not available on window"
+					);
 					logger.error("❌ OneSignal not available on window");
 					return;
 				}
 
 				// Safety check: final verification userId is still valid
 				if (!userId || typeof userId !== "string") {
-					console.error("❌ [OneSignal Login] userId is invalid:", userId, typeof userId);
+					console.error(
+						"❌ [OneSignal Login] userId is invalid:",
+						userId,
+						typeof userId
+					);
 					logger.error(`❌ userId is invalid: ${userId}`);
 					return;
 				}
@@ -164,61 +199,87 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				logger.debug(`🔔 Logging in user: ${userId}`);
 
 				// Call login
-				console.log(`🔔 [OneSignal Login] Calling OneSignal.login("${userId}")`);
+				console.log(
+					`🔔 [OneSignal Login] Calling OneSignal.login("${userId}")`
+				);
 				await OneSignal.login(userId);
 				console.log(`✅ [OneSignal Login] Login call completed`);
 
 				// Wait a bit for the SDK to update User object
-				await new Promise(resolve => setTimeout(resolve, 500));
+				await new Promise((resolve) => setTimeout(resolve, 500));
 
 				// Check external ID
 				const externalId = OneSignal.User?.externalId;
 				console.log("🔔 External ID:", externalId);
-				console.log("🧠 [OneSignal Login] External ID after login:", externalId);
+				console.log(
+					"🧠 [OneSignal Login] External ID after login:",
+					externalId
+				);
 				logger.debug("✅ OneSignal.User.externalId after login:", externalId);
 
 				if (externalId === userId) {
-					console.log(`✅ [OneSignal Login] Login successful, external ID matches: ${userId}`);
+					console.log(
+						`✅ [OneSignal Login] Login successful, external ID matches: ${userId}`
+					);
 					logger.debug(`✅ Login successful: ${userId}`);
 					currentUserRef.current = userId;
+					await setOneSignalExternalId({ externalId: userId });
 				} else {
-					console.warn(`⚠️ [OneSignal Login] External ID mismatch. Expected ${userId}, got ${externalId}`);
+					console.warn(
+						`⚠️ [OneSignal Login] External ID mismatch. Expected ${userId}, got ${externalId}`
+					);
+					if (externalId) {
+						await setOneSignalExternalId({ externalId });
+					}
 				}
 
 				// Check and request push subscription
 				const subscriptionStatus = OneSignal.User?.PushSubscription?.optedIn;
-				console.log("📱 [OneSignal Login] Push subscription opted in:", subscriptionStatus);
-				
+				console.log(
+					"📱 [OneSignal Login] Push subscription opted in:",
+					subscriptionStatus
+				);
+
 				if (!subscriptionStatus) {
-					console.log("📱 [OneSignal Login] Requesting push subscription opt-in...");
+					console.log(
+						"📱 [OneSignal Login] Requesting push subscription opt-in..."
+					);
 					try {
 						// Request push subscription
 						await OneSignal.User.PushSubscription.optIn();
-						console.log("✅ [OneSignal Login] Push subscription opt-in request sent");
+						console.log(
+							"✅ [OneSignal Login] Push subscription opt-in request sent"
+						);
 						logger.debug("✅ Push subscription opt-in requested");
-						
+
 						// Wait a moment for it to process
-						await new Promise(resolve => setTimeout(resolve, 500));
-						
+						await new Promise((resolve) => setTimeout(resolve, 500));
+
 						// Check new status
 						const newStatus = OneSignal.User?.PushSubscription?.optedIn;
-						console.log("📱 [OneSignal Login] Push subscription after opt-in:", newStatus);
+						console.log(
+							"📱 [OneSignal Login] Push subscription after opt-in:",
+							newStatus
+						);
 						logger.debug("📱 Push subscription after opt-in:", newStatus);
 					} catch (subError) {
-						console.warn("⚠️ [OneSignal Login] Push subscription opt-in request failed (may require user interaction):", subError);
+						console.warn(
+							"⚠️ [OneSignal Login] Push subscription opt-in request failed (may require user interaction):",
+							subError
+						);
 						logger.warn("⚠️ Push subscription opt-in request failed");
 					}
 				}
 			} catch (error) {
-			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error(`❌ [OneSignal Login] Error:`, errorMsg);
-			logger.error(`❌ OneSignal login error:`, errorMsg);
-		} finally {
-			loginInFlightRef.current = false;
-		}
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				console.error(`❌ [OneSignal Login] Error:`, errorMsg);
+				logger.error(`❌ OneSignal login error:`, errorMsg);
+			} finally {
+				loginInFlightRef.current = false;
+			}
 		};
 		loginUser();
-	}, [userId]);
+	}, [setOneSignalExternalId, userId]);
 
 	// ============================================================================
 	// Handle user logout
@@ -245,15 +306,18 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				logger.debug(`🔔 Logging out user`);
 				await OneSignal.logout();
 				currentUserRef.current = undefined;
+				await setOneSignalExternalId({ externalId: undefined });
 				logger.debug(`✅ Logout successful`);
-
 			} catch (error) {
-				logger.error("❌ OneSignal logout error:", error instanceof Error ? error.message : String(error));
+				logger.error(
+					"❌ OneSignal logout error:",
+					error instanceof Error ? error.message : String(error)
+				);
 			}
 		};
 
 		logoutUser();
-	}, [userId]);
+	}, [setOneSignalExternalId, userId]);
 
 	if (!appId) {
 		return null;
