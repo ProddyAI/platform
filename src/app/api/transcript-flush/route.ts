@@ -1,4 +1,5 @@
 import { ConvexHttpClient } from "convex/browser";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 
@@ -17,12 +18,14 @@ export async function POST(req: Request) {
 			return new NextResponse("Missing required fields", { status: 400 });
 		}
 
-		// We use a internal mutation or a regular mutation here.
-		// Note: Since this is called from a beacon, we don't have the user's session context automatically 
-		// in the same way as a client-side mutation. However, for a "best-effort" flush, 
-		// we can attempt to call the mutation. 
-		// For production hardening, you'd want to verify a session token here.
+		// Forward authentication from cookies
+		const cookieStore = await cookies();
+		const token = cookieStore.get("convex-auth-session-token")?.value;
 		
+		if (token) {
+			convex.setAuth(token);
+		}
+
 		await convex.mutation(api.meetingNotes.saveTranscript, {
 			roomId,
 			workspaceId,

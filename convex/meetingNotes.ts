@@ -271,7 +271,6 @@ export const saveChatNotesToHistory = mutation({
 				actionItems: args.actionItems,
 				decisions: args.decisions,
 				status: "completed",
-				createdAt: Date.now(),
 				lastGeneratedAt: Date.now(),
 			});
 			return existingNote._id;
