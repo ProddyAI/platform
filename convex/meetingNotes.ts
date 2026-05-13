@@ -6,7 +6,7 @@ import { z } from "zod";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
-import { getMember, mapWorkspaceId } from "./utils";
+import { getMember } from "./utils";
 
 // ─── QUERIES ─────────────────────────────────────────────────────────────────
 
