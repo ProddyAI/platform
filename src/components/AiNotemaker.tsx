@@ -712,7 +712,8 @@ export const AiNotemaker = ({
 																							}}
 																						>
 																							<div className="size-4 rounded-full bg-blue-100 flex items-center justify-center text-[8px] font-bold text-blue-700">
-																								{(m.user.name || "U")[0].toUpperCase()}
+																								{(m.user.name ||
+																									"U")[0].toUpperCase()}
 																							</div>
 																							{m.user.name || "Unknown"}
 																						</div>

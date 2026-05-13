@@ -35,7 +35,9 @@ export const CreateProjectModal = () => {
 	const [name, setName] = useState("");
 	const [connectedChannelId, setConnectedChannelId] = useState<string>("none");
 
-	const { data: channels } = useGetChannels({ workspaceId: workspaceId as any });
+	const { data: channels } = useGetChannels({
+		workspaceId,
+	});
 	const { isPending, mutate } = useCreateProject();
 
 	const chatChannels = (channels || []).filter(
@@ -51,9 +53,14 @@ export const CreateProjectModal = () => {
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
+		if (!workspaceId) {
+			toast.error("Workspace ID is required");
+			return;
+		}
+
 		mutate(
 			{
-				workspaceId: workspaceId as any,
+				workspaceId,
 				name,
 				connectedChannelId:
 					connectedChannelId !== "none"

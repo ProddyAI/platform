@@ -22,14 +22,17 @@ const TasksPage = () => {
 	useDocumentTitle("Tasks");
 
 	const workspaceId = useWorkspaceId();
+	if (!workspaceId) return null;
 
 	useTrackActivity({
-		workspaceId: workspaceId ?? null,
+		workspaceId: workspaceId,
 		activityType: "tasks_view",
 	});
-	const { data: tasks, isLoading } = useGetTasks({ workspaceId: workspaceId as any });
+	const { data: tasks, isLoading } = useGetTasks({
+		workspaceId,
+	});
 	const { data: categories, isLoading: categoriesLoading } =
-		useGetTaskCategories({ workspaceId: workspaceId as any });
+		useGetTaskCategories({ workspaceId });
 
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filtersOpen, setFiltersOpen] = useState(false);
@@ -218,7 +221,7 @@ const TasksPage = () => {
 									</h2>
 									<TaskCreateForm
 										onSuccess={handleTaskCreated}
-										workspaceId={workspaceId as any}
+										workspaceId={workspaceId}
 									/>
 								</div>
 								<div className="space-y-4">
@@ -243,7 +246,7 @@ const TasksPage = () => {
 									) : (
 										<TaskToggleView
 											tasks={filteredTasks}
-											workspaceId={workspaceId as any}
+											workspaceId={workspaceId}
 										/>
 									)}
 								</div>

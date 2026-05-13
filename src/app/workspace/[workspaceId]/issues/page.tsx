@@ -19,6 +19,11 @@ const IssuesPage = () => {
 	useDocumentTitle("Issue");
 
 	const workspaceId = useWorkspaceId();
+
+	if (!workspaceId) {
+		return null;
+	}
+
 	const { data: currentMember, isLoading: isMemberLoading } = useCurrentMember({
 		workspaceId,
 	});
@@ -30,7 +35,7 @@ const IssuesPage = () => {
 		api.board.getAssignedIssues,
 		currentMember
 			? {
-					workspaceId: workspaceId as any,
+					workspaceId,
 					memberId: currentMember._id,
 				}
 			: "skip"

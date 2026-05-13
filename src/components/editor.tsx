@@ -458,7 +458,7 @@ const Editor = ({
 			const mentionHTML = createMentionElement(
 				memberId,
 				memberName,
-				workspaceId as any
+				workspaceId as Id<"workspaces">
 			);
 
 			// Insert the mention HTML at the cursor position
@@ -477,7 +477,7 @@ const Editor = ({
 			const mentionHTML = createMentionElement(
 				memberId,
 				memberName,
-				workspaceId as any
+				workspaceId as Id<"workspaces">
 			);
 
 			// Insert the mention HTML at the cursor position
@@ -652,7 +652,7 @@ const Editor = ({
 		}
 
 		await createMessage({
-			workspaceId: workspaceId as any,
+			workspaceId: workspaceId as Id<"workspaces">,
 			channelId,
 			conversationId,
 			body: JSON.stringify({
@@ -678,7 +678,7 @@ const Editor = ({
 		}
 
 		await createMessage({
-			workspaceId: workspaceId as any,
+			workspaceId: workspaceId as Id<"workspaces">,
 			channelId,
 			conversationId,
 			body: JSON.stringify({
@@ -731,7 +731,7 @@ const Editor = ({
 			const newNoteId = await createNote({
 				title,
 				content: defaultContent,
-				workspaceId: workspaceId as any,
+				workspaceId: workspaceId as Id<"workspaces">,
 				channelId,
 			});
 
@@ -892,17 +892,7 @@ const Editor = ({
 				</DialogContent>
 			</Dialog>
 
-			<Dialog onOpenChange={setMeetsModalOpen} open={meetsModalOpen}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Meets coming soon</DialogTitle>
-						<DialogDescription>
-							We are building native meetings for chat contexts. You will be
-							able to start and join calls from here soon.
-						</DialogDescription>
-					</DialogHeader>
-				</DialogContent>
-			</Dialog>
+
 
 			<Dialog
 				onOpenChange={(open) => {

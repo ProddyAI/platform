@@ -44,7 +44,9 @@ export const StartMeetingModal = ({
 	const [date, setDate] = useState("");
 	const [time, setTime] = useState("");
 
-	const members = useQuery(api.members.get, { workspaceId: workspaceId as any });
+	const members = useQuery(api.members.get, {
+		workspaceId,
+	});
 	const createMessage = useMutation(api.messages.create);
 	// In a real app we might have api.meetings.schedule, but for now we'll just send a message.
 
@@ -67,19 +69,29 @@ export const StartMeetingModal = ({
 		if (selectedMembers.size === filteredMembers.length) {
 			setSelectedMembers(new Set());
 		} else {
-			const allUserIds = new Set(filteredMembers.map((m) => m.user._id));
+			const allUserIds = new Set(
+				filteredMembers
+					.map((m) => m.user?._id)
+					.filter((id): id is Id<"users"> => !!id)
+			);
 			setSelectedMembers(allUserIds);
 		}
 	};
 
 	const handleStartMeeting = async () => {
+		// Validate scheduled meetings first
+		if (meetingType === "schedule" && (!date || !time)) {
+			toast.error("Please select a date and time for the scheduled meeting.");
+			return;
+		}
+
 		const meetingId = crypto.randomUUID();
-		const meetUrl = `/meet/${meetingId}?workspaceId=${workspaceId as any}${channelId ? `&channelId=${channelId}` : ""}`;
+		const meetUrl = `/meet/${meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ""}${conversationId ? `&conversationId=${conversationId}` : ""}`;
 
 		try {
-			if (selectedMembers.size > 0 || channelId) {
-				// Send unified message payload to chat (fire and forget to not block navigation)
-				createMessage({
+			if (selectedMembers.size > 0 || channelId || conversationId) {
+				// Send unified message payload to chat
+				await createMessage({
 					workspaceId: workspaceId as any,
 					channelId,
 					conversationId,
@@ -92,12 +104,7 @@ export const StartMeetingModal = ({
 						startedAt: Date.now(),
 						participants: Array.from(selectedMembers),
 					}),
-				}).catch(console.error);
-			}
-
-			if (meetingType === "schedule" && (!date || !time)) {
-				toast.error("Please select a date and time for the scheduled meeting.");
-				return;
+				});
 			}
 
 			if (meetingType === "instant") {
@@ -181,24 +188,27 @@ export const StartMeetingModal = ({
 					</div>
 
 					<ScrollArea className="h-[200px] border rounded-md p-2">
-						{filteredMembers.map((member) => (
-							<div
-								className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-md"
-								key={member._id}
-							>
-								<Checkbox
-									checked={selectedMembers.has(member.user._id)}
-									id={`member-${member._id}`}
-									onCheckedChange={() => handleToggleMember(member.user._id)}
-								/>
-								<label
-									className="text-sm cursor-pointer flex-1"
-									htmlFor={`member-${member._id}`}
+						{filteredMembers.map((member) => {
+							if (!member.user) return null;
+							return (
+								<div
+									className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-md"
+									key={member._id}
 								>
-									{member.user.name}
-								</label>
-							</div>
-						))}
+									<Checkbox
+										checked={selectedMembers.has(member.user._id)}
+										id={`member-${member._id}`}
+										onCheckedChange={() => handleToggleMember(member.user._id)}
+									/>
+									<label
+										className="text-sm cursor-pointer flex-1"
+										htmlFor={`member-${member._id}`}
+									>
+										{member.user.name}
+									</label>
+								</div>
+							);
+						})}
 					</ScrollArea>
 				</div>
 

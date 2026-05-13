@@ -40,7 +40,9 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	}, [workspaceId, router]);
 
 	// Use the Convex-backed sidebar collapsed state
-	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({ workspaceId: workspaceId as any });
+	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({
+		workspaceId: workspaceId as any,
+	});
 
 	// Handle mobile menu toggle
 	const handleMobileMenuToggle = useCallback(() => {

@@ -28,7 +28,9 @@ import { exportToPDF, exportToWord } from "@/lib/export-utils";
 
 export default function MeetingNotesPage() {
 	const workspaceId = useWorkspaceId();
-	const allNotes = useQuery(api.meetingNotes.getByWorkspace, { workspaceId: workspaceId as any });
+	const allNotes = useQuery(api.meetingNotes.getByWorkspace, {
+		workspaceId: workspaceId as Id<"workspaces">,
+	});
 	const [expandedNote, setExpandedNote] = useState<string | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [sourceFilter, setSourceFilter] = useState<

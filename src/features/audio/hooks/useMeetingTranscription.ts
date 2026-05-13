@@ -70,15 +70,27 @@ export const useMeetingTranscription = (
 
 				// Debounce saving to DB
 				if (timerRef.current) clearTimeout(timerRef.current);
-				timerRef.current = setTimeout(() => {
+				timerRef.current = setTimeout(async () => {
 					if (chunkRef.current.trim().length > 0) {
-						saveTranscriptChunk({
-							roomId,
-							workspaceId: workspaceId as Id<"workspaces">,
-							channelId: channelId as Id<"channels">,
-							transcriptChunk: chunkRef.current.trim(),
-						});
-						chunkRef.current = "";
+						const currentChunk = chunkRef.current.trim();
+						try {
+							await saveTranscriptChunk({
+								roomId,
+								workspaceId: workspaceId as Id<"workspaces">,
+								channelId: channelId as Id<"channels">,
+								transcriptChunk: currentChunk,
+							});
+							// Only clear if the mutation was successful
+							if (chunkRef.current.trim() === currentChunk) {
+								chunkRef.current = "";
+							} else {
+								// If more text was added while waiting, just remove what we saved
+								chunkRef.current = chunkRef.current.replace(currentChunk, "").trim();
+							}
+						} catch (error) {
+							console.error("Failed to save transcript chunk:", error);
+							// Don't clear chunkRef.current so it retries on next update
+						}
 					}
 				}, 2000);
 			}

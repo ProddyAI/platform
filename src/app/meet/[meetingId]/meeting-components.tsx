@@ -61,7 +61,7 @@ export const MeetingRecordButton = ({
 			try {
 				await saveTranscript({
 					roomId,
-					workspaceId: workspaceId as any,
+					workspaceId: workspaceId as Id<"workspaces">,
 					transcriptChunk: saveBufferRef.current.trim(),
 				});
 				saveBufferRef.current = "";

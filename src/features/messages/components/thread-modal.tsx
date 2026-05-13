@@ -254,7 +254,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 			await createMessage(
 				{
-					workspaceId: workspaceId as any,
+					workspaceId: workspaceId as Id<"workspaces">,
 					channelId: thread.message.channelId,
 					conversationId: thread.message.conversationId,
 					parentMessageId: thread.message.parentMessageId,

@@ -224,7 +224,7 @@ export const getByWorkspace = query({
 export const saveChatNotesToHistory = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
-		channelId: v.optional(v.id("channels")),
+		conversationId: v.optional(v.id("conversations")),
 		title: v.optional(v.string()),
 		transcript: v.string(),
 		summary: v.string(),
@@ -239,9 +239,12 @@ export const saveChatNotesToHistory = mutation({
 		if (!member)
 			throw new Error("Unauthorized: Not a member of this workspace");
 
-		const mappedWorkspaceId = mapWorkspaceId(args.workspaceId);
-		// Use stable roomId based on channelId so we can find & update existing records
-		const roomId = `chat-${args.channelId || "unknown"}`;
+		// Use stable roomId based on channelId or conversationId so we can find & update existing records
+		const roomId = args.channelId 
+			? `chat-${args.channelId}` 
+			: args.conversationId 
+				? `chat-${args.conversationId}` 
+				: `chat-unknown-${userId}`;
 
 		// Check for existing note for this channel
 		const existingNote = await ctx.db

@@ -238,19 +238,19 @@ export const WorkspaceSidebar = ({
 	};
 
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
-		id: workspaceId,
+		id: workspaceId as Id<"workspaces">,
 	});
 	const { data: channels, isLoading: channelsLoading } = useGetChannels({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: projects, isLoading: projectsLoading } = useGetProjects({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: members, isLoading: membersLoading } = useGetMembers({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 
 	if (

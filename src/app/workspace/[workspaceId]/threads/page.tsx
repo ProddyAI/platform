@@ -68,6 +68,11 @@ export default function ThreadsPage() {
 	useDocumentTitle("Threads");
 
 	const workspaceId = useWorkspaceId();
+
+	if (!workspaceId) {
+		return null;
+	}
+
 	const threads = useGetThreadMessages() as ThreadMessage[] | undefined;
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeFilter, setActiveFilter] = useState<
@@ -79,7 +84,7 @@ export default function ThreadsPage() {
 
 	// Get all thread titles for this workspace
 	const threadTitles = useQuery(api.threadTitles.getByWorkspaceId, {
-		workspaceId: workspaceId as any,
+		workspaceId,
 	});
 
 	// Get thread reply counts

@@ -71,7 +71,7 @@ const ReportsPage = () => {
 
 	// Get current member to check permissions
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 
 	// Calculate date range based on selected time range

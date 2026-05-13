@@ -14,7 +14,10 @@ export const ChannelPresenceParticipants = () => {
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
 
-	const { presenceState } = useChannelPresence({ workspaceId: workspaceId as any, channelId });
+	const { presenceState } = useChannelPresence({
+		workspaceId: workspaceId as Id<"workspaces">,
+		channelId,
+	});
 
 	const onlineUsers = useMemo(
 		() => presenceState.filter((p) => p.online),

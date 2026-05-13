@@ -137,10 +137,10 @@ export default function MeetingPage({
 	useEffect(() => {
 		if (isLoading) return;
 		if (!isAuthenticated) {
-			router.push("/auth/signin");
+			router.replace("/auto-login");
 			return;
 		}
-		if (!user) return;
+		if (!user?._id) return;
 
 		let mounted = true;
 		const initStream = async () => {
@@ -188,7 +188,7 @@ export default function MeetingPage({
 				clientRef.current.disconnectUser().catch(() => {});
 			}
 		};
-	}, [isAuthenticated, isLoading, user, params.meetingId, router]);
+	}, [isAuthenticated, isLoading, user?._id, params.meetingId, router]);
 
 	const handleLeave = async () => {
 		try {
@@ -209,7 +209,7 @@ export default function MeetingPage({
 
 		// If still open, redirect
 		if (returnUrl) {
-			router.push(returnUrl);
+			router.replace(returnUrl);
 		} else {
 			setShowLeaveModal(true);
 		}

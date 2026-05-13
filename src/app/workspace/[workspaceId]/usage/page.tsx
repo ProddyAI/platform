@@ -6,6 +6,7 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 export default function UsagePage() {
 	const workspaceId = useWorkspaceId();
+	if (!workspaceId) return null;
 
 	return (
 		<div className="flex h-full flex-col">
@@ -15,7 +16,7 @@ export default function UsagePage() {
 			</div>
 			<div className="flex-1 overflow-y-auto px-6 py-6">
 				<div className="mx-auto max-w-2xl">
-					<UsageDashboard workspaceId={workspaceId as any} />
+					<UsageDashboard workspaceId={workspaceId as Id<"workspaces">} />
 				</div>
 			</div>
 		</div>
