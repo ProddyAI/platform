@@ -10,6 +10,46 @@ const COMPOSIO_BASE_V1 = "https://backend.composio.dev/api/v1";
 const COMPOSIO_BASE_V2 = "https://backend.composio.dev/api/v2";
 const COMPOSIO_BASE_V3 = "https://backend.composio.dev/api/v3";
 
+export function isStarredRepoListRequest(message: string) {
+	const normalized = message.trim().toLowerCase();
+	return (
+		/\b(my\s+)?starred\s+(repo|repos|repository|repositories)\b/i.test(
+			normalized
+		) ||
+		/\b(starred|stars?)\b[\s\S]{0,20}\b(repo|repos|repository|repositories)\b/i.test(
+			normalized
+		)
+	);
+}
+
+export function isAuthenticatedRepoListRequest(message: string) {
+	const normalized = message.trim().toLowerCase();
+	return (
+		!isStarredRepoListRequest(normalized) &&
+		/\b(my|authenticated user['’]s?)\s+(repo|repos|repository|repositories)\b/i.test(
+			normalized
+		) ||
+		(!isStarredRepoListRequest(normalized) &&
+			/\blist\s+(out\s+)?(my\s+)?(repo|repos|repository|repositories)\b/i.test(
+				normalized
+			)) ||
+		(!isStarredRepoListRequest(normalized) &&
+			/\bshow\s+(my\s+)?(repo|repos|repository|repositories)\b/i.test(
+				normalized
+			))
+	);
+}
+
+export function normalizeGithubInstruction(message: string) {
+	if (isStarredRepoListRequest(message)) {
+		return "List repositories starred by the authenticated user. Do not list owned repositories unless the user asks for them.";
+	}
+	if (isAuthenticatedRepoListRequest(message)) {
+		return "List repositories for the authenticated user. Do not list starred repositories. Do not search public repositories.";
+	}
+	return message;
+}
+
 async function executeComposioAction(
 	ctx: { runQuery: (query: any, args: any) => Promise<any> },
 	entityId: string,
@@ -24,6 +64,8 @@ async function executeComposioAction(
 		if (!OPENAI_KEY) return { success: false, error: "OPENAI_API_KEY not configured" };
 
 		const openai = new OpenAI({ apiKey: OPENAI_KEY });
+		const normalizedMessage =
+			appNames.includes("GITHUB") ? normalizeGithubInstruction(message) : message;
 		console.log(`[Composio] Starting: entityId=${entityId}, apps=${appNames.join(",")}`);
 
 		// Look up connected accounts from our DB to get composioAccountId
@@ -161,10 +203,11 @@ async function executeComposioAction(
 					content: `You are a helpful assistant with direct access to ${appNames.join(", ")} via tools. 
 IMPORTANT: The user is already authenticated via OAuth — NEVER ask for a username, password, or token. 
 Always call tools that work for the "authenticated user" (e.g. list repos for authenticated user, not repos for a specific username).
+If the user asks for their repositories, you MUST list repositories for the authenticated user. NEVER use starred-repository tools or public repository search tools unless the user explicitly asks for starred repositories or search.
 Available tools: ${tools.map(t => t.function.name).join(", ")}
 ALWAYS call the most relevant tool immediately without explaining.`,
 				},
-				{ role: "user", content: message },
+				{ role: "user", content: normalizedMessage },
 			],
 			temperature: 0,
 			max_tokens: 500,
@@ -247,7 +290,7 @@ ALWAYS call the most relevant tool immediately without explaining.`,
 			model: "gpt-4o-mini",
 			messages: [
 				{ role: "system", content: "Format the tool results clearly and concisely for the user." },
-				{ role: "user", content: message },
+				{ role: "user", content: normalizedMessage },
 				completion.choices[0].message as OpenAI.Chat.ChatCompletionMessageParam,
 				...toolMessages,
 			],

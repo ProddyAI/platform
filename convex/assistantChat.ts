@@ -6,14 +6,18 @@ import type { Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
 import { buildChannelSummaryFallback } from "./assistant/channelSummaryFallback";
 import {
-	buildAssistantProfilePrompt,
+	buildPreflightContextPlan,
+	buildPreflightContextPrompt,
+} from "./assistant/context";
+import {
 	type AssistantProfileRecord,
+	buildAssistantProfilePrompt,
 } from "./assistant/profile";
 import {
+	buildTaskDraftFailureMessage,
 	formatPendingTaskDraftConfirmation,
 	isPendingTaskCancellation,
 	isPendingTaskConfirmation,
-	buildTaskDraftFailureMessage,
 } from "./assistant/taskDrafts";
 import { resolveAssistantToolLoop } from "./assistant/toolLoop";
 
@@ -342,11 +346,224 @@ function createFallbackResponseFromToolResult(
 	return null;
 }
 
+type PreflightResolutionResult = {
+	promptText: string;
+	sourceRefs: string[];
+	earlyResponse?: string;
+};
+
+function summarizeCount(label: string, count: number) {
+	return `${label}: ${count}`;
+}
+
+async function resolvePreflightContext(args: {
+	ctx: any;
+	workspaceId: Id<"workspaces">;
+	userId: Id<"users">;
+	message: string;
+}): Promise<PreflightResolutionResult> {
+	const plan = buildPreflightContextPlan({ message: args.message });
+	const sourceRefs: string[] = [];
+	const summaryLines = [...plan.summaryLines];
+	let resolvedTopic = plan.resolvedTopic;
+
+	if (plan.intent === "channel_summary" && plan.channelQuery) {
+		const channelSearch = (await args.ctx.runQuery(
+			api.assistantTools.searchChannels,
+			{
+				workspaceId: args.workspaceId,
+				query: plan.channelQuery,
+			}
+		)) as any;
+		sourceRefs.push(
+			...collectSourceRefsFromToolResult("searchChannels", channelSearch)
+		);
+		const channels = Array.isArray(channelSearch?.channels)
+			? channelSearch.channels
+			: [];
+		const exactMatch =
+			channels.find(
+				(channel: any) =>
+					String(channel?.name ?? "")
+						.trim()
+						.toLowerCase() === plan.channelQuery
+			) ?? null;
+		if (!exactMatch && channels.length > 1) {
+			const suggestions = channels
+				.slice(0, 3)
+				.map((channel: any) => `#${String(channel?.name ?? "").trim()}`)
+				.filter(Boolean);
+			return {
+				promptText: "",
+				sourceRefs,
+				earlyResponse: suggestions.length
+					? `I found multiple channels matching "${plan.channelQuery}": ${suggestions.join(", ")}. Which one should I use?`
+					: `I found multiple channels matching "${plan.channelQuery}". Which one should I use?`,
+			};
+		}
+		const resolvedChannel = exactMatch ?? channels[0];
+		if (resolvedChannel?._id) {
+			const channelSummary = (await args.ctx.runQuery(
+				api.assistantTools.getChannelSummary,
+				{
+					workspaceId: args.workspaceId,
+					channelId: resolvedChannel._id,
+					limit: 40,
+				}
+			)) as any;
+			sourceRefs.push(
+				...collectSourceRefsFromToolResult("getChannelSummary", channelSummary)
+			);
+			resolvedTopic =
+				String(
+					channelSummary?.channelName ?? resolvedChannel?.name ?? ""
+				).trim() || resolvedTopic;
+			summaryLines.push(
+				`Resolved channel: #${resolvedTopic}`,
+				summarizeCount(
+					"Recent messages considered",
+					Number(channelSummary?.messageCount ?? 0)
+				)
+			);
+		}
+	}
+
+	if (plan.intent === "workspace_catchup") {
+		const summary = (await args.ctx.runQuery(
+			api.assistantTools.getWorkspaceGeneralSummary,
+			{
+				workspaceId: args.workspaceId,
+				userId: args.userId,
+			}
+		)) as any;
+		sourceRefs.push(
+			...collectSourceRefsFromToolResult("getWorkspaceGeneralSummary", summary)
+		);
+		summaryLines.push(
+			summarizeCount(
+				"Recent messages",
+				Array.isArray(summary?.recentMessages)
+					? summary.recentMessages.length
+					: 0
+			),
+			summarizeCount(
+				"High-priority tasks",
+				Array.isArray(summary?.highPriorityTasks)
+					? summary.highPriorityTasks.length
+					: 0
+			),
+			summarizeCount(
+				"Recent notes",
+				Array.isArray(summary?.recentNotes) ? summary.recentNotes.length : 0
+			)
+		);
+	}
+
+	if (plan.intent === "note_lookup") {
+		const toolName = plan.noteQuery ? "searchNotes" : "getRecentNotes";
+		const noteResult = (await args.ctx.runQuery(
+			plan.noteQuery
+				? api.assistantTools.searchNotes
+				: api.assistantTools.getRecentNotes,
+			plan.noteQuery
+				? {
+						workspaceId: args.workspaceId,
+						query: plan.noteQuery,
+						limit: 6,
+					}
+				: {
+						workspaceId: args.workspaceId,
+						limit: 6,
+					}
+		)) as any;
+		sourceRefs.push(...collectSourceRefsFromToolResult(toolName, noteResult));
+		summaryLines.push(
+			summarizeCount(
+				"Matching notes",
+				Array.isArray(noteResult?.notes) ? noteResult.notes.length : 0
+			)
+		);
+	}
+
+	if (plan.intent === "task_lookup") {
+		const toolName = plan.taskQuery ? "searchTasks" : "getMyAllTasks";
+		const taskResult = (await args.ctx.runQuery(
+			plan.taskQuery
+				? api.assistantTools.searchTasks
+				: api.assistantTools.getMyAllTasks,
+			plan.taskQuery
+				? {
+						workspaceId: args.workspaceId,
+						userId: args.userId,
+						query: plan.taskQuery,
+						limit: 8,
+					}
+				: {
+						workspaceId: args.workspaceId,
+						userId: args.userId,
+						includeCompleted: false,
+					}
+		)) as any;
+		sourceRefs.push(...collectSourceRefsFromToolResult(toolName, taskResult));
+		summaryLines.push(
+			summarizeCount(
+				"Matching tasks",
+				Array.isArray(taskResult?.tasks) ? taskResult.tasks.length : 0
+			)
+		);
+	}
+
+	if (plan.intent === "calendar_lookup" && plan.recommendedToolOrder[0]) {
+		const calendarTool = plan.recommendedToolOrder[0];
+		const handler =
+			calendarTool === "getMyCalendarTomorrow"
+				? api.assistantTools.getMyCalendarTomorrow
+				: calendarTool === "getMyCalendarNextWeek"
+					? api.assistantTools.getMyCalendarNextWeek
+					: api.assistantTools.getMyCalendarToday;
+		const calendarResult = (await args.ctx.runQuery(handler, {
+			workspaceId: args.workspaceId,
+			userId: args.userId,
+		})) as any;
+		sourceRefs.push(
+			...collectSourceRefsFromToolResult(calendarTool, calendarResult)
+		);
+		summaryLines.push(
+			summarizeCount(
+				"Matching calendar events",
+				Array.isArray(calendarResult?.events) ? calendarResult.events.length : 0
+			)
+		);
+	}
+
+	if (plan.intent === "task_create" && plan.needsMemberResolution) {
+		const members = (await args.ctx.runQuery(api.members.get, {
+			workspaceId: args.workspaceId,
+		})) as any[];
+		const acceptedMembers = Array.isArray(members) ? members : [];
+		summaryLines.push(
+			summarizeCount("Accepted workspace members", acceptedMembers.length)
+		);
+	}
+
+	return {
+		promptText: buildPreflightContextPrompt({
+			intent: plan.intent,
+			confidence: plan.confidence,
+			resolvedTopic,
+			recommendedToolOrder: plan.recommendedToolOrder,
+			summaryLines,
+		}),
+		sourceRefs: dedupeSourceRefs(sourceRefs),
+	};
+}
+
 function buildSystemPrompt(options?: {
 	hasPendingTaskDraft?: boolean;
 	pendingTaskDraftSummary?: string;
 	pendingTaskDraftAssigneeMemberId?: string;
 	pendingTaskDraftAssigneeName?: string;
+	preflightContext?: string;
 	assistantProfile?: AssistantProfileRecord;
 }) {
 	const pendingTaskInstructions =
@@ -367,6 +584,9 @@ Do not create the task in the same turn as drafting it. Wait for an explicit con
 			: "";
 	const personalizationPrompt = options?.assistantProfile
 		? buildAssistantProfilePrompt(options.assistantProfile)
+		: "";
+	const preflightPrompt = options?.preflightContext?.trim()
+		? options.preflightContext.trim()
 		: "";
 
 	return `You are Proddy, a personal work assistant for team workspaces.
@@ -394,7 +614,7 @@ Guidelines:
 - For broad catch-up questions like "what happened in general", summarize concrete updates when data exists
 - Reuse recent conversation context for short follow-ups like "what about release?"
 - Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."
-- ALWAYS use integration tools (runGithubTool, runGmailTool, runSlackTool, etc.) when the user asks about those services — do NOT say you can't access them
+- ALWAYS use integration tools (runGithubTool, runGmailTool, runSlackTool, etc.) when the user asks about those services ï¿½ do NOT say you can't access them
 
 Available capabilities:
 - Calendar: View today's/tomorrow's/next week's meetings
@@ -406,6 +626,15 @@ Available capabilities:
 - Boards: View assigned cards across all boards
 - Workspace: Get overview statistics and a general workspace catch-up summary
 - Search: Semantic search across messages, notes, tasks as fallback only
+- GitHub: List repos, create issues, and manage PRs with runGithubTool
+- GitHub repository policy: "my repos" means repositories for the authenticated user, not starred repositories and not public search results
+- Gmail: Send email, read inbox, and search messages with runGmailTool
+- Slack: Send messages and browse channels with runSlackTool
+- Notion: Create and read pages and databases with runNotionTool
+- ClickUp: Create and manage tasks with runClickupTool
+- Linear: Create and manage issues with runLinearTool
+
+${preflightPrompt}
 
 ${personalizationPrompt}
 
@@ -413,13 +642,6 @@ ${pendingTaskInstructions}
 
 When a user asks about their schedule, tasks, or workspace, use the appropriate tools to fetch current data.`;
 }
-- GitHub: List repos, create issues, manage PRs — use runGithubTool
-- Gmail: Send emails, read inbox, search messages — use runGmailTool
-- Slack: Send messages, browse channels — use runSlackTool
-- Notion: Create/read pages and databases — use runNotionTool
-- ClickUp: Create and manage tasks — use runClickupTool
-- Linear: Create and manage issues — use runLinearTool
-
 // Define tools that AI can use (handles are created inside the action)
 const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
@@ -778,7 +1000,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "runGithubTool",
 		description:
-			"Use GitHub to create issues, comment on PRs, or search repositories. Provide a clear instruction like 'create an issue in repo X about bug Y'.",
+			"Use GitHub to list repositories for the authenticated user, list repositories starred by the authenticated user, create issues, comment on PRs, or manage repository data. For requests like 'list my repos', pass an instruction that explicitly says to list repositories for the authenticated user. For requests like 'my starred repositories', pass an instruction that explicitly says to list repositories starred by the authenticated user. Do not use public repository search unless the user explicitly asks for search.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -1162,6 +1384,29 @@ export const sendMessage = action({
 				components.databaseChat.messages.list,
 				{ conversationId: activeConversationId as any }
 			);
+			const preflightContext = await resolvePreflightContext({
+				ctx,
+				workspaceId: resolvedWorkspaceId,
+				userId: resolvedUserId,
+				message: args.message,
+			});
+
+			if (preflightContext.earlyResponse) {
+				const responseText = preflightContext.earlyResponse;
+				await ctx.runMutation(components.databaseChat.messages.add, {
+					conversationId: activeConversationId as any,
+					role: "assistant",
+					content: responseText,
+				});
+				await ctx.runMutation(api.assistantConversations.upsertConversation, {
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+					conversationId: activeConversationId,
+					lastMessageAt: Date.now(),
+				});
+
+				return { success: true, content: responseText };
+			}
 
 			// Build messages array with system prompt
 			const messages = [
@@ -1175,6 +1420,7 @@ export const sendMessage = action({
 						pendingTaskDraftAssigneeMemberId:
 							pendingTaskDraft?.assigneeMemberId,
 						pendingTaskDraftAssigneeName: pendingTaskDraft?.assigneeName,
+						preflightContext: preflightContext.promptText,
 						assistantProfile: assistantProfile ?? undefined,
 					}),
 				},
@@ -1185,12 +1431,9 @@ export const sendMessage = action({
 			];
 
 			// Create stream for delta-based streaming
-			streamId = await ctx.runMutation(
-				components.databaseChat.stream.create,
-				{
-					conversationId: activeConversationId as any,
-				}
-			);
+			streamId = await ctx.runMutation(components.databaseChat.stream.create, {
+				conversationId: activeConversationId as any,
+			});
 
 			const openai = new OpenAI({
 				apiKey: apiKey,
@@ -1220,7 +1463,7 @@ export const sendMessage = action({
 				completion.choices[0]?.message?.content ||
 				"I couldn't find anything relevant yet.";
 			const toolCalls = completion.choices[0]?.message?.tool_calls;
-			const collectedSourceRefs: string[] = [];
+			const collectedSourceRefs: string[] = [...preflightContext.sourceRefs];
 
 			// If the model returns empty content and no tools, fall back to RAG search.
 			// This makes keyword-only queries (e.g. "onboarding") still produce something useful.
@@ -1333,7 +1576,9 @@ export const sendMessage = action({
 							};
 						} catch (error) {
 							const message =
-								error instanceof Error ? error.message : "Tool execution failed";
+								error instanceof Error
+									? error.message
+									: "Tool execution failed";
 							return {
 								result: {
 									success: false,
@@ -1395,7 +1640,10 @@ export const sendMessage = action({
 						streamId,
 					});
 				} catch (streamError) {
-					console.warn("[Assistant] Failed to close stream after error:", streamError);
+					console.warn(
+						"[Assistant] Failed to close stream after error:",
+						streamError
+					);
 				}
 			}
 			try {
@@ -1415,7 +1663,10 @@ export const sendMessage = action({
 					lastMessageAt: Date.now(),
 				});
 			} catch (persistError) {
-				console.warn("[Assistant] Failed to persist error response:", persistError);
+				console.warn(
+					"[Assistant] Failed to persist error response:",
+					persistError
+				);
 			}
 			return {
 				success: false,

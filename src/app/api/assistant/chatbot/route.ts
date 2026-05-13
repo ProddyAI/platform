@@ -225,7 +225,7 @@ export async function POST(req: NextRequest) {
 				queryLower
 			);
 		const needsGithub =
-			/\b(github|github\s+(repo|issue|pr|commit)|in\s+github|on\s+github)\b/i.test(
+			/\b(github|github\s+(repo|repos|repository|repositories|issue|pr|commit)|in\s+github|on\s+github|my\s+(github\s+)?(repo|repos|repository|repositories))\b/i.test(
 				queryLower
 			);
 		const needsSlack =

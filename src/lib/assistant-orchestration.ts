@@ -1,6 +1,6 @@
 import {
-	buildAssistantProfilePrompt,
 	type AssistantProfileRecord,
+	buildAssistantProfilePrompt,
 } from "../../convex/assistant/profile";
 
 export const ASSISTANT_METADATA_SCHEMA_VERSION = "v1";
@@ -136,7 +136,9 @@ export function buildFollowUpContextHint(options: {
 	}
 
 	const history = (options.conversationHistory ?? [])
-		.filter((entry) => typeof entry.content === "string" && entry.content.trim())
+		.filter(
+			(entry) => typeof entry.content === "string" && entry.content.trim()
+		)
 		.slice(-6);
 	if (history.length === 0) {
 		return "";
@@ -148,7 +150,8 @@ export function buildFollowUpContextHint(options: {
 			(entry) =>
 				entry.role === "user" &&
 				typeof entry.content === "string" &&
-				entry.content.trim().toLowerCase() !== options.message.trim().toLowerCase()
+				entry.content.trim().toLowerCase() !==
+					options.message.trim().toLowerCase()
 		)?.content;
 	const lastAssistantAnswer = [...history]
 		.reverse()
@@ -190,6 +193,7 @@ export function classifyAssistantQuery(message: string): AssistantIntent {
 
 export function buildAssistantSystemPrompt(options?: {
 	workspaceContext?: string;
+	preflightContext?: string;
 	connectedApps?: string[];
 	externalToolsAllowed?: boolean;
 	conversationHistory?: AssistantConversationMessage[];
@@ -240,6 +244,9 @@ NEVER say you can't access these apps - you have active connections and tools to
 	const contextLine = options?.workspaceContext?.trim()
 		? `Workspace context: ${options.workspaceContext.trim()}`
 		: "";
+	const preflightContextLine = options?.preflightContext?.trim()
+		? options.preflightContext.trim()
+		: "";
 	const personalizationLine = options?.assistantProfile
 		? buildAssistantProfilePrompt(options.assistantProfile)
 		: "";
@@ -255,6 +262,7 @@ NEVER say you can't access these apps - you have active connections and tools to
 		BASE_SYSTEM_PROMPT,
 		policyLine,
 		contextLine,
+		preflightContextLine,
 		personalizationLine,
 		followUpHint,
 	]
