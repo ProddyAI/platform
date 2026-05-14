@@ -62,6 +62,7 @@ import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
 import type * as richText from "../richText.js";
 import type * as search from "../search.js";
+import type * as stress from "../stress.js";
 import type * as tasks from "../tasks.js";
 import type * as threadTitles from "../threadTitles.js";
 import type * as typing from "../typing.js";
@@ -135,6 +136,7 @@ declare const fullApi: ApiFromModules<{
   reactions: typeof reactions;
   richText: typeof richText;
   search: typeof search;
+  stress: typeof stress;
   tasks: typeof tasks;
   threadTitles: typeof threadTitles;
   typing: typeof typing;

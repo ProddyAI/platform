@@ -52,6 +52,7 @@ import { useToast } from "@/components/ui/use-toast";
 interface DashboardChatbotProps {
 	workspaceId: Id<"workspaces">;
 	member: any;
+	initialPrompt?: string;
 }
 
 type NavigationAction = {
@@ -209,6 +210,7 @@ function parseAssistantMessageContent(content: string) {
 export const DashboardChatbot = ({
 	workspaceId,
 	member,
+	initialPrompt,
 }: DashboardChatbotProps) => (
 	<DatabaseChatProvider
 		api={{
@@ -221,13 +223,14 @@ export const DashboardChatbot = ({
 			sendMessage: api.assistantChat.sendMessage,
 		}}
 	>
-		<DashboardChatbotBody member={member} workspaceId={workspaceId} />
+		<DashboardChatbotBody member={member} workspaceId={workspaceId} initialPrompt={initialPrompt} />
 	</DatabaseChatProvider>
 );
 
 const DashboardChatbotBody = ({
 	workspaceId,
 	member,
+	initialPrompt,
 }: DashboardChatbotProps) => {
 	const [conversationId, setConversationId] = useState<string | null>(null);
 	const [welcomeMessage, setWelcomeMessage] = useState<Message | null>(null);
@@ -255,6 +258,20 @@ const DashboardChatbotBody = ({
 	>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const autocompleteRef = useRef<HTMLDivElement>(null);
+	// Track whether the initial prompt (from ?prompt= URL param) has already been sent
+	const initialPromptSentRef = useRef<boolean>(false);
+	// Track whether the user is currently scrolled near the bottom of the chat
+	const isNearBottomRef = useRef<boolean>(true);
+
+	// Helper: scroll the Radix ScrollArea viewport to the very bottom
+	const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+		const viewport = scrollAreaRef.current?.querySelector<HTMLElement>(
+			"[data-radix-scroll-area-viewport]"
+		);
+		if (viewport) {
+			viewport.scrollTo({ top: viewport.scrollHeight, behavior });
+		}
+	}, []);
 
 	const findAutocompleteTrigger = (text: string, cursorIndex: number) => {
 		const prefix = text.slice(0, cursorIndex);
@@ -382,6 +399,16 @@ const DashboardChatbotBody = ({
 		}
 	}, [conversationId, workspaceId, member, createConversation]);
 
+	// Auto-send initial prompt when provided via ?prompt= URL param (e.g. from stress widget buttons)
+	useEffect(() => {
+		if (initialPrompt && conversationId && !initialPromptSentRef.current) {
+			initialPromptSentRef.current = true;
+			send(initialPrompt).catch((error) => {
+				console.error("Error sending initial prompt:", error);
+			});
+		}
+	}, [initialPrompt, conversationId, send]);
+
 	// Update welcome message when integration status changes
 	useEffect(() => {
 		if (!integrationStatus.loading) {
@@ -479,17 +506,48 @@ Try asking me things like:`;
 		}
 	}, [workspaceId, member]);
 
-	// Scroll to bottom when messages change (e.g. after sending or receiving)
+	// --- SMART SCROLL MANAGEMENT ---
+
+	// 1. Attach a passive scroll listener to track whether the user is near the
+	//    bottom. If they scroll up to read history, auto-scroll pauses.
+	//    Scrolling back within 120 px of the bottom resumes it.
 	useEffect(() => {
-		if (scrollAreaRef.current) {
-			const scrollContainer = scrollAreaRef.current.querySelector(
-				"[data-radix-scroll-area-viewport]"
-			);
-			if (scrollContainer) {
-				scrollContainer.scrollTop = scrollContainer.scrollHeight;
-			}
+		const viewport = scrollAreaRef.current?.querySelector<HTMLElement>(
+			"[data-radix-scroll-area-viewport]"
+		);
+		if (!viewport) return;
+
+		const handleScroll = () => {
+			const { scrollTop, scrollHeight, clientHeight } = viewport;
+			isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 120;
+		};
+
+		viewport.addEventListener("scroll", handleScroll, { passive: true });
+		return () => viewport.removeEventListener("scroll", handleScroll);
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+	// 2. Jump to the very bottom (instantly, no animation) whenever a
+	//    conversation is first selected or created — like opening a chat app.
+	useEffect(() => {
+		if (!conversationId) return;
+		// Short timeout lets the DOM finish painting messages before scrolling
+		const timer = setTimeout(() => {
+			isNearBottomRef.current = true;
+			scrollToBottom("instant");
+		}, 100);
+		return () => clearTimeout(timer);
+	}, [conversationId, scrollToBottom]);
+
+	// 3. Smart auto-scroll on every message update and during streaming.
+	//    Only scrolls if the user is currently near the bottom — does NOT
+	//    forcibly yank them if they have scrolled up to read older messages.
+	useEffect(() => {
+		if (isNearBottomRef.current) {
+			// "instant" keeps up with rapid token streaming;
+			// "smooth" feels natural for new discrete messages.
+			scrollToBottom(isStreaming ? "instant" : "smooth");
 		}
-	}, []);
+	}, [allMessages, isStreaming, scrollToBottom]);
 
 	const handleSendMessage = async () => {
 		if (!input.trim() || !conversationId) return;
@@ -748,7 +806,7 @@ Try asking me things like:`;
 			</CardHeader>
 			<CardContent className="flex-1 overflow-hidden p-0">
 				<ScrollArea className="h-[calc(100vh-240px)] px-4" ref={scrollAreaRef}>
-					<div className="flex flex-col gap-4 py-4 pb-10">
+					<div className="flex flex-col gap-4 py-4 pb-4">
 						{renderedMessages.map((message) => (
 							<div
 								className={`flex ${

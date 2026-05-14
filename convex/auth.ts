@@ -191,6 +191,11 @@ const CustomGoogle = Google({
 	},
 });
 
+// Fix JWT private key newline encoding for Edge/Convex runtime environments
+if (process.env.JWT_PRIVATE_KEY) {
+	process.env.JWT_PRIVATE_KEY = process.env.JWT_PRIVATE_KEY.replace(/\\n/g, "\n");
+}
+
 export const { auth, signIn, signOut, store } = convexAuth({
 	providers: [CustomPassword, CustomGitHub, CustomGoogle],
 });
