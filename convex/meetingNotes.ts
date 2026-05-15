@@ -452,15 +452,15 @@ ${args.membersContext}
 			const prompt = `You are an expert AI meeting assistant. Analyze the following meeting transcript and transform it into actionable intelligence.
 ${membersInfo}
 Instructions:
-1. **Summary**: Generate a concise smart executive summary.
-2. **Action Items**: Extract all action items. For each:
-   - Provide a clear task title.
-   - Infer who it is assigned to based on the transcript. Match their name to one of the provided workspace members.
-   - If a match is found, include their "assigneeUserId" from the context. If no clear assignment is found, leave assigneeUserId empty.
+1. **Summary**: Generate a comprehensive and professional executive summary. Highlight the core purpose, key discussion points, and next steps.
+2. **Action Items**: Extract EVERY action item, task, or follow-up mentioned, even if subtle. For each:
+   - Provide a clear, actionable task title.
+   - Infer who it is assigned to. Match their name to one of the provided workspace members if possible.
+   - If a match is found, include their "assigneeUserId".
    - Provide the assignee's display name in the "assignee" field.
    - Determine the priority (high, medium, or low).
    - Include any due date mentioned.
-3. **Decisions**: List all concrete and specific decisions made.
+3. **Decisions**: List all concrete and specific decisions, agreements, and consensus points made. Be thorough.
 
 Transcript:
 ${newTranscript}`;
@@ -501,11 +501,11 @@ ${newTranscript}`;
 					.describe("Key decisions made during the meeting."),
 			});
 
-			// Try multiple models with fallback (same as generateChatNotes)
+			// Try multiple models with fallback
 			const models = [
-				"gemini-2.5-flash",
 				"gemini-2.0-flash",
 				"gemini-1.5-flash",
+				"gemini-1.5-pro",
 			];
 			let lastError: unknown = null;
 			let object: any = null;
@@ -610,6 +610,33 @@ ${newTranscript}`;
 			}
 
 			// Save as a versioned generation
+			await ctx.runMutation(internal.meetingNotes.saveGeneration, {
+				meetingNoteId: args.noteId,
+				generationNumber,
+				summary: object.summary,
+				actionItems: (object.actionItems as any[]).map((item: any) => ({
+					title: item.title,
+					assignee: item.assignee || undefined,
+					assigneeUserId: item.assigneeUserId || undefined,
+					dueDate: item.dueDate || undefined,
+					priority: item.priority || undefined,
+				})),
+				decisions: object.decisions,
+				processedTranscriptStart: lastProcessedIndex,
+				processedTranscriptEnd: fullTranscript.length,
+			});
+		} catch (error) {
+			console.error("AI Generation Error", error);
+			await ctx.runMutation(internal.meetingNotes.updateStatus, {
+				noteId: args.noteId,
+				status: "failed",
+			});
+			throw new Error(
+				error instanceof Error ? error.message : "Failed to generate AI notes"
+			);
+		}
+	},
+});
 			await ctx.runMutation(internal.meetingNotes.saveGeneration, {
 				meetingNoteId: args.noteId,
 				generationNumber,
@@ -786,7 +813,7 @@ ${args.transcript}
 `;
 
 		// Try primary model, fallback to secondary on 503
-		const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+		const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
 		let lastError: unknown = null;
 
 		for (const modelName of models) {

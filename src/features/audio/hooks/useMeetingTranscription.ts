@@ -140,11 +140,12 @@ export const useMeetingTranscription = (
 		isListening,
 	]);
 
-	const triggerGenerateInsights = async () => {
+	const triggerGenerateInsights = async (membersContext?: string) => {
 		if (meetingNotes?._id && meetingNotes.transcript.trim().length > 10) {
 			await generateAI({
 				noteId: meetingNotes._id,
 				transcript: meetingNotes.transcript,
+				membersContext,
 			});
 		}
 	};

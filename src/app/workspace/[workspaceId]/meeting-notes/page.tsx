@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
 	Brain,
 	CheckSquare,
@@ -165,6 +165,12 @@ function NoteCard({
 	onToggle: () => void;
 }) {
 	const [activeTab, setActiveTab] = useState("summary");
+	const [isPushingTasks, setIsPushingTasks] = useState(false);
+	const [isSavingNote, setIsSavingNote] = useState(false);
+
+	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
+	const createNote = useMutation(api.notes.create);
+
 	const generations = useQuery(api.meetingNotes.getGenerations, {
 		roomId: note.roomId,
 	});
@@ -321,6 +327,52 @@ function NoteCard({
 					>
 						<Download className="w-3.5 h-3.5 text-blue-500" /> Export Word
 					</Button>
+					<div className="flex-1" />
+					<Button
+						className="h-8 text-[11px] font-bold gap-1.5 border-emerald-100 dark:border-emerald-900/30 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
+						disabled={isSavingNote}
+						onClick={async () => {
+							try {
+								setIsSavingNote(true);
+								const summary = currentGen?.summary || note.summary || "";
+								const tasks = (currentGen?.actionItems || note.actionItems || [])
+									.map((t: any) =>
+										typeof t === "string" ? `- ${t}` : `- ${t.title}`
+									)
+									.join("\n");
+								const decisions = (currentGen?.decisions || note.decisions || [])
+									.map((d: string) => `- ${d}`)
+									.join("\n");
+
+								const textRep = `Summary:\n${summary}\n\nAction Items:\n${tasks}\n\nDecisions:\n${decisions}`;
+								const delta = JSON.stringify({ ops: [{ insert: textRep }] });
+
+								await createNote({
+									title:
+										note.title ||
+										`AI Meeting Notes - ${new Date(note.createdAt).toLocaleDateString()}`,
+									content: delta,
+									workspaceId: note.workspaceId as Id<"workspaces">,
+									icon: "✨",
+									tags: ["AI", "Meeting"],
+								});
+								toast.success("Notes saved to your workspace library!");
+							} catch (e) {
+								toast.error("Failed to save to library");
+							} finally {
+								setIsSavingNote(false);
+							}
+						}}
+						size="sm"
+						variant="outline"
+					>
+						{isSavingNote ? (
+							<div className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent" />
+						) : (
+							<Sparkles className="w-3.5 h-3.5" />
+						)}
+						Save to Note Library
+					</Button>
 				</div>
 			)}
 
@@ -416,9 +468,46 @@ function NoteCard({
 														<CheckSquare className="w-3.5 h-3.5 text-emerald-500" />{" "}
 														Action Items
 													</h4>
-													<span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-														{genItems.length} tasks
-													</span>
+													<div className="flex items-center gap-2">
+														<Button
+															className="h-7 text-[10px] font-bold gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
+															disabled={isPushingTasks}
+															onClick={async () => {
+																try {
+																	setIsPushingTasks(true);
+																	await createBulkTasks({
+																		workspaceId:
+																			note.workspaceId as Id<"workspaces">,
+																		tasks: genItems.map((t: any) => ({
+																			title: t.title,
+																			assigneeUserId:
+																				t.assigneeUserId || undefined,
+																			priority: t.priority || "medium",
+																		})),
+																	});
+																	toast.success(
+																		`Successfully pushed ${genItems.length} tasks to dashboard!`
+																	);
+																} catch (e) {
+																	toast.error("Failed to push tasks");
+																} finally {
+																	setIsPushingTasks(false);
+																}
+															}}
+															size="sm"
+															variant="outline"
+														>
+															{isPushingTasks ? (
+																<div className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent" />
+															) : (
+																<Target className="w-3 h-3" />
+															)}
+															Push to Dashboard
+														</Button>
+														<span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+															{genItems.length} tasks
+														</span>
+													</div>
 												</div>
 												<div className="space-y-2">
 													{genItems.map((task: any, i: number) => (

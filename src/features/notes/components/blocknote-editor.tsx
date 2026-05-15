@@ -111,10 +111,10 @@ export const BlockNoteEditor = ({
 				}
 			};
 
-			window.addEventListener("proddy:insert-ai-notes", handleAiInsertion as EventListener);
+			window.addEventListener("proddy:insert-ai-notes", handleAiInsertion as unknown as EventListener);
 
 			return () => {
-				window.removeEventListener("proddy:insert-ai-notes", handleAiInsertion as EventListener);
+				window.removeEventListener("proddy:insert-ai-notes", handleAiInsertion as unknown as EventListener);
 				// Clear timeout on cleanup
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);

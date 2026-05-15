@@ -1,8 +1,12 @@
-import { Brain, CheckSquare, FileText, Loader2, Target, X } from "lucide-react";
+import { Brain, CheckSquare, FileText, Loader2, Sparkles, Target, X } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 import { useMeetingTranscription } from "../hooks/useMeetingTranscription";
 
 interface MeetingNotesPanelProps {
@@ -20,6 +24,11 @@ export const MeetingNotesPanel = ({
 	onClose,
 	isAudioMuted,
 }: MeetingNotesPanelProps) => {
+	const members = useQuery(api.members.get, { workspaceId: workspaceId as Id<"workspaces"> }) || [];
+	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
+	const createNote = useMutation(api.notes.create);
+	const generations = useQuery(api.meetingNotes.getGenerations, { roomId });
+	
 	const { meetingNotes, isListening, triggerGenerateInsights } =
 		useMeetingTranscription(
 			roomId,
@@ -29,10 +38,48 @@ export const MeetingNotesPanel = ({
 		);
 
 	const [activeTab, setActiveTab] = useState("transcript");
+	const [isPushingTasks, setIsPushingTasks] = useState(false);
+	const [isSavingNote, setIsSavingNote] = useState(false);
 
 	const handleGenerate = () => {
-		triggerGenerateInsights();
+		const membersContext = members
+			.map(
+				(m: any) =>
+					`- ${m.user?.name || "Unknown"} (ID: ${m.user?._id || "Unknown"})`
+			)
+			.join("\n");
+		triggerGenerateInsights(membersContext);
 		setActiveTab("summary");
+	};
+
+	const handleSaveToLibrary = async () => {
+		if (!meetingNotes) return;
+		setIsSavingNote(true);
+		try {
+			const tasks = (meetingNotes.actionItems || [])
+				.map((t: string) => `- ${t}`)
+				.join("\n");
+			const decisions = (meetingNotes.decisions || [])
+				.map((d: string) => `- ${d}`)
+				.join("\n");
+
+			const textRep = `Summary:\n${meetingNotes.summary}\n\nAction Items:\n${tasks}\n\nDecisions:\n${decisions}`;
+			const delta = JSON.stringify({ ops: [{ insert: textRep }] });
+
+			await createNote({
+				title: `AI Meeting Notes - ${new Date().toLocaleDateString()}`,
+				content: delta,
+				workspaceId: workspaceId as Id<"workspaces">,
+				channelId: channelId as Id<"channels">,
+				icon: "✨",
+				tags: ["AI", "Meeting"],
+			});
+			toast.success("Notes saved to your workspace library!");
+		} catch (e) {
+			toast.error("Failed to save to library");
+		} finally {
+			setIsSavingNote(false);
+		}
 	};
 
 	const handleInsertToNote = () => {
@@ -86,44 +133,62 @@ export const MeetingNotesPanel = ({
 
 			{/* Status / Trigger */}
 			<div className="p-4 border-b border-[#2B2D31] bg-[#1E2125]">
-				<div className="flex items-center justify-between mb-2">
-					<div className="flex items-center gap-2">
-						<div
-							className={`w-2 h-2 rounded-full ${isListening ? "bg-red-500 animate-pulse" : "bg-gray-500"}`}
-						/>
-						<span className="text-xs text-gray-400">
-							{isListening ? "Listening..." : "Microphone muted"}
-						</span>
-					</div>
-					<div className="flex gap-2">
-						{meetingNotes?.status === "completed" && (
+				<div className="flex flex-col gap-3">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							<div
+								className={`w-2 h-2 rounded-full ${isListening ? "bg-red-500 animate-pulse" : "bg-gray-500"}`}
+							/>
+							<span className="text-xs text-gray-400">
+								{isListening ? "Listening..." : "Microphone muted"}
+							</span>
+						</div>
+						<div className="flex gap-2">
+							{meetingNotes?.status === "completed" && (
+								<Button
+									className="bg-green-600 hover:bg-green-700 text-white border-0 text-xs px-3 h-8"
+									onClick={handleInsertToNote}
+									size="sm"
+									variant="secondary"
+								>
+									Insert into Note
+								</Button>
+							)}
 							<Button
-								className="bg-green-600 hover:bg-green-700 text-white border-0 text-xs px-3 h-8"
-								onClick={handleInsertToNote}
+								className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 text-xs px-3 h-8"
+								disabled={
+									!meetingNotes?.transcript ||
+									meetingNotes.status === "generating"
+								}
+								onClick={handleGenerate}
 								size="sm"
 								variant="secondary"
 							>
-								Insert into Note
+								{meetingNotes?.status === "generating" ? (
+									<Loader2 className="w-3 h-3 animate-spin mr-2" />
+								) : null}
+								{meetingNotes?.status === "completed"
+									? "Regenerate"
+									: "Generate AI Notes"}
 							</Button>
-						)}
-						<Button
-							className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 text-xs px-3 h-8"
-							disabled={
-								!meetingNotes?.transcript ||
-								meetingNotes.status === "generating"
-							}
-							onClick={handleGenerate}
-							size="sm"
-							variant="secondary"
-						>
-							{meetingNotes?.status === "generating" ? (
-								<Loader2 className="w-3 h-3 animate-spin mr-2" />
-							) : null}
-							{meetingNotes?.status === "completed"
-								? "Regenerate"
-								: "Generate AI Notes"}
-						</Button>
+						</div>
 					</div>
+					
+					{meetingNotes?.summary && (
+						<Button
+							className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-xs h-8 gap-2"
+							disabled={isSavingNote}
+							onClick={handleSaveToLibrary}
+							size="sm"
+						>
+							{isSavingNote ? (
+								<Loader2 className="w-3 h-3 animate-spin" />
+							) : (
+								<Sparkles className="w-3.5 h-3.5" />
+							)}
+							Save to Workspace Note Library
+						</Button>
+					)}
 				</div>
 			</div>
 
@@ -247,10 +312,43 @@ export const MeetingNotesPanel = ({
 						) : meetingNotes?.actionItems &&
 							meetingNotes.actionItems.length > 0 ? (
 							<div className="space-y-3">
-								<h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-									<CheckSquare className="w-4 h-4 text-orange-400" /> Action
-									Items
-								</h3>
+								<div className="flex items-center justify-between mb-3">
+									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
+										<CheckSquare className="w-4 h-4 text-orange-400" /> Action
+										Items
+									</h3>
+									<Button
+										className="h-7 text-[10px] font-bold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
+										disabled={isPushingTasks || !generations || generations.length === 0}
+										onClick={async () => {
+											try {
+												setIsPushingTasks(true);
+												const latestGen = generations![generations!.length - 1];
+												await createBulkTasks({
+													workspaceId: workspaceId as Id<"workspaces">,
+													tasks: latestGen.actionItems.map((t: any) => ({
+														title: t.title,
+														assigneeUserId: t.assigneeUserId || undefined,
+														priority: t.priority || "medium",
+													})),
+												});
+												toast.success(`Successfully pushed ${latestGen.actionItems.length} tasks to dashboard!`);
+											} catch (e) {
+												toast.error("Failed to push tasks");
+											} finally {
+												setIsPushingTasks(false);
+											}
+										}}
+										size="sm"
+									>
+										{isPushingTasks ? (
+											<Loader2 className="w-3 h-3 animate-spin" />
+										) : (
+											<Target className="w-3 h-3" />
+										)}
+										Push to Tasks
+									</Button>
+								</div>
 								{meetingNotes.actionItems.map((task, i) => (
 									<div
 										className="flex items-start gap-3 bg-[#2B2D31] p-3 rounded-md border border-[#3A3D42]"
