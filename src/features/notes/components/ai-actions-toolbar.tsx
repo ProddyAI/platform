@@ -75,12 +75,60 @@ interface AIActionsToolbarProps {
 	className?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Retry helper — retries only on transient network errors (5xx / network fail)
+// ---------------------------------------------------------------------------
+
+async function fetchWithRetry(
+	url: string,
+	init: RequestInit,
+	maxRetries = 2
+): Promise<Response> {
+	let lastError: unknown;
+
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		if (attempt > 0) {
+			// Exponential backoff: 500ms, 1000ms
+			await new Promise((resolve) =>
+				setTimeout(resolve, 500 * 2 ** (attempt - 1))
+			);
+		}
+
+		try {
+			const response = await fetch(url, init);
+
+			// Only retry on 5xx server errors — 4xx are caller errors, don't retry
+			if (response.status >= 500 && attempt < maxRetries) {
+				lastError = new Error(`Server error: ${response.status}`);
+				continue;
+			}
+
+			return response;
+		} catch (err) {
+			// Network-level failure (no response) — safe to retry
+			lastError = err;
+
+			// Don't retry if the request was aborted by the user
+			if ((err as Error).name === "AbortError") throw err;
+		}
+	}
+
+	throw lastError;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export const AIActionsToolbar = ({
 	editorRef,
 	isLoading = false,
 	className,
 }: AIActionsToolbarProps) => {
 	const [activeAction, setActiveAction] = useState<AIAction | null>(null);
+	// _streamedText is kept in state so streaming-indicator renders correctly,
+	// but the value is intentionally not rendered (accumulated text is parsed
+	// once complete and inserted as blocks).
 	const [_streamedText, setStreamedText] = useState("");
 	const [isStreaming, setIsStreaming] = useState(false);
 	const abortControllerRef = useRef<AbortController | null>(null);
@@ -96,12 +144,13 @@ export const AIActionsToolbar = ({
 
 	const runAIAction = useCallback(
 		async (action: AIActionConfig) => {
-			if (!editorRef.current) {
+			// Capture editorRef.current at call time to avoid stale-ref reads
+			// later when async work completes
+			const editor = editorRef.current;
+			if (!editor) {
 				toast.error("Editor not ready");
 				return;
 			}
-
-			const editor = editorRef.current;
 
 			// Get current content as markdown
 			let currentContent: string;
@@ -125,12 +174,16 @@ export const AIActionsToolbar = ({
 			abortControllerRef.current = abortController;
 
 			try {
-				const response = await fetch(action.endpoint, {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ content: currentContent }),
-					signal: abortController.signal,
-				});
+				const response = await fetchWithRetry(
+					action.endpoint,
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ content: currentContent }),
+						signal: abortController.signal,
+					},
+					2 // up to 2 retries on transient server errors
+				);
 
 				if (!response.ok) {
 					const errorData = await response.json().catch(() => ({}));
@@ -158,7 +211,8 @@ export const AIActionsToolbar = ({
 					setStreamedText(accumulated);
 				}
 
-				// Parse accumulated markdown into blocks and insert
+				// Parse accumulated markdown into blocks and insert via a single
+				// atomic transaction (one Undo step for the entire AI output)
 				if (accumulated.trim()) {
 					try {
 						const newBlocks =
@@ -166,17 +220,20 @@ export const AIActionsToolbar = ({
 
 						if (newBlocks && newBlocks.length > 0) {
 							editor.transact(() => {
-								const currentBlocks = editor.document;
+								// Re-fetch currentBlocks inside the transaction so we always
+								// operate on the latest document state, not a stale snapshot
+								// captured before the async stream completed.
+								const latestBlocks = editor.document;
 
 								if (action.insertMode === "replace") {
-									editor.replaceBlocks(currentBlocks, newBlocks);
+									editor.replaceBlocks(latestBlocks, newBlocks);
 								} else {
 									// Append after current content
-									const lastBlock = currentBlocks[currentBlocks.length - 1];
+									const lastBlock = latestBlocks[latestBlocks.length - 1];
 									if (lastBlock) {
 										editor.insertBlocks(newBlocks, lastBlock, "after");
 									} else {
-										editor.replaceBlocks(currentBlocks, newBlocks);
+										editor.replaceBlocks(latestBlocks, newBlocks);
 									}
 								}
 							});
@@ -186,7 +243,10 @@ export const AIActionsToolbar = ({
 							toast.error("Could not parse AI response");
 						}
 					} catch (editorError) {
-						console.error("Editor insertion error:", editorError);
+						// Log to stderr — safe for production, no PII exposed to client
+						process.stderr?.write?.(
+							`[AI Toolbar] Editor insertion error: ${editorError instanceof Error ? editorError.message : String(editorError)}\n`
+						);
 						toast.error("Failed to insert AI content into editor");
 					}
 				}
@@ -194,7 +254,10 @@ export const AIActionsToolbar = ({
 				if ((error as Error).name === "AbortError") {
 					toast.info("AI action cancelled");
 				} else {
-					console.error(`[AI ${action.id}] Error:`, error);
+					// Log to stderr — safe for production
+					process.stderr?.write?.(
+						`[AI ${action.id}] ${error instanceof Error ? error.message : String(error)}\n`
+					);
 					toast.error(
 						error instanceof Error ? error.message : "AI action failed"
 					);

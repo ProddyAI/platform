@@ -156,6 +156,25 @@ export const processUpload = action({
 });
 ```
 
+> **Note:** `internal.results.store` must be defined and exported as an
+> `internalMutation` in your Convex backend (e.g. `convex/results.ts`).
+> A plain function or a public `mutation` will not work here — `ctx.runMutation`
+> with an `internal.*` reference only resolves correctly against registered
+> internal mutations.
+>
+> ```ts
+> // convex/results.ts
+> import { internalMutation } from "./_generated/server";
+> import { v } from "convex/values";
+>
+> export const store = internalMutation({
+>   args: { result: v.any() },
+>   handler: async (ctx, { result }) => {
+>     await ctx.db.insert("results", result);
+>   },
+> });
+> ```
+
 ### 5. Trim return values
 
 Only return what the client needs. If a query fetches full documents but the

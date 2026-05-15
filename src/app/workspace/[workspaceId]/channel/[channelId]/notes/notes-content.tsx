@@ -90,13 +90,13 @@ export const NotesContent = ({
 	const handleSave = useCallback(async () => {
 		if (!activeNoteId) return;
 		try {
-			await handleUpdate({ content: localContent });
+			await handleUpdate({ content: localContent, title: localTitle });
 			toast.success("Note saved");
 		} catch (error) {
 			console.error("Failed to save note:", error);
 			toast.error("Failed to save note");
 		}
-	}, [activeNoteId, localContent, handleUpdate]);
+	}, [activeNoteId, localContent, localTitle, handleUpdate]);
 
 	// Wrappers to match LiveSidebar expected signatures
 	const handleItemSelect = useCallback(
@@ -220,7 +220,9 @@ export const NotesContent = ({
 							showFullScreenToggle={true}
 							showTags={true}
 							tags={activeNote?.tags || []}
-							title={isTyping ? localTitle : activeNote?.title || "Untitled Note"}
+							title={
+								isTyping ? localTitle : activeNote?.title || "Untitled Note"
+							}
 							toggleFullScreen={memoizedToggleFullScreen}
 							type="notes"
 							updatedAt={activeNote?.updatedAt}
@@ -242,9 +244,12 @@ export const NotesContent = ({
 										<FileText className="h-8 w-8 text-violet-500 dark:text-violet-400" />
 									</div>
 									<div>
-										<h3 className="text-lg font-semibold mb-1">No note selected</h3>
+										<h3 className="text-lg font-semibold mb-1">
+											No note selected
+										</h3>
 										<p className="text-sm text-muted-foreground">
-											Choose a note from the sidebar or create a new one to start writing.
+											Choose a note from the sidebar or create a new one to
+											start writing.
 										</p>
 									</div>
 									<Button

@@ -94,7 +94,19 @@ function SnapshotView() {
   const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
-    client.query(api.items.snapshot).then(setItems);
+    // Use consistentQuery for a snapshot read that is consistent with the
+    // database state at the moment the request is processed. This avoids
+    // serving a stale cached result that reactive useQuery would normally
+    // bypass by subscribing to live updates.
+    //
+    // ⚠️  consistentQuery is currently experimental and may change.
+    //     client.query() is the stable alternative but may return a cached
+    //     result; prefer consistentQuery when snapshot consistency matters.
+    //
+    // ⚠️  This snapshot reflects the database state at request time, not a
+    //     user-specified timestamp. If you need data "as of" a specific point
+    //     in time, that pattern is not currently supported by ConvexHttpClient.
+    client.consistentQuery(api.items.snapshot).then(setItems);
   }, []);
 
   return <ItemGrid items={items} />;
