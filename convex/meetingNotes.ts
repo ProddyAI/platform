@@ -637,33 +637,6 @@ ${newTranscript}`;
 		}
 	},
 });
-			await ctx.runMutation(internal.meetingNotes.saveGeneration, {
-				meetingNoteId: args.noteId,
-				generationNumber,
-				summary: object.summary,
-				actionItems: (object.actionItems as any[]).map((item: any) => ({
-					title: item.title,
-					assignee: item.assignee || undefined,
-					assigneeUserId: item.assigneeUserId || undefined,
-					dueDate: item.dueDate || undefined,
-					priority: item.priority || undefined,
-				})),
-				decisions: object.decisions,
-				processedTranscriptStart: lastProcessedIndex,
-				processedTranscriptEnd: fullTranscript.length,
-			});
-		} catch (error) {
-			console.error("AI Generation Error", error);
-			await ctx.runMutation(internal.meetingNotes.updateStatus, {
-				noteId: args.noteId,
-				status: "failed",
-			});
-			throw new Error(
-				error instanceof Error ? error.message : "Failed to generate AI notes"
-			);
-		}
-	},
-});
 
 // ─── SAVE MEETING NOTES (for direct save / upload pipeline) ─────────────────
 
