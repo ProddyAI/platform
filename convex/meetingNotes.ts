@@ -4,9 +4,143 @@ import { generateObject } from "ai";
 import { v } from "convex/values";
 import { z } from "zod";
 import { api, internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { getMember } from "./utils";
+
+// ─── TYPES ──────────────────────────────────────────────────────────────────
+
+type AIActionItem = {
+	title: string;
+	assignee?: string;
+	assigneeUserId?: string;
+	dueDate?: string;
+	priority?: "low" | "medium" | "high";
+};
+
+type AIInsightsResponse = {
+	summary: string;
+	actionItems: AIActionItem[];
+	decisions: string[];
+};
+
+// ─── HELPER FUNCTIONS ───────────────────────────────────────────────────────
+
+/**
+ * Executes AI generation with fallback logic across multiple models.
+ */
+async function executeAIGeneration(
+	prompt: string,
+	schema: z.ZodType<AIInsightsResponse>
+): Promise<AIInsightsResponse | null> {
+	const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+	const apiKey =
+		process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+	if (!apiKey) {
+		throw new Error("GEMINI_API_KEY is not set.");
+	}
+
+	const google = createGoogleGenerativeAI({ apiKey });
+	let lastError: unknown = null;
+	let resultObject: AIInsightsResponse | null = null;
+
+	for (const modelName of models) {
+		try {
+			const result = await generateObject({
+				model: google(modelName),
+				schema,
+				prompt,
+			});
+			resultObject = result.object;
+			break;
+		} catch (e) {
+			lastError = e;
+			const errMsg = e instanceof Error ? e.message : String(e);
+			const retryableErrors = [
+				"503",
+				"429",
+				"Service Unavailable",
+				"overloaded",
+				"RESOURCE_EXHAUSTED",
+				"quota",
+			];
+
+			if (retryableErrors.some((err) => errMsg.includes(err))) {
+				// skipcq: JS-0002
+				console.log(`Model ${modelName} unavailable/quota exceeded, trying next...`);
+				continue;
+			}
+			throw e;
+		}
+	}
+
+	if (!resultObject && process.env.OPENAI_API_KEY) {
+		// skipcq: JS-0002
+		console.log("All Gemini models failed. Falling back to OpenAI gpt-4o-mini...");
+		resultObject = await fallbackToOpenAI(prompt);
+	}
+
+	if (!resultObject) {
+		throw lastError || new Error("All AI models are currently unavailable.");
+	}
+
+	return resultObject;
+}
+
+/**
+ * Fallback to OpenAI if Gemini fails.
+ */
+async function fallbackToOpenAI(
+	prompt: string
+): Promise<AIInsightsResponse | null> {
+	try {
+		const response = await fetch("https://api.openai.com/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+			},
+			body: JSON.stringify({
+				model: "gpt-4o-mini",
+				response_format: { type: "json_object" },
+				messages: [
+					{
+						role: "system",
+						content: `You must respond with valid JSON matching exactly this format:
+{
+  "summary": "Concise executive summary",
+  "actionItems": [
+    {
+      "title": "Task description",
+      "assignee": "Person name or null",
+      "dueDate": "Due date or null",
+      "priority": "low" | "medium" | "high"
+    }
+  ],
+  "decisions": ["Decision 1", "Decision 2"]
+}`,
+					},
+					{ role: "user", content: prompt },
+				],
+				temperature: 0.2,
+			}),
+		});
+
+		if (response.ok) {
+			const data = (await response.json()) as {
+				choices: { message: { content: string } }[];
+			};
+			const parsed = JSON.parse(data.choices[0].message.content);
+			if (parsed.summary && parsed.actionItems && parsed.decisions) {
+				return parsed as AIInsightsResponse;
+			}
+		}
+	} catch (openaiErr) {
+		// skipcq: JS-0002
+		console.error("OpenAI Fallback Error:", openaiErr);
+	}
+	return null;
+}
 
 // ─── QUERIES ─────────────────────────────────────────────────────────────────
 
@@ -404,7 +538,6 @@ export const generateAIInsights = action({
 		}
 
 		try {
-			// Fetch the note to get workspaceId, userId, and lastProcessedIndex
 			const note = await ctx.runQuery(api.meetingNotes.getById, {
 				noteId: args.noteId,
 			});
@@ -412,220 +545,76 @@ export const generateAIInsights = action({
 
 			const lastProcessedIndex = note.lastProcessedIndex || 0;
 			const fullTranscript = args.transcript;
-
-			// Only process NEW transcript content
 			const newTranscript = fullTranscript.slice(lastProcessedIndex).trim();
 
 			if (newTranscript.length < 10) {
-				// No new content to process
 				await ctx.runMutation(internal.meetingNotes.updateStatus, {
 					noteId: args.noteId,
 					status: "completed",
 				});
-				throw new Error(
-					"No new conversation to summarize since last generation."
-				);
+				throw new Error("No new conversation to summarize.");
 			}
 
-			// Update status to generating
 			await ctx.runMutation(internal.meetingNotes.updateStatus, {
 				noteId: args.noteId,
 				status: "generating",
 			});
 
-			// Get existing generations to determine generation number
 			const existingGenerations = await ctx.runQuery(
 				api.meetingNotes.getGenerations,
-				{
-					roomId: note.roomId,
-				}
+				{ roomId: note.roomId }
 			);
 			const generationNumber = existingGenerations.length + 1;
 
 			const membersInfo = args.membersContext
-				? `
-The workspace members are:
-${args.membersContext}
-`
+				? `\nThe workspace members are:\n${args.membersContext}\n`
 				: "";
 
 			const prompt = `You are an expert AI meeting assistant. Analyze the following meeting transcript and transform it into actionable intelligence.
 ${membersInfo}
 Instructions:
-1. **Summary**: Generate a comprehensive and professional executive summary. Highlight the core purpose, key discussion points, and next steps.
-2. **Action Items**: Extract EVERY action item, task, or follow-up mentioned, even if subtle. For each:
-   - Provide a clear, actionable task title.
-   - Infer who it is assigned to. Match their name to one of the provided workspace members if possible.
-   - If a match is found, include their "assigneeUserId".
-   - Provide the assignee's display name in the "assignee" field.
-   - Determine the priority (high, medium, or low).
-   - Include any due date mentioned.
-3. **Decisions**: List all concrete and specific decisions, agreements, and consensus points made. Be thorough.
+1. **Summary**: Generate a comprehensive and professional executive summary.
+2. **Action Items**: Extract EVERY action item, task, or follow-up. For each, include title, assignee, assigneeUserId (if matched), priority (low, medium, high), and dueDate.
+3. **Decisions**: List all concrete and specific decisions made.
 
 Transcript:
 ${newTranscript}`;
 
 			const schema = z.object({
-				summary: z
-					.string()
-					.describe("A concise executive summary of the meeting discussion."),
-				actionItems: z
-					.array(
-						z.object({
-							title: z.string().describe("The task description"),
-							assignee: z
-								.string()
-								.optional()
-								.describe(
-									"The display name of the person assigned to the task"
-								),
-							assigneeUserId: z
-								.string()
-								.optional()
-								.describe(
-									"The userId of the assigned workspace member, if matched"
-								),
-							dueDate: z
-								.string()
-								.optional()
-								.describe("Optional due date mentioned"),
-							priority: z
-								.enum(["low", "medium", "high"])
-								.optional()
-								.describe("Task priority"),
-						})
-					)
-					.describe("Action items extracted from the meeting."),
-				decisions: z
-					.array(z.string())
-					.describe("Key decisions made during the meeting."),
+				summary: z.string(),
+				actionItems: z.array(
+					z.object({
+						title: z.string(),
+						assignee: z.string().optional(),
+						assigneeUserId: z.string().optional(),
+						dueDate: z.string().optional(),
+						priority: z.enum(["low", "medium", "high"]).optional(),
+					})
+				),
+				decisions: z.array(z.string()),
 			});
 
-			// Try multiple models with fallback
-			const models = [
-				"gemini-2.0-flash",
-				"gemini-1.5-flash",
-				"gemini-1.5-pro",
-			];
-			let lastError: unknown = null;
-			let object: any = null;
+			const object = await executeAIGeneration(prompt, schema);
 
-			const apiKey =
-				process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-			if (!apiKey) {
-				throw new Error("GEMINI_API_KEY is not set.");
+			if (object) {
+				await ctx.runMutation(internal.meetingNotes.saveGeneration, {
+					meetingNoteId: args.noteId,
+					generationNumber,
+					summary: object.summary,
+					actionItems: object.actionItems.map((item) => ({
+						title: item.title,
+						assignee: item.assignee || undefined,
+						assigneeUserId: item.assigneeUserId || undefined,
+						dueDate: item.dueDate || undefined,
+						priority: item.priority || undefined,
+					})),
+					decisions: object.decisions,
+					processedTranscriptStart: lastProcessedIndex,
+					processedTranscriptEnd: fullTranscript.length,
+				});
 			}
-
-			const google = createGoogleGenerativeAI({ apiKey });
-
-			for (const modelName of models) {
-				try {
-					const result = await generateObject({
-						model: google(modelName),
-						schema,
-						prompt,
-					});
-					object = result.object;
-					break; // Success — stop trying
-				} catch (e) {
-					lastError = e;
-					const errMsg = e instanceof Error ? e.message : String(e);
-					// Retry on 503 (overloaded) or 429 (quota exceeded)
-					if (
-						errMsg.includes("503") ||
-						errMsg.includes("429") ||
-						errMsg.includes("Service Unavailable") ||
-						errMsg.includes("overloaded") ||
-						errMsg.includes("RESOURCE_EXHAUSTED") ||
-						errMsg.includes("quota")
-					) {
-						console.log(
-							`Model ${modelName} unavailable/quota exceeded, trying next...`
-						);
-						continue;
-					}
-					throw e; // Non-retryable errors
-				}
-			}
-
-			if (!object && process.env.OPENAI_API_KEY) {
-				console.log(
-					"All Gemini models failed. Falling back to OpenAI gpt-4o-mini..."
-				);
-				try {
-					const response = await fetch(
-						"https://api.openai.com/v1/chat/completions",
-						{
-							method: "POST",
-							headers: {
-								"Content-Type": "application/json",
-								Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-							},
-							body: JSON.stringify({
-								model: "gpt-4o-mini",
-								response_format: { type: "json_object" },
-								messages: [
-									{
-										role: "system",
-										content: `You must respond with valid JSON matching exactly this format:
-{
-  "summary": "Concise executive summary",
-  "actionItems": [
-    {
-      "title": "Task description",
-      "assignee": "Person name or null",
-      "dueDate": "Due date or null",
-      "priority": "low" | "medium" | "high"
-    }
-  ],
-  "decisions": ["Decision 1", "Decision 2"]
-}`,
-									},
-									{
-										role: "user",
-										content: prompt,
-									},
-								],
-								temperature: 0.2,
-							}),
-						}
-					);
-
-					if (response.ok) {
-						const data = await response.json();
-						const parsed = JSON.parse(data.choices[0].message.content);
-						if (parsed.summary && parsed.actionItems && parsed.decisions) {
-							object = parsed;
-						}
-					}
-				} catch (openaiErr) {
-					console.error("OpenAI Fallback Error:", openaiErr);
-				}
-			}
-
-			if (!object) {
-				throw (
-					lastError || new Error("All AI models are currently unavailable.")
-				);
-			}
-
-			// Save as a versioned generation
-			await ctx.runMutation(internal.meetingNotes.saveGeneration, {
-				meetingNoteId: args.noteId,
-				generationNumber,
-				summary: object.summary,
-				actionItems: (object.actionItems as any[]).map((item: any) => ({
-					title: item.title,
-					assignee: item.assignee || undefined,
-					assigneeUserId: item.assigneeUserId || undefined,
-					dueDate: item.dueDate || undefined,
-					priority: item.priority || undefined,
-				})),
-				decisions: object.decisions,
-				processedTranscriptStart: lastProcessedIndex,
-				processedTranscriptEnd: fullTranscript.length,
-			});
 		} catch (error) {
+			// skipcq: JS-0002
 			console.error("AI Generation Error", error);
 			await ctx.runMutation(internal.meetingNotes.updateStatus, {
 				noteId: args.noteId,
