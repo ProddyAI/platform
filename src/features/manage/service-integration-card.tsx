@@ -66,7 +66,7 @@ type ConnectedAccount = {
 type CurrentMember = {
 	_id: Id<"members">;
 	userId: string;
-	role: "owner" | "admin" | "member";
+	role: "owner" | "admin" | "member" | "viewer";
 };
 
 interface ServiceIntegrationCardProps {

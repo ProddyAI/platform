@@ -66,6 +66,24 @@ export async function POST(request: NextRequest) {
 		}
 		client.setAuth(token);
 
+		// Check usage limits before proceeding
+		const usageCheck = await client.query(
+			api.usageTracking.checkAIUsageLimitPublic,
+			{
+				workspaceId: trimmedWorkspaceId as Id<"workspaces">,
+				featureType: "aiSearch",
+			}
+		);
+
+		if (!usageCheck.allowed) {
+			return NextResponse.json(
+				{
+					error: `AI Search limit reached. Your plan allows ${usageCheck.limit} requests per month.`,
+				},
+				{ status: 403 }
+			);
+		}
+
 		// Fetch search data from Convex
 		const searchData = await client.query(api.aiSearch.getSearchData, {
 			workspaceId: trimmedWorkspaceId as Id<"workspaces">,
@@ -76,6 +94,14 @@ export async function POST(request: NextRequest) {
 			query: trimmedQuery,
 			searchData,
 		});
+
+		// Record successful usage
+		if ((result as any).success) {
+			await client.mutation(api.usageTracking.recordAIRequestPublic, {
+				workspaceId: trimmedWorkspaceId as Id<"workspaces">,
+				featureType: "aiSearch",
+			});
+		}
 
 		return NextResponse.json(result);
 	} catch (error) {

@@ -140,7 +140,7 @@ export const workspaceHeartbeat = mutation({
 			.unique();
 
 		if (!member) {
-			throw new Error("Not a member of this workspace");
+			return { roomToken: `workspace-${workspaceId}`, sessionToken: sessionId };
 		}
 
 		// Check if user has status tracking enabled

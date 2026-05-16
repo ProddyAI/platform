@@ -3,6 +3,52 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, internalQuery, mutation, query } from "./_generated/server";
 
+const BILLABLE_MEMBER_ROLES = new Set(["owner", "admin", "member"]);
+
+const getWorkspaceSeatTier = (workspace: {
+	plan?: string;
+}): "pro" | "enterprise" | undefined => {
+	if (workspace.plan === "pro" || workspace.plan === "enterprise") {
+		return workspace.plan;
+	}
+	return undefined;
+};
+
+const getPaidSeatLimit = (workspace: {
+	plan?: string;
+	proSeats?: number;
+	enterpriseSeats?: number;
+}) => {
+	if (workspace.plan === "enterprise") return workspace.enterpriseSeats ?? 0;
+	if (workspace.plan === "pro") return workspace.proSeats ?? 0;
+	return 0;
+};
+
+const getActiveBillableMemberCount = async (ctx: any, workspaceId: any) => {
+	const members = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id", (q: any) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	return members.filter((member: any) => BILLABLE_MEMBER_ROLES.has(member.role))
+		.length;
+};
+
+const getPendingBillableInviteCount = async (ctx: any, workspaceId: any) => {
+	const pendingInvites = await ctx.db
+		.query("workspaceInvites")
+		.withIndex("by_workspace", (q: any) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	const now = Date.now();
+	return pendingInvites.filter(
+		(invite: any) =>
+			!invite.used &&
+			invite.expiresAt > now &&
+			(invite.role === "admin" || invite.role === "member")
+	).length;
+};
+
 export const getInviteDetails = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -57,6 +103,50 @@ export const getInviteDetails = query({
 	},
 });
 
+export const getSeatUsage = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+	},
+	handler: async (ctx, args) => {
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) return null;
+
+		const paidMembers = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) =>
+				q.or(
+					q.eq(q.field("role"), "owner"),
+					q.eq(q.field("role"), "admin"),
+					q.eq(q.field("role"), "member")
+				)
+			)
+			.collect();
+
+		const pendingPaidInvites = await ctx.db
+			.query("workspaceInvites")
+			.withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("used"), false),
+					q.gt(q.field("expiresAt"), Date.now()),
+					q.or(q.eq(q.field("role"), "admin"), q.eq(q.field("role"), "member"))
+				)
+			)
+			.collect();
+
+		return {
+			proSeats: workspace.proSeats ?? 0,
+			enterpriseSeats: workspace.enterpriseSeats ?? 0,
+			occupiedSeats: paidMembers.length,
+			pendingInvites: pendingPaidInvites.length,
+			plan: workspace.plan ?? "free",
+		};
+	},
+});
+
 export const getWorkspaceJoinCode = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -98,6 +188,8 @@ export const insertInvite = mutation({
 		email: v.string(),
 		hash: v.string(),
 		expiresAt: v.number(),
+		role: v.union(v.literal("admin"), v.literal("member")),
+		comment: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -122,10 +214,37 @@ export const insertInvite = mutation({
 			);
 		}
 
+		// Enforce paid seat limits. Removed members free up one occupied seat;
+		// purchased seat quantity is only changed explicitly from billing.
+		if (args.role === "admin" || args.role === "member") {
+			const workspace = await ctx.db.get(args.workspaceId);
+			if (!workspace) throw new Error("Workspace not found");
+
+			const workspaceSeatTier = getWorkspaceSeatTier(workspace);
+			if (workspaceSeatTier) {
+				const totalSeatsPurchased = getPaidSeatLimit(workspace);
+				const totalOccupied =
+					(await getActiveBillableMemberCount(ctx, args.workspaceId)) +
+					(await getPendingBillableInviteCount(ctx, args.workspaceId));
+
+				if (totalOccupied >= totalSeatsPurchased) {
+					throw new Error(
+						`Seat limit reached for ${workspaceSeatTier}. You have ${totalSeatsPurchased} seats and all are occupied or invited. Remove a member, wait for an invite to expire, or add seats before inviting another user.`
+					);
+				}
+			}
+		}
+
+		const workspace = await ctx.db.get(args.workspaceId);
+		const invitePlan = workspace ? getWorkspaceSeatTier(workspace) : undefined;
+
 		return await ctx.db.insert("workspaceInvites", {
 			workspaceId: args.workspaceId,
 			email: args.email,
 			hash: args.hash,
+			role: args.role,
+			invitePlan,
+			comment: args.comment,
 			used: false,
 			expiresAt: args.expiresAt,
 			createdAt: Date.now(),
@@ -285,8 +404,6 @@ export const consumeInvite = mutation({
 			throw new Error("Invite expired");
 		}
 
-		await ctx.db.patch(args.inviteId, { used: true });
-
 		const existingMember = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
@@ -295,13 +412,43 @@ export const consumeInvite = mutation({
 			.unique();
 
 		if (existingMember) {
+			await ctx.db.patch(args.inviteId, { used: true });
 			return { success: true, message: "User already a member" };
 		}
+
+		const workspace = await ctx.db.get(invite.workspaceId);
+		if (!workspace) {
+			throw new Error("Workspace not found");
+		}
+
+		const workspaceSeatTier = getWorkspaceSeatTier(workspace);
+		if (
+			workspaceSeatTier &&
+			(invite.role === "admin" || invite.role === "member")
+		) {
+			const totalSeatsPurchased = getPaidSeatLimit(workspace);
+			const occupiedSeats = await getActiveBillableMemberCount(
+				ctx,
+				invite.workspaceId
+			);
+
+			if (occupiedSeats >= totalSeatsPurchased) {
+				throw new Error(
+					`Seat limit reached for ${workspaceSeatTier}. Ask a workspace owner or admin to free a seat or add seats before joining.`
+				);
+			}
+		}
+
+		await ctx.db.patch(args.inviteId, { used: true });
 
 		await ctx.db.insert("members", {
 			workspaceId: invite.workspaceId,
 			userId: userId,
-			role: "member",
+			role: invite.role,
+			seatTier:
+				invite.role === "admin" || invite.role === "member"
+					? workspaceSeatTier
+					: undefined,
 		});
 
 		const workspaceMembers = await ctx.db
