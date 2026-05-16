@@ -13,20 +13,20 @@ type PendingTaskDraft = {
 
 
 const CONFIRMATION_PATTERNS = [
-	/^yes\b/i,
-	/^confirm\b/i,
-	/^create it\b/i,
-	/^create the task\b/i,
-	/^go ahead\b/i,
-	/^looks good\b/i,
+	/^yes[.!?\s]*$/i,
+	/^confirm[.!?\s]*$/i,
+	/^create it[.!?\s]*$/i,
+	/^create the task[.!?\s]*$/i,
+	/^go ahead[.!?\s]*$/i,
+	/^looks good[.!?\s]*$/i,
 ];
 
 const CANCELLATION_PATTERNS = [
-	/^cancel\b/i,
-	/^never mind\b/i,
-	/^dont create it\b/i,
-	/^don't create it\b/i,
-	/^stop\b/i,
+	/^cancel[.!?\s]*$/i,
+	/^never mind[.!?\s]*$/i,
+	/^dont create it[.!?\s]*$/i,
+	/^don't create it[.!?\s]*$/i,
+	/^stop[.!?\s]*$/i,
 ];
 
 function formatDueDate(dueDate: number) {

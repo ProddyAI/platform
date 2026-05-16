@@ -111,7 +111,7 @@ export async function resolveAssistantToolLoop(
 			toolMessages.push({
 				role: "tool",
 				tool_call_id: toolCall.id,
-				content: JSON.stringify(executionResult.result),
+				content: JSON.stringify(executionResult.result ?? null),
 			});
 		}
 

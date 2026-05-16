@@ -993,8 +993,8 @@ export function filterToolsForQuery(
 
 		// Prefer owned/authenticated repository listings for "my repos" style requests.
 		const isMyReposQuery =
-			/\bmy\s+(github\s+)?(repos|repositories)\b/i.test(query) ||
-			/\blist\s+(out\s+)?my\s+(repos|repositories)\b/i.test(query);
+			/\bmy\s+(github\s+)?(repo|repos|repository|repositories)\b/i.test(query) ||
+			/\blist\s+(out\s+)?my\s+(repo|repos|repository|repositories)\b/i.test(query);
 		if (isMyReposQuery) {
 			if (toolName.includes("list_repositories_for_the_authenticated_user")) {
 				score += 500;

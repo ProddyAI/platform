@@ -45,7 +45,7 @@ function calculateStress(metrics: {
 	const { overdueCount, pendingSoon, totalPending, highPriorityPercent } = metrics;
 
 	// Step 1 – base formula
-	let baseScore = overdueCount * 10 + pendingSoon * 5 + totalPending * 2;
+	const baseScore = overdueCount * 10 + pendingSoon * 5 + totalPending * 2;
 
 	// Step 2 – high-priority multiplier
 	const multiplierApplied = highPriorityPercent > 50;
@@ -101,6 +101,8 @@ export const getStressMetrics = query({
 				? Math.round((highPriorityTasks.length / totalPending) * 100)
 				: 0;
 
+		// Cohort metric: % of tasks created in the last 7d that are now complete.
+		// This is not a velocity metric; it measures completeness of the recent cohort.
 		const recentTasks = allTasks.filter(
 			(t) => t._creationTime >= sevenDaysAgo
 		);

@@ -5,6 +5,7 @@ import type { Id } from "./_generated/dataModel";
 import {
 	type MutationCtx,
 	mutation,
+	internalMutation,
 	type QueryCtx,
 	query,
 } from "./_generated/server";
@@ -67,7 +68,8 @@ export const getByWorkspaceAndUser = query({
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 	},
 });
 
@@ -85,35 +87,201 @@ export const getByConversationId = query({
 	},
 });
 
+export const listRecentConversations = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit ?? 20;
+		const conversations = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+			)
+			.order("desc")
+			.take(limit);
+
+		return conversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+	},
+});
+
 export const upsertConversation = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
 		conversationId: v.string(),
+		title: v.optional(v.string()),
 		lastMessageAt: v.number(),
 	},
 	handler: async (ctx, args) => {
 		const existing = await ctx.db
 			.query("assistantConversations")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
 			)
 			.unique();
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {
-				conversationId: args.conversationId,
+				title: args.title ?? existing.title,
 				lastMessageAt: args.lastMessageAt,
 			});
 			return existing._id;
 		}
 
+		const now = Date.now();
 		return await ctx.db.insert("assistantConversations", {
 			workspaceId: args.workspaceId,
 			userId: args.userId,
 			conversationId: args.conversationId,
+			title: args.title ?? "New Chat",
 			lastMessageAt: args.lastMessageAt,
+			createdAt: now,
 		});
+	},
+});
+
+export const updateConversationTitle = mutation({
+	args: {
+		conversationId: v.string(),
+		title: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Not authenticated");
+		}
+
+		const conversation = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
+			)
+			.unique();
+
+		if (!conversation) {
+			throw new Error("Conversation not found");
+		}
+
+		if (conversation.userId !== userId) {
+			throw new Error("Not authorized to update this conversation");
+		}
+
+		await ctx.db.patch(conversation._id, {
+			title: args.title,
+		});
+
+		return conversation._id;
+	},
+});
+
+export const updateConversationTitleWithSource = mutation({
+	args: {
+		conversationId: v.string(),
+		title: v.string(),
+		titleSource: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Not authenticated");
+		}
+
+		const conversation = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
+			)
+			.unique();
+
+		if (!conversation) {
+			throw new Error("Conversation not found");
+		}
+
+		if (conversation.userId !== userId) {
+			throw new Error("Not authorized to update this conversation");
+		}
+
+		await ctx.db.patch(conversation._id, {
+			title: args.title,
+			titleSource: args.titleSource,
+		});
+
+		return conversation._id;
+	},
+});
+
+// Internal-only mutation for auto-generating titles — not callable from the browser.
+export const updateConversationTitleInternal = internalMutation({
+	args: {
+		conversationId: v.string(),
+		title: v.string(),
+		titleSource: v.optional(v.string()),
+		userId: v.id("users"),
+	},
+	handler: async (ctx, args) => {
+		const conversation = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
+			)
+			.unique();
+
+		if (!conversation) {
+			// Conversation may not yet be persisted — silently skip
+			console.warn("[autoTitle] Conversation not found, skipping title update", args.conversationId);
+			return null;
+		}
+
+		// Only update if still using a default title to avoid overwriting manual renames
+		const isDefaultTitle =
+			!conversation.title ||
+			conversation.title === "New Chat" ||
+			conversation.title === "Assistant Chat";
+
+		if (!isDefaultTitle && conversation.titleSource !== "ai_generated") {
+			// Manually renamed — do not overwrite
+			return null;
+		}
+
+		await ctx.db.patch(conversation._id, {
+			title: args.title,
+			titleSource: args.titleSource,
+		});
+
+		return conversation._id;
+	},
+});
+
+export const deleteConversation = mutation({
+	args: {
+		conversationId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Not authenticated");
+		}
+
+		const conversation = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
+			)
+			.unique();
+
+		if (!conversation) {
+			throw new Error("Conversation not found");
+		}
+
+		if (conversation.userId !== userId) {
+			throw new Error("Not authorized to delete this conversation");
+		}
+
+		await ctx.db.delete(conversation._id);
+		return { success: true };
 	},
 });
 
@@ -138,7 +306,8 @@ export const savePendingTaskDraft = mutation({
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 		if (!existing) {
 			throw new Error("Assistant conversation not found");
 		}
@@ -231,7 +400,8 @@ export const clearPendingTaskDraft = mutation({
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 		if (!existing) {
 			return false;
 		}
@@ -265,7 +435,8 @@ export const createTaskFromPendingDraft = mutation({
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 		const draft = existing?.pendingTaskDraft;
 		if (!existing || !draft) {
 			throw new Error("No pending task draft to create");
@@ -333,6 +504,7 @@ export const getMyConversation = query({
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 	},
 });

@@ -82,8 +82,12 @@ export function buildChannelSummaryFallback({
 		return null;
 	}
 
-	if (messageCount === 0 || recentMessages.length === 0) {
+	if (messageCount === 0) {
 		return `No messages found in #${channelName}.`;
+	}
+
+	if (recentMessages.length === 0) {
+		return `No recent messages in #${channelName}, but ${messageCount} total.`;
 	}
 
 	const classified = recentMessages

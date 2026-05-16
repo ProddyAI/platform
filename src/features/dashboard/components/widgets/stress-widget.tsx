@@ -152,15 +152,19 @@ export const StressWidget = ({
 												<Badge variant="secondary" className="text-[9px] h-4 px-1 capitalize">
 													{task.priority || "medium"}
 												</Badge>
-												{task.dueDate && (
-													<span className={cn(
-														"text-[9px] font-medium flex items-center gap-0.5",
-														task.isOverdue ? "text-rose-500" : "text-muted-foreground"
-													)}>
-														<Clock className="h-2.5 w-2.5" />
-														{formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
-													</span>
-												)}
+												{task.dueDate && (() => {
+													const due = new Date(task.dueDate);
+													if (Number.isNaN(due.getTime())) return null;
+													return (
+														<span className={cn(
+															"text-[9px] font-medium flex items-center gap-0.5",
+															task.isOverdue ? "text-rose-500" : "text-muted-foreground"
+														)}>
+															<Clock className="h-2.5 w-2.5" />
+															{formatDistanceToNow(due, { addSuffix: true })}
+														</span>
+													);
+												})()}
 											</div>
 										</div>
 									</div>

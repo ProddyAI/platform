@@ -511,6 +511,9 @@ export const hybridSearch = action({
 
 		const [taskBatch, cardBatch, blockerCardIds, blockerIssueIds] =
 			await Promise.all([
+				// candidateIds may contain IDs from non-task tables; fetchTaskMetadataBatch
+				// and fetchCardMetadataBatch both return null for non-matching rows, and
+				// results are post-filtered below — so these casts are safe by design.
 				ctx.runQuery(internal.hybridRag.fetchTaskMetadataBatch, {
 					taskIds: candidateIds as Id<"tasks">[],
 				}) as Promise<Array<{ id: Id<"tasks">; doc: Doc<"tasks"> | null }>>,

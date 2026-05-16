@@ -230,14 +230,16 @@ function calculateHybridScore(candidate: HybridCandidate, query: string) {
 	if (candidate.sources.has("semantic")) score += 0.4;
 	if (candidate.sources.size > 1) score += 0.35;
 
-	if (normalizedTitle === normalizedQuery) {
-		score += 1.5;
-	} else if (normalizedTitle.includes(normalizedQuery)) {
-		score += 0.9;
-	}
+	if (normalizedQuery.length > 0) {
+		if (normalizedTitle === normalizedQuery) {
+			score += 1.5;
+		} else if (normalizedTitle.includes(normalizedQuery)) {
+			score += 0.9;
+		}
 
-	if (normalizedText.includes(normalizedQuery)) {
-		score += 0.45;
+		if (normalizedText.includes(normalizedQuery)) {
+			score += 0.45;
+		}
 	}
 
 	if (tokens.length > 0) {

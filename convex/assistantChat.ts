@@ -1,4 +1,4 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
+﻿import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import OpenAI from "openai";
 import { api, components, internal } from "./_generated/api";
@@ -268,7 +268,7 @@ function createFallbackResponseFromToolResult(
 			...tasks.slice(0, 6).map((task) => {
 				const flags = [task?.status, task?.priority]
 					.filter(Boolean)
-					.join(" • ");
+					.join(" â€¢ ");
 				return `- ${String(task?.title ?? "Untitled task").trim()}${flags ? ` (${flags})` : ""}`;
 			}),
 		].join("\n");
@@ -301,7 +301,7 @@ function createFallbackResponseFromToolResult(
 				...tasks.map((task: any) => {
 					const flags = [task?.status, task?.priority]
 						.filter(Boolean)
-						.join(" • ");
+						.join(" â€¢ ");
 					return `- Task: ${String(task?.title ?? "").trim()}${flags ? ` (${flags})` : ""}`;
 				})
 			);
@@ -614,7 +614,7 @@ Guidelines:
 - For broad catch-up questions like "what happened in general", summarize concrete updates when data exists
 - Reuse recent conversation context for short follow-ups like "what about release?"
 - Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."
-- ALWAYS use integration tools (runGithubTool, runGmailTool, runSlackTool, etc.) when the user asks about those services � do NOT say you can't access them
+- ALWAYS use integration tools (runGithubTool, runGmailTool, runSlackTool, etc.) when the user asks about those services ï¿½ do NOT say you can't access them
 
 Available capabilities:
 - Calendar: View today's/tomorrow's/next week's meetings
@@ -1106,44 +1106,64 @@ export const createConversation = mutation({
 	},
 	returns: v.string(),
 	handler: async (ctx, args) => {
+		// Always create a new conversation when forceNew is true
+		if (args.forceNew) {
+			const conversationId = await ctx.runMutation(
+				components.databaseChat.conversations.create,
+				{
+					externalId: `workspace_${args.workspaceId}_user_${args.userId}_${Date.now()}`,
+					title: args.title ?? "New Chat",
+				}
+			);
+
+			const now = Date.now();
+			await ctx.db.insert("assistantConversations", {
+				workspaceId: args.workspaceId,
+				userId: args.userId,
+				conversationId,
+				title: args.title ?? "New Chat",
+				lastMessageAt: now,
+				createdAt: now,
+			});
+
+			return conversationId;
+		}
+
+		// For non-forceNew, check if there's an existing conversation
 		const existing = await ctx.db
 			.query("assistantConversations")
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 
-		const existingConversation =
-			!args.forceNew && existing?.conversationId
-				? await getDatabaseChatConversation(ctx, existing.conversationId)
-				: null;
+		const existingConversation = existing?.conversationId
+			? await getDatabaseChatConversation(ctx, existing.conversationId)
+			: null;
 
 		if (existingConversation) {
 			return existingConversation._id;
 		}
 
+		// Create first conversation
 		const conversationId = await ctx.runMutation(
 			components.databaseChat.conversations.create,
 			{
 				externalId: `workspace_${args.workspaceId}_user_${args.userId}_${Date.now()}`,
-				title: args.title ?? "Chat with Proddy",
+				title: args.title ?? "New Chat",
 			}
 		);
 
-		if (existing && args.forceNew) {
-			// Update existing record instead of creating duplicate
-			await ctx.db.patch(existing._id, {
-				conversationId,
-				lastMessageAt: Date.now(),
-			});
-		} else {
-			await ctx.db.insert("assistantConversations", {
-				workspaceId: args.workspaceId,
-				userId: args.userId,
-				conversationId,
-				lastMessageAt: Date.now(),
-			});
-		}
+		const now = Date.now();
+		await ctx.db.insert("assistantConversations", {
+			workspaceId: args.workspaceId,
+			userId: args.userId,
+			conversationId,
+			title: args.title ?? "New Chat",
+			lastMessageAt: now,
+			createdAt: now,
+		});
 
 		return conversationId;
 	},
@@ -1495,7 +1515,7 @@ export const sendMessage = action({
 							.map((r: any, i: number) => {
 								const text = String(r?.text ?? "").trim();
 								const snippet =
-									text.length > 160 ? `${text.slice(0, 160)}…` : text;
+									text.length > 160 ? `${text.slice(0, 160)}â€¦` : text;
 								return `- (${i + 1}) ${snippet || "(no snippet)"}`;
 							})
 							.join("\n");
@@ -1629,6 +1649,12 @@ export const sendMessage = action({
 				userId: resolvedUserId,
 				conversationId: activeConversationId,
 				lastMessageAt: Date.now(),
+			});
+
+			await ctx.scheduler.runAfter(0, internal.assistantTitles.autoGenerateTitleIfNeeded, {
+				conversationId: activeConversationId,
+				workspaceId: resolvedWorkspaceId,
+				userId: resolvedUserId,
 			});
 
 			return { success: true, content: responseText };

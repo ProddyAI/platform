@@ -84,7 +84,7 @@ export function buildPreflightContextPlan(input: {
 	const channelQuery = extractChannelQuery(message);
 	const needsMemberResolution =
 		TASK_CREATE_PATTERN.test(lower) &&
-		/\bfor\s+[A-Z][a-z]+|\bassign\b/i.test(message);
+		/\bfor\s+[A-Za-z]+|\bassign\b/i.test(message);
 
 	if (channelQuery) {
 		return {

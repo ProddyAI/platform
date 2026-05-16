@@ -47,4 +47,16 @@ describe("buildChannelSummaryFallback", () => {
 		expect(summary).not.toContain('"Onboarding update:');
 		expect(summary).not.toContain("Christy Saji:");
 	});
+
+	test("handles messageCount > 0 with empty recentMessages", () => {
+		const summary = buildChannelSummaryFallback({
+			channelName: "general",
+			messageCount: 3,
+			recentMessages: [],
+		});
+
+		expect(summary).toContain("No recent messages in #general, but 3 total.");
+		expect(summary).not.toContain("Summary of `#general` Channel");
+		expect(summary).not.toContain("No messages found");
+	});
 });

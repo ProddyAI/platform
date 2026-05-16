@@ -619,7 +619,12 @@ const schema = defineSchema({
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
 		conversationId: v.string(),
+		title: v.optional(v.string()),
+		titleSource: v.optional(v.string()),
+		preview: v.optional(v.string()),
+		isPinned: v.optional(v.boolean()),
 		lastMessageAt: v.number(),
+		createdAt: v.optional(v.number()),
 		source: v.optional(v.string()),
 		pendingTaskDraft: v.optional(
 			v.object({
@@ -639,6 +644,7 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_workspace_id_user_id_last_message", ["workspaceId", "userId", "lastMessageAt"])
 		.index("by_conversation_id", ["conversationId"]),
 
 	assistantToolAuditEvents: defineTable({

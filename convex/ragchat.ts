@@ -112,9 +112,9 @@ export const indexContent = action({
 				? String((metadataInput as { title?: unknown }).title).trim()
 				: undefined;
 		const entryMetadata = {
+			...metadataInput,
 			sourceType: args.contentType,
 			sourceId: args.contentId,
-			...metadataInput,
 		};
 		await rag.add(ctx, {
 			namespace: args.workspaceId,
@@ -561,11 +561,13 @@ export const semanticSearch = action({
 		const userId = args.userId ?? (await getAuthUserId(ctx));
 
 		// --- Dashboard / local testing bypass ---
-		// Convex action runtimes do NOT set NODE_ENV, so we rely on an explicit
-		// env var instead.  Set CONVEX_SKIP_AUTH=true in your .env.local to allow
-		// unauthenticated calls from the Convex Dashboard during local testing.
-		// Remove (or leave unset) the variable before deploying to production.
-		const skipAuth = process.env.CONVEX_SKIP_AUTH === "true";
+		// Convex action runtimes do NOT set NODE_ENV, so we rely on explicit
+		// env vars instead. Both CONVEX_SKIP_AUTH=true AND CONVEX_LOCAL=true
+		// must be set — this restricts the bypass to explicit local dev
+		// deployments only. Never set these in production.
+		const skipAuth =
+			process.env.CONVEX_SKIP_AUTH === "true" &&
+			process.env.CONVEX_LOCAL === "true";
 		if (!userId && !skipAuth) throw new Error("Unauthorized");
 
 		// When a real userId is present, enforce workspace membership and scope

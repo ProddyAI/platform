@@ -161,7 +161,7 @@ export function extractAssistantProfileUpdateFromMessage(
 	message: string
 ): AssistantProfileUpdate | null {
 	const normalized = normalizeWhitespace(message);
-	if (!/\bremember\b|\bi prefer\b|\bprefer\b|\bfocus on\b|\bworking on\b/i.test(normalized)) {
+	if (!/\bremember\b|\bi prefer\b|\bprefer\b|\bfocus on\b|\bworking on\b|\bi want you to remember\b|\bplease keep in mind\b|\bremember that\b|\bdont forget\b|\bdon't forget\b|\bnote that\b/i.test(normalized)) {
 		return null;
 	}
 
@@ -269,8 +269,8 @@ export function mergeAssistantActiveContexts(
 				ownerHints:
 					newContext.ownerHints?.map(normalizeWhitespace).filter(Boolean) ??
 					existing?.ownerHints,
-				statusHint: newContext.statusHint
-					? normalizeWhitespace(newContext.statusHint)
+				statusHint: "statusHint" in newContext
+					? (newContext.statusHint ? normalizeWhitespace(newContext.statusHint) : undefined)
 					: existing?.statusHint,
 				lastMentionedAt: newContext.lastMentionedAt,
 			});
