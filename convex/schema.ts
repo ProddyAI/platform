@@ -620,7 +620,7 @@ const schema = defineSchema({
 		userId: v.id("users"),
 		conversationId: v.string(),
 		title: v.optional(v.string()),
-		titleSource: v.optional(v.string()),
+		titleSource: v.optional(v.union(v.literal("ai_generated"), v.literal("manual"))),
 		preview: v.optional(v.string()),
 		isPinned: v.optional(v.boolean()),
 		lastMessageAt: v.number(),

@@ -12,6 +12,14 @@ interface ComposioConnection {
 }
 
 /**
+ * Options forwarded to the Composio connectedAccounts.initiate() call
+ */
+interface InitiateOptions {
+	allowMultiple: boolean;
+	callbackUrl?: string;
+}
+
+/**
  * Result type for connection deletion operations
  */
 type ConnectedAccountDeleteResult = boolean | undefined | { success: boolean };
@@ -84,7 +92,7 @@ export function initializeComposio() {
 				);
 			}
 
-			const initiateOptions: Record<string, any> = { allowMultiple: true };
+			const initiateOptions: InitiateOptions = { allowMultiple: true };
 			if (callbackUrl) {
 				initiateOptions.callbackUrl = callbackUrl;
 			}

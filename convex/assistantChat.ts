@@ -1,4 +1,4 @@
-﻿import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import OpenAI from "openai";
 import { api, components, internal } from "./_generated/api";
@@ -381,12 +381,13 @@ async function resolvePreflightContext(args: {
 		const channels = Array.isArray(channelSearch?.channels)
 			? channelSearch.channels
 			: [];
+		const normalizedChannelQuery = String(plan.channelQuery ?? "").trim().toLowerCase();
 		const exactMatch =
 			channels.find(
 				(channel: any) =>
 					String(channel?.name ?? "")
 						.trim()
-						.toLowerCase() === plan.channelQuery
+						.toLowerCase() === normalizedChannelQuery
 			) ?? null;
 		if (!exactMatch && channels.length > 1) {
 			const suggestions = channels
@@ -1314,7 +1315,11 @@ export const sendMessage = action({
 				userId: resolvedUserId,
 			}
 		);
-		const pendingTaskDraft = latestConversationMeta?.pendingTaskDraft;
+		// Only use the draft when it belongs to the active conversation
+		const pendingTaskDraft =
+			latestConversationMeta?.conversationId === activeConversationId
+				? latestConversationMeta.pendingTaskDraft
+				: undefined;
 
 		// Record AI usage
 		try {
@@ -1335,14 +1340,19 @@ export const sendMessage = action({
 				content: args.message,
 			});
 
-			const assistantProfile = await ctx.runMutation(
-				api.assistantProfiles.recordSignal,
-				{
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					message: args.message,
-				}
-			);
+			let assistantProfile: Awaited<ReturnType<typeof ctx.runMutation<typeof api.assistantProfiles.recordSignal>>> | null = null;
+			try {
+				assistantProfile = await ctx.runMutation(
+					api.assistantProfiles.recordSignal,
+					{
+						workspaceId: resolvedWorkspaceId,
+						userId: resolvedUserId,
+						message: args.message,
+					}
+				);
+			} catch (signalErr) {
+				console.warn("[Assistant] recordSignal failed (non-fatal):", signalErr);
+			}
 
 			if (pendingTaskDraft && isPendingTaskConfirmation(args.message)) {
 				const created = await ctx.runMutation(

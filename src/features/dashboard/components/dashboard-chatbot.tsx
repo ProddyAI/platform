@@ -430,17 +430,18 @@ const DashboardChatbotBody = ({
 	// Initialize with most recent conversation or create new one
 	useEffect(() => {
 		if (!conversationId && workspaceId && member?.userId) {
-			if (recentConversations && recentConversations.length > 0) {
+			if (recentConversations !== undefined && recentConversations.length > 0) {
 				// Load the most recent conversation
 				setConversationId(recentConversations[0].conversationId);
-			} else {
-				// Create first conversation
+			} else if (recentConversations !== undefined) {
+				// Query resolved as empty — create first conversation
 				createConversation({
 					workspaceId,
 					userId: member.userId,
 					title: "New Chat",
 				}).then(setConversationId);
 			}
+			// else: recentConversations is still loading (undefined) — do nothing yet
 		}
 	}, [conversationId, workspaceId, member, recentConversations, createConversation]);
 

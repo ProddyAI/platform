@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { api, components, internal } from "./_generated/api";
 import { action, internalAction } from "./_generated/server";
@@ -13,11 +14,14 @@ export const generateTitle = action({
 	args: {
 		conversationId: v.string(),
 		workspaceId: v.id("workspaces"),
-		userId: v.id("users"),
 	},
 	handler: async (ctx, args) => {
 		const apiKey = process.env.OPENAI_API_KEY;
 		if (!apiKey) return { success: false, error: "API key not configured" };
+
+		// Authenticate server-side — never trust a client-supplied userId
+		const userId = await getAuthUserId(ctx);
+		if (!userId) return { success: false, error: "Not authenticated" };
 
 		try {
 			const conversation = await ctx.runQuery(
@@ -25,8 +29,22 @@ export const generateTitle = action({
 				{ conversationId: args.conversationId }
 			);
 
+			if (!conversation) {
+				return { success: false, error: "Conversation not found" };
+			}
+
+			// Ownership check: authenticated user must own this conversation
+			if (conversation.userId !== userId) {
+				return { success: false, error: "Not authorized" };
+			}
+
+			// Workspace check: conversation must belong to the requested workspace
+			if (conversation.workspaceId !== args.workspaceId) {
+				return { success: false, error: "Workspace mismatch" };
+			}
+
 			if (
-				conversation?.title &&
+				conversation.title &&
 				!isDefaultTitle(conversation.title) &&
 				conversation.titleSource !== "ai_generated"
 			) {
@@ -34,7 +52,7 @@ export const generateTitle = action({
 			}
 
 			const messages = await ctx.runQuery(components.databaseChat.messages.list, {
-				conversationId: args.conversationId as any,
+				conversationId: args.conversationId,
 			});
 
 			if (!messages || messages.length === 0) {
@@ -54,7 +72,7 @@ export const generateTitle = action({
 				conversationId: args.conversationId,
 				title,
 				titleSource: "ai_generated",
-				userId: args.userId,
+				userId,
 			});
 
 			return { success: true, title };
@@ -102,7 +120,7 @@ export const autoGenerateTitleIfNeeded = internalAction({
 			}
 
 			const messages = await ctx.runQuery(components.databaseChat.messages.list, {
-				conversationId: args.conversationId as any,
+				conversationId: args.conversationId,
 			});
 
 			if (!messages || messages.length < 2) return;

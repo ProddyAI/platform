@@ -68,7 +68,7 @@ Return ONLY the title. Nothing else.`,
 		const title = raw.replace(/^["'`]|["'`]$/g, "").replace(/[.!?]$/, "").trim();
 		const wordCount = title.split(/\s+/).filter(Boolean).length;
 
-		if (wordCount >= 2 && wordCount <= 8 && title.length > 0) return title;
+		if (wordCount >= 3 && wordCount <= 6 && title.length > 0) return title;
 
 		return extractFallbackTitle(userMessages);
 	} catch {

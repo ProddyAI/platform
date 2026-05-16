@@ -90,15 +90,17 @@ export const getByConversationId = query({
 export const listRecentConversations = query({
 	args: {
 		workspaceId: v.id("workspaces"),
-		userId: v.id("users"),
 		limit: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) return [];
+
 		const limit = args.limit ?? 20;
 		const conversations = await ctx.db
 			.query("assistantConversations")
 			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
 			)
 			.order("desc")
 			.take(limit);
@@ -181,7 +183,7 @@ export const updateConversationTitleWithSource = mutation({
 	args: {
 		conversationId: v.string(),
 		title: v.string(),
-		titleSource: v.optional(v.string()),
+		titleSource: v.optional(v.union(v.literal("ai_generated"), v.literal("manual"))),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -218,7 +220,7 @@ export const updateConversationTitleInternal = internalMutation({
 	args: {
 		conversationId: v.string(),
 		title: v.string(),
-		titleSource: v.optional(v.string()),
+		titleSource: v.optional(v.union(v.literal("ai_generated"), v.literal("manual"))),
 		userId: v.id("users"),
 	},
 	handler: async (ctx, args) => {
@@ -288,7 +290,7 @@ export const deleteConversation = mutation({
 export const savePendingTaskDraft = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
-		userId: v.id("users"),
+		userId: v.id("users"), // kept for tool-call compatibility; overridden by auth
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
 		assigneeMemberId: v.optional(v.id("members")),
@@ -296,7 +298,9 @@ export const savePendingTaskDraft = mutation({
 		priority: v.optional(TASK_PRIORITY_VALIDATOR),
 	},
 	handler: async (ctx, args) => {
-		const member = await getMember(ctx, args.workspaceId, args.userId);
+		const authUserId = await getAuthUserId(ctx);
+		if (!authUserId) throw new Error("Not authenticated");
+		const member = await getMember(ctx, args.workspaceId, authUserId);
 		if (!member) {
 			throw new Error("Not a member of this workspace");
 		}
@@ -391,14 +395,17 @@ export const savePendingTaskDraft = mutation({
 export const clearPendingTaskDraft = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
-		userId: v.id("users"),
+		userId: v.id("users"), // kept for tool-call compatibility; overridden by auth
 	},
 	returns: v.boolean(),
 	handler: async (ctx, args) => {
+		const authUserId = await getAuthUserId(ctx);
+		if (!authUserId) throw new Error("Not authenticated");
+
 		const existing = await ctx.db
 			.query("assistantConversations")
 			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
 			.order("desc")
 			.first();
@@ -417,7 +424,7 @@ export const clearPendingTaskDraft = mutation({
 export const createTaskFromPendingDraft = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
-		userId: v.id("users"),
+		userId: v.id("users"), // kept for tool-call compatibility; overridden by auth
 	},
 	returns: v.object({
 		taskId: v.id("tasks"),
@@ -425,7 +432,10 @@ export const createTaskFromPendingDraft = mutation({
 		assigneeName: v.optional(v.string()),
 	}),
 	handler: async (ctx, args) => {
-		const member = await getMember(ctx, args.workspaceId, args.userId);
+		const authUserId = await getAuthUserId(ctx);
+		if (!authUserId) throw new Error("Not authenticated");
+
+		const member = await getMember(ctx, args.workspaceId, authUserId);
 		if (!member) {
 			throw new Error("Not a member of this workspace");
 		}
@@ -433,7 +443,7 @@ export const createTaskFromPendingDraft = mutation({
 		const existing = await ctx.db
 			.query("assistantConversations")
 			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
 			.order("desc")
 			.first();
@@ -442,7 +452,7 @@ export const createTaskFromPendingDraft = mutation({
 			throw new Error("No pending task draft to create");
 		}
 
-		let assigneeUserId = args.userId;
+		let assigneeUserId = authUserId;
 		if (draft.assigneeMemberId) {
 			const assigneeMember = await ctx.db.get(draft.assigneeMemberId);
 			if (!assigneeMember || assigneeMember.workspaceId !== args.workspaceId) {

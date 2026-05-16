@@ -196,7 +196,15 @@ export const rescheduleTask = mutation({
 		if (!task) throw new Error("Task not found");
 		if (task.userId !== userId) throw new Error("Not authorized");
 
+		if (task.completed || task.status === "cancelled") {
+			throw new Error("Cannot reschedule a completed or cancelled task");
+		}
+
 		const daysToAdd = args.daysToAdd ?? 1;
+		if (!Number.isInteger(daysToAdd) || daysToAdd < 1) {
+			throw new Error("daysToAdd must be an integer >= 1");
+		}
+
 		const now = Date.now();
 		const baseDate = task.dueDate && task.dueDate > now ? task.dueDate : now;
 		const newDueDate = baseDate + daysToAdd * 24 * 60 * 60 * 1000;

@@ -50,6 +50,10 @@ const TOPIC_PREFIX_PATTERN =
 	/^(?:find|search|show|summarize|summary of|what happened in|what is happening in|what happened with|what about|about)\s+/i;
 const TOPIC_SUFFIX_PATTERN =
 	/\b(?:notes?|tasks?|channels?|messages?|please|for me|today|tomorrow)\b/gi;
+// Phrases that explicitly ask for channel context — required when a #channel
+// reference appears alongside other intent signals (e.g. task_create).
+const CHANNEL_SUMMARY_EXPLICIT_PATTERN =
+	/\b(summarize|summary|what('?s| is) (in|happening in)|show channel|channel (context|activity|messages?|summary))\b/i;
 
 function normalizeWhitespace(value: string) {
 	return value.replace(/\s+/g, " ").trim();
@@ -86,20 +90,6 @@ export function buildPreflightContextPlan(input: {
 		TASK_CREATE_PATTERN.test(lower) &&
 		/\bfor\s+[A-Za-z]+|\bassign\b/i.test(message);
 
-	if (channelQuery) {
-		return {
-			intent: "channel_summary",
-			confidence: "high",
-			channelQuery,
-			resolvedTopic: channelQuery,
-			needsMemberResolution: false,
-			recommendedToolOrder: ["searchChannels", "getChannelSummary"],
-			summaryLines: [
-				`Matched explicit channel reference: #${channelQuery}`,
-				"Prefer direct channel retrieval before semantic fallback.",
-			],
-		};
-	}
 
 	if (TASK_CREATE_PATTERN.test(lower)) {
 		return {
@@ -227,6 +217,29 @@ export function buildPreflightContextPlan(input: {
 			summaryLines: [
 				"External integration request detected.",
 				"Use workspace context first only when the request also references internal topics.",
+			],
+		};
+	}
+
+	// channel_summary: only fire when no stronger intent matched AND the message
+	// either explicitly requests channel context OR contains no action/lookup verbs
+	// that suggest the #channel reference is incidental (e.g. "add task in #general").
+	const ACTION_VERB_PATTERN =
+		/\b(create|add|make|find|search|assign|note|task|todo|to-do|schedule|book)\b/i;
+	if (
+		channelQuery &&
+		(CHANNEL_SUMMARY_EXPLICIT_PATTERN.test(lower) || !ACTION_VERB_PATTERN.test(lower))
+	) {
+		return {
+			intent: "channel_summary",
+			confidence: CHANNEL_SUMMARY_EXPLICIT_PATTERN.test(lower) ? "high" : "medium",
+			channelQuery,
+			resolvedTopic: channelQuery,
+			needsMemberResolution: false,
+			recommendedToolOrder: ["searchChannels", "getChannelSummary"],
+			summaryLines: [
+				`Matched explicit channel reference: #${channelQuery}`,
+				"Prefer direct channel retrieval before semantic fallback.",
 			],
 		};
 	}

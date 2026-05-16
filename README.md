@@ -3,7 +3,7 @@
 Collaborate with your team using real-time messaging, boards, notes, calendar, and AI features. Built with Next.js, Convex, and Shadcn UI.
 
 [![GitHub branches](https://flat.badgen.net/github/branches/george-bobby/proddy-platform?icon=github&color=black&scale=1.01)](https://github.com/george-bobby/proddy-platform/branches)
-[![Github commits](https://flat.badgen.net/github/commits/george-bobby/proddy-platform?icon=github&color=black&scale=1.01)](https://github.com/george-bobby/proddy-platform/commits)
+[![GitHub commits](https://flat.badgen.net/github/commits/george-bobby/proddy-platform?icon=github&color=black&scale=1.01)](https://github.com/george-bobby/proddy-platform/commits)
 [![GitHub pull requests](https://flat.badgen.net/github/prs/george-bobby/proddy-platform?icon=github&color=black&scale=1.01)](https://github.com/george-bobby/proddy-platform/pulls)
 
 ---
@@ -64,7 +64,7 @@ Covers this branch's work:
 
 ## Folder structure
 
-```
+```text
 platform/
 ├── .github/           # PR template, agents
 ├── convex/            # Convex backend
@@ -128,10 +128,12 @@ The system was designed as a **pure post-processing layer** — no vector DB cha
 **Files changed:**
 
 1. `convex/schema.ts` — Two new B-tree indexes added to the `tasks` table (additive, zero migration):
-   ```
+
+   ```text
    by_workspace_id_status     ["workspaceId", "status"]
    by_workspace_id_due_date   ["workspaceId", "dueDate"]
    ```
+
 
 2. `convex/hybridRag.ts` — New file (~380 lines), four exported building blocks:
 
@@ -145,7 +147,7 @@ The system was designed as a **pure post-processing layer** — no vector DB cha
 
 #### Pipeline diagram
 
-```
+```text
 User query
     │
     ▼
@@ -184,9 +186,11 @@ Multipliers are **multiplicative** (stack on each other) and the result is cappe
 | Completed / cancelled | `status === "completed"` or `"cancelled"` | ×0.60 |
 
 **Example:** an overdue high-priority blocker card with raw cosine score `0.55`:
-```
+
+```text
 0.55 × 1.35 × 1.40 × 1.30 = 1.346 → capped to 1.0
 ```
+
 It surfaces to the top regardless of raw score.
 
 #### Context sanitizer guarantees
@@ -292,7 +296,7 @@ Watch the Convex terminal for:
 The vector index must be populated before `hybridSearch` can return results.
 Run once via the Convex Dashboard:
 
-```
+```text
 Function: ragchat → triggerBulkIndexing
 Args:     { "workspaceId": "<id>", "limit": 1000 }
 ```
@@ -337,11 +341,13 @@ const WEIGHTS = {
 ### AI SDK version mismatch — `AI_UnsupportedModelVersionError`
 
 **Error:**
-```
+
+```text
 Uncaught AI_UnsupportedModelVersionError: Unsupported model version v3 for provider
 "openai.embedding" and model "text-embedding-3-small". AI SDK 5 only supports models
 that implement specification version "v2".
 ```
+
 
 **Root cause:**
 
@@ -385,10 +391,12 @@ bun install
 **Fix — `CONVEX_SKIP_AUTH` environment variable:**
 
 1. Add to `.env.local`:
-   ```
+
+   ```env
    # ⚠️ LOCAL TESTING ONLY — remove before deploying to production
    CONVEX_SKIP_AUTH=true
    ```
+
 2. Push to the Convex dev deployment:
    ```bash
    bunx convex env set CONVEX_SKIP_AUTH true

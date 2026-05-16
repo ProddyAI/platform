@@ -252,9 +252,12 @@ export const ServiceIntegrationCard = ({
 			return toast.error("No account to refresh");
 		setIsRefreshing(true);
 		try {
-			const res = await fetch(
-				`/api/assistant/composio/agentauth?action=check-status&composioAccountId=${connectedAccount.composioAccountId}&memberId=${currentMember._id}`
-			);
+			const statusParams = new URLSearchParams({
+				action: "check-status",
+				composioAccountId: connectedAccount.composioAccountId,
+				memberId: currentMember._id,
+			});
+			const res = await fetch(`/api/assistant/composio/agentauth?${statusParams}`);
 			if (!res.ok) throw new Error("Status check failed");
 			const status = await res.json();
 			if (status.connected) {

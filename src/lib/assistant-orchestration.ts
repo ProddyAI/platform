@@ -126,6 +126,18 @@ function isShortFollowUp(message: string) {
 	return /^(what about|how about|and|about)\b/i.test(trimmed);
 }
 
+/**
+ * Sanitize a raw string before embedding it in a system prompt:
+ * - Trims whitespace
+ * - Caps to maxLen characters
+ * - Strips ASCII control characters that could act as prompt delimiters
+ */
+function sanitizeContextValue(value: string, maxLen = 200): string {
+	// Remove ASCII control characters (0x00-0x1F, 0x7F) except normal whitespace
+	const cleaned = value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").trim();
+	return cleaned.length > maxLen ? cleaned.slice(0, maxLen) + "…" : cleaned;
+}
+
 export function buildFollowUpContextHint(options: {
 	message: string;
 	conversationHistory?: AssistantConversationMessage[];
@@ -158,10 +170,14 @@ export function buildFollowUpContextHint(options: {
 		.find((entry) => entry.role === "assistant")?.content;
 
 	const hints = [
-		subject ? `Short follow-up subject: ${subject}` : "",
-		lastUserTopic ? `Most recent user topic: ${lastUserTopic.trim()}` : "",
+		subject
+			? `Quoted context: Short follow-up subject: "${sanitizeContextValue(subject)}"`
+			: "",
+		lastUserTopic
+			? `Quoted context: Most recent user topic: "${sanitizeContextValue(lastUserTopic)}"`
+			: "",
 		lastAssistantAnswer
-			? `Most recent assistant answer: ${lastAssistantAnswer.trim().slice(0, 220)}`
+			? `Quoted context: Most recent assistant answer: "${sanitizeContextValue(lastAssistantAnswer)}"`
 			: "",
 	].filter(Boolean);
 
