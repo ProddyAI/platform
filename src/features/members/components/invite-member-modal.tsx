@@ -29,6 +29,197 @@ import { useInviteMemberModal } from "../store/use-invite-member-modal";
 const getErrorMessage = (error: unknown, fallback: string) =>
 	error instanceof Error ? error.message : fallback;
 
+const InviteModalHeader = () => {
+	return (
+		<div className="bg-gradient-to-br from-[#4a0a4f] via-[#7c3aed] to-[#ec4899] p-8 text-white relative overflow-hidden">
+			<div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+			<div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
+
+			<div className="relative z-10 flex flex-col items-center text-center">
+				<div className="size-16 bg-white rounded-2xl flex items-center justify-center mb-4 border border-white/30 shadow-xl ring-4 ring-white/10 animate-in zoom-in duration-500">
+					<Image
+						alt="Proddy"
+						className="object-contain"
+						height={45}
+						src="/logo.png"
+						width={45}
+					/>
+				</div>
+				<DialogTitle className="text-3xl font-bold tracking-tight text-white mb-2">
+					Grow Your Team
+				</DialogTitle>
+				<DialogDescription className="text-purple-100 text-lg max-w-[280px]">
+					Invite new members to collaborate on your projects.
+				</DialogDescription>
+			</div>
+		</div>
+	);
+};
+
+interface WorkspaceRoleSelectProps {
+	role: "admin" | "member";
+	setRole: (role: "admin" | "member") => void;
+}
+
+const WorkspaceRoleSelect = ({ role, setRole }: WorkspaceRoleSelectProps) => {
+	return (
+		<div className="space-y-2">
+			<Label className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+				<Crown className="size-4 text-amber-500" />
+				Workspace Role
+			</Label>
+			<Select
+				onValueChange={(v: "admin" | "member") => setRole(v)}
+				value={role}
+			>
+				<SelectTrigger className="h-14 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 transition-all font-medium text-lg">
+					<SelectValue placeholder="Select Role" />
+				</SelectTrigger>
+				<SelectContent className="border-none shadow-xl rounded-xl p-2">
+					<SelectItem
+						className="py-4 cursor-pointer rounded-lg hover:bg-zinc-100 transition-colors"
+						value="member"
+					>
+						<div className="flex items-center gap-4">
+							<div className="size-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+								<Users className="size-5" />
+							</div>
+							<div className="flex flex-col">
+								<span className="font-bold text-base">Member</span>
+								<span className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold">
+									Standard access to workspace features
+								</span>
+							</div>
+						</div>
+					</SelectItem>
+
+					<SelectItem
+						className="py-4 cursor-pointer rounded-lg hover:bg-purple-50 transition-colors"
+						value="admin"
+					>
+						<div className="flex items-center gap-4">
+							<div className="size-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+								<Crown className="size-5" />
+							</div>
+							<div className="flex flex-col">
+								<span className="font-bold text-base">Admin</span>
+								<span className="text-[11px] text-purple-600 uppercase tracking-wider font-bold">
+									Full management and settings access
+								</span>
+							</div>
+						</div>
+					</SelectItem>
+				</SelectContent>
+			</Select>
+		</div>
+	);
+};
+
+interface SeatFullWarningBannerProps {
+	isSeatsFull: boolean;
+	seatChangePending: boolean;
+	addingSeats: boolean;
+	handleAddSeat: () => void;
+}
+
+const SeatFullWarningBanner = ({
+	isSeatsFull,
+	seatChangePending,
+	addingSeats,
+	handleAddSeat,
+}: SeatFullWarningBannerProps) => {
+	if (!isSeatsFull) return null;
+
+	return (
+		<div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+			<div className="flex items-center gap-3">
+				<div className="size-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600">
+					<AlertTriangle className="size-5" />
+				</div>
+				<div className="flex flex-col">
+					<span className="text-sm font-bold text-amber-900 dark:text-amber-100">
+						{seatChangePending ? "Billing Pending" : "Seats Finished"}
+					</span>
+					<span className="text-[12px] text-amber-700 dark:text-amber-300">
+						{seatChangePending
+							? "Your new seat is processing."
+							: "You've reached your seat limit."}
+					</span>
+				</div>
+			</div>
+			<Button
+				className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm"
+				disabled={addingSeats || seatChangePending}
+				onClick={handleAddSeat}
+				size="sm"
+			>
+				{addingSeats ? (
+					<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+				) : (
+					<div className="flex items-center gap-1">
+						<Plus className="size-4" />
+						{seatChangePending ? "Pending" : "Add Seat"}
+					</div>
+				)}
+			</Button>
+		</div>
+	);
+};
+
+interface InviteModalFooterProps {
+	workspaceName: string;
+	inviteLoading: boolean;
+	email: string;
+	isSeatsFull: boolean;
+	handleClose: () => void;
+	sendInvite: () => void;
+}
+
+const InviteModalFooter = ({
+	workspaceName,
+	inviteLoading,
+	email,
+	isSeatsFull,
+	handleClose,
+	sendInvite,
+}: InviteModalFooterProps) => {
+	return (
+		<div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-900">
+			<div className="flex flex-col">
+				<span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
+					Workspace
+				</span>
+				<span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+					{workspaceName}
+				</span>
+			</div>
+			<div className="flex gap-3">
+				<Button
+					className="px-6 h-11 font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+					onClick={handleClose}
+					variant="ghost"
+				>
+					Cancel
+				</Button>
+				<Button
+					className="px-8 h-11 bg-gradient-to-r from-[#7c3aed] to-[#ec4899] hover:opacity-90 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+					disabled={inviteLoading || !email || isSeatsFull}
+					onClick={sendInvite}
+				>
+					{inviteLoading ? (
+						<div className="flex items-center gap-2">
+							<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+							Sending...
+						</div>
+					) : (
+						"Send Invite"
+					)}
+				</Button>
+			</div>
+		</div>
+	);
+};
+
 export const InviteMemberModal = () => {
 	const workspaceId = useWorkspaceId();
 	const [open, setOpen] = useInviteMemberModal();
@@ -163,28 +354,7 @@ export const InviteMemberModal = () => {
 	return (
 		<Dialog onOpenChange={handleClose} open={open}>
 			<DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
-				<div className="bg-gradient-to-br from-[#4a0a4f] via-[#7c3aed] to-[#ec4899] p-8 text-white relative overflow-hidden">
-					<div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-					<div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
-
-					<div className="relative z-10 flex flex-col items-center text-center">
-						<div className="size-16 bg-white rounded-2xl flex items-center justify-center mb-4 border border-white/30 shadow-xl ring-4 ring-white/10 animate-in zoom-in duration-500">
-							<Image
-								alt="Proddy"
-								className="object-contain"
-								height={45}
-								src="/logo.png"
-								width={45}
-							/>
-						</div>
-						<DialogTitle className="text-3xl font-bold tracking-tight text-white mb-2">
-							Grow Your Team
-						</DialogTitle>
-						<DialogDescription className="text-purple-100 text-lg max-w-[280px]">
-							Invite new members to collaborate on your projects.
-						</DialogDescription>
-					</div>
-				</div>
+				<InviteModalHeader />
 
 				<div className="p-8 space-y-6 bg-white dark:bg-zinc-950">
 					<div className="space-y-4">
@@ -206,90 +376,14 @@ export const InviteMemberModal = () => {
 							/>
 						</div>
 
-						<div className="space-y-2">
-							<Label className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-								<Crown className="size-4 text-amber-500" />
-								Workspace Role
-							</Label>
-							<Select
-								onValueChange={(v: "admin" | "member") => setRole(v)}
-								value={role}
-							>
-								<SelectTrigger className="h-14 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 transition-all font-medium text-lg">
-									<SelectValue placeholder="Select Role" />
-								</SelectTrigger>
-								<SelectContent className="border-none shadow-xl rounded-xl p-2">
-									<SelectItem
-										className="py-4 cursor-pointer rounded-lg hover:bg-zinc-100 transition-colors"
-										value="member"
-									>
-										<div className="flex items-center gap-4">
-											<div className="size-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-												<Users className="size-5" />
-											</div>
-											<div className="flex flex-col">
-												<span className="font-bold text-base">Member</span>
-												<span className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold">
-													Standard access to workspace features
-												</span>
-											</div>
-										</div>
-									</SelectItem>
+						<WorkspaceRoleSelect role={role} setRole={setRole} />
 
-									<SelectItem
-										className="py-4 cursor-pointer rounded-lg hover:bg-purple-50 transition-colors"
-										value="admin"
-									>
-										<div className="flex items-center gap-4">
-											<div className="size-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
-												<Crown className="size-5" />
-											</div>
-											<div className="flex flex-col">
-												<span className="font-bold text-base">Admin</span>
-												<span className="text-[11px] text-purple-600 uppercase tracking-wider font-bold">
-													Full management and settings access
-												</span>
-											</div>
-										</div>
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-
-						{isSeatsFull && (
-							<div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
-								<div className="flex items-center gap-3">
-									<div className="size-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600">
-										<AlertTriangle className="size-5" />
-									</div>
-									<div className="flex flex-col">
-										<span className="text-sm font-bold text-amber-900 dark:text-amber-100">
-											{seatChangePending ? "Billing Pending" : "Seats Finished"}
-										</span>
-										<span className="text-[12px] text-amber-700 dark:text-amber-300">
-											{seatChangePending
-												? "Your new seat is processing."
-												: "You've reached your seat limit."}
-										</span>
-									</div>
-								</div>
-								<Button
-									className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm"
-									disabled={addingSeats || seatChangePending}
-									onClick={handleAddSeat}
-									size="sm"
-								>
-									{addingSeats ? (
-										<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-									) : (
-										<div className="flex items-center gap-1">
-											<Plus className="size-4" />
-											{seatChangePending ? "Pending" : "Add Seat"}
-										</div>
-									)}
-								</Button>
-							</div>
-						)}
+						<SeatFullWarningBanner
+							addingSeats={addingSeats}
+							handleAddSeat={handleAddSeat}
+							isSeatsFull={isSeatsFull}
+							seatChangePending={seatChangePending}
+						/>
 
 						<div className="space-y-2">
 							<Label
@@ -309,39 +403,14 @@ export const InviteMemberModal = () => {
 						</div>
 					</div>
 
-					<div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-900">
-						<div className="flex flex-col">
-							<span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
-								Workspace
-							</span>
-							<span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-								{workspace?.name ?? "Workspace"}
-							</span>
-						</div>
-						<div className="flex gap-3">
-							<Button
-								className="px-6 h-11 font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
-								onClick={handleClose}
-								variant="ghost"
-							>
-								Cancel
-							</Button>
-							<Button
-								className="px-8 h-11 bg-gradient-to-r from-[#7c3aed] to-[#ec4899] hover:opacity-90 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-								disabled={inviteLoading || !email || isSeatsFull}
-								onClick={sendInvite}
-							>
-								{inviteLoading ? (
-									<div className="flex items-center gap-2">
-										<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-										Sending...
-									</div>
-								) : (
-									"Send Invite"
-								)}
-							</Button>
-						</div>
-					</div>
+					<InviteModalFooter
+						email={email}
+						handleClose={handleClose}
+						inviteLoading={inviteLoading}
+						isSeatsFull={isSeatsFull}
+						sendInvite={sendInvite}
+						workspaceName={workspace?.name ?? "Workspace"}
+					/>
 				</div>
 			</DialogContent>
 		</Dialog>

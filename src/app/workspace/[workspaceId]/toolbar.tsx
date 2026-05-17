@@ -847,7 +847,9 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						variant="ghost"
 					>
 						<ArrowUpCircle className="size-4" />
-						<span className="hidden text-xs font-medium sm:inline">Upgrade</span>
+						<span className="hidden text-xs font-medium sm:inline">
+							Upgrade
+						</span>
 					</Button>
 				</Hint>
 

@@ -210,6 +210,16 @@ const baseConfig = withPWA({
 	typescript: {
 		ignoreBuildErrors: true,
 	},
+	experimental: {
+		cpus: 1,
+		workerThreads: true,
+	},
+	webpack(config, { dev }) {
+		if (!dev) {
+			config.cache = false;
+		}
+		return config;
+	},
 });
 
 export default baseConfig;

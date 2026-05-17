@@ -13,7 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { Doc } from "@/../convex/_generated/dataModel";
+import type { Doc, Id } from "@/../convex/_generated/dataModel";
 import { InviteModal } from "@/app/workspace/[workspaceId]/invitation";
 import {
 	AlertDialog,
@@ -49,6 +49,76 @@ interface WorkspaceManagementProps {
 	currentMember: Doc<"members">;
 }
 
+interface DeleteWorkspaceSectionProps {
+	isOwner: boolean;
+	workspaceId: Id<"workspaces">;
+}
+
+const DeleteWorkspaceSection = ({
+	isOwner,
+	workspaceId,
+}: DeleteWorkspaceSectionProps) => {
+	const router = useRouter();
+	const [isDeleting, setIsDeleting] = useState(false);
+	const removeWorkspace = useRemoveWorkspace();
+
+	if (!isOwner) return null;
+
+	const handleDeleteWorkspace = async () => {
+		setIsDeleting(true);
+
+		try {
+			await removeWorkspace.mutate({
+				id: workspaceId,
+			});
+
+			toast.success("Workspace deleted");
+			router.push("/workspace");
+		} catch (_error) {
+			toast.error("Failed to delete workspace");
+			setIsDeleting(false);
+		}
+	};
+
+	return (
+		<div className="grid gap-2">
+			<Label>Delete Workspace</Label>
+			<p className="text-xs text-muted-foreground mb-2">
+				Permanently delete this workspace and all its data. This action is
+				irreversible.
+			</p>
+			<AlertDialog>
+				<AlertDialogTrigger asChild>
+					<Button className="w-full" variant="destructive">
+						<Trash2 className="mr-2 h-4 w-4" />
+						Delete Workspace
+					</Button>
+				</AlertDialogTrigger>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action cannot be undone. This will permanently delete your
+							workspace and remove all associated data including messages,
+							channels, and member information.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							disabled={isDeleting}
+							onClick={handleDeleteWorkspace}
+						>
+							{isDeleting ? "Deleting..." : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</div>
+	);
+};
+
 export const WorkspaceManagement = ({
 	workspace,
 	currentMember,
@@ -56,14 +126,12 @@ export const WorkspaceManagement = ({
 	const router = useRouter();
 	const [name, setName] = useState(workspace.name);
 	const [isUpdating, setIsUpdating] = useState(false);
-	const [isDeleting, setIsDeleting] = useState(false);
 	const [_isGeneratingCode, setIsGeneratingCode] = useState(false);
 	const [_showJoinCode, _setShowJoinCode] = useState(false);
 	const [inviteOpen, setInviteOpen] = useState(false);
 	const [channelsExpanded, setChannelsExpanded] = useState(false);
 
 	const updateWorkspace = useUpdateWorkspace();
-	const removeWorkspace = useRemoveWorkspace();
 	const newJoinCode = useNewJoinCode();
 
 	// Fetch workspace data for overview
@@ -116,22 +184,6 @@ export const WorkspaceManagement = ({
 		const joinLink = `${window.location.origin}/auth/join/${workspace._id}?code=${workspace.joinCode}`;
 		navigator.clipboard.writeText(joinLink);
 		toast.success("Join link copied to clipboard");
-	};
-
-	const handleDeleteWorkspace = async () => {
-		setIsDeleting(true);
-
-		try {
-			await removeWorkspace.mutate({
-				id: workspace._id,
-			});
-
-			toast.success("Workspace deleted");
-			router.push("/workspace");
-		} catch (_error) {
-			toast.error("Failed to delete workspace");
-			setIsDeleting(false);
-		}
 	};
 
 	return (
@@ -250,45 +302,10 @@ export const WorkspaceManagement = ({
 					</div>
 
 					<div className="grid gap-4">
-						{isOwner && (
-							<div className="grid gap-2">
-								<Label>Delete Workspace</Label>
-								<p className="text-xs text-muted-foreground mb-2">
-									Permanently delete this workspace and all its data. This
-									action is irreversible.
-								</p>
-								<AlertDialog>
-									<AlertDialogTrigger asChild>
-										<Button className="w-full" variant="destructive">
-											<Trash2 className="mr-2 h-4 w-4" />
-											Delete Workspace
-										</Button>
-									</AlertDialogTrigger>
-									<AlertDialogContent>
-										<AlertDialogHeader>
-											<AlertDialogTitle>
-												Are you absolutely sure?
-											</AlertDialogTitle>
-											<AlertDialogDescription>
-												This action cannot be undone. This will permanently
-												delete your workspace and remove all associated data
-												including messages, channels, and member information.
-											</AlertDialogDescription>
-										</AlertDialogHeader>
-										<AlertDialogFooter>
-											<AlertDialogCancel>Cancel</AlertDialogCancel>
-											<AlertDialogAction
-												className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-												disabled={isDeleting}
-												onClick={handleDeleteWorkspace}
-											>
-												{isDeleting ? "Deleting..." : "Delete"}
-											</AlertDialogAction>
-										</AlertDialogFooter>
-									</AlertDialogContent>
-								</AlertDialog>
-							</div>
-						)}
+						<DeleteWorkspaceSection
+							isOwner={isOwner}
+							workspaceId={workspace._id}
+						/>
 					</div>
 				</div>
 

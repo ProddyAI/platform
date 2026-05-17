@@ -124,14 +124,20 @@ export function UpgradeModal({
 			newQuantity: selectedSeatCount,
 		})
 			.then((preview) => {
-				if (!cancelled) setFairBillingPreview(preview);
+				if (!cancelled) {
+					setFairBillingPreview(preview);
+				}
 			})
 			.catch((error) => {
 				console.warn("Failed to load fair billing preview:", error);
-				if (!cancelled) setFairBillingPreview(null);
+				if (!cancelled) {
+					setFairBillingPreview(null);
+				}
 			})
 			.finally(() => {
-				if (!cancelled) setPreviewLoading(false);
+				if (!cancelled) {
+					setPreviewLoading(false);
+				}
 			});
 
 		return () => {
@@ -278,9 +284,11 @@ export function UpgradeModal({
 										aria-label="Decrease Pro seats"
 										className="h-8 w-8"
 										disabled={proSeatCount <= requiredSeats}
-										onClick={() =>
-											setProSeatCount(Math.max(requiredSeats, proSeatCount - 1))
-										}
+										onClick={() => {
+											setProSeatCount(
+												Math.max(requiredSeats, proSeatCount - 1)
+											);
+										}}
 										size="icon"
 										variant="outline"
 									>
@@ -293,9 +301,9 @@ export function UpgradeModal({
 										aria-label="Increase Pro seats"
 										className="h-8 w-8"
 										disabled={proSeatCount >= maxSeats}
-										onClick={() =>
-											setProSeatCount(Math.min(maxSeats, proSeatCount + 1))
-										}
+										onClick={() => {
+											setProSeatCount(Math.min(maxSeats, proSeatCount + 1));
+										}}
 										size="icon"
 										variant="outline"
 									>
@@ -326,7 +334,9 @@ export function UpgradeModal({
 							<Button
 								className="w-full"
 								disabled={loading}
-								onClick={() => handleUpgrade("pro")}
+								onClick={() => {
+									handleUpgrade("pro");
+								}}
 								variant="secondary"
 							>
 								{loading ? (
@@ -373,11 +383,11 @@ export function UpgradeModal({
 										aria-label="Decrease Enterprise seats"
 										className="h-8 w-8"
 										disabled={enterpriseSeatCount <= requiredSeats}
-										onClick={() =>
+										onClick={() => {
 											setEnterpriseSeatCount(
 												Math.max(requiredSeats, enterpriseSeatCount - 1)
-											)
-										}
+											);
+										}}
 										size="icon"
 										variant="outline"
 									>
@@ -390,11 +400,11 @@ export function UpgradeModal({
 										aria-label="Increase Enterprise seats"
 										className="h-8 w-8"
 										disabled={enterpriseSeatCount >= maxSeats}
-										onClick={() =>
+										onClick={() => {
 											setEnterpriseSeatCount(
 												Math.min(maxSeats, enterpriseSeatCount + 1)
-											)
-										}
+											);
+										}}
 										size="icon"
 										variant="outline"
 									>
@@ -425,7 +435,9 @@ export function UpgradeModal({
 							<Button
 								className="w-full"
 								disabled={loading}
-								onClick={() => handleUpgrade("enterprise")}
+								onClick={() => {
+									handleUpgrade("enterprise");
+								}}
 								variant="secondary"
 							>
 								{loading ? (

@@ -21,96 +21,6 @@ interface InviteMailTemplateProps {
 	comment?: string;
 }
 
-// Helper component to create the email content
-function InviteMailContent({
-	senderName,
-	senderEmail,
-	workspaceName,
-	inviteLink,
-	comment,
-}: InviteMailTemplateProps) {
-	const invitationNote = comment?.trim();
-	const logoUrl = process.env.NEXT_PUBLIC_LOGO_URL;
-
-	return (
-		<>
-			{logoUrl ? (
-				<Img alt="Proddy" height="40" src={logoUrl} style={logo} width="40" />
-			) : null}
-			<Heading style={heading}>You've been invited to join a workspace</Heading>
-			<Section style={section}>
-				<Text style={text}>
-					<strong>{senderName}</strong> ({senderEmail}) has invited you to join
-					the workspace <strong>{workspaceName}</strong> on Proddy.
-				</Text>
-
-				{invitationNote ? (
-					<Section style={noteContainer}>
-						<Text style={noteLabel}>Invitation note</Text>
-						<Text style={noteText}>{invitationNote}</Text>
-					</Section>
-				) : null}
-
-				<Section style={buttonContainer}>
-					<Button
-						href={inviteLink}
-						style={{
-							...button,
-							paddingLeft: "24px",
-							paddingRight: "24px",
-							paddingTop: "12px",
-							paddingBottom: "12px",
-						}}
-					>
-						Accept Invite
-					</Button>
-				</Section>
-
-				<Text style={expiryText}>
-					This invite will expire in <strong>48 hours</strong>.
-				</Text>
-			</Section>
-
-			<Hr style={hr} />
-
-			<Section style={warningContainer}>
-				<Text style={warningText}>
-					<strong>⚠️ Security Notice:</strong> Only accept this invite if you
-					trust the sender. Never share your login credentials with anyone.
-				</Text>
-			</Section>
-
-			<Text style={footer}>
-				If you didn't expect this invitation, you can safely ignore this email.
-			</Text>
-		</>
-	);
-}
-
-export const InviteMailTemplate: React.FC<
-	Readonly<InviteMailTemplateProps>
-> = ({ senderName, senderEmail, workspaceName, inviteLink, comment }) => {
-	const previewText = `You've been invited to join ${workspaceName}`;
-
-	return (
-		<Html>
-			<Head />
-			<Preview>{previewText}</Preview>
-			<Body style={main}>
-				<Container style={container}>
-					<InviteMailContent
-						comment={comment}
-						inviteLink={inviteLink}
-						senderEmail={senderEmail}
-						senderName={senderName}
-						workspaceName={workspaceName}
-					/>
-				</Container>
-			</Body>
-		</Html>
-	);
-};
-
 // Styles
 const main = {
 	backgroundColor: "#f6f9fc",
@@ -230,4 +140,94 @@ const footer = {
 	lineHeight: "1.5",
 	textAlign: "center" as const,
 	marginTop: "30px",
+};
+
+// Helper component to create the email content
+function InviteMailContent({
+	senderName,
+	senderEmail,
+	workspaceName,
+	inviteLink,
+	comment,
+}: InviteMailTemplateProps) {
+	const invitationNote = comment?.trim();
+	const logoUrl = process.env.NEXT_PUBLIC_LOGO_URL;
+
+	return (
+		<>
+			{logoUrl ? (
+				<Img alt="Proddy" height="40" src={logoUrl} style={logo} width="40" />
+			) : null}
+			<Heading style={heading}>You've been invited to join a workspace</Heading>
+			<Section style={section}>
+				<Text style={text}>
+					<strong>{senderName}</strong> ({senderEmail}) has invited you to join
+					the workspace <strong>{workspaceName}</strong> on Proddy.
+				</Text>
+
+				{invitationNote ? (
+					<Section style={noteContainer}>
+						<Text style={noteLabel}>Invitation note</Text>
+						<Text style={noteText}>{invitationNote}</Text>
+					</Section>
+				) : null}
+
+				<Section style={buttonContainer}>
+					<Button
+						href={inviteLink}
+						style={{
+							...button,
+							paddingLeft: "24px",
+							paddingRight: "24px",
+							paddingTop: "12px",
+							paddingBottom: "12px",
+						}}
+					>
+						Accept Invite
+					</Button>
+				</Section>
+
+				<Text style={expiryText}>
+					This invite will expire in <strong>48 hours</strong>.
+				</Text>
+			</Section>
+
+			<Hr style={hr} />
+
+			<Section style={warningContainer}>
+				<Text style={warningText}>
+					<strong>⚠️ Security Notice:</strong> Only accept this invite if you
+					trust the sender. Never share your login credentials with anyone.
+				</Text>
+			</Section>
+
+			<Text style={footer}>
+				If you didn't expect this invitation, you can safely ignore this email.
+			</Text>
+		</>
+	);
+}
+
+export const InviteMailTemplate: React.FC<
+	Readonly<InviteMailTemplateProps>
+> = ({ senderName, senderEmail, workspaceName, inviteLink, comment }) => {
+	const previewText = `You've been invited to join ${workspaceName}`;
+
+	return (
+		<Html>
+			<Head />
+			<Preview>{previewText}</Preview>
+			<Body style={main}>
+				<Container style={container}>
+					<InviteMailContent
+						comment={comment}
+						inviteLink={inviteLink}
+						senderEmail={senderEmail}
+						senderName={senderName}
+						workspaceName={workspaceName}
+					/>
+				</Container>
+			</Body>
+		</Html>
+	);
 };

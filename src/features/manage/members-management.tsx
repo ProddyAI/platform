@@ -67,6 +67,185 @@ interface MembersManagementProps {
 	currentMember: Doc<"members">;
 }
 
+interface EmailInviteSectionProps {
+	workspaceId: Id<"workspaces">;
+}
+
+const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
+	const [email, setEmail] = useState("");
+	const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
+	const [inviteComment, setInviteComment] = useState("");
+	const [inviteLoading, setInviteLoading] = useState(false);
+	const [inviteError, setInviteError] = useState<string | null>(null);
+	const [inviteSuccess, setInviteSuccess] = useState(false);
+	const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+
+	const newJoinCode = useNewJoinCode();
+
+	const handleGenerateNewCode = async () => {
+		setIsGeneratingCode(true);
+		try {
+			await newJoinCode.mutate({
+				workspaceId,
+			});
+			toast.success("New join code generated");
+		} catch (_error) {
+			toast.error("Failed to generate new join code");
+		} finally {
+			setIsGeneratingCode(false);
+		}
+	};
+
+	const sendInvite = async () => {
+		setInviteError(null);
+		setInviteSuccess(false);
+
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!email || !emailRegex.test(email.trim())) {
+			setInviteError("Enter a valid email address");
+			return;
+		}
+
+		try {
+			setInviteLoading(true);
+			const res = await fetch("/api/account/invite", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					workspaceId,
+					email,
+					role: inviteRole,
+					comment: inviteComment,
+				}),
+			});
+
+			const data = await res.json();
+			if (!res.ok) {
+				throw new Error(data.error || "Failed to send invite");
+			}
+
+			setInviteSuccess(true);
+			setEmail("");
+			setInviteRole("member");
+			setInviteComment("");
+			toast.success("Invite sent successfully");
+		} catch (err: any) {
+			setInviteError(err.message);
+			toast.error(err.message || "Failed to send invite");
+		} finally {
+			setInviteLoading(false);
+		}
+	};
+
+	return (
+		<div className="p-4 bg-muted/30 dark:bg-muted/50 rounded-lg border border-border/50 dark:border-border">
+			<div className="grid gap-4">
+				<Label className="text-sm font-semibold" htmlFor="emailInvite">
+					Invite by Email
+				</Label>
+				<div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto_auto]">
+					<Input
+						className="flex-1"
+						disabled={inviteLoading}
+						id="emailInvite"
+						onChange={(e) => {
+							setEmail(e.target.value);
+							setInviteSuccess(false);
+						}}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								sendInvite();
+							}
+						}}
+						placeholder="name@example.com"
+						type="email"
+						value={email}
+					/>
+					<Select
+						disabled={inviteLoading}
+						onValueChange={(value) =>
+							setInviteRole(value as "admin" | "member")
+						}
+						value={inviteRole}
+					>
+						<SelectTrigger aria-label="Invite role">
+							<SelectValue placeholder="Role" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="member">
+								<div className="flex items-center gap-2">
+									<Users className="h-4 w-4" />
+									Member
+								</div>
+							</SelectItem>
+							<SelectItem value="admin">
+								<div className="flex items-center gap-2">
+									<Crown className="h-4 w-4" />
+									Admin
+								</div>
+							</SelectItem>
+						</SelectContent>
+					</Select>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								disabled={isGeneratingCode}
+								onClick={handleGenerateNewCode}
+								size="icon"
+								variant="outline"
+							>
+								{isGeneratingCode ? (
+									<RefreshCw className="h-4 w-4 animate-spin" />
+								) : (
+									<RefreshCw className="h-4 w-4" />
+								)}
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>
+							<p>Refresh Code</p>
+						</TooltipContent>
+					</Tooltip>
+					<Button
+						className="min-w-[120px]"
+						disabled={inviteLoading}
+						onClick={sendInvite}
+					>
+						{inviteLoading ? "Sending..." : "Send Invite"}
+					</Button>
+				</div>
+				<div className="grid gap-2">
+					<Label
+						className="flex items-center gap-2 text-sm font-medium"
+						htmlFor="inviteComment"
+					>
+						<MessageSquare className="h-4 w-4" />
+						Invitation Note
+					</Label>
+					<Textarea
+						disabled={inviteLoading}
+						id="inviteComment"
+						onChange={(e) => {
+							setInviteComment(e.target.value);
+							setInviteSuccess(false);
+						}}
+						placeholder="Let them know why you're inviting them..."
+						value={inviteComment}
+					/>
+				</div>
+				{inviteError && (
+					<p className="text-sm text-destructive">{inviteError}</p>
+				)}
+				{inviteSuccess && (
+					<p className="text-sm text-green-600">Invite sent successfully</p>
+				)}
+				<p className="text-xs text-muted-foreground">
+					Send an email invitation with a secure link to join the workspace
+				</p>
+			</div>
+		</div>
+	);
+};
+
 export const MembersManagement = ({
 	workspaceId,
 	currentMember,
@@ -80,19 +259,9 @@ export const MembersManagement = ({
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [isRemoving, setIsRemoving] = useState(false);
 	const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
-	const [isGeneratingCode, setIsGeneratingCode] = useState(false);
-
-	// Email invite state
-	const [email, setEmail] = useState("");
-	const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
-	const [inviteComment, setInviteComment] = useState("");
-	const [inviteLoading, setInviteLoading] = useState(false);
-	const [inviteError, setInviteError] = useState<string | null>(null);
-	const [inviteSuccess, setInviteSuccess] = useState(false);
 
 	const updateMember = useUpdateMember();
 	const removeMember = useRemoveMember();
-	const newJoinCode = useNewJoinCode();
 
 	const isOwner = currentMember.role === "owner";
 	const isAdmin = currentMember.role === "admin";
@@ -154,66 +323,6 @@ export const MembersManagement = ({
 		}
 	};
 
-	const handleGenerateNewCode = async () => {
-		setIsGeneratingCode(true);
-
-		try {
-			await newJoinCode.mutate({
-				workspaceId,
-			});
-
-			toast.success("New join code generated");
-		} catch (_error) {
-			toast.error("Failed to generate new join code");
-		} finally {
-			setIsGeneratingCode(false);
-		}
-	};
-
-	const sendInvite = async () => {
-		setInviteError(null);
-		setInviteSuccess(false);
-
-		// Email validation regex
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-		if (!email || !emailRegex.test(email.trim())) {
-			setInviteError("Enter a valid email address");
-			return;
-		}
-
-		try {
-			setInviteLoading(true);
-			const res = await fetch("/api/account/invite", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					workspaceId,
-					email,
-					role: inviteRole,
-					comment: inviteComment,
-				}),
-			});
-
-			const data = await res.json();
-
-			if (!res.ok) {
-				throw new Error(data.error || "Failed to send invite");
-			}
-
-			setInviteSuccess(true);
-			setEmail("");
-			setInviteRole("member");
-			setInviteComment("");
-			toast.success("Invite sent successfully");
-		} catch (err: any) {
-			setInviteError(err.message);
-			toast.error(err.message || "Failed to send invite");
-		} finally {
-			setInviteLoading(false);
-		}
-	};
-
 	const getRoleBadgeColor = (role: string) => {
 		switch (role) {
 			case "owner":
@@ -238,117 +347,7 @@ export const MembersManagement = ({
 				</div>
 
 				{(isOwner || isAdmin) && workspace && (
-					<>
-						{/* Email Invite Section */}
-						<div className="p-4 bg-muted/30 dark:bg-muted/50 rounded-lg border border-border/50 dark:border-border">
-							<div className="grid gap-4">
-								<Label className="text-sm font-semibold" htmlFor="emailInvite">
-									Invite by Email
-								</Label>
-								<div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto_auto]">
-									<Input
-										className="flex-1"
-										disabled={inviteLoading}
-										id="emailInvite"
-										onChange={(e) => {
-											setEmail(e.target.value);
-											setInviteSuccess(false);
-										}}
-										onKeyDown={(e) => {
-											if (e.key === "Enter") {
-												sendInvite();
-											}
-										}}
-										placeholder="name@example.com"
-										type="email"
-										value={email}
-									/>
-									<Select
-										disabled={inviteLoading}
-										onValueChange={(value) =>
-											setInviteRole(value as "admin" | "member")
-										}
-										value={inviteRole}
-									>
-										<SelectTrigger aria-label="Invite role">
-											<SelectValue placeholder="Role" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="member">
-												<div className="flex items-center gap-2">
-													<Users className="h-4 w-4" />
-													Member
-												</div>
-											</SelectItem>
-											<SelectItem value="admin">
-												<div className="flex items-center gap-2">
-													<Crown className="h-4 w-4" />
-													Admin
-												</div>
-											</SelectItem>
-										</SelectContent>
-									</Select>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												disabled={isGeneratingCode}
-												onClick={handleGenerateNewCode}
-												size="icon"
-												variant="outline"
-											>
-												{isGeneratingCode ? (
-													<RefreshCw className="h-4 w-4 animate-spin" />
-												) : (
-													<RefreshCw className="h-4 w-4" />
-												)}
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>Refresh Code</p>
-										</TooltipContent>
-									</Tooltip>
-									<Button
-										className="min-w-[120px]"
-										disabled={inviteLoading}
-										onClick={sendInvite}
-									>
-										{inviteLoading ? "Sending..." : "Send Invite"}
-									</Button>
-								</div>
-								<div className="grid gap-2">
-									<Label
-										className="flex items-center gap-2 text-sm font-medium"
-										htmlFor="inviteComment"
-									>
-										<MessageSquare className="h-4 w-4" />
-										Invitation Note
-									</Label>
-									<Textarea
-										disabled={inviteLoading}
-										id="inviteComment"
-										onChange={(e) => {
-											setInviteComment(e.target.value);
-											setInviteSuccess(false);
-										}}
-										placeholder="Let them know why you're inviting them..."
-										value={inviteComment}
-									/>
-								</div>
-								{inviteError && (
-									<p className="text-sm text-destructive">{inviteError}</p>
-								)}
-								{inviteSuccess && (
-									<p className="text-sm text-green-600">
-										Invite sent successfully
-									</p>
-								)}
-								<p className="text-xs text-muted-foreground">
-									Send an email invitation with a secure link to join the
-									workspace
-								</p>
-							</div>
-						</div>
-					</>
+					<EmailInviteSection workspaceId={workspaceId} />
 				)}
 
 				<Separator />
