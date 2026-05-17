@@ -180,6 +180,13 @@ export const update = mutation({
 		// Check permissions based on role hierarchy
 		if (!currentMember) throw new Error("Unauthorized.");
 
+		// Only owners and admins can modify member roles
+		if (currentMember.role !== "owner" && currentMember.role !== "admin") {
+			throw new Error(
+				"Unauthorized: Only owners and admins can modify member roles."
+			);
+		}
+
 		// Only owners can promote to owner
 		if (args.role === "owner" && currentMember.role !== "owner") {
 			throw new Error("Only owners can promote members to owner role.");

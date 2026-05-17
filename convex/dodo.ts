@@ -87,8 +87,9 @@ async function identifyCustomer(
 		// We are in a Query or Mutation
 		const dbCtx = ctx as MutationCtx;
 		const identity = await dbCtx.auth.getUserIdentity();
-		if (!identity) return null;
-		const baseUserId = (identity.subject || "").split("|")[0];
+		if (!identity?.subject) return null;
+		const baseUserId = identity.subject.split("|")[0];
+		if (!baseUserId) return null;
 
 		const pref = await dbCtx.db
 			.query("preferences")

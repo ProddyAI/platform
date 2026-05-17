@@ -211,7 +211,10 @@ const baseConfig = withPWA({
 		ignoreBuildErrors: false,
 	},
 	experimental: {
-		cpus: 1,
+		// Restrict build to a single CPU core in resource-constrained environments (like CI / Docker)
+		// to avoid OOM / memory exhaustion errors, while keeping local development unconstrained.
+		cpus: process.env.CI || process.env.LIMIT_BUILD_CPUS ? 1 : undefined,
+		// Enable worker threads to speed up build parallelization
 		workerThreads: true,
 	},
 	webpack(config, { dev }) {

@@ -153,7 +153,7 @@ const syncMemberSeatTiers = async (
 	const members = await ctx.db
 		.query("members")
 		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
-		.take(1000);
+		.collect();
 
 	for (const member of members) {
 		if (!BILLABLE_MEMBER_ROLES.has(member.role)) continue;

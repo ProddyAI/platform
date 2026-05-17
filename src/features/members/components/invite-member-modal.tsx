@@ -340,6 +340,12 @@ export const InviteMemberModal = () => {
 			return;
 		}
 
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email.trim())) {
+			toast.error("Please enter a valid email address");
+			return;
+		}
+
 		setInviteLoading(true);
 		try {
 			const response = await fetch("/api/account/invite", {

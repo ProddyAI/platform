@@ -73,17 +73,18 @@ export function UpgradeModal({
 		nextMonthlyAmount?: number;
 	} | null>(null);
 
-	const requiredSeats = Math.max(1, minimumSeatCount, initialSeatCount);
+	const requiredSeats = Math.max(1, minimumSeatCount);
 	const maxSeats = Math.max(1000, requiredSeats);
+	const clampedInitialSeats = Math.min(Math.max(initialSeatCount, requiredSeats), maxSeats);
 
-	const [proSeatCount, setProSeatCount] = useState(requiredSeats);
-	const [enterpriseSeatCount, setEnterpriseSeatCount] = useState(requiredSeats);
+	const [proSeatCount, setProSeatCount] = useState(clampedInitialSeats);
+	const [enterpriseSeatCount, setEnterpriseSeatCount] = useState(clampedInitialSeats);
 
 	useEffect(() => {
 		if (!open) return;
-		setProSeatCount(requiredSeats);
-		setEnterpriseSeatCount(requiredSeats);
-	}, [open, requiredSeats]);
+		setProSeatCount(clampedInitialSeats);
+		setEnterpriseSeatCount(clampedInitialSeats);
+	}, [open, clampedInitialSeats]);
 
 	const proPlan = PLANS.pro;
 	const enterprisePlan = PLANS.enterprise;

@@ -841,6 +841,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				{/* Notifications Button */}
 				<Hint label="Open billing" side="bottom">
 					<Button
+						aria-label="Upgrade"
 						className="h-8 gap-1.5 px-2 text-white hover:bg-white/15 transition-colors sm:px-3"
 						onClick={handleUpgradeClick}
 						size="sm"

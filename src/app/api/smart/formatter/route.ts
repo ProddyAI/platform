@@ -46,12 +46,36 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { content, title, workspaceId } = requestData ?? {};
-
-		if (!content) {
-			console.error("Missing content in request");
+		if (!requestData || typeof requestData !== "object") {
+			console.error("Invalid request payload object");
 			return NextResponse.json(
-				{ error: "Content is required" },
+				{ error: "Invalid request payload" },
+				{ status: 400 }
+			);
+		}
+
+		const { content, title, workspaceId } = requestData;
+
+		if (typeof content !== "string" || content.trim().length === 0) {
+			console.error("Missing or invalid content in request");
+			return NextResponse.json(
+				{ error: "Content is required and must be a non-empty string" },
+				{ status: 400 }
+			);
+		}
+
+		if (title !== undefined && typeof title !== "string") {
+			console.error("Invalid title in request");
+			return NextResponse.json(
+				{ error: "Title must be a string" },
+				{ status: 400 }
+			);
+		}
+
+		if (workspaceId !== undefined && typeof workspaceId !== "string") {
+			console.error("Invalid workspaceId in request");
+			return NextResponse.json(
+				{ error: "WorkspaceId must be a string" },
 				{ status: 400 }
 			);
 		}
@@ -147,7 +171,14 @@ Formatted Content:`;
 						featureType: "aiSummary",
 					});
 				} catch (trackErr) {
-					console.warn("[Smart Formatter] Failed to record usage:", trackErr);
+					console.error("[Smart Formatter] Fail-closed: Failed to record usage:", trackErr);
+					return NextResponse.json(
+						{
+							error: "Service Temporarily Unavailable",
+							message: "Failed to verify usage limits. Please try again.",
+						},
+						{ status: 503 }
+					);
 				}
 			}
 

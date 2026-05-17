@@ -269,7 +269,7 @@ export const WorkspaceManagement = ({
 					</p>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+				<div className={cn("grid grid-cols-1 gap-8 items-start", isOwner && "md:grid-cols-2")}>
 					<div className="grid gap-4">
 						<Label htmlFor="name">Workspace Name</Label>
 						<div className="flex items-center gap-2">
