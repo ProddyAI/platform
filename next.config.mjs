@@ -208,7 +208,7 @@ const baseConfig = withPWA({
 		ignoreDuringBuilds: true,
 	},
 	typescript: {
-		ignoreBuildErrors: true,
+		ignoreBuildErrors: false,
 	},
 	experimental: {
 		cpus: 1,

@@ -470,6 +470,15 @@ export const recordAIRequestPublic = mutation({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return;
 
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.first();
+
+		if (!member) return;
+
 		const month = getCurrentMonth();
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const fieldName = FEATURE_FIELD_MAP[featureType];

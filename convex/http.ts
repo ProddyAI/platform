@@ -244,14 +244,13 @@ http.route({
 		console.log(`[Dodo Webhook] Received event: ${payload.type}`);
 		const webhookId = getWebhookId(payload);
 		if (webhookId) {
-			const recordResult = await ctx.runMutation(
-				(internal.webhooks as any).recordWebhook,
+			const isDuplicate = await ctx.runQuery(
+				(internal.webhooks as any).checkWebhook,
 				{
 					webhookId,
-					eventType: payload.type ?? "unknown",
 				}
 			);
-			if (!recordResult?.recorded) {
+			if (isDuplicate) {
 				console.log(`[Dodo Webhook] Duplicate event skipped: ${webhookId}`);
 				return new Response("OK", { status: 200 });
 			}
@@ -365,6 +364,16 @@ http.route({
 				if (customerId) cancelArgs.customerId = customerId;
 
 				await ctx.runMutation(internal.webhooks.cancelSubscription, cancelArgs);
+			}
+
+			if (webhookId) {
+				await ctx.runMutation(
+					(internal.webhooks as any).recordWebhook,
+					{
+						webhookId,
+						eventType: payload.type ?? "unknown",
+					}
+				);
 			}
 		} catch (e) {
 			console.error(

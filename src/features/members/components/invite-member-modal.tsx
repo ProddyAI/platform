@@ -57,8 +57,8 @@ const InviteModalHeader = () => {
 };
 
 interface WorkspaceRoleSelectProps {
-	role: "admin" | "member";
-	setRole: (role: "admin" | "member") => void;
+	role: "admin" | "member" | "viewer";
+	setRole: (role: "admin" | "member" | "viewer") => void;
 }
 
 const WorkspaceRoleSelect = ({ role, setRole }: WorkspaceRoleSelectProps) => {
@@ -69,7 +69,7 @@ const WorkspaceRoleSelect = ({ role, setRole }: WorkspaceRoleSelectProps) => {
 				Workspace Role
 			</Label>
 			<Select
-				onValueChange={(v: "admin" | "member") => setRole(v)}
+				onValueChange={(v: "admin" | "member" | "viewer") => setRole(v)}
 				value={role}
 			>
 				<SelectTrigger className="h-14 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 transition-all font-medium text-lg">
@@ -88,6 +88,23 @@ const WorkspaceRoleSelect = ({ role, setRole }: WorkspaceRoleSelectProps) => {
 								<span className="font-bold text-base">Member</span>
 								<span className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold">
 									Standard access to workspace features
+								</span>
+							</div>
+						</div>
+					</SelectItem>
+
+					<SelectItem
+						className="py-4 cursor-pointer rounded-lg hover:bg-green-50/50 transition-colors"
+						value="viewer"
+					>
+						<div className="flex items-center gap-4">
+							<div className="size-10 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
+								<Users className="size-5" />
+							</div>
+							<div className="flex flex-col">
+								<span className="font-bold text-base">Viewer</span>
+								<span className="text-[11px] text-green-600 uppercase tracking-wider font-bold">
+									Read-only access (free/non-billable)
 								</span>
 							</div>
 						</div>
@@ -229,7 +246,7 @@ export const InviteMemberModal = () => {
 	);
 
 	const [email, setEmail] = useState("");
-	const [role, setRole] = useState<"admin" | "member">("member");
+	const [role, setRole] = useState<"admin" | "member" | "viewer">("member");
 	const [comment, setComment] = useState("");
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [addingSeats, setAddingSeats] = useState(false);
@@ -250,7 +267,7 @@ export const InviteMemberModal = () => {
 		(seatUsage?.occupiedSeats ?? 0) + (seatUsage?.pendingInvites ?? 0);
 	const isPlanPaid =
 		seatUsage?.plan === "pro" || seatUsage?.plan === "enterprise";
-	const isSeatsFull = isPlanPaid && usedSeats >= totalSeats;
+	const isSeatsFull = isPlanPaid && role !== "viewer" && usedSeats >= totalSeats;
 
 	useEffect(() => {
 		if (!isSeatsFull) {

@@ -236,6 +236,14 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
+		const workspaceId = requestData?.workspaceId;
+		if (!workspaceId) {
+			return NextResponse.json(
+				{ error: "workspaceId is required" },
+				{ status: 400 }
+			);
+		}
+
 		let messages: MessageData[] | null = null;
 		let channelLabel: string | null = null;
 
@@ -246,7 +254,6 @@ export async function POST(req: NextRequest) {
 
 		// New mode: accept workspaceId + channel / channelId and fetch from DB.
 		if (!messages) {
-			const workspaceId = requestData?.workspaceId;
 			const channel = requestData?.channel;
 			const channelId = requestData?.channelId;
 			const limitRaw = requestData?.limit;
@@ -254,13 +261,6 @@ export async function POST(req: NextRequest) {
 				typeof limitRaw === "number" && Number.isFinite(limitRaw)
 					? Math.max(1, Math.min(MAX_MESSAGES, Math.floor(limitRaw)))
 					: MAX_MESSAGES;
-
-			if (!workspaceId) {
-				return NextResponse.json(
-					{ error: "Either messages[] or workspaceId is required" },
-					{ status: 400 }
-				);
-			}
 
 			try {
 				const fetched = await fetchRecentChannelMessages({
@@ -300,37 +300,39 @@ export async function POST(req: NextRequest) {
 				: messages;
 
 		// ─── Usage Limit Check ──────────────────────────────────────────────────
-		const trackingWorkspaceId = requestData?.workspaceId as
-			| Id<"workspaces">
-			| undefined;
-		if (trackingWorkspaceId) {
-			try {
-				const convex = createConvexClient();
-				const token = await convexAuthNextjsToken();
-				if (token) convex.setAuth(token);
+		try {
+			const convex = createConvexClient();
+			const token = await convexAuthNextjsToken();
+			if (token) convex.setAuth(token);
 
-				const usageCheck = await convex.query(
-					api.usageTracking.checkAIUsageLimitPublic,
-					{
-						workspaceId: trackingWorkspaceId,
-						featureType: "aiSummary",
-					}
-				);
-
-				if (!usageCheck.allowed) {
-					return NextResponse.json(
-						{
-							error: `Usage limit reached. Your plan allows ${usageCheck.limit} AI summaries per month.`,
-						},
-						{ status: 403 }
-					);
+			const usageCheck = await convex.query(
+				api.usageTracking.checkAIUsageLimitPublic,
+				{
+					workspaceId,
+					featureType: "aiSummary",
 				}
-			} catch (error) {
-				console.warn(
-					"[Smart Summarize] Usage check failed, proceeding anyway:",
-					error
+			);
+
+			if (!usageCheck.allowed) {
+				return NextResponse.json(
+					{
+						error: `Usage limit reached. Your plan allows ${usageCheck.limit} AI summaries per month.`,
+					},
+					{ status: 403 }
 				);
 			}
+		} catch (error) {
+			console.error(
+				"[Smart Summarize] Workspace usage check failed:",
+				error
+			);
+			return NextResponse.json(
+				{
+					error: "Usage check failed",
+					message: "AI services are temporarily unavailable. Please try again.",
+				},
+				{ status: 503 }
+			);
 		}
 
 		// Check cache first
@@ -410,25 +412,22 @@ Output format (Markdown, no intro text):
 			});
 
 			// Track AI summary usage
-			const trackingWorkspaceId = requestData?.workspaceId;
-			if (trackingWorkspaceId) {
-				const trackingConvex = createConvexClient();
-				try {
-					const trackingToken = await convexAuthNextjsToken();
-					if (trackingToken) trackingConvex.setAuth(trackingToken);
-					await trackingConvex.mutation(
-						api.usageTracking.recordAIRequestPublic,
-						{
-							workspaceId: trackingWorkspaceId,
-							featureType: "aiSummary",
-						}
-					);
-				} catch (trackErr) {
-					console.warn(
-						"[UsageTracking] Failed to record AI summary:",
-						trackErr
-					);
-				}
+			const trackingConvex = createConvexClient();
+			try {
+				const trackingToken = await convexAuthNextjsToken();
+				if (trackingToken) trackingConvex.setAuth(trackingToken);
+				await trackingConvex.mutation(
+					api.usageTracking.recordAIRequestPublic,
+					{
+						workspaceId,
+						featureType: "aiSummary",
+					}
+				);
+			} catch (trackErr) {
+				console.warn(
+					"[UsageTracking] Failed to record AI summary:",
+					trackErr
+				);
 			}
 
 			// Prune cache if needed

@@ -411,12 +411,11 @@ export const getWorkspaceByIdInternal = internalQuery({
 export const resetBillingStatus = mutation({
 	args: { workspaceId: v.id("workspaces") },
 	handler: async (ctx, args) => {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) throw new Error("Unauthorized");
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) throw new Error("Workspace not found");
-		const baseUserId = (identity.subject || "").split("|")[0];
-		if (workspace.userId !== baseUserId)
+		if (workspace.userId !== userId)
 			throw new Error("Only owner can reset");
 		await ctx.db.patch(args.workspaceId, {
 			plan: "free",
@@ -439,12 +438,11 @@ export const resetBillingStatus = mutation({
 export const resetMyBilling = mutation({
 	args: {},
 	handler: async (ctx) => {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) throw new Error("Unauthorized");
-		const baseUserId = (identity.subject || "").split("|")[0] as Id<"users">;
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
 		const workspaces = await ctx.db
 			.query("workspaces")
-			.withIndex("by_user_id", (q) => q.eq("userId", baseUserId))
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.collect();
 		for (const workspace of workspaces) {
 			await ctx.db.patch(workspace._id, {

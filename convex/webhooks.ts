@@ -10,7 +10,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, type MutationCtx } from "./_generated/server";
+import { internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 
 const BILLABLE_MEMBER_ROLES = new Set(["owner", "admin", "member"]);
 const INACTIVE_SUBSCRIPTION_STATUSES = new Set([
@@ -19,6 +19,19 @@ const INACTIVE_SUBSCRIPTION_STATUSES = new Set([
 	"expired",
 	"failed",
 ]);
+
+export const checkWebhook = internalQuery({
+	args: {
+		webhookId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const existing = await ctx.db
+			.query("webhookEvents")
+			.withIndex("by_webhook_id", (q) => q.eq("webhookId", args.webhookId))
+			.unique();
+		return !!existing;
+	},
+});
 
 export const recordWebhook = internalMutation({
 	args: {

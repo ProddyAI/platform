@@ -82,9 +82,16 @@ export async function POST(req: NextRequest) {
 					);
 				}
 			} catch (err) {
-				console.warn(
-					"[Smart Formatter] Usage check failed, proceeding anyway:",
+				console.error(
+					"[Smart Formatter] Workspace usage check failed:",
 					err
+				);
+				return NextResponse.json(
+					{
+						error: "Usage check failed",
+						message: "AI services are temporarily unavailable. Please try again.",
+					},
+					{ status: 503 }
 				);
 			}
 		}

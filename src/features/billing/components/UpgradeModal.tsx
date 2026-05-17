@@ -74,7 +74,7 @@ export function UpgradeModal({
 	} | null>(null);
 
 	const requiredSeats = Math.max(1, minimumSeatCount, initialSeatCount);
-	const maxSeats = Math.max(20, requiredSeats);
+	const maxSeats = Math.max(1000, requiredSeats);
 
 	const [proSeatCount, setProSeatCount] = useState(requiredSeats);
 	const [enterpriseSeatCount, setEnterpriseSeatCount] = useState(requiredSeats);

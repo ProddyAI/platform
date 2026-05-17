@@ -45,6 +45,7 @@ export default function BillingPage() {
 			<div className="flex items-center justify-between border-b bg-white dark:bg-slate-900/50 px-6 py-4 backdrop-blur-md sticky top-0 z-10">
 				<div className="flex items-center gap-4">
 					<Button
+						aria-label="Go back"
 						className="rounded-full"
 						onClick={() => router.back()}
 						size="icon"

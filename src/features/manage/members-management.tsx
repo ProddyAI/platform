@@ -73,7 +73,7 @@ interface EmailInviteSectionProps {
 
 const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 	const [email, setEmail] = useState("");
-	const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
+	const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">("member");
 	const [inviteComment, setInviteComment] = useState("");
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [inviteError, setInviteError] = useState<string | null>(null);
@@ -164,7 +164,7 @@ const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 					<Select
 						disabled={inviteLoading}
 						onValueChange={(value) =>
-							setInviteRole(value as "admin" | "member")
+							setInviteRole(value as "admin" | "member" | "viewer")
 						}
 						value={inviteRole}
 					>
@@ -182,6 +182,12 @@ const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 								<div className="flex items-center gap-2">
 									<Crown className="h-4 w-4" />
 									Admin
+								</div>
+							</SelectItem>
+							<SelectItem value="viewer">
+								<div className="flex items-center gap-2">
+									<UserCog className="h-4 w-4" />
+									Viewer
 								</div>
 							</SelectItem>
 						</SelectContent>
@@ -272,7 +278,7 @@ export const MembersManagement = ({
 
 	const handleUpdateRole = async (
 		memberId: Id<"members">,
-		role: "owner" | "admin" | "member"
+		role: "owner" | "admin" | "member" | "viewer"
 	) => {
 		// Prevent the only owner from downgrading themselves
 		if (memberId === currentMember._id && isOnlyOwner && role !== "owner") {
@@ -412,7 +418,7 @@ export const MembersManagement = ({
 									<TableCell>
 										<div className="flex items-center gap-2">
 											{/* Role Management Dropdown */}
-											{(isOwner || (isAdmin && member.role === "member")) &&
+											{(isOwner || (isAdmin && (member.role === "member" || member.role === "viewer"))) &&
 												!(member._id === currentMember._id && isOnlyOwner) && (
 													<DropdownMenu>
 														<DropdownMenuTrigger asChild>
@@ -455,6 +461,16 @@ export const MembersManagement = ({
 																	Make Member
 																</DropdownMenuItem>
 															)}
+															{(isOwner || isAdmin) && (
+																<DropdownMenuItem
+																	disabled={member.role === "viewer"}
+																	onClick={() =>
+																		handleUpdateRole(member._id, "viewer")
+																	}
+																>
+																	Make Viewer
+																</DropdownMenuItem>
+															)}
 														</DropdownMenuContent>
 													</DropdownMenu>
 												)}
@@ -470,7 +486,7 @@ export const MembersManagement = ({
 
 											{/* Remove Member Button */}
 											{((isOwner && member.role !== "owner") ||
-												(isAdmin && member.role === "member")) && (
+												(isAdmin && (member.role === "member" || member.role === "viewer"))) && (
 												<Button
 													className="text-destructive hover:bg-destructive/10"
 													disabled={member._id === currentMember._id}

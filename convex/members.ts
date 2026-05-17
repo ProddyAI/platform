@@ -154,7 +154,12 @@ export const current = query({
 export const update = mutation({
 	args: {
 		id: v.id("members"),
-		role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+		role: v.union(
+			v.literal("owner"),
+			v.literal("admin"),
+			v.literal("member"),
+			v.literal("viewer")
+		),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -237,9 +242,13 @@ export const remove = mutation({
 		// Owners cannot be removed
 		if (member.role === "owner") throw new Error("Owners cannot be removed.");
 
-		// Admins can only remove members
-		if (currentMember.role === "admin" && member.role !== "member") {
-			throw new Error("Admins can only remove members.");
+		// Admins can only remove members and viewers
+		if (
+			currentMember.role === "admin" &&
+			member.role !== "member" &&
+			member.role !== "viewer"
+		) {
+			throw new Error("Admins can only remove members and viewers.");
 		}
 
 		// Cannot remove self if admin or owner
