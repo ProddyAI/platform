@@ -2,6 +2,24 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const planName = v.union(
+	v.literal("free"),
+	v.literal("pro"),
+	v.literal("enterprise")
+);
+
+const billingAuditValue = v.object({
+	plan: v.optional(v.union(planName, v.null())),
+	quantity: v.optional(v.number()),
+	proSeats: v.optional(v.number()),
+	enterpriseSeats: v.optional(v.number()),
+	cancellationAtPeriodEnd: v.optional(v.boolean()),
+	scheduledCancellationDate: v.optional(v.union(v.number(), v.null())),
+	refundAmount: v.optional(v.number()),
+	refundCurrency: v.optional(v.union(v.string(), v.null())),
+	refundId: v.optional(v.union(v.string(), v.null())),
+});
+
 const schema = defineSchema({
 	...authTables,
 	// Extend the users table with additional profile fields
@@ -36,16 +54,66 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
-		plan: v.optional(
-			v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise"))
-		),
+		plan: v.optional(planName),
+		subscriptionStatus: v.optional(v.string()),
+		subscriptionId: v.optional(v.string()),
+		customerId: v.optional(v.string()),
 		dodoCustomerId: v.optional(v.string()),
 		dodoSubscriptionId: v.optional(v.string()),
+		proSeats: v.optional(v.number()),
+		enterpriseSeats: v.optional(v.number()),
+
+		// Enterprise Billing Fields
+		totalPaidSeats: v.optional(v.number()),
+		activeUserCount: v.optional(v.number()),
+		nextBillingDate: v.optional(v.number()),
+		currentPeriodEnd: v.optional(v.number()),
+		cancellationAtPeriodEnd: v.optional(v.boolean()),
+		scheduledCancellationDate: v.optional(v.number()),
+		AIAddonEnabled: v.optional(v.boolean()),
+		billingInterval: v.optional(v.union(v.literal("month"), v.literal("year"))),
+		billingCredits: v.optional(v.number()),
 	})
 		.index("by_user_id", ["userId"])
 		.index("by_plan", ["plan"])
 		.index("by_dodo_subscription_id", ["dodoSubscriptionId"])
 		.index("by_dodo_customer_id", ["dodoCustomerId"]),
+
+	// Local Ledger: Stores transaction history and invoice links
+	billingHistory: defineTable({
+		workspaceId: v.id("workspaces"),
+		amount: v.number(),
+		currency: v.string(),
+		status: v.string(),
+		taxAmount: v.optional(v.number()),
+		type: v.optional(v.union(v.literal("payment"), v.literal("refund"))),
+		description: v.optional(v.string()),
+		plan: v.optional(v.string()),
+		seats: v.optional(v.number()),
+		invoiceUrl: v.optional(v.string()),
+		usedAmount: v.optional(v.number()),
+		dodoInvoiceId: v.string(),
+		createdAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_dodo_invoice_id", ["dodoInvoiceId"]),
+
+	// Audit Log: Tracks internal billing changes (seat expansion, plan changes)
+	billingAuditLogs: defineTable({
+		workspaceId: v.id("workspaces"),
+		action: v.string(), // "seat_expansion", "plan_change", "cancellation_scheduled"
+		previousValue: billingAuditValue,
+		newValue: billingAuditValue,
+		timestamp: v.number(),
+	}).index("by_workspace_id", ["workspaceId"]),
+
+	webhookEvents: defineTable({
+		webhookId: v.string(),
+		eventType: v.string(),
+		processedAt: v.number(),
+	})
+		.index("by_webhook_id", ["webhookId"])
+		.index("by_processed_at", ["processedAt"]),
 
 	// Usage tracking - rolling monthly counts per workspace
 	usageStats: defineTable({
@@ -74,7 +142,13 @@ const schema = defineSchema({
 	members: defineTable({
 		userId: v.id("users"),
 		workspaceId: v.id("workspaces"),
-		role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+		role: v.union(
+			v.literal("owner"),
+			v.literal("admin"),
+			v.literal("member"),
+			v.literal("viewer")
+		),
+		seatTier: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 	})
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id", ["workspaceId"])
@@ -758,8 +832,11 @@ const schema = defineSchema({
 		workspaceId: v.id("workspaces"), // which workspace
 		email: v.string(), // who the invite is for
 		hash: v.string(), // token from email link
+		role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+		invitePlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 		used: v.boolean(), // one-time use
 		expiresAt: v.number(), // auto-expiry
+		comment: v.optional(v.string()), // added comment field
 		createdAt: v.optional(v.number()), // when the invite was created (optional for backward compatibility)
 		invitedBy: v.optional(v.id("members")), // who sent the invite (optional for backward compatibility; new records should set this)
 	})

@@ -1,9 +1,10 @@
-import { createDodoWebhookHandler } from "@dodopayments/convex";
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
+import { subscriptions } from "./dodo";
+import { PLANS } from "./plans";
 
 const http = httpRouter();
 
@@ -19,89 +20,372 @@ const parsePlanFromMetadata = (
 	return undefined;
 };
 
+const parsePlanFromProductId = (
+	productId: unknown
+): "pro" | "enterprise" | undefined => {
+	if (typeof productId !== "string") return undefined;
+	if (productId === PLANS.pro.dodoProductId) return "pro";
+	if (productId === PLANS.enterprise.dodoProductId) return "enterprise";
+	return undefined;
+};
+
+const parseSubscriptionWorkspaceId = (data: any): string | undefined =>
+	data?.metadata?.workspace_id as string | undefined;
+
+const parseSubscriptionCustomerId = (data: any): string | undefined =>
+	data?.customer?.customer_id ?? data?.customer_id;
+
+const parseSubscriptionPlan = (data: any): "pro" | "enterprise" | undefined =>
+	parsePlanFromProductId(data?.product_id) ??
+	parsePlanFromProductId(data?.product?.product_id) ??
+	parsePlanFromProductId(data?.product?.id) ??
+	parsePlanFromMetadata(data?.metadata);
+
+const buildSubscriptionMutationArgs = (
+	data: any,
+	raw: string,
+	fallbackWorkspaceId?: string,
+	billingDetails?: {
+		amountDue?: number;
+		currency?: string;
+		taxAmount?: number;
+		invoiceUrl?: string;
+		paymentConfirmed?: boolean;
+	}
+) => {
+	const args: {
+		workspaceId?: string;
+		subscriptionId: string;
+		status: string;
+		plan?: "pro" | "enterprise";
+		customerId?: string;
+		quantity?: number;
+		cancelAtNextBillingDate?: boolean;
+		nextBillingDate?: string;
+		amountDue?: number;
+		currency?: string;
+		taxAmount?: number;
+		invoiceUrl?: string;
+		paymentConfirmed?: boolean;
+		raw: string;
+	} = {
+		subscriptionId: data?.subscription_id,
+		status: data?.status ?? "unknown",
+		raw,
+	};
+	const workspaceId = parseSubscriptionWorkspaceId(data) ?? fallbackWorkspaceId;
+	const plan = parseSubscriptionPlan(data);
+	const customerId = parseSubscriptionCustomerId(data);
+
+	if (workspaceId) args.workspaceId = workspaceId;
+	if (plan) args.plan = plan;
+	if (customerId) args.customerId = customerId;
+	if (typeof data?.quantity === "number") args.quantity = data.quantity;
+	if (typeof data?.cancel_at_next_billing_date === "boolean") {
+		args.cancelAtNextBillingDate = data.cancel_at_next_billing_date;
+	}
+	if (typeof data?.next_billing_date === "string") {
+		args.nextBillingDate = data.next_billing_date;
+	}
+	if (billingDetails?.amountDue && billingDetails.amountDue > 0) {
+		args.amountDue = billingDetails.amountDue;
+	}
+	if (billingDetails?.currency) args.currency = billingDetails.currency;
+	if (billingDetails?.taxAmount && billingDetails.taxAmount > 0) {
+		args.taxAmount = billingDetails.taxAmount;
+	}
+	if (billingDetails?.invoiceUrl) args.invoiceUrl = billingDetails.invoiceUrl;
+	if (billingDetails?.paymentConfirmed === true) {
+		args.paymentConfirmed = true;
+	}
+
+	return args;
+};
+
+const syncSubscriptionFromDodo = async (
+	ctx: any,
+	subscriptionId: string,
+	fallbackWorkspaceId?: string,
+	billingDetails?: {
+		amountDue?: number;
+		currency?: string;
+		taxAmount?: number;
+		invoiceUrl?: string;
+		paymentConfirmed?: boolean;
+	}
+) => {
+	const subscription = await subscriptions.retrieve(ctx, {
+		subscription_id: subscriptionId,
+	});
+
+	await ctx.runMutation(
+		internal.webhooks.updateSubscription,
+		buildSubscriptionMutationArgs(
+			{
+				...subscription,
+				subscription_id: subscription.subscription_id ?? subscriptionId,
+			},
+			JSON.stringify(subscription),
+			fallbackWorkspaceId,
+			billingDetails
+		)
+	);
+};
+
 // ─── Dodo Payments Webhook ─────────────────────────────────────────────────────
 // Securely handles Dodo Payments webhook events with signature verification.
 // Ensure DODO_PAYMENTS_WEBHOOK_SECRET is configured in Convex dashboard env vars.
+
+const parseWebhookSignatures = (signatureHeader: string): string[] =>
+	signatureHeader
+		.split(/\s+/)
+		.flatMap((token) => token.split(","))
+		.map((segment) => segment.trim())
+		.filter(Boolean)
+		.flatMap((segment) => {
+			const versioned = segment.match(/^v\d+[=,](.+)$/i);
+			if (versioned) return [versioned[1].trim()];
+			return /^v\d+$/i.test(segment) ? [] : [segment];
+		})
+		.filter(Boolean);
+
+const getWebhookId = (payload: any): string | null => {
+	const id = payload?.msg_id ?? payload?.msgId ?? payload?.id;
+	return typeof id === "string" && id.length > 0 ? id : null;
+};
+
+const verifyDodoSignature = async (
+	payload: string,
+	signatureHeader: string,
+	msgId: string,
+	timestamp: string,
+	secretBase64: string
+): Promise<boolean> => {
+	const encoder = new TextEncoder();
+	const toSign = encoder.encode(`${msgId}.${timestamp}.${payload}`);
+
+	const secretStr = secretBase64.startsWith("whsec_")
+		? secretBase64.substring(6)
+		: secretBase64;
+	const secretBytes = Uint8Array.from(atob(secretStr), (c) => c.charCodeAt(0));
+
+	const key = await crypto.subtle.importKey(
+		"raw",
+		secretBytes,
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"]
+	);
+
+	const signatureBuffer = await crypto.subtle.sign("HMAC", key, toSign);
+	const signatureBase64Computed = btoa(
+		String.fromCharCode(...new Uint8Array(signatureBuffer))
+	);
+
+	const signatures = parseWebhookSignatures(signatureHeader);
+	return signatures.includes(signatureBase64Computed);
+};
+
 http.route({
 	path: "/dodopayments-webhook",
 	method: "POST",
-	handler: createDodoWebhookHandler({
-		onPaymentSucceeded: async (ctx, payload) => {
-			// Persist/handle payment success if needed
-			// Using internal.webhooks.* mutations to avoid schema changes during migration
-			try {
-				await ctx.runMutation(internal.webhooks.createPayment, {
+	handler: httpAction(async (ctx, request) => {
+		console.log("[Webhook] Request received");
+
+		const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET;
+		if (!webhookSecret) {
+			console.error("Missing DODO_PAYMENTS_WEBHOOK_SECRET");
+			return new Response("Configuration error", { status: 500 });
+		}
+
+		const body = await request.text();
+		const signature = request.headers.get("webhook-signature");
+		const msgId = request.headers.get("webhook-id");
+		const timestamp = request.headers.get("webhook-timestamp");
+
+		if (!signature || !msgId || !timestamp) {
+			return new Response("Missing headers", { status: 400 });
+		}
+
+		const now = Math.floor(Date.now() / 1000);
+		const parsedTimestamp = Number.parseInt(timestamp, 10);
+		if (!Number.isFinite(parsedTimestamp)) {
+			return new Response("Invalid timestamp", { status: 400 });
+		}
+		if (Math.abs(now - parsedTimestamp) > 300) {
+			return new Response("Timestamp out of tolerance", { status: 400 });
+		}
+
+		try {
+			const isValid = await verifyDodoSignature(
+				body,
+				signature,
+				msgId,
+				timestamp,
+				webhookSecret
+			);
+			if (!isValid) return new Response("Invalid signature", { status: 401 });
+		} catch (e) {
+			console.error("Signature verification failed", e);
+			return new Response("Signature verification error", { status: 400 });
+		}
+
+		let payload: any;
+		try {
+			payload = JSON.parse(body);
+		} catch (e) {
+			console.error("Invalid JSON payload", {
+				error: e,
+				bodyPreview: body.slice(0, 1000),
+			});
+			return new Response("Bad Request", { status: 400 });
+		}
+
+		console.log(`[Dodo Webhook] Received event: ${payload.type}`);
+		const webhookId = getWebhookId(payload);
+		if (webhookId) {
+			const isDuplicate = await ctx.runQuery(
+				(internal.webhooks as any).checkWebhook,
+				{
+					webhookId,
+				}
+			);
+			if (isDuplicate) {
+				console.log(`[Dodo Webhook] Duplicate event skipped: ${webhookId}`);
+				return new Response("OK", { status: 200 });
+			}
+		}
+
+		try {
+			if (payload.type === "payment.succeeded") {
+				const subscriptionId = payload.data?.subscription_id;
+				const plan =
+					typeof subscriptionId === "string"
+						? undefined
+						: parsePlanFromMetadata(payload.data?.metadata);
+				const paymentArgs: {
+					paymentId: string;
+					businessId?: string;
+					workspaceId?: string;
+					plan?: "pro" | "enterprise";
+					quantity?: number;
+					customerEmail?: string | null;
+					amount: number;
+					currency: string;
+					status: string;
+					taxAmount?: number;
+					invoiceUrl?: string;
+					raw: string;
+				} = {
 					paymentId: payload.data.payment_id,
-					businessId: payload.business_id,
 					customerEmail: payload.data.customer?.email ?? null,
 					amount: payload.data.total_amount,
 					currency: payload.data.currency,
 					status: payload.data.status ?? "unknown",
 					raw: JSON.stringify(payload),
-				});
-			} catch (e) {
-				console.error("Dodo onPaymentSucceeded handler failed", e);
-				throw e;
-			}
-		},
-		onSubscriptionActive: async (ctx, payload) => {
-			// Map back to workspace using metadata if present
-			const workspaceId = payload.data?.metadata?.workspace_id as
-				| Id<"workspaces">
-				| undefined;
-			const plan = parsePlanFromMetadata(
-				payload.data?.metadata as Record<string, unknown> | undefined
-			);
+				};
+				if (typeof payload.business_id === "string") {
+					paymentArgs.businessId = payload.business_id;
+				}
+				if (typeof payload.data?.metadata?.workspace_id === "string") {
+					paymentArgs.workspaceId = payload.data.metadata.workspace_id;
+				}
+				if (plan) paymentArgs.plan = plan;
+				if (typeof payload.data?.quantity === "number") {
+					paymentArgs.quantity = payload.data.quantity;
+				}
+				if (typeof payload.data?.tax === "number") {
+					paymentArgs.taxAmount = payload.data.tax;
+				}
+				if (typeof payload.data?.invoice_url === "string") {
+					paymentArgs.invoiceUrl = payload.data.invoice_url;
+				}
+				await ctx.runMutation(internal.webhooks.createPayment, paymentArgs);
+				if (typeof subscriptionId === "string") {
+					const billingDetails: {
+						amountDue?: number;
+						currency?: string;
+						taxAmount?: number;
+						invoiceUrl?: string;
+						paymentConfirmed?: boolean;
+					} = {};
+					billingDetails.paymentConfirmed = true;
+					if (
+						typeof payload.data?.total_amount === "number" &&
+						payload.data.total_amount > 0
+					) {
+						billingDetails.amountDue = payload.data.total_amount;
+					}
+					if (typeof payload.data?.currency === "string") {
+						billingDetails.currency = payload.data.currency;
+					}
+					if (typeof payload.data?.tax === "number" && payload.data.tax > 0) {
+						billingDetails.taxAmount = payload.data.tax;
+					}
+					if (typeof payload.data?.invoice_url === "string") {
+						billingDetails.invoiceUrl = payload.data.invoice_url;
+					}
+					await syncSubscriptionFromDodo(
+						ctx,
+						subscriptionId,
+						payload.data?.metadata?.workspace_id,
+						billingDetails
+					);
+				}
+			} else if (payload.type === "subscription.active") {
+				await ctx.runMutation(
+					internal.webhooks.createSubscription,
+					buildSubscriptionMutationArgs(payload.data, JSON.stringify(payload))
+				);
+			} else if (
+				payload.type === "subscription.updated" ||
+				payload.type === "subscription.plan_changed"
+			) {
+				await ctx.runMutation(
+					internal.webhooks.updateSubscription,
+					buildSubscriptionMutationArgs(payload.data, JSON.stringify(payload))
+				);
+			} else if (payload.type === "subscription.cancelled") {
+				const workspaceId = payload.data?.metadata?.workspace_id as
+					| string
+					| undefined;
+				const customerId = payload.data?.customer?.customer_id;
 
-			try {
-				await ctx.runMutation(internal.webhooks.createSubscription, {
-					workspaceId,
+				const cancelArgs: {
+					workspaceId?: string;
+					subscriptionId: string;
+					customerId?: string;
+					raw: string;
+				} = {
 					subscriptionId: payload.data.subscription_id,
-					status: payload.data.status,
-					plan,
 					raw: JSON.stringify(payload),
-				});
-			} catch (e) {
-				console.error("Dodo onSubscriptionActive handler failed", e);
-				throw e;
+				};
+				if (workspaceId) cancelArgs.workspaceId = workspaceId;
+				if (customerId) cancelArgs.customerId = customerId;
+
+				await ctx.runMutation(internal.webhooks.cancelSubscription, cancelArgs);
 			}
-		},
-		onSubscriptionUpdated: async (ctx, payload) => {
-			const workspaceId = payload.data?.metadata?.workspace_id as
-				| Id<"workspaces">
-				| undefined;
-			const plan = parsePlanFromMetadata(
-				payload.data?.metadata as Record<string, unknown> | undefined
+
+			if (webhookId) {
+				await ctx.runMutation(
+					(internal.webhooks as any).recordWebhook,
+					{
+						webhookId,
+						eventType: payload.type ?? "unknown",
+					}
+				);
+			}
+		} catch (e) {
+			console.error(
+				`[Dodo Webhook] Error processing webhook ${payload?.type}:`,
+				e
 			);
+			// Always returning 200 to acknowledge receipt and prevent endless retries
+			// as requested by the user.
+			return new Response("OK", { status: 200 });
+		}
 
-			try {
-				await ctx.runMutation(internal.webhooks.updateSubscription, {
-					workspaceId,
-					subscriptionId: payload.data.subscription_id,
-					status: payload.data.status,
-					plan,
-					raw: JSON.stringify(payload),
-				});
-			} catch (e) {
-				console.error("Dodo onSubscriptionUpdated handler failed", e);
-				throw e;
-			}
-		},
-		onSubscriptionCancelled: async (ctx, payload) => {
-			const workspaceId = payload.data?.metadata?.workspace_id as
-				| Id<"workspaces">
-				| undefined;
-
-			try {
-				await ctx.runMutation(internal.webhooks.cancelSubscription, {
-					workspaceId,
-					raw: JSON.stringify(payload),
-				});
-			} catch (e) {
-				console.error("Dodo onSubscriptionCancelled handler failed", e);
-				throw e;
-			}
-		},
+		return new Response("OK", { status: 200 });
 	}),
 });
 

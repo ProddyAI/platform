@@ -1,10 +1,22 @@
 import { openai } from "@ai-sdk/openai";
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { generateText } from "ai";
+import { ConvexHttpClient } from "convex/browser";
 import * as dotenv from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 
 // Load environment variables
 dotenv.config();
+
+function createConvexClient(): ConvexHttpClient {
+	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
+	}
+	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
+}
+
 export async function POST(req: NextRequest) {
 	try {
 		if (!process.env.OPENAI_API_KEY) {
@@ -18,11 +30,13 @@ export async function POST(req: NextRequest) {
 		let requestData: {
 			content?: string;
 			title?: string;
+			workspaceId?: Id<"workspaces">;
 		} | null = null;
 		try {
 			requestData = (await req.json()) as {
 				content?: string;
 				title?: string;
+				workspaceId?: Id<"workspaces">;
 			};
 		} catch (parseError) {
 			console.error("Error parsing JSON:", parseError);
@@ -32,14 +46,78 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { content, title } = requestData ?? {};
-
-		if (!content) {
-			console.error("Missing content in request");
+		if (!requestData || typeof requestData !== "object") {
+			console.error("Invalid request payload object");
 			return NextResponse.json(
-				{ error: "Content is required" },
+				{ error: "Invalid request payload" },
 				{ status: 400 }
 			);
+		}
+
+		const { content, title, workspaceId } = requestData;
+
+		if (typeof content !== "string" || content.trim().length === 0) {
+			console.error("Missing or invalid content in request");
+			return NextResponse.json(
+				{ error: "Content is required and must be a non-empty string" },
+				{ status: 400 }
+			);
+		}
+
+		if (title !== undefined && typeof title !== "string") {
+			console.error("Invalid title in request");
+			return NextResponse.json(
+				{ error: "Title must be a string" },
+				{ status: 400 }
+			);
+		}
+
+		if (workspaceId !== undefined && typeof workspaceId !== "string") {
+			console.error("Invalid workspaceId in request");
+			return NextResponse.json(
+				{ error: "WorkspaceId must be a string" },
+				{ status: 400 }
+			);
+		}
+
+		// ─── Usage Limit Check ──────────────────────────────────────────────────
+		const convex = workspaceId ? createConvexClient() : null;
+		if (convex) {
+			const token = await convexAuthNextjsToken();
+			if (token) convex.setAuth(token);
+		}
+
+		if (workspaceId && convex) {
+			try {
+				const usageCheck = await convex.query(
+					api.usageTracking.checkAIUsageLimitPublic,
+					{
+						workspaceId,
+						featureType: "aiSummary", // Counting as summary per user's request for Usage page location
+					}
+				);
+
+				if (!usageCheck.allowed) {
+					return NextResponse.json(
+						{
+							error: `Usage limit reached. Your plan allows ${usageCheck.limit} AI actions per month.`,
+						},
+						{ status: 403 }
+					);
+				}
+			} catch (err) {
+				console.error(
+					"[Smart Formatter] Workspace usage check failed:",
+					err
+				);
+				return NextResponse.json(
+					{
+						error: "Usage check failed",
+						message: "AI services are temporarily unavailable. Please try again.",
+					},
+					{ status: 503 }
+				);
+			}
 		}
 
 		// Prepare the formatting prompt
@@ -83,10 +161,31 @@ Formatted Content:`;
 				temperature: 0.3, // Lower temperature for more consistent formatting
 			});
 
+			const formattedText = text.trim();
+
+			// ─── Record Usage ──────────────────────────────────────────────────────
+			if (workspaceId && convex) {
+				try {
+					await convex.mutation(api.usageTracking.recordAIRequestPublic, {
+						workspaceId,
+						featureType: "aiSummary",
+					});
+				} catch (trackErr) {
+					console.error("[Smart Formatter] Fail-closed: Failed to record usage:", trackErr);
+					return NextResponse.json(
+						{
+							error: "Service Temporarily Unavailable",
+							message: "Failed to verify usage limits. Please try again.",
+						},
+						{ status: 503 }
+					);
+				}
+			}
+
 			return NextResponse.json({
-				formattedContent: text.trim(),
+				formattedContent: formattedText,
 				originalLength: content.length,
-				formattedLength: text.trim().length,
+				formattedLength: formattedText.length,
 			});
 		} catch (aiError) {
 			console.error("[Smart Formatter] AI formatting failed:", aiError);

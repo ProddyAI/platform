@@ -7,7 +7,7 @@ import {
 	mutation,
 	query,
 } from "./_generated/server";
-import { getPlanConfig, isUnlimited } from "./plans";
+import { getPlanConfig, isUnlimited, type PlanName } from "./plans";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,6 +30,11 @@ type FeatureType =
 	| "channel"
 	| "board"
 	| "note";
+
+const toPlanName = (plan?: string | null): PlanName => {
+	if (plan === "pro" || plan === "enterprise") return plan;
+	return "free";
+};
 
 /** Maps a feature type to the DB column name on `usageStats`. */
 const FEATURE_FIELD_MAP: Record<FeatureType, string> = {
@@ -274,7 +279,8 @@ export const checkAIUsageLimit = internalQuery({
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) return { allowed: false, used: 0, limit: 0 };
 
-		const plan = getPlanConfig(workspace.plan);
+		// Fallback to workspace plan if no member-specific plan is checked (admin view)
+		const plan = getPlanConfig(toPlanName(workspace.plan));
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const limitKey = FEATURE_LIMIT_MAP[featureType];
 		const limit = (plan.limits as any)[limitKey] as number;
@@ -315,13 +321,15 @@ export const getWorkspaceUsage = query({
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
 			)
-			.first();
-		if (!member) throw new Error("Not a member of this workspace");
+			.unique();
+
+		if (!member) return null;
 
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) throw new Error("Workspace not found");
 
-		const plan = getPlanConfig(workspace.plan);
+		// Use workspace plan for limits (everyone shares the same plan)
+		const plan = getPlanConfig(toPlanName(workspace.plan));
 		const month = getCurrentMonth();
 
 		const rows = await ctx.db
@@ -412,7 +420,19 @@ export const checkAIUsageLimitPublic = query({
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) return { allowed: false, used: 0, limit: 0 };
 
-		const plan = getPlanConfig(workspace.plan);
+		// Verify the user is a workspace member before checking shared workspace limits.
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.first();
+
+		if (!member) return { allowed: false, used: 0, limit: 0 };
+
+		// Use workspace plan for limits (everyone shares the same plan)
+		const plan = getPlanConfig(toPlanName(workspace.plan));
+
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const limitKey = FEATURE_LIMIT_MAP[featureType];
 		const limit = (plan.limits as any)[limitKey] as number;
@@ -449,6 +469,15 @@ export const recordAIRequestPublic = mutation({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return;
+
+		const member = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.first();
+
+		if (!member) return;
 
 		const month = getCurrentMonth();
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;

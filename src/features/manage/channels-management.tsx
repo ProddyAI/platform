@@ -58,7 +58,12 @@ interface ChannelsManagementProps {
 
 export const ChannelsManagement = ({
 	workspaceId,
+	currentMember,
 }: ChannelsManagementProps) => {
+	const isOwner = currentMember.role === "owner";
+	const isAdmin = currentMember.role === "admin";
+	const canManage = isOwner || isAdmin;
+
 	const { data: channels, isLoading } = useGetChannels({ workspaceId });
 	const [editChannelName, setEditChannelName] = useState("");
 	const [editChannelIcon, setEditChannelIcon] = useState<string | undefined>(
@@ -302,7 +307,8 @@ export const ChannelsManagement = ({
 					);
 				} else if (
 					error.message.includes("permission") ||
-					error.message.includes("unauthorized")
+					error.message.includes("unauthorized") ||
+					error.message.includes("Unauthorized")
 				) {
 					toast.error("You don't have permission to update this channel.");
 				} else {
@@ -344,7 +350,8 @@ export const ChannelsManagement = ({
 					toast.error("Channel not found. It may have already been deleted.");
 				} else if (
 					error.message.includes("permission") ||
-					error.message.includes("unauthorized")
+					error.message.includes("unauthorized") ||
+					error.message.includes("Unauthorized")
 				) {
 					toast.error("You don't have permission to delete this channel.");
 				} else if (
@@ -398,10 +405,12 @@ export const ChannelsManagement = ({
 					</p>
 				</div>
 
-				<Button onClick={() => setCreateOpen(true)}>
-					<Plus className="mr-2 h-4 w-4" />
-					New Channel
-				</Button>
+				{canManage && (
+					<Button onClick={() => setCreateOpen(true)}>
+						<Plus className="mr-2 h-4 w-4" />
+						New Channel
+					</Button>
+				)}
 			</div>
 
 			<Separator />
@@ -441,21 +450,25 @@ export const ChannelsManagement = ({
 								</TableCell>
 								<TableCell>
 									<div className="flex items-center gap-2">
-										<Button
-											onClick={() => openEditDialog(channel)}
-											size="sm"
-											variant="outline"
-										>
-											<Edit className="h-4 w-4" />
-										</Button>
-										<Button
-											className="text-destructive hover:bg-destructive/10"
-											onClick={() => openDeleteDialog(channel._id)}
-											size="sm"
-											variant="outline"
-										>
-											<Trash2 className="h-4 w-4" />
-										</Button>
+										{canManage && (
+											<Button
+												onClick={() => openEditDialog(channel)}
+												size="sm"
+												variant="outline"
+											>
+												<Edit className="h-4 w-4" />
+											</Button>
+										)}
+										{canManage && (
+											<Button
+												className="text-destructive hover:bg-destructive/10"
+												onClick={() => openDeleteDialog(channel._id)}
+												size="sm"
+												variant="outline"
+											>
+												<Trash2 className="h-4 w-4" />
+											</Button>
+										)}
 									</div>
 								</TableCell>
 							</TableRow>
@@ -492,6 +505,7 @@ export const ChannelsManagement = ({
 										type="file"
 									/>
 
+									{/* biome-ignore lint/a11y/useSemanticElements: This upload zone contains nested controls, so replacing it with a button would create invalid nested buttons. */}
 									<div
 										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
 										onClick={() =>

@@ -187,7 +187,7 @@ export const WorkspaceHeader = ({
 								</DialogDescription>
 							</DialogHeader>
 
-							<div className="flex flex-col gap-y-3 p-5">
+							<div className="flex flex-col gap-y-3 p-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
 								{workspaces?.map((item) => (
 									<button
 										className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border bg-card px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group"
@@ -215,7 +215,9 @@ export const WorkspaceHeader = ({
 										)}
 									</button>
 								))}
+							</div>
 
+							<div className="p-5 pt-0">
 								<button
 									className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border border-dashed bg-card/50 px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group mt-2"
 									onClick={() => {
