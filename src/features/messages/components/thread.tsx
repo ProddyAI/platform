@@ -196,7 +196,11 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 	const handleSaveTitle = async () => {
 		if (titleInput.trim()) {
 			try {
-				await updateTitle(messageId, titleInput.trim(), workspaceId as Id<"workspaces">);
+				await updateTitle(
+					messageId,
+					titleInput.trim(),
+					workspaceId as Id<"workspaces">
+				);
 				setIsEditingTitle(false);
 				toast.success("Thread title saved");
 			} catch (_error) {

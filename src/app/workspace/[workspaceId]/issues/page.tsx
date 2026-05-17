@@ -4,9 +4,8 @@ import { useQuery } from "convex/react";
 import { ArrowRight, LayoutGrid, Loader } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
-import type { Id } from "@/../convex/_generated/dataModel";
-
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCurrentMember } from "@/features/members/api/use-current-member";

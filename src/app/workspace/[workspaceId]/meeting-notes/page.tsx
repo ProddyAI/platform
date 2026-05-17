@@ -171,6 +171,10 @@ function NoteCard({
 	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
 	const createNote = useMutation(api.notes.create);
 
+	const channels = useQuery(api.channels.get, {
+		workspaceId: note.workspaceId as Id<"workspaces">,
+	});
+
 	const generations = useQuery(api.meetingNotes.getGenerations, {
 		roomId: note.roomId,
 	});
@@ -332,15 +336,27 @@ function NoteCard({
 						className="h-8 text-[11px] font-bold gap-1.5 border-emerald-100 dark:border-emerald-900/30 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
 						disabled={isSavingNote}
 						onClick={async () => {
+							if (!channels || channels.length === 0) {
+								toast.error("No channel found to save the note");
+								return;
+							}
 							try {
 								setIsSavingNote(true);
 								const summary = currentGen?.summary || note.summary || "";
-								const tasks = (currentGen?.actionItems || note.actionItems || [])
+								const tasks = (
+									currentGen?.actionItems ||
+									note.actionItems ||
+									[]
+								)
 									.map((t: any) =>
 										typeof t === "string" ? `- ${t}` : `- ${t.title}`
 									)
 									.join("\n");
-								const decisions = (currentGen?.decisions || note.decisions || [])
+								const decisions = (
+									currentGen?.decisions ||
+									note.decisions ||
+									[]
+								)
 									.map((d: string) => `- ${d}`)
 									.join("\n");
 
@@ -353,11 +369,12 @@ function NoteCard({
 										`AI Meeting Notes - ${new Date(note.createdAt).toLocaleDateString()}`,
 									content: delta,
 									workspaceId: note.workspaceId as Id<"workspaces">,
+									channelId: channels[0]._id,
 									icon: "✨",
 									tags: ["AI", "Meeting"],
 								});
 								toast.success("Notes saved to your workspace library!");
-							} catch (e) {
+							} catch (_e) {
 								toast.error("Failed to save to library");
 							} finally {
 								setIsSavingNote(false);
@@ -488,7 +505,7 @@ function NoteCard({
 																	toast.success(
 																		`Successfully pushed ${genItems.length} tasks to dashboard!`
 																	);
-																} catch (e) {
+																} catch (_e) {
 																	toast.error("Failed to push tasks");
 																} finally {
 																	setIsPushingTasks(false);

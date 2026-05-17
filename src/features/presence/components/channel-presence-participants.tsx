@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChannelPresence } from "@/features/presence/hooks/use-channel-presence";
 import { useChannelId } from "@/hooks/use-channel-id";
-import type { Id } from "@/../convex/_generated/dataModel";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { generateUserColor } from "@/lib/placeholder-image";
 

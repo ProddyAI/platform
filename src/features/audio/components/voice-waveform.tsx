@@ -26,7 +26,8 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 				const analyser = ctx.createAnalyser();
 				const source = ctx.createMediaStreamSource(stream);
 
-				analyser.fftSize = 256;
+				analyser.fftSize = 64;
+				analyser.smoothingTimeConstant = 0.8;
 				source.connect(analyser);
 
 				setAudioContext(ctx);
@@ -56,21 +57,32 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-				const barWidth = (canvas.width / bufferLength) * 2.5;
-				let x = 0;
+				const barCount = 16;
+				const gap = 3;
+				const barWidth = (canvas.width - (barCount - 1) * gap) / barCount;
+				const centerY = canvas.height / 2;
 
-				for (let i = 0; i < bufferLength; i++) {
-					const barHeight = (dataArray[i] / 255) * canvas.height;
+				for (let i = 0; i < barCount; i++) {
+					// Sample from the data array evenly
+					const dataIndex = Math.floor((i / barCount) * bufferLength);
+					const value = dataArray[dataIndex] / 255;
+					// Minimum bar height for visual pulse even when quiet
+					const barHeight = Math.max(4, value * (canvas.height * 0.9));
 
-					// Gradient color for a premium look
-					const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-					gradient.addColorStop(0, "#3b82f6"); // Blue
-					gradient.addColorStop(1, "#8b5cf6"); // Purple
+					const x = i * (barWidth + gap);
+					const y = centerY - barHeight / 2;
+
+					// Rounded bars with gradient
+					const gradient = ctx.createLinearGradient(x, centerY + barHeight / 2, x, centerY - barHeight / 2);
+					gradient.addColorStop(0, "#6366f1"); // Indigo
+					gradient.addColorStop(0.5, "#818cf8"); // Lighter indigo
+					gradient.addColorStop(1, "#c084fc"); // Purple
 
 					ctx.fillStyle = gradient;
-					ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-
-					x += barWidth + 1;
+					ctx.beginPath();
+					const radius = Math.min(barWidth / 2, 3);
+					ctx.roundRect(x, y, barWidth, barHeight, radius);
+					ctx.fill();
 				}
 			};
 
@@ -83,15 +95,15 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 			if (animationRef.current) cancelAnimationFrame(animationRef.current);
 			if (audioContext) audioContext.close();
 		};
-	}, [isRecording]);
+	}, [isRecording, audioContext]);
 
 	return (
-		<div className="flex items-center gap-2 h-8 w-24">
+		<div className="flex items-center h-11 px-3 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm">
 			<canvas
-				className="rounded-sm opacity-80"
-				height={32}
+				className="rounded-sm"
+				height={36}
 				ref={canvasRef}
-				width={96}
+				width={120}
 			/>
 		</div>
 	);

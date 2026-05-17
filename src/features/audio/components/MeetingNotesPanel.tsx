@@ -1,12 +1,20 @@
-import { Brain, CheckSquare, FileText, Loader2, Sparkles, Target, X } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
+import {
+	Brain,
+	CheckSquare,
+	FileText,
+	Loader2,
+	Sparkles,
+	Target,
+	X,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 import { useMeetingTranscription } from "../hooks/useMeetingTranscription";
 
 interface MeetingNotesPanelProps {
@@ -24,11 +32,14 @@ export const MeetingNotesPanel = ({
 	onClose,
 	isAudioMuted,
 }: MeetingNotesPanelProps) => {
-	const members = useQuery(api.members.get, { workspaceId: workspaceId as Id<"workspaces"> }) || [];
+	const members =
+		useQuery(api.members.get, {
+			workspaceId: workspaceId as Id<"workspaces">,
+		}) || [];
 	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
 	const createNote = useMutation(api.notes.create);
 	const generations = useQuery(api.meetingNotes.getGenerations, { roomId });
-	
+
 	const { meetingNotes, isListening, triggerGenerateInsights } =
 		useMeetingTranscription(
 			roomId,
@@ -75,7 +86,7 @@ export const MeetingNotesPanel = ({
 				tags: ["AI", "Meeting"],
 			});
 			toast.success("Notes saved to your workspace library!");
-		} catch (e) {
+		} catch (_e) {
 			toast.error("Failed to save to library");
 		} finally {
 			setIsSavingNote(false);
@@ -173,7 +184,7 @@ export const MeetingNotesPanel = ({
 							</Button>
 						</div>
 					</div>
-					
+
 					{meetingNotes?.summary && (
 						<Button
 							className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-xs h-8 gap-2"
@@ -319,11 +330,17 @@ export const MeetingNotesPanel = ({
 									</h3>
 									<Button
 										className="h-7 text-[10px] font-bold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
-										disabled={isPushingTasks || !generations || generations.length === 0}
+										disabled={
+											isPushingTasks || !generations || generations.length === 0
+										}
 										onClick={async () => {
 											try {
 												setIsPushingTasks(true);
-												const latestGen = generations![generations!.length - 1];
+												const latestGen = generations?.[generations?.length - 1];
+												if (!latestGen?.actionItems) {
+													toast.error("No action items to push");
+													return;
+												}
 												await createBulkTasks({
 													workspaceId: workspaceId as Id<"workspaces">,
 													tasks: latestGen.actionItems.map((t: any) => ({
@@ -332,8 +349,10 @@ export const MeetingNotesPanel = ({
 														priority: t.priority || "medium",
 													})),
 												});
-												toast.success(`Successfully pushed ${latestGen.actionItems.length} tasks to dashboard!`);
-											} catch (e) {
+												toast.success(
+													`Successfully pushed ${latestGen.actionItems.length} tasks to dashboard!`
+												);
+											} catch (_e) {
 												toast.error("Failed to push tasks");
 											} finally {
 												setIsPushingTasks(false);

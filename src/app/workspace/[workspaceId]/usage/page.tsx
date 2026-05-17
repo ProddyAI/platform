@@ -3,7 +3,7 @@
 import { Activity } from "lucide-react";
 import { UsageDashboard } from "@/features/usage/components/UsageDashboard";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { Id } from "../../../../../convex/_generated/dataModel";
+import type { Id } from "../../../../../convex/_generated/dataModel";
 
 export default function UsagePage() {
 	const workspaceId = useWorkspaceId();

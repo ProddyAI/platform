@@ -32,7 +32,7 @@ async function executeAIGeneration(
 	prompt: string,
 	schema: z.ZodType<AIInsightsResponse>
 ): Promise<AIInsightsResponse | null> {
-	const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+	const models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
 	const apiKey =
 		process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
@@ -59,6 +59,8 @@ async function executeAIGeneration(
 			const retryableErrors = [
 				"503",
 				"429",
+				"404",
+				"Not Found",
 				"Service Unavailable",
 				"overloaded",
 				"RESOURCE_EXHAUSTED",
@@ -67,7 +69,9 @@ async function executeAIGeneration(
 
 			if (retryableErrors.some((err) => errMsg.includes(err))) {
 				// skipcq: JS-0002
-				console.log(`Model ${modelName} unavailable/quota exceeded, trying next...`);
+				console.log(
+					`Model ${modelName} unavailable/quota exceeded, trying next...`
+				);
 				continue;
 			}
 			throw e;
@@ -76,7 +80,9 @@ async function executeAIGeneration(
 
 	if (!resultObject && process.env.OPENAI_API_KEY) {
 		// skipcq: JS-0002
-		console.log("All Gemini models failed. Falling back to OpenAI gpt-4o-mini...");
+		console.log(
+			"All Gemini models failed. Falling back to OpenAI gpt-4o-mini..."
+		);
 		resultObject = await fallbackToOpenAI(prompt);
 	}
 
@@ -235,7 +241,8 @@ export const finalizeTranscript = mutation({
 
 		// Verify membership
 		const member = await getMember(ctx, note.workspaceId, userId);
-		if (!member) throw new Error("Unauthorized: Not a member of this workspace");
+		if (!member)
+			throw new Error("Unauthorized: Not a member of this workspace");
 
 		// Only update status, don't change transcript
 		if (note.status === "recording") {
@@ -379,10 +386,10 @@ export const saveChatNotesToHistory = mutation({
 			throw new Error("Unauthorized: Not a member of this workspace");
 
 		// Use stable roomId based on channelId or conversationId so we can find & update existing records
-		const roomId = args.channelId 
-			? `chat-${args.channelId}` 
-			: args.conversationId 
-				? `chat-${args.conversationId}` 
+		const roomId = args.channelId
+			? `chat-${args.channelId}`
+			: args.conversationId
+				? `chat-${args.conversationId}`
 				: `chat-unknown-${userId}`;
 
 		// Check for existing note for this channel
@@ -775,7 +782,7 @@ ${args.transcript}
 `;
 
 		// Try primary model, fallback to secondary on 503
-		const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+		const models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
 		let lastError: unknown = null;
 
 		for (const modelName of models) {
@@ -798,6 +805,8 @@ ${args.transcript}
 				if (
 					errMsg.includes("503") ||
 					errMsg.includes("429") ||
+					errMsg.includes("404") ||
+					errMsg.includes("Not Found") ||
 					errMsg.includes("Service Unavailable") ||
 					errMsg.includes("overloaded") ||
 					errMsg.includes("RESOURCE_EXHAUSTED") ||

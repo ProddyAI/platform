@@ -4,6 +4,7 @@ import { isAfter, isBefore, isToday, startOfDay } from "date-fns";
 import { CheckSquare, Loader, Search, SlidersHorizontal } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -17,8 +18,6 @@ import { TaskToggleView } from "@/features/tasks/components/task-toggle-view";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../toolbar";
-
-import type { Id } from "@/../convex/_generated/dataModel";
 
 const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	useTrackActivity({
@@ -149,8 +148,14 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 					break;
 				case "priority": {
 					const priorityValues = { high: 3, medium: 2, low: 1, undefined: 0 };
-					const aPriority = priorityValues[a.priority || "undefined" as keyof typeof priorityValues];
-					const bPriority = priorityValues[b.priority || "undefined" as keyof typeof priorityValues];
+					const aPriority =
+						priorityValues[
+							a.priority || ("undefined" as keyof typeof priorityValues)
+						];
+					const bPriority =
+						priorityValues[
+							b.priority || ("undefined" as keyof typeof priorityValues)
+						];
 					comparison = bPriority - aPriority;
 					break;
 				}

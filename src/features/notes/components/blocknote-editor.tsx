@@ -73,7 +73,9 @@ export const BlockNoteEditor = ({
 			editor.onEditorSelectionChange(handleSelectionChange);
 
 			// Listen for AI note insertion events
-			const handleAiInsertion = async (e: CustomEvent<{ content?: string }>) => {
+			const handleAiInsertion = async (
+				e: CustomEvent<{ content?: string }>
+			) => {
 				const content = e.detail?.content;
 				if (content && editor) {
 					try {
@@ -83,7 +85,7 @@ export const BlockNoteEditor = ({
 						// Insert at the end of the document
 						const topLevel = editor.document;
 						const lastBlock = topLevel[topLevel.length - 1];
-						
+
 						if (lastBlock) {
 							editor.insertBlocks(blocks, lastBlock, "after");
 						} else {
@@ -98,7 +100,7 @@ export const BlockNoteEditor = ({
 							const topLevel = editor.document;
 							const lastBlock = topLevel[topLevel.length - 1];
 							const fallback = [{ type: "paragraph", content }] as any;
-							
+
 							if (lastBlock) {
 								editor.insertBlocks(fallback, lastBlock, "after");
 							} else {
@@ -111,10 +113,16 @@ export const BlockNoteEditor = ({
 				}
 			};
 
-			window.addEventListener("proddy:insert-ai-notes", handleAiInsertion as unknown as EventListener);
+			window.addEventListener(
+				"proddy:insert-ai-notes",
+				handleAiInsertion as unknown as EventListener
+			);
 
 			return () => {
-				window.removeEventListener("proddy:insert-ai-notes", handleAiInsertion as unknown as EventListener);
+				window.removeEventListener(
+					"proddy:insert-ai-notes",
+					handleAiInsertion as unknown as EventListener
+				);
 				// Clear timeout on cleanup
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);

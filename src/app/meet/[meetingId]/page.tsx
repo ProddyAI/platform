@@ -1,9 +1,7 @@
 "use client";
 
 import {
-	CancelCallButton,
 	PaginatedGridLayout,
-	ScreenShareButton,
 	SpeakerLayout,
 	SpeakingWhileMutedNotification,
 	StreamCall,
@@ -19,7 +17,6 @@ import {
 	Check,
 	Copy,
 	Hand,
-	LayoutGrid,
 	Loader2,
 	MessageSquare,
 	Mic,
@@ -71,7 +68,7 @@ export default function MeetingPage({
 	const [showLeaveModal, setShowLeaveModal] = useState(false);
 	const [linkCopied, setLinkCopied] = useState(false);
 	const [handRaised, setHandRaised] = useState(false);
-	const [viewMode, setViewMode] = useState<"speaker" | "grid">("speaker");
+	const [viewMode, _setViewMode] = useState<"speaker" | "grid">("speaker");
 
 	const [isRecording, setIsRecording] = useState(false);
 	const [liveTranscript, setLiveTranscript] = useState("");
@@ -188,7 +185,15 @@ export default function MeetingPage({
 				clientRef.current.disconnectUser().catch(() => {});
 			}
 		};
-	}, [isAuthenticated, isLoading, user?._id, params.meetingId, router]);
+	}, [
+		isAuthenticated,
+		isLoading,
+		user?._id,
+		params.meetingId,
+		router,
+		user?.image,
+		user?.name,
+	]);
 
 	const handleLeave = async () => {
 		try {

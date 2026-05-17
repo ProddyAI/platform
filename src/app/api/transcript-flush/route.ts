@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 		// Forward authentication from cookies
 		const cookieStore = await cookies();
 		const token = cookieStore.get("convex-auth-session-token")?.value;
-		
+
 		if (token) {
 			convex.setAuth(token);
 		}

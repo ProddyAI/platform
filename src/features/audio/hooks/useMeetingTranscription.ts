@@ -85,7 +85,9 @@ export const useMeetingTranscription = (
 								chunkRef.current = "";
 							} else {
 								// If more text was added while waiting, just remove what we saved
-								chunkRef.current = chunkRef.current.replace(currentChunk, "").trim();
+								chunkRef.current = chunkRef.current
+									.replace(currentChunk, "")
+									.trim();
 							}
 						} catch (error) {
 							console.error("Failed to save transcript chunk:", error);

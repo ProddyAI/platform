@@ -892,8 +892,6 @@ const Editor = ({
 				</DialogContent>
 			</Dialog>
 
-
-
 			<Dialog
 				onOpenChange={(open) => {
 					setNotesModalOpen(open);
