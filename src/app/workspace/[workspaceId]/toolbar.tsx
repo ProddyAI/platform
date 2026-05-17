@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import {
+	ArrowUpCircle,
 	Bell,
 	Calendar,
 	CheckSquare,
@@ -649,6 +650,10 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		setNotificationsOpen(true);
 	}, []);
 
+	const handleUpgradeClick = useCallback(() => {
+		router.push(`/workspace/${workspaceId}/manage#billing`);
+	}, [router, workspaceId]);
+
 	const handleToggleAI = useCallback(() => {
 		setUseAI((current) => !current);
 		setSearchQuery("");
@@ -834,6 +839,21 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				</div>
 
 				{/* Notifications Button */}
+				<Hint label="Open billing" side="bottom">
+					<Button
+						aria-label="Upgrade"
+						className="h-8 gap-1.5 px-2 text-white hover:bg-white/15 transition-colors sm:px-3"
+						onClick={handleUpgradeClick}
+						size="sm"
+						variant="ghost"
+					>
+						<ArrowUpCircle className="size-4" />
+						<span className="hidden text-xs font-medium sm:inline">
+							Upgrade
+						</span>
+					</Button>
+				</Hint>
+
 				<Hint label="Notifications" side="bottom">
 					<Button
 						className="text-white relative hover:bg-white/15 transition-colors"

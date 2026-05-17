@@ -1,6 +1,5 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
 import Script from "next/script";
 import type { PropsWithChildren } from "react";
 import { ApolloTracking } from "@/components/3pc/apollo-tracking";
@@ -18,13 +17,6 @@ import { ConvexClientProvider } from "@/config/convex-client-provider";
 import { AdBlockerProvider } from "@/lib/ad-blocker-context";
 
 import "./globals.css";
-
-const poppins = Poppins({
-	weight: ["300", "400", "500", "600", "700"],
-	subsets: ["latin"],
-	display: "swap",
-	variable: "--font-poppins",
-});
 
 export const viewport: Viewport = {
 	width: "device-width",
@@ -67,7 +59,7 @@ const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					<meta content="yes" name="mobile-web-app-capable" />
 					<link href="/logo-nobg.png" rel="apple-touch-icon" />
 				</head>
-				<body className={`${poppins.variable} antialiased font-sans`}>
+				<body className="antialiased font-sans">
 					<Script id="force-light-mode" strategy="beforeInteractive">
 						{`
 							(function() {

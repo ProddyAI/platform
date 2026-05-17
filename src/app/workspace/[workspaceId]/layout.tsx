@@ -1,5 +1,6 @@
 "use client";
 
+import { useConvexAuth } from "convex/react";
 import { Loader } from "lucide-react";
 import Script from "next/script";
 import type { PropsWithChildren } from "react";
@@ -73,12 +74,14 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		setupGlobalMentionHandler();
 	}, []);
 
+	const { isAuthenticated, isLoading } = useConvexAuth();
+
 	// Update last active workspace when the user visits a workspace
 	useEffect(() => {
-		if (workspaceId) {
+		if (workspaceId && !isLoading && isAuthenticated) {
 			updateLastActiveWorkspace({ workspaceId });
 		}
-	}, [workspaceId, updateLastActiveWorkspace]);
+	}, [workspaceId, updateLastActiveWorkspace, isLoading, isAuthenticated]);
 
 	return (
 		<>
@@ -117,9 +120,11 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 							{showMobileSidebar && (
 								<>
 									{/* Backdrop */}
-									<div
+									<button
+										aria-label="Close mobile sidebar"
 										className="md:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
 										onClick={() => setShowMobileSidebar(false)}
+										type="button"
 									/>
 									{/* Sidebar Overlay */}
 									<div

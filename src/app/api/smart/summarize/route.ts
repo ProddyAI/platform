@@ -219,6 +219,7 @@ export async function POST(req: NextRequest) {
 			workspaceId?: Id<"workspaces">;
 			channel?: string;
 			channelId?: Id<"channels">;
+			limit?: number;
 		} | null = null;
 		try {
 			requestData = (await req.json()) as {
@@ -226,10 +227,19 @@ export async function POST(req: NextRequest) {
 				workspaceId?: Id<"workspaces">;
 				channel?: string;
 				channelId?: Id<"channels">;
+				limit?: number;
 			};
 		} catch (_parseError) {
 			return NextResponse.json(
 				{ error: "Invalid JSON in request" },
+				{ status: 400 }
+			);
+		}
+
+		const workspaceId = requestData?.workspaceId;
+		if (!workspaceId) {
+			return NextResponse.json(
+				{ error: "workspaceId is required" },
 				{ status: 400 }
 			);
 		}
@@ -244,21 +254,13 @@ export async function POST(req: NextRequest) {
 
 		// New mode: accept workspaceId + channel / channelId and fetch from DB.
 		if (!messages) {
-			const workspaceId = requestData?.workspaceId;
 			const channel = requestData?.channel;
 			const channelId = requestData?.channelId;
-			const limitRaw = (requestData as any)?.limit;
+			const limitRaw = requestData?.limit;
 			const limit =
 				typeof limitRaw === "number" && Number.isFinite(limitRaw)
 					? Math.max(1, Math.min(MAX_MESSAGES, Math.floor(limitRaw)))
 					: MAX_MESSAGES;
-
-			if (!workspaceId) {
-				return NextResponse.json(
-					{ error: "Either messages[] or workspaceId is required" },
-					{ status: 400 }
-				);
-			}
 
 			try {
 				const fetched = await fetchRecentChannelMessages({
@@ -296,6 +298,39 @@ export async function POST(req: NextRequest) {
 			messages.length > MAX_MESSAGES
 				? messages.slice(messages.length - MAX_MESSAGES)
 				: messages;
+
+		// ─── Usage Limit Check ──────────────────────────────────────────────────
+		try {
+			const convex = createConvexClient();
+			const token = await convexAuthNextjsToken();
+			if (token) convex.setAuth(token);
+
+			const usageCheck = await convex.query(
+				api.usageTracking.checkAIUsageLimitPublic,
+				{
+					workspaceId,
+					featureType: "aiSummary",
+				}
+			);
+
+			if (!usageCheck.allowed) {
+				return NextResponse.json(
+					{
+						error: `Usage limit reached. Your plan allows ${usageCheck.limit} AI summaries per month.`,
+					},
+					{ status: 403 }
+				);
+			}
+		} catch (error) {
+			console.error("[Smart Summarize] Workspace usage check failed:", error);
+			return NextResponse.json(
+				{
+					error: "Usage check failed",
+					message: "AI services are temporarily unavailable. Please try again.",
+				},
+				{ status: 503 }
+			);
+		}
 
 		// Check cache first
 		const cacheKey = `${channelLabel ?? "messages"}::${generateCacheKey(limitedMessages)}`;
@@ -374,27 +409,16 @@ Output format (Markdown, no intro text):
 			});
 
 			// Track AI summary usage
-			const trackingWorkspaceId = (requestData as any)?.workspaceId as
-				| Id<"workspaces">
-				| undefined;
-			if (trackingWorkspaceId) {
-				const trackingConvex = createConvexClient();
-				try {
-					const trackingToken = convexAuthNextjsToken();
-					if (trackingToken) trackingConvex.setAuth(trackingToken);
-					await trackingConvex.mutation(
-						api.usageTracking.recordAIRequestPublic,
-						{
-							workspaceId: trackingWorkspaceId,
-							featureType: "aiSummary",
-						}
-					);
-				} catch (trackErr) {
-					console.warn(
-						"[UsageTracking] Failed to record AI summary:",
-						trackErr
-					);
-				}
+			const trackingConvex = createConvexClient();
+			try {
+				const trackingToken = await convexAuthNextjsToken();
+				if (trackingToken) trackingConvex.setAuth(trackingToken);
+				await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
+					workspaceId,
+					featureType: "aiSummary",
+				});
+			} catch (trackErr) {
+				console.warn("[UsageTracking] Failed to record AI summary:", trackErr);
 			}
 
 			// Prune cache if needed

@@ -53,6 +53,7 @@ export const BlockNoteNotesEditor = ({
 				body: JSON.stringify({
 					content: currentContent,
 					title: note.title,
+					workspaceId: note.workspaceId,
 				}),
 			});
 

@@ -108,6 +108,9 @@ export const updateLastActiveWorkspace = mutation({
 			throw new Error("Unauthorized");
 		}
 
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) throw new Error("Workspace not found");
+
 		const member = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
@@ -115,7 +118,9 @@ export const updateLastActiveWorkspace = mutation({
 			)
 			.unique();
 
-		if (!member) {
+		const isOwner = workspace.userId === userId;
+
+		if (!member && !isOwner) {
 			throw new Error("User is not a member of this workspace");
 		}
 
@@ -174,6 +179,10 @@ export const getLastActiveWorkspace = query({
 		const workspace = await ctx.db.get(workspaceId);
 		if (!workspace) {
 			return null;
+		}
+
+		if (workspace.userId === userId) {
+			return workspaceId;
 		}
 
 		// Check if the user is still a member of this workspace
