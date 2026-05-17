@@ -3,7 +3,13 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 
-import { internalQuery, mutation, query } from "./_generated/server";
+import {
+	internalQuery,
+	type MutationCtx,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 import { createDefaultCategoriesForWorkspace } from "./tasks";
 
 const generateCode = () => {
@@ -36,31 +42,34 @@ const getPaidSeatLimit = (workspace: {
 	return 0;
 };
 
+type ReadableCtx = Pick<QueryCtx | MutationCtx, "db">;
+type WritableCtx = Pick<MutationCtx, "db">;
+
 const getActiveBillableMemberCount = async (
-	ctx: any,
+	ctx: ReadableCtx,
 	workspaceId: Id<"workspaces">
 ) => {
 	const members = await ctx.db
 		.query("members")
-		.withIndex("by_workspace_id", (q: any) => q.eq("workspaceId", workspaceId))
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 		.collect();
 
-	return members.filter((member: any) => BILLABLE_MEMBER_ROLES.has(member.role))
+	return members.filter((member) => BILLABLE_MEMBER_ROLES.has(member.role))
 		.length;
 };
 
 const getPendingBillableInviteCount = async (
-	ctx: any,
+	ctx: ReadableCtx,
 	workspaceId: Id<"workspaces">
 ) => {
 	const pendingInvites = await ctx.db
 		.query("workspaceInvites")
-		.withIndex("by_workspace", (q: any) => q.eq("workspaceId", workspaceId))
+		.withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
 		.collect();
 
 	const now = Date.now();
 	return pendingInvites.filter(
-		(invite: any) =>
+		(invite) =>
 			!invite.used &&
 			invite.expiresAt > now &&
 			(invite.role === "admin" || invite.role === "member")
@@ -68,12 +77,12 @@ const getPendingBillableInviteCount = async (
 };
 
 const resetWorkspaceMemberSeatTiers = async (
-	ctx: any,
+	ctx: WritableCtx,
 	workspaceId: Id<"workspaces">
 ) => {
 	const members = await ctx.db
 		.query("members")
-		.withIndex("by_workspace_id", (q: any) => q.eq("workspaceId", workspaceId))
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 		.collect();
 
 	for (const member of members) {

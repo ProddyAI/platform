@@ -10,7 +10,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, type MutationCtx } from "./_generated/server";
 
 const BILLABLE_MEMBER_ROLES = new Set(["owner", "admin", "member"]);
 const INACTIVE_SUBSCRIPTION_STATUSES = new Set([
@@ -26,14 +26,15 @@ export const recordWebhook = internalMutation({
 		eventType: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const existing = await (ctx.db.query as any)("webhookEvents")
-			.withIndex("by_webhook_id", (q: any) => q.eq("webhookId", args.webhookId))
+		const existing = await ctx.db
+			.query("webhookEvents")
+			.withIndex("by_webhook_id", (q) => q.eq("webhookId", args.webhookId))
 			.unique();
 		if (existing) {
 			return { recorded: false };
 		}
 
-		await ctx.db.insert("webhookEvents" as any, {
+		await ctx.db.insert("webhookEvents", {
 			webhookId: args.webhookId,
 			eventType: args.eventType,
 			processedAt: Date.now(),
@@ -64,8 +65,24 @@ type BillingEmailDetails = {
 	refundCurrency?: string;
 };
 
+type WorkspaceBillingPatch = {
+	subscriptionId?: string;
+	dodoSubscriptionId?: string;
+	subscriptionStatus?: string;
+	customerId?: string;
+	dodoCustomerId?: string;
+	plan?: "free" | "pro" | "enterprise";
+	proSeats?: number;
+	enterpriseSeats?: number;
+	totalPaidSeats?: number;
+	cancellationAtPeriodEnd?: boolean;
+	nextBillingDate?: number;
+	currentPeriodEnd?: number;
+	scheduledCancellationDate?: number;
+};
+
 const notifyAdminsOfPlanChange = async (
-	ctx: any,
+	ctx: Pick<MutationCtx, "scheduler">,
 	workspaceId: Id<"workspaces">,
 	previousPlan: string | null | undefined,
 	newPlan: string | undefined,
@@ -116,13 +133,13 @@ const notifyAdminsOfPlanChange = async (
 };
 
 const syncMemberSeatTiers = async (
-	ctx: any,
+	ctx: Pick<MutationCtx, "db">,
 	workspaceId: Id<"workspaces">,
 	plan: "pro" | "enterprise" | "free"
 ) => {
 	const members = await ctx.db
 		.query("members")
-		.withIndex("by_workspace_id", (q: any) => q.eq("workspaceId", workspaceId))
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 		.take(1000);
 
 	for (const member of members) {
@@ -230,10 +247,6 @@ export const createSubscription = internalMutation({
 		raw: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		console.log(
-			`[createSubscription] Processing webhook for subscriptionId: ${args.subscriptionId}`,
-			args
-		);
 		let workspaceObjId: Id<"workspaces"> | undefined;
 
 		if (args.workspaceId) {
@@ -279,7 +292,7 @@ export const createSubscription = internalMutation({
 
 		const previousWorkspace = await ctx.db.get(workspaceObjId);
 		const canApplyPaidPlan = args.paymentConfirmed === true;
-		const patch: Record<string, any> = {
+		const patch: WorkspaceBillingPatch = {
 			subscriptionId: args.subscriptionId,
 			dodoSubscriptionId: args.subscriptionId,
 			subscriptionStatus: args.status,
@@ -298,7 +311,10 @@ export const createSubscription = internalMutation({
 			patch.nextBillingDate = undefined;
 			patch.currentPeriodEnd = undefined;
 			patch.scheduledCancellationDate = undefined;
-		} else if (args.plan && canApplyPaidPlan) {
+		} else if (
+			(args.plan === "pro" || args.plan === "enterprise") &&
+			canApplyPaidPlan
+		) {
 			patch.plan = args.plan;
 			if (args.quantity) {
 				if (args.plan === "pro") {
@@ -328,9 +344,6 @@ export const createSubscription = internalMutation({
 			patch.scheduledCancellationDate = undefined;
 		}
 
-		console.log(
-			`[createSubscription] Updating workspace ${workspaceObjId} for subscriptionId: ${args.subscriptionId}`
-		);
 		await ctx.db.patch(workspaceObjId, patch);
 		if (isInactive) {
 			await syncMemberSeatTiers(ctx, workspaceObjId, "free");
@@ -376,10 +389,6 @@ export const updateSubscription = internalMutation({
 		raw: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		console.log(
-			`[updateSubscription] Processing webhook for subscriptionId: ${args.subscriptionId}`,
-			args
-		);
 		let workspaceObjId: Id<"workspaces"> | undefined;
 
 		if (args.workspaceId) {
@@ -425,7 +434,7 @@ export const updateSubscription = internalMutation({
 
 		const previousWorkspace = await ctx.db.get(workspaceObjId);
 		const canApplyPaidPlan = args.paymentConfirmed === true;
-		const patch: Record<string, any> = {
+		const patch: WorkspaceBillingPatch = {
 			subscriptionId: args.subscriptionId,
 			dodoSubscriptionId: args.subscriptionId,
 			subscriptionStatus: args.status,
@@ -444,7 +453,10 @@ export const updateSubscription = internalMutation({
 			patch.nextBillingDate = undefined;
 			patch.currentPeriodEnd = undefined;
 			patch.scheduledCancellationDate = undefined;
-		} else if (args.plan && canApplyPaidPlan) {
+		} else if (
+			(args.plan === "pro" || args.plan === "enterprise") &&
+			canApplyPaidPlan
+		) {
 			patch.plan = args.plan;
 			if (args.quantity) {
 				if (args.plan === "pro") {
@@ -474,9 +486,6 @@ export const updateSubscription = internalMutation({
 			patch.scheduledCancellationDate = undefined;
 		}
 
-		console.log(
-			`[updateSubscription] Updating workspace ${workspaceObjId} for subscriptionId: ${args.subscriptionId}`
-		);
 		await ctx.db.patch(workspaceObjId, patch);
 		if (isInactive) {
 			await syncMemberSeatTiers(ctx, workspaceObjId, "free");
@@ -512,10 +521,6 @@ export const cancelSubscription = internalMutation({
 		raw: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		console.log(
-			`[cancelSubscription] Processing webhook for subscriptionId: ${args.subscriptionId}`,
-			args
-		);
 		let workspaceObjId: Id<"workspaces"> | undefined;
 
 		if (args.workspaceId) {
@@ -561,9 +566,6 @@ export const cancelSubscription = internalMutation({
 
 		const previousWorkspace = await ctx.db.get(workspaceObjId);
 
-		console.log(
-			`[cancelSubscription] Updating workspace ${workspaceObjId} to free plan`
-		);
 		await ctx.db.patch(workspaceObjId, {
 			subscriptionId: undefined,
 			dodoSubscriptionId: undefined,

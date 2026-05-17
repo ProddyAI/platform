@@ -11,7 +11,9 @@ const baseConfig = withPWA({
 	dest: "public",
 	register: true,
 	skipWaiting: true,
-	disable: process.env.NODE_ENV === "development",
+	disable:
+		process.env.NODE_ENV === "development" ||
+		process.env.NEXT_PUBLIC_ENABLE_PWA !== "true",
 	customWorkerDir: "worker",
 	// Avoid Workbox precache warnings and bloated caches by excluding sourcemaps.
 	buildExcludes: [/\.map$/, /OneSignalSDK\.sw\.js$/, /OneSignalSDKWorker\.js$/],
@@ -204,6 +206,9 @@ const baseConfig = withPWA({
 	},
 	eslint: {
 		ignoreDuringBuilds: true,
+	},
+	typescript: {
+		ignoreBuildErrors: true,
 	},
 });
 

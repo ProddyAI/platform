@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-async function verifySignature(payload, signatureHeader, msgId, timestamp, secretBase64) {
+function verifySignature(payload, signatureHeader, msgId, timestamp, secretBase64) {
 	const toSign = `${msgId}.${timestamp}.${payload}`;
 	const secretStr = secretBase64.replace("whsec_", "");
 	const secretBytes = Buffer.from(secretStr, 'base64');
@@ -34,4 +34,4 @@ const hmac = crypto.createHmac('sha256', secretBytes);
 hmac.update(toSign);
 const sig = `v1,${hmac.digest('base64')}`;
 
-verifySignature(payload, sig, msgId, timestamp, secret).then(console.log);
+console.log(verifySignature(payload, sig, msgId, timestamp, secret));

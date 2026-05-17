@@ -219,6 +219,7 @@ export async function POST(req: NextRequest) {
 			workspaceId?: Id<"workspaces">;
 			channel?: string;
 			channelId?: Id<"channels">;
+			limit?: number;
 		} | null = null;
 		try {
 			requestData = (await req.json()) as {
@@ -226,6 +227,7 @@ export async function POST(req: NextRequest) {
 				workspaceId?: Id<"workspaces">;
 				channel?: string;
 				channelId?: Id<"channels">;
+				limit?: number;
 			};
 		} catch (_parseError) {
 			return NextResponse.json(
@@ -247,7 +249,7 @@ export async function POST(req: NextRequest) {
 			const workspaceId = requestData?.workspaceId;
 			const channel = requestData?.channel;
 			const channelId = requestData?.channelId;
-			const limitRaw = (requestData as any)?.limit;
+			const limitRaw = requestData?.limit;
 			const limit =
 				typeof limitRaw === "number" && Number.isFinite(limitRaw)
 					? Math.max(1, Math.min(MAX_MESSAGES, Math.floor(limitRaw)))
@@ -408,13 +410,11 @@ Output format (Markdown, no intro text):
 			});
 
 			// Track AI summary usage
-			const trackingWorkspaceId = (requestData as any)?.workspaceId as
-				| Id<"workspaces">
-				| undefined;
+			const trackingWorkspaceId = requestData?.workspaceId;
 			if (trackingWorkspaceId) {
 				const trackingConvex = createConvexClient();
 				try {
-					const trackingToken = convexAuthNextjsToken();
+					const trackingToken = await convexAuthNextjsToken();
 					if (trackingToken) trackingConvex.setAuth(trackingToken);
 					await trackingConvex.mutation(
 						api.usageTracking.recordAIRequestPublic,

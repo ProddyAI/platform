@@ -1,7 +1,15 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalQuery, mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import {
+	action,
+	internalQuery,
+	type MutationCtx,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 
 const BILLABLE_MEMBER_ROLES = new Set(["owner", "admin", "member"]);
 
@@ -24,25 +32,33 @@ const getPaidSeatLimit = (workspace: {
 	return 0;
 };
 
-const getActiveBillableMemberCount = async (ctx: any, workspaceId: any) => {
+type ReadableCtx = Pick<QueryCtx | MutationCtx, "db">;
+
+const getActiveBillableMemberCount = async (
+	ctx: ReadableCtx,
+	workspaceId: Id<"workspaces">
+) => {
 	const members = await ctx.db
 		.query("members")
-		.withIndex("by_workspace_id", (q: any) => q.eq("workspaceId", workspaceId))
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 		.collect();
 
-	return members.filter((member: any) => BILLABLE_MEMBER_ROLES.has(member.role))
+	return members.filter((member) => BILLABLE_MEMBER_ROLES.has(member.role))
 		.length;
 };
 
-const getPendingBillableInviteCount = async (ctx: any, workspaceId: any) => {
+const getPendingBillableInviteCount = async (
+	ctx: ReadableCtx,
+	workspaceId: Id<"workspaces">
+) => {
 	const pendingInvites = await ctx.db
 		.query("workspaceInvites")
-		.withIndex("by_workspace", (q: any) => q.eq("workspaceId", workspaceId))
+		.withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
 		.collect();
 
 	const now = Date.now();
 	return pendingInvites.filter(
-		(invite: any) =>
+		(invite) =>
 			!invite.used &&
 			invite.expiresAt > now &&
 			(invite.role === "admin" || invite.role === "member")
@@ -89,7 +105,7 @@ export const getInviteDetails = query({
 			if (sender.image.startsWith("http")) {
 				senderImageUrl = sender.image;
 			} else {
-				const url = await ctx.storage.getUrl(sender.image as any);
+				const url = await ctx.storage.getUrl(sender.image as Id<"_storage">);
 				senderImageUrl = url ?? undefined;
 			}
 		}

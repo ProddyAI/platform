@@ -31,7 +31,7 @@ export const WorkspacePresenceTracker = ({
 	}, [workspaceId, workspaceHeartbeat, isAuthenticated, isLoading]);
 
 	useEffect(() => {
-		if (!isAuthenticated || isLoading) return;
+		if (!isAuthenticated || isLoading) return undefined;
 
 		// Send heartbeat immediately
 		sendHeartbeat();

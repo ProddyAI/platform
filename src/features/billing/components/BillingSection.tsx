@@ -41,6 +41,9 @@ interface BillingSectionProps {
 	showBillingSummary?: boolean;
 }
 
+type BillingHistoryEntry = Doc<"billingHistory">;
+type BillingAuditLogEntry = Doc<"billingAuditLogs">;
+
 export function BillingSection({
 	workspaceId,
 	currentMember,
@@ -57,6 +60,10 @@ export function BillingSection({
 		api.payments.getBillingSummary,
 		canManageBilling && showBillingSummary ? { workspaceId } : "skip"
 	);
+	const billingHistory = (billingSummary?.history ??
+		[]) as BillingHistoryEntry[];
+	const billingAuditLogs = (billingSummary?.auditLogs ??
+		[]) as BillingAuditLogEntry[];
 	const createPortal = useAction(api.payments.getCustomerPortal);
 	const cancelPlan = useAction(api.payments.cancelSubscription);
 	const syncSubscription = useAction(api.payments.syncWorkspaceSubscription);
@@ -74,7 +81,7 @@ export function BillingSection({
 		}
 
 		lastSyncedSubscriptionId.current = subscription.dodoSubscriptionId;
-		void syncSubscription({ workspaceId }).catch((error) => {
+		syncSubscription({ workspaceId }).catch((error) => {
 			console.warn("Failed to sync Dodo subscription:", error);
 		});
 	}, [
@@ -122,15 +129,13 @@ export function BillingSection({
 		Boolean(billingSummary?.history?.length);
 	const isFreeSeatInPaidWorkspace =
 		subscription.memberPlan === "free" && planName !== "free";
-	const latestRefund = billingSummary?.history?.find(
-		(entry) => entry.type === "refund"
-	);
-	const latestCancellation = billingSummary?.auditLogs?.find(
+	const latestRefund = billingHistory.find((entry) => entry.type === "refund");
+	const latestCancellation = billingAuditLogs.find(
 		(entry) =>
 			entry.action === "subscription_cancelled" ||
 			entry.action === "subscription_downgraded_refunded"
 	);
-	const latestPayment = billingSummary?.history?.find(
+	const latestPayment = billingHistory.find(
 		(entry) => (entry.type ?? "payment") === "payment"
 	);
 	const currentSeatCount =
@@ -358,9 +363,9 @@ export function BillingSection({
 
 			<div className="space-y-2">
 				<p className="text-sm font-medium">Recent billing activity</p>
-				{billingSummary?.history?.length ? (
+				{billingHistory.length ? (
 					<div className="max-h-72 divide-y overflow-y-auto rounded-md border">
-						{billingSummary.history.slice(0, 10).map((entry) => (
+						{billingHistory.slice(0, 10).map((entry) => (
 							<div
 								className="flex items-center justify-between gap-4 p-3"
 								key={entry._id}

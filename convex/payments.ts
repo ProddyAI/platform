@@ -5,15 +5,93 @@
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
+	type ActionCtx,
 	action,
 	internalMutation,
 	internalQuery,
+	type MutationCtx,
+	type QueryCtx,
 	query,
 } from "./_generated/server";
 import { checkout, customerPortal } from "./dodo";
 import { PLANS, type PlanName } from "./plans";
+
+type PaidPlanName = "pro" | "enterprise";
+type DodoSubscription = Record<string, unknown> & {
+	subscription_id?: string;
+	product_id?: string;
+	product?: { product_id?: string; id?: string };
+	metadata?: { plan?: string };
+	quantity?: number;
+	status?: string;
+	currency?: string;
+	previous_billing_date?: string;
+	next_billing_date?: string;
+	current_period_end?: string;
+	customer?: { customer_id?: string };
+	customer_id?: string;
+	cancel_at_next_billing_date?: boolean;
+	scheduled_change?: {
+		product_id?: string;
+		quantity?: number;
+	};
+};
+type DodoPayment = Record<string, unknown> & {
+	payment_id?: string;
+	id?: string;
+	status?: string;
+	total_amount?: number;
+	amount?: number;
+	currency?: string;
+	created_at?: string;
+	tax?: number;
+	invoice_url?: string;
+	invoiceUrl?: string;
+	receipt_url?: string;
+	refunds?: Array<{ status?: string; amount?: number }>;
+};
+type DodoRefund = Record<string, unknown> & {
+	refund_id?: string;
+	amount?: number;
+	currency?: string;
+};
+type DodoLineItem = Record<string, unknown> & {
+	item_id?: string;
+	items_id?: string;
+	id?: string;
+	line_item_id?: string;
+	lineItemId?: string;
+	refundable_amount?: number;
+	refundableAmount?: number;
+	amount_refundable?: number;
+	remaining_refundable_amount?: number;
+	remainingRefundableAmount?: number;
+};
+type DodoPaymentsApi = {
+	listForSubscription: (
+		ctx: ActionCtx,
+		args: { subscription_id: string; page_size: number }
+	) => Promise<{ items?: DodoPayment[] } | null | undefined>;
+	retrieveLineItems: (
+		ctx: ActionCtx,
+		args: { payment_id: string }
+	) => Promise<unknown>;
+};
+type DodoRefundsApi = {
+	create: (
+		ctx: ActionCtx,
+		args: {
+			payment_id: string;
+			item_id: string;
+			amount: number;
+			reason: string;
+			metadata: Record<string, string>;
+		}
+	) => Promise<DodoRefund>;
+};
+type ReadableCtx = Pick<QueryCtx | MutationCtx, "db">;
 
 const parseDodoErrorCode = (error: unknown): string | null => {
 	if (
@@ -118,8 +196,8 @@ const planNameFromDodoProductId = (
 };
 
 const planNameFromDodoSubscription = (
-	subscription: any
-): "pro" | "enterprise" | null => {
+	subscription: DodoSubscription | null | undefined
+): PaidPlanName | null => {
 	const productIds = [
 		subscription?.product_id,
 		subscription?.product?.product_id,
@@ -153,10 +231,13 @@ const planChangeType = (
 ): "upgrade" | "downgrade" =>
 	planRank(newPlan) > planRank(previousPlan) ? "upgrade" : "downgrade";
 
-const getBillableMembers = async (ctx: any, workspaceId: Id<"workspaces">) => {
+const getBillableMembers = async (
+	ctx: ReadableCtx,
+	workspaceId: Id<"workspaces">
+) => {
 	const members = await ctx.db
 		.query("members")
-		.withIndex("by_workspace_id", (q: any) => q.eq("workspaceId", workspaceId))
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 		.take(1000);
 
 	if (members.length >= 1000) {
@@ -165,9 +246,7 @@ const getBillableMembers = async (ctx: any, workspaceId: Id<"workspaces">) => {
 		);
 	}
 
-	return members.filter((member: any) =>
-		BILLABLE_MEMBER_ROLES.has(member.role)
-	);
+	return members.filter((member) => BILLABLE_MEMBER_ROLES.has(member.role));
 };
 
 const requireSeatsForEveryMember = (
@@ -187,21 +266,24 @@ const parseTime = (value: unknown) => {
 	return Number.isFinite(time) ? time : null;
 };
 
-const sumSucceededRefunds = (payment: any) => {
+const sumSucceededRefunds = (payment: DodoPayment | null | undefined) => {
 	const refunds = Array.isArray(payment?.refunds) ? payment.refunds : [];
-	return refunds.reduce((total: number, refund: any) => {
+	return refunds.reduce((total: number, refund) => {
 		if (refund?.status !== "succeeded") return total;
 		return total + (typeof refund?.amount === "number" ? refund.amount : 0);
 	}, 0);
 };
 
-const getPaymentInvoiceUrl = (payment: any) => {
+const getPaymentInvoiceUrl = (payment: DodoPayment | null | undefined) => {
 	const invoiceUrl =
 		payment?.invoice_url ?? payment?.invoiceUrl ?? payment?.receipt_url;
 	return typeof invoiceUrl === "string" ? invoiceUrl : undefined;
 };
 
-const calculateUnusedPeriodRefundAmount = (subscription: any, payment: any) => {
+const calculateUnusedPeriodRefundAmount = (
+	subscription: DodoSubscription | null | undefined,
+	payment: DodoPayment | null | undefined
+) => {
 	const periodStart = parseTime(subscription?.previous_billing_date);
 	const periodEnd = parseTime(subscription?.next_billing_date);
 	const totalAmount =
@@ -236,7 +318,7 @@ const getPlanMonthlyValueCents = (
 ) => PLANS[planName].pricePerSeatMonthly * 100 * quantity;
 
 const calculateFairBillingDelta = (
-	subscription: any,
+	subscription: DodoSubscription | null | undefined,
 	args: {
 		currentPlan: "pro" | "enterprise";
 		currentQuantity: number;
@@ -308,8 +390,8 @@ const calculateFairBillingDelta = (
 };
 
 const getLatestSucceededSubscriptionPayment = async (
-	ctx: any,
-	paymentsApi: any,
+	ctx: ActionCtx,
+	paymentsApi: DodoPaymentsApi,
 	subscriptionId: string
 ) => {
 	const paymentList = await paymentsApi.listForSubscription(ctx, {
@@ -318,15 +400,15 @@ const getLatestSucceededSubscriptionPayment = async (
 	});
 	return Array.isArray(paymentList?.items)
 		? paymentList.items
-				.filter((payment: any) => payment?.status === "succeeded")
+				.filter((payment) => payment?.status === "succeeded")
 				.sort(
-					(a: any, b: any) =>
+					(a, b) =>
 						Date.parse(b?.created_at ?? "") - Date.parse(a?.created_at ?? "")
 				)[0]
 		: null;
 };
 
-const collectLineItems = (value: unknown): any[] => {
+const collectLineItems = (value: unknown): DodoLineItem[] => {
 	if (!value || typeof value !== "object") return [];
 	if (Array.isArray(value)) {
 		return value.flatMap((item) => collectLineItems(item));
@@ -348,7 +430,7 @@ const collectLineItems = (value: unknown): any[] => {
 	];
 };
 
-const getRefundableAmount = (item: any): number => {
+const getRefundableAmount = (item: DodoLineItem | null | undefined): number => {
 	const amount =
 		item?.refundable_amount ??
 		item?.refundableAmount ??
@@ -359,11 +441,11 @@ const getRefundableAmount = (item: any): number => {
 };
 
 const refundLatestSubscriptionPayment = async (
-	ctx: any,
-	paymentsApi: any,
-	refundsApi: any,
+	ctx: ActionCtx,
+	paymentsApi: DodoPaymentsApi,
+	refundsApi: DodoRefundsApi,
 	args: {
-		latestPayment: any;
+		latestPayment: DodoPayment | null | undefined;
 		amount: number;
 		reason: string;
 		metadata: Record<string, string>;
@@ -380,9 +462,8 @@ const refundLatestSubscriptionPayment = async (
 		payment_id: args.latestPayment.payment_id,
 	});
 	const refundableLineItem =
-		collectLineItems(lineItems).find(
-			(item: any) => getRefundableAmount(item) > 0
-		) ?? null;
+		collectLineItems(lineItems).find((item) => getRefundableAmount(item) > 0) ??
+		null;
 	const refundItemId =
 		refundableLineItem?.item_id ??
 		refundableLineItem?.items_id ??
@@ -400,7 +481,7 @@ const refundLatestSubscriptionPayment = async (
 
 	const refund = await refundsApi.create(ctx, {
 		payment_id: args.latestPayment.payment_id,
-		item_id: refundItemId,
+		item_id: String(refundItemId),
 		amount: refundRequestAmount,
 		reason: args.reason,
 		metadata: args.metadata,
@@ -413,10 +494,10 @@ const refundLatestSubscriptionPayment = async (
 };
 
 const getWorkspacePortalCustomerId = async (
-	ctx: any,
+	ctx: ActionCtx,
 	workspaceId: Id<"workspaces">
 ) => {
-	const workspace = await ctx.runQuery(
+	const workspace: Doc<"workspaces"> | null = await ctx.runQuery(
 		internal.workspaces.getWorkspaceByIdInternal,
 		{
 			id: workspaceId,
@@ -426,7 +507,7 @@ const getWorkspacePortalCustomerId = async (
 };
 
 const sendDodoCustomerPortalEmail = async (
-	ctx: any,
+	ctx: ActionCtx,
 	workspaceId: Id<"workspaces">
 ) => {
 	try {
@@ -451,7 +532,7 @@ const sendDodoCustomerPortalEmail = async (
 };
 
 const syncDodoSubscriptionToWorkspace = async (
-	ctx: any,
+	ctx: ActionCtx,
 	args: {
 		workspaceId?: string;
 		subscriptionId: string;
@@ -500,26 +581,23 @@ const syncDodoSubscriptionToWorkspace = async (
 // Internal query: identify the Dodo customer ID for a user
 export const identifyDodoCustomer = internalQuery({
 	args: { userId: v.optional(v.string()) },
-	handler: async (ctx, args) => {
+	handler: async (ctx, args): Promise<string | null> => {
 		let baseUserId = args.userId;
 
 		if (!baseUserId) {
 			const identity = await ctx.auth.getUserIdentity();
 			if (!identity) {
-				console.log(
-					"[identifyDodoCustomer] No identity found and no userId provided"
-				);
 				return null;
 			}
 			baseUserId = (identity.subject || "").split("|")[0];
 		}
 
-		console.log("[identifyDodoCustomer] Identifying customer");
+		const userId = baseUserId as Id<"users">;
 
 		// Try preferences first
 		const pref = await ctx.db
 			.query("preferences")
-			.withIndex("by_user_id", (q) => q.eq("userId", baseUserId as any))
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
 			.unique();
 
 		let workspace = null;
@@ -531,17 +609,12 @@ export const identifyDodoCustomer = internalQuery({
 		if (!workspace) {
 			workspace = await ctx.db
 				.query("workspaces")
-				.withIndex("by_user_id", (q) => q.eq("userId", baseUserId as any))
+				.withIndex("by_user_id", (q) => q.eq("userId", userId))
 				.first();
 		}
 
 		const customerId =
 			workspace?.dodoCustomerId || workspace?.customerId || null;
-		console.log(
-			customerId
-				? "[identifyDodoCustomer] Customer found"
-				: "[identifyDodoCustomer] No customer found"
-		);
 		return customerId;
 	},
 });
@@ -556,8 +629,8 @@ export const checkWorkspaceAdmin = internalQuery({
 		const baseUserId = (identity.subject || "").split("|")[0];
 		const member = await ctx.db
 			.query("members")
-			.withIndex("by_workspace_id_user_id", (q: any) =>
-				q.eq("workspaceId", workspaceId).eq("userId", baseUserId)
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", workspaceId).eq("userId", baseUserId as Id<"users">)
 			)
 			.unique();
 		return member && (member.role === "admin" || member.role === "owner");
@@ -914,7 +987,7 @@ export const getSubscriptionStatus = query({
 
 		let memberPlan: string = "free";
 		if (identity) {
-			const baseUserId = (identity.subject || "").split("|")[0] as any;
+			const baseUserId = (identity.subject || "").split("|")[0] as Id<"users">;
 			const member = await ctx.db
 				.query("members")
 				.withIndex("by_workspace_id_user_id", (q) =>
@@ -951,7 +1024,7 @@ export const getBillingSummary = query({
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthorized");
 
-		const baseUserId = (identity.subject || "").split("|")[0] as any;
+		const baseUserId = (identity.subject || "").split("|")[0] as Id<"users">;
 		const member = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
@@ -977,7 +1050,8 @@ export const getBillingSummary = query({
 		const successfulPayments = history.filter(
 			(entry) =>
 				(entry.type ?? "payment") === "payment" &&
-				(entry.status === "succeeded" || (entry as any).settled === true)
+				(entry.status === "succeeded" ||
+					(entry as { settled?: boolean }).settled === true)
 		);
 		const paidTotal = successfulPayments.reduce(
 			(total, entry) => total + entry.amount,
@@ -1010,13 +1084,13 @@ export const getPlanChangePreview = action({
 		newPlan: v.union(v.literal("pro"), v.literal("enterprise")),
 		newQuantity: v.number(),
 	},
-	handler: async (ctx, args) => {
+	handler: async (ctx, args): Promise<Record<string, unknown>> => {
 		const isAdmin = await ctx.runQuery(internal.payments.checkWorkspaceAdmin, {
 			workspaceId: args.workspaceId,
 		});
 		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
-		const workspace: any = await ctx.runQuery(
+		const workspace: Doc<"workspaces"> | null = await ctx.runQuery(
 			internal.workspaces.getWorkspaceByIdInternal,
 			{ id: args.workspaceId }
 		);
@@ -1033,10 +1107,11 @@ export const getPlanChangePreview = action({
 		}
 
 		const { subscriptions } = await import("./dodo");
-		const subscription = await subscriptions.retrieve(ctx, {
+		const subscription: DodoSubscription = await subscriptions.retrieve(ctx, {
 			subscription_id: workspace.dodoSubscriptionId,
 		});
-		const currentPlan = workspace.plan === "enterprise" ? "enterprise" : "pro";
+		const currentPlan: PaidPlanName =
+			workspace.plan === "enterprise" ? "enterprise" : "pro";
 		const currentQuantity = Math.max(
 			1,
 			Math.floor(
@@ -1273,7 +1348,7 @@ export const syncWorkspaceSubscription = action({
 			subscription_id: workspace.dodoSubscriptionId,
 		});
 		const plan = planNameFromDodoSubscription(subscription);
-		let syncedPayments: any[] = [];
+		let syncedPayments: DodoPayment[] = [];
 		try {
 			const paymentList = await payments.listForSubscription(ctx, {
 				subscription_id: workspace.dodoSubscriptionId,
@@ -1286,7 +1361,7 @@ export const syncWorkspaceSubscription = action({
 			console.warn("[Dodo] Failed to fetch payment history:", error);
 		}
 		const hasSucceededPayment = syncedPayments.some(
-			(payment: any) => payment?.status === "succeeded"
+			(payment) => payment?.status === "succeeded"
 		);
 
 		await syncDodoSubscriptionToWorkspace(ctx, {
@@ -1395,12 +1470,15 @@ export const updateSubscriptionQuantity = action({
 		});
 		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
-		const workspace: any = await ctx.runQuery(
+		const workspace: Doc<"workspaces"> | null = await ctx.runQuery(
 			internal.workspaces.getWorkspaceByIdInternal,
 			{
 				id: workspaceId,
 			}
 		);
+		if (!workspace) {
+			return inactiveSubscriptionCheckoutResult();
+		}
 
 		const dodoSubscriptionId: string | null =
 			typeof workspace?.dodoSubscriptionId === "string"
@@ -1416,9 +1494,8 @@ export const updateSubscriptionQuantity = action({
 			subscriptions,
 			payments: dodoPayments,
 			refunds: dodoRefunds,
-			apiBase,
 		} = await import("./dodo");
-		let currentSubscription: any;
+		let currentSubscription: DodoSubscription;
 		try {
 			currentSubscription = await subscriptions.retrieve(ctx, {
 				subscription_id: dodoSubscriptionId,
@@ -1440,7 +1517,7 @@ export const updateSubscriptionQuantity = action({
 				: null;
 		const workspacePlan = dodoPlan ?? workspacePaidPlan;
 		const subscriptionStatus =
-			currentSubscription?.status ?? workspace?.subscriptionStatus;
+			currentSubscription?.status ?? workspace.subscriptionStatus ?? "unknown";
 		if (!workspacePlan) {
 			return inactiveSubscriptionCheckoutResult();
 		}
@@ -1502,13 +1579,6 @@ export const updateSubscriptionQuantity = action({
 		});
 		requireSeatsForEveryMember(quantity, billingContext.billableMemberCount);
 
-		console.log(`[Dodo Debug] Environment Base: ${apiBase}`);
-		console.log(`[Dodo Debug] Plan Name: ${planName}`);
-		console.log(`[Dodo Debug] Product ID: ${dodoProductId}`);
-		console.log(
-			`[updateSubscriptionQuantity] Attempting to update subscription: ${dodoSubscriptionId} to quantity: ${quantity}`
-		);
-
 		const firstPositiveSeatCount = (
 			...values: Array<number | null | undefined>
 		) => values.find((value) => typeof value === "number" && value > 0);
@@ -1538,7 +1608,7 @@ export const updateSubscriptionQuantity = action({
 		const shouldRefundDowngrade = fairBilling.refundAmount > 0;
 		const shouldChargeUpgrade = fairBilling.amountDue > 0 || isPaidUpgrade;
 		let downgradeRefundCurrency: string | null = null;
-		let latestPaymentForDowngradeRefund: any = null;
+		let latestPaymentForDowngradeRefund: DodoPayment | null = null;
 		if (shouldRefundDowngrade) {
 			latestPaymentForDowngradeRefund =
 				await getLatestSucceededSubscriptionPayment(
@@ -1661,7 +1731,7 @@ export const updateSubscriptionQuantity = action({
 				typeof latestPaymentForDowngradeRefund?.tax === "number"
 					? latestPaymentForDowngradeRefund.tax
 					: null;
-			let refund: any = null;
+			let refund: DodoRefund | null = null;
 			let refundAmount = 0;
 			let refundError: unknown = null;
 			const downgradeCurrency =

@@ -26,6 +26,9 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { api } from "../../../../convex/_generated/api";
 import { useInviteMemberModal } from "../store/use-invite-member-modal";
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+	error instanceof Error ? error.message : fallback;
+
 export const InviteMemberModal = () => {
 	const workspaceId = useWorkspaceId();
 	const [open, setOpen] = useInviteMemberModal();
@@ -107,8 +110,8 @@ export const InviteMemberModal = () => {
 				return;
 			}
 			toast.success("Seat added successfully!");
-		} catch (error: any) {
-			toast.error(error.message || "Failed to add seat");
+		} catch (error: unknown) {
+			toast.error(getErrorMessage(error, "Failed to add seat"));
 		} finally {
 			setAddingSeats(false);
 		}
@@ -150,8 +153,8 @@ export const InviteMemberModal = () => {
 
 			toast.success(`Invite sent to ${email}`);
 			handleClose();
-		} catch (error: any) {
-			toast.error(error.message);
+		} catch (error: unknown) {
+			toast.error(getErrorMessage(error, "Failed to send invite"));
 		} finally {
 			setInviteLoading(false);
 		}
@@ -191,7 +194,7 @@ export const InviteMemberModal = () => {
 								htmlFor="email"
 							>
 								<Users className="size-4 text-[#7c3aed]" />
-								Colleague's Email
+								Colleague&apos;s Email
 							</Label>
 							<Input
 								className="h-12 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus:ring-2 focus:ring-[#7c3aed] transition-all text-base"
