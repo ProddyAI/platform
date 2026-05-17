@@ -10,6 +10,16 @@ async function verifySignature(
 	timestamp,
 	secretBase64
 ) {
+	const timestampMs = Number(timestamp) * 1000;
+	const toleranceMs = 5 * 60 * 1000;
+
+	if (
+		!Number.isFinite(timestampMs) ||
+		Math.abs(Date.now() - timestampMs) > toleranceMs
+	) {
+		return false;
+	}
+
 	const toSign = `${msgId}.${timestamp}.${payload}`;
 	const secretStr = secretBase64.replace("whsec_", "");
 	const secretBytes = Buffer.from(secretStr, "base64");
@@ -20,11 +30,25 @@ async function verifySignature(
 		.digest("base64");
 
 	const signatures = signatureHeader
-		.split(" ")
-		.map((signature) => signature.split(",")[1])
+		.split(/[\s,]+/)
+		.map((signature) => signature.trim())
+		.filter(Boolean)
+		.map((signature) => {
+			const versionedSignature = signature.match(/^v\d+=(.+)$/i);
+			return versionedSignature ? versionedSignature[1].trim() : signature;
+		})
+		.filter((signature) => !/^v\d+$/i.test(signature))
 		.filter(Boolean);
 
-	return signatures.includes(computedSignature);
+	const computedSignatureBuffer = Buffer.from(computedSignature);
+
+	return signatures.some((signature) => {
+		const signatureBuffer = Buffer.from(signature);
+		return (
+			signatureBuffer.length === computedSignatureBuffer.length &&
+			crypto.timingSafeEqual(signatureBuffer, computedSignatureBuffer)
+		);
+	});
 }
 
 async function main() {
