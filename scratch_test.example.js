@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 
 dotenv.config({ path: ".env.local" });
 
-async function verifySignature(
+function verifySignature(
 	payload,
 	signatureHeader,
 	msgId,
@@ -51,7 +51,7 @@ async function verifySignature(
 	});
 }
 
-async function main() {
+function main() {
 	const secret =
 		process.env.DODO_PAYMENTS_WEBHOOK_SECRET ||
 		process.env.STRIPE_WEBHOOK_SECRET;
@@ -73,10 +73,14 @@ async function main() {
 		.update(toSign)
 		.digest("base64")}`;
 
-	console.log(await verifySignature(payload, sig, msgId, timestamp, secret));
+	process.stdout.write(
+		`${verifySignature(payload, sig, msgId, timestamp, secret)}\n`
+	);
 }
 
-main().catch((error) => {
-	console.error(error);
+try {
+	main();
+} catch (error) {
+	process.stderr.write(`${error.stack || error.message || error}\n`);
 	process.exit(1);
-});
+}
