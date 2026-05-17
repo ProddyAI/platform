@@ -979,6 +979,7 @@ export const markWorkspaceCancellationScheduled = internalMutation({
 // Query: subscription status for UI
 export const getSubscriptionStatus = query({
 	args: { workspaceId: v.id("workspaces") },
+	// skipcq: JS-0128
 	handler: async (ctx, { workspaceId }) => {
 		const identity = await ctx.auth.getUserIdentity();
 		const workspace = await ctx.db.get(workspaceId);

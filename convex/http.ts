@@ -244,12 +244,13 @@ const verifyDodoSignature = async (
 http.route({
 	path: "/dodopayments-webhook",
 	method: "POST",
+	// skipcq: JS-0128
 	handler: httpAction(async (ctx, request) => {
-		console.log("[Webhook] Request received");
+		/* skipcq: JS-0002 */ console.log("[Webhook] Request received");
 
 		const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET;
 		if (!webhookSecret) {
-			console.error("Missing DODO_PAYMENTS_WEBHOOK_SECRET");
+			/* skipcq: JS-0002 */ console.error("Missing DODO_PAYMENTS_WEBHOOK_SECRET");
 			return new Response("Configuration error", { status: 500 });
 		}
 
@@ -281,7 +282,7 @@ http.route({
 			);
 			if (!isValid) return new Response("Invalid signature", { status: 401 });
 		} catch (e) {
-			console.error("Signature verification failed", e);
+			/* skipcq: JS-0002 */ console.error("Signature verification failed", e);
 			return new Response("Signature verification error", { status: 400 });
 		}
 
@@ -289,14 +290,14 @@ http.route({
 		try {
 			payload = JSON.parse(body);
 		} catch (e) {
-			console.error("Invalid JSON payload", {
+			/* skipcq: JS-0002 */ console.error("Invalid JSON payload", {
 				error: e,
 				bodyPreview: body.slice(0, 1000),
 			});
 			return new Response("Bad Request", { status: 400 });
 		}
 
-		console.log(`[Dodo Webhook] Received event: ${payload.type}`);
+		/* skipcq: JS-0002 */ console.log(`[Dodo Webhook] Received event: ${payload.type}`);
 		const webhookId = getWebhookId(payload);
 		if (webhookId) {
 			const isDuplicate = await ctx.runQuery(
@@ -306,7 +307,7 @@ http.route({
 				}
 			);
 			if (isDuplicate) {
-				console.log(`[Dodo Webhook] Duplicate event skipped: ${webhookId}`);
+				/* skipcq: JS-0002 */ console.log(`[Dodo Webhook] Duplicate event skipped: ${webhookId}`);
 				return new Response("OK", { status: 200 });
 			}
 		}
@@ -431,7 +432,7 @@ http.route({
 				);
 			}
 		} catch (e) {
-			console.error(
+			/* skipcq: JS-0002 */ console.error(
 				`[Dodo Webhook] Error processing webhook ${payload?.type}:`,
 				e
 			);
