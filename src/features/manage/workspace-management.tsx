@@ -41,6 +41,7 @@ import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useNewJoinCode } from "@/features/workspaces/api/use-new-join-code";
 import { useRemoveWorkspace } from "@/features/workspaces/api/use-remove-workspace";
 import { useUpdateWorkspace } from "@/features/workspaces/api/use-update-workspace";
+import { cn } from "@/lib/utils";
 import { ChannelsManagement } from "./channels-management";
 
 interface WorkspaceManagementProps {
@@ -70,6 +71,8 @@ export const WorkspaceManagement = ({
 	const { data: channels } = useGetChannels({ workspaceId: workspace._id });
 
 	const isOwner = currentMember.role === "owner";
+	const isAdmin = currentMember.role === "admin";
+	const canRename = isOwner || isAdmin;
 
 	const handleUpdateName = async () => {
 		if (name.length < 3 || name.length > 20) {
@@ -214,73 +217,79 @@ export const WorkspaceManagement = ({
 					</p>
 				</div>
 
-				<div className="flex justify-between items-start">
-					{/* Left side - Edit name */}
-					<div className="grid gap-2 w-1/2 pr-4">
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+					<div className="grid gap-4">
 						<Label htmlFor="name">Workspace Name</Label>
 						<div className="flex items-center gap-2">
 							<Input
-								className="flex-1"
+								className={cn(
+									"flex-1",
+									!canRename && "opacity-60 bg-muted pointer-events-none"
+								)}
+								disabled={!canRename}
 								id="name"
 								onChange={(e) => setName(e.target.value)}
 								value={name}
 							/>
-							<Button disabled={isUpdating} onClick={handleUpdateName}>
-								{isUpdating ? (
-									<>
-										<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-										Saving...
-									</>
-								) : (
-									<>
-										<Save className="mr-2 h-4 w-4" />
-										Save
-									</>
-								)}
-							</Button>
+							{canRename && (
+								<Button disabled={isUpdating} onClick={handleUpdateName}>
+									{isUpdating ? (
+										<>
+											<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+											Saving...
+										</>
+									) : (
+										<>
+											<Save className="mr-2 h-4 w-4" />
+											Save
+										</>
+									)}
+								</Button>
+							)}
 						</div>
 					</div>
 
-					{/* Right side - Delete option */}
-					{isOwner && (
-						<div className="w-1/2 pl-4">
+					<div className="grid gap-4">
+						{isOwner && (
 							<div className="grid gap-2">
-								<Label className="text-destructive">Delete Workspace</Label>
-								<div>
-									<AlertDialog>
-										<AlertDialogTrigger asChild>
-											<Button className="w-full" variant="destructive">
-												<Trash2 className="mr-2 h-4 w-4" />
-												Delete Workspace
-											</Button>
-										</AlertDialogTrigger>
-										<AlertDialogContent>
-											<AlertDialogHeader>
-												<AlertDialogTitle>
-													Are you absolutely sure?
-												</AlertDialogTitle>
-												<AlertDialogDescription>
-													This action cannot be undone. This will permanently
-													delete your workspace and remove all associated data
-													including messages, channels, and member information.
-												</AlertDialogDescription>
-											</AlertDialogHeader>
-											<AlertDialogFooter>
-												<AlertDialogCancel>Cancel</AlertDialogCancel>
-												<AlertDialogAction
-													className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-													disabled={isDeleting}
-													onClick={handleDeleteWorkspace}
-												>
-													{isDeleting ? "Deleting..." : "Delete"}
-												</AlertDialogAction>
-											</AlertDialogFooter>
-										</AlertDialogContent>
-									</AlertDialog>
-								</div>
+								<Label>Delete Workspace</Label>
+								<p className="text-xs text-muted-foreground mb-2">
+									Permanently delete this workspace and all its data. This
+									action is irreversible.
+								</p>
+								<AlertDialog>
+									<AlertDialogTrigger asChild>
+										<Button className="w-full" variant="destructive">
+											<Trash2 className="mr-2 h-4 w-4" />
+											Delete Workspace
+										</Button>
+									</AlertDialogTrigger>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>
+												Are you absolutely sure?
+											</AlertDialogTitle>
+											<AlertDialogDescription>
+												This action cannot be undone. This will permanently
+												delete your workspace and remove all associated data
+												including messages, channels, and member information.
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel>Cancel</AlertDialogCancel>
+											<AlertDialogAction
+												className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+												disabled={isDeleting}
+												onClick={handleDeleteWorkspace}
+											>
+												{isDeleting ? "Deleting..." : "Delete"}
+											</AlertDialogAction>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
 							</div>
-						</div>
-					)}
+						)}
+					</div>
 				</div>
 
 				<Separator />

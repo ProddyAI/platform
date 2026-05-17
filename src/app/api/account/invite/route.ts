@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
 		resend ??= new Resend(process.env.RESEND_API_KEY);
 
-		const { workspaceId, email } = await req.json();
+		const { workspaceId, email, role = "member", comment } = await req.json();
 
 		if (!workspaceId || !email) {
 			return NextResponse.json(
@@ -77,10 +77,21 @@ export async function POST(req: Request) {
 
 		const emailSchema = z.string().email();
 		const emailValidation = emailSchema.safeParse(email);
+		const roleValidation = z.enum(["admin", "member"]).safeParse(role);
+		const inviteComment =
+			typeof comment === "string" && comment.trim().length > 0
+				? comment.trim()
+				: undefined;
 
 		if (!emailValidation.success) {
 			return NextResponse.json(
 				{ error: "Invalid email format" },
+				{ status: 400 }
+			);
+		}
+		if (!roleValidation.success) {
+			return NextResponse.json(
+				{ error: "Invalid invite role" },
 				{ status: 400 }
 			);
 		}
@@ -105,6 +116,15 @@ export async function POST(req: Request) {
 			convex.query(api.workspaceInvites.getInviteDetails, { workspaceId }),
 			convex.query(api.workspaceInvites.getWorkspaceJoinCode, { workspaceId }),
 		]);
+		const senderName = inviteDetails?.senderName;
+		const senderEmail = inviteDetails?.senderEmail;
+		const workspaceName = inviteDetails?.workspaceName;
+		if (!senderName || !senderEmail || !workspaceName) {
+			return NextResponse.json(
+				{ error: "Workspace invite details are incomplete" },
+				{ status: 400 }
+			);
+		}
 
 		const raw = `${joinCode}:${email.toLowerCase()}:${process.env.NEXT_PUBLIC_EMAIL_INVITE_SECRET}`;
 		const hash = crypto.createHash("sha256").update(raw).digest("hex");
@@ -116,6 +136,8 @@ export async function POST(req: Request) {
 			email: email.toLowerCase(),
 			hash,
 			expiresAt: Date.now() + 1000 * 60 * 60 * 48, // 48 hours
+			role: roleValidation.data,
+			comment: inviteComment,
 		});
 
 		// Best-effort push notification for existing workspace members.
@@ -136,10 +158,11 @@ export async function POST(req: Request) {
 
 		// Create the invite email template
 		const emailTemplate = InviteMailTemplate({
-			senderName: inviteDetails.senderName!,
-			senderEmail: inviteDetails.senderEmail!,
-			workspaceName: inviteDetails.workspaceName!,
+			senderName,
+			senderEmail,
+			workspaceName,
 			inviteLink,
+			comment: inviteComment,
 		});
 
 		const { fromAddress, replyToAddress } = getEmailConfig();
@@ -147,7 +170,7 @@ export async function POST(req: Request) {
 		const emailResult = await resend.emails.send({
 			from: fromAddress,
 			to: email,
-			subject: `You've been invited to join ${inviteDetails.workspaceName}`,
+			subject: `You've been invited to join ${workspaceName}`,
 			react: emailTemplate,
 			replyTo: replyToAddress,
 		});
@@ -168,9 +191,8 @@ export async function POST(req: Request) {
 		return NextResponse.json({ success: true });
 	} catch (err) {
 		console.error("[Invite Send] Error:", err);
-		return NextResponse.json(
-			{ error: "Failed to send invite" },
-			{ status: 500 }
-		);
+		const message =
+			err instanceof Error ? err.message : "Failed to send invite";
+		return NextResponse.json({ error: message }, { status: 500 });
 	}
 }

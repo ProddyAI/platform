@@ -1,6 +1,14 @@
 "use client";
 
-import { RefreshCw, Shield, Trash2, UserCog } from "lucide-react";
+import {
+	Crown,
+	MessageSquare,
+	RefreshCw,
+	Shield,
+	Trash2,
+	UserCog,
+	Users,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
@@ -25,6 +33,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
 	Table,
@@ -34,6 +49,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	Tooltip,
 	TooltipContent,
@@ -68,6 +84,8 @@ export const MembersManagement = ({
 
 	// Email invite state
 	const [email, setEmail] = useState("");
+	const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
+	const [inviteComment, setInviteComment] = useState("");
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [inviteError, setInviteError] = useState<string | null>(null);
 	const [inviteSuccess, setInviteSuccess] = useState(false);
@@ -172,6 +190,8 @@ export const MembersManagement = ({
 				body: JSON.stringify({
 					workspaceId,
 					email,
+					role: inviteRole,
+					comment: inviteComment,
 				}),
 			});
 
@@ -183,6 +203,8 @@ export const MembersManagement = ({
 
 			setInviteSuccess(true);
 			setEmail("");
+			setInviteRole("member");
+			setInviteComment("");
 			toast.success("Invite sent successfully");
 		} catch (err: any) {
 			setInviteError(err.message);
@@ -203,6 +225,17 @@ export const MembersManagement = ({
 		}
 	};
 
+	const getPlanBadgeColor = (plan: string | undefined) => {
+		switch (plan) {
+			case "enterprise":
+				return "bg-indigo-100 text-indigo-800 border-indigo-200";
+			case "pro":
+				return "bg-emerald-100 text-emerald-800 border-emerald-200";
+			default:
+				return "bg-zinc-100 text-zinc-600 border-zinc-200";
+		}
+	};
+
 	return (
 		<TooltipProvider>
 			<div className="space-y-6">
@@ -219,11 +252,11 @@ export const MembersManagement = ({
 					<>
 						{/* Email Invite Section */}
 						<div className="p-4 bg-muted/30 dark:bg-muted/50 rounded-lg border border-border/50 dark:border-border">
-							<div className="grid gap-2">
+							<div className="grid gap-4">
 								<Label className="text-sm font-semibold" htmlFor="emailInvite">
 									Invite by Email
 								</Label>
-								<div className="flex gap-2">
+								<div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto_auto]">
 									<Input
 										className="flex-1"
 										disabled={inviteLoading}
@@ -241,6 +274,31 @@ export const MembersManagement = ({
 										type="email"
 										value={email}
 									/>
+									<Select
+										disabled={inviteLoading}
+										onValueChange={(value) =>
+											setInviteRole(value as "admin" | "member")
+										}
+										value={inviteRole}
+									>
+										<SelectTrigger aria-label="Invite role">
+											<SelectValue placeholder="Role" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="member">
+												<div className="flex items-center gap-2">
+													<Users className="h-4 w-4" />
+													Member
+												</div>
+											</SelectItem>
+											<SelectItem value="admin">
+												<div className="flex items-center gap-2">
+													<Crown className="h-4 w-4" />
+													Admin
+												</div>
+											</SelectItem>
+										</SelectContent>
+									</Select>
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<Button
@@ -267,6 +325,25 @@ export const MembersManagement = ({
 									>
 										{inviteLoading ? "Sending..." : "Send Invite"}
 									</Button>
+								</div>
+								<div className="grid gap-2">
+									<Label
+										className="flex items-center gap-2 text-sm font-medium"
+										htmlFor="inviteComment"
+									>
+										<MessageSquare className="h-4 w-4" />
+										Invitation Note
+									</Label>
+									<Textarea
+										disabled={inviteLoading}
+										id="inviteComment"
+										onChange={(e) => {
+											setInviteComment(e.target.value);
+											setInviteSuccess(false);
+										}}
+										placeholder="Let them know why you're inviting them..."
+										value={inviteComment}
+									/>
 								</div>
 								{inviteError && (
 									<p className="text-sm text-destructive">{inviteError}</p>
@@ -305,6 +382,7 @@ export const MembersManagement = ({
 							<TableRow>
 								<TableHead>User</TableHead>
 								<TableHead>Role</TableHead>
+								<TableHead>Plan</TableHead>
 								<TableHead className="w-[200px]">Actions</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -333,6 +411,14 @@ export const MembersManagement = ({
 									<TableCell>
 										<Badge className={getRoleBadgeColor(member.role)}>
 											{member.role}
+										</Badge>
+									</TableCell>
+									<TableCell>
+										<Badge
+											className={getPlanBadgeColor(workspace?.plan)}
+											variant="outline"
+										>
+											{workspace?.plan ? workspace.plan.toUpperCase() : "FREE"}
 										</Badge>
 									</TableCell>
 									<TableCell>

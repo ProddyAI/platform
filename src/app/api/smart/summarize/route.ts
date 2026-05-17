@@ -297,6 +297,33 @@ export async function POST(req: NextRequest) {
 				? messages.slice(messages.length - MAX_MESSAGES)
 				: messages;
 
+		// ─── Usage Limit Check ──────────────────────────────────────────────────
+		const trackingWorkspaceId = requestData?.workspaceId as
+			| Id<"workspaces">
+			| undefined;
+		if (trackingWorkspaceId) {
+			const convex = createConvexClient();
+			const token = await convexAuthNextjsToken();
+			if (token) convex.setAuth(token);
+
+			const usageCheck = await convex.query(
+				api.usageTracking.checkAIUsageLimitPublic,
+				{
+					workspaceId: trackingWorkspaceId,
+					featureType: "aiSummary",
+				}
+			);
+
+			if (!usageCheck.allowed) {
+				return NextResponse.json(
+					{
+						error: `Usage limit reached. Your plan allows ${usageCheck.limit} AI summaries per month.`,
+					},
+					{ status: 403 }
+				);
+			}
+		}
+
 		// Check cache first
 		const cacheKey = `${channelLabel ?? "messages"}::${generateCacheKey(limitedMessages)}`;
 		const cachedResult = summaryCache.get(cacheKey);

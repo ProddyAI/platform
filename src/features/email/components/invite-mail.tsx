@@ -18,6 +18,7 @@ interface InviteMailTemplateProps {
 	senderEmail: string;
 	workspaceName: string;
 	inviteLink: string;
+	comment?: string;
 }
 
 // Helper component to create the email content
@@ -26,22 +27,29 @@ function InviteMailContent({
 	senderEmail,
 	workspaceName,
 	inviteLink,
+	comment,
 }: InviteMailTemplateProps) {
+	const invitationNote = comment?.trim();
+	const logoUrl = process.env.NEXT_PUBLIC_LOGO_URL;
+
 	return (
 		<>
-			<Img
-				alt="Proddy"
-				height="40"
-				src={process.env.NEXT_PUBLIC_LOGO_URL!}
-				style={logo}
-				width="40"
-			/>
+			{logoUrl ? (
+				<Img alt="Proddy" height="40" src={logoUrl} style={logo} width="40" />
+			) : null}
 			<Heading style={heading}>You've been invited to join a workspace</Heading>
 			<Section style={section}>
 				<Text style={text}>
 					<strong>{senderName}</strong> ({senderEmail}) has invited you to join
 					the workspace <strong>{workspaceName}</strong> on Proddy.
 				</Text>
+
+				{invitationNote ? (
+					<Section style={noteContainer}>
+						<Text style={noteLabel}>Invitation note</Text>
+						<Text style={noteText}>{invitationNote}</Text>
+					</Section>
+				) : null}
 
 				<Section style={buttonContainer}>
 					<Button
@@ -81,7 +89,7 @@ function InviteMailContent({
 
 export const InviteMailTemplate: React.FC<
 	Readonly<InviteMailTemplateProps>
-> = ({ senderName, senderEmail, workspaceName, inviteLink }) => {
+> = ({ senderName, senderEmail, workspaceName, inviteLink, comment }) => {
 	const previewText = `You've been invited to join ${workspaceName}`;
 
 	return (
@@ -91,6 +99,7 @@ export const InviteMailTemplate: React.FC<
 			<Body style={main}>
 				<Container style={container}>
 					<InviteMailContent
+						comment={comment}
 						inviteLink={inviteLink}
 						senderEmail={senderEmail}
 						senderName={senderName}
@@ -148,6 +157,32 @@ const text = {
 const buttonContainer = {
 	margin: "30px 0",
 	textAlign: "center" as const,
+};
+
+const noteContainer = {
+	backgroundColor: "#f8fafc",
+	border: "1px solid #e5e7eb",
+	borderRadius: "6px",
+	margin: "20px 0",
+	padding: "14px 16px",
+};
+
+const noteLabel = {
+	color: "#64748b",
+	fontSize: "12px",
+	fontWeight: "600",
+	letterSpacing: "0.04em",
+	lineHeight: "1.4",
+	margin: "0 0 6px",
+	textTransform: "uppercase" as const,
+};
+
+const noteText = {
+	color: "#334155",
+	fontSize: "15px",
+	lineHeight: "1.5",
+	margin: "0",
+	whiteSpace: "pre-wrap" as const,
 };
 
 const button = {
