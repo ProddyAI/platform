@@ -8,6 +8,14 @@ import {
 	type DodoPaymentsClientConfig,
 } from "@dodopayments/convex";
 import { components, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import {
+	type ActionCtx,
+	type MutationCtx,
+	type QueryCtx,
+} from "./_generated/server";
+
+type ConvexCtx = QueryCtx | MutationCtx | ActionCtx;
 
 export class DodoApiError extends Error {
 	code: string | null;
@@ -71,30 +79,31 @@ const fetchDodo = async <T>(
 
 // Identify the current user's active workspace and map to its Dodo customer
 async function identifyCustomer(
-	ctx: any
+	ctx: ConvexCtx
 ): Promise<{ dodoCustomerId: string } | null> {
 	let dodoCustomerId: string | null = null;
 
-	if (ctx.db) {
+	if ("db" in ctx) {
 		// We are in a Query or Mutation
-		const identity = await ctx.auth.getUserIdentity();
+		const dbCtx = ctx as MutationCtx;
+		const identity = await dbCtx.auth.getUserIdentity();
 		if (!identity) return null;
 		const baseUserId = (identity.subject || "").split("|")[0];
 
-		const pref = await ctx.db
+		const pref = await dbCtx.db
 			.query("preferences")
-			.withIndex("by_user_id", (q: any) => q.eq("userId", baseUserId))
+			.withIndex("by_user_id", (q) => q.eq("userId", baseUserId as Id<"users">))
 			.unique();
 
 		let workspace = null;
 		if (pref?.lastActiveWorkspaceId) {
-			workspace = await ctx.db.get(pref.lastActiveWorkspaceId);
+			workspace = await dbCtx.db.get(pref.lastActiveWorkspaceId);
 		}
 
 		if (!workspace) {
-			workspace = await ctx.db
+			workspace = await dbCtx.db
 				.query("workspaces")
-				.withIndex("by_user_id", (q: any) => q.eq("userId", baseUserId))
+				.withIndex("by_user_id", (q) => q.eq("userId", baseUserId as Id<"users">))
 				.first();
 		}
 		dodoCustomerId = workspace?.dodoCustomerId || null;
@@ -142,7 +151,7 @@ export const { checkout, customerPortal } = dodo.api();
 
 export const customerPortals = {
 	create: async (
-		_ctx: any,
+		_ctx: ConvexCtx,
 		args: {
 			customer_id: string;
 			return_url?: string;
@@ -195,7 +204,7 @@ export const customerPortals = {
 
 export const customers = {
 	update: async (
-		_ctx: any,
+		_ctx: ConvexCtx,
 		args: {
 			customer_id: string;
 			email?: string | null;
@@ -265,7 +274,7 @@ type SubscriptionUpdate = {
 };
 
 export const subscriptions = {
-	retrieve: async (_ctx: any, args: { subscription_id: string }) => {
+	retrieve: async (_ctx: ConvexCtx, args: { subscription_id: string }) => {
 		return await fetchDodo(
 			"retrieve",
 			`${apiBase}/subscriptions/${args.subscription_id}`,
@@ -289,7 +298,7 @@ export const subscriptions = {
 	},
 
 	changePlan: async (
-		_ctx: any,
+		_ctx: ConvexCtx,
 		args: {
 			subscription_id: string;
 			product_id: string;
@@ -341,7 +350,7 @@ export const subscriptions = {
 		);
 	},
 
-	cancel: async (ctx: any, args: { subscription_id: string }) => {
+	cancel: async (ctx: ConvexCtx, args: { subscription_id: string }) => {
 		return await subscriptions.update(ctx, {
 			subscription_id: args.subscription_id,
 			status: "cancelled",
@@ -353,7 +362,7 @@ export const subscriptions = {
 	},
 
 	update: async (
-		_ctx: any,
+		_ctx: ConvexCtx,
 		args: { subscription_id: string } & SubscriptionUpdate
 	) => {
 		const { subscription_id, ...body } = args;
@@ -383,7 +392,7 @@ export const subscriptions = {
 		);
 	},
 
-	reactivate: async (ctx: any, args: { subscription_id: string }) => {
+	reactivate: async (ctx: ConvexCtx, args: { subscription_id: string }) => {
 		const updated = await subscriptions.update(ctx, {
 			subscription_id: args.subscription_id,
 			cancel_at_next_billing_date: false,
@@ -403,14 +412,14 @@ export const subscriptions = {
 			}
 		}
 
-		throwDodoApiError(
+		return throwDodoApiError(
 			"reactivate",
 			"Subscription is still scheduled for cancellation after update"
 		);
 	},
 
 	updatePaymentMethod: async (
-		_ctx: any,
+		_ctx: ConvexCtx,
 		args: { subscription_id: string; return_url?: string | null }
 	) => {
 		return await fetchDodo(
@@ -445,7 +454,7 @@ export const subscriptions = {
 
 export const payments = {
 	listForSubscription: async (
-		_ctx: any,
+		_ctx: ConvexCtx,
 		args: { subscription_id: string; page_size?: number }
 	) => {
 		const params = new URLSearchParams({
@@ -477,7 +486,7 @@ export const payments = {
 		);
 	},
 
-	retrieveLineItems: async (_ctx: any, args: { payment_id: string }) => {
+	retrieveLineItems: async (_ctx: ConvexCtx, args: { payment_id: string }) => {
 		return await fetchDodo(
 			"retrieve line items",
 			`${apiBase}/payments/${args.payment_id}/line-items`,
@@ -503,7 +512,7 @@ export const payments = {
 
 export const refunds = {
 	create: async (
-		_ctx: any,
+		_ctx: ConvexCtx,
 		args: {
 			payment_id: string;
 			item_id: string;
