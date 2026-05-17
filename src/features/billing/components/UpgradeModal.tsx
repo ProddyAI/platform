@@ -75,10 +75,14 @@ export function UpgradeModal({
 
 	const requiredSeats = Math.max(1, minimumSeatCount);
 	const maxSeats = Math.max(1000, requiredSeats);
-	const clampedInitialSeats = Math.min(Math.max(initialSeatCount, requiredSeats), maxSeats);
+	const clampedInitialSeats = Math.min(
+		Math.max(initialSeatCount, requiredSeats),
+		maxSeats
+	);
 
 	const [proSeatCount, setProSeatCount] = useState(clampedInitialSeats);
-	const [enterpriseSeatCount, setEnterpriseSeatCount] = useState(clampedInitialSeats);
+	const [enterpriseSeatCount, setEnterpriseSeatCount] =
+		useState(clampedInitialSeats);
 
 	useEffect(() => {
 		if (!open) return;

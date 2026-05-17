@@ -9,11 +9,7 @@ import {
 } from "@dodopayments/convex";
 import { components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-	type ActionCtx,
-	type MutationCtx,
-	type QueryCtx,
-} from "./_generated/server";
+import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
 
 type ConvexCtx = QueryCtx | MutationCtx | ActionCtx;
 
@@ -104,7 +100,9 @@ async function identifyCustomer(
 		if (!workspace) {
 			workspace = await dbCtx.db
 				.query("workspaces")
-				.withIndex("by_user_id", (q) => q.eq("userId", baseUserId as Id<"users">))
+				.withIndex("by_user_id", (q) =>
+					q.eq("userId", baseUserId as Id<"users">)
+				)
 				.first();
 		}
 		dodoCustomerId = workspace?.dodoCustomerId || null;

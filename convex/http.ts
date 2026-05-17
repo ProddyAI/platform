@@ -367,13 +367,10 @@ http.route({
 			}
 
 			if (webhookId) {
-				await ctx.runMutation(
-					(internal.webhooks as any).recordWebhook,
-					{
-						webhookId,
-						eventType: payload.type ?? "unknown",
-					}
-				);
+				await ctx.runMutation((internal.webhooks as any).recordWebhook, {
+					webhookId,
+					eventType: payload.type ?? "unknown",
+				});
 			}
 		} catch (e) {
 			console.error(

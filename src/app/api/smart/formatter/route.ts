@@ -106,14 +106,12 @@ export async function POST(req: NextRequest) {
 					);
 				}
 			} catch (err) {
-				console.error(
-					"[Smart Formatter] Workspace usage check failed:",
-					err
-				);
+				console.error("[Smart Formatter] Workspace usage check failed:", err);
 				return NextResponse.json(
 					{
 						error: "Usage check failed",
-						message: "AI services are temporarily unavailable. Please try again.",
+						message:
+							"AI services are temporarily unavailable. Please try again.",
 					},
 					{ status: 503 }
 				);
@@ -171,7 +169,10 @@ Formatted Content:`;
 						featureType: "aiSummary",
 					});
 				} catch (trackErr) {
-					console.error("[Smart Formatter] Fail-closed: Failed to record usage:", trackErr);
+					console.error(
+						"[Smart Formatter] Fail-closed: Failed to record usage:",
+						trackErr
+					);
 					return NextResponse.json(
 						{
 							error: "Service Temporarily Unavailable",
