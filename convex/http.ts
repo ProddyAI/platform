@@ -1,4 +1,4 @@
-import { httpRouter } from "convex/server";
+import { type FunctionReference, httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type ActionCtx, httpAction } from "./_generated/server";
@@ -124,7 +124,7 @@ const buildSubscriptionMutationArgs = (
 		paymentConfirmed?: boolean;
 		raw: string;
 	} = {
-		subscriptionId: data?.subscription_id,
+		subscriptionId: data?.subscription_id ?? "",
 		status: data?.status ?? "unknown",
 		raw,
 	};
@@ -241,10 +241,133 @@ const verifyDodoSignature = async (
 	return signatures.includes(signatureBase64Computed);
 };
 
+const handlePaymentSucceededEvent = async (
+	ctx: ActionCtx,
+	payload: DodoWebhookPayload
+) => {
+	const subscriptionId = payload.data?.subscription_id;
+	const plan =
+		typeof subscriptionId === "string"
+			? undefined
+			: parsePlanFromMetadata(payload.data?.metadata);
+	const paymentArgs: {
+		paymentId: string;
+		businessId?: string;
+		workspaceId?: string;
+		plan?: "pro" | "enterprise";
+		quantity?: number;
+		customerEmail?: string | null;
+		amount: number;
+		currency: string;
+		status: string;
+		taxAmount?: number;
+		invoiceUrl?: string;
+		raw: string;
+	} = {
+		paymentId: payload.data.payment_id!,
+		customerEmail: payload.data.customer?.email ?? null,
+		amount: payload.data.total_amount!,
+		currency: payload.data.currency!,
+		status: payload.data.status ?? "unknown",
+		raw: JSON.stringify(payload),
+	};
+	if (typeof payload.business_id === "string") {
+		paymentArgs.businessId = payload.business_id;
+	}
+	if (typeof payload.data?.metadata?.workspace_id === "string") {
+		paymentArgs.workspaceId = payload.data.metadata.workspace_id;
+	}
+	if (plan) paymentArgs.plan = plan;
+	if (typeof payload.data?.quantity === "number") {
+		paymentArgs.quantity = payload.data.quantity;
+	}
+	if (typeof payload.data?.tax === "number") {
+		paymentArgs.taxAmount = payload.data.tax;
+	}
+	if (typeof payload.data?.invoice_url === "string") {
+		paymentArgs.invoiceUrl = payload.data.invoice_url;
+	}
+	await ctx.runMutation(internal.webhooks.createPayment, paymentArgs);
+	if (typeof subscriptionId === "string") {
+		const billingDetails: {
+			amountDue?: number;
+			currency?: string;
+			taxAmount?: number;
+			invoiceUrl?: string;
+			paymentConfirmed?: boolean;
+		} = {};
+		billingDetails.paymentConfirmed = true;
+		if (
+			typeof payload.data?.total_amount === "number" &&
+			payload.data.total_amount > 0
+		) {
+			billingDetails.amountDue = payload.data.total_amount;
+		}
+		if (typeof payload.data?.currency === "string") {
+			billingDetails.currency = payload.data.currency;
+		}
+		if (typeof payload.data?.tax === "number" && payload.data.tax > 0) {
+			billingDetails.taxAmount = payload.data.tax;
+		}
+		if (typeof payload.data?.invoice_url === "string") {
+			billingDetails.invoiceUrl = payload.data.invoice_url;
+		}
+		await syncSubscriptionFromDodo(
+			ctx,
+			subscriptionId,
+			payload.data?.metadata?.workspace_id,
+			billingDetails
+		);
+	}
+};
+
+const handleSubscriptionActiveEvent = async (
+	ctx: ActionCtx,
+	payload: DodoWebhookPayload
+) => {
+	await ctx.runMutation(
+		internal.webhooks.createSubscription,
+		buildSubscriptionMutationArgs(payload.data, JSON.stringify(payload))
+	);
+};
+
+const handleSubscriptionUpdatedEvent = async (
+	ctx: ActionCtx,
+	payload: DodoWebhookPayload
+) => {
+	await ctx.runMutation(
+		internal.webhooks.updateSubscription,
+		buildSubscriptionMutationArgs(payload.data, JSON.stringify(payload))
+	);
+};
+
+const handleSubscriptionCancelledEvent = async (
+	ctx: ActionCtx,
+	payload: DodoWebhookPayload
+) => {
+	const workspaceId = payload.data?.metadata?.workspace_id as
+		| string
+		| undefined;
+	const customerId = payload.data?.customer?.customer_id;
+
+	const cancelArgs: {
+		workspaceId?: string;
+		subscriptionId: string;
+		customerId?: string;
+		raw: string;
+	} = {
+		subscriptionId: payload.data.subscription_id!,
+		raw: JSON.stringify(payload),
+	};
+	if (workspaceId) cancelArgs.workspaceId = workspaceId;
+	if (customerId) cancelArgs.customerId = customerId;
+
+	await ctx.runMutation(internal.webhooks.cancelSubscription, cancelArgs);
+};
+
 http.route({
 	path: "/dodopayments-webhook",
 	method: "POST",
-	// skipcq: JS-0128
 	handler: httpAction(async (ctx, request) => {
 		/* skipcq: JS-0002 */ console.log("[Webhook] Request received");
 
@@ -301,7 +424,12 @@ http.route({
 		const webhookId = getWebhookId(payload);
 		if (webhookId) {
 			const isDuplicate = await ctx.runQuery(
-				(internal.webhooks as Record<string, unknown>).checkWebhook as never,
+				(internal.webhooks as Record<string, unknown>).checkWebhook as FunctionReference<
+					"query",
+					"internal",
+					{ webhookId: string },
+					boolean
+				>,
 				{
 					webhookId,
 				}
@@ -314,117 +442,26 @@ http.route({
 
 		try {
 			if (payload.type === "payment.succeeded") {
-				const subscriptionId = payload.data?.subscription_id;
-				const plan =
-					typeof subscriptionId === "string"
-						? undefined
-						: parsePlanFromMetadata(payload.data?.metadata);
-				const paymentArgs: {
-					paymentId: string;
-					businessId?: string;
-					workspaceId?: string;
-					plan?: "pro" | "enterprise";
-					quantity?: number;
-					customerEmail?: string | null;
-					amount: number;
-					currency: string;
-					status: string;
-					taxAmount?: number;
-					invoiceUrl?: string;
-					raw: string;
-				} = {
-					paymentId: payload.data.payment_id,
-					customerEmail: payload.data.customer?.email ?? null,
-					amount: payload.data.total_amount,
-					currency: payload.data.currency,
-					status: payload.data.status ?? "unknown",
-					raw: JSON.stringify(payload),
-				};
-				if (typeof payload.business_id === "string") {
-					paymentArgs.businessId = payload.business_id;
-				}
-				if (typeof payload.data?.metadata?.workspace_id === "string") {
-					paymentArgs.workspaceId = payload.data.metadata.workspace_id;
-				}
-				if (plan) paymentArgs.plan = plan;
-				if (typeof payload.data?.quantity === "number") {
-					paymentArgs.quantity = payload.data.quantity;
-				}
-				if (typeof payload.data?.tax === "number") {
-					paymentArgs.taxAmount = payload.data.tax;
-				}
-				if (typeof payload.data?.invoice_url === "string") {
-					paymentArgs.invoiceUrl = payload.data.invoice_url;
-				}
-				await ctx.runMutation(internal.webhooks.createPayment, paymentArgs);
-				if (typeof subscriptionId === "string") {
-					const billingDetails: {
-						amountDue?: number;
-						currency?: string;
-						taxAmount?: number;
-						invoiceUrl?: string;
-						paymentConfirmed?: boolean;
-					} = {};
-					billingDetails.paymentConfirmed = true;
-					if (
-						typeof payload.data?.total_amount === "number" &&
-						payload.data.total_amount > 0
-					) {
-						billingDetails.amountDue = payload.data.total_amount;
-					}
-					if (typeof payload.data?.currency === "string") {
-						billingDetails.currency = payload.data.currency;
-					}
-					if (typeof payload.data?.tax === "number" && payload.data.tax > 0) {
-						billingDetails.taxAmount = payload.data.tax;
-					}
-					if (typeof payload.data?.invoice_url === "string") {
-						billingDetails.invoiceUrl = payload.data.invoice_url;
-					}
-					await syncSubscriptionFromDodo(
-						ctx,
-						subscriptionId,
-						payload.data?.metadata?.workspace_id,
-						billingDetails
-					);
-				}
+				await handlePaymentSucceededEvent(ctx, payload);
 			} else if (payload.type === "subscription.active") {
-				await ctx.runMutation(
-					internal.webhooks.createSubscription,
-					buildSubscriptionMutationArgs(payload.data, JSON.stringify(payload))
-				);
+				await handleSubscriptionActiveEvent(ctx, payload);
 			} else if (
 				payload.type === "subscription.updated" ||
 				payload.type === "subscription.plan_changed"
 			) {
-				await ctx.runMutation(
-					internal.webhooks.updateSubscription,
-					buildSubscriptionMutationArgs(payload.data, JSON.stringify(payload))
-				);
+				await handleSubscriptionUpdatedEvent(ctx, payload);
 			} else if (payload.type === "subscription.cancelled") {
-				const workspaceId = payload.data?.metadata?.workspace_id as
-					| string
-					| undefined;
-				const customerId = payload.data?.customer?.customer_id;
-
-				const cancelArgs: {
-					workspaceId?: string;
-					subscriptionId: string;
-					customerId?: string;
-					raw: string;
-				} = {
-					subscriptionId: payload.data.subscription_id,
-					raw: JSON.stringify(payload),
-				};
-				if (workspaceId) cancelArgs.workspaceId = workspaceId;
-				if (customerId) cancelArgs.customerId = customerId;
-
-				await ctx.runMutation(internal.webhooks.cancelSubscription, cancelArgs);
+				await handleSubscriptionCancelledEvent(ctx, payload);
 			}
 
 			if (webhookId) {
 				await ctx.runMutation(
-					(internal.webhooks as Record<string, unknown>).recordWebhook as never,
+					(internal.webhooks as Record<string, unknown>).recordWebhook as FunctionReference<
+						"mutation",
+						"internal",
+						{ webhookId: string; eventType: string },
+						unknown
+					>,
 					{
 						webhookId,
 						eventType: payload.type ?? "unknown",

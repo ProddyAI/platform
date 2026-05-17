@@ -283,7 +283,7 @@ export const checkAIUsageLimit = internalQuery({
 		const plan = getPlanConfig(toPlanName(workspace.plan));
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const limitKey = FEATURE_LIMIT_MAP[featureType];
-		const limit = (plan.limits as Record<string, number>)[limitKey] as number;
+		const limit = (plan.limits as unknown as Record<string, number>)[limitKey] as number;
 
 		if (isUnlimited(limit)) return { allowed: true, used: 0, limit: -1 };
 
@@ -435,7 +435,7 @@ export const checkAIUsageLimitPublic = query({
 
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const limitKey = FEATURE_LIMIT_MAP[featureType];
-		const limit = (plan.limits as Record<string, number>)[limitKey] as number;
+		const limit = (plan.limits as unknown as Record<string, number>)[limitKey] as number;
 
 		if (isUnlimited(limit)) return { allowed: true, used: 0, limit: -1 };
 
