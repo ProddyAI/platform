@@ -474,7 +474,7 @@ export const consumeInvite = mutation({
 
 		await ctx.db.insert("members", {
 			workspaceId: invite.workspaceId,
-			userId: userId,
+			userId,
 			role: invite.role ?? "member",
 			seatTier:
 				invite.role === "admin" ||

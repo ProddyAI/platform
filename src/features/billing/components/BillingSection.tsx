@@ -1,6 +1,6 @@
 "use client";
 
-import { useAction, useQuery } from "convex/react";
+import { useAction, useQuery, useConvexAuth } from "convex/react";
 import {
 	CalendarDays,
 	CreditCard,
@@ -52,13 +52,17 @@ export function BillingSection({
 	const isOwner = currentMember.role === "owner";
 	const isAdmin = currentMember.role === "admin";
 	const canManageBilling = isOwner || isAdmin;
+	const { isAuthenticated } = useConvexAuth();
 	const router = useRouter();
-	const subscription = useQuery(api.payments.getSubscriptionStatus, {
-		workspaceId,
-	});
+	const subscription = useQuery(
+		api.payments.getSubscriptionStatus,
+		isAuthenticated ? { workspaceId } : "skip"
+	);
 	const billingSummary = useQuery(
 		api.payments.getBillingSummary,
-		canManageBilling && showBillingSummary ? { workspaceId } : "skip"
+		isAuthenticated && canManageBilling && showBillingSummary
+			? { workspaceId }
+			: "skip"
 	);
 	const billingHistory = (billingSummary?.history ??
 		[]) as BillingHistoryEntry[];
