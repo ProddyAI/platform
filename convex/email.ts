@@ -410,8 +410,8 @@ export const sendWorkspacePlanChangeEmail = internalAction({
 							.join("")}
 						${
 							args.changeType === "downgrade"
-								? `<p style="font-size: 12px; color: #6b7280; margin: 10px 0 0;">These amounts come from the Dodo payment and refund records for this plan change.</p>`
-								: `<p style="font-size: 12px; color: #6b7280; margin: 10px 0 0;">These amounts come from the Dodo invoice for this plan change.</p>`
+								? '<p style="font-size: 12px; color: #6b7280; margin: 10px 0 0;">These amounts come from the Dodo payment and refund records for this plan change.</p>'
+								: '<p style="font-size: 12px; color: #6b7280; margin: 10px 0 0;">These amounts come from the Dodo invoice for this plan change.</p>'
 						}
 					</div>`
 				: "";

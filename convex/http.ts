@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { httpAction } from "./_generated/server";
+import { type ActionCtx, httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { subscriptions } from "./dodo";
 import { PLANS } from "./plans";
@@ -29,20 +29,75 @@ const parsePlanFromProductId = (
 	return undefined;
 };
 
-const parseSubscriptionWorkspaceId = (data: any): string | undefined =>
-	data?.metadata?.workspace_id as string | undefined;
+interface DodoSubscriptionData {
+	subscription_id?: string;
+	status?: string;
+	quantity?: number;
+	cancel_at_next_billing_date?: boolean;
+	next_billing_date?: string;
+	product_id?: string;
+	product?: {
+		product_id?: string;
+		id?: string;
+	};
+	metadata?: {
+		workspace_id?: string;
+		plan?: string;
+	};
+	customer?: {
+		customer_id?: string;
+		email?: string;
+	};
+	customer_id?: string;
+}
 
-const parseSubscriptionCustomerId = (data: any): string | undefined =>
-	data?.customer?.customer_id ?? data?.customer_id;
+interface DodoWebhookPayload {
+	type: string;
+	data: DodoSubscriptionData & {
+		payment_id?: string;
+		total_amount?: number;
+		tax?: number;
+		invoice_url?: string;
+		currency?: string;
+		status?: string;
+		quantity?: number;
+		cancel_at_next_billing_date?: boolean;
+		next_billing_date?: string;
+		subscription_id?: string;
+		metadata?: {
+			workspace_id?: string;
+			plan?: string;
+		};
+		customer?: {
+			customer_id?: string;
+			email?: string;
+		};
+	};
+	business_id?: string;
+	webhook_id?: string;
+	id?: string;
+	msg_id?: string;
+	msgId?: string;
+}
 
-const parseSubscriptionPlan = (data: any): "pro" | "enterprise" | undefined =>
+const parseSubscriptionWorkspaceId = (
+	data: DodoSubscriptionData
+): string | undefined => data?.metadata?.workspace_id;
+
+const parseSubscriptionCustomerId = (
+	data: DodoSubscriptionData
+): string | undefined => data?.customer?.customer_id ?? data?.customer_id;
+
+const parseSubscriptionPlan = (
+	data: DodoSubscriptionData
+): "pro" | "enterprise" | undefined =>
 	parsePlanFromProductId(data?.product_id) ??
 	parsePlanFromProductId(data?.product?.product_id) ??
 	parsePlanFromProductId(data?.product?.id) ??
 	parsePlanFromMetadata(data?.metadata);
 
 const buildSubscriptionMutationArgs = (
-	data: any,
+	data: DodoSubscriptionData,
 	raw: string,
 	fallbackWorkspaceId?: string,
 	billingDetails?: {
@@ -103,7 +158,7 @@ const buildSubscriptionMutationArgs = (
 };
 
 const syncSubscriptionFromDodo = async (
-	ctx: any,
+	ctx: ActionCtx,
 	subscriptionId: string,
 	fallbackWorkspaceId?: string,
 	billingDetails?: {
@@ -149,7 +204,7 @@ const parseWebhookSignatures = (signatureHeader: string): string[] =>
 		})
 		.filter(Boolean);
 
-const getWebhookId = (payload: any): string | null => {
+const getWebhookId = (payload: DodoWebhookPayload): string | null => {
 	const id = payload?.msg_id ?? payload?.msgId ?? payload?.id;
 	return typeof id === "string" && id.length > 0 ? id : null;
 };
@@ -230,7 +285,7 @@ http.route({
 			return new Response("Signature verification error", { status: 400 });
 		}
 
-		let payload: any;
+		let payload: DodoWebhookPayload;
 		try {
 			payload = JSON.parse(body);
 		} catch (e) {
@@ -245,7 +300,7 @@ http.route({
 		const webhookId = getWebhookId(payload);
 		if (webhookId) {
 			const isDuplicate = await ctx.runQuery(
-				(internal.webhooks as any).checkWebhook,
+				(internal.webhooks as Record<string, unknown>).checkWebhook as never,
 				{
 					webhookId,
 				}
@@ -367,10 +422,13 @@ http.route({
 			}
 
 			if (webhookId) {
-				await ctx.runMutation((internal.webhooks as any).recordWebhook, {
-					webhookId,
-					eventType: payload.type ?? "unknown",
-				});
+				await ctx.runMutation(
+					(internal.webhooks as Record<string, unknown>).recordWebhook as never,
+					{
+						webhookId,
+						eventType: payload.type ?? "unknown",
+					}
+				);
 			}
 		} catch (e) {
 			console.error(

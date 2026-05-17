@@ -139,7 +139,9 @@ export const apiBase =
 		? "https://test.dodopayments.com"
 		: "https://live.dodopayments.com";
 
-export const dodo = new DodoPayments((components as any).dodopayments, {
+export const dodo = new DodoPayments(
+	(components as Record<string, unknown>).dodopayments as never,
+	{
 	identify: identifyCustomer,
 	apiKey: dodoApiKey,
 	environment: dodoEnvironment,

@@ -2,13 +2,13 @@ import { openai } from "@ai-sdk/openai";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { generateText } from "ai";
 import { ConvexHttpClient } from "convex/browser";
-import * as dotenv from "dotenv";
+import { config } from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 // Load environment variables
-dotenv.config();
+config();
 
 function createConvexClient(): ConvexHttpClient {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {

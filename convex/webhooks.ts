@@ -33,7 +33,7 @@ export const checkWebhook = internalQuery({
 			.query("webhookEvents")
 			.withIndex("by_webhook_id", (q) => q.eq("webhookId", args.webhookId))
 			.unique();
-		return !!existing;
+		return Boolean(existing);
 	},
 });
 
