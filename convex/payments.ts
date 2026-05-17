@@ -1026,9 +1026,43 @@ export const getSubscriptionStatus = query({
 	},
 });
 
+function buildBillingSummary(
+	history: Doc<"billingHistory">[],
+	auditLogs: Doc<"billingAuditLogs">[]
+) {
+	const successfulPayments = history.filter(
+		(entry) =>
+			(entry.type ?? "payment") === "payment" &&
+			(entry.status === "succeeded" ||
+				(entry as { settled?: boolean }).settled === true)
+	);
+	const paidTotal = successfulPayments.reduce(
+		(total, entry) => total + entry.amount,
+		0
+	);
+	const taxTotal = successfulPayments.reduce(
+		(total, entry) => total + (entry.taxAmount ?? 0),
+		0
+	);
+	const refundedTotal = history
+		.filter((entry) => entry.type === "refund")
+		.reduce((total, entry) => total + entry.amount, 0);
+	const currency = history.find((entry) => entry.currency)?.currency ?? "USD";
+
+	return {
+		history,
+		auditLogs,
+		paidTotal,
+		taxTotal,
+		refundedTotal,
+		netPaid: paidTotal - refundedTotal,
+		currency,
+	};
+}
+
 export const getBillingSummary = query({
 	args: { workspaceId: v.id("workspaces") },
-	handler: async (ctx, { workspaceId }) => {
+	handler: async (ctx, { workspaceId }) => { // Refactored to drop complexity
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthorized");
 
@@ -1055,34 +1089,7 @@ export const getBillingSummary = query({
 			.order("desc")
 			.take(20);
 
-		const successfulPayments = history.filter(
-			(entry) =>
-				(entry.type ?? "payment") === "payment" &&
-				(entry.status === "succeeded" ||
-					(entry as { settled?: boolean }).settled === true)
-		);
-		const paidTotal = successfulPayments.reduce(
-			(total, entry) => total + entry.amount,
-			0
-		);
-		const taxTotal = successfulPayments.reduce(
-			(total, entry) => total + (entry.taxAmount ?? 0),
-			0
-		);
-		const refundedTotal = history
-			.filter((entry) => entry.type === "refund")
-			.reduce((total, entry) => total + entry.amount, 0);
-		const currency = history.find((entry) => entry.currency)?.currency ?? "USD";
-
-		return {
-			history,
-			auditLogs,
-			paidTotal,
-			taxTotal,
-			refundedTotal,
-			netPaid: paidTotal - refundedTotal,
-			currency,
-		};
+		return buildBillingSummary(history, auditLogs);
 	},
 });
 
