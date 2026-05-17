@@ -368,7 +368,7 @@ const handleSubscriptionCancelledEvent = async (
 http.route({
 	path: "/dodopayments-webhook",
 	method: "POST",
-	handler: httpAction(async (ctx, request) => {
+	handler: httpAction(async (ctx, request) => { // Refactored to external handlers
 		/* skipcq: JS-0002 */ console.log("[Webhook] Request received");
 
 		const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET;

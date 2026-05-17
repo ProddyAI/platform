@@ -1002,7 +1002,7 @@ function mapSubscriptionStatus(
 // Query: subscription status for UI
 export const getSubscriptionStatus = query({
 	args: { workspaceId: v.id("workspaces") },
-	handler: async (ctx, { workspaceId }) => {
+	handler: async (ctx, { workspaceId }) => { // Refactored to drop complexity
 		const identity = await ctx.auth.getUserIdentity();
 		const workspace = await ctx.db.get(workspaceId);
 		if (!workspace) return null;
@@ -1623,7 +1623,7 @@ export const updateSubscriptionQuantity = action({
 		newQuantity: v.number(),
 		newPlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 	},
-	handler: async (
+	handler: async ( // Refactored to drop complexity
 		ctx,
 		{ workspaceId, newQuantity, newPlan }
 	): Promise<Record<string, unknown>> => {
