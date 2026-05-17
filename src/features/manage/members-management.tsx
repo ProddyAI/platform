@@ -73,7 +73,9 @@ interface EmailInviteSectionProps {
 
 const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 	const [email, setEmail] = useState("");
-	const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">("member");
+	const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">(
+		"member"
+	);
 	const [inviteComment, setInviteComment] = useState("");
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [inviteError, setInviteError] = useState<string | null>(null);
@@ -418,7 +420,10 @@ export const MembersManagement = ({
 									<TableCell>
 										<div className="flex items-center gap-2">
 											{/* Role Management Dropdown */}
-											{(isOwner || (isAdmin && (member.role === "member" || member.role === "viewer"))) &&
+											{(isOwner ||
+												(isAdmin &&
+													(member.role === "member" ||
+														member.role === "viewer"))) &&
 												!(member._id === currentMember._id && isOnlyOwner) && (
 													<DropdownMenu>
 														<DropdownMenuTrigger asChild>
@@ -486,7 +491,9 @@ export const MembersManagement = ({
 
 											{/* Remove Member Button */}
 											{((isOwner && member.role !== "owner") ||
-												(isAdmin && (member.role === "member" || member.role === "viewer"))) && (
+												(isAdmin &&
+													(member.role === "member" ||
+														member.role === "viewer"))) && (
 												<Button
 													className="text-destructive hover:bg-destructive/10"
 													disabled={member._id === currentMember._id}

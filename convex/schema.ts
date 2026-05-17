@@ -832,7 +832,9 @@ const schema = defineSchema({
 		workspaceId: v.id("workspaces"), // which workspace
 		email: v.string(), // who the invite is for
 		hash: v.string(), // token from email link
-		role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+		role: v.optional(
+			v.union(v.literal("admin"), v.literal("member"), v.literal("viewer"))
+		),
 		invitePlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 		used: v.boolean(), // one-time use
 		expiresAt: v.number(), // auto-expiry

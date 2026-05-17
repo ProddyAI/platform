@@ -415,8 +415,7 @@ export const resetBillingStatus = mutation({
 		if (!userId) throw new Error("Unauthorized");
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) throw new Error("Workspace not found");
-		if (workspace.userId !== userId)
-			throw new Error("Only owner can reset");
+		if (workspace.userId !== userId) throw new Error("Only owner can reset");
 		await ctx.db.patch(args.workspaceId, {
 			plan: "free",
 			subscriptionStatus: "none",

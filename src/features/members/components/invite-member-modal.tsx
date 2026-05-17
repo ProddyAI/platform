@@ -267,7 +267,8 @@ export const InviteMemberModal = () => {
 		(seatUsage?.occupiedSeats ?? 0) + (seatUsage?.pendingInvites ?? 0);
 	const isPlanPaid =
 		seatUsage?.plan === "pro" || seatUsage?.plan === "enterprise";
-	const isSeatsFull = isPlanPaid && role !== "viewer" && usedSeats >= totalSeats;
+	const isSeatsFull =
+		isPlanPaid && role !== "viewer" && usedSeats >= totalSeats;
 
 	useEffect(() => {
 		if (!isSeatsFull) {

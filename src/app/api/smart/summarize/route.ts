@@ -322,10 +322,7 @@ export async function POST(req: NextRequest) {
 				);
 			}
 		} catch (error) {
-			console.error(
-				"[Smart Summarize] Workspace usage check failed:",
-				error
-			);
+			console.error("[Smart Summarize] Workspace usage check failed:", error);
 			return NextResponse.json(
 				{
 					error: "Usage check failed",
@@ -416,18 +413,12 @@ Output format (Markdown, no intro text):
 			try {
 				const trackingToken = await convexAuthNextjsToken();
 				if (trackingToken) trackingConvex.setAuth(trackingToken);
-				await trackingConvex.mutation(
-					api.usageTracking.recordAIRequestPublic,
-					{
-						workspaceId,
-						featureType: "aiSummary",
-					}
-				);
+				await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
+					workspaceId,
+					featureType: "aiSummary",
+				});
 			} catch (trackErr) {
-				console.warn(
-					"[UsageTracking] Failed to record AI summary:",
-					trackErr
-				);
+				console.warn("[UsageTracking] Failed to record AI summary:", trackErr);
 			}
 
 			// Prune cache if needed
