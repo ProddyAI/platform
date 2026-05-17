@@ -1073,10 +1073,14 @@ export const createIssue = mutation({
 			const auth = await ctx.auth.getUserIdentity();
 			if (auth) {
 				const userId = auth.subject.split("|")[0] as Id<"users">;
-				await ctx.runMutation(internal.usageTracking.recordBoardCreated, {
-					userId,
-					workspaceId: channel.workspaceId,
-				});
+				await ctx.scheduler.runAfter(
+					0,
+					internal.usageTracking.recordBoardCreated,
+					{
+						userId,
+						workspaceId: channel.workspaceId,
+					}
+				);
 			}
 		} catch (error) {
 			console.error("Error recording board card usage:", error);
