@@ -95,27 +95,15 @@ export const sendPushNotification = internalAction({
 		}
 
 		try {
-			// Log before sending
+			// Log before sending (non-sensitive info only)
 			console.log(
 				"🔔 Sending push notification to:",
 				filteredUserIds.length,
 				"users"
 			);
-			console.log(
-				"🔔 User IDs:",
-				filteredUserIds.slice(0, 3),
-				filteredUserIds.length > 3
-					? `... +${filteredUserIds.length - 3} more`
-					: ""
-			);
-			console.log("🔔 OneSignal App ID:", oneSignalAppId);
 			console.log("🔔 Notification type:", args.notificationType);
 			console.log("🔔 Title:", args.title);
 			console.log("🔔 API Key available:", !!oneSignalApiKey);
-			console.log(
-				"🔔 API Key (first 20 chars):",
-				oneSignalApiKey?.substring(0, 20)
-			);
 
 			// Send notification via OneSignal REST API
 			const response = await fetch("https://api.onesignal.com/notifications", {
@@ -142,9 +130,8 @@ export const sendPushNotification = internalAction({
 				result = { raw: responseText };
 			}
 
-			// Log response details
+			// Log response status only (non-sensitive)
 			console.log("🔔 OneSignal HTTP status:", response.status);
-			console.log("🔔 OneSignal response:", result);
 
 			if (!response.ok) {
 				console.error("❌ OneSignal push request failed", {
@@ -165,7 +152,6 @@ export const sendPushNotification = internalAction({
 			);
 
 			console.log("🔔 OneSignal recipients count:", recipients);
-			console.log("🔔 Notification ID:", result.id);
 
 			if (recipients === 0) {
 				console.warn("⚠️ OneSignal accepted request but 0 recipients reached", {

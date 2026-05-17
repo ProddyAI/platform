@@ -57,10 +57,12 @@ export const NotificationSettings = () => {
 	>("default");
 
 	const updateSettings = useMutation(api.preferences.updateUserPreferences);
-	const updateBrowserPref = useMutation(
-		(api as any).preferences.updateBrowserPref
+	const updateBrowserPrefs = useMutation(
+		(api as any).preferences.updateBrowserPrefs
 	);
-	const updateEmailPref = useMutation((api as any).preferences.updateEmailPref);
+	const updateEmailPrefs = useMutation(
+		(api as any).preferences.updateEmailPrefs
+	);
 	const updateChannelToggle = useMutation(
 		(api as any).preferences.updateChannelToggle
 	);
@@ -136,34 +138,30 @@ export const NotificationSettings = () => {
 
 	const handleMasterToggle = async (enabled: boolean) => {
 		await withSaveState(async () => {
-			const keys = [
-				"mentions",
-				"assignee",
-				"threadReply",
-				"directMessage",
-				"inviteSent",
-				"workspaceJoin",
-			];
-			await Promise.all(
-				keys.map((key) => updateBrowserPref({ notificationKey: key, enabled }))
-			);
+			const updates = {
+				mentions: enabled,
+				assignee: enabled,
+				threadReply: enabled,
+				directMessage: enabled,
+				inviteSent: enabled,
+				workspaceJoin: enabled,
+			};
+			await updateBrowserPrefs({ updates });
 		});
 	};
 
 	const handleBrowserToggle = async (type: string, enabled: boolean) => {
 		await withSaveState(async () => {
-			await updateBrowserPref({
-				notificationKey: type,
-				enabled,
+			await updateBrowserPrefs({
+				updates: { [type]: enabled },
 			});
 		});
 	};
 
 	const handleEmailToggle = async (type: string, enabled: boolean) => {
 		await withSaveState(async () => {
-			await updateEmailPref({
-				notificationKey: type,
-				enabled,
+			await updateEmailPrefs({
+				updates: { [type]: enabled },
 			});
 		});
 	};

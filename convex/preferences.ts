@@ -381,6 +381,53 @@ export const updateBrowserPref = mutation({
 	},
 });
 
+/**
+ * Bulk update multiple browser notification preferences in a single atomic operation
+ * Prevents race conditions when updating multiple keys at once
+ */
+export const updateBrowserPrefs = mutation({
+	args: {
+		updates: v.record(notificationKeyValidator, v.boolean()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		const existingPrefs = await ctx.db
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
+			.unique();
+
+		const merged = buildNotificationDefaults(
+			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+				undefined
+		);
+		const nextNotifications = {
+			...merged,
+			notificationBrowserPrefs: {
+				...merged.notificationBrowserPrefs,
+				...args.updates,
+			},
+		};
+
+		if (existingPrefs) {
+			await ctx.db.patch(existingPrefs._id, {
+				settings: {
+					...existingPrefs.settings,
+					notifications: nextNotifications,
+				},
+			});
+		} else {
+			await ctx.db.insert("preferences", {
+				userId,
+				settings: { notifications: nextNotifications },
+			});
+		}
+
+		return { success: true };
+	},
+});
+
 export const updateEmailPref = mutation({
 	args: {
 		notificationKey: notificationKeyValidator,
@@ -404,6 +451,53 @@ export const updateEmailPref = mutation({
 			notificationEmailPrefs: {
 				...merged.notificationEmailPrefs,
 				[args.notificationKey]: args.enabled,
+			},
+		};
+
+		if (existingPrefs) {
+			await ctx.db.patch(existingPrefs._id, {
+				settings: {
+					...existingPrefs.settings,
+					notifications: nextNotifications,
+				},
+			});
+		} else {
+			await ctx.db.insert("preferences", {
+				userId,
+				settings: { notifications: nextNotifications },
+			});
+		}
+
+		return { success: true };
+	},
+});
+
+/**
+ * Bulk update multiple email notification preferences in a single atomic operation
+ * Prevents race conditions when updating multiple keys at once
+ */
+export const updateEmailPrefs = mutation({
+	args: {
+		updates: v.record(notificationKeyValidator, v.boolean()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		const existingPrefs = await ctx.db
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
+			.unique();
+
+		const merged = buildNotificationDefaults(
+			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+				undefined
+		);
+		const nextNotifications = {
+			...merged,
+			notificationEmailPrefs: {
+				...merged.notificationEmailPrefs,
+				...args.updates,
 			},
 		};
 
