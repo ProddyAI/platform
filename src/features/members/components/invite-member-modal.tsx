@@ -29,6 +29,10 @@ import { useInviteMemberModal } from "../store/use-invite-member-modal";
 export const InviteMemberModal = () => {
 	const workspaceId = useWorkspaceId();
 	const [open, setOpen] = useInviteMemberModal();
+	const workspace = useQuery(
+		api.workspaces.getById,
+		workspaceId ? { id: workspaceId } : "skip"
+	);
 
 	const [email, setEmail] = useState("");
 	const [role, setRole] = useState<"admin" | "member">("member");
@@ -113,6 +117,7 @@ export const InviteMemberModal = () => {
 	const handleClose = () => {
 		setOpen(false);
 		setEmail("");
+		setRole("member");
 		setComment("");
 		setInviteLoading(false);
 		setSeatChangePending(false);
@@ -203,7 +208,10 @@ export const InviteMemberModal = () => {
 								<Crown className="size-4 text-amber-500" />
 								Workspace Role
 							</Label>
-							<Select onValueChange={(v: any) => setRole(v)} value={role}>
+							<Select
+								onValueChange={(v: "admin" | "member") => setRole(v)}
+								value={role}
+							>
 								<SelectTrigger className="h-14 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 transition-all font-medium text-lg">
 									<SelectValue placeholder="Select Role" />
 								</SelectTrigger>
@@ -304,7 +312,7 @@ export const InviteMemberModal = () => {
 								Workspace
 							</span>
 							<span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-								Proddy Platform
+								{workspace?.name ?? "Workspace"}
 							</span>
 						</div>
 						<div className="flex gap-3">

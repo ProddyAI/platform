@@ -514,10 +514,7 @@ export const identifyDodoCustomer = internalQuery({
 			baseUserId = (identity.subject || "").split("|")[0];
 		}
 
-		console.log(
-			"[identifyDodoCustomer] Identifying customer for user:",
-			baseUserId
-		);
+		console.log("[identifyDodoCustomer] Identifying customer");
 
 		// Try preferences first
 		const pref = await ctx.db
@@ -540,7 +537,11 @@ export const identifyDodoCustomer = internalQuery({
 
 		const customerId =
 			workspace?.dodoCustomerId || workspace?.customerId || null;
-		console.log("[identifyDodoCustomer] Returning customerId:", customerId);
+		console.log(
+			customerId
+				? "[identifyDodoCustomer] Customer found"
+				: "[identifyDodoCustomer] No customer found"
+		);
 		return customerId;
 	},
 });
@@ -973,12 +974,19 @@ export const getBillingSummary = query({
 			.order("desc")
 			.take(20);
 
-		const paidTotal = history
-			.filter((entry) => (entry.type ?? "payment") === "payment")
-			.reduce((total, entry) => total + entry.amount, 0);
-		const taxTotal = history
-			.filter((entry) => (entry.type ?? "payment") === "payment")
-			.reduce((total, entry) => total + (entry.taxAmount ?? 0), 0);
+		const successfulPayments = history.filter(
+			(entry) =>
+				(entry.type ?? "payment") === "payment" &&
+				(entry.status === "succeeded" || (entry as any).settled === true)
+		);
+		const paidTotal = successfulPayments.reduce(
+			(total, entry) => total + entry.amount,
+			0
+		);
+		const taxTotal = successfulPayments.reduce(
+			(total, entry) => total + (entry.taxAmount ?? 0),
+			0
+		);
 		const refundedTotal = history
 			.filter((entry) => entry.type === "refund")
 			.reduce((total, entry) => total + entry.amount, 0);
@@ -1191,34 +1199,38 @@ export const getCustomerPortal = action({
 				ctx,
 				args.workspaceId
 			);
-			if (customerId) {
-				const appUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-				const { customerPortals, customers } = await import("./dodo");
-				if (identity.email) {
-					try {
-						await customers.update(ctx, {
-							customer_id: customerId,
-							email: identity.email,
-							name: identity.name ?? null,
-						});
-					} catch (error) {
-						console.warn(
-							"[getCustomerPortal] Failed to sync Dodo customer email:",
-							error
-						);
-					}
-				}
-				const portal = await customerPortals.create(ctx, {
-					customer_id: customerId,
-					send_email: args.send_email ?? false,
-					...(appUrl
-						? {
-								return_url: `${appUrl}/workspace/${args.workspaceId}/manage#billing`,
-							}
-						: {}),
-				});
-				return portal.portal_url;
+			if (!customerId) {
+				throw new Error(
+					"No billing customer is associated with this workspace."
+				);
 			}
+
+			const appUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+			const { customerPortals, customers } = await import("./dodo");
+			if (identity.email) {
+				try {
+					await customers.update(ctx, {
+						customer_id: customerId,
+						email: identity.email,
+						name: identity.name ?? null,
+					});
+				} catch (error) {
+					console.warn(
+						"[getCustomerPortal] Failed to sync Dodo customer email:",
+						error
+					);
+				}
+			}
+			const portal = await customerPortals.create(ctx, {
+				customer_id: customerId,
+				send_email: args.send_email ?? false,
+				...(appUrl
+					? {
+							return_url: `${appUrl}/workspace/${args.workspaceId}/manage#billing`,
+						}
+					: {}),
+			});
+			return portal.portal_url;
 		}
 
 		// Customer identification is handled by dodo.identify() in convex/dodo.ts
@@ -1462,8 +1474,7 @@ export const updateSubscriptionQuantity = action({
 						? currentSubscription.quantity
 						: null,
 				cancelAtNextBillingDate:
-					typeof currentSubscription?.cancel_at_next_billing_date ===
-					"boolean"
+					typeof currentSubscription?.cancel_at_next_billing_date === "boolean"
 						? currentSubscription.cancel_at_next_billing_date
 						: null,
 				nextBillingDate:
@@ -1617,18 +1628,6 @@ export const updateSubscriptionQuantity = action({
 		const refundedDowngradeResult = async (): Promise<
 			Record<string, unknown>
 		> => {
-			const { refund, requestedRefundAmount } =
-				await refundLatestSubscriptionPayment(ctx, dodoPayments, dodoRefunds, {
-					latestPayment: latestPaymentForDowngradeRefund,
-					amount: fairBilling.refundAmount,
-					reason:
-						"Workspace subscription downgraded with unused time remaining",
-					metadata: {
-						workspace_id: workspaceId,
-						subscription_id: dodoSubscriptionId,
-					},
-				});
-
 			const downgradeApplyArgs: {
 				workspaceId: Id<"workspaces">;
 				planName: "pro" | "enterprise";
@@ -1654,7 +1653,6 @@ export const updateSubscriptionQuantity = action({
 			);
 			if (downgradeInvoiceUrl)
 				downgradeApplyArgs.invoiceUrl = downgradeInvoiceUrl;
-			const refundAmount = refund?.amount ?? requestedRefundAmount;
 			const latestTotalAmount =
 				typeof latestPaymentForDowngradeRefund?.total_amount === "number"
 					? latestPaymentForDowngradeRefund.total_amount
@@ -1663,30 +1661,58 @@ export const updateSubscriptionQuantity = action({
 				typeof latestPaymentForDowngradeRefund?.tax === "number"
 					? latestPaymentForDowngradeRefund.tax
 					: null;
+			let refund: any = null;
+			let refundAmount = 0;
+			let refundError: unknown = null;
 			const downgradeCurrency =
-				refund?.currency ??
-				downgradeRefundCurrency ??
-				currentSubscription?.currency ??
-				"USD";
+				downgradeRefundCurrency ?? currentSubscription?.currency ?? "USD";
 			if (latestTotalAmount && latestTotalAmount > 0) {
 				downgradeApplyArgs.amountDue = latestTotalAmount;
 				downgradeApplyArgs.currency = downgradeCurrency;
 				downgradeApplyArgs.usedAmount = Math.max(
 					0,
-					latestTotalAmount - refundAmount
+					latestTotalAmount - fairBilling.refundAmount
 				);
 			}
 			if (latestTaxAmount && latestTaxAmount > 0) {
 				downgradeApplyArgs.taxAmount = latestTaxAmount;
 			}
-			if (refundAmount > 0) {
-				downgradeApplyArgs.refundAmount = refundAmount;
+			if (fairBilling.refundAmount > 0) {
+				downgradeApplyArgs.refundAmount = fairBilling.refundAmount;
 				downgradeApplyArgs.refundCurrency = downgradeCurrency;
 			}
 			await ctx.runMutation(
 				internal.payments.applyWorkspaceSubscriptionQuantity,
 				downgradeApplyArgs
 			);
+			await sendDodoCustomerPortalEmail(ctx, workspaceId);
+
+			if (fairBilling.refundAmount > 0) {
+				try {
+					const refundResult = await refundLatestSubscriptionPayment(
+						ctx,
+						dodoPayments,
+						dodoRefunds,
+						{
+							latestPayment: latestPaymentForDowngradeRefund,
+							amount: fairBilling.refundAmount,
+							reason:
+								"Workspace subscription downgraded with unused time remaining",
+							metadata: {
+								workspace_id: workspaceId,
+								subscription_id: dodoSubscriptionId,
+							},
+						}
+					);
+					refund = refundResult.refund;
+					refundAmount =
+						refundResult.refund?.amount ?? refundResult.requestedRefundAmount;
+				} catch (error) {
+					refundError = error;
+					console.error("[updateSubscriptionQuantity] Refund failed:", error);
+				}
+			}
+
 			if (refundAmount > 0) {
 				const usedAmount =
 					typeof downgradeApplyArgs.usedAmount === "number"
@@ -1711,7 +1737,6 @@ export const updateSubscriptionQuantity = action({
 					...(typeof usedAmount === "number" ? { usedAmount } : {}),
 				});
 			}
-			await sendDodoCustomerPortalEmail(ctx, workspaceId);
 			return {
 				success: true,
 				status: "updated",
@@ -1720,7 +1745,9 @@ export const updateSubscriptionQuantity = action({
 				refundCurrency: refund?.currency ?? downgradeRefundCurrency,
 				refundId: refund?.refund_id ?? null,
 				message:
-					"Plan updated and the unused balance was refunded under fair billing.",
+					refundError === null
+						? "Plan updated and the unused balance was refunded under fair billing."
+						: "Plan updated, but the refund could not be completed automatically. Please contact support.",
 			};
 		};
 

@@ -42,6 +42,33 @@ const throwDodoApiError = (operation: string, error: string): never => {
 	);
 };
 
+const DODO_REQUEST_TIMEOUT_MS = 30_000;
+
+const fetchDodo = async <T>(
+	operation: string,
+	input: string,
+	init: RequestInit,
+	parse: (response: Response) => Promise<T>
+): Promise<T> => {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(
+		() => controller.abort(),
+		DODO_REQUEST_TIMEOUT_MS
+	);
+
+	try {
+		const res = await fetch(input, { ...init, signal: controller.signal });
+		return await parse(res);
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			throwDodoApiError(operation, "request timed out");
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
+};
+
 // Identify the current user's active workspace and map to its Dodo customer
 async function identifyCustomer(
 	ctx: any
@@ -74,12 +101,13 @@ async function identifyCustomer(
 	} else {
 		// We are in an Action
 		const identity = await ctx.auth.getUserIdentity();
-		const baseUserId = (identity?.subject || "").split("|")[0];
+		if (!identity?.subject) return null;
+		const baseUserId = identity.subject.split("|")[0];
 
 		dodoCustomerId = await ctx.runQuery(
 			internal.payments.identifyDodoCustomer,
 			{
-				userId: baseUserId || undefined,
+				userId: baseUserId,
 			}
 		);
 	}
@@ -130,7 +158,8 @@ export const customerPortals = {
 		}
 
 		const query = params.toString();
-		const res = await fetch(
+		return await fetchDodo(
+			"customer portal",
 			`${apiBase}/customers/${args.customer_id}/customer-portal/session${
 				query ? `?${query}` : ""
 			}`,
@@ -139,27 +168,28 @@ export const customerPortals = {
 				headers: {
 					Authorization: `Bearer ${dodoApiKey}`,
 				},
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"customer portal",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+
+				const session = await res.json();
+				const portalUrl = session?.link ?? session?.portal_url;
+				if (typeof portalUrl !== "string" || portalUrl.length === 0) {
+					throwDodoApiError(
+						"customer portal",
+						"Customer portal session did not return a link"
+					);
+				}
+
+				return { portal_url: portalUrl };
 			}
 		);
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError(
-				"customer portal",
-				error || `${res.status} ${res.statusText}`
-			);
-		}
-
-		const session = await res.json();
-		const portalUrl = session?.link ?? session?.portal_url;
-		if (typeof portalUrl !== "string" || portalUrl.length === 0) {
-			throwDodoApiError(
-				"customer portal",
-				"Customer portal session did not return a link"
-			);
-		}
-
-		return { portal_url: portalUrl };
 	},
 };
 
@@ -173,23 +203,28 @@ export const customers = {
 		}
 	) => {
 		const { customer_id, ...body } = args;
-		const res = await fetch(`${apiBase}/customers/${customer_id}`, {
-			method: "PATCH",
-			headers: {
-				Authorization: `Bearer ${dodoApiKey}`,
-				"Content-Type": "application/json",
+		return await fetchDodo(
+			"update customer",
+			`${apiBase}/customers/${customer_id}`,
+			{
+				method: "PATCH",
+				headers: {
+					Authorization: `Bearer ${dodoApiKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(body),
 			},
-			body: JSON.stringify(body),
-		});
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError(
-				"update customer",
-				error || `${res.status} ${res.statusText}`
-			);
-		}
-		return await res.json();
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"update customer",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return await res.json();
+			}
+		);
 	},
 };
 
@@ -231,21 +266,26 @@ type SubscriptionUpdate = {
 
 export const subscriptions = {
 	retrieve: async (_ctx: any, args: { subscription_id: string }) => {
-		const res = await fetch(
+		return await fetchDodo(
+			"retrieve",
 			`${apiBase}/subscriptions/${args.subscription_id}`,
 			{
 				method: "GET",
 				headers: {
 					Authorization: `Bearer ${dodoApiKey}`,
 				},
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"retrieve",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return await res.json();
 			}
 		);
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError("retrieve", error || `${res.status} ${res.statusText}`);
-		}
-		return await res.json();
 	},
 
 	changePlan: async (
@@ -275,7 +315,8 @@ export const subscriptions = {
 			body.metadata = args.metadata;
 		}
 
-		const res = await fetch(
+		return await fetchDodo(
+			"changePlan",
 			`${apiBase}/subscriptions/${args.subscription_id}/change-plan`,
 			{
 				method: "POST",
@@ -284,19 +325,20 @@ export const subscriptions = {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(body),
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"changePlan",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return res.headers.get("content-type")?.includes("application/json")
+					? await res.json()
+					: null;
 			}
 		);
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError(
-				"changePlan",
-				error || `${res.status} ${res.statusText}`
-			);
-		}
-		return res.headers.get("content-type")?.includes("application/json")
-			? await res.json()
-			: null;
 	},
 
 	cancel: async (ctx: any, args: { subscription_id: string }) => {
@@ -315,22 +357,30 @@ export const subscriptions = {
 		args: { subscription_id: string } & SubscriptionUpdate
 	) => {
 		const { subscription_id, ...body } = args;
-		const res = await fetch(`${apiBase}/subscriptions/${subscription_id}`, {
-			method: "PATCH",
-			headers: {
-				Authorization: `Bearer ${dodoApiKey}`,
-				"Content-Type": "application/json",
+		return await fetchDodo(
+			"update",
+			`${apiBase}/subscriptions/${subscription_id}`,
+			{
+				method: "PATCH",
+				headers: {
+					Authorization: `Bearer ${dodoApiKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(body),
 			},
-			body: JSON.stringify(body),
-		});
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError("update", error || `${res.status} ${res.statusText}`);
-		}
-		return res.headers.get("content-type")?.includes("application/json")
-			? await res.json()
-			: null;
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"update",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return res.headers.get("content-type")?.includes("application/json")
+					? await res.json()
+					: null;
+			}
+		);
 	},
 
 	reactivate: async (ctx: any, args: { subscription_id: string }) => {
@@ -343,11 +393,14 @@ export const subscriptions = {
 			return updated;
 		}
 
-		const subscription = await subscriptions.retrieve(ctx, {
-			subscription_id: args.subscription_id,
-		});
-		if (subscription?.cancel_at_next_billing_date === false) {
-			return subscription;
+		for (const delayMs of [500, 1500]) {
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+			const subscription = await subscriptions.retrieve(ctx, {
+				subscription_id: args.subscription_id,
+			});
+			if (subscription?.cancel_at_next_billing_date === false) {
+				return subscription;
+			}
 		}
 
 		throwDodoApiError(
@@ -360,7 +413,8 @@ export const subscriptions = {
 		_ctx: any,
 		args: { subscription_id: string; return_url?: string | null }
 	) => {
-		const res = await fetch(
+		return await fetchDodo(
+			"updatePaymentMethod",
 			`${apiBase}/subscriptions/${args.subscription_id}/update-payment-method`,
 			{
 				method: "POST",
@@ -372,19 +426,20 @@ export const subscriptions = {
 					type: "new",
 					return_url: args.return_url ?? null,
 				}),
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"updatePaymentMethod",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return res.headers.get("content-type")?.includes("application/json")
+					? await res.json()
+					: null;
 			}
 		);
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError(
-				"updatePaymentMethod",
-				error || `${res.status} ${res.statusText}`
-			);
-		}
-		return res.headers.get("content-type")?.includes("application/json")
-			? await res.json()
-			: null;
 	},
 };
 
@@ -400,42 +455,49 @@ export const payments = {
 			page_number: "0",
 		});
 
-		const res = await fetch(`${apiBase}/payments?${params.toString()}`, {
-			method: "GET",
-			headers: {
-				Authorization: `Bearer ${dodoApiKey}`,
+		return await fetchDodo(
+			"list payments",
+			`${apiBase}/payments?${params.toString()}`,
+			{
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${dodoApiKey}`,
+				},
 			},
-		});
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError(
-				"list payments",
-				error || `${res.status} ${res.statusText}`
-			);
-		}
-		return await res.json();
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"list payments",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return await res.json();
+			}
+		);
 	},
 
 	retrieveLineItems: async (_ctx: any, args: { payment_id: string }) => {
-		const res = await fetch(
+		return await fetchDodo(
+			"retrieve line items",
 			`${apiBase}/payments/${args.payment_id}/line-items`,
 			{
 				method: "GET",
 				headers: {
 					Authorization: `Bearer ${dodoApiKey}`,
 				},
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"retrieve line items",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return await res.json();
 			}
 		);
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError(
-				"retrieve line items",
-				error || `${res.status} ${res.statusText}`
-			);
-		}
-		return await res.json();
 	},
 };
 
@@ -450,30 +512,38 @@ export const refunds = {
 			metadata?: Record<string, string>;
 		}
 	) => {
-		const res = await fetch(`${apiBase}/refunds`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${dodoApiKey}`,
-				"Content-Type": "application/json",
+		return await fetchDodo(
+			"refund",
+			`${apiBase}/refunds`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${dodoApiKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					payment_id: args.payment_id,
+					items: [
+						{
+							item_id: args.item_id,
+							amount: args.amount,
+							tax_inclusive: true,
+						},
+					],
+					reason: args.reason,
+					metadata: args.metadata,
+				}),
 			},
-			body: JSON.stringify({
-				payment_id: args.payment_id,
-				items: [
-					{
-						item_id: args.item_id,
-						amount: args.amount,
-						tax_inclusive: true,
-					},
-				],
-				reason: args.reason,
-				metadata: args.metadata,
-			}),
-		});
-
-		if (!res.ok) {
-			const error = await res.text();
-			throwDodoApiError("refund", error || `${res.status} ${res.statusText}`);
-		}
-		return await res.json();
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"refund",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return await res.json();
+			}
+		);
 	},
 };

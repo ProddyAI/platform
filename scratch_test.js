@@ -10,7 +10,15 @@ async function verifySignature(payload, signatureHeader, msgId, timestamp, secre
 	const computedSignature = hmac.digest('base64');
 	
 	const signatures = signatureHeader.split(" ").map(s => s.split(",")[1]);
-	return signatures.includes(computedSignature);
+	const computedSignatureBuffer = Buffer.from(computedSignature, "base64");
+	return signatures.some((signature) => {
+		if (!signature) return false;
+		const signatureBuffer = Buffer.from(signature, "base64");
+		return (
+			signatureBuffer.length === computedSignatureBuffer.length &&
+			crypto.timingSafeEqual(signatureBuffer, computedSignatureBuffer)
+		);
+	});
 }
 
 // simulate:

@@ -77,9 +77,7 @@ export const PLANS: Record<PlanName, PlanConfig> = {
 		description: "Unlimited usage for large organisations.",
 		pricePerSeatMonthly: 10,
 		priceDisplayLabel: "$10",
-		dodoProductId:
-			process.env.DODO_PAYMENTS_PRODUCTID_ENTERPRISE ||
-			"pdt_0NegLpD1pdNLK75VRnLoQ",
+		dodoProductId: process.env.DODO_PAYMENTS_PRODUCTID_ENTERPRISE,
 		limits: {
 			aiRequestsPerMonth: -1,
 			aiDiagramGenerationsPerMonth: -1,

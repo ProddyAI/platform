@@ -94,8 +94,13 @@ export function UpgradeModal({
 		targetPlan === "enterprise" ? enterpriseSeatCount : proSeatCount;
 
 	const formatMoney = (amount?: number | null, currency?: string | null) => {
-		if (!amount || amount <= 0) return "$0.00";
+		if (amount === null || amount === undefined || amount === 0) return "$0.00";
 		try {
+			const formatted = new Intl.NumberFormat("en-US", {
+				style: "currency",
+				currency: currency || "USD",
+			}).format(Math.abs(amount) / 100);
+			if (amount < 0) return `-${formatted}`;
 			return new Intl.NumberFormat("en-US", {
 				style: "currency",
 				currency: currency || "USD",
@@ -223,9 +228,11 @@ export function UpgradeModal({
 			}
 
 			await startCheckout(planName, quantity);
-		} catch (err: any) {
-			console.error("Failed to update plan:", err);
-			toast.error(err?.message || "Failed to update plan");
+		} catch (err: unknown) {
+			const message =
+				err instanceof Error ? err.message : "Failed to update plan";
+			console.error("Failed to update plan:", message);
+			toast.error(message);
 		} finally {
 			setLoading(false);
 		}

@@ -57,12 +57,14 @@ export async function POST(req: NextRequest) {
 		}
 
 		// ─── Usage Limit Check ──────────────────────────────────────────────────
-		if (workspaceId) {
-			const convex = createConvexClient();
-			try {
-				const token = await convexAuthNextjsToken();
-				if (token) convex.setAuth(token);
+		const convex = workspaceId ? createConvexClient() : null;
+		if (convex) {
+			const token = await convexAuthNextjsToken();
+			if (token) convex.setAuth(token);
+		}
 
+		if (workspaceId && convex) {
+			try {
 				const usageCheck = await convex.query(
 					api.usageTracking.checkAIUsageLimitPublic,
 					{
@@ -131,11 +133,8 @@ Formatted Content:`;
 			const formattedText = text.trim();
 
 			// ─── Record Usage ──────────────────────────────────────────────────────
-			if (workspaceId) {
-				const convex = createConvexClient();
+			if (workspaceId && convex) {
 				try {
-					const token = await convexAuthNextjsToken();
-					if (token) convex.setAuth(token);
 					await convex.mutation(api.usageTracking.recordAIRequestPublic, {
 						workspaceId,
 						featureType: "aiSummary",

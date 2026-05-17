@@ -156,6 +156,17 @@ const ManagePage = () => {
 									workspaceId={workspaceId}
 								/>
 							</div>
+							<div className="mt-6 rounded-lg border bg-background p-6 shadow-sm">
+								<h2 className="text-xl font-semibold">Billing</h2>
+								<p className="mt-2 text-sm text-muted-foreground">
+									Review plan options or request an upgrade for your workspace.
+								</p>
+								<Button asChild className="mt-4">
+									<a href={`/workspace/${workspaceId}/manage#billing`}>
+										View billing options
+									</a>
+								</Button>
+							</div>
 						</div>
 					) : (
 						/* For admins and owners, show all tabs */

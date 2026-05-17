@@ -225,17 +225,6 @@ export const MembersManagement = ({
 		}
 	};
 
-	const getPlanBadgeColor = (plan: string | undefined) => {
-		switch (plan) {
-			case "enterprise":
-				return "bg-indigo-100 text-indigo-800 border-indigo-200";
-			case "pro":
-				return "bg-emerald-100 text-emerald-800 border-emerald-200";
-			default:
-				return "bg-zinc-100 text-zinc-600 border-zinc-200";
-		}
-	};
-
 	return (
 		<TooltipProvider>
 			<div className="space-y-6">
@@ -364,6 +353,15 @@ export const MembersManagement = ({
 
 				<Separator />
 
+				<div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
+					<span className="text-sm font-medium text-muted-foreground">
+						Workspace plan
+					</span>
+					<Badge variant="outline">
+						{workspace?.plan ? workspace.plan.toUpperCase() : "FREE"}
+					</Badge>
+				</div>
+
 				{isLoading ? (
 					<div className="flex justify-center py-8">
 						<RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -382,7 +380,6 @@ export const MembersManagement = ({
 							<TableRow>
 								<TableHead>User</TableHead>
 								<TableHead>Role</TableHead>
-								<TableHead>Plan</TableHead>
 								<TableHead className="w-[200px]">Actions</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -411,14 +408,6 @@ export const MembersManagement = ({
 									<TableCell>
 										<Badge className={getRoleBadgeColor(member.role)}>
 											{member.role}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<Badge
-											className={getPlanBadgeColor(workspace?.plan)}
-											variant="outline"
-										>
-											{workspace?.plan ? workspace.plan.toUpperCase() : "FREE"}
 										</Badge>
 									</TableCell>
 									<TableCell>

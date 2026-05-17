@@ -302,24 +302,31 @@ export async function POST(req: NextRequest) {
 			| Id<"workspaces">
 			| undefined;
 		if (trackingWorkspaceId) {
-			const convex = createConvexClient();
-			const token = await convexAuthNextjsToken();
-			if (token) convex.setAuth(token);
+			try {
+				const convex = createConvexClient();
+				const token = await convexAuthNextjsToken();
+				if (token) convex.setAuth(token);
 
-			const usageCheck = await convex.query(
-				api.usageTracking.checkAIUsageLimitPublic,
-				{
-					workspaceId: trackingWorkspaceId,
-					featureType: "aiSummary",
-				}
-			);
-
-			if (!usageCheck.allowed) {
-				return NextResponse.json(
+				const usageCheck = await convex.query(
+					api.usageTracking.checkAIUsageLimitPublic,
 					{
-						error: `Usage limit reached. Your plan allows ${usageCheck.limit} AI summaries per month.`,
-					},
-					{ status: 403 }
+						workspaceId: trackingWorkspaceId,
+						featureType: "aiSummary",
+					}
+				);
+
+				if (!usageCheck.allowed) {
+					return NextResponse.json(
+						{
+							error: `Usage limit reached. Your plan allows ${usageCheck.limit} AI summaries per month.`,
+						},
+						{ status: 403 }
+					);
+				}
+			} catch (error) {
+				console.warn(
+					"[Smart Summarize] Usage check failed, proceeding anyway:",
+					error
 				);
 			}
 		}

@@ -49,6 +49,38 @@ const getActiveBillableMemberCount = async (
 		.length;
 };
 
+const getPendingBillableInviteCount = async (
+	ctx: any,
+	workspaceId: Id<"workspaces">
+) => {
+	const pendingInvites = await ctx.db
+		.query("workspaceInvites")
+		.withIndex("by_workspace", (q: any) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	const now = Date.now();
+	return pendingInvites.filter(
+		(invite: any) =>
+			!invite.used &&
+			invite.expiresAt > now &&
+			(invite.role === "admin" || invite.role === "member")
+	).length;
+};
+
+const resetWorkspaceMemberSeatTiers = async (
+	ctx: any,
+	workspaceId: Id<"workspaces">
+) => {
+	const members = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id", (q: any) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	for (const member of members) {
+		await ctx.db.patch(member._id, { seatTier: undefined });
+	}
+};
+
 export const join = mutation({
 	args: {
 		joinCode: v.string(),
@@ -77,10 +109,15 @@ export const join = mutation({
 
 		const workspaceSeatTier = getWorkspaceSeatTier(workspace);
 		if (workspaceSeatTier) {
-			const occupiedSeats = await getActiveBillableMemberCount(
+			const activeBillable = await getActiveBillableMemberCount(
 				ctx,
 				workspace._id
 			);
+			const pendingBillable = await getPendingBillableInviteCount(
+				ctx,
+				workspace._id
+			);
+			const occupiedSeats = activeBillable + pendingBillable;
 			const totalSeatsPurchased = getPaidSeatLimit(workspace);
 
 			if (occupiedSeats >= totalSeatsPurchased) {
@@ -379,7 +416,13 @@ export const resetBillingStatus = mutation({
 			dodoCustomerId: undefined,
 			proSeats: 0,
 			enterpriseSeats: 0,
+			totalPaidSeats: 0,
+			cancellationAtPeriodEnd: false,
+			nextBillingDate: undefined,
+			currentPeriodEnd: undefined,
+			scheduledCancellationDate: undefined,
 		});
+		await resetWorkspaceMemberSeatTiers(ctx, args.workspaceId);
 		return { success: true };
 	},
 });
@@ -402,7 +445,13 @@ export const resetMyBilling = mutation({
 				dodoCustomerId: undefined,
 				proSeats: 0,
 				enterpriseSeats: 0,
+				totalPaidSeats: 0,
+				cancellationAtPeriodEnd: false,
+				nextBillingDate: undefined,
+				currentPeriodEnd: undefined,
+				scheduledCancellationDate: undefined,
 			});
+			await resetWorkspaceMemberSeatTiers(ctx, workspace._id);
 		}
 		return { count: workspaces.length };
 	},

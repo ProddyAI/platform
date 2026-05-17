@@ -21,7 +21,22 @@ export default function BillingPage() {
 	}
 
 	if (!member) {
-		return null;
+		return (
+			<div className="flex h-full items-center justify-center bg-slate-50/50 px-6 dark:bg-transparent">
+				<div className="max-w-md rounded-lg border bg-white p-6 text-center shadow-sm dark:bg-slate-900/50">
+					<h1 className="text-xl font-bold tracking-tight">Access denied</h1>
+					<p className="mt-2 text-sm text-muted-foreground">
+						You need to be a workspace member to view billing.
+					</p>
+					<Button
+						className="mt-4"
+						onClick={() => router.push(`/workspace/${workspaceId}`)}
+					>
+						Back to workspace
+					</Button>
+				</div>
+			</div>
+		);
 	}
 
 	return (

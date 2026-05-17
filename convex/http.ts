@@ -136,6 +136,24 @@ const syncSubscriptionFromDodo = async (
 // Securely handles Dodo Payments webhook events with signature verification.
 // Ensure DODO_PAYMENTS_WEBHOOK_SECRET is configured in Convex dashboard env vars.
 
+const parseWebhookSignatures = (signatureHeader: string): string[] =>
+	signatureHeader
+		.split(/\s+/)
+		.flatMap((token) => token.split(","))
+		.map((segment) => segment.trim())
+		.filter(Boolean)
+		.flatMap((segment) => {
+			const versioned = segment.match(/^v\d+[=,](.+)$/i);
+			if (versioned) return [versioned[1].trim()];
+			return /^v\d+$/i.test(segment) ? [] : [segment];
+		})
+		.filter(Boolean);
+
+const getWebhookId = (payload: any): string | null => {
+	const id = payload?.msg_id ?? payload?.msgId ?? payload?.id;
+	return typeof id === "string" && id.length > 0 ? id : null;
+};
+
 const verifyDodoSignature = async (
 	payload: string,
 	signatureHeader: string,
@@ -164,7 +182,7 @@ const verifyDodoSignature = async (
 		String.fromCharCode(...new Uint8Array(signatureBuffer))
 	);
 
-	const signatures = signatureHeader.split(" ").map((s) => s.split(",")[1]);
+	const signatures = parseWebhookSignatures(signatureHeader);
 	return signatures.includes(signatureBase64Computed);
 };
 
@@ -190,7 +208,11 @@ http.route({
 		}
 
 		const now = Math.floor(Date.now() / 1000);
-		if (Math.abs(now - parseInt(timestamp, 10)) > 300) {
+		const parsedTimestamp = Number.parseInt(timestamp, 10);
+		if (!Number.isFinite(parsedTimestamp)) {
+			return new Response("Invalid timestamp", { status: 400 });
+		}
+		if (Math.abs(now - parsedTimestamp) > 300) {
 			return new Response("Timestamp out of tolerance", { status: 400 });
 		}
 
@@ -212,11 +234,28 @@ http.route({
 		try {
 			payload = JSON.parse(body);
 		} catch (e) {
-			console.error("Invalid JSON payload", e);
-			return new Response("OK", { status: 200 });
+			console.error("Invalid JSON payload", {
+				error: e,
+				bodyPreview: body.slice(0, 1000),
+			});
+			return new Response("Bad Request", { status: 400 });
 		}
 
 		console.log(`[Dodo Webhook] Received event: ${payload.type}`);
+		const webhookId = getWebhookId(payload);
+		if (webhookId) {
+			const recordResult = await ctx.runMutation(
+				(internal.webhooks as any).recordWebhook,
+				{
+					webhookId,
+					eventType: payload.type ?? "unknown",
+				}
+			);
+			if (!recordResult?.recorded) {
+				console.log(`[Dodo Webhook] Duplicate event skipped: ${webhookId}`);
+				return new Response("OK", { status: 200 });
+			}
+		}
 
 		try {
 			if (payload.type === "payment.succeeded") {

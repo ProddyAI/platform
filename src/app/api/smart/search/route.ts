@@ -14,6 +14,19 @@ function createConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 }
 
+type AiSearchResult = {
+	success: boolean;
+	error?: string;
+	answer?: unknown;
+	sources?: unknown[];
+};
+
+const isAiSearchResult = (value: unknown): value is AiSearchResult =>
+	typeof value === "object" &&
+	value !== null &&
+	"success" in value &&
+	typeof (value as { success?: unknown }).success === "boolean";
+
 export async function POST(request: NextRequest) {
 	// Check authentication
 	const isAuth = await isAuthenticatedNextjs();
@@ -96,7 +109,7 @@ export async function POST(request: NextRequest) {
 		});
 
 		// Record successful usage
-		if ((result as any).success) {
+		if (isAiSearchResult(result) && result.success) {
 			await client.mutation(api.usageTracking.recordAIRequestPublic, {
 				workspaceId: trimmedWorkspaceId as Id<"workspaces">,
 				featureType: "aiSearch",

@@ -2,6 +2,24 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const planName = v.union(
+	v.literal("free"),
+	v.literal("pro"),
+	v.literal("enterprise")
+);
+
+const billingAuditValue = v.object({
+	plan: v.optional(v.union(planName, v.null())),
+	quantity: v.optional(v.number()),
+	proSeats: v.optional(v.number()),
+	enterpriseSeats: v.optional(v.number()),
+	cancellationAtPeriodEnd: v.optional(v.boolean()),
+	scheduledCancellationDate: v.optional(v.union(v.number(), v.null())),
+	refundAmount: v.optional(v.number()),
+	refundCurrency: v.optional(v.union(v.string(), v.null())),
+	refundId: v.optional(v.union(v.string(), v.null())),
+});
+
 const schema = defineSchema({
 	...authTables,
 	// Extend the users table with additional profile fields
@@ -36,7 +54,7 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
-		plan: v.optional(v.string()),
+		plan: v.optional(planName),
 		subscriptionStatus: v.optional(v.string()),
 		subscriptionId: v.optional(v.string()),
 		customerId: v.optional(v.string()),
@@ -84,10 +102,18 @@ const schema = defineSchema({
 	billingAuditLogs: defineTable({
 		workspaceId: v.id("workspaces"),
 		action: v.string(), // "seat_expansion", "plan_change", "cancellation_scheduled"
-		previousValue: v.any(),
-		newValue: v.any(),
+		previousValue: billingAuditValue,
+		newValue: billingAuditValue,
 		timestamp: v.number(),
 	}).index("by_workspace_id", ["workspaceId"]),
+
+	webhookEvents: defineTable({
+		webhookId: v.string(),
+		eventType: v.string(),
+		processedAt: v.number(),
+	})
+		.index("by_webhook_id", ["webhookId"])
+		.index("by_processed_at", ["processedAt"]),
 
 	// Usage tracking - rolling monthly counts per workspace
 	usageStats: defineTable({

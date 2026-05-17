@@ -20,6 +20,28 @@ const INACTIVE_SUBSCRIPTION_STATUSES = new Set([
 	"failed",
 ]);
 
+export const recordWebhook = internalMutation({
+	args: {
+		webhookId: v.string(),
+		eventType: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const existing = await (ctx.db.query as any)("webhookEvents")
+			.withIndex("by_webhook_id", (q: any) => q.eq("webhookId", args.webhookId))
+			.unique();
+		if (existing) {
+			return { recorded: false };
+		}
+
+		await ctx.db.insert("webhookEvents" as any, {
+			webhookId: args.webhookId,
+			eventType: args.eventType,
+			processedAt: Date.now(),
+		});
+		return { recorded: true };
+	},
+});
+
 const planRank = (plan: string | null | undefined) => {
 	if (plan === "enterprise") return 2;
 	if (plan === "pro") return 1;
@@ -273,6 +295,8 @@ export const createSubscription = internalMutation({
 			patch.enterpriseSeats = 0;
 			patch.totalPaidSeats = 0;
 			patch.cancellationAtPeriodEnd = false;
+			patch.nextBillingDate = undefined;
+			patch.currentPeriodEnd = undefined;
 			patch.scheduledCancellationDate = undefined;
 		} else if (args.plan && canApplyPaidPlan) {
 			patch.plan = args.plan;
@@ -305,8 +329,7 @@ export const createSubscription = internalMutation({
 		}
 
 		console.log(
-			`[createSubscription] Updating workspace ${workspaceObjId} with patch`,
-			patch
+			`[createSubscription] Updating workspace ${workspaceObjId} for subscriptionId: ${args.subscriptionId}`
 		);
 		await ctx.db.patch(workspaceObjId, patch);
 		if (isInactive) {
@@ -418,6 +441,8 @@ export const updateSubscription = internalMutation({
 			patch.enterpriseSeats = 0;
 			patch.totalPaidSeats = 0;
 			patch.cancellationAtPeriodEnd = false;
+			patch.nextBillingDate = undefined;
+			patch.currentPeriodEnd = undefined;
 			patch.scheduledCancellationDate = undefined;
 		} else if (args.plan && canApplyPaidPlan) {
 			patch.plan = args.plan;
@@ -450,8 +475,7 @@ export const updateSubscription = internalMutation({
 		}
 
 		console.log(
-			`[updateSubscription] Updating workspace ${workspaceObjId} with patch`,
-			patch
+			`[updateSubscription] Updating workspace ${workspaceObjId} for subscriptionId: ${args.subscriptionId}`
 		);
 		await ctx.db.patch(workspaceObjId, patch);
 		if (isInactive) {
@@ -548,6 +572,10 @@ export const cancelSubscription = internalMutation({
 			proSeats: 0,
 			enterpriseSeats: 0,
 			totalPaidSeats: 0,
+			cancellationAtPeriodEnd: false,
+			nextBillingDate: undefined,
+			currentPeriodEnd: undefined,
+			scheduledCancellationDate: undefined,
 		});
 		await syncMemberSeatTiers(ctx, workspaceObjId, "free");
 		await notifyAdminsOfPlanChange(

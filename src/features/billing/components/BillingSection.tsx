@@ -147,7 +147,11 @@ export function BillingSection({
 					currentSeatCount,
 					minimumSeatCount
 				)
-			: Math.max(subscription.proSeats ?? 0, currentSeatCount, minimumSeatCount);
+			: Math.max(
+					subscription.proSeats ?? 0,
+					currentSeatCount,
+					minimumSeatCount
+				);
 	const monthlySeatAmount =
 		planName === "free"
 			? 0
@@ -238,9 +242,11 @@ export function BillingSection({
 					? `Plan cancelled. ${refundText} refund requested.`
 					: "Plan cancelled. Workspace moved to Free."
 			);
-		} catch (err: any) {
-			console.error("Failed to cancel plan:", err);
-			toast.error(err?.message || "Failed to cancel plan");
+		} catch (err: unknown) {
+			const message =
+				err instanceof Error ? err.message : "Failed to cancel plan";
+			console.error("Failed to cancel plan:", message);
+			toast.error(message);
 		} finally {
 			setCancelLoading(false);
 		}

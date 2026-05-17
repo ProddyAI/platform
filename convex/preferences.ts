@@ -106,6 +106,10 @@ export const getLastActiveWorkspace = query({
 			return null;
 		}
 
+		if (workspace.userId === userId) {
+			return workspaceId;
+		}
+
 		// Check if the user is still a member of this workspace
 		const member = await ctx.db
 			.query("members")

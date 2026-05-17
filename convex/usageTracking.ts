@@ -420,7 +420,7 @@ export const checkAIUsageLimitPublic = query({
 		const workspace = await ctx.db.get(args.workspaceId);
 		if (!workspace) return { allowed: false, used: 0, limit: 0 };
 
-		// Fetch the member record for this user to check their individual seat tier
+		// Verify the user is a workspace member before checking shared workspace limits.
 		const member = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
