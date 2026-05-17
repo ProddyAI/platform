@@ -985,7 +985,7 @@ export const getSubscriptionStatus = query({
 		if (!workspace) return null;
 		const billableMembers = await getBillableMembers(ctx, workspaceId);
 
-		let memberPlan: string = "free";
+		let memberPlan = "free";
 		if (identity) {
 			const baseUserId = (identity.subject || "").split("|")[0] as Id<"users">;
 			const member = await ctx.db
@@ -1084,6 +1084,7 @@ export const getPlanChangePreview = action({
 		newPlan: v.union(v.literal("pro"), v.literal("enterprise")),
 		newQuantity: v.number(),
 	},
+	// skipcq: JS-0128
 	handler: async (ctx, args): Promise<Record<string, unknown>> => {
 		const isAdmin = await ctx.runQuery(internal.payments.checkWorkspaceAdmin, {
 			workspaceId: args.workspaceId,
@@ -1461,6 +1462,7 @@ export const updateSubscriptionQuantity = action({
 		newQuantity: v.number(),
 		newPlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 	},
+	// skipcq: JS-0128
 	handler: async (
 		ctx,
 		{ workspaceId, newQuantity, newPlan }

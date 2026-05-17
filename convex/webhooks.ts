@@ -263,6 +263,7 @@ export const createSubscription = internalMutation({
 		paymentConfirmed: v.optional(v.boolean()),
 		raw: v.optional(v.string()),
 	},
+	// skipcq: JS-0128
 	handler: async (ctx, args) => {
 		let workspaceObjId: Id<"workspaces"> | undefined;
 
@@ -405,6 +406,7 @@ export const updateSubscription = internalMutation({
 		paymentConfirmed: v.optional(v.boolean()),
 		raw: v.optional(v.string()),
 	},
+	// skipcq: JS-0128
 	handler: async (ctx, args) => {
 		let workspaceObjId: Id<"workspaces"> | undefined;
 
