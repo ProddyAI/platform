@@ -128,7 +128,6 @@ export const NotificationSettings = () => {
 		} catch (error) {
 			console.error("Failed to save notification preferences", error);
 			toast.error("Failed to save notification preferences");
-			throw error;
 		} finally {
 			setIsUpdating(false);
 		}
