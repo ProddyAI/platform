@@ -32,3 +32,4 @@ scratch_test.js
 .github\instructions\codacy.instructions.md
 
 /certificates/
+/.agents/
