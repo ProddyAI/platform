@@ -976,10 +976,32 @@ export const markWorkspaceCancellationScheduled = internalMutation({
 	},
 });
 
+function mapSubscriptionStatus(
+	workspace: Doc<"workspaces">,
+	billableMemberCount: number,
+	memberPlan: string
+) {
+	return {
+		plan: (workspace.plan as PlanName) ?? "free",
+		memberPlan: memberPlan as PlanName,
+		subscriptionStatus: workspace.subscriptionStatus ?? null,
+		cancellationAtPeriodEnd: workspace.cancellationAtPeriodEnd ?? false,
+		scheduledCancellationDate: workspace.scheduledCancellationDate ?? null,
+		nextBillingDate: workspace.nextBillingDate ?? null,
+		currentPeriodEnd:
+			workspace.currentPeriodEnd ?? workspace.nextBillingDate ?? null,
+		dodoCustomerId: workspace.dodoCustomerId ?? workspace.customerId ?? null,
+		dodoSubscriptionId: workspace.dodoSubscriptionId ?? null,
+		proSeats: workspace.proSeats ?? 0,
+		enterpriseSeats: workspace.enterpriseSeats ?? 0,
+		billableMemberCount,
+		minimumSeatCount: Math.max(1, billableMemberCount),
+	};
+}
+
 // Query: subscription status for UI
 export const getSubscriptionStatus = query({
 	args: { workspaceId: v.id("workspaces") },
-	// skipcq: JS-0128
 	handler: async (ctx, { workspaceId }) => {
 		const identity = await ctx.auth.getUserIdentity();
 		const workspace = await ctx.db.get(workspaceId);
@@ -1000,22 +1022,7 @@ export const getSubscriptionStatus = query({
 			memberPlan = member?.seatTier ?? "free";
 		}
 
-		return {
-			plan: (workspace.plan as PlanName) ?? "free",
-			memberPlan: memberPlan as PlanName,
-			subscriptionStatus: workspace.subscriptionStatus ?? null,
-			cancellationAtPeriodEnd: workspace.cancellationAtPeriodEnd ?? false,
-			scheduledCancellationDate: workspace.scheduledCancellationDate ?? null,
-			nextBillingDate: workspace.nextBillingDate ?? null,
-			currentPeriodEnd:
-				workspace.currentPeriodEnd ?? workspace.nextBillingDate ?? null,
-			dodoCustomerId: workspace.dodoCustomerId ?? workspace.customerId ?? null,
-			dodoSubscriptionId: workspace.dodoSubscriptionId ?? null,
-			proSeats: workspace.proSeats ?? 0,
-			enterpriseSeats: workspace.enterpriseSeats ?? 0,
-			billableMemberCount: billableMembers.length,
-			minimumSeatCount: Math.max(1, billableMembers.length),
-		};
+		return mapSubscriptionStatus(workspace, billableMembers.length, memberPlan);
 	},
 });
 
@@ -1456,6 +1463,159 @@ export const syncWorkspaceSubscription = action({
 	},
 });
 
+async function processRefundedDowngrade(
+	ctx: ActionCtx,
+	args: {
+		workspaceId: Id<"workspaces">;
+		planName: "pro" | "enterprise";
+		quantity: number;
+		fairBilling: any;
+		dodoSubscriptionId: string;
+		dodoPayments: any;
+		dodoRefunds: any;
+		latestPaymentForDowngradeRefund: DodoPayment | null;
+		downgradeRefundCurrency: string | null;
+		currentSubscription: DodoSubscription;
+		downgradeInvoiceUrl: string | undefined;
+		latestTotalAmount: number | null;
+		latestTaxAmount: number | null;
+	}
+): Promise<Record<string, unknown>> {
+	const {
+		workspaceId,
+		planName,
+		quantity,
+		fairBilling,
+		dodoSubscriptionId,
+		dodoPayments,
+		dodoRefunds,
+		latestPaymentForDowngradeRefund,
+		downgradeRefundCurrency,
+		currentSubscription,
+		downgradeInvoiceUrl,
+		latestTotalAmount,
+		latestTaxAmount,
+	} = args;
+
+	const downgradeApplyArgs: {
+		workspaceId: Id<"workspaces">;
+		planName: "pro" | "enterprise";
+		quantity: number;
+		subscriptionStatus: string;
+		auditAction: string;
+		invoiceUrl?: string;
+		amountDue?: number;
+		currency?: string;
+		taxAmount?: number;
+		usedAmount?: number;
+		refundAmount?: number;
+		refundCurrency?: string;
+	} = {
+		workspaceId,
+		planName,
+		quantity,
+		subscriptionStatus: "active",
+		auditAction: "subscription_downgraded_refunded",
+	};
+
+	if (downgradeInvoiceUrl) {
+		downgradeApplyArgs.invoiceUrl = downgradeInvoiceUrl;
+	}
+
+	const downgradeCurrency =
+		downgradeRefundCurrency ?? currentSubscription?.currency ?? "USD";
+
+	if (latestTotalAmount && latestTotalAmount > 0) {
+		downgradeApplyArgs.amountDue = latestTotalAmount;
+		downgradeApplyArgs.currency = downgradeCurrency;
+		downgradeApplyArgs.usedAmount = Math.max(
+			0,
+			latestTotalAmount - fairBilling.refundAmount
+		);
+	}
+	if (latestTaxAmount && latestTaxAmount > 0) {
+		downgradeApplyArgs.taxAmount = latestTaxAmount;
+	}
+	if (fairBilling.refundAmount > 0) {
+		downgradeApplyArgs.refundAmount = fairBilling.refundAmount;
+		downgradeApplyArgs.refundCurrency = downgradeCurrency;
+	}
+
+	await ctx.runMutation(
+		internal.payments.applyWorkspaceSubscriptionQuantity,
+		downgradeApplyArgs
+	);
+	await sendDodoCustomerPortalEmail(ctx, workspaceId);
+
+	let refund: DodoRefund | null = null;
+	let refundAmount = 0;
+	let refundError: unknown = null;
+
+	if (fairBilling.refundAmount > 0) {
+		try {
+			const refundResult = await refundLatestSubscriptionPayment(
+				ctx,
+				dodoPayments,
+				dodoRefunds,
+				{
+					latestPayment: latestPaymentForDowngradeRefund,
+					amount: fairBilling.refundAmount,
+					reason:
+						"Workspace subscription downgraded with unused time remaining",
+					metadata: {
+						workspace_id: workspaceId,
+						subscription_id: dodoSubscriptionId,
+					},
+				}
+			);
+			refund = refundResult.refund;
+			refundAmount =
+				refundResult.refund?.amount ?? refundResult.requestedRefundAmount;
+		} catch (error) {
+			refundError = error;
+			console.error("[updateSubscriptionQuantity] Refund failed:", error);
+		}
+	}
+
+	if (refundAmount > 0) {
+		const usedAmount =
+			typeof downgradeApplyArgs.usedAmount === "number"
+				? downgradeApplyArgs.usedAmount
+				: undefined;
+		await ctx.runMutation(internal.payments.recordBillingHistoryEntry, {
+			workspaceId,
+			amount: refundAmount,
+			currency: downgradeCurrency,
+			status: "succeeded",
+			type: "refund",
+			description: `Fair billing refund for ${PLANS[planName].label}`,
+			dodoInvoiceId:
+				refund?.refund_id ??
+				`refund_${dodoSubscriptionId}_${Date.now().toString()}`,
+			plan: planName,
+			seats: quantity,
+			...(downgradeInvoiceUrl ? { invoiceUrl: downgradeInvoiceUrl } : {}),
+			...(typeof latestTaxAmount === "number"
+				? { taxAmount: latestTaxAmount }
+				: {}),
+			...(typeof usedAmount === "number" ? { usedAmount } : {}),
+		});
+	}
+
+	return {
+		success: true,
+		status: "updated",
+		quantity,
+		refundAmount,
+		refundCurrency: refund?.currency ?? downgradeRefundCurrency,
+		refundId: refund?.refund_id ?? null,
+		message:
+			refundError === null
+				? "Plan updated and the unused balance was refunded under fair billing."
+				: "Plan updated, but the refund could not be completed automatically. Please contact support.",
+	};
+}
+
 // Action: Update subscription quantity (seat expansion) or change plan
 export const updateSubscriptionQuantity = action({
 	args: {
@@ -1463,7 +1623,6 @@ export const updateSubscriptionQuantity = action({
 		newQuantity: v.number(),
 		newPlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 	},
-	// skipcq: JS-0128
 	handler: async (
 		ctx,
 		{ workspaceId, newQuantity, newPlan }
@@ -1698,132 +1857,6 @@ export const updateSubscriptionQuantity = action({
 			};
 		};
 
-		const refundedDowngradeResult = async (): Promise<
-			Record<string, unknown>
-		> => {
-			const downgradeApplyArgs: {
-				workspaceId: Id<"workspaces">;
-				planName: "pro" | "enterprise";
-				quantity: number;
-				subscriptionStatus: string;
-				auditAction: string;
-				invoiceUrl?: string;
-				amountDue?: number;
-				currency?: string;
-				taxAmount?: number;
-				usedAmount?: number;
-				refundAmount?: number;
-				refundCurrency?: string;
-			} = {
-				workspaceId,
-				planName,
-				quantity,
-				subscriptionStatus: "active",
-				auditAction: "subscription_downgraded_refunded",
-			};
-			const downgradeInvoiceUrl = getPaymentInvoiceUrl(
-				latestPaymentForDowngradeRefund
-			);
-			if (downgradeInvoiceUrl)
-				downgradeApplyArgs.invoiceUrl = downgradeInvoiceUrl;
-			const latestTotalAmount =
-				typeof latestPaymentForDowngradeRefund?.total_amount === "number"
-					? latestPaymentForDowngradeRefund.total_amount
-					: null;
-			const latestTaxAmount =
-				typeof latestPaymentForDowngradeRefund?.tax === "number"
-					? latestPaymentForDowngradeRefund.tax
-					: null;
-			let refund: DodoRefund | null = null;
-			let refundAmount = 0;
-			let refundError: unknown = null;
-			const downgradeCurrency =
-				downgradeRefundCurrency ?? currentSubscription?.currency ?? "USD";
-			if (latestTotalAmount && latestTotalAmount > 0) {
-				downgradeApplyArgs.amountDue = latestTotalAmount;
-				downgradeApplyArgs.currency = downgradeCurrency;
-				downgradeApplyArgs.usedAmount = Math.max(
-					0,
-					latestTotalAmount - fairBilling.refundAmount
-				);
-			}
-			if (latestTaxAmount && latestTaxAmount > 0) {
-				downgradeApplyArgs.taxAmount = latestTaxAmount;
-			}
-			if (fairBilling.refundAmount > 0) {
-				downgradeApplyArgs.refundAmount = fairBilling.refundAmount;
-				downgradeApplyArgs.refundCurrency = downgradeCurrency;
-			}
-			await ctx.runMutation(
-				internal.payments.applyWorkspaceSubscriptionQuantity,
-				downgradeApplyArgs
-			);
-			await sendDodoCustomerPortalEmail(ctx, workspaceId);
-
-			if (fairBilling.refundAmount > 0) {
-				try {
-					const refundResult = await refundLatestSubscriptionPayment(
-						ctx,
-						dodoPayments,
-						dodoRefunds,
-						{
-							latestPayment: latestPaymentForDowngradeRefund,
-							amount: fairBilling.refundAmount,
-							reason:
-								"Workspace subscription downgraded with unused time remaining",
-							metadata: {
-								workspace_id: workspaceId,
-								subscription_id: dodoSubscriptionId,
-							},
-						}
-					);
-					refund = refundResult.refund;
-					refundAmount =
-						refundResult.refund?.amount ?? refundResult.requestedRefundAmount;
-				} catch (error) {
-					refundError = error;
-					console.error("[updateSubscriptionQuantity] Refund failed:", error);
-				}
-			}
-
-			if (refundAmount > 0) {
-				const usedAmount =
-					typeof downgradeApplyArgs.usedAmount === "number"
-						? downgradeApplyArgs.usedAmount
-						: undefined;
-				await ctx.runMutation(internal.payments.recordBillingHistoryEntry, {
-					workspaceId,
-					amount: refundAmount,
-					currency: downgradeCurrency,
-					status: "succeeded",
-					type: "refund",
-					description: `Fair billing refund for ${PLANS[planName].label}`,
-					dodoInvoiceId:
-						refund?.refund_id ??
-						`refund_${dodoSubscriptionId}_${Date.now().toString()}`,
-					plan: planName,
-					seats: quantity,
-					...(downgradeInvoiceUrl ? { invoiceUrl: downgradeInvoiceUrl } : {}),
-					...(typeof latestTaxAmount === "number"
-						? { taxAmount: latestTaxAmount }
-						: {}),
-					...(typeof usedAmount === "number" ? { usedAmount } : {}),
-				});
-			}
-			return {
-				success: true,
-				status: "updated",
-				quantity,
-				refundAmount,
-				refundCurrency: refund?.currency ?? downgradeRefundCurrency,
-				refundId: refund?.refund_id ?? null,
-				message:
-					refundError === null
-						? "Plan updated and the unused balance was refunded under fair billing."
-						: "Plan updated, but the refund could not be completed automatically. Please contact support.",
-			};
-		};
-
 		const handlePendingOrProviderError = (error: unknown) => {
 			if (isDodoRbacAccessDenied(error)) {
 				return dodoBillingPermissionRequiredResult();
@@ -1842,7 +1875,29 @@ export const updateSubscriptionQuantity = action({
 		try {
 			const changeResult = await changeSubscriptionPlan();
 			if (shouldRefundDowngrade) {
-				return await refundedDowngradeResult();
+				const latestTotalAmount =
+					typeof latestPaymentForDowngradeRefund?.total_amount === "number"
+						? latestPaymentForDowngradeRefund.total_amount
+						: null;
+				const latestTaxAmount =
+					typeof latestPaymentForDowngradeRefund?.tax === "number"
+						? latestPaymentForDowngradeRefund.tax
+						: null;
+				return await processRefundedDowngrade(ctx, {
+					workspaceId,
+					planName,
+					quantity,
+					fairBilling,
+					dodoSubscriptionId,
+					dodoPayments,
+					dodoRefunds,
+					latestPaymentForDowngradeRefund,
+					downgradeRefundCurrency,
+					currentSubscription,
+					downgradeInvoiceUrl: getPaymentInvoiceUrl(latestPaymentForDowngradeRefund),
+					latestTotalAmount,
+					latestTaxAmount,
+				});
 			}
 
 			await sendDodoCustomerPortalEmail(ctx, workspaceId);
@@ -1908,7 +1963,29 @@ export const updateSubscriptionQuantity = action({
 				try {
 					const retryResult = await changeSubscriptionPlan();
 					if (shouldRefundDowngrade) {
-						return await refundedDowngradeResult();
+						const latestTotalAmount =
+							typeof latestPaymentForDowngradeRefund?.total_amount === "number"
+								? latestPaymentForDowngradeRefund.total_amount
+								: null;
+						const latestTaxAmount =
+							typeof latestPaymentForDowngradeRefund?.tax === "number"
+								? latestPaymentForDowngradeRefund.tax
+								: null;
+						return await processRefundedDowngrade(ctx, {
+							workspaceId,
+							planName,
+							quantity,
+							fairBilling,
+							dodoSubscriptionId,
+							dodoPayments,
+							dodoRefunds,
+							latestPaymentForDowngradeRefund,
+							downgradeRefundCurrency,
+							currentSubscription,
+							downgradeInvoiceUrl: getPaymentInvoiceUrl(latestPaymentForDowngradeRefund),
+							latestTotalAmount,
+							latestTaxAmount,
+						});
 					}
 					await sendDodoCustomerPortalEmail(ctx, workspaceId);
 					if (!shouldChargeUpgrade) {
