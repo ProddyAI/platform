@@ -4,6 +4,12 @@ import { logger } from "../src/lib/logger";
 import { api, internal } from "./_generated/api";
 import { action, internalAction, mutation } from "./_generated/server";
 
+// Delay push notifications to allow OneSignal client SDK login to complete.
+// The OneSignal SDK needs time to register the user on the frontend before the
+// push notification is dispatched from the backend. This 2s delay accounts for
+// network latency and SDK initialization time.
+const PUSH_NOTIFICATION_DELAY_MS = 2000;
+
 type NotificationType =
 	| "mentions"
 	| "assignee"
@@ -278,9 +284,9 @@ export const notifyWorkspaceJoin = mutation({
 
 		if (onlineUserIds.length === 0) return;
 
-		// Schedule internal notification
+		// Delay push notification to allow OneSignal client registration
 		await ctx.scheduler.runAfter(
-			2000,
+			PUSH_NOTIFICATION_DELAY_MS,
 			internal.notifications.sendPushNotification,
 			{
 				userIds: onlineUserIds,
@@ -356,9 +362,9 @@ export const notifyStatusChange = mutation({
 		const statusMessage =
 			args.newStatus === "online" ? "is now online" : "is now offline";
 
-		// Schedule internal notification
+		// Delay push notification to allow OneSignal client registration
 		await ctx.scheduler.runAfter(
-			2000,
+			PUSH_NOTIFICATION_DELAY_MS,
 			internal.notifications.sendPushNotification,
 			{
 				userIds,
