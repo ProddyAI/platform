@@ -785,14 +785,29 @@ export const sendWeeklyDigestEmails = internalAction({
 	},
 });
 
+// Helper function to calculate week range (Monday-Sunday)
+function getWeekRangeDates(): { weekStart: Date; weekEnd: Date } {
+	const now = new Date();
+	const currentDate = new Date(now);
+	const dayOfWeek = currentDate.getDay();
+	const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+	const weekStart = new Date(currentDate);
+	weekStart.setDate(currentDate.getDate() - daysToMonday);
+	weekStart.setHours(0, 0, 0, 0);
+
+	const weekEnd = new Date(weekStart);
+	weekEnd.setDate(weekStart.getDate() + 6);
+	weekEnd.setHours(23, 59, 59, 999);
+
+	return { weekStart, weekEnd };
+}
+
 // Helper function to get week range string
 function getWeekRange(): string {
-	const now = new Date();
-	const startOfWeek = new Date(now);
-	startOfWeek.setDate(now.getDate() - now.getDay());
-
-	const endOfWeek = new Date(startOfWeek);
-	endOfWeek.setDate(startOfWeek.getDate() + 6);
+	const { weekStart } = getWeekRangeDates();
+	const endOfWeek = new Date(weekStart);
+	endOfWeek.setDate(weekStart.getDate() + 6);
 
 	const formatDate = (date: Date) => {
 		return date.toLocaleDateString("en-US", {
@@ -801,7 +816,7 @@ function getWeekRange(): string {
 		});
 	};
 
-	return `${formatDate(startOfWeek)} - ${formatDate(endOfWeek)}, ${now.getFullYear()}`;
+	return `${formatDate(weekStart)} - ${formatDate(endOfWeek)}, ${new Date().getFullYear()}`;
 }
 
 // Main action: Send weekly digest emails (called by scheduler for a specific day)
