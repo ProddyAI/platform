@@ -44,14 +44,21 @@ export const sendPushNotification = internalAction({
 
 		const filteredUserIds: string[] = [];
 
-		for (const userId of args.userIds) {
-			const user = await ctx.runQuery(internal.users._getUserById, {
-				id: userId,
-			});
-			const notifications = await ctx.runQuery(
-				api.preferences.getNotificationPreferencesByUserId,
-				{ userId }
-			);
+		// Fetch all users and preferences in parallel to avoid N+1 query pattern
+		const userIds = args.userIds;
+		const users = await Promise.all(
+			userIds.map((id) => ctx.runQuery(internal.users._getUserById, { id }))
+		);
+		const notificationPrefs = await Promise.all(
+			userIds.map((userId) =>
+				ctx.runQuery(api.preferences.getNotificationPreferencesByUserId, { userId })
+			)
+		);
+
+		for (let i = 0; i < userIds.length; i++) {
+			const userId = userIds[i];
+			const user = users[i];
+			const notifications = notificationPrefs[i];
 
 			const browserEnabled = notifications?.browserNotificationsEnabled ?? true;
 			const browserPrefs = notifications?.notificationBrowserPrefs;
@@ -109,7 +116,7 @@ export const sendPushNotification = internalAction({
 			const response = await fetch("https://api.onesignal.com/notifications", {
 				method: "POST",
 				headers: {
-					Authorization: oneSignalApiKey,
+					Authorization: `Basic ${oneSignalApiKey}`,
 					"content-type": "application/json; charset=utf-8",
 				},
 				body: JSON.stringify({

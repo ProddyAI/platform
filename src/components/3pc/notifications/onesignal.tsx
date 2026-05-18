@@ -15,7 +15,7 @@ type OneSignalInterface = any;
 export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 	const setOneSignalExternalId = useMutation(
-		(api as any).users.setOneSignalExternalId
+		api.users.setOneSignalExternalId
 	);
 	const sdkLoadedRef = useRef(false);
 	const initAttemptedRef = useRef(false);
@@ -29,12 +29,11 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 		const startTime = Date.now();
 		while (Date.now() - startTime < maxWaitMs) {
 			if (window.OneSignal) {
-				logger.debug("✅ OneSignal SDK found on window");
 				return window.OneSignal;
 			}
 			await new Promise((resolve) => setTimeout(resolve, 100));
 		}
-		logger.error("❌ OneSignal SDK not available after waiting");
+		logger.error("OneSignal SDK not available after waiting");
 		return null;
 	};
 
@@ -43,7 +42,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	// ============================================================================
 	useEffect(() => {
 		if (!appId) {
-			logger.warn("⚠️ No NEXT_PUBLIC_ONESIGNAL_APP_ID provided");
+			logger.warn("No NEXT_PUBLIC_ONESIGNAL_APP_ID provided");
 			return;
 		}
 
