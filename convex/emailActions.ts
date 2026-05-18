@@ -154,33 +154,37 @@ export const sendDirectMessageEmail = action({
 				messageId: args.messageId,
 			});
 			if (!message) {
-			logger.error("Message not found:", args.messageId);
-			return { success: false, error: "Message not found" };
-		}
-
-		// Only process direct messages (messages with conversationId)
-		if (!message.conversationId) {
-			return { success: true, skipped: true };
-		}
-
-		// Get the conversation using the existing query
-		const conversation = await ctx.runQuery(
-			api.conversations._getConversationById,
-			{
-				conversationId: message.conversationId,
+				logger.error("Message not found:", args.messageId);
+				return { success: false, error: "Message not found" };
 			}
-		);
-		if (!conversation) {
-			logger.error("Conversation not found:", message.conversationId);
-			return { success: false, error: "Conversation not found" };
-		}
 
-		// Get the sender using the existing query
-		const sender = await ctx.runQuery(api.members.getMemberById, {
-			memberId: message.memberId,
-		});
-		if (!sender?.user) {
-			logger.error("Sender not found:", message.memberId);
+			// Only process direct messages (messages with conversationId)
+			if (!message.conversationId) {
+				return { success: true, skipped: true };
+			}
+
+			// Get the conversation using the existing query
+			const conversation = await ctx.runQuery(
+				api.conversations._getConversationById,
+				{
+					conversationId: message.conversationId,
+				}
+			);
+			if (!conversation) {
+				logger.error("Conversation not found:", message.conversationId);
+				return { success: false, error: "Conversation not found" };
+			}
+
+			// Get the sender using the existing query
+			const sender = await ctx.runQuery(api.members.getMemberById, {
+				memberId: message.memberId,
+			});
+			if (!sender?.user) {
+				logger.error("Sender not found:", message.memberId);
+				return { success: false, error: "Sender not found" };
+			}
+
+			// Find the recipient (the other member in the conversation)
 			const recipientMemberId =
 				conversation.memberOneId === message.memberId
 					? conversation.memberTwoId
@@ -290,33 +294,37 @@ export const sendMentionEmail = action({
 				mentionId: args.mentionId,
 			});
 			if (!mention) {
-			logger.error("Mention not found:", args.mentionId);
-			return { success: false, error: "Mention not found" };
-		}
+				logger.error("Mention not found:", args.mentionId);
+				return { success: false, error: "Mention not found" };
+			}
 
-		// Get the mentioned member
-		const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
-			memberId: mention.mentionedMemberId,
-		});
-		if (!mentionedMember?.user?.email) {
-			return { success: true, skipped: true };
-		}
+			// Get the mentioned member
+			const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
+				memberId: mention.mentionedMemberId,
+			});
+			if (!mentionedMember?.user?.email) {
+				return { success: true, skipped: true };
+			}
 
-		const canSendEmail = await shouldSendEmailNotification(
-			ctx,
-			mentionedMember.userId,
-			"mentions"
-		);
-		if (!canSendEmail) {
-			return { success: true, skipped: true };
-		}
+			const canSendEmail = await shouldSendEmailNotification(
+				ctx,
+				mentionedMember.userId,
+				"mentions"
+			);
+			if (!canSendEmail) {
+				return { success: true, skipped: true };
+			}
 
-		// Get the mentioner
-		const mentioner = await ctx.runQuery(api.members.getMemberById, {
-			memberId: mention.mentionerMemberId,
-		});
-		if (!mentioner?.user) {
-			logger.error("Mentioner not found:", mention.mentionerMemberId);
+			// Get the mentioner
+			const mentioner = await ctx.runQuery(api.members.getMemberById, {
+				memberId: mention.mentionerMemberId,
+			});
+			if (!mentioner?.user) {
+				logger.error("Mentioner not found:", mention.mentionerMemberId);
+				return { success: false, error: "Mentioner not found" };
+			}
+
+			// Don't send email to the mentioner themselves
 			if (mentioner.userId === mentionedMember.userId) {
 				return { success: true, skipped: true };
 			}
@@ -423,42 +431,46 @@ export const sendThreadReplyEmail = action({
 				messageId: args.messageId,
 			});
 			if (!replyMessage) {
-			logger.error("Reply message not found:", args.messageId);
-			return { success: false, error: "Reply message not found" };
-		}
+				logger.error("Reply message not found:", args.messageId);
+				return { success: false, error: "Reply message not found" };
+			}
 
-		// Get the parent message
-		const parentMessage = await ctx.runQuery(api.messages._getMessageById, {
-			messageId: args.parentMessageId,
-		});
-		if (!parentMessage) {
-			logger.error("Parent message not found:", args.parentMessageId);
-			return { success: false, error: "Parent message not found" };
-		}
+			// Get the parent message
+			const parentMessage = await ctx.runQuery(api.messages._getMessageById, {
+				messageId: args.parentMessageId,
+			});
+			if (!parentMessage) {
+				logger.error("Parent message not found:", args.parentMessageId);
+				return { success: false, error: "Parent message not found" };
+			}
 
-		// Get the original author (parent message author)
-		const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
-			memberId: parentMessage.memberId,
-		});
-		if (!originalAuthor?.user?.email) {
-			return { success: true, skipped: true };
-		}
+			// Get the original author (parent message author)
+			const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
+				memberId: parentMessage.memberId,
+			});
+			if (!originalAuthor?.user?.email) {
+				return { success: true, skipped: true };
+			}
 
-		const canSendEmail = await shouldSendEmailNotification(
-			ctx,
-			originalAuthor.userId,
-			"threadReply"
-		);
-		if (!canSendEmail) {
-			return { success: true, skipped: true };
-		}
+			const canSendEmail = await shouldSendEmailNotification(
+				ctx,
+				originalAuthor.userId,
+				"threadReply"
+			);
+			if (!canSendEmail) {
+				return { success: true, skipped: true };
+			}
 
-		// Get the replier
-		const replier = await ctx.runQuery(api.members.getMemberById, {
-			memberId: replyMessage.memberId,
-		});
-		if (!replier?.user) {
-			logger.error("Replier not found:", replyMessage.memberId);
+			// Get the replier
+			const replier = await ctx.runQuery(api.members.getMemberById, {
+				memberId: replyMessage.memberId,
+			});
+			if (!replier?.user) {
+				logger.error("Replier not found:", replyMessage.memberId);
+				return { success: false, error: "Replier not found" };
+			}
+
+			// Don't send email if the replier is the same as the original author
 			if (replier.userId === originalAuthor.userId) {
 				return { success: true, skipped: true };
 			}
@@ -1010,7 +1022,12 @@ export const sendCardAssignmentEmail = action({
 				{ cardId }
 			);
 			if (!card) {
-			logger.error("Card not found for email notification:", cardId);
+				logger.error("Card not found for email notification:", cardId);
+				return { success: false, error: "Card not found" };
+			}
+
+			// Get the assignee's email and name
+			const assigneeEmail: string | null = await ctx.runQuery(
 				api.board._getMemberEmail,
 				{
 					memberId: assigneeId,
