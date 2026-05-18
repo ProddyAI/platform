@@ -58,16 +58,16 @@ export const NotificationSettings = () => {
 
 	const updateSettings = useMutation(api.preferences.updateUserPreferences);
 	const updateBrowserPrefs = useMutation(
-		(api as any).preferences.updateBrowserPrefs
+		api.preferences.updateBrowserPrefs
 	);
 	const updateEmailPrefs = useMutation(
-		(api as any).preferences.updateEmailPrefs
+		api.preferences.updateEmailPrefs
 	);
 	const updateChannelToggle = useMutation(
-		(api as any).preferences.updateChannelToggle
+		api.preferences.updateChannelToggle
 	);
 	const sendTestPush = useAction(
-		(api as any).notifications.sendTestPushNotification
+		api.notifications.sendTestPushNotification
 	);
 
 	const browserPrefs = notifications?.notificationBrowserPrefs || {
@@ -95,10 +95,11 @@ export const NotificationSettings = () => {
 	const notificationSummaryMode =
 		notifications?.notificationSummaryMode ?? "realtime";
 
-	// Calculate if all notifications are enabled
+	// Calculate if all notifications are enabled (browser channel)
 	useEffect(() => {
 		if (notifications) {
 			const allEnabled =
+				(notifications.browserNotificationsEnabled ?? true) &&
 				(browserPrefs.mentions ?? true) &&
 				(browserPrefs.assignee ?? true) &&
 				(browserPrefs.threadReply ?? true) &&
@@ -205,6 +206,13 @@ export const NotificationSettings = () => {
 		try {
 			setTestPushState("sending");
 			await window.OneSignal?.Notifications.requestPermission();
+			// Refresh permission state after user grants/blocks permission
+			if ("Notification" in window) {
+				setPermissionState(
+					(window.Notification?.permission as "default" | "granted" | "denied") ??
+						"default"
+				);
+			}
 			await (window as any).OneSignal?.User?.pushSubscription?.optIn?.();
 			await sendTestPush({});
 			setTestPushState("sent");

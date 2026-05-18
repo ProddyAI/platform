@@ -282,8 +282,8 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	// Handle user logout
 	// ============================================================================
 	useEffect(() => {
-		// Only handle logout transitions
-		if (userId !== undefined && userId !== null) {
+		// Only handle logout transitions (when userId becomes undefined)
+		if (userId !== undefined) {
 			return; // User is still logged in
 		}
 
@@ -296,18 +296,18 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 			try {
 				const OneSignal = window.OneSignal;
 				if (!OneSignal) {
-					logger.debug("🔔 OneSignal not available, skipping logout");
+					logger.debug("OneSignal not available, skipping logout");
 					return;
 				}
 
-				logger.debug(`🔔 Logging out user`);
+				logger.debug("Logging out user");
 				await OneSignal.logout();
 				currentUserRef.current = undefined;
 				await setOneSignalExternalId({ externalId: undefined });
-				logger.debug(`✅ Logout successful`);
+				logger.debug("Logout successful");
 			} catch (error) {
 				logger.error(
-					"❌ OneSignal logout error:",
+					"OneSignal logout error:",
 					error instanceof Error ? error.message : String(error)
 				);
 			}

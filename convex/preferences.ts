@@ -387,7 +387,7 @@ export const updateBrowserPref = mutation({
  */
 export const updateBrowserPrefs = mutation({
 	args: {
-		updates: v.record(notificationKeyValidator, v.boolean()),
+		updates: v.record(v.string(), v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -478,7 +478,7 @@ export const updateEmailPref = mutation({
  */
 export const updateEmailPrefs = mutation({
 	args: {
-		updates: v.record(notificationKeyValidator, v.boolean()),
+		updates: v.record(v.string(), v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
