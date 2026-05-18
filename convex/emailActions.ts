@@ -8,8 +8,19 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type ActionCtx, action, internalAction } from "./_generated/server";
 
-// Initialize Resend SDK
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend SDK with lazy loading to validate API key
+let resend: Resend | null = null;
+
+function getResendClient(): Resend {
+	if (!resend) {
+		const apiKey = process.env.RESEND_API_KEY;
+		if (!apiKey) {
+			throw new Error("RESEND_API_KEY environment variable is required");
+		}
+		resend = new Resend(apiKey);
+	}
+	return resend;
+}
 
 // Email configuration - get from environment
 function getEmailConfig() {
@@ -229,7 +240,7 @@ export const sendDirectMessageEmail = internalAction({
 				const subject = `New direct message from ${sender.user.name || "A team member"}`;
 
 				// Send email using Resend
-				const { data, error } = await resend.emails.send({
+				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [recipient.user.email],
 					subject,
@@ -365,7 +376,7 @@ export const sendMentionEmail = internalAction({
 				const { fromAddress, replyToAddress } = getEmailConfig();
 				const subject = `You were mentioned in ${escapeHtml(channelName)} - Proddy`;
 
-				const { data, error } = await resend.emails.send({
+				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [mentionedMember.user.email],
 					subject,
@@ -507,7 +518,7 @@ export const sendThreadReplyEmail = internalAction({
 				const { fromAddress, replyToAddress } = getEmailConfig();
 				const subject = `${escapeHtml(replier.user.name || "A team member")} replied to your message in Proddy`;
 
-				const { data, error } = await resend.emails.send({
+				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [originalAuthor.user.email],
 					subject,
@@ -675,7 +686,7 @@ export const sendWeeklyDigestEmails = internalAction({
 								)
 								.join("");
 
-							const { data, error } = await resend.emails.send({
+							const { data, error } = await getResendClient().emails.send({
 								from: fromAddress,
 								to: [user.email],
 								subject,
@@ -928,7 +939,7 @@ export const sendWeeklyDigestEmail = internalAction({
 				.join("");
 
 			// Send email directly using Resend
-			const { data, error } = await resend.emails.send({
+			const { data, error } = await getResendClient().emails.send({
 				from: fromAddress,
 				to: [args.email],
 				subject,
@@ -1080,7 +1091,7 @@ export const sendCardAssignmentEmail = internalAction({
 				const siteUrl = getSiteUrl();
 				const workspaceUrl = `${siteUrl}/workspace/${escapeHtml(card.workspaceId)}/channel/${escapeHtml(card.channelId)}/board`;
 
-				const { data, error } = await resend.emails.send({
+				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [assigneeEmail],
 					subject,
@@ -1206,7 +1217,7 @@ export const sendIssueAssignmentEmail = internalAction({
 				const siteUrl = getSiteUrl();
 				const workspaceUrl = `${siteUrl}/workspace/${escapeHtml(issue.workspaceId)}/channel/${escapeHtml(issue.channelId)}/board`;
 
-				const { data, error } = await resend.emails.send({
+				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [assigneeEmail],
 					subject,
@@ -1348,7 +1359,7 @@ export const sendImportCompletionEmail = internalAction({
 
 			// Send email directly using Resend
 			try {
-				const { data, error } = await resend.emails.send({
+				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [args.email],
 					subject,

@@ -15,7 +15,10 @@ export type EmailNotificationKey =
 	| "mentions"
 	| "directMessage"
 	| "threadReply"
-	| "assignee";
+	| "assignee"
+	| "inviteSent"
+	| "workspaceJoin"
+	| "onlineStatus";
 
 // Get weekly digest data for a user across all their workspaces
 export const getUserWeeklyDigest = query({
