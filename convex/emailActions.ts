@@ -44,7 +44,7 @@ function generateUnsubscribeUrl(
 ): string {
 	const secret = process.env.EMAIL_UNSUBSCRIBE_SECRET;
 	if (!secret) {
-		console.warn(
+		logger.warn(
 			"EMAIL_UNSUBSCRIBE_SECRET not configured, skipping unsubscribe URL"
 		);
 		return "";
@@ -154,37 +154,33 @@ export const sendDirectMessageEmail = action({
 				messageId: args.messageId,
 			});
 			if (!message) {
-				console.error("Message not found:", args.messageId);
-				return { success: false, error: "Message not found" };
-			}
+			logger.error("Message not found:", args.messageId);
+			return { success: false, error: "Message not found" };
+		}
 
-			// Only process direct messages (messages with conversationId)
-			if (!message.conversationId) {
-				return { success: true, skipped: true };
-			}
+		// Only process direct messages (messages with conversationId)
+		if (!message.conversationId) {
+			return { success: true, skipped: true };
+		}
 
-			// Get the conversation using the existing query
-			const conversation = await ctx.runQuery(
-				api.conversations._getConversationById,
-				{
-					conversationId: message.conversationId,
-				}
-			);
-			if (!conversation) {
-				console.error("Conversation not found:", message.conversationId);
-				return { success: false, error: "Conversation not found" };
+		// Get the conversation using the existing query
+		const conversation = await ctx.runQuery(
+			api.conversations._getConversationById,
+			{
+				conversationId: message.conversationId,
 			}
+		);
+		if (!conversation) {
+			logger.error("Conversation not found:", message.conversationId);
+			return { success: false, error: "Conversation not found" };
+		}
 
-			// Get the sender using the existing query
-			const sender = await ctx.runQuery(api.members.getMemberById, {
-				memberId: message.memberId,
-			});
-			if (!sender?.user) {
-				console.error("Sender not found:", message.memberId);
-				return { success: false, error: "Sender not found" };
-			}
-
-			// Find the recipient (the other member in the conversation)
+		// Get the sender using the existing query
+		const sender = await ctx.runQuery(api.members.getMemberById, {
+			memberId: message.memberId,
+		});
+		if (!sender?.user) {
+			logger.error("Sender not found:", message.memberId);
 			const recipientMemberId =
 				conversation.memberOneId === message.memberId
 					? conversation.memberTwoId
@@ -253,7 +249,7 @@ export const sendDirectMessageEmail = action({
 				});
 
 				if (error) {
-					console.error("Resend error sending direct message email:", error);
+					logger.error("Resend error sending direct message email:", error);
 					return {
 						success: false,
 						error: `Failed to send email: ${error.message}`,
@@ -266,14 +262,14 @@ export const sendDirectMessageEmail = action({
 				});
 				return { success: true };
 			} catch (error) {
-				console.error("Error sending direct message email via Resend:", error);
+				logger.error("Error sending direct message email via Resend:", error);
 				return {
 					success: false,
 					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
-			console.error("Error in sendDirectMessageEmail:", error);
+			logger.error("Error in sendDirectMessageEmail:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
@@ -294,37 +290,33 @@ export const sendMentionEmail = action({
 				mentionId: args.mentionId,
 			});
 			if (!mention) {
-				console.error("Mention not found:", args.mentionId);
-				return { success: false, error: "Mention not found" };
-			}
+			logger.error("Mention not found:", args.mentionId);
+			return { success: false, error: "Mention not found" };
+		}
 
-			// Get the mentioned member
-			const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
-				memberId: mention.mentionedMemberId,
-			});
-			if (!mentionedMember?.user?.email) {
-				return { success: true, skipped: true };
-			}
+		// Get the mentioned member
+		const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
+			memberId: mention.mentionedMemberId,
+		});
+		if (!mentionedMember?.user?.email) {
+			return { success: true, skipped: true };
+		}
 
-			const canSendEmail = await shouldSendEmailNotification(
-				ctx,
-				mentionedMember.userId,
-				"mentions"
-			);
-			if (!canSendEmail) {
-				return { success: true, skipped: true };
-			}
+		const canSendEmail = await shouldSendEmailNotification(
+			ctx,
+			mentionedMember.userId,
+			"mentions"
+		);
+		if (!canSendEmail) {
+			return { success: true, skipped: true };
+		}
 
-			// Get the mentioner
-			const mentioner = await ctx.runQuery(api.members.getMemberById, {
-				memberId: mention.mentionerMemberId,
-			});
-			if (!mentioner?.user) {
-				console.error("Mentioner not found:", mention.mentionerMemberId);
-				return { success: false, error: "Mentioner not found" };
-			}
-
-			// Don't send email to the mentioner themselves
+		// Get the mentioner
+		const mentioner = await ctx.runQuery(api.members.getMemberById, {
+			memberId: mention.mentionerMemberId,
+		});
+		if (!mentioner?.user) {
+			logger.error("Mentioner not found:", mention.mentionerMemberId);
 			if (mentioner.userId === mentionedMember.userId) {
 				return { success: true, skipped: true };
 			}
@@ -389,7 +381,7 @@ export const sendMentionEmail = action({
 				});
 
 				if (error) {
-					console.error("Resend error sending mention email:", error);
+					logger.error("Resend error sending mention email:", error);
 					return {
 						success: false,
 						error: `Failed to send email: ${error.message}`,
@@ -402,14 +394,14 @@ export const sendMentionEmail = action({
 				});
 				return { success: true };
 			} catch (error) {
-				console.error("Error sending mention email via Resend:", error);
+				logger.error("Error sending mention email via Resend:", error);
 				return {
 					success: false,
 					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
-			console.error("Error in sendMentionEmail:", error);
+			logger.error("Error in sendMentionEmail:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
@@ -431,46 +423,42 @@ export const sendThreadReplyEmail = action({
 				messageId: args.messageId,
 			});
 			if (!replyMessage) {
-				console.error("Reply message not found:", args.messageId);
-				return { success: false, error: "Reply message not found" };
-			}
+			logger.error("Reply message not found:", args.messageId);
+			return { success: false, error: "Reply message not found" };
+		}
 
-			// Get the parent message
-			const parentMessage = await ctx.runQuery(api.messages._getMessageById, {
-				messageId: args.parentMessageId,
-			});
-			if (!parentMessage) {
-				console.error("Parent message not found:", args.parentMessageId);
-				return { success: false, error: "Parent message not found" };
-			}
+		// Get the parent message
+		const parentMessage = await ctx.runQuery(api.messages._getMessageById, {
+			messageId: args.parentMessageId,
+		});
+		if (!parentMessage) {
+			logger.error("Parent message not found:", args.parentMessageId);
+			return { success: false, error: "Parent message not found" };
+		}
 
-			// Get the original author (parent message author)
-			const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
-				memberId: parentMessage.memberId,
-			});
-			if (!originalAuthor?.user?.email) {
-				return { success: true, skipped: true };
-			}
+		// Get the original author (parent message author)
+		const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
+			memberId: parentMessage.memberId,
+		});
+		if (!originalAuthor?.user?.email) {
+			return { success: true, skipped: true };
+		}
 
-			const canSendEmail = await shouldSendEmailNotification(
-				ctx,
-				originalAuthor.userId,
-				"threadReply"
-			);
-			if (!canSendEmail) {
-				return { success: true, skipped: true };
-			}
+		const canSendEmail = await shouldSendEmailNotification(
+			ctx,
+			originalAuthor.userId,
+			"threadReply"
+		);
+		if (!canSendEmail) {
+			return { success: true, skipped: true };
+		}
 
-			// Get the replier
-			const replier = await ctx.runQuery(api.members.getMemberById, {
-				memberId: replyMessage.memberId,
-			});
-			if (!replier?.user) {
-				console.error("Replier not found:", replyMessage.memberId);
-				return { success: false, error: "Replier not found" };
-			}
-
-			// Don't send email if the replier is the same as the original author
+		// Get the replier
+		const replier = await ctx.runQuery(api.members.getMemberById, {
+			memberId: replyMessage.memberId,
+		});
+		if (!replier?.user) {
+			logger.error("Replier not found:", replyMessage.memberId);
 			if (replier.userId === originalAuthor.userId) {
 				return { success: true, skipped: true };
 			}
@@ -540,7 +528,7 @@ export const sendThreadReplyEmail = action({
 				});
 
 				if (error) {
-					console.error("Resend error sending thread reply email:", error);
+					logger.error("Resend error sending thread reply email:", error);
 					return {
 						success: false,
 						error: `Failed to send email: ${error.message}`,
@@ -553,14 +541,14 @@ export const sendThreadReplyEmail = action({
 				});
 				return { success: true };
 			} catch (error) {
-				console.error("Error sending thread reply email via Resend:", error);
+				logger.error("Error sending thread reply email via Resend:", error);
 				return {
 					success: false,
 					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
-			console.error("Error in sendThreadReplyEmail:", error);
+			logger.error("Error in sendThreadReplyEmail:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
@@ -699,7 +687,7 @@ export const sendWeeklyDigestEmails = action({
 							});
 
 							if (error) {
-								console.error(
+								logger.error(
 									`Resend error sending weekly digest to ${user.email}:`,
 									error
 								);
@@ -725,7 +713,7 @@ export const sendWeeklyDigestEmails = action({
 								});
 							}
 						} catch (error) {
-							console.error(
+							logger.error(
 								`Error sending weekly digest to ${user.email} via Resend:`,
 								error
 							);
@@ -746,7 +734,7 @@ export const sendWeeklyDigestEmails = action({
 						});
 					}
 				} catch (error) {
-					console.error(
+					logger.error(
 						`Error processing weekly digest for user ${user.email}:`,
 						error
 					);
@@ -765,7 +753,7 @@ export const sendWeeklyDigestEmails = action({
 				results,
 			};
 		} catch (error) {
-			console.error("Error in sendWeeklyDigestEmails:", error);
+			logger.error("Error in sendWeeklyDigestEmails:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
@@ -884,7 +872,7 @@ export const sendWeeklyDigests = action({
 				results,
 			};
 		} catch (error) {
-			console.error("Error in sendWeeklyDigests:", error);
+			logger.error("Error in sendWeeklyDigests:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
@@ -952,7 +940,7 @@ export const sendWeeklyDigestEmail = internalAction({
 			});
 
 			if (error) {
-				console.error(
+				logger.error(
 					`Resend error sending weekly digest to ${args.email}:`,
 					error
 				);
@@ -968,7 +956,7 @@ export const sendWeeklyDigestEmail = internalAction({
 			});
 			return { success: true, emailId: data?.id };
 		} catch (error) {
-			console.error(
+			logger.error(
 				`Error sending weekly digest to ${args.email} via Resend:`,
 				error
 			);
@@ -1022,12 +1010,7 @@ export const sendCardAssignmentEmail = action({
 				{ cardId }
 			);
 			if (!card) {
-				console.error("Card not found for email notification:", cardId);
-				return { success: false, error: "Card not found" };
-			}
-
-			// Get the assignee's email and name
-			const assigneeEmail: string | null = await ctx.runQuery(
+			logger.error("Card not found for email notification:", cardId);
 				api.board._getMemberEmail,
 				{
 					memberId: assigneeId,
@@ -1108,7 +1091,7 @@ export const sendCardAssignmentEmail = action({
 				});
 
 				if (error) {
-					console.error("Resend error sending card assignment email:", error);
+					logger.error("Resend error sending card assignment email:", error);
 					return {
 						success: false,
 						error: `Failed to send email: ${error.message}`,
@@ -1121,14 +1104,14 @@ export const sendCardAssignmentEmail = action({
 				});
 				return { success: true };
 			} catch (error) {
-				console.error("Error sending card assignment email via Resend:", error);
+				logger.error("Error sending card assignment email via Resend:", error);
 				return {
 					success: false,
 					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
-			console.error("Error in sendCardAssignmentEmail:", error);
+			logger.error("Error in sendCardAssignmentEmail:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
@@ -1234,7 +1217,7 @@ export const sendIssueAssignmentEmail = action({
 				});
 
 				if (error) {
-					console.error("Resend error sending issue assignment email:", error);
+					logger.error("Resend error sending issue assignment email:", error);
 					return {
 						success: false,
 						error: `Failed to send email: ${error.message}`,
@@ -1247,7 +1230,7 @@ export const sendIssueAssignmentEmail = action({
 				});
 				return { success: true };
 			} catch (error) {
-				console.error(
+				logger.error(
 					"Error sending issue assignment email via Resend:",
 					error
 				);
@@ -1357,7 +1340,7 @@ export const sendImportCompletionEmail = internalAction({
 				});
 
 				if (error) {
-					console.error("Resend error sending import completion email:", error);
+					logger.error("Resend error sending import completion email:", error);
 					return {
 						success: false,
 						error: `Failed to send email: ${error.message}`,
@@ -1370,7 +1353,7 @@ export const sendImportCompletionEmail = internalAction({
 				});
 				return { success: true };
 			} catch (error) {
-				console.error(
+				logger.error(
 					"Error sending import completion email via Resend:",
 					error
 				);
@@ -1380,7 +1363,7 @@ export const sendImportCompletionEmail = internalAction({
 				};
 			}
 		} catch (error) {
-			console.error("Error in sendImportCompletionEmail:", error);
+			logger.error("Error in sendImportCompletionEmail:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
