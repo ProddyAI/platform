@@ -14,6 +14,19 @@ function createConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 }
 
+type AiSearchResult = {
+	success: boolean;
+	error?: string;
+	answer?: unknown;
+	sources?: unknown[];
+};
+
+const isAiSearchResult = (value: unknown): value is AiSearchResult =>
+	typeof value === "object" &&
+	value !== null &&
+	"success" in value &&
+	typeof (value as { success?: unknown }).success === "boolean";
+
 export async function POST(request: NextRequest) {
 	// Check authentication
 	const isAuth = await isAuthenticatedNextjs();
@@ -66,6 +79,24 @@ export async function POST(request: NextRequest) {
 		}
 		client.setAuth(token);
 
+		// Check usage limits before proceeding
+		const usageCheck = await client.query(
+			api.usageTracking.checkAIUsageLimitPublic,
+			{
+				workspaceId: trimmedWorkspaceId as Id<"workspaces">,
+				featureType: "aiSearch",
+			}
+		);
+
+		if (!usageCheck.allowed) {
+			return NextResponse.json(
+				{
+					error: `AI Search limit reached. Your plan allows ${usageCheck.limit} requests per month.`,
+				},
+				{ status: 403 }
+			);
+		}
+
 		// Fetch search data from Convex
 		const searchData = await client.query(api.aiSearch.getSearchData, {
 			workspaceId: trimmedWorkspaceId as Id<"workspaces">,
@@ -76,6 +107,14 @@ export async function POST(request: NextRequest) {
 			query: trimmedQuery,
 			searchData,
 		});
+
+		// Record successful usage
+		if (isAiSearchResult(result) && result.success) {
+			await client.mutation(api.usageTracking.recordAIRequestPublic, {
+				workspaceId: trimmedWorkspaceId as Id<"workspaces">,
+				featureType: "aiSearch",
+			});
+		}
 
 		return NextResponse.json(result);
 	} catch (error) {

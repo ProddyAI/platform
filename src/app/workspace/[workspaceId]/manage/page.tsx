@@ -136,8 +136,11 @@ const ManagePage = () => {
 			{/* Content */}
 			<div className="flex-1 overflow-auto p-6 bg-white">
 				<div className="max-w-6xl mx-auto">
-					{/* For members, show only Integrations */}
-					{member.role === "member" ? (
+					{/* For regular members on a free plan, show only Integrations.
+					    Paid members (Pro/Enterprise) get to see the full management interface. */}
+					{member.role === "member" &&
+					member.seatTier !== "pro" &&
+					member.seatTier !== "enterprise" ? (
 						<div>
 							<div className="mb-6">
 								<h2 className="text-2xl font-bold mb-2">My Integrations</h2>
@@ -152,6 +155,17 @@ const ManagePage = () => {
 									currentMember={member}
 									workspaceId={workspaceId}
 								/>
+							</div>
+							<div className="mt-6 rounded-lg border bg-background p-6 shadow-sm">
+								<h2 className="text-xl font-semibold">Billing</h2>
+								<p className="mt-2 text-sm text-muted-foreground">
+									Review plan options or request an upgrade for your workspace.
+								</p>
+								<Button asChild className="mt-4">
+									<a href={`/workspace/${workspaceId}/manage#billing`}>
+										View billing options
+									</a>
+								</Button>
 							</div>
 						</div>
 					) : (
@@ -208,7 +222,10 @@ const ManagePage = () => {
 								className="bg-background rounded-lg p-6 shadow-sm border"
 								value="billing"
 							>
-								<BillingSection workspaceId={workspaceId} />
+								<BillingSection
+									currentMember={member}
+									workspaceId={workspaceId}
+								/>
 							</TabsContent>
 
 							<TabsContent

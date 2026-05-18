@@ -11,7 +11,9 @@ const baseConfig = withPWA({
 	dest: "public",
 	register: true,
 	skipWaiting: true,
-	disable: process.env.NODE_ENV === "development",
+	disable:
+		process.env.NODE_ENV === "development" ||
+		process.env.NEXT_PUBLIC_ENABLE_PWA !== "true",
 	customWorkerDir: "worker",
 	// Avoid Workbox precache warnings and bloated caches by excluding sourcemaps.
 	buildExcludes: [/\.map$/, /OneSignalSDK\.sw\.js$/, /OneSignalSDKWorker\.js$/],
@@ -204,6 +206,22 @@ const baseConfig = withPWA({
 	},
 	eslint: {
 		ignoreDuringBuilds: true,
+	},
+	typescript: {
+		ignoreBuildErrors: false,
+	},
+	experimental: {
+		// Restrict build to a single CPU core in resource-constrained environments (like CI / Docker)
+		// to avoid OOM / memory exhaustion errors, while keeping local development unconstrained.
+		cpus: process.env.CI || process.env.LIMIT_BUILD_CPUS ? 1 : undefined,
+		// Enable worker threads to speed up build parallelization
+		workerThreads: true,
+	},
+	webpack(config, { dev }) {
+		if (!dev) {
+			config.cache = false;
+		}
+		return config;
 	},
 });
 
