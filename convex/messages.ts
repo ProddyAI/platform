@@ -329,7 +329,7 @@ export const create = mutation({
 
 		// If this is a reply to a thread, send an email notification
 		if (args.parentMessageId) {
-			await ctx.scheduler.runAfter(0, api.emailActions.sendThreadReplyEmail, {
+			await ctx.scheduler.runAfter(0, internal.emailActions.sendThreadReplyEmail, {
 				messageId,
 				parentMessageId: args.parentMessageId,
 			});
@@ -360,7 +360,7 @@ export const create = mutation({
 
 		// If this is a direct message, send an email notification
 		if (args.conversationId) {
-			await ctx.scheduler.runAfter(0, api.emailActions.sendDirectMessageEmail, {
+			await ctx.scheduler.runAfter(0, internal.emailActions.sendDirectMessageEmail, {
 				messageId,
 			});
 
@@ -510,7 +510,7 @@ export const create = mutation({
 				});
 
 				// Schedule an email notification for the mention
-				await ctx.scheduler.runAfter(0, api.emailActions.sendMentionEmail, {
+				await ctx.scheduler.runAfter(0, internal.emailActions.sendMentionEmail, {
 					mentionId,
 				});
 

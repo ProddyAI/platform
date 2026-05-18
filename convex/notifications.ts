@@ -51,7 +51,9 @@ export const sendPushNotification = internalAction({
 		);
 		const notificationPrefs = await Promise.all(
 			userIds.map((userId) =>
-				ctx.runQuery(api.preferences.getNotificationPreferencesByUserId, { userId })
+				ctx.runQuery(api.preferences.getNotificationPreferencesByUserId, {
+					userId,
+				})
 			)
 		);
 

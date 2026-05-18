@@ -143,7 +143,7 @@ const shouldSendEmailNotification = async (
 };
 
 // Action to send email notification for direct messages
-export const sendDirectMessageEmail = internalAction({
+export const sendDirectMessageEmail = action({
 	args: {
 		messageId: v.id("messages"),
 	},
@@ -163,28 +163,24 @@ export const sendDirectMessageEmail = internalAction({
 				return { success: true, skipped: true };
 			}
 
-			// Get the conversation using the existing query
-			const conversation = await ctx.runQuery(
-				api.conversations._getConversationById,
-				{
-					conversationId: message.conversationId,
-				}
-			);
-			if (!conversation) {
-				logger.error("Conversation not found:", message.conversationId);
-				return { success: false, error: "Conversation not found" };
+		// Get the conversation using the existing query
+		const conversation = await ctx.runQuery(
+			api.conversations._getConversationById,
+			{
+				conversationId: message.conversationId,
 			}
+		);
+		if (!conversation) {
+			logger.error("Conversation not found:", message.conversationId);
+			return { success: false, error: "Conversation not found" };
+		}
 
-			// Get the sender using the existing query
-			const sender = await ctx.runQuery(api.members.getMemberById, {
-				memberId: message.memberId,
-			});
-			if (!sender?.user) {
-				logger.error("Sender not found:", message.memberId);
-				return { success: false, error: "Sender not found" };
-			}
-
-			// Find the recipient (the other member in the conversation)
+		// Get the sender using the existing query
+		const sender = await ctx.runQuery(api.members.getMemberById, {
+			memberId: message.memberId,
+		});
+		if (!sender?.user) {
+			logger.error("Sender not found:", message.memberId);
 			const recipientMemberId =
 				conversation.memberOneId === message.memberId
 					? conversation.memberTwoId
@@ -283,7 +279,7 @@ export const sendDirectMessageEmail = internalAction({
 });
 
 // Action to send email notification for mentions
-export const sendMentionEmail = internalAction({
+export const sendMentionEmail = action({
 	args: {
 		mentionId: v.id("mentions"),
 	},
@@ -294,37 +290,32 @@ export const sendMentionEmail = internalAction({
 				mentionId: args.mentionId,
 			});
 			if (!mention) {
-				logger.error("Mention not found:", args.mentionId);
-				return { success: false, error: "Mention not found" };
-			}
+			logger.error("Mention not found:", args.mentionId);
+			return { success: false, error: "Mention not found" };
+		}
+		// Get the mentioned member
+		const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
+			memberId: mention.mentionedMemberId,
+		});
+		if (!mentionedMember?.user?.email) {
+			return { success: true, skipped: true };
+		}
 
-			// Get the mentioned member
-			const mentionedMember = await ctx.runQuery(api.members.getMemberById, {
-				memberId: mention.mentionedMemberId,
-			});
-			if (!mentionedMember?.user?.email) {
-				return { success: true, skipped: true };
-			}
+		const canSendEmail = await shouldSendEmailNotification(
+			ctx,
+			mentionedMember.userId,
+			"mentions"
+		);
+		if (!canSendEmail) {
+			return { success: true, skipped: true };
+		}
 
-			const canSendEmail = await shouldSendEmailNotification(
-				ctx,
-				mentionedMember.userId,
-				"mentions"
-			);
-			if (!canSendEmail) {
-				return { success: true, skipped: true };
-			}
-
-			// Get the mentioner
-			const mentioner = await ctx.runQuery(api.members.getMemberById, {
-				memberId: mention.mentionerMemberId,
-			});
-			if (!mentioner?.user) {
-				logger.error("Mentioner not found:", mention.mentionerMemberId);
-				return { success: false, error: "Mentioner not found" };
-			}
-
-			// Don't send email to the mentioner themselves
+		// Get the mentioner
+		const mentioner = await ctx.runQuery(api.members.getMemberById, {
+			memberId: mention.mentionerMemberId,
+		});
+		if (!mentioner?.user) {
+			logger.error("Mentioner not found:", mention.mentionerMemberId);
 			if (mentioner.userId === mentionedMember.userId) {
 				return { success: true, skipped: true };
 			}
@@ -419,7 +410,7 @@ export const sendMentionEmail = internalAction({
 });
 
 // Action to send email notification for thread replies
-export const sendThreadReplyEmail = internalAction({
+export const sendThreadReplyEmail = action({
 	args: {
 		messageId: v.id("messages"),
 		parentMessageId: v.id("messages"),
@@ -431,46 +422,42 @@ export const sendThreadReplyEmail = internalAction({
 				messageId: args.messageId,
 			});
 			if (!replyMessage) {
-				logger.error("Reply message not found:", args.messageId);
-				return { success: false, error: "Reply message not found" };
-			}
+			logger.error("Reply message not found:", args.messageId);
+			return { success: false, error: "Reply message not found" };
+		}
 
-			// Get the parent message
-			const parentMessage = await ctx.runQuery(api.messages._getMessageById, {
-				messageId: args.parentMessageId,
-			});
-			if (!parentMessage) {
-				logger.error("Parent message not found:", args.parentMessageId);
-				return { success: false, error: "Parent message not found" };
-			}
+		// Get the parent message
+		const parentMessage = await ctx.runQuery(api.messages._getMessageById, {
+			messageId: args.parentMessageId,
+		});
+		if (!parentMessage) {
+			logger.error("Parent message not found:", args.parentMessageId);
+			return { success: false, error: "Parent message not found" };
+		}
 
-			// Get the original author (parent message author)
-			const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
-				memberId: parentMessage.memberId,
-			});
-			if (!originalAuthor?.user?.email) {
-				return { success: true, skipped: true };
-			}
+		// Get the original author (parent message author)
+		const originalAuthor = await ctx.runQuery(api.members.getMemberById, {
+			memberId: parentMessage.memberId,
+		});
+		if (!originalAuthor?.user?.email) {
+			return { success: true, skipped: true };
+		}
 
-			const canSendEmail = await shouldSendEmailNotification(
-				ctx,
-				originalAuthor.userId,
-				"threadReply"
-			);
-			if (!canSendEmail) {
-				return { success: true, skipped: true };
-			}
+		const canSendEmail = await shouldSendEmailNotification(
+			ctx,
+			originalAuthor.userId,
+			"threadReply"
+		);
+		if (!canSendEmail) {
+			return { success: true, skipped: true };
+		}
 
-			// Get the replier
-			const replier = await ctx.runQuery(api.members.getMemberById, {
-				memberId: replyMessage.memberId,
-			});
-			if (!replier?.user) {
-				logger.error("Replier not found:", replyMessage.memberId);
-				return { success: false, error: "Replier not found" };
-			}
-
-			// Don't send email if the replier is the same as the original author
+		// Get the replier
+		const replier = await ctx.runQuery(api.members.getMemberById, {
+			memberId: replyMessage.memberId,
+		});
+		if (!replier?.user) {
+			logger.error("Replier not found:", replyMessage.memberId);
 			if (replier.userId === originalAuthor.userId) {
 				return { success: true, skipped: true };
 			}
@@ -600,7 +587,7 @@ type DigestData = {
 };
 
 // Action to send weekly digest emails to users
-export const sendWeeklyDigestEmails = internalAction({
+export const sendWeeklyDigestEmails = action({
 	args: {
 		dayOfWeek: v.string(),
 	},
@@ -794,7 +781,7 @@ function getWeekRange(): string {
 }
 
 // Main action: Send weekly digest emails (called by scheduler for a specific day)
-export const sendWeeklyDigests = internalAction({
+export const sendWeeklyDigests = action({
 	args: {
 		dayOfWeek: v.union(
 			v.literal("monday"),
@@ -997,7 +984,7 @@ type CardDetails = {
 };
 
 // Action to send email notification for card assignment
-export const sendCardAssignmentEmail = internalAction({
+export const sendCardAssignmentEmail = action({
 	args: {
 		assigneeId: v.id("members"),
 		cardId: v.id("cards"),
@@ -1026,7 +1013,6 @@ export const sendCardAssignmentEmail = internalAction({
 				return { success: false, error: "Card not found" };
 			}
 
-			// Get the assignee's email and name
 			const assigneeEmail: string | null = await ctx.runQuery(
 				api.board._getMemberEmail,
 				{
@@ -1138,7 +1124,7 @@ export const sendCardAssignmentEmail = internalAction({
 });
 
 // Action to send email notification for issue assignment
-export const sendIssueAssignmentEmail = internalAction({
+export const sendIssueAssignmentEmail = action({
 	args: {
 		assigneeId: v.id("members"),
 		issueId: v.id("issues"),
@@ -1247,16 +1233,14 @@ export const sendIssueAssignmentEmail = internalAction({
 				});
 				return { success: true };
 			} catch (error) {
-				logger.error(
-					"Error sending issue assignment email via Resend:",
-					error
-				);
+				logger.error("Error sending issue assignment email via Resend:", error);
 				return {
 					success: false,
 					error: error instanceof Error ? error.message : "Unknown error",
 				};
 			}
 		} catch (error) {
+			logger.error("Error in sendIssueAssignmentEmail:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

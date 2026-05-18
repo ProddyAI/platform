@@ -293,7 +293,7 @@ export const createCard = mutation({
 					// Send email notification
 					await ctx.scheduler.runAfter(
 						0,
-						api.emailActions.sendCardAssignmentEmail,
+						internal.emailActions.sendCardAssignmentEmail,
 						{
 							assigneeId,
 							cardId,
@@ -433,7 +433,7 @@ export const updateCard = mutation({
 					// Send email notification
 					await ctx.scheduler.runAfter(
 						0,
-						api.emailActions.sendCardAssignmentEmail,
+						internal.emailActions.sendCardAssignmentEmail,
 						{
 							assigneeId,
 							cardId,
@@ -1061,7 +1061,7 @@ export const createIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.emailActions.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId,
@@ -1190,7 +1190,7 @@ export const updateIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.emailActions.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId,
@@ -1875,7 +1875,7 @@ export const createSubIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.emailActions.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId: subIssueId,
