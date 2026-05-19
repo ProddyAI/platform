@@ -232,7 +232,7 @@ export const notifyInviteSent = mutation({
 
 		// Schedule internal notification
 		await ctx.scheduler.runAfter(
-			2000,
+			PUSH_NOTIFICATION_DELAY_MS,
 			internal.notifications.sendPushNotification,
 			{
 				userIds,

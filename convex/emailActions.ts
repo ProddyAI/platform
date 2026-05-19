@@ -6,7 +6,8 @@ import { Resend } from "resend";
 import { logger } from "../src/lib/logger";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { type ActionCtx, action, internalAction } from "./_generated/server";
+import { type ActionCtx, internalAction } from "./_generated/server";
+import { type EmailNotificationKey } from "./email";
 
 // Initialize Resend SDK with lazy loading to validate API key
 let resend: Resend | null = null;
@@ -124,11 +125,7 @@ type EmailNotificationResult = {
 	emailId?: string;
 };
 
-type EmailNotificationKey =
-	| "mentions"
-	| "directMessage"
-	| "threadReply"
-	| "assignee";
+
 
 const shouldSendEmailNotification = async (
 	ctx: ActionCtx,

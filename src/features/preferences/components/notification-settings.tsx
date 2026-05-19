@@ -42,6 +42,15 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useNotificationPreferences } from "../api/use-user-preferences";
 
+type WeeklyDigestDay =
+	| "monday"
+	| "tuesday"
+	| "wednesday"
+	| "thursday"
+	| "friday"
+	| "saturday"
+	| "sunday";
+
 export const NotificationSettings = () => {
 	const { data: notifications, isLoading } = useNotificationPreferences();
 	const [isUpdating, setIsUpdating] = useState(false);
@@ -182,7 +191,7 @@ export const NotificationSettings = () => {
 				settings: {
 					notifications: {
 						...notifications,
-						weeklyDigestDay: day as any,
+						weeklyDigestDay: day as WeeklyDigestDay,
 					},
 				},
 			});
