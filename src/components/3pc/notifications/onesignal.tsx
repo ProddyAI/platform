@@ -135,7 +135,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 				while (!initCompleted && Date.now() - startTime < maxWaitMs) {
 					waitAttempts++;
-					console.log(
+					logger.debug(
 						`⏳ [OneSignal Login] Waiting for init to complete (attempt ${waitAttempts})...`
 					);
 					await new Promise((resolve) => setTimeout(resolve, 100));

@@ -45,7 +45,7 @@ export const sendPushNotification = internalAction({
 		const oneSignalAppId = process.env.ONESIGNAL_APP_ID;
 
 		if (!oneSignalApiKey || !oneSignalAppId) {
-			console.warn("🔔 OneSignal not configured - missing API key or app ID");
+			logger.warn("🔔 OneSignal not configured - missing API key or app ID");
 			return { success: false, error: "OneSignal not configured" };
 		}
 
@@ -66,7 +66,10 @@ export const sendPushNotification = internalAction({
 
 		for (let i = 0; i < userIds.length; i++) {
 			const userId = userIds[i];
-			const user = users[i]; if (!user) continue;
+			const user = users[i];
+			if (!user) {
+				continue;
+			}
 			const notifications = notificationPrefs[i];
 
 			const browserEnabled = notifications?.browserNotificationsEnabled ?? true;

@@ -85,10 +85,14 @@ const buildNotificationDefaults = (notifications?: Record<string, any>) => {
 		onlineStatus: legacy.onlineStatus ?? false,
 		notificationBrowserPrefs: {
 			...defaultBrowserPrefs,
+			workspaceJoin: legacy.workspaceJoin ?? defaultBrowserPrefs.workspaceJoin,
+			onlineStatus: legacy.onlineStatus ?? defaultBrowserPrefs.onlineStatus,
 			...(legacy.notificationBrowserPrefs || {}),
 		},
 		notificationEmailPrefs: {
 			...defaultEmailPrefs,
+			workspaceJoin: legacy.workspaceJoin ?? defaultEmailPrefs.workspaceJoin,
+			onlineStatus: legacy.onlineStatus ?? defaultEmailPrefs.onlineStatus,
 			...(legacy.notificationEmailPrefs || {}),
 		},
 		browserNotificationsEnabled: legacy.browserNotificationsEnabled ?? true,
@@ -356,7 +360,7 @@ export const getNotificationPreferences = query({
  */
 export const updateBrowserPrefs = mutation({
 	args: {
-		updates: v.record(v.string(), v.boolean()),
+		updates: v.record(notificationKeyValidator, v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -407,7 +411,7 @@ export const updateBrowserPrefs = mutation({
  */
 export const updateEmailPrefs = mutation({
 	args: {
-		updates: v.record(v.string(), v.boolean()),
+		updates: v.record(notificationKeyValidator, v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
