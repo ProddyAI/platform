@@ -372,14 +372,7 @@ export const create = mutation({
 						: conversation.memberOneId;
 				const recipientMember = await ctx.db.get(recipientMemberId);
 				if (recipientMember?.userId && recipientMember.userId !== userId) {
-					// Debug: Log direct message push trigger
-					console.log("📱 [DM PUSH] Triggering push notification", {
-						recipientUserId: recipientMember.userId,
-						senderUserId: userId,
-						messageId,
-						conversationId: args.conversationId,
-						delay: "2000ms",
-					});
+
 					// Delay added to avoid OneSignal login race condition
 					await ctx.scheduler.runAfter(
 						2000,
@@ -397,11 +390,7 @@ export const create = mutation({
 							},
 						}
 					);
-				} else if (recipientMember) {
-					console.warn("⚠️ [DM PUSH] Recipient missing userId or is sender", {
-						hasUserId: !!recipientMember.userId,
-						isSender: recipientMember.userId === userId,
-					});
+
 				}
 			}
 		}
@@ -516,15 +505,7 @@ export const create = mutation({
 
 				const mentionedMember = memberMap.get(mentionedMemberId);
 				if (mentionedMember?.userId && mentionedMember.userId !== userId) {
-					// Debug: Log mention push trigger
-					console.log("👤 [MENTION PUSH] Triggering push notification", {
-						mentionedUserId: mentionedMember.userId,
-						mentionerUserId: userId,
-						messageId,
-						mentionId,
-						channelId: args.channelId,
-						delay: "2000ms",
-					});
+
 					// Delay added to avoid OneSignal login race condition
 					await ctx.scheduler.runAfter(
 						2000,
@@ -542,29 +523,12 @@ export const create = mutation({
 							},
 						}
 					);
-				} else if (mentionedMember) {
-					console.warn(
-						"⚠️ [MENTION PUSH] Mentioned member missing userId or is mentioner",
-						{
-							hasUserId: !!mentionedMember.userId,
-							isMentioner: mentionedMember.userId === userId,
-						}
-					);
-				} else {
-					console.warn("⚠️ [MENTION PUSH] Mentioned member not found in map", {
-						mentionedMemberId,
-						mapSize: memberMap.size,
-					});
+
 				}
 			}
 		} catch (_error) {
 			// Don't throw the error, as we still want to return the message ID
 			// even if mention processing fails
-			console.error("❌ [MENTION PUSH] Error during mention processing:", {
-				error: _error instanceof Error ? _error.message : String(_error),
-				messageId,
-				channelId: args.channelId,
-			});
 		}
 
 		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexMessage, {

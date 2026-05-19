@@ -103,26 +103,10 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	// Handle user login - runs when userId changes
 	// ============================================================================
 	useEffect(() => {
-		// Debug: log userId on every effect run
-		console.log("🔍 [OneSignal Login Effect] userId prop:", userId);
-		console.log(
-			"🔍 [OneSignal Login Effect] sdkLoadedRef:",
-			sdkLoadedRef.current
-		);
-		console.log(
-			"🔍 [OneSignal Login Effect] window.OneSignal exists:",
-			!!window.OneSignal
-		);
-		console.log(
-			"🔍 [OneSignal Login Effect] currentUserRef:",
-			currentUserRef.current
-		);
+		if (!userId) return;
 
 		// If no userId, skip
 		if (!userId) {
-			console.warn(
-				"❌ [OneSignal Login Effect] No userId provided, skipping login"
-			);
 			logger.debug("🔔 No userId provided, skipping login");
 			currentUserRef.current = undefined;
 			return;
@@ -135,7 +119,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 		}
 
 		if (loginInFlightRef.current) {
-			console.log("🔔 OneSignal login skipped: login already in progress");
+			logger.debug("🔔 OneSignal login skipped: login already in progress");
 			return;
 		}
 
@@ -159,72 +143,43 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				}
 
 				if (!initCompleted) {
-					console.error(
-						"❌ [OneSignal Login] OneSignal init did not complete after waiting"
-					);
 					logger.error("❌ OneSignal init did not complete, aborting login");
 					return;
 				}
 
-				console.log(
-					`✅ [OneSignal Login] Init completed, proceeding with login`
-				);
 
 				// Now check SDK is available
 				const OneSignal: any = window.OneSignal as any;
 				if (!OneSignal) {
-					console.error(
-						"❌ [OneSignal Login] OneSignal SDK not available on window"
-					);
 					logger.error("❌ OneSignal not available on window");
 					return;
 				}
 
 				// Safety check: final verification userId is still valid
 				if (!userId || typeof userId !== "string") {
-					console.error(
-						"❌ [OneSignal Login] userId is invalid:",
-						userId,
-						typeof userId
-					);
 					logger.error(`❌ userId is invalid: ${userId}`);
 					return;
 				}
 
-				console.log("🔔 OneSignal login:", userId);
-				console.log(`🔔 [OneSignal Login] Logging in user: ${userId}`);
 				logger.debug(`🔔 Logging in user: ${userId}`);
 
 				// Call login
-				console.log(
-					`🔔 [OneSignal Login] Calling OneSignal.login("${userId}")`
-				);
 				await OneSignal.login(userId);
-				console.log(`✅ [OneSignal Login] Login call completed`);
+				logger.debug(`✅ OneSignal login call completed`);
 
 				// Wait a bit for the SDK to update User object
 				await new Promise((resolve) => setTimeout(resolve, 500));
 
 				// Check external ID
 				const externalId = OneSignal.User?.externalId;
-				console.log("🔔 External ID:", externalId);
-				console.log(
-					"🧠 [OneSignal Login] External ID after login:",
-					externalId
-				);
 				logger.debug("✅ OneSignal.User.externalId after login:", externalId);
 
 				if (externalId === userId) {
-					console.log(
-						`✅ [OneSignal Login] Login successful, external ID matches: ${userId}`
-					);
 					logger.debug(`✅ Login successful: ${userId}`);
 					currentUserRef.current = userId;
 					await setOneSignalExternalId({ externalId: userId });
 				} else {
-					console.warn(
-						`⚠️ [OneSignal Login] External ID mismatch. Expected ${userId}, got ${externalId}`
-					);
+					logger.warn(`⚠️ External ID mismatch. Expected ${userId}, got ${externalId}`);
 					if (externalId) {
 						await setOneSignalExternalId({ externalId });
 					}
@@ -232,21 +187,11 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 				// Check and request push subscription
 				const subscriptionStatus = OneSignal.User?.PushSubscription?.optedIn;
-				console.log(
-					"📱 [OneSignal Login] Push subscription opted in:",
-					subscriptionStatus
-				);
 
 				if (!subscriptionStatus) {
-					console.log(
-						"📱 [OneSignal Login] Requesting push subscription opt-in..."
-					);
 					try {
 						// Request push subscription
 						await OneSignal.User.PushSubscription.optIn();
-						console.log(
-							"✅ [OneSignal Login] Push subscription opt-in request sent"
-						);
 						logger.debug("✅ Push subscription opt-in requested");
 
 						// Wait a moment for it to process
@@ -254,22 +199,13 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 						// Check new status
 						const newStatus = OneSignal.User?.PushSubscription?.optedIn;
-						console.log(
-							"📱 [OneSignal Login] Push subscription after opt-in:",
-							newStatus
-						);
 						logger.debug("📱 Push subscription after opt-in:", newStatus);
 					} catch (subError) {
-						console.warn(
-							"⚠️ [OneSignal Login] Push subscription opt-in request failed (may require user interaction):",
-							subError
-						);
 						logger.warn("⚠️ Push subscription opt-in request failed");
 					}
 				}
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				console.error(`❌ [OneSignal Login] Error:`, errorMsg);
 				logger.error(`❌ OneSignal login error:`, errorMsg);
 			} finally {
 				loginInFlightRef.current = false;
