@@ -96,6 +96,17 @@ type WorkspaceBillingPatch = {
 	nextBillingDate?: number;
 	currentPeriodEnd?: number;
 	scheduledCancellationDate?: number;
+	pendingBillingStatus?: "pending_payment" | "expired" | "cleared" | undefined;
+	pendingBillingPlan?: undefined;
+	pendingBillingQuantity?: undefined;
+	pendingBillingCheckoutSessionId?: undefined;
+	pendingBillingPaymentUrl?: undefined;
+	pendingBillingAmount?: undefined;
+	pendingBillingCurrency?: undefined;
+	pendingBillingTaxAmount?: undefined;
+	pendingBillingCreatedAt?: undefined;
+	pendingBillingExpiresAt?: undefined;
+	pendingBillingSubscriptionId?: undefined;
 };
 
 const notifyAdminsOfPlanChange = async (
@@ -167,14 +178,49 @@ const syncMemberSeatTiers = async (
 	}
 };
 
+const getBillableMemberCount = async (
+	ctx: Pick<MutationCtx, "db">,
+	workspaceId: Id<"workspaces">
+) => {
+	const members = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	return members.filter((member) => BILLABLE_MEMBER_ROLES.has(member.role))
+		.length;
+};
+
+const findWorkspaceMemberByBillingEmail = async (
+	ctx: Pick<MutationCtx, "db">,
+	email: string
+) => {
+	const user = await ctx.db
+		.query("users")
+		.withIndex("email", (q) => q.eq("email", email))
+		.first();
+	if (!user) return null;
+
+	return await ctx.db
+		.query("members")
+		.withIndex("by_user_id", (q) => q.eq("userId", user._id))
+		.filter((q) =>
+			q.or(q.eq(q.field("role"), "owner"), q.eq(q.field("role"), "admin"))
+		)
+		.first();
+};
+
 // Store payment info (no-op for schema-light approach, but kept for audit/extension)
 export const createPayment = internalMutation({
 	args: {
 		paymentId: v.string(),
 		businessId: v.optional(v.string()),
 		workspaceId: v.optional(v.string()),
+		subscriptionId: v.optional(v.string()),
+		applyPendingBilling: v.optional(v.boolean()),
 		plan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 		quantity: v.optional(v.number()),
+		customerId: v.optional(v.string()),
 		customerEmail: v.optional(v.union(v.string(), v.null())),
 		amount: v.number(),
 		currency: v.string(),
@@ -204,9 +250,56 @@ export const createPayment = internalMutation({
 			}
 		}
 
+		if (!workspaceObjId && args.subscriptionId) {
+			const workspace = await ctx.db
+				.query("workspaces")
+				.withIndex("by_dodo_subscription_id", (q) =>
+					q.eq("dodoSubscriptionId", args.subscriptionId as string)
+				)
+				.first();
+			if (workspace) workspaceObjId = workspace._id;
+		}
+
 		if (!workspaceObjId) {
+			if (args.customerEmail) {
+				const member = await findWorkspaceMemberByBillingEmail(
+					ctx,
+					args.customerEmail
+				);
+				if (member) workspaceObjId = member.workspaceId;
+			}
+		}
+
+		if (!workspaceObjId) {
+			console.error(
+				`[createPayment] Failed to find workspace context for payment ${args.paymentId}`
+			);
 			return { ok: true, reason: "no_workspace_context" };
 		}
+
+		const workspace = await ctx.db.get(workspaceObjId);
+		const pendingMatchesPayment =
+			Boolean(args.subscriptionId) &&
+			workspace?.pendingBillingStatus === "pending_payment" &&
+			workspace.pendingBillingSubscriptionId === args.subscriptionId;
+		const canApplyPendingPayment =
+			!pendingMatchesPayment || args.applyPendingBilling !== false;
+		const effectivePlan =
+			(pendingMatchesPayment &&
+			canApplyPendingPayment &&
+			(workspace?.pendingBillingPlan === "pro" ||
+				workspace?.pendingBillingPlan === "enterprise")
+				? workspace.pendingBillingPlan
+				: undefined) ??
+			(canApplyPendingPayment ? args.plan : undefined);
+		const effectiveQuantity =
+			pendingMatchesPayment &&
+			canApplyPendingPayment &&
+			typeof workspace?.pendingBillingQuantity === "number"
+				? workspace.pendingBillingQuantity
+				: typeof args.quantity === "number" && args.quantity > 0
+					? args.quantity
+					: undefined;
 
 		const historyEntry: {
 			workspaceId: Id<"workspaces">;
@@ -227,8 +320,8 @@ export const createPayment = internalMutation({
 			currency: args.currency,
 			status: args.status,
 			type: "payment",
-			description: args.plan
-				? `${args.plan === "enterprise" ? "Enterprise" : "Pro"} plan payment`
+			description: effectivePlan
+				? `${effectivePlan === "enterprise" ? "Enterprise" : "Pro"} plan payment`
 				: "Subscription payment",
 			dodoInvoiceId: args.paymentId,
 			createdAt: Date.now(),
@@ -236,11 +329,151 @@ export const createPayment = internalMutation({
 		if (typeof args.taxAmount === "number") {
 			historyEntry.taxAmount = args.taxAmount;
 		}
-		if (args.plan) historyEntry.plan = args.plan;
-		if (typeof args.quantity === "number") historyEntry.seats = args.quantity;
+		if (effectivePlan) historyEntry.plan = effectivePlan;
+		if (typeof effectiveQuantity === "number") historyEntry.seats = effectiveQuantity;
 		if (args.invoiceUrl) historyEntry.invoiceUrl = args.invoiceUrl;
 		await ctx.db.insert("billingHistory", historyEntry);
 
+		if (effectivePlan === "pro" || effectivePlan === "enterprise") {
+			const activeUserCount = await getBillableMemberCount(ctx, workspaceObjId);
+			const quantity =
+				typeof effectiveQuantity === "number" && effectiveQuantity > 0
+					? effectiveQuantity
+					: Math.max(1, activeUserCount);
+
+			await ctx.db.patch(workspaceObjId, {
+				plan: effectivePlan,
+				subscriptionStatus: "active",
+				proSeats: effectivePlan === "pro" ? quantity : 0,
+				enterpriseSeats: effectivePlan === "enterprise" ? quantity : 0,
+				totalPaidSeats: quantity,
+				activeUserCount,
+				customerId: args.customerId,
+				dodoCustomerId: args.customerId,
+				cancellationAtPeriodEnd: false,
+				scheduledCancellationDate: undefined,
+				pendingBillingStatus: undefined,
+				pendingBillingPlan: undefined,
+				pendingBillingQuantity: undefined,
+				pendingBillingCheckoutSessionId: undefined,
+				pendingBillingPaymentUrl: undefined,
+				pendingBillingAmount: undefined,
+				pendingBillingCurrency: undefined,
+				pendingBillingTaxAmount: undefined,
+				pendingBillingCreatedAt: undefined,
+				pendingBillingExpiresAt: undefined,
+				pendingBillingSubscriptionId: undefined,
+			});
+			console.log("[billing] payment success activated plan", {
+				workspaceId: workspaceObjId,
+				paymentId: args.paymentId,
+				plan: effectivePlan,
+				quantity,
+			});
+			await syncMemberSeatTiers(ctx, workspaceObjId, effectivePlan);
+			await notifyAdminsOfPlanChange(
+				ctx,
+				workspaceObjId,
+				workspace?.plan,
+				effectivePlan,
+				{
+					invoiceUrl: args.invoiceUrl,
+					amountDue: args.amount,
+					currency: args.currency,
+					taxAmount: args.taxAmount,
+				}
+			);
+		}
+
+		return { ok: true };
+	},
+});
+
+export const getPendingSubscriptionChange = internalQuery({
+	args: {
+		subscriptionId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const workspace = await ctx.db
+			.query("workspaces")
+			.withIndex("by_dodo_subscription_id", (q) =>
+				q.eq("dodoSubscriptionId", args.subscriptionId)
+			)
+			.first();
+
+		if (
+			!workspace ||
+			workspace.pendingBillingStatus !== "pending_payment" ||
+			workspace.pendingBillingSubscriptionId !== args.subscriptionId ||
+			!(
+				workspace.pendingBillingPlan === "pro" ||
+				workspace.pendingBillingPlan === "enterprise"
+			) ||
+			typeof workspace.pendingBillingQuantity !== "number"
+		) {
+			return null;
+		}
+
+		return {
+			workspaceId: workspace._id,
+			plan: workspace.pendingBillingPlan,
+			quantity: Math.max(1, Math.floor(workspace.pendingBillingQuantity)),
+			currentQuantity:
+				workspace.pendingBillingPlan === "enterprise"
+					? (workspace.enterpriseSeats ?? workspace.totalPaidSeats ?? 0)
+					: (workspace.proSeats ?? workspace.totalPaidSeats ?? 0),
+			amountDue: workspace.pendingBillingAmount ?? null,
+			currency: workspace.pendingBillingCurrency ?? null,
+			taxAmount: workspace.pendingBillingTaxAmount ?? null,
+		};
+	},
+});
+
+export const activateEnterprisePlan = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		quantity: v.number(),
+		paymentId: v.string(),
+		customerId: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) throw new Error("Workspace not found");
+
+		const activeUserCount = await getBillableMemberCount(ctx, args.workspaceId);
+		const quantity = Math.max(
+			Math.max(1, activeUserCount),
+			Math.floor(args.quantity)
+		);
+		await ctx.db.patch(args.workspaceId, {
+			plan: "enterprise",
+			subscriptionStatus: "active",
+			proSeats: 0,
+			enterpriseSeats: quantity,
+			totalPaidSeats: quantity,
+			activeUserCount,
+			customerId: args.customerId,
+			dodoCustomerId: args.customerId,
+			cancellationAtPeriodEnd: false,
+			scheduledCancellationDate: undefined,
+			pendingBillingStatus: undefined,
+			pendingBillingPlan: undefined,
+			pendingBillingQuantity: undefined,
+			pendingBillingCheckoutSessionId: undefined,
+			pendingBillingPaymentUrl: undefined,
+			pendingBillingAmount: undefined,
+			pendingBillingCurrency: undefined,
+			pendingBillingTaxAmount: undefined,
+			pendingBillingCreatedAt: undefined,
+			pendingBillingExpiresAt: undefined,
+			pendingBillingSubscriptionId: undefined,
+		});
+		await syncMemberSeatTiers(ctx, args.workspaceId, "enterprise");
+		console.log("[billing] activateEnterprisePlan completed", {
+			workspaceId: args.workspaceId,
+			paymentId: args.paymentId,
+			quantity,
+		});
 		return { ok: true };
 	},
 });
@@ -251,6 +484,7 @@ interface SubscriptionSyncArgs {
 	status: string;
 	plan?: string;
 	customerId?: string;
+	customerEmail?: string | null;
 	quantity?: number;
 	cancelAtNextBillingDate?: boolean;
 	nextBillingDate?: string;
@@ -303,6 +537,11 @@ async function processSubscriptionSync(
 		if (workspace) workspaceObjId = workspace._id;
 	}
 
+	if (!workspaceObjId && args.customerEmail) {
+		const member = await findWorkspaceMemberByBillingEmail(ctx, args.customerEmail);
+		if (member) workspaceObjId = member.workspaceId;
+	}
+
 	if (!workspaceObjId) {
 		console.error(
 			`[${contextName}] Failed to find workspace context for subscription ${args.subscriptionId}`
@@ -311,7 +550,63 @@ async function processSubscriptionSync(
 	}
 
 	const previousWorkspace = await ctx.db.get(workspaceObjId);
-	const canApplyPaidPlan = args.paymentConfirmed === true;
+	const previousPaidPlan =
+		previousWorkspace?.plan === "pro" || previousWorkspace?.plan === "enterprise"
+			? previousWorkspace.plan
+			: null;
+	const hasPendingUpgradeForSubscription =
+		previousWorkspace?.pendingBillingStatus === "pending_payment" &&
+		previousWorkspace.pendingBillingSubscriptionId === args.subscriptionId;
+	const pendingPlan =
+		hasPendingUpgradeForSubscription &&
+		(previousWorkspace?.pendingBillingPlan === "pro" ||
+			previousWorkspace?.pendingBillingPlan === "enterprise")
+			? previousWorkspace.pendingBillingPlan
+			: null;
+	const eventPlan =
+		args.plan === "pro" || args.plan === "enterprise" ? args.plan : null;
+	const isStaleSubscriptionEventForPendingUpgrade =
+		args.paymentConfirmed !== true &&
+		pendingPlan !== null &&
+		eventPlan !== null &&
+		eventPlan !== pendingPlan;
+	if (isStaleSubscriptionEventForPendingUpgrade) {
+		console.log(
+			`[${contextName}] Ignoring stale subscription event during pending upgrade`,
+			{
+				workspaceId: workspaceObjId,
+				subscriptionId: args.subscriptionId,
+				eventPlan,
+				pendingPlan,
+			}
+		);
+		return { ok: true, reason: "stale_subscription_event_for_pending_upgrade" };
+	}
+	const nextPaidPlan =
+		(args.paymentConfirmed === true ? pendingPlan : null) ?? eventPlan;
+	const nextQuantity =
+		typeof args.quantity === "number" && args.quantity > 0
+			? args.quantity
+			: args.paymentConfirmed === true &&
+					hasPendingUpgradeForSubscription &&
+					typeof previousWorkspace?.pendingBillingQuantity === "number"
+				? previousWorkspace.pendingBillingQuantity
+				: undefined;
+	const isExistingPaidSubscription =
+		(previousWorkspace?.dodoSubscriptionId === args.subscriptionId ||
+			previousWorkspace?.subscriptionId === args.subscriptionId) &&
+		previousPaidPlan !== null;
+	const isPaidPlanOrQuantityChange =
+		Boolean(nextPaidPlan) &&
+		isExistingPaidSubscription &&
+		(previousPaidPlan !== nextPaidPlan ||
+			(typeof nextQuantity === "number" &&
+				nextQuantity > 0 &&
+				nextQuantity !== (previousWorkspace?.totalPaidSeats ?? 0)));
+	const canApplyPaidPlan =
+		args.paymentConfirmed === true ||
+		args.status === "trialing" ||
+		(args.status === "active" && !isPaidPlanOrQuantityChange);
 	const patch: WorkspaceBillingPatch = {
 		subscriptionId: args.subscriptionId,
 		dodoSubscriptionId: args.subscriptionId,
@@ -331,21 +626,47 @@ async function processSubscriptionSync(
 		patch.nextBillingDate = undefined;
 		patch.currentPeriodEnd = undefined;
 		patch.scheduledCancellationDate = undefined;
+		patch.pendingBillingStatus = undefined;
+		patch.pendingBillingPlan = undefined;
+		patch.pendingBillingQuantity = undefined;
+		patch.pendingBillingCheckoutSessionId = undefined;
+		patch.pendingBillingPaymentUrl = undefined;
+		patch.pendingBillingAmount = undefined;
+		patch.pendingBillingCurrency = undefined;
+		patch.pendingBillingTaxAmount = undefined;
+		patch.pendingBillingCreatedAt = undefined;
+		patch.pendingBillingExpiresAt = undefined;
+		patch.pendingBillingSubscriptionId = undefined;
 	} else if (
-		(args.plan === "pro" || args.plan === "enterprise") &&
+		nextPaidPlan &&
 		canApplyPaidPlan
 	) {
-		patch.plan = args.plan;
-		if (args.quantity) {
-			if (args.plan === "pro") {
-				patch.proSeats = args.quantity;
-				patch.enterpriseSeats = 0;
-			}
-			if (args.plan === "enterprise") {
-				patch.enterpriseSeats = args.quantity;
-				patch.proSeats = 0;
-			}
-			patch.totalPaidSeats = args.quantity;
+		patch.plan = nextPaidPlan;
+		const quantity =
+			typeof nextQuantity === "number" && nextQuantity > 0
+				? nextQuantity
+				: Math.max(1, await getBillableMemberCount(ctx, workspaceObjId));
+		if (nextPaidPlan === "pro") {
+			patch.proSeats = quantity;
+			patch.enterpriseSeats = 0;
+		}
+		if (nextPaidPlan === "enterprise") {
+			patch.enterpriseSeats = quantity;
+			patch.proSeats = 0;
+		}
+		patch.totalPaidSeats = quantity;
+		if (args.paymentConfirmed === true) {
+			patch.pendingBillingStatus = undefined;
+			patch.pendingBillingPlan = undefined;
+			patch.pendingBillingQuantity = undefined;
+			patch.pendingBillingCheckoutSessionId = undefined;
+			patch.pendingBillingPaymentUrl = undefined;
+			patch.pendingBillingAmount = undefined;
+			patch.pendingBillingCurrency = undefined;
+			patch.pendingBillingTaxAmount = undefined;
+			patch.pendingBillingCreatedAt = undefined;
+			patch.pendingBillingExpiresAt = undefined;
+			patch.pendingBillingSubscriptionId = undefined;
 		}
 	}
 	if (typeof args.cancelAtNextBillingDate === "boolean") {
@@ -369,9 +690,9 @@ async function processSubscriptionSync(
 		await syncMemberSeatTiers(ctx, workspaceObjId, "free");
 	} else if (
 		canApplyPaidPlan &&
-		(args.plan === "pro" || args.plan === "enterprise")
+		nextPaidPlan
 	) {
-		await syncMemberSeatTiers(ctx, workspaceObjId, args.plan);
+		await syncMemberSeatTiers(ctx, workspaceObjId, nextPaidPlan);
 	}
 	await notifyAdminsOfPlanChange(
 		ctx,
@@ -397,6 +718,7 @@ export const createSubscription = internalMutation({
 		status: v.string(),
 		plan: v.optional(v.string()),
 		customerId: v.optional(v.string()),
+		customerEmail: v.optional(v.union(v.string(), v.null())),
 		quantity: v.optional(v.number()),
 		cancelAtNextBillingDate: v.optional(v.boolean()),
 		nextBillingDate: v.optional(v.string()),
@@ -420,6 +742,7 @@ export const updateSubscription = internalMutation({
 		status: v.string(),
 		plan: v.optional(v.string()),
 		customerId: v.optional(v.string()),
+		customerEmail: v.optional(v.union(v.string(), v.null())),
 		quantity: v.optional(v.number()),
 		cancelAtNextBillingDate: v.optional(v.boolean()),
 		nextBillingDate: v.optional(v.string()),
@@ -501,6 +824,17 @@ export const cancelSubscription = internalMutation({
 			nextBillingDate: undefined,
 			currentPeriodEnd: undefined,
 			scheduledCancellationDate: undefined,
+			pendingBillingStatus: undefined,
+			pendingBillingPlan: undefined,
+			pendingBillingQuantity: undefined,
+			pendingBillingCheckoutSessionId: undefined,
+			pendingBillingPaymentUrl: undefined,
+			pendingBillingAmount: undefined,
+			pendingBillingCurrency: undefined,
+			pendingBillingTaxAmount: undefined,
+			pendingBillingCreatedAt: undefined,
+			pendingBillingExpiresAt: undefined,
+			pendingBillingSubscriptionId: undefined,
 		});
 		await syncMemberSeatTiers(ctx, workspaceObjId, "free");
 		await notifyAdminsOfPlanChange(

@@ -11,7 +11,7 @@
 		"type": "tsc --noEmit",
 		"check": "biome check --write .",
 		"start": "next start",
-		"build": "tsc --noEmit && next build"
+		"build": "tsc --noEmit && node scripts/next-build.js"
 	},
 	"author": {
 		"name": "ProddyAI",

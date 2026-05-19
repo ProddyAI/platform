@@ -71,11 +71,11 @@ interface EmailInviteSectionProps {
 	workspaceId: Id<"workspaces">;
 }
 
+type InviteRole = "owner" | "admin" | "member";
+
 const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 	const [email, setEmail] = useState("");
-	const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">(
-		"member"
-	);
+	const [inviteRole, setInviteRole] = useState<InviteRole>("member");
 	const [inviteComment, setInviteComment] = useState("");
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [inviteError, setInviteError] = useState<string | null>(null);
@@ -165,9 +165,7 @@ const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 					/>
 					<Select
 						disabled={inviteLoading}
-						onValueChange={(value) =>
-							setInviteRole(value as "admin" | "member" | "viewer")
-						}
+						onValueChange={(value) => setInviteRole(value as InviteRole)}
 						value={inviteRole}
 					>
 						<SelectTrigger aria-label="Invite role">
@@ -186,10 +184,10 @@ const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 									Admin
 								</div>
 							</SelectItem>
-							<SelectItem value="viewer">
+							<SelectItem value="owner">
 								<div className="flex items-center gap-2">
-									<UserCog className="h-4 w-4" />
-									Viewer
+									<Crown className="h-4 w-4" />
+									Owner
 								</div>
 							</SelectItem>
 						</SelectContent>

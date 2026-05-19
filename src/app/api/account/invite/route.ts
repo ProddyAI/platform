@@ -77,7 +77,7 @@ export async function POST(req: Request) {
 
 		const emailSchema = z.string().email();
 		const emailValidation = emailSchema.safeParse(email);
-		const roleValidation = z.enum(["admin", "member"]).safeParse(role);
+		const roleValidation = z.enum(["owner", "admin", "member"]).safeParse(role);
 		const inviteComment =
 			typeof comment === "string" && comment.trim().length > 0
 				? comment.trim()

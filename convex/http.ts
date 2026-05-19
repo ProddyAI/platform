@@ -20,6 +20,13 @@ const parsePlanFromMetadata = (
 	return undefined;
 };
 
+const parseWorkspaceIdFromMetadata = (
+	metadata: Record<string, unknown> | undefined
+): string | undefined => {
+	const workspaceId = metadata?.workspace_id ?? metadata?.workspaceId;
+	return typeof workspaceId === "string" ? workspaceId : undefined;
+};
+
 const parsePlanFromProductId = (
 	productId: unknown
 ): "pro" | "enterprise" | undefined => {
@@ -42,13 +49,18 @@ interface DodoSubscriptionData {
 	};
 	metadata?: {
 		workspace_id?: string;
+		workspaceId?: string;
 		plan?: string;
 	};
-	customer?: {
+	customer?:
+		| string
+		| {
 		customer_id?: string;
+				id?: string;
 		email?: string;
-	};
+		  };
 	customer_id?: string;
+	customer_email?: string;
 }
 
 interface DodoWebhookPayload {
@@ -66,12 +78,17 @@ interface DodoWebhookPayload {
 		subscription_id?: string;
 		metadata?: {
 			workspace_id?: string;
+			workspaceId?: string;
 			plan?: string;
 		};
-		customer?: {
+		customer?:
+			| string
+			| {
 			customer_id?: string;
+					id?: string;
 			email?: string;
-		};
+			  };
+		customer_email?: string;
 	};
 	business_id?: string;
 	webhook_id?: string;
@@ -82,11 +99,21 @@ interface DodoWebhookPayload {
 
 const parseSubscriptionWorkspaceId = (
 	data: DodoSubscriptionData
-): string | undefined => data?.metadata?.workspace_id;
+): string | undefined => parseWorkspaceIdFromMetadata(data?.metadata);
 
 const parseSubscriptionCustomerId = (
 	data: DodoSubscriptionData
-): string | undefined => data?.customer?.customer_id ?? data?.customer_id;
+): string | undefined => {
+	if (typeof data?.customer === "string") return data.customer;
+	return data?.customer?.customer_id ?? data?.customer?.id ?? data?.customer_id;
+};
+
+const parseCustomerEmail = (data: DodoSubscriptionData): string | null => {
+	if (typeof data?.customer === "object" && data.customer?.email) {
+		return data.customer.email;
+	}
+	return typeof data?.customer_email === "string" ? data.customer_email : null;
+};
 
 const parseSubscriptionPlan = (
 	data: DodoSubscriptionData
@@ -106,16 +133,19 @@ const buildSubscriptionMutationArgs = (
 		taxAmount?: number;
 		invoiceUrl?: string;
 		paymentConfirmed?: boolean;
-	}
+	},
+	fallbackPlan?: "pro" | "enterprise",
+	fallbackQuantity?: number
 ) => {
 	const args: {
 		workspaceId?: string;
 		subscriptionId: string;
 		status: string;
 		plan?: "pro" | "enterprise";
-		customerId?: string;
-		quantity?: number;
-		cancelAtNextBillingDate?: boolean;
+	customerId?: string;
+	quantity?: number;
+	customerEmail?: string | null;
+	cancelAtNextBillingDate?: boolean;
 		nextBillingDate?: string;
 		amountDue?: number;
 		currency?: string;
@@ -129,13 +159,18 @@ const buildSubscriptionMutationArgs = (
 		raw,
 	};
 	const workspaceId = parseSubscriptionWorkspaceId(data) ?? fallbackWorkspaceId;
-	const plan = parseSubscriptionPlan(data);
+	const plan = parseSubscriptionPlan(data) ?? fallbackPlan;
 	const customerId = parseSubscriptionCustomerId(data);
+	const customerEmail = parseCustomerEmail(data);
 
 	if (workspaceId) args.workspaceId = workspaceId;
 	if (plan) args.plan = plan;
 	if (customerId) args.customerId = customerId;
+	if (customerEmail) args.customerEmail = customerEmail;
 	if (typeof data?.quantity === "number") args.quantity = data.quantity;
+	else if (typeof fallbackQuantity === "number") {
+		args.quantity = fallbackQuantity;
+	}
 	if (typeof data?.cancel_at_next_billing_date === "boolean") {
 		args.cancelAtNextBillingDate = data.cancel_at_next_billing_date;
 	}
@@ -167,24 +202,50 @@ const syncSubscriptionFromDodo = async (
 		taxAmount?: number;
 		invoiceUrl?: string;
 		paymentConfirmed?: boolean;
-	}
+	},
+	fallbackPlan?: "pro" | "enterprise",
+	fallbackQuantity?: number
 ) => {
-	const subscription = await subscriptions.retrieve(ctx, {
-		subscription_id: subscriptionId,
-	});
+	try {
+		const subscription = await subscriptions.retrieve(ctx, {
+			subscription_id: subscriptionId,
+		});
 
-	await ctx.runMutation(
-		internal.webhooks.updateSubscription,
-		buildSubscriptionMutationArgs(
-			{
-				...subscription,
-				subscription_id: subscription.subscription_id ?? subscriptionId,
-			},
-			JSON.stringify(subscription),
-			fallbackWorkspaceId,
-			billingDetails
-		)
-	);
+		await ctx.runMutation(
+			internal.webhooks.updateSubscription,
+			buildSubscriptionMutationArgs(
+				{
+					...subscription,
+					subscription_id: subscription.subscription_id ?? subscriptionId,
+				},
+				JSON.stringify(subscription),
+				fallbackWorkspaceId,
+				billingDetails,
+				fallbackPlan,
+				fallbackQuantity
+			)
+		);
+	} catch (error) {
+		console.error("[Dodo Webhook] Failed to retrieve subscription:", error);
+		await ctx.runMutation(
+			internal.webhooks.updateSubscription,
+			buildSubscriptionMutationArgs(
+				{
+					subscription_id: subscriptionId,
+					status: "active",
+					metadata: fallbackWorkspaceId
+						? { workspace_id: fallbackWorkspaceId, plan: fallbackPlan }
+						: undefined,
+					quantity: fallbackQuantity,
+				},
+				JSON.stringify({ subscription_id: subscriptionId, fallback: true }),
+				fallbackWorkspaceId,
+				billingDetails,
+				fallbackPlan,
+				fallbackQuantity
+			)
+		);
+	}
 };
 
 // ─── Dodo Payments Webhook ─────────────────────────────────────────────────────
@@ -246,16 +307,32 @@ const handlePaymentSucceededEvent = async (
 	payload: DodoWebhookPayload
 ) => {
 	const subscriptionId = payload.data?.subscription_id;
-	const plan =
-		typeof subscriptionId === "string"
-			? undefined
-			: parsePlanFromMetadata(payload.data?.metadata);
+	const plan = parsePlanFromMetadata(payload.data?.metadata);
+	const workspaceId = parseWorkspaceIdFromMetadata(payload.data?.metadata);
+	const paymentId = payload.data?.payment_id;
+	const totalAmount = payload.data?.total_amount;
+	const currency = payload.data?.currency;
+	if (
+		typeof paymentId !== "string" ||
+		typeof totalAmount !== "number" ||
+		typeof currency !== "string"
+	) {
+		console.warn("[Dodo Webhook] payment.succeeded missing required fields", {
+			paymentId,
+			totalAmount,
+			currency,
+		});
+		return;
+	}
 	const paymentArgs: {
 		paymentId: string;
 		businessId?: string;
 		workspaceId?: string;
+		subscriptionId?: string;
+		applyPendingBilling?: boolean;
 		plan?: "pro" | "enterprise";
 		quantity?: number;
+		customerId?: string;
 		customerEmail?: string | null;
 		amount: number;
 		currency: string;
@@ -264,19 +341,96 @@ const handlePaymentSucceededEvent = async (
 		invoiceUrl?: string;
 		raw: string;
 	} = {
-		paymentId: payload.data.payment_id!,
-		customerEmail: payload.data.customer?.email ?? null,
-		amount: payload.data.total_amount!,
-		currency: payload.data.currency!,
+		paymentId,
+		customerEmail: parseCustomerEmail(payload.data),
+		amount: totalAmount,
+		currency,
 		status: payload.data.status ?? "unknown",
 		raw: JSON.stringify(payload),
 	};
 	if (typeof payload.business_id === "string") {
 		paymentArgs.businessId = payload.business_id;
 	}
-	if (typeof payload.data?.metadata?.workspace_id === "string") {
-		paymentArgs.workspaceId = payload.data.metadata.workspace_id;
+	let dodoQuantityAligned = true;
+	let pendingChange:
+		| {
+				workspaceId: Id<"workspaces">;
+				plan: "pro" | "enterprise";
+				quantity: number;
+				currentQuantity: number;
+				amountDue: number | null;
+				currency: string | null;
+				taxAmount: number | null;
+		  }
+		| null = null;
+	if (typeof subscriptionId === "string") {
+		paymentArgs.subscriptionId = subscriptionId;
+		pendingChange = await ctx.runQuery(
+			internal.webhooks.getPendingSubscriptionChange,
+			{ subscriptionId }
+		);
+		if (pendingChange) {
+			const productId = PLANS[pendingChange.plan].dodoProductId;
+			if (!productId) {
+				console.error("[Dodo Webhook] Missing Dodo product id for pending plan", {
+					plan: pendingChange.plan,
+					workspaceId: pendingChange.workspaceId,
+				});
+				dodoQuantityAligned = false;
+			} else {
+				try {
+					const liveSubscription = await subscriptions.retrieve(ctx, {
+						subscription_id: subscriptionId,
+					});
+					const livePlan = parseSubscriptionPlan(liveSubscription);
+					if (
+						livePlan !== pendingChange.plan ||
+						liveSubscription?.quantity !== pendingChange.quantity
+					) {
+						await subscriptions.changePlan(ctx, {
+							subscription_id: subscriptionId,
+							product_id: productId,
+							quantity: pendingChange.quantity,
+							proration_billing_mode: "do_not_bill",
+							effective_at: "immediately",
+							on_payment_failure: "apply_change",
+							metadata: {
+								workspace_id: pendingChange.workspaceId,
+								plan: pendingChange.plan,
+							},
+						});
+						const updatedSubscription = await subscriptions.retrieve(ctx, {
+							subscription_id: subscriptionId,
+						});
+						const updatedPlan = parseSubscriptionPlan(updatedSubscription);
+						if (
+							updatedPlan !== pendingChange.plan ||
+							updatedSubscription?.quantity !== pendingChange.quantity
+						) {
+							throw new Error(
+								`Dodo subscription did not update to ${pendingChange.plan} x ${pendingChange.quantity}`
+							);
+						}
+						console.log("[Dodo Webhook] Applied paid pending seat quantity", {
+							workspaceId: pendingChange.workspaceId,
+							subscriptionId,
+							quantity: pendingChange.quantity,
+						});
+					}
+				} catch (error) {
+					dodoQuantityAligned = false;
+					console.error(
+						"[Dodo Webhook] Failed to update Dodo quantity after payment:",
+						error
+					);
+				}
+			}
+			paymentArgs.applyPendingBilling = dodoQuantityAligned;
+		}
 	}
+	const customerId = parseSubscriptionCustomerId(payload.data);
+	if (customerId) paymentArgs.customerId = customerId;
+	if (workspaceId) paymentArgs.workspaceId = workspaceId;
 	if (plan) paymentArgs.plan = plan;
 	if (typeof payload.data?.quantity === "number") {
 		paymentArgs.quantity = payload.data.quantity;
@@ -288,6 +442,9 @@ const handlePaymentSucceededEvent = async (
 		paymentArgs.invoiceUrl = payload.data.invoice_url;
 	}
 	await ctx.runMutation(internal.webhooks.createPayment, paymentArgs);
+	if (pendingChange && dodoQuantityAligned) {
+		return;
+	}
 	if (typeof subscriptionId === "string") {
 		const billingDetails: {
 			amountDue?: number;
@@ -296,7 +453,7 @@ const handlePaymentSucceededEvent = async (
 			invoiceUrl?: string;
 			paymentConfirmed?: boolean;
 		} = {};
-		billingDetails.paymentConfirmed = true;
+		billingDetails.paymentConfirmed = dodoQuantityAligned;
 		if (
 			typeof payload.data?.total_amount === "number" &&
 			payload.data.total_amount > 0
@@ -315,8 +472,12 @@ const handlePaymentSucceededEvent = async (
 		await syncSubscriptionFromDodo(
 			ctx,
 			subscriptionId,
-			payload.data?.metadata?.workspace_id,
-			billingDetails
+			workspaceId,
+			billingDetails,
+			plan,
+			typeof payload.data?.quantity === "number"
+				? payload.data.quantity
+				: undefined
 		);
 	}
 };
@@ -348,7 +509,7 @@ const handleSubscriptionCancelledEvent = async (
 	const workspaceId = payload.data?.metadata?.workspace_id as
 		| string
 		| undefined;
-	const customerId = payload.data?.customer?.customer_id;
+	const customerId = parseSubscriptionCustomerId(payload.data);
 
 	const cancelArgs: {
 		workspaceId?: string;
@@ -356,9 +517,13 @@ const handleSubscriptionCancelledEvent = async (
 		customerId?: string;
 		raw: string;
 	} = {
-		subscriptionId: payload.data.subscription_id!,
+		subscriptionId: payload.data.subscription_id ?? "",
 		raw: JSON.stringify(payload),
 	};
+	if (!cancelArgs.subscriptionId) {
+		console.warn("[Dodo Webhook] subscription.cancelled missing subscription_id");
+		return;
+	}
 	if (workspaceId) cancelArgs.workspaceId = workspaceId;
 	if (customerId) cancelArgs.customerId = customerId;
 
@@ -443,6 +608,24 @@ http.route({
 		try {
 			if (payload.type === "payment.succeeded") {
 				await handlePaymentSucceededEvent(ctx, payload);
+			} else if (
+				payload.type === "payment.failed" ||
+				payload.type === "payment.cancelled" ||
+				payload.type === "payment.canceled"
+			) {
+				const failedWorkspaceId = parseWorkspaceIdFromMetadata(
+					payload.data?.metadata
+				);
+				console.warn("[Dodo Webhook] Payment did not complete", {
+					type: payload.type,
+					workspaceId: failedWorkspaceId,
+					paymentId: payload.data?.payment_id,
+				});
+				if (failedWorkspaceId) {
+					await ctx.runMutation(internal.payments.clearPendingUpgrade, {
+						workspaceId: failedWorkspaceId as Id<"workspaces">,
+					});
+				}
 			} else if (payload.type === "subscription.active") {
 				await handleSubscriptionActiveEvent(ctx, payload);
 			} else if (

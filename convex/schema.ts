@@ -15,10 +15,12 @@ const billingAuditValue = v.object({
 	enterpriseSeats: v.optional(v.number()),
 	cancellationAtPeriodEnd: v.optional(v.boolean()),
 	scheduledCancellationDate: v.optional(v.union(v.number(), v.null())),
-	refundAmount: v.optional(v.number()),
-	refundCurrency: v.optional(v.union(v.string(), v.null())),
-	refundId: v.optional(v.union(v.string(), v.null())),
-});
+		refundAmount: v.optional(v.number()),
+		refundCurrency: v.optional(v.union(v.string(), v.null())),
+		refundId: v.optional(v.union(v.string(), v.null())),
+		creditAmount: v.optional(v.number()),
+		creditCurrency: v.optional(v.union(v.string(), v.null())),
+	});
 
 const schema = defineSchema({
 	...authTables,
@@ -73,6 +75,25 @@ const schema = defineSchema({
 		AIAddonEnabled: v.optional(v.boolean()),
 		billingInterval: v.optional(v.union(v.literal("month"), v.literal("year"))),
 		billingCredits: v.optional(v.number()),
+		pendingBillingStatus: v.optional(
+			v.union(
+				v.literal("pending_payment"),
+				v.literal("expired"),
+				v.literal("cleared")
+			)
+		),
+		pendingBillingPlan: v.optional(
+			v.union(v.literal("pro"), v.literal("enterprise"))
+		),
+		pendingBillingQuantity: v.optional(v.number()),
+		pendingBillingCheckoutSessionId: v.optional(v.string()),
+		pendingBillingPaymentUrl: v.optional(v.string()),
+		pendingBillingAmount: v.optional(v.number()),
+		pendingBillingCurrency: v.optional(v.string()),
+		pendingBillingTaxAmount: v.optional(v.number()),
+		pendingBillingCreatedAt: v.optional(v.number()),
+		pendingBillingExpiresAt: v.optional(v.number()),
+		pendingBillingSubscriptionId: v.optional(v.string()),
 	})
 		.index("by_user_id", ["userId"])
 		.index("by_plan", ["plan"])
@@ -86,7 +107,9 @@ const schema = defineSchema({
 		currency: v.string(),
 		status: v.string(),
 		taxAmount: v.optional(v.number()),
-		type: v.optional(v.union(v.literal("payment"), v.literal("refund"))),
+		type: v.optional(
+			v.union(v.literal("payment"), v.literal("refund"), v.literal("credit"))
+		),
 		description: v.optional(v.string()),
 		plan: v.optional(v.string()),
 		seats: v.optional(v.number()),
@@ -106,6 +129,20 @@ const schema = defineSchema({
 		newValue: billingAuditValue,
 		timestamp: v.number(),
 	}).index("by_workspace_id", ["workspaceId"]),
+
+	billingUsageEvents: defineTable({
+		workspaceId: v.id("workspaces"),
+		eventType: v.string(),
+		quantity: v.number(),
+		unitCostCents: v.number(),
+		totalCostCents: v.number(),
+		occurredAt: v.number(),
+		idempotencyKey: v.optional(v.string()),
+		metadata: v.optional(v.any()),
+	})
+		.index("by_workspace_id_occurred_at", ["workspaceId", "occurredAt"])
+		.index("by_workspace_id_event_type", ["workspaceId", "eventType"])
+		.index("by_idempotency_key", ["idempotencyKey"]),
 
 	webhookEvents: defineTable({
 		webhookId: v.string(),
@@ -833,7 +870,14 @@ const schema = defineSchema({
 		email: v.string(), // who the invite is for
 		hash: v.string(), // token from email link
 		role: v.optional(
-			v.union(v.literal("admin"), v.literal("member"), v.literal("viewer"))
+			v.union(
+				v.literal("owner"),
+				v.literal("admin"),
+				v.literal("member"),
+				// Kept only so older pending invite documents do not break schema
+				// validation. New invites are validated without viewer.
+				v.literal("viewer")
+			)
 		),
 		invitePlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 		used: v.boolean(), // one-time use
