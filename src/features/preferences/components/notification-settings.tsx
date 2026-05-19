@@ -51,6 +51,15 @@ type WeeklyDigestDay =
 	| "saturday"
 	| "sunday";
 
+type NotificationKey =
+	| "mentions"
+	| "assignee"
+	| "threadReply"
+	| "directMessage"
+	| "inviteSent"
+	| "workspaceJoin"
+	| "onlineStatus";
+
 export const NotificationSettings = () => {
 	const { data: notifications, isLoading } = useNotificationPreferences();
 	const [isUpdating, setIsUpdating] = useState(false);
@@ -156,14 +165,16 @@ export const NotificationSettings = () => {
 				inviteSent: enabled,
 				workspaceJoin: enabled,
 			};
-			await updateBrowserPrefs({ updates: updates as any });
+			await updateBrowserPrefs({
+				updates: updates as unknown as Record<NotificationKey, boolean>,
+			});
 		});
 	};
 
 	const handleBrowserToggle = async (type: string, enabled: boolean) => {
 		await withSaveState(async () => {
 			await updateBrowserPrefs({
-				updates: { [type]: enabled } as any,
+				updates: { [type]: enabled } as unknown as Record<NotificationKey, boolean>,
 			});
 		});
 	};
@@ -171,7 +182,7 @@ export const NotificationSettings = () => {
 	const handleEmailToggle = async (type: string, enabled: boolean) => {
 		await withSaveState(async () => {
 			await updateEmailPrefs({
-				updates: { [type]: enabled } as any,
+				updates: { [type]: enabled } as unknown as Record<NotificationKey, boolean>,
 			});
 		});
 	};
