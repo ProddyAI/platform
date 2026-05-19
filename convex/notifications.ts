@@ -93,6 +93,8 @@ export const sendPushNotification = internalAction({
 				logger.warn("User not subscribed to OneSignal", { userId });
 				continue;
 			}
+
+			filteredUserIds.push(oneSignalExternalId);
 		}
 
 		if (filteredUserIds.length === 0) {

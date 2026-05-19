@@ -212,7 +212,7 @@ export const NotificationSettings = () => {
 						"default"
 				);
 			}
-			await (window as any).OneSignal?.User?.pushSubscription?.optIn?.();
+			await (window as any).OneSignal?.User?.PushSubscription?.optIn?.();
 			await sendTestPush({});
 			setTestPushState("sent");
 			toast.success("Test notification sent");

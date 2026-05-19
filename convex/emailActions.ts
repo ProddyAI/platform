@@ -680,7 +680,7 @@ export const sendWeeklyDigestEmails = internalAction({
 									<div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
 										<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(ws.workspaceName)}</h3>
 										<p style="margin: 5px 0; color: #666;">📊 <strong>${ws.stats.totalMessages}</strong> messages | 📋 <strong>${ws.stats.totalTasks}</strong> tasks (${ws.stats.completedTasks} completed)</p>
-										${ws.topChannels.length > 0 ? `<p style="margin: 5px 0; color: #666;"><strong>Top channels:</strong> ${ws.topChannels.map((c) => `${escapeHtml(c.name!)} (${c.messageCount!})`).join(", ")}</p>` : ""}
+										${ws.topChannels.length > 0 ? `<p style="margin: 5px 0; color: #666;"><strong>Top channels:</strong> ${ws.topChannels.map((c) => `${escapeHtml(c.name ?? "")} (${c.messageCount ?? 0})`).join(", ")}</p>` : ""}
 									</div>
 								`
 								)
@@ -947,7 +947,7 @@ export const sendWeeklyDigestEmail = internalAction({
 					<div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
 						<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(ws.workspaceName)}</h3>
 						<p style="margin: 5px 0; color: #666;">📊 <strong>${ws.stats.totalMessages}</strong> messages | 📋 <strong>${ws.stats.totalTasks}</strong> tasks (${ws.stats.completedTasks} completed)</p>
-						${ws.topChannels.length > 0 ? `<p style="margin: 5px 0; color: #666;"><strong>Top channels:</strong> ${ws.topChannels.map((c: any) => `${escapeHtml(c.name!)} (${c.messageCount!})`).join(", ")}</p>` : ""}
+						${ws.topChannels.length > 0 ? `<p style="margin: 5px 0; color: #666;"><strong>Top channels:</strong> ${ws.topChannels.map((c: any) => `${escapeHtml(c.name ?? "")} (${c.messageCount ?? 0})`).join(", ")}</p>` : ""}
 					</div>
 				`
 				)

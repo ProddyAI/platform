@@ -12,15 +12,14 @@
 		"skipLibCheck": true,
 		"allowSyntheticDefaultImports": true,
 		/* These compiler options are required by Convex */
-		"ignoreDeprecations": "6.0",
+		"ignoreDeprecations": "5.0",
 		"target": "ESNext",
-		"lib": ["ES2022", "dom"],
-		"downlevelIteration": true,
+		"lib": ["ESNext", "dom"],
 		"forceConsistentCasingInFileNames": true,
 		"module": "ESNext",
 		"isolatedModules": true,
 		"noEmit": true
 	},
-	"include": ["./**/*", "../tests/errorHandling.test.ts"],
+	"include": ["./**/*"],
 	"exclude": ["./_generated"]
 }
