@@ -5,12 +5,13 @@ import {
 	AlertTriangle,
 	ChevronDown,
 	Crown,
-	Minus,
 	MessageSquare,
+	Minus,
 	Plus,
 	Users,
 } from "lucide-react";
 import Image from "next/image";
+import type { RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -152,6 +153,147 @@ interface SeatFullWarningBannerProps {
 	handleAddSeat: () => void;
 }
 
+interface SeatWarningHeaderProps {
+	seatChangePending: boolean;
+}
+
+const SeatWarningHeader = ({ seatChangePending }: SeatWarningHeaderProps) => {
+	return (
+		<div className="flex items-center gap-3">
+			<div className="size-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600">
+				<AlertTriangle className="size-5" />
+			</div>
+			<div className="flex flex-col">
+				<span className="text-sm font-bold text-amber-900 dark:text-amber-100">
+					{seatChangePending ? "Billing Pending" : "Seats Finished"}
+				</span>
+				<span className="text-[12px] text-amber-700 dark:text-amber-300">
+					{seatChangePending
+						? "Your new seat is processing."
+						: "You've reached your seat limit."}
+				</span>
+			</div>
+		</div>
+	);
+};
+
+interface SeatStepperProps {
+	addingSeats: boolean;
+	seatChangePending: boolean;
+	seatsToAdd: number;
+	updateSeatsToAdd: (value: number) => void;
+}
+
+const SeatStepper = ({
+	addingSeats,
+	seatChangePending,
+	seatsToAdd,
+	updateSeatsToAdd,
+}: SeatStepperProps) => {
+	return (
+		<div className="flex items-center gap-2">
+			<Button
+				aria-label="Decrease seats to add"
+				className="size-9 rounded-lg"
+				disabled={addingSeats || seatChangePending || seatsToAdd <= 1}
+				onClick={() => updateSeatsToAdd(seatsToAdd - 1)}
+				size="icon"
+				type="button"
+				variant="outline"
+			>
+				<Minus className="size-4" />
+			</Button>
+			<Input
+				className="h-9 w-20 text-center font-semibold bg-white dark:bg-zinc-950"
+				min={1}
+				onChange={(event) => updateSeatsToAdd(Number(event.target.value))}
+				type="number"
+				value={seatsToAdd}
+			/>
+			<Button
+				aria-label="Increase seats to add"
+				className="size-9 rounded-lg"
+				disabled={addingSeats || seatChangePending}
+				onClick={() => updateSeatsToAdd(seatsToAdd + 1)}
+				size="icon"
+				type="button"
+				variant="outline"
+			>
+				<Plus className="size-4" />
+			</Button>
+		</div>
+	);
+};
+
+interface SeatQuantityControlsProps {
+	addingSeats: boolean;
+	seatChangePending: boolean;
+	seatsToAdd: number;
+	newTotalSeats: number;
+	updateSeatsToAdd: (value: number) => void;
+}
+
+const SeatQuantityControls = ({
+	addingSeats,
+	seatChangePending,
+	seatsToAdd,
+	newTotalSeats,
+	updateSeatsToAdd,
+}: SeatQuantityControlsProps) => {
+	return (
+		<div className="space-y-1">
+			<Label className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">
+				Seats to add
+			</Label>
+			<SeatStepper
+				addingSeats={addingSeats}
+				seatChangePending={seatChangePending}
+				seatsToAdd={seatsToAdd}
+				updateSeatsToAdd={updateSeatsToAdd}
+			/>
+			<p className="text-xs text-amber-700 dark:text-amber-300">
+				New Dodo quantity: {newTotalSeats} seats
+			</p>
+		</div>
+	);
+};
+
+interface AddSeatsButtonProps {
+	addingSeats: boolean;
+	seatChangePending: boolean;
+	seatsToAdd: number;
+	handleAddSeat: () => void;
+}
+
+const AddSeatsButton = ({
+	addingSeats,
+	seatChangePending,
+	seatsToAdd,
+	handleAddSeat,
+}: AddSeatsButtonProps) => {
+	const buttonLabel = seatChangePending
+		? "Pending"
+		: `Add ${seatsToAdd} Seat${seatsToAdd === 1 ? "" : "s"}`;
+
+	return (
+		<Button
+			className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm"
+			disabled={addingSeats || seatChangePending}
+			onClick={handleAddSeat}
+			size="sm"
+		>
+			{addingSeats ? (
+				<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+			) : (
+				<div className="flex items-center gap-1">
+					<Plus className="size-4" />
+					{buttonLabel}
+				</div>
+			)}
+		</Button>
+	);
+};
+
 const SeatFullWarningBanner = ({
 	isSeatsFull,
 	seatChangePending,
@@ -169,80 +311,21 @@ const SeatFullWarningBanner = ({
 
 	return (
 		<div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-			<div className="flex items-center gap-3">
-				<div className="size-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600">
-					<AlertTriangle className="size-5" />
-				</div>
-				<div className="flex flex-col">
-					<span className="text-sm font-bold text-amber-900 dark:text-amber-100">
-						{seatChangePending ? "Billing Pending" : "Seats Finished"}
-					</span>
-					<span className="text-[12px] text-amber-700 dark:text-amber-300">
-						{seatChangePending
-							? "Your new seat is processing."
-							: "You've reached your seat limit."}
-					</span>
-				</div>
-			</div>
+			<SeatWarningHeader seatChangePending={seatChangePending} />
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-				<div className="space-y-1">
-					<Label className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">
-						Seats to add
-					</Label>
-					<div className="flex items-center gap-2">
-						<Button
-							aria-label="Decrease seats to add"
-							className="size-9 rounded-lg"
-							disabled={addingSeats || seatChangePending || seatsToAdd <= 1}
-							onClick={() => updateSeatsToAdd(seatsToAdd - 1)}
-							size="icon"
-							type="button"
-							variant="outline"
-						>
-							<Minus className="size-4" />
-						</Button>
-						<Input
-							className="h-9 w-20 text-center font-semibold bg-white dark:bg-zinc-950"
-							min={1}
-							onChange={(event) =>
-								updateSeatsToAdd(Number(event.target.value))
-							}
-							type="number"
-							value={seatsToAdd}
-						/>
-						<Button
-							aria-label="Increase seats to add"
-							className="size-9 rounded-lg"
-							disabled={addingSeats || seatChangePending}
-							onClick={() => updateSeatsToAdd(seatsToAdd + 1)}
-							size="icon"
-							type="button"
-							variant="outline"
-						>
-							<Plus className="size-4" />
-						</Button>
-					</div>
-					<p className="text-xs text-amber-700 dark:text-amber-300">
-						New Dodo quantity: {newTotalSeats} seats
-					</p>
-				</div>
-				<Button
-					className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm"
-					disabled={addingSeats || seatChangePending}
-					onClick={handleAddSeat}
-					size="sm"
-				>
-					{addingSeats ? (
-						<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-					) : (
-						<div className="flex items-center gap-1">
-							<Plus className="size-4" />
-							{seatChangePending
-								? "Pending"
-								: `Add ${seatsToAdd} Seat${seatsToAdd === 1 ? "" : "s"}`}
-						</div>
-					)}
-				</Button>
+				<SeatQuantityControls
+					addingSeats={addingSeats}
+					newTotalSeats={newTotalSeats}
+					seatChangePending={seatChangePending}
+					seatsToAdd={seatsToAdd}
+					updateSeatsToAdd={updateSeatsToAdd}
+				/>
+				<AddSeatsButton
+					addingSeats={addingSeats}
+					handleAddSeat={handleAddSeat}
+					seatChangePending={seatChangePending}
+					seatsToAdd={seatsToAdd}
+				/>
 			</div>
 		</div>
 	);
@@ -302,6 +385,194 @@ const InviteModalFooter = ({
 	);
 };
 
+interface InviteMemberFieldsProps {
+	email: string;
+	role: WorkspaceInviteRole;
+	comment: string;
+	addingSeats: boolean;
+	seatChangePending: boolean;
+	seatsToAdd: number;
+	isSeatsFull: boolean;
+	newTotalSeats: number;
+	setEmail: (email: string) => void;
+	setRole: (role: WorkspaceInviteRole) => void;
+	setComment: (comment: string) => void;
+	setSeatsToAdd: (seats: number) => void;
+	handleAddSeat: () => void;
+}
+
+const EmailField = ({
+	email,
+	setEmail,
+}: Pick<InviteMemberFieldsProps, "email" | "setEmail">) => {
+	return (
+		<div className="space-y-2">
+			<Label
+				className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
+				htmlFor="email"
+			>
+				<Users className="size-4 text-primary" />
+				Colleague&apos;s Email
+			</Label>
+			<Input
+				className="h-12 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-secondary transition-all text-base"
+				id="email"
+				onChange={(e) => setEmail(e.target.value)}
+				placeholder="colleague@example.com"
+				type="email"
+				value={email}
+			/>
+		</div>
+	);
+};
+
+const InvitationNoteField = ({
+	comment,
+	setComment,
+}: Pick<InviteMemberFieldsProps, "comment" | "setComment">) => {
+	return (
+		<div className="space-y-2">
+			<Label
+				className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
+				htmlFor="comment"
+			>
+				<MessageSquare className="size-4 text-secondary" />
+				Invitation Note
+			</Label>
+			<Textarea
+				className="min-h-[80px] border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-secondary resize-none transition-all"
+				id="comment"
+				onChange={(e) => setComment(e.target.value)}
+				placeholder="Let them know why you're inviting them..."
+				value={comment}
+			/>
+		</div>
+	);
+};
+
+const InviteMemberFields = ({
+	email,
+	role,
+	comment,
+	addingSeats,
+	seatChangePending,
+	seatsToAdd,
+	isSeatsFull,
+	newTotalSeats,
+	setEmail,
+	setRole,
+	setComment,
+	setSeatsToAdd,
+	handleAddSeat,
+}: InviteMemberFieldsProps) => {
+	return (
+		<div className="space-y-4">
+			<EmailField email={email} setEmail={setEmail} />
+			<WorkspaceRoleSelect role={role} setRole={setRole} />
+			<SeatFullWarningBanner
+				addingSeats={addingSeats}
+				handleAddSeat={handleAddSeat}
+				isSeatsFull={isSeatsFull}
+				newTotalSeats={newTotalSeats}
+				seatChangePending={seatChangePending}
+				seatsToAdd={seatsToAdd}
+				setSeatsToAdd={setSeatsToAdd}
+			/>
+			<InvitationNoteField comment={comment} setComment={setComment} />
+		</div>
+	);
+};
+
+interface InviteModalBodyProps extends InviteMemberFieldsProps {
+	scrollContainerRef: RefObject<HTMLDivElement>;
+}
+
+const InviteModalBody = ({
+	scrollContainerRef,
+	...fieldsProps
+}: InviteModalBodyProps) => {
+	return (
+		<div
+			className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white dark:bg-zinc-950"
+			ref={scrollContainerRef}
+		>
+			<div className="p-6 sm:p-8 space-y-6">
+				<InviteMemberFields {...fieldsProps} />
+			</div>
+		</div>
+	);
+};
+
+interface ScrollToActionsButtonProps {
+	hasMoreBelow: boolean;
+	scrollToActions: () => void;
+}
+
+const ScrollToActionsButton = ({
+	hasMoreBelow,
+	scrollToActions,
+}: ScrollToActionsButtonProps) => {
+	if (!hasMoreBelow) return null;
+
+	return (
+		<Button
+			aria-label="Scroll to invite actions"
+			className="absolute bottom-24 right-6 z-20 size-9 rounded-full bg-white text-secondary border border-secondary/20 shadow-lg hover:bg-secondary hover:text-white dark:bg-zinc-900 dark:hover:bg-secondary"
+			onClick={scrollToActions}
+			size="icon"
+			type="button"
+			variant="outline"
+		>
+			<ChevronDown className="size-4" />
+		</Button>
+	);
+};
+
+interface InviteDialogContentProps extends InviteMemberFieldsProps {
+	handleClose: () => void;
+	hasMoreBelow: boolean;
+	inviteLoading: boolean;
+	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollToActions: () => void;
+	sendInvite: () => void;
+	workspaceName: string;
+}
+
+const InviteDialogContent = ({
+	handleClose,
+	hasMoreBelow,
+	inviteLoading,
+	scrollContainerRef,
+	scrollToActions,
+	sendInvite,
+	workspaceName,
+	...fieldsProps
+}: InviteDialogContentProps) => {
+	return (
+		<DialogContent className="sm:max-w-[500px] max-h-[calc(100vh-2rem)] p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col">
+			<InviteModalHeader />
+			<InviteModalBody
+				scrollContainerRef={scrollContainerRef}
+				{...fieldsProps}
+			/>
+			<div className="sticky bottom-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur px-6 sm:px-8 py-4 border-t border-zinc-100 dark:border-zinc-900">
+				<InviteModalFooter
+					email={fieldsProps.email}
+					handleClose={handleClose}
+					inviteLoading={inviteLoading}
+					isSeatsFull={fieldsProps.isSeatsFull}
+					sendInvite={sendInvite}
+					workspaceName={workspaceName}
+				/>
+			</div>
+			<ScrollToActionsButton
+				hasMoreBelow={hasMoreBelow}
+				scrollToActions={scrollToActions}
+			/>
+		</DialogContent>
+	);
+};
+
 export const InviteMemberModal = () => {
 	const workspaceId = useWorkspaceId();
 	const [open, setOpen] = useInviteMemberModal();
@@ -346,7 +617,7 @@ export const InviteMemberModal = () => {
 
 	useEffect(() => {
 		const scrollContainer = scrollContainerRef.current;
-		if (!open || !scrollContainer) return;
+		if (!open || !scrollContainer) return undefined;
 
 		const updateScrollButton = () => {
 			const remainingScroll =
@@ -366,7 +637,7 @@ export const InviteMemberModal = () => {
 			scrollContainer.removeEventListener("scroll", updateScrollButton);
 			window.removeEventListener("resize", updateScrollButton);
 		};
-	}, [open, isSeatsFull]);
+	}, [open]);
 
 	const scrollToActions = () => {
 		const scrollContainer = scrollContainerRef.current;
@@ -483,89 +754,28 @@ export const InviteMemberModal = () => {
 
 	return (
 		<Dialog onOpenChange={handleClose} open={open}>
-			<DialogContent className="sm:max-w-[500px] max-h-[calc(100vh-2rem)] p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col">
-				<InviteModalHeader />
-
-				<div
-					className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white dark:bg-zinc-950"
-					ref={scrollContainerRef}
-				>
-					<div className="p-6 sm:p-8 space-y-6">
-						<div className="space-y-4">
-							<div className="space-y-2">
-								<Label
-									className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
-									htmlFor="email"
-								>
-									<Users className="size-4 text-primary" />
-									Colleague&apos;s Email
-								</Label>
-								<Input
-									className="h-12 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-secondary transition-all text-base"
-									id="email"
-									onChange={(e) => setEmail(e.target.value)}
-									placeholder="colleague@example.com"
-									type="email"
-									value={email}
-								/>
-							</div>
-
-							<WorkspaceRoleSelect role={role} setRole={setRole} />
-
-							<SeatFullWarningBanner
-								addingSeats={addingSeats}
-								handleAddSeat={handleAddSeat}
-								isSeatsFull={isSeatsFull}
-								newTotalSeats={newTotalSeats}
-								seatChangePending={seatChangePending}
-								seatsToAdd={seatsToAdd}
-								setSeatsToAdd={setSeatsToAdd}
-							/>
-
-							<div className="space-y-2">
-								<Label
-									className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
-									htmlFor="comment"
-								>
-									<MessageSquare className="size-4 text-secondary" />
-									Invitation Note
-								</Label>
-								<Textarea
-									className="min-h-[80px] border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-secondary resize-none transition-all"
-									id="comment"
-									onChange={(e) => setComment(e.target.value)}
-									placeholder="Let them know why you're inviting them..."
-									value={comment}
-								/>
-							</div>
-						</div>
-					</div>
-
-					<div className="sticky bottom-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur px-6 sm:px-8 py-4 border-t border-zinc-100 dark:border-zinc-900">
-						<InviteModalFooter
-							email={email}
-							handleClose={handleClose}
-							inviteLoading={inviteLoading}
-							isSeatsFull={isSeatsFull}
-							sendInvite={sendInvite}
-							workspaceName={workspace?.name ?? "Workspace"}
-						/>
-					</div>
-				</div>
-
-				{hasMoreBelow && (
-					<Button
-						aria-label="Scroll to invite actions"
-						className="absolute bottom-24 right-6 z-20 size-9 rounded-full bg-white text-secondary border border-secondary/20 shadow-lg hover:bg-secondary hover:text-white dark:bg-zinc-900 dark:hover:bg-secondary"
-						onClick={scrollToActions}
-						size="icon"
-						type="button"
-						variant="outline"
-					>
-						<ChevronDown className="size-4" />
-					</Button>
-				)}
-			</DialogContent>
+			<InviteDialogContent
+				addingSeats={addingSeats}
+				comment={comment}
+				email={email}
+				handleAddSeat={handleAddSeat}
+				handleClose={handleClose}
+				hasMoreBelow={hasMoreBelow}
+				inviteLoading={inviteLoading}
+				isSeatsFull={isSeatsFull}
+				newTotalSeats={newTotalSeats}
+				role={role}
+				scrollContainerRef={scrollContainerRef}
+				scrollToActions={scrollToActions}
+				seatChangePending={seatChangePending}
+				seatsToAdd={seatsToAdd}
+				sendInvite={sendInvite}
+				setComment={setComment}
+				setEmail={setEmail}
+				setRole={setRole}
+				setSeatsToAdd={setSeatsToAdd}
+				workspaceName={workspace?.name ?? "Workspace"}
+			/>
 		</Dialog>
 	);
 };

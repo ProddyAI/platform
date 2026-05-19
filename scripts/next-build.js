@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const { spawn } = require("node:child_process");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -35,7 +33,14 @@ async function prepareWindowsBuild() {
 async function main() {
 	await prepareWindowsBuild();
 
-	const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
+	const nextBin = path.join(
+		root,
+		"node_modules",
+		"next",
+		"dist",
+		"bin",
+		"next"
+	);
 	const env = {
 		...process.env,
 		NEXT_TELEMETRY_DISABLED: "1",
@@ -47,28 +52,33 @@ async function main() {
 		env.NEXT_DIST_DIR = ".next-win";
 	}
 
-	const child = spawn(process.execPath, [nextBin, "build"], {
-		cwd: root,
-		env,
-		stdio: "inherit",
-		windowsHide: true,
-	});
+	await new Promise((resolve, reject) => {
+		const child = spawn(process.execPath, [nextBin, "build"], {
+			cwd: root,
+			env,
+			stdio: "inherit",
+			windowsHide: true,
+		});
 
-	child.on("exit", (code, signal) => {
-		if (signal) {
-			process.kill(process.pid, signal);
-			return;
-		}
-		process.exit(code ?? 1);
-	});
+		child.on("exit", (code, signal) => {
+			if (signal) {
+				process.kill(process.pid, signal);
+				return;
+			}
 
-	child.on("error", (error) => {
-		console.error(error);
-		process.exit(1);
+			if (code && code !== 0) {
+				reject(new Error(`Next.js build failed with exit code ${code}.`));
+				return;
+			}
+
+			resolve();
+		});
+
+		child.on("error", reject);
 	});
 }
 
 main().catch((error) => {
 	console.error(error);
-	process.exit(1);
+	process.exitCode = 1;
 });
