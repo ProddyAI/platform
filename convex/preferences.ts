@@ -356,7 +356,7 @@ export const getNotificationPreferences = query({
  */
 export const updateBrowserPrefs = mutation({
 	args: {
-		updates: v.record(notificationKeyValidator, v.boolean()),
+		updates: v.record(v.string(), v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -407,7 +407,7 @@ export const updateBrowserPrefs = mutation({
  */
 export const updateEmailPrefs = mutation({
 	args: {
-		updates: v.record(notificationKeyValidator, v.boolean()),
+		updates: v.record(v.string(), v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);

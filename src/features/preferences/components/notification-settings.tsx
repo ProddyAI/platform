@@ -145,6 +145,7 @@ export const NotificationSettings = () => {
 				directMessage: enabled,
 				inviteSent: enabled,
 				workspaceJoin: enabled,
+				onlineStatus: enabled,
 			};
 			await updateBrowserPrefs({ updates });
 		});
@@ -153,7 +154,7 @@ export const NotificationSettings = () => {
 	const handleBrowserToggle = async (type: string, enabled: boolean) => {
 		await withSaveState(async () => {
 			await updateBrowserPrefs({
-				updates: { [type]: enabled },
+				updates: { [type]: enabled } as Record<string, boolean>,
 			});
 		});
 	};
@@ -161,7 +162,7 @@ export const NotificationSettings = () => {
 	const handleEmailToggle = async (type: string, enabled: boolean) => {
 		await withSaveState(async () => {
 			await updateEmailPrefs({
-				updates: { [type]: enabled },
+				updates: { [type]: enabled } as Record<string, boolean>,
 			});
 		});
 	};
