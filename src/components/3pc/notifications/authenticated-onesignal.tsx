@@ -21,5 +21,9 @@ export const AuthenticatedOneSignalTracking = () => {
 		return null;
 	}
 
+	// Safety check: ensure userId exists
+	if (!currentUser._id) {
+		return null;
+	}
 	return <OneSignalTracking userId={currentUser._id} />;
 };
