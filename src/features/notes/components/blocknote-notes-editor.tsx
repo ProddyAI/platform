@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { Note } from "../types";
 import { AIActionsToolbar } from "./ai-actions-toolbar";
 import { BlockNoteEditor } from "./blocknote-editor";
+import { NoteEditorErrorBoundary } from "./note-editor-error-boundary";
 
 interface BlockNoteNotesEditorProps {
 	note: Note;
@@ -78,12 +79,17 @@ export const BlockNoteNotesEditor = ({
 			</div>
 
 			{/* Editor area — fills remaining height, scrollable inside */}
+			{/* Wrapped in Error Boundary to catch ProseMirror/BlockNote crashes
+			    (e.g. RangeError: Invalid array passed to renderSpec) for existing
+			    notes that were stored with an invalid document structure. */}
 			<div className="flex-1 min-h-0 overflow-hidden relative">
-				<BlockNoteEditor
-					className="h-full"
-					noteId={note._id}
-					onEditorReady={handleEditorReady}
-				/>
+				<NoteEditorErrorBoundary noteId={note._id}>
+					<BlockNoteEditor
+						className="h-full"
+						noteId={note._id}
+						onEditorReady={handleEditorReady}
+					/>
+				</NoteEditorErrorBoundary>
 			</div>
 		</div>
 	);

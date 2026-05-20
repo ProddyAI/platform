@@ -116,7 +116,11 @@ export const create = mutation({
 		}
 
 		// Create the prosemirror document for collaborative editing
-		await prosemirrorSync.create(ctx, noteId, { type: "doc", content: [] });
+		// NOTE: content must NOT be an empty array — ProseMirror requires at least one node
+		await prosemirrorSync.create(ctx, noteId, {
+			type: "doc",
+			content: [{ type: "paragraph" }],
+		});
 
 		// Index for RAG search (disabled temporarily for stability)
 		/*
@@ -143,8 +147,10 @@ export const getByChannel = query({
 		if (!args.workspaceId) return [];
 		const userId = await getAuthUserId(ctx);
 
+		// Return empty array instead of throwing to avoid client-side crashes
+		// during auth state transitions (e.g. page load before session is confirmed)
 		if (!userId) {
-			throw new Error("Unauthorized");
+			return [];
 		}
 
 		const workspaceId = mapWorkspaceId(args.workspaceId) as Id<"workspaces">;
@@ -153,7 +159,7 @@ export const getByChannel = query({
 		const member = await findMemberForUser(ctx, workspaceId, userId);
 
 		if (!member) {
-			throw new Error("Unauthorized");
+			return [];
 		}
 
 		const notes = await ctx.db
@@ -179,8 +185,10 @@ export const list = query({
 		if (!args.workspaceId) return [];
 		const userId = await getAuthUserId(ctx);
 
+		// Return empty array instead of throwing to avoid client-side crashes
+		// during auth state transitions (e.g. page load before session is confirmed)
 		if (!userId) {
-			throw new Error("Unauthorized");
+			return [];
 		}
 
 		const workspaceId = mapWorkspaceId(args.workspaceId) as Id<"workspaces">;
@@ -189,7 +197,7 @@ export const list = query({
 		const member = await findMemberForUser(ctx, workspaceId, userId);
 
 		if (!member) {
-			throw new Error("Unauthorized");
+			return [];
 		}
 
 		// Real search (Broad for now to ensure visibility)

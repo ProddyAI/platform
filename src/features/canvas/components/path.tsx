@@ -21,6 +21,21 @@ export const Path = ({
 	stroke,
 	strokeWidth = 16,
 }: PathProps) => {
+	// Guard against invalid/empty points to prevent SVG NaN errors
+	if (
+		!points ||
+		!Array.isArray(points) ||
+		points.length === 0 ||
+		points.some(
+			(pt) =>
+				!Array.isArray(pt) ||
+				pt.length < 2 ||
+				pt.some((v) => typeof v !== "number" || isNaN(v) || !isFinite(v))
+		)
+	) {
+		return null;
+	}
+
 	// Process the stroke with perfect-freehand
 	const strokePath = getStroke(points, {
 		size: strokeWidth,
@@ -31,6 +46,11 @@ export const Path = ({
 
 	// Convert the stroke to an SVG path
 	const pathData = getSvgPathFromStroke(strokePath);
+
+	// Skip rendering if pathData contains NaN (safety net)
+	if (!pathData || pathData.includes("NaN")) {
+		return null;
+	}
 
 	return (
 		<path
