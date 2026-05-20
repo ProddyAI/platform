@@ -133,27 +133,29 @@ export const get = query({
 			})
 		);
 
-		return projects
-			.map((project) => ({
-				...project,
-				issueCount: issueCountMap.get(project._id) ?? 0,
-				boardChannelName:
-					channelMap.get(project.boardChannelId)?.name ?? "Unknown board",
-				connectedChannelName: project.connectedChannelId
-					? channelMap.get(project.connectedChannelId)?.name
-					: undefined,
-				connectedChannelIcon: project.connectedChannelId
-					? channelMap.get(project.connectedChannelId)?.icon
-					: undefined,
-				connectedChannelIconImageUrl: project.connectedChannelId
-					? channelMap.get(project.connectedChannelId)?.iconImageUrl
-					: undefined,
-			}))
-			// Sort by issue count descending, then alphabetically by name for ties
-			.sort((a, b) => {
-				const diff = b.issueCount - a.issueCount;
-				return diff !== 0 ? diff : a.name.localeCompare(b.name);
-			});
+		return (
+			projects
+				.map((project) => ({
+					...project,
+					issueCount: issueCountMap.get(project._id) ?? 0,
+					boardChannelName:
+						channelMap.get(project.boardChannelId)?.name ?? "Unknown board",
+					connectedChannelName: project.connectedChannelId
+						? channelMap.get(project.connectedChannelId)?.name
+						: undefined,
+					connectedChannelIcon: project.connectedChannelId
+						? channelMap.get(project.connectedChannelId)?.icon
+						: undefined,
+					connectedChannelIconImageUrl: project.connectedChannelId
+						? channelMap.get(project.connectedChannelId)?.iconImageUrl
+						: undefined,
+				}))
+				// Sort by issue count descending, then alphabetically by name for ties
+				.sort((a, b) => {
+					const diff = b.issueCount - a.issueCount;
+					return diff !== 0 ? diff : a.name.localeCompare(b.name);
+				})
+		);
 	},
 });
 

@@ -369,8 +369,8 @@ export const ImportDataManagement = ({
 			<div>
 				<h3 className="text-lg font-medium">Import Data</h3>
 				<p className="text-sm text-muted-foreground">
-					Connect to external platforms and import your data into Proddy.
-					Slack and Linear are fully supported. More platforms coming soon.
+					Connect to external platforms and import your data into Proddy. Slack
+					and Linear are fully supported. More platforms coming soon.
 				</p>
 			</div>
 
@@ -424,9 +424,12 @@ export const ImportDataManagement = ({
 												className="flex-1"
 												disabled={
 													!platform.available ||
-													(platform.id === "slack" && startSlackImport.isPending) ||
-													(platform.id === "linear" && startLinearImport.isPending) ||
-													(platform.id === "todoist" && startTodoistImport.isPending)
+													(platform.id === "slack" &&
+														startSlackImport.isPending) ||
+													(platform.id === "linear" &&
+														startLinearImport.isPending) ||
+													(platform.id === "todoist" &&
+														startTodoistImport.isPending)
 												}
 												onClick={() => handleStartImport(platform.id)}
 												size="sm"
@@ -491,7 +494,9 @@ export const ImportDataManagement = ({
 												{(
 													latestJob.result?.messagesCreated ?? 0
 												).toLocaleString()}{" "}
-												{latestJob.platform === "linear" ? "issues" : "messages"}
+												{latestJob.platform === "linear"
+													? "issues"
+													: "messages"}
 											</p>
 										)}
 									</div>
@@ -555,28 +560,28 @@ export const ImportDataManagement = ({
 												)}
 											</TableCell>
 											<TableCell>
-										{job.result ? (
-												<div className="text-xs space-y-1">
-													<div>
-														{job.result?.channelsCreated?.length ?? 0}{" "}
-														{job.platform === "linear"
-															? "projects"
-															: "channels"}
+												{job.result ? (
+													<div className="text-xs space-y-1">
+														<div>
+															{job.result?.channelsCreated?.length ?? 0}{" "}
+															{job.platform === "linear"
+																? "projects"
+																: "channels"}
+														</div>
+														<div>
+															{(
+																job.result?.messagesCreated ?? 0
+															).toLocaleString()}{" "}
+															{job.platform === "linear"
+																? "issues"
+																: "messages"}
+														</div>
 													</div>
-													<div>
-														{(
-															job.result?.messagesCreated ?? 0
-														).toLocaleString()}{" "}
-														{job.platform === "linear"
-															? "issues"
-															: "messages"}
-													</div>
-												</div>
-											) : (
-												<span className="text-sm text-muted-foreground">
-													—
-												</span>
-											)}
+												) : (
+													<span className="text-sm text-muted-foreground">
+														—
+													</span>
+												)}
 											</TableCell>
 											<TableCell>
 												{job.status === "in_progress" && (
@@ -742,7 +747,7 @@ export const ImportDataManagement = ({
 										}
 										value={importConfig.targetChannelId || ""}
 									>
-									<option value="">
+										<option value="">
 											Create new projects (one per Linear team)
 										</option>
 										{channels?.map((channel) => (
@@ -751,11 +756,11 @@ export const ImportDataManagement = ({
 											</option>
 										))}
 									</select>
-								<p className="text-xs text-muted-foreground">
-											{importConfig.targetChannelId
-												? "All Linear teams and issues will be imported into the selected channel."
-												: "Each Linear team will be created as a separate project in the Projects tab. Issues are imported and assignees are matched automatically."}
-										</p>
+									<p className="text-xs text-muted-foreground">
+										{importConfig.targetChannelId
+											? "All Linear teams and issues will be imported into the selected channel."
+											: "Each Linear team will be created as a separate project in the Projects tab. Issues are imported and assignees are matched automatically."}
+									</p>
 								</div>
 
 								<div className="space-y-2 pt-2">
@@ -776,11 +781,11 @@ export const ImportDataManagement = ({
 							Cancel
 						</Button>
 						<Button
-					disabled={
-							startSlackImport.isPending ||
-							startTodoistImport.isPending ||
-							startLinearImport.isPending
-						}
+							disabled={
+								startSlackImport.isPending ||
+								startTodoistImport.isPending ||
+								startLinearImport.isPending
+							}
 							onClick={handleConfirmImport}
 						>
 							<Download className="h-4 w-4 mr-2" />

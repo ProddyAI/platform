@@ -2749,7 +2749,8 @@ export const sendAutoInviteEmail = internalAction({
 
 			const workspaceUrl = `${siteUrl}/workspace/${args.workspaceId}`;
 			const firstName = args.name.split(" ")[0] || args.name;
-			const platformName = args.platform.charAt(0).toUpperCase() + args.platform.slice(1);
+			const platformName =
+				args.platform.charAt(0).toUpperCase() + args.platform.slice(1);
 
 			const html = `<!DOCTYPE html>
 <html>

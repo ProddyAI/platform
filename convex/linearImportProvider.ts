@@ -777,10 +777,7 @@ async function storeTeam(
 	}
 
 	// Create a project + board channel for this Linear team
-	await ctx.log(
-		"info",
-		`Creating new project for Linear team ${team.name}`
-	);
+	await ctx.log("info", `Creating new project for Linear team ${team.name}`);
 	const channelId = await ctx.runMutation<string>(
 		internal.importIntegrations.storeImportedLinearProject,
 		{

@@ -823,7 +823,7 @@ export async function executeSlackImport(
 		for (const user of users) {
 			if (user.email) {
 				try {
-					const memberResult = await ctx.runMutation(
+					const memberResult = (await ctx.runMutation(
 						internal.importIntegrations._getOrCreateMemberByEmail,
 						{
 							workspaceId: ctx.workspaceId,
@@ -834,7 +834,7 @@ export async function executeSlackImport(
 							importJobUserId: (ctx as any).userId,
 							platform: "slack",
 						}
-					) as any;
+					)) as any;
 
 					if (memberResult && memberResult.member) {
 						slackCtx.userMap.set(user.externalId, memberResult.member._id);
@@ -1080,8 +1080,8 @@ async function storeMessages(
 				return; // Skip this message
 			}
 
-		// Find the member for this user from the user map (if available)
-		const memberId = ctx.userMap.get(message.authorExternalId);
+			// Find the member for this user from the user map (if available)
+			const memberId = ctx.userMap.get(message.authorExternalId);
 
 			// Get parent message ID if this is a thread reply
 			let parentMessageId: string | undefined;
