@@ -142,10 +142,11 @@ export const apiBase =
 export const dodo = new DodoPayments(
 	(components as Record<string, unknown>).dodopayments as never,
 	{
-	identify: identifyCustomer,
-	apiKey: dodoApiKey,
-	environment: dodoEnvironment,
-} as DodoPaymentsClientConfig);
+		identify: identifyCustomer,
+		apiKey: dodoApiKey,
+		environment: dodoEnvironment,
+	} as DodoPaymentsClientConfig
+);
 
 // Export API surface for use in Convex actions
 export const { checkout, customerPortal } = dodo.api();
@@ -397,7 +398,9 @@ export const subscriptions = {
 						error || `${res.status} ${res.statusText}`
 					);
 				}
-				return await res.json();
+				return res.headers.get("content-type")?.includes("application/json")
+					? await res.json()
+					: null;
 			}
 		);
 	},

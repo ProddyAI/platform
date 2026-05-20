@@ -215,13 +215,16 @@ const baseConfig = withPWA({
 	typescript: {
 		// `bun run build` runs `tsc --noEmit` first. Skipping Next's duplicate
 		// type worker avoids Windows spawn/worker stalls without hiding TS errors.
-		ignoreBuildErrors: true,
+		ignoreBuildErrors: process.env.NEXT_IGNORE_TS_ERRORS === "true",
 	},
 	experimental: {
 		// Windows + OneDrive can throw EPERM while Next forks workers and renames
 		// cache/export folders. Keep local Windows builds single-worker; CI/Linux
 		// builds can still use the default parallelism.
-		cpus: isWindows || process.env.CI || process.env.LIMIT_BUILD_CPUS ? 1 : undefined,
+		cpus:
+			isWindows || process.env.CI || process.env.LIMIT_BUILD_CPUS
+				? 1
+				: undefined,
 		workerThreads: true,
 	},
 	webpack(config, { dev }) {

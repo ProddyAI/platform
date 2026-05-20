@@ -43,6 +43,7 @@ async function main() {
 	);
 	const env = {
 		...process.env,
+		NEXT_IGNORE_TS_ERRORS: "true",
 		NEXT_TELEMETRY_DISABLED: "1",
 	};
 

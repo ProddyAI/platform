@@ -3,6 +3,9 @@
 	"version": "1.0.1",
 	"private": true,
 	"packageManager": "bun@1.3.6",
+	"engines": {
+		"node": ">=20"
+	},
 	"scripts": {
 		"dev": "next dev",
 		"dev:https": "next dev --experimental-https",

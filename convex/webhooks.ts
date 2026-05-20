@@ -9,7 +9,7 @@
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
 	internalMutation,
 	internalQuery,
@@ -57,6 +57,38 @@ export const recordWebhook = internalMutation({
 			processedAt: Date.now(),
 		});
 		return { recorded: true };
+	},
+});
+
+export const markDodoSyncManualReview = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		reason: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) return { ok: false, reason: "workspace_not_found" };
+
+		await ctx.db.patch(args.workspaceId, {
+			needsDodoReview: true,
+			dodoReviewReason: args.reason,
+			dodoReviewUpdatedAt: Date.now(),
+		});
+		await ctx.db.insert("billingAuditLogs", {
+			workspaceId: args.workspaceId,
+			action: "dodo_manual_review_required",
+			previousValue: {
+				plan: workspace.plan ?? null,
+				quantity: workspace.totalPaidSeats ?? 0,
+			},
+			newValue: {
+				plan: workspace.plan ?? null,
+				quantity: workspace.totalPaidSeats ?? 0,
+			},
+			timestamp: Date.now(),
+		});
+
+		return { ok: true };
 	},
 });
 
@@ -197,7 +229,7 @@ const findWorkspaceMemberByBillingEmail = async (
 ) => {
 	const user = await ctx.db
 		.query("users")
-		.withIndex("email", (q) => q.eq("email", email))
+		.withIndex("by_email", (q) => q.eq("email", email))
 		.first();
 	if (!user) return null;
 
@@ -208,6 +240,53 @@ const findWorkspaceMemberByBillingEmail = async (
 			q.or(q.eq(q.field("role"), "owner"), q.eq(q.field("role"), "admin"))
 		)
 		.first();
+};
+
+const getEffectiveBilling = (
+	workspace: Doc<"workspaces"> | null,
+	args: {
+		subscriptionId?: string;
+		applyPendingBilling?: boolean;
+		plan?: "pro" | "enterprise";
+		quantity?: number;
+	}
+) => {
+	const pendingMatchesPayment =
+		Boolean(args.subscriptionId) &&
+		workspace?.pendingBillingStatus === "pending_payment" &&
+		workspace.pendingBillingSubscriptionId === args.subscriptionId;
+	const canApplyPendingPayment =
+		!pendingMatchesPayment || args.applyPendingBilling !== false;
+
+	if (!canApplyPendingPayment) {
+		return { effectivePlan: undefined, effectiveQuantity: undefined };
+	}
+
+	const pendingPlan =
+		workspace?.pendingBillingPlan === "pro" ||
+		workspace?.pendingBillingPlan === "enterprise"
+			? workspace.pendingBillingPlan
+			: undefined;
+	const effectivePlan =
+		pendingMatchesPayment && pendingPlan ? pendingPlan : args.plan;
+
+	if (
+		pendingMatchesPayment &&
+		typeof workspace?.pendingBillingQuantity === "number"
+	) {
+		return {
+			effectivePlan,
+			effectiveQuantity: workspace.pendingBillingQuantity,
+		};
+	}
+
+	return {
+		effectivePlan,
+		effectiveQuantity:
+			typeof args.quantity === "number" && args.quantity > 0
+				? args.quantity
+				: undefined,
+	};
 };
 
 // Store payment info (no-op for schema-light approach, but kept for audit/extension)
@@ -278,28 +357,10 @@ export const createPayment = internalMutation({
 		}
 
 		const workspace = await ctx.db.get(workspaceObjId);
-		const pendingMatchesPayment =
-			Boolean(args.subscriptionId) &&
-			workspace?.pendingBillingStatus === "pending_payment" &&
-			workspace.pendingBillingSubscriptionId === args.subscriptionId;
-		const canApplyPendingPayment =
-			!pendingMatchesPayment || args.applyPendingBilling !== false;
-		const effectivePlan =
-			(pendingMatchesPayment &&
-			canApplyPendingPayment &&
-			(workspace?.pendingBillingPlan === "pro" ||
-				workspace?.pendingBillingPlan === "enterprise")
-				? workspace.pendingBillingPlan
-				: undefined) ??
-			(canApplyPendingPayment ? args.plan : undefined);
-		const effectiveQuantity =
-			pendingMatchesPayment &&
-			canApplyPendingPayment &&
-			typeof workspace?.pendingBillingQuantity === "number"
-				? workspace.pendingBillingQuantity
-				: typeof args.quantity === "number" && args.quantity > 0
-					? args.quantity
-					: undefined;
+		const { effectivePlan, effectiveQuantity } = getEffectiveBilling(
+			workspace,
+			args
+		);
 
 		const historyEntry: {
 			workspaceId: Id<"workspaces">;
@@ -330,7 +391,8 @@ export const createPayment = internalMutation({
 			historyEntry.taxAmount = args.taxAmount;
 		}
 		if (effectivePlan) historyEntry.plan = effectivePlan;
-		if (typeof effectiveQuantity === "number") historyEntry.seats = effectiveQuantity;
+		if (typeof effectiveQuantity === "number")
+			historyEntry.seats = effectiveQuantity;
 		if (args.invoiceUrl) historyEntry.invoiceUrl = args.invoiceUrl;
 		await ctx.db.insert("billingHistory", historyEntry);
 
@@ -363,6 +425,9 @@ export const createPayment = internalMutation({
 				pendingBillingCreatedAt: undefined,
 				pendingBillingExpiresAt: undefined,
 				pendingBillingSubscriptionId: undefined,
+				needsDodoReview: undefined,
+				dodoReviewReason: undefined,
+				dodoReviewUpdatedAt: undefined,
 			});
 			console.log("[billing] payment success activated plan", {
 				workspaceId: workspaceObjId,
@@ -505,9 +570,7 @@ async function processSubscriptionSync(
 
 	if (args.workspaceId) {
 		try {
-			const workspace = await ctx.db.get(
-				args.workspaceId as Id<"workspaces">
-			);
+			const workspace = await ctx.db.get(args.workspaceId as Id<"workspaces">);
 
 			if (workspace) {
 				workspaceObjId = workspace._id;
@@ -538,7 +601,10 @@ async function processSubscriptionSync(
 	}
 
 	if (!workspaceObjId && args.customerEmail) {
-		const member = await findWorkspaceMemberByBillingEmail(ctx, args.customerEmail);
+		const member = await findWorkspaceMemberByBillingEmail(
+			ctx,
+			args.customerEmail
+		);
 		if (member) workspaceObjId = member.workspaceId;
 	}
 
@@ -551,12 +617,28 @@ async function processSubscriptionSync(
 
 	const previousWorkspace = await ctx.db.get(workspaceObjId);
 	const previousPaidPlan =
-		previousWorkspace?.plan === "pro" || previousWorkspace?.plan === "enterprise"
+		previousWorkspace?.plan === "pro" ||
+		previousWorkspace?.plan === "enterprise"
 			? previousWorkspace.plan
 			: null;
 	const hasPendingUpgradeForSubscription =
 		previousWorkspace?.pendingBillingStatus === "pending_payment" &&
 		previousWorkspace.pendingBillingSubscriptionId === args.subscriptionId;
+	if (
+		previousWorkspace?.needsDodoReview &&
+		hasPendingUpgradeForSubscription &&
+		args.paymentConfirmed !== true
+	) {
+		console.warn(
+			`[${contextName}] Dodo manual review required before syncing pending billing`,
+			{
+				workspaceId: workspaceObjId,
+				subscriptionId: args.subscriptionId,
+				reason: previousWorkspace.dodoReviewReason,
+			}
+		);
+		return { ok: true, reason: "dodo_manual_review_required" };
+	}
 	const pendingPlan =
 		hasPendingUpgradeForSubscription &&
 		(previousWorkspace?.pendingBillingPlan === "pro" ||
@@ -637,10 +719,7 @@ async function processSubscriptionSync(
 		patch.pendingBillingCreatedAt = undefined;
 		patch.pendingBillingExpiresAt = undefined;
 		patch.pendingBillingSubscriptionId = undefined;
-	} else if (
-		nextPaidPlan &&
-		canApplyPaidPlan
-	) {
+	} else if (nextPaidPlan && canApplyPaidPlan) {
 		patch.plan = nextPaidPlan;
 		const quantity =
 			typeof nextQuantity === "number" && nextQuantity > 0
@@ -688,10 +767,7 @@ async function processSubscriptionSync(
 	await ctx.db.patch(workspaceObjId, patch);
 	if (isInactive) {
 		await syncMemberSeatTiers(ctx, workspaceObjId, "free");
-	} else if (
-		canApplyPaidPlan &&
-		nextPaidPlan
-	) {
+	} else if (canApplyPaidPlan && nextPaidPlan) {
 		await syncMemberSeatTiers(ctx, workspaceObjId, nextPaidPlan);
 	}
 	await notifyAdminsOfPlanChange(
@@ -729,7 +805,8 @@ export const createSubscription = internalMutation({
 		paymentConfirmed: v.optional(v.boolean()),
 		raw: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => { // Refactored to drop complexity
+	handler: async (ctx, args) => {
+		// Refactored to drop complexity
 		return processSubscriptionSync(ctx, args, "createSubscription");
 	},
 });
@@ -753,7 +830,8 @@ export const updateSubscription = internalMutation({
 		paymentConfirmed: v.optional(v.boolean()),
 		raw: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => { // Refactored to drop complexity
+	handler: async (ctx, args) => {
+		// Refactored to drop complexity
 		return processSubscriptionSync(ctx, args, "updateSubscription");
 	},
 });

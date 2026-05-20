@@ -256,31 +256,24 @@ export const insertInvite = mutation({
 
 		// Enforce paid seat limits. Removed members free up one occupied seat;
 		// purchased seat quantity is only changed explicitly from billing.
-		if (
-			args.role === "owner" ||
-			args.role === "admin" ||
-			args.role === "member"
-		) {
-			const workspace = await ctx.db.get(args.workspaceId);
-			if (!workspace) throw new Error("Workspace not found");
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) throw new Error("Workspace not found");
 
-			const workspaceSeatTier = getWorkspaceSeatTier(workspace);
-			if (workspaceSeatTier) {
-				const totalSeatsPurchased = getPaidSeatLimit(workspace);
-				const totalOccupied =
-					(await getActiveBillableMemberCount(ctx, args.workspaceId)) +
-					(await getPendingBillableInviteCount(ctx, args.workspaceId));
+		const workspaceSeatTier = getWorkspaceSeatTier(workspace);
+		if (workspaceSeatTier) {
+			const totalSeatsPurchased = getPaidSeatLimit(workspace);
+			const totalOccupied =
+				(await getActiveBillableMemberCount(ctx, args.workspaceId)) +
+				(await getPendingBillableInviteCount(ctx, args.workspaceId));
 
-				if (totalOccupied >= totalSeatsPurchased) {
-					throw new Error(
-						`Seat limit reached for ${workspaceSeatTier}. You have ${totalSeatsPurchased} seats and all are occupied or invited. Remove a member, wait for an invite to expire, or add seats before inviting another user.`
-					);
-				}
+			if (totalOccupied >= totalSeatsPurchased) {
+				throw new Error(
+					`Seat limit reached for ${workspaceSeatTier}. You have ${totalSeatsPurchased} seats and all are occupied or invited. Remove a member, wait for an invite to expire, or add seats before inviting another user.`
+				);
 			}
 		}
 
-		const workspace = await ctx.db.get(args.workspaceId);
-		const invitePlan = workspace ? getWorkspaceSeatTier(workspace) : undefined;
+		const invitePlan = workspaceSeatTier;
 
 		return await ctx.db.insert("workspaceInvites", {
 			workspaceId: args.workspaceId,

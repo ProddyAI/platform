@@ -69,11 +69,15 @@ interface MembersManagementProps {
 
 interface EmailInviteSectionProps {
 	workspaceId: Id<"workspaces">;
+	currentMember: Doc<"members">;
 }
 
 type InviteRole = "owner" | "admin" | "member";
 
-const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
+const EmailInviteSection = ({
+	workspaceId,
+	currentMember,
+}: EmailInviteSectionProps) => {
 	const [email, setEmail] = useState("");
 	const [inviteRole, setInviteRole] = useState<InviteRole>("member");
 	const [inviteComment, setInviteComment] = useState("");
@@ -184,12 +188,14 @@ const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 									Admin
 								</div>
 							</SelectItem>
-							<SelectItem value="owner">
-								<div className="flex items-center gap-2">
-									<Crown className="h-4 w-4" />
-									Owner
-								</div>
-							</SelectItem>
+							{currentMember.role === "owner" && (
+								<SelectItem value="owner">
+									<div className="flex items-center gap-2">
+										<Crown className="h-4 w-4" />
+										Owner
+									</div>
+								</SelectItem>
+							)}
 						</SelectContent>
 					</Select>
 					<Tooltip>
@@ -353,7 +359,10 @@ export const MembersManagement = ({
 				</div>
 
 				{(isOwner || isAdmin) && workspace && (
-					<EmailInviteSection workspaceId={workspaceId} />
+					<EmailInviteSection
+						currentMember={currentMember}
+						workspaceId={workspaceId}
+					/>
 				)}
 
 				<Separator />

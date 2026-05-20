@@ -55,9 +55,9 @@ interface DodoSubscriptionData {
 	customer?:
 		| string
 		| {
-		customer_id?: string;
+				customer_id?: string;
 				id?: string;
-		email?: string;
+				email?: string;
 		  };
 	customer_id?: string;
 	customer_email?: string;
@@ -84,9 +84,9 @@ interface DodoWebhookPayload {
 		customer?:
 			| string
 			| {
-			customer_id?: string;
+					customer_id?: string;
 					id?: string;
-			email?: string;
+					email?: string;
 			  };
 		customer_email?: string;
 	};
@@ -142,10 +142,10 @@ const buildSubscriptionMutationArgs = (
 		subscriptionId: string;
 		status: string;
 		plan?: "pro" | "enterprise";
-	customerId?: string;
-	quantity?: number;
-	customerEmail?: string | null;
-	cancelAtNextBillingDate?: boolean;
+		customerId?: string;
+		quantity?: number;
+		customerEmail?: string | null;
+		cancelAtNextBillingDate?: boolean;
 		nextBillingDate?: string;
 		amountDue?: number;
 		currency?: string;
@@ -352,17 +352,15 @@ const handlePaymentSucceededEvent = async (
 		paymentArgs.businessId = payload.business_id;
 	}
 	let dodoQuantityAligned = true;
-	let pendingChange:
-		| {
-				workspaceId: Id<"workspaces">;
-				plan: "pro" | "enterprise";
-				quantity: number;
-				currentQuantity: number;
-				amountDue: number | null;
-				currency: string | null;
-				taxAmount: number | null;
-		  }
-		| null = null;
+	let pendingChange: {
+		workspaceId: Id<"workspaces">;
+		plan: "pro" | "enterprise";
+		quantity: number;
+		currentQuantity: number;
+		amountDue: number | null;
+		currency: string | null;
+		taxAmount: number | null;
+	} | null = null;
 	if (typeof subscriptionId === "string") {
 		paymentArgs.subscriptionId = subscriptionId;
 		pendingChange = await ctx.runQuery(
@@ -372,10 +370,13 @@ const handlePaymentSucceededEvent = async (
 		if (pendingChange) {
 			const productId = PLANS[pendingChange.plan].dodoProductId;
 			if (!productId) {
-				console.error("[Dodo Webhook] Missing Dodo product id for pending plan", {
-					plan: pendingChange.plan,
-					workspaceId: pendingChange.workspaceId,
-				});
+				console.error(
+					"[Dodo Webhook] Missing Dodo product id for pending plan",
+					{
+						plan: pendingChange.plan,
+						workspaceId: pendingChange.workspaceId,
+					}
+				);
 				dodoQuantityAligned = false;
 			} else {
 				try {
@@ -419,10 +420,20 @@ const handlePaymentSucceededEvent = async (
 					}
 				} catch (error) {
 					dodoQuantityAligned = false;
+					const errorDetails =
+						error instanceof Error ? error.message : String(error);
 					console.error(
-						"[Dodo Webhook] Failed to update Dodo quantity after payment:",
-						error
+						"[Dodo Webhook] Failed to update Dodo quantity after payment",
+						{
+							workspaceId: pendingChange.workspaceId,
+							subscriptionId,
+							error: errorDetails,
+						}
 					);
+					await ctx.runMutation(internal.webhooks.markDodoSyncManualReview, {
+						workspaceId: pendingChange.workspaceId,
+						reason: `Failed to apply paid Dodo plan change after payment: ${errorDetails}`,
+					});
 				}
 			}
 			paymentArgs.applyPendingBilling = dodoQuantityAligned;
@@ -521,7 +532,9 @@ const handleSubscriptionCancelledEvent = async (
 		raw: JSON.stringify(payload),
 	};
 	if (!cancelArgs.subscriptionId) {
-		console.warn("[Dodo Webhook] subscription.cancelled missing subscription_id");
+		console.warn(
+			"[Dodo Webhook] subscription.cancelled missing subscription_id"
+		);
 		return;
 	}
 	if (workspaceId) cancelArgs.workspaceId = workspaceId;
@@ -533,12 +546,15 @@ const handleSubscriptionCancelledEvent = async (
 http.route({
 	path: "/dodopayments-webhook",
 	method: "POST",
-	handler: httpAction(async (ctx, request) => { // Refactored to external handlers
+	handler: httpAction(async (ctx, request) => {
+		// Refactored to external handlers
 		/* skipcq: JS-0002 */ console.log("[Webhook] Request received");
 
 		const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET;
 		if (!webhookSecret) {
-			/* skipcq: JS-0002 */ console.error("Missing DODO_PAYMENTS_WEBHOOK_SECRET");
+			/* skipcq: JS-0002 */ console.error(
+				"Missing DODO_PAYMENTS_WEBHOOK_SECRET"
+			);
 			return new Response("Configuration error", { status: 500 });
 		}
 
@@ -585,11 +601,14 @@ http.route({
 			return new Response("Bad Request", { status: 400 });
 		}
 
-		/* skipcq: JS-0002 */ console.log(`[Dodo Webhook] Received event: ${payload.type}`);
+		/* skipcq: JS-0002 */ console.log(
+			`[Dodo Webhook] Received event: ${payload.type}`
+		);
 		const webhookId = getWebhookId(payload);
 		if (webhookId) {
 			const isDuplicate = await ctx.runQuery(
-				(internal.webhooks as Record<string, unknown>).checkWebhook as FunctionReference<
+				(internal.webhooks as Record<string, unknown>)
+					.checkWebhook as FunctionReference<
 					"query",
 					"internal",
 					{ webhookId: string },
@@ -600,7 +619,9 @@ http.route({
 				}
 			);
 			if (isDuplicate) {
-				/* skipcq: JS-0002 */ console.log(`[Dodo Webhook] Duplicate event skipped: ${webhookId}`);
+				/* skipcq: JS-0002 */ console.log(
+					`[Dodo Webhook] Duplicate event skipped: ${webhookId}`
+				);
 				return new Response("OK", { status: 200 });
 			}
 		}
@@ -639,7 +660,8 @@ http.route({
 
 			if (webhookId) {
 				await ctx.runMutation(
-					(internal.webhooks as Record<string, unknown>).recordWebhook as FunctionReference<
+					(internal.webhooks as Record<string, unknown>)
+						.recordWebhook as FunctionReference<
 						"mutation",
 						"internal",
 						{ webhookId: string; eventType: string },

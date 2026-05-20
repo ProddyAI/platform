@@ -15,12 +15,12 @@ const billingAuditValue = v.object({
 	enterpriseSeats: v.optional(v.number()),
 	cancellationAtPeriodEnd: v.optional(v.boolean()),
 	scheduledCancellationDate: v.optional(v.union(v.number(), v.null())),
-		refundAmount: v.optional(v.number()),
-		refundCurrency: v.optional(v.union(v.string(), v.null())),
-		refundId: v.optional(v.union(v.string(), v.null())),
-		creditAmount: v.optional(v.number()),
-		creditCurrency: v.optional(v.union(v.string(), v.null())),
-	});
+	refundAmount: v.optional(v.number()),
+	refundCurrency: v.optional(v.union(v.string(), v.null())),
+	refundId: v.optional(v.union(v.string(), v.null())),
+	creditAmount: v.optional(v.number()),
+	creditCurrency: v.optional(v.union(v.string(), v.null())),
+});
 
 const schema = defineSchema({
 	...authTables,
@@ -38,7 +38,7 @@ const schema = defineSchema({
 		bio: v.optional(v.string()),
 		location: v.optional(v.string()),
 		website: v.optional(v.string()),
-	}).index("email", ["email"]),
+	}).index("by_email", ["email"]),
 
 	// Email OTP verifications
 	emailVerifications: defineTable({
@@ -94,6 +94,9 @@ const schema = defineSchema({
 		pendingBillingCreatedAt: v.optional(v.number()),
 		pendingBillingExpiresAt: v.optional(v.number()),
 		pendingBillingSubscriptionId: v.optional(v.string()),
+		needsDodoReview: v.optional(v.boolean()),
+		dodoReviewReason: v.optional(v.string()),
+		dodoReviewUpdatedAt: v.optional(v.number()),
 	})
 		.index("by_user_id", ["userId"])
 		.index("by_plan", ["plan"])

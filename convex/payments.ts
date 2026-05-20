@@ -255,6 +255,29 @@ const getActivePendingBillingPayment = (
 	};
 };
 
+const clearWorkspacePendingBilling = async (
+	ctx: MutationCtx,
+	workspaceId: Id<"workspaces">
+) => {
+	await ctx.db.patch(workspaceId, {
+		pendingBillingStatus: undefined,
+		pendingBillingPlan: undefined,
+		pendingBillingQuantity: undefined,
+		pendingBillingCheckoutSessionId: undefined,
+		pendingBillingPaymentUrl: undefined,
+		pendingBillingAmount: undefined,
+		pendingBillingCurrency: undefined,
+		pendingBillingTaxAmount: undefined,
+		pendingBillingCreatedAt: undefined,
+		pendingBillingExpiresAt: undefined,
+		pendingBillingSubscriptionId: undefined,
+	});
+	console.log("[billing] pending upgrade cleared", {
+		workspaceId,
+	});
+	return { ok: true };
+};
+
 const isActivePaidSubscription = (
 	workspacePlan: string | null | undefined,
 	subscriptionStatus: string | null | undefined,
@@ -405,6 +428,23 @@ const parseTime = (value: unknown) => {
 	return Number.isFinite(time) ? time : null;
 };
 
+const getUsageMonthKeys = (periodStart: number, periodEnd: number) => {
+	const months: string[] = [];
+	const cursor = new Date(periodStart);
+	cursor.setUTCDate(1);
+	cursor.setUTCHours(0, 0, 0, 0);
+	const end = new Date(periodEnd);
+	end.setUTCDate(1);
+	end.setUTCHours(0, 0, 0, 0);
+
+	while (cursor.getTime() <= end.getTime()) {
+		months.push(cursor.toISOString().slice(0, 7));
+		cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+	}
+
+	return months;
+};
+
 const sumSucceededRefunds = (payment: DodoPayment | null | undefined) => {
 	const refunds = Array.isArray(payment?.refunds) ? payment.refunds : [];
 	return refunds.reduce((total: number, refund) => {
@@ -538,9 +578,7 @@ const calculateRefundOrCredit = (args: {
 	const actualUsageCost =
 		args.featureUsageCostCents + args.workspaceActivityCostCents;
 	const minimumConsumed = Math.max(
-		Math.floor(
-			(args.paidAmountCents * BILLING_MINIMUM_CONSUMED_PERCENT) / 100
-		),
+		Math.floor((args.paidAmountCents * BILLING_MINIMUM_CONSUMED_PERCENT) / 100),
 		actualUsageCost
 	);
 
@@ -673,7 +711,8 @@ const getPaymentPeriodEndFallback = (
 	payment: DodoPayment | null | undefined,
 	workspaceCurrentPeriodEnd: number | null | undefined
 ) => {
-	if (typeof workspaceCurrentPeriodEnd === "number") return workspaceCurrentPeriodEnd;
+	if (typeof workspaceCurrentPeriodEnd === "number")
+		return workspaceCurrentPeriodEnd;
 	const paymentCreatedAt = getPaymentCreatedAt(payment);
 	return paymentCreatedAt ? paymentCreatedAt + BILLING_MONTH_MS : null;
 };
@@ -787,7 +826,10 @@ const getWorkspacePortalCustomerId = async (
 	ctx: ActionCtx,
 	workspaceId: Id<"workspaces">
 ) => {
-	const billingContext = await getWorkspacePortalBillingContext(ctx, workspaceId);
+	const billingContext = await getWorkspacePortalBillingContext(
+		ctx,
+		workspaceId
+	);
 	return billingContext.customerId;
 };
 
@@ -796,7 +838,7 @@ const getCustomerIdFromSubscription = (
 ) =>
 	(typeof subscription?.customer === "string"
 		? subscription.customer
-		: subscription?.customer?.customer_id ?? subscription?.customer?.id) ??
+		: (subscription?.customer?.customer_id ?? subscription?.customer?.id)) ??
 	(typeof subscription?.customer_id === "string"
 		? subscription.customer_id
 		: null);
@@ -1033,7 +1075,9 @@ export const getRecentSuccessfulSeatPayment = internalQuery({
 	handler: async (ctx, args) => {
 		const recentPayments = await ctx.db
 			.query("billingHistory")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.order("desc")
 			.take(20);
 
@@ -1211,23 +1255,7 @@ export const clearWorkspacePendingPlanPayment = internalMutation({
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
-		await ctx.db.patch(args.workspaceId, {
-			pendingBillingStatus: undefined,
-			pendingBillingPlan: undefined,
-			pendingBillingQuantity: undefined,
-			pendingBillingCheckoutSessionId: undefined,
-			pendingBillingPaymentUrl: undefined,
-			pendingBillingAmount: undefined,
-			pendingBillingCurrency: undefined,
-			pendingBillingTaxAmount: undefined,
-			pendingBillingCreatedAt: undefined,
-			pendingBillingExpiresAt: undefined,
-			pendingBillingSubscriptionId: undefined,
-		});
-		console.log("[billing] pending upgrade cleared", {
-			workspaceId: args.workspaceId,
-		});
-		return { ok: true };
+		return await clearWorkspacePendingBilling(ctx, args.workspaceId);
 	},
 });
 
@@ -1236,23 +1264,7 @@ export const clearPendingUpgrade = internalMutation({
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, args) => {
-		await ctx.db.patch(args.workspaceId, {
-			pendingBillingStatus: undefined,
-			pendingBillingPlan: undefined,
-			pendingBillingQuantity: undefined,
-			pendingBillingCheckoutSessionId: undefined,
-			pendingBillingPaymentUrl: undefined,
-			pendingBillingAmount: undefined,
-			pendingBillingCurrency: undefined,
-			pendingBillingTaxAmount: undefined,
-			pendingBillingCreatedAt: undefined,
-			pendingBillingExpiresAt: undefined,
-			pendingBillingSubscriptionId: undefined,
-		});
-		console.log("[billing] pending upgrade cleared", {
-			workspaceId: args.workspaceId,
-		});
-		return { ok: true };
+		return await clearWorkspacePendingBilling(ctx, args.workspaceId);
 	},
 });
 
@@ -1393,7 +1405,11 @@ export const recordBillingHistoryEntry = internalMutation({
 		currency: v.string(),
 		status: v.string(),
 		taxAmount: v.optional(v.number()),
-		type: v.union(v.literal("payment"), v.literal("refund"), v.literal("credit")),
+		type: v.union(
+			v.literal("payment"),
+			v.literal("refund"),
+			v.literal("credit")
+		),
 		description: v.string(),
 		dodoInvoiceId: v.string(),
 		plan: v.optional(v.string()),
@@ -1533,15 +1549,18 @@ export const getBillingConsumptionForPeriod = internalQuery({
 	handler: async (ctx, args) => {
 		const periodStart = Math.max(0, args.periodStart);
 		const periodEnd = Math.max(periodStart, args.periodEnd);
-		const usageRows = await ctx.db
-			.query("usageStats")
-			.withIndex("by_workspace_month", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq(
-					"month",
-					new Date(periodStart).toISOString().slice(0, 7)
+		const usageRows = (
+			await Promise.all(
+				getUsageMonthKeys(periodStart, periodEnd).map((month) =>
+					ctx.db
+						.query("usageStats")
+						.withIndex("by_workspace_month", (q) =>
+							q.eq("workspaceId", args.workspaceId).eq("month", month)
+						)
+						.take(1000)
 				)
 			)
-			.take(1000);
+		).flat();
 		const premiumEvents = await ctx.db
 			.query("billingUsageEvents")
 			.withIndex("by_workspace_id_occurred_at", (q) =>
@@ -1553,7 +1572,9 @@ export const getBillingConsumptionForPeriod = internalQuery({
 			.take(1000);
 		const activities = await ctx.db
 			.query("userActivities")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.take(1000);
 		const periodActivities = activities.filter(
 			(activity) =>
@@ -1561,7 +1582,9 @@ export const getBillingConsumptionForPeriod = internalQuery({
 		);
 		const members = await ctx.db
 			.query("members")
-			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
 			.take(1000);
 
 		const totals = {
@@ -1583,7 +1606,8 @@ export const getBillingConsumptionForPeriod = internalQuery({
 			userActivityCount: periodActivities.length,
 			teamMemberAddCount: members.filter(
 				(member) =>
-					member._creationTime >= periodStart && member._creationTime <= periodEnd
+					member._creationTime >= periodStart &&
+					member._creationTime <= periodEnd
 			).length,
 		};
 
@@ -1722,7 +1746,8 @@ function mapSubscriptionStatus(
 // Query: subscription status for UI
 export const getSubscriptionStatus = query({
 	args: { workspaceId: v.id("workspaces") },
-	handler: async (ctx, { workspaceId }) => { // Refactored to drop complexity
+	handler: async (ctx, { workspaceId }) => {
+		// Refactored to drop complexity
 		const identity = await ctx.auth.getUserIdentity();
 		const workspace = await ctx.db.get(workspaceId);
 		if (!workspace) return null;
@@ -1782,7 +1807,8 @@ function buildBillingSummary(
 
 export const getBillingSummary = query({
 	args: { workspaceId: v.id("workspaces") },
-	handler: async (ctx, { workspaceId }) => { // Refactored to drop complexity
+	handler: async (ctx, { workspaceId }) => {
+		// Refactored to drop complexity
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthorized");
 
@@ -1889,7 +1915,8 @@ export const getPlanChangePreview = action({
 				pendingExpiresAt: workspace.pendingBillingExpiresAt,
 			};
 		}
-		let dodoPreviewCharge: ReturnType<typeof getDodoPreviewCharge> | null = null;
+		let dodoPreviewCharge: ReturnType<typeof getDodoPreviewCharge> | null =
+			null;
 		if (nextPlan?.dodoProductId) {
 			try {
 				const preview: DodoPlanChangePreview =
@@ -2084,9 +2111,12 @@ export const getCustomerPortal = action({
 			let customerId = billingContext.customerId;
 			if (!customerId && billingContext.subscriptionId) {
 				const { subscriptions } = await import("./dodo");
-				const subscription: DodoSubscription = await subscriptions.retrieve(ctx, {
-					subscription_id: billingContext.subscriptionId,
-				});
+				const subscription: DodoSubscription = await subscriptions.retrieve(
+					ctx,
+					{
+						subscription_id: billingContext.subscriptionId,
+					}
+				);
 				customerId = getCustomerIdFromSubscription(subscription);
 				if (customerId) {
 					await syncDodoSubscriptionToWorkspace(ctx, {
@@ -2134,7 +2164,9 @@ export const getCustomerPortal = action({
 			}
 
 			const appUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-			const { customerPortals, customers, subscriptions } = await import("./dodo");
+			const { customerPortals, customers, subscriptions } = await import(
+				"./dodo"
+			);
 			if (identity.email) {
 				try {
 					await customers.update(ctx, {
@@ -2188,9 +2220,12 @@ export const getCustomerPortal = action({
 					throw error;
 				}
 
-				const subscription: DodoSubscription = await subscriptions.retrieve(ctx, {
-					subscription_id: billingContext.subscriptionId,
-				});
+				const subscription: DodoSubscription = await subscriptions.retrieve(
+					ctx,
+					{
+						subscription_id: billingContext.subscriptionId,
+					}
+				);
 				const liveCustomerId = getCustomerIdFromSubscription(subscription);
 				if (!liveCustomerId || liveCustomerId === customerId) {
 					const recoveryPlan =
@@ -2517,7 +2552,8 @@ export const updateSubscriptionQuantity = action({
 		newQuantity: v.number(),
 		newPlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 	},
-	handler: async ( // Refactored to drop complexity
+	handler: async (
+		// Refactored to drop complexity
 		ctx,
 		{ workspaceId, newQuantity, newPlan }
 	): Promise<Record<string, unknown>> => {
@@ -2618,10 +2654,7 @@ export const updateSubscriptionQuantity = action({
 
 		// Ask Dodo first so stale local workspace state cannot fall back to
 		// a full checkout and bypass fair-billing proration.
-		const {
-			subscriptions,
-			payments: dodoPayments,
-		} = await import("./dodo");
+		const { subscriptions, payments: dodoPayments } = await import("./dodo");
 		let currentSubscription: DodoSubscription;
 		try {
 			currentSubscription = await subscriptions.retrieve(ctx, {
@@ -2676,7 +2709,7 @@ export const updateSubscriptionQuantity = action({
 			dodoPlan !== workspacePaidPlan;
 		const workspacePlan = isUnconfirmedDodoPlanChange
 			? workspacePaidPlan
-			: dodoPlan ?? workspacePaidPlan;
+			: (dodoPlan ?? workspacePaidPlan);
 		if (!workspacePlan) {
 			return inactiveSubscriptionCheckoutResult();
 		}
@@ -2844,16 +2877,19 @@ export const updateSubscriptionQuantity = action({
 					plan: planName,
 				},
 			});
-			await ctx.runMutation(internal.payments.applyWorkspaceSubscriptionQuantity, {
-				workspaceId,
-				planName,
-				quantity,
-				subscriptionStatus: updatedSubscription?.status ?? "active",
-				auditAction: "seat_quantity_reconciled_after_payment",
-				amountDue: recentPaidSeatChange.amount,
-				currency: recentPaidSeatChange.currency,
-				taxAmount: recentPaidSeatChange.taxAmount ?? 0,
-			});
+			await ctx.runMutation(
+				internal.payments.applyWorkspaceSubscriptionQuantity,
+				{
+					workspaceId,
+					planName,
+					quantity,
+					subscriptionStatus: updatedSubscription?.status ?? "active",
+					auditAction: "seat_quantity_reconciled_after_payment",
+					amountDue: recentPaidSeatChange.amount,
+					currency: recentPaidSeatChange.currency,
+					taxAmount: recentPaidSeatChange.taxAmount ?? 0,
+				}
+			);
 			return {
 				success: true,
 				status: "updated",
@@ -2900,8 +2936,9 @@ export const updateSubscriptionQuantity = action({
 				),
 			});
 		}
-		let dodoUpgradePreviewCharge: ReturnType<typeof getDodoPreviewCharge> | null =
-			null;
+		let dodoUpgradePreviewCharge: ReturnType<
+			typeof getDodoPreviewCharge
+		> | null = null;
 		if (isPaidUpgrade) {
 			try {
 				const preview: DodoPlanChangePreview =
@@ -2918,18 +2955,23 @@ export const updateSubscriptionQuantity = action({
 					});
 				dodoUpgradePreviewCharge = getDodoPreviewCharge(preview);
 			} catch (error) {
-				console.warn("[updateSubscriptionQuantity] Dodo preview failed:", error);
+				console.warn(
+					"[updateSubscriptionQuantity] Dodo preview failed:",
+					error
+				);
 				if (parseDodoErrorCode(error) === "PREVIOUS_PAYMENT_PENDING") {
 					try {
 						const siteUrl =
 							process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-						const paymentSetupResult =
-							await subscriptions.updatePaymentMethod(ctx, {
+						const paymentSetupResult = await subscriptions.updatePaymentMethod(
+							ctx,
+							{
 								subscription_id: dodoSubscriptionId,
 								return_url: siteUrl
 									? `${siteUrl}/workspace/${workspaceId}/manage#billing`
 									: undefined,
-							});
+							}
+						);
 						const paymentUrl = findDodoPaymentUrl(paymentSetupResult);
 						if (paymentUrl) {
 							await ctx.runMutation(
@@ -2961,13 +3003,13 @@ export const updateSubscriptionQuantity = action({
 			typeof dodoUpgradePreviewCharge?.amount === "number"
 				? dodoUpgradePreviewCharge.amount
 				: fairBilling.amountDue > 0
-				? fairBilling.amountDue
-				: isPaidUpgrade &&
-						(!fairBilling.periodStart ||
-							!fairBilling.periodEnd ||
-							fairBilling.periodEnd <= fairBilling.periodStart)
-					? fairBilling.monthlyDelta
-					: 0;
+					? fairBilling.amountDue
+					: isPaidUpgrade &&
+							(!fairBilling.periodStart ||
+								!fairBilling.periodEnd ||
+								fairBilling.periodEnd <= fairBilling.periodStart)
+						? fairBilling.monthlyDelta
+						: 0;
 		const shouldWaiveSmallUpgradeCharge =
 			upgradeChargeAmount > 0 &&
 			upgradeChargeAmount < DODO_MINIMUM_PAYMENT_AMOUNT_CENTS;
@@ -3092,19 +3134,22 @@ export const updateSubscriptionQuantity = action({
 			}
 
 			if (!paymentUrl) {
-				await ctx.runMutation(internal.payments.recordWorkspacePendingPlanPayment, {
-					workspaceId,
-					subscriptionId: dodoSubscriptionId,
-					planName,
-					quantity,
-					...(checkoutSessionId ? { checkoutSessionId } : {}),
-					amountDue: upgradeChargeAmount,
-					currency:
-						dodoUpgradePreviewCharge?.currency ??
-						currentSubscription?.currency ??
-						"USD",
-					taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
-				});
+				await ctx.runMutation(
+					internal.payments.recordWorkspacePendingPlanPayment,
+					{
+						workspaceId,
+						subscriptionId: dodoSubscriptionId,
+						planName,
+						quantity,
+						...(checkoutSessionId ? { checkoutSessionId } : {}),
+						amountDue: upgradeChargeAmount,
+						currency:
+							dodoUpgradePreviewCharge?.currency ??
+							currentSubscription?.currency ??
+							"USD",
+						taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+					}
+				);
 				return {
 					success: true,
 					status: "pending_payment",
@@ -3113,20 +3158,23 @@ export const updateSubscriptionQuantity = action({
 				};
 			}
 
-			await ctx.runMutation(internal.payments.recordWorkspacePendingPlanPayment, {
-				workspaceId,
-				subscriptionId: dodoSubscriptionId,
-				planName,
-				quantity,
-				...(checkoutSessionId ? { checkoutSessionId } : {}),
-				paymentUrl,
-				amountDue: upgradeChargeAmount,
-				currency:
-					dodoUpgradePreviewCharge?.currency ??
-					currentSubscription?.currency ??
-					"USD",
-				taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
-			});
+			await ctx.runMutation(
+				internal.payments.recordWorkspacePendingPlanPayment,
+				{
+					workspaceId,
+					subscriptionId: dodoSubscriptionId,
+					planName,
+					quantity,
+					...(checkoutSessionId ? { checkoutSessionId } : {}),
+					paymentUrl,
+					amountDue: upgradeChargeAmount,
+					currency:
+						dodoUpgradePreviewCharge?.currency ??
+						currentSubscription?.currency ??
+						"USD",
+					taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+				}
+			);
 
 			return {
 				success: true,
@@ -3171,18 +3219,21 @@ export const updateSubscriptionQuantity = action({
 					throw changeError;
 				}
 
-				await ctx.runMutation(internal.payments.recordWorkspacePendingPlanPayment, {
-					workspaceId,
-					subscriptionId: dodoSubscriptionId,
-					planName,
-					quantity,
-					amountDue: upgradeChargeAmount,
-					currency:
-						dodoUpgradePreviewCharge?.currency ??
-						currentSubscription?.currency ??
-						"USD",
-					taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
-				});
+				await ctx.runMutation(
+					internal.payments.recordWorkspacePendingPlanPayment,
+					{
+						workspaceId,
+						subscriptionId: dodoSubscriptionId,
+						planName,
+						quantity,
+						amountDue: upgradeChargeAmount,
+						currency:
+							dodoUpgradePreviewCharge?.currency ??
+							currentSubscription?.currency ??
+							"USD",
+						taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+					}
+				);
 				return {
 					success: true,
 					status: "pending_payment",
@@ -3200,13 +3251,16 @@ export const updateSubscriptionQuantity = action({
 
 		const applyNoImmediateBillingUpdate = async (message: string) => {
 			await sendDodoCustomerPortalEmail(ctx, workspaceId);
-			await ctx.runMutation(internal.payments.applyWorkspaceSubscriptionQuantity, {
-				workspaceId,
-				planName,
-				quantity,
-				subscriptionStatus: "active",
-				auditAction: "subscription_updated_no_proration",
-			});
+			await ctx.runMutation(
+				internal.payments.applyWorkspaceSubscriptionQuantity,
+				{
+					workspaceId,
+					planName,
+					quantity,
+					subscriptionStatus: "active",
+					auditAction: "subscription_updated_no_proration",
+				}
+			);
 			return {
 				success: true,
 				status: "updated",
@@ -3339,7 +3393,9 @@ export const updateSubscriptionQuantity = action({
 					dodoSubscriptionId,
 					downgradeRefundCurrency,
 					currentSubscription,
-					downgradeInvoiceUrl: getPaymentInvoiceUrl(latestPaymentForDowngradeRefund),
+					downgradeInvoiceUrl: getPaymentInvoiceUrl(
+						latestPaymentForDowngradeRefund
+					),
 					latestTotalAmount,
 					latestTaxAmount,
 					billingAdjustment: downgradeBillingAdjustment ?? undefined,
@@ -3421,7 +3477,9 @@ export const updateSubscriptionQuantity = action({
 							dodoSubscriptionId,
 							downgradeRefundCurrency,
 							currentSubscription,
-							downgradeInvoiceUrl: getPaymentInvoiceUrl(latestPaymentForDowngradeRefund),
+							downgradeInvoiceUrl: getPaymentInvoiceUrl(
+								latestPaymentForDowngradeRefund
+							),
 							latestTotalAmount,
 							latestTaxAmount,
 							billingAdjustment: downgradeBillingAdjustment ?? undefined,
