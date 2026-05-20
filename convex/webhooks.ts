@@ -33,7 +33,7 @@ export const checkWebhook = internalQuery({
 			.query("webhookEvents")
 			.withIndex("by_webhook_id", (q) => q.eq("webhookId", args.webhookId))
 			.unique();
-		return !!existing;
+		return Boolean(existing);
 	},
 });
 
@@ -245,6 +245,150 @@ export const createPayment = internalMutation({
 	},
 });
 
+interface SubscriptionSyncArgs {
+	workspaceId?: string;
+	subscriptionId: string;
+	status: string;
+	plan?: string;
+	customerId?: string;
+	quantity?: number;
+	cancelAtNextBillingDate?: boolean;
+	nextBillingDate?: string;
+	invoiceUrl?: string;
+	amountDue?: number;
+	currency?: string;
+	taxAmount?: number;
+	paymentConfirmed?: boolean;
+	raw?: string;
+}
+
+async function processSubscriptionSync(
+	ctx: MutationCtx,
+	args: SubscriptionSyncArgs,
+	contextName: string
+) {
+	let workspaceObjId: Id<"workspaces"> | undefined;
+
+	if (args.workspaceId) {
+		try {
+			const workspace = await ctx.db.get(
+				args.workspaceId as Id<"workspaces">
+			);
+
+			if (workspace) {
+				workspaceObjId = workspace._id;
+			}
+		} catch (err) {
+			console.error(`[${contextName}] Invalid workspaceId`, err);
+		}
+	}
+
+	if (!workspaceObjId) {
+		const workspace = await ctx.db
+			.query("workspaces")
+			.withIndex("by_dodo_subscription_id", (q) =>
+				q.eq("dodoSubscriptionId", args.subscriptionId)
+			)
+			.first();
+		if (workspace) workspaceObjId = workspace._id;
+	}
+
+	if (!workspaceObjId && args.customerId) {
+		const workspace = await ctx.db
+			.query("workspaces")
+			.withIndex("by_dodo_customer_id", (q) =>
+				q.eq("dodoCustomerId", args.customerId as string)
+			)
+			.first();
+		if (workspace) workspaceObjId = workspace._id;
+	}
+
+	if (!workspaceObjId) {
+		console.error(
+			`[${contextName}] Failed to find workspace context for subscription ${args.subscriptionId}`
+		);
+		return { ok: true, reason: "no_workspace_context" };
+	}
+
+	const previousWorkspace = await ctx.db.get(workspaceObjId);
+	const canApplyPaidPlan = args.paymentConfirmed === true;
+	const patch: WorkspaceBillingPatch = {
+		subscriptionId: args.subscriptionId,
+		dodoSubscriptionId: args.subscriptionId,
+		subscriptionStatus: args.status,
+		customerId: args.customerId,
+		dodoCustomerId: args.customerId,
+	};
+	const isInactive = INACTIVE_SUBSCRIPTION_STATUSES.has(args.status);
+	if (isInactive) {
+		patch.plan = "free";
+		patch.subscriptionId = undefined;
+		patch.dodoSubscriptionId = undefined;
+		patch.proSeats = 0;
+		patch.enterpriseSeats = 0;
+		patch.totalPaidSeats = 0;
+		patch.cancellationAtPeriodEnd = false;
+		patch.nextBillingDate = undefined;
+		patch.currentPeriodEnd = undefined;
+		patch.scheduledCancellationDate = undefined;
+	} else if (
+		(args.plan === "pro" || args.plan === "enterprise") &&
+		canApplyPaidPlan
+	) {
+		patch.plan = args.plan;
+		if (args.quantity) {
+			if (args.plan === "pro") {
+				patch.proSeats = args.quantity;
+				patch.enterpriseSeats = 0;
+			}
+			if (args.plan === "enterprise") {
+				patch.enterpriseSeats = args.quantity;
+				patch.proSeats = 0;
+			}
+			patch.totalPaidSeats = args.quantity;
+		}
+	}
+	if (typeof args.cancelAtNextBillingDate === "boolean") {
+		patch.cancellationAtPeriodEnd = args.cancelAtNextBillingDate;
+	}
+	if (args.nextBillingDate) {
+		const nextBillingTime = Date.parse(args.nextBillingDate);
+		if (Number.isFinite(nextBillingTime)) {
+			patch.nextBillingDate = nextBillingTime;
+			patch.currentPeriodEnd = nextBillingTime;
+			patch.scheduledCancellationDate = args.cancelAtNextBillingDate
+				? nextBillingTime
+				: undefined;
+		}
+	} else if (args.cancelAtNextBillingDate === false) {
+		patch.scheduledCancellationDate = undefined;
+	}
+
+	await ctx.db.patch(workspaceObjId, patch);
+	if (isInactive) {
+		await syncMemberSeatTiers(ctx, workspaceObjId, "free");
+	} else if (
+		canApplyPaidPlan &&
+		(args.plan === "pro" || args.plan === "enterprise")
+	) {
+		await syncMemberSeatTiers(ctx, workspaceObjId, args.plan);
+	}
+	await notifyAdminsOfPlanChange(
+		ctx,
+		workspaceObjId,
+		previousWorkspace?.plan,
+		patch.plan,
+		{
+			invoiceUrl: args.invoiceUrl,
+			amountDue: args.amountDue,
+			currency: args.currency,
+			taxAmount: args.taxAmount,
+		}
+	);
+
+	return { ok: true };
+}
+
 // Activate a subscription for a workspace (sets dodoSubscriptionId and optional plan)
 export const createSubscription = internalMutation({
 	args: {
@@ -263,127 +407,8 @@ export const createSubscription = internalMutation({
 		paymentConfirmed: v.optional(v.boolean()),
 		raw: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
-		let workspaceObjId: Id<"workspaces"> | undefined;
-
-		if (args.workspaceId) {
-			try {
-				const workspace = await ctx.db.get(
-					args.workspaceId as Id<"workspaces">
-				);
-
-				if (workspace) {
-					workspaceObjId = workspace._id;
-				}
-			} catch (err) {
-				console.error("Invalid workspaceId", err);
-			}
-		}
-
-		if (!workspaceObjId && args.customerId) {
-			const workspace = await ctx.db
-				.query("workspaces")
-				.withIndex("by_dodo_customer_id", (q) =>
-					q.eq("dodoCustomerId", args.customerId as string)
-				)
-				.first();
-			if (workspace) workspaceObjId = workspace._id;
-		}
-
-		if (!workspaceObjId) {
-			const workspace = await ctx.db
-				.query("workspaces")
-				.withIndex("by_dodo_subscription_id", (q) =>
-					q.eq("dodoSubscriptionId", args.subscriptionId)
-				)
-				.first();
-			if (workspace) workspaceObjId = workspace._id;
-		}
-
-		if (!workspaceObjId) {
-			console.error(
-				`[createSubscription] Failed to find workspace context for subscription ${args.subscriptionId}`
-			);
-			return { ok: true, reason: "no_workspace_context" };
-		}
-
-		const previousWorkspace = await ctx.db.get(workspaceObjId);
-		const canApplyPaidPlan = args.paymentConfirmed === true;
-		const patch: WorkspaceBillingPatch = {
-			subscriptionId: args.subscriptionId,
-			dodoSubscriptionId: args.subscriptionId,
-			subscriptionStatus: args.status,
-			customerId: args.customerId,
-			dodoCustomerId: args.customerId,
-		};
-		const isInactive = INACTIVE_SUBSCRIPTION_STATUSES.has(args.status);
-		if (isInactive) {
-			patch.plan = "free";
-			patch.subscriptionId = undefined;
-			patch.dodoSubscriptionId = undefined;
-			patch.proSeats = 0;
-			patch.enterpriseSeats = 0;
-			patch.totalPaidSeats = 0;
-			patch.cancellationAtPeriodEnd = false;
-			patch.nextBillingDate = undefined;
-			patch.currentPeriodEnd = undefined;
-			patch.scheduledCancellationDate = undefined;
-		} else if (
-			(args.plan === "pro" || args.plan === "enterprise") &&
-			canApplyPaidPlan
-		) {
-			patch.plan = args.plan;
-			if (args.quantity) {
-				if (args.plan === "pro") {
-					patch.proSeats = args.quantity;
-					patch.enterpriseSeats = 0;
-				}
-				if (args.plan === "enterprise") {
-					patch.enterpriseSeats = args.quantity;
-					patch.proSeats = 0;
-				}
-				patch.totalPaidSeats = args.quantity;
-			}
-		}
-		if (typeof args.cancelAtNextBillingDate === "boolean") {
-			patch.cancellationAtPeriodEnd = args.cancelAtNextBillingDate;
-		}
-		if (args.nextBillingDate) {
-			const nextBillingTime = Date.parse(args.nextBillingDate);
-			if (Number.isFinite(nextBillingTime)) {
-				patch.nextBillingDate = nextBillingTime;
-				patch.currentPeriodEnd = nextBillingTime;
-				patch.scheduledCancellationDate = args.cancelAtNextBillingDate
-					? nextBillingTime
-					: undefined;
-			}
-		} else if (args.cancelAtNextBillingDate === false) {
-			patch.scheduledCancellationDate = undefined;
-		}
-
-		await ctx.db.patch(workspaceObjId, patch);
-		if (isInactive) {
-			await syncMemberSeatTiers(ctx, workspaceObjId, "free");
-		} else if (
-			canApplyPaidPlan &&
-			(args.plan === "pro" || args.plan === "enterprise")
-		) {
-			await syncMemberSeatTiers(ctx, workspaceObjId, args.plan);
-		}
-		await notifyAdminsOfPlanChange(
-			ctx,
-			workspaceObjId,
-			previousWorkspace?.plan,
-			patch.plan,
-			{
-				invoiceUrl: args.invoiceUrl,
-				amountDue: args.amountDue,
-				currency: args.currency,
-				taxAmount: args.taxAmount,
-			}
-		);
-
-		return { ok: true };
+	handler: async (ctx, args) => { // Refactored to drop complexity
+		return processSubscriptionSync(ctx, args, "createSubscription");
 	},
 });
 
@@ -405,127 +430,8 @@ export const updateSubscription = internalMutation({
 		paymentConfirmed: v.optional(v.boolean()),
 		raw: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
-		let workspaceObjId: Id<"workspaces"> | undefined;
-
-		if (args.workspaceId) {
-			try {
-				const workspace = await ctx.db.get(
-					args.workspaceId as Id<"workspaces">
-				);
-
-				if (workspace) {
-					workspaceObjId = workspace._id;
-				}
-			} catch (err) {
-				console.error("Invalid workspaceId", err);
-			}
-		}
-
-		if (!workspaceObjId) {
-			const workspace = await ctx.db
-				.query("workspaces")
-				.withIndex("by_dodo_subscription_id", (q) =>
-					q.eq("dodoSubscriptionId", args.subscriptionId)
-				)
-				.first();
-			if (workspace) workspaceObjId = workspace._id;
-		}
-
-		if (!workspaceObjId && args.customerId) {
-			const workspace = await ctx.db
-				.query("workspaces")
-				.withIndex("by_dodo_customer_id", (q) =>
-					q.eq("dodoCustomerId", args.customerId as string)
-				)
-				.first();
-			if (workspace) workspaceObjId = workspace._id;
-		}
-
-		if (!workspaceObjId) {
-			console.error(
-				`[updateSubscription] Failed to find workspace context for subscription ${args.subscriptionId}`
-			);
-			return { ok: true, reason: "no_workspace_context" };
-		}
-
-		const previousWorkspace = await ctx.db.get(workspaceObjId);
-		const canApplyPaidPlan = args.paymentConfirmed === true;
-		const patch: WorkspaceBillingPatch = {
-			subscriptionId: args.subscriptionId,
-			dodoSubscriptionId: args.subscriptionId,
-			subscriptionStatus: args.status,
-			customerId: args.customerId,
-			dodoCustomerId: args.customerId,
-		};
-		const isInactive = INACTIVE_SUBSCRIPTION_STATUSES.has(args.status);
-		if (isInactive) {
-			patch.plan = "free";
-			patch.subscriptionId = undefined;
-			patch.dodoSubscriptionId = undefined;
-			patch.proSeats = 0;
-			patch.enterpriseSeats = 0;
-			patch.totalPaidSeats = 0;
-			patch.cancellationAtPeriodEnd = false;
-			patch.nextBillingDate = undefined;
-			patch.currentPeriodEnd = undefined;
-			patch.scheduledCancellationDate = undefined;
-		} else if (
-			(args.plan === "pro" || args.plan === "enterprise") &&
-			canApplyPaidPlan
-		) {
-			patch.plan = args.plan;
-			if (args.quantity) {
-				if (args.plan === "pro") {
-					patch.proSeats = args.quantity;
-					patch.enterpriseSeats = 0;
-				}
-				if (args.plan === "enterprise") {
-					patch.enterpriseSeats = args.quantity;
-					patch.proSeats = 0;
-				}
-				patch.totalPaidSeats = args.quantity;
-			}
-		}
-		if (typeof args.cancelAtNextBillingDate === "boolean") {
-			patch.cancellationAtPeriodEnd = args.cancelAtNextBillingDate;
-		}
-		if (args.nextBillingDate) {
-			const nextBillingTime = Date.parse(args.nextBillingDate);
-			if (Number.isFinite(nextBillingTime)) {
-				patch.nextBillingDate = nextBillingTime;
-				patch.currentPeriodEnd = nextBillingTime;
-				patch.scheduledCancellationDate = args.cancelAtNextBillingDate
-					? nextBillingTime
-					: undefined;
-			}
-		} else if (args.cancelAtNextBillingDate === false) {
-			patch.scheduledCancellationDate = undefined;
-		}
-
-		await ctx.db.patch(workspaceObjId, patch);
-		if (isInactive) {
-			await syncMemberSeatTiers(ctx, workspaceObjId, "free");
-		} else if (
-			canApplyPaidPlan &&
-			(args.plan === "pro" || args.plan === "enterprise")
-		) {
-			await syncMemberSeatTiers(ctx, workspaceObjId, args.plan);
-		}
-		await notifyAdminsOfPlanChange(
-			ctx,
-			workspaceObjId,
-			previousWorkspace?.plan,
-			patch.plan,
-			{
-				invoiceUrl: args.invoiceUrl,
-				amountDue: args.amountDue,
-				currency: args.currency,
-				taxAmount: args.taxAmount,
-			}
-		);
-
-		return { ok: true };
+	handler: async (ctx, args) => { // Refactored to drop complexity
+		return processSubscriptionSync(ctx, args, "updateSubscription");
 	},
 });
 
