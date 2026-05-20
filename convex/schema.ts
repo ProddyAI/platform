@@ -363,6 +363,10 @@ const schema = defineSchema({
 		projectId: v.optional(v.id("projects")),
 		blockedIssueId: v.id("issues"), // The issue that is blocked
 		blockingIssueId: v.id("issues"), // The issue that is blocking
+		// Optional metadata (manual or auto-detected)
+		reasoning: v.optional(v.string()),
+		resolutionSteps: v.optional(v.array(v.string())),
+		updatedAt: v.optional(v.number()),
 		createdAt: v.number(),
 		createdBy: v.id("members"),
 	})
@@ -505,6 +509,15 @@ const schema = defineSchema({
 		),
 		categoryId: v.optional(v.id("categories")),
 		tags: v.optional(v.array(v.string())),
+		// Dependency fields (used by blocker detector / legacy data)
+		blockedBy: v.optional(v.array(v.id("tasks"))),
+		blocking: v.optional(v.array(v.id("tasks"))),
+		/**
+		 * Optional per-blocker metadata keyed by task id as string.
+		 * (Some existing docs use `{}` maps; keep as `any` for backward compatibility.)
+		 */
+		blockerDetailsByTaskId: v.optional(v.record(v.string(), v.any())),
+		blockerExplanationsByTaskId: v.optional(v.record(v.string(), v.any())),
 		createdAt: v.number(),
 		updatedAt: v.optional(v.number()),
 		userId: v.id("users"),

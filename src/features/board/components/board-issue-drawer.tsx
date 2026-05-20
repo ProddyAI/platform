@@ -771,9 +771,12 @@ const BlockingSection = ({
 	const blockingIssues = useQuery(api.board.getBlockingIssues, {
 		issueId: issue._id,
 	});
-	const blockedByIssues = useQuery(api.board.getBlockedByIssues, {
-		issueId: issue._id,
-	});
+	const blockedByIssuesDetailed = useQuery(
+		api.board.getBlockedByIssuesWithDetails,
+		{
+			issueId: issue._id,
+		}
+	);
 	const addBlocking = useMutation(api.board.addIssueBlockingRelationship);
 	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
 
@@ -846,7 +849,9 @@ const BlockingSection = ({
 
 	// Filter out issues already in blocking/blockedBy lists
 	const blockingIds = new Set(blockingIssues?.map((i) => i._id) || []);
-	const blockedByIds = new Set(blockedByIssues?.map((i) => i._id) || []);
+	const blockedByIds = new Set(
+		blockedByIssuesDetailed?.map((i) => i.issue._id) || []
+	);
 	const usedIssueIds = new Set([...blockingIds, ...blockedByIds, issue._id]);
 
 	const availableForBlocking = availableIssues.filter(
@@ -899,11 +904,11 @@ const BlockingSection = ({
 	};
 
 	const renderBlockedByContent = () => {
-		if (!blockedByIssues) {
+		if (!blockedByIssuesDetailed) {
 			return <div className="text-sm text-muted-foreground">Loading...</div>;
 		}
 
-		if (blockedByIssues.length === 0) {
+		if (blockedByIssuesDetailed.length === 0) {
 			return (
 				<div className="text-sm text-muted-foreground py-2">
 					Not blocked by any issues
@@ -913,32 +918,60 @@ const BlockingSection = ({
 
 		return (
 			<div className="space-y-1.5">
-				{blockedByIssues.map((blockingIssue) => (
-					<div
-						className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-						key={blockingIssue._id}
-						onClick={() => onClickIssue(blockingIssue)}
-					>
-						<div className="flex items-center gap-2 flex-1 min-w-0">
-							<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-							<span className="text-sm truncate">
-								{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
-							</span>
-						</div>
-						<Button
-							className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-							onClick={(e) => {
-								e.stopPropagation();
-								handleRemoveBlockedBy(blockingIssue._id);
-							}}
-							size="icon"
-							title="Remove blocked by relationship"
-							variant="ghost"
+				{blockedByIssuesDetailed.map(
+					({ issue: blockingIssue, resolutionSteps, reasoning }) => (
+						<div
+							className="p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+							key={blockingIssue._id}
+							onClick={() => onClickIssue(blockingIssue)}
 						>
-							<Minus className="w-3 h-3" />
-						</Button>
-					</div>
-				))}
+							<div className="flex items-start justify-between gap-2">
+								<div className="flex items-start gap-2 flex-1 min-w-0">
+									<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0 mt-2" />
+									<div className="min-w-0">
+										<div className="text-sm truncate">
+											{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
+										</div>
+										{reasoning && (
+											<div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+												{reasoning}
+											</div>
+										)}
+										{resolutionSteps && resolutionSteps.length > 0 && (
+											<div className="mt-2 rounded-md border bg-muted/20 px-2 py-2">
+												<div className="text-[11px] font-medium text-muted-foreground">
+													Resolution steps
+												</div>
+												<ol className="mt-1 list-decimal pl-4 space-y-0.5">
+													{resolutionSteps.slice(0, 7).map((step, idx) => (
+														<li
+															className="text-xs text-foreground/90"
+															key={idx}
+														>
+															{step}
+														</li>
+													))}
+												</ol>
+											</div>
+										)}
+									</div>
+								</div>
+								<Button
+									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									onClick={(e) => {
+										e.stopPropagation();
+										handleRemoveBlockedBy(blockingIssue._id);
+									}}
+									size="icon"
+									title="Remove blocked by relationship"
+									variant="ghost"
+								>
+									<Minus className="w-3 h-3" />
+								</Button>
+							</div>
+						</div>
+					)
+				)}
 			</div>
 		);
 	};
@@ -981,10 +1014,10 @@ const BlockingSection = ({
 					<div className="flex items-center gap-2">
 						<Shield className="w-4 h-4 text-blue-500 rotate-180" />
 						<h3 className="text-sm font-semibold">Blocked By</h3>
-						{blockedByIssues && blockedByIssues.length > 0 && (
+						{blockedByIssuesDetailed && blockedByIssuesDetailed.length > 0 && (
 							<span className="text-xs text-muted-foreground">
-								({blockedByIssues.length} issue
-								{blockedByIssues.length !== 1 ? "s" : ""})
+								({blockedByIssuesDetailed.length} issue
+								{blockedByIssuesDetailed.length !== 1 ? "s" : ""})
 							</span>
 						)}
 					</div>
