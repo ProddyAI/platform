@@ -108,7 +108,7 @@ const ManagePage = () => {
 		);
 	}
 
-	if (!member || !workspace) {
+	if (!workspaceId || !member || !workspace) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center">
 				<Shield className="h-12 w-12 text-muted-foreground mb-4" />
@@ -150,7 +150,7 @@ const ManagePage = () => {
 							<div className="bg-background rounded-lg p-6 shadow-sm border">
 								<IntegrationsManagement
 									currentMember={member}
-									workspaceId={workspaceId as any}
+									workspaceId={workspaceId}
 								/>
 							</div>
 						</div>
@@ -200,7 +200,7 @@ const ManagePage = () => {
 							>
 								<MembersManagement
 									currentMember={member}
-									workspaceId={workspaceId as any}
+									workspaceId={workspaceId}
 								/>
 							</TabsContent>
 
@@ -208,7 +208,10 @@ const ManagePage = () => {
 								className="bg-background rounded-lg p-6 shadow-sm border"
 								value="billing"
 							>
-								<BillingSection workspaceId={workspaceId as any} />
+								<BillingSection
+									currentMember={member}
+									workspaceId={workspaceId}
+								/>
 							</TabsContent>
 
 							<TabsContent
@@ -217,7 +220,7 @@ const ManagePage = () => {
 							>
 								<IntegrationsManagement
 									currentMember={member}
-									workspaceId={workspaceId as any}
+									workspaceId={workspaceId}
 								/>
 							</TabsContent>
 
@@ -227,7 +230,7 @@ const ManagePage = () => {
 							>
 								<ImportDataManagement
 									currentMember={member}
-									workspaceId={workspaceId as any}
+									workspaceId={workspaceId}
 								/>
 							</TabsContent>
 						</Tabs>

@@ -32,6 +32,67 @@
   overscroll-behavior: contain; /* Prevent scroll chaining */
 }
 
+/* Notes editor custom scrollbar — subtle violet-tinted for a modern feel */
+.bn-editor,
+.bn-editor *,
+[data-bn-editor],
+.blocknote-editor-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.2) transparent;
+}
+
+.bn-editor::-webkit-scrollbar,
+.blocknote-editor-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bn-editor::-webkit-scrollbar-track,
+.blocknote-editor-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bn-editor::-webkit-scrollbar-thumb,
+.blocknote-editor-scroll::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.2);
+  border-radius: 3px;
+}
+
+.bn-editor::-webkit-scrollbar-thumb:hover,
+.blocknote-editor-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.4);
+}
+
+/* Ensure BlockNote view fills container properly */
+.bn-container,
+.bn-editor {
+  height: 100% !important;
+  overflow-y: auto !important;
+}
+
+/* Custom scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+
 /* Safe area padding for mobile devices (notches, etc.) */
 .mobile-footer-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);

@@ -61,6 +61,10 @@ interface BoardStatusColumnProps {
 	onCreateIssue: (statusId: Id<"statuses">, title: string) => Promise<void>;
 	disableColumnDrag?: boolean;
 	subIssueStatsMap?: Record<string, { total: number; completed: number }>;
+	dependencyStatsMap?: Record<
+		string,
+		{ blockedByCount: number; blockingCount: number }
+	>;
 	disableIssueDrag?: boolean;
 	isFocused?: boolean;
 }
@@ -75,6 +79,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	onCreateIssue,
 	disableColumnDrag = false,
 	subIssueStatsMap,
+	dependencyStatsMap,
 	disableIssueDrag = false,
 	isFocused = false,
 }) => {
@@ -234,6 +239,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						{issues.map((issue) => (
 							<BoardIssueRow
 								assigneeData={assigneeData}
+								dependencyIndicators={dependencyStatsMap?.[issue._id]}
 								disableDrag={disableIssueDrag}
 								issue={issue}
 								key={issue._id}

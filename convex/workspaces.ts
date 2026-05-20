@@ -3,7 +3,13 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 
-import { mutation, query } from "./_generated/server";
+import {
+	internalQuery,
+	type MutationCtx,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 import { createDefaultCategoriesForWorkspace } from "./tasks";
 import { mapWorkspaceId } from "./utils";
 
@@ -14,6 +20,75 @@ const generateCode = () => {
 	).join("");
 
 	return code;
+};
+
+const BILLABLE_MEMBER_ROLES = new Set(["owner", "admin", "member"]);
+
+const getWorkspaceSeatTier = (workspace: {
+	plan?: string;
+}): "pro" | "enterprise" | undefined => {
+	if (workspace.plan === "pro" || workspace.plan === "enterprise") {
+		return workspace.plan;
+	}
+	return undefined;
+};
+
+const getPaidSeatLimit = (workspace: {
+	plan?: string;
+	proSeats?: number;
+	enterpriseSeats?: number;
+}) => {
+	if (workspace.plan === "enterprise") return workspace.enterpriseSeats ?? 0;
+	if (workspace.plan === "pro") return workspace.proSeats ?? 0;
+	return 0;
+};
+
+type ReadableCtx = Pick<QueryCtx | MutationCtx, "db">;
+type WritableCtx = Pick<MutationCtx, "db">;
+
+const getActiveBillableMemberCount = async (
+	ctx: ReadableCtx,
+	workspaceId: Id<"workspaces">
+) => {
+	const members = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	return members.filter((member) => BILLABLE_MEMBER_ROLES.has(member.role))
+		.length;
+};
+
+const getPendingBillableInviteCount = async (
+	ctx: ReadableCtx,
+	workspaceId: Id<"workspaces">
+) => {
+	const pendingInvites = await ctx.db
+		.query("workspaceInvites")
+		.withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	const now = Date.now();
+	return pendingInvites.filter(
+		(invite) =>
+			!invite.used &&
+			invite.expiresAt > now &&
+			(invite.role === "admin" || invite.role === "member")
+	).length;
+};
+
+const resetWorkspaceMemberSeatTiers = async (
+	ctx: WritableCtx,
+	workspaceId: Id<"workspaces">
+) => {
+	const members = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	for (const member of members) {
+		await ctx.db.patch(member._id, { seatTier: undefined });
+	}
 };
 
 export const join = mutation({
@@ -42,10 +117,31 @@ export const join = mutation({
 
 		if (existingMember) throw new Error("Already a member of this workspace.");
 
+		const workspaceSeatTier = getWorkspaceSeatTier(workspace);
+		if (workspaceSeatTier) {
+			const activeBillable = await getActiveBillableMemberCount(
+				ctx,
+				workspace._id
+			);
+			const pendingBillable = await getPendingBillableInviteCount(
+				ctx,
+				workspace._id
+			);
+			const occupiedSeats = activeBillable + pendingBillable;
+			const totalSeatsPurchased = getPaidSeatLimit(workspace);
+
+			if (occupiedSeats >= totalSeatsPurchased) {
+				throw new Error(
+					`Seat limit reached for ${workspaceSeatTier}. Ask a workspace owner or admin to free a seat or add seats before joining.`
+				);
+			}
+		}
+
 		await ctx.db.insert("members", {
 			userId,
 			workspaceId: workspace._id,
 			role: "member",
+			seatTier: workspaceSeatTier,
 		});
 
 		const workspaceMembers = await ctx.db
@@ -58,7 +154,7 @@ export const join = mutation({
 
 		if (recipientUserIds.length > 0) {
 			await ctx.scheduler.runAfter(
-				0,
+				2000,
 				internal.notifications.sendPushNotification,
 				{
 					userIds: recipientUserIds,
@@ -307,5 +403,67 @@ export const remove = mutation({
 		await ctx.db.delete(args.id);
 
 		return args.id;
+	},
+});
+// Internal query: get a workspace by ID (no auth check)
+export const getWorkspaceByIdInternal = internalQuery({
+	args: { id: v.id("workspaces") },
+	handler: async (ctx, args) => {
+		return await ctx.db.get(args.id);
+	},
+});
+
+export const resetBillingStatus = mutation({
+	args: { workspaceId: v.id("workspaces") },
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) throw new Error("Workspace not found");
+		if (workspace.userId !== userId) throw new Error("Only owner can reset");
+		await ctx.db.patch(args.workspaceId, {
+			plan: "free",
+			subscriptionStatus: "none",
+			dodoSubscriptionId: undefined,
+			dodoCustomerId: undefined,
+			proSeats: 0,
+			enterpriseSeats: 0,
+			totalPaidSeats: 0,
+			cancellationAtPeriodEnd: false,
+			nextBillingDate: undefined,
+			currentPeriodEnd: undefined,
+			scheduledCancellationDate: undefined,
+		});
+		await resetWorkspaceMemberSeatTiers(ctx, args.workspaceId);
+		return { success: true };
+	},
+});
+
+export const resetMyBilling = mutation({
+	args: {},
+	handler: async (ctx) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+		const workspaces = await ctx.db
+			.query("workspaces")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
+			.collect();
+		for (const workspace of workspaces) {
+			await ctx.db.patch(workspace._id, {
+				plan: "free",
+				subscriptionStatus: "none",
+				dodoSubscriptionId: undefined,
+				dodoCustomerId: undefined,
+				proSeats: 0,
+				enterpriseSeats: 0,
+				totalPaidSeats: 0,
+				cancellationAtPeriodEnd: false,
+				nextBillingDate: undefined,
+				currentPeriodEnd: undefined,
+				scheduledCancellationDate: undefined,
+			});
+			await resetWorkspaceMemberSeatTiers(ctx, workspace._id);
+		}
+		return { count: workspaces.length };
 	},
 });

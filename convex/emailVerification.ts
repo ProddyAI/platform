@@ -29,7 +29,7 @@ export const generateOTPInternal = internalMutation({
 		// Check if email is already registered
 		const existingUser = await ctx.db
 			.query("users")
-			.withIndex("email", (q) => q.eq("email", email))
+			.withIndex("by_email", (q) => q.eq("email", email))
 			.first();
 
 		if (existingUser) {

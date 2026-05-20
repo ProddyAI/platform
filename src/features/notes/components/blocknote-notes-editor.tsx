@@ -1,11 +1,10 @@
 "use client";
 
 import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
-import { Loader2, Wand2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import type { Note } from "../types";
+import { AIActionsToolbar } from "./ai-actions-toolbar";
 import { BlockNoteEditor } from "./blocknote-editor";
 
 interface BlockNoteNotesEditorProps {
@@ -19,7 +18,6 @@ export const BlockNoteNotesEditor = ({
 	isLoading = false,
 	isFullScreen = false,
 }: BlockNoteNotesEditorProps) => {
-	const [isFormatting, setIsFormatting] = useState(false);
 	const editorRef = useRef<BlockNoteEditorType | null>(null);
 
 	const handleEditorReady = useCallback((editor: BlockNoteEditorType) => {
@@ -38,7 +36,6 @@ export const BlockNoteNotesEditor = ({
 				const blocks =
 					await editorRef.current.tryParseMarkdownToBlocks(content);
 				if (blocks && blocks.length > 0) {
-					// Insert at the end of the document, handle empty document case
 					const lastBlock =
 						editorRef.current.document.length > 0
 							? editorRef.current.document[
@@ -49,7 +46,6 @@ export const BlockNoteNotesEditor = ({
 					if (lastBlock) {
 						editorRef.current.insertBlocks(blocks, lastBlock, "after");
 					} else {
-						// For empty documents, just insert the blocks
 						editorRef.current.insertBlocks(
 							blocks,
 							editorRef.current.document[0],
@@ -70,107 +66,24 @@ export const BlockNoteNotesEditor = ({
 		};
 	}, []);
 
-	const handleFormatNote = async () => {
-		if (!editorRef.current) {
-			toast.error("Editor not ready");
-			return;
-		}
-
-		setIsFormatting(true);
-
-		try {
-			// Get current content as markdown
-			const currentContent = await editorRef.current.blocksToMarkdownLossy();
-
-			if (!currentContent.trim()) {
-				toast.error("No content to format");
-				setIsFormatting(false);
-				return;
-			}
-
-			// Call the formatter API
-			const response = await fetch("/api/smart/formatter", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					content: currentContent,
-					title: note.title,
-				}),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || "Formatting failed");
-			}
-
-			const { formattedContent } = await response.json();
-
-			if (formattedContent) {
-				// Parse the formatted markdown to blocks
-				const formattedBlocks =
-					await editorRef.current.tryParseMarkdownToBlocks(formattedContent);
-
-				if (formattedBlocks && formattedBlocks.length > 0) {
-					// Get current blocks and replace them with formatted blocks
-					const currentBlocks = editorRef.current.document;
-
-					// Use transaction to replace all content
-					editorRef.current.transact(() => {
-						editorRef.current?.replaceBlocks(currentBlocks, formattedBlocks);
-					});
-
-					toast.success("Note formatted successfully!");
-				} else {
-					toast.error("Failed to parse formatted content");
-				}
-			}
-		} catch (error) {
-			console.error("Formatting error:", error);
-			toast.error(
-				error instanceof Error ? error.message : "Failed to format note"
-			);
-		} finally {
-			setIsFormatting(false);
-		}
-	};
 
 	return (
 		<div
-			className="flex flex-col h-full relative dark:bg-[hsl(var(--card-accent))]"
+			className="flex flex-col h-full overflow-hidden"
 			data-fullscreen={isFullScreen}
 		>
-			{/* Note Content */}
-			<div className="flex-1 overflow-hidden dark:bg-[hsl(var(--card-accent))]">
+			{/* AI Actions Toolbar — sticky at top */}
+			<div className="flex-none">
+				<AIActionsToolbar editorRef={editorRef} isLoading={isLoading} />
+			</div>
+
+			{/* Editor area — fills remaining height, scrollable inside */}
+			<div className="flex-1 min-h-0 overflow-hidden relative">
 				<BlockNoteEditor
-					className="h-full dark:bg-[hsl(var(--card-accent))]"
+					className="h-full"
 					noteId={note._id}
 					onEditorReady={handleEditorReady}
 				/>
-			</div>
-
-			{/* Format Button - Top Right */}
-			<div className="absolute top-4 right-4 z-10">
-				<Button
-					className="shadow-lg hover:shadow-xl transition-shadow"
-					disabled={isFormatting || isLoading}
-					onClick={handleFormatNote}
-					size="sm"
-					variant="secondary"
-				>
-					{isFormatting ? (
-						<>
-							<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-							Formatting...
-						</>
-					) : (
-						<>
-							<Wand2 className="h-4 w-4 mr-2" />
-							Format
-						</>
-					)}
-				</Button>
 			</div>
 		</div>
 	);

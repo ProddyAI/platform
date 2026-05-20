@@ -53,20 +53,18 @@ export const NotesContent = ({
 }: NotesContentProps) => {
 	// Local state for sidebar
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-	// Local state for AI panel visibility
-	const [_showAIPanel, _setShowAIPanel] = useState(false);
-	// Live note session hook - now inside RoomProvider context
-	// Use a stable dummy ID that exists in the database to avoid server errors
+
+	// Live note session hook — inside RoomProvider context
 	const dummyNoteId = "kn7cvx952gp794j4vzvxxqqgk57k9yhh" as Id<"notes">;
 	const _liveSession = useLiveNoteSession({
 		noteId: activeNoteId || dummyNoteId,
 		noteTitle: activeNote?.title || "Untitled",
 		workspaceId,
 		channelId,
-		autoAnnounce: Boolean(activeNoteId), // Only auto-announce when there's an active note
+		autoAnnounce: Boolean(activeNoteId),
 	});
 
-	// Create a wrapper function that matches the hook's expected signature
+	// Wrapper matching the hook's expected signature
 	const handleUpdate = useCallback(
 		async (updates: Partial<Note>) => {
 			if (!activeNoteId) return;
@@ -75,7 +73,7 @@ export const NotesContent = ({
 		[activeNoteId, onUpdateNote]
 	);
 
-	// Note content management
+	// Note content management with debounced auto-save
 	const {
 		localContent,
 		localTitle,
@@ -85,22 +83,22 @@ export const NotesContent = ({
 	} = useNoteContent({
 		note: activeNote || undefined,
 		onUpdate: handleUpdate,
-		debounceMs: 1000,
+		debounceMs: 2000,
 	});
 
-	// Handle save
+	// Handle manual save
 	const handleSave = useCallback(async () => {
 		if (!activeNoteId) return;
 		try {
-			await handleUpdate({ content: localContent });
-			toast.success("Note saved successfully");
+			await handleUpdate({ content: localContent, title: localTitle });
+			toast.success("Note saved");
 		} catch (error) {
 			console.error("Failed to save note:", error);
 			toast.error("Failed to save note");
 		}
-	}, [activeNoteId, localContent, handleUpdate]);
+	}, [activeNoteId, localContent, localTitle, handleUpdate]);
 
-	// Create wrapper for onItemSelect to match LiveSidebar's expected signature
+	// Wrappers to match LiveSidebar expected signatures
 	const handleItemSelect = useCallback(
 		(itemId: string) => {
 			onNoteSelect(itemId as Id<"notes">);
@@ -108,7 +106,6 @@ export const NotesContent = ({
 		[onNoteSelect]
 	);
 
-	// Create wrapper for onDeleteItem to match LiveSidebar's expected signature
 	const handleDeleteItem = useCallback(
 		async (itemId: string) => {
 			try {
@@ -121,7 +118,6 @@ export const NotesContent = ({
 		[onDeleteNote]
 	);
 
-	// Create wrapper for onRenameItem to match LiveSidebar's expected signature
 	const handleRenameItem = useCallback(
 		async (itemId: string, newName: string) => {
 			try {
@@ -134,7 +130,7 @@ export const NotesContent = ({
 		[onUpdateNote]
 	);
 
-	// Memoize the note object to prevent unnecessary re-renders
+	// Memoize note with local overrides while typing
 	const memoizedNote = useMemo(() => {
 		if (!activeNote) return null;
 		return {
@@ -144,28 +140,14 @@ export const NotesContent = ({
 		};
 	}, [activeNote, isTyping, localTitle, localContent]);
 
-	// Memoize the update callback to prevent re-renders
-	const _memoizedOnUpdate = useCallback(
-		(updates: Partial<Note>) => {
-			handleUpdate(updates).catch((error) => {
-				console.error("Failed to update note:", error);
-				toast.error("Failed to update note");
-			});
-		},
-		[handleUpdate]
-	);
-
-	// Memoize the fullscreen toggle to prevent re-renders
 	const memoizedToggleFullScreen = useCallback(() => {
 		setIsFullScreen(!isFullScreen);
 	}, [isFullScreen, setIsFullScreen]);
 
-	// Memoize the export callback
 	const memoizedOnExport = useCallback(() => {
 		setShowExportDialog(true);
 	}, [setShowExportDialog]);
 
-	// Memoize the tags change callback
 	const memoizedOnTagsChange = useCallback(
 		(tags: string[]) => {
 			handleUpdate({ tags }).catch((error) => {
@@ -176,7 +158,6 @@ export const NotesContent = ({
 		[handleUpdate]
 	);
 
-	// Memoize the items array to prevent unnecessary re-renders of LiveSidebar
 	const memoizedItems = useMemo(() => {
 		return notes.map((note) => ({
 			_id: note._id,
@@ -188,18 +169,24 @@ export const NotesContent = ({
 		}));
 	}, [notes]);
 
-	// Memoize the sidebar toggle callback
 	const memoizedToggleCollapse = useCallback(() => {
 		setSidebarCollapsed(!sidebarCollapsed);
 	}, [sidebarCollapsed]);
 
+	// Auto-save status derived from typing/unsaved state
+	const autoSaveStatus = useMemo<"saving" | "saved" | null>(() => {
+		if (isTyping) return "saving";
+		if (!hasUnsavedChanges && activeNote) return "saved";
+		return null;
+	}, [isTyping, hasUnsavedChanges, activeNote]);
+
 	return (
 		<div
-			className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white" : "flex-col"}`}
+			className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-background" : "flex-col"}`}
 			ref={pageContainerRef}
 		>
-			<div className="flex flex-1 overflow-hidden">
-				{/* Enhanced Sidebar with categories - hidden in fullscreen */}
+			<div className="flex flex-1 min-h-0 overflow-hidden">
+				{/* Sidebar — hidden in fullscreen */}
 				{!isFullScreen && (
 					<LiveSidebar
 						channelId={channelId}
@@ -217,42 +204,53 @@ export const NotesContent = ({
 				)}
 
 				{/* Main Content Area */}
-				<div className="flex-1 flex flex-col overflow-hidden dark:bg-[hsl(var(--card-accent))]">
-					{/* Live Header - always visible */}
-					<LiveHeader
-						createdAt={activeNote?.createdAt}
-						hasUnsavedChanges={hasUnsavedChanges}
-						isFullScreen={isFullScreen}
-						onExport={memoizedOnExport}
-						onSave={handleSave}
-						onTagsChange={memoizedOnTagsChange}
-						onTitleChange={handleNoteTitleChange}
-						showFullScreenToggle={true}
-						showTags={true}
-						tags={activeNote?.tags || []}
-						title={isTyping ? localTitle : activeNote?.title || "Untitled Note"}
-						toggleFullScreen={memoizedToggleFullScreen}
-						type="notes"
-						updatedAt={activeNote?.updatedAt}
-					/>
+				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+					{/* Live Header — always visible, never scrolls away */}
+					<div className="flex-none">
+						<LiveHeader
+							autoSaveStatus={autoSaveStatus}
+							createdAt={activeNote?.createdAt}
+							hasUnsavedChanges={hasUnsavedChanges}
+							isFullScreen={isFullScreen}
+							lastSaved={activeNote?.updatedAt}
+							onExport={memoizedOnExport}
+							onSave={handleSave}
+							onTagsChange={memoizedOnTagsChange}
+							onTitleChange={handleNoteTitleChange}
+							showFullScreenToggle={true}
+							showTags={true}
+							tags={activeNote?.tags || []}
+							title={
+								isTyping ? localTitle : activeNote?.title || "Untitled Note"
+							}
+							toggleFullScreen={memoizedToggleFullScreen}
+							type="notes"
+							updatedAt={activeNote?.updatedAt}
+						/>
+					</div>
 
-					{/* Notes Editor */}
-					<div className="flex-1 overflow-hidden">
+					{/* Editor — fills remaining space */}
+					<div className="flex-1 min-h-0 overflow-hidden">
 						{memoizedNote && activeNoteId ? (
 							<BlockNoteNotesEditor
 								isFullScreen={isFullScreen}
-								isLoading={isTyping || hasUnsavedChanges}
+								isLoading={false}
 								note={memoizedNote}
 							/>
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground">
-								<div className="text-center">
-									<FileText className="mx-auto h-12 w-12 mb-4 text-muted-foreground/50" />
-									<div className="text-lg font-medium mb-2">
-										No note selected
+								<div className="text-center space-y-4 max-w-sm px-4">
+									<div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/30 dark:to-blue-900/30 flex items-center justify-center">
+										<FileText className="h-8 w-8 text-violet-500 dark:text-violet-400" />
 									</div>
-									<div className="text-sm mb-4">
-										Select a note from the sidebar or create a new one
+									<div>
+										<h3 className="text-lg font-semibold mb-1">
+											No note selected
+										</h3>
+										<p className="text-sm text-muted-foreground">
+											Choose a note from the sidebar or create a new one to
+											start writing.
+										</p>
 									</div>
 									<Button
 										className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg"
@@ -273,7 +271,7 @@ export const NotesContent = ({
 				</div>
 			</div>
 
-			{/* Audio Room Component */}
+			{/* Audio Room */}
 			{activeNote && (
 				<StreamAudioRoom
 					canvasName={activeNote.title || "Notes Audio Room"}
