@@ -184,7 +184,6 @@ export const BlockNoteEditor = ({
 		);
 	}
 
-
 	return (
 		<div
 			className={className}

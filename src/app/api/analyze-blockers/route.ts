@@ -39,7 +39,9 @@ type ApplyDependenciesResult = {
 	}>;
 };
 
-function dependencyApplySummary(result: ApplyDependenciesResult | null | undefined) {
+function dependencyApplySummary(
+	result: ApplyDependenciesResult | null | undefined
+) {
 	return {
 		applied: result?.applied ?? 0,
 		skipped: result?.skipped ?? [],

@@ -1736,18 +1736,17 @@ export const applyDetectedIssueDependencies = mutation({
 			ctx,
 			args.channelId
 		);
-		const issueStatusById = await getIssueStatusIdsByChannel(ctx, args.channelId);
+		const issueStatusById = await getIssueStatusIdsByChannel(
+			ctx,
+			args.channelId
+		);
 		const existing = await ctx.db
 			.query("issueBlocking")
 			.withIndex("by_channel_id", (q) => q.eq("channelId", args.channelId))
 			.take(500);
 		for (const rel of existing) {
 			if (
-				!isActiveBlockingRelationship(
-					rel,
-					issueStatusById,
-					completedStatusIds
-				)
+				!isActiveBlockingRelationship(rel, issueStatusById, completedStatusIds)
 			) {
 				await ctx.db.delete(rel._id);
 			}
@@ -1779,8 +1778,7 @@ export const applyDetectedIssueDependencies = mutation({
 				});
 				applied++;
 			} catch (error) {
-				const reason =
-					error instanceof Error ? error.message : "unknown_error";
+				const reason = error instanceof Error ? error.message : "unknown_error";
 				console.warn("Skipping dependency", dep, error);
 				skipped.push({
 					blockerId: dep.blockerId,

@@ -336,7 +336,8 @@ export const MeetingNotesPanel = ({
 										onClick={async () => {
 											try {
 												setIsPushingTasks(true);
-												const latestGen = generations?.[generations?.length - 1];
+												const latestGen =
+													generations?.[generations?.length - 1];
 												if (!latestGen?.actionItems) {
 													toast.error("No action items to push");
 													return;

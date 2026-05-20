@@ -758,26 +758,49 @@ export const NotesSidebar = ({
 										className="space-y-3 max-h-[60vh] overflow-y-auto pr-1"
 										ref={scrollRef}
 									>
-										{transcript.split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => {
-											const colonIdx = line.indexOf(": ");
-											const speaker = colonIdx > -1 ? line.slice(0, colonIdx).trim() : null;
-											const text = colonIdx > -1 ? line.slice(colonIdx + 2) : line;
-											const colors = ["bg-indigo-500", "bg-emerald-500", "bg-purple-500", "bg-orange-500", "bg-pink-500", "bg-cyan-500"];
-											const colorClass = speaker ? colors[speaker.charCodeAt(0) % colors.length] : "bg-gray-600";
-											return (
-												<div className="flex items-start gap-2.5 animate-in fade-in duration-300" key={i}>
-													<div className={`w-7 h-7 rounded-full ${colorClass} text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5`}>
-														{speaker ? speaker[0]?.toUpperCase() : "?"}
+										{transcript
+											.split("\n")
+											.filter((l: string) => l.trim())
+											.map((line: string, i: number) => {
+												const colonIdx = line.indexOf(": ");
+												const speaker =
+													colonIdx > -1 ? line.slice(0, colonIdx).trim() : null;
+												const text =
+													colonIdx > -1 ? line.slice(colonIdx + 2) : line;
+												const colors = [
+													"bg-indigo-500",
+													"bg-emerald-500",
+													"bg-purple-500",
+													"bg-orange-500",
+													"bg-pink-500",
+													"bg-cyan-500",
+												];
+												const colorClass = speaker
+													? colors[speaker.charCodeAt(0) % colors.length]
+													: "bg-gray-600";
+												return (
+													<div
+														className="flex items-start gap-2.5 animate-in fade-in duration-300"
+														key={i}
+													>
+														<div
+															className={`w-7 h-7 rounded-full ${colorClass} text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5`}
+														>
+															{speaker ? speaker[0]?.toUpperCase() : "?"}
+														</div>
+														<div className="flex-1 min-w-0">
+															{speaker && (
+																<span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide">
+																	{speaker}
+																</span>
+															)}
+															<p className="text-[13px] text-gray-300 leading-relaxed">
+																{text}
+															</p>
+														</div>
 													</div>
-													<div className="flex-1 min-w-0">
-														{speaker && (
-															<span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide">{speaker}</span>
-														)}
-														<p className="text-[13px] text-gray-300 leading-relaxed">{text}</p>
-													</div>
-												</div>
-											);
-										})}
+												);
+											})}
 									</div>
 								</div>
 							) : (

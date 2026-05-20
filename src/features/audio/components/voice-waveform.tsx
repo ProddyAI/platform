@@ -73,7 +73,12 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 					const y = centerY - barHeight / 2;
 
 					// Rounded bars with gradient
-					const gradient = ctx.createLinearGradient(x, centerY + barHeight / 2, x, centerY - barHeight / 2);
+					const gradient = ctx.createLinearGradient(
+						x,
+						centerY + barHeight / 2,
+						x,
+						centerY - barHeight / 2
+					);
 					gradient.addColorStop(0, "#6366f1"); // Indigo
 					gradient.addColorStop(0.5, "#818cf8"); // Lighter indigo
 					gradient.addColorStop(1, "#c084fc"); // Purple
@@ -99,12 +104,7 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 
 	return (
 		<div className="flex items-center h-11 px-3 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm">
-			<canvas
-				className="rounded-sm"
-				height={36}
-				ref={canvasRef}
-				width={120}
-			/>
+			<canvas className="rounded-sm" height={36} ref={canvasRef} width={120} />
 		</div>
 	);
 };

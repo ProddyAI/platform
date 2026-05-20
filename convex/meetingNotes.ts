@@ -32,7 +32,11 @@ async function executeAIGeneration(
 	prompt: string,
 	schema: z.ZodType<AIInsightsResponse>
 ): Promise<AIInsightsResponse | null> {
-	const models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
+	const models = [
+		"gemini-2.0-flash",
+		"gemini-2.5-flash",
+		"gemini-2.0-flash-lite",
+	];
 	const apiKey =
 		process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
@@ -782,7 +786,11 @@ ${args.transcript}
 `;
 
 		// Try primary model, fallback to secondary on 503
-		const models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
+		const models = [
+			"gemini-2.0-flash",
+			"gemini-2.5-flash",
+			"gemini-2.0-flash-lite",
+		];
 		let lastError: unknown = null;
 
 		for (const modelName of models) {

@@ -1,8 +1,8 @@
 "use client";
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import { Component } from "react";
 
 interface NoteEditorErrorBoundaryProps {
 	children: ReactNode;
@@ -34,9 +34,7 @@ export class NoteEditorErrorBoundary extends Component<
 		this.state = { hasError: false, error: null };
 	}
 
-	static getDerivedStateFromError(
-		error: Error
-	): NoteEditorErrorBoundaryState {
+	static getDerivedStateFromError(error: Error): NoteEditorErrorBoundaryState {
 		return { hasError: true, error };
 	}
 
