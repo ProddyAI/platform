@@ -164,11 +164,12 @@ export const initiateSlackOAuth = mutation({
 			throw new Error("Slack OAuth not configured");
 		}
 
-		// Build OAuth URL with minimal scopes
+		// Build OAuth URL with required scopes (users:read.email needed for user matching)
 		const scopes = [
 			"channels:read",
 			"channels:history",
 			"users:read",
+			"users:read.email",
 			"files:read",
 			"team:read",
 		].join(",");
@@ -992,17 +993,6 @@ export const processSlackImport = internalAction({
 				throw new Error("Connection not found");
 			}
 
-			// eslint-disable-next-line no-warning-comments
-			// TODO: Implement actual Slack API calls here
-			// For now, we'll simulate the import process
-			await ctx.runMutation(internal.importIntegrations.updateJobProgress, {
-				jobId: args.jobId,
-				currentStep: "Import simulation - would fetch from Slack API",
-				channelsImported: 0,
-				messagesImported: 0,
-				usersImported: 0,
-			});
-
 			// Check if token is expired
 			if (connection.expiresAt && Date.now() >= connection.expiresAt) {
 				throw new Error("Slack access token has expired. Please reconnect.");
@@ -1539,6 +1529,107 @@ export const notifyImportComplete = internalAction({
 // ============================================================================
 
 /**
+ * Helper to generate a slugified board channel name from a team name
+ */
+function toBoardChannelNameForImport(name: string): string {
+	const slug = name
+		.toLowerCase()
+		.replace(/[^a-z0-9\s-]/g, "")
+		.replace(/\s+/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 14);
+	const base = slug.length > 0 ? slug : "project";
+	return `${base}-board`;
+}
+
+/**
+ * Store an imported Linear team as a Project with a board channel (internal only).
+ * Creates both a board channel (type="board") and a project record so the team
+ * appears in the Projects sidebar tab rather than the plain Channels list.
+ * Uses idempotency key to prevent duplicates across re-imports.
+ */
+export const storeImportedLinearProject = internalMutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		memberId: v.id("members"),
+		externalId: v.string(), // Linear team ID
+		idempotencyKey: v.string(),
+		name: v.string(),
+		metadata: v.optional(v.any()),
+	},
+	handler: async (ctx, args) => {
+		// Check for existing import by idempotency key
+		const existingMetadata = await ctx.db
+			.query("import_channel_metadata")
+			.withIndex("by_idempotency_key", (q) =>
+				q.eq("idempotencyKey", args.idempotencyKey)
+			)
+			.first();
+
+		if (existingMetadata) {
+			// Already imported — update names if changed
+			const internalChannel = await ctx.db.get(
+				existingMetadata.internalChannelId
+			);
+			if (internalChannel && internalChannel.name !== args.name) {
+				await ctx.db.patch(existingMetadata.internalChannelId, {
+					name: args.name,
+				});
+			}
+			// Update the linked project name too
+			const project = await ctx.db
+				.query("projects")
+				.withIndex("by_board_channel_id", (q) =>
+					q.eq("boardChannelId", existingMetadata.internalChannelId)
+				)
+				.first();
+			if (project && project.name !== args.name) {
+				await ctx.db.patch(project._id, {
+					name: args.name,
+					updatedAt: Date.now(),
+				});
+			}
+			return existingMetadata.internalChannelId;
+		}
+
+		const now = Date.now();
+
+		// Create the board channel (type="board" so it's not shown in Channels)
+		const boardChannelId = await ctx.db.insert("channels", {
+			workspaceId: args.workspaceId,
+			name: toBoardChannelNameForImport(args.name),
+			type: "board",
+		});
+
+		// Create the project so it appears in the Projects sidebar tab
+		await ctx.db.insert("projects", {
+			name: args.name,
+			workspaceId: args.workspaceId,
+			boardChannelId,
+			createdBy: args.memberId,
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		// Store import metadata for idempotency
+		await ctx.db.insert("import_channel_metadata", {
+			workspaceId: args.workspaceId,
+			externalId: args.externalId,
+			idempotencyKey: args.idempotencyKey,
+			platform: "linear",
+			internalChannelId: boardChannelId,
+			name: args.name,
+			type: "team",
+			metadata: args.metadata,
+			importedAt: now,
+		});
+
+		return boardChannelId;
+	},
+});
+
+/**
  * Update job status (internal only)
  */
 export const updateJobStatus = internalMutation({
@@ -1877,6 +1968,7 @@ export const storeImportedChannel = internalMutation({
 		const channelId = await ctx.db.insert("channels", {
 			workspaceId: args.workspaceId,
 			name: args.name,
+			type: "chat",
 			icon: args.type === "private" ? "lock" : "hash",
 		});
 
@@ -2004,9 +2096,19 @@ export const storeImportedLinearIssue = internalMutation({
 			}
 		}
 
+		// Look up the project linked to this board channel so issues are properly associated
+		// This is needed so project board views that query by projectId find the imported issues
+		const linkedProject = await ctx.db
+			.query("projects")
+			.withIndex("by_board_channel_id", (q) =>
+				q.eq("boardChannelId", args.channelId)
+			)
+			.first();
+
 		// Create new issue
 		const issueId = await ctx.db.insert("issues", {
 			channelId: args.channelId,
+			projectId: linkedProject?._id,
 			statusId: args.statusId,
 			title: args.title,
 			description: args.description,
@@ -2174,6 +2276,25 @@ export const getChannelByExternalId = internalQuery({
 		}
 
 		return null;
+	},
+});
+
+/**
+ * Get Linear channel metadata by external team ID (internal only)
+ * Used for idempotency checks when re-importing Linear teams
+ */
+export const getLinearChannelMetadataByExternalId = internalQuery({
+	args: {
+		workspaceId: v.id("workspaces"),
+		externalId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("import_channel_metadata")
+			.withIndex("by_platform_external_id", (q) =>
+				q.eq("platform", "linear").eq("externalId", args.externalId)
+			)
+			.first();
 	},
 });
 
@@ -2382,6 +2503,7 @@ export const _getOrCreateMemberByEmail = internalMutation({
 		linearRole: v.optional(v.string()), // Linear role (admin, member, etc.)
 		importSource: v.optional(v.string()), // e.g., "Linear Import"
 		importJobUserId: v.optional(v.id("users")), // User who started the import (for rate limiting)
+		platform: v.string(), // "linear" or "slack" etc.
 	},
 	handler: async (ctx, args): Promise<MemberCreationResult> => {
 		// Validate inputs
@@ -2502,13 +2624,31 @@ export const _getOrCreateMemberByEmail = internalMutation({
 			createdNewMember = true;
 		}
 
-		// Send notification if new member was created
-		// Note: Actual notification is sent via the import completion notification
-		// to avoid circular dependency issues during Convex codegen
+		// Send workspace invite email to newly created members
 		if (createdNewMember && member) {
 			console.log(
 				`[AutoInvite] New member created: ${member._id} for workspace ${args.workspaceId}`
 			);
+			// Fetch workspace name for the email
+			try {
+				const workspace = await ctx.db.get(args.workspaceId);
+				if (workspace && normalizedEmail) {
+					await ctx.scheduler.runAfter(
+						0,
+						internal.importIntegrations.sendAutoInviteEmail,
+						{
+							email: normalizedEmail,
+							name: args.name.trim(),
+							workspaceId: args.workspaceId,
+							workspaceName: workspace.name,
+							platform: args.platform,
+						}
+					);
+				}
+			} catch (emailErr) {
+				// Non-fatal: log but continue
+				console.warn("[AutoInvite] Could not schedule invite email:", emailErr);
+			}
 		}
 
 		return {
@@ -2578,6 +2718,103 @@ export const createDefaultStatus = internalMutation({
 		});
 
 		return statusId;
+	},
+});
+
+/**
+ * Send a workspace invitation email to a user auto-added during an import (internal only).
+ * Uses Resend directly (same pattern as sendImportCompletionEmail in email.ts).
+ */
+export const sendAutoInviteEmail = internalAction({
+	args: {
+		email: v.string(),
+		name: v.string(),
+		workspaceId: v.id("workspaces"),
+		workspaceName: v.string(),
+		platform: v.string(), // e.g., "linear", "slack"
+	},
+	handler: async (_ctx, args) => {
+		try {
+			const apiKey = process.env.RESEND_API_KEY;
+			const fromEmail = process.env.RESEND_FROM_EMAIL;
+			const siteUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+
+			if (!apiKey || !fromEmail || !siteUrl) {
+				console.log(
+					"[AutoInvite] Email not configured, skipping invite email for",
+					args.email
+				);
+				return { success: false, reason: "Email service not configured" };
+			}
+
+			const workspaceUrl = `${siteUrl}/workspace/${args.workspaceId}`;
+			const firstName = args.name.split(" ")[0] || args.name;
+			const platformName = args.platform.charAt(0).toUpperCase() + args.platform.slice(1);
+
+			const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+    .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px; }
+    .button { display: inline-block; background: #667eea; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; margin-top: 20px; font-weight: 600; }
+    .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 24px;">You've been added to ${args.workspaceName}!</h1>
+    </div>
+    <div class="content">
+      <p>Hi ${firstName},</p>
+      <p>Your ${platformName} account was linked to the <strong>${args.workspaceName}</strong> workspace on Proddy during a ${platformName.toLowerCase()} import. Content assigned to you has been automatically imported.</p>
+      <p>Sign in to Proddy to view your assigned issues and collaborate with your team:</p>
+      <div style="text-align: center;">
+        <a class="button" href="${workspaceUrl}">Open Workspace</a>
+      </div>
+      <p style="margin-top: 24px; color: #666; font-size: 14px;">If you don't have an account yet, sign up using this email address (${args.email}) and you'll automatically get access.</p>
+    </div>
+    <div class="footer">
+      <p>© 2026 Proddy. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+			const response = await fetch("https://api.resend.com/emails", {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					from: fromEmail,
+					to: args.email,
+					subject: `You've been added to ${args.workspaceName} on Proddy`,
+					html,
+				}),
+			});
+
+			if (!response.ok) {
+				const errData = await response.json();
+				console.error("[AutoInvite] Resend error:", errData);
+				return { success: false, error: `Resend error: ${response.status}` };
+			}
+
+			console.log("[AutoInvite] Invite email sent to", args.email);
+			return { success: true };
+		} catch (error) {
+			console.error("[AutoInvite] Failed to send invite email:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
 	},
 });
 

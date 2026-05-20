@@ -775,6 +775,8 @@ interface SlackImportContext extends ImportContext {
 	channelMap: Map<string, string>;
 	/** Map of external message ID to internal message ID */
 	messageMap: Map<string, string>;
+	/** Map of Slack user external ID to internal member ID */
+	userMap: Map<string, Id<"members">>;
 }
 
 /**
@@ -800,6 +802,7 @@ export async function executeSlackImport(
 		...ctx,
 		channelMap: new Map(),
 		messageMap: new Map(),
+		userMap: new Map(),
 	};
 
 	try {
@@ -815,6 +818,48 @@ export async function executeSlackImport(
 		await ctx.updateProgress({ currentStep: "Fetching users..." });
 		const users = await provider.fetchUsers(ctx);
 		result.usersMatched = users.length;
+
+		// Build user and member maps for author resolution
+		for (const user of users) {
+			if (user.email) {
+				try {
+					const memberResult = await ctx.runMutation(
+						internal.importIntegrations._getOrCreateMemberByEmail,
+						{
+							workspaceId: ctx.workspaceId,
+							email: user.email,
+							name: user.displayName || user.name || "Unknown",
+							avatarUrl: user.avatarUrl,
+							importSource: "Slack Import",
+							importJobUserId: (ctx as any).userId,
+							platform: "slack",
+						}
+					) as any;
+
+					if (memberResult && memberResult.member) {
+						slackCtx.userMap.set(user.externalId, memberResult.member._id);
+						await ctx.log(
+							"info",
+							`Mapped Slack user ${user.displayName || user.name} to member ${memberResult.member._id}`
+						);
+					}
+				} catch (error) {
+					await ctx.log(
+						"warn",
+						`Failed to create member for Slack user ${user.displayName || user.name}: ${error instanceof Error ? error.message : "Unknown error"}`
+					);
+				}
+			} else {
+				await ctx.log(
+					"warn",
+					`Slack user ${user.displayName || user.name} has no email, cannot auto-invite`
+				);
+			}
+		}
+		await ctx.log(
+			"info",
+			`Fetched ${users.length} users, matched ${slackCtx.userMap.size} to members`
+		);
 
 		// Step 4: Fetch channels
 		await ctx.updateProgress({ currentStep: "Fetching channels..." });
@@ -1035,8 +1080,8 @@ async function storeMessages(
 				return; // Skip this message
 			}
 
-			// Find the member for this user
-			const memberId = await findMemberForUser(ctx, message.authorExternalId);
+		// Find the member for this user from the user map (if available)
+		const memberId = ctx.userMap.get(message.authorExternalId);
 
 			// Get parent message ID if this is a thread reply
 			let parentMessageId: string | undefined;
@@ -1169,22 +1214,4 @@ async function _storeFileAttachment(
 	});
 
 	result.filesImported++;
-}
-
-/**
- * Find or create a member for a Slack user.
- * Tries to match by email first, then creates a placeholder.
- */
-async function findMemberForUser(
-	_ctx: SlackImportContext,
-	_userExternalId: string
-): Promise<Id<"members"> | undefined> {
-	// In a full implementation, you would:
-	// 1. Fetch user details from Slack to get email
-	// 2. Look up existing member by email in the members table
-	// 3. Create a placeholder member if no match found
-
-	// For now, return undefined (message will be stored without specific author)
-	// The message will use the importing member as the author
-	return undefined;
 }

@@ -542,6 +542,7 @@ export async function executeLinearImport(
 							avatarUrl: cleanAvatarUrl,
 							importSource: "Linear Import",
 							importJobUserId: (ctx as any).userId,
+							platform: "linear",
 						}
 					)) as any;
 
@@ -734,14 +735,16 @@ export async function executeLinearImport(
 }
 
 /**
- * Store a team in the database (idempotent)
- * If a target channel is specified, uses that channel instead of creating new ones
+ * Store a Linear team as a Project in the database (idempotent).
+ * Each team becomes a project with a dedicated board channel so it appears
+ * in the Projects sidebar tab instead of the plain Channels list.
+ * If a target channel is specified, that channel is used directly (legacy mode).
  */
 async function storeTeam(
 	ctx: LinearImportContext,
 	team: LinearTeam
 ): Promise<string> {
-	// If target channel is specified, use it for all teams
+	// Legacy mode: if target channel is specified, use it for all teams
 	if (ctx.targetChannelId) {
 		ctx.teamMap.set(team.id, ctx.targetChannelId);
 		await ctx.log(
@@ -758,46 +761,43 @@ async function storeTeam(
 		"channel"
 	);
 
-	const existingChannel = (await ctx.runQuery(
-		internal.importIntegrations.getChannelByExternalId,
+	// Check if this Linear team was already imported (idempotency via metadata)
+	const existingMetadata = (await ctx.runQuery(
+		internal.importIntegrations.getLinearChannelMetadataByExternalId,
 		{ workspaceId: ctx.workspaceId, externalId: team.id }
 	)) as any;
 
-	if (existingChannel) {
+	if (existingMetadata) {
 		await ctx.log(
 			"info",
-			`Found existing channel for team ${team.name}: ${existingChannel._id}`
+			`Found existing project/channel for team ${team.name}: ${existingMetadata.internalChannelId}`
 		);
-		if (existingChannel.name !== team.name) {
-			await ctx.runMutation(
-				internal.importIntegrations.updateImportedChannelName,
-				{
-					channelId: existingChannel._id,
-					name: team.name,
-				}
-			);
-		}
-		ctx.teamMap.set(team.id, existingChannel._id);
-		return existingChannel._id;
+		ctx.teamMap.set(team.id, existingMetadata.internalChannelId);
+		return existingMetadata.internalChannelId;
 	}
 
-	await ctx.log("info", `Creating new channel for team ${team.name}`);
+	// Create a project + board channel for this Linear team
+	await ctx.log(
+		"info",
+		`Creating new project for Linear team ${team.name}`
+	);
 	const channelId = await ctx.runMutation<string>(
-		internal.importIntegrations.storeImportedChannel,
+		internal.importIntegrations.storeImportedLinearProject,
 		{
 			workspaceId: ctx.workspaceId,
 			memberId: ctx.memberId,
 			externalId: team.id,
 			idempotencyKey,
 			name: team.name,
-			type: "team",
-			platform: "linear" as const,
 			metadata: { key: team.key },
 		}
 	);
 
 	ctx.teamMap.set(team.id, channelId);
-	await ctx.log("info", `Created channel ${channelId} for team ${team.name}`);
+	await ctx.log(
+		"info",
+		`Created project + board channel ${channelId} for Linear team ${team.name}`
+	);
 	return channelId;
 }
 

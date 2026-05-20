@@ -119,9 +119,24 @@ export const get = query({
 				.map((channel) => [channel._id, channel])
 		);
 
+		// Count issues per project (by board channel) for sorting
+		const issueCountMap = new Map<Id<"projects">, number>();
+		await Promise.all(
+			projects.map(async (project) => {
+				const issues = await ctx.db
+					.query("issues")
+					.withIndex("by_channel_id", (q) =>
+						q.eq("channelId", project.boardChannelId)
+					)
+					.take(1000);
+				issueCountMap.set(project._id, issues.length);
+			})
+		);
+
 		return projects
 			.map((project) => ({
 				...project,
+				issueCount: issueCountMap.get(project._id) ?? 0,
 				boardChannelName:
 					channelMap.get(project.boardChannelId)?.name ?? "Unknown board",
 				connectedChannelName: project.connectedChannelId
@@ -134,7 +149,11 @@ export const get = query({
 					? channelMap.get(project.connectedChannelId)?.iconImageUrl
 					: undefined,
 			}))
-			.sort((a, b) => a.name.localeCompare(b.name));
+			// Sort by issue count descending, then alphabetically by name for ties
+			.sort((a, b) => {
+				const diff = b.issueCount - a.issueCount;
+				return diff !== 0 ? diff : a.name.localeCompare(b.name);
+			});
 	},
 });
 
