@@ -26,7 +26,7 @@ const JoinWorkspaceIdPage = () => {
 	const verificationAttemptedRef = useRef(false);
 
 	const { mutate, isPending } = useJoin();
-	const { data, isLoading } = useGetWorkspaceInfo({ id: workspaceId });
+	const { data, isLoading } = useGetWorkspaceInfo({ id: workspaceId as any });
 
 	const isMember = useMemo(() => data?.isMember, [data?.isMember]);
 
@@ -79,7 +79,7 @@ const JoinWorkspaceIdPage = () => {
 	const handleComplete = useCallback(
 		(value: string) => {
 			mutate(
-				{ workspaceId, joinCode: value },
+				{ workspaceId: workspaceId as any, joinCode: value },
 				{
 					onSuccess: (id) => {
 						router.replace(`/workspace/${id}`);

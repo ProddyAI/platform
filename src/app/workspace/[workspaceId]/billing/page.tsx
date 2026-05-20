@@ -39,6 +39,10 @@ export default function BillingPage() {
 		);
 	}
 
+	if (!workspaceId) {
+		return null;
+	}
+
 	return (
 		<div className="flex h-full flex-col bg-slate-50/50 dark:bg-transparent">
 			{/* Premium Header */}

@@ -52,9 +52,10 @@ const MemberIdPage = () => {
 	});
 
 	useEffect(() => {
+		if (!workspaceId) return;
 		mutate(
 			{
-				workspaceId,
+				workspaceId: workspaceId as Id<"workspaces">,
 				memberId,
 			},
 			{
@@ -76,7 +77,7 @@ const MemberIdPage = () => {
 
 	if (!conversationId) {
 		return (
-			<div className="h-full flex-col items-center justify-center gap-y-2">
+			<div className="flex h-full flex-col items-center justify-center gap-y-2">
 				<AlertTriangle className="size-6 text-muted-foreground" />
 
 				<span className="text-sm text-muted-foreground">

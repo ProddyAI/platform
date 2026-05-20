@@ -127,7 +127,9 @@ export const generateAndSendOTP = action({
 		// Send email using Resend
 		const resendApiKey = process.env.RESEND_API_KEY;
 		if (!resendApiKey) {
-			throw new Error("RESEND_API_KEY environment variable is required");
+			throw new Error(
+				"Email service is not configured (RESEND_API_KEY is missing)"
+			);
 		}
 
 		const response = await fetch("https://api.resend.com/emails", {
@@ -195,6 +197,7 @@ export const verifyOTP = mutation({
 			.query("emailVerifications")
 			.withIndex("by_email", (q) => q.eq("email", email))
 			.filter((q) => q.eq(q.field("verified"), false))
+			.order("desc")
 			.first();
 
 		if (!otpRecord) {

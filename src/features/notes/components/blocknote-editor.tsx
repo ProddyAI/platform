@@ -7,6 +7,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useUpdateMyPresence } from "@/../liveblocks.config";
@@ -84,7 +85,57 @@ export const BlockNoteEditor = ({
 			editor.onEditorContentChange(handleChange);
 			editor.onEditorSelectionChange(handleSelectionChange);
 
+			// Listen for AI note insertion events
+			const handleAiInsertion = async (
+				e: CustomEvent<{ content?: string }>
+			) => {
+				const content = e.detail?.content;
+				if (content && editor) {
+					try {
+						// Parse markdown to blocks
+						const blocks = await editor.tryParseMarkdownToBlocks(content);
+
+						// Insert at the end of the document
+						const topLevel = editor.document;
+						const lastBlock = topLevel[topLevel.length - 1];
+
+						if (lastBlock) {
+							editor.insertBlocks(blocks, lastBlock, "after");
+						} else {
+							editor.replaceBlocks(topLevel, blocks);
+						}
+						toast.success("AI notes inserted into editor");
+					} catch (err) {
+						console.error("Failed to parse/insert AI notes:", err);
+						// Fallback to simple text if parsing fails
+						toast.error("Failed to parse AI notes, inserting as plain text");
+						try {
+							const topLevel = editor.document;
+							const lastBlock = topLevel[topLevel.length - 1];
+							const fallback = [{ type: "paragraph", content }] as any;
+
+							if (lastBlock) {
+								editor.insertBlocks(fallback, lastBlock, "after");
+							} else {
+								editor.replaceBlocks(topLevel, fallback);
+							}
+						} catch (fallbackErr) {
+							console.error("Fallback insertion failed:", fallbackErr);
+						}
+					}
+				}
+			};
+
+			window.addEventListener(
+				"proddy:insert-ai-notes",
+				handleAiInsertion as unknown as EventListener
+			);
+
 			return () => {
+				window.removeEventListener(
+					"proddy:insert-ai-notes",
+					handleAiInsertion as unknown as EventListener
+				);
 				if (presenceUpdateTimeout) {
 					clearTimeout(presenceUpdateTimeout);
 				}

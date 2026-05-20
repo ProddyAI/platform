@@ -7,6 +7,7 @@ import { WorkspaceToolbar } from "../toolbar";
 
 export default function UsagePage() {
 	const workspaceId = useWorkspaceId();
+	if (!workspaceId) return null;
 
 	return (
 		<div className="flex h-full flex-col">

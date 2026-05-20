@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { mapWorkspaceId } from "./utils";
 
 // Helper query to get a channel by ID (for internal use)
 export const _getChannelById = query({
@@ -235,7 +236,7 @@ export const get = query({
 
 		if (!userId) return [];
 		if (!args.workspaceId) return [];
-		const workspaceId = args.workspaceId;
+		const workspaceId = mapWorkspaceId(args.workspaceId) as Id<"workspaces">;
 
 		const member = await ctx.db
 			.query("members")
