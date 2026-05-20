@@ -32,16 +32,6 @@ const notificationDayValidator = v.union(
 	v.literal("sunday")
 );
 
-const notificationKeyValidator = v.union(
-	v.literal("mentions"),
-	v.literal("assignee"),
-	v.literal("threadReply"),
-	v.literal("directMessage"),
-	v.literal("inviteSent"),
-	v.literal("workspaceJoin"),
-	v.literal("onlineStatus")
-);
-
 type NotificationKey =
 	| "mentions"
 	| "assignee"
@@ -360,7 +350,15 @@ export const getNotificationPreferences = query({
  */
 export const updateBrowserPrefs = mutation({
 	args: {
-		updates: v.record(notificationKeyValidator, v.boolean()),
+		updates: v.object({
+			mentions: v.optional(v.boolean()),
+			assignee: v.optional(v.boolean()),
+			threadReply: v.optional(v.boolean()),
+			directMessage: v.optional(v.boolean()),
+			inviteSent: v.optional(v.boolean()),
+			workspaceJoin: v.optional(v.boolean()),
+			onlineStatus: v.optional(v.boolean()),
+		}),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -411,7 +409,15 @@ export const updateBrowserPrefs = mutation({
  */
 export const updateEmailPrefs = mutation({
 	args: {
-		updates: v.record(notificationKeyValidator, v.boolean()),
+		updates: v.object({
+			mentions: v.optional(v.boolean()),
+			assignee: v.optional(v.boolean()),
+			threadReply: v.optional(v.boolean()),
+			directMessage: v.optional(v.boolean()),
+			inviteSent: v.optional(v.boolean()),
+			workspaceJoin: v.optional(v.boolean()),
+			onlineStatus: v.optional(v.boolean()),
+		}),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
