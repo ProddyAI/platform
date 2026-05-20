@@ -61,7 +61,10 @@ interface BoardStatusColumnProps {
 	onCreateIssue: (statusId: Id<"statuses">, title: string) => Promise<void>;
 	disableColumnDrag?: boolean;
 	subIssueStatsMap?: Record<string, { total: number; completed: number }>;
-	dependencyStatsMap?: Record<string, { blockedByCount: number; blockingCount: number }>;
+	dependencyStatsMap?: Record<
+		string,
+		{ blockedByCount: number; blockingCount: number }
+	>;
 	disableIssueDrag?: boolean;
 	isFocused?: boolean;
 }

@@ -771,9 +771,12 @@ const BlockingSection = ({
 	const blockingIssues = useQuery(api.board.getBlockingIssues, {
 		issueId: issue._id,
 	});
-	const blockedByIssuesDetailed = useQuery(api.board.getBlockedByIssuesWithDetails, {
-		issueId: issue._id,
-	});
+	const blockedByIssuesDetailed = useQuery(
+		api.board.getBlockedByIssuesWithDetails,
+		{
+			issueId: issue._id,
+		}
+	);
 	const addBlocking = useMutation(api.board.addIssueBlockingRelationship);
 	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
 
@@ -915,55 +918,60 @@ const BlockingSection = ({
 
 		return (
 			<div className="space-y-1.5">
-				{blockedByIssuesDetailed.map(({ issue: blockingIssue, resolutionSteps, reasoning }) => (
-					<div
-						className="p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-						key={blockingIssue._id}
-						onClick={() => onClickIssue(blockingIssue)}
-					>
-						<div className="flex items-start justify-between gap-2">
-							<div className="flex items-start gap-2 flex-1 min-w-0">
-								<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0 mt-2" />
-								<div className="min-w-0">
-									<div className="text-sm truncate">
-										{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
-									</div>
-									{reasoning && (
-										<div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-											{reasoning}
+				{blockedByIssuesDetailed.map(
+					({ issue: blockingIssue, resolutionSteps, reasoning }) => (
+						<div
+							className="p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+							key={blockingIssue._id}
+							onClick={() => onClickIssue(blockingIssue)}
+						>
+							<div className="flex items-start justify-between gap-2">
+								<div className="flex items-start gap-2 flex-1 min-w-0">
+									<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0 mt-2" />
+									<div className="min-w-0">
+										<div className="text-sm truncate">
+											{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
 										</div>
-									)}
-									{resolutionSteps && resolutionSteps.length > 0 && (
-										<div className="mt-2 rounded-md border bg-muted/20 px-2 py-2">
-											<div className="text-[11px] font-medium text-muted-foreground">
-												Resolution steps
+										{reasoning && (
+											<div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+												{reasoning}
 											</div>
-											<ol className="mt-1 list-decimal pl-4 space-y-0.5">
-												{resolutionSteps.slice(0, 7).map((step, idx) => (
-													<li className="text-xs text-foreground/90" key={idx}>
-														{step}
-													</li>
-												))}
-											</ol>
-										</div>
-									)}
+										)}
+										{resolutionSteps && resolutionSteps.length > 0 && (
+											<div className="mt-2 rounded-md border bg-muted/20 px-2 py-2">
+												<div className="text-[11px] font-medium text-muted-foreground">
+													Resolution steps
+												</div>
+												<ol className="mt-1 list-decimal pl-4 space-y-0.5">
+													{resolutionSteps.slice(0, 7).map((step, idx) => (
+														<li
+															className="text-xs text-foreground/90"
+															key={idx}
+														>
+															{step}
+														</li>
+													))}
+												</ol>
+											</div>
+										)}
+									</div>
 								</div>
+								<Button
+									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									onClick={(e) => {
+										e.stopPropagation();
+										handleRemoveBlockedBy(blockingIssue._id);
+									}}
+									size="icon"
+									title="Remove blocked by relationship"
+									variant="ghost"
+								>
+									<Minus className="w-3 h-3" />
+								</Button>
 							</div>
-							<Button
-								className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-								onClick={(e) => {
-									e.stopPropagation();
-									handleRemoveBlockedBy(blockingIssue._id);
-								}}
-								size="icon"
-								title="Remove blocked by relationship"
-								variant="ghost"
-							>
-								<Minus className="w-3 h-3" />
-							</Button>
 						</div>
-					</div>
-				))}
+					)
+				)}
 			</div>
 		);
 	};

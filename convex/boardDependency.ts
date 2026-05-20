@@ -93,10 +93,10 @@ const extractExplicitMentions = (
 
 	// Pattern 1: "blocked by: <title>" / "depends on <title>" / "after <title>"
 	const patterns = [
-		/blocked by\s*[:\-]\s*([^.;\n]+)/g,
-		/depends on\s*[:\-]?\s*([^.;\n]+)/g,
+		/blocked by\s*[:-]\s*([^.;\n]+)/g,
+		/depends on\s*[:-]?\s*([^.;\n]+)/g,
 		/after\s+([^.;\n]+)/g,
-		/requires\s*[:\-]?\s*([^.;\n]+)/g,
+		/requires\s*[:-]?\s*([^.;\n]+)/g,
 	];
 	for (const re of patterns) {
 		for (const match of t.matchAll(re)) {
@@ -211,10 +211,13 @@ export const analyzeIssueDependencies = action({
 				suggestions.push({
 					blockerId: maybeBlocker.issueId,
 					blockedId: blocked.issueId,
-					reasoning: `Similar scope detected and dependency language present (similarity ${(score * 100).toFixed(
-						0
-					)}%).`,
-					resolutionSteps: buildResolutionSteps(blocked.title, maybeBlocker.title),
+					reasoning: `Similar scope detected and dependency language present (similarity ${(
+						score * 100
+					).toFixed(0)}%).`,
+					resolutionSteps: buildResolutionSteps(
+						blocked.title,
+						maybeBlocker.title
+					),
 				});
 			}
 		}
@@ -229,4 +232,3 @@ export const analyzeIssueDependencies = action({
 		});
 	},
 });
-

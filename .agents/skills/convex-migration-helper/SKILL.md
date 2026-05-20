@@ -96,7 +96,7 @@ users: defineTable({
 
 Every breaking migration follows the same multi-deploy pattern:
 
-**Deploy 1 - Widen the schema:**
+### Deploy 1 - Widen the schema
 
 1. Update schema to allow both old and new formats (e.g., add optional new
    field)
@@ -104,12 +104,12 @@ Every breaking migration follows the same multi-deploy pattern:
 3. Update code to write the new format for new documents
 4. Deploy
 
-**Between deploys - Migrate data:**
+### Between deploys - Migrate data
 
 1. Run migration to backfill existing documents
 2. Verify all documents are migrated
 
-**Deploy 2 - Narrow the schema:**
+### Deploy 2 - Narrow the schema
 
 1. Update schema to require the new format only
 2. Remove code that handles the old format

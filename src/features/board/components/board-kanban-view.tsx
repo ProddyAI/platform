@@ -133,9 +133,12 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 		api.board.getBatchSubIssueStats,
 		issueIds.length > 0 ? { issueIds } : "skip"
 	);
-	const dependencyStats = useQuery(api.board.getIssueDependencyStatsForChannel, {
-		channelId,
-	});
+	const dependencyStats = useQuery(
+		api.board.getIssueDependencyStatsForChannel,
+		{
+			channelId,
+		}
+	);
 
 	const memberDataMap = useMemo(() => {
 		const map: Record<Id<"members">, { name: string; image?: string }> = {};
@@ -351,6 +354,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 									>
 										<BoardStatusColumn
 											assigneeData={memberDataMap}
+											dependencyStatsMap={dependencyStats ?? undefined}
 											disableIssueDrag={disableIssueDrag}
 											isFocused={focusedStatusId === status._id}
 											issues={issuesByStatus[status._id] || []}
@@ -360,7 +364,6 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 											onEditStatus={() => onEditStatus(status)}
 											status={status}
 											subIssueStatsMap={subIssueStatsMap}
-											dependencyStatsMap={dependencyStats ?? undefined}
 										/>
 									</div>
 								))}

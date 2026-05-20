@@ -1737,11 +1737,18 @@ export const addIssueBlockingRelationship = mutation({
 		if (existing.length > 0) {
 			const rel = existing[0];
 			if (rel && (reasoning !== undefined || resolutionSteps !== undefined)) {
-				await ctx.db.patch(rel._id, {
-					reasoning,
-					resolutionSteps,
-					updatedAt: Date.now(),
-				});
+				const patch: {
+					updatedAt: number;
+					reasoning?: string;
+					resolutionSteps?: string[];
+				} = { updatedAt: Date.now() };
+				if (reasoning !== undefined) {
+					patch.reasoning = reasoning;
+				}
+				if (resolutionSteps !== undefined) {
+					patch.resolutionSteps = resolutionSteps;
+				}
+				await ctx.db.patch(rel._id, patch);
 			}
 			return; // Already blocked by this issue
 		}
@@ -1750,16 +1757,30 @@ export const addIssueBlockingRelationship = mutation({
 		const member = await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Create the blocking relationship
-		await ctx.db.insert("issueBlocking", {
+		const relationship: {
+			channelId: typeof channelId;
+			blockedIssueId: typeof blockedIssueId;
+			blockingIssueId: typeof blockingIssueId;
+			updatedAt: number;
+			createdAt: number;
+			createdBy: typeof member._id;
+			reasoning?: string;
+			resolutionSteps?: string[];
+		} = {
 			channelId,
 			blockedIssueId,
 			blockingIssueId,
-			reasoning,
-			resolutionSteps,
 			updatedAt: Date.now(),
 			createdAt: Date.now(),
 			createdBy: member._id,
-		});
+		};
+		if (reasoning !== undefined) {
+			relationship.reasoning = reasoning;
+		}
+		if (resolutionSteps !== undefined) {
+			relationship.resolutionSteps = resolutionSteps;
+		}
+		await ctx.db.insert("issueBlocking", relationship);
 
 		return;
 	},
@@ -1795,16 +1816,32 @@ export const applyDetectedIssueDependencies = mutation({
 		for (const rel of existing) {
 			const blocker = await ctx.db.get(rel.blockingIssueId);
 			const blocked = await ctx.db.get(rel.blockedIssueId);
-			const blockerDone = Boolean(blocker && completedStatusIds.has(blocker.statusId));
-			const blockedDone = Boolean(blocked && completedStatusIds.has(blocked.statusId));
+			const blockerDone = Boolean(
+				blocker && completedStatusIds.has(blocker.statusId)
+			);
+			const blockedDone = Boolean(
+				blocked && completedStatusIds.has(blocked.statusId)
+			);
 			if (!blocker || !blocked || blockerDone || blockedDone) {
 				await ctx.db.delete(rel._id);
 			}
 		}
 
 		let applied = 0;
+		const skipped: Array<{
+			blockerId: Id<"issues">;
+			blockedId: Id<"issues">;
+			reason: string;
+		}> = [];
 		for (const dep of args.dependencies) {
-			if (dep.blockerId === dep.blockedId) continue;
+			if (dep.blockerId === dep.blockedId) {
+				skipped.push({
+					blockerId: dep.blockerId,
+					blockedId: dep.blockedId,
+					reason: "self_loop",
+				});
+				continue;
+			}
 			try {
 				await ctx.runMutation(api.board.addIssueBlockingRelationship, {
 					channelId: args.channelId,
@@ -1815,12 +1852,18 @@ export const applyDetectedIssueDependencies = mutation({
 				});
 				applied++;
 			} catch (error) {
-				// Skip invalid/circular relationships; keep applying others.
+				const reason =
+					error instanceof Error ? error.message : "unknown_error";
 				console.warn("Skipping dependency", dep, error);
+				skipped.push({
+					blockerId: dep.blockerId,
+					blockedId: dep.blockedId,
+					reason,
+				});
 			}
 		}
 
-		return { applied };
+		return { applied, skipped };
 	},
 });
 
@@ -1831,7 +1874,10 @@ export const getActiveBlockingRelationshipsForChannel = query({
 		if (!channel) throw new Error("Channel not found");
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
-		const completedStatusIds = await getCompletedStatusIdsForChannel(ctx, channelId);
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx,
+			channelId
+		);
 
 		const rels = await ctx.db
 			.query("issueBlocking")
@@ -1858,15 +1904,20 @@ export const getIssueDependencyStatsForChannel = query({
 		if (!channel) throw new Error("Channel not found");
 		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
 
-		const completedStatusIds = await getCompletedStatusIdsForChannel(ctx, channelId);
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx,
+			channelId
+		);
 
 		const rels = await ctx.db
 			.query("issueBlocking")
 			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
 			.collect();
 
-		const stats: Record<string, { blockedByCount: number; blockingCount: number }> =
-			{};
+		const stats: Record<
+			string,
+			{ blockedByCount: number; blockingCount: number }
+		> = {};
 
 		for (const rel of rels) {
 			const blocker = await ctx.db.get(rel.blockingIssueId);

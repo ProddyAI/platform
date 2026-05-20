@@ -30,6 +30,22 @@ type LlmDependency = {
 	stepByStepResolution: string[] | string;
 };
 
+type ApplyDependenciesResult = {
+	applied?: number;
+	skipped?: Array<{
+		blockerId: Id<"issues">;
+		blockedId: Id<"issues">;
+		reason: string;
+	}>;
+};
+
+function dependencyApplySummary(result: ApplyDependenciesResult | null | undefined) {
+	return {
+		applied: result?.applied ?? 0,
+		skipped: result?.skipped ?? [],
+	};
+}
+
 function safeJsonParse(text: string): unknown | null {
 	try {
 		return JSON.parse(text);
@@ -38,9 +54,14 @@ function safeJsonParse(text: string): unknown | null {
 	}
 }
 
-function normalizeSteps(steps: LlmDependency["stepByStepResolution"]): string[] {
+function normalizeSteps(
+	steps: LlmDependency["stepByStepResolution"]
+): string[] {
 	if (Array.isArray(steps)) {
-		return steps.map((s) => String(s).trim()).filter(Boolean).slice(0, 12);
+		return steps
+			.map((s) => String(s).trim())
+			.filter(Boolean)
+			.slice(0, 12);
 	}
 	const s = String(steps ?? "").trim();
 	if (!s) return [];
@@ -101,12 +122,14 @@ export async function POST(req: NextRequest) {
 			statusNameById.set(String(s._id), String(s.name));
 		}
 
-		const issuesPayload = (issues as Array<{
-			_id: Id<"issues">;
-			title: string;
-			description?: string;
-			statusId: Id<"statuses">;
-		}>).map((i) => ({
+		const issuesPayload = (
+			issues as Array<{
+				_id: Id<"issues">;
+				title: string;
+				description?: string;
+				statusId: Id<"statuses">;
+			}>
+		).map((i) => ({
 			id: i._id,
 			title: i.title,
 			description: i.description ?? "",
@@ -124,6 +147,7 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({
 				ok: true,
 				applied: 0,
+				skipped: [],
 				dependencies: [],
 				message: "Not enough tasks to analyze",
 			});
@@ -148,7 +172,7 @@ export async function POST(req: NextRequest) {
 
 			return NextResponse.json({
 				ok: true,
-				applied: (result as any)?.applied ?? 0,
+				...dependencyApplySummary(result as ApplyDependenciesResult),
 				dependencies: suggestions,
 				fallback: "heuristic_no_openai_key",
 			});
@@ -201,7 +225,7 @@ ${JSON.stringify(issuesPayload)}`;
 
 				return NextResponse.json({
 					ok: true,
-					applied: (result as any)?.applied ?? 0,
+					...dependencyApplySummary(result as ApplyDependenciesResult),
 					dependencies: suggestions,
 					fallback: "heuristic_invalid_llm_json",
 				});
@@ -226,7 +250,7 @@ ${JSON.stringify(issuesPayload)}`;
 
 			return NextResponse.json({
 				ok: true,
-				applied: (result as any)?.applied ?? 0,
+				...dependencyApplySummary(result as ApplyDependenciesResult),
 				dependencies: suggestions,
 				fallback: "heuristic_llm_error",
 			});
@@ -254,14 +278,17 @@ ${JSON.stringify(issuesPayload)}`;
 			}))
 			.filter((d) => d.resolutionSteps.length > 0);
 
-		const result = await convex.mutation(api.board.applyDetectedIssueDependencies, {
-			channelId,
-			dependencies: normalized,
-		});
+		const result = await convex.mutation(
+			api.board.applyDetectedIssueDependencies,
+			{
+				channelId,
+				dependencies: normalized,
+			}
+		);
 
 		return NextResponse.json({
 			ok: true,
-			applied: (result as any)?.applied ?? 0,
+			...dependencyApplySummary(result as ApplyDependenciesResult),
 			dependencies: normalized,
 		});
 	} catch (error) {
@@ -275,4 +302,3 @@ ${JSON.stringify(issuesPayload)}`;
 		);
 	}
 }
-

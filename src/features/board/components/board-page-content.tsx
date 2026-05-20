@@ -618,6 +618,7 @@ export const BoardPageContent = ({
 					</div>
 				) : (
 					<BoardKanbanView
+						analyzeBlockersLoading={analyzeBlockersLoading}
 						channelId={channelId}
 						connectedChannelName={projectConnectedChannelName}
 						disableIssueDrag={isFilteredBoardView}
@@ -630,6 +631,7 @@ export const BoardPageContent = ({
 							setStatusColor("#5e6ad2");
 							setAddStatusOpen(true);
 						}}
+						onAnalyzeBlockersClick={handleAnalyzeBlockers}
 						onClickIssue={handleClickIssue}
 						onConnectChannelClick={
 							canManageProjectConnection
@@ -672,8 +674,6 @@ export const BoardPageContent = ({
 							});
 							document.dispatchEvent(event);
 						}}
-						analyzeBlockersLoading={analyzeBlockersLoading}
-						onAnalyzeBlockersClick={handleAnalyzeBlockers}
 						setView={setView}
 						showHeader
 						statusCount={displayedStatuses.length}
@@ -684,6 +684,7 @@ export const BoardPageContent = ({
 				)
 			) : (
 				<BoardHeader
+					analyzeBlockersLoading={analyzeBlockersLoading}
 					connectedChannelName={projectConnectedChannelName}
 					isProjectChannelConnected={isProjectChannelConnected}
 					onAddStatus={() => {
@@ -691,6 +692,7 @@ export const BoardPageContent = ({
 						setStatusColor("#5e6ad2");
 						setAddStatusOpen(true);
 					}}
+					onAnalyzeBlockersClick={handleAnalyzeBlockers}
 					onConnectChannelClick={
 						canManageProjectConnection ? handleConnectProjectChannel : undefined
 					}
@@ -704,8 +706,6 @@ export const BoardPageContent = ({
 						});
 						document.dispatchEvent(event);
 					}}
-					analyzeBlockersLoading={analyzeBlockersLoading}
-					onAnalyzeBlockersClick={handleAnalyzeBlockers}
 					setView={setView}
 					statusCount={displayedStatuses.length}
 					totalIssues={allCards.length}

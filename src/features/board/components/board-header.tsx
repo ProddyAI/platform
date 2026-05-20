@@ -183,7 +183,10 @@ interface AnalyzeBlockersButtonProps {
 	loading?: boolean;
 }
 
-const AnalyzeBlockersButton = ({ onClick, loading }: AnalyzeBlockersButtonProps) => (
+const AnalyzeBlockersButton = ({
+	onClick,
+	loading,
+}: AnalyzeBlockersButtonProps) => (
 	<TooltipProvider>
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -208,7 +211,9 @@ const AnalyzeBlockersButton = ({ onClick, loading }: AnalyzeBlockersButtonProps)
 					)}
 				</Button>
 			</TooltipTrigger>
-			<TooltipContent>Auto-detect task dependencies on this board</TooltipContent>
+			<TooltipContent>
+				Auto-detect task dependencies on this board
+			</TooltipContent>
 		</Tooltip>
 	</TooltipProvider>
 );
