@@ -60,7 +60,7 @@ export function UpgradeModal({
 	hasActiveSubscription = false,
 }: UpgradeModalProps) {
 	const createCheckout = useAction(api.payments.createCheckoutSession);
-	const updateQuantity = useAction(api.payments.updateSubscriptionQuantity);
+	const createUpgradeCheckout = useAction(api.payments.createUpgradeCheckout);
 	const getPlanChangePreview = useAction(api.payments.getPlanChangePreview);
 	const [loading, setLoading] = useState(false);
 	const [previewLoading, setPreviewLoading] = useState(false);
@@ -181,10 +181,10 @@ export function UpgradeModal({
 		setLoading(true);
 		try {
 			if (hasActiveSubscription) {
-				const result = await updateQuantity({
+				const result = await createUpgradeCheckout({
 					workspaceId,
-					newPlan: planName,
-					newQuantity: quantity,
+					planName,
+					quantity,
 				});
 				const billingResult = result as {
 					status?: string;
@@ -203,7 +203,10 @@ export function UpgradeModal({
 					toast.error(
 						billingResult.message || "Billing permissions need updating."
 					);
-				} else if (billingResult.status === "payment_required") {
+				} else if (
+					billingResult.status === "payment_required" ||
+					billingResult.status === "pending_payment"
+				) {
 					if (billingResult.paymentUrl) {
 						window.location.href = billingResult.paymentUrl;
 						return;

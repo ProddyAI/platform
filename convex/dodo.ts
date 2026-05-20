@@ -142,10 +142,11 @@ export const apiBase =
 export const dodo = new DodoPayments(
 	(components as Record<string, unknown>).dodopayments as never,
 	{
-	identify: identifyCustomer,
-	apiKey: dodoApiKey,
-	environment: dodoEnvironment,
-} as DodoPaymentsClientConfig);
+		identify: identifyCustomer,
+		apiKey: dodoApiKey,
+		environment: dodoEnvironment,
+	} as DodoPaymentsClientConfig
+);
 
 // Export API surface for use in Convex actions
 export const { checkout, customerPortal } = dodo.api();
@@ -241,6 +242,7 @@ export const customers = {
 type SubscriptionBillingAddress = Record<string, unknown>;
 
 type SubscriptionUpdate = {
+	quantity?: number | null;
 	billing?: SubscriptionBillingAddress | null;
 	cancel_at_next_billing_date?: boolean | null;
 	cancel_reason?:
@@ -309,6 +311,7 @@ export const subscriptions = {
 				| "full_immediately"
 				| "difference_immediately"
 				| "do_not_bill";
+			effective_at?: "immediately" | "next_billing_date";
 			on_payment_failure?: "prevent_change" | "apply_change";
 			metadata?: Record<string, string>;
 		}
@@ -317,8 +320,8 @@ export const subscriptions = {
 			product_id: args.product_id,
 			quantity: args.quantity,
 			proration_billing_mode:
-				args.proration_billing_mode || "difference_immediately",
-			effective_at: "immediately",
+				args.proration_billing_mode || "prorated_immediately",
+			effective_at: args.effective_at || "immediately",
 			on_payment_failure: args.on_payment_failure || "prevent_change",
 		};
 		if (args.metadata) {
@@ -341,6 +344,85 @@ export const subscriptions = {
 					const error = await res.text();
 					throwDodoApiError(
 						"changePlan",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return res.headers.get("content-type")?.includes("application/json")
+					? await res.json()
+					: null;
+			}
+		);
+	},
+
+	previewChangePlan: async (
+		_ctx: ConvexCtx,
+		args: {
+			subscription_id: string;
+			product_id: string;
+			quantity: number;
+			proration_billing_mode:
+				| "prorated_immediately"
+				| "full_immediately"
+				| "difference_immediately"
+				| "do_not_bill";
+			effective_at?: "immediately" | "next_billing_date";
+			metadata?: Record<string, string>;
+		}
+	) => {
+		const body: Record<string, unknown> = {
+			product_id: args.product_id,
+			quantity: args.quantity,
+			proration_billing_mode: args.proration_billing_mode,
+			effective_at: args.effective_at || "immediately",
+		};
+		if (args.metadata) {
+			body.metadata = args.metadata;
+		}
+
+		return await fetchDodo(
+			"previewChangePlan",
+			`${apiBase}/subscriptions/${args.subscription_id}/change-plan/preview`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${dodoApiKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(body),
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"previewChangePlan",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return res.headers.get("content-type")?.includes("application/json")
+					? await res.json()
+					: null;
+			}
+		);
+	},
+
+	cancelPlanChange: async (
+		_ctx: ConvexCtx,
+		args: { subscription_id: string }
+	) => {
+		return await fetchDodo(
+			"cancelPlanChange",
+			`${apiBase}/subscriptions/${args.subscription_id}/change-plan/scheduled`,
+			{
+				method: "DELETE",
+				headers: {
+					Authorization: `Bearer ${dodoApiKey}`,
+				},
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"cancelPlanChange",
 						error || `${res.status} ${res.statusText}`
 					);
 				}

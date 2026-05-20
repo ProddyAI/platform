@@ -61,7 +61,9 @@ const getPendingBillableInviteCount = async (
 		(invite) =>
 			!invite.used &&
 			invite.expiresAt > now &&
-			(invite.role === "admin" || invite.role === "member")
+			(invite.role === "owner" ||
+				invite.role === "admin" ||
+				invite.role === "member")
 	).length;
 };
 
@@ -136,7 +138,7 @@ export const getSeatUsage = query({
 			)
 			.unique();
 		if (!currentMember) {
-			throw new Error("Unauthorized. User is not a member of this workspace.");
+			return null;
 		}
 
 		const workspace = await ctx.db.get(args.workspaceId);
@@ -163,7 +165,11 @@ export const getSeatUsage = query({
 				q.and(
 					q.eq(q.field("used"), false),
 					q.gt(q.field("expiresAt"), Date.now()),
-					q.or(q.eq(q.field("role"), "admin"), q.eq(q.field("role"), "member"))
+					q.or(
+						q.eq(q.field("role"), "owner"),
+						q.eq(q.field("role"), "admin"),
+						q.eq(q.field("role"), "member")
+					)
 				)
 			)
 			.collect();
@@ -219,7 +225,7 @@ export const insertInvite = mutation({
 		email: v.string(),
 		hash: v.string(),
 		expiresAt: v.number(),
-		role: v.union(v.literal("admin"), v.literal("member")),
+		role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
 		comment: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
@@ -244,30 +250,30 @@ export const insertInvite = mutation({
 				"Unauthorized. Only admins and owners can send workspace invites."
 			);
 		}
+		if (args.role === "owner" && currentMember.role !== "owner") {
+			throw new Error("Unauthorized. Only owners can invite another owner.");
+		}
 
 		// Enforce paid seat limits. Removed members free up one occupied seat;
 		// purchased seat quantity is only changed explicitly from billing.
-		if (args.role === "admin" || args.role === "member") {
-			const workspace = await ctx.db.get(args.workspaceId);
-			if (!workspace) throw new Error("Workspace not found");
+		const workspace = await ctx.db.get(args.workspaceId);
+		if (!workspace) throw new Error("Workspace not found");
 
-			const workspaceSeatTier = getWorkspaceSeatTier(workspace);
-			if (workspaceSeatTier) {
-				const totalSeatsPurchased = getPaidSeatLimit(workspace);
-				const totalOccupied =
-					(await getActiveBillableMemberCount(ctx, args.workspaceId)) +
-					(await getPendingBillableInviteCount(ctx, args.workspaceId));
+		const workspaceSeatTier = getWorkspaceSeatTier(workspace);
+		if (workspaceSeatTier) {
+			const totalSeatsPurchased = getPaidSeatLimit(workspace);
+			const totalOccupied =
+				(await getActiveBillableMemberCount(ctx, args.workspaceId)) +
+				(await getPendingBillableInviteCount(ctx, args.workspaceId));
 
-				if (totalOccupied >= totalSeatsPurchased) {
-					throw new Error(
-						`Seat limit reached for ${workspaceSeatTier}. You have ${totalSeatsPurchased} seats and all are occupied or invited. Remove a member, wait for an invite to expire, or add seats before inviting another user.`
-					);
-				}
+			if (totalOccupied >= totalSeatsPurchased) {
+				throw new Error(
+					`Seat limit reached for ${workspaceSeatTier}. You have ${totalSeatsPurchased} seats and all are occupied or invited. Remove a member, wait for an invite to expire, or add seats before inviting another user.`
+				);
 			}
 		}
 
-		const workspace = await ctx.db.get(args.workspaceId);
-		const invitePlan = workspace ? getWorkspaceSeatTier(workspace) : undefined;
+		const invitePlan = workspaceSeatTier;
 
 		return await ctx.db.insert("workspaceInvites", {
 			workspaceId: args.workspaceId,
@@ -453,9 +459,12 @@ export const consumeInvite = mutation({
 		}
 
 		const workspaceSeatTier = getWorkspaceSeatTier(workspace);
+		const inviteRole = invite.role === "viewer" ? "member" : invite.role;
 		if (
 			workspaceSeatTier &&
-			(invite.role === "admin" || invite.role === "member")
+			(inviteRole === "owner" ||
+				inviteRole === "admin" ||
+				inviteRole === "member")
 		) {
 			const totalSeatsPurchased = getPaidSeatLimit(workspace);
 			const occupiedSeats = await getActiveBillableMemberCount(
@@ -475,11 +484,12 @@ export const consumeInvite = mutation({
 		await ctx.db.insert("members", {
 			workspaceId: invite.workspaceId,
 			userId,
-			role: invite.role ?? "member",
+			role: inviteRole ?? "member",
 			seatTier:
-				invite.role === "admin" ||
-				invite.role === "member" ||
-				invite.role === undefined
+				inviteRole === "owner" ||
+				inviteRole === "admin" ||
+				inviteRole === "member" ||
+				inviteRole === undefined
 					? workspaceSeatTier
 					: undefined,
 		});

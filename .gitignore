@@ -1,5 +1,3 @@
-# Ignore custom build script
-scripts/next-build.js
 /node_modules
 /.pnp
 .env.local

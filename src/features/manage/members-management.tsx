@@ -69,13 +69,17 @@ interface MembersManagementProps {
 
 interface EmailInviteSectionProps {
 	workspaceId: Id<"workspaces">;
+	currentMember: Doc<"members">;
 }
 
-const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
+type InviteRole = "owner" | "admin" | "member";
+
+const EmailInviteSection = ({
+	workspaceId,
+	currentMember,
+}: EmailInviteSectionProps) => {
 	const [email, setEmail] = useState("");
-	const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">(
-		"member"
-	);
+	const [inviteRole, setInviteRole] = useState<InviteRole>("member");
 	const [inviteComment, setInviteComment] = useState("");
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [inviteError, setInviteError] = useState<string | null>(null);
@@ -165,9 +169,7 @@ const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 					/>
 					<Select
 						disabled={inviteLoading}
-						onValueChange={(value) =>
-							setInviteRole(value as "admin" | "member" | "viewer")
-						}
+						onValueChange={(value) => setInviteRole(value as InviteRole)}
 						value={inviteRole}
 					>
 						<SelectTrigger aria-label="Invite role">
@@ -186,12 +188,14 @@ const EmailInviteSection = ({ workspaceId }: EmailInviteSectionProps) => {
 									Admin
 								</div>
 							</SelectItem>
-							<SelectItem value="viewer">
-								<div className="flex items-center gap-2">
-									<UserCog className="h-4 w-4" />
-									Viewer
-								</div>
-							</SelectItem>
+							{currentMember.role === "owner" && (
+								<SelectItem value="owner">
+									<div className="flex items-center gap-2">
+										<Crown className="h-4 w-4" />
+										Owner
+									</div>
+								</SelectItem>
+							)}
 						</SelectContent>
 					</Select>
 					<Tooltip>
@@ -355,7 +359,10 @@ export const MembersManagement = ({
 				</div>
 
 				{(isOwner || isAdmin) && workspace && (
-					<EmailInviteSection workspaceId={workspaceId} />
+					<EmailInviteSection
+						currentMember={currentMember}
+						workspaceId={workspaceId}
+					/>
 				)}
 
 				<Separator />

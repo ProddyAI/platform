@@ -1,6 +1,6 @@
 "use client";
 
-import { useAction, useQuery, useConvexAuth } from "convex/react";
+import { useAction, useConvexAuth, useQuery } from "convex/react";
 import {
 	CalendarDays,
 	CreditCard,
@@ -50,8 +50,7 @@ export function BillingSection({
 	showBillingSummary = true,
 }: BillingSectionProps) {
 	const isOwner = currentMember.role === "owner";
-	const isAdmin = currentMember.role === "admin";
-	const canManageBilling = isOwner || isAdmin;
+	const canManageBilling = isOwner;
 	const { isAuthenticated } = useConvexAuth();
 	const router = useRouter();
 	const subscription = useQuery(
@@ -110,11 +109,12 @@ export function BillingSection({
 					<Lock className="size-12 text-amber-600" />
 				</div>
 				<h2 className="text-2xl font-bold text-gray-900 mb-2">
-					You do not have permission to access billing settings.
+					Billing is restricted to workspace owners.
 				</h2>
 				<p className="text-muted-foreground max-w-md mx-auto">
-					Only workspace owners and admins can manage billing. Please contact
-					your administrator if you believe this is an error.
+					Only a workspace owner can view payment details, update plans, or
+					manage billing. Please contact the workspace owner if you need a
+					billing change.
 				</p>
 			</div>
 		);
@@ -125,8 +125,10 @@ export function BillingSection({
 	const currentPlan = workspacePlan;
 	const hasActiveSubscription =
 		planName !== "free" &&
-		subscription.subscriptionStatus === "active" &&
-		Boolean(subscription.dodoSubscriptionId);
+		Boolean(subscription.dodoSubscriptionId) &&
+		!["cancelled", "canceled", "expired", "failed"].includes(
+			subscription.subscriptionStatus ?? ""
+		);
 	const canOpenBillingPortal =
 		Boolean(subscription.dodoSubscriptionId) ||
 		Boolean(subscription.dodoCustomerId) ||

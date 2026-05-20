@@ -18,6 +18,8 @@ const billingAuditValue = v.object({
 	refundAmount: v.optional(v.number()),
 	refundCurrency: v.optional(v.union(v.string(), v.null())),
 	refundId: v.optional(v.union(v.string(), v.null())),
+	creditAmount: v.optional(v.number()),
+	creditCurrency: v.optional(v.union(v.string(), v.null())),
 });
 
 const schema = defineSchema({
@@ -38,7 +40,7 @@ const schema = defineSchema({
 		website: v.optional(v.string()),
 		onesignalExternalId: v.optional(v.string()),
 	})
-		.index("email", ["email"])
+		.index("by_email", ["email"])
 		.index("by_onesignal_external_id", ["onesignalExternalId"]),
 
 	// Email OTP verifications
@@ -76,6 +78,28 @@ const schema = defineSchema({
 		AIAddonEnabled: v.optional(v.boolean()),
 		billingInterval: v.optional(v.union(v.literal("month"), v.literal("year"))),
 		billingCredits: v.optional(v.number()),
+		pendingBillingStatus: v.optional(
+			v.union(
+				v.literal("pending_payment"),
+				v.literal("expired"),
+				v.literal("cleared")
+			)
+		),
+		pendingBillingPlan: v.optional(
+			v.union(v.literal("pro"), v.literal("enterprise"))
+		),
+		pendingBillingQuantity: v.optional(v.number()),
+		pendingBillingCheckoutSessionId: v.optional(v.string()),
+		pendingBillingPaymentUrl: v.optional(v.string()),
+		pendingBillingAmount: v.optional(v.number()),
+		pendingBillingCurrency: v.optional(v.string()),
+		pendingBillingTaxAmount: v.optional(v.number()),
+		pendingBillingCreatedAt: v.optional(v.number()),
+		pendingBillingExpiresAt: v.optional(v.number()),
+		pendingBillingSubscriptionId: v.optional(v.string()),
+		needsDodoReview: v.optional(v.boolean()),
+		dodoReviewReason: v.optional(v.string()),
+		dodoReviewUpdatedAt: v.optional(v.number()),
 	})
 		.index("by_user_id", ["userId"])
 		.index("by_plan", ["plan"])
@@ -89,7 +113,9 @@ const schema = defineSchema({
 		currency: v.string(),
 		status: v.string(),
 		taxAmount: v.optional(v.number()),
-		type: v.optional(v.union(v.literal("payment"), v.literal("refund"))),
+		type: v.optional(
+			v.union(v.literal("payment"), v.literal("refund"), v.literal("credit"))
+		),
 		description: v.optional(v.string()),
 		plan: v.optional(v.string()),
 		seats: v.optional(v.number()),
@@ -109,6 +135,20 @@ const schema = defineSchema({
 		newValue: billingAuditValue,
 		timestamp: v.number(),
 	}).index("by_workspace_id", ["workspaceId"]),
+
+	billingUsageEvents: defineTable({
+		workspaceId: v.id("workspaces"),
+		eventType: v.string(),
+		quantity: v.number(),
+		unitCostCents: v.number(),
+		totalCostCents: v.number(),
+		occurredAt: v.number(),
+		idempotencyKey: v.optional(v.string()),
+		metadata: v.optional(v.any()),
+	})
+		.index("by_workspace_id_occurred_at", ["workspaceId", "occurredAt"])
+		.index("by_workspace_id_event_type", ["workspaceId", "eventType"])
+		.index("by_idempotency_key", ["idempotencyKey"]),
 
 	webhookEvents: defineTable({
 		webhookId: v.string(),
@@ -580,11 +620,11 @@ const schema = defineSchema({
 						v.literal("offline")
 					)
 				), // User's custom status (e.g., DND)
-			// Notification preferences: two-stage migration
-			// Legacy fields (mentions, assignee, threadReply, directMessage, inviteSent, onlineStatus, workspaceJoin)
-			// are deprecated in favor of channel-specific preferences (notificationBrowserPrefs, notificationEmailPrefs).
-			// Current behavior: channel-specific prefs take precedence; if absent, the legacy field is used as fallback.
-			// Deprecation timeline: legacy fields will be removed in Q3 2026. All new code should use channel-specific prefs.
+				// Notification preferences: two-stage migration
+				// Legacy fields (mentions, assignee, threadReply, directMessage, inviteSent, onlineStatus, workspaceJoin)
+				// are deprecated in favor of channel-specific preferences (notificationBrowserPrefs, notificationEmailPrefs).
+				// Current behavior: channel-specific prefs take precedence; if absent, the legacy field is used as fallback.
+				// Deprecation timeline: legacy fields will be removed in Q3 2026. All new code should use channel-specific prefs.
 				notifications: v.optional(
 					v.object({
 						mentions: v.optional(v.boolean()), // Default: true
@@ -867,7 +907,14 @@ const schema = defineSchema({
 		email: v.string(), // who the invite is for
 		hash: v.string(), // token from email link
 		role: v.optional(
-			v.union(v.literal("admin"), v.literal("member"), v.literal("viewer"))
+			v.union(
+				v.literal("owner"),
+				v.literal("admin"),
+				v.literal("member"),
+				// Kept only so older pending invite documents do not break schema
+				// validation. New invites are validated without viewer.
+				v.literal("viewer")
+			)
 		),
 		invitePlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 		used: v.boolean(), // one-time use
