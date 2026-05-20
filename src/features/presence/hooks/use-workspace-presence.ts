@@ -29,7 +29,9 @@ export const useWorkspacePresence = ({
 	);
 
 	// Get members data to enrich presence information
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, {
+		workspaceId: workspaceId as Id<"workspaces">,
+	});
 
 	// Combine presence data with member information
 	const enrichedPresence =
@@ -67,7 +69,9 @@ export const useUserPresence = (userId?: Id<"users">) => {
 // Hook to get presence for multiple users efficiently
 export const useMultipleUserPresence = (_userIds: Id<"users">[]) => {
 	const workspaceId = useWorkspaceId();
-	const { presenceState } = useWorkspacePresence({ workspaceId });
+	const { presenceState } = useWorkspacePresence({
+		workspaceId: workspaceId as Id<"workspaces">,
+	});
 
 	// Create a map of online users for quick lookup
 	const onlineUsers = new Set(

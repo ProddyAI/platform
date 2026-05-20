@@ -40,6 +40,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 					"note-live",
 					"note-export",
 					"file",
+					"meeting",
 				].includes(parsed.type)
 			);
 		} catch (_e) {
@@ -63,6 +64,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 				"note-live",
 				"note-export",
 				"file",
+				"meeting",
 			];
 
 			if (
@@ -227,7 +229,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 		return () => {
 			if (container) container.innerHTML = "";
 		};
-	}, [value, image, calendarEvent, isUnifiedMessage]);
+	}, [value, calendarEvent, isUnifiedMessage]);
 
 	// If this is a unified message (canvas or note type), render the UnifiedMessage component
 	if (isUnifiedMessage()) {

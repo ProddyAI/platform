@@ -363,6 +363,10 @@ const schema = defineSchema({
 		projectId: v.optional(v.id("projects")),
 		blockedIssueId: v.id("issues"), // The issue that is blocked
 		blockingIssueId: v.id("issues"), // The issue that is blocking
+		// Optional metadata (manual or auto-detected)
+		reasoning: v.optional(v.string()),
+		resolutionSteps: v.optional(v.array(v.string())),
+		updatedAt: v.optional(v.number()),
 		createdAt: v.number(),
 		createdBy: v.id("members"),
 	})
@@ -505,6 +509,15 @@ const schema = defineSchema({
 		),
 		categoryId: v.optional(v.id("categories")),
 		tags: v.optional(v.array(v.string())),
+		// Dependency fields (used by blocker detector / legacy data)
+		blockedBy: v.optional(v.array(v.id("tasks"))),
+		blocking: v.optional(v.array(v.id("tasks"))),
+		/**
+		 * Optional per-blocker metadata keyed by task id as string.
+		 * (Some existing docs use `{}` maps; keep as `any` for backward compatibility.)
+		 */
+		blockerDetailsByTaskId: v.optional(v.record(v.string(), v.any())),
+		blockerExplanationsByTaskId: v.optional(v.record(v.string(), v.any())),
 		createdAt: v.number(),
 		updatedAt: v.optional(v.number()),
 		userId: v.id("users"),
@@ -1053,6 +1066,58 @@ const schema = defineSchema({
 		.index("by_connection_id", ["connectionId"])
 		.index("by_status", ["status"])
 		.index("by_workspace_status", ["workspaceId", "status"]),
+
+	meetingNotes: defineTable({
+		roomId: v.string(),
+		title: v.optional(v.string()),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
+		transcript: v.string(),
+		summary: v.optional(v.string()),
+		actionItems: v.optional(v.array(v.string())),
+		decisions: v.optional(v.array(v.string())),
+		status: v.union(
+			v.literal("recording"),
+			v.literal("generating"),
+			v.literal("completed"),
+			v.literal("failed")
+		),
+		userId: v.id("users"),
+		createdAt: v.number(),
+		// Incremental processing checkpoint
+		lastProcessedIndex: v.optional(v.number()),
+		// Source type for upload vs live
+		source: v.optional(v.union(v.literal("live"), v.literal("upload"))),
+		// Tracks when AI notes were last generated for "Since last generation" mode
+		lastGeneratedAt: v.optional(v.number()),
+	})
+		.index("by_room", ["roomId"])
+		.index("by_workspace", ["workspaceId"]),
+
+	// Versioned AI note generations — each generation is a separate record
+	meetingNoteGenerations: defineTable({
+		meetingNoteId: v.id("meetingNotes"),
+		generationNumber: v.number(),
+		summary: v.string(),
+		actionItems: v.array(
+			v.object({
+				title: v.string(),
+				assignee: v.optional(v.string()),
+				assigneeUserId: v.optional(v.string()),
+				dueDate: v.optional(v.string()),
+				priority: v.optional(
+					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+				),
+			})
+		),
+		decisions: v.array(v.string()),
+		// Transcript range this generation covers
+		processedTranscriptStart: v.number(),
+		processedTranscriptEnd: v.number(),
+		createdAt: v.number(),
+	})
+		.index("by_meeting_note", ["meetingNoteId"])
+		.index("by_meeting_note_generation", ["meetingNoteId", "generationNumber"]),
 });
 
 export default schema;

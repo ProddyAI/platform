@@ -114,7 +114,9 @@ export const TaskFilter = ({
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
 								onValueChange={(value) =>
-									onFilterChange({ status: value as any })
+									onFilterChange({
+										status: value as TaskFilterOptions["status"],
+									})
 								}
 								value={filterOptions.status}
 							>
@@ -146,7 +148,9 @@ export const TaskFilter = ({
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
 								onValueChange={(value) =>
-									onFilterChange({ priority: value as any })
+									onFilterChange({
+										priority: value as "all" | "low" | "medium" | "high",
+									})
 								}
 								value={filterOptions.priority}
 							>
@@ -179,7 +183,9 @@ export const TaskFilter = ({
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
 								onValueChange={(value) =>
-									onFilterChange({ dueDate: value as any })
+									onFilterChange({
+										dueDate: value as TaskFilterOptions["dueDate"],
+									})
 								}
 								value={filterOptions.dueDate}
 							>
@@ -254,7 +260,9 @@ export const TaskFilter = ({
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
 								onValueChange={(value) =>
-									onFilterChange({ sortBy: value as any })
+									onFilterChange({
+										sortBy: value as TaskFilterOptions["sortBy"],
+									})
 								}
 								value={filterOptions.sortBy}
 							>
@@ -287,7 +295,7 @@ export const TaskFilter = ({
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
 								onValueChange={(value) =>
-									onFilterChange({ sortDirection: value as any })
+									onFilterChange({ sortDirection: value as "asc" | "desc" })
 								}
 								value={filterOptions.sortDirection}
 							>

@@ -11,6 +11,7 @@ import {
 	query,
 } from "./_generated/server";
 import { createDefaultCategoriesForWorkspace } from "./tasks";
+import { mapWorkspaceId } from "./utils";
 
 const generateCode = () => {
 	const code = Array.from(
@@ -275,14 +276,16 @@ export const getInfoById = query({
 
 		if (!userId) return null;
 
+		const workspaceId = mapWorkspaceId(args.id) as Id<"workspaces">;
+
 		const member = await ctx.db
 			.query("members")
 			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.id).eq("userId", userId)
+				q.eq("workspaceId", workspaceId).eq("userId", userId)
 			)
 			.unique();
 
-		const workspace = await ctx.db.get(args.id);
+		const workspace = await ctx.db.get(workspaceId);
 
 		if (!workspace) return null;
 
@@ -310,7 +313,9 @@ export const getById = query({
 
 		if (!member) return null;
 
-		return await ctx.db.get(args.id);
+		const workspaceId = mapWorkspaceId(args.id) as Id<"workspaces">;
+
+		return await ctx.db.get(workspaceId);
 	},
 });
 

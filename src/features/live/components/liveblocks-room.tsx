@@ -23,28 +23,40 @@ export const LiveblocksRoom = ({
 	fallback,
 }: LiveblocksRoomProps) => {
 	// Ensure roomId is a string and normalize it
-	const normalizedRoomId = String(roomId).trim();
+	const normalizedRoomId = String(roomId || "").trim();
 
-	// Add a key to force remount when roomId changes
-	const key = `${roomType}-room-${normalizedRoomId}`;
+	// Add a key to force remount when roomId changes - but only if valid
+	const key = normalizedRoomId
+		? `${roomType}-room-${normalizedRoomId}`
+		: undefined;
 
 	// Get the workspace ID from params
 	const workspaceId = useWorkspaceId();
 
 	// Get the current user from Convex
-	const currentUser = useQuery(api.users.current);
+	const _currentUser = useQuery(api.users.current);
 
 	// Get current member info to pass to Liveblocks
-	const currentMember = useQuery(
+	const _currentMember = useQuery(
 		api.members.current,
 		workspaceId ? { workspaceId } : "skip"
 	);
 
-	// Show loading state while user data is being fetched
-	if (!currentUser || !currentMember) {
+	// Don't connect to the room if the ID is missing or "undefined" (which happens during initial mount)
+	if (
+		!normalizedRoomId ||
+		normalizedRoomId === "undefined" ||
+		normalizedRoomId === "null" ||
+		normalizedRoomId === ""
+	) {
 		return (
-			<div className="flex h-full w-full items-center justify-center">
-				<Loader className="size-5 animate-spin" />
+			<div className="flex h-full items-center justify-center">
+				<div className="flex flex-col items-center gap-y-4">
+					<Loader className="size-6 animate-spin text-muted-foreground" />
+					<p className="text-sm text-muted-foreground">
+						Initializing workspace...
+					</p>
+				</div>
 			</div>
 		);
 	}
@@ -79,8 +91,13 @@ export const LiveblocksRoom = ({
 				<ClientSideSuspense
 					fallback={
 						fallback || (
-							<div className="flex h-full w-full items-center justify-center">
-								<Loader className="size-5 animate-spin" />
+							<div className="flex h-full items-center justify-center">
+								<div className="flex flex-col items-center gap-y-4">
+									<Loader className="size-6 animate-spin text-muted-foreground" />
+									<p className="text-sm text-muted-foreground">
+										Connecting to live session...
+									</p>
+								</div>
 							</div>
 						)
 					}

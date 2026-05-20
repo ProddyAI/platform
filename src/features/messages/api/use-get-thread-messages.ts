@@ -6,5 +6,7 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 export const useGetThreadMessages = () => {
 	const workspaceId = useWorkspaceId();
 
-	return useQuery(api.messages.getThreadMessages, { workspaceId });
+	return useQuery(api.messages.getThreadMessages, {
+		workspaceId: workspaceId as any,
+	});
 };

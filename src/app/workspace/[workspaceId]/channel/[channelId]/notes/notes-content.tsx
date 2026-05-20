@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Plus } from "lucide-react";
+import { Brain, FileText } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -30,7 +30,7 @@ interface NotesContentProps {
 	setShowExportDialog: (value: boolean) => void;
 	pageContainerRef: React.RefObject<HTMLDivElement>;
 	onNoteSelect: (noteId: Id<"notes">) => void;
-	onCreateNote: () => Promise<void>;
+	onCreateNote: (isAI?: boolean) => Promise<void>;
 	onDeleteNote: (noteId: Id<"notes">) => Promise<void>;
 	onUpdateNote: (noteId: Id<"notes">, updates: Partial<Note>) => Promise<void>;
 }
@@ -253,16 +253,16 @@ export const NotesContent = ({
 										</p>
 									</div>
 									<Button
-										className="gap-2 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white border-0"
+										className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg"
 										onClick={() => {
-											onCreateNote().catch((error) => {
+											onCreateNote(true).catch((error) => {
 												console.error("Failed to create note:", error);
 												toast.error("Failed to create note");
 											});
 										}}
 									>
-										<Plus className="h-4 w-4" />
-										New Note
+										<Brain className="h-4 w-4" />
+										Start AI Meeting Note
 									</Button>
 								</div>
 							</div>
@@ -276,7 +276,9 @@ export const NotesContent = ({
 				<StreamAudioRoom
 					canvasName={activeNote.title || "Notes Audio Room"}
 					channelId={channelId}
+					initialShowNotes={activeNote.tags?.includes("AI")}
 					isFullScreen={isFullScreen}
+					key={activeNote._id}
 					roomId={activeNote._id}
 					workspaceId={workspaceId}
 				/>

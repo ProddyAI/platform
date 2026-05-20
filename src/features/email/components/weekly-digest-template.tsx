@@ -172,7 +172,7 @@ export const WeeklyDigestTemplate: React.FC<
 							</Text>
 							<Text style={footerText}>
 								<Link
-									href={process.env.NEXT_PUBLIC_APP_URL + "/workspace"}
+									href={`${process.env.NEXT_PUBLIC_APP_URL}/workspace`}
 									style={link}
 								>
 									Visit Proddy Dashboard

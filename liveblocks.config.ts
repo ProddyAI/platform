@@ -92,6 +92,20 @@ type RoomEvent =
 	| {
 			type: "NOTIFICATION";
 			message?: string;
+	  }
+	| {
+			type: "REACTION";
+			emoji: string;
+	  }
+	| {
+			type: "TRANSCRIPT_UPDATE";
+			chunk: string;
+	  }
+	| {
+			type: "CHAT_MESSAGE";
+			name: string;
+			text: string;
+			time: string;
 	  };
 
 // Optionally, when using Comments, ThreadMetadata represents metadata on
