@@ -34,11 +34,6 @@ const normalize = (s: string) =>
 		.replace(/\s+/g, " ")
 		.trim();
 
-const tokenize = (s: string) =>
-	normalize(s)
-		.split(" ")
-		.filter((t) => t.length >= 4 && !STOPWORDS.has(t));
-
 const STOPWORDS = new Set([
 	"with",
 	"from",
@@ -79,9 +74,57 @@ const STOPWORDS = new Set([
 	"build",
 ]);
 
+const tokenize = (s: string) =>
+	normalize(s)
+		.split(" ")
+		.filter((t) => t.length >= 4 && !STOPWORDS.has(t));
+
 const isDone = (statusName?: string) => {
 	if (!statusName) return false;
 	return DONE_STATUS_KEYWORDS.has(statusName.trim().toLowerCase());
+};
+
+const escapeRegExp = (value: string) =>
+	value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Match normalized titles as whole phrases, not arbitrary substrings. */
+const containsNormalizedTitleAtWordBoundary = (
+	haystack: string,
+	normTitle: string,
+	minLength: number
+): boolean => {
+	if (normTitle.length < minLength) return false;
+	const pattern = `(^|\\s)${escapeRegExp(normTitle)}(\\s|$)`;
+	return new RegExp(pattern).test(haystack);
+};
+
+/** Split dependency phrase captures on conjunctions and punctuation. */
+const segmentDependencyCapture = (raw: string): string[] =>
+	normalize(raw)
+		.split(/\s+(?:and|or|then)\s+|[,;|]+/)
+		.map((part) => part.trim())
+		.filter((part) => part.length > 0);
+
+const mapSegmentsToIssueIds = (
+	segments: string[],
+	titleToId: Map<string, Id<"issues">>,
+	minTitleLength: number
+): Id<"issues">[] => {
+	const matched: Id<"issues">[] = [];
+	for (const segment of segments) {
+		for (const [normTitle, id] of titleToId.entries()) {
+			if (
+				containsNormalizedTitleAtWordBoundary(
+					segment,
+					normTitle,
+					minTitleLength
+				)
+			) {
+				matched.push(id);
+			}
+		}
+	}
+	return matched;
 };
 
 const extractExplicitMentions = (
@@ -91,29 +134,27 @@ const extractExplicitMentions = (
 	const out = new Set<Id<"issues">>();
 	const t = normalize(text);
 
-	// Pattern 1: "blocked by: <title>" / "depends on <title>" / "after <title>"
+	// Pattern 1: "blocked by [...] <title>" / "depends on <title>" / "after <title>"
 	const patterns = [
-		/blocked by\s*[:-]\s*([^.;\n]+)/g,
-		/depends on\s*[:-]?\s*([^.;\n]+)/g,
-		/after\s+([^.;\n]+)/g,
-		/requires\s*[:-]?\s*([^.;\n]+)/g,
+		/blocked by\s*[:-]?\s*([^,;|\n.]+)/g,
+		/depends on\s*[:-]?\s*([^,;|\n.]+)/g,
+		/\bafter\s+([^,;|\n.]+)/g,
+		/requires\s*[:-]?\s*([^,;|\n.]+)/g,
 	];
 	for (const re of patterns) {
 		for (const match of t.matchAll(re)) {
 			const raw = (match[1] ?? "").trim();
 			if (!raw) continue;
-			// Try to map to known titles by substring match (normalized)
-			for (const [normTitle, id] of titleToId.entries()) {
-				if (normTitle.length >= 8 && raw.includes(normTitle)) {
-					out.add(id);
-				}
+			const segments = segmentDependencyCapture(raw);
+			for (const id of mapSegmentsToIssueIds(segments, titleToId, 10)) {
+				out.add(id);
 			}
 		}
 	}
 
-	// Pattern 2: direct mention of another issue title (>= 12 chars)
+	// Pattern 2: direct mention of another issue title (longer titles only)
 	for (const [normTitle, id] of titleToId.entries()) {
-		if (normTitle.length >= 12 && t.includes(normTitle)) {
+		if (containsNormalizedTitleAtWordBoundary(t, normTitle, 14)) {
 			out.add(id);
 		}
 	}

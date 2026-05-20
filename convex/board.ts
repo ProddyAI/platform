@@ -3,6 +3,7 @@ import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { addIssueBlockingRelationshipHelper } from "./lib/issueBlocking";
 import { getUserEmailFromMemberId, getUserNameFromMemberId } from "./utils";
 
 const DONE_STATUS_KEYWORDS = [
@@ -32,6 +33,33 @@ const getCompletedStatusIdsForChannel = async (
 			.filter((status) => isDoneStatusName(status.name))
 			.map((status) => status._id)
 	);
+};
+
+const getIssueStatusIdsByChannel = async (
+	ctx: QueryCtx,
+	channelId: Id<"channels">
+): Promise<Map<Id<"issues">, Id<"statuses">>> => {
+	const issues = await ctx.db
+		.query("issues")
+		.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+		.collect();
+
+	return new Map(issues.map((issue) => [issue._id, issue.statusId]));
+};
+
+const isActiveBlockingRelationship = (
+	rel: { blockingIssueId: Id<"issues">; blockedIssueId: Id<"issues"> },
+	issueStatusById: Map<Id<"issues">, Id<"statuses">>,
+	completedStatusIds: Set<Id<"statuses">>
+): boolean => {
+	const blockerStatusId = issueStatusById.get(rel.blockingIssueId);
+	const blockedStatusId = issueStatusById.get(rel.blockedIssueId);
+	if (blockerStatusId === undefined || blockedStatusId === undefined) {
+		return false;
+	}
+	if (completedStatusIds.has(blockerStatusId)) return false;
+	if (completedStatusIds.has(blockedStatusId)) return false;
+	return true;
 };
 
 const richTextBodyFromPlainText = (text: string) => {
@@ -1669,120 +1697,19 @@ export const addIssueBlockingRelationship = mutation({
 		ctx: MutationCtx,
 		{ channelId, blockedIssueId, blockingIssueId, reasoning, resolutionSteps }
 	) => {
-		if (blockedIssueId === blockingIssueId) {
-			throw new Error("An issue cannot block itself");
-		}
-
 		const channel = await ctx.db.get(channelId);
 		if (!channel) throw new Error("Channel not found");
 
-		const blockedIssue = await ctx.db.get(blockedIssueId);
-		const blockingIssue = await ctx.db.get(blockingIssueId);
-		if (!blockedIssue || !blockingIssue) {
-			throw new Error("Issue not found");
-		}
-
-		// Verify both issues belong to the same channel
-		if (
-			blockedIssue.channelId !== channelId ||
-			blockingIssue.channelId !== channelId
-		) {
-			throw new Error("Issues must belong to the same channel");
-		}
-
-		// Check for circular dependency (multi-hop)
-		const visited = new Set<string>();
-		const queue: Id<"issues">[] = [blockedIssueId];
-		while (queue.length > 0) {
-			const currentIssueId = queue.shift();
-			if (!currentIssueId) continue;
-
-			const visitedKey = String(currentIssueId);
-			if (visited.has(visitedKey)) {
-				continue;
-			}
-			visited.add(visitedKey);
-
-			const outboundBlocking = await ctx.db
-				.query("issueBlocking")
-				.withIndex("by_blocked_issue_id", (q) =>
-					q.eq("blockedIssueId", currentIssueId)
-				)
-				.collect();
-
-			for (const rel of outboundBlocking) {
-				if (rel.blockingIssueId === blockingIssueId) {
-					throw new Error(
-						"Circular dependency detected: the issue you're blocking already blocks this issue"
-					);
-				}
-
-				if (!visited.has(String(rel.blockingIssueId))) {
-					queue.push(rel.blockingIssueId);
-				}
-			}
-		}
-
-		// Check if relationship already exists
-		const existing = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_channel_id_blocked_issue_id_blocking_issue_id", (q) =>
-				q
-					.eq("channelId", channelId)
-					.eq("blockedIssueId", blockedIssueId)
-					.eq("blockingIssueId", blockingIssueId)
-			)
-			.collect();
-
-		if (existing.length > 0) {
-			const rel = existing[0];
-			if (rel && (reasoning !== undefined || resolutionSteps !== undefined)) {
-				const patch: {
-					updatedAt: number;
-					reasoning?: string;
-					resolutionSteps?: string[];
-				} = { updatedAt: Date.now() };
-				if (reasoning !== undefined) {
-					patch.reasoning = reasoning;
-				}
-				if (resolutionSteps !== undefined) {
-					patch.resolutionSteps = resolutionSteps;
-				}
-				await ctx.db.patch(rel._id, patch);
-			}
-			return; // Already blocked by this issue
-		}
-
-		// Verify caller is a member of the workspace
 		const member = await assertWorkspaceMember(ctx, channel.workspaceId);
 
-		// Create the blocking relationship
-		const relationship: {
-			channelId: typeof channelId;
-			blockedIssueId: typeof blockedIssueId;
-			blockingIssueId: typeof blockingIssueId;
-			updatedAt: number;
-			createdAt: number;
-			createdBy: typeof member._id;
-			reasoning?: string;
-			resolutionSteps?: string[];
-		} = {
+		await addIssueBlockingRelationshipHelper(ctx, {
 			channelId,
 			blockedIssueId,
 			blockingIssueId,
-			updatedAt: Date.now(),
-			createdAt: Date.now(),
+			reasoning,
+			resolutionSteps,
 			createdBy: member._id,
-		};
-		if (reasoning !== undefined) {
-			relationship.reasoning = reasoning;
-		}
-		if (resolutionSteps !== undefined) {
-			relationship.resolutionSteps = resolutionSteps;
-		}
-		await ctx.db.insert("issueBlocking", relationship);
-
-		return;
+		});
 	},
 });
 
@@ -1801,28 +1728,27 @@ export const applyDetectedIssueDependencies = mutation({
 	handler: async (ctx: MutationCtx, args) => {
 		const channel = await ctx.db.get(args.channelId);
 		if (!channel) throw new Error("Channel not found");
-		await assertWorkspaceMember(ctx, channel.workspaceId);
+		const member = await assertWorkspaceMember(ctx, channel.workspaceId);
 
 		// Prune relationships where blocker/blocked are already completed.
 		// This keeps the UI accurate even if prior analyses created stale edges.
 		const completedStatusIds = await getCompletedStatusIdsForChannel(
-			ctx as any,
+			ctx,
 			args.channelId
 		);
+		const issueStatusById = await getIssueStatusIdsByChannel(ctx, args.channelId);
 		const existing = await ctx.db
 			.query("issueBlocking")
 			.withIndex("by_channel_id", (q) => q.eq("channelId", args.channelId))
 			.take(500);
 		for (const rel of existing) {
-			const blocker = await ctx.db.get(rel.blockingIssueId);
-			const blocked = await ctx.db.get(rel.blockedIssueId);
-			const blockerDone = Boolean(
-				blocker && completedStatusIds.has(blocker.statusId)
-			);
-			const blockedDone = Boolean(
-				blocked && completedStatusIds.has(blocked.statusId)
-			);
-			if (!blocker || !blocked || blockerDone || blockedDone) {
+			if (
+				!isActiveBlockingRelationship(
+					rel,
+					issueStatusById,
+					completedStatusIds
+				)
+			) {
 				await ctx.db.delete(rel._id);
 			}
 		}
@@ -1843,12 +1769,13 @@ export const applyDetectedIssueDependencies = mutation({
 				continue;
 			}
 			try {
-				await ctx.runMutation(api.board.addIssueBlockingRelationship, {
+				await addIssueBlockingRelationshipHelper(ctx, {
 					channelId: args.channelId,
 					blockedIssueId: dep.blockedId,
 					blockingIssueId: dep.blockerId,
 					reasoning: dep.reasoning,
 					resolutionSteps: dep.resolutionSteps,
+					createdBy: member._id,
 				});
 				applied++;
 			} catch (error) {
@@ -1878,22 +1805,16 @@ export const getActiveBlockingRelationshipsForChannel = query({
 			ctx,
 			channelId
 		);
+		const issueStatusById = await getIssueStatusIdsByChannel(ctx, channelId);
 
 		const rels = await ctx.db
 			.query("issueBlocking")
 			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
 			.collect();
 
-		const filtered = [];
-		for (const rel of rels) {
-			const blocker = await ctx.db.get(rel.blockingIssueId);
-			const blocked = await ctx.db.get(rel.blockedIssueId);
-			if (!blocker || !blocked) continue;
-			if (completedStatusIds.has(blocker.statusId)) continue;
-			if (completedStatusIds.has(blocked.statusId)) continue;
-			filtered.push(rel);
-		}
-		return filtered;
+		return rels.filter((rel) =>
+			isActiveBlockingRelationship(rel, issueStatusById, completedStatusIds)
+		);
 	},
 });
 
@@ -1908,6 +1829,7 @@ export const getIssueDependencyStatsForChannel = query({
 			ctx,
 			channelId
 		);
+		const issueStatusById = await getIssueStatusIdsByChannel(ctx, channelId);
 
 		const rels = await ctx.db
 			.query("issueBlocking")
@@ -1920,11 +1842,11 @@ export const getIssueDependencyStatsForChannel = query({
 		> = {};
 
 		for (const rel of rels) {
-			const blocker = await ctx.db.get(rel.blockingIssueId);
-			const blocked = await ctx.db.get(rel.blockedIssueId);
-			if (!blocker || !blocked) continue;
-			if (completedStatusIds.has(blocker.statusId)) continue;
-			if (completedStatusIds.has(blocked.statusId)) continue;
+			if (
+				!isActiveBlockingRelationship(rel, issueStatusById, completedStatusIds)
+			) {
+				continue;
+			}
 
 			const blockerKey = String(rel.blockingIssueId);
 			const blockedKey = String(rel.blockedIssueId);
@@ -1958,21 +1880,26 @@ export const getBlockedByIssuesWithDetails = query({
 			ctx,
 			issue.channelId
 		);
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", issue.channelId))
+			.collect();
+		const issuesById = new Map(issues.map((row) => [row._id, row]));
 
-		const results = await Promise.all(
-			rels.map(async (rel) => {
-				const blockingIssue = await ctx.db.get(rel.blockingIssueId);
-				if (!blockingIssue) return null;
-				if (completedStatusIds.has(blockingIssue.statusId)) return null;
-				return {
-					issue: blockingIssue,
-					reasoning: rel.reasoning,
-					resolutionSteps: rel.resolutionSteps,
-				};
-			})
-		);
+		const results = [];
+		for (const rel of rels) {
+			const blockingIssue = issuesById.get(rel.blockingIssueId);
+			if (!blockingIssue) continue;
+			if (blockingIssue.channelId !== issue.channelId) continue;
+			if (completedStatusIds.has(blockingIssue.statusId)) continue;
+			results.push({
+				issue: blockingIssue,
+				reasoning: rel.reasoning,
+				resolutionSteps: rel.resolutionSteps,
+			});
+		}
 
-		return results.filter((r) => r !== null);
+		return results;
 	},
 });
 
