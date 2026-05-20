@@ -18,6 +18,7 @@ import {
 	InputOTPGroup,
 	InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { parseJsonResponse } from "@/lib/safe-fetch";
 
 interface OTPVerificationCardProps {
 	email: string;
@@ -90,7 +91,19 @@ export const OTPVerificationCard = ({
 
 			// If name and password provided, create the account
 			if (name && password) {
-				await signIn("password", { name, email, password, flow: "signUp" });
+				const result = await signIn("password", {
+					name,
+					email,
+					password,
+					flow: "signUp",
+				});
+
+				// The /api/auth proxy returns a JSON error response when the
+				// backend authorize() throws, so signIn no longer rejects on
+				// failure — we must inspect the return value.
+				if (!result?.signingIn && !result?.redirect) {
+					throw new Error("Account creation failed. Please try again.");
+				}
 
 				// Clear sensitive data from sessionStorage
 				sessionStorage.removeItem("signup_name");
@@ -155,11 +168,7 @@ export const OTPVerificationCard = ({
 				body: JSON.stringify({ email }),
 			});
 
-			const data = await response.json();
-
-			if (!response.ok) {
-				throw new Error(data.error || "Failed to resend OTP");
-			}
+			await parseJsonResponse(response, "Failed to resend OTP");
 
 			// Reset cooldown
 			setResendCooldown(60);

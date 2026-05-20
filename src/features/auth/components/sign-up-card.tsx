@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { parseJsonResponse } from "@/lib/safe-fetch";
 
 import type { SignInFlow } from "../types";
 import { isPasswordValid } from "../utils/password-validation";
@@ -72,11 +73,7 @@ export const SignUpCard = ({
 				body: JSON.stringify({ email }),
 			});
 
-			const data = await response.json();
-
-			if (!response.ok) {
-				throw new Error(data.error || "Failed to send OTP");
-			}
+			await parseJsonResponse(response, "Failed to send OTP");
 
 			// Store credentials securely in sessionStorage (not in component state)
 			// This prevents exposure in React DevTools

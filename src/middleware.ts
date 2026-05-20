@@ -63,13 +63,42 @@ const authMiddleware = convexAuthNextjsMiddleware(
 	convexUrl ? { convexUrl } : undefined
 );
 
-export default function middleware(
+// Convex's fetchAction wraps backend errors in messages like:
+//   "[CONVEX A(auth:signIn)] [Request ID: ...] Server Error\nUncaught Error: Invalid credentials\n  at ..."
+// Pull out the underlying reason so the client gets something useful.
+function extractConvexErrorMessage(error: unknown): string {
+	if (!(error instanceof Error)) {
+		return typeof error === "string" ? error : "Authentication failed";
+	}
+	const msg = error.message ?? "";
+	const uncaught = msg.match(/Uncaught Error:\s*([^\n]+)/);
+	if (uncaught?.[1]) return uncaught[1].trim();
+	const serverError = msg.match(/Server Error\s*\n([^\n]+)/);
+	if (serverError?.[1]) return serverError[1].trim();
+	return msg || "Authentication failed";
+}
+
+export default async function middleware(
 	req: Parameters<typeof authMiddleware>[0],
 	event: Parameters<typeof authMiddleware>[1]
 ) {
 	// Allow Slack OAuth callback to pass through without auth handling
 	if (req.nextUrl.pathname === "/api/import/slack/callback") {
 		return NextResponse.next();
+	}
+
+	// Wrap the Convex auth proxy so that errors thrown inside the backend
+	// authorize() callback (e.g. "Invalid credentials") come back as JSON
+	// instead of Next.js's default HTML 500 page — which would break
+	// `await response.json()` on the client with "Unexpected token 'A'...".
+	if (req.nextUrl.pathname === "/api/auth") {
+		try {
+			return await authMiddleware(req, event);
+		} catch (error) {
+			const message = extractConvexErrorMessage(error);
+			console.error("[/api/auth] proxy error:", message);
+			return NextResponse.json({ error: message }, { status: 400 });
+		}
 	}
 
 	return authMiddleware(req, event);

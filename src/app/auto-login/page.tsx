@@ -20,28 +20,51 @@ export default function AutoLogin() {
 		if (!isLoading && !isAuthenticated && !hasAttempted.current) {
 			hasAttempted.current = true;
 			const doBypass = async () => {
+				const friendlyError = (raw: unknown): string => {
+					const msg = raw instanceof Error ? raw.message : String(raw);
+					// Hide low-level JSON / fetch errors from end users — they
+					// happen when the auth endpoint returns a non-JSON body
+					// (e.g. a generic Next.js error page). Show something useful.
+					if (
+						/Unexpected token|is not valid JSON|Failed to fetch|NetworkError/i.test(
+							msg
+						)
+					) {
+						return "Unable to reach the authentication service. Please try again.";
+					}
+					return msg || "Authentication failed";
+				};
+
 				try {
 					// Try to sign in
-					await signIn("password", {
+					const signInResult = await signIn("password", {
 						email: "admin@proddy.ai",
 						password: "password123",
 						flow: "signIn",
 					});
-					window.location.href = "/workspace";
-				} catch (_e) {
-					// If it fails, sign up
-					try {
-						await signIn("password", {
-							email: "admin@proddy.ai",
-							password: "password123",
-							name: "Admin",
-							flow: "signUp",
-						});
+					if (signInResult?.signingIn) {
 						window.location.href = "/workspace";
-					} catch (err) {
-						console.error("Auto login failed:", err);
-						setErrorMsg(err instanceof Error ? err.message : String(err));
+						return;
 					}
+
+					// Fall back to sign up if sign-in did not succeed
+					const signUpResult = await signIn("password", {
+						email: "admin@proddy.ai",
+						password: "password123",
+						name: "Admin",
+						flow: "signUp",
+					});
+					if (signUpResult?.signingIn) {
+						window.location.href = "/workspace";
+						return;
+					}
+
+					setErrorMsg(
+						"Auto-login is unavailable. Please sign in with your account."
+					);
+				} catch (err) {
+					console.error("Auto login failed:", err);
+					setErrorMsg(friendlyError(err));
 				}
 			};
 			doBypass();
@@ -53,12 +76,24 @@ export default function AutoLogin() {
 			<div className="flex h-screen w-full flex-col items-center justify-center bg-[#4A0D68] text-white">
 				<p className="text-xl font-bold text-red-400">Auto-login Failed</p>
 				<p className="mt-2 text-sm">{errorMsg}</p>
-				<button
-					className="mt-4 rounded bg-white px-4 py-2 text-[#4A0D68]"
-					onClick={() => window.location.reload()}
-				>
-					Retry
-				</button>
+				<div className="mt-4 flex gap-2">
+					<button
+						className="rounded bg-white px-4 py-2 text-[#4A0D68]"
+						onClick={() => window.location.reload()}
+						type="button"
+					>
+						Retry
+					</button>
+					<button
+						className="rounded border border-white px-4 py-2 text-white"
+						onClick={() => {
+							window.location.href = "/auth/signin";
+						}}
+						type="button"
+					>
+						Sign in
+					</button>
+				</div>
 			</div>
 		);
 	}

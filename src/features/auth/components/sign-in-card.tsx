@@ -38,16 +38,28 @@ export const SignInCard = ({
 		signIn(value).finally(() => setPending(false));
 	};
 
-	const handleSignIn = (e: React.FormEvent<HTMLFormElement>) => {
+	const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setPending(true);
 		setError("");
 
-		signIn("password", { email, password, flow: "signIn" })
-			.catch(() => {
+		try {
+			const result = await signIn("password", {
+				email,
+				password,
+				flow: "signIn",
+			});
+			// `signingIn` is false when the backend rejects the credentials —
+			// the /api/auth proxy now returns a JSON error rather than throwing,
+			// so we must check this explicitly instead of relying on `.catch`.
+			if (!result?.signingIn && !result?.redirect) {
 				setError("Invalid email or password!");
-			})
-			.finally(() => setPending(false));
+			}
+		} catch {
+			setError("Invalid email or password!");
+		} finally {
+			setPending(false);
+		}
 	};
 
 	return (
