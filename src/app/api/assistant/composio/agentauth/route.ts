@@ -151,7 +151,11 @@ export async function POST(req: NextRequest) {
 				const callbackUrl = `${appUrl}/workspace/${workspaceId}/manage?connected=true&toolkit=${encodeURIComponent(toolkit)}&memberId=${encodeURIComponent(memberId)}&userId=${encodeURIComponent(entityId)}`;
 
 				// Step 1: Create entity and initiate connection using the API client
-				const connection = await apiClient.createConnection(entityId, toolkit, callbackUrl);
+				const connection = await apiClient.createConnection(
+					entityId,
+					toolkit,
+					callbackUrl
+				);
 
 				// The API returns a redirectUrl for OAuth
 				const redirectUrl = connection.redirectUrl;
@@ -304,24 +308,24 @@ export async function POST(req: NextRequest) {
 						// Get or create auth config for this toolkit
 						let authConfigId: Id<"auth_configs"> | undefined;
 						try {
-						// First try member-scoped lookup, then fall back to workspace-scoped
-						let existingAuthConfig = await convex.query(
-							api.integrations.getMyAuthConfigByToolkit,
-							{
-								workspaceId: workspaceId as Id<"workspaces">,
-								toolkit: toolkit as any,
-							}
-						);
-						if (!existingAuthConfig) {
-							existingAuthConfig = await convex.query(
-								api.integrations.getAuthConfigByToolkit,
+							// First try member-scoped lookup, then fall back to workspace-scoped
+							let existingAuthConfig = await convex.query(
+								api.integrations.getMyAuthConfigByToolkit,
 								{
 									workspaceId: workspaceId as Id<"workspaces">,
 									toolkit: toolkit as any,
 								}
 							);
-						}
-						authConfigId = existingAuthConfig?._id;
+							if (!existingAuthConfig) {
+								existingAuthConfig = await convex.query(
+									api.integrations.getAuthConfigByToolkit,
+									{
+										workspaceId: workspaceId as Id<"workspaces">,
+										toolkit: toolkit as any,
+									}
+								);
+							}
+							authConfigId = existingAuthConfig?._id;
 						} catch (_error) {
 							// Auth config doesn't exist, create it
 						}

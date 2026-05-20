@@ -10,10 +10,7 @@ export function canAssignTaskToMember(options: {
 		return true;
 	}
 
-	if (
-		options.currentRole === "owner" ||
-		options.currentRole === "admin"
-	) {
+	if (options.currentRole === "owner" || options.currentRole === "admin") {
 		return true;
 	}
 

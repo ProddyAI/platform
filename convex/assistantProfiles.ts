@@ -1,12 +1,11 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import {
 	extractAssistantProfileUpdateFromMessage,
 	mergeAssistantActiveContexts,
 	mergeAssistantMemoryBullets,
-	type AssistantProfileRecord,
 } from "./assistant/profile";
 
 const responseStyleValidator = v.union(
@@ -91,7 +90,11 @@ export const recordSignal = mutation({
 	},
 	returns: v.union(v.null(), assistantProfileValidator),
 	handler: async (ctx, args) => {
-		const existing = await getExistingProfile(ctx, args.workspaceId, args.userId);
+		const existing = await getExistingProfile(
+			ctx,
+			args.workspaceId,
+			args.userId
+		);
 		const extracted = extractAssistantProfileUpdateFromMessage(args.message);
 		const now = Date.now();
 
@@ -107,10 +110,7 @@ export const recordSignal = mutation({
 				actionPreference: extracted.actionPreference,
 				prioritizationStrategy: extracted.prioritizationStrategy,
 				summaryFocus: extracted.summaryFocus,
-				memoryBullets: mergeAssistantMemoryBullets(
-					[],
-					extracted.memoryBullet
-				),
+				memoryBullets: mergeAssistantMemoryBullets([], extracted.memoryBullet),
 				activeContexts: mergeAssistantActiveContexts(
 					[],
 					extracted.activeContext
@@ -127,10 +127,9 @@ export const recordSignal = mutation({
 			return null;
 		}
 
-		const patch: Partial<AssistantProfileRecord> & {
-			updatedAt?: number;
-			lastUsedAt: number;
-		} = {
+		const patch: Partial<
+			Omit<Doc<"assistantProfiles">, "_id" | "_creationTime">
+		> = {
 			lastUsedAt: now,
 		};
 
@@ -162,7 +161,7 @@ export const recordSignal = mutation({
 			patch.updatedAt = now;
 		}
 
-		await ctx.db.patch(existing._id, patch as any);
+		await ctx.db.patch(existing._id, patch);
 
 		return {
 			...existing,

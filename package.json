@@ -45,9 +45,9 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@ai-sdk/google": "^1.0.0",
-		"@ai-sdk/openai": "^1.0.0",
-		"@ai-sdk/provider": "^0.0.26",
+		"@ai-sdk/google": "^3.0.0",
+		"@ai-sdk/openai": "^3.0.0",
+		"@ai-sdk/provider": "^1.0.0",
 		"@auth/core": "^0.34.2",
 		"@blocknote/core": "^0.33.0",
 		"@blocknote/mantine": "^0.33.0",
@@ -98,7 +98,7 @@
 		"@stream-io/node-sdk": "^0.4.25",
 		"@stream-io/video-react-sdk": "^1.18.8",
 		"@types/dompurify": "^3.2.0",
-		"ai": "^5.0.160",
+		"ai": "^6.0.0",
 		"autoprefixer": "^10.4.21",
 		"baseline-browser-mapping": "^2.9.11",
 		"caniuse-lite": "^1.0.30001762",
@@ -117,7 +117,7 @@
 		"jotai": "^2.9.3",
 		"jspdf": "^3.0.1",
 		"lucide-react": "^0.439.0",
-		"mermaid": "^11.8.1",
+		"mermaid": "^11.15.0",
 		"minimatch": "^10.1.1",
 		"moment": "^2.30.1",
 		"next": "14.2.35",
@@ -148,6 +148,15 @@
 		"zod": "^3.24.4",
 		"zustand": "^5.0.4"
 	},
+	"overrides": {
+		"axios": ">=1.15.2",
+		"fast-uri": ">=3.1.2",
+		"@babel/plugin-transform-modules-systemjs": ">=7.29.4",
+		"langsmith": ">=0.6.0",
+		"mermaid": ">=11.15.0",
+		"postcss": ">=8.5.10",
+		"uuid": ">=11.1.1"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.9",
 		"@tailwindcss/typography": "^0.5.16",
@@ -156,7 +165,7 @@
 		"@types/node": "^20",
 		"@types/react": "^18",
 		"@types/react-dom": "^18",
-		"postcss": "^8",
+		"postcss": "^8.5.10",
 		"tailwindcss": "^3.4.1",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.3"

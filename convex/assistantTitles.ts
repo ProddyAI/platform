@@ -2,7 +2,10 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { api, components, internal } from "./_generated/api";
 import { action, internalAction } from "./_generated/server";
-import { generateConversationTitle, isFillerMessage } from "./assistant/titleGeneration";
+import {
+	generateConversationTitle,
+	isFillerMessage,
+} from "./assistant/titleGeneration";
 
 const DEFAULT_TITLES = new Set(["New Chat", "Assistant Chat"]);
 
@@ -19,7 +22,6 @@ export const generateTitle = action({
 		const apiKey = process.env.OPENAI_API_KEY;
 		if (!apiKey) return { success: false, error: "API key not configured" };
 
-		// Authenticate server-side — never trust a client-supplied userId
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return { success: false, error: "Not authenticated" };
 
@@ -33,12 +35,10 @@ export const generateTitle = action({
 				return { success: false, error: "Conversation not found" };
 			}
 
-			// Ownership check: authenticated user must own this conversation
 			if (conversation.userId !== userId) {
 				return { success: false, error: "Not authorized" };
 			}
 
-			// Workspace check: conversation must belong to the requested workspace
 			if (conversation.workspaceId !== args.workspaceId) {
 				return { success: false, error: "Workspace mismatch" };
 			}
@@ -51,9 +51,12 @@ export const generateTitle = action({
 				return { success: false, error: "Conversation has a manual title" };
 			}
 
-			const messages = await ctx.runQuery(components.databaseChat.messages.list, {
-				conversationId: args.conversationId,
-			});
+			const messages = await ctx.runQuery(
+				components.databaseChat.messages.list,
+				{
+					conversationId: args.conversationId,
+				}
+			);
 
 			if (!messages || messages.length === 0) {
 				return { success: false, error: "No messages found" };
@@ -65,15 +68,21 @@ export const generateTitle = action({
 			);
 
 			if (isDefaultTitle(title)) {
-				return { success: false, error: "Not enough context to generate title" };
+				return {
+					success: false,
+					error: "Not enough context to generate title",
+				};
 			}
 
-			await ctx.runMutation(internal.assistantConversations.updateConversationTitleInternal, {
-				conversationId: args.conversationId,
-				title,
-				titleSource: "ai_generated",
-				userId,
-			});
+			await ctx.runMutation(
+				internal.assistantConversations.updateConversationTitleInternal,
+				{
+					conversationId: args.conversationId,
+					title,
+					titleSource: "ai_generated",
+					userId,
+				}
+			);
 
 			return { success: true, title };
 		} catch (error) {
@@ -102,7 +111,6 @@ export const autoGenerateTitleIfNeeded = internalAction({
 				{ conversationId: args.conversationId }
 			);
 
-			// Skip manually renamed conversations
 			if (
 				conversation?.title &&
 				!isDefaultTitle(conversation.title) &&
@@ -111,7 +119,6 @@ export const autoGenerateTitleIfNeeded = internalAction({
 				return;
 			}
 
-			// Skip if a good AI title already exists
 			if (
 				conversation?.titleSource === "ai_generated" &&
 				!isDefaultTitle(conversation?.title)
@@ -119,17 +126,18 @@ export const autoGenerateTitleIfNeeded = internalAction({
 				return;
 			}
 
-			const messages = await ctx.runQuery(components.databaseChat.messages.list, {
-				conversationId: args.conversationId,
-			});
+			const messages = await ctx.runQuery(
+				components.databaseChat.messages.list,
+				{
+					conversationId: args.conversationId,
+				}
+			);
 
 			if (!messages || messages.length < 2) return;
 			if (!messages.some((m) => m.role === "assistant")) return;
 
-			// After 6 messages, only proceed if still on a default title
 			if (messages.length > 6 && !isDefaultTitle(conversation?.title)) return;
 
-			// Skip filler-only conversations
 			const userMessages = messages.filter((m) => m.role === "user");
 			if (!userMessages.some((m) => !isFillerMessage(m.content ?? ""))) return;
 
@@ -140,12 +148,15 @@ export const autoGenerateTitleIfNeeded = internalAction({
 
 			if (!title || isDefaultTitle(title)) return;
 
-			await ctx.runMutation(internal.assistantConversations.updateConversationTitleInternal, {
-				conversationId: args.conversationId,
-				title,
-				titleSource: "ai_generated",
-				userId: args.userId,
-			});
+			await ctx.runMutation(
+				internal.assistantConversations.updateConversationTitleInternal,
+				{
+					conversationId: args.conversationId,
+					title,
+					titleSource: "ai_generated",
+					userId: args.userId,
+				}
+			);
 		} catch (error) {
 			console.error("[autoGenerateTitleIfNeeded] Failed:", error);
 		}

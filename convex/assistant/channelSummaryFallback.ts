@@ -92,7 +92,9 @@ export function buildChannelSummaryFallback({
 
 	const classified = recentMessages
 		.map((message) => classifyMessage(message.body))
-		.filter((item): item is { title: string; detail: string } => Boolean(item?.detail.length));
+		.filter((item): item is { title: string; detail: string } =>
+			Boolean(item?.detail.length)
+		);
 
 	const unique = classified.filter(
 		(item, index) =>

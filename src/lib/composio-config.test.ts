@@ -5,7 +5,9 @@ describe("API_TOOL_FALLBACKS", () => {
 	test("does not use starred repositories as a fallback for listing the authenticated user's repositories", () => {
 		expect(
 			API_TOOL_FALLBACKS.GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER
-		).not.toContain("GITHUB_ACTIVITY_LIST_REPO_S_STARRED_BY_AUTHENTICATED_USER");
+		).not.toContain(
+			"GITHUB_ACTIVITY_LIST_REPO_S_STARRED_BY_AUTHENTICATED_USER"
+		);
 	});
 });
 

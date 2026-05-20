@@ -1,10 +1,3 @@
-/**
- * AI Assistant Tools - replaces deterministic intent matching with AI-driven tool selection
- *
- * Each tool is a Convex query/action that the AI can call based on user intent.
- * The LLM reads the tool descriptions and decides which to invoke.
- */
-
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -16,7 +9,6 @@ import {
 } from "./assistant/hybridRetrieval";
 import { extractTextFromRichText } from "./richText";
 
-// Helper functions
 function startOfDayMs(date: Date) {
 	const d = new Date(date);
 	d.setHours(0, 0, 0, 0);
@@ -74,9 +66,9 @@ function getTaskStatusScore(status?: string, dueDate?: number) {
 	}
 }
 
-function sortTasksForAssistant<T extends { status?: string; dueDate?: number; priority?: string }>(
-	tasks: T[]
-) {
+function sortTasksForAssistant<
+	T extends { status?: string; dueDate?: number; priority?: string },
+>(tasks: T[]) {
 	return [...tasks].sort((a, b) => {
 		const statusDelta =
 			getTaskStatusScore(b.status, b.dueDate) -
@@ -94,10 +86,6 @@ function sortTasksForAssistant<T extends { status?: string; dueDate?: number; pr
 		return 0;
 	});
 }
-
-// =============================================================================
-// CALENDAR & MEETINGS TOOLS
-// =============================================================================
 
 export const getMyCalendarToday = query({
 	args: {
@@ -283,10 +271,6 @@ export const getMyCalendarNextWeek = query({
 		};
 	},
 });
-
-// =============================================================================
-// TASKS TOOLS
-// =============================================================================
 
 export const getMyTasksToday = query({
 	args: {
@@ -493,10 +477,6 @@ export const getMyAllTasks = query({
 	},
 });
 
-// =============================================================================
-// NOTES TOOLS
-// =============================================================================
-
 export const getRecentNotes = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -541,7 +521,8 @@ export const getRecentNotes = query({
 				id: note._id,
 				title: note.title,
 				channelName: channelMap.get(note.channelId),
-				snippet: compactText(extractTextFromRichText(note.content), 140) || undefined,
+				snippet:
+					compactText(extractTextFromRichText(note.content), 140) || undefined,
 				updatedAt: note.updatedAt,
 			})),
 			count: notes.length,
@@ -684,10 +665,6 @@ export const searchTasks = query({
 	},
 });
 
-// =============================================================================
-// CHANNEL & MESSAGING TOOLS
-// =============================================================================
-
 export const searchChannels = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -763,11 +740,15 @@ export const getChannelDebug = query({
 			.order("desc")
 			.take(args.limit ?? 20);
 
-		const topLevelMessages = messages.filter((message) => !message.parentMessageId);
-		const memberIds = Array.from(
-			new Set(topLevelMessages.map((message: { authorName?: string | undefined; body: string; id: string; memberId: string; creationTime: number }) => message.memberId))
+		const topLevelMessages = messages.filter(
+			(message) => !message.parentMessageId
 		);
-		const members = await Promise.all(memberIds.map((memberId) => ctx.db.get(memberId)));
+		const memberIds = Array.from(
+			new Set(topLevelMessages.map((message) => message.memberId))
+		);
+		const members = await Promise.all(
+			memberIds.map((memberId) => ctx.db.get(memberId))
+		);
 		const memberMap = new Map(
 			members
 				.filter((member): member is Doc<"members"> => Boolean(member))
@@ -780,26 +761,26 @@ export const getChannelDebug = query({
 					.map((member) => member.userId)
 			)
 		);
-		const users = await Promise.all(userIds.map((userId) => ctx.db.get(userId)));
+		const users = await Promise.all(
+			userIds.map((userId) => ctx.db.get(userId))
+		);
 		const userMap = new Map(
 			users
 				.filter((user): user is Doc<"users"> => Boolean(user))
 				.map((user) => [user._id, user] as const)
 		);
 
-		const recentMessages = topLevelMessages
-			.reverse()
-			.map((message: { authorName?: string | undefined; body: string; id: string; memberId: string; creationTime: number }) => {
-				const member = memberMap.get(message.memberId);
-				const user = member ? userMap.get(member.userId) : null;
-				return {
-					id: message._id,
-					body: compactText(extractTextFromRichText(message.body), 220),
-					authorName: user?.name,
-					memberId: message.memberId,
-					creationTime: message._creationTime,
-				};
-			});
+		const recentMessages = topLevelMessages.reverse().map((message) => {
+			const member = memberMap.get(message.memberId);
+			const user = member ? userMap.get(member.userId) : null;
+			return {
+				id: message._id,
+				body: compactText(extractTextFromRichText(message.body), 220),
+				authorName: user?.name,
+				memberId: message.memberId,
+				creationTime: message._creationTime,
+			};
+		});
 
 		return {
 			channelName: channel.name,
@@ -828,7 +809,10 @@ export const getChannelSummary = query({
 			})
 		),
 	}),
-	handler: async (ctx, args): Promise<{
+	handler: async (
+		ctx,
+		args
+	): Promise<{
 		summary: string;
 		messageCount: number;
 		channelName: string;
@@ -857,8 +841,16 @@ export const getChannelSummary = query({
 			};
 		}
 
-		type ChannelMsg = { authorName?: string; body: string; id: string; memberId: string; creationTime: number };
-		const messageContext: string = (debug.recentMessages as unknown as ChannelMsg[])
+		type ChannelMsg = {
+			authorName?: string;
+			body: string;
+			id: string;
+			memberId: string;
+			creationTime: number;
+		};
+		const messageContext: string = (
+			debug.recentMessages as unknown as ChannelMsg[]
+		)
 			.slice(-10)
 			.map((message) =>
 				message.authorName
@@ -871,19 +863,17 @@ export const getChannelSummary = query({
 			summary: messageContext,
 			messageCount: debug.messageCount,
 			channelName: debug.channelName,
-			recentMessages: (debug.recentMessages as unknown as ChannelMsg[]).map((message) => ({
-				id: message.id,
-				body: message.body,
-				authorName: message.authorName,
-				creationTime: message.creationTime,
-			})),
+			recentMessages: (debug.recentMessages as unknown as ChannelMsg[]).map(
+				(message) => ({
+					id: message.id,
+					body: message.body,
+					authorName: message.authorName,
+					creationTime: message.creationTime,
+				})
+			),
 		};
 	},
 });
-
-// =============================================================================
-// WORKSPACE OVERVIEW TOOLS
-// =============================================================================
 
 export const getWorkspaceOverview = query({
 	args: {
@@ -972,16 +962,42 @@ export const getWorkspaceGeneralSummary = query({
 		channelCount: v.number(),
 		taskCount: v.number(),
 	}),
-	handler: async (ctx, args) => {
-		const [allTasks, noteResult, recentMessages, overview] = await Promise.all([
-			ctx.db
-				.query("tasks")
-				.withIndex("by_workspace_id", (q) =>
-					q.eq("workspaceId", args.workspaceId)
-				)
-				.filter((q) => q.eq(q.field("userId"), args.userId))
-				.filter((q) => q.eq(q.field("completed"), false))
-				.collect(),
+	handler: async (
+		ctx,
+		args
+	): Promise<{
+		highPriorityTasks: Array<{
+			id: string;
+			title: string;
+			status: string;
+			priority?: string;
+			dueDate?: number;
+		}>;
+		recentNotes: Array<{
+			id: string;
+			title: string;
+			channelName?: string;
+			snippet?: string;
+		}>;
+		recentMessages: Array<{
+			channelName: string;
+			authorName: string;
+			body: string;
+			creationTime: number;
+		}>;
+		channelCount: number;
+		taskCount: number;
+	}> => {
+		const allTasks: Doc<"tasks">[] = await ctx.db
+			.query("tasks")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("completed"), false))
+			.collect();
+
+		const [noteResult, recentMessages, overview] = await Promise.all([
 			ctx.runQuery(api.assistantTools.getRecentNotes, {
 				workspaceId: args.workspaceId,
 				limit: 4,
@@ -995,7 +1011,9 @@ export const getWorkspaceGeneralSummary = query({
 			}>,
 			ctx.runQuery(api.messages.getRecentWorkspaceChannelMessages, {
 				workspaceId: args.workspaceId,
+				from: Date.now() - 7 * 24 * 60 * 60 * 1000,
 				limit: 8,
+				perChannelLimit: 3,
 			}) as Promise<
 				Array<{
 					channelName: string;
@@ -1007,7 +1025,12 @@ export const getWorkspaceGeneralSummary = query({
 			ctx.runQuery(api.assistantTools.getWorkspaceOverview, {
 				workspaceId: args.workspaceId,
 				userId: args.userId,
-			}),
+			}) as Promise<{
+				channelCount: number;
+				memberCount: number;
+				taskCount: number;
+				upcomingEvents: number;
+			}>,
 		]);
 
 		const highPriorityTasks = sortTasksForAssistant(allTasks)
@@ -1023,26 +1046,24 @@ export const getWorkspaceGeneralSummary = query({
 		return {
 			highPriorityTasks,
 			recentNotes: noteResult.notes.slice(0, 4),
-			recentMessages: recentMessages.map((message: {
-				channelName: string;
-				authorName: string;
-				body: string;
-				_creationTime: number;
-			}) => ({
-				channelName: message.channelName,
-				authorName: message.authorName,
-				body: compactText(extractTextFromRichText(message.body), 160),
-				creationTime: message._creationTime,
-			})),
+			recentMessages: recentMessages.map(
+				(message: {
+					channelName: string;
+					authorName: string;
+					body: string;
+					_creationTime: number;
+				}) => ({
+					channelName: message.channelName,
+					authorName: message.authorName,
+					body: compactText(extractTextFromRichText(message.body), 160),
+					creationTime: message._creationTime,
+				})
+			),
 			channelCount: overview.channelCount,
 			taskCount: overview.taskCount,
 		};
 	},
 });
-
-// =============================================================================
-// BOARD & CARDS TOOLS
-// =============================================================================
 
 export const getMyCards = query({
 	args: {
@@ -1073,7 +1094,6 @@ export const getMyCards = query({
 			return { cards: [], count: 0 };
 		}
 
-		// Get all channels in workspace
 		const channels = await ctx.db
 			.query("channels")
 			.withIndex("by_workspace_id", (q) =>
@@ -1096,7 +1116,6 @@ export const getMyCards = query({
 					.collect();
 
 				for (const card of listCards) {
-					// Check if user is assigned (if assignees exist)
 					if (card.assignees && Array.isArray(card.assignees)) {
 						if (card.assignees.includes(member._id)) {
 							cards.push({
@@ -1109,7 +1128,6 @@ export const getMyCards = query({
 							});
 						}
 					} else {
-						// Include cards without assignees
 						cards.push({
 							id: card._id,
 							title: card.title,
@@ -1129,10 +1147,6 @@ export const getMyCards = query({
 		};
 	},
 });
-
-// =============================================================================
-// SEMANTIC SEARCH TOOL (fallback for general questions)
-// =============================================================================
 
 export const semanticSearch: ReturnType<typeof action> = action({
 	args: {
@@ -1163,37 +1177,45 @@ export const semanticSearch: ReturnType<typeof action> = action({
 			score: number;
 			sourceRefs: string[];
 		}>;
-			count: number;
-		}> => {
+		count: number;
+	}> => {
 		const requestedLimit = args.limit ?? 10;
 		const retrievalLimit = Math.max(requestedLimit * 2, 10);
-		const [directSearchResult, semanticSearchResult] = await Promise.allSettled([
-			ctx.runQuery(api.search.searchAll, {
-				workspaceId: args.workspaceId,
-				query: args.query,
-				limit: retrievalLimit,
-			}) as Promise<DirectSearchAllResults>,
-			ctx.runAction(api.ragchat.semanticSearch, {
-				workspaceId: args.workspaceId,
-				query: args.query,
-				limit: retrievalLimit,
-			}) as Promise<{
-				results: Array<{
-					entryId: string;
-					score: number;
-					content: Array<{ text: string; metadata?: Record<string, unknown> }>;
-				}>;
-				entries?: Array<{
-					entryId: string;
-					key?: string;
-					title?: string;
-					metadata?: Record<string, unknown>;
-				}>;
-			}>,
-		]);
+		const [directSearchResult, semanticSearchResult] = await Promise.allSettled(
+			[
+				ctx.runQuery(api.search.searchAll, {
+					workspaceId: args.workspaceId,
+					query: args.query,
+					limit: retrievalLimit,
+				}) as Promise<DirectSearchAllResults>,
+				ctx.runAction(api.ragchat.semanticSearch, {
+					workspaceId: args.workspaceId,
+					query: args.query,
+					limit: retrievalLimit,
+				}) as Promise<{
+					results: Array<{
+						entryId: string;
+						score: number;
+						content: Array<{
+							text: string;
+							metadata?: Record<string, unknown>;
+						}>;
+					}>;
+					entries?: Array<{
+						entryId: string;
+						key?: string;
+						title?: string;
+						metadata?: Record<string, unknown>;
+					}>;
+				}>,
+			]
+		);
 
 		if (directSearchResult.status === "rejected") {
-			console.warn("[Assistant Retrieval] Direct search failed", directSearchResult.reason);
+			console.warn(
+				"[Assistant Retrieval] Direct search failed",
+				directSearchResult.reason
+			);
 		}
 		if (semanticSearchResult.status === "rejected") {
 			console.warn(
@@ -1243,46 +1265,48 @@ export const semanticSearch: ReturnType<typeof action> = action({
 					return "Workspace Item";
 			}
 		};
-		const dedupe = (items: string[]): string[] => [...new Set(items.filter(Boolean))];
+		const dedupe = (items: string[]): string[] => [
+			...new Set(items.filter(Boolean)),
+		];
 
-		const semanticResults: SemanticRetrievalResult[] = ragResult.results.map((r) => {
-			const firstContent = r.content?.[0];
-			const entry = entriesById.get(r.entryId);
-			const contentType =
-				firstContent && typeof firstContent.metadata?.contentType === "string"
-					? String(firstContent.metadata?.contentType)
-					: typeof entry?.metadata?.sourceType === "string"
-						? String(entry.metadata?.sourceType)
-						: "content";
-			const contentMeta =
-				firstContent?.metadata && typeof firstContent.metadata === "object"
-					? firstContent.metadata
-					: {};
-			const entryMeta =
-				entry?.metadata && typeof entry.metadata === "object" ? entry.metadata : {};
-			const sourceTypeLabel = getSourceTypeLabel(contentType);
-			const primaryLabel =
-				entry?.title?.trim() ||
-				createSnippet(firstContent?.text ?? "") ||
-				String(entry?.key ?? "").trim() ||
-				r.entryId;
-			const sourceRefs = dedupe([
-				`${sourceTypeLabel}: ${primaryLabel}`,
-				typeof contentMeta.documentReference === "string"
-					? `Document Ref: ${contentMeta.documentReference}`
-					: "",
-				typeof contentMeta.sourceChain === "string"
-					? `Source Chain: ${contentMeta.sourceChain}`
-					: "",
-			]);
-			return {
-				id: r.entryId,
-				text: firstContent?.text ?? "",
-				type: contentType,
-				score: r.score ?? 0,
-				sourceRefs,
-			};
-		});
+		const semanticResults: SemanticRetrievalResult[] = ragResult.results.map(
+			(r) => {
+				const firstContent = r.content?.[0];
+				const entry = entriesById.get(r.entryId);
+				const contentType =
+					firstContent && typeof firstContent.metadata?.contentType === "string"
+						? String(firstContent.metadata?.contentType)
+						: typeof entry?.metadata?.sourceType === "string"
+							? String(entry.metadata?.sourceType)
+							: "content";
+				const contentMeta =
+					firstContent?.metadata && typeof firstContent.metadata === "object"
+						? firstContent.metadata
+						: {};
+				const sourceTypeLabel = getSourceTypeLabel(contentType);
+				const primaryLabel =
+					entry?.title?.trim() ||
+					createSnippet(firstContent?.text ?? "") ||
+					String(entry?.key ?? "").trim() ||
+					r.entryId;
+				const sourceRefs = dedupe([
+					`${sourceTypeLabel}: ${primaryLabel}`,
+					typeof contentMeta.documentReference === "string"
+						? `Document Ref: ${contentMeta.documentReference}`
+						: "",
+					typeof contentMeta.sourceChain === "string"
+						? `Source Chain: ${contentMeta.sourceChain}`
+						: "",
+				]);
+				return {
+					id: r.entryId,
+					text: firstContent?.text ?? "",
+					type: contentType,
+					score: r.score ?? 0,
+					sourceRefs,
+				};
+			}
+		);
 		const mappedResults = buildHybridRetrievalResults({
 			query: args.query,
 			directResults,

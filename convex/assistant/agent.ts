@@ -1,8 +1,3 @@
-/**
- * Proddy Assistant Agent - unified agent using @convex-dev/agent.
- * Uses thread-based conversations with workspace and Composio tools.
- */
-
 import { openai } from "@ai-sdk/openai";
 import { Agent } from "@convex-dev/agent";
 import { stepCountIs } from "ai";
@@ -31,16 +26,11 @@ Guidelines:
 - For broad catch-up questions like "what happened in general", summarize concrete updates instead of apologizing when data exists
 - Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."`;
 
-/** Custom context for tool handlers (workspaceId, userId). */
 export type ProddyAgentContext = {
 	workspaceId: Id<"workspaces">;
 	userId: Id<"users">;
 };
 
-/**
- * Agent with custom context (workspaceId, userId) so tools can call workspace-scoped APIs.
- * Pass { ...ctx, workspaceId, userId } when calling generateText / continueThread.
- */
 export const proddyAgent: Agent<ProddyAgentContext> =
 	new Agent<ProddyAgentContext>((components as any).agent, {
 		name: "Proddy Assistant",

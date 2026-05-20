@@ -38,6 +38,34 @@ type LLMMessage = {
 	content: string;
 };
 
+type PresenceRow = { online?: boolean; userId?: unknown };
+type MemberRow = { userId?: unknown; user?: { name?: string } };
+type TaskRow = { title?: unknown; dueDate?: unknown; priority?: unknown };
+type AssignedCardRow = {
+	title?: unknown;
+	dueDate?: unknown;
+	priority?: unknown;
+	channelName?: unknown;
+};
+type MentionRow = {
+	_creationTime?: number;
+	user?: { name?: string };
+	context?: { name?: string };
+	body?: string;
+};
+type MentionCandidateRow = {
+	who: string;
+	ctxName: string;
+	created: number;
+	body: string;
+};
+type RagCatalogEntry = {
+	entryId: string;
+	metadata?: Record<string, unknown>;
+	title?: string;
+	key?: string;
+};
+
 const DEFAULT_SYSTEM_PROMPT = [
 	"You are Proddy, a personal work assistant for a team workspace.",
 	"You help with: calendar/meetings, tasks, incidents, team status, and project execution.",
@@ -1927,16 +1955,16 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 
 				const onlineUserIds = new Set(
 					(presenceState || [])
-						.filter((p) => Boolean(p?.online))
-						.map((p) => String(p?.userId))
+						.filter((p: PresenceRow) => Boolean(p?.online))
+						.map((p: PresenceRow) => String(p?.userId))
 				);
 
 				const totalMembers = Array.isArray(members) ? members.length : 0;
-				const onlineMembers = (members || []).filter((m) =>
+				const onlineMembers = (members || []).filter((m: MemberRow) =>
 					onlineUserIds.has(String(m?.userId))
 				);
 				const offlineMembers = (members || []).filter(
-					(m) => !onlineUserIds.has(String(m?.userId))
+					(m: MemberRow) => !onlineUserIds.has(String(m?.userId))
 				);
 
 				const formatMember = (m: { user?: { name?: string } }) =>
@@ -2055,7 +2083,7 @@ Updates:\n${context}`;
 						workspaceId,
 						memberId: currentMember._id,
 					});
-					return cards.map((c) => ({
+					return cards.map((c: AssignedCardRow) => ({
 						title: String(c.title ?? ""),
 						dueDate: typeof c.dueDate === "number" ? c.dueDate : undefined,
 						priority: normalizePriority(c.priority),
@@ -2393,32 +2421,38 @@ Updates:\n${context}`;
 					]);
 
 					const undatedTasks = (upcomingTasks || [])
-						.filter((t) => typeof t?.dueDate !== "number")
+						.filter((t: TaskRow) => typeof t?.dueDate !== "number")
 						.slice(0, 10)
-						.map((t) => ({
+						.map((t: TaskRow) => ({
 							title: String(t?.title ?? ""),
 							dueDate: undefined,
 							priority: t?.priority ?? undefined,
 						}));
-					const tasks = [...(tasksDueToday || []), ...undatedTasks].filter(
-						(t) => String(t?.title ?? "").trim()
-					);
+					const tasks = [...(tasksDueToday || []), ...undatedTasks]
+						.filter((t: TaskRow) => String(t?.title ?? "").trim())
+						.map((t: TaskRow) => ({
+							title: String(t?.title ?? ""),
+							dueDate:
+								typeof t?.dueDate === "number"
+									? (t.dueDate as number)
+									: undefined,
+							priority: normalizePriority(t?.priority),
+						}));
 
 					const cardsDueToday = (assignedCards || []).filter(
-						(c) =>
+						(c: AssignedCardRow) =>
 							typeof c?.dueDate === "number" &&
 							c.dueDate >= todayFrom &&
 							c.dueDate <= todayTo
 					);
 					const cardsUndated = (assignedCards || [])
-						.filter((c) => typeof c?.dueDate !== "number")
+						.filter((c: AssignedCardRow) => typeof c?.dueDate !== "number")
 						.slice(0, 10);
-					const cards = [...cardsDueToday, ...cardsUndated].filter((c) =>
-						String(c?.title ?? "").trim()
+					const cards = [...cardsDueToday, ...cardsUndated].filter(
+						(c: AssignedCardRow) => String(c?.title ?? "").trim()
 					);
 
-					// Match example style: a compact day-ahead digest (still user-scoped).
-					const todaysMentions = (mentioned || []).filter((m) => {
+					const todaysMentions = (mentioned || []).filter((m: MentionRow) => {
 						const created =
 							typeof m?._creationTime === "number" ? m._creationTime : 0;
 						return created >= todayFrom && created <= todayTo;
@@ -2426,7 +2460,7 @@ Updates:\n${context}`;
 					const createdTodayMentionsCount = todaysMentions.length;
 					const mentionsSummary = todaysMentions
 						.slice(0, 6)
-						.map((m) => {
+						.map((m: MentionRow) => {
 							const who = String(m?.user?.name ?? "Someone").trim();
 							const ctxName = String(m?.context?.name ?? "Mention").trim();
 							return `- @${who} in ${ctxName}`;
@@ -2480,39 +2514,46 @@ Updates:\n${context}`;
 					]);
 
 					const undatedTasks = (upcomingTasks || [])
-						.filter((t) => typeof t?.dueDate !== "number")
+						.filter((t: TaskRow) => typeof t?.dueDate !== "number")
 						.slice(0, 10)
-						.map((t) => ({
+						.map((t: TaskRow) => ({
 							title: String(t?.title ?? ""),
 							dueDate: undefined,
 							priority: t?.priority ?? undefined,
 						}));
-					const tasks = [...(tasksDueTomorrow || []), ...undatedTasks].filter(
-						(t) => String(t?.title ?? "").trim()
-					);
+					const tasks = [...(tasksDueTomorrow || []), ...undatedTasks]
+						.filter((t: TaskRow) => String(t?.title ?? "").trim())
+						.map((t: TaskRow) => ({
+							title: String(t?.title ?? ""),
+							dueDate:
+								typeof t?.dueDate === "number"
+									? (t.dueDate as number)
+									: undefined,
+							priority: normalizePriority(t?.priority),
+						}));
 
 					const cardsDueTomorrow = (assignedCards || []).filter(
-						(c) =>
+						(c: AssignedCardRow) =>
 							typeof c?.dueDate === "number" &&
 							c.dueDate >= tomorrowFrom &&
 							c.dueDate <= tomorrowTo
 					);
 					const cardsUndated = (assignedCards || [])
-						.filter((c) => typeof c?.dueDate !== "number")
+						.filter((c: AssignedCardRow) => typeof c?.dueDate !== "number")
 						.slice(0, 10);
-					const cards = [...cardsDueTomorrow, ...cardsUndated].filter((c) =>
-						String(c?.title ?? "").trim()
+					const cards = [...cardsDueTomorrow, ...cardsUndated].filter(
+						(c: AssignedCardRow) => String(c?.title ?? "").trim()
 					);
 
 					const tomorrowKey = shortDate(tomorrowFrom);
 					const mentionCandidates = (mentioned || [])
-						.filter((m) => {
+						.filter((m: MentionRow) => {
 							const created =
 								typeof m?._creationTime === "number" ? m._creationTime : 0;
 							return created >= todayFrom;
 						})
 						.slice(0, 40)
-						.map((m) => {
+						.map((m: MentionRow): MentionCandidateRow => {
 							const who = String(m?.user?.name ?? "Someone").trim();
 							const ctxName = String(m?.context?.name ?? "Mention");
 							const created =
@@ -2521,7 +2562,7 @@ Updates:\n${context}`;
 							return { who, ctxName, created, body };
 						});
 
-					const matches = mentionCandidates.filter((m) =>
+					const matches = mentionCandidates.filter((m: MentionCandidateRow) =>
 						isLikelyTomorrowReferenceFallback(m.body, tomorrowKey)
 					);
 					const tomorrowMentionsCount = matches.length;
@@ -2529,7 +2570,7 @@ Updates:\n${context}`;
 					if (mentionCandidates.length) {
 						try {
 							const mentionContext = mentionCandidates
-								.map((m, i) => {
+								.map((m: MentionCandidateRow, i: number) => {
 									const when = m.created
 										? new Date(m.created).toISOString()
 										: "";
@@ -2571,7 +2612,10 @@ Mentions:\n${mentionContext}`;
 							if (matches.length) {
 								mentionsSummary = matches
 									.slice(0, 6)
-									.map((m) => `- @${m.who} in ${m.ctxName}`)
+									.map(
+										(m: { who: string; ctxName: string }) =>
+											`- @${m.who} in ${m.ctxName}`
+									)
 									.join("\n");
 							}
 						}
@@ -2774,24 +2818,23 @@ ${channelBlocks}`;
 				]);
 
 			const undatedTasks = (upcomingTasks || [])
-				.filter((t) => typeof t?.dueDate !== "number")
+				.filter((t: TaskRow) => typeof t?.dueDate !== "number")
 				.slice(0, 10)
-				.map((t) => ({
+				.map((t: TaskRow) => ({
 					title: String(t?.title ?? ""),
 					dueDate: undefined,
 					priority: t?.priority ?? undefined,
 				}));
-			const tasks = [...(tasksDueToday || []), ...undatedTasks].filter((t) =>
-				String(t?.title ?? "").trim()
-			);
+			const tasks = [...(tasksDueToday || []), ...undatedTasks]
+				.filter((t: TaskRow) => String(t?.title ?? "").trim())
+				.map((t: TaskRow) => ({
+					title: String(t?.title ?? ""),
+					dueDate:
+						typeof t?.dueDate === "number" ? (t.dueDate as number) : undefined,
+					priority: normalizePriority(t?.priority),
+				}));
 
-			type AssignedCardShape = {
-				title?: unknown;
-				dueDate?: unknown;
-				priority?: unknown;
-				channelName?: unknown;
-			};
-			const mappedCards = (assignedCards || []).map((c: AssignedCardShape) => ({
+			const mappedCards = (assignedCards || []).map((c: AssignedCardRow) => ({
 				title: String(c?.title ?? ""),
 				dueDate:
 					typeof c?.dueDate === "number" ? (c.dueDate as number) : undefined,
@@ -2801,26 +2844,33 @@ ${channelBlocks}`;
 						? (c.channelName as string)
 						: undefined,
 			}));
-			const cardsDueToday = mappedCards.filter((c) => {
-				const dueDate = c.dueDate;
-				if (typeof dueDate !== "number") return false;
-				return dueDate >= todayFrom && dueDate <= todayTo;
-			});
+			const cardsDueToday = mappedCards.filter(
+				(c: {
+					title: string;
+					dueDate?: number;
+					priority?: string;
+					channelName?: string;
+				}) => {
+					const dueDate = c.dueDate;
+					if (typeof dueDate !== "number") return false;
+					return dueDate >= todayFrom && dueDate <= todayTo;
+				}
+			);
 			const cardsUndated = mappedCards
-				.filter((c) => typeof c?.dueDate !== "number")
+				.filter((c: { dueDate?: number }) => typeof c?.dueDate !== "number")
 				.slice(0, 10);
-			const cards = [...cardsDueToday, ...cardsUndated].filter((c) =>
-				String(c?.title ?? "").trim()
+			const cards = [...cardsDueToday, ...cardsUndated].filter(
+				(c: { title: string }) => String(c?.title ?? "").trim()
 			);
 
-			const todaysMentions = (mentioned || []).filter((m) => {
+			const todaysMentions = (mentioned || []).filter((m: MentionRow) => {
 				const created =
 					typeof m?._creationTime === "number" ? m._creationTime : 0;
 				return created >= todayFrom && created <= todayTo;
 			});
 			const mentionsSummary = todaysMentions
 				.slice(0, 6)
-				.map((m) => {
+				.map((m: MentionRow) => {
 					const who = String(m?.user?.name ?? "Someone").trim();
 					const ctxName = String(m?.context?.name ?? "Mention").trim();
 					return `- @${who} in ${ctxName}`;
@@ -2926,7 +2976,10 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 				limit: 5,
 			});
 			const entriesById = new Map(
-				(ragResponse.entries ?? []).map((entry: any) => [entry.entryId, entry])
+				(ragResponse.entries ?? []).map((entry: RagCatalogEntry) => [
+					entry.entryId,
+					entry,
+				])
 			);
 			const dedupe = (items: string[]): string[] => {
 				const seen = new Set<string>();
@@ -2940,7 +2993,10 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 				return out;
 			};
 			ragResults = ragResponse.results.map(
-				(r: { entryId: string; content: Array<{ text: string; metadata?: any }> }) => {
+				(r: {
+					entryId: string;
+					content: Array<{ text: string; metadata?: any }>;
+				}) => {
 					const entry = entriesById.get(r.entryId);
 					const firstContent = r.content?.[0];
 					const chunkMeta =

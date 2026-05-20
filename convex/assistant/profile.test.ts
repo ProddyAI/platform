@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+	type AssistantProfileRecord,
 	buildAssistantProfilePrompt,
 	extractAssistantProfileUpdateFromMessage,
-	type AssistantProfileRecord,
 } from "./profile";
 
 describe("buildAssistantProfilePrompt", () => {
@@ -22,7 +22,9 @@ describe("buildAssistantProfilePrompt", () => {
 		expect(prompt).toContain("Keep responses concise");
 		expect(prompt).toContain("Be proactive about suggesting next steps");
 		expect(prompt).toContain("Prioritize blockers");
-		expect(prompt).toContain("Emphasize these areas in summaries: tasks, channels");
+		expect(prompt).toContain(
+			"Emphasize these areas in summaries: tasks, channels"
+		);
 		expect(prompt).toContain(
 			"- User prefers short summaries with direct next steps."
 		);
@@ -68,8 +70,7 @@ describe("extractAssistantProfileUpdateFromMessage", () => {
 		expect(update).toEqual({
 			responseStyle: "concise",
 			prioritizationStrategy: "blockers_first",
-			memoryBullet:
-				"User is currently focused on the release rollout.",
+			memoryBullet: "User is currently focused on the release rollout.",
 			activeContext: {
 				kind: "release",
 				label: "release rollout",

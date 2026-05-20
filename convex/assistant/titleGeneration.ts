@@ -21,7 +21,9 @@ export async function generateConversationTitle(
 	if (contextMessages.length === 0) return "New Chat";
 
 	const userMessages = contextMessages.filter((m) => m.role === "user");
-	const hasMeaningfulContent = userMessages.some((m) => !isFillerMessage(m.content));
+	const hasMeaningfulContent = userMessages.some(
+		(m) => !isFillerMessage(m.content)
+	);
 
 	if (!hasMeaningfulContent) return "New Chat";
 
@@ -65,7 +67,10 @@ Return ONLY the title. Nothing else.`,
 		});
 
 		const raw = response.choices[0]?.message?.content?.trim() || "";
-		const title = raw.replace(/^["'`]|["'`]$/g, "").replace(/[.!?]$/, "").trim();
+		const title = raw
+			.replace(/^["'`]|["'`]$/g, "")
+			.replace(/[.!?]$/, "")
+			.trim();
 		const wordCount = title.split(/\s+/).filter(Boolean).length;
 
 		if (wordCount >= 3 && wordCount <= 6 && title.length > 0) return title;

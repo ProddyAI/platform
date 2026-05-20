@@ -1,14 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import type { FunctionReference } from "convex/server";
 import { v } from "convex/values";
 import OpenAI from "openai";
 import { api, components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
 import { action, mutation, query } from "./_generated/server";
-import { buildChannelSummaryFallback } from "./assistant/channelSummaryFallback";
-import {
-	buildPreflightContextPlan,
-	buildPreflightContextPrompt,
-} from "./assistant/context";
+import { resolvePreflightContext } from "./assistant/preflightResolver";
 import {
 	type AssistantProfileRecord,
 	buildAssistantProfilePrompt,
@@ -19,7 +17,16 @@ import {
 	isPendingTaskCancellation,
 	isPendingTaskConfirmation,
 } from "./assistant/taskDrafts";
+import {
+	executeToolHandler,
+	toOpenAIChatMessages,
+} from "./assistant/toolExecutor";
 import { resolveAssistantToolLoop } from "./assistant/toolLoop";
+import {
+	collectSourceRefsFromToolResult,
+	createFallbackResponseFromToolResult,
+	dedupeSourceRefs,
+} from "./assistant/toolResults";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 
@@ -32,532 +39,12 @@ type ToolDefinition = {
 		required?: string[];
 	};
 	handlerType: ToolHandlerType;
-	handler: unknown;
+	handler: FunctionReference<"query" | "mutation" | "action", "public">;
 	contextParams?: {
 		needsWorkspaceId?: boolean;
 		needsUserId?: boolean;
 	};
 };
-
-function dedupeSourceRefs(sourceRefs: string[]) {
-	const seen = new Set<string>();
-	const unique: string[] = [];
-	for (const sourceRef of sourceRefs) {
-		const cleaned = sourceRef.trim();
-		if (!cleaned || seen.has(cleaned)) continue;
-		seen.add(cleaned);
-		unique.push(cleaned);
-	}
-	return unique;
-}
-
-function createLabeledSourceRef(label: string, value: unknown) {
-	const normalized = String(value ?? "")
-		.replace(/\s+/g, " ")
-		.trim();
-	if (!normalized) return null;
-	return `${label}: ${normalized}`;
-}
-
-function collectSourceRefsFromToolResult(toolName: string, result: unknown) {
-	if (!result || typeof result !== "object") {
-		return [] as string[];
-	}
-
-	if (toolName === "semanticSearch" && Array.isArray((result as any).results)) {
-		return dedupeSourceRefs(
-			(result as any).results.flatMap((item: any) =>
-				Array.isArray(item?.sourceRefs) ? item.sourceRefs : []
-			)
-		);
-	}
-
-	if (
-		(toolName === "getMyTasksToday" ||
-			toolName === "getMyTasksTomorrow" ||
-			toolName === "getMyAllTasks" ||
-			toolName === "searchTasks") &&
-		Array.isArray((result as any).tasks)
-	) {
-		return dedupeSourceRefs(
-			(result as any).tasks
-				.map((task: any) => createLabeledSourceRef("Task", task?.title))
-				.filter(Boolean) as string[]
-		);
-	}
-
-	if (
-		(toolName === "getMyCalendarToday" ||
-			toolName === "getMyCalendarTomorrow" ||
-			toolName === "getMyCalendarNextWeek") &&
-		Array.isArray((result as any).events)
-	) {
-		return dedupeSourceRefs(
-			(result as any).events
-				.map((event: any) =>
-					createLabeledSourceRef("Calendar Event", event?.title)
-				)
-				.filter(Boolean) as string[]
-		);
-	}
-
-	if (toolName === "getMyCards" && Array.isArray((result as any).cards)) {
-		return dedupeSourceRefs(
-			(result as any).cards
-				.map((card: any) => {
-					const location =
-						card?.channelName && card?.listName
-							? ` (${card.channelName} / ${card.listName})`
-							: "";
-					return createLabeledSourceRef(
-						"Board Card",
-						`${card?.title ?? ""}${location}`
-					);
-				})
-				.filter(Boolean) as string[]
-		);
-	}
-
-	if (toolName === "getChannelSummary") {
-		const channelName = String((result as any).channelName ?? "").trim();
-		return channelName ? [`Channel Messages: #${channelName}`] : [];
-	}
-
-	if (
-		(toolName === "getRecentNotes" || toolName === "searchNotes") &&
-		Array.isArray((result as any).notes)
-	) {
-		return dedupeSourceRefs(
-			(result as any).notes.flatMap((note: any) => {
-				if (Array.isArray(note?.sourceRefs)) {
-					return note.sourceRefs;
-				}
-				const refs = [createLabeledSourceRef("Note", note?.title)].filter(
-					Boolean
-				);
-				if (note?.channelName) {
-					refs.push(`Channel: #${String(note.channelName).trim()}`);
-				}
-				return refs as string[];
-			})
-		);
-	}
-
-	if (
-		toolName === "searchChannels" &&
-		Array.isArray((result as any).channels)
-	) {
-		return dedupeSourceRefs(
-			(result as any).channels
-				.map((channel: any) =>
-					createLabeledSourceRef(
-						"Channel",
-						`#${String(channel?.name ?? "").trim()}`
-					)
-				)
-				.filter(Boolean) as string[]
-		);
-	}
-
-	if (toolName === "getWorkspaceOverview") {
-		return ["Workspace Overview"];
-	}
-
-	if (toolName === "getWorkspaceGeneralSummary") {
-		return ["Workspace Activity Summary"];
-	}
-
-	return [];
-}
-
-function createFallbackResponseFromToolResult(
-	toolName: string,
-	result: unknown
-) {
-	if (!result || typeof result !== "object") {
-		return null;
-	}
-
-	if (toolName === "getChannelSummary") {
-		const channelName = String((result as any).channelName ?? "").trim();
-		const messageCount = Number((result as any).messageCount ?? 0);
-		const recentMessages = Array.isArray((result as any).recentMessages)
-			? ((result as any).recentMessages as Array<any>)
-			: [];
-
-		if (!channelName) return null;
-		return buildChannelSummaryFallback({
-			channelName,
-			messageCount,
-			recentMessages: recentMessages.map((message) => ({
-				id: String(message?.id ?? ""),
-				body: String(message?.body ?? ""),
-				authorName: message?.authorName
-					? String(message.authorName)
-					: undefined,
-				creationTime: Number(message?.creationTime ?? 0),
-			})),
-		});
-	}
-
-	if (toolName === "getChannelDebug") {
-		const channelName =
-			String((result as any).channelName ?? "").trim() || "unknown";
-		const recentMessages = Array.isArray((result as any).recentMessages)
-			? ((result as any).recentMessages as Array<any>)
-			: [];
-		if (recentMessages.length === 0) {
-			return `Debug view: the assistant sees no recent messages in #${channelName}.`;
-		}
-		return [
-			`Debug view for #${channelName}`,
-			...recentMessages.slice(-8).map((message) => {
-				const author = String(message?.authorName ?? "").trim();
-				const body = String(message?.body ?? "").trim();
-				return `- ${author ? `${author}: ` : ""}${body}`;
-			}),
-		].join("\n");
-	}
-
-	if (toolName === "getRecentNotes" && Array.isArray((result as any).notes)) {
-		const notes = (result as any).notes as Array<any>;
-		if (notes.length === 0) {
-			return "I couldn't find any notes in this workspace yet.";
-		}
-
-		return [
-			"Recent notes",
-			...notes.slice(0, 6).map((note) => {
-				const channelSuffix = note?.channelName
-					? ` (#${note.channelName})`
-					: "";
-				return `- ${String(note?.title ?? "Untitled note").trim()}${channelSuffix}`;
-			}),
-		].join("\n");
-	}
-
-	if (toolName === "searchNotes" && Array.isArray((result as any).notes)) {
-		const notes = (result as any).notes as Array<any>;
-		if (notes.length === 0) {
-			return "I couldn't find any notes matching that query.";
-		}
-
-		return [
-			"Matching notes",
-			...notes.slice(0, 6).map((note) => {
-				const channelSuffix = note?.channelName
-					? ` (#${note.channelName})`
-					: "";
-				const snippet = String(note?.snippet ?? "").trim();
-				return `- ${String(note?.title ?? "Untitled note").trim()}${channelSuffix}${snippet ? `: ${snippet}` : ""}`;
-			}),
-		].join("\n");
-	}
-
-	if (
-		(toolName === "getMyAllTasks" || toolName === "searchTasks") &&
-		Array.isArray((result as any).tasks)
-	) {
-		const tasks = (result as any).tasks as Array<any>;
-		if (tasks.length === 0) {
-			return "I couldn't find anything relevant yet.";
-		}
-
-		return [
-			"Top tasks",
-			...tasks.slice(0, 6).map((task) => {
-				const flags = [task?.status, task?.priority]
-					.filter(Boolean)
-					.join(" â€¢ ");
-				return `- ${String(task?.title ?? "Untitled task").trim()}${flags ? ` (${flags})` : ""}`;
-			}),
-		].join("\n");
-	}
-
-	if (toolName === "getWorkspaceGeneralSummary") {
-		const summary = result as any;
-		const messages = Array.isArray(summary?.recentMessages)
-			? summary.recentMessages.slice(0, 3)
-			: [];
-		const tasks = Array.isArray(summary?.highPriorityTasks)
-			? summary.highPriorityTasks.slice(0, 3)
-			: [];
-		const notes = Array.isArray(summary?.recentNotes)
-			? summary.recentNotes.slice(0, 2)
-			: [];
-		const lines = ["Workspace catch-up"];
-
-		if (messages.length > 0) {
-			lines.push(
-				...messages.map(
-					(message: any) =>
-						`- #${message.channelName}: ${String(message.body ?? "").trim()}`
-				)
-			);
-		}
-
-		if (tasks.length > 0) {
-			lines.push(
-				...tasks.map((task: any) => {
-					const flags = [task?.status, task?.priority]
-						.filter(Boolean)
-						.join(" â€¢ ");
-					return `- Task: ${String(task?.title ?? "").trim()}${flags ? ` (${flags})` : ""}`;
-				})
-			);
-		}
-
-		if (notes.length > 0) {
-			lines.push(
-				...notes.map((note: any) => {
-					const channelSuffix = note?.channelName
-						? ` (#${note.channelName})`
-						: "";
-					return `- Note: ${String(note?.title ?? "").trim()}${channelSuffix}`;
-				})
-			);
-		}
-
-		return lines.length > 1
-			? lines.join("\n")
-			: "I couldn't find anything relevant yet.";
-	}
-
-	if (toolName === "draftTaskForConfirmation") {
-		return String((result as any).confirmationMessage ?? "").trim() || null;
-	}
-
-	if (toolName === "getWorkspaceMembers" && Array.isArray(result as any)) {
-		const members = (result as any[]).slice(0, 8);
-		if (members.length === 0) {
-			return "There are no accepted workspace members available yet.";
-		}
-
-		return [
-			"Accepted workspace members",
-			...members.map((member) => {
-				const userName = String(member?.user?.name ?? "").trim() || "Unknown";
-				const role = String(member?.role ?? "member").trim();
-				return `- ${userName} (${role})`;
-			}),
-		].join("\n");
-	}
-
-	return null;
-}
-
-type PreflightResolutionResult = {
-	promptText: string;
-	sourceRefs: string[];
-	earlyResponse?: string;
-};
-
-function summarizeCount(label: string, count: number) {
-	return `${label}: ${count}`;
-}
-
-async function resolvePreflightContext(args: {
-	ctx: any;
-	workspaceId: Id<"workspaces">;
-	userId: Id<"users">;
-	message: string;
-}): Promise<PreflightResolutionResult> {
-	const plan = buildPreflightContextPlan({ message: args.message });
-	const sourceRefs: string[] = [];
-	const summaryLines = [...plan.summaryLines];
-	let resolvedTopic = plan.resolvedTopic;
-
-	if (plan.intent === "channel_summary" && plan.channelQuery) {
-		const channelSearch = (await args.ctx.runQuery(
-			api.assistantTools.searchChannels,
-			{
-				workspaceId: args.workspaceId,
-				query: plan.channelQuery,
-			}
-		)) as any;
-		sourceRefs.push(
-			...collectSourceRefsFromToolResult("searchChannels", channelSearch)
-		);
-		const channels = Array.isArray(channelSearch?.channels)
-			? channelSearch.channels
-			: [];
-		const normalizedChannelQuery = String(plan.channelQuery ?? "").trim().toLowerCase();
-		const exactMatch =
-			channels.find(
-				(channel: any) =>
-					String(channel?.name ?? "")
-						.trim()
-						.toLowerCase() === normalizedChannelQuery
-			) ?? null;
-		if (!exactMatch && channels.length > 1) {
-			const suggestions = channels
-				.slice(0, 3)
-				.map((channel: any) => `#${String(channel?.name ?? "").trim()}`)
-				.filter(Boolean);
-			return {
-				promptText: "",
-				sourceRefs,
-				earlyResponse: suggestions.length
-					? `I found multiple channels matching "${plan.channelQuery}": ${suggestions.join(", ")}. Which one should I use?`
-					: `I found multiple channels matching "${plan.channelQuery}". Which one should I use?`,
-			};
-		}
-		const resolvedChannel = exactMatch ?? channels[0];
-		if (resolvedChannel?._id) {
-			const channelSummary = (await args.ctx.runQuery(
-				api.assistantTools.getChannelSummary,
-				{
-					workspaceId: args.workspaceId,
-					channelId: resolvedChannel._id,
-					limit: 40,
-				}
-			)) as any;
-			sourceRefs.push(
-				...collectSourceRefsFromToolResult("getChannelSummary", channelSummary)
-			);
-			resolvedTopic =
-				String(
-					channelSummary?.channelName ?? resolvedChannel?.name ?? ""
-				).trim() || resolvedTopic;
-			summaryLines.push(
-				`Resolved channel: #${resolvedTopic}`,
-				summarizeCount(
-					"Recent messages considered",
-					Number(channelSummary?.messageCount ?? 0)
-				)
-			);
-		}
-	}
-
-	if (plan.intent === "workspace_catchup") {
-		const summary = (await args.ctx.runQuery(
-			api.assistantTools.getWorkspaceGeneralSummary,
-			{
-				workspaceId: args.workspaceId,
-				userId: args.userId,
-			}
-		)) as any;
-		sourceRefs.push(
-			...collectSourceRefsFromToolResult("getWorkspaceGeneralSummary", summary)
-		);
-		summaryLines.push(
-			summarizeCount(
-				"Recent messages",
-				Array.isArray(summary?.recentMessages)
-					? summary.recentMessages.length
-					: 0
-			),
-			summarizeCount(
-				"High-priority tasks",
-				Array.isArray(summary?.highPriorityTasks)
-					? summary.highPriorityTasks.length
-					: 0
-			),
-			summarizeCount(
-				"Recent notes",
-				Array.isArray(summary?.recentNotes) ? summary.recentNotes.length : 0
-			)
-		);
-	}
-
-	if (plan.intent === "note_lookup") {
-		const toolName = plan.noteQuery ? "searchNotes" : "getRecentNotes";
-		const noteResult = (await args.ctx.runQuery(
-			plan.noteQuery
-				? api.assistantTools.searchNotes
-				: api.assistantTools.getRecentNotes,
-			plan.noteQuery
-				? {
-						workspaceId: args.workspaceId,
-						query: plan.noteQuery,
-						limit: 6,
-					}
-				: {
-						workspaceId: args.workspaceId,
-						limit: 6,
-					}
-		)) as any;
-		sourceRefs.push(...collectSourceRefsFromToolResult(toolName, noteResult));
-		summaryLines.push(
-			summarizeCount(
-				"Matching notes",
-				Array.isArray(noteResult?.notes) ? noteResult.notes.length : 0
-			)
-		);
-	}
-
-	if (plan.intent === "task_lookup") {
-		const toolName = plan.taskQuery ? "searchTasks" : "getMyAllTasks";
-		const taskResult = (await args.ctx.runQuery(
-			plan.taskQuery
-				? api.assistantTools.searchTasks
-				: api.assistantTools.getMyAllTasks,
-			plan.taskQuery
-				? {
-						workspaceId: args.workspaceId,
-						userId: args.userId,
-						query: plan.taskQuery,
-						limit: 8,
-					}
-				: {
-						workspaceId: args.workspaceId,
-						userId: args.userId,
-						includeCompleted: false,
-					}
-		)) as any;
-		sourceRefs.push(...collectSourceRefsFromToolResult(toolName, taskResult));
-		summaryLines.push(
-			summarizeCount(
-				"Matching tasks",
-				Array.isArray(taskResult?.tasks) ? taskResult.tasks.length : 0
-			)
-		);
-	}
-
-	if (plan.intent === "calendar_lookup" && plan.recommendedToolOrder[0]) {
-		const calendarTool = plan.recommendedToolOrder[0];
-		const handler =
-			calendarTool === "getMyCalendarTomorrow"
-				? api.assistantTools.getMyCalendarTomorrow
-				: calendarTool === "getMyCalendarNextWeek"
-					? api.assistantTools.getMyCalendarNextWeek
-					: api.assistantTools.getMyCalendarToday;
-		const calendarResult = (await args.ctx.runQuery(handler, {
-			workspaceId: args.workspaceId,
-			userId: args.userId,
-		})) as any;
-		sourceRefs.push(
-			...collectSourceRefsFromToolResult(calendarTool, calendarResult)
-		);
-		summaryLines.push(
-			summarizeCount(
-				"Matching calendar events",
-				Array.isArray(calendarResult?.events) ? calendarResult.events.length : 0
-			)
-		);
-	}
-
-	if (plan.intent === "task_create" && plan.needsMemberResolution) {
-		const members = (await args.ctx.runQuery(api.members.get, {
-			workspaceId: args.workspaceId,
-		})) as any[];
-		const acceptedMembers = Array.isArray(members) ? members : [];
-		summaryLines.push(
-			summarizeCount("Accepted workspace members", acceptedMembers.length)
-		);
-	}
-
-	return {
-		promptText: buildPreflightContextPrompt({
-			intent: plan.intent,
-			confidence: plan.confidence,
-			resolvedTopic,
-			recommendedToolOrder: plan.recommendedToolOrder,
-			summaryLines,
-		}),
-		sourceRefs: dedupeSourceRefs(sourceRefs),
-	};
-}
 
 function buildSystemPrompt(options?: {
 	hasPendingTaskDraft?: boolean;
@@ -643,7 +130,6 @@ ${pendingTaskInstructions}
 
 When a user asks about their schedule, tasks, or workspace, use the appropriate tools to fetch current data.`;
 }
-// Define tools that AI can use (handles are created inside the action)
 const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "getMyCalendarToday",
@@ -1072,12 +558,8 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 ];
 
-// =============================================================================
-// Chat Integration with database-chat component
-// =============================================================================
-
 async function getDatabaseChatConversation(
-	ctx: any,
+	ctx: QueryCtx | MutationCtx | ActionCtx,
 	conversationId: string | null | undefined
 ) {
 	if (!conversationId) {
@@ -1086,7 +568,7 @@ async function getDatabaseChatConversation(
 
 	try {
 		return await ctx.runQuery(components.databaseChat.conversations.get, {
-			conversationId: conversationId as any,
+			conversationId,
 		});
 	} catch (error) {
 		console.warn(
@@ -1107,7 +589,6 @@ export const createConversation = mutation({
 	},
 	returns: v.string(),
 	handler: async (ctx, args) => {
-		// Always create a new conversation when forceNew is true
 		if (args.forceNew) {
 			const conversationId = await ctx.runMutation(
 				components.databaseChat.conversations.create,
@@ -1130,7 +611,6 @@ export const createConversation = mutation({
 			return conversationId;
 		}
 
-		// For non-forceNew, check if there's an existing conversation
 		const existing = await ctx.db
 			.query("assistantConversations")
 			.withIndex("by_workspace_id_user_id", (q) =>
@@ -1147,7 +627,6 @@ export const createConversation = mutation({
 			return existingConversation._id;
 		}
 
-		// Create first conversation
 		const conversationId = await ctx.runMutation(
 			components.databaseChat.conversations.create,
 			{
@@ -1219,7 +698,7 @@ export const getStreamDeltas = query({
 	args: { streamId: v.string(), cursor: v.number() },
 	handler: async (ctx, args) => {
 		return await ctx.runQuery(components.databaseChat.stream.listDeltas, {
-			streamId: args.streamId as any,
+			streamId: args.streamId,
 			cursor: args.cursor,
 		});
 	},
@@ -1246,10 +725,6 @@ export const abortStream = mutation({
 		);
 	},
 });
-
-// =============================================================================
-// Main AI Assistant Action
-// =============================================================================
 
 export const sendMessage = action({
 	args: {
@@ -1315,13 +790,11 @@ export const sendMessage = action({
 				userId: resolvedUserId,
 			}
 		);
-		// Only use the draft when it belongs to the active conversation
 		const pendingTaskDraft =
 			latestConversationMeta?.conversationId === activeConversationId
 				? latestConversationMeta.pendingTaskDraft
 				: undefined;
 
-		// Record AI usage
 		try {
 			await ctx.runMutation(internal.usageTracking.recordAIRequest, {
 				userId: resolvedUserId as Id<"users">,
@@ -1333,14 +806,17 @@ export const sendMessage = action({
 		}
 
 		try {
-			// Save user message
 			await ctx.runMutation(components.databaseChat.messages.add, {
-				conversationId: activeConversationId as any,
+				conversationId: activeConversationId,
 				role: "user",
 				content: args.message,
 			});
 
-			let assistantProfile: Awaited<ReturnType<typeof ctx.runMutation<typeof api.assistantProfiles.recordSignal>>> | null = null;
+			let assistantProfile: Awaited<
+				ReturnType<
+					typeof ctx.runMutation<typeof api.assistantProfiles.recordSignal>
+				>
+			> | null = null;
 			try {
 				assistantProfile = await ctx.runMutation(
 					api.assistantProfiles.recordSignal,
@@ -1370,7 +846,7 @@ export const sendMessage = action({
 				const responseText = `Created the task "${created.title}"${assigneeSuffix}.`;
 
 				await ctx.runMutation(components.databaseChat.messages.add, {
-					conversationId: activeConversationId as any,
+					conversationId: activeConversationId,
 					role: "assistant",
 					content: responseText,
 				});
@@ -1395,7 +871,7 @@ export const sendMessage = action({
 				const responseText = "Canceled the pending task draft.";
 
 				await ctx.runMutation(components.databaseChat.messages.add, {
-					conversationId: activeConversationId as any,
+					conversationId: activeConversationId,
 					role: "assistant",
 					content: responseText,
 				});
@@ -1409,10 +885,9 @@ export const sendMessage = action({
 				return { success: true, content: responseText };
 			}
 
-			// Get conversation history
 			const rawMessages = await ctx.runQuery(
 				components.databaseChat.messages.list,
-				{ conversationId: activeConversationId as any }
+				{ conversationId: activeConversationId }
 			);
 			const preflightContext = await resolvePreflightContext({
 				ctx,
@@ -1424,7 +899,7 @@ export const sendMessage = action({
 			if (preflightContext.earlyResponse) {
 				const responseText = preflightContext.earlyResponse;
 				await ctx.runMutation(components.databaseChat.messages.add, {
-					conversationId: activeConversationId as any,
+					conversationId: activeConversationId,
 					role: "assistant",
 					content: responseText,
 				});
@@ -1438,7 +913,6 @@ export const sendMessage = action({
 				return { success: true, content: responseText };
 			}
 
-			// Build messages array with system prompt
 			const messages = [
 				{
 					role: "system",
@@ -1454,22 +928,20 @@ export const sendMessage = action({
 						assistantProfile: assistantProfile ?? undefined,
 					}),
 				},
-				...rawMessages.map((m: any) => ({
+				...rawMessages.map((m) => ({
 					role: m.role,
 					content: m.content,
 				})),
 			];
 
-			// Create stream for delta-based streaming
 			streamId = await ctx.runMutation(components.databaseChat.stream.create, {
-				conversationId: activeConversationId as any,
+				conversationId: activeConversationId,
 			});
 
 			const openai = new OpenAI({
 				apiKey: apiKey,
 			});
 
-			// Format tools for OpenAI
 			const openaiTools: OpenAI.Chat.ChatCompletionTool[] =
 				TOOL_DEFINITIONS.map((t) => ({
 					type: "function" as const,
@@ -1480,7 +952,6 @@ export const sendMessage = action({
 					},
 				}));
 
-			// Call OpenAI with tools
 			const completion = await openai.chat.completions.create({
 				model: "gpt-4o-mini",
 				messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
@@ -1495,37 +966,39 @@ export const sendMessage = action({
 			const toolCalls = completion.choices[0]?.message?.tool_calls;
 			const collectedSourceRefs: string[] = [...preflightContext.sourceRefs];
 
-			// If the model returns empty content and no tools, fall back to RAG search.
-			// This makes keyword-only queries (e.g. "onboarding") still produce something useful.
 			if (
 				!completion.choices[0]?.message?.content?.trim() &&
 				(!toolCalls || toolCalls.length === 0)
 			) {
 				try {
-					const search = (await ctx.runAction(
+					const search = await ctx.runAction(
 						api.assistantTools.semanticSearch,
 						{
 							workspaceId: resolvedWorkspaceId,
 							query: args.message,
 							limit: 5,
 						}
-					)) as any;
-					const results = Array.isArray(search?.results) ? search.results : [];
+					);
+					const results: Array<{
+						id: string;
+						text: string;
+						type: string;
+						score: number;
+						sourceRefs: string[];
+					}> = search.results ?? [];
 					if (results.length) {
 						for (const r of results) {
-							if (Array.isArray(r?.sourceRefs)) {
-								for (const ref of r.sourceRefs) {
-									if (typeof ref === "string" && ref.trim())
-										collectedSourceRefs.push(ref.trim());
-								}
+							for (const ref of r.sourceRefs) {
+								if (typeof ref === "string" && ref.trim())
+									collectedSourceRefs.push(ref.trim());
 							}
 						}
 						const lines = results
 							.slice(0, 5)
-							.map((r: any, i: number) => {
-								const text = String(r?.text ?? "").trim();
+							.map((r, i) => {
+								const text = String(r.text ?? "").trim();
 								const snippet =
-									text.length > 160 ? `${text.slice(0, 160)}â€¦` : text;
+									text.length > 160 ? `${text.slice(0, 160)}…` : text;
 								return `- (${i + 1}) ${snippet || "(no snippet)"}`;
 							})
 							.join("\n");
@@ -1534,13 +1007,9 @@ export const sendMessage = action({
 						responseText =
 							"I couldn't find anything relevant in your workspace yet.";
 					}
-				} catch {
-					// Keep the original placeholder if search fails.
-				}
+				} catch {}
 			}
 
-			// Execute tool calls, allowing multi-step chains like
-			// searchChannels -> getChannelSummary before the assistant answers.
 			if (toolCalls && toolCalls.length > 0) {
 				const loopResult = await resolveAssistantToolLoop({
 					initialAssistantMessage: completion.choices[0].message,
@@ -1552,7 +1021,7 @@ export const sendMessage = action({
 					createCompletion: async (followUpMessages) => {
 						const followUpCompletion = await openai.chat.completions.create({
 							model: "gpt-4o-mini",
-							messages: followUpMessages as any,
+							messages: toOpenAIChatMessages(followUpMessages),
 							tools: openaiTools,
 							temperature: 0.7,
 							max_tokens: 2000,
@@ -1578,7 +1047,7 @@ export const sendMessage = action({
 							const parsedArgs = JSON.parse(
 								toolCall.function?.arguments ?? "{}"
 							);
-							const fullArgs: Record<string, any> = { ...parsedArgs };
+							const fullArgs: Record<string, unknown> = { ...parsedArgs };
 
 							if (tool.contextParams?.needsWorkspaceId) {
 								fullArgs.workspaceId = resolvedWorkspaceId;
@@ -1587,14 +1056,12 @@ export const sendMessage = action({
 								fullArgs.userId = resolvedUserId;
 							}
 
-							let result: unknown;
-							if (tool.handlerType === "query") {
-								result = await ctx.runQuery(tool.handler as any, fullArgs);
-							} else if (tool.handlerType === "mutation") {
-								result = await ctx.runMutation(tool.handler as any, fullArgs);
-							} else {
-								result = await ctx.runAction(tool.handler as any, fullArgs);
-							}
+							const result = await executeToolHandler(
+								ctx,
+								tool.handlerType,
+								tool.handler,
+								fullArgs
+							);
 
 							return {
 								result,
@@ -1628,13 +1095,8 @@ export const sendMessage = action({
 					collectedSourceRefs.push(ref);
 				}
 				responseText = loopResult.responseText;
-				console.info("[Assistant] Executed tool chain", {
-					tools: loopResult.executedTools.map((tool) => tool.name),
-					workspaceId: String(resolvedWorkspaceId),
-				});
 			}
 
-			// Append a compact Sources section for visibility in the UI.
 			if (collectedSourceRefs.length) {
 				const unique = dedupeSourceRefs(collectedSourceRefs).slice(0, 5);
 				responseText = `${responseText.trim()}\n\nSources:\n${unique
@@ -1642,14 +1104,12 @@ export const sendMessage = action({
 					.join("\n")}`.trim();
 			}
 
-			// Finish streaming
 			await ctx.runMutation(components.databaseChat.stream.finish, {
 				streamId,
 			});
 
-			// Save assistant response
 			await ctx.runMutation(components.databaseChat.messages.add, {
-				conversationId: activeConversationId as any,
+				conversationId: activeConversationId,
 				role: "assistant",
 				content: responseText,
 			});
@@ -1661,11 +1121,15 @@ export const sendMessage = action({
 				lastMessageAt: Date.now(),
 			});
 
-			await ctx.scheduler.runAfter(0, internal.assistantTitles.autoGenerateTitleIfNeeded, {
-				conversationId: activeConversationId,
-				workspaceId: resolvedWorkspaceId,
-				userId: resolvedUserId,
-			});
+			await ctx.scheduler.runAfter(
+				0,
+				internal.assistantTitles.autoGenerateTitleIfNeeded,
+				{
+					conversationId: activeConversationId,
+					workspaceId: resolvedWorkspaceId,
+					userId: resolvedUserId,
+				}
+			);
 
 			return { success: true, content: responseText };
 		} catch (error) {
@@ -1688,7 +1152,7 @@ export const sendMessage = action({
 						? buildTaskDraftFailureMessage(error.message)
 						: "I ran into an issue while processing that request. Please try again.";
 				await ctx.runMutation(components.databaseChat.messages.add, {
-					conversationId: activeConversationId as any,
+					conversationId: activeConversationId,
 					role: "assistant",
 					content: responseText,
 				});

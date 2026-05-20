@@ -20,7 +20,9 @@ type Options = {
 export const useRescheduleTask = () => {
 	const [data, setData] = useState<ResponseType>(undefined);
 	const [error, setError] = useState<Error | null>(null);
-	const [status, setStatus] = useState<"idle" | "pending" | "success" | "error">("idle");
+	const [status, setStatus] = useState<
+		"idle" | "pending" | "success" | "error"
+	>("idle");
 
 	const isPending = useMemo(() => status === "pending", [status]);
 
@@ -39,7 +41,8 @@ export const useRescheduleTask = () => {
 				options?.onSuccess?.(result);
 				return result;
 			} catch (err) {
-				const error = err instanceof Error ? err : new Error("Failed to reschedule task");
+				const error =
+					err instanceof Error ? err : new Error("Failed to reschedule task");
 				setError(error);
 				setStatus("error");
 				options?.onError?.(error);

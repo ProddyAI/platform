@@ -1,4 +1,11 @@
-import { GanttChart, LayoutGrid, Link2, Network, Plus, Search } from "lucide-react";
+import {
+	GanttChart,
+	LayoutGrid,
+	Link2,
+	Network,
+	Plus,
+	Search,
+} from "lucide-react";
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import {

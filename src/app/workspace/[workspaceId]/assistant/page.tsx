@@ -1,8 +1,8 @@
 "use client";
 
 import { Bot, Loader } from "lucide-react";
-import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
 import { DashboardChatbot } from "@/features/dashboard/components/dashboard-chatbot";
@@ -18,7 +18,6 @@ const AssistantPage = () => {
 
 	const workspaceId = useWorkspaceId();
 
-	// Read ?prompt= query param — set by stress widget buttons to pre-fill assistant
 	const searchParams = useSearchParams();
 	const initialPrompt = searchParams.get("prompt") ?? undefined;
 
@@ -75,7 +74,11 @@ const AssistantPage = () => {
 			<div className="flex flex-1 overflow-hidden p-4 md:p-6">
 				<div className="flex w-full flex-col">
 					{/* Full-width Proddy AI Chatbot */}
-					<DashboardChatbot member={enhancedMember} workspaceId={workspaceId} initialPrompt={initialPrompt} />
+					<DashboardChatbot
+						initialPrompt={initialPrompt}
+						member={enhancedMember}
+						workspaceId={workspaceId}
+					/>
 				</div>
 			</div>
 		</div>

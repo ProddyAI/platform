@@ -22,11 +22,9 @@ describe("GitHub repo instruction normalization", () => {
 
 	test("detects owned and starred repository requests separately", () => {
 		expect(isAuthenticatedRepoListRequest("list my repos")).toBe(true);
-		expect(
-			isAuthenticatedRepoListRequest("list my starred repositories")
-		).toBe(false);
-		expect(isStarredRepoListRequest("list my starred repositories")).toBe(
-			true
+		expect(isAuthenticatedRepoListRequest("list my starred repositories")).toBe(
+			false
 		);
+		expect(isStarredRepoListRequest("list my starred repositories")).toBe(true);
 	});
 });

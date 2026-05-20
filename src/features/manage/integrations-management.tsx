@@ -30,8 +30,6 @@ const SUPPORTED_TOOLKITS = [
 	"clickup",
 ] as const;
 
-
-
 // Loading card component - matches the new ServiceIntegrationCard layout
 const LoadingCard = () => {
 	return (
@@ -64,7 +62,6 @@ const LoadingCard = () => {
 		</Card>
 	);
 };
-
 
 export const IntegrationsManagement = ({
 	workspaceId,
@@ -172,7 +169,6 @@ export const IntegrationsManagement = ({
 			router.replace(newUrl.pathname + newUrl.search);
 		}
 	}, [searchParams, router, handleConnectionComplete]);
-
 
 	// Initial data fetch
 	useEffect(() => {

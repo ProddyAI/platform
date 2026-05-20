@@ -18,11 +18,7 @@ import { FaGithub, FaSlack } from "react-icons/fa";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "../../components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-} from "../../components/ui/card";
+import { Card, CardContent, CardHeader } from "../../components/ui/card";
 
 // Single source of truth for supported toolkits
 type Toolkit = "github" | "gmail" | "slack" | "linear" | "notion" | "clickup";
@@ -207,13 +203,16 @@ export const ServiceIntegrationCard = ({
 			}
 
 			const result = await response.json();
-			if (!result.redirectUrl) throw new Error("No redirect URL from authorization");
+			if (!result.redirectUrl)
+				throw new Error("No redirect URL from authorization");
 
 			toast.success(`Redirecting to ${cfg.name} authorization…`);
 			window.location.href = result.redirectUrl;
 			// page navigates away — no need to reset isConnecting
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : `Failed to connect ${cfg.name}`);
+			toast.error(
+				err instanceof Error ? err.message : `Failed to connect ${cfg.name}`
+			);
 			setIsConnecting(false);
 		}
 	};
@@ -240,7 +239,9 @@ export const ServiceIntegrationCard = ({
 			toast.success(`${cfg.name} disconnected`);
 			onConnectionChange?.();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : `Failed to disconnect ${cfg.name}`);
+			toast.error(
+				err instanceof Error ? err.message : `Failed to disconnect ${cfg.name}`
+			);
 		} finally {
 			setIsDisconnecting(false);
 		}
@@ -257,13 +258,17 @@ export const ServiceIntegrationCard = ({
 				composioAccountId: connectedAccount.composioAccountId,
 				memberId: currentMember._id,
 			});
-			const res = await fetch(`/api/assistant/composio/agentauth?${statusParams}`);
+			const res = await fetch(
+				`/api/assistant/composio/agentauth?${statusParams}`
+			);
 			if (!res.ok) throw new Error("Status check failed");
 			const status = await res.json();
 			if (status.connected) {
 				toast.success(`${cfg.name} connection is active`);
 			} else {
-				toast.warning(`${cfg.name} connection issue: ${status?.error || "unknown"}`);
+				toast.warning(
+					`${cfg.name} connection issue: ${status?.error || "unknown"}`
+				);
 			}
 			onConnectionChange?.();
 		} catch {
@@ -279,9 +284,10 @@ export const ServiceIntegrationCard = ({
 			className={`
 				relative overflow-hidden border transition-all duration-200
 				hover:shadow-md hover:-translate-y-0.5
-				${isConnected
-					? "border-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent"
-					: "border-border bg-card hover:border-primary/20"
+				${
+					isConnected
+						? "border-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent"
+						: "border-border bg-card hover:border-primary/20"
 				}
 			`}
 		>
@@ -341,8 +347,8 @@ export const ServiceIntegrationCard = ({
 				<div className="flex flex-wrap gap-1 mb-4">
 					{cfg.capability.split(" · ").map((cap) => (
 						<span
-							key={cap}
 							className="text-[10px] font-medium bg-muted text-muted-foreground rounded-md px-2 py-0.5 border border-border/60"
+							key={cap}
 						>
 							{cap}
 						</span>
@@ -374,11 +380,11 @@ export const ServiceIntegrationCard = ({
 						{/* Action buttons */}
 						<div className="flex gap-2">
 							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleRefresh}
-								disabled={isRefreshing || isDisconnecting}
 								className="flex-1 h-8 text-xs font-medium border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40 transition-colors"
+								disabled={isRefreshing || isDisconnecting}
+								onClick={handleRefresh}
+								size="sm"
+								variant="outline"
 							>
 								{isRefreshing ? (
 									<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -389,11 +395,11 @@ export const ServiceIntegrationCard = ({
 							</Button>
 
 							<Button
-								variant="outline"
-								size="sm"
-								onClick={handleDisconnect}
-								disabled={isDisconnecting || isRefreshing}
 								className="flex-1 h-8 text-xs font-medium border-destructive/20 text-destructive hover:bg-destructive/5 hover:border-destructive/40 transition-colors"
+								disabled={isDisconnecting || isRefreshing}
+								onClick={handleDisconnect}
+								size="sm"
+								variant="outline"
 							>
 								{isDisconnecting ? (
 									<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -408,10 +414,10 @@ export const ServiceIntegrationCard = ({
 					/* ── Not connected state ── */
 					<div className="space-y-2">
 						<Button
-							size="sm"
-							onClick={handleConnect}
-							disabled={isConnecting}
 							className={`w-full h-9 text-xs font-semibold rounded-lg transition-all duration-150 shadow-sm ${cfg.connectBtn}`}
+							disabled={isConnecting}
+							onClick={handleConnect}
+							size="sm"
 						>
 							{isConnecting ? (
 								<>

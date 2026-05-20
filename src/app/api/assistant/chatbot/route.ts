@@ -256,13 +256,10 @@ export async function POST(req: NextRequest) {
 		if (needsExternalTools && process.env.COMPOSIO_API_KEY) {
 			try {
 				composioClient = createComposioClient();
-				// Prefer member-scoped entity ID; fall back to workspace entity
 				userId = memberId
 					? `member_${memberId}`
 					: getWorkspaceEntityId(workspaceId);
 
-				// Use Convex DB as source of truth for connected apps (same as manage page)
-				// This avoids entity ID mismatches with the live Composio API
 				const dbAccounts = await convex.query(
 					api.integrations.getConnectedAccountsPublic,
 					{
@@ -276,31 +273,24 @@ export async function POST(req: NextRequest) {
 				);
 
 				if (activeAccounts.length > 0) {
-					// Build connected apps list from DB
 					connectedApps = [
 						...new Set(
-							activeAccounts.map((acc: any) =>
-								acc.toolkit.toUpperCase()
-							)
+							activeAccounts.map((acc: any) => acc.toolkit.toUpperCase())
 						),
 					] as AvailableApp[];
 
-					// Use the entity ID stored in the DB record for Composio tool fetching
-					// (it's the entity ID that was used when the connection was established)
 					const firstAccount = activeAccounts[0];
 					if (firstAccount?.userId) {
 						userId = firstAccount.userId;
 					}
 
 					if (connectedApps.length > 0) {
-						// Get all available tools using the correct entity ID
 						const allTools = await getAllToolsForApps(
 							composioClient,
 							userId,
 							connectedApps
 						);
 
-						// Filter tools based on query
 						composioTools = filterToolsForQuery(allTools, message, {
 							maxTools: 20,
 							preferDashboard: true,
@@ -401,7 +391,10 @@ export async function POST(req: NextRequest) {
 							userId,
 							completion
 						);
-						console.log(`[Chatbot] Tool results:`, JSON.stringify(result).slice(0, 500));
+						console.log(
+							`[Chatbot] Tool results:`,
+							JSON.stringify(result).slice(0, 500)
+						);
 
 						// Extract tool results for display
 						toolResults = Array.isArray(result) ? result : [result];

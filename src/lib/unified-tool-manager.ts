@@ -4,9 +4,6 @@ import type { ConvexHttpClient } from "convex/browser";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
-/**
- * Internal Convex tool definition
- */
 interface ConvexToolDefinition {
 	name: string;
 	description: string;
@@ -24,9 +21,6 @@ interface ConvexToolDefinition {
 	externalApp?: string;
 }
 
-/**
- * Internal Convex tool definitions
- */
 export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 	{
 		name: "getMyCalendarToday",
@@ -118,7 +112,8 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 			properties: {
 				query: {
 					type: "string",
-					description: "Keyword or topic to search for in task titles/descriptions.",
+					description:
+						"Keyword or topic to search for in task titles/descriptions.",
 				},
 				limit: {
 					type: "number",
@@ -162,7 +157,8 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 				},
 				limit: {
 					type: "number",
-					description: "Maximum number of matching notes to return (default: 10).",
+					description:
+						"Maximum number of matching notes to return (default: 10).",
 				},
 			},
 			required: ["query"],
@@ -222,7 +218,8 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 				},
 				limit: {
 					type: "number",
-					description: "Maximum number of raw messages to return (default: 20).",
+					description:
+						"Maximum number of raw messages to return (default: 20).",
 				},
 			},
 			required: ["channelId"],
@@ -290,9 +287,6 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 	},
 ];
 
-/**
- * Unified tool manager that combines internal Convex tools and external Composio tools
- */
 export class UnifiedToolManager {
 	private convex: ConvexHttpClient;
 	private composio: Composio<any> | null = null;
@@ -314,14 +308,10 @@ export class UnifiedToolManager {
 		this.workspaceEntityId = config.workspaceEntityId;
 	}
 
-	/**
-	 * Get internal Convex tools as AI SDK tools
-	 */
 	async getInternalTools(): Promise<Record<string, any>> {
 		const tools: Record<string, any> = {};
 
 		for (const toolDef of INTERNAL_TOOL_DEFINITIONS) {
-			// Create JSON Schema with proper typing
 			const jsonSchemaObj: Record<string, any> = {
 				type: "object",
 				properties: toolDef.parameters.properties || {},
@@ -334,7 +324,6 @@ export class UnifiedToolManager {
 				inputSchema: jsonSchema(jsonSchemaObj),
 				execute: async (params: any) => {
 					try {
-						// Inject context parameters
 						const fullArgs: Record<string, any> = { ...params };
 
 						if (toolDef.contextParams?.needsWorkspaceId) {
@@ -371,9 +360,6 @@ export class UnifiedToolManager {
 		return tools;
 	}
 
-	/**
-	 * Get external Composio tools as AI SDK tools
-	 */
 	async getExternalTools(
 		requestedApps: string[]
 	): Promise<Record<string, any>> {
@@ -396,9 +382,6 @@ export class UnifiedToolManager {
 		}
 	}
 
-	/**
-	 * Get all tools (internal + external) as AI SDK tools
-	 */
 	async getAllTools(
 		options: {
 			includeInternal?: boolean;
@@ -414,13 +397,11 @@ export class UnifiedToolManager {
 
 		const allTools: Record<string, any> = {};
 
-		// Get internal tools
 		if (includeInternal) {
 			const internalTools = await this.getInternalTools();
 			Object.assign(allTools, internalTools);
 		}
 
-		// Get external tools
 		if (includeExternal && requestedApps.length > 0) {
 			const externalTools = await this.getExternalTools(requestedApps);
 			Object.assign(allTools, externalTools);

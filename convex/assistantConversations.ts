@@ -3,17 +3,17 @@ import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
+	internalMutation,
 	type MutationCtx,
 	mutation,
-	internalMutation,
 	type QueryCtx,
 	query,
 } from "./_generated/server";
+import { canAssignTaskToMember } from "./assistant/taskAssignment";
 import {
 	formatPendingTaskDraftConfirmation,
 	mergePendingTaskDraftUpdate,
 } from "./assistant/taskDrafts";
-import { canAssignTaskToMember } from "./assistant/taskAssignment";
 
 const TASK_PRIORITY_VALIDATOR = v.union(
 	v.literal("low"),
@@ -91,6 +91,7 @@ export const listRecentConversations = query({
 	args: {
 		workspaceId: v.id("workspaces"),
 		limit: v.optional(v.number()),
+		userId: v.optional(v.id("users")), // accepted but ignored — auth provides the real userId
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -183,7 +184,9 @@ export const updateConversationTitleWithSource = mutation({
 	args: {
 		conversationId: v.string(),
 		title: v.string(),
-		titleSource: v.optional(v.union(v.literal("ai_generated"), v.literal("manual"))),
+		titleSource: v.optional(
+			v.union(v.literal("ai_generated"), v.literal("manual"))
+		),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -215,12 +218,13 @@ export const updateConversationTitleWithSource = mutation({
 	},
 });
 
-// Internal-only mutation for auto-generating titles — not callable from the browser.
 export const updateConversationTitleInternal = internalMutation({
 	args: {
 		conversationId: v.string(),
 		title: v.string(),
-		titleSource: v.optional(v.union(v.literal("ai_generated"), v.literal("manual"))),
+		titleSource: v.optional(
+			v.union(v.literal("ai_generated"), v.literal("manual"))
+		),
 		userId: v.id("users"),
 	},
 	handler: async (ctx, args) => {
@@ -232,19 +236,19 @@ export const updateConversationTitleInternal = internalMutation({
 			.unique();
 
 		if (!conversation) {
-			// Conversation may not yet be persisted — silently skip
-			console.warn("[autoTitle] Conversation not found, skipping title update", args.conversationId);
+			console.warn(
+				"[autoTitle] Conversation not found, skipping title update",
+				args.conversationId
+			);
 			return null;
 		}
 
-		// Only update if still using a default title to avoid overwriting manual renames
 		const isDefaultTitle =
 			!conversation.title ||
 			conversation.title === "New Chat" ||
 			conversation.title === "Assistant Chat";
 
 		if (!isDefaultTitle && conversation.titleSource !== "ai_generated") {
-			// Manually renamed — do not overwrite
 			return null;
 		}
 
@@ -328,12 +332,13 @@ export const savePendingTaskDraft = mutation({
 				);
 			}
 
-			const targetWasInvitedByCurrentMember = await wasMemberInvitedByCurrentMember(
-				ctx,
-				args.workspaceId,
-				member._id,
-				assigneeMember.userId
-			);
+			const targetWasInvitedByCurrentMember =
+				await wasMemberInvitedByCurrentMember(
+					ctx,
+					args.workspaceId,
+					member._id,
+					assigneeMember.userId
+				);
 			const canAssign = canAssignTaskToMember({
 				currentMemberId: member._id,
 				currentRole: member.role,

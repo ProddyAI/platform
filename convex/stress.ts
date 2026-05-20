@@ -1,9 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { type QueryCtx, type MutationCtx, query, mutation } from "./_generated/server";
-
-// ─── Helper ──────────────────────────────────────────────────────────────────
+import {
+	type MutationCtx,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 
 const getMember = async (
 	ctx: QueryCtx | MutationCtx,
@@ -17,8 +20,6 @@ const getMember = async (
 		)
 		.unique();
 };
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type StressLevel = "low" | "medium" | "high";
 
@@ -34,32 +35,33 @@ export type StressMetrics = {
 	multiplierApplied: boolean;
 };
 
-// ─── Core Formula ─────────────────────────────────────────────────────────────
-
 function calculateStress(metrics: {
 	overdueCount: number;
 	pendingSoon: number;
 	totalPending: number;
 	highPriorityPercent: number;
-}): { baseScore: number; finalScore: number; stressLevel: StressLevel; multiplierApplied: boolean } {
-	const { overdueCount, pendingSoon, totalPending, highPriorityPercent } = metrics;
+}): {
+	baseScore: number;
+	finalScore: number;
+	stressLevel: StressLevel;
+	multiplierApplied: boolean;
+} {
+	const { overdueCount, pendingSoon, totalPending, highPriorityPercent } =
+		metrics;
 
-	// Step 1 – base formula
 	const baseScore = overdueCount * 10 + pendingSoon * 5 + totalPending * 2;
 
-	// Step 2 – high-priority multiplier
 	const multiplierApplied = highPriorityPercent > 50;
-	const finalScore = multiplierApplied ? Math.round(baseScore * 1.5) : baseScore;
+	const finalScore = multiplierApplied
+		? Math.round(baseScore * 1.5)
+		: baseScore;
 
-	// Step 3 – classify
 	let stressLevel: StressLevel = "low";
 	if (finalScore > 100) stressLevel = "high";
 	else if (finalScore > 50) stressLevel = "medium";
 
 	return { baseScore, finalScore, stressLevel, multiplierApplied };
 }
-
-// ─── Query: Stress Metrics ────────────────────────────────────────────────────
 
 export const getStressMetrics = query({
 	args: {
@@ -101,11 +103,7 @@ export const getStressMetrics = query({
 				? Math.round((highPriorityTasks.length / totalPending) * 100)
 				: 0;
 
-		// Cohort metric: % of tasks created in the last 7d that are now complete.
-		// This is not a velocity metric; it measures completeness of the recent cohort.
-		const recentTasks = allTasks.filter(
-			(t) => t._creationTime >= sevenDaysAgo
-		);
+		const recentTasks = allTasks.filter((t) => t._creationTime >= sevenDaysAgo);
 		const completedRecently = recentTasks.filter((t) => t.completed).length;
 		const completionRate7d =
 			recentTasks.length > 0
@@ -113,7 +111,12 @@ export const getStressMetrics = query({
 				: 100;
 
 		const { baseScore, finalScore, stressLevel, multiplierApplied } =
-			calculateStress({ overdueCount, pendingSoon, totalPending, highPriorityPercent });
+			calculateStress({
+				overdueCount,
+				pendingSoon,
+				totalPending,
+				highPriorityPercent,
+			});
 
 		return {
 			totalPending,
@@ -128,8 +131,6 @@ export const getStressMetrics = query({
 		};
 	},
 });
-
-// ─── Query: Daily Focus Tasks ─────────────────────────────────────────────────
 
 export const getDailyFocusTasks = query({
 	args: {
@@ -180,8 +181,6 @@ export const getDailyFocusTasks = query({
 		}));
 	},
 });
-
-// ─── Mutation: Reschedule Task ────────────────────────────────────────────────
 
 export const rescheduleTask = mutation({
 	args: {

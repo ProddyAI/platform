@@ -1,8 +1,3 @@
-/**
- * External integration tools (Composio) for the Proddy agent.
- * Wraps assistantComposioTools with createTool for @convex-dev/agent.
- */
-
 import { createTool } from "@convex-dev/agent";
 import { z } from "zod";
 import { api } from "../../_generated/api";

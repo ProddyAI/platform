@@ -68,7 +68,11 @@ export function initializeComposio() {
 	const composioInstance = composio;
 
 	const apiClient = {
-		async createConnection(userId: string, appName: string, callbackUrl?: string) {
+		async createConnection(
+			userId: string,
+			appName: string,
+			callbackUrl?: string
+		) {
 			const { APP_CONFIGS } = await import("./composio-config");
 			const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
 			const appConfig = APP_CONFIGS[appKey];

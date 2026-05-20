@@ -3,7 +3,7 @@ import {
 	isAuthenticatedNextjs,
 } from "@convex-dev/auth/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -21,8 +21,7 @@ export async function POST(req: NextRequest) {
 		const body = await req.json();
 		return await runDebugLookup({
 			workspaceId: body?.workspaceId as Id<"workspaces"> | undefined,
-			channel:
-				typeof body?.channel === "string" ? body.channel.trim() : "",
+			channel: typeof body?.channel === "string" ? body.channel.trim() : "",
 			limit:
 				typeof body?.limit === "number" && Number.isFinite(body.limit)
 					? body.limit
@@ -102,7 +101,8 @@ async function runDebugLookup(params: {
 	const channels = Array.isArray(search?.channels) ? search.channels : [];
 	const exactMatch =
 		channels.find(
-			(channel) => channel.name.toLowerCase() === normalizedQuery.toLowerCase()
+			(channel: { name: string }) =>
+				channel.name.toLowerCase() === normalizedQuery.toLowerCase()
 		) ?? channels[0];
 
 	if (!exactMatch) {

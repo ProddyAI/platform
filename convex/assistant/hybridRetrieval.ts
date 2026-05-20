@@ -98,7 +98,9 @@ function buildSourceRef(label: string, value: string) {
 	return cleaned ? `${label}: ${cleaned}` : "";
 }
 
-function buildDirectCandidates(input: DirectSearchAllResults): HybridCandidate[] {
+function buildDirectCandidates(
+	input: DirectSearchAllResults
+): HybridCandidate[] {
 	return [
 		...input.messages.map((message) => ({
 			id: message._id,
@@ -205,7 +207,10 @@ function mergeCandidates(candidates: HybridCandidate[]) {
 			existing.title = candidate.title;
 		}
 		existing.score = Math.max(existing.score, candidate.score);
-		existing.timestamp = Math.max(existing.timestamp ?? 0, candidate.timestamp ?? 0);
+		existing.timestamp = Math.max(
+			existing.timestamp ?? 0,
+			candidate.timestamp ?? 0
+		);
 	}
 
 	return [...merged.values()];

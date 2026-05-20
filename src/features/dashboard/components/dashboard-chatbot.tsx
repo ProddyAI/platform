@@ -5,7 +5,7 @@ import {
 	useDatabaseChat,
 	useMessagesWithStreaming,
 } from "@dayhaysoos/convex-database-chat";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
 	Bot,
 	Calendar,
@@ -254,7 +254,11 @@ export const DashboardChatbot = ({
 			sendMessage: api.assistantChat.sendMessage,
 		}}
 	>
-		<DashboardChatbotBody member={member} workspaceId={workspaceId} initialPrompt={initialPrompt} />
+		<DashboardChatbotBody
+			initialPrompt={initialPrompt}
+			member={member}
+			workspaceId={workspaceId}
+		/>
 	</DatabaseChatProvider>
 );
 
@@ -271,14 +275,15 @@ const DashboardChatbotBody = ({
 		totalTools: number;
 		loading: boolean;
 	}>({ connected: [], totalTools: 0, loading: true });
-	const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
+	const [editingConversationId, setEditingConversationId] = useState<
+		string | null
+	>(null);
 	const [editingTitle, setEditingTitle] = useState("");
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const { toast } = useToast();
 	const router = useRouter();
 
-	// Fetch recent conversations
 	const recentConversations = useQuery(
 		api.assistantConversations.listRecentConversations,
 		workspaceId && member?.userId
@@ -390,8 +395,12 @@ const DashboardChatbotBody = ({
 	}, [autocompleteOpen, closeAutocomplete]);
 
 	const createConversation = useMutation(api.assistantChat.createConversation);
-	const updateConversationTitle = useMutation(api.assistantConversations.updateConversationTitle);
-	const deleteConversation = useMutation(api.assistantConversations.deleteConversation);
+	const updateConversationTitle = useMutation(
+		api.assistantConversations.updateConversationTitle
+	);
+	const deleteConversation = useMutation(
+		api.assistantConversations.deleteConversation
+	);
 	const {
 		send,
 		abort,
@@ -443,7 +452,13 @@ const DashboardChatbotBody = ({
 			}
 			// else: recentConversations is still loading (undefined) — do nothing yet
 		}
-	}, [conversationId, workspaceId, member, recentConversations, createConversation]);
+	}, [
+		conversationId,
+		workspaceId,
+		member,
+		recentConversations,
+		createConversation,
+	]);
 
 	// Auto-send initial prompt
 	useEffect(() => {
@@ -697,10 +712,12 @@ Try asking me things like:`;
 	const handleDeleteChat = async (convId: string) => {
 		try {
 			await deleteConversation({ conversationId: convId });
-			
+
 			// If deleting current conversation, switch to a new one
 			if (convId === conversationId) {
-				const remaining = recentConversations?.filter(c => c.conversationId !== convId);
+				const remaining = recentConversations?.filter(
+					(c) => c.conversationId !== convId
+				);
 				if (remaining && remaining.length > 0) {
 					setConversationId(remaining[0].conversationId);
 				} else {
@@ -708,7 +725,7 @@ Try asking me things like:`;
 					await handleNewChat();
 				}
 			}
-			
+
 			toast({
 				title: "Success",
 				description: "Chat deleted successfully",
@@ -805,8 +822,12 @@ Try asking me things like:`;
 							key={source.id}
 							variant="secondary"
 						>
-							<span className="font-medium">{getSourceTypeDisplay(source.type)}:</span>
-							<span className="ml-1">{source.text.replace(/^[^:]+:\s*/, "")}</span>
+							<span className="font-medium">
+								{getSourceTypeDisplay(source.type)}:
+							</span>
+							<span className="ml-1">
+								{source.text.replace(/^[^:]+:\s*/, "")}
+							</span>
 						</Badge>
 					))}
 				</div>
@@ -827,7 +848,9 @@ Try asking me things like:`;
 								</AvatarFallback>
 							</Avatar>
 							<div>
-								<CardTitle className="text-lg font-semibold">Proddy AI</CardTitle>
+								<CardTitle className="text-lg font-semibold">
+									Proddy AI
+								</CardTitle>
 								<div className="flex items-center gap-2 mt-0.5">
 									{integrationStatus.loading ? (
 										<div className="flex items-center gap-1">
@@ -890,34 +913,40 @@ Try asking me things like:`;
 											</PopoverContent>
 										</Popover>
 									) : (
-										<Badge className="text-xs px-2 py-0.5 h-5" variant="outline">
+										<Badge
+											className="text-xs px-2 py-0.5 h-5"
+											variant="outline"
+										>
 											No integrations
 										</Badge>
 									)}
 								</div>
 							</div>
 						</div>
-						
+
 						{/* Modern Header Controls */}
 						<div className="flex items-center gap-2">
 							{/* New Chat Button */}
 							<Button
+								className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-md"
 								onClick={handleNewChat}
 								size="sm"
 								variant="default"
-								className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-md"
 							>
 								<Plus className="h-4 w-4 mr-1.5" />
 								New Chat
 							</Button>
 
 							{/* Recent Chats Dropdown */}
-							<DropdownMenu open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+							<DropdownMenu
+								onOpenChange={setIsHistoryOpen}
+								open={isHistoryOpen}
+							>
 								<DropdownMenuTrigger asChild>
 									<Button
+										className="h-8 px-3 rounded-lg border-2 hover:bg-accent transition-all"
 										size="sm"
 										variant="outline"
-										className="h-8 px-3 rounded-lg border-2 hover:bg-accent transition-all"
 									>
 										<History className="h-4 w-4 mr-1.5" />
 										Recent Chats
@@ -937,7 +966,8 @@ Try asking me things like:`;
 													<DropdownMenuItem
 														className={cn(
 															"flex items-start gap-2 p-3 cursor-pointer group",
-															conversationId === conv.conversationId && "bg-accent"
+															conversationId === conv.conversationId &&
+																"bg-accent"
 														)}
 														onSelect={(e) => {
 															e.preventDefault();
@@ -967,25 +997,28 @@ Try asking me things like:`;
 														</div>
 														<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 															<Button
-																size="sm"
-																variant="ghost"
 																className="h-6 w-6 p-0"
 																onClick={(e) => {
 																	e.stopPropagation();
-																	handleStartEditTitle(conv.conversationId, conv.title || "");
+																	handleStartEditTitle(
+																		conv.conversationId,
+																		conv.title || ""
+																	);
 																	setIsHistoryOpen(false);
 																}}
+																size="sm"
+																variant="ghost"
 															>
 																<Edit2 className="h-3 w-3" />
 															</Button>
 															<Button
-																size="sm"
-																variant="ghost"
 																className="h-6 w-6 p-0 hover:text-destructive"
 																onClick={(e) => {
 																	e.stopPropagation();
 																	handleDeleteChat(conv.conversationId);
 																}}
+																size="sm"
+																variant="ghost"
 															>
 																<Trash2 className="h-3 w-3" />
 															</Button>
@@ -1004,23 +1037,24 @@ Try asking me things like:`;
 
 							{/* Clear Chat Button */}
 							<Button
+								className="h-8 px-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
 								onClick={handleNewChat}
 								size="sm"
 								variant="ghost"
-								className="h-8 px-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
 							>
 								<Trash2 className="h-4 w-4 mr-1.5" />
 								Clear
 							</Button>
 						</div>
 					</div>
-					
+
 					{/* Inline Edit Mode */}
 					{editingConversationId && (
 						<div className="flex items-center gap-2 mt-3 p-2 bg-muted/50 rounded-lg border">
 							<MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
 							<Input
-								value={editingTitle}
+								autoFocus
+								className="h-8 text-sm flex-1"
 								onChange={(e) => setEditingTitle(e.target.value)}
 								onKeyDown={(e) => {
 									if (e.key === "Enter") {
@@ -1029,23 +1063,22 @@ Try asking me things like:`;
 										handleCancelEditTitle();
 									}
 								}}
-								className="h-8 text-sm flex-1"
 								placeholder="Enter chat title..."
-								autoFocus
+								value={editingTitle}
 							/>
 							<Button
-								size="sm"
-								variant="ghost"
 								className="h-8 w-8 p-0"
 								onClick={() => handleSaveTitle(editingConversationId)}
+								size="sm"
+								variant="ghost"
 							>
 								<Check className="h-4 w-4 text-green-600" />
 							</Button>
 							<Button
-								size="sm"
-								variant="ghost"
 								className="h-8 w-8 p-0"
 								onClick={handleCancelEditTitle}
+								size="sm"
+								variant="ghost"
 							>
 								<X className="h-4 w-4" />
 							</Button>
@@ -1053,7 +1086,10 @@ Try asking me things like:`;
 					)}
 				</CardHeader>
 				<CardContent className="flex-1 overflow-hidden p-0">
-					<ScrollArea className="h-[calc(100vh-240px)] px-4" ref={scrollAreaRef}>
+					<ScrollArea
+						className="h-[calc(100vh-240px)] px-4"
+						ref={scrollAreaRef}
+					>
 						<div className="flex flex-col gap-4 py-4 pb-4">
 							{renderedMessages.map((message) => (
 								<div

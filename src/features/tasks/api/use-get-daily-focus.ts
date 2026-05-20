@@ -7,7 +7,10 @@ interface UseGetDailyFocusProps {
 	limit?: number;
 }
 
-export const useGetDailyFocus = ({ workspaceId, limit = 5 }: UseGetDailyFocusProps) => {
+export const useGetDailyFocus = ({
+	workspaceId,
+	limit = 5,
+}: UseGetDailyFocusProps) => {
 	const data = useQuery(api.stress.getDailyFocusTasks, { workspaceId, limit });
 	const isLoading = data === undefined;
 	return { data, isLoading };

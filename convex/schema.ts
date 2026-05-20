@@ -397,7 +397,6 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
 		.index("by_category_id", ["categoryId"])
-		// Hybrid RAG enrichment indexes — enable O(log n) metadata lookups
 		.index("by_workspace_id_status", ["workspaceId", "status"])
 		.index("by_workspace_id_due_date", ["workspaceId", "dueDate"]),
 
@@ -620,7 +619,13 @@ const schema = defineSchema({
 		userId: v.id("users"),
 		conversationId: v.string(),
 		title: v.optional(v.string()),
-		titleSource: v.optional(v.union(v.literal("ai_generated"), v.literal("manual"))),
+		titleSource: v.optional(
+			v.union(
+				v.literal("ai_generated"),
+				v.literal("manual"),
+				v.literal("default")
+			)
+		),
 		preview: v.optional(v.string()),
 		isPinned: v.optional(v.boolean()),
 		lastMessageAt: v.number(),
@@ -644,7 +649,11 @@ const schema = defineSchema({
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
-		.index("by_workspace_id_user_id_last_message", ["workspaceId", "userId", "lastMessageAt"])
+		.index("by_workspace_id_user_id_last_message", [
+			"workspaceId",
+			"userId",
+			"lastMessageAt",
+		])
 		.index("by_conversation_id", ["conversationId"]),
 
 	assistantToolAuditEvents: defineTable({

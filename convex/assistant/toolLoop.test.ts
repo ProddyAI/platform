@@ -3,8 +3,10 @@ import { resolveAssistantToolLoop } from "./toolLoop";
 
 describe("resolveAssistantToolLoop", () => {
 	test("allows multi-step internal retrieval chains before finalizing the answer", async () => {
-		const executedSteps: Array<{ name: string; args: Record<string, unknown> }> =
-			[];
+		const executedSteps: Array<{
+			name: string;
+			args: Record<string, unknown>;
+		}> = [];
 		let completionCount = 0;
 
 		const result = await resolveAssistantToolLoop({
@@ -127,8 +129,8 @@ describe("resolveAssistantToolLoop", () => {
 			{ name: "getChannelSummary", args: { channelId: "channel-general" } },
 		]);
 		expect(result.executedTools).toEqual(executedSteps);
-	expect(result.sourceRefs).toEqual(["Channel Messages: #general"]);
-	expect(result.responseText).toContain("Recent updates in #general");
+		expect(result.sourceRefs).toEqual(["Channel Messages: #general"]);
+		expect(result.responseText).toContain("Recent updates in #general");
 	});
 
 	test("stops and surfaces fallback text when tool execution throws", async () => {

@@ -1,7 +1,3 @@
-/**
- * Error categorization and fallback strategies for the assistant.
- */
-
 export type AssistantErrorType =
 	| "rate_limit"
 	| "tool_failure"

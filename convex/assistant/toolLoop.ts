@@ -33,7 +33,9 @@ type ToolExecutionResult = {
 type ResolveAssistantToolLoopOptions = {
 	initialAssistantMessage: AssistantMessage;
 	baseMessages: ConversationMessage[];
-	createCompletion: (messages: ConversationMessage[]) => Promise<AssistantMessage>;
+	createCompletion: (
+		messages: ConversationMessage[]
+	) => Promise<AssistantMessage>;
 	executeToolCall: (toolCall: ToolCall) => Promise<ToolExecutionResult>;
 	initialResponseText: string;
 	maxIterations?: number;

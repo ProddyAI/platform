@@ -1,7 +1,3 @@
-/**
- * Monitoring: log assistant request outcomes for latency, success rate, and error categories.
- */
-
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";

@@ -1,6 +1,7 @@
 import type { StressMetrics } from "../../convex/stress";
 
-export const buildStressDetectionPrompt = (metrics: StressMetrics): string => `
+export const buildStressDetectionPrompt = (metrics: StressMetrics): string =>
+	`
 You are Proddy, a human-centric AI productivity coach.
 
 Analyze the following workload metrics and provide a compassionate, actionable stress assessment:
@@ -29,11 +30,16 @@ export type TaskSummary = {
 	isOverdue?: boolean;
 };
 
-export const buildReschedulingPrompt = (overdueTasks: TaskSummary[]): string => {
+export const buildReschedulingPrompt = (
+	overdueTasks: TaskSummary[]
+): string => {
 	const taskList = overdueTasks
 		.map((t, i) => {
 			const due = t.dueDate
-				? new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+				? new Date(t.dueDate).toLocaleDateString("en-US", {
+						month: "short",
+						day: "numeric",
+					})
 				: "No due date";
 			return `${i + 1}. "${t.title}" — Priority: ${t.priority ?? "none"} | Due: ${due}`;
 		})
@@ -60,7 +66,10 @@ export const buildDailyFocusPrompt = (focusTasks: TaskSummary[]): string => {
 	const taskList = focusTasks
 		.map((t, i) => {
 			const due = t.dueDate
-				? new Date(t.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+				? new Date(t.dueDate).toLocaleDateString("en-US", {
+						month: "short",
+						day: "numeric",
+					})
 				: "Flexible";
 			return `${i + 1}. "${t.title}" — Priority: ${t.priority ?? "medium"} | Due: ${due}`;
 		})

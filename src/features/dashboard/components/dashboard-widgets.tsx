@@ -43,10 +43,10 @@ import { CalendarPreviewWidget } from "./widgets/calendar-preview-widget";
 import { CanvasWidget } from "./widgets/canvas-widget";
 import { MentionsWidget } from "./widgets/mentions-widget";
 import { NotesWidget } from "./widgets/notes-widget";
+import { StressWidget } from "./widgets/stress-widget";
 import { TasksWidget } from "./widgets/tasks-widget";
 import { TeamStatusWidget } from "./widgets/team-status-widget";
 import { ThreadRepliesWidget } from "./widgets/thread-replies-widget";
-import { StressWidget } from "./widgets/stress-widget";
 
 interface DashboardWidgetsProps {
 	workspaceId: Id<"workspaces">;

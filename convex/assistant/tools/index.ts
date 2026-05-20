@@ -1,7 +1,3 @@
-/**
- * Proddy assistant tools - internal workspace + external integrations.
- */
-
 import * as composio from "./composioTools";
 import * as internal from "./internalTools";
 

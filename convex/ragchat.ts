@@ -560,20 +560,11 @@ export const semanticSearch = action({
 	handler: async (ctx, args) => {
 		const userId = args.userId ?? (await getAuthUserId(ctx));
 
-		// --- Dashboard / local testing bypass ---
-		// Convex action runtimes do NOT set NODE_ENV, so we rely on explicit
-		// env vars instead. Both CONVEX_SKIP_AUTH=true AND CONVEX_LOCAL=true
-		// must be set — this restricts the bypass to explicit local dev
-		// deployments only. Never set these in production.
 		const skipAuth =
 			process.env.CONVEX_SKIP_AUTH === "true" &&
 			process.env.CONVEX_LOCAL === "true";
 		if (!userId && !skipAuth) throw new Error("Unauthorized");
 
-		// When a real userId is present, enforce workspace membership and scope
-		// channel filters to channels the user can see.
-		// When bypassing auth (Dashboard testing), channelIds stays empty which
-		// is fine — the NO_CHANNEL_FILTER_VALUE filter still returns results.
 		let channelIds: string[] = [];
 		if (userId) {
 			const member = await ctx.runQuery(api.members.current, {

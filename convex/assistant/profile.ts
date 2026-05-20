@@ -57,7 +57,9 @@ export function buildAssistantProfilePrompt(profile: AssistantProfileRecord) {
 	if (profile.prioritizationStrategy === "blockers_first") {
 		lines.push("- Prioritize blockers before other work when summarizing.");
 	} else if (profile.prioritizationStrategy === "deadlines_first") {
-		lines.push("- Prioritize upcoming deadlines before other work when summarizing.");
+		lines.push(
+			"- Prioritize upcoming deadlines before other work when summarizing."
+		);
 	} else if (profile.prioritizationStrategy === "meetings_first") {
 		lines.push("- Prioritize meetings and calendar commitments when relevant.");
 	}
@@ -113,9 +115,7 @@ function extractReleaseFocus(message: string) {
 	return `User is currently focused on the ${subject}.`;
 }
 
-function inferActiveContextKind(
-	label: string
-): AssistantActiveContextKind {
+function inferActiveContextKind(label: string): AssistantActiveContextKind {
 	return /\b(release|rollout|launch|deploy(?:ment)?)\b/i.test(label)
 		? "release"
 		: "project";
@@ -161,7 +161,11 @@ export function extractAssistantProfileUpdateFromMessage(
 	message: string
 ): AssistantProfileUpdate | null {
 	const normalized = normalizeWhitespace(message);
-	if (!/\bremember\b|\bi prefer\b|\bprefer\b|\bfocus on\b|\bworking on\b|\bi want you to remember\b|\bplease keep in mind\b|\bremember that\b|\bdont forget\b|\bdon't forget\b|\bnote that\b/i.test(normalized)) {
+	if (
+		!/\bremember\b|\bi prefer\b|\bprefer\b|\bfocus on\b|\bworking on\b|\bi want you to remember\b|\bplease keep in mind\b|\bremember that\b|\bdont forget\b|\bdon't forget\b|\bnote that\b/i.test(
+			normalized
+		)
+	) {
 		return null;
 	}
 
@@ -192,13 +196,22 @@ export function extractAssistantProfileUpdateFromMessage(
 	}
 
 	const focusAreas: AssistantSummaryFocus[] = [];
-	if (/\btasks?\b/i.test(lower) && /\b(summary|summaries|focus)\b/i.test(lower)) {
+	if (
+		/\btasks?\b/i.test(lower) &&
+		/\b(summary|summaries|focus)\b/i.test(lower)
+	) {
 		focusAreas.push("tasks");
 	}
-	if (/\bchannels?\b/i.test(lower) && /\b(summary|summaries|focus)\b/i.test(lower)) {
+	if (
+		/\bchannels?\b/i.test(lower) &&
+		/\b(summary|summaries|focus)\b/i.test(lower)
+	) {
 		focusAreas.push("channels");
 	}
-	if (/\bnotes?\b/i.test(lower) && /\b(summary|summaries|focus)\b/i.test(lower)) {
+	if (
+		/\bnotes?\b/i.test(lower) &&
+		/\b(summary|summaries|focus)\b/i.test(lower)
+	) {
 		focusAreas.push("notes");
 	}
 	if (focusAreas.length > 0) {
@@ -225,7 +238,10 @@ export function mergeAssistantMemoryBullets(
 	const unique = new Set<string>();
 	const merged: string[] = [];
 
-	for (const item of [...(existingBullets ?? []), ...(newBullet ? [newBullet] : [])]) {
+	for (const item of [
+		...(existingBullets ?? []),
+		...(newBullet ? [newBullet] : []),
+	]) {
 		const cleaned = normalizeWhitespace(item);
 		if (!cleaned || unique.has(cleaned)) continue;
 		unique.add(cleaned);
@@ -269,9 +285,12 @@ export function mergeAssistantActiveContexts(
 				ownerHints:
 					newContext.ownerHints?.map(normalizeWhitespace).filter(Boolean) ??
 					existing?.ownerHints,
-				statusHint: "statusHint" in newContext
-					? (newContext.statusHint ? normalizeWhitespace(newContext.statusHint) : undefined)
-					: existing?.statusHint,
+				statusHint:
+					"statusHint" in newContext
+						? newContext.statusHint
+							? normalizeWhitespace(newContext.statusHint)
+							: undefined
+						: existing?.statusHint,
 				lastMentionedAt: newContext.lastMentionedAt,
 			});
 		}

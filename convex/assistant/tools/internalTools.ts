@@ -1,8 +1,3 @@
-/**
- * Internal workspace tools for the Proddy agent.
- * Wraps assistantTools (calendar, tasks, channels, etc.) with createTool for @convex-dev/agent.
- */
-
 import type { ToolCtx } from "@convex-dev/agent";
 import { createTool } from "@convex-dev/agent";
 import { z } from "zod";
@@ -183,9 +178,7 @@ export const draftTaskForConfirmation = createTool({
 				description: args.description,
 				dueDate: args.dueDate,
 				priority: args.priority,
-				assigneeMemberId: args.assigneeMemberId as
-					| Id<"members">
-					| undefined,
+				assigneeMemberId: args.assigneeMemberId as Id<"members"> | undefined,
 			}
 		);
 	},

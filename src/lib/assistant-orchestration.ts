@@ -126,16 +126,12 @@ function isShortFollowUp(message: string) {
 	return /^(what about|how about|and|about)\b/i.test(trimmed);
 }
 
-/**
- * Sanitize a raw string before embedding it in a system prompt:
- * - Trims whitespace
- * - Caps to maxLen characters
- * - Strips ASCII control characters that could act as prompt delimiters
- */
+const CONTROL_CHARS_PATTERN = "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]";
+const CONTROL_CHARS_REGEX = new RegExp(CONTROL_CHARS_PATTERN, "g");
+
 function sanitizeContextValue(value: string, maxLen = 200): string {
-	// Remove ASCII control characters (0x00-0x1F, 0x7F) except normal whitespace
-	const cleaned = value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").trim();
-	return cleaned.length > maxLen ? cleaned.slice(0, maxLen) + "…" : cleaned;
+	const cleaned = value.replace(CONTROL_CHARS_REGEX, "").trim();
+	return cleaned.length > maxLen ? `${cleaned.slice(0, maxLen)}…` : cleaned;
 }
 
 export function buildFollowUpContextHint(options: {
@@ -221,7 +217,6 @@ export function buildAssistantSystemPrompt(options?: {
 
 	let policyLine = "";
 	if (externalToolsAllowed && connectedApps.length > 0) {
-		// User has connected apps - be very directive about using them
 		const appsList = connectedApps.join(", ");
 		policyLine = `IMPORTANT: The user has connected the following external apps: ${appsList}.
 
@@ -266,13 +261,12 @@ NEVER say you can't access these apps - you have active connections and tools to
 	const personalizationLine = options?.assistantProfile
 		? buildAssistantProfilePrompt(options.assistantProfile)
 		: "";
-	const followUpHint =
-		options?.latestUserMessage && options.latestUserMessage.trim()
-			? buildFollowUpContextHint({
-					message: options.latestUserMessage,
-					conversationHistory: options.conversationHistory,
-				})
-			: "";
+	const followUpHint = options?.latestUserMessage?.trim()
+		? buildFollowUpContextHint({
+				message: options.latestUserMessage,
+				conversationHistory: options.conversationHistory,
+			})
+		: "";
 
 	return [
 		BASE_SYSTEM_PROMPT,
