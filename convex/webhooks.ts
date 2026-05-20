@@ -805,7 +805,7 @@ export const createSubscription = internalMutation({
 		paymentConfirmed: v.optional(v.boolean()),
 		raw: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
+	handler: (ctx, args) => {
 		// Refactored to drop complexity
 		return processSubscriptionSync(ctx, args, "createSubscription");
 	},
@@ -830,7 +830,7 @@ export const updateSubscription = internalMutation({
 		paymentConfirmed: v.optional(v.boolean()),
 		raw: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
+	handler: (ctx, args) => {
 		// Refactored to drop complexity
 		return processSubscriptionSync(ctx, args, "updateSubscription");
 	},

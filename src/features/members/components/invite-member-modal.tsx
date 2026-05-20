@@ -617,7 +617,7 @@ export const InviteMemberModal = () => {
 
 	useEffect(() => {
 		const scrollContainer = scrollContainerRef.current;
-		if (!open || !scrollContainer) return;
+		if (!open || !scrollContainer) return undefined;
 
 		const updateScrollButton = () => {
 			const remainingScroll =
@@ -632,12 +632,12 @@ export const InviteMemberModal = () => {
 		scrollContainer.addEventListener("scroll", updateScrollButton);
 		window.addEventListener("resize", updateScrollButton);
 
-		return () => {
+		return function cleanupScrollButton() {
 			window.cancelAnimationFrame(frameId);
 			scrollContainer.removeEventListener("scroll", updateScrollButton);
 			window.removeEventListener("resize", updateScrollButton);
 		};
-	}, [open, isSeatsFull]);
+	}, [open]);
 
 	const scrollToActions = () => {
 		const scrollContainer = scrollContainerRef.current;
@@ -754,89 +754,28 @@ export const InviteMemberModal = () => {
 
 	return (
 		<Dialog onOpenChange={handleClose} open={open}>
-			<DialogContent className="sm:max-w-[500px] max-h-[calc(100vh-2rem)] p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col">
-				<InviteModalHeader />
-
-				<div
-					className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white dark:bg-zinc-950"
-					ref={scrollContainerRef}
-				>
-					<div className="p-6 sm:p-8 space-y-6">
-						<div className="space-y-4">
-							<div className="space-y-2">
-								<Label
-									className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
-									htmlFor="email"
-								>
-									<Users className="size-4 text-primary" />
-									Colleague&apos;s Email
-								</Label>
-								<Input
-									className="h-12 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-secondary transition-all text-base"
-									id="email"
-									onChange={(e) => setEmail(e.target.value)}
-									placeholder="colleague@example.com"
-									type="email"
-									value={email}
-								/>
-							</div>
-
-							<WorkspaceRoleSelect role={role} setRole={setRole} />
-
-							<SeatFullWarningBanner
-								addingSeats={addingSeats}
-								handleAddSeat={handleAddSeat}
-								isSeatsFull={isSeatsFull}
-								newTotalSeats={newTotalSeats}
-								seatChangePending={seatChangePending}
-								seatsToAdd={seatsToAdd}
-								setSeatsToAdd={setSeatsToAdd}
-							/>
-
-							<div className="space-y-2">
-								<Label
-									className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
-									htmlFor="comment"
-								>
-									<MessageSquare className="size-4 text-secondary" />
-									Invitation Note
-								</Label>
-								<Textarea
-									className="min-h-[80px] border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-secondary resize-none transition-all"
-									id="comment"
-									onChange={(e) => setComment(e.target.value)}
-									placeholder="Let them know why you're inviting them..."
-									value={comment}
-								/>
-							</div>
-						</div>
-					</div>
-
-					<div className="sticky bottom-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur px-6 sm:px-8 py-4 border-t border-zinc-100 dark:border-zinc-900">
-						<InviteModalFooter
-							email={email}
-							handleClose={handleClose}
-							inviteLoading={inviteLoading}
-							isSeatsFull={isSeatsFull}
-							sendInvite={sendInvite}
-							workspaceName={workspace?.name ?? "Workspace"}
-						/>
-					</div>
-				</div>
-
-				{hasMoreBelow && (
-					<Button
-						aria-label="Scroll to invite actions"
-						className="absolute bottom-24 right-6 z-20 size-9 rounded-full bg-white text-secondary border border-secondary/20 shadow-lg hover:bg-secondary hover:text-white dark:bg-zinc-900 dark:hover:bg-secondary"
-						onClick={scrollToActions}
-						size="icon"
-						type="button"
-						variant="outline"
-					>
-						<ChevronDown className="size-4" />
-					</Button>
-				)}
-			</DialogContent>
+			<InviteDialogContent
+				addingSeats={addingSeats}
+				comment={comment}
+				email={email}
+				handleAddSeat={handleAddSeat}
+				handleClose={handleClose}
+				hasMoreBelow={hasMoreBelow}
+				inviteLoading={inviteLoading}
+				isSeatsFull={isSeatsFull}
+				newTotalSeats={newTotalSeats}
+				role={role}
+				scrollContainerRef={scrollContainerRef}
+				scrollToActions={scrollToActions}
+				seatChangePending={seatChangePending}
+				seatsToAdd={seatsToAdd}
+				sendInvite={sendInvite}
+				setComment={setComment}
+				setEmail={setEmail}
+				setRole={setRole}
+				setSeatsToAdd={setSeatsToAdd}
+				workspaceName={workspace?.name ?? "Workspace"}
+			/>
 		</Dialog>
 	);
 };
