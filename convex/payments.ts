@@ -429,7 +429,7 @@ const parseTime = (value: unknown) => {
 };
 
 const getUsageMonthKeys = (periodStart: number, periodEnd: number) => {
-	const months: string[] = [];
+	const months: Array<{ month: string; isFullMonth: boolean }> = [];
 	const cursor = new Date(periodStart);
 	cursor.setUTCDate(1);
 	cursor.setUTCHours(0, 0, 0, 0);
@@ -438,12 +438,22 @@ const getUsageMonthKeys = (periodStart: number, periodEnd: number) => {
 	end.setUTCHours(0, 0, 0, 0);
 
 	while (cursor.getTime() <= end.getTime()) {
-		months.push(cursor.toISOString().slice(0, 7));
+		const monthStart = cursor.getTime();
+		const nextMonth = new Date(cursor);
+		nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+		const monthEnd = nextMonth.getTime() - 1;
+		months.push({
+			month: cursor.toISOString().slice(0, 7),
+			isFullMonth: periodStart <= monthStart && periodEnd >= monthEnd,
+		});
 		cursor.setUTCMonth(cursor.getUTCMonth() + 1);
 	}
 
 	return months;
 };
+
+const isNegativeBillingAdjustment = (entry: Doc<"billingHistory">) =>
+	entry.type === "refund" || entry.type === "credit";
 
 const sumSucceededRefunds = (payment: DodoPayment | null | undefined) => {
 	const refunds = Array.isArray(payment?.refunds) ? payment.refunds : [];
@@ -1549,9 +1559,12 @@ export const getBillingConsumptionForPeriod = internalQuery({
 	handler: async (ctx, args) => {
 		const periodStart = Math.max(0, args.periodStart);
 		const periodEnd = Math.max(periodStart, args.periodEnd);
+		const fullUsageMonths = getUsageMonthKeys(periodStart, periodEnd).filter(
+			({ isFullMonth }) => isFullMonth
+		);
 		const usageRows = (
 			await Promise.all(
-				getUsageMonthKeys(periodStart, periodEnd).map((month) =>
+				fullUsageMonths.map(({ month }) =>
 					ctx.db
 						.query("usageStats")
 						.withIndex("by_workspace_month", (q) =>
@@ -1790,7 +1803,7 @@ function buildBillingSummary(
 		0
 	);
 	const refundedTotal = history
-		.filter((entry) => entry.type === "refund")
+		.filter(isNegativeBillingAdjustment)
 		.reduce((total, entry) => total + entry.amount, 0);
 	const currency = history.find((entry) => entry.currency)?.currency ?? "USD";
 
