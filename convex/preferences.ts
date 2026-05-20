@@ -22,6 +22,75 @@ export type WorkspacePreference = {
 	dashboardWidgets?: DashboardWidget[];
 };
 
+const notificationDayValidator = v.union(
+	v.literal("monday"),
+	v.literal("tuesday"),
+	v.literal("wednesday"),
+	v.literal("thursday"),
+	v.literal("friday"),
+	v.literal("saturday"),
+	v.literal("sunday")
+);
+
+type NotificationKey =
+	| "mentions"
+	| "assignee"
+	| "threadReply"
+	| "directMessage"
+	| "inviteSent"
+	| "workspaceJoin"
+	| "onlineStatus";
+
+const defaultBrowserPrefs: Record<NotificationKey, boolean> = {
+	mentions: true,
+	assignee: true,
+	threadReply: true,
+	directMessage: true,
+	inviteSent: true,
+	workspaceJoin: false,
+	onlineStatus: true,
+};
+
+const defaultEmailPrefs: Record<NotificationKey, boolean> = {
+	mentions: true,
+	assignee: true,
+	threadReply: true,
+	directMessage: true,
+	inviteSent: true,
+	workspaceJoin: true,
+	onlineStatus: false,
+};
+
+const buildNotificationDefaults = (notifications?: Record<string, any>) => {
+	const legacy = notifications || {};
+	return {
+		mentions: legacy.mentions ?? true,
+		assignee: legacy.assignee ?? true,
+		threadReply: legacy.threadReply ?? true,
+		directMessage: legacy.directMessage ?? true,
+		weeklyDigest: legacy.weeklyDigest ?? false,
+		weeklyDigestDay: legacy.weeklyDigestDay ?? "monday",
+		inviteSent: legacy.inviteSent ?? true,
+		workspaceJoin: legacy.workspaceJoin ?? true,
+		onlineStatus: legacy.onlineStatus ?? false,
+		notificationBrowserPrefs: {
+			...defaultBrowserPrefs,
+			workspaceJoin: legacy.workspaceJoin ?? defaultBrowserPrefs.workspaceJoin,
+			onlineStatus: legacy.onlineStatus ?? defaultBrowserPrefs.onlineStatus,
+			...(legacy.notificationBrowserPrefs || {}),
+		},
+		notificationEmailPrefs: {
+			...defaultEmailPrefs,
+			workspaceJoin: legacy.workspaceJoin ?? defaultEmailPrefs.workspaceJoin,
+			onlineStatus: legacy.onlineStatus ?? defaultEmailPrefs.onlineStatus,
+			...(legacy.notificationEmailPrefs || {}),
+		},
+		browserNotificationsEnabled: legacy.browserNotificationsEnabled ?? true,
+		emailNotificationsEnabled: legacy.emailNotificationsEnabled ?? true,
+		notificationSummaryMode: legacy.notificationSummaryMode ?? "realtime",
+	};
+};
+
 export const updateLastActiveWorkspace = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -161,20 +230,37 @@ export const updateUserPreferences = mutation({
 						threadReply: v.optional(v.boolean()),
 						directMessage: v.optional(v.boolean()),
 						weeklyDigest: v.optional(v.boolean()),
-						weeklyDigestDay: v.optional(
-							v.union(
-								v.literal("monday"),
-								v.literal("tuesday"),
-								v.literal("wednesday"),
-								v.literal("thursday"),
-								v.literal("friday"),
-								v.literal("saturday"),
-								v.literal("sunday")
-							)
-						),
+						weeklyDigestDay: v.optional(notificationDayValidator),
 						inviteSent: v.optional(v.boolean()),
 						workspaceJoin: v.optional(v.boolean()),
 						onlineStatus: v.optional(v.boolean()),
+						notificationBrowserPrefs: v.optional(
+							v.object({
+								mentions: v.optional(v.boolean()),
+								assignee: v.optional(v.boolean()),
+								threadReply: v.optional(v.boolean()),
+								directMessage: v.optional(v.boolean()),
+								inviteSent: v.optional(v.boolean()),
+								workspaceJoin: v.optional(v.boolean()),
+								onlineStatus: v.optional(v.boolean()),
+							})
+						),
+						notificationEmailPrefs: v.optional(
+							v.object({
+								mentions: v.optional(v.boolean()),
+								assignee: v.optional(v.boolean()),
+								threadReply: v.optional(v.boolean()),
+								directMessage: v.optional(v.boolean()),
+								inviteSent: v.optional(v.boolean()),
+								workspaceJoin: v.optional(v.boolean()),
+								onlineStatus: v.optional(v.boolean()),
+							})
+						),
+						browserNotificationsEnabled: v.optional(v.boolean()),
+						emailNotificationsEnabled: v.optional(v.boolean()),
+						notificationSummaryMode: v.optional(
+							v.union(v.literal("realtime"), v.literal("batched30m"))
+						),
 					})
 				),
 			})
@@ -247,38 +333,176 @@ export const getNotificationPreferences = query({
 			.unique();
 
 		const notifications = preferences?.settings?.notifications as
-			| {
-					mentions?: boolean;
-					assignee?: boolean;
-					threadReply?: boolean;
-					directMessage?: boolean;
-					weeklyDigest?: boolean;
-					weeklyDigestDay?:
-						| "monday"
-						| "tuesday"
-						| "wednesday"
-						| "thursday"
-						| "friday"
-						| "saturday"
-						| "sunday";
-					inviteSent?: boolean;
-					workspaceJoin?: boolean;
-					onlineStatus?: boolean;
-			  }
+			| Record<string, any>
 			| undefined;
 
-		// Return with defaults
-		return {
-			mentions: notifications?.mentions ?? true,
-			assignee: notifications?.assignee ?? true,
-			threadReply: notifications?.threadReply ?? true,
-			directMessage: notifications?.directMessage ?? true,
-			weeklyDigest: notifications?.weeklyDigest ?? false,
-			weeklyDigestDay: notifications?.weeklyDigestDay ?? "monday",
-			inviteSent: notifications?.inviteSent ?? true,
-			workspaceJoin: notifications?.workspaceJoin ?? true,
-			onlineStatus: notifications?.onlineStatus ?? false,
+		return buildNotificationDefaults(notifications);
+	},
+});
+
+/**
+ * Bulk update multiple browser notification preferences in a single atomic operation
+ * Prevents race conditions when updating multiple keys at once
+ * 
+ * IMPORTANT: This is the only way to update browser preferences. Individual key updates
+ * (like updateBrowserPref) have been removed due to race condition vulnerability where
+ * concurrent patches overwrite each other. Always use this bulk mutation instead.
+ */
+export const updateBrowserPrefs = mutation({
+	args: {
+		updates: v.object({
+			mentions: v.optional(v.boolean()),
+			assignee: v.optional(v.boolean()),
+			threadReply: v.optional(v.boolean()),
+			directMessage: v.optional(v.boolean()),
+			inviteSent: v.optional(v.boolean()),
+			workspaceJoin: v.optional(v.boolean()),
+			onlineStatus: v.optional(v.boolean()),
+		}),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		const existingPrefs = await ctx.db
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
+			.unique();
+
+		const merged = buildNotificationDefaults(
+			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+				undefined
+		);
+		const nextNotifications = {
+			...merged,
+			notificationBrowserPrefs: {
+				...merged.notificationBrowserPrefs,
+				...args.updates,
+			},
 		};
+
+		if (existingPrefs) {
+			await ctx.db.patch(existingPrefs._id, {
+				settings: {
+					...existingPrefs.settings,
+					notifications: nextNotifications,
+				},
+			});
+		} else {
+			await ctx.db.insert("preferences", {
+				userId,
+				settings: { notifications: nextNotifications },
+			});
+		}
+
+		return { success: true };
+	},
+});
+
+/**
+ * Bulk update multiple email notification preferences in a single atomic operation
+ * Prevents race conditions when updating multiple keys at once
+ * 
+ * IMPORTANT: This is the only way to update email preferences. Individual key updates
+ * (like updateEmailPref) have been removed due to race condition vulnerability where
+ * concurrent patches overwrite each other. Always use this bulk mutation instead.
+ */
+export const updateEmailPrefs = mutation({
+	args: {
+		updates: v.object({
+			mentions: v.optional(v.boolean()),
+			assignee: v.optional(v.boolean()),
+			threadReply: v.optional(v.boolean()),
+			directMessage: v.optional(v.boolean()),
+			inviteSent: v.optional(v.boolean()),
+			workspaceJoin: v.optional(v.boolean()),
+			onlineStatus: v.optional(v.boolean()),
+		}),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		const existingPrefs = await ctx.db
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
+			.unique();
+
+		const merged = buildNotificationDefaults(
+			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+				undefined
+		);
+		const nextNotifications = {
+			...merged,
+			notificationEmailPrefs: {
+				...merged.notificationEmailPrefs,
+				...args.updates,
+			},
+		};
+
+		if (existingPrefs) {
+			await ctx.db.patch(existingPrefs._id, {
+				settings: {
+					...existingPrefs.settings,
+					notifications: nextNotifications,
+				},
+			});
+		} else {
+			await ctx.db.insert("preferences", {
+				userId,
+				settings: { notifications: nextNotifications },
+			});
+		}
+
+		return { success: true };
+	},
+});
+
+export const updateChannelToggle = mutation({
+	args: {
+		channel: v.union(v.literal("browser"), v.literal("email")),
+		enabled: v.boolean(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error("Unauthorized");
+
+		const existingPrefs = await ctx.db
+			.query("preferences")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
+			.unique();
+
+		const merged = buildNotificationDefaults(
+			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+				undefined
+		);
+		const nextNotifications = {
+			...merged,
+			browserNotificationsEnabled:
+				args.channel === "browser"
+					? args.enabled
+					: merged.browserNotificationsEnabled,
+			emailNotificationsEnabled:
+				args.channel === "email"
+					? args.enabled
+					: merged.emailNotificationsEnabled,
+		};
+
+		if (existingPrefs) {
+			await ctx.db.patch(existingPrefs._id, {
+				settings: {
+					...existingPrefs.settings,
+					notifications: nextNotifications,
+				},
+			});
+		} else {
+			await ctx.db.insert("preferences", {
+				userId,
+				settings: { notifications: nextNotifications },
+			});
+		}
+
+		return { success: true };
 	},
 });
 
@@ -619,7 +843,10 @@ export const updateNotificationPreferencesByUserId = mutation({
 			v.literal("assignee"),
 			v.literal("threadReply"),
 			v.literal("directMessage"),
-			v.literal("weeklyDigest")
+			v.literal("weeklyDigest"),
+			v.literal("inviteSent"),
+			v.literal("workspaceJoin"),
+			v.literal("onlineStatus")
 		),
 		enabled: v.boolean(),
 	},
@@ -632,14 +859,9 @@ export const updateNotificationPreferencesByUserId = mutation({
 
 		if (existingPrefs) {
 			// Get current notifications or initialize with defaults
-			const currentNotifications = existingPrefs.settings?.notifications || {
-				mentions: true,
-				assignee: true,
-				threadReply: true,
-				directMessage: true,
-				weeklyDigest: false,
-				weeklyDigestDay: "monday" as const,
-			};
+			const currentNotifications = buildNotificationDefaults(
+				existingPrefs.settings?.notifications as Record<string, any> | undefined
+			);
 
 			// Update the specific notification preference
 			const updatedNotifications = {
@@ -657,12 +879,7 @@ export const updateNotificationPreferencesByUserId = mutation({
 		} else {
 			// Create new preferences with the updated notification setting
 			const notifications = {
-				mentions: true,
-				assignee: true,
-				threadReply: true,
-				directMessage: true,
-				weeklyDigest: false,
-				weeklyDigestDay: "monday" as const,
+				...buildNotificationDefaults(undefined),
 				[args.notificationKey]: args.enabled,
 			};
 
@@ -692,37 +909,9 @@ export const getNotificationPreferencesByUserId = query({
 			.unique();
 
 		const notifications = preferences?.settings?.notifications as
-			| {
-					mentions?: boolean;
-					assignee?: boolean;
-					threadReply?: boolean;
-					directMessage?: boolean;
-					weeklyDigest?: boolean;
-					weeklyDigestDay?:
-						| "monday"
-						| "tuesday"
-						| "wednesday"
-						| "thursday"
-						| "friday"
-						| "saturday"
-						| "sunday";
-					inviteSent?: boolean;
-					workspaceJoin?: boolean;
-					onlineStatus?: boolean;
-			  }
+			| Record<string, any>
 			| undefined;
 
-		// Return with defaults
-		return {
-			mentions: notifications?.mentions ?? true,
-			assignee: notifications?.assignee ?? true,
-			threadReply: notifications?.threadReply ?? true,
-			directMessage: notifications?.directMessage ?? true,
-			weeklyDigest: notifications?.weeklyDigest ?? false,
-			weeklyDigestDay: notifications?.weeklyDigestDay ?? "monday",
-			inviteSent: notifications?.inviteSent ?? true,
-			workspaceJoin: notifications?.workspaceJoin ?? true,
-			onlineStatus: notifications?.onlineStatus ?? false,
-		};
+		return buildNotificationDefaults(notifications);
 	},
 });

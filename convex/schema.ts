@@ -38,7 +38,10 @@ const schema = defineSchema({
 		bio: v.optional(v.string()),
 		location: v.optional(v.string()),
 		website: v.optional(v.string()),
-	}).index("by_email", ["email"]),
+		onesignalExternalId: v.optional(v.string()),
+	})
+		.index("by_email", ["email"])
+		.index("by_onesignal_external_id", ["onesignalExternalId"]),
 
 	// Email OTP verifications
 	emailVerifications: defineTable({
@@ -617,7 +620,11 @@ const schema = defineSchema({
 						v.literal("offline")
 					)
 				), // User's custom status (e.g., DND)
-				// Notification preferences
+				// Notification preferences: two-stage migration
+				// Legacy fields (mentions, assignee, threadReply, directMessage, inviteSent, onlineStatus, workspaceJoin)
+				// are deprecated in favor of channel-specific preferences (notificationBrowserPrefs, notificationEmailPrefs).
+				// Current behavior: channel-specific prefs take precedence; if absent, the legacy field is used as fallback.
+				// Deprecation timeline: legacy fields will be removed in Q3 2026. All new code should use channel-specific prefs.
 				notifications: v.optional(
 					v.object({
 						mentions: v.optional(v.boolean()), // Default: true
@@ -639,6 +646,33 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
+						notificationBrowserPrefs: v.optional(
+							v.object({
+								mentions: v.optional(v.boolean()),
+								assignee: v.optional(v.boolean()),
+								threadReply: v.optional(v.boolean()),
+								directMessage: v.optional(v.boolean()),
+								inviteSent: v.optional(v.boolean()),
+								workspaceJoin: v.optional(v.boolean()),
+								onlineStatus: v.optional(v.boolean()),
+							})
+						),
+						notificationEmailPrefs: v.optional(
+							v.object({
+								mentions: v.optional(v.boolean()),
+								assignee: v.optional(v.boolean()),
+								threadReply: v.optional(v.boolean()),
+								directMessage: v.optional(v.boolean()),
+								inviteSent: v.optional(v.boolean()),
+								workspaceJoin: v.optional(v.boolean()),
+								onlineStatus: v.optional(v.boolean()),
+							})
+						),
+						browserNotificationsEnabled: v.optional(v.boolean()),
+						emailNotificationsEnabled: v.optional(v.boolean()),
+						notificationSummaryMode: v.optional(
+							v.union(v.literal("realtime"), v.literal("batched30m"))
+						),
 					})
 				),
 			})

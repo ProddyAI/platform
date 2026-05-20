@@ -33,6 +33,7 @@ import type * as crons from "../crons.js";
 import type * as direct from "../direct.js";
 import type * as dodo from "../dodo.js";
 import type * as email from "../email.js";
+import type * as emailActions from "../emailActions.js";
 import type * as emailVerification from "../emailVerification.js";
 import type * as http from "../http.js";
 import type * as importIntegrations from "../importIntegrations.js";
@@ -98,6 +99,7 @@ declare const fullApi: ApiFromModules<{
   direct: typeof direct;
   dodo: typeof dodo;
   email: typeof email;
+  emailActions: typeof emailActions;
   emailVerification: typeof emailVerification;
   http: typeof http;
   importIntegrations: typeof importIntegrations;

@@ -506,7 +506,7 @@ export const consumeInvite = mutation({
 
 		if (recipientUserIds.length > 0) {
 			await ctx.scheduler.runAfter(
-				0,
+				2000,
 				internal.notifications.sendPushNotification,
 				{
 					userIds: recipientUserIds,

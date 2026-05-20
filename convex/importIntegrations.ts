@@ -556,7 +556,7 @@ export const notifyImportComplete = internalAction({
 		}
 
 		// Send email notification
-		await ctx.runAction(internal.email.sendImportCompletionEmail, {
+		await ctx.runAction(internal.emailActions.sendImportCompletionEmail, {
 			email: user.email,
 			userName: user.name || "User",
 			platform: job.platform,

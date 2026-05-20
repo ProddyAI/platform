@@ -329,7 +329,7 @@ export const create = mutation({
 
 		// If this is a reply to a thread, send an email notification
 		if (args.parentMessageId) {
-			await ctx.scheduler.runAfter(0, api.email.sendThreadReplyEmail, {
+			await ctx.scheduler.runAfter(0, internal.emailActions.sendThreadReplyEmail, {
 				messageId,
 				parentMessageId: args.parentMessageId,
 			});
@@ -339,7 +339,7 @@ export const create = mutation({
 				const parentAuthor = await ctx.db.get(parentMessage.memberId);
 				if (parentAuthor?.userId && parentAuthor.userId !== userId) {
 					await ctx.scheduler.runAfter(
-						0,
+						2000,
 						internal.notifications.sendPushNotification,
 						{
 							userIds: [parentAuthor.userId],
@@ -360,7 +360,7 @@ export const create = mutation({
 
 		// If this is a direct message, send an email notification
 		if (args.conversationId) {
-			await ctx.scheduler.runAfter(0, api.email.sendDirectMessageEmail, {
+			await ctx.scheduler.runAfter(0, internal.emailActions.sendDirectMessageEmail, {
 				messageId,
 			});
 
@@ -372,8 +372,10 @@ export const create = mutation({
 						: conversation.memberOneId;
 				const recipientMember = await ctx.db.get(recipientMemberId);
 				if (recipientMember?.userId && recipientMember.userId !== userId) {
+
+					// Delay added to avoid OneSignal login race condition
 					await ctx.scheduler.runAfter(
-						0,
+						2000,
 						internal.notifications.sendPushNotification,
 						{
 							userIds: [recipientMember.userId],
@@ -388,6 +390,7 @@ export const create = mutation({
 							},
 						}
 					);
+
 				}
 			}
 		}
@@ -496,14 +499,16 @@ export const create = mutation({
 				});
 
 				// Schedule an email notification for the mention
-				await ctx.scheduler.runAfter(0, api.email.sendMentionEmail, {
+				await ctx.scheduler.runAfter(0, internal.emailActions.sendMentionEmail, {
 					mentionId,
 				});
 
 				const mentionedMember = memberMap.get(mentionedMemberId);
 				if (mentionedMember?.userId && mentionedMember.userId !== userId) {
+
+					// Delay added to avoid OneSignal login race condition
 					await ctx.scheduler.runAfter(
-						0,
+						2000,
 						internal.notifications.sendPushNotification,
 						{
 							userIds: [mentionedMember.userId],
@@ -518,6 +523,7 @@ export const create = mutation({
 							},
 						}
 					);
+
 				}
 			}
 		} catch (_error) {

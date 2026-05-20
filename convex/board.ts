@@ -291,16 +291,21 @@ export const createCard = mutation({
 					});
 
 					// Send email notification
-					await ctx.scheduler.runAfter(0, api.email.sendCardAssignmentEmail, {
-						assigneeId,
-						cardId,
-						assignerId: creator._id,
-					});
+					await ctx.scheduler.runAfter(
+						0,
+						internal.emailActions.sendCardAssignmentEmail,
+						{
+							assigneeId,
+							cardId,
+							assignerId: creator._id,
+						}
+					);
 
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
-						await ctx.scheduler.runAfter(
-							0,
+					// Delay push notification by 2s to avoid race condition with OneSignal login
+					await ctx.scheduler.runAfter(
+							2000,
 							internal.notifications.sendPushNotification,
 							{
 								userIds: [assigneeMember.userId],
@@ -427,16 +432,21 @@ export const updateCard = mutation({
 					});
 
 					// Send email notification
-					await ctx.scheduler.runAfter(0, api.email.sendCardAssignmentEmail, {
-						assigneeId,
-						cardId,
-						assignerId: updater._id,
-					});
+					await ctx.scheduler.runAfter(
+						0,
+						internal.emailActions.sendCardAssignmentEmail,
+						{
+							assigneeId,
+							cardId,
+							assignerId: updater._id,
+						}
+					);
 
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
-						await ctx.scheduler.runAfter(
-							0,
+					// Delay push notification by 2s to avoid race condition with OneSignal login
+					await ctx.scheduler.runAfter(
+							2000,
 							internal.notifications.sendPushNotification,
 							{
 								userIds: [assigneeMember.userId],
@@ -1053,7 +1063,7 @@ export const createIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId,
@@ -1200,7 +1210,7 @@ export const updateIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId,
@@ -1885,7 +1895,7 @@ export const createSubIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId: subIssueId,

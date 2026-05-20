@@ -54,6 +54,24 @@ export const _getUserById = internalQuery({
 	},
 });
 
+export const setOneSignalExternalId = mutation({
+	args: {
+		externalId: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Unauthorized");
+		}
+
+		await ctx.db.patch(userId, {
+			onesignalExternalId: args.externalId,
+		});
+
+		return { success: true };
+	},
+});
+
 export const getUserById = query({
 	args: {
 		id: v.id("users"),
