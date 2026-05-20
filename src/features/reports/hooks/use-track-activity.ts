@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
@@ -17,16 +17,18 @@ export const useTrackActivity = ({
 	channelId,
 	activityType = "page_view",
 }: UseTrackActivityProps) => {
+	const { isAuthenticated, isLoading } = useConvexAuth();
 	const recordActivity = useMutation(api.analytics.recordUserActivity);
 	const recordChannelSession = useMutation(api.analytics.recordChannelSession);
-	const pathname = usePathname();
+	const rawPathname = usePathname();
+	const pathname = rawPathname || "/";
 	const sessionIdRef = useRef<Id<"channelSessions"> | null>(null);
 	const startTimeRef = useRef<number>(Date.now());
 	const [isTracking, setIsTracking] = useState(false);
 
 	// Record page view on mount
 	useEffect(() => {
-		if (!workspaceId) return;
+		if (!workspaceId || isLoading || !isAuthenticated) return;
 
 		const recordPageView = async () => {
 			try {
@@ -45,11 +47,19 @@ export const useTrackActivity = ({
 		};
 
 		recordPageView();
-	}, [workspaceId, channelId, activityType, pathname, recordActivity]);
+	}, [
+		workspaceId,
+		channelId,
+		activityType,
+		pathname,
+		recordActivity,
+		isLoading,
+		isAuthenticated,
+	]);
 
 	// Start channel session if channelId is provided
 	useEffect(() => {
-		if (!workspaceId || !channelId) return;
+		if (!workspaceId || !channelId || isLoading || !isAuthenticated) return;
 
 		const startSession = async () => {
 			try {
@@ -69,7 +79,7 @@ export const useTrackActivity = ({
 
 		// End session on unmount
 		return () => {
-			if (sessionIdRef.current) {
+			if (sessionIdRef.current && isAuthenticated) {
 				recordChannelSession({
 					workspaceId,
 					channelId,
@@ -80,15 +90,25 @@ export const useTrackActivity = ({
 				});
 			}
 		};
-	}, [workspaceId, channelId, recordChannelSession]);
+	}, [
+		workspaceId,
+		channelId,
+		recordChannelSession,
+		isLoading,
+		isAuthenticated,
+	]);
 
 	// Track time spent on page
 	useEffect(() => {
-		if (!workspaceId) return;
+		if (!workspaceId || isLoading || !isAuthenticated) return;
 
 		// Record time spent when user leaves the page
 		const handleVisibilityChange = async () => {
-			if (document.visibilityState === "hidden" && isTracking) {
+			if (
+				document.visibilityState === "hidden" &&
+				isTracking &&
+				isAuthenticated
+			) {
 				const duration = Date.now() - startTimeRef.current;
 				try {
 					await recordActivity({
@@ -111,7 +131,7 @@ export const useTrackActivity = ({
 
 		// Record time spent when user navigates away
 		const handleBeforeUnload = async () => {
-			if (isTracking) {
+			if (isTracking && isAuthenticated) {
 				const duration = Date.now() - startTimeRef.current;
 				try {
 					await recordActivity({
@@ -137,7 +157,7 @@ export const useTrackActivity = ({
 			window.removeEventListener("beforeunload", handleBeforeUnload);
 
 			// Record final time spent when component unmounts
-			if (isTracking) {
+			if (isTracking && isAuthenticated) {
 				const duration = Date.now() - startTimeRef.current;
 				recordActivity({
 					workspaceId,
@@ -152,7 +172,15 @@ export const useTrackActivity = ({
 				});
 			}
 		};
-	}, [workspaceId, channelId, pathname, isTracking, recordActivity]);
+	}, [
+		workspaceId,
+		channelId,
+		pathname,
+		isTracking,
+		recordActivity,
+		isLoading,
+		isAuthenticated,
+	]);
 
 	return { isTracking };
 };

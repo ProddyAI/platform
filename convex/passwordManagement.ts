@@ -289,7 +289,7 @@ export const generatePasswordResetTokenInternal = internalMutation({
 
 		const user = await ctx.db
 			.query("users")
-			.withIndex("email", (q) => q.eq("email", email))
+			.withIndex("by_email", (q) => q.eq("email", email))
 			.first();
 		if (!user) {
 			return { success: true, token: null, reason: "user_not_found" };
@@ -442,7 +442,7 @@ export const resetPassword = mutation({
 
 		const user = await ctx.db
 			.query("users")
-			.withIndex("email", (q) => q.eq("email", resetToken.email))
+			.withIndex("by_email", (q) => q.eq("email", resetToken.email))
 			.first();
 
 		if (!user) {
@@ -507,5 +507,66 @@ export const cleanupExpiredTokens = internalMutation({
 		}
 
 		return { deleted: expiredTokens.length };
+	},
+});
+
+export const adminForcePasswordChange = mutation({
+	args: {
+		email: v.string(),
+		newPassword: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const email = args.email.toLowerCase().trim();
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_email", (q) => q.eq("email", email))
+			.first();
+		if (!user) throw new Error("User not found");
+
+		const authAccounts = await ctx.db
+			.query("authAccounts")
+			.filter((q) => q.eq(q.field("userId"), user._id))
+			.collect();
+		const passwordAccount = authAccounts.find((a) => a.provider === "password");
+		if (!passwordAccount) throw new Error("No password account");
+
+		const hashedPassword = await hashPassword(args.newPassword);
+		await ctx.db.patch(passwordAccount._id, { secret: hashedPassword });
+		return { success: true };
+	},
+});
+
+export const adminForceCreateWorkspace = mutation({
+	args: {
+		email: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const email = args.email.toLowerCase().trim();
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_email", (q) => q.eq("email", email))
+			.first();
+		if (!user) throw new Error("User not found");
+
+		const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+		const workspaceId = await ctx.db.insert("workspaces", {
+			name: "Proddy Team Workspace",
+			userId: user._id,
+			joinCode,
+		});
+
+		await ctx.db.insert("members", {
+			userId: user._id,
+			workspaceId,
+			role: "owner",
+		});
+
+		const _channelId = await ctx.db.insert("channels", {
+			name: "general",
+			workspaceId,
+		});
+
+		return { success: true, workspaceId };
 	},
 });

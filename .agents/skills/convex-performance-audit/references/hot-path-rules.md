@@ -1,17 +1,23 @@
 # Hot Path Rules
 
-Use these rules when the top-level workflow points to read amplification, denormalization, index rollout, reactive query cost, or invalidation-heavy writes.
+Use these rules when the top-level workflow points to read amplification,
+denormalization, index rollout, reactive query cost, or invalidation-heavy
+writes.
 
 ## Contents
 
 - Core Principle
 - Consistency Rule
-- 1. Push Filters To Storage (indexes, migration rule, redundant indexes)
-- 2. Minimize Data Sources (denormalization, fallback rule)
-- 3. Minimize Row Size (digest tables)
-- 4. Skip No-Op Writes
-- 5. Match Consistency To Read Patterns (high-read/low-write, high-read/high-write)
-- Convex-Specific Notes (reactive queries, point-in-time reads, triggers, aggregates, backfills)
+
+1. Push Filters To Storage (indexes, migration rule, redundant indexes)
+2. Minimize Data Sources (denormalization, fallback rule)
+3. Minimize Row Size (digest tables)
+4. Isolate Frequently-Updated Fields
+5. Match Consistency To Read Patterns (high-read/low-write,
+   high-read/high-write)
+
+- Convex-Specific Notes (reactive queries, point-in-time reads, triggers,
+  aggregates, backfills)
 - Verification
 
 ## Core Principle
@@ -22,12 +28,15 @@ Think:
 
 `cost x calls_per_second x 86400`
 
+<<<<<<< HEAD
 In Convex, every write can also fan out into reactive invalidation, replication work, and downstream sync.
 
 ## Consistency Rule
 
 If you fix a hot-path pattern for one function, audit sibling functions touching the same tables for the same pattern.
-
+=======
+In Convex, every write can also fan out into reactive invalidation, replication
+work, and downstream sync.
 Do this especially for:
 
 - multiple list queries over the same table
@@ -35,9 +44,16 @@ Do this especially for:
 - public browse and search queries over the same records
 - helper functions reused by more than one endpoint
 
-## 1. Push Filters To Storage
 
+<<<<<<< HEAD
 Both JavaScript `.filter()` and the Convex query `.filter()` method after a DB scan mean you already paid for the read. The Convex `.filter()` method has the same performance as filtering in JS, it does not push the predicate to the storage layer. Only `.withIndex()` and `.withSearchIndex()` actually reduce the documents scanned.
+=======
+Both JavaScript `.filter()` and the Convex query `.filter()` method after a DB
+scan mean you already paid for the read. The Convex `.filter()` method has the
+same performance as filtering in JS, it does not push the predicate to the
+storage layer. Only `.withIndex()` and `.withSearchIndex()` actually reduce the
+documents scanned.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 Prefer:
 
@@ -87,17 +103,34 @@ export const listOpen = query({
 
 ### Migration rule for indexes
 
+<<<<<<< HEAD
 New indexes on partially backfilled fields can create correctness bugs during rollout.
+=======
+New indexes on partially backfilled fields can create correctness bugs during
+rollout.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 Important Convex detail:
 
 `undefined !== false`
 
+<<<<<<< HEAD
 If an older document is missing a field entirely, it will not match a compound index entry that expects `false`.
 
 Do not trust old comments saying a field is "not backfilled" or "already backfilled". Verify.
 
 If correctness depends on handling old and new states during rollout, do not improvise a partial-backfill workaround in the hot path. Use a migration-safe rollout and consult `skills/convex-migration-helper/SKILL.md`.
+=======
+If an older document is missing a field entirely, it will not match a compound
+index entry that expects `false`.
+
+Do not trust old comments saying a field is "not backfilled" or "already
+backfilled". Verify.
+
+If correctness depends on handling old and new states during rollout, do not
+improvise a partial-backfill workaround in the hot path. Use a migration-safe
+rollout and consult `skills/convex-migration-helper/SKILL.md`.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 ```ts
 // Bad: optional booleans can miss older rows where the field is undefined
@@ -115,7 +148,14 @@ const projects = await ctx.db
 
 ### Check for redundant indexes
 
+<<<<<<< HEAD
 Indexes like `by_foo` and `by_foo_and_bar` are usually redundant. You only need `by_foo_and_bar`, since you can query it with just the `foo` condition and omit `bar`. Extra indexes add storage cost and write overhead on every insert, patch, and delete.
+=======
+Indexes like `by_foo` and `by_foo_and_bar` are usually redundant. You only need
+`by_foo_and_bar`, since you can query it with just the `foo` condition and omit
+`bar`. Extra indexes add storage cost and write overhead on every insert, patch,
+and delete.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 ```ts
 // Bad: two indexes where one would do
@@ -132,13 +172,26 @@ defineTable({ team: v.id("teams"), user: v.id("users") }).index(
 );
 ```
 
+<<<<<<< HEAD
 Exception: `.index("by_foo", ["foo"])` is really an index on `foo` + `_creationTime`, while `.index("by_foo_and_bar", ["foo", "bar"])` is on `foo` + `bar` + `_creationTime`. If you need results sorted by `foo` then `_creationTime`, you need the single-field index because the compound one would sort by `bar` first.
+=======
+Exception: `.index("by_foo", ["foo"])` is really an index on `foo` +
+`_creationTime`, while `.index("by_foo_and_bar", ["foo", "bar"])` is on `foo` +
+`bar` + `_creationTime`. If you need results sorted by `foo` then
+`_creationTime`, you need the single-field index because the compound one would
+sort by `bar` first.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 ## 2. Minimize Data Sources
 
 Trace every read.
 
+<<<<<<< HEAD
 If a function resolves a foreign key for a tiny display field and a denormalized copy already exists, prefer the denormalized field on the hot path.
+=======
+If a function resolves a foreign key for a tiny display field and a denormalized
+copy already exists, prefer the denormalized field on the hot path.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 ### When to denormalize
 
@@ -152,7 +205,12 @@ Useful mental model:
 
 `join_cost = rows_per_page x foreign_doc_size x pages_per_second`
 
+<<<<<<< HEAD
 Small-table joins are often fine. Large-document joins for tiny fields on hot list pages are usually not.
+=======
+Small-table joins are often fine. Large-document joins for tiny fields on hot
+list pages are usually not.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 ### Fallback rule
 
@@ -196,9 +254,17 @@ const ownersById =
 
 ### No denormalized copy yet
 
+<<<<<<< HEAD
 Prefer adding fields to an existing summary, companion, or digest table instead of bloating the primary hot-path table.
 
 If introducing the new field or table requires a staged rollout, backfill, or old/new-shape handling, use the migration helper skill for the rollout plan.
+=======
+Prefer adding fields to an existing summary, companion, or digest table instead
+of bloating the primary hot-path table.
+
+If introducing the new field or table requires a staged rollout, backfill, or
+old/new-shape handling, use the migration helper skill for the rollout plan.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 Rollout order:
 
@@ -209,7 +275,12 @@ Rollout order:
 
 ## 3. Minimize Row Size
 
+<<<<<<< HEAD
 Hot list pages should read the smallest document shape that still answers the UI.
+=======
+Hot list pages should read the smallest document shape that still answers the
+UI.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 Prefer summary or digest tables over full source tables when:
 
@@ -217,12 +288,26 @@ Prefer summary or digest tables over full source tables when:
 - source documents are large
 - the query is high volume
 
+<<<<<<< HEAD
 An 800 byte summary row is materially cheaper than a 3 KB full document on a hot page.
 
 Digest tables are a tradeoff, not a default:
 
 - Worth it when the path is clearly hot, the source rows are much larger than the UI needs, or many readers are repeatedly paying the same join and payload cost
 - Probably not worth it when an indexed read on the source table is already cheap enough, the table is still small, or the extra write and migration complexity would dominate the benefit
+=======
+An 800 byte summary row is materially cheaper than a 3 KB full document on a hot
+page.
+
+Digest tables are a tradeoff, not a default:
+
+- Worth it when the path is clearly hot, the source rows are much larger than
+  the UI needs, or many readers are repeatedly paying the same join and payload
+  cost
+- Probably not worth it when an indexed read on the source table is already
+  cheap enough, the table is still small, or the extra write and migration
+  complexity would dominate the benefit
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 ```ts
 // Bad: list page reads source docs, then joins owner data per row
@@ -243,11 +328,22 @@ const projects = await ctx.db
 
 ## 4. Isolate Frequently-Updated Fields
 
+<<<<<<< HEAD
 Convex already no-ops unchanged writes. The invalidation problem here is real writes hitting documents that many queries subscribe to.
 
 Move high-churn fields like `lastSeen`, counters, presence, or ephemeral status off widely-read documents when most readers do not need them.
 
 Apply this across sibling writers too. Splitting one write path does not help much if three other mutations still update the same widely-read document.
+=======
+Convex already no-ops unchanged writes. The invalidation problem here is real
+writes hitting documents that many queries subscribe to.
+
+Move high-churn fields like `lastSeen`, counters, presence, or ephemeral status
+off widely-read documents when most readers do not need them.
+
+Apply this across sibling writers too. Splitting one write path does not help
+much if three other mutations still update the same widely-read document.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 ```ts
 // Bad: every presence heartbeat invalidates subscribers to the whole profile
@@ -290,7 +386,13 @@ Prefer:
 - local state for pagination
 - caching where appropriate
 
+<<<<<<< HEAD
 Do not treat subscriptions as automatically wrong here. Prefer point-in-time reads only when the product does not need live freshness and the reactive cost is material. See `subscription-cost.md` for detailed patterns.
+=======
+Do not treat subscriptions as automatically wrong here. Prefer point-in-time
+reads only when the product does not need live freshness and the reactive cost
+is material. See `subscription-cost.md` for detailed patterns.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 ### High-read, high-write
 
@@ -306,18 +408,33 @@ Reactive queries may be worth the ongoing cost.
 
 ### Reactive queries
 
+<<<<<<< HEAD
 Every `ctx.db.get()` and `ctx.db.query()` contributes to the invalidation set for the query.
+=======
+Every `ctx.db.get()` and `ctx.db.query()` contributes to the invalidation set
+for the query.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 On the client:
 
 - `useQuery` creates a live subscription
 - `usePaginatedQuery` creates a live subscription per page
 
+<<<<<<< HEAD
 For low-freshness flows, consider a point-in-time read instead of a live subscription only when the product does not need updates pushed automatically.
 
 ### Point-in-time reads
 
 Framework helpers, server-rendered fetches, or one-shot client reads can avoid ongoing subscription cost when live updates are not useful.
+=======
+For low-freshness flows, consider a point-in-time read instead of a live
+subscription only when the product does not need updates pushed automatically.
+
+### Point-in-time reads
+
+Framework helpers, server-rendered fetches, or one-shot client reads can avoid
+ongoing subscription cost when live updates are not useful.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 Use them for:
 
@@ -328,7 +445,12 @@ Use them for:
 
 ### Triggers and fan-out
 
+<<<<<<< HEAD
 Triggers fire on every write, including writes that did not materially change the document.
+=======
+Triggers fire on every write, including writes that did not materially change
+the document.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 When a write exists only to keep derived state in sync:
 
@@ -349,7 +471,12 @@ for global stats that do not need live updates every second.
 
 ### Backfills
 
+<<<<<<< HEAD
 For larger backfills, use cursor-based, self-scheduling `internalMutation` jobs or the migrations component.
+=======
+For larger backfills, use cursor-based, self-scheduling `internalMutation` jobs
+or the migrations component.
+>>>>>>> 7c1f9518c31e7b2b1b14eb8db8a16ab3d1d42534
 
 Deploy code that can handle both states before running the backfill.
 

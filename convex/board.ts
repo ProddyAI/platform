@@ -3,6 +3,7 @@ import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { addIssueBlockingRelationshipHelper } from "./lib/issueBlocking";
 import { getUserEmailFromMemberId, getUserNameFromMemberId } from "./utils";
 
 const DONE_STATUS_KEYWORDS = [
@@ -32,6 +33,33 @@ const getCompletedStatusIdsForChannel = async (
 			.filter((status) => isDoneStatusName(status.name))
 			.map((status) => status._id)
 	);
+};
+
+const getIssueStatusIdsByChannel = async (
+	ctx: QueryCtx,
+	channelId: Id<"channels">
+): Promise<Map<Id<"issues">, Id<"statuses">>> => {
+	const issues = await ctx.db
+		.query("issues")
+		.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+		.collect();
+
+	return new Map(issues.map((issue) => [issue._id, issue.statusId]));
+};
+
+const isActiveBlockingRelationship = (
+	rel: { blockingIssueId: Id<"issues">; blockedIssueId: Id<"issues"> },
+	issueStatusById: Map<Id<"issues">, Id<"statuses">>,
+	completedStatusIds: Set<Id<"statuses">>
+): boolean => {
+	const blockerStatusId = issueStatusById.get(rel.blockingIssueId);
+	const blockedStatusId = issueStatusById.get(rel.blockedIssueId);
+	if (blockerStatusId === undefined || blockedStatusId === undefined) {
+		return false;
+	}
+	if (completedStatusIds.has(blockerStatusId)) return false;
+	if (completedStatusIds.has(blockedStatusId)) return false;
+	return true;
 };
 
 const richTextBodyFromPlainText = (text: string) => {
@@ -291,16 +319,21 @@ export const createCard = mutation({
 					});
 
 					// Send email notification
-					await ctx.scheduler.runAfter(0, api.email.sendCardAssignmentEmail, {
-						assigneeId,
-						cardId,
-						assignerId: creator._id,
-					});
+					await ctx.scheduler.runAfter(
+						0,
+						internal.emailActions.sendCardAssignmentEmail,
+						{
+							assigneeId,
+							cardId,
+							assignerId: creator._id,
+						}
+					);
 
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
+						// Delay push notification by 2s to avoid race condition with OneSignal login
 						await ctx.scheduler.runAfter(
-							0,
+							2000,
 							internal.notifications.sendPushNotification,
 							{
 								userIds: [assigneeMember.userId],
@@ -427,16 +460,21 @@ export const updateCard = mutation({
 					});
 
 					// Send email notification
-					await ctx.scheduler.runAfter(0, api.email.sendCardAssignmentEmail, {
-						assigneeId,
-						cardId,
-						assignerId: updater._id,
-					});
+					await ctx.scheduler.runAfter(
+						0,
+						internal.emailActions.sendCardAssignmentEmail,
+						{
+							assigneeId,
+							cardId,
+							assignerId: updater._id,
+						}
+					);
 
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
+						// Delay push notification by 2s to avoid race condition with OneSignal login
 						await ctx.scheduler.runAfter(
-							0,
+							2000,
 							internal.notifications.sendPushNotification,
 							{
 								userIds: [assigneeMember.userId],
@@ -1053,7 +1091,7 @@ export const createIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId,
@@ -1066,6 +1104,24 @@ export const createIssue = mutation({
 			} catch (error) {
 				console.error("Error creating mentions for issue assignees:", error);
 			}
+		}
+
+		// Record usage
+		try {
+			const auth = await ctx.auth.getUserIdentity();
+			if (auth) {
+				const userId = auth.subject.split("|")[0] as Id<"users">;
+				await ctx.scheduler.runAfter(
+					0,
+					internal.usageTracking.recordBoardCreated,
+					{
+						userId,
+						workspaceId: channel.workspaceId,
+					}
+				);
+			}
+		} catch (error) {
+			console.error("Error recording board card usage:", error);
 		}
 
 		return issueId;
@@ -1182,7 +1238,7 @@ export const updateIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId,
@@ -1634,93 +1690,214 @@ export const addIssueBlockingRelationship = mutation({
 		channelId: v.id("channels"),
 		blockedIssueId: v.id("issues"),
 		blockingIssueId: v.id("issues"),
+		reasoning: v.optional(v.string()),
+		resolutionSteps: v.optional(v.array(v.string())),
 	},
 	handler: async (
 		ctx: MutationCtx,
-		{ channelId, blockedIssueId, blockingIssueId }
+		{ channelId, blockedIssueId, blockingIssueId, reasoning, resolutionSteps }
 	) => {
-		if (blockedIssueId === blockingIssueId) {
-			throw new Error("An issue cannot block itself");
-		}
-
 		const channel = await ctx.db.get(channelId);
 		if (!channel) throw new Error("Channel not found");
 
-		const blockedIssue = await ctx.db.get(blockedIssueId);
-		const blockingIssue = await ctx.db.get(blockingIssueId);
-		if (!blockedIssue || !blockingIssue) {
-			throw new Error("Issue not found");
-		}
-
-		// Verify both issues belong to the same channel
-		if (
-			blockedIssue.channelId !== channelId ||
-			blockingIssue.channelId !== channelId
-		) {
-			throw new Error("Issues must belong to the same channel");
-		}
-
-		// Check for circular dependency (multi-hop)
-		const visited = new Set<string>();
-		const queue: Id<"issues">[] = [blockedIssueId];
-		while (queue.length > 0) {
-			const currentIssueId = queue.shift();
-			if (!currentIssueId) continue;
-
-			const visitedKey = String(currentIssueId);
-			if (visited.has(visitedKey)) {
-				continue;
-			}
-			visited.add(visitedKey);
-
-			const outboundBlocking = await ctx.db
-				.query("issueBlocking")
-				.withIndex("by_blocked_issue_id", (q) =>
-					q.eq("blockedIssueId", currentIssueId)
-				)
-				.collect();
-
-			for (const rel of outboundBlocking) {
-				if (rel.blockingIssueId === blockingIssueId) {
-					throw new Error(
-						"Circular dependency detected: the issue you're blocking already blocks this issue"
-					);
-				}
-
-				if (!visited.has(String(rel.blockingIssueId))) {
-					queue.push(rel.blockingIssueId);
-				}
-			}
-		}
-
-		// Check if relationship already exists
-		const existing = await ctx.db
-			.query("issueBlocking")
-			.withIndex("by_channel_id_blocked_issue_id_blocking_issue_id", (q) =>
-				q
-					.eq("channelId", channelId)
-					.eq("blockedIssueId", blockedIssueId)
-					.eq("blockingIssueId", blockingIssueId)
-			)
-			.collect();
-
-		if (existing.length > 0) {
-			return; // Already blocked by this issue
-		}
-
-		// Verify caller is a member of the workspace
 		const member = await assertWorkspaceMember(ctx, channel.workspaceId);
 
-		// Create the blocking relationship
-		await ctx.db.insert("issueBlocking", {
+		await addIssueBlockingRelationshipHelper(ctx, {
 			channelId,
 			blockedIssueId,
 			blockingIssueId,
-			createdAt: Date.now(),
+			reasoning,
+			resolutionSteps,
 			createdBy: member._id,
 		});
+	},
+});
 
-		return;
+export const applyDetectedIssueDependencies = mutation({
+	args: {
+		channelId: v.id("channels"),
+		dependencies: v.array(
+			v.object({
+				blockerId: v.id("issues"),
+				blockedId: v.id("issues"),
+				reasoning: v.string(),
+				resolutionSteps: v.array(v.string()),
+			})
+		),
+	},
+	handler: async (ctx: MutationCtx, args) => {
+		const channel = await ctx.db.get(args.channelId);
+		if (!channel) throw new Error("Channel not found");
+		const member = await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		// Prune relationships where blocker/blocked are already completed.
+		// This keeps the UI accurate even if prior analyses created stale edges.
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx,
+			args.channelId
+		);
+		const issueStatusById = await getIssueStatusIdsByChannel(
+			ctx,
+			args.channelId
+		);
+		const existing = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", args.channelId))
+			.take(500);
+		for (const rel of existing) {
+			if (
+				!isActiveBlockingRelationship(rel, issueStatusById, completedStatusIds)
+			) {
+				await ctx.db.delete(rel._id);
+			}
+		}
+
+		let applied = 0;
+		const skipped: Array<{
+			blockerId: Id<"issues">;
+			blockedId: Id<"issues">;
+			reason: string;
+		}> = [];
+		for (const dep of args.dependencies) {
+			if (dep.blockerId === dep.blockedId) {
+				skipped.push({
+					blockerId: dep.blockerId,
+					blockedId: dep.blockedId,
+					reason: "self_loop",
+				});
+				continue;
+			}
+			try {
+				await addIssueBlockingRelationshipHelper(ctx, {
+					channelId: args.channelId,
+					blockedIssueId: dep.blockedId,
+					blockingIssueId: dep.blockerId,
+					reasoning: dep.reasoning,
+					resolutionSteps: dep.resolutionSteps,
+					createdBy: member._id,
+				});
+				applied++;
+			} catch (error) {
+				const reason = error instanceof Error ? error.message : "unknown_error";
+				console.warn("Skipping dependency", dep, error);
+				skipped.push({
+					blockerId: dep.blockerId,
+					blockedId: dep.blockedId,
+					reason,
+				});
+			}
+		}
+
+		return { applied, skipped };
+	},
+});
+
+export const getActiveBlockingRelationshipsForChannel = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx,
+			channelId
+		);
+		const issueStatusById = await getIssueStatusIdsByChannel(ctx, channelId);
+
+		const rels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		return rels.filter((rel) =>
+			isActiveBlockingRelationship(rel, issueStatusById, completedStatusIds)
+		);
+	},
+});
+
+export const getIssueDependencyStatsForChannel = query({
+	args: { channelId: v.id("channels") },
+	handler: async (ctx, { channelId }) => {
+		const channel = await ctx.db.get(channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx,
+			channelId
+		);
+		const issueStatusById = await getIssueStatusIdsByChannel(ctx, channelId);
+
+		const rels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", channelId))
+			.collect();
+
+		const stats: Record<
+			string,
+			{ blockedByCount: number; blockingCount: number }
+		> = {};
+
+		for (const rel of rels) {
+			if (
+				!isActiveBlockingRelationship(rel, issueStatusById, completedStatusIds)
+			) {
+				continue;
+			}
+
+			const blockerKey = String(rel.blockingIssueId);
+			const blockedKey = String(rel.blockedIssueId);
+
+			stats[blockerKey] ??= { blockedByCount: 0, blockingCount: 0 };
+			stats[blockedKey] ??= { blockedByCount: 0, blockingCount: 0 };
+
+			stats[blockerKey].blockingCount += 1;
+			stats[blockedKey].blockedByCount += 1;
+		}
+
+		return stats;
+	},
+});
+
+export const getBlockedByIssuesWithDetails = query({
+	args: { issueId: v.id("issues") },
+	handler: async (ctx, { issueId }) => {
+		const issue = await ctx.db.get(issueId);
+		if (!issue) throw new Error("Issue not found");
+		const channel = await ctx.db.get(issue.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await assertWorkspaceMemberForRead(ctx, channel.workspaceId);
+
+		const rels = await ctx.db
+			.query("issueBlocking")
+			.withIndex("by_blocked_issue_id", (q) => q.eq("blockedIssueId", issueId))
+			.collect();
+
+		const completedStatusIds = await getCompletedStatusIdsForChannel(
+			ctx,
+			issue.channelId
+		);
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("by_channel_id", (q) => q.eq("channelId", issue.channelId))
+			.collect();
+		const issuesById = new Map(issues.map((row) => [row._id, row]));
+
+		const results = [];
+		for (const rel of rels) {
+			const blockingIssue = issuesById.get(rel.blockingIssueId);
+			if (!blockingIssue) continue;
+			if (blockingIssue.channelId !== issue.channelId) continue;
+			if (completedStatusIds.has(blockingIssue.statusId)) continue;
+			results.push({
+				issue: blockingIssue,
+				reasoning: rel.reasoning,
+				resolutionSteps: rel.resolutionSteps,
+			});
+		}
+
+		return results;
 	},
 });
 
@@ -1867,7 +2044,7 @@ export const createSubIssue = mutation({
 
 							await ctx.scheduler.runAfter(
 								0,
-								api.email.sendIssueAssignmentEmail,
+								internal.emailActions.sendIssueAssignmentEmail,
 								{
 									assigneeId,
 									issueId: subIssueId,

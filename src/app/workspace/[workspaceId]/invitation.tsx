@@ -44,7 +44,7 @@ export const InviteModal = ({
 
 		mutate(
 			{
-				workspaceId,
+				workspaceId: workspaceId as any,
 			},
 			{
 				onSuccess: () => {

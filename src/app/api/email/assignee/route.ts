@@ -12,7 +12,7 @@ if (apiKey) {
 	const _maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
 }
 
-const resend = new Resend(apiKey);
+const resend = new Resend(apiKey || "re_dummy_key");
 
 export async function POST(req: NextRequest) {
 	try {

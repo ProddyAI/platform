@@ -1502,10 +1502,10 @@ export const notifyImportComplete = internalAction({
 			return;
 		}
 
-		// Send OneSignal push notification
-		await ctx.runAction(internal.onesignal.sendImportNotification, {
-			userId: user._id,
-			workspaceId: job.workspaceId,
+		// Send email notification
+		await ctx.runAction(internal.emailActions.sendImportCompletionEmail, {
+			email: user.email,
+			userName: user.name || "User",
 			platform: job.platform,
 			status: job.status,
 			channelsImported: job.result?.channelsCreated?.length || 0,

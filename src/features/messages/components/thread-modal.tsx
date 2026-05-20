@@ -227,6 +227,11 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 		body: string;
 		image: File | null;
 	}) => {
+		if (!workspaceId) {
+			toast.error("Workspace not found");
+			return;
+		}
+
 		try {
 			let storageId: Id<"_storage"> | undefined;
 

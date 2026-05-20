@@ -5,6 +5,7 @@ import {
 	AlertTriangle,
 	BarChart,
 	Bot,
+	Brain,
 	CalendarIcon,
 	ChartNoAxesGantt,
 	CheckSquare,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -237,19 +239,19 @@ export const WorkspaceSidebar = ({
 	};
 
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
-		id: workspaceId,
+		id: workspaceId as Id<"workspaces">,
 	});
 	const { data: channels, isLoading: channelsLoading } = useGetChannels({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: projects, isLoading: projectsLoading } = useGetProjects({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: members, isLoading: membersLoading } = useGetMembers({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 
 	if (
@@ -543,6 +545,16 @@ export const WorkspaceSidebar = ({
 								isActive={pathname.includes("/tasks")}
 								isCollapsed={isCollapsed}
 								label="Tasks"
+							/>
+						</MobileCloseWrapper>
+						<MobileCloseWrapper onClose={onMobileClose}>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/meeting-notes`}
+								icon={Brain}
+								id="meeting-notes"
+								isActive={pathname.includes("/meeting-notes")}
+								isCollapsed={isCollapsed}
+								label="Meeting Notes"
 							/>
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChannelPresence } from "@/features/presence/hooks/use-channel-presence";
@@ -14,7 +15,10 @@ export const ChannelPresenceParticipants = () => {
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
 
-	const { presenceState } = useChannelPresence({ workspaceId, channelId });
+	const { presenceState } = useChannelPresence({
+		workspaceId: workspaceId as Id<"workspaces">,
+		channelId,
+	});
 
 	const onlineUsers = useMemo(
 		() => presenceState.filter((p) => p.online),

@@ -1,5 +1,3 @@
-# Ignore custom build script
-scripts/next-build.js
 /node_modules
 /.pnp
 .env.local
@@ -19,6 +17,9 @@ next-env.d.ts
 .vscode/mcp.json
 # Build logs
 build.*.log
+
+# Local scratch files can contain temporary webhook payloads/secrets.
+scratch_test.js
 
 # next-pwa generated assets (created during build)
 /public/sw.js*

@@ -19,7 +19,9 @@ export const useChannelParticipants = () => {
 	const currentMember = useQuery(api.members.current, { workspaceId }) as any;
 
 	// Get presence data using the new presence system
-	const { presenceState } = useWorkspacePresence({ workspaceId });
+	const { presenceState } = useWorkspacePresence({
+		workspaceId: workspaceId as any, // workspaceId is handled by useQuery skipping, but hook needs a type
+	});
 
 	// Check if data is still loading
 	const isLoading = members === undefined || currentMember === undefined;
@@ -49,7 +51,7 @@ export const useChannelParticipants = () => {
 
 				return {
 					userId,
-					memberId: (p.memberId as any) || null,
+					memberId: (p.memberId as string) || null,
 					info: {
 						name,
 						picture,

@@ -1,6 +1,8 @@
 "use client";
 
+import { useConvexAuth } from "convex/react";
 import { Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Script from "next/script";
 import type { PropsWithChildren } from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -24,14 +26,24 @@ import { MobileFooter } from "./mobile-footer";
 import { WorkspaceSidebar } from "./sidebar";
 
 const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
+	const router = useRouter();
 	const { parentMessageId, profileMemberId, onClose } = usePanel();
 	const [isMobile, setIsMobile] = useState(false);
 	const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 	const workspaceId = useWorkspaceId();
 	const updateLastActiveWorkspace = useUpdateLastActiveWorkspace();
 
+	// Redirect if workspaceId is "create" (which happens if user hits /workspace/create manually)
+	useEffect(() => {
+		if (workspaceId === ("create" as any)) {
+			router.replace("/workspace");
+		}
+	}, [workspaceId, router]);
+
 	// Use the Convex-backed sidebar collapsed state
-	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({ workspaceId });
+	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({
+		workspaceId: workspaceId as any,
+	});
 
 	// Handle mobile menu toggle
 	const handleMobileMenuToggle = useCallback(() => {
@@ -73,12 +85,14 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 		setupGlobalMentionHandler();
 	}, []);
 
+	const { isAuthenticated, isLoading } = useConvexAuth();
+
 	// Update last active workspace when the user visits a workspace
 	useEffect(() => {
-		if (workspaceId) {
+		if (workspaceId && !isLoading && isAuthenticated) {
 			updateLastActiveWorkspace({ workspaceId });
 		}
-	}, [workspaceId, updateLastActiveWorkspace]);
+	}, [workspaceId, updateLastActiveWorkspace, isLoading, isAuthenticated]);
 
 	return (
 		<>
@@ -95,7 +109,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 				`}
 			</Script>
 			<MessageSelectionProvider>
-				<WorkspacePresenceTracker workspaceId={workspaceId}>
+				<WorkspacePresenceTracker workspaceId={workspaceId as any}>
 					<div className="h-full w-full min-w-0 flex flex-col overflow-hidden">
 						<div className="flex h-full min-w-0 overflow-hidden">
 							{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}
@@ -117,9 +131,11 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 							{showMobileSidebar && (
 								<>
 									{/* Backdrop */}
-									<div
+									<button
+										aria-label="Close mobile sidebar"
 										className="md:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
 										onClick={() => setShowMobileSidebar(false)}
+										type="button"
 									/>
 									{/* Sidebar Overlay */}
 									<div
@@ -149,7 +165,13 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 
 							{/* Main content area - remove overflow-auto to prevent toolbar scrolling */}
 							<div className="flex-1 h-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-0">
-								{children}
+								{workspaceId === ("create" as any) ? (
+									<div className="flex h-full items-center justify-center">
+										<Loader className="size-6 animate-spin text-muted-foreground" />
+									</div>
+								) : (
+									children
+								)}
 							</div>
 
 							{/* Right panel for threads and profiles - Hidden on mobile */}
