@@ -121,7 +121,9 @@ export const BlockNoteEditor = ({
 					</p>
 					<button
 						className="px-4 py-2 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 transition-colors"
-						onClick={() => sync.create({ type: "doc", content: [] })}
+						onClick={() =>
+							sync.create({ type: "doc", content: [{ type: "paragraph" }] })
+						}
 						type="button"
 					>
 						Initialize Editor
@@ -130,6 +132,7 @@ export const BlockNoteEditor = ({
 			</div>
 		);
 	}
+
 
 	return (
 		<div

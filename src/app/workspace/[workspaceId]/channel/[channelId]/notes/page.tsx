@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { FileText, Plus, Sparkles } from "lucide-react";
+import { FileText, Loader2, Plus, Sparkles } from "lucide-react";
+
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -31,8 +32,10 @@ const NotesPage = () => {
 	const channel = useQuery(api.channels.getById, { id: channelId });
 	useDocumentTitle(channel ? `Notes — ${channel.name}` : "Notes");
 
-	// Convex queries
-	const notes = useQuery(api.notes.list, { workspaceId, channelId }) || [];
+	// Convex queries — `undefined` means still loading; `null/[]` means no data
+	const notesQuery = useQuery(api.notes.list, { workspaceId, channelId });
+	const isLoadingNotes = notesQuery === undefined;
+	const notes = notesQuery ?? [];
 
 	// Get active note
 	const activeNote = useQuery(
@@ -121,6 +124,15 @@ const NotesPage = () => {
 			}
 		}
 	};
+
+	// Loading state — notes query hasn't resolved yet
+	if (isLoadingNotes) {
+		return (
+			<div className="flex h-full items-center justify-center">
+				<Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+			</div>
+		);
+	}
 
 	// Empty state — no notes at all
 	if (notes.length === 0) {

@@ -14,10 +14,11 @@ export const heartbeat = mutation({
 		interval: v.number(),
 	},
 	handler: async (ctx, { roomId, sessionId, interval }) => {
-		// Check authentication
+		// Check authentication — return silently if not authenticated
+		// (avoids Server Error spam when session expires or user logs out)
 		const authUserId = await getAuthUserId(ctx);
 		if (!authUserId) {
-			throw new Error("Unauthorized");
+			return { roomToken: roomId, sessionToken: sessionId };
 		}
 
 		// Use the authenticated user ID instead of the passed userId for security

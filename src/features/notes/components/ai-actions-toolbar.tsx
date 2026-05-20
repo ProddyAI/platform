@@ -224,12 +224,20 @@ export const AIActionsToolbar = ({
 								// operate on the latest document state, not a stale snapshot
 								// captured before the async stream completed.
 								const latestBlocks = editor.document;
+								const lastBlock = latestBlocks[latestBlocks.length - 1];
 
 								if (action.insertMode === "replace") {
-									editor.replaceBlocks(latestBlocks, newBlocks);
+									if (lastBlock) {
+										// Safest way to replace all content in BlockNote:
+										// Insert new blocks at the end, then remove old blocks.
+										// This ensures the document is never temporarily empty.
+										editor.insertBlocks(newBlocks, lastBlock, "after");
+										editor.removeBlocks(latestBlocks);
+									} else {
+										editor.replaceBlocks(latestBlocks, newBlocks);
+									}
 								} else {
 									// Append after current content
-									const lastBlock = latestBlocks[latestBlocks.length - 1];
 									if (lastBlock) {
 										editor.insertBlocks(newBlocks, lastBlock, "after");
 									} else {
@@ -243,10 +251,8 @@ export const AIActionsToolbar = ({
 							toast.error("Could not parse AI response");
 						}
 					} catch (editorError) {
-						// Log to stderr — safe for production, no PII exposed to client
-						process.stderr?.write?.(
-							`[AI Toolbar] Editor insertion error: ${editorError instanceof Error ? editorError.message : String(editorError)}\n`
-						);
+						// Use console.error instead of process.stderr for browser compatibility
+						console.error("[AI Toolbar] Editor insertion error:", editorError);
 						toast.error("Failed to insert AI content into editor");
 					}
 				}
@@ -254,10 +260,8 @@ export const AIActionsToolbar = ({
 				if ((error as Error).name === "AbortError") {
 					toast.info("AI action cancelled");
 				} else {
-					// Log to stderr — safe for production
-					process.stderr?.write?.(
-						`[AI ${action.id}] ${error instanceof Error ? error.message : String(error)}\n`
-					);
+					// Use console.error instead of process.stderr for browser compatibility
+					console.error(`[AI ${action.id}]`, error);
 					toast.error(
 						error instanceof Error ? error.message : "AI action failed"
 					);

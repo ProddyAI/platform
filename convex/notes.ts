@@ -56,7 +56,11 @@ export const create = mutation({
 		});
 
 		// Create the prosemirror document for collaborative editing
-		await prosemirrorSync.create(ctx, noteId, { type: "doc", content: [] });
+		// NOTE: content must NOT be an empty array — ProseMirror requires at least one node
+		await prosemirrorSync.create(ctx, noteId, {
+			type: "doc",
+			content: [{ type: "paragraph" }],
+		});
 
 		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexNote, {
 			noteId,
@@ -75,8 +79,10 @@ export const getByChannel = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
+		// Return empty array instead of throwing to avoid client-side crashes
+		// during auth state transitions (e.g. page load before session is confirmed)
 		if (!userId) {
-			throw new Error("Unauthorized");
+			return [];
 		}
 
 		const member = await ctx.db
@@ -87,7 +93,7 @@ export const getByChannel = query({
 			.first();
 
 		if (!member) {
-			throw new Error("Unauthorized");
+			return [];
 		}
 
 		const notes = await ctx.db
@@ -110,8 +116,10 @@ export const list = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 
+		// Return empty array instead of throwing to avoid client-side crashes
+		// during auth state transitions (e.g. page load before session is confirmed)
 		if (!userId) {
-			throw new Error("Unauthorized");
+			return [];
 		}
 
 		const member = await ctx.db
@@ -122,7 +130,7 @@ export const list = query({
 			.first();
 
 		if (!member) {
-			throw new Error("Unauthorized");
+			return [];
 		}
 
 		const notes = await ctx.db
