@@ -136,102 +136,84 @@ const ManagePage = () => {
 			{/* Content */}
 			<div className="flex-1 overflow-auto p-6 bg-white">
 				<div className="max-w-6xl mx-auto">
-					{/* For members, show only Integrations */}
-					{member.role === "member" ? (
-						<div>
-							<div className="mb-6">
-								<h2 className="text-2xl font-bold mb-2">My Integrations</h2>
-								<p className="text-muted-foreground">
-									Connect and manage your personal integrations with external
-									services. These connections are unique to you and will be used
-									when you interact with Proddy AI and other features.
-								</p>
-							</div>
-							<div className="bg-background rounded-lg p-6 shadow-sm border">
-								<IntegrationsManagement
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</div>
-						</div>
-					) : (
-						/* For admins and owners, show all tabs */
-						<Tabs
-							className="w-full"
-							onValueChange={handleTabChange}
-							value={activeTab}
+					<Tabs
+						className="w-full"
+						onValueChange={handleTabChange}
+						value={activeTab}
+					>
+						<TabsList className="grid w-full grid-cols-5 mb-8">
+							<TabsTrigger value="workspace">
+								<Settings className="h-4 w-4 mr-2" />
+								Workspace
+							</TabsTrigger>
+							<TabsTrigger value="members">
+								<Users className="h-4 w-4 mr-2" />
+								Members
+							</TabsTrigger>
+							<TabsTrigger value="billing">
+								<CreditCard className="h-4 w-4 mr-2" />
+								Billing
+							</TabsTrigger>
+							<TabsTrigger value="integrations">
+								<Plug className="h-4 w-4 mr-2" />
+								Integrations
+							</TabsTrigger>
+							<TabsTrigger value="import">
+								<Database className="h-4 w-4 mr-2" />
+								Import Data
+							</TabsTrigger>
+						</TabsList>
+
+						<TabsContent
+							className="bg-background rounded-lg p-6 shadow-sm border"
+							value="workspace"
 						>
-							<TabsList className="grid w-full grid-cols-5 mb-8">
-								<TabsTrigger value="workspace">
-									<Settings className="h-4 w-4 mr-2" />
-									Workspace
-								</TabsTrigger>
-								<TabsTrigger value="members">
-									<Users className="h-4 w-4 mr-2" />
-									Members
-								</TabsTrigger>
-								<TabsTrigger value="billing">
-									<CreditCard className="h-4 w-4 mr-2" />
-									Billing
-								</TabsTrigger>
-								<TabsTrigger value="integrations">
-									<Plug className="h-4 w-4 mr-2" />
-									Integrations
-								</TabsTrigger>
-								<TabsTrigger value="import">
-									<Database className="h-4 w-4 mr-2" />
-									Import Data
-								</TabsTrigger>
-							</TabsList>
+							<WorkspaceManagement
+								currentMember={member}
+								workspace={workspace}
+							/>
+						</TabsContent>
 
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="workspace"
-							>
-								<WorkspaceManagement
-									currentMember={member}
-									workspace={workspace}
-								/>
-							</TabsContent>
+						<TabsContent
+							className="bg-background rounded-lg p-6 shadow-sm border"
+							value="members"
+						>
+							<MembersManagement
+								currentMember={member}
+								workspaceId={workspaceId}
+							/>
+						</TabsContent>
 
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="members"
-							>
-								<MembersManagement
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</TabsContent>
+						<TabsContent
+							className="bg-background rounded-lg p-6 shadow-sm border"
+							value="billing"
+						>
+							<BillingSection
+								currentMember={member}
+								workspaceId={workspaceId}
+							/>
+						</TabsContent>
 
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="billing"
-							>
-								<BillingSection workspaceId={workspaceId} />
-							</TabsContent>
+						<TabsContent
+							className="bg-background rounded-lg p-6 shadow-sm border"
+							value="integrations"
+						>
+							<IntegrationsManagement
+								currentMember={member}
+								workspaceId={workspaceId}
+							/>
+						</TabsContent>
 
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="integrations"
-							>
-								<IntegrationsManagement
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</TabsContent>
-
-							<TabsContent
-								className="bg-background rounded-lg p-6 shadow-sm border"
-								value="import"
-							>
-								<ImportDataManagement
-									currentMember={member}
-									workspaceId={workspaceId}
-								/>
-							</TabsContent>
-						</Tabs>
-					)}
+						<TabsContent
+							className="bg-background rounded-lg p-6 shadow-sm border"
+							value="import"
+						>
+							<ImportDataManagement
+								currentMember={member}
+								workspaceId={workspaceId}
+							/>
+						</TabsContent>
+					</Tabs>
 				</div>
 			</div>
 		</div>

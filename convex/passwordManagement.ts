@@ -289,7 +289,7 @@ export const generatePasswordResetTokenInternal = internalMutation({
 
 		const user = await ctx.db
 			.query("users")
-			.withIndex("email", (q) => q.eq("email", email))
+			.withIndex("by_email", (q) => q.eq("email", email))
 			.first();
 		if (!user) {
 			return { success: true, token: null, reason: "user_not_found" };
@@ -442,7 +442,7 @@ export const resetPassword = mutation({
 
 		const user = await ctx.db
 			.query("users")
-			.withIndex("email", (q) => q.eq("email", resetToken.email))
+			.withIndex("by_email", (q) => q.eq("email", resetToken.email))
 			.first();
 
 		if (!user) {
