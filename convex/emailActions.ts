@@ -7,7 +7,7 @@ import { logger } from "../src/lib/logger";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type ActionCtx, internalAction } from "./_generated/server";
-import { type EmailNotificationKey } from "./email";
+import type { EmailNotificationKey } from "./email";
 
 // Initialize Resend SDK with lazy loading to validate API key
 let resend: Resend | null = null;
@@ -124,8 +124,6 @@ type EmailNotificationResult = {
 	skipped?: boolean;
 	emailId?: string;
 };
-
-
 
 const shouldSendEmailNotification = async (
 	ctx: ActionCtx,
@@ -1270,10 +1268,7 @@ export const sendIssueAssignmentEmail = internalAction({
 				});
 				return { success: true };
 			} catch (error) {
-				logger.error(
-					"Error sending issue assignment email via Resend:",
-					error
-				);
+				logger.error("Error sending issue assignment email via Resend:", error);
 				return {
 					success: false,
 					error: error instanceof Error ? error.message : "Unknown error",

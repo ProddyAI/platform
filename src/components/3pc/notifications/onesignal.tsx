@@ -147,7 +147,6 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 					return;
 				}
 
-
 				// Now check SDK is available
 				const OneSignal: any = window.OneSignal as any;
 				if (!OneSignal) {
@@ -179,7 +178,9 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 					currentUserRef.current = userId;
 					await setOneSignalExternalId({ externalId: userId });
 				} else {
-					logger.warn(`⚠️ External ID mismatch. Expected ${userId}, got ${externalId}`);
+					logger.warn(
+						`⚠️ External ID mismatch. Expected ${userId}, got ${externalId}`
+					);
 					if (externalId) {
 						await setOneSignalExternalId({ externalId });
 					}

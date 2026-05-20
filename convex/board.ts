@@ -303,8 +303,8 @@ export const createCard = mutation({
 
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
-					// Delay push notification by 2s to avoid race condition with OneSignal login
-					await ctx.scheduler.runAfter(
+						// Delay push notification by 2s to avoid race condition with OneSignal login
+						await ctx.scheduler.runAfter(
 							2000,
 							internal.notifications.sendPushNotification,
 							{
@@ -444,8 +444,8 @@ export const updateCard = mutation({
 
 					const assigneeMember = await ctx.db.get(assigneeId);
 					if (assigneeMember?.userId && assigneeMember.userId !== userId) {
-					// Delay push notification by 2s to avoid race condition with OneSignal login
-					await ctx.scheduler.runAfter(
+						// Delay push notification by 2s to avoid race condition with OneSignal login
+						await ctx.scheduler.runAfter(
 							2000,
 							internal.notifications.sendPushNotification,
 							{

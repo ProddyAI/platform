@@ -75,18 +75,10 @@ export const NotificationSettings = () => {
 	>("default");
 
 	const updateSettings = useMutation(api.preferences.updateUserPreferences);
-	const updateBrowserPrefs = useMutation(
-		api.preferences.updateBrowserPrefs
-	);
-	const updateEmailPrefs = useMutation(
-		api.preferences.updateEmailPrefs
-	);
-	const updateChannelToggle = useMutation(
-		api.preferences.updateChannelToggle
-	);
-	const sendTestPush = useAction(
-		api.notifications.sendTestPushNotification
-	);
+	const updateBrowserPrefs = useMutation(api.preferences.updateBrowserPrefs);
+	const updateEmailPrefs = useMutation(api.preferences.updateEmailPrefs);
+	const updateChannelToggle = useMutation(api.preferences.updateChannelToggle);
+	const sendTestPush = useAction(api.notifications.sendTestPushNotification);
 
 	const browserPrefs = notifications?.notificationBrowserPrefs || {
 		mentions: true,
@@ -174,7 +166,10 @@ export const NotificationSettings = () => {
 	const handleBrowserToggle = async (type: string, enabled: boolean) => {
 		await withSaveState(async () => {
 			await updateBrowserPrefs({
-				updates: { [type]: enabled } as unknown as Record<NotificationKey, boolean>,
+				updates: { [type]: enabled } as unknown as Record<
+					NotificationKey,
+					boolean
+				>,
 			});
 		});
 	};
@@ -182,7 +177,10 @@ export const NotificationSettings = () => {
 	const handleEmailToggle = async (type: string, enabled: boolean) => {
 		await withSaveState(async () => {
 			await updateEmailPrefs({
-				updates: { [type]: enabled } as unknown as Record<NotificationKey, boolean>,
+				updates: { [type]: enabled } as unknown as Record<
+					NotificationKey,
+					boolean
+				>,
 			});
 		});
 	};
@@ -229,8 +227,10 @@ export const NotificationSettings = () => {
 			// Refresh permission state after user grants/blocks permission
 			if ("Notification" in window) {
 				setPermissionState(
-					(window.Notification?.permission as "default" | "granted" | "denied") ??
-						"default"
+					(window.Notification?.permission as
+						| "default"
+						| "granted"
+						| "denied") ?? "default"
 				);
 			}
 			await (window as any).OneSignal?.User?.PushSubscription?.optIn?.();

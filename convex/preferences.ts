@@ -343,7 +343,7 @@ export const getNotificationPreferences = query({
 /**
  * Bulk update multiple browser notification preferences in a single atomic operation
  * Prevents race conditions when updating multiple keys at once
- * 
+ *
  * IMPORTANT: This is the only way to update browser preferences. Individual key updates
  * (like updateBrowserPref) have been removed due to race condition vulnerability where
  * concurrent patches overwrite each other. Always use this bulk mutation instead.
@@ -402,7 +402,7 @@ export const updateBrowserPrefs = mutation({
 /**
  * Bulk update multiple email notification preferences in a single atomic operation
  * Prevents race conditions when updating multiple keys at once
- * 
+ *
  * IMPORTANT: This is the only way to update email preferences. Individual key updates
  * (like updateEmailPref) have been removed due to race condition vulnerability where
  * concurrent patches overwrite each other. Always use this bulk mutation instead.

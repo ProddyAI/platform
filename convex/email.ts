@@ -447,16 +447,14 @@ export const sendWorkspacePlanChangeEmail = internalAction({
 			`;
 
 			try {
-			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 10_000);
-			let response: Response;
-			try {
-				response = await fetch(
-					"https://api.resend.com/emails",
-					{
+				const controller = new AbortController();
+				const timeoutId = setTimeout(() => controller.abort(), 10_000);
+				let response: Response;
+				try {
+					response = await fetch("https://api.resend.com/emails", {
 						method: "POST",
 						headers: {
-							"Authorization": `Bearer ${apiKey}`,
+							Authorization: `Bearer ${apiKey}`,
 							"Content-Type": "application/json",
 						},
 						body: JSON.stringify({
@@ -466,11 +464,10 @@ export const sendWorkspacePlanChangeEmail = internalAction({
 							html,
 						}),
 						signal: controller.signal,
-					}
-				);
-			} finally {
-				clearTimeout(timeoutId);
-			}
+					});
+				} finally {
+					clearTimeout(timeoutId);
+				}
 
 				if (!response.ok) {
 					const errorText = await response.text();

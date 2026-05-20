@@ -183,16 +183,19 @@ export const sendTestPushNotification = action({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 
-		const result = await ctx.runAction(internal.notifications.sendPushNotification, {
-			userIds: [userId],
-			title: "Test notification",
-			message: "Your browser push notifications are working.",
-			notificationType: "mentions" as const,
-			data: {
-				type: "test_push",
-				userId,
-			},
-		});
+		const result = await ctx.runAction(
+			internal.notifications.sendPushNotification,
+			{
+				userIds: [userId],
+				title: "Test notification",
+				message: "Your browser push notifications are working.",
+				notificationType: "mentions" as const,
+				data: {
+					type: "test_push",
+					userId,
+				},
+			}
+		);
 
 		logger.info("Test push notification sent", {
 			recipients: result?.recipients ?? 0,
