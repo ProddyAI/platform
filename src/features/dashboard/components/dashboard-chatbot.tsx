@@ -430,6 +430,94 @@ type RecentConversation = {
 	lastMessageAt: number;
 };
 
+function ChatHeaderActions({
+	isHistoryOpen,
+	setIsHistoryOpen,
+	recentConversations,
+	conversationId,
+	onNewChat,
+	onDeleteChat,
+	onSelectConversation,
+	onStartEditTitle,
+}: {
+	isHistoryOpen: boolean;
+	setIsHistoryOpen: (open: boolean) => void;
+	recentConversations: RecentConversation[] | undefined;
+	conversationId: string | null;
+	onNewChat: () => void;
+	onDeleteChat: (id: string) => void;
+	onSelectConversation: (id: string) => void;
+	onStartEditTitle: (id: string, title: string) => void;
+}) {
+	return (
+		<div className="flex items-center gap-2">
+			<Button
+				className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-md"
+				onClick={onNewChat}
+				size="sm"
+				variant="default"
+			>
+				<Plus className="h-4 w-4 mr-1.5" />
+				New Chat
+			</Button>
+
+			<DropdownMenu onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
+				<DropdownMenuTrigger asChild>
+					<Button
+						className="h-8 px-3 rounded-lg border-2 hover:bg-accent transition-all"
+						size="sm"
+						variant="outline"
+					>
+						<History className="h-4 w-4 mr-1.5" />
+						Recent Chats
+						<ChevronDown className="h-3 w-3 ml-1.5 opacity-50" />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent
+					align="end"
+					className="w-80 max-h-[400px] overflow-y-auto"
+					sideOffset={8}
+				>
+					{recentConversations && recentConversations.length > 0 ? (
+						recentConversations.map((conv, index) => (
+							<div key={conv._id}>
+								{index > 0 && <DropdownMenuSeparator />}
+								<ChatHistoryItem
+									conv={conv}
+									isActive={conversationId === conv.conversationId}
+									onDelete={() => onDeleteChat(conv.conversationId)}
+									onSelect={() => {
+										onSelectConversation(conv.conversationId);
+										setIsHistoryOpen(false);
+									}}
+									onStartEdit={() => {
+										onStartEditTitle(conv.conversationId, conv.title || "");
+										setIsHistoryOpen(false);
+									}}
+								/>
+							</div>
+						))
+					) : (
+						<div className="p-4 text-center text-sm text-muted-foreground">
+							No conversations yet
+						</div>
+					)}
+				</DropdownMenuContent>
+			</DropdownMenu>
+
+			<Button
+				className="h-8 px-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+				onClick={onNewChat}
+				size="sm"
+				variant="ghost"
+			>
+				<Trash2 className="h-4 w-4 mr-1.5" />
+				Clear
+			</Button>
+		</div>
+	);
+}
+
 function ChatHistoryItem({
 	conv,
 	isActive,
@@ -1255,77 +1343,16 @@ Try asking me things like:`;
 					<div className="flex items-center justify-between">
 						<ChatHeaderTitle status={integrationStatus} />
 
-						<div className="flex items-center gap-2">
-							<Button
-								className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-md"
-								onClick={handleNewChat}
-								size="sm"
-								variant="default"
-							>
-								<Plus className="h-4 w-4 mr-1.5" />
-								New Chat
-							</Button>
-
-							<DropdownMenu
-								onOpenChange={setIsHistoryOpen}
-								open={isHistoryOpen}
-							>
-								<DropdownMenuTrigger asChild>
-									<Button
-										className="h-8 px-3 rounded-lg border-2 hover:bg-accent transition-all"
-										size="sm"
-										variant="outline"
-									>
-										<History className="h-4 w-4 mr-1.5" />
-										Recent Chats
-										<ChevronDown className="h-3 w-3 ml-1.5 opacity-50" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent
-									align="end"
-									className="w-80 max-h-[400px] overflow-y-auto"
-									sideOffset={8}
-								>
-									{recentConversations && recentConversations.length > 0 ? (
-										recentConversations.map((conv, index) => (
-											<div key={conv._id}>
-												{index > 0 && <DropdownMenuSeparator />}
-												<ChatHistoryItem
-													conv={conv}
-													isActive={conversationId === conv.conversationId}
-													onDelete={() => handleDeleteChat(conv.conversationId)}
-													onSelect={() => {
-														handleSelectConversation(conv.conversationId);
-														setIsHistoryOpen(false);
-													}}
-													onStartEdit={() => {
-														handleStartEditTitle(
-															conv.conversationId,
-															conv.title || ""
-														);
-														setIsHistoryOpen(false);
-													}}
-												/>
-											</div>
-										))
-									) : (
-										<div className="p-4 text-center text-sm text-muted-foreground">
-											No conversations yet
-										</div>
-									)}
-								</DropdownMenuContent>
-							</DropdownMenu>
-
-							<Button
-								className="h-8 px-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-								onClick={handleNewChat}
-								size="sm"
-								variant="ghost"
-							>
-								<Trash2 className="h-4 w-4 mr-1.5" />
-								Clear
-							</Button>
-						</div>
+						<ChatHeaderActions
+							conversationId={conversationId}
+							isHistoryOpen={isHistoryOpen}
+							onDeleteChat={handleDeleteChat}
+							onNewChat={handleNewChat}
+							onSelectConversation={handleSelectConversation}
+							onStartEditTitle={handleStartEditTitle}
+							recentConversations={recentConversations}
+							setIsHistoryOpen={setIsHistoryOpen}
+						/>
 					</div>
 
 					{/* Inline Edit Mode */}
