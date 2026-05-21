@@ -247,6 +247,54 @@ function formatRelativeTime(timestamp: number): string {
 	return new Date(timestamp).toLocaleDateString();
 }
 
+function ProddyChatAvatar() {
+	return (
+		<Avatar className="h-9 w-9 bg-primary/10 ring-2 ring-primary/20">
+			<AvatarFallback>
+				<Bot className="h-5 w-5 text-primary" />
+			</AvatarFallback>
+		</Avatar>
+	);
+}
+
+const CHAT_TOOL_STATUS_LABELS = [
+	"Calendar",
+	"Tasks",
+	"Search",
+	"Integrations",
+] as const;
+
+function ChatLoadingIndicator() {
+	return (
+		<div className="flex justify-start">
+			<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3">
+				<div className="flex items-start gap-2">
+					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+						<Zap className="h-4 w-4 animate-pulse text-primary" />
+					</div>
+					<div className="min-w-0 flex-1">
+						<p className="text-sm font-medium">Using tools when needed</p>
+						<p className="text-xs text-muted-foreground mt-1">
+							Checking calendar, tasks, search, and integrations…
+						</p>
+						<div className="mt-2 flex flex-wrap gap-1">
+							{CHAT_TOOL_STATUS_LABELS.map((label) => (
+								<span
+									className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+									key={label}
+								>
+									{label}
+								</span>
+							))}
+						</div>
+					</div>
+					<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+				</div>
+			</div>
+		</div>
+	);
+}
+
 export const DashboardChatbot = ({
 	workspaceId,
 	member,
@@ -605,7 +653,9 @@ Try asking me things like:`;
 		const viewport = scrollAreaRef.current?.querySelector<HTMLElement>(
 			"[data-radix-scroll-area-viewport]"
 		);
-		if (!viewport) return;
+		if (!viewport) {
+			return undefined;
+		}
 
 		const handleScroll = () => {
 			const { scrollTop, scrollHeight, clientHeight } = viewport;
@@ -617,7 +667,9 @@ Try asking me things like:`;
 	}, []);
 
 	useEffect(() => {
-		if (!conversationId) return;
+		if (!conversationId) {
+			return undefined;
+		}
 		const timer = setTimeout(() => {
 			isNearBottomRef.current = true;
 			scrollToBottom("instant");
@@ -877,11 +929,7 @@ Try asking me things like:`;
 				<CardHeader className="pb-3 border-b bg-gradient-to-r from-background to-muted/20">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
-							<Avatar className="h-9 w-9 bg-primary/10 ring-2 ring-primary/20">
-								<AvatarFallback>
-									<Bot className="h-5 w-5 text-primary" />
-								</AvatarFallback>
-							</Avatar>
+							<ProddyChatAvatar />
 							<div>
 								<CardTitle className="text-lg font-semibold">
 									Proddy AI
@@ -1209,38 +1257,7 @@ Try asking me things like:`;
 									</div>
 								</div>
 							))}
-							{isLoading && (
-								<div className="flex justify-start">
-									<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3">
-										<div className="flex items-start gap-2">
-											<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-												<Zap className="h-4 w-4 animate-pulse text-primary" />
-											</div>
-											<div className="min-w-0 flex-1">
-												<p className="text-sm font-medium">
-													Using tools when needed
-												</p>
-												<p className="text-xs text-muted-foreground mt-1">
-													Checking calendar, tasks, search, and integrations…
-												</p>
-												<div className="mt-2 flex flex-wrap gap-1">
-													{["Calendar", "Tasks", "Search", "Integrations"].map(
-														(label) => (
-															<span
-																className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
-																key={label}
-															>
-																{label}
-															</span>
-														)
-													)}
-												</div>
-											</div>
-											<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-										</div>
-									</div>
-								</div>
-							)}
+							{isLoading && <ChatLoadingIndicator />}
 						</div>
 					</ScrollArea>
 				</CardContent>

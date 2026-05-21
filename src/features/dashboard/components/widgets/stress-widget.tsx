@@ -38,6 +38,96 @@ interface StressWidgetProps {
 	controls?: React.ReactNode;
 }
 
+type StressLevelConfig = {
+	color: string;
+	text: string;
+	label: string;
+	icon: typeof Zap;
+};
+
+function StressWidgetTitleRow({
+	config,
+	isEditMode,
+	controls,
+}: {
+	config: StressLevelConfig;
+	isEditMode?: boolean;
+	controls?: React.ReactNode;
+}) {
+	return (
+		<div className="flex items-center justify-between">
+			<div className="flex items-center gap-2">
+				<div className={cn("p-2 rounded-lg bg-primary/10", config.text)}>
+					<Brain className="h-5 w-5" />
+				</div>
+				<h3 className="font-bold text-lg tracking-tight">Stress & Focus</h3>
+			</div>
+			{isEditMode ? (
+				controls
+			) : (
+				<Badge
+					className="font-mono text-[10px] uppercase tracking-wider"
+					variant="outline"
+				>
+					Live Engine
+				</Badge>
+			)}
+		</div>
+	);
+}
+
+function StressHighAlert() {
+	return (
+		<div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 animate-pulse">
+			<div className="flex gap-2">
+				<AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />
+				<p className="text-xs text-rose-700 dark:text-rose-300 font-medium leading-relaxed">
+					High workload detected. Consider rescheduling non-urgent tasks or
+					taking a short break.
+				</p>
+			</div>
+		</div>
+	);
+}
+
+function FocusTaskRow({ task }: { task: TaskSummary & { _id?: string } }) {
+	return (
+		<div className="group relative p-3 rounded-xl border bg-card hover:border-primary/30 transition-all duration-200">
+			<div className="flex items-start gap-3">
+				<div className="space-y-1 min-w-0">
+					<p className="text-sm font-semibold truncate leading-none">
+						{task.title}
+					</p>
+					<div className="flex items-center gap-2">
+						<Badge
+							className="text-[9px] h-4 px-1 capitalize"
+							variant="secondary"
+						>
+							{task.priority || "medium"}
+						</Badge>
+						{task.dueDate &&
+							(() => {
+								const due = new Date(task.dueDate);
+								if (Number.isNaN(due.getTime())) return null;
+								return (
+									<span
+										className={cn(
+											"text-[9px] font-medium flex items-center gap-0.5",
+											task.isOverdue ? "text-rose-500" : "text-muted-foreground"
+										)}
+									>
+										<Clock className="h-2.5 w-2.5" />
+										{formatDistanceToNow(due, { addSuffix: true })}
+									</span>
+								);
+							})()}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
 export const StressWidget = ({
 	workspaceId,
 	isEditMode,
@@ -95,25 +185,11 @@ export const StressWidget = ({
 	return (
 		<WidgetCard className="overflow-hidden border-none shadow-xl bg-gradient-to-br from-background to-muted/30">
 			<div className="p-6 space-y-6">
-				{/* Header */}
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<div className={cn("p-2 rounded-lg bg-primary/10", config.text)}>
-							<Brain className="h-5 w-5" />
-						</div>
-						<h3 className="font-bold text-lg tracking-tight">Stress & Focus</h3>
-					</div>
-					{isEditMode ? (
-						controls
-					) : (
-						<Badge
-							className="font-mono text-[10px] uppercase tracking-wider"
-							variant="outline"
-						>
-							Live Engine
-						</Badge>
-					)}
-				</div>
+				<StressWidgetTitleRow
+					config={config}
+					controls={controls}
+					isEditMode={isEditMode}
+				/>
 
 				{/* Stress Meter Section */}
 				<div className="space-y-4">
@@ -160,17 +236,7 @@ export const StressWidget = ({
 						/>
 					</div>
 
-					{stressLevel === "high" && (
-						<div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 animate-pulse">
-							<div className="flex gap-2">
-								<AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />
-								<p className="text-xs text-rose-700 dark:text-rose-300 font-medium leading-relaxed">
-									High workload detected. Consider rescheduling non-urgent tasks
-									or taking a short break.
-								</p>
-							</div>
-						</div>
-					)}
+					{stressLevel === "high" && <StressHighAlert />}
 				</div>
 
 				<Separator className="opacity-50" />
@@ -207,46 +273,7 @@ export const StressWidget = ({
 								</div>
 							) : (
 								focusTasks?.map((task: TaskSummary & { _id?: string }) => (
-									<div
-										className="group relative p-3 rounded-xl border bg-card hover:border-primary/30 transition-all duration-200"
-										key={task._id}
-									>
-										<div className="flex items-start gap-3">
-											<div className="space-y-1 min-w-0">
-												<p className="text-sm font-semibold truncate leading-none">
-													{task.title}
-												</p>
-												<div className="flex items-center gap-2">
-													<Badge
-														className="text-[9px] h-4 px-1 capitalize"
-														variant="secondary"
-													>
-														{task.priority || "medium"}
-													</Badge>
-													{task.dueDate &&
-														(() => {
-															const due = new Date(task.dueDate);
-															if (Number.isNaN(due.getTime())) return null;
-															return (
-																<span
-																	className={cn(
-																		"text-[9px] font-medium flex items-center gap-0.5",
-																		task.isOverdue
-																			? "text-rose-500"
-																			: "text-muted-foreground"
-																	)}
-																>
-																	<Clock className="h-2.5 w-2.5" />
-																	{formatDistanceToNow(due, {
-																		addSuffix: true,
-																	})}
-																</span>
-															);
-														})()}
-												</div>
-											</div>
-										</div>
-									</div>
+									<FocusTaskRow key={task._id} task={task} />
 								))
 							)}
 						</div>

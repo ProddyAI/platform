@@ -146,6 +146,57 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 	},
 };
 
+function IntegrationTopBar({ gradient }: { gradient: string }) {
+	return (
+		<div
+			className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${gradient}`}
+		/>
+	);
+}
+
+function IntegrationStatusBadge({ isConnected }: { isConnected: boolean }) {
+	if (isConnected) {
+		return (
+			<span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 leading-5">
+				<span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+				Active
+			</span>
+		);
+	}
+	return (
+		<span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border text-muted-foreground text-[11px] font-medium px-2.5 py-0.5 leading-5">
+			<span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+			Not connected
+		</span>
+	);
+}
+
+function ServiceToolkitIcon({
+	Icon,
+	iconBg,
+	isConnected,
+}: {
+	Icon: React.ComponentType<{ className?: string }>;
+	iconBg: string;
+	isConnected: boolean;
+}) {
+	return (
+		<div
+			className={`
+				relative flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
+				text-white shadow-sm ${iconBg}
+			`}
+		>
+			<Icon className="h-5 w-5" />
+			{isConnected && (
+				<span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-card flex items-center justify-center">
+					<CheckCircle2 className="h-2.5 w-2.5 text-white" />
+				</span>
+			)}
+		</div>
+	);
+}
+
 /** Relative-time helper */
 function timeAgo(ms: number): string {
 	const diff = Date.now() - ms;
@@ -305,45 +356,20 @@ export const ServiceIntegrationCard = ({
 				}
 			`}
 		>
-			{/* ── Connected gradient top-bar ── */}
-			{isConnected && (
-				<div
-					className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${cfg.connectedGradient}`}
-				/>
-			)}
+			{isConnected && <IntegrationTopBar gradient={cfg.connectedGradient} />}
 
-			{/* ── Status badge ── */}
 			<div className="absolute top-3 right-3 z-10">
-				{isConnected ? (
-					<span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 leading-5">
-						<span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-						Active
-					</span>
-				) : (
-					<span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border text-muted-foreground text-[11px] font-medium px-2.5 py-0.5 leading-5">
-						<span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-						Not connected
-					</span>
-				)}
+				<IntegrationStatusBadge isConnected={Boolean(isConnected)} />
 			</div>
 
 			{/* ── Header ── */}
 			<CardHeader className="pb-2 pt-5 pr-24">
 				<div className="flex items-center gap-3">
-					{/* Icon pill */}
-					<div
-						className={`
-							relative flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
-							text-white shadow-sm ${cfg.iconBg}
-						`}
-					>
-						<IconComponent className="h-5 w-5" />
-						{isConnected && (
-							<span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-card flex items-center justify-center">
-								<CheckCircle2 className="h-2.5 w-2.5 text-white" />
-							</span>
-						)}
-					</div>
+					<ServiceToolkitIcon
+						Icon={IconComponent}
+						iconBg={cfg.iconBg}
+						isConnected={Boolean(isConnected)}
+					/>
 
 					<div className="min-w-0">
 						<p className="font-semibold text-sm text-foreground leading-tight">

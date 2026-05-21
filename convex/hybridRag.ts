@@ -261,17 +261,19 @@ function sanitizeContextWindow(
 		if (!items || items.length === 0) continue;
 
 		const rows = items.map((entry) => {
-			const m = entry.metadata;
+			const metadata = entry.metadata;
 			const flags: string[] = [];
-			if (m.isBlocker) flags.push("🔴 BLOCKER");
-			if (m.isOverdue) flags.push("⚠️ OVERDUE");
-			if (m.status) flags.push(`status:${m.status}`);
-			if (m.priority) flags.push(`priority:${m.priority}`);
-			if (m.dueDate) {
-				flags.push(`due:${new Date(m.dueDate).toISOString().slice(0, 10)}`);
+			if (metadata.isBlocker) flags.push("🔴 BLOCKER");
+			if (metadata.isOverdue) flags.push("⚠️ OVERDUE");
+			if (metadata.status) flags.push(`status:${metadata.status}`);
+			if (metadata.priority) flags.push(`priority:${metadata.priority}`);
+			if (metadata.dueDate) {
+				flags.push(
+					`due:${new Date(metadata.dueDate).toISOString().slice(0, 10)}`
+				);
 			}
 			const flagStr = flags.length ? ` [${flags.join(" | ")}]` : "";
-			const title = m.title ? `**${m.title}**${flagStr}\n  ` : "";
+			const title = metadata.title ? `**${metadata.title}**${flagStr}\n  ` : "";
 			const rel = `(relevance: ${(entry.hybridScore * 100).toFixed(0)}%)`;
 			return `- ${title}${entry.text} ${rel}`;
 		});

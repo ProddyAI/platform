@@ -310,7 +310,7 @@ export const getChannelSummary = createTool({
 		}
 		return await ctx.runQuery(api.assistantTools.getChannelSummary, {
 			workspaceId: ctx.workspaceId,
-			channelId: channelId,
+			channelId,
 			limit: args.limit,
 		});
 	},
@@ -341,7 +341,7 @@ export const getChannelDebug = createTool({
 		}
 		return await ctx.runQuery(api.assistantTools.getChannelDebug, {
 			workspaceId: ctx.workspaceId,
-			channelId: channelId,
+			channelId,
 			limit: args.limit,
 		});
 	},

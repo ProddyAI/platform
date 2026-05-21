@@ -8,7 +8,7 @@ type RequestType = {
 	daysToAdd?: number;
 };
 
-type ResponseType = { taskId: Id<"tasks">; newDueDate: number } | undefined;
+type ResponseType = { taskId: Id<"tasks">; newDueDate: number } | null;
 
 type Options = {
 	onSuccess?: (data: ResponseType) => void;
@@ -18,7 +18,7 @@ type Options = {
 };
 
 export const useRescheduleTask = () => {
-	const [data, setData] = useState<ResponseType>();
+	const [data, setData] = useState<ResponseType>(null);
 	const [error, setError] = useState<Error | null>(null);
 	const [status, setStatus] = useState<
 		"idle" | "pending" | "success" | "error"
@@ -32,7 +32,7 @@ export const useRescheduleTask = () => {
 		async (values: RequestType, options?: Options) => {
 			try {
 				setStatus("pending");
-				setData(undefined);
+				setData(null);
 				setError(null);
 
 				const result = await mutation(values);
@@ -49,7 +49,7 @@ export const useRescheduleTask = () => {
 				if (options?.throwError) {
 					throw mutationError;
 				}
-				return undefined;
+				return null;
 			} finally {
 				options?.onSettled?.();
 			}

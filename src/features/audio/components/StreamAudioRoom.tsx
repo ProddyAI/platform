@@ -92,7 +92,7 @@ export const StreamAudioRoom = ({
 	};
 
 	// Function to actually leave audio room after confirmation
-	const confirmLeaveAudio = useCallback(async () => {
+	const confirmLeaveAudio = useCallback(() => {
 		if (isLeavingConfirmed) return;
 
 		try {
