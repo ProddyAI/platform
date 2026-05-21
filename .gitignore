@@ -12,6 +12,8 @@
 .DS_Store
 *.pem
 npm-debug.log*
+npm-install.log
+bun-install.log
 package-lock.json
 .vercel
 *.tsbuildinfo
