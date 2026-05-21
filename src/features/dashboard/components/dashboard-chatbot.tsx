@@ -13,7 +13,6 @@ import {
 	CheckCircle,
 	CheckSquare,
 	ChevronDown,
-	Clock,
 	Edit2,
 	ExternalLink,
 	FileText,
@@ -23,7 +22,6 @@ import {
 	Loader,
 	Mail,
 	MessageSquare,
-	MoreVertical,
 	Plus,
 	Send,
 	Sparkles,
@@ -834,16 +832,16 @@ Try asking me things like:`;
 					{sources.map((source) => {
 						const sourceTypeDisplay = getSourceTypeDisplay(source.type);
 						return (
-						<Badge
-							className="max-w-full whitespace-normal break-words text-xs leading-relaxed"
-							key={source.id}
-							variant="secondary"
-						>
-							<span className="font-medium">{sourceTypeDisplay}:</span>
-							<span className="ml-1">
-								{getSourceDisplayText(source.text, sourceTypeDisplay)}
-							</span>
-						</Badge>
+							<Badge
+								className="max-w-full whitespace-normal break-words text-xs leading-relaxed"
+								key={source.id}
+								variant="secondary"
+							>
+								<span className="font-medium">{sourceTypeDisplay}:</span>
+								<span className="ml-1">
+									{getSourceDisplayText(source.text, sourceTypeDisplay)}
+								</span>
+							</Badge>
 						);
 					})}
 				</div>
@@ -975,74 +973,72 @@ Try asking me things like:`;
 									sideOffset={8}
 								>
 									{recentConversations && recentConversations.length > 0 ? (
-										<>
-											{recentConversations.map((conv, index) => (
-												<div key={conv._id}>
-													{index > 0 && <DropdownMenuSeparator />}
-													<DropdownMenuItem
-														className={cn(
-															"flex items-start gap-2 p-3 cursor-pointer group",
-															conversationId === conv.conversationId &&
-																"bg-accent"
-														)}
-														onSelect={(e) => {
-															e.preventDefault();
-															handleSelectConversation(conv.conversationId);
-															setIsHistoryOpen(false);
-														}}
-													>
-														<MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
-														<div className="flex-1 min-w-0">
-															<p
-																className={`text-sm font-medium truncate transition-all duration-500 ${
-																	conv.title && conv.title !== "New Chat"
-																		? "opacity-100"
-																		: "opacity-60"
-																}`}
-															>
-																{conv.title || "New Chat"}
-																{(conv as any).titleSource === "ai_generated" &&
-																	conv.title &&
-																	conv.title !== "New Chat" && (
-																		<Sparkles className="inline-block ml-1 h-3 w-3 text-primary/40" />
-																	)}
-															</p>
-															<p className="text-xs text-muted-foreground mt-0.5">
-																{formatRelativeTime(conv.lastMessageAt)}
-															</p>
-														</div>
-														<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-															<Button
-																className="h-6 w-6 p-0"
-																onClick={(e) => {
-																	e.stopPropagation();
-																	handleStartEditTitle(
-																		conv.conversationId,
-																		conv.title || ""
-																	);
-																	setIsHistoryOpen(false);
-																}}
-																size="sm"
-																variant="ghost"
-															>
-																<Edit2 className="h-3 w-3" />
-															</Button>
-															<Button
-																className="h-6 w-6 p-0 hover:text-destructive"
-																onClick={(e) => {
-																	e.stopPropagation();
-																	handleDeleteChat(conv.conversationId);
-																}}
-																size="sm"
-																variant="ghost"
-															>
-																<Trash2 className="h-3 w-3" />
-															</Button>
-														</div>
-													</DropdownMenuItem>
-												</div>
-											))}
-										</>
+										recentConversations.map((conv, index) => (
+											<div key={conv._id}>
+												{index > 0 && <DropdownMenuSeparator />}
+												<DropdownMenuItem
+													className={cn(
+														"flex items-start gap-2 p-3 cursor-pointer group",
+														conversationId === conv.conversationId &&
+															"bg-accent"
+													)}
+													onSelect={(e) => {
+														e.preventDefault();
+														handleSelectConversation(conv.conversationId);
+														setIsHistoryOpen(false);
+													}}
+												>
+													<MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+													<div className="flex-1 min-w-0">
+														<p
+															className={`text-sm font-medium truncate transition-all duration-500 ${
+																conv.title && conv.title !== "New Chat"
+																	? "opacity-100"
+																	: "opacity-60"
+															}`}
+														>
+															{conv.title || "New Chat"}
+															{(conv as any).titleSource === "ai_generated" &&
+																conv.title &&
+																conv.title !== "New Chat" && (
+																	<Sparkles className="inline-block ml-1 h-3 w-3 text-primary/40" />
+																)}
+														</p>
+														<p className="text-xs text-muted-foreground mt-0.5">
+															{formatRelativeTime(conv.lastMessageAt)}
+														</p>
+													</div>
+													<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+														<Button
+															className="h-6 w-6 p-0"
+															onClick={(e) => {
+																e.stopPropagation();
+																handleStartEditTitle(
+																	conv.conversationId,
+																	conv.title || ""
+																);
+																setIsHistoryOpen(false);
+															}}
+															size="sm"
+															variant="ghost"
+														>
+															<Edit2 className="h-3 w-3" />
+														</Button>
+														<Button
+															className="h-6 w-6 p-0 hover:text-destructive"
+															onClick={(e) => {
+																e.stopPropagation();
+																handleDeleteChat(conv.conversationId);
+															}}
+															size="sm"
+															variant="ghost"
+														>
+															<Trash2 className="h-3 w-3" />
+														</Button>
+													</div>
+												</DropdownMenuItem>
+											</div>
+										))
 									) : (
 										<div className="p-4 text-center text-sm text-muted-foreground">
 											No conversations yet

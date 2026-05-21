@@ -359,16 +359,11 @@ export class UnifiedToolManager {
 							fullArgs.userId = this.userId;
 						}
 
-						let result: unknown;
-						if (toolDef.handlerType === "query") {
-							result = await this.convex.query(toolDef.handler, fullArgs);
-						} else if (toolDef.handlerType === "mutation") {
-							result = await this.convex.mutation(toolDef.handler, fullArgs);
-						} else {
-							result = await this.convex.action(toolDef.handler, fullArgs);
-						}
-
-						return result;
+						if (toolDef.handlerType === "query")
+							return this.convex.query(toolDef.handler, fullArgs);
+						if (toolDef.handlerType === "mutation")
+							return this.convex.mutation(toolDef.handler, fullArgs);
+						return this.convex.action(toolDef.handler, fullArgs);
 					} catch (error: any) {
 						console.error(
 							`Error executing internal tool ${toolDef.name}:`,
@@ -394,14 +389,10 @@ export class UnifiedToolManager {
 		}
 
 		try {
-			const tools = await (this.composio as any).getTools(
-				{
-					apps: requestedApps,
-				},
+			return await (this.composio as any).getTools(
+				{ apps: requestedApps },
 				this.workspaceEntityId
 			);
-
-			return tools;
 		} catch (error) {
 			console.error("Failed to fetch Composio tools:", error);
 			return {};
@@ -423,15 +414,9 @@ export class UnifiedToolManager {
 
 		const allTools: Record<string, any> = {};
 
-		if (includeInternal) {
-			const internalTools = await this.getInternalTools();
-			Object.assign(allTools, internalTools);
-		}
-
-		if (includeExternal && requestedApps.length > 0) {
-			const externalTools = await this.getExternalTools(requestedApps);
-			Object.assign(allTools, externalTools);
-		}
+		if (includeInternal) Object.assign(allTools, await this.getInternalTools());
+		if (includeExternal && requestedApps.length > 0)
+			Object.assign(allTools, await this.getExternalTools(requestedApps));
 
 		return allTools;
 	}

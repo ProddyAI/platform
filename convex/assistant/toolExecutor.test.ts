@@ -11,7 +11,7 @@ describe("toOpenAIChatMessages", () => {
 					{
 						id: "call_1",
 						type: "function",
-						function: { name: "searchNotes", arguments: "{\"query\":\"roadmap\"}" },
+						function: { name: "searchNotes", arguments: '{"query":"roadmap"}' },
 					},
 				],
 			},

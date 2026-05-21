@@ -143,10 +143,7 @@ async function appendWorkspaceCatchupContext(
 
 		pushSourceRefs(state, "getWorkspaceGeneralSummary", summary);
 		state.summaryLines.push(
-			summarizeCount(
-				"Recent messages",
-				countItems(summary?.recentMessages)
-			),
+			summarizeCount("Recent messages", countItems(summary?.recentMessages)),
 			summarizeCount(
 				"High-priority tasks",
 				countItems(summary?.highPriorityTasks)
@@ -250,22 +247,25 @@ async function appendTaskCreateContext(
 			workspaceId: args.workspaceId,
 		})) as unknown[];
 		state.summaryLines.push(
-			summarizeCount(
-				"Accepted workspace members",
-				countItems(members)
-			)
+			summarizeCount("Accepted workspace members", countItems(members))
 		);
 	}
 }
 
 const contextResolvers: Array<
-	(args: PreflightArgs, state: PreflightState, plan: PreflightPlan) => Promise<
-		string | undefined
-	>
+	(
+		args: PreflightArgs,
+		state: PreflightState,
+		plan: PreflightPlan
+	) => Promise<string | undefined>
 > = [resolveChannelSummaryContext];
 
 const contextAppenders: Array<
-	(args: PreflightArgs, state: PreflightState, plan: PreflightPlan) => Promise<void>
+	(
+		args: PreflightArgs,
+		state: PreflightState,
+		plan: PreflightPlan
+	) => Promise<void>
 > = [
 	appendWorkspaceCatchupContext,
 	appendNoteLookupContext,

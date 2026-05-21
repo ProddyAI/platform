@@ -11,6 +11,7 @@ import {
 	type AssistantProfileRecord,
 	buildAssistantProfilePrompt,
 } from "./assistant/profile";
+import { validateRelativeDueDateSelection } from "./assistant/relativeDate";
 import {
 	buildTaskDraftFailureMessage,
 	formatPendingTaskDraftConfirmation,
@@ -27,7 +28,6 @@ import {
 	createFallbackResponseFromToolResult,
 	dedupeSourceRefs,
 } from "./assistant/toolResults";
-import { validateRelativeDueDateSelection } from "./assistant/relativeDate";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 

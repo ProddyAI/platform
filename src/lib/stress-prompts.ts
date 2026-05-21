@@ -1,6 +1,6 @@
 import type { StressMetrics } from "../../convex/stress";
 
-const TITLE_CONTROL_CHARS_REGEX = /[\x00-\x1F\x7F]/g;
+const TITLE_CONTROL_CHARS_REGEX = /\p{Cc}/gu;
 const INSTRUCTION_PREFIX_REGEX =
 	/^(?:system|assistant|user|developer|instructions?)\s*:\s*/i;
 

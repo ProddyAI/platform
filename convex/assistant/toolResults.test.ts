@@ -18,6 +18,10 @@ describe("collectSourceRefsFromToolResult", () => {
 			],
 		});
 
-		expect(refs).toEqual(["Note: Release notes", "Note: Launch plan", "Channel: #product"]);
+		expect(refs).toEqual([
+			"Note: Release notes",
+			"Note: Launch plan",
+			"Channel: #product",
+		]);
 	});
 });

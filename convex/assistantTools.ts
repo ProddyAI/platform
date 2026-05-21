@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { action, query, type QueryCtx } from "./_generated/server";
+import { action, type QueryCtx, query } from "./_generated/server";
 import {
 	buildHybridRetrievalResults,
 	type DirectSearchAllResults,

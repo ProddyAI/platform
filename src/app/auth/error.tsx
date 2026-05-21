@@ -3,7 +3,9 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-function getAuthErrorMessage(error: Error & { digest?: string; code?: string }) {
+function getAuthErrorMessage(
+	error: Error & { digest?: string; code?: string }
+) {
 	const errorCode = String(error.code ?? "").toLowerCase();
 	const errorMessage = String(error.message ?? "").toLowerCase();
 
@@ -13,10 +15,7 @@ function getAuthErrorMessage(error: Error & { digest?: string; code?: string }) 
 	) {
 		return "Access was denied. Please try signing in again.";
 	}
-	if (
-		errorCode.includes("callback") ||
-		errorMessage.includes("callback")
-	) {
+	if (errorCode.includes("callback") || errorMessage.includes("callback")) {
 		return "The sign-in callback did not complete. Please try again.";
 	}
 

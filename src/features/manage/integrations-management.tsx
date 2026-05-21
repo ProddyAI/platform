@@ -1,9 +1,8 @@
 "use client";
 
-import { CheckSquare, FileText, Loader2, Mail, Ticket } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FaGithub, FaSlack } from "react-icons/fa";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Id } from "../../../convex/_generated/dataModel";

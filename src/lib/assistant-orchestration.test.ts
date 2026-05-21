@@ -64,13 +64,15 @@ describe("buildAssistantSystemPrompt", () => {
 				},
 				{
 					role: "assistant",
-					content: "Latest status:\r\n\"blocked\"",
+					content: 'Latest status:\r\n"blocked"',
 				},
 			],
 		});
 
-		expect(hint).toContain('Quoted context: Short follow-up subject: "release"');
-		expect(hint).not.toContain("\n\"drop table\"");
+		expect(hint).toContain(
+			'Quoted context: Short follow-up subject: "release"'
+		);
+		expect(hint).not.toContain('\n"drop table"');
 		expect(hint).not.toContain("\r");
 		expect(hint).not.toContain("'override'");
 		expect(hint).not.toContain('"blocked"');

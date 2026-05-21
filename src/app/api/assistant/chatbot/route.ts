@@ -62,7 +62,9 @@ function sanitizeToolResult(result: unknown): Record<string, unknown> {
 		id: truncateIdentifier(record.id),
 		keys: Object.keys(record).slice(0, 8),
 		itemCount: Array.isArray(record.items) ? record.items.length : undefined,
-		resultCount: Array.isArray(record.results) ? record.results.length : undefined,
+		resultCount: Array.isArray(record.results)
+			? record.results.length
+			: undefined,
 	};
 }
 
@@ -315,9 +317,7 @@ export async function POST(req: NextRequest) {
 							typeof acc?.toolkit === "string" ? acc.toolkit.trim() : "";
 						return toolkit ? [toolkit.toUpperCase()] : [];
 					});
-					connectedApps = [
-						...new Set(normalizedToolkits),
-					] as AvailableApp[];
+					connectedApps = [...new Set(normalizedToolkits)] as AvailableApp[];
 
 					const firstAccount = activeAccounts[0];
 					if (firstAccount?.userId) {
