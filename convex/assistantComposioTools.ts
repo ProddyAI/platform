@@ -7,9 +7,9 @@ import type { Id } from "./_generated/dataModel";
 import type { ActionCtx } from "./_generated/server";
 import { action } from "./_generated/server";
 
-const COMPOSIO_BASE_V1 = "https://backend.composio.dev/api/v1";
 const COMPOSIO_BASE_V2 = "https://backend.composio.dev/api/v2";
 const COMPOSIO_BASE_V3 = "https://backend.composio.dev/api/v3";
+const COMPOSIO_BASE_V3_1 = "https://backend.composio.dev/api/v3.1";
 
 function debugLog(...args: unknown[]) {
 	if (process.env.COMPOSIO_DEBUG === "1") console.log(...args);
@@ -73,6 +73,7 @@ type ComposioToolItem = {
 type DbAccount = ComposioAccountItem & {
 	toolkit?: string;
 	composioAccountId?: string;
+	userId?: string;
 };
 
 async function fetchWithTimeout(
@@ -102,50 +103,6 @@ async function fetchWithTimeout(
 		clearTimeout(timeoutId);
 		upstreamSignal?.removeEventListener("abort", abortHandler);
 	}
-}
-
-async function resolveComposioUUID(
-	composioKey: string,
-	entityId: string,
-	toolkit: string,
-	dbAccount: DbAccount
-): Promise<string | null> {
-	const appNameUpper = toolkit.toUpperCase();
-
-	const acctResp = await fetchWithTimeout(
-		`${COMPOSIO_BASE_V1}/connectedAccounts?entityId=${entityId}&appName=${appNameUpper}`,
-		{ headers: { "X-API-Key": composioKey } }
-	);
-	const acctData = (await acctResp.json()) as { items?: ComposioAccountItem[] };
-	const exactMatch = (acctData?.items ?? []).find(
-		(a) => a.appName?.toLowerCase() === toolkit && a.status === "ACTIVE"
-	);
-	if (exactMatch?.id) return exactMatch.id;
-
-	debugLog(
-		`[Composio] No UUID for ${toolkit} with entityId filter, trying without...`
-	);
-	const allAcctResp = await fetchWithTimeout(
-		`${COMPOSIO_BASE_V1}/connectedAccounts?entityId=${entityId}`,
-		{ headers: { "X-API-Key": composioKey } }
-	);
-	const allAcctData = (await allAcctResp.json()) as {
-		items?: ComposioAccountItem[];
-	};
-	const broadMatch = (allAcctData?.items ?? []).find(
-		(a) => a.appName?.toLowerCase() === toolkit && a.status === "ACTIVE"
-	);
-	if (broadMatch?.id) return broadMatch.id;
-
-	if (dbAccount.composioAccountId) {
-		debugLog(
-			`[Composio] Using DB composioAccountId as UUID: ${dbAccount.composioAccountId}`
-		);
-		return dbAccount.composioAccountId;
-	}
-
-	debugLog(`[Composio] No UUID found for ${toolkit} anywhere`);
-	return null;
 }
 
 async function fetchComposioToolDefs(
@@ -197,23 +154,47 @@ async function fetchComposioToolDefs(
 async function executeComposioToolCall(
 	composioKey: string,
 	execSlug: string,
-	connectedAccountId: string,
+	userId: string,
 	toolArgs: Record<string, unknown>
 ): Promise<unknown> {
+	// v3.1 is the documented current execute endpoint:
+	//   POST /api/v3.1/tools/execute/{tool_slug}
+	//   body: { user_id, arguments }
+	// We pass user_id (the Composio entity id) rather than connected_account_id
+	// so Composio auto-resolves to the currently active connection. Passing a
+	// cached UUID can produce 400 "No connected account found" if the
+	// underlying connection was rotated, deleted, or never existed under that id.
+	const v3Body = JSON.stringify({
+		user_id: userId,
+		arguments: toolArgs,
+	});
+
 	let execResp = await fetchWithTimeout(
-		`${COMPOSIO_BASE_V3}/tools/${execSlug}/execute`,
+		`${COMPOSIO_BASE_V3_1}/tools/execute/${execSlug}`,
 		{
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				"X-API-Key": composioKey,
 			},
-			body: JSON.stringify({
-				connected_account_id: connectedAccountId,
-				input: toolArgs,
-			}),
+			body: v3Body,
 		}
 	);
+
+	if (execResp.status === 404) {
+		debugLog(`[Composio] v3.1 execute 404 for ${execSlug}, trying v3 fallback`);
+		execResp = await fetchWithTimeout(
+			`${COMPOSIO_BASE_V3}/tools/execute/${execSlug}`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-API-Key": composioKey,
+				},
+				body: v3Body,
+			}
+		);
+	}
 
 	if (execResp.status === 404) {
 		debugLog(`[Composio] v3 execute 404 for ${execSlug}, falling back to v2`);
@@ -225,21 +206,57 @@ async function executeComposioToolCall(
 					"Content-Type": "application/json",
 					"X-API-Key": composioKey,
 				},
-				body: JSON.stringify({ connectedAccountId, input: toolArgs }),
+				body: JSON.stringify({ entityId: userId, input: toolArgs }),
 			}
 		);
 	}
 
-	const result = await execResp.json();
+	const resultText = await execResp.text();
+	let result: unknown;
+	try {
+		result = JSON.parse(resultText);
+	} catch {
+		result = { raw: resultText };
+	}
+
 	debugLog(
 		`[Composio] tool result (${execResp.status}): ${JSON.stringify(result).slice(0, 500)}`
 	);
+
+	if (!execResp.ok) {
+		console.error(
+			`[Composio] execute failed: slug=${execSlug} status=${execResp.status} body=${resultText.slice(0, 500)}`
+		);
+		throw new Error(
+			`Composio execute failed (${execResp.status}): ${resultText.slice(0, 300)}`
+		);
+	}
+
+	const resultObj =
+		result && typeof result === "object"
+			? (result as Record<string, unknown>)
+			: null;
+	if (resultObj && resultObj.successful === false) {
+		const errMsg =
+			typeof resultObj.error === "string"
+				? resultObj.error
+				: JSON.stringify(resultObj.error ?? resultObj);
+		console.error(
+			`[Composio] execute returned successful=false: slug=${execSlug} error=${errMsg.slice(0, 500)}`
+		);
+		throw new Error(
+			`Composio tool ${execSlug} failed: ${errMsg.slice(0, 300)}`
+		);
+	}
+
 	return result;
 }
 
 type ComposioToolsBuildResult = {
 	tools: OpenAI.Chat.ChatCompletionTool[];
-	uuidByToolName: Record<string, string>;
+	// Maps OpenAI tool name -> Composio entity user_id (used at execute time),
+	// plus parallel keys `__slug__${name}` -> raw Composio tool slug.
+	contextByToolName: Record<string, string>;
 };
 
 function buildComposioSystemPrompt(
@@ -273,7 +290,7 @@ async function buildOpenAIToolsFromApps(
 	allAccounts: unknown[]
 ): Promise<ComposioToolsBuildResult | { error: string }> {
 	const tools: OpenAI.Chat.ChatCompletionTool[] = [];
-	const uuidByToolName: Record<string, string> = {};
+	const contextByToolName: Record<string, string> = {};
 
 	for (const appName of appNames) {
 		const toolkit = appName.toLowerCase();
@@ -285,14 +302,13 @@ async function buildOpenAIToolsFromApps(
 			continue;
 		}
 
-		const connectedAccountUUID = await resolveComposioUUID(
-			composioKey,
-			entityId,
-			toolkit,
-			dbAccount
-		);
-		if (!connectedAccountUUID) continue;
-		debugLog(`[Composio] ${toolkit}: UUID=${connectedAccountUUID}`);
+		// Prefer the entity id stored on the DB row (this is what was used when
+		// the connection was initiated, e.g. `member_xxx` or `workspace_xxx`).
+		// Fall back to the caller-provided entityId for legacy rows.
+		const executionUserId =
+			(typeof dbAccount.userId === "string" && dbAccount.userId.trim()) ||
+			entityId;
+		debugLog(`[Composio] ${toolkit}: user_id=${executionUserId}`);
 
 		const toolSearchHint =
 			appNames.includes("GITHUB") && isAuthenticatedRepoListRequest(message)
@@ -309,8 +325,8 @@ async function buildOpenAIToolsFromApps(
 			const rawName: string = t.slug || t.name || t.displayName || "";
 			if (!rawName) continue;
 			const name = rawName.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
-			uuidByToolName[name] = connectedAccountUUID;
-			uuidByToolName[`__slug__${name}`] = t.slug || rawName;
+			contextByToolName[name] = executionUserId;
+			contextByToolName[`__slug__${name}`] = t.slug || rawName;
 			tools.push({
 				type: "function",
 				function: {
@@ -335,14 +351,14 @@ async function buildOpenAIToolsFromApps(
 		};
 	}
 
-	return { tools, uuidByToolName };
+	return { tools, contextByToolName };
 }
 
 async function runComposioToolCallLoop(
 	openai: OpenAI,
 	composioKey: string,
 	toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[],
-	uuidByToolName: Record<string, string>,
+	contextByToolName: Record<string, string>,
 	normalizedMessage: string,
 	assistantMessage: OpenAI.Chat.ChatCompletionMessageParam
 ): Promise<string> {
@@ -355,17 +371,17 @@ async function runComposioToolCallLoop(
 			string,
 			unknown
 		>;
-		const connectedAccountId = uuidByToolName[toolName];
-		const execSlug = uuidByToolName[`__slug__${toolName}`] || toolName;
+		const executionUserId = contextByToolName[toolName];
+		const execSlug = contextByToolName[`__slug__${toolName}`] || toolName;
 		debugLog(
-			`[Composio] Executing ${toolName} (slug=${execSlug}), connectedAccountId=${connectedAccountId}`
+			`[Composio] Executing ${toolName} (slug=${execSlug}), user_id=${executionUserId}`
 		);
 
 		try {
 			const result = await executeComposioToolCall(
 				composioKey,
 				execSlug,
-				connectedAccountId,
+				executionUserId,
 				toolArgs
 			);
 			toolMessages.push({
@@ -447,7 +463,7 @@ async function executeComposioAction(
 			return { success: false, error: built.error };
 		}
 
-		const { tools, uuidByToolName } = built;
+		const { tools, contextByToolName } = built;
 		debugLog(
 			`[Composio] Calling OpenAI with ${tools.length} tools (tool_choice=required)`
 		);
@@ -474,8 +490,8 @@ async function executeComposioAction(
 					tc.type === "function"
 			)
 			.map((tc) => tc.function.name);
-		debugLog(
-			`[Composio] OpenAI selected ${toolCalls.length} tool call(s): ${functionToolNames.join(", ")}`
+		console.log(
+			`[Composio] apps=${appNames.join(",")} selected ${toolCalls.length} tool call(s): ${functionToolNames.join(", ")}`
 		);
 
 		if (toolCalls.length === 0) {
@@ -491,7 +507,7 @@ async function executeComposioAction(
 			openai,
 			COMPOSIO_KEY,
 			toolCalls,
-			uuidByToolName,
+			contextByToolName,
 			normalizedMessage,
 			assistantMessage
 		);
