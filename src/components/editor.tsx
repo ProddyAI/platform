@@ -892,18 +892,6 @@ const Editor = ({
 				</DialogContent>
 			</Dialog>
 
-			<Dialog onOpenChange={setMeetsModalOpen} open={meetsModalOpen}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Meets coming soon</DialogTitle>
-						<DialogDescription>
-							We are building native meetings for chat contexts. You will be
-							able to start and join calls from here soon.
-						</DialogDescription>
-					</DialogHeader>
-				</DialogContent>
-			</Dialog>
-
 			<Dialog
 				onOpenChange={(open) => {
 					setNotesModalOpen(open);

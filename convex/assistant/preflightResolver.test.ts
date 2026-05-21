@@ -6,13 +6,13 @@ import { resolvePreflightContext } from "./preflightResolver";
 function createCtx(responses: unknown[]) {
 	let index = 0;
 	return {
-		runQuery: async () => {
+		runQuery: () => {
 			if (index >= responses.length) {
-				throw new Error("Unexpected query handler");
+				return Promise.reject(new Error("Unexpected query handler"));
 			}
 			const response = responses[index];
 			index += 1;
-			return response;
+			return Promise.resolve(response);
 		},
 	} as unknown as ActionCtx;
 }

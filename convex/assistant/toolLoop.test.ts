@@ -27,22 +27,22 @@ describe("resolveAssistantToolLoop", () => {
 				{ role: "system", content: "system prompt" },
 				{ role: "user", content: "summarize #general" },
 			],
-			executeToolCall: async (toolCall) => {
+			executeToolCall: (toolCall) => {
 				const name = toolCall.function?.name ?? "unknownTool";
 				const args = JSON.parse(toolCall.function?.arguments ?? "{}");
 				executedSteps.push({ name, args });
 
 				if (name === "searchChannels") {
-					return {
+					return Promise.resolve({
 						result: {
 							channels: [{ id: "channel-general", name: "general" }],
 							count: 1,
 						},
-					};
+					});
 				}
 
 				if (name === "getChannelSummary") {
-					return {
+					return Promise.resolve({
 						result: {
 							channelName: "general",
 							messageCount: 4,
@@ -59,12 +59,12 @@ describe("resolveAssistantToolLoop", () => {
 						fallbackText:
 							"Recent updates in #general\n- Christy Saji: Onboarding update: the workspace checklist is ready.",
 						sourceRefs: ["Channel Messages: #general"],
-					};
+					});
 				}
 
-				throw new Error(`Unexpected tool: ${name}`);
+				return Promise.reject(new Error(`Unexpected tool: ${name}`));
 			},
-			createCompletion: async (messages) => {
+			createCompletion: (messages) => {
 				completionCount += 1;
 
 				if (completionCount === 1) {
@@ -77,7 +77,7 @@ describe("resolveAssistantToolLoop", () => {
 						}),
 					});
 
-					return {
+					return Promise.resolve({
 						content: "",
 						tool_calls: [
 							{
@@ -91,7 +91,7 @@ describe("resolveAssistantToolLoop", () => {
 								},
 							},
 						],
-					};
+					});
 				}
 
 				if (completionCount === 2) {
@@ -113,13 +113,13 @@ describe("resolveAssistantToolLoop", () => {
 						}),
 					});
 
-					return {
+					return Promise.resolve({
 						content:
 							"Recent updates in #general:\n- Onboarding checklist is ready.\n- Login bug is still blocking rollout.",
-					};
+					});
 				}
 
-				throw new Error("Unexpected extra completion");
+				return Promise.reject(new Error("Unexpected extra completion"));
 			},
 			initialResponseText: "I couldn't find anything relevant yet.",
 		});
@@ -152,12 +152,10 @@ describe("resolveAssistantToolLoop", () => {
 				{ role: "system", content: "system prompt" },
 				{ role: "user", content: "make it medium priority" },
 			],
-			executeToolCall: async () => {
-				throw new Error("Task title is required");
-			},
-			createCompletion: async () => {
-				throw new Error("Should not request another completion");
-			},
+			executeToolCall: () =>
+				Promise.reject(new Error("Task title is required")),
+			createCompletion: () =>
+				Promise.reject(new Error("Should not request another completion")),
 			initialResponseText: "I couldn't find anything relevant yet.",
 		}).catch((error) => error);
 

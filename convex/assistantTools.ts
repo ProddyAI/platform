@@ -139,6 +139,8 @@ export const getMyCalendarToday = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const now = new Date();
 		const todayStart = startOfDayMs(now);
 		const todayEnd = endOfDayMs(now);
@@ -184,6 +186,8 @@ export const getMyCalendarTomorrow = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const now = new Date();
 		const tomorrow = addDays(now, 1);
 		const tomorrowStart = startOfDayMs(tomorrow);
@@ -230,6 +234,8 @@ export const getMyCalendarThisWeek = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const now = new Date();
 		const thisWeekEnd = addDays(now, 7);
 
@@ -276,6 +282,8 @@ export const getMyCalendarNextWeek = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const now = new Date();
 		const nextWeekStart = addDays(now, 7);
 		const nextWeekEnd = addDays(now, 14);
@@ -326,6 +334,8 @@ export const getMyTasksToday = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const now = new Date();
 		const todayStart = startOfDayMs(now);
 		const todayEnd = endOfDayMs(now);
@@ -335,7 +345,7 @@ export const getMyTasksToday = query({
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
-			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -377,6 +387,8 @@ export const getMyTasksTomorrow = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const now = new Date();
 		const tomorrow = addDays(now, 1);
 		const tomorrowStart = startOfDayMs(tomorrow);
@@ -387,7 +399,7 @@ export const getMyTasksTomorrow = query({
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
-			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -429,6 +441,8 @@ export const getMyTasksThisWeek = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const now = new Date();
 		const thisWeekEnd = addDays(now, 7);
 
@@ -437,7 +451,7 @@ export const getMyTasksThisWeek = query({
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
-			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -482,6 +496,8 @@ export const getMyTasksNextWeek = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const now = new Date();
 
 		const allTasks = await ctx.db
@@ -489,7 +505,7 @@ export const getMyTasksNextWeek = query({
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
-			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -530,12 +546,14 @@ export const getMyAllTasks = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
+
 		let query = ctx.db
 			.query("tasks")
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
-			.filter((q) => q.eq(q.field("userId"), args.userId));
+			.filter((q) => q.eq(q.field("userId"), authUserId));
 
 		if (!args.includeCompleted) {
 			query = query.filter((q) => q.eq(q.field("completed"), false));
@@ -764,6 +782,8 @@ export const searchChannels = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		await requireWorkspaceMember(ctx, args.workspaceId);
+
 		const channels = await ctx.db
 			.query("channels")
 			.withIndex("by_workspace_id", (q) =>
@@ -1160,14 +1180,13 @@ export const getMyCards = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
-		const member = await ctx.db
-			.query("members")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
-			)
-			.unique();
-		if (!member) {
-			return { cards: [], count: 0 };
+		const { authUserId, member } = await requireWorkspaceMember(
+			ctx,
+			args.workspaceId
+		);
+
+		if (args.userId !== authUserId) {
+			throw new Error("Unauthorized: can only access your own cards");
 		}
 
 		const channels = await ctx.db

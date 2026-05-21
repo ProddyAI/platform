@@ -191,7 +191,9 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	};
 
 	// Required by DndContext but no custom drag-over behavior needed
-	const handleDragOver = (_event: DragOverEvent) => {};
+	const handleDragOver = (_event: DragOverEvent) => {
+		void _event;
+	};
 
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;

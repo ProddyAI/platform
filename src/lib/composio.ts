@@ -43,7 +43,15 @@ export default composio;
  * Helper to resolve the appropriate list method for connected accounts
  * Handles SDK version compatibility between connectedAccounts.list and connections.list
  */
-function resolveComposioListMethod(composioInstance: Composio<any>) {
+type LegacyConnectionsApi = {
+	connections?: {
+		list?: (args: { entityId: string }) => Promise<unknown>;
+		get?: (connectionId: string) => Promise<unknown>;
+		delete?: (connectionId: string) => Promise<unknown>;
+	};
+};
+
+function resolveComposioListMethod(composioInstance: Composio) {
 	if (composioInstance.connectedAccounts?.list) {
 		return async (userId: string) => {
 			return await composioInstance.connectedAccounts.list({
@@ -53,7 +61,7 @@ function resolveComposioListMethod(composioInstance: Composio<any>) {
 	}
 	// Fallback for older SDK versions
 	return async (userId: string) => {
-		const connectionsApi = composioInstance as any;
+		const connectionsApi = composioInstance as LegacyConnectionsApi;
 		return await connectionsApi.connections?.list?.({
 			entityId: userId,
 		});
@@ -119,7 +127,7 @@ export function initializeComposio() {
 					userId,
 					authConfigId,
 					connectionId
-				).catch(() => {});
+				).catch(() => undefined);
 			}
 
 			return {
@@ -130,22 +138,28 @@ export function initializeComposio() {
 		},
 
 		async getConnections(userId: string) {
-			const listMethod = resolveComposioListMethod(composioInstance);
+			const listMethod = resolveComposioListMethod(
+				composioInstance as unknown as Parameters<
+					typeof resolveComposioListMethod
+				>[0]
+			);
 			return await listMethod(userId);
 		},
 
 		async getConnectionStatus(connectionId: string) {
 			return (
 				(await composioInstance.connectedAccounts?.get?.(connectionId)) ||
-				(await (composioInstance as any).connections?.get?.(connectionId))
+				(await (composioInstance as LegacyConnectionsApi).connections?.get?.(
+					connectionId
+				))
 			);
 		},
 
 		async getTools(entityId: string, appNames: string[]) {
 			try {
 				const tools = await composioInstance.tools.get(entityId, {
-					appNames: appNames,
-				} as any);
+					appNames,
+				} as never);
 
 				return { items: Array.isArray(tools) ? tools : [tools] };
 			} catch (err) {
@@ -163,8 +177,10 @@ export function initializeComposio() {
 
 			// Fallback to legacy API if modern API returns undefined or doesn't exist
 			if (result === undefined) {
-				const connectionsApi = composioInstance as any;
-				return await connectionsApi.connections?.delete?.(connectionId);
+				const connectionsApi = composioInstance as LegacyConnectionsApi;
+				return (await connectionsApi.connections?.delete?.(
+					connectionId
+				)) as ConnectedAccountDeleteResult;
 			}
 
 			return result;

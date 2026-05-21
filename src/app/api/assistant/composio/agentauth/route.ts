@@ -5,7 +5,7 @@ import {
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
-import type { Id } from "@/../convex/_generated/dataModel";
+import type { Doc, Id } from "@/../convex/_generated/dataModel";
 import {
 	buildActionableErrorPayload,
 	buildComposioFailureGuidance,
@@ -36,7 +36,8 @@ async function verifyMemberOwnership(
 	memberId: string,
 	convexClient: ConvexHttpClient
 ): Promise<
-	{ success: true; member: any } | { success: false; response: NextResponse }
+	| { success: true; member: Doc<"members"> }
+	| { success: false; response: NextResponse }
 > {
 	// Verify authentication
 	const isAuthenticated = await isAuthenticatedNextjs();
@@ -192,7 +193,7 @@ export async function POST(req: NextRequest) {
 							await convex.mutation(api.integrations.storeAuthConfig, {
 								workspaceId: workspaceId as Id<"workspaces">,
 								memberId: memberId as Id<"members">,
-								toolkit: toolkit as any,
+								toolkit,
 								name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
 								type: "use_composio_managed_auth",
 								composioAuthConfigId: toolkitAuthConfigId,
@@ -273,13 +274,22 @@ export async function POST(req: NextRequest) {
 
 			try {
 				// Step 2: Get connections to verify connection using API client
-				const connectionsResponse = await apiClient.getConnections(entityId);
-				const connectedAccounts = connectionsResponse.items || [];
+				const connectionsResponse = (await apiClient.getConnections(
+					entityId
+				)) as { items?: Array<Record<string, unknown>> };
+				const connectedAccounts = connectionsResponse.items ?? [];
 
 				// Find the most recent connection for this toolkit
 				const normalizedToolkit = String(toolkit ?? "").toLowerCase();
+				type ComposioConnectionRecord = {
+					id?: string;
+					connectionId?: string;
+					appName?: string;
+					integrationId?: string;
+					slug?: string;
+				};
 				const connectedAccount =
-					connectedAccounts.find((account: any) => {
+					connectedAccounts.find((account: Record<string, unknown>) => {
 						// Normalize account fields for comparison
 						const appName = String(account.appName ?? "").toLowerCase();
 						const integrationId = String(
@@ -293,9 +303,14 @@ export async function POST(req: NextRequest) {
 							integrationId === normalizedToolkit ||
 							slug === normalizedToolkit
 						);
-					}) || connectedAccounts[0]; // Fallback to most recent if no exact match
+					}) ?? connectedAccounts[0]; // Fallback to most recent if no exact match
+				const resolvedConnection = connectedAccount as
+					| ComposioConnectionRecord
+					| undefined;
+				const composioAccountId =
+					resolvedConnection?.id ?? resolvedConnection?.connectionId;
 
-				if (!connectedAccount) {
+				if (!resolvedConnection || !composioAccountId) {
 					return NextResponse.json(
 						{ error: "No connected account found" },
 						{ status: 404 }
@@ -313,7 +328,7 @@ export async function POST(req: NextRequest) {
 								api.integrations.getMyAuthConfigByToolkit,
 								{
 									workspaceId: workspaceId as Id<"workspaces">,
-									toolkit: toolkit as any,
+									toolkit,
 								}
 							);
 							if (!existingAuthConfig) {
@@ -321,7 +336,7 @@ export async function POST(req: NextRequest) {
 									api.integrations.getAuthConfigByToolkit,
 									{
 										workspaceId: workspaceId as Id<"workspaces">,
-										toolkit: toolkit as any,
+										toolkit,
 									}
 								);
 							}
@@ -336,10 +351,10 @@ export async function POST(req: NextRequest) {
 								{
 									workspaceId: workspaceId as Id<"workspaces">,
 									memberId: memberId as Id<"members">,
-									toolkit: toolkit as any,
+									toolkit,
 									name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
 									type: "use_composio_managed_auth",
-									composioAuthConfigId: connectedAccount.id,
+									composioAuthConfigId: composioAccountId,
 									isComposioManaged: true,
 									createdBy: memberId as Id<"members">,
 								}
@@ -369,8 +384,8 @@ export async function POST(req: NextRequest) {
 									connectedAccountId: existingConnectedAccount._id,
 									status: "ACTIVE",
 									lastUsed: Date.now(),
-									composioAccountId: connectedAccount.id,
-									metadata: connectedAccount,
+									composioAccountId,
+									metadata: resolvedConnection,
 								}
 							);
 						} else {
@@ -379,12 +394,12 @@ export async function POST(req: NextRequest) {
 							await convex.mutation(api.integrations.storeConnectedAccount, {
 								workspaceId: workspaceId as Id<"workspaces">,
 								memberId: memberId as Id<"members">,
-								authConfigId: authConfigId,
+								authConfigId,
 								userId: entityId,
-								composioAccountId: connectedAccount.id,
-								toolkit: toolkit as any,
+								composioAccountId,
+								toolkit,
 								status: "ACTIVE",
-								metadata: connectedAccount,
+								metadata: resolvedConnection,
 								connectedBy: memberId as Id<"members">,
 							});
 						}
@@ -569,7 +584,7 @@ export async function GET(req: NextRequest) {
 
 				return NextResponse.json({
 					success: true,
-					tools: tools,
+					tools,
 					toolkit,
 					entityId,
 				});

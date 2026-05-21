@@ -23,6 +23,7 @@ import {
 	buildDailyFocusPrompt,
 	buildReschedulingPrompt,
 	buildStressDetectionPrompt,
+	type TaskSummary,
 } from "@/lib/stress-prompts";
 import { cn } from "@/lib/utils";
 import { WidgetCard } from "../shared/widget-card";
@@ -205,7 +206,7 @@ export const StressWidget = ({
 									<p className="text-xs font-medium">All clear for today!</p>
 								</div>
 							) : (
-								focusTasks?.map((task: any) => (
+								focusTasks?.map((task: TaskSummary & { _id?: string }) => (
 									<div
 										className="group relative p-3 rounded-xl border bg-card hover:border-primary/30 transition-all duration-200"
 										key={task._id}
@@ -272,7 +273,7 @@ export const StressWidget = ({
 							focusTasks &&
 							openAssistantWithPrompt(
 								buildReschedulingPrompt(
-									focusTasks.filter((t: any) => t.isOverdue)
+									focusTasks.filter((task) => task.isOverdue)
 								)
 							)
 						}

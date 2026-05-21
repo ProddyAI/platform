@@ -307,12 +307,17 @@ export async function POST(req: NextRequest) {
 					}
 				);
 
-				const activeAccounts = dbAccounts.filter(
-					(acc: any) => acc.status === "ACTIVE"
+				type ConnectedAccountRow = {
+					status?: string;
+					toolkit?: string;
+					userId?: string;
+				};
+				const activeAccounts = (dbAccounts as ConnectedAccountRow[]).filter(
+					(acc) => acc.status === "ACTIVE"
 				);
 
 				if (activeAccounts.length > 0) {
-					const normalizedToolkits = activeAccounts.flatMap((acc: any) => {
+					const normalizedToolkits = activeAccounts.flatMap((acc) => {
 						const toolkit =
 							typeof acc?.toolkit === "string" ? acc.toolkit.trim() : "";
 						return toolkit ? [toolkit.toUpperCase()] : [];

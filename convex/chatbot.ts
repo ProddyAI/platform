@@ -2995,7 +2995,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 			ragResults = ragResponse.results.map(
 				(r: {
 					entryId: string;
-					content: Array<{ text: string; metadata?: any }>;
+					content: Array<{ text: string; metadata?: Record<string, unknown> }>;
 				}) => {
 					const entry = entriesById.get(r.entryId);
 					const firstContent = r.content?.[0];

@@ -191,9 +191,9 @@ export const ServiceIntegrationCard = ({
 			});
 
 			if (!response.ok) {
-				let details: any;
+				let details: { error?: string };
 				try {
-					details = await response.json();
+					details = (await response.json()) as { error?: string };
 				} catch {
 					details = { error: `HTTP ${response.status}` };
 				}
@@ -218,8 +218,11 @@ export const ServiceIntegrationCard = ({
 	};
 
 	/* ──── DISCONNECT ─────────────────────────────────────────── */
-	const handleDisconnect = async () => {
-		if (!connectedAccount) return toast.error("No connected account found");
+	const handleDisconnect = async (): Promise<void> => {
+		if (!connectedAccount) {
+			toast.error("No connected account found");
+			return;
+		}
 		setIsDisconnecting(true);
 		try {
 			const response = await fetch("/api/assistant/composio/agentauth", {
@@ -233,8 +236,8 @@ export const ServiceIntegrationCard = ({
 				}),
 			});
 			if (!response.ok) {
-				const err: any = await response.json();
-				throw new Error(err?.error || "Failed to disconnect");
+				const err = (await response.json()) as { error?: string };
+				throw new Error(err.error || "Failed to disconnect");
 			}
 			toast.success(`${cfg.name} disconnected`);
 			onConnectionChange?.();
@@ -248,9 +251,11 @@ export const ServiceIntegrationCard = ({
 	};
 
 	/* ──── REFRESH STATUS ─────────────────────────────────────── */
-	const handleRefresh = async () => {
-		if (!connectedAccount?.composioAccountId)
-			return toast.error("No account to refresh");
+	const handleRefresh = async (): Promise<void> => {
+		if (!connectedAccount?.composioAccountId) {
+			toast.error("No account to refresh");
+			return;
+		}
 		setIsRefreshing(true);
 		try {
 			const statusParams = new URLSearchParams({

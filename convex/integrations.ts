@@ -473,10 +473,17 @@ export const updateConnectedAccountStatus = mutation({
 		isDisabled: v.optional(v.boolean()),
 		lastUsed: v.optional(v.number()),
 		composioAccountId: v.optional(v.string()),
+		// metadata can contain integration-specific data like OAuth tokens, refresh tokens, or provider-specific settings
 		metadata: v.optional(v.any()),
 	},
 	handler: async (ctx, args) => {
-		const updateData: any = {
+		const updateData: {
+			status: "ACTIVE" | "PENDING" | "EXPIRED" | "ERROR" | "DISABLED";
+			isDisabled?: boolean;
+			lastUsed?: number;
+			composioAccountId?: string;
+			metadata?: any;
+		} = {
 			status: args.status,
 		};
 

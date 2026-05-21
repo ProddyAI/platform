@@ -334,8 +334,8 @@ export class UnifiedToolManager {
 		this.workspaceEntityId = config.workspaceEntityId;
 	}
 
-	async getInternalTools(): Promise<Record<string, any>> {
-		const tools: Record<string, any> = {};
+	getInternalTools(): Record<string, unknown> {
+		const tools: Record<string, unknown> = {};
 
 		for (const toolDef of INTERNAL_TOOL_DEFINITIONS) {
 			const jsonSchemaObj: Record<string, any> = {
@@ -348,9 +348,11 @@ export class UnifiedToolManager {
 			tools[toolDef.name] = tool({
 				description: toolDef.description,
 				inputSchema: jsonSchema(jsonSchemaObj),
-				execute: async (params: any) => {
+				execute: async (params: Record<string, unknown>) => {
 					try {
-						const fullArgs: Record<string, any> = { ...params };
+						const fullArgs: Record<string, unknown> = {
+							...(params as Record<string, unknown>),
+						};
 
 						if (toolDef.contextParams?.needsWorkspaceId) {
 							fullArgs.workspaceId = this.workspaceId;
@@ -359,23 +361,28 @@ export class UnifiedToolManager {
 							fullArgs.userId = this.userId;
 						}
 
-						if (toolDef.handlerType === "query")
-							return this.convex.query(toolDef.handler, fullArgs);
-						if (toolDef.handlerType === "mutation")
-							return this.convex.mutation(toolDef.handler, fullArgs);
-						return this.convex.action(toolDef.handler, fullArgs);
-					} catch (error: any) {
+						if (toolDef.handlerType === "query") {
+							return await this.convex.query(toolDef.handler, fullArgs);
+						}
+						if (toolDef.handlerType === "mutation") {
+							return await this.convex.mutation(toolDef.handler, fullArgs);
+						}
+						return await this.convex.action(toolDef.handler, fullArgs);
+					} catch (error: unknown) {
 						console.error(
 							`Error executing internal tool ${toolDef.name}:`,
 							error
 						);
 						return {
 							success: false,
-							error: error.message || "Tool execution failed",
+							error:
+								error instanceof Error
+									? error.message
+									: "Tool execution failed",
 						};
 					}
 				},
-			} as any);
+			} as unknown as ReturnType<typeof tool>);
 		}
 
 		return tools;
@@ -389,10 +396,14 @@ export class UnifiedToolManager {
 		}
 
 		try {
-			return await (this.composio as any).getTools(
-				{ apps: requestedApps },
-				this.workspaceEntityId
-			);
+			return await (
+				this.composio as unknown as {
+					getTools: (
+						args: { apps: string[] },
+						entityId: string
+					) => Promise<Record<string, unknown>>;
+				}
+			).getTools({ apps: requestedApps }, this.workspaceEntityId);
 		} catch (error) {
 			console.error("Failed to fetch Composio tools:", error);
 			return {};
@@ -414,7 +425,9 @@ export class UnifiedToolManager {
 
 		const allTools: Record<string, any> = {};
 
-		if (includeInternal) Object.assign(allTools, await this.getInternalTools());
+		if (includeInternal) {
+			Object.assign(allTools, this.getInternalTools());
+		}
 		if (includeExternal && requestedApps.length > 0)
 			Object.assign(allTools, await this.getExternalTools(requestedApps));
 

@@ -1,33 +1,22 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import type { FunctionReference } from "convex/server";
 import { v } from "convex/values";
-import OpenAI from "openai";
-import { api, components, internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
+import { api, components } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
-import { resolvePreflightContext } from "./assistant/preflightResolver";
+import { getDatabaseChatConversation } from "./assistant/databaseChatConversation";
 import {
 	type AssistantProfileRecord,
 	buildAssistantProfilePrompt,
 } from "./assistant/profile";
-import { validateRelativeDueDateSelection } from "./assistant/relativeDate";
 import {
-	buildTaskDraftFailureMessage,
-	formatPendingTaskDraftConfirmation,
-	isPendingTaskCancellation,
-	isPendingTaskConfirmation,
-} from "./assistant/taskDrafts";
-import {
-	executeToolHandler,
-	toOpenAIChatMessages,
-} from "./assistant/toolExecutor";
-import { resolveAssistantToolLoop } from "./assistant/toolLoop";
-import {
-	collectSourceRefsFromToolResult,
-	createFallbackResponseFromToolResult,
-	dedupeSourceRefs,
-} from "./assistant/toolResults";
+	finalizeSendMessageSuccess,
+	handleSendMessageFailure,
+	prepareSendMessageContext,
+	processSendMessageEarlyPaths,
+	recordAssistantSignal,
+	recordSendMessageUsage,
+	runSendMessageCompletion,
+	type SendMessageResult,
+} from "./assistant/sendMessageFlow";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 
@@ -611,28 +600,6 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 ];
 
-async function getDatabaseChatConversation(
-	ctx: QueryCtx | MutationCtx | ActionCtx,
-	conversationId: string | null | undefined
-) {
-	if (!conversationId) {
-		return null;
-	}
-
-	try {
-		return await ctx.runQuery(components.databaseChat.conversations.get, {
-			conversationId,
-		});
-	} catch (error) {
-		console.warn(
-			"[Assistant] Stored database-chat conversation ID is invalid:",
-			conversationId,
-			error
-		);
-		return null;
-	}
-}
-
 export const createConversation = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -791,468 +758,59 @@ export const sendMessage = action({
 		content: v.optional(v.string()),
 		error: v.optional(v.string()),
 	}),
-	handler: async (
-		ctx,
-		args
-	): Promise<{ success: boolean; content?: string; error?: string }> => {
-		const apiKey = process.env.OPENAI_API_KEY;
-		if (!apiKey) {
-			return { success: false, error: "OPENAI_API_KEY not configured" };
+	handler: async (ctx, args): Promise<SendMessageResult> => {
+		const prepared = await prepareSendMessageContext(ctx, args);
+		if ("success" in prepared) {
+			return prepared;
 		}
+
+		const context = prepared;
 		let streamId: string | null = null;
 
-		const conversationMeta = await ctx.runQuery(
-			api.assistantConversations.getByConversationId,
-			{ conversationId: args.conversationId }
-		);
-
-		const resolvedWorkspaceId =
-			args.workspaceId ?? conversationMeta?.workspaceId ?? null;
-		const resolvedUserId =
-			args.userId ?? conversationMeta?.userId ?? (await getAuthUserId(ctx));
-
-		if (!resolvedWorkspaceId || !resolvedUserId) {
-			return {
-				success: false,
-				error: "Missing workspace or user context for this conversation.",
-			};
-		}
-
-		let activeConversationId = args.conversationId;
-		const existingConversation = await getDatabaseChatConversation(
-			ctx,
-			activeConversationId
-		);
-
-		if (!existingConversation) {
-			activeConversationId = await ctx.runMutation(
-				api.assistantChat.createConversation,
-				{
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					title: "Assistant Chat",
-					forceNew: true,
-				}
-			);
-		}
-
-		const latestConversationMeta = await ctx.runQuery(
-			api.assistantConversations.getByWorkspaceAndUser,
-			{
-				workspaceId: resolvedWorkspaceId,
-				userId: resolvedUserId,
-			}
-		);
-		const pendingTaskDraft =
-			latestConversationMeta?.conversationId === activeConversationId
-				? latestConversationMeta.pendingTaskDraft
-				: undefined;
-
 		try {
-			await ctx.runMutation(internal.usageTracking.recordAIRequest, {
-				userId: resolvedUserId as Id<"users">,
-				workspaceId: resolvedWorkspaceId as Id<"workspaces">,
-				featureType: "aiRequest",
-			});
-		} catch (e) {
-			console.warn("[UsageTracking] Failed to record AI request:", e);
-		}
+			await recordSendMessageUsage(ctx, context);
 
-		try {
 			await ctx.runMutation(components.databaseChat.messages.add, {
-				conversationId: activeConversationId,
+				conversationId: context.activeConversationId,
 				role: "user",
 				content: args.message,
 			});
 
-			let assistantProfile: Awaited<
-				ReturnType<
-					typeof ctx.runMutation<typeof api.assistantProfiles.recordSignal>
-				>
-			> | null = null;
-			try {
-				assistantProfile = await ctx.runMutation(
-					api.assistantProfiles.recordSignal,
-					{
-						workspaceId: resolvedWorkspaceId,
-						userId: resolvedUserId,
-						message: args.message,
-					}
-				);
-			} catch (signalErr) {
-				console.warn("[Assistant] recordSignal failed (non-fatal):", signalErr);
-			}
-
-			if (pendingTaskDraft && isPendingTaskConfirmation(args.message)) {
-				const created = await ctx.runMutation(
-					api.assistantConversations.createTaskFromPendingDraft,
-					{
-						workspaceId: resolvedWorkspaceId,
-						userId: resolvedUserId,
-					}
-				);
-				const assigneeSuffix =
-					created.assigneeName?.trim() &&
-					pendingTaskDraft?.assigneeUserId !== resolvedUserId
-						? ` for ${created.assigneeName.trim()}`
-						: "";
-				const responseText = `Created the task "${created.title}"${assigneeSuffix}.`;
-
-				await ctx.runMutation(components.databaseChat.messages.add, {
-					conversationId: activeConversationId,
-					role: "assistant",
-					content: responseText,
-				});
-				await ctx.runMutation(api.assistantConversations.upsertConversation, {
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: activeConversationId,
-					lastMessageAt: Date.now(),
-				});
-
-				return { success: true, content: responseText };
-			}
-
-			if (pendingTaskDraft && isPendingTaskCancellation(args.message)) {
-				await ctx.runMutation(
-					api.assistantConversations.clearPendingTaskDraft,
-					{
-						workspaceId: resolvedWorkspaceId,
-						userId: resolvedUserId,
-					}
-				);
-				const responseText = "Canceled the pending task draft.";
-
-				await ctx.runMutation(components.databaseChat.messages.add, {
-					conversationId: activeConversationId,
-					role: "assistant",
-					content: responseText,
-				});
-				await ctx.runMutation(api.assistantConversations.upsertConversation, {
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: activeConversationId,
-					lastMessageAt: Date.now(),
-				});
-
-				return { success: true, content: responseText };
-			}
-
-			const rawMessages = await ctx.runQuery(
-				components.databaseChat.messages.list,
-				{ conversationId: activeConversationId }
-			);
-			const preflightContext = await resolvePreflightContext({
+			const earlyResult = await processSendMessageEarlyPaths(
 				ctx,
-				workspaceId: resolvedWorkspaceId,
-				userId: resolvedUserId,
-				message: args.message,
-			});
-
-			if (preflightContext.earlyResponse) {
-				const responseText = preflightContext.earlyResponse;
-				await ctx.runMutation(components.databaseChat.messages.add, {
-					conversationId: activeConversationId,
-					role: "assistant",
-					content: responseText,
-				});
-				await ctx.runMutation(api.assistantConversations.upsertConversation, {
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: activeConversationId,
-					lastMessageAt: Date.now(),
-				});
-
-				return { success: true, content: responseText };
+				args,
+				context
+			);
+			if (earlyResult) {
+				return earlyResult;
 			}
 
-			const messages = [
+			const assistantProfile = await recordAssistantSignal(ctx, args, context);
+
+			const completion = await runSendMessageCompletion(
+				ctx,
+				args,
+				context,
+				assistantProfile,
 				{
-					role: "system",
-					content: buildSystemPrompt({
-						hasPendingTaskDraft: Boolean(pendingTaskDraft),
-						pendingTaskDraftSummary: pendingTaskDraft
-							? formatPendingTaskDraftConfirmation(pendingTaskDraft)
-							: undefined,
-						pendingTaskDraftAssigneeMemberId:
-							pendingTaskDraft?.assigneeMemberId,
-						pendingTaskDraftAssigneeName: pendingTaskDraft?.assigneeName,
-						preflightContext: preflightContext.promptText,
-						assistantProfile: assistantProfile ?? undefined,
-					}),
-				},
-				...rawMessages.map((m) => ({
-					role: m.role,
-					content: m.content,
-				})),
-			];
-
-			streamId = await ctx.runMutation(components.databaseChat.stream.create, {
-				conversationId: activeConversationId,
-			});
-
-			const openai = new OpenAI({
-				apiKey: apiKey,
-			});
-
-			const openaiTools: OpenAI.Chat.ChatCompletionTool[] =
-				TOOL_DEFINITIONS.map((t) => ({
-					type: "function" as const,
-					function: {
-						name: t.name,
-						description: t.description,
-						parameters: t.parameters,
-					},
-				}));
-
-			const completion = await openai.chat.completions.create({
-				model: "gpt-4o-mini",
-				messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
-				tools: openaiTools,
-				temperature: 0.7,
-				max_tokens: 2000,
-			});
-
-			let responseText =
-				completion.choices[0]?.message?.content ||
-				"I couldn't find anything relevant yet.";
-			const toolCalls = completion.choices[0]?.message?.tool_calls;
-			const collectedSourceRefs: string[] = [...preflightContext.sourceRefs];
-
-			if (
-				!completion.choices[0]?.message?.content?.trim() &&
-				(!toolCalls || toolCalls.length === 0)
-			) {
-				try {
-					const search = await ctx.runAction(
-						api.assistantTools.semanticSearch,
-						{
-							workspaceId: resolvedWorkspaceId,
-							query: args.message,
-							limit: 5,
-						}
-					);
-					const results: Array<{
-						id: string;
-						text: string;
-						type: string;
-						score: number;
-						sourceRefs: string[];
-					}> = search.results ?? [];
-					if (results.length) {
-						for (const r of results) {
-							for (const ref of r.sourceRefs) {
-								if (typeof ref === "string" && ref.trim())
-									collectedSourceRefs.push(ref.trim());
-							}
-						}
-						const lines = results
-							.slice(0, 5)
-							.map((r, i) => {
-								const text = String(r.text ?? "").trim();
-								const snippet =
-									text.length > 160 ? `${text.slice(0, 160)}…` : text;
-								return `- (${i + 1}) ${snippet || "(no snippet)"}`;
-							})
-							.join("\n");
-						responseText = `I found a few relevant items:\n${lines}`.trim();
-					} else {
-						responseText =
-							"I couldn't find anything relevant in your workspace yet.";
-					}
-				} catch (fallbackError) {
-					console.error(
-						"[Assistant] Semantic search fallback failed",
-						fallbackError,
-						{ conversationId: args.conversationId, message: args.message }
-					);
-				}
-			}
-
-			if (toolCalls && toolCalls.length > 0) {
-				const loopResult = await resolveAssistantToolLoop({
-					initialAssistantMessage: completion.choices[0].message,
-					baseMessages: messages as Array<{
-						role: "system" | "user" | "assistant";
-						content: string;
-					}>,
-					initialResponseText: responseText,
-					createCompletion: async (followUpMessages) => {
-						const followUpCompletion = await openai.chat.completions.create({
-							model: "gpt-4o-mini",
-							messages: toOpenAIChatMessages(followUpMessages),
-							tools: openaiTools,
-							temperature: 0.7,
-							max_tokens: 2000,
-						});
-
-						return followUpCompletion.choices[0]?.message ?? {};
-					},
-					executeToolCall: async (toolCall) => {
-						const toolName = toolCall.function?.name ?? "";
-						const tool = TOOL_DEFINITIONS.find((t) => t.name === toolName);
-						if (!tool) {
-							return {
-								result: {
-									success: false,
-									error: `Unknown tool: ${toolName}`,
-								},
-								fallbackText: null,
-								sourceRefs: [],
-							};
-						}
-
-						try {
-							const parsedArgs = JSON.parse(
-								toolCall.function?.arguments ?? "{}"
-							);
-							const fullArgs: Record<string, unknown> = { ...parsedArgs };
-
-							if (toolName === "draftTaskForConfirmation") {
-								const relativeDateValidation = validateRelativeDueDateSelection(
-									{
-										message: args.message,
-										dueDate:
-											typeof fullArgs.dueDate === "number"
-												? fullArgs.dueDate
-												: undefined,
-									}
-								);
-								if (relativeDateValidation) {
-									return {
-										result: {
-											success: false,
-											error: relativeDateValidation,
-										},
-										sourceRefs: [],
-										fallbackText: relativeDateValidation,
-									};
-								}
-							}
-
-							if (tool.contextParams?.needsWorkspaceId) {
-								fullArgs.workspaceId = resolvedWorkspaceId;
-							}
-							if (tool.contextParams?.needsUserId) {
-								fullArgs.userId = resolvedUserId;
-							}
-
-							const result = await executeToolHandler(
-								ctx,
-								tool.handlerType,
-								tool.handler,
-								fullArgs
-							);
-
-							return {
-								result,
-								sourceRefs: collectSourceRefsFromToolResult(toolName, result),
-								fallbackText: createFallbackResponseFromToolResult(
-									toolName,
-									result
-								),
-							};
-						} catch (error) {
-							const message =
-								error instanceof Error
-									? error.message
-									: "Tool execution failed";
-							return {
-								result: {
-									success: false,
-									error: message,
-								},
-								sourceRefs: [],
-								fallbackText:
-									toolName === "draftTaskForConfirmation"
-										? buildTaskDraftFailureMessage(message)
-										: `I hit an issue while using ${toolName}. Please try again.`,
-							};
-						}
-					},
-				});
-
-				for (const ref of loopResult.sourceRefs) {
-					collectedSourceRefs.push(ref);
-				}
-				responseText = loopResult.responseText;
-			}
-
-			if (collectedSourceRefs.length) {
-				const unique = dedupeSourceRefs(collectedSourceRefs).slice(0, 5);
-				responseText = `${responseText.trim()}\n\nSources:\n${unique
-					.map((s) => `- ${s}`)
-					.join("\n")}`.trim();
-			}
-
-			await ctx.runMutation(components.databaseChat.stream.finish, {
-				streamId,
-			});
-
-			await ctx.runMutation(components.databaseChat.messages.add, {
-				conversationId: activeConversationId,
-				role: "assistant",
-				content: responseText,
-			});
-
-			await ctx.runMutation(api.assistantConversations.upsertConversation, {
-				workspaceId: resolvedWorkspaceId,
-				userId: resolvedUserId,
-				conversationId: activeConversationId,
-				lastMessageAt: Date.now(),
-			});
-
-			await ctx.scheduler.runAfter(
-				0,
-				internal.assistantTitles.autoGenerateTitleIfNeeded,
-				{
-					conversationId: activeConversationId,
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
+					buildSystemPrompt,
+					toolDefinitions: TOOL_DEFINITIONS,
 				}
 			);
 
-			return { success: true, content: responseText };
+			if (completion.kind === "early") {
+				return { success: true, content: completion.responseText };
+			}
+
+			streamId = completion.streamId;
+			return finalizeSendMessageSuccess(
+				ctx,
+				context,
+				completion.responseText,
+				completion.streamId
+			);
 		} catch (error) {
-			console.error("[Assistant] Error:", error);
-			if (streamId) {
-				try {
-					await ctx.runMutation(components.databaseChat.stream.finish, {
-						streamId,
-					});
-				} catch (streamError) {
-					console.warn(
-						"[Assistant] Failed to close stream after error:",
-						streamError
-					);
-				}
-			}
-			try {
-				const responseText =
-					error instanceof Error
-						? buildTaskDraftFailureMessage(error.message)
-						: "I ran into an issue while processing that request. Please try again.";
-				await ctx.runMutation(components.databaseChat.messages.add, {
-					conversationId: activeConversationId,
-					role: "assistant",
-					content: responseText,
-				});
-				await ctx.runMutation(api.assistantConversations.upsertConversation, {
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					conversationId: activeConversationId,
-					lastMessageAt: Date.now(),
-				});
-			} catch (persistError) {
-				console.warn(
-					"[Assistant] Failed to persist error response:",
-					persistError
-				);
-			}
-			return {
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			};
+			return handleSendMessageFailure(ctx, context, streamId, error, args);
 		}
 	},
 });

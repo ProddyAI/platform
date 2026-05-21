@@ -260,8 +260,8 @@ function sanitizeContextWindow(
 		const items = groups[type];
 		if (!items || items.length === 0) continue;
 
-		const rows = items.map((e) => {
-			const m = e.metadata;
+		const rows = items.map((entry) => {
+			const m = entry.metadata;
 			const flags: string[] = [];
 			if (m.isBlocker) flags.push("🔴 BLOCKER");
 			if (m.isOverdue) flags.push("⚠️ OVERDUE");
@@ -272,8 +272,8 @@ function sanitizeContextWindow(
 			}
 			const flagStr = flags.length ? ` [${flags.join(" | ")}]` : "";
 			const title = m.title ? `**${m.title}**${flagStr}\n  ` : "";
-			const rel = `(relevance: ${(e.hybridScore * 100).toFixed(0)}%)`;
-			return `- ${title}${e.text} ${rel}`;
+			const rel = `(relevance: ${(entry.hybridScore * 100).toFixed(0)}%)`;
+			return `- ${title}${entry.text} ${rel}`;
 		});
 
 		sections.push(`${LABELS[type] ?? `## ${type}`}\n${rows.join("\n")}`);

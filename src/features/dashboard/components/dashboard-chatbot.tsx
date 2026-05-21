@@ -423,18 +423,24 @@ const DashboardChatbotBody = ({
 	const isLoading = isSending || isStreaming;
 
 	const displayMessages: Message[] = allMessages.map((msg, index) => {
-		const sender = msg.role === "user" ? "user" : "assistant";
+		const streamMessage = msg as {
+			_id?: string;
+			_creationTime?: number;
+			role: string;
+			content?: string | null;
+		};
+		const sender = streamMessage.role === "user" ? "user" : "assistant";
 		const parsed =
 			sender === "assistant"
-				? parseAssistantMessageContent(msg.content ?? "")
-				: { body: msg.content ?? "", sources: [] };
+				? parseAssistantMessageContent(streamMessage.content ?? "")
+				: { body: streamMessage.content ?? "", sources: [] };
 
 		return {
-			id: String((msg as any)._id ?? index),
+			id: String(streamMessage._id ?? index),
 			content: parsed.body,
 			sender,
 			role: sender,
-			timestamp: new Date((msg as any)._creationTime ?? Date.now()),
+			timestamp: new Date(streamMessage._creationTime ?? Date.now()),
 			sources: parsed.sources,
 		};
 	});
@@ -713,7 +719,7 @@ Try asking me things like:`;
 				title: "Success",
 				description: "Chat renamed successfully",
 			});
-		} catch (error) {
+		} catch (_error) {
 			toast({
 				title: "Error",
 				description: "Failed to rename chat",
@@ -743,7 +749,7 @@ Try asking me things like:`;
 				title: "Success",
 				description: "Chat deleted successfully",
 			});
-		} catch (error) {
+		} catch (_error) {
 			toast({
 				title: "Error",
 				description: "Failed to delete chat",
@@ -998,7 +1004,7 @@ Try asking me things like:`;
 															}`}
 														>
 															{conv.title || "New Chat"}
-															{(conv as any).titleSource === "ai_generated" &&
+															{conv.titleSource === "ai_generated" &&
 																conv.title &&
 																conv.title !== "New Chat" && (
 																	<Sparkles className="inline-block ml-1 h-3 w-3 text-primary/40" />
@@ -1065,7 +1071,6 @@ Try asking me things like:`;
 						<div className="flex items-center gap-2 mt-3 p-2 bg-muted/50 rounded-lg border">
 							<MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
 							<Input
-								autoFocus
 								className="h-8 text-sm flex-1"
 								onChange={(e) => setEditingTitle(e.target.value)}
 								onKeyDown={(e) => {

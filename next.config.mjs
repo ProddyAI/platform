@@ -7,11 +7,17 @@
 /** @type {import('next').NextConfig} */
 import withPWA from "next-pwa";
 
+const isWindows = process.platform === "win32";
+const disablePWA =
+	process.env.NODE_ENV === "development" ||
+	process.env.NEXT_PUBLIC_ENABLE_PWA !== "true" ||
+	process.env.DISABLE_PWA_BUILD === "true";
+
 const baseConfig = withPWA({
 	dest: "public",
 	register: true,
 	skipWaiting: true,
-	disable: process.env.NODE_ENV === "development",
+	disable: disablePWA,
 	customWorkerDir: "worker",
 	// Avoid Workbox precache warnings and bloated caches by excluding sourcemaps.
 	buildExcludes: [/\.map$/, /OneSignalSDK\.sw\.js$/, /OneSignalSDKWorker\.js$/],
@@ -141,7 +147,7 @@ const baseConfig = withPWA({
 		},
 	],
 })({
-	distDir: process.platform === "win32" ? ".next-win" : ".next",
+	distDir: process.env.NEXT_DIST_DIR || ".next",
 	images: {
 		remotePatterns: [
 			{
@@ -162,6 +168,7 @@ const baseConfig = withPWA({
 		],
 	},
 	async headers() {
+		await Promise.resolve();
 		return [
 			{
 				source: "/OneSignalSDK.sw.js",
@@ -207,7 +214,25 @@ const baseConfig = withPWA({
 		ignoreDuringBuilds: true,
 	},
 	typescript: {
-		ignoreBuildErrors: true,
+		// `bun run build` runs `tsc --noEmit` first. Skipping Next's duplicate
+		// type worker avoids Windows spawn/worker stalls without hiding TS errors.
+		ignoreBuildErrors: process.env.NEXT_IGNORE_TS_ERRORS === "true",
+	},
+	experimental: {
+		// Windows + OneDrive can throw EPERM while Next forks workers and renames
+		// cache/export folders. Keep local Windows builds single-worker; CI/Linux
+		// builds can still use the default parallelism.
+		cpus:
+			isWindows || process.env.CI || process.env.LIMIT_BUILD_CPUS
+				? 1
+				: undefined,
+		workerThreads: true,
+	},
+	webpack(config, { dev }) {
+		if (!dev) {
+			config.cache = false;
+		}
+		return config;
 	},
 });
 

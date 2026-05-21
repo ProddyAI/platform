@@ -2,7 +2,7 @@ import type { StressMetrics } from "../../convex/stress";
 
 const TITLE_CONTROL_CHARS_REGEX = /\p{Cc}/gu;
 const INSTRUCTION_PREFIX_REGEX =
-	/^(?:system|assistant|user|developer|instructions?)\s*:\s*/i;
+	/^\s*(?:system|assistant|user|developer|instructions?)\s*:\s*/i;
 
 function sanitizeTitle(value: string): string {
 	const cleaned = value

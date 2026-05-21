@@ -18,7 +18,7 @@ type Options = {
 };
 
 export const useRescheduleTask = () => {
-	const [data, setData] = useState<ResponseType>(undefined);
+	const [data, setData] = useState<ResponseType>();
 	const [error, setError] = useState<Error | null>(null);
 	const [status, setStatus] = useState<
 		"idle" | "pending" | "success" | "error"
@@ -41,12 +41,15 @@ export const useRescheduleTask = () => {
 				options?.onSuccess?.(result);
 				return result;
 			} catch (err) {
-				const error =
+				const mutationError =
 					err instanceof Error ? err : new Error("Failed to reschedule task");
-				setError(error);
+				setError(mutationError);
 				setStatus("error");
-				options?.onError?.(error);
-				if (options?.throwError) throw error;
+				options?.onError?.(mutationError);
+				if (options?.throwError) {
+					throw mutationError;
+				}
+				return undefined;
 			} finally {
 				options?.onSettled?.();
 			}

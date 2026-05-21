@@ -285,9 +285,18 @@ export const getChannelSummary = createTool({
 			.describe("Max number of messages to analyze (default: 40)"),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
+		const channelId = args.channelId as Id<"channels">;
+		const channel = await ctx.runQuery(api.channels.getById, {
+			id: channelId,
+		});
+		if (!channel) {
+			throw new Error(
+				`Channel not found or you don't have access to it. Use searchChannels to find valid channel IDs.`
+			);
+		}
 		return await ctx.runQuery(api.assistantTools.getChannelSummary, {
 			workspaceId: ctx.workspaceId,
-			channelId: args.channelId as Id<"channels">,
+			channelId: channelId,
 			limit: args.limit,
 		});
 	},
@@ -304,9 +313,18 @@ export const getChannelDebug = createTool({
 			.describe("Maximum number of raw messages to return (default: 20)."),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
+		const channelId = args.channelId as Id<"channels">;
+		const channel = await ctx.runQuery(api.channels.getById, {
+			id: channelId,
+		});
+		if (!channel) {
+			throw new Error(
+				`Channel not found or you don't have access to it. Use searchChannels to find valid channel IDs.`
+			);
+		}
 		return await ctx.runQuery(api.assistantTools.getChannelDebug, {
 			workspaceId: ctx.workspaceId,
-			channelId: args.channelId as Id<"channels">,
+			channelId: channelId,
 			limit: args.limit,
 		});
 	},

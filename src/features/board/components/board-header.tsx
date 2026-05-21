@@ -1,7 +1,9 @@
 import {
+	Bot,
 	GanttChart,
 	LayoutGrid,
 	Link2,
+	Loader2,
 	Network,
 	Plus,
 	Search,
