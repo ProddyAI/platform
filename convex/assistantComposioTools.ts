@@ -75,6 +75,35 @@ type DbAccount = ComposioAccountItem & {
 	composioAccountId?: string;
 };
 
+async function fetchWithTimeout(
+	url: string,
+	options: RequestInit = {},
+	timeoutMs = 10000
+): Promise<Response> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+	const upstreamSignal = options.signal;
+	const abortHandler = () => controller.abort();
+
+	if (upstreamSignal) {
+		if (upstreamSignal.aborted) {
+			controller.abort();
+		} else {
+			upstreamSignal.addEventListener("abort", abortHandler, { once: true });
+		}
+	}
+
+	try {
+		return await fetch(url, {
+			...options,
+			signal: controller.signal,
+		});
+	} finally {
+		clearTimeout(timeoutId);
+		upstreamSignal?.removeEventListener("abort", abortHandler);
+	}
+}
+
 async function resolveComposioUUID(
 	composioKey: string,
 	entityId: string,
@@ -83,7 +112,7 @@ async function resolveComposioUUID(
 ): Promise<string | null> {
 	const appNameUpper = toolkit.toUpperCase();
 
-	const acctResp = await fetch(
+	const acctResp = await fetchWithTimeout(
 		`${COMPOSIO_BASE_V1}/connectedAccounts?entityId=${entityId}&appName=${appNameUpper}`,
 		{ headers: { "X-API-Key": composioKey } }
 	);
@@ -96,7 +125,7 @@ async function resolveComposioUUID(
 	debugLog(
 		`[Composio] No UUID for ${toolkit} with entityId filter, trying without...`
 	);
-	const allAcctResp = await fetch(
+	const allAcctResp = await fetchWithTimeout(
 		`${COMPOSIO_BASE_V1}/connectedAccounts?entityId=${entityId}`,
 		{ headers: { "X-API-Key": composioKey } }
 	);
@@ -128,7 +157,9 @@ async function fetchComposioToolDefs(
 	const toolsUrl = `${COMPOSIO_BASE_V3}/tools?toolkit_slug=${toolkit}&query=${searchQuery}&limit=20`;
 	debugLog(`[Composio] Fetching tools: ${toolsUrl}`);
 
-	const resp = await fetch(toolsUrl, { headers: { "X-API-Key": composioKey } });
+	const resp = await fetchWithTimeout(toolsUrl, {
+		headers: { "X-API-Key": composioKey },
+	});
 	const data = (await resp.json()) as {
 		items?: ComposioToolItem[];
 		tools?: ComposioToolItem[];
@@ -142,7 +173,7 @@ async function fetchComposioToolDefs(
 		debugLog(
 			`[Composio] v3 search returned 0 for ${toolkit}, retrying without search...`
 		);
-		const fallbackResp = await fetch(
+		const fallbackResp = await fetchWithTimeout(
 			`${COMPOSIO_BASE_V3}/tools?toolkit_slug=${toolkit}&limit=20`,
 			{ headers: { "X-API-Key": composioKey } }
 		);
@@ -169,22 +200,34 @@ async function executeComposioToolCall(
 	connectedAccountId: string,
 	toolArgs: Record<string, unknown>
 ): Promise<unknown> {
-	let execResp = await fetch(`${COMPOSIO_BASE_V3}/tools/${execSlug}/execute`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json", "X-API-Key": composioKey },
-		body: JSON.stringify({
-			connected_account_id: connectedAccountId,
-			input: toolArgs,
-		}),
-	});
+	let execResp = await fetchWithTimeout(
+		`${COMPOSIO_BASE_V3}/tools/${execSlug}/execute`,
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"X-API-Key": composioKey,
+			},
+			body: JSON.stringify({
+				connected_account_id: connectedAccountId,
+				input: toolArgs,
+			}),
+		}
+	);
 
 	if (execResp.status === 404) {
 		debugLog(`[Composio] v3 execute 404 for ${execSlug}, falling back to v2`);
-		execResp = await fetch(`${COMPOSIO_BASE_V2}/actions/${execSlug}/execute`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", "X-API-Key": composioKey },
-			body: JSON.stringify({ connectedAccountId, input: toolArgs }),
-		});
+		execResp = await fetchWithTimeout(
+			`${COMPOSIO_BASE_V2}/actions/${execSlug}/execute`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-API-Key": composioKey,
+				},
+				body: JSON.stringify({ connectedAccountId, input: toolArgs }),
+			}
+		);
 	}
 
 	const result = await execResp.json();

@@ -37,6 +37,18 @@ describe("buildPreflightContextPlan", () => {
 		expect(plan.recommendedToolOrder).toEqual(["searchNotes"]);
 	});
 
+	test("routes next-week task requests to the scoped next-week task tool", () => {
+		const plan = buildPreflightContextPlan({
+			message: "What are my tasks next week?",
+		});
+
+		expect(plan.intent).toBe("task_lookup");
+		expect(plan.recommendedToolOrder).toEqual(["getMyTasksNextWeek"]);
+		expect(plan.summaryLines).toContain(
+			"Relative task window detected: next week."
+		);
+	});
+
 	test("marks task creation requests as action-oriented and member-aware", () => {
 		const plan = buildPreflightContextPlan({
 			message: "create a task for Alice to follow up on onboarding blockers",

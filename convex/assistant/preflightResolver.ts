@@ -16,93 +16,121 @@ export type PreflightResolutionResult = {
 	earlyResponse?: string;
 };
 
-function summarizeCount(label: string, count: number): string {
-	return `${label}: ${count}`;
-}
+type PreflightPlan = ReturnType<typeof buildPreflightContextPlan>;
 
-export async function resolvePreflightContext(args: {
+type PreflightArgs = {
 	ctx: ActionCtx;
 	workspaceId: Id<"workspaces">;
 	userId: Id<"users">;
 	message: string;
-}): Promise<PreflightResolutionResult> {
-	const plan = buildPreflightContextPlan({ message: args.message });
-	const sourceRefs: string[] = [];
-	const summaryLines = [...plan.summaryLines];
-	let resolvedTopic = plan.resolvedTopic;
+};
 
-	if (plan.intent === "channel_summary" && plan.channelQuery) {
-		const channelSearch = (await args.ctx.runQuery(
-			api.assistantTools.searchChannels,
-			{ workspaceId: args.workspaceId, query: plan.channelQuery }
-		)) as { channels?: Array<{ id: string; name?: string }> } | null;
+type PreflightState = {
+	sourceRefs: string[];
+	summaryLines: string[];
+	resolvedTopic: string;
+};
 
-		sourceRefs.push(
-			...collectSourceRefsFromToolResult("searchChannels", channelSearch)
-		);
+function summarizeCount(label: string, count: number): string {
+	return `${label}: ${count}`;
+}
 
-		const channels: Array<{ id: string; name?: string }> = Array.isArray(
-			channelSearch?.channels
-		)
-			? channelSearch.channels
-			: [];
+function countItems(items: unknown[] | undefined): number {
+	return Array.isArray(items) ? items.length : 0;
+}
 
-		const normalizedQuery = plan.channelQuery.trim().toLowerCase();
-		const exactMatch =
-			channels.find(
-				(ch) =>
-					String(ch?.name ?? "")
-						.trim()
-						.toLowerCase() === normalizedQuery
-			) ?? null;
+function pushSourceRefs(
+	state: PreflightState,
+	toolName: string,
+	result: unknown
+): void {
+	state.sourceRefs.push(...collectSourceRefsFromToolResult(toolName, result));
+}
 
-		if (!exactMatch && channels.length > 1) {
-			const suggestions = channels
-				.slice(0, 3)
-				.map((ch) => `#${String(ch?.name ?? "").trim()}`)
-				.filter(Boolean);
-			return {
-				promptText: "",
-				sourceRefs,
-				earlyResponse: suggestions.length
-					? `I found multiple channels matching "${plan.channelQuery}": ${suggestions.join(", ")}. Which one should I use?`
-					: `I found multiple channels matching "${plan.channelQuery}". Which one should I use?`,
-			};
-		}
-
-		const resolvedChannel = exactMatch ?? channels[0];
-		if (resolvedChannel?.id) {
-			const channelSummary = (await args.ctx.runQuery(
-				api.assistantTools.getChannelSummary,
-				{
-					workspaceId: args.workspaceId,
-					channelId: resolvedChannel.id as Id<"channels">,
-					limit: 40,
-				}
-			)) as { channelName?: string; messageCount?: number } | null;
-
-			sourceRefs.push(
-				...collectSourceRefsFromToolResult("getChannelSummary", channelSummary)
-			);
-			resolvedTopic =
-				String(
-					(channelSummary as { channelName?: string } | null)?.channelName ??
-						resolvedChannel?.name ??
-						""
-				).trim() || resolvedTopic;
-			summaryLines.push(
-				`Resolved channel: #${resolvedTopic}`,
-				summarizeCount(
-					"Recent messages considered",
-					Number(
-						(channelSummary as { messageCount?: number } | null)
-							?.messageCount ?? 0
-					)
-				)
-			);
-		}
+async function resolveChannelSummaryContext(
+	args: PreflightArgs,
+	state: PreflightState,
+	plan: PreflightPlan
+): Promise<string | undefined> {
+	if (!(plan.intent === "channel_summary" && plan.channelQuery)) {
+		return undefined;
 	}
 
+	const channelSearch = (await args.ctx.runQuery(
+		api.assistantTools.searchChannels,
+		{ workspaceId: args.workspaceId, query: plan.channelQuery }
+	)) as { channels?: Array<{ id: string; name?: string }> } | null;
+
+	pushSourceRefs(state, "searchChannels", channelSearch);
+
+	const channels: Array<{ id: string; name?: string }> = Array.isArray(
+		channelSearch?.channels
+	)
+		? channelSearch.channels
+		: [];
+
+	const normalizedQuery = plan.channelQuery.trim().toLowerCase();
+	const exactMatch =
+		channels.find(
+			(ch) =>
+				String(ch?.name ?? "")
+					.trim()
+					.toLowerCase() === normalizedQuery
+		) ?? null;
+
+	if (channels.length === 0) {
+		return `I couldn't find any channels matching "${plan.channelQuery}". Which channel did you mean?`;
+	}
+
+	if (!exactMatch && channels.length > 1) {
+		const suggestions = channels
+			.slice(0, 3)
+			.map((ch) => `#${String(ch?.name ?? "").trim()}`)
+			.filter(Boolean);
+		return suggestions.length
+			? `I found multiple channels matching "${plan.channelQuery}": ${suggestions.join(", ")}. Which one should I use?`
+			: `I found multiple channels matching "${plan.channelQuery}". Which one should I use?`;
+	}
+
+	const resolvedChannel = exactMatch ?? channels[0];
+	if (!resolvedChannel?.id) {
+		return undefined;
+	}
+
+	const channelSummary = (await args.ctx.runQuery(
+		api.assistantTools.getChannelSummary,
+		{
+			workspaceId: args.workspaceId,
+			channelId: resolvedChannel.id as Id<"channels">,
+			limit: 40,
+		}
+	)) as { channelName?: string; messageCount?: number } | null;
+
+	pushSourceRefs(state, "getChannelSummary", channelSummary);
+	state.resolvedTopic =
+		String(
+			(channelSummary as { channelName?: string } | null)?.channelName ??
+				resolvedChannel.name ??
+				""
+		).trim() || state.resolvedTopic;
+	state.summaryLines.push(
+		`Resolved channel: #${state.resolvedTopic}`,
+		summarizeCount(
+			"Recent messages considered",
+			Number(
+				(channelSummary as { messageCount?: number } | null)?.messageCount ?? 0
+			)
+		)
+	);
+
+	return undefined;
+}
+
+async function appendWorkspaceCatchupContext(
+	args: PreflightArgs,
+	state: PreflightState,
+	plan: PreflightPlan
+) {
 	if (plan.intent === "workspace_catchup") {
 		const summary = (await args.ctx.runQuery(
 			api.assistantTools.getWorkspaceGeneralSummary,
@@ -113,29 +141,26 @@ export async function resolvePreflightContext(args: {
 			recentNotes?: unknown[];
 		} | null;
 
-		sourceRefs.push(
-			...collectSourceRefsFromToolResult("getWorkspaceGeneralSummary", summary)
-		);
-		summaryLines.push(
+		pushSourceRefs(state, "getWorkspaceGeneralSummary", summary);
+		state.summaryLines.push(
 			summarizeCount(
 				"Recent messages",
-				Array.isArray(summary?.recentMessages)
-					? summary.recentMessages.length
-					: 0
+				countItems(summary?.recentMessages)
 			),
 			summarizeCount(
 				"High-priority tasks",
-				Array.isArray(summary?.highPriorityTasks)
-					? summary.highPriorityTasks.length
-					: 0
+				countItems(summary?.highPriorityTasks)
 			),
-			summarizeCount(
-				"Recent notes",
-				Array.isArray(summary?.recentNotes) ? summary.recentNotes.length : 0
-			)
+			summarizeCount("Recent notes", countItems(summary?.recentNotes))
 		);
 	}
+}
 
+async function appendNoteLookupContext(
+	args: PreflightArgs,
+	state: PreflightState,
+	plan: PreflightPlan
+) {
 	if (plan.intent === "note_lookup") {
 		const toolName = plan.noteQuery ? "searchNotes" : "getRecentNotes";
 		const noteResult = (await args.ctx.runQuery(
@@ -147,15 +172,18 @@ export async function resolvePreflightContext(args: {
 				: { workspaceId: args.workspaceId, limit: 6 }
 		)) as { notes?: unknown[] } | null;
 
-		sourceRefs.push(...collectSourceRefsFromToolResult(toolName, noteResult));
-		summaryLines.push(
-			summarizeCount(
-				"Matching notes",
-				Array.isArray(noteResult?.notes) ? noteResult.notes.length : 0
-			)
+		pushSourceRefs(state, toolName, noteResult);
+		state.summaryLines.push(
+			summarizeCount("Matching notes", countItems(noteResult?.notes))
 		);
 	}
+}
 
+async function appendTaskLookupContext(
+	args: PreflightArgs,
+	state: PreflightState,
+	plan: PreflightPlan
+) {
 	if (plan.intent === "task_lookup") {
 		const toolName = plan.taskQuery ? "searchTasks" : "getMyAllTasks";
 		const taskResult = (await args.ctx.runQuery(
@@ -176,15 +204,18 @@ export async function resolvePreflightContext(args: {
 					}
 		)) as { tasks?: unknown[] } | null;
 
-		sourceRefs.push(...collectSourceRefsFromToolResult(toolName, taskResult));
-		summaryLines.push(
-			summarizeCount(
-				"Matching tasks",
-				Array.isArray(taskResult?.tasks) ? taskResult.tasks.length : 0
-			)
+		pushSourceRefs(state, toolName, taskResult);
+		state.summaryLines.push(
+			summarizeCount("Matching tasks", countItems(taskResult?.tasks))
 		);
 	}
+}
 
+async function appendCalendarLookupContext(
+	args: PreflightArgs,
+	state: PreflightState,
+	plan: PreflightPlan
+) {
 	if (plan.intent === "calendar_lookup" && plan.recommendedToolOrder[0]) {
 		const calendarTool = plan.recommendedToolOrder[0];
 		const handler =
@@ -199,37 +230,83 @@ export async function resolvePreflightContext(args: {
 			userId: args.userId,
 		})) as { events?: unknown[] } | null;
 
-		sourceRefs.push(
-			...collectSourceRefsFromToolResult(calendarTool, calendarResult)
-		);
-		summaryLines.push(
+		pushSourceRefs(state, calendarTool, calendarResult);
+		state.summaryLines.push(
 			summarizeCount(
 				"Matching calendar events",
-				Array.isArray(calendarResult?.events) ? calendarResult.events.length : 0
+				countItems(calendarResult?.events)
 			)
 		);
 	}
+}
 
+async function appendTaskCreateContext(
+	args: PreflightArgs,
+	state: PreflightState,
+	plan: PreflightPlan
+) {
 	if (plan.intent === "task_create" && plan.needsMemberResolution) {
 		const members = (await args.ctx.runQuery(api.members.get, {
 			workspaceId: args.workspaceId,
 		})) as unknown[];
-		summaryLines.push(
+		state.summaryLines.push(
 			summarizeCount(
 				"Accepted workspace members",
-				Array.isArray(members) ? members.length : 0
+				countItems(members)
 			)
 		);
+	}
+}
+
+const contextResolvers: Array<
+	(args: PreflightArgs, state: PreflightState, plan: PreflightPlan) => Promise<
+		string | undefined
+	>
+> = [resolveChannelSummaryContext];
+
+const contextAppenders: Array<
+	(args: PreflightArgs, state: PreflightState, plan: PreflightPlan) => Promise<void>
+> = [
+	appendWorkspaceCatchupContext,
+	appendNoteLookupContext,
+	appendTaskLookupContext,
+	appendCalendarLookupContext,
+	appendTaskCreateContext,
+];
+
+export async function resolvePreflightContext(
+	args: PreflightArgs
+): Promise<PreflightResolutionResult> {
+	const plan = buildPreflightContextPlan({ message: args.message });
+	const state: PreflightState = {
+		sourceRefs: [],
+		summaryLines: [...plan.summaryLines],
+		resolvedTopic: plan.resolvedTopic ?? "",
+	};
+
+	for (const resolveContext of contextResolvers) {
+		const earlyResponse = await resolveContext(args, state, plan);
+		if (earlyResponse) {
+			return {
+				promptText: "",
+				sourceRefs: state.sourceRefs,
+				earlyResponse,
+			};
+		}
+	}
+
+	for (const appendContext of contextAppenders) {
+		await appendContext(args, state, plan);
 	}
 
 	return {
 		promptText: buildPreflightContextPrompt({
 			intent: plan.intent,
 			confidence: plan.confidence,
-			resolvedTopic,
+			resolvedTopic: state.resolvedTopic,
 			recommendedToolOrder: plan.recommendedToolOrder,
-			summaryLines,
+			summaryLines: state.summaryLines,
 		}),
-		sourceRefs: dedupeSourceRefs(sourceRefs),
+		sourceRefs: dedupeSourceRefs(state.sourceRefs),
 	};
 }

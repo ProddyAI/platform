@@ -25,6 +25,7 @@ import type * as assistant_hybridRetrieval from "../assistant/hybridRetrieval.js
 import type * as assistant_monitoring from "../assistant/monitoring.js";
 import type * as assistant_preflightResolver from "../assistant/preflightResolver.js";
 import type * as assistant_profile from "../assistant/profile.js";
+import type * as assistant_relativeDate from "../assistant/relativeDate.js";
 import type * as assistant_taskAssignment from "../assistant/taskAssignment.js";
 import type * as assistant_taskDrafts from "../assistant/taskDrafts.js";
 import type * as assistant_titleGeneration from "../assistant/titleGeneration.js";
@@ -105,6 +106,7 @@ declare const fullApi: ApiFromModules<{
   "assistant/monitoring": typeof assistant_monitoring;
   "assistant/preflightResolver": typeof assistant_preflightResolver;
   "assistant/profile": typeof assistant_profile;
+  "assistant/relativeDate": typeof assistant_relativeDate;
   "assistant/taskAssignment": typeof assistant_taskAssignment;
   "assistant/taskDrafts": typeof assistant_taskDrafts;
   "assistant/titleGeneration": typeof assistant_titleGeneration;

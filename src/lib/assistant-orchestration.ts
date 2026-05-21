@@ -111,6 +111,30 @@ Guidelines:
 - For short follow-ups like "what about release?", reuse the most recent resolved workspace topic from the conversation when it is relevant
 - Never respond with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."`;
 
+function buildCurrentDateContext() {
+	const now = new Date();
+	const utcIso = now.toISOString();
+	const localFormatter = new Intl.DateTimeFormat("en-US", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+		second: "2-digit",
+		timeZoneName: "short",
+	});
+	const localTimezone =
+		Intl.DateTimeFormat().resolvedOptions().timeZone || "local timezone";
+
+	return [
+		"Current date context:",
+		`- Local runtime time: ${localFormatter.format(now)} (${localTimezone})`,
+		`- UTC timestamp: ${utcIso}`,
+		"- Always interpret relative dates like today, tomorrow, and yesterday using this current date context, not training-time assumptions.",
+	].join("\n");
+}
+
 function extractFollowUpSubject(message: string) {
 	const normalized = message.trim().toLowerCase();
 	const match = normalized.match(
@@ -130,7 +154,11 @@ const CONTROL_CHARS_PATTERN = "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]";
 const CONTROL_CHARS_REGEX = new RegExp(CONTROL_CHARS_PATTERN, "g");
 
 function sanitizeContextValue(value: string, maxLen = 200): string {
-	const cleaned = value.replace(CONTROL_CHARS_REGEX, "").trim();
+	const cleaned = value
+		.replace(CONTROL_CHARS_REGEX, " ")
+		.replace(/[\r\n"']/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
 	return cleaned.length > maxLen ? `${cleaned.slice(0, maxLen)}…` : cleaned;
 }
 
@@ -270,6 +298,7 @@ NEVER say you can't access these apps - you have active connections and tools to
 
 	return [
 		BASE_SYSTEM_PROMPT,
+		buildCurrentDateContext(),
 		policyLine,
 		contextLine,
 		preflightContextLine,

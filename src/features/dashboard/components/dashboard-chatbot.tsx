@@ -224,6 +224,17 @@ function parseAssistantMessageContent(content: string) {
 	};
 }
 
+function getSourceDisplayText(sourceText: string, displayLabel: string) {
+	const prefix = `${displayLabel}:`;
+	if (sourceText.startsWith(`${prefix} `)) {
+		return sourceText.slice(prefix.length + 1);
+	}
+	if (sourceText.startsWith(prefix)) {
+		return sourceText.slice(prefix.length).trimStart();
+	}
+	return sourceText;
+}
+
 function formatRelativeTime(timestamp: number): string {
 	const now = Date.now();
 	const diff = now - timestamp;
@@ -461,6 +472,10 @@ const DashboardChatbotBody = ({
 	]);
 
 	// Auto-send initial prompt
+	useEffect(() => {
+		initialPromptSentRef.current = false;
+	}, [initialPrompt, conversationId]);
+
 	useEffect(() => {
 		if (initialPrompt && conversationId && !initialPromptSentRef.current) {
 			initialPromptSentRef.current = true;
@@ -816,20 +831,21 @@ Try asking me things like:`;
 					Sources
 				</p>
 				<div className="mt-2 flex flex-wrap gap-1.5">
-					{sources.map((source) => (
+					{sources.map((source) => {
+						const sourceTypeDisplay = getSourceTypeDisplay(source.type);
+						return (
 						<Badge
 							className="max-w-full whitespace-normal break-words text-xs leading-relaxed"
 							key={source.id}
 							variant="secondary"
 						>
-							<span className="font-medium">
-								{getSourceTypeDisplay(source.type)}:
-							</span>
+							<span className="font-medium">{sourceTypeDisplay}:</span>
 							<span className="ml-1">
-								{source.text.replace(/^[^:]+:\s*/, "")}
+								{getSourceDisplayText(source.text, sourceTypeDisplay)}
 							</span>
 						</Badge>
-					))}
+						);
+					})}
 				</div>
 			</div>
 		);

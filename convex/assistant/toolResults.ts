@@ -109,6 +109,8 @@ const sourceRefExtractors: Record<string, SourceRefExtractor> = {
 
 	getMyTasksToday: taskSourceRefs,
 	getMyTasksTomorrow: taskSourceRefs,
+	getMyTasksThisWeek: taskSourceRefs,
+	getMyTasksNextWeek: taskSourceRefs,
 	getMyAllTasks: taskSourceRefs,
 	searchTasks: taskSourceRefs,
 
@@ -146,9 +148,12 @@ const sourceRefExtractors: Record<string, SourceRefExtractor> = {
 		const channels = getArray<ChannelItem>(r, "channels");
 		return dedupeRefs(
 			channels
-				.map((channel) =>
-					createLabeledRef("Channel", `#${String(channel?.name ?? "").trim()}`)
-				)
+				.map((channel) => {
+					const trimmed = String(channel?.name ?? "").trim();
+					return trimmed.length > 0
+						? createLabeledRef("Channel", `#${trimmed}`)
+						: null;
+				})
 				.filter((s): s is string => s !== null)
 		);
 	},
@@ -183,8 +188,9 @@ function noteSourceRefs(r: Record<string, unknown>): string[] {
 			const refs: string[] = [];
 			const titleRef = createLabeledRef("Note", note?.title);
 			if (titleRef) refs.push(titleRef);
-			if (note?.channelName) {
-				refs.push(`Channel: #${String(note.channelName).trim()}`);
+			const trimmedChannelName = String(note?.channelName ?? "").trim();
+			if (trimmedChannelName) {
+				refs.push(`Channel: #${trimmedChannelName}`);
 			}
 			return refs;
 		})

@@ -472,6 +472,8 @@ export const updateConnectedAccountStatus = mutation({
 		),
 		isDisabled: v.optional(v.boolean()),
 		lastUsed: v.optional(v.number()),
+		composioAccountId: v.optional(v.string()),
+		metadata: v.optional(v.any()),
 	},
 	handler: async (ctx, args) => {
 		const updateData: any = {
@@ -484,6 +486,14 @@ export const updateConnectedAccountStatus = mutation({
 
 		if (args.lastUsed !== undefined) {
 			updateData.lastUsed = args.lastUsed;
+		}
+
+		if (args.composioAccountId !== undefined) {
+			updateData.composioAccountId = args.composioAccountId;
+		}
+
+		if (args.metadata !== undefined) {
+			updateData.metadata = args.metadata;
 		}
 
 		await ctx.db.patch(args.connectedAccountId, updateData);

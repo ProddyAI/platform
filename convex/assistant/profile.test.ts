@@ -47,7 +47,7 @@ describe("buildAssistantProfilePrompt", () => {
 					lastMentionedAt: Date.now(),
 				},
 			],
-		} as any);
+		});
 
 		expect(prompt).toContain("Active context memory:");
 		expect(prompt).toContain("Release: payment rollout");

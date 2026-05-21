@@ -93,6 +93,18 @@ export const getMyTasksThisWeek = createTool({
 	},
 });
 
+export const getMyTasksNextWeek = createTool({
+	description:
+		"Get tasks assigned to the user that are due next week (7-14 days from now). Use when the user explicitly asks about next week's tasks.",
+	args: z.object({}),
+	handler: async (ctx: AssistantCtx): Promise<unknown> => {
+		return await ctx.runQuery(api.assistantTools.getMyTasksNextWeek, {
+			workspaceId: ctx.workspaceId,
+			userId: ctx.userId,
+		});
+	},
+});
+
 export const getMyAllTasks = createTool({
 	description:
 		"Get all tasks assigned to the user. Results are ranked for visible triage, so overdue, in-progress, on-hold, and higher-priority work appears first.",
@@ -169,6 +181,25 @@ export const draftTaskForConfirmation = createTool({
 			),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
+		let assigneeMemberId: Id<"members"> | undefined;
+		if (typeof args.assigneeMemberId === "string") {
+			const normalizedAssigneeMemberId = args.assigneeMemberId.trim();
+			if (normalizedAssigneeMemberId) {
+				const workspaceMembers = (await ctx.runQuery(api.members.get, {
+					workspaceId: ctx.workspaceId,
+				})) as Array<{ _id: Id<"members"> }>;
+				const matchingMember = workspaceMembers.find(
+					(member) => member._id === normalizedAssigneeMemberId
+				);
+				if (!matchingMember) {
+					throw new Error(
+						"Invalid assigneeMemberId. Resolve it with getWorkspaceMembers before drafting the task."
+					);
+				}
+				assigneeMemberId = matchingMember._id;
+			}
+		}
+
 		return await ctx.runMutation(
 			api.assistantConversations.savePendingTaskDraft,
 			{
@@ -178,7 +209,7 @@ export const draftTaskForConfirmation = createTool({
 				description: args.description,
 				dueDate: args.dueDate,
 				priority: args.priority,
-				assigneeMemberId: args.assigneeMemberId as Id<"members"> | undefined,
+				assigneeMemberId,
 			}
 		);
 	},

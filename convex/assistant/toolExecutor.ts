@@ -4,7 +4,7 @@ import type { ActionCtx } from "../_generated/server";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 
-export async function executeToolHandler(
+export function executeToolHandler(
 	ctx: ActionCtx,
 	handlerType: ToolHandlerType,
 	handler: FunctionReference<"query" | "mutation" | "action", "public">,
@@ -34,5 +34,86 @@ export function toOpenAIChatMessages(
 		tool_call_id?: string;
 	}>
 ): OpenAI.Chat.ChatCompletionMessageParam[] {
-	return messages as OpenAI.Chat.ChatCompletionMessageParam[];
+	return messages.map((message, index) => {
+		switch (message.role) {
+			case "system":
+			case "user": {
+				if (typeof message.content !== "string") {
+					throw new Error(
+						`Invalid chat message at index ${index}: ${message.role} messages require string content.`
+					);
+				}
+				return {
+					role: message.role,
+					content: message.content,
+				};
+			}
+			case "assistant": {
+				const hasStringContent = typeof message.content === "string";
+				const toolCalls = message.tool_calls?.map((toolCall, toolIndex) => {
+					if (
+						typeof toolCall?.id !== "string" ||
+						!toolCall.id.trim() ||
+						typeof toolCall?.function?.name !== "string" ||
+						!toolCall.function.name.trim() ||
+						typeof toolCall?.function?.arguments !== "string"
+					) {
+						throw new Error(
+							`Invalid chat message at index ${index}: assistant tool_calls[${toolIndex}] must include id, function.name, and function.arguments strings.`
+						);
+					}
+					return {
+						id: toolCall.id,
+						type: "function" as const,
+						function: {
+							name: toolCall.function.name,
+							arguments: toolCall.function.arguments,
+						},
+					};
+				});
+				if (!hasStringContent && !toolCalls?.length) {
+					throw new Error(
+						`Invalid chat message at index ${index}: assistant messages require string content or valid tool_calls.`
+					);
+				}
+				const assistantMessage: OpenAI.Chat.ChatCompletionAssistantMessageParam =
+					{
+						role: "assistant",
+					};
+				if (hasStringContent) {
+					assistantMessage.content = message.content;
+				} else if (message.content === null) {
+					assistantMessage.content = null;
+				}
+				if (toolCalls?.length) {
+					assistantMessage.tool_calls = toolCalls;
+				}
+				return assistantMessage;
+			}
+			case "tool": {
+				if (typeof message.content !== "string") {
+					throw new Error(
+						`Invalid chat message at index ${index}: tool messages require string content.`
+					);
+				}
+				if (
+					typeof message.tool_call_id !== "string" ||
+					!message.tool_call_id.trim()
+				) {
+					throw new Error(
+						`Invalid chat message at index ${index}: tool messages require a tool_call_id string.`
+					);
+				}
+				return {
+					role: "tool",
+					content: message.content,
+					tool_call_id: message.tool_call_id,
+				};
+			}
+			default:
+				throw new Error(
+					`Invalid chat message at index ${index}: unsupported role "${message.role}".`
+				);
+		}
+	});
 }

@@ -8,6 +8,7 @@
 import withPWA from "next-pwa";
 
 const baseConfig = withPWA({
+	distDir: process.platform === "win32" ? ".next-win" : ".next",
 	dest: "public",
 	register: true,
 	skipWaiting: true,

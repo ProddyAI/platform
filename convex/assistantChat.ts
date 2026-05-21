@@ -27,6 +27,7 @@ import {
 	createFallbackResponseFromToolResult,
 	dedupeSourceRefs,
 } from "./assistant/toolResults";
+import { validateRelativeDueDateSelection } from "./assistant/relativeDate";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 
@@ -45,6 +46,30 @@ type ToolDefinition = {
 		needsUserId?: boolean;
 	};
 };
+
+function buildCurrentDateContext() {
+	const now = new Date();
+	const utcIso = now.toISOString();
+	const localFormatter = new Intl.DateTimeFormat("en-US", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+		second: "2-digit",
+		timeZoneName: "short",
+	});
+	const localTimezone =
+		Intl.DateTimeFormat().resolvedOptions().timeZone || "local timezone";
+
+	return [
+		"Current date context:",
+		`- Local runtime time: ${localFormatter.format(now)} (${localTimezone})`,
+		`- UTC timestamp: ${utcIso}`,
+		"- Always interpret relative dates like today, tomorrow, and yesterday using this current date context, not training-time assumptions.",
+	].join("\n");
+}
 
 function buildSystemPrompt(options?: {
 	hasPendingTaskDraft?: boolean;
@@ -102,7 +127,7 @@ Guidelines:
 - For broad catch-up questions like "what happened in general", summarize concrete updates when data exists
 - Reuse recent conversation context for short follow-ups like "what about release?"
 - Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."
-- ALWAYS use integration tools (runGithubTool, runGmailTool, runSlackTool, etc.) when the user asks about those services ï¿½ do NOT say you can't access them
+- ALWAYS use integration tools (runGithubTool, runGmailTool, runSlackTool, etc.) when the user asks about those services - do NOT say you can't access them
 
 Available capabilities:
 - Calendar: View today's/tomorrow's/next week's meetings
@@ -121,6 +146,8 @@ Available capabilities:
 - Notion: Create and read pages and databases with runNotionTool
 - ClickUp: Create and manage tasks with runClickupTool
 - Linear: Create and manage issues with runLinearTool
+
+${buildCurrentDateContext()}
 
 ${preflightPrompt}
 
@@ -194,6 +221,32 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		},
 		handlerType: "query" as const,
 		handler: api.assistantTools.getMyTasksTomorrow,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getMyTasksThisWeek",
+		description:
+			"Get tasks assigned to the user that are due this week (the next 7 days starting from today). Use when the user asks about this week's or upcoming tasks.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyTasksThisWeek,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getMyTasksNextWeek",
+		description:
+			"Get tasks assigned to the user that are due next week (7-14 days from now). Returns incomplete tasks within that date window only.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyTasksNextWeek,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
@@ -1007,7 +1060,13 @@ export const sendMessage = action({
 						responseText =
 							"I couldn't find anything relevant in your workspace yet.";
 					}
-				} catch {}
+				} catch (fallbackError) {
+					console.error(
+						"[Assistant] Semantic search fallback failed",
+						fallbackError,
+						{ conversationId: args.conversationId, message: args.message }
+					);
+				}
 			}
 
 			if (toolCalls && toolCalls.length > 0) {
@@ -1048,6 +1107,28 @@ export const sendMessage = action({
 								toolCall.function?.arguments ?? "{}"
 							);
 							const fullArgs: Record<string, unknown> = { ...parsedArgs };
+
+							if (toolName === "draftTaskForConfirmation") {
+								const relativeDateValidation = validateRelativeDueDateSelection(
+									{
+										message: args.message,
+										dueDate:
+											typeof fullArgs.dueDate === "number"
+												? fullArgs.dueDate
+												: undefined,
+									}
+								);
+								if (relativeDateValidation) {
+									return {
+										result: {
+											success: false,
+											error: relativeDateValidation,
+										},
+										sourceRefs: [],
+										fallbackText: relativeDateValidation,
+									};
+								}
+							}
 
 							if (tool.contextParams?.needsWorkspaceId) {
 								fullArgs.workspaceId = resolvedWorkspaceId;

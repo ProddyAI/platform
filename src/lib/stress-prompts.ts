@@ -1,5 +1,25 @@
 import type { StressMetrics } from "../../convex/stress";
 
+const TITLE_CONTROL_CHARS_REGEX = /[\x00-\x1F\x7F]/g;
+const INSTRUCTION_PREFIX_REGEX =
+	/^(?:system|assistant|user|developer|instructions?)\s*:\s*/i;
+
+function sanitizeTitle(value: string): string {
+	const cleaned = value
+		.replace(TITLE_CONTROL_CHARS_REGEX, " ")
+		.replace(/[\r\n]+/g, " ")
+		.replace(/["']/g, "")
+		.replace(INSTRUCTION_PREFIX_REGEX, "")
+		.replace(/\s+/g, " ")
+		.trim();
+
+	if (cleaned.length <= 200) {
+		return cleaned;
+	}
+
+	return `${cleaned.slice(0, 197).trimEnd()}...`;
+}
+
 export const buildStressDetectionPrompt = (metrics: StressMetrics): string =>
 	`
 You are Proddy, a human-centric AI productivity coach.
@@ -13,13 +33,13 @@ Analyze the following workload metrics and provide a compassionate, actionable s
 - High-priority task share: ${metrics.highPriorityPercent}%
 - 7-day task completion rate: ${metrics.completionRate7d}%
 - Stress Score: ${metrics.finalScore} (${metrics.stressLevel.toUpperCase()} stress)
-${metrics.multiplierApplied ? "- ⚠️ High-priority multiplier applied (>50% of tasks are high priority)" : ""}
+${metrics.multiplierApplied ? "- High-priority multiplier applied (>50% of tasks are high priority)" : ""}
 
 **Instructions:**
 1. Acknowledge the user's current workload level with empathy.
-2. Identify the top 1–2 stress drivers from the data.
-3. Suggest 2–3 concrete, immediately actionable steps.
-4. If stress level is HIGH, strongly recommend a short break (5–15 minutes) before diving back in.
+2. Identify the top 1-2 stress drivers from the data.
+3. Suggest 2-3 concrete, immediately actionable steps.
+4. If stress level is HIGH, strongly recommend a short break (5-15 minutes) before diving back in.
 5. Keep your response warm, supportive, and under 200 words.
 `.trim();
 
@@ -41,7 +61,7 @@ export const buildReschedulingPrompt = (
 						day: "numeric",
 					})
 				: "No due date";
-			return `${i + 1}. "${t.title}" — Priority: ${t.priority ?? "none"} | Due: ${due}`;
+			return `${i + 1}. "${sanitizeTitle(t.title)}" - Priority: ${t.priority ?? "none"} | Due: ${due}`;
 		})
 		.join("\n");
 
@@ -54,10 +74,10 @@ ${taskList}
 
 **Instructions:**
 1. Assess each task's urgency and importance.
-2. Suggest a realistic new due date for each task (1–5 days from today).
+2. Suggest a realistic new due date for each task (1-5 days from today).
 3. Recommend which task to tackle FIRST and why.
 4. If the list is long (>5 tasks), suggest delegating or dropping the lowest-priority ones.
-5. Be direct and confident — give specific dates, not vague advice.
+5. Be direct and confident - give specific dates, not vague advice.
 6. Keep the response structured (one bullet per task) and under 250 words.
 `.trim();
 };
@@ -71,7 +91,7 @@ export const buildDailyFocusPrompt = (focusTasks: TaskSummary[]): string => {
 						day: "numeric",
 					})
 				: "Flexible";
-			return `${i + 1}. "${t.title}" — Priority: ${t.priority ?? "medium"} | Due: ${due}`;
+			return `${i + 1}. "${sanitizeTitle(t.title)}" - Priority: ${t.priority ?? "medium"} | Due: ${due}`;
 		})
 		.join("\n");
 

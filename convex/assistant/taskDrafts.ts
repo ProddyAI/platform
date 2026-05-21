@@ -13,7 +13,7 @@ type PendingTaskDraft = {
 
 const CONFIRMATION_PATTERNS = [
 	/^yes[.!?\s]*$/i,
-	/^yes,\s*create\b/i,
+	/^yes,\s*create[.!?\s]*$/i,
 	/^confirm[.!?\s]*$/i,
 	/^create it[.!?\s]*$/i,
 	/^create the task[.!?\s]*$/i,

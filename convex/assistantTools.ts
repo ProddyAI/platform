@@ -1,7 +1,8 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { action, query } from "./_generated/server";
+import { action, query, type QueryCtx } from "./_generated/server";
 import {
 	buildHybridRetrievalResults,
 	type DirectSearchAllResults,
@@ -25,6 +26,18 @@ function addDays(date: Date, days: number): Date {
 	const result = new Date(date);
 	result.setDate(result.getDate() + days);
 	return result;
+}
+
+export function filterItemsInRelativeDayWindow<
+	T extends { dueDate?: number | null },
+>(items: T[], now: Date, startDaysFromNow: number, endDaysFromNow: number) {
+	const windowStart = startOfDayMs(addDays(now, startDaysFromNow));
+	const windowEnd = endOfDayMs(addDays(now, endDaysFromNow));
+
+	return items.filter((item) => {
+		if (typeof item.dueDate !== "number") return false;
+		return item.dueDate >= windowStart && item.dueDate <= windowEnd;
+	});
 }
 
 function compactText(text: string, maxLength = 180) {
@@ -85,6 +98,28 @@ function sortTasksForAssistant<
 
 		return 0;
 	});
+}
+
+async function requireWorkspaceMember(
+	ctx: QueryCtx,
+	workspaceId: Id<"workspaces">
+) {
+	const authUserId = await getAuthUserId(ctx);
+	if (!authUserId) {
+		throw new Error("Unauthorized");
+	}
+
+	const member = await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", authUserId)
+		)
+		.unique();
+	if (!member) {
+		throw new Error("Unauthorized");
+	}
+
+	return { authUserId, member };
 }
 
 export const getMyCalendarToday = query({
@@ -428,6 +463,52 @@ export const getMyTasksThisWeek = query({
 	},
 });
 
+export const getMyTasksNextWeek = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+	},
+	returns: v.object({
+		tasks: v.array(
+			v.object({
+				id: v.string(),
+				title: v.string(),
+				description: v.optional(v.string()),
+				status: v.string(),
+				priority: v.optional(v.string()),
+				dueDate: v.optional(v.number()),
+			})
+		),
+		count: v.number(),
+	}),
+	handler: async (ctx, args) => {
+		const now = new Date();
+
+		const allTasks = await ctx.db
+			.query("tasks")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("completed"), false))
+			.collect();
+
+		const nextWeekTasks = filterItemsInRelativeDayWindow(allTasks, now, 7, 14);
+
+		return {
+			tasks: nextWeekTasks.map((t) => ({
+				id: t._id,
+				title: t.title,
+				description: t.description,
+				status: t.status || "todo",
+				priority: t.priority,
+				dueDate: t.dueDate,
+			})),
+			count: nextWeekTasks.length,
+		};
+	},
+});
+
 export const getMyAllTasks = query({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -495,6 +576,7 @@ export const getRecentNotes = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		await requireWorkspaceMember(ctx, args.workspaceId);
 		const notes = await ctx.db
 			.query("notes")
 			.withIndex("by_workspace_id", (q) =>
@@ -550,6 +632,7 @@ export const searchNotes = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		await requireWorkspaceMember(ctx, args.workspaceId);
 		const noteResults = (await ctx.runQuery(api.search.searchNotes, {
 			workspaceId: args.workspaceId,
 			query: args.query,
@@ -627,6 +710,7 @@ export const searchTasks = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
 		const taskResults = (await ctx.runQuery(api.search.searchTasks, {
 			workspaceId: args.workspaceId,
 			query: args.query,
@@ -644,7 +728,7 @@ export const searchTasks = query({
 			taskDocs.filter((task): task is Doc<"tasks"> => {
 				if (!task) return false;
 				return (
-					task.userId === args.userId && task.workspaceId === args.workspaceId
+					task.userId === authUserId && task.workspaceId === args.workspaceId
 				);
 			})
 		);
@@ -725,6 +809,7 @@ export const getChannelDebug = query({
 		),
 	}),
 	handler: async (ctx, args) => {
+		await requireWorkspaceMember(ctx, args.workspaceId);
 		const channel = await ctx.db.get(args.channelId);
 		if (!channel || channel.workspaceId !== args.workspaceId) {
 			return {
@@ -841,16 +926,7 @@ export const getChannelSummary = query({
 			};
 		}
 
-		type ChannelMsg = {
-			authorName?: string;
-			body: string;
-			id: string;
-			memberId: string;
-			creationTime: number;
-		};
-		const messageContext: string = (
-			debug.recentMessages as unknown as ChannelMsg[]
-		)
+		const messageContext = debug.recentMessages
 			.slice(-10)
 			.map((message) =>
 				message.authorName
@@ -863,14 +939,12 @@ export const getChannelSummary = query({
 			summary: messageContext,
 			messageCount: debug.messageCount,
 			channelName: debug.channelName,
-			recentMessages: (debug.recentMessages as unknown as ChannelMsg[]).map(
-				(message) => ({
-					id: message.id,
-					body: message.body,
-					authorName: message.authorName,
-					creationTime: message.creationTime,
-				})
-			),
+			recentMessages: debug.recentMessages.map((message) => ({
+				id: message.id,
+				body: message.body,
+				authorName: message.authorName,
+				creationTime: message.creationTime,
+			})),
 		};
 	},
 });
@@ -887,6 +961,7 @@ export const getWorkspaceOverview = query({
 		upcomingEvents: v.number(),
 	}),
 	handler: async (ctx, args) => {
+		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
 		const channels = await ctx.db
 			.query("channels")
 			.withIndex("by_workspace_id", (q) =>
@@ -904,7 +979,7 @@ export const getWorkspaceOverview = query({
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
-			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 		const events = await ctx.db
@@ -988,12 +1063,13 @@ export const getWorkspaceGeneralSummary = query({
 		channelCount: number;
 		taskCount: number;
 	}> => {
+		const { authUserId } = await requireWorkspaceMember(ctx, args.workspaceId);
 		const allTasks: Doc<"tasks">[] = await ctx.db
 			.query("tasks")
 			.withIndex("by_workspace_id", (q) =>
 				q.eq("workspaceId", args.workspaceId)
 			)
-			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("userId"), authUserId))
 			.filter((q) => q.eq(q.field("completed"), false))
 			.collect();
 
@@ -1024,7 +1100,7 @@ export const getWorkspaceGeneralSummary = query({
 			>,
 			ctx.runQuery(api.assistantTools.getWorkspaceOverview, {
 				workspaceId: args.workspaceId,
-				userId: args.userId,
+				userId: authUserId,
 			}) as Promise<{
 				channelCount: number;
 				memberCount: number;

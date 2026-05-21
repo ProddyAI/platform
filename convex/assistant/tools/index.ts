@@ -11,6 +11,7 @@ export const internalTools: Record<string, unknown> = {
 	getMyTasksToday: internal.getMyTasksToday,
 	getMyTasksTomorrow: internal.getMyTasksTomorrow,
 	getMyTasksThisWeek: internal.getMyTasksThisWeek,
+	getMyTasksNextWeek: internal.getMyTasksNextWeek,
 	getMyAllTasks: internal.getMyAllTasks,
 	searchTasks: internal.searchTasks,
 	draftTaskForConfirmation: internal.draftTaskForConfirmation,

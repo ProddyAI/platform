@@ -362,13 +362,15 @@ export async function POST(req: NextRequest) {
 						);
 
 						if (existingConnectedAccount) {
-							// Update the existing record's status and composioAccountId
+							// Refresh the existing record with the latest Composio identity data.
 							await convex.mutation(
 								api.integrations.updateConnectedAccountStatus,
 								{
 									connectedAccountId: existingConnectedAccount._id,
 									status: "ACTIVE",
 									lastUsed: Date.now(),
+									composioAccountId: connectedAccount.id,
+									metadata: connectedAccount,
 								}
 							);
 						} else {

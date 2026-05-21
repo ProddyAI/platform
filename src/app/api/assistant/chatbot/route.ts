@@ -16,6 +16,7 @@ import {
 	getAllToolsForApps,
 	getWorkspaceEntityId,
 } from "@/lib/composio-config";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,42 @@ type AssistantSource = {
 	type: string;
 	text: string;
 };
+
+function truncateIdentifier(value: unknown, maxLength = 24) {
+	const normalized = String(value ?? "").trim();
+	if (!normalized) return undefined;
+	return normalized.length > maxLength
+		? `${normalized.slice(0, maxLength)}...`
+		: normalized;
+}
+
+function sanitizeToolResult(result: unknown): Record<string, unknown> {
+	if (Array.isArray(result)) {
+		return {
+			kind: "array",
+			count: result.length,
+			items: result.slice(0, 3).map((item) => sanitizeToolResult(item)),
+		};
+	}
+
+	if (!result || typeof result !== "object") {
+		return {
+			kind: typeof result,
+			present: result !== undefined && result !== null,
+		};
+	}
+
+	const record = result as Record<string, unknown>;
+	return {
+		kind: "object",
+		status: typeof record.status === "string" ? record.status : undefined,
+		type: typeof record.type === "string" ? record.type : undefined,
+		id: truncateIdentifier(record.id),
+		keys: Object.keys(record).slice(0, 8),
+		itemCount: Array.isArray(record.items) ? record.items.length : undefined,
+		resultCount: Array.isArray(record.results) ? record.results.length : undefined,
+	};
+}
 
 function inferSourceType(sourceText: string) {
 	const prefix = sourceText.split(":")[0]?.trim().toLowerCase();
@@ -273,10 +310,13 @@ export async function POST(req: NextRequest) {
 				);
 
 				if (activeAccounts.length > 0) {
+					const normalizedToolkits = activeAccounts.flatMap((acc: any) => {
+						const toolkit =
+							typeof acc?.toolkit === "string" ? acc.toolkit.trim() : "";
+						return toolkit ? [toolkit.toUpperCase()] : [];
+					});
 					connectedApps = [
-						...new Set(
-							activeAccounts.map((acc: any) => acc.toolkit.toUpperCase())
-						),
+						...new Set(normalizedToolkits),
 					] as AvailableApp[];
 
 					const firstAccount = activeAccounts[0];
@@ -391,9 +431,9 @@ export async function POST(req: NextRequest) {
 							userId,
 							completion
 						);
-						console.log(
-							`[Chatbot] Tool results:`,
-							JSON.stringify(result).slice(0, 500)
+						logger.info(
+							"[Chatbot] Tool results summary",
+							sanitizeToolResult(result)
 						);
 
 						// Extract tool results for display

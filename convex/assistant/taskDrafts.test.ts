@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import type { Id } from "../_generated/dataModel";
 import {
 	buildTaskDraftFailureMessage,
 	formatPendingTaskDraftConfirmation,
 	isPendingTaskCancellation,
 	isPendingTaskConfirmation,
 	mergePendingTaskDraftUpdate,
+	type PendingTaskDraft,
 } from "./taskDrafts";
 
 describe("task draft confirmation helpers", () => {
@@ -12,7 +14,10 @@ describe("task draft confirmation helpers", () => {
 		expect(isPendingTaskConfirmation("yes")).toBe(true);
 		expect(isPendingTaskConfirmation("confirm")).toBe(true);
 		expect(isPendingTaskConfirmation("create it")).toBe(true);
-		expect(isPendingTaskConfirmation("yes, create the task")).toBe(true);
+		expect(isPendingTaskConfirmation("yes, create the task")).toBe(false);
+		expect(isPendingTaskConfirmation("yes, create")).toBe(true);
+		expect(isPendingTaskConfirmation("yes, create.")).toBe(true);
+		expect(isPendingTaskConfirmation("yes, create but wait")).toBe(false);
 		expect(isPendingTaskConfirmation("change the due date to Friday")).toBe(
 			false
 		);
@@ -58,21 +63,26 @@ describe("task draft confirmation helpers", () => {
 		const message = formatPendingTaskDraftConfirmation({
 			title: "Prepare onboarding deck",
 			assigneeName: "Alice Johnson",
-		} as any);
+			updatedAt: Date.now(),
+		});
 
 		expect(message).toContain("- Title: Prepare onboarding deck");
 		expect(message).toContain("- Assignee: Alice Johnson");
 	});
 
 	test("merges partial updates into an existing pending draft", () => {
+		const assigneeMemberId = "member_1" as Id<"members">;
+		const assigneeUserId = "user_1" as Id<"users">;
+		const existingDraft: PendingTaskDraft = {
+			title: "Mentoring",
+			assigneeName: "Alice",
+			assigneeMemberId,
+			assigneeUserId,
+			priority: "low",
+			updatedAt: 100,
+		};
 		const merged = mergePendingTaskDraftUpdate(
-			{
-				title: "Mentoring",
-				assigneeName: "Alice",
-				assigneeMemberId: "member_1" as any,
-				assigneeUserId: "user_1" as any,
-				priority: "low",
-			},
+			existingDraft,
 			{
 				dueDate: new Date("2026-10-24T00:00:00.000Z").getTime(),
 				priority: "medium",

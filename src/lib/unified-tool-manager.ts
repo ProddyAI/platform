@@ -86,6 +86,32 @@ export const INTERNAL_TOOL_DEFINITIONS: ConvexToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
+		name: "getMyTasksThisWeek",
+		description:
+			"Get tasks assigned to the user that are due this week (the next 7 days starting from today).",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyTasksThisWeek,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getMyTasksNextWeek",
+		description:
+			"Get tasks assigned to the user that are due next week (7-14 days from now).",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyTasksNextWeek,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
 		name: "getMyAllTasks",
 		description:
 			"Get all tasks assigned to the user. Results are already ranked for visible triage, with overdue, in-progress, and on-hold work first.",

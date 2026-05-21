@@ -124,22 +124,41 @@ function planTaskLookup(
 	lower: string
 ): PreflightContextPlan | null {
 	if (!TASK_LOOKUP_PATTERN.test(lower)) return null;
+	const wantsNextWeek = lower.includes("next week");
+	const wantsThisWeek =
+		!wantsNextWeek &&
+		(lower.includes("this week") || lower.includes("upcoming"));
 	const taskQuery =
 		extractTopicAfterKeyword(message, /\b(?:tasks?\s+about|tasks?\s+on)\b/i) ??
 		extractTopicAfterKeyword(message, /\b(?:blocked|blockers?)\b/i);
+
+	const recommendedToolOrder = taskQuery
+		? ["searchTasks"]
+		: wantsNextWeek
+			? ["getMyTasksNextWeek"]
+			: wantsThisWeek
+				? ["getMyTasksThisWeek"]
+				: ["getMyAllTasks"];
+
+	const summaryLines = taskQuery
+		? [
+				`Direct task topic detected: ${taskQuery}`,
+				"Use task search before broader workspace retrieval.",
+			]
+		: wantsNextWeek
+			? ["Relative task window detected: next week."]
+			: wantsThisWeek
+				? ["Relative task window detected: this week."]
+				: ["Task intent detected without a specific topic."];
+
 	return {
 		intent: "task_lookup",
 		confidence: taskQuery ? "high" : "medium",
 		taskQuery: taskQuery ?? undefined,
 		resolvedTopic: taskQuery ?? undefined,
 		needsMemberResolution: false,
-		recommendedToolOrder: taskQuery ? ["searchTasks"] : ["getMyAllTasks"],
-		summaryLines: taskQuery
-			? [
-					`Direct task topic detected: ${taskQuery}`,
-					"Use task search before broader workspace retrieval.",
-				]
-			: ["Task intent detected without a specific topic."],
+		recommendedToolOrder,
+		summaryLines,
 	};
 }
 

@@ -312,7 +312,7 @@ export const savePendingTaskDraft = mutation({
 		const existing = await ctx.db
 			.query("assistantConversations")
 			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
 			)
 			.order("desc")
 			.first();
