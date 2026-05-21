@@ -1,5 +1,7 @@
 /node_modules
 /.pnp
+# Bun patch workflow scratch (only patches/ is committed)
+.patch-tmp/
 .env.local
 .env.convex
 /coverage
