@@ -264,32 +264,357 @@ const CHAT_TOOL_STATUS_LABELS = [
 	"Integrations",
 ] as const;
 
+function ChatLoadingStatusTags() {
+	return (
+		<div className="mt-2 flex flex-wrap gap-1">
+			{CHAT_TOOL_STATUS_LABELS.map((label) => (
+				<span
+					className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+					key={label}
+				>
+					{label}
+				</span>
+			))}
+		</div>
+	);
+}
+
+function ChatLoadingBody() {
+	return (
+		<div className="min-w-0 flex-1">
+			<p className="text-sm font-medium">Using tools when needed</p>
+			<p className="text-xs text-muted-foreground mt-1">
+				Checking calendar, tasks, search, and integrations…
+			</p>
+			<ChatLoadingStatusTags />
+		</div>
+	);
+}
+
 function ChatLoadingIndicator() {
 	return (
 		<div className="flex justify-start">
-			<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3">
-				<div className="flex items-start gap-2">
-					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-						<Zap className="h-4 w-4 animate-pulse text-primary" />
-					</div>
-					<div className="min-w-0 flex-1">
-						<p className="text-sm font-medium">Using tools when needed</p>
-						<p className="text-xs text-muted-foreground mt-1">
-							Checking calendar, tasks, search, and integrations…
-						</p>
-						<div className="mt-2 flex flex-wrap gap-1">
-							{CHAT_TOOL_STATUS_LABELS.map((label) => (
-								<span
-									className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
-									key={label}
-								>
-									{label}
-								</span>
-							))}
-						</div>
-					</div>
-					<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+			<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3 flex items-start gap-2">
+				<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+					<Zap className="h-4 w-4 animate-pulse text-primary" />
 				</div>
+				<ChatLoadingBody />
+				<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+			</div>
+		</div>
+	);
+}
+
+function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
+	const metadata = getIntegrationMetadata(app.app);
+	const Icon = metadata?.icon ?? Zap;
+	return (
+		<div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border">
+			<Icon
+				className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
+			/>
+			<div className="flex-1">
+				<div className="font-medium text-sm">{metadata?.name ?? app.app}</div>
+				<div className="text-xs text-muted-foreground">
+					{metadata?.description ??
+						"Connected and available for assistant actions"}
+				</div>
+			</div>
+			<CheckCircle className="h-4 w-4 text-green-600" />
+		</div>
+	);
+}
+
+function ConnectedIntegrationsPopover({
+	connected,
+	totalTools,
+}: {
+	connected: IntegrationStatusApp[];
+	totalTools: number;
+}) {
+	return (
+		<Popover>
+			<PopoverTrigger asChild>
+				<Button
+					className="h-5 px-2 text-xs hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
+					size="sm"
+					variant="ghost"
+				>
+					<Zap className="h-3 w-3 mr-1 text-green-600" />
+					<span className="text-green-700 dark:text-green-300 font-medium">
+						{connected.length} connected
+					</span>
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent className="w-80 p-3">
+				<div className="space-y-3">
+					<h4 className="font-medium text-sm flex items-center gap-2">
+						<CheckCircle className="h-4 w-4 text-green-600" />
+						Connected Integrations
+					</h4>
+					<div className="space-y-2">
+						{connected.map((app) => (
+							<ConnectedIntegrationRow app={app} key={app.app} />
+						))}
+					</div>
+					<div className="text-xs text-muted-foreground pt-2 border-t">
+						{totalTools} tools available
+					</div>
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
+function IntegrationStatusBlock({
+	status,
+}: {
+	status: {
+		connected: IntegrationStatusApp[];
+		totalTools: number;
+		loading: boolean;
+	};
+}) {
+	if (status.loading) {
+		return (
+			<div className="flex items-center gap-1">
+				<Loader className="h-3 w-3 animate-spin text-muted-foreground" />
+				<span className="text-xs text-muted-foreground">
+					Checking integrations...
+				</span>
+			</div>
+		);
+	}
+	if (status.connected.length > 0) {
+		return (
+			<ConnectedIntegrationsPopover
+				connected={status.connected}
+				totalTools={status.totalTools}
+			/>
+		);
+	}
+	return (
+		<Badge className="text-xs px-2 py-0.5 h-5" variant="outline">
+			No integrations
+		</Badge>
+	);
+}
+
+function ChatHeaderTitle({
+	status,
+}: {
+	status: {
+		connected: IntegrationStatusApp[];
+		totalTools: number;
+		loading: boolean;
+	};
+}) {
+	return (
+		<div className="flex items-center gap-3">
+			<ProddyChatAvatar />
+			<div>
+				<CardTitle className="text-lg font-semibold">Proddy AI</CardTitle>
+				<div className="flex items-center gap-2 mt-0.5">
+					<IntegrationStatusBlock status={status} />
+				</div>
+			</div>
+		</div>
+	);
+}
+
+type RecentConversation = {
+	_id: string;
+	conversationId: string;
+	title?: string;
+	titleSource?: string;
+	lastMessageAt: number;
+};
+
+function ChatHistoryItem({
+	conv,
+	isActive,
+	onSelect,
+	onStartEdit,
+	onDelete,
+}: {
+	conv: RecentConversation;
+	isActive: boolean;
+	onSelect: () => void;
+	onStartEdit: () => void;
+	onDelete: () => void;
+}) {
+	return (
+		<DropdownMenuItem
+			className={cn(
+				"flex items-start gap-2 p-3 cursor-pointer group",
+				isActive && "bg-accent"
+			)}
+			onSelect={(e) => {
+				e.preventDefault();
+				onSelect();
+			}}
+		>
+			<MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+			<div className="flex-1 min-w-0">
+				<p
+					className={`text-sm font-medium truncate transition-all duration-500 ${
+						conv.title && conv.title !== "New Chat"
+							? "opacity-100"
+							: "opacity-60"
+					}`}
+				>
+					{conv.title || "New Chat"}
+					{conv.titleSource === "ai_generated" &&
+						conv.title &&
+						conv.title !== "New Chat" && (
+							<Sparkles className="inline-block ml-1 h-3 w-3 text-primary/40" />
+						)}
+				</p>
+				<p className="text-xs text-muted-foreground mt-0.5">
+					{formatRelativeTime(conv.lastMessageAt)}
+				</p>
+			</div>
+			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+				<Button
+					className="h-6 w-6 p-0"
+					onClick={(e) => {
+						e.stopPropagation();
+						onStartEdit();
+					}}
+					size="sm"
+					variant="ghost"
+				>
+					<Edit2 className="h-3 w-3" />
+				</Button>
+				<Button
+					className="h-6 w-6 p-0 hover:text-destructive"
+					onClick={(e) => {
+						e.stopPropagation();
+						onDelete();
+					}}
+					size="sm"
+					variant="ghost"
+				>
+					<Trash2 className="h-3 w-3" />
+				</Button>
+			</div>
+		</DropdownMenuItem>
+	);
+}
+
+const MARKDOWN_COMPONENTS = {
+	a: ({
+		href,
+		children,
+		...props
+	}: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+		<a
+			className="text-primary hover:text-primary/80 underline"
+			href={href}
+			rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
+			target={href?.startsWith("http") ? "_blank" : "_self"}
+			{...props}
+		>
+			{children}
+		</a>
+	),
+	code: ({
+		className,
+		children,
+		...props
+	}: React.HTMLAttributes<HTMLElement>) => (
+		<code
+			className={`${className} bg-muted px-1 py-0.5 rounded text-sm font-mono`}
+			{...props}
+		>
+			{children}
+		</code>
+	),
+	pre: ({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) => (
+		<pre className="bg-muted p-3 rounded-md overflow-x-auto text-sm" {...props}>
+			{children}
+		</pre>
+	),
+};
+
+function AssistantMarkdown({ content }: { content: string }) {
+	return (
+		<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300 prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
+			<ReactMarkdown
+				components={MARKDOWN_COMPONENTS}
+				remarkPlugins={[remarkGfm]}
+			>
+				{content}
+			</ReactMarkdown>
+		</div>
+	);
+}
+
+function MessageActions({
+	actions,
+	getActionIcon,
+	onNavigate,
+}: {
+	actions: NavigationAction[];
+	getActionIcon: (type: string) => React.ReactNode;
+	onNavigate: (action: NavigationAction) => void;
+}) {
+	return (
+		<div className="flex flex-wrap gap-2 mt-3">
+			{actions.map((action) => (
+				<Button
+					className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
+					key={`${action.type}-${action.url}-${action.label}`}
+					onClick={() => onNavigate(action)}
+					size="sm"
+					variant="outline"
+				>
+					{getActionIcon(action.type)}
+					<span className="ml-1.5">{action.label}</span>
+				</Button>
+			))}
+		</div>
+	);
+}
+
+function MessageBubble({
+	message,
+	renderSourceBadges,
+	getActionIcon,
+	onNavigate,
+}: {
+	message: Message;
+	renderSourceBadges: (sources: Message["sources"]) => React.ReactNode;
+	getActionIcon: (type: string) => React.ReactNode;
+	onNavigate: (action: NavigationAction) => void;
+}) {
+	const isUser = message.sender === "user";
+	return (
+		<div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+			<div
+				className={`max-w-[80%] rounded-lg px-4 py-3 ${
+					isUser ? "bg-primary text-primary-foreground" : "bg-muted"
+				}`}
+			>
+				{isUser ? (
+					<p className="text-sm">{message.content}</p>
+				) : (
+					<AssistantMarkdown content={message.content} />
+				)}
+				{message.sources && renderSourceBadges(message.sources)}
+				{message.actions && message.actions.length > 0 && (
+					<MessageActions
+						actions={message.actions}
+						getActionIcon={getActionIcon}
+						onNavigate={onNavigate}
+					/>
+				)}
+				<p className="mt-2 text-right text-xs opacity-70">
+					{message.timestamp.toLocaleTimeString([], {
+						hour: "2-digit",
+						minute: "2-digit",
+					})}
+				</p>
 			</div>
 		</div>
 	);
@@ -928,88 +1253,9 @@ Try asking me things like:`;
 			<Card className="flex flex-col flex-1 shadow-md overflow-hidden">
 				<CardHeader className="pb-3 border-b bg-gradient-to-r from-background to-muted/20">
 					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-3">
-							<ProddyChatAvatar />
-							<div>
-								<CardTitle className="text-lg font-semibold">
-									Proddy AI
-								</CardTitle>
-								<div className="flex items-center gap-2 mt-0.5">
-									{integrationStatus.loading ? (
-										<div className="flex items-center gap-1">
-											<Loader className="h-3 w-3 animate-spin text-muted-foreground" />
-											<span className="text-xs text-muted-foreground">
-												Checking integrations...
-											</span>
-										</div>
-									) : integrationStatus.connected.length > 0 ? (
-										<Popover>
-											<PopoverTrigger asChild>
-												<Button
-													className="h-5 px-2 text-xs hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
-													size="sm"
-													variant="ghost"
-												>
-													<Zap className="h-3 w-3 mr-1 text-green-600" />
-													<span className="text-green-700 dark:text-green-300 font-medium">
-														{integrationStatus.connected.length} connected
-													</span>
-												</Button>
-											</PopoverTrigger>
-											<PopoverContent className="w-80 p-3">
-												<div className="space-y-3">
-													<h4 className="font-medium text-sm flex items-center gap-2">
-														<CheckCircle className="h-4 w-4 text-green-600" />
-														Connected Integrations
-													</h4>
-													<div className="space-y-2">
-														{integrationStatus.connected.map((app) => {
-															const metadata = getIntegrationMetadata(app.app);
-															const Icon = metadata?.icon ?? Zap;
+						<ChatHeaderTitle status={integrationStatus} />
 
-															return (
-																<div
-																	className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border"
-																	key={app.app}
-																>
-																	<Icon
-																		className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
-																	/>
-																	<div className="flex-1">
-																		<div className="font-medium text-sm">
-																			{metadata?.name ?? app.app}
-																		</div>
-																		<div className="text-xs text-muted-foreground">
-																			{metadata?.description ??
-																				"Connected and available for assistant actions"}
-																		</div>
-																	</div>
-																	<CheckCircle className="h-4 w-4 text-green-600" />
-																</div>
-															);
-														})}
-													</div>
-													<div className="text-xs text-muted-foreground pt-2 border-t">
-														{integrationStatus.totalTools} tools available
-													</div>
-												</div>
-											</PopoverContent>
-										</Popover>
-									) : (
-										<Badge
-											className="text-xs px-2 py-0.5 h-5"
-											variant="outline"
-										>
-											No integrations
-										</Badge>
-									)}
-								</div>
-							</div>
-						</div>
-
-						{/* Modern Header Controls */}
 						<div className="flex items-center gap-2">
-							{/* New Chat Button */}
 							<Button
 								className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-md"
 								onClick={handleNewChat}
@@ -1020,7 +1266,6 @@ Try asking me things like:`;
 								New Chat
 							</Button>
 
-							{/* Recent Chats Dropdown */}
 							<DropdownMenu
 								onOpenChange={setIsHistoryOpen}
 								open={isHistoryOpen}
@@ -1045,67 +1290,22 @@ Try asking me things like:`;
 										recentConversations.map((conv, index) => (
 											<div key={conv._id}>
 												{index > 0 && <DropdownMenuSeparator />}
-												<DropdownMenuItem
-													className={cn(
-														"flex items-start gap-2 p-3 cursor-pointer group",
-														conversationId === conv.conversationId &&
-															"bg-accent"
-													)}
-													onSelect={(e) => {
-														e.preventDefault();
+												<ChatHistoryItem
+													conv={conv}
+													isActive={conversationId === conv.conversationId}
+													onDelete={() => handleDeleteChat(conv.conversationId)}
+													onSelect={() => {
 														handleSelectConversation(conv.conversationId);
 														setIsHistoryOpen(false);
 													}}
-												>
-													<MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
-													<div className="flex-1 min-w-0">
-														<p
-															className={`text-sm font-medium truncate transition-all duration-500 ${
-																conv.title && conv.title !== "New Chat"
-																	? "opacity-100"
-																	: "opacity-60"
-															}`}
-														>
-															{conv.title || "New Chat"}
-															{conv.titleSource === "ai_generated" &&
-																conv.title &&
-																conv.title !== "New Chat" && (
-																	<Sparkles className="inline-block ml-1 h-3 w-3 text-primary/40" />
-																)}
-														</p>
-														<p className="text-xs text-muted-foreground mt-0.5">
-															{formatRelativeTime(conv.lastMessageAt)}
-														</p>
-													</div>
-													<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-														<Button
-															className="h-6 w-6 p-0"
-															onClick={(e) => {
-																e.stopPropagation();
-																handleStartEditTitle(
-																	conv.conversationId,
-																	conv.title || ""
-																);
-																setIsHistoryOpen(false);
-															}}
-															size="sm"
-															variant="ghost"
-														>
-															<Edit2 className="h-3 w-3" />
-														</Button>
-														<Button
-															className="h-6 w-6 p-0 hover:text-destructive"
-															onClick={(e) => {
-																e.stopPropagation();
-																handleDeleteChat(conv.conversationId);
-															}}
-															size="sm"
-															variant="ghost"
-														>
-															<Trash2 className="h-3 w-3" />
-														</Button>
-													</div>
-												</DropdownMenuItem>
+													onStartEdit={() => {
+														handleStartEditTitle(
+															conv.conversationId,
+															conv.title || ""
+														);
+														setIsHistoryOpen(false);
+													}}
+												/>
 											</div>
 										))
 									) : (
@@ -1116,7 +1316,6 @@ Try asking me things like:`;
 								</DropdownMenuContent>
 							</DropdownMenu>
 
-							{/* Clear Chat Button */}
 							<Button
 								className="h-8 px-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
 								onClick={handleNewChat}
@@ -1172,90 +1371,13 @@ Try asking me things like:`;
 					>
 						<div className="flex flex-col gap-4 py-4 pb-4">
 							{renderedMessages.map((message) => (
-								<div
-									className={`flex ${
-										message.sender === "user" ? "justify-end" : "justify-start"
-									}`}
+								<MessageBubble
+									getActionIcon={getActionIcon}
 									key={message.id}
-								>
-									<div
-										className={`max-w-[80%] rounded-lg px-4 py-3 ${
-											message.sender === "user"
-												? "bg-primary text-primary-foreground"
-												: "bg-muted"
-										}`}
-									>
-										{message.sender === "user" ? (
-											<p className="text-sm">{message.content}</p>
-										) : (
-											<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300 prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
-												<ReactMarkdown
-													components={{
-														a: ({ href, children, ...props }) => (
-															<a
-																className="text-primary hover:text-primary/80 underline"
-																href={href}
-																rel={
-																	href?.startsWith("http")
-																		? "noopener noreferrer"
-																		: undefined
-																}
-																target={
-																	href?.startsWith("http") ? "_blank" : "_self"
-																}
-																{...props}
-															>
-																{children}
-															</a>
-														),
-														code: ({ className, children, ...props }) => (
-															<code
-																className={`${className} bg-muted px-1 py-0.5 rounded text-sm font-mono`}
-																{...props}
-															>
-																{children}
-															</code>
-														),
-														pre: ({ children, ...props }) => (
-															<pre
-																className="bg-muted p-3 rounded-md overflow-x-auto text-sm"
-																{...props}
-															>
-																{children}
-															</pre>
-														),
-													}}
-													remarkPlugins={[remarkGfm]}
-												>
-													{message.content}
-												</ReactMarkdown>
-											</div>
-										)}
-										{message.sources && renderSourceBadges(message.sources)}
-										{message.actions && message.actions.length > 0 && (
-											<div className="flex flex-wrap gap-2 mt-3">
-												{message.actions.map((action) => (
-													<Button
-														className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
-														key={`${action.type}-${action.url}-${action.label}`}
-														onClick={() => handleNavigation(action)}
-														size="sm"
-														variant="outline"
-													>
-														{getActionIcon(action.type)}
-														<span className="ml-1.5">{action.label}</span>
-													</Button>
-												))}
-											</div>
-										)}
-										<p className="mt-2 text-right text-xs opacity-70">
-											{message.timestamp.toLocaleTimeString([], {
-												hour: "2-digit",
-												minute: "2-digit",
-											})}
-										</p>
-									</div>
-								</div>
+									message={message}
+									onNavigate={handleNavigation}
+									renderSourceBadges={renderSourceBadges}
+								/>
 							))}
 							{isLoading && <ChatLoadingIndicator />}
 						</div>

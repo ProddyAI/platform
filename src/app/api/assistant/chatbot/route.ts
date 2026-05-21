@@ -7,7 +7,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { api } from "@/../convex/_generated/api";
-import type { Id } from "@/../convex/_generated/dataModel";
+import type { Doc, Id } from "@/../convex/_generated/dataModel";
 import { buildAssistantSystemPrompt } from "@/lib/assistant-orchestration";
 import {
 	type AvailableApp,
@@ -29,6 +29,66 @@ type AssistantSource = {
 	type: string;
 	text: string;
 };
+
+type ToolkitKey =
+	| "GMAIL"
+	| "GITHUB"
+	| "SLACK"
+	| "NOTION"
+	| "CLICKUP"
+	| "LINEAR";
+
+type IntegrationDetection = {
+	needsExternalTools: boolean;
+	selectedToolkit: ToolkitKey | "";
+};
+
+type ConnectedAccountRow = {
+	status?: string;
+	toolkit?: string;
+	userId?: string;
+};
+
+type ComposioContext = {
+	useComposio: boolean;
+	connectedApps: AvailableApp[];
+	composioTools: any[];
+	composioClient: Composio<any> | null;
+	userId: string;
+};
+
+const TOOLKIT_PATTERNS: Array<{ key: ToolkitKey; pattern: RegExp }> = [
+	{
+		key: "GMAIL",
+		pattern:
+			/\b(gmail|send\s+email|email\s+to|in\s+gmail|my\s+inbox|draft\s+email)\b/i,
+	},
+	{
+		key: "GITHUB",
+		pattern:
+			/\b(github|github\s+(repo|repos|repository|repositories|issue|pr|commit)|in\s+github|on\s+github|my\s+(github\s+)?(repo|repos|repository|repositories))\b/i,
+	},
+	{
+		key: "SLACK",
+		pattern:
+			/\b(slack|slack\s+(message|channel)|in\s+slack|on\s+slack|send\s+to\s+slack)\b/i,
+	},
+	{
+		key: "NOTION",
+		pattern:
+			/\b(notion|notion\s+(page|database)|in\s+notion|on\s+notion|my\s+notion)\b/i,
+	},
+	{
+		key: "CLICKUP",
+		pattern:
+			/\b(clickup|clickup\s+(task|project)|in\s+clickup|on\s+clickup|my\s+clickup)\b/i,
+	},
+	{
+		key: "LINEAR",
+		pattern:
+			/\b(linear|linear\s+(issue|ticket)|in\s+linear|on\s+linear|my\s+linear)\b/i,
+	},
+];
 
 function truncateIdentifier(value: unknown, maxLength = 24) {
 	const normalized = String(value ?? "").trim();
@@ -115,12 +175,6 @@ function parseAssistantResponse(content: string): {
 	return { body, sources };
 }
 
-/**
- * Create a Convex HTTP client configured from the NEXT_PUBLIC_CONVEX_URL environment variable.
- *
- * @returns A ConvexHttpClient instance pointed at the Convex backend URL from `NEXT_PUBLIC_CONVEX_URL`.
- * @throws If the `NEXT_PUBLIC_CONVEX_URL` environment variable is not set.
- */
 function createConvexClient(): ConvexHttpClient {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
 		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
@@ -128,12 +182,6 @@ function createConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 }
 
-/**
- * Create an OpenAI client configured from the `OPENAI_API_KEY` environment variable.
- *
- * @returns An `OpenAI` client instance configured with the value of `OPENAI_API_KEY`.
- * @throws If `OPENAI_API_KEY` is not set in the environment.
- */
 function createOpenAIClient(): OpenAI {
 	if (!process.env.OPENAI_API_KEY) {
 		throw new Error("OPENAI_API_KEY environment variable is required");
@@ -143,52 +191,434 @@ function createOpenAIClient(): OpenAI {
 	});
 }
 
+function applyConvexAuth(convex: ConvexHttpClient) {
+	try {
+		const token = convexAuthNextjsToken();
+		if (token) {
+			convex.setAuth(token);
+			return;
+		}
+		if (isAuthenticatedNextjs()) {
+			console.warn(
+				"[Chatbot Assistant] Authenticated session but no Convex token found"
+			);
+		}
+	} catch (err) {
+		if (isAuthenticatedNextjs()) {
+			console.warn(
+				"[Chatbot Assistant] Failed to read Convex auth token from request",
+				err
+			);
+		}
+	}
+}
+
+async function verifyMemberOwnership(
+	convex: ConvexHttpClient,
+	memberId: string,
+	currentUser: Doc<"users"> | null
+): Promise<NextResponse | null> {
+	const isAuthenticated = await isAuthenticatedNextjs();
+	if (!isAuthenticated) {
+		return NextResponse.json(
+			{ error: "Authentication required when specifying memberId" },
+			{ status: 401 }
+		);
+	}
+
+	const token = await convexAuthNextjsToken();
+	if (token && typeof token === "string") {
+		convex.setAuth(token);
+	}
+	if (!currentUser) {
+		return NextResponse.json({ error: "User not found" }, { status: 404 });
+	}
+
+	const member = await convex.query(api.members.getMemberById, {
+		memberId: memberId as Id<"members">,
+	});
+
+	if (!member) {
+		return NextResponse.json({ error: "Member not found" }, { status: 404 });
+	}
+
+	if (member.userId !== currentUser._id) {
+		return NextResponse.json(
+			{
+				error:
+					"Unauthorized: Cannot access integrations for another user's member",
+			},
+			{ status: 403 }
+		);
+	}
+	return null;
+}
+
+function detectIntegrationNeed(message: string): IntegrationDetection {
+	const queryLower = message.toLowerCase();
+	const match = TOOLKIT_PATTERNS.find(({ pattern }) =>
+		pattern.test(queryLower)
+	);
+	return {
+		needsExternalTools: Boolean(match),
+		selectedToolkit: match?.key ?? "",
+	};
+}
+
+async function prepareComposioContext(
+	convex: ConvexHttpClient,
+	workspaceId: string,
+	memberId: string | undefined,
+	message: string,
+	detection: IntegrationDetection
+): Promise<ComposioContext> {
+	const empty: ComposioContext = {
+		useComposio: false,
+		connectedApps: [],
+		composioTools: [],
+		composioClient: null,
+		userId: "",
+	};
+
+	if (!detection.needsExternalTools || !process.env.COMPOSIO_API_KEY) {
+		return empty;
+	}
+
+	try {
+		const composioClient = createComposioClient();
+		let userId = memberId
+			? `member_${memberId}`
+			: getWorkspaceEntityId(workspaceId);
+
+		const dbAccounts = (await convex.query(
+			api.integrations.getConnectedAccountsPublic,
+			{
+				workspaceId: workspaceId as Id<"workspaces">,
+				memberId: memberId ? (memberId as Id<"members">) : undefined,
+			}
+		)) as ConnectedAccountRow[];
+
+		const activeAccounts = dbAccounts.filter((acc) => acc.status === "ACTIVE");
+		if (activeAccounts.length === 0) return empty;
+
+		const normalizedToolkits = activeAccounts.flatMap((acc) => {
+			const toolkit =
+				typeof acc?.toolkit === "string" ? acc.toolkit.trim() : "";
+			return toolkit ? [toolkit.toUpperCase()] : [];
+		});
+		const connectedApps = [...new Set(normalizedToolkits)] as AvailableApp[];
+
+		const matchingAccount = detection.selectedToolkit
+			? activeAccounts.find(
+					(acc) =>
+						(acc.toolkit ?? "").trim().toUpperCase() ===
+						detection.selectedToolkit
+				)
+			: undefined;
+		const accountForTools = matchingAccount ?? activeAccounts[0];
+		if (accountForTools?.userId) {
+			userId = accountForTools.userId;
+		}
+
+		if (connectedApps.length === 0) return empty;
+
+		const allTools = await getAllToolsForApps(
+			composioClient,
+			userId,
+			connectedApps
+		);
+		const composioTools = filterToolsForQuery(allTools, message, {
+			maxTools: 20,
+			preferDashboard: true,
+		});
+
+		return {
+			useComposio: composioTools.length > 0,
+			connectedApps,
+			composioTools,
+			composioClient,
+			userId,
+		};
+	} catch (_error) {
+		console.warn(
+			"[Chatbot Assistant] Composio initialization failed, using Convex fallback"
+		);
+		return empty;
+	}
+}
+
+function sanitizeConversationHistory(history: any) {
+	return (history || [])
+		.filter(
+			(msg: any) =>
+				msg &&
+				["user", "assistant"].includes(msg.role) &&
+				typeof msg.content === "string"
+		)
+		.map((msg: any) => ({
+			role: msg.role as "user" | "assistant",
+			content: msg.content.replace(CONTROL_CHARS_REGEX, "").trim(),
+		}));
+}
+
+type ToolExecutionResult = {
+	responseText: string;
+	toolResults: any[];
+	sources: AssistantSource[];
+};
+
+async function executeToolCallsAndFollowUp(
+	openai: OpenAI,
+	composioClient: Composio<any>,
+	userId: string,
+	completion: OpenAI.Chat.ChatCompletion,
+	messages: OpenAI.Chat.ChatCompletionMessageParam[],
+	fallbackText: string
+): Promise<ToolExecutionResult> {
+	const toolCalls = (completion.choices[0]?.message?.tool_calls ?? []) as any[];
+	try {
+		console.log(
+			`[Chatbot] Executing ${toolCalls.length} tool calls with entityId: ${userId}`
+		);
+		const result = await composioClient.provider.handleToolCalls(
+			userId,
+			completion
+		);
+		logger.info("[Chatbot] Tool results summary", sanitizeToolResult(result));
+
+		const toolResults = Array.isArray(result) ? result : [result];
+		const sources: AssistantSource[] = toolCalls.map((call, idx) => ({
+			id: `tool-${idx}`,
+			type: "tool",
+			text: `${call.function?.name || "Tool"} executed`,
+		}));
+
+		const resultMap: Record<string, any> = {};
+		toolCalls.forEach((call, idx) => {
+			resultMap[call.id] = toolResults[idx] ?? { success: true };
+		});
+
+		if (toolCalls.length !== toolResults.length) {
+			console.warn(
+				`[Chatbot Assistant] Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
+			);
+		}
+
+		const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+			...messages,
+			completion.choices[0].message,
+			...toolCalls.map((call) => ({
+				role: "tool" as const,
+				tool_call_id: call.id,
+				content: JSON.stringify(resultMap[call.id]),
+			})),
+		];
+
+		const followUpCompletion = await openai.chat.completions.create({
+			model: "gpt-4o-mini",
+			messages: followUpMessages,
+			temperature: 0.7,
+			max_tokens: 1500,
+		});
+
+		return {
+			responseText:
+				followUpCompletion.choices[0]?.message?.content || fallbackText,
+			toolResults,
+			sources,
+		};
+	} catch (toolError) {
+		console.error("[Chatbot Assistant] Tool execution failed:", toolError);
+		console.error("[Chatbot Assistant] userId used:", userId);
+		return {
+			responseText: `${fallbackText}\n\nNote: Some operations could not be completed. Please try again or check your integration settings.`,
+			toolResults: [],
+			sources: [],
+		};
+	}
+}
+
+async function runOpenAIComposioPath(params: {
+	convex: ConvexHttpClient;
+	context: ComposioContext;
+	currentUser: Doc<"users"> | null;
+	workspaceId: string;
+	message: string;
+	workspaceContext: unknown;
+	conversationHistory: unknown;
+}): Promise<NextResponse | null> {
+	const {
+		convex,
+		context,
+		currentUser,
+		workspaceId,
+		message,
+		workspaceContext,
+		conversationHistory,
+	} = params;
+	try {
+		const openai = createOpenAIClient();
+		const sanitizedHistory = sanitizeConversationHistory(conversationHistory);
+		const assistantProfile = currentUser
+			? await convex.mutation(api.assistantProfiles.recordSignal, {
+					workspaceId: workspaceId as Id<"workspaces">,
+					userId: currentUser._id,
+					message,
+				})
+			: null;
+
+		const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+			{
+				role: "system",
+				content: buildAssistantSystemPrompt({
+					workspaceContext:
+						typeof workspaceContext === "string" ? workspaceContext : "",
+					connectedApps: context.connectedApps,
+					externalToolsAllowed: true,
+					conversationHistory: sanitizedHistory,
+					latestUserMessage: message,
+					assistantProfile: assistantProfile ?? undefined,
+				}),
+			},
+			...sanitizedHistory,
+			{ role: "user", content: message },
+		];
+
+		const completion = await openai.chat.completions.create({
+			model: "gpt-4o-mini",
+			tools: context.composioTools,
+			messages,
+			temperature: 0.7,
+			max_tokens: 1500,
+		});
+
+		const initialResponseText =
+			completion.choices[0]?.message?.content ||
+			"I couldn't find anything relevant yet.";
+		const toolCalls = completion.choices[0]?.message?.tool_calls ?? [];
+
+		const { responseText, toolResults, sources } =
+			toolCalls.length > 0
+				? await executeToolCallsAndFollowUp(
+						openai,
+						context.composioClient as Composio<any>,
+						context.userId,
+						completion,
+						messages,
+						initialResponseText
+					)
+				: {
+						responseText: initialResponseText,
+						toolResults: [] as any[],
+						sources: [] as AssistantSource[],
+					};
+
+		return NextResponse.json({
+			success: true,
+			response: responseText,
+			sources,
+			actions: [],
+			toolResults,
+			assistantType: "openai-composio",
+			composioToolsUsed: true,
+			connectedApps: context.connectedApps,
+		});
+	} catch (error) {
+		console.error(
+			"[Chatbot Assistant] OpenAI+Composio failed, falling back to Convex:",
+			error
+		);
+		return null;
+	}
+}
+
+async function recordAIUsage(convex: ConvexHttpClient, workspaceId: string) {
+	try {
+		await convex.mutation(api.usageTracking.recordAIRequestPublic, {
+			workspaceId: workspaceId as Id<"workspaces">,
+			featureType: "aiRequest",
+		});
+	} catch (trackErr) {
+		console.warn("[UsageTracking] Failed to record AI request:", trackErr);
+	}
+}
+
+async function runConvexAssistantPath(params: {
+	convex: ConvexHttpClient;
+	currentUser: Doc<"users"> | null;
+	workspaceId: string;
+	message: string;
+}): Promise<NextResponse> {
+	const { convex, currentUser, workspaceId, message } = params;
+	try {
+		if (!currentUser) {
+			return NextResponse.json(
+				{ success: false, error: "User not authenticated" },
+				{ status: 401 }
+			);
+		}
+
+		const conversationId = await convex.mutation(
+			api.assistantChat.createConversation,
+			{
+				workspaceId: workspaceId as Id<"workspaces">,
+				userId: currentUser._id,
+				title: "Assistant Chat",
+			}
+		);
+
+		const result = await convex.action(api.assistantChat.sendMessage, {
+			conversationId,
+			message,
+			workspaceId: workspaceId as Id<"workspaces">,
+			userId: currentUser._id,
+		});
+
+		if (!result.success) {
+			return NextResponse.json(
+				{
+					success: false,
+					error: result.error || "Assistant failed to respond",
+				},
+				{ status: 500 }
+			);
+		}
+
+		const { body: responseText, sources } = parseAssistantResponse(
+			result.content || "I couldn't find anything relevant yet."
+		);
+
+		return NextResponse.json({
+			success: true,
+			response: responseText,
+			sources,
+			actions: [],
+			toolResults: [],
+			assistantType: "ai-tools",
+			composioToolsUsed: false,
+		});
+	} catch (error) {
+		console.error("[Chatbot Assistant] AI assistant failed:", error);
+		return NextResponse.json(
+			{
+				success: false,
+				error:
+					error instanceof Error
+						? error.message
+						: "Failed to generate assistant response",
+			},
+			{ status: 500 }
+		);
+	}
+}
+
 /**
  * Handle chatbot POST requests by routing the user's query through OpenAI+Composio tool integration when applicable, otherwise falling back to the Convex-based assistant.
- *
- * This endpoint:
- * - Validates request payload and optional member-scoped access.
- * - Detects whether external integrations are needed and, if configured, attempts to use Composio tools together with OpenAI (including executing tool calls and performing follow-up reasoning).
- * - Falls back to the Convex assistant if Composio/OpenAI path is unavailable or fails.
- *
- * @param req - The incoming Next.js request whose JSON body must contain `message` and `workspaceId`, and may include `workspaceContext`, `conversationHistory`, and `memberId`.
- * @returns A JSON object describing the assistant result:
- * - `success`: `true` if a response was generated, `false` otherwise.
- * - On success:
- *   - `response`: Assistant reply text.
- *   - `sources`: Array of source badges `{ id, type, text }`.
- *   - `actions`: Array of suggested actions (may be empty).
- *   - `toolResults`: Array of executed tool results (empty if none).
- *   - `assistantType`: `'openai-composio'` when OpenAI+Composio was used, `'convex'` when using the Convex assistant.
- *   - `composioToolsUsed`: `true` if Composio tools were applied, `false` otherwise.
- *   - `connectedApps`: Present when OpenAI+Composio path was used and lists connected integrations.
- * - On failure:
- *   - `error`: A string describing the failure.
  */
 export async function POST(req: NextRequest) {
 	try {
 		const convex = createConvexClient();
-
-		// Pass auth through to Convex so membership/tasks/channels work.
-		// We attempt token retrieval even if isAuthenticatedNextjs() is false, because
-		// auth state can depend on request cookies and runtime environment.
-		try {
-			const token = convexAuthNextjsToken();
-			if (token) {
-				convex.setAuth(token);
-			} else if (isAuthenticatedNextjs()) {
-				console.warn(
-					"[Chatbot Assistant] Authenticated session but no Convex token found"
-				);
-			}
-		} catch (err) {
-			if (isAuthenticatedNextjs()) {
-				console.warn(
-					"[Chatbot Assistant] Failed to read Convex auth token from request",
-					err
-				);
-			}
-		}
+		applyConvexAuth(convex);
 
 		const {
 			message,
@@ -207,410 +637,44 @@ export async function POST(req: NextRequest) {
 
 		const currentUser = await convex.query(api.users.current);
 
-		// Verify authentication when memberId is provided
 		if (memberId) {
-			const isAuthenticated = await isAuthenticatedNextjs();
-			if (!isAuthenticated) {
-				return NextResponse.json(
-					{ error: "Authentication required when specifying memberId" },
-					{ status: 401 }
-				);
-			}
-
-			// Get the authenticated user's information
-			const token = await convexAuthNextjsToken();
-			if (token && typeof token === "string") {
-				convex.setAuth(token);
-			}
-			if (!currentUser) {
-				return NextResponse.json({ error: "User not found" }, { status: 404 });
-			}
-
-			// Get the member for this workspace and verify ownership
-			const member = await convex.query(api.members.getMemberById, {
-				memberId: memberId as Id<"members">,
-			});
-
-			if (!member) {
-				return NextResponse.json(
-					{ error: "Member not found" },
-					{ status: 404 }
-				);
-			}
-
-			if (member.userId !== currentUser._id) {
-				return NextResponse.json(
-					{
-						error:
-							"Unauthorized: Cannot access integrations for another user's member",
-					},
-					{ status: 403 }
-				);
-			}
+			const errorResponse = await verifyMemberOwnership(
+				convex,
+				memberId,
+				currentUser
+			);
+			if (errorResponse) return errorResponse;
 		}
 
-		// Check if Composio integration is available and relevant
-		let useComposio: boolean = false;
-		let connectedApps: AvailableApp[] = [];
-		let composioTools: any[] = []; // Keep as any[] for OpenAI compatibility
-		let composioClient: Composio<any> | null = null; // Store composio client for reuse
-		let userId: string = ""; // Composio uses userId as entity identifier
+		const detection = detectIntegrationNeed(message);
+		const composioContext = await prepareComposioContext(
+			convex,
+			workspaceId,
+			memberId,
+			message,
+			detection
+		);
 
-		// Detect if query needs external tools (Gmail, GitHub, Slack, Notion, ClickUp, or Linear)
-		// Tightened patterns to require explicit app names or contextual phrases to reduce false positives
-		const queryLower = message.toLowerCase();
-		const needsGmail =
-			/\b(gmail|send\s+email|email\s+to|in\s+gmail|my\s+inbox|draft\s+email)\b/i.test(
-				queryLower
-			);
-		const needsGithub =
-			/\b(github|github\s+(repo|repos|repository|repositories|issue|pr|commit)|in\s+github|on\s+github|my\s+(github\s+)?(repo|repos|repository|repositories))\b/i.test(
-				queryLower
-			);
-		const needsSlack =
-			/\b(slack|slack\s+(message|channel)|in\s+slack|on\s+slack|send\s+to\s+slack)\b/i.test(
-				queryLower
-			);
-		const needsNotion =
-			/\b(notion|notion\s+(page|database)|in\s+notion|on\s+notion|my\s+notion)\b/i.test(
-				queryLower
-			);
-		const needsClickup =
-			/\b(clickup|clickup\s+(task|project)|in\s+clickup|on\s+clickup|my\s+clickup)\b/i.test(
-				queryLower
-			);
-		const needsLinear =
-			/\b(linear|linear\s+(issue|ticket)|in\s+linear|on\s+linear|my\s+linear)\b/i.test(
-				queryLower
-			);
-		const needsExternalTools =
-			needsGmail ||
-			needsGithub ||
-			needsSlack ||
-			needsNotion ||
-			needsClickup ||
-			needsLinear;
-
-		// If external tools are needed and Composio is configured, try to use it
-		if (needsExternalTools && process.env.COMPOSIO_API_KEY) {
-			try {
-				composioClient = createComposioClient();
-				userId = memberId
-					? `member_${memberId}`
-					: getWorkspaceEntityId(workspaceId);
-
-				const dbAccounts = await convex.query(
-					api.integrations.getConnectedAccountsPublic,
-					{
-						workspaceId: workspaceId as Id<"workspaces">,
-						memberId: memberId ? (memberId as Id<"members">) : undefined,
-					}
-				);
-
-				type ConnectedAccountRow = {
-					status?: string;
-					toolkit?: string;
-					userId?: string;
-				};
-				const activeAccounts = (dbAccounts as ConnectedAccountRow[]).filter(
-					(acc) => acc.status === "ACTIVE"
-				);
-
-				if (activeAccounts.length > 0) {
-					const normalizedToolkits = activeAccounts.flatMap((acc) => {
-						const toolkit =
-							typeof acc?.toolkit === "string" ? acc.toolkit.trim() : "";
-						return toolkit ? [toolkit.toUpperCase()] : [];
-					});
-					connectedApps = [...new Set(normalizedToolkits)] as AvailableApp[];
-
-					const selectedToolkit = needsGmail
-						? "GMAIL"
-						: needsGithub
-							? "GITHUB"
-							: needsSlack
-								? "SLACK"
-								: needsNotion
-									? "NOTION"
-									: needsClickup
-										? "CLICKUP"
-										: needsLinear
-											? "LINEAR"
-											: "";
-					const matchingAccount = selectedToolkit
-						? activeAccounts.find(
-								(acc) =>
-									(acc.toolkit ?? "").trim().toUpperCase() === selectedToolkit
-							)
-						: undefined;
-					const accountForTools = matchingAccount ?? activeAccounts[0];
-					if (accountForTools?.userId) {
-						userId = accountForTools.userId;
-					}
-
-					if (connectedApps.length > 0) {
-						const allTools = await getAllToolsForApps(
-							composioClient,
-							userId,
-							connectedApps
-						);
-
-						composioTools = filterToolsForQuery(allTools, message, {
-							maxTools: 20,
-							preferDashboard: true,
-						});
-
-						if (composioTools.length > 0) {
-							useComposio = true;
-						}
-					}
-				}
-			} catch (_error) {
-				// Composio setup failed, fall back to Convex
-				console.warn(
-					"[Chatbot Assistant] Composio initialization failed, using Convex fallback"
-				);
-			}
-		}
-
-		// If Composio should be used, handle with OpenAI + Composio tools
-		if (useComposio && composioTools.length > 0 && composioClient) {
-			try {
-				const openai = createOpenAIClient();
-				// Reuse the composio client that already has userId context
-				// userId is already set from the previous block
-
-				// Build messages array
-				// Sanitize conversation history to prevent system prompt injection
-				const sanitizedHistory = (conversationHistory || [])
-					.filter((msg: any) => {
-						// Only allow 'user' and 'assistant' roles, block 'system' and unknown roles
-						const allowedRoles = ["user", "assistant"];
-						return (
-							msg &&
-							allowedRoles.includes(msg.role) &&
-							typeof msg.content === "string"
-						);
-					})
-					.map((msg: any) => ({
-						role: msg.role as "user" | "assistant",
-						// Strip control characters and normalize content
-						content: msg.content.replace(CONTROL_CHARS_REGEX, "").trim(),
-					}));
-				const assistantProfile = currentUser
-					? await convex.mutation(api.assistantProfiles.recordSignal, {
-							workspaceId: workspaceId as Id<"workspaces">,
-							userId: currentUser._id,
-							message,
-						})
-					: null;
-
-				const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-					{
-						role: "system",
-						content: buildAssistantSystemPrompt({
-							workspaceContext:
-								typeof workspaceContext === "string" ? workspaceContext : "",
-							connectedApps,
-							externalToolsAllowed: true,
-							conversationHistory: sanitizedHistory,
-							latestUserMessage: message,
-							assistantProfile: assistantProfile ?? undefined,
-						}),
-					},
-					// Add sanitized conversation history
-					...sanitizedHistory,
-					{
-						role: "user",
-						content: message,
-					},
-				];
-
-				// Create completion with tools
-				const completion = await openai.chat.completions.create({
-					model: "gpt-4o-mini",
-					tools: composioTools,
-					messages,
-					temperature: 0.7,
-					max_tokens: 1500,
-				});
-
-				let responseText =
-					completion.choices[0]?.message?.content ||
-					"I couldn't find anything relevant yet.";
-				let toolResults: any[] = [];
-				let sources: any[] = [];
-
-				// Execute tool calls if any
-				if (
-					completion.choices[0]?.message?.tool_calls &&
-					completion.choices[0].message.tool_calls.length > 0
-				) {
-					try {
-						console.log(
-							`[Chatbot] Executing ${completion.choices[0].message.tool_calls.length} tool calls with entityId: ${userId}`
-						);
-						// Use Composio's provider.handleToolCalls method (matches sample code pattern)
-						const result = await composioClient.provider.handleToolCalls(
-							userId,
-							completion
-						);
-						logger.info(
-							"[Chatbot] Tool results summary",
-							sanitizeToolResult(result)
-						);
-
-						// Extract tool results for display
-						toolResults = Array.isArray(result) ? result : [result];
-
-						// Create source badges for executed tools
-						const toolCalls = completion.choices[0].message.tool_calls as any[];
-						sources = toolCalls.map((call, idx) => ({
-							id: `tool-${idx}`,
-							type: "tool",
-							text: `${call.function?.name || "Tool"} executed`,
-						}));
-
-						// Build result map indexed by tool call id for safe lookup
-						const resultMap: Record<string, any> = {};
-						toolCalls.forEach((call, idx) => {
-							resultMap[call.id] = toolResults[idx] ?? { success: true };
-						});
-
-						// Log warning if counts differ
-						if (toolCalls.length !== toolResults.length) {
-							console.warn(
-								`[Chatbot Assistant] Tool calls and results count mismatch: ${toolCalls.length} calls, ${toolResults.length} results`
-							);
-						}
-
-						// Get follow-up response with tool results
-						const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-							...messages,
-							completion.choices[0].message,
-							...toolCalls.map((call) => ({
-								role: "tool" as const,
-								tool_call_id: call.id,
-								content: JSON.stringify(resultMap[call.id]),
-							})),
-						];
-
-						const followUpCompletion = await openai.chat.completions.create({
-							model: "gpt-4o-mini",
-							messages: followUpMessages,
-							temperature: 0.7,
-							max_tokens: 1500,
-						});
-
-						responseText =
-							followUpCompletion.choices[0]?.message?.content || responseText;
-					} catch (toolError) {
-						console.error(
-							"[Chatbot Assistant] Tool execution failed:",
-							toolError
-						);
-						console.error("[Chatbot Assistant] userId used:", userId);
-						responseText +=
-							"\n\nNote: Some operations could not be completed. Please try again or check your integration settings.";
-					}
-				}
-
-				return NextResponse.json({
-					success: true,
-					response: responseText,
-					sources,
-					actions: [],
-					toolResults,
-					assistantType: "openai-composio",
-					composioToolsUsed: true,
-					connectedApps,
-				});
-			} catch (error) {
-				console.error(
-					"[Chatbot Assistant] OpenAI+Composio failed, falling back to Convex:",
-					error
-				);
-				// Fall through to Convex assistant
-			}
-		}
-
-		// Track AI usage for this workspace
-		try {
-			await convex.mutation(api.usageTracking.recordAIRequestPublic, {
-				workspaceId: workspaceId as Id<"workspaces">,
-				featureType: "aiRequest",
-			});
-		} catch (trackErr) {
-			console.warn("[UsageTracking] Failed to record AI request:", trackErr);
-		}
-
-		// Default: Use new AI-driven assistant with database-chat
-		try {
-			// Get or create conversation for this workspace/user
-			// Use memberId if available, otherwise use workspace ID
-			if (!currentUser) {
-				return NextResponse.json(
-					{ success: false, error: "User not authenticated" },
-					{ status: 401 }
-				);
-			}
-
-			// Create a unique conversation ID for this workspace + user
-			// In production, you'd want to persist this and reuse it
-			const conversationId = await convex.mutation(
-				api.assistantChat.createConversation,
-				{
-					workspaceId: workspaceId as Id<"workspaces">,
-					userId: currentUser._id,
-					title: "Assistant Chat",
-				}
-			);
-
-			// Call the AI assistant with the message
-			const result = await convex.action(api.assistantChat.sendMessage, {
-				conversationId,
+		if (composioContext.useComposio && composioContext.composioClient) {
+			const response = await runOpenAIComposioPath({
+				convex,
+				context: composioContext,
+				currentUser,
+				workspaceId,
 				message,
-				workspaceId: workspaceId as Id<"workspaces">,
-				userId: currentUser._id,
+				workspaceContext,
+				conversationHistory,
 			});
-
-			if (!result.success) {
-				return NextResponse.json(
-					{
-						success: false,
-						error: result.error || "Assistant failed to respond",
-					},
-					{ status: 500 }
-				);
-			}
-
-			const rawResponseText =
-				result.content || "I couldn't find anything relevant yet.";
-			const { body: responseText, sources } =
-				parseAssistantResponse(rawResponseText);
-
-			return NextResponse.json({
-				success: true,
-				response: responseText,
-				sources,
-				actions: [],
-				toolResults: [],
-				assistantType: "ai-tools",
-				composioToolsUsed: false,
-			});
-		} catch (error) {
-			console.error("[Chatbot Assistant] AI assistant failed:", error);
-			return NextResponse.json(
-				{
-					success: false,
-					error:
-						error instanceof Error
-							? error.message
-							: "Failed to generate assistant response",
-				},
-				{ status: 500 }
-			);
+			if (response) return response;
 		}
+
+		await recordAIUsage(convex, workspaceId);
+		return await runConvexAssistantPath({
+			convex,
+			currentUser,
+			workspaceId,
+			message,
+		});
 	} catch (error) {
 		console.error("[Chatbot Assistant] Error:", error);
 		return NextResponse.json(

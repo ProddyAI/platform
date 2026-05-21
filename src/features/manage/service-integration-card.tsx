@@ -197,6 +197,159 @@ function ServiceToolkitIcon({
 	);
 }
 
+function ConnectedAccountMeta({
+	connectedAccount,
+}: {
+	connectedAccount: ConnectedAccount;
+}) {
+	return (
+		<div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/60 rounded-lg px-3 py-2 border border-border/40">
+			<span className="flex items-center gap-1.5">
+				<Wifi className="h-3 w-3 text-emerald-500" />
+				Connected
+				{connectedAccount.connectedAt && (
+					<span className="text-muted-foreground/70">
+						· {timeAgo(connectedAccount.connectedAt)}
+					</span>
+				)}
+			</span>
+			{connectedAccount.lastUsed && (
+				<span className="flex items-center gap-1">
+					<Zap className="h-3 w-3" />
+					Used {timeAgo(connectedAccount.lastUsed)}
+				</span>
+			)}
+		</div>
+	);
+}
+
+function ConnectedActionButtons({
+	isRefreshing,
+	isDisconnecting,
+	onRefresh,
+	onDisconnect,
+}: {
+	isRefreshing: boolean;
+	isDisconnecting: boolean;
+	onRefresh: () => void;
+	onDisconnect: () => void;
+}) {
+	return (
+		<div className="flex gap-2">
+			<Button
+				className="flex-1 h-8 text-xs font-medium border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40 transition-colors"
+				disabled={isRefreshing || isDisconnecting}
+				onClick={onRefresh}
+				size="sm"
+				variant="outline"
+			>
+				{isRefreshing ? (
+					<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+				) : (
+					<RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+				)}
+				{isRefreshing ? "Checking…" : "Verify"}
+			</Button>
+
+			<Button
+				className="flex-1 h-8 text-xs font-medium border-destructive/20 text-destructive hover:bg-destructive/5 hover:border-destructive/40 transition-colors"
+				disabled={isDisconnecting || isRefreshing}
+				onClick={onDisconnect}
+				size="sm"
+				variant="outline"
+			>
+				{isDisconnecting ? (
+					<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+				) : (
+					<Unlink className="h-3.5 w-3.5 mr-1.5" />
+				)}
+				{isDisconnecting ? "Disconnecting…" : "Disconnect"}
+			</Button>
+		</div>
+	);
+}
+
+function ConnectButton({
+	isConnecting,
+	onConnect,
+	Icon,
+	connectBtnClass,
+	name,
+}: {
+	isConnecting: boolean;
+	onConnect: () => void;
+	Icon: React.ComponentType<{ className?: string }>;
+	connectBtnClass: string;
+	name: string;
+}) {
+	return (
+		<Button
+			className={`w-full h-9 text-xs font-semibold rounded-lg transition-all duration-150 shadow-sm ${connectBtnClass}`}
+			disabled={isConnecting}
+			onClick={onConnect}
+			size="sm"
+		>
+			{isConnecting ? (
+				<>
+					<Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+					Redirecting…
+				</>
+			) : (
+				<>
+					<Icon className="h-3.5 w-3.5 mr-2" />
+					Connect {name}
+				</>
+			)}
+		</Button>
+	);
+}
+
+function IntegrationCardHeader({
+	cfg,
+	IconComponent,
+	isConnected,
+}: {
+	cfg: ToolkitConfig;
+	IconComponent: React.ComponentType<{ className?: string }>;
+	isConnected: boolean;
+}) {
+	return (
+		<CardHeader className="pb-2 pt-5 pr-24">
+			<div className="flex items-center gap-3">
+				<ServiceToolkitIcon
+					Icon={IconComponent}
+					iconBg={cfg.iconBg}
+					isConnected={isConnected}
+				/>
+
+				<div className="min-w-0">
+					<p className="font-semibold text-sm text-foreground leading-tight">
+						{cfg.name}
+					</p>
+					<p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+						{cfg.description}
+					</p>
+				</div>
+			</div>
+		</CardHeader>
+	);
+}
+
+function CapabilityPills({ capability }: { capability: string }) {
+	return (
+		<div className="flex flex-wrap gap-1 mb-4">
+			{capability.split(" · ").map((cap) => (
+				<span
+					className="text-[10px] font-medium bg-muted text-muted-foreground rounded-md px-2 py-0.5 border border-border/60"
+					key={cap}
+				>
+					{cap}
+				</span>
+			))}
+		</div>
+	);
+}
+
 /** Relative-time helper */
 function timeAgo(ms: number): string {
 	const diff = Date.now() - ms;
@@ -362,115 +515,34 @@ export const ServiceIntegrationCard = ({
 				<IntegrationStatusBadge isConnected={Boolean(isConnected)} />
 			</div>
 
-			{/* ── Header ── */}
-			<CardHeader className="pb-2 pt-5 pr-24">
-				<div className="flex items-center gap-3">
-					<ServiceToolkitIcon
-						Icon={IconComponent}
-						iconBg={cfg.iconBg}
-						isConnected={Boolean(isConnected)}
-					/>
-
-					<div className="min-w-0">
-						<p className="font-semibold text-sm text-foreground leading-tight">
-							{cfg.name}
-						</p>
-						<p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-							{cfg.description}
-						</p>
-					</div>
-				</div>
-			</CardHeader>
+			<IntegrationCardHeader
+				cfg={cfg}
+				IconComponent={IconComponent}
+				isConnected={Boolean(isConnected)}
+			/>
 
 			<CardContent className="pt-1 pb-4">
-				{/* Capability pills */}
-				<div className="flex flex-wrap gap-1 mb-4">
-					{cfg.capability.split(" · ").map((cap) => (
-						<span
-							className="text-[10px] font-medium bg-muted text-muted-foreground rounded-md px-2 py-0.5 border border-border/60"
-							key={cap}
-						>
-							{cap}
-						</span>
-					))}
-				</div>
+				<CapabilityPills capability={cfg.capability} />
 
 				{isConnected ? (
-					/* ── Connected state ── */
 					<div className="space-y-3">
-						{/* Meta row */}
-						<div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/60 rounded-lg px-3 py-2 border border-border/40">
-							<span className="flex items-center gap-1.5">
-								<Wifi className="h-3 w-3 text-emerald-500" />
-								Connected
-								{connectedAccount.connectedAt && (
-									<span className="text-muted-foreground/70">
-										· {timeAgo(connectedAccount.connectedAt)}
-									</span>
-								)}
-							</span>
-							{connectedAccount.lastUsed && (
-								<span className="flex items-center gap-1">
-									<Zap className="h-3 w-3" />
-									Used {timeAgo(connectedAccount.lastUsed)}
-								</span>
-							)}
-						</div>
-
-						{/* Action buttons */}
-						<div className="flex gap-2">
-							<Button
-								className="flex-1 h-8 text-xs font-medium border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40 transition-colors"
-								disabled={isRefreshing || isDisconnecting}
-								onClick={handleRefresh}
-								size="sm"
-								variant="outline"
-							>
-								{isRefreshing ? (
-									<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-								) : (
-									<RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-								)}
-								{isRefreshing ? "Checking…" : "Verify"}
-							</Button>
-
-							<Button
-								className="flex-1 h-8 text-xs font-medium border-destructive/20 text-destructive hover:bg-destructive/5 hover:border-destructive/40 transition-colors"
-								disabled={isDisconnecting || isRefreshing}
-								onClick={handleDisconnect}
-								size="sm"
-								variant="outline"
-							>
-								{isDisconnecting ? (
-									<Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-								) : (
-									<Unlink className="h-3.5 w-3.5 mr-1.5" />
-								)}
-								{isDisconnecting ? "Disconnecting…" : "Disconnect"}
-							</Button>
-						</div>
+						<ConnectedAccountMeta connectedAccount={connectedAccount} />
+						<ConnectedActionButtons
+							isDisconnecting={isDisconnecting}
+							isRefreshing={isRefreshing}
+							onDisconnect={handleDisconnect}
+							onRefresh={handleRefresh}
+						/>
 					</div>
 				) : (
-					/* ── Not connected state ── */
 					<div className="space-y-2">
-						<Button
-							className={`w-full h-9 text-xs font-semibold rounded-lg transition-all duration-150 shadow-sm ${cfg.connectBtn}`}
-							disabled={isConnecting}
-							onClick={handleConnect}
-							size="sm"
-						>
-							{isConnecting ? (
-								<>
-									<Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
-									Redirecting…
-								</>
-							) : (
-								<>
-									<IconComponent className="h-3.5 w-3.5 mr-2" />
-									Connect {cfg.name}
-								</>
-							)}
-						</Button>
+						<ConnectButton
+							connectBtnClass={cfg.connectBtn}
+							Icon={IconComponent}
+							isConnecting={isConnecting}
+							name={cfg.name}
+							onConnect={handleConnect}
+						/>
 
 						<p className="text-[10px] text-muted-foreground text-center flex items-center justify-center gap-1">
 							<WifiOff className="h-3 w-3" />

@@ -90,40 +90,182 @@ function StressHighAlert() {
 	);
 }
 
+function FocusTaskDueDate({
+	dueDate,
+	isOverdue,
+}: {
+	dueDate: number | string;
+	isOverdue?: boolean;
+}) {
+	const due = new Date(dueDate);
+	if (Number.isNaN(due.getTime())) return null;
+	return (
+		<span
+			className={cn(
+				"text-[9px] font-medium flex items-center gap-0.5",
+				isOverdue ? "text-rose-500" : "text-muted-foreground"
+			)}
+		>
+			<Clock className="h-2.5 w-2.5" />
+			{formatDistanceToNow(due, { addSuffix: true })}
+		</span>
+	);
+}
+
+function FocusTaskMeta({ task }: { task: TaskSummary }) {
+	return (
+		<div className="flex items-center gap-2">
+			<Badge className="text-[9px] h-4 px-1 capitalize" variant="secondary">
+				{task.priority || "medium"}
+			</Badge>
+			{task.dueDate && (
+				<FocusTaskDueDate dueDate={task.dueDate} isOverdue={task.isOverdue} />
+			)}
+		</div>
+	);
+}
+
 function FocusTaskRow({ task }: { task: TaskSummary & { _id?: string } }) {
 	return (
-		<div className="group relative p-3 rounded-xl border bg-card hover:border-primary/30 transition-all duration-200">
-			<div className="flex items-start gap-3">
-				<div className="space-y-1 min-w-0">
-					<p className="text-sm font-semibold truncate leading-none">
-						{task.title}
-					</p>
-					<div className="flex items-center gap-2">
-						<Badge
-							className="text-[9px] h-4 px-1 capitalize"
-							variant="secondary"
-						>
-							{task.priority || "medium"}
-						</Badge>
-						{task.dueDate &&
-							(() => {
-								const due = new Date(task.dueDate);
-								if (Number.isNaN(due.getTime())) return null;
-								return (
-									<span
-										className={cn(
-											"text-[9px] font-medium flex items-center gap-0.5",
-											task.isOverdue ? "text-rose-500" : "text-muted-foreground"
-										)}
-									>
-										<Clock className="h-2.5 w-2.5" />
-										{formatDistanceToNow(due, { addSuffix: true })}
-									</span>
-								);
-							})()}
-					</div>
-				</div>
+		<div className="group relative p-3 rounded-xl border bg-card hover:border-primary/30 transition-all duration-200 flex items-start gap-3">
+			<div className="space-y-1 min-w-0">
+				<p className="text-sm font-semibold truncate leading-none">
+					{task.title}
+				</p>
+				<FocusTaskMeta task={task} />
 			</div>
+		</div>
+	);
+}
+
+function StressMeterReadout({
+	config,
+	stressScore,
+}: {
+	config: StressLevelConfig;
+	stressScore: number;
+}) {
+	return (
+		<div className="space-y-1">
+			<p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+				Current Load
+			</p>
+			<p className={cn("text-3xl font-black tracking-tighter", config.text)}>
+				{stressScore}
+				<span className="text-sm font-medium text-muted-foreground ml-1">
+					/ 150
+				</span>
+			</p>
+		</div>
+	);
+}
+
+function StressMeterBadge({
+	config,
+	totalPending,
+}: {
+	config: StressLevelConfig;
+	totalPending?: number;
+}) {
+	return (
+		<div className="text-right">
+			<Badge
+				className={cn("mb-1", config.color, "text-white border-none shadow-sm")}
+			>
+				{config.label}
+			</Badge>
+			<p className="text-[10px] text-muted-foreground">
+				Based on {totalPending} pending tasks
+			</p>
+		</div>
+	);
+}
+
+function StressMeterSection({
+	config,
+	stressLevel,
+	stressScore,
+	totalPending,
+}: {
+	config: StressLevelConfig;
+	stressLevel: string;
+	stressScore: number;
+	totalPending?: number;
+}) {
+	return (
+		<div className="space-y-4">
+			<div className="flex items-end justify-between">
+				<StressMeterReadout config={config} stressScore={stressScore} />
+				<StressMeterBadge config={config} totalPending={totalPending} />
+			</div>
+
+			<div className="relative h-3 w-full bg-muted rounded-full overflow-hidden shadow-inner">
+				<div
+					className={cn(
+						"absolute h-full transition-all duration-1000 ease-out",
+						config.color
+					)}
+					style={{ width: `${Math.min((stressScore / 150) * 100, 100)}%` }}
+				/>
+			</div>
+
+			{stressLevel === "high" && <StressHighAlert />}
+		</div>
+	);
+}
+
+function FocusSectionHeader({ onAIGuide }: { onAIGuide: () => void }) {
+	return (
+		<div className="flex items-center justify-between">
+			<div className="flex items-center gap-2">
+				<Target className="h-4 w-4 text-primary" />
+				<h4 className="text-sm font-bold uppercase tracking-tight">
+					Daily Focus
+				</h4>
+			</div>
+			<Button
+				className="h-7 text-[10px] uppercase font-bold text-primary hover:bg-primary/5"
+				onClick={onAIGuide}
+				size="sm"
+				variant="ghost"
+			>
+				<Sparkles className="h-3 w-3 mr-1" />
+				AI Guide
+			</Button>
+		</div>
+	);
+}
+
+function FocusSectionEmpty() {
+	return (
+		<div className="flex flex-col items-center justify-center py-8 text-center opacity-50">
+			<CheckCircle2 className="h-8 w-8 mb-2" />
+			<p className="text-xs font-medium">All clear for today!</p>
+		</div>
+	);
+}
+
+function FocusSection({
+	focusTasks,
+	onAIGuide,
+}: {
+	focusTasks?: Array<TaskSummary & { _id?: string }>;
+	onAIGuide: () => void;
+}) {
+	return (
+		<div className="space-y-4">
+			<FocusSectionHeader onAIGuide={onAIGuide} />
+			<ScrollArea className="h-[180px] -mx-1 px-1">
+				<div className="space-y-2">
+					{focusTasks?.length === 0 ? (
+						<FocusSectionEmpty />
+					) : (
+						focusTasks?.map((task) => (
+							<FocusTaskRow key={task._id} task={task} />
+						))
+					)}
+				</div>
+			</ScrollArea>
 		</div>
 	);
 }
@@ -191,94 +333,22 @@ export const StressWidget = ({
 					isEditMode={isEditMode}
 				/>
 
-				{/* Stress Meter Section */}
-				<div className="space-y-4">
-					<div className="flex items-end justify-between">
-						<div className="space-y-1">
-							<p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
-								Current Load
-							</p>
-							<p
-								className={cn(
-									"text-3xl font-black tracking-tighter",
-									config.text
-								)}
-							>
-								{stressScore}
-								<span className="text-sm font-medium text-muted-foreground ml-1">
-									/ 150
-								</span>
-							</p>
-						</div>
-						<div className="text-right">
-							<Badge
-								className={cn(
-									"mb-1",
-									config.color,
-									"text-white border-none shadow-sm"
-								)}
-							>
-								{config.label}
-							</Badge>
-							<p className="text-[10px] text-muted-foreground">
-								Based on {metrics?.totalPending} pending tasks
-							</p>
-						</div>
-					</div>
-
-					<div className="relative h-3 w-full bg-muted rounded-full overflow-hidden shadow-inner">
-						<div
-							className={cn(
-								"absolute h-full transition-all duration-1000 ease-out",
-								config.color
-							)}
-							style={{ width: `${Math.min((stressScore / 150) * 100, 100)}%` }}
-						/>
-					</div>
-
-					{stressLevel === "high" && <StressHighAlert />}
-				</div>
+				<StressMeterSection
+					config={config}
+					stressLevel={stressLevel}
+					stressScore={stressScore}
+					totalPending={metrics?.totalPending}
+				/>
 
 				<Separator className="opacity-50" />
 
-				{/* Focus Section */}
-				<div className="space-y-4">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2">
-							<Target className="h-4 w-4 text-primary" />
-							<h4 className="text-sm font-bold uppercase tracking-tight">
-								Daily Focus
-							</h4>
-						</div>
-						<Button
-							className="h-7 text-[10px] uppercase font-bold text-primary hover:bg-primary/5"
-							onClick={() =>
-								metrics &&
-								openAssistantWithPrompt(buildDailyFocusPrompt(focusTasks ?? []))
-							}
-							size="sm"
-							variant="ghost"
-						>
-							<Sparkles className="h-3 w-3 mr-1" />
-							AI Guide
-						</Button>
-					</div>
-
-					<ScrollArea className="h-[180px] -mx-1 px-1">
-						<div className="space-y-2">
-							{focusTasks?.length === 0 ? (
-								<div className="flex flex-col items-center justify-center py-8 text-center opacity-50">
-									<CheckCircle2 className="h-8 w-8 mb-2" />
-									<p className="text-xs font-medium">All clear for today!</p>
-								</div>
-							) : (
-								focusTasks?.map((task: TaskSummary & { _id?: string }) => (
-									<FocusTaskRow key={task._id} task={task} />
-								))
-							)}
-						</div>
-					</ScrollArea>
-				</div>
+				<FocusSection
+					focusTasks={focusTasks}
+					onAIGuide={() =>
+						metrics &&
+						openAssistantWithPrompt(buildDailyFocusPrompt(focusTasks ?? []))
+					}
+				/>
 
 				{/* Quick AI Actions */}
 				<div className="grid grid-cols-2 gap-2">

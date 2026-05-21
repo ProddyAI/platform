@@ -91,21 +91,376 @@ async function verifyMemberOwnership(
 	return { success: true, member };
 }
 
+type ApiClient = ReturnType<typeof initializeComposio>["apiClient"];
+
+type ToolkitName =
+	| "github"
+	| "gmail"
+	| "slack"
+	| "linear"
+	| "notion"
+	| "clickup";
+
+type ComposioConnectionRecord = {
+	id?: string;
+	connectionId?: string;
+	appName?: string;
+	integrationId?: string;
+	slug?: string;
+};
+
+async function persistAuthConfigForToolkit(
+	toolkit: ToolkitName,
+	workspaceId: string,
+	memberId: string
+) {
+	try {
+		const { APP_CONFIGS } = await import("@/lib/composio-config");
+		const appKey = toolkit.toUpperCase() as keyof typeof APP_CONFIGS;
+		const toolkitAuthConfigId = APP_CONFIGS[appKey]?.authConfigId;
+
+		if (!toolkitAuthConfigId) {
+			logRouteError({
+				route: "AgentAuth",
+				stage: "auth_config_id_missing",
+				error: new Error("No auth config ID found"),
+				level: "warn",
+				context: { toolkit },
+			});
+			return;
+		}
+
+		await convex.mutation(api.integrations.storeAuthConfig, {
+			workspaceId: workspaceId as Id<"workspaces">,
+			memberId: memberId as Id<"members">,
+			toolkit,
+			name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
+			type: "use_composio_managed_auth",
+			composioAuthConfigId: toolkitAuthConfigId,
+			isComposioManaged: true,
+			createdBy: memberId as Id<"members">,
+		});
+	} catch (error) {
+		logRouteError({
+			route: "AgentAuth",
+			stage: "store_auth_config_failed",
+			error,
+			level: "warn",
+			context: { toolkit, workspaceId, memberId },
+		});
+	}
+}
+
+async function ensureMemberAuthorized(memberId: unknown, stage: string) {
+	if (!memberId || typeof memberId !== "string") {
+		logRouteError({
+			route: "AgentAuth",
+			stage,
+			error: new Error("Missing memberId"),
+			level: "warn",
+		});
+		return {
+			ok: false as const,
+			response: NextResponse.json(
+				{ error: "Missing memberId" },
+				{ status: 400 }
+			),
+		};
+	}
+
+	const verifyResult = await verifyMemberOwnership(memberId, convex);
+	if (!verifyResult.success) {
+		return { ok: false as const, response: verifyResult.response };
+	}
+	return { ok: true as const, memberId };
+}
+
+async function handleAuthorizeAction(
+	apiClient: ApiClient,
+	toolkit: ToolkitName,
+	workspaceId: string,
+	memberId: unknown
+): Promise<NextResponse> {
+	const auth = await ensureMemberAuthorized(
+		memberId,
+		"missing_member_id_authorize"
+	);
+	if (!auth.ok) return auth.response;
+
+	const entityId = `member_${auth.memberId}`;
+	try {
+		const appUrl =
+			process.env.NEXT_PUBLIC_APP_URL ||
+			process.env.SITE_URL ||
+			"https://localhost:3000";
+		const callbackUrl = `${appUrl}/workspace/${workspaceId}/manage?connected=true&toolkit=${encodeURIComponent(toolkit)}&memberId=${encodeURIComponent(auth.memberId)}&userId=${encodeURIComponent(entityId)}`;
+
+		const connection = await apiClient.createConnection(
+			entityId,
+			toolkit,
+			callbackUrl
+		);
+		const redirectUrl = connection.redirectUrl;
+
+		if (!redirectUrl) {
+			logRouteError({
+				route: "AgentAuth",
+				stage: "missing_redirect_url",
+				error: new Error("No redirect URL from Composio"),
+				context: { toolkit },
+			});
+			return NextResponse.json(
+				buildActionableErrorPayload({
+					message: "Authorization URL was not returned by Composio.",
+					nextStep:
+						"Retry authorization. If this continues, verify the toolkit auth configuration.",
+					code: "AGENTAUTH_REDIRECT_URL_MISSING",
+					recoverable: true,
+				}),
+				{ status: 400 }
+			);
+		}
+
+		await persistAuthConfigForToolkit(toolkit, workspaceId, auth.memberId);
+
+		return NextResponse.json({
+			success: true,
+			redirectUrl,
+			connectionId: connection.connectionId || connection.id,
+			message: `Redirect user to ${toolkit} authorization`,
+		});
+	} catch (error) {
+		logRouteError({
+			route: "AgentAuth",
+			stage: "authorization_failed",
+			error,
+			context: { toolkit, workspaceId, memberId },
+		});
+		return NextResponse.json(
+			buildActionableErrorPayload({
+				message: `Failed to authorize ${toolkit}.`,
+				nextStep: buildComposioFailureGuidance(),
+				code: "AGENTAUTH_AUTHORIZE_FAILED",
+				recoverable: true,
+				fallbackResponse: sanitizeErrorMessage(
+					error instanceof Error ? error.message : "Unknown error"
+				),
+			}),
+			{ status: 400 }
+		);
+	}
+}
+
+function extractConnectedAccounts(
+	response: unknown
+): Array<Record<string, unknown>> {
+	if (Array.isArray(response)) {
+		return response as Array<Record<string, unknown>>;
+	}
+	const items = (response as { items?: unknown }).items;
+	if (Array.isArray(items)) {
+		return items as Array<Record<string, unknown>>;
+	}
+	return [];
+}
+
+function selectConnectionForToolkit(
+	accounts: Array<Record<string, unknown>>,
+	toolkit: string
+) {
+	const normalizedToolkit = toolkit.toLowerCase();
+	const match = accounts.find((account) => {
+		const appName = String(account.appName ?? "").toLowerCase();
+		const integrationId = String(account.integrationId ?? "").toLowerCase();
+		const slug = String(account.slug ?? "").toLowerCase();
+		return (
+			appName === normalizedToolkit ||
+			integrationId === normalizedToolkit ||
+			slug === normalizedToolkit
+		);
+	});
+	return (match ?? accounts[0]) as ComposioConnectionRecord | undefined;
+}
+
+async function resolveAuthConfigId(
+	toolkit: ToolkitName,
+	workspaceId: string,
+	memberId: string
+): Promise<Id<"auth_configs"> | NextResponse> {
+	let existingAuthConfig: { _id: Id<"auth_configs"> } | null = null;
+	try {
+		existingAuthConfig = await convex.query(
+			api.integrations.getMyAuthConfigByToolkit,
+			{ workspaceId: workspaceId as Id<"workspaces">, toolkit }
+		);
+		if (!existingAuthConfig) {
+			existingAuthConfig = await convex.query(
+				api.integrations.getAuthConfigByToolkit,
+				{ workspaceId: workspaceId as Id<"workspaces">, toolkit }
+			);
+		}
+	} catch (_error) {
+		// Will fall through to creation below
+	}
+
+	if (existingAuthConfig?._id) {
+		return existingAuthConfig._id;
+	}
+
+	const { APP_CONFIGS } = await import("@/lib/composio-config");
+	const appKey = toolkit.toUpperCase() as keyof typeof APP_CONFIGS;
+	const toolkitAuthConfigId = APP_CONFIGS[appKey]?.authConfigId;
+	if (!toolkitAuthConfigId) {
+		return NextResponse.json(
+			{ error: `No auth config ID found for toolkit: ${toolkit}` },
+			{ status: 400 }
+		);
+	}
+
+	return await convex.mutation(api.integrations.storeAuthConfig, {
+		workspaceId: workspaceId as Id<"workspaces">,
+		memberId: memberId as Id<"members">,
+		toolkit,
+		name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
+		type: "use_composio_managed_auth",
+		composioAuthConfigId: toolkitAuthConfigId,
+		isComposioManaged: true,
+		createdBy: memberId as Id<"members">,
+	});
+}
+
+async function storeOrUpdateConnectedAccount(
+	toolkit: ToolkitName,
+	workspaceId: string,
+	memberId: string,
+	entityId: string,
+	composioAccountId: string,
+	resolvedConnection: ComposioConnectionRecord
+) {
+	try {
+		const authConfigIdOrResponse = await resolveAuthConfigId(
+			toolkit,
+			workspaceId,
+			memberId
+		);
+		if (authConfigIdOrResponse instanceof NextResponse) {
+			return authConfigIdOrResponse;
+		}
+		const authConfigId = authConfigIdOrResponse;
+
+		const existingConnectedAccount = await convex.query(
+			api.integrations.getMyConnectedAccountByToolkit,
+			{ workspaceId: workspaceId as Id<"workspaces">, toolkit }
+		);
+
+		if (existingConnectedAccount) {
+			await convex.mutation(api.integrations.updateConnectedAccountStatus, {
+				connectedAccountId: existingConnectedAccount._id,
+				status: "ACTIVE",
+				lastUsed: Date.now(),
+				composioAccountId,
+				metadata: resolvedConnection,
+			});
+		} else {
+			await convex.mutation(api.integrations.storeConnectedAccount, {
+				workspaceId: workspaceId as Id<"workspaces">,
+				memberId: memberId as Id<"members">,
+				authConfigId,
+				userId: entityId,
+				composioAccountId,
+				toolkit,
+				status: "ACTIVE",
+				metadata: resolvedConnection,
+				connectedBy: memberId as Id<"members">,
+			});
+		}
+		return null;
+	} catch (error) {
+		logRouteError({
+			route: "AgentAuth",
+			stage: "store_connected_account_failed",
+			error,
+			level: "warn",
+			context: { toolkit, workspaceId, memberId },
+		});
+		return null;
+	}
+}
+
+async function handleCompleteAction(
+	apiClient: ApiClient,
+	toolkit: ToolkitName,
+	workspaceId: string,
+	memberId: unknown
+): Promise<NextResponse> {
+	const auth = await ensureMemberAuthorized(
+		memberId,
+		"missing_member_id_complete"
+	);
+	if (!auth.ok) return auth.response;
+
+	const entityId = `member_${auth.memberId}`;
+
+	try {
+		const connectionsResponse = await apiClient.getConnections(entityId);
+		const connectedAccounts = extractConnectedAccounts(connectionsResponse);
+		const resolvedConnection = selectConnectionForToolkit(
+			connectedAccounts,
+			String(toolkit ?? "")
+		);
+		const composioAccountId =
+			resolvedConnection?.id ?? resolvedConnection?.connectionId;
+
+		if (!resolvedConnection || !composioAccountId) {
+			return NextResponse.json(
+				{ error: "No connected account found" },
+				{ status: 404 }
+			);
+		}
+
+		const errResponse = await storeOrUpdateConnectedAccount(
+			toolkit,
+			workspaceId,
+			auth.memberId,
+			entityId,
+			composioAccountId,
+			resolvedConnection
+		);
+		if (errResponse) return errResponse;
+
+		return NextResponse.json({
+			success: true,
+			connectedAccount: resolvedConnection,
+			message: `${toolkit} connected successfully`,
+		});
+	} catch (error) {
+		logRouteError({
+			route: "AgentAuth",
+			stage: "connection_completion_failed",
+			error,
+			context: { toolkit, workspaceId, memberId },
+		});
+		return NextResponse.json(
+			buildActionableErrorPayload({
+				message: `Failed to complete ${toolkit} connection.`,
+				nextStep: buildComposioFailureGuidance(),
+				code: "AGENTAUTH_COMPLETE_FAILED",
+				recoverable: true,
+				fallbackResponse: sanitizeErrorMessage(
+					error instanceof Error ? error.message : "Unknown error"
+				),
+			}),
+			{ status: 500 }
+		);
+	}
+}
+
 /**
  * Handle POST requests to initiate toolkit authorization or complete a toolkit connection for a member-scoped entity.
- *
- * Expects a JSON body with fields: `action` ("authorize" or "complete"), `userId`, `toolkit`, `workspaceId`, and (for member-scoped flows) `memberId`. For `authorize` the handler creates a Composio connection and returns a `redirectUrl` and connection identifier; it also attempts to persist a related auth config. For `complete` the handler retrieves the Composio connection, selects the most relevant connected account for the toolkit, and attempts to store a connected account record.
- *
- * @param req - Incoming NextRequest whose JSON body must include `action`, `userId`, `toolkit`, and `workspaceId`. When acting on a specific member, `memberId` is required and must belong to the authenticated user.
- * @returns On success returns a JSON object with `success: true` and either:
- *  - for `authorize`: `redirectUrl`, `connectionId`, and `message`, or
- *  - for `complete`: `connectedAccount` and `message`.
- * On failure returns a JSON error object `{ error: string }` and an appropriate HTTP status.
  */
 export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json();
-
 		const { action, userId, toolkit, workspaceId, memberId } = body;
 
 		if (!userId || !toolkit || !workspaceId) {
@@ -118,340 +473,21 @@ export async function POST(req: NextRequest) {
 		const { apiClient } = initializeComposio();
 
 		if (action === "authorize") {
-			// Verify ownership: ensure the authenticated user has permission to act on this memberId
-			if (!memberId) {
-				logRouteError({
-					route: "AgentAuth",
-					stage: "missing_member_id_authorize",
-					error: new Error("Missing memberId for authorization"),
-					level: "warn",
-				});
-				return NextResponse.json(
-					{ error: "Missing memberId" },
-					{ status: 400 }
-				);
-			}
-
-			// Verify authentication and member ownership
-			const verifyResult = await verifyMemberOwnership(memberId, convex);
-			if (!verifyResult.success) {
-				return verifyResult.response;
-			}
-
-			const entityId = `member_${memberId}`;
-
-			try {
-				// Build a callback URL that redirects back to the manage page
-				// with query params so the frontend can call `complete`
-				const appUrl =
-					process.env.NEXT_PUBLIC_APP_URL ||
-					process.env.SITE_URL ||
-					"https://localhost:3000";
-				const callbackUrl = `${appUrl}/workspace/${workspaceId}/manage?connected=true&toolkit=${encodeURIComponent(toolkit)}&memberId=${encodeURIComponent(memberId)}&userId=${encodeURIComponent(entityId)}`;
-
-				// Step 1: Create entity and initiate connection using the API client
-				const connection = await apiClient.createConnection(
-					entityId,
-					toolkit,
-					callbackUrl
-				);
-
-				// The API returns a redirectUrl for OAuth
-				const redirectUrl = connection.redirectUrl;
-
-				if (!redirectUrl) {
-					logRouteError({
-						route: "AgentAuth",
-						stage: "missing_redirect_url",
-						error: new Error("No redirect URL from Composio"),
-						context: { toolkit },
-					});
-					return NextResponse.json(
-						buildActionableErrorPayload({
-							message: "Authorization URL was not returned by Composio.",
-							nextStep:
-								"Retry authorization. If this continues, verify the toolkit auth configuration.",
-							code: "AGENTAUTH_REDIRECT_URL_MISSING",
-							recoverable: true,
-						}),
-						{ status: 400 }
-					);
-				}
-
-				// Store auth config in database for tracking
-				if (memberId) {
-					try {
-						// Store the auth config linked to this toolkit (persist the real authConfigId)
-						const { APP_CONFIGS } = await import("@/lib/composio-config");
-						const appKey = toolkit.toUpperCase() as keyof typeof APP_CONFIGS;
-						const toolkitAuthConfigId = APP_CONFIGS[appKey]?.authConfigId;
-
-						// Only store auth config if authConfigId is available
-						if (toolkitAuthConfigId) {
-							await convex.mutation(api.integrations.storeAuthConfig, {
-								workspaceId: workspaceId as Id<"workspaces">,
-								memberId: memberId as Id<"members">,
-								toolkit,
-								name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
-								type: "use_composio_managed_auth",
-								composioAuthConfigId: toolkitAuthConfigId,
-								isComposioManaged: true,
-								createdBy: memberId as Id<"members">,
-							});
-						} else {
-							logRouteError({
-								route: "AgentAuth",
-								stage: "auth_config_id_missing",
-								error: new Error("No auth config ID found"),
-								level: "warn",
-								context: { toolkit },
-							});
-						}
-					} catch (error) {
-						logRouteError({
-							route: "AgentAuth",
-							stage: "store_auth_config_failed",
-							error,
-							level: "warn",
-							context: { toolkit, workspaceId, memberId },
-						});
-					}
-				}
-
-				return NextResponse.json({
-					success: true,
-					redirectUrl,
-					connectionId: connection.connectionId || connection.id,
-					message: `Redirect user to ${toolkit} authorization`,
-				});
-			} catch (error) {
-				logRouteError({
-					route: "AgentAuth",
-					stage: "authorization_failed",
-					error,
-					context: { toolkit, workspaceId, memberId },
-				});
-				return NextResponse.json(
-					buildActionableErrorPayload({
-						message: `Failed to authorize ${toolkit}.`,
-						nextStep: buildComposioFailureGuidance(),
-						code: "AGENTAUTH_AUTHORIZE_FAILED",
-						recoverable: true,
-						fallbackResponse: sanitizeErrorMessage(
-							error instanceof Error ? error.message : "Unknown error"
-						),
-					}),
-					{ status: 400 }
-				);
-			}
+			return await handleAuthorizeAction(
+				apiClient,
+				toolkit,
+				workspaceId,
+				memberId
+			);
 		}
 
 		if (action === "complete") {
-			// Verify ownership: ensure the authenticated user has permission to act on this memberId
-			if (!memberId) {
-				logRouteError({
-					route: "AgentAuth",
-					stage: "missing_member_id_complete",
-					error: new Error("Missing memberId for connection completion"),
-					level: "warn",
-				});
-				return NextResponse.json(
-					{ error: "Missing memberId" },
-					{ status: 400 }
-				);
-			}
-
-			// Verify authentication and member ownership
-			const verifyResult = await verifyMemberOwnership(memberId, convex);
-			if (!verifyResult.success) {
-				return verifyResult.response;
-			}
-
-			// Use member-scoped entity ID for user-specific connections
-			const entityId = `member_${memberId}`;
-
-			try {
-				// Step 2: Get connections to verify connection using API client
-				const connectionsResponse = await apiClient.getConnections(entityId);
-				const connectedAccounts = Array.isArray(connectionsResponse)
-					? connectionsResponse
-					: Array.isArray((connectionsResponse as { items?: unknown }).items)
-						? (connectionsResponse as { items: Array<Record<string, unknown>> })
-								.items
-						: [];
-
-				// Find the most recent connection for this toolkit
-				const normalizedToolkit = String(toolkit ?? "").toLowerCase();
-				type ComposioConnectionRecord = {
-					id?: string;
-					connectionId?: string;
-					appName?: string;
-					integrationId?: string;
-					slug?: string;
-				};
-				const connectedAccount =
-					connectedAccounts.find((account: Record<string, unknown>) => {
-						// Normalize account fields for comparison
-						const appName = String(account.appName ?? "").toLowerCase();
-						const integrationId = String(
-							account.integrationId ?? ""
-						).toLowerCase();
-						const slug = String(account.slug ?? "").toLowerCase();
-
-						// Try to match by appName, integrationId, or slug
-						return (
-							appName === normalizedToolkit ||
-							integrationId === normalizedToolkit ||
-							slug === normalizedToolkit
-						);
-					}) ?? connectedAccounts[0]; // Fallback to most recent if no exact match
-				const resolvedConnection = connectedAccount as
-					| ComposioConnectionRecord
-					| undefined;
-				const composioAccountId =
-					resolvedConnection?.id ?? resolvedConnection?.connectionId;
-
-				if (!resolvedConnection || !composioAccountId) {
-					return NextResponse.json(
-						{ error: "No connected account found" },
-						{ status: 404 }
-					);
-				}
-
-				// Store connected account in database
-				if (memberId) {
-					try {
-						// Get or create auth config for this toolkit
-						let authConfigId: Id<"auth_configs"> | undefined;
-						try {
-							// First try member-scoped lookup, then fall back to workspace-scoped
-							let existingAuthConfig = await convex.query(
-								api.integrations.getMyAuthConfigByToolkit,
-								{
-									workspaceId: workspaceId as Id<"workspaces">,
-									toolkit,
-								}
-							);
-							if (!existingAuthConfig) {
-								existingAuthConfig = await convex.query(
-									api.integrations.getAuthConfigByToolkit,
-									{
-										workspaceId: workspaceId as Id<"workspaces">,
-										toolkit,
-									}
-								);
-							}
-							authConfigId = existingAuthConfig?._id;
-						} catch (_error) {
-							// Auth config doesn't exist, create it
-						}
-
-						if (!authConfigId) {
-							const { APP_CONFIGS } = await import("@/lib/composio-config");
-							const appKey = toolkit.toUpperCase() as keyof typeof APP_CONFIGS;
-							const toolkitAuthConfigId = APP_CONFIGS[appKey]?.authConfigId;
-							if (!toolkitAuthConfigId) {
-								return NextResponse.json(
-									{
-										error: `No auth config ID found for toolkit: ${toolkit}`,
-									},
-									{ status: 400 }
-								);
-							}
-
-							authConfigId = await convex.mutation(
-								api.integrations.storeAuthConfig,
-								{
-									workspaceId: workspaceId as Id<"workspaces">,
-									memberId: memberId as Id<"members">,
-									toolkit,
-									name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
-									type: "use_composio_managed_auth",
-									composioAuthConfigId: toolkitAuthConfigId,
-									isComposioManaged: true,
-									createdBy: memberId as Id<"members">,
-								}
-							);
-						}
-
-						if (!authConfigId) {
-							throw new Error(
-								"Failed to resolve auth config id for connected account"
-							);
-						}
-
-						// Check if a connected account already exists for this member+toolkit
-						const existingConnectedAccount = await convex.query(
-							api.integrations.getMyConnectedAccountByToolkit,
-							{
-								workspaceId: workspaceId as Id<"workspaces">,
-								toolkit: toolkit as string,
-							}
-						);
-
-						if (existingConnectedAccount) {
-							// Refresh the existing record with the latest Composio identity data.
-							await convex.mutation(
-								api.integrations.updateConnectedAccountStatus,
-								{
-									connectedAccountId: existingConnectedAccount._id,
-									status: "ACTIVE",
-									lastUsed: Date.now(),
-									composioAccountId,
-									metadata: resolvedConnection,
-								}
-							);
-						} else {
-							// Store connected account (new record)
-							// Use member-scoped entity ID for user-specific connections
-							await convex.mutation(api.integrations.storeConnectedAccount, {
-								workspaceId: workspaceId as Id<"workspaces">,
-								memberId: memberId as Id<"members">,
-								authConfigId,
-								userId: entityId,
-								composioAccountId,
-								toolkit,
-								status: "ACTIVE",
-								metadata: resolvedConnection,
-								connectedBy: memberId as Id<"members">,
-							});
-						}
-					} catch (error) {
-						logRouteError({
-							route: "AgentAuth",
-							stage: "store_connected_account_failed",
-							error,
-							level: "warn",
-							context: { toolkit, workspaceId, memberId },
-						});
-					}
-				}
-
-				return NextResponse.json({
-					success: true,
-					connectedAccount,
-					message: `${toolkit} connected successfully`,
-				});
-			} catch (error) {
-				logRouteError({
-					route: "AgentAuth",
-					stage: "connection_completion_failed",
-					error,
-					context: { toolkit, workspaceId, memberId },
-				});
-				return NextResponse.json(
-					buildActionableErrorPayload({
-						message: `Failed to complete ${toolkit} connection.`,
-						nextStep: buildComposioFailureGuidance(),
-						code: "AGENTAUTH_COMPLETE_FAILED",
-						recoverable: true,
-						fallbackResponse: sanitizeErrorMessage(
-							error instanceof Error ? error.message : "Unknown error"
-						),
-					}),
-					{ status: 500 }
-				);
-			}
+			return await handleCompleteAction(
+				apiClient,
+				toolkit,
+				workspaceId,
+				memberId
+			);
 		}
 
 		return NextResponse.json({ error: "Invalid action" }, { status: 400 });
