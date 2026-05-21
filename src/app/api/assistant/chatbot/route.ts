@@ -324,9 +324,28 @@ export async function POST(req: NextRequest) {
 					});
 					connectedApps = [...new Set(normalizedToolkits)] as AvailableApp[];
 
-					const firstAccount = activeAccounts[0];
-					if (firstAccount?.userId) {
-						userId = firstAccount.userId;
+					const selectedToolkit = needsGmail
+						? "GMAIL"
+						: needsGithub
+							? "GITHUB"
+							: needsSlack
+								? "SLACK"
+								: needsNotion
+									? "NOTION"
+									: needsClickup
+										? "CLICKUP"
+										: needsLinear
+											? "LINEAR"
+											: "";
+					const matchingAccount = selectedToolkit
+						? activeAccounts.find(
+								(acc) =>
+									(acc.toolkit ?? "").trim().toUpperCase() === selectedToolkit
+							)
+						: undefined;
+					const accountForTools = matchingAccount ?? activeAccounts[0];
+					if (accountForTools?.userId) {
+						userId = accountForTools.userId;
 					}
 
 					if (connectedApps.length > 0) {

@@ -40,6 +40,7 @@ export const Reactions = ({ data, onChange }: ReactionsProps) => {
 								"border-secondary bg-secondary/10 text-secondary hover:bg-secondary/20"
 						)}
 						onClick={() => onChange(reaction.value)}
+						type="button"
 					>
 						{reaction.value}{" "}
 						<span
@@ -55,7 +56,10 @@ export const Reactions = ({ data, onChange }: ReactionsProps) => {
 			))}
 
 			<EmojiPopover hint="Add a reaction" onEmojiSelect={onChange}>
-				<button className="group flex h-7 items-center gap-x-1 rounded-full border border-transparent bg-slate-200/70 px-3 text-slate-800 hover:border-secondary transition-standard hover:bg-slate-200/90 hover:scale-105">
+				<button
+					className="group flex h-7 items-center gap-x-1 rounded-full border border-transparent bg-slate-200/70 px-3 text-slate-800 hover:border-secondary transition-standard hover:bg-slate-200/90 hover:scale-105"
+					type="button"
+				>
 					<MdOutlineAddReaction className="size-4 transition-transform duration-200 group-hover:rotate-12" />
 				</button>
 			</EmojiPopover>

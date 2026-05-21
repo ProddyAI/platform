@@ -5,7 +5,7 @@ import { LiveObject } from "@liveblocks/client";
 import { useQuery } from "convex/react";
 import { nanoid } from "nanoid";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -567,7 +567,7 @@ export const ExcalidrawCanvas = () => {
 		}
 	});
 
-	const insertStickyNote = async () => {
+	const insertStickyNote = useCallback(async () => {
 		const api = excalidrawApiRef.current;
 		if (!api) return;
 
@@ -695,7 +695,7 @@ export const ExcalidrawCanvas = () => {
 				// Best-effort. If scrollToContent isn't available, insertion still works.
 			}
 		});
-	};
+	}, []);
 
 	// Keyboard shortcut: N to insert sticky note.
 	useEffect(() => {
@@ -1164,7 +1164,13 @@ export const ExcalidrawCanvas = () => {
 								style={{ transform: `translate(${x}px, ${y}px)` }}
 							>
 								<div className="flex items-start gap-1">
-									<svg fill="none" height="18" viewBox="0 0 24 24" width="18">
+									<svg
+										aria-hidden="true"
+										fill="none"
+										height="18"
+										viewBox="0 0 24 24"
+										width="18"
+									>
 										<path
 											d="M5 3L19 12L13 13L11 19L5 3Z"
 											fill={color}

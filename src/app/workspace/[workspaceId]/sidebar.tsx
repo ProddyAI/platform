@@ -5,6 +5,7 @@ import {
 	AlertTriangle,
 	BarChart,
 	Bot,
+	Brain,
 	CalendarIcon,
 	ChartNoAxesGantt,
 	CheckSquare,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -58,7 +60,7 @@ const MobileCloseWrapper = ({
 	className,
 	ariaLabel = "Close mobile sidebar",
 }: MobileCloseWrapperProps) => {
-	const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+	const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
 		if (!onClose) {
 			return;
 		}
@@ -69,18 +71,21 @@ const MobileCloseWrapper = ({
 		}
 	};
 
-	return (
-		<div
-			aria-label={onClose ? ariaLabel : undefined}
-			className={className}
-			onClick={onClose}
-			onKeyDown={onClose ? handleKeyDown : undefined}
-			role={onClose ? "button" : undefined}
-			tabIndex={onClose ? 0 : undefined}
-		>
-			{children}
-		</div>
-	);
+	if (onClose) {
+		return (
+			<button
+				aria-label={ariaLabel}
+				className={cn(className, "w-full text-left")}
+				onClick={onClose}
+				onKeyDown={handleKeyDown}
+				type="button"
+			>
+				{children}
+			</button>
+		);
+	}
+
+	return <div className={className}>{children}</div>;
 };
 
 // DroppableItem Component
@@ -116,9 +121,10 @@ const DroppableItem = ({
 				isCollapsed ? "px-1" : "px-2 md:px-4"
 			)}
 		>
-			<div
+			<button
 				className="group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2.5 text-sm font-medium transition-standard text-secondary-foreground/80 hover:bg-secondary-foreground/10"
 				onClick={handleToggle}
+				type="button"
 			>
 				{isCollapsed ? (
 					<div className="relative flex-shrink-0">
@@ -157,7 +163,7 @@ const DroppableItem = ({
 						)}
 					</>
 				)}
-			</div>
+			</button>
 
 			{isExpanded && (
 				<div className="mt-2 space-y-1.5 pl-1 md:pl-2">{children}</div>
@@ -237,19 +243,19 @@ export const WorkspaceSidebar = ({
 	};
 
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
-		id: workspaceId,
+		id: workspaceId as Id<"workspaces">,
 	});
 	const { data: channels, isLoading: channelsLoading } = useGetChannels({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: projects, isLoading: projectsLoading } = useGetProjects({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const { data: members, isLoading: membersLoading } = useGetMembers({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 
 	if (
@@ -380,7 +386,7 @@ export const WorkspaceSidebar = ({
 
 							{/* New Channel option - only visible to admins and owners */}
 							{(member.role === "admin" || member.role === "owner") && (
-								<div
+								<button
 									className={cn(
 										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
 										isCollapsed
@@ -388,6 +394,7 @@ export const WorkspaceSidebar = ({
 											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
 									)}
 									onClick={() => setOpen(true)}
+									type="button"
 								>
 									{isCollapsed ? (
 										<div className="relative flex-shrink-0">
@@ -403,7 +410,7 @@ export const WorkspaceSidebar = ({
 											<span className="truncate min-w-0">New Channel</span>
 										</>
 									)}
-								</div>
+								</button>
 							)}
 						</DroppableItem>
 					</div>
@@ -439,7 +446,7 @@ export const WorkspaceSidebar = ({
 							))}
 
 							{(member.role === "admin" || member.role === "owner") && (
-								<div
+								<button
 									className={cn(
 										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
 										isCollapsed
@@ -447,6 +454,7 @@ export const WorkspaceSidebar = ({
 											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
 									)}
 									onClick={() => setCreateProjectOpen(true)}
+									type="button"
 								>
 									{isCollapsed ? (
 										<div className="relative flex-shrink-0">
@@ -462,7 +470,7 @@ export const WorkspaceSidebar = ({
 											<span className="truncate min-w-0">New Project</span>
 										</>
 									)}
-								</div>
+								</button>
 							)}
 						</DroppableItem>
 					</div>
@@ -493,7 +501,7 @@ export const WorkspaceSidebar = ({
 
 							{/* New Member option - only visible to admins and owners */}
 							{(member.role === "admin" || member.role === "owner") && (
-								<div
+								<button
 									className={cn(
 										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
 										isCollapsed
@@ -501,6 +509,7 @@ export const WorkspaceSidebar = ({
 											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
 									)}
 									onClick={() => setInviteOpen(true)}
+									type="button"
 								>
 									{isCollapsed ? (
 										<div className="relative flex-shrink-0">
@@ -516,7 +525,7 @@ export const WorkspaceSidebar = ({
 											<span className="truncate min-w-0">New Member</span>
 										</>
 									)}
-								</div>
+								</button>
 							)}
 						</DroppableItem>
 					</div>
@@ -543,6 +552,16 @@ export const WorkspaceSidebar = ({
 								isActive={pathname.includes("/tasks")}
 								isCollapsed={isCollapsed}
 								label="Tasks"
+							/>
+						</MobileCloseWrapper>
+						<MobileCloseWrapper onClose={onMobileClose}>
+							<SidebarItem
+								href={`/workspace/${workspaceId}/meeting-notes`}
+								icon={Brain}
+								id="meeting-notes"
+								isActive={pathname.includes("/meeting-notes")}
+								isCollapsed={isCollapsed}
+								label="Meeting Notes"
 							/>
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>

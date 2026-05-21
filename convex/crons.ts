@@ -10,7 +10,7 @@ const crons = cronJobs();
 crons.weekly(
 	"weekly-digest-monday",
 	{ dayOfWeek: "monday", hourUTC: 9, minuteUTC: 0 },
-	internal.email.sendWeeklyDigests,
+	internal.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "monday" }
 );
 
@@ -18,7 +18,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-tuesday",
 	{ dayOfWeek: "tuesday", hourUTC: 9, minuteUTC: 0 },
-	internal.email.sendWeeklyDigests,
+	internal.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "tuesday" }
 );
 
@@ -26,7 +26,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-wednesday",
 	{ dayOfWeek: "wednesday", hourUTC: 9, minuteUTC: 0 },
-	internal.email.sendWeeklyDigests,
+	internal.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "wednesday" }
 );
 
@@ -34,7 +34,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-thursday",
 	{ dayOfWeek: "thursday", hourUTC: 9, minuteUTC: 0 },
-	internal.email.sendWeeklyDigests,
+	internal.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "thursday" }
 );
 
@@ -42,7 +42,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-friday",
 	{ dayOfWeek: "friday", hourUTC: 9, minuteUTC: 0 },
-	internal.email.sendWeeklyDigests,
+	internal.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "friday" }
 );
 
@@ -50,7 +50,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-saturday",
 	{ dayOfWeek: "saturday", hourUTC: 9, minuteUTC: 0 },
-	internal.email.sendWeeklyDigests,
+	internal.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "saturday" }
 );
 
@@ -58,7 +58,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-sunday",
 	{ dayOfWeek: "sunday", hourUTC: 9, minuteUTC: 0 },
-	internal.email.sendWeeklyDigests,
+	internal.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "sunday" }
 );
 

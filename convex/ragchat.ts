@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
@@ -11,16 +11,11 @@ type FilterTypes = {
 	contentType: string;
 	channelId: string;
 };
-const rag = new RAG<FilterTypes>(
-	components.rag as unknown as ConstructorParameters<typeof RAG>[0],
-	{
-		filterNames: ["workspaceId", "contentType", "channelId"],
-		textEmbeddingModel: openai.embedding(
-			"text-embedding-3-small"
-		) as unknown as ConstructorParameters<typeof RAG>[1]["textEmbeddingModel"],
-		embeddingDimension: 1536,
-	}
-);
+const rag = new RAG<FilterTypes>(components.rag as any, {
+	filterNames: ["workspaceId", "contentType", "channelId"],
+	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004") as any,
+	embeddingDimension: 768,
+});
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
 
@@ -131,6 +126,7 @@ export const indexContent = action({
 				metadata: entryMetadata,
 			});
 		} catch (e) {
+			// Embedding model errors should not crash the app
 			console.error("indexContent failed (non-fatal):", e);
 		}
 	},
@@ -268,6 +264,7 @@ export const autoIndexNote = action({
 				});
 			}
 		} catch (e) {
+			// Don't let embedding model errors crash the entire note flow
 			console.error("autoIndexNote failed (non-fatal):", e);
 		}
 	},

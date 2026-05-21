@@ -23,7 +23,7 @@ const AssistantPage = () => {
 
 	// Track user activity and time spent on assistant page
 	useTrackActivity({
-		workspaceId,
+		workspaceId: workspaceId ?? null,
 		activityType: "assistant_view",
 	});
 

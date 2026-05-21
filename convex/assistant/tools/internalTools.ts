@@ -9,6 +9,17 @@ export type AssistantCtx = ToolCtx & {
 	userId: Id<"users">;
 };
 
+const CHANNEL_NOT_FOUND_MESSAGE =
+	"Channel not found or you don't have access to it. Use searchChannels to find valid channel IDs.";
+
+function resolveChannelId(channelId: string): Id<"channels"> {
+	const trimmed = channelId.trim();
+	if (!trimmed || /\s/.test(trimmed) || trimmed.startsWith("#")) {
+		throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
+	}
+	return trimmed as Id<"channels">;
+}
+
 export const getMyCalendarToday = createTool({
 	description:
 		"Get the user's calendar events for today. Returns all meetings and events scheduled for the current day.",
@@ -285,14 +296,17 @@ export const getChannelSummary = createTool({
 			.describe("Max number of messages to analyze (default: 40)"),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
-		const channelId = args.channelId as Id<"channels">;
-		const channel = await ctx.runQuery(api.channels.getById, {
-			id: channelId,
-		});
+		const channelId = resolveChannelId(args.channelId);
+		let channel: unknown;
+		try {
+			channel = await ctx.runQuery(api.channels.getById, {
+				id: channelId,
+			});
+		} catch {
+			throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
+		}
 		if (!channel) {
-			throw new Error(
-				`Channel not found or you don't have access to it. Use searchChannels to find valid channel IDs.`
-			);
+			throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
 		}
 		return await ctx.runQuery(api.assistantTools.getChannelSummary, {
 			workspaceId: ctx.workspaceId,
@@ -313,14 +327,17 @@ export const getChannelDebug = createTool({
 			.describe("Maximum number of raw messages to return (default: 20)."),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
-		const channelId = args.channelId as Id<"channels">;
-		const channel = await ctx.runQuery(api.channels.getById, {
-			id: channelId,
-		});
+		const channelId = resolveChannelId(args.channelId);
+		let channel: unknown;
+		try {
+			channel = await ctx.runQuery(api.channels.getById, {
+				id: channelId,
+			});
+		} catch {
+			throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
+		}
 		if (!channel) {
-			throw new Error(
-				`Channel not found or you don't have access to it. Use searchChannels to find valid channel IDs.`
-			);
+			throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
 		}
 		return await ctx.runQuery(api.assistantTools.getChannelDebug, {
 			workspaceId: ctx.workspaceId,

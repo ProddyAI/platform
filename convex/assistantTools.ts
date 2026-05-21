@@ -139,7 +139,7 @@ export const getMyCalendarToday = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
-		await requireWorkspaceMember(ctx, args.workspaceId);
+		const { member } = await requireWorkspaceMember(ctx, args.workspaceId);
 
 		const now = new Date();
 		const todayStart = startOfDayMs(now);
@@ -153,6 +153,9 @@ export const getMyCalendarToday = query({
 			.collect();
 
 		const todayEvents = allEvents.filter((event) => {
+			if (event.memberId !== member._id) {
+				return false;
+			}
 			const eventDate = new Date(event.date).getTime();
 			return eventDate >= todayStart && eventDate <= todayEnd;
 		});
@@ -186,7 +189,7 @@ export const getMyCalendarTomorrow = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
-		await requireWorkspaceMember(ctx, args.workspaceId);
+		const { member } = await requireWorkspaceMember(ctx, args.workspaceId);
 
 		const now = new Date();
 		const tomorrow = addDays(now, 1);
@@ -201,6 +204,9 @@ export const getMyCalendarTomorrow = query({
 			.collect();
 
 		const tomorrowEvents = allEvents.filter((event) => {
+			if (event.memberId !== member._id) {
+				return false;
+			}
 			const eventDate = new Date(event.date).getTime();
 			return eventDate >= tomorrowStart && eventDate <= tomorrowEnd;
 		});
@@ -234,7 +240,7 @@ export const getMyCalendarThisWeek = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
-		await requireWorkspaceMember(ctx, args.workspaceId);
+		const { member } = await requireWorkspaceMember(ctx, args.workspaceId);
 
 		const now = new Date();
 		const thisWeekEnd = addDays(now, 7);
@@ -247,6 +253,9 @@ export const getMyCalendarThisWeek = query({
 			.collect();
 
 		const thisWeekEvents = allEvents.filter((event) => {
+			if (event.memberId !== member._id) {
+				return false;
+			}
 			const eventDate = new Date(event.date).getTime();
 			return (
 				eventDate >= startOfDayMs(now) && eventDate <= endOfDayMs(thisWeekEnd)
@@ -282,7 +291,7 @@ export const getMyCalendarNextWeek = query({
 		count: v.number(),
 	}),
 	handler: async (ctx, args) => {
-		await requireWorkspaceMember(ctx, args.workspaceId);
+		const { member } = await requireWorkspaceMember(ctx, args.workspaceId);
 
 		const now = new Date();
 		const nextWeekStart = addDays(now, 7);
@@ -296,6 +305,9 @@ export const getMyCalendarNextWeek = query({
 			.collect();
 
 		const nextWeekEvents = allEvents.filter((event) => {
+			if (event.memberId !== member._id) {
+				return false;
+			}
 			const eventDate = new Date(event.date).getTime();
 			return (
 				eventDate >= startOfDayMs(nextWeekStart) &&
@@ -1211,18 +1223,11 @@ export const getMyCards = query({
 					.collect();
 
 				for (const card of listCards) {
-					if (card.assignees && Array.isArray(card.assignees)) {
-						if (card.assignees.includes(member._id)) {
-							cards.push({
-								id: card._id,
-								title: card.title,
-								description: card.description,
-								listName: list.title,
-								channelName: channel.name,
-								dueDate: card.dueDate,
-							});
-						}
-					} else {
+					if (
+						card.assignees &&
+						Array.isArray(card.assignees) &&
+						card.assignees.includes(member._id)
+					) {
 						cards.push({
 							id: card._id,
 							title: card.title,

@@ -316,6 +316,7 @@ const DashboardChatbotBody = ({
 	const autocompleteRef = useRef<HTMLDivElement>(null);
 	const initialPromptSentRef = useRef<boolean>(false);
 	const isNearBottomRef = useRef<boolean>(true);
+	const createConversationInFlightRef = useRef<boolean>(false);
 
 	const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
 		const viewport = scrollAreaRef.current?.querySelector<HTMLElement>(
@@ -453,17 +454,31 @@ const DashboardChatbotBody = ({
 
 	// Initialize with most recent conversation or create new one
 	useEffect(() => {
+		if (createConversationInFlightRef.current) {
+			return;
+		}
 		if (!conversationId && workspaceId && member?.userId) {
 			if (recentConversations !== undefined && recentConversations.length > 0) {
 				// Load the most recent conversation
 				setConversationId(recentConversations[0].conversationId);
 			} else if (recentConversations !== undefined) {
 				// Query resolved as empty — create first conversation
+				createConversationInFlightRef.current = true;
 				createConversation({
 					workspaceId,
 					userId: member.userId,
 					title: "New Chat",
-				}).then(setConversationId);
+				})
+					.then(setConversationId)
+					.catch((error) => {
+						console.error(
+							"[DashboardChatbot] Failed to create conversation:",
+							error
+						);
+					})
+					.finally(() => {
+						createConversationInFlightRef.current = false;
+					});
 			}
 			// else: recentConversations is still loading (undefined) — do nothing yet
 		}
@@ -478,7 +493,7 @@ const DashboardChatbotBody = ({
 	// Auto-send initial prompt
 	useEffect(() => {
 		initialPromptSentRef.current = false;
-	}, [initialPrompt, conversationId]);
+	}, []);
 
 	useEffect(() => {
 		if (initialPrompt && conversationId && !initialPromptSentRef.current) {
@@ -614,7 +629,7 @@ Try asking me things like:`;
 		if (isNearBottomRef.current) {
 			scrollToBottom(isStreaming ? "instant" : "smooth");
 		}
-	}, [allMessages, isStreaming, scrollToBottom]);
+	}, [isStreaming, scrollToBottom]);
 
 	const handleSendMessage = async () => {
 		if (!input.trim() || !conversationId) return;

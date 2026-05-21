@@ -162,6 +162,11 @@ export const CreateChannelModal = () => {
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
+		if (!workspaceId) {
+			toast.error("Workspace ID is required");
+			return;
+		}
+
 		mutate(
 			{
 				name,

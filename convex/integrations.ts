@@ -474,7 +474,7 @@ export const updateConnectedAccountStatus = mutation({
 		lastUsed: v.optional(v.number()),
 		composioAccountId: v.optional(v.string()),
 		// metadata can contain integration-specific data like OAuth tokens, refresh tokens, or provider-specific settings
-		metadata: v.optional(v.any()),
+		metadata: v.optional(v.record(v.string(), v.any())),
 	},
 	handler: async (ctx, args) => {
 		const updateData: {
@@ -482,7 +482,7 @@ export const updateConnectedAccountStatus = mutation({
 			isDisabled?: boolean;
 			lastUsed?: number;
 			composioAccountId?: string;
-			metadata?: any;
+			metadata?: Record<string, unknown>;
 		} = {
 			status: args.status,
 		};

@@ -1,12 +1,12 @@
 "use client";
 
 import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
-import { Loader2, Wand2 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import type { Note } from "../types";
+import { AIActionsToolbar } from "./ai-actions-toolbar";
 import { BlockNoteEditor } from "./blocknote-editor";
+import { NoteEditorErrorBoundary } from "./note-editor-error-boundary";
 
 interface BlockNoteNotesEditorProps {
 	note: Note;
@@ -19,114 +19,76 @@ export const BlockNoteNotesEditor = ({
 	isLoading = false,
 	isFullScreen = false,
 }: BlockNoteNotesEditorProps) => {
-	const [isFormatting, setIsFormatting] = useState(false);
 	const editorRef = useRef<BlockNoteEditorType | null>(null);
 
 	const handleEditorReady = useCallback((editor: BlockNoteEditorType) => {
 		editorRef.current = editor;
 	}, []);
 
-	const handleFormatNote = async () => {
-		if (!editorRef.current) {
-			toast.error("Editor not ready");
-			return;
-		}
+	useEffect(() => {
+		const handleInsertNotes = async (e: Event) => {
+			if (!editorRef.current) return;
 
-		setIsFormatting(true);
+			const customEvent = e as CustomEvent;
+			const { content } = customEvent.detail || {};
+			if (!content) return;
 
-		try {
-			// Get current content as markdown
-			const currentContent = await editorRef.current.blocksToMarkdownLossy();
+			try {
+				const blocks =
+					await editorRef.current.tryParseMarkdownToBlocks(content);
+				if (blocks && blocks.length > 0) {
+					const lastBlock =
+						editorRef.current.document.length > 0
+							? editorRef.current.document[
+									editorRef.current.document.length - 1
+								]
+							: undefined;
 
-			if (!currentContent.trim()) {
-				toast.error("No content to format");
-				setIsFormatting(false);
-				return;
-			}
-
-			// Call the formatter API
-			const response = await fetch("/api/smart/formatter", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					content: currentContent,
-					title: note.title,
-				}),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || "Formatting failed");
-			}
-
-			const { formattedContent } = await response.json();
-
-			if (formattedContent) {
-				// Parse the formatted markdown to blocks
-				const formattedBlocks =
-					await editorRef.current.tryParseMarkdownToBlocks(formattedContent);
-
-				if (formattedBlocks && formattedBlocks.length > 0) {
-					// Get current blocks and replace them with formatted blocks
-					const currentBlocks = editorRef.current.document;
-
-					// Use transaction to replace all content
-					editorRef.current.transact(() => {
-						editorRef.current?.replaceBlocks(currentBlocks, formattedBlocks);
-					});
-
-					toast.success("Note formatted successfully!");
-				} else {
-					toast.error("Failed to parse formatted content");
+					if (lastBlock) {
+						editorRef.current.insertBlocks(blocks, lastBlock, "after");
+					} else {
+						editorRef.current.insertBlocks(
+							blocks,
+							editorRef.current.document[0],
+							"before"
+						);
+					}
+					toast.success("Inserted AI notes into document!");
 				}
+			} catch (error) {
+				console.error("Failed to insert AI notes", error);
+				toast.error("Failed to insert AI notes into editor");
 			}
-		} catch (error) {
-			console.error("Formatting error:", error);
-			toast.error(
-				error instanceof Error ? error.message : "Failed to format note"
-			);
-		} finally {
-			setIsFormatting(false);
-		}
-	};
+		};
+
+		window.addEventListener("proddy:insert-ai-notes", handleInsertNotes);
+		return () => {
+			window.removeEventListener("proddy:insert-ai-notes", handleInsertNotes);
+		};
+	}, []);
 
 	return (
 		<div
-			className="flex flex-col h-full relative dark:bg-[hsl(var(--card-accent))]"
+			className="flex flex-col h-full overflow-hidden"
 			data-fullscreen={isFullScreen}
 		>
-			{/* Note Content */}
-			<div className="flex-1 overflow-hidden dark:bg-[hsl(var(--card-accent))]">
-				<BlockNoteEditor
-					className="h-full dark:bg-[hsl(var(--card-accent))]"
-					noteId={note._id}
-					onEditorReady={handleEditorReady}
-				/>
+			{/* AI Actions Toolbar — sticky at top */}
+			<div className="flex-none">
+				<AIActionsToolbar editorRef={editorRef} isLoading={isLoading} />
 			</div>
 
-			{/* Format Button - Top Right */}
-			<div className="absolute top-4 right-4 z-10">
-				<Button
-					className="shadow-lg hover:shadow-xl transition-shadow"
-					disabled={isFormatting || isLoading}
-					onClick={handleFormatNote}
-					size="sm"
-					variant="secondary"
-				>
-					{isFormatting ? (
-						<>
-							<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-							Formatting...
-						</>
-					) : (
-						<>
-							<Wand2 className="h-4 w-4 mr-2" />
-							Format
-						</>
-					)}
-				</Button>
+			{/* Editor area — fills remaining height, scrollable inside */}
+			{/* Wrapped in Error Boundary to catch ProseMirror/BlockNote crashes
+			    (e.g. RangeError: Invalid array passed to renderSpec) for existing
+			    notes that were stored with an invalid document structure. */}
+			<div className="flex-1 min-h-0 overflow-hidden relative">
+				<NoteEditorErrorBoundary noteId={note._id}>
+					<BlockNoteEditor
+						className="h-full"
+						noteId={note._id}
+						onEditorReady={handleEditorReady}
+					/>
+				</NoteEditorErrorBoundary>
 			</div>
 		</div>
 	);

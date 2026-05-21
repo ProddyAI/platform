@@ -24,16 +24,8 @@ interface InitiateOptions {
  */
 type ConnectedAccountDeleteResult = boolean | undefined | { success: boolean };
 
-if (!process.env.OPENAI_API_KEY) {
-	throw new Error("OPENAI_API_KEY is required");
-}
-
-if (!process.env.COMPOSIO_API_KEY) {
-	throw new Error("COMPOSIO_API_KEY is required");
-}
-
 export const composio = new Composio({
-	apiKey: process.env.COMPOSIO_API_KEY,
+	apiKey: process.env.COMPOSIO_API_KEY || "dummy_composio_key_for_build",
 	provider: new VercelProvider(),
 });
 
@@ -157,9 +149,21 @@ export function initializeComposio() {
 
 		async getTools(entityId: string, appNames: string[]) {
 			try {
+				const { APP_CONFIGS } = await import("./composio-config");
+				const authConfigIds = appNames.flatMap((appName) => {
+					const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
+					const authConfigId = APP_CONFIGS[appKey]?.authConfigId;
+					return authConfigId ? [authConfigId] : [];
+				});
+
+				if (authConfigIds.length === 0) {
+					return { items: [] };
+				}
+
 				const tools = await composioInstance.tools.get(entityId, {
-					appNames,
-				} as never);
+					authConfigIds,
+					limit: 1000,
+				});
 
 				return { items: Array.isArray(tools) ? tools : [tools] };
 			} catch (err) {

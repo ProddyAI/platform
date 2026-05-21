@@ -298,10 +298,22 @@ async function applySemanticSearchFallback(
 		console.error(
 			"[Assistant] Semantic search fallback failed",
 			fallbackError,
-			{ conversationId: args.conversationId, message: args.message }
+			{
+				conversationId: args.conversationId,
+				messageSummary: createSafeMessageSummary(args.message),
+			}
 		);
 		return defaultResponseText;
 	}
+}
+
+function createSafeMessageSummary(message: string): string {
+	const trimmed = message.trim();
+	let hash = 0;
+	for (let i = 0; i < trimmed.length; i++) {
+		hash = (hash * 31 + trimmed.charCodeAt(i)) >>> 0;
+	}
+	return `len=${trimmed.length},hash=${hash.toString(16)}`;
 }
 
 type AssistantToolCall = {
@@ -454,13 +466,6 @@ export async function runSendMessageCompletion(
 		})),
 	];
 
-	const streamId = await ctx.runMutation(
-		components.databaseChat.stream.create,
-		{
-			conversationId: context.activeConversationId,
-		}
-	);
-
 	const openai = new OpenAIClient({
 		apiKey: context.apiKey,
 	});
@@ -481,6 +486,13 @@ export async function runSendMessageCompletion(
 		temperature: 0.7,
 		max_tokens: 2000,
 	});
+
+	const streamId = await ctx.runMutation(
+		components.databaseChat.stream.create,
+		{
+			conversationId: context.activeConversationId,
+		}
+	);
 
 	let responseText =
 		completion.choices[0]?.message?.content ||

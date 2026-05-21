@@ -138,6 +138,7 @@ export const TestNotesSidebar = ({
 												)}
 												key={note.id}
 												onClick={() => onNoteSelect(note.id)}
+												type="button"
 											>
 												<div className="flex items-start justify-between gap-2 mb-2">
 													<div className="flex items-center gap-2 min-w-0 flex-1">

@@ -14,10 +14,8 @@ import {
 } from "@/lib/assistant-error-utils";
 import { initializeComposio } from "@/lib/composio";
 
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-if (!convexUrl) {
-	throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
-}
+const convexUrl =
+	process.env.NEXT_PUBLIC_CONVEX_URL || "https://dummy.convex.cloud";
 const convex = new ConvexHttpClient(convexUrl);
 
 // Validate composioAuthConfigId format
@@ -274,10 +272,13 @@ export async function POST(req: NextRequest) {
 
 			try {
 				// Step 2: Get connections to verify connection using API client
-				const connectionsResponse = (await apiClient.getConnections(
-					entityId
-				)) as { items?: Array<Record<string, unknown>> };
-				const connectedAccounts = connectionsResponse.items ?? [];
+				const connectionsResponse = await apiClient.getConnections(entityId);
+				const connectedAccounts = Array.isArray(connectionsResponse)
+					? connectionsResponse
+					: Array.isArray((connectionsResponse as { items?: unknown }).items)
+						? (connectionsResponse as { items: Array<Record<string, unknown>> })
+								.items
+						: [];
 
 				// Find the most recent connection for this toolkit
 				const normalizedToolkit = String(toolkit ?? "").toLowerCase();
@@ -346,6 +347,18 @@ export async function POST(req: NextRequest) {
 						}
 
 						if (!authConfigId) {
+							const { APP_CONFIGS } = await import("@/lib/composio-config");
+							const appKey = toolkit.toUpperCase() as keyof typeof APP_CONFIGS;
+							const toolkitAuthConfigId = APP_CONFIGS[appKey]?.authConfigId;
+							if (!toolkitAuthConfigId) {
+								return NextResponse.json(
+									{
+										error: `No auth config ID found for toolkit: ${toolkit}`,
+									},
+									{ status: 400 }
+								);
+							}
+
 							authConfigId = await convex.mutation(
 								api.integrations.storeAuthConfig,
 								{
@@ -354,7 +367,7 @@ export async function POST(req: NextRequest) {
 									toolkit,
 									name: `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} Config`,
 									type: "use_composio_managed_auth",
-									composioAuthConfigId: composioAccountId,
+									composioAuthConfigId: toolkitAuthConfigId,
 									isComposioManaged: true,
 									createdBy: memberId as Id<"members">,
 								}

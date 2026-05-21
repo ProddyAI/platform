@@ -19,7 +19,7 @@ const ChannelChatPage = () => {
 
 	// Track user activity and time spent in this channel
 	useTrackActivity({
-		workspaceId,
+		workspaceId: workspaceId ?? null,
 		channelId,
 		activityType: "channel_view",
 	});

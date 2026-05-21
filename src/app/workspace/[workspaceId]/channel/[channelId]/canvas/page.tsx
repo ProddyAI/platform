@@ -420,7 +420,7 @@ const CanvasPage = () => {
 						channelId={channelId}
 						isFullScreen={isFullScreen}
 						roomId={activeCanvas.roomId}
-						workspaceId={workspaceId}
+						workspaceId={workspaceId as any}
 					/>
 				)}
 			</div>

@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import {
+	ArrowUpCircle,
 	Bell,
 	Calendar,
 	CheckSquare,
@@ -40,6 +41,7 @@ import {
 	CommandList,
 	CommandSeparator,
 } from "@/components/ui/command";
+import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
 import { UserButton } from "@/features/auth/components/user-button";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
@@ -479,6 +481,9 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		"profile" | "notifications"
 	>("profile");
 
+	const { setIsOpen: setAiNotemakerOpen, generateNotes } =
+		useAiNotemakerStore();
+
 	// Board search integration
 	const isBoardPage = useBoardSearchStore((state) => state.isBoardPage);
 	const setBoardSearchQuery = useBoardSearchStore(
@@ -541,7 +546,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	);
 
 	const { results: searchResults, isLoading: isSearching } = useSearchMessages({
-		workspaceId,
+		workspaceId: workspaceId as any,
 		query: useAI || isBoardPage ? "" : searchQuery,
 		enabled: (!useAI && !isBoardPage && searchQuery.trim().length > 0) || false,
 	});
@@ -551,7 +556,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		isLoading: isAISearching,
 		result: aiResult,
 		reset: resetAISearch,
-	} = useAISearch(workspaceId);
+	} = useAISearch(workspaceId as any);
 
 	// Reset search state when dialog closes
 	useEffect(() => {
@@ -648,6 +653,10 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const handleNotificationsOpen = useCallback(() => {
 		setNotificationsOpen(true);
 	}, []);
+
+	const handleUpgradeClick = useCallback(() => {
+		router.push(`/workspace/${workspaceId}/manage#billing`);
+	}, [router, workspaceId]);
 
 	const handleToggleAI = useCallback(() => {
 		setUseAI((current) => !current);
@@ -820,6 +829,22 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 			{/* Right section - Actions */}
 			<div className="ml-auto flex flex-1 items-center justify-end gap-x-1.5 md:gap-x-3 px-3 md:px-6">
+				{/* AI Notemaker Component */}
+				<div className="hidden md:flex">
+					<Button
+						className="gap-2 h-9 bg-white/10 hover:bg-white/20 text-white border-white/20"
+						onClick={() => {
+							setAiNotemakerOpen(true);
+							generateNotes();
+						}}
+						size="sm"
+						variant="outline"
+					>
+						<Sparkles className="size-4" />
+						<span className="hidden sm:inline">Generate AI Notes</span>
+					</Button>
+				</div>
+
 				{/* Mobile Search Button */}
 				<div className="md:hidden">
 					<Button
@@ -834,6 +859,21 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 				</div>
 
 				{/* Notifications Button */}
+				<Hint label="Open billing" side="bottom">
+					<Button
+						aria-label="Upgrade"
+						className="h-8 gap-1.5 px-2 text-white hover:bg-white/15 transition-colors sm:px-3"
+						onClick={handleUpgradeClick}
+						size="sm"
+						variant="ghost"
+					>
+						<ArrowUpCircle className="size-4" />
+						<span className="hidden text-xs font-medium sm:inline">
+							Upgrade
+						</span>
+					</Button>
+				</Hint>
+
 				<Hint label="Notifications" side="bottom">
 					<Button
 						className="text-white relative hover:bg-white/15 transition-colors"

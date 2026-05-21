@@ -63,7 +63,7 @@ type ConnectedAccount = {
 type CurrentMember = {
 	_id: Id<"members">;
 	userId: string;
-	role: "owner" | "admin" | "member";
+	role: "owner" | "admin" | "member" | "viewer";
 };
 
 interface ServiceIntegrationCardProps {
@@ -236,8 +236,17 @@ export const ServiceIntegrationCard = ({
 				}),
 			});
 			if (!response.ok) {
-				const err = (await response.json()) as { error?: string };
-				throw new Error(err.error || "Failed to disconnect");
+				let errorMessage = "";
+				try {
+					const err = (await response.json()) as { error?: string };
+					errorMessage = err.error ?? "";
+				} catch {
+					errorMessage = (await response.text()).trim();
+				}
+				throw new Error(
+					errorMessage ||
+						`Failed to disconnect (${response.status} ${response.statusText})`
+				);
 			}
 			toast.success(`${cfg.name} disconnected`);
 			onConnectionChange?.();

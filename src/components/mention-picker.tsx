@@ -36,7 +36,9 @@ export const MentionPicker = ({
 	searchQuery,
 }: MentionPickerProps) => {
 	const workspaceId = useWorkspaceId();
-	const { data: members, isLoading } = useGetMembers({ workspaceId });
+	const { data: members, isLoading } = useGetMembers({
+		workspaceId: workspaceId as Id<"workspaces">,
+	});
 	const [filteredMembers, setFilteredMembers] = useState<MemberWithPresence[]>(
 		[]
 	);
@@ -45,7 +47,10 @@ export const MentionPicker = ({
 
 	// Get presence information for all users
 	const userIds = members?.map((m) => m.userId) || [];
-	const { getUserStatus } = useMultipleUserStatuses(userIds, workspaceId);
+	const { getUserStatus } = useMultipleUserStatuses(
+		userIds,
+		workspaceId as Id<"workspaces">
+	);
 
 	// Initialize search term from the searchQuery prop
 	useEffect(() => {
@@ -114,6 +119,8 @@ export const MentionPicker = ({
 		<div
 			className="fixed bottom-[120px] left-0 right-0 mx-auto w-[90%] max-w-[500px] bg-white border border-gray-200 rounded-md shadow-lg z-[9999] overflow-hidden"
 			onClick={handleMentionPickerClick}
+			onKeyDown={(event) => event.stopPropagation()}
+			role="presentation"
 		>
 			{/* Header */}
 			<div className="border-b p-2 bg-gray-50">

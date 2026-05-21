@@ -1,4 +1,4 @@
-type AssignmentRole = "owner" | "admin" | "member";
+type AssignmentRole = "owner" | "admin" | "member" | "viewer";
 
 export function canAssignTaskToMember(options: {
 	currentMemberId: string;

@@ -338,6 +338,10 @@ export class UnifiedToolManager {
 		const tools: Record<string, unknown> = {};
 
 		for (const toolDef of INTERNAL_TOOL_DEFINITIONS) {
+			if (toolDef.contextParams?.needsUserId && !this.userId) {
+				continue;
+			}
+
 			const jsonSchemaObj: Record<string, any> = {
 				type: "object",
 				properties: toolDef.parameters.properties || {},

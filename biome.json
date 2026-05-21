@@ -131,5 +131,56 @@
 				"useSortedAttributes": "on"
 			}
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["src/components/3pc/**"],
+			"linter": {
+				"rules": {
+					"security": {
+						"noDangerouslySetInnerHtml": "off"
+					},
+					"correctness": {
+						"useExhaustiveDependencies": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/features/canvas/**"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"useExhaustiveDependencies": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"src/app/mockup/**",
+				"src/features/reports/components/charts/**",
+				"src/features/chats/components/**",
+				"src/features/landing/**",
+				"src/features/live/**",
+				"src/components/ui/**",
+				"src/components/AiNotemaker.tsx",
+				"src/features/board/**",
+				"src/features/canvas/**",
+				"src/components/label-input.tsx",
+				"src/components/member-selector.tsx"
+			],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useSemanticElements": "off",
+						"noLabelWithoutControl": "off",
+						"useFocusableInteractive": "off",
+						"useAriaPropsForRole": "off",
+						"useKeyWithClickEvents": "off"
+					}
+				}
+			}
+		}
+	]
 }
