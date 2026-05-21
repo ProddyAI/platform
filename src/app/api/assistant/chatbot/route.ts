@@ -1,4 +1,5 @@
 import type { Composio } from "@composio/core";
+import type { OpenAIProvider } from "@composio/openai";
 import {
 	convexAuthNextjsToken,
 	isAuthenticatedNextjs,
@@ -49,11 +50,19 @@ type ConnectedAccountRow = {
 	userId?: string;
 };
 
+type ChatCompletionTool = OpenAI.Chat.ChatCompletionTool;
+type ChatCompletionMessageToolCall = OpenAI.Chat.ChatCompletionMessageToolCall;
+
+type ConversationMessage = {
+	role: "user" | "assistant";
+	content: string;
+};
+
 type ComposioContext = {
 	useComposio: boolean;
 	connectedApps: AvailableApp[];
-	composioTools: any[];
-	composioClient: Composio<any> | null;
+	composioTools: ChatCompletionTool[];
+	composioClient: Composio<OpenAIProvider> | null;
 	userId: string;
 };
 
@@ -335,8 +344,8 @@ async function prepareComposioContext(
 		return {
 			useComposio: composioTools.length > 0,
 			connectedApps,
-			composioTools,
-			composioClient,
+			composioTools: composioTools as ChatCompletionTool[],
+			composioClient: composioClient as unknown as Composio<OpenAIProvider>,
 			userId,
 		};
 	} catch (_error) {
@@ -347,35 +356,41 @@ async function prepareComposioContext(
 	}
 }
 
-function sanitizeConversationHistory(history: any) {
-	return (history || [])
-		.filter(
-			(msg: any) =>
-				msg &&
-				["user", "assistant"].includes(msg.role) &&
-				typeof msg.content === "string"
-		)
-		.map((msg: any) => ({
-			role: msg.role as "user" | "assistant",
-			content: msg.content.replace(CONTROL_CHARS_REGEX, "").trim(),
-		}));
+function sanitizeConversationHistory(history: unknown): ConversationMessage[] {
+	const arr = Array.isArray(history) ? history : [];
+	const result: ConversationMessage[] = [];
+	for (const entry of arr) {
+		if (!entry || typeof entry !== "object") continue;
+		const msg = entry as { role?: unknown; content?: unknown };
+		if (
+			(msg.role === "user" || msg.role === "assistant") &&
+			typeof msg.content === "string"
+		) {
+			result.push({
+				role: msg.role,
+				content: msg.content.replace(CONTROL_CHARS_REGEX, "").trim(),
+			});
+		}
+	}
+	return result;
 }
 
 type ToolExecutionResult = {
 	responseText: string;
-	toolResults: any[];
+	toolResults: unknown[];
 	sources: AssistantSource[];
 };
 
 async function executeToolCallsAndFollowUp(
 	openai: OpenAI,
-	composioClient: Composio<any>,
+	composioClient: Composio<OpenAIProvider>,
 	userId: string,
 	completion: OpenAI.Chat.ChatCompletion,
 	messages: OpenAI.Chat.ChatCompletionMessageParam[],
 	fallbackText: string
 ): Promise<ToolExecutionResult> {
-	const toolCalls = (completion.choices[0]?.message?.tool_calls ?? []) as any[];
+	const toolCalls = (completion.choices[0]?.message?.tool_calls ??
+		[]) as ChatCompletionMessageToolCall[];
 	try {
 		console.log(
 			`[Chatbot] Executing ${toolCalls.length} tool calls with entityId: ${userId}`
@@ -386,14 +401,14 @@ async function executeToolCallsAndFollowUp(
 		);
 		logger.info("[Chatbot] Tool results summary", sanitizeToolResult(result));
 
-		const toolResults = Array.isArray(result) ? result : [result];
+		const toolResults: unknown[] = Array.isArray(result) ? result : [result];
 		const sources: AssistantSource[] = toolCalls.map((call, idx) => ({
 			id: `tool-${idx}`,
 			type: "tool",
-			text: `${call.function?.name || "Tool"} executed`,
+			text: `${(call as { function?: { name?: string } }).function?.name || "Tool"} executed`,
 		}));
 
-		const resultMap: Record<string, any> = {};
+		const resultMap: Record<string, unknown> = {};
 		toolCalls.forEach((call, idx) => {
 			resultMap[call.id] = toolResults[idx] ?? { success: true };
 		});
@@ -501,7 +516,7 @@ async function runOpenAIComposioPath(params: {
 			toolCalls.length > 0
 				? await executeToolCallsAndFollowUp(
 						openai,
-						context.composioClient as Composio<any>,
+						context.composioClient as Composio<OpenAIProvider>,
 						context.userId,
 						completion,
 						messages,
@@ -509,7 +524,7 @@ async function runOpenAIComposioPath(params: {
 					)
 				: {
 						responseText: initialResponseText,
-						toolResults: [] as any[],
+						toolResults: [] as unknown[],
 						sources: [] as AssistantSource[],
 					};
 
