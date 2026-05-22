@@ -3,7 +3,7 @@
 import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { generateText } from "ai";
+import { generateText, type ModelMessage } from "ai";
 import { v } from "convex/values";
 import OpenAI from "openai";
 import { api, internal } from "./_generated/api";
@@ -64,6 +64,12 @@ type MentionCandidateRow = {
 	ctxName: string;
 	created: number;
 	body: string;
+};
+type RecentWorkspaceChannelMessageRow = {
+	channelName?: string;
+	authorName?: string;
+	body?: string;
+	_creationTime?: number;
 };
 type RagCatalogEntry = {
 	entryId: string;
@@ -358,6 +364,44 @@ type ComposioIntent = {
 	keywords: string[];
 };
 
+type ComposioToolDefinition = {
+	function?: {
+		name?: string;
+		description?: string;
+		parameters?: Record<string, unknown>;
+	};
+	name?: string;
+	slug?: string;
+	description?: string;
+	parameters?: Record<string, unknown>;
+	schema?: Record<string, unknown>;
+};
+
+type ComposioToolResult = {
+	toolCallId: string;
+	toolName: string;
+	result?: unknown;
+	error?: string;
+};
+
+type ComposioActionResult = {
+	success: boolean;
+	response?: string;
+	error?: string;
+	toolCalls?: OpenAI.Chat.ChatCompletionMessageToolCall[];
+	toolResults?: ComposioToolResult[];
+};
+
+function normalizeComposioTools(appTools: unknown): ComposioToolDefinition[] {
+	if (Array.isArray(appTools)) {
+		return appTools as ComposioToolDefinition[];
+	}
+	if (typeof appTools === "object" && appTools !== null) {
+		return Object.values(appTools) as ComposioToolDefinition[];
+	}
+	return appTools ? [appTools as ComposioToolDefinition] : [];
+}
+
 /**
  * Detect if a query should be routed to Composio based on keyword matching
  */
@@ -411,18 +455,12 @@ function detectComposioIntent(query: string): ComposioIntent | null {
  * Resolves auth config IDs from the member's connected accounts so tools.get uses valid authConfigIds.
  */
 async function executeComposioAction(
-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
+	ctx: ActionCtx,
 	entityId: string,
 	appNames: string[],
 	message: string,
 	workspaceId: Id<"workspaces">
-): Promise<{
-	success: boolean;
-	response?: string;
-	error?: string;
-	toolCalls?: any[];
-	toolResults?: any[];
-}> {
+): Promise<ComposioActionResult> {
 	try {
 		// Validate environment variables
 		if (!process.env.COMPOSIO_API_KEY) {
@@ -450,7 +488,7 @@ async function executeComposioAction(
 		});
 
 		// Resolve auth config IDs from member's or workspace's connected accounts (Composio requires authConfigIds, not appNames)
-		const tools: any[] = [];
+		const tools: ComposioToolDefinition[] = [];
 		for (const appName of appNames) {
 			const toolkit = appName.toLowerCase();
 			try {
@@ -493,13 +531,7 @@ async function executeComposioAction(
 					limit: 100,
 				});
 
-				const toolsArray = Array.isArray(appTools)
-					? appTools
-					: typeof appTools === "object" && appTools !== null
-						? Object.values(appTools)
-						: appTools
-							? [appTools]
-							: [];
+				const toolsArray = normalizeComposioTools(appTools);
 				tools.push(...toolsArray);
 			} catch (error) {
 				console.warn(`[Composio] No tools found for app ${appName}:`, error);
@@ -514,15 +546,27 @@ async function executeComposioAction(
 		}
 
 		// Convert Composio tools to OpenAI format (align with composio-config shape)
-		const openaiTools = tools.map((tool: any) => ({
-			type: "function" as const,
-			function: {
-				name: tool.function?.name || tool.name || tool.slug,
-				description: tool.function?.description || tool.description,
-				parameters:
-					tool.parameters ?? tool.schema ?? tool.function?.parameters ?? {},
-			},
-		}));
+		const openaiTools: OpenAI.Chat.ChatCompletionTool[] = tools.flatMap(
+			(tool) => {
+				const name = tool.function?.name || tool.name || tool.slug;
+				if (!name) return [];
+
+				return [
+					{
+						type: "function" as const,
+						function: {
+							name,
+							description: tool.function?.description || tool.description || "",
+							parameters:
+								tool.parameters ??
+								tool.schema ??
+								tool.function?.parameters ??
+								{},
+						},
+					},
+				];
+			}
+		);
 
 		// Create OpenAI completion with tools
 		const completion = await openaiClient.chat.completions.create({
@@ -544,7 +588,7 @@ async function executeComposioAction(
 
 		let responseText =
 			completion.choices[0]?.message?.content || "No response generated";
-		const toolResults: any[] = [];
+		const toolResults: ComposioToolResult[] = [];
 
 		// Execute any tool calls with Composio
 		if (
@@ -746,7 +790,7 @@ async function generateLLMResponse(opts: {
 			content: truncateOneLine(String(m.content ?? "").trim(), 700),
 		}));
 
-	const messages: LLMMessage[] = [
+	const messages: ModelMessage[] = [
 		{ role: "system", content: system },
 		...previous,
 		{ role: "user", content: userPrompt },
@@ -755,7 +799,7 @@ async function generateLLMResponse(opts: {
 	try {
 		const { text } = await generateText({
 			model: openai("gpt-4o-mini"),
-			messages: messages as any,
+			messages,
 			temperature: 0.2,
 		});
 
@@ -1801,7 +1845,7 @@ async function handleWorkspaceSummaryRoute(
 	}
 
 	const lines = (recent || [])
-		.map((m: any) => {
+		.map((m: RecentWorkspaceChannelMessageRow) => {
 			const channelName = String(m?.channelName ?? "unknown").trim();
 			const who = String(m?.authorName ?? "").trim();
 			const body = truncateOneLine(String(m?.body ?? ""), 180);
@@ -2182,6 +2226,290 @@ async function handleAgendaTomorrowRoute(
 	};
 }
 
+const PERSONAL_ASSISTANT_MODES = [
+	"agenda_today",
+	"agenda_tomorrow",
+	"tasks_today",
+	"tasks_tomorrow",
+	"calendar_next_week",
+	"calendar_today",
+	"calendar_tomorrow",
+	"calendar",
+	"incidents",
+	"boards",
+	"tasks",
+] as const;
+
+type PersonalAssistantMode = (typeof PERSONAL_ASSISTANT_MODES)[number];
+
+function isPersonalAssistantMode(
+	mode: AssistantIntent["mode"]
+): mode is PersonalAssistantMode {
+	return PERSONAL_ASSISTANT_MODES.includes(mode as PersonalAssistantMode);
+}
+
+type PersonalAssistantDateRange = {
+	now: Date;
+	todayFrom: number;
+	todayTo: number;
+	tomorrowFrom: number;
+	tomorrowTo: number;
+};
+
+function getPersonalAssistantDateRange(now: Date): PersonalAssistantDateRange {
+	const todayFrom = startOfDayMs(now);
+	const todayTo = endOfDayMs(now);
+	const tomorrow = new Date(now);
+	tomorrow.setDate(now.getDate() + 1);
+	return {
+		now,
+		todayFrom,
+		todayTo,
+		tomorrowFrom: startOfDayMs(tomorrow),
+		tomorrowTo: endOfDayMs(tomorrow),
+	};
+}
+
+function getTasksPrivacyBlock(query: string): AssistantResult | null {
+	const normalizedQuery = query.trim().toLowerCase();
+	const queryWithoutPunctuation = normalizedQuery.replace(
+		/[^a-z0-9\s#@'-]/g,
+		" "
+	);
+	if (
+		/@\w+/.test(queryWithoutPunctuation) ||
+		/\b(\w+)'s\s+tasks\b/.test(queryWithoutPunctuation)
+	) {
+		return {
+			answer:
+				'I can only show tasks assigned to you (the signed-in user). If you want, ask "What are my tasks for today?" or "Show my tasks".',
+			sources: [],
+		};
+	}
+	return null;
+}
+
+async function handleIncidentsRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">
+): Promise<AssistantResult> {
+	await ctx.runQuery(api.members.current, { workspaceId });
+	let channels: Array<{ _id: Id<"channels">; name: string }> = [];
+	try {
+		channels = await ctx.runQuery(api.channels.get, { workspaceId });
+	} catch {
+		channels = [];
+	}
+	const candidates = (channels || [])
+		.map((channel) => String(channel?.name ?? "").trim())
+		.filter(Boolean)
+		.filter((name) =>
+			/\b(incident|incidents|oncall|ops|status|alerts)\b/i.test(name)
+		)
+		.slice(0, 6)
+		.map((name) => `#${name}`);
+	const lines = ["Incident Status"];
+	lines.push(
+		candidates.length
+			? `- Check incident channels: ${candidates.join(", ")}`
+			: "- Check your incident/oncall/status channels for the latest updates"
+	);
+	lines.push(
+		"- Identify owner, impact, current mitigation, and next update time"
+	);
+	return {
+		answer: lines.join("\n"),
+		sources: candidates.length ? ["Channels"] : [],
+	};
+}
+
+async function handleCalendarNextWeekRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	now: Date
+): Promise<AssistantResult> {
+	const range = getNextWeekRange(now);
+	const events = await ctx.runQuery(
+		api.chatbotQueries.getMyCalendarEventsInRange,
+		{
+			workspaceId,
+			from: range.from,
+			to: range.to,
+		}
+	);
+	const sorted = sortEventsByTimeThenTitle(events);
+	const byDay = new Map<string, Array<{ title: string; time?: string }>>();
+	for (const event of sorted) {
+		const dayKey = shortDate(event.date);
+		const list = byDay.get(dayKey) ?? [];
+		list.push({ title: event.title, time: event.time });
+		byDay.set(dayKey, list);
+	}
+	const lines = ["Next Week's Calendar:"];
+	if (!sorted.length) {
+		lines.push("No events");
+	} else {
+		for (const [day, items] of Array.from(byDay.entries())) {
+			lines.push("", `📅 ${day}`);
+			for (const event of items) {
+				lines.push(
+					`${clockEmojiForTime(event.time)} ${event.time ? `${event.time} - ` : ""}${event.title}`
+				);
+			}
+		}
+	}
+	return {
+		answer: lines.join("\n"),
+		sources: ["Calendar"],
+		actions: [calendarActionForWorkspace(workspaceId)],
+	};
+}
+
+async function handleCalendarDayRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	opts: { from: number; to: number; title: string }
+): Promise<AssistantResult> {
+	const events = await ctx.runQuery(
+		api.chatbotQueries.getMyCalendarEventsInRange,
+		{
+			workspaceId,
+			from: opts.from,
+			to: opts.to,
+		}
+	);
+	return {
+		answer: renderCalendarSection({
+			title: opts.title,
+			events: sortEventsByTimeThenTitle(events).map((event) => ({
+				title: event.title,
+				time: event.time,
+			})),
+		}),
+		sources: ["Calendar"],
+		actions: [calendarActionForWorkspace(workspaceId)],
+	};
+}
+
+async function handleCalendarCombinedRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	dates: PersonalAssistantDateRange
+): Promise<AssistantResult> {
+	const [todayEvents, tomorrowEvents] = await Promise.all([
+		ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
+			workspaceId,
+			from: dates.todayFrom,
+			to: dates.todayTo,
+		}),
+		ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
+			workspaceId,
+			from: dates.tomorrowFrom,
+			to: dates.tomorrowTo,
+		}),
+	]);
+	const lines = [
+		renderCalendarSection({
+			title: "Today's Calendar:",
+			events: sortEventsByTimeThenTitle(todayEvents).map((event) => ({
+				title: event.title,
+				time: event.time,
+			})),
+		}),
+		"",
+		renderCalendarSection({
+			title: "Tomorrow's Calendar:",
+			events: sortEventsByTimeThenTitle(tomorrowEvents).map((event) => ({
+				title: event.title,
+				time: event.time,
+			})),
+		}),
+	];
+	return {
+		answer: lines.join("\n"),
+		sources: ["Calendar"],
+		actions: [calendarActionForWorkspace(workspaceId)],
+	};
+}
+
+async function handleBoardsRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">
+): Promise<AssistantResult> {
+	const assignedCards = await fetchAssignedCardsForUser(ctx, workspaceId);
+	const groups = emptyPriorityGroup();
+	for (const card of assignedCards.slice(0, 80)) {
+		const bucket = bucketByDueDate({
+			dueDate: card.dueDate,
+			explicitPriority: card.priority,
+		});
+		groups[bucket].push(
+			`${card.title}${card.channelName ? ` (#${card.channelName})` : ""}${card.dueDate ? ` (due ${shortDate(card.dueDate)})` : ""}`
+		);
+	}
+	return {
+		answer: renderTrafficLightPrioritySections({
+			header: "Your Board Cards:",
+			groups,
+		}),
+		sources: ["Boards"],
+	};
+}
+
+function renderTasksPriorityAnswer(
+	tasks: Array<{
+		title: string;
+		dueDate?: number;
+		priority?: Priority | null;
+	}>,
+	header: string,
+	dueDateLabel: "paren" | "due" = "paren"
+): AssistantResult {
+	const groups = emptyPriorityGroup();
+	for (const task of tasks) {
+		const bucket = bucketByDueDate({
+			dueDate: task.dueDate,
+			explicitPriority: task.priority ?? undefined,
+		});
+		const dueSuffix =
+			task.dueDate && dueDateLabel === "due"
+				? ` (due ${shortDate(task.dueDate)})`
+				: task.dueDate
+					? ` (${shortDate(task.dueDate)})`
+					: "";
+		groups[bucket].push(`${task.title}${dueSuffix}`);
+	}
+	return {
+		answer: renderTrafficLightPrioritySections({ header, groups }),
+		sources: ["Tasks"],
+	};
+}
+
+async function handleTasksInRangeRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	opts: { from: number; to: number; header: string }
+): Promise<AssistantResult> {
+	const tasks = await ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
+		workspaceId,
+		from: opts.from,
+		to: opts.to,
+		onlyIncomplete: true,
+	});
+	return renderTasksPriorityAnswer(tasks, opts.header);
+}
+
+async function handleUpcomingTasksRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">
+): Promise<AssistantResult> {
+	const tasks = await ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
+		workspaceId,
+		limit: 25,
+	});
+	return renderTasksPriorityAnswer(tasks, "Your Tasks:", "due");
+}
+
 async function handlePersonalAssistant(
 	ctx: ActionCtx,
 	workspaceId: Id<"workspaces">,
@@ -2198,307 +2526,71 @@ async function handlePersonalAssistant(
 		return handleTeamStatusRoute(ctx, workspaceId, recentChatMessages);
 	}
 
-	const personalModes = [
-		"agenda_today",
-		"agenda_tomorrow",
-		"tasks_today",
-		"tasks_tomorrow",
-		"calendar_next_week",
-		"calendar_today",
-		"calendar_tomorrow",
-		"calendar",
-		"incidents",
-		"boards",
-		"tasks",
-	] as const;
-	if (!personalModes.includes(intent.mode as (typeof personalModes)[number])) {
+	if (!isPersonalAssistantMode(intent.mode)) {
 		return null;
 	}
 
-	const now = new Date();
-	const todayFrom = startOfDayMs(now);
-	const todayTo = endOfDayMs(now);
-	const tomorrow = new Date(now);
-	tomorrow.setDate(now.getDate() + 1);
-	const tomorrowFrom = startOfDayMs(tomorrow);
-	const tomorrowTo = endOfDayMs(tomorrow);
+	const dates = getPersonalAssistantDateRange(new Date());
 
-	if (intent.mode === "tasks") {
-		const q = query.trim().toLowerCase();
-		const qNoPunct = q.replace(/[^a-z0-9\s#@'-]/g, " ");
-		if (/@\w+/.test(qNoPunct) || /\b(\w+)'s\s+tasks\b/.test(qNoPunct)) {
-			return {
-				answer:
-					'I can only show tasks assigned to you (the signed-in user). If you want, ask "What are my tasks for today?" or "Show my tasks".',
-				sources: [],
-			};
+	switch (intent.mode) {
+		case "tasks": {
+			const privacyBlock = getTasksPrivacyBlock(query);
+			if (privacyBlock) return privacyBlock;
+			return handleUpcomingTasksRoute(ctx, workspaceId);
 		}
-	}
-
-	if (intent.mode === "incidents") {
-		await ctx.runQuery(api.members.current, { workspaceId });
-		let channels: Array<{ _id: Id<"channels">; name: string }> = [];
-		try {
-			channels = await ctx.runQuery(api.channels.get, { workspaceId });
-		} catch {
-			channels = [];
-		}
-		const candidates = (channels || [])
-			.map((c) => String(c?.name ?? "").trim())
-			.filter(Boolean)
-			.filter((name) =>
-				/\b(incident|incidents|oncall|ops|status|alerts)\b/i.test(name)
-			)
-			.slice(0, 6)
-			.map((name) => `#${name}`);
-		const lines = ["Incident Status"];
-		lines.push(
-			candidates.length
-				? `- Check incident channels: ${candidates.join(", ")}`
-				: "- Check your incident/oncall/status channels for the latest updates"
-		);
-		lines.push(
-			"- Identify owner, impact, current mitigation, and next update time"
-		);
-		return {
-			answer: lines.join("\n"),
-			sources: candidates.length ? ["Channels"] : [],
-		};
-	}
-
-	if (intent.mode === "calendar_next_week") {
-		const range = getNextWeekRange(now);
-		const events = await ctx.runQuery(
-			api.chatbotQueries.getMyCalendarEventsInRange,
-			{
-				workspaceId,
-				from: range.from,
-				to: range.to,
-			}
-		);
-		const sorted = sortEventsByTimeThenTitle(events);
-		const byDay = new Map<string, Array<{ title: string; time?: string }>>();
-		for (const ev of sorted) {
-			const dayKey = shortDate(ev.date);
-			const list = byDay.get(dayKey) ?? [];
-			list.push({ title: ev.title, time: ev.time });
-			byDay.set(dayKey, list);
-		}
-		const lines = ["Next Week's Calendar:"];
-		if (!sorted.length) {
-			lines.push("No events");
-		} else {
-			for (const [day, items] of Array.from(byDay.entries())) {
-				lines.push("", `📅 ${day}`);
-				for (const ev of items) {
-					lines.push(
-						`${clockEmojiForTime(ev.time)} ${ev.time ? `${ev.time} - ` : ""}${ev.title}`
-					);
-				}
-			}
-		}
-		return {
-			answer: lines.join("\n"),
-			sources: ["Calendar"],
-			actions: [calendarActionForWorkspace(workspaceId)],
-		};
-	}
-
-	if (intent.mode === "calendar_today") {
-		const events = await ctx.runQuery(
-			api.chatbotQueries.getMyCalendarEventsInRange,
-			{
-				workspaceId,
-				from: todayFrom,
-				to: todayTo,
-			}
-		);
-		return {
-			answer: renderCalendarSection({
+		case "incidents":
+			return handleIncidentsRoute(ctx, workspaceId);
+		case "calendar_next_week":
+			return handleCalendarNextWeekRoute(ctx, workspaceId, dates.now);
+		case "calendar_today":
+			return handleCalendarDayRoute(ctx, workspaceId, {
+				from: dates.todayFrom,
+				to: dates.todayTo,
 				title: "Today's Meetings:",
-				events: sortEventsByTimeThenTitle(events).map((e) => ({
-					title: e.title,
-					time: e.time,
-				})),
-			}),
-			sources: ["Calendar"],
-			actions: [calendarActionForWorkspace(workspaceId)],
-		};
-	}
-
-	if (intent.mode === "calendar_tomorrow") {
-		const events = await ctx.runQuery(
-			api.chatbotQueries.getMyCalendarEventsInRange,
-			{
-				workspaceId,
-				from: tomorrowFrom,
-				to: tomorrowTo,
-			}
-		);
-		return {
-			answer: renderCalendarSection({
-				title: "Tomorrow's Calendar:",
-				events: sortEventsByTimeThenTitle(events).map((e) => ({
-					title: e.title,
-					time: e.time,
-				})),
-			}),
-			sources: ["Calendar"],
-			actions: [calendarActionForWorkspace(workspaceId)],
-		};
-	}
-
-	if (intent.mode === "calendar") {
-		const [todayEvents, tomorrowEvents] = await Promise.all([
-			ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
-				workspaceId,
-				from: todayFrom,
-				to: todayTo,
-			}),
-			ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
-				workspaceId,
-				from: tomorrowFrom,
-				to: tomorrowTo,
-			}),
-		]);
-		const lines = [
-			renderCalendarSection({
-				title: "Today's Calendar:",
-				events: sortEventsByTimeThenTitle(todayEvents).map((e) => ({
-					title: e.title,
-					time: e.time,
-				})),
-			}),
-			"",
-			renderCalendarSection({
-				title: "Tomorrow's Calendar:",
-				events: sortEventsByTimeThenTitle(tomorrowEvents).map((e) => ({
-					title: e.title,
-					time: e.time,
-				})),
-			}),
-		];
-		return {
-			answer: lines.join("\n"),
-			sources: ["Calendar"],
-			actions: [calendarActionForWorkspace(workspaceId)],
-		};
-	}
-
-	if (intent.mode === "boards") {
-		const assignedCards = await fetchAssignedCardsForUser(ctx, workspaceId);
-		const groups = emptyPriorityGroup();
-		for (const c of assignedCards.slice(0, 80)) {
-			const bucket = bucketByDueDate({
-				dueDate: c.dueDate,
-				explicitPriority: c.priority,
 			});
-			groups[bucket].push(
-				`${c.title}${c.channelName ? ` (#${c.channelName})` : ""}${c.dueDate ? ` (due ${shortDate(c.dueDate)})` : ""}`
-			);
-		}
-		return {
-			answer: renderTrafficLightPrioritySections({
-				header: "Your Board Cards:",
-				groups,
-			}),
-			sources: ["Boards"],
-		};
-	}
-
-	if (intent.mode === "tasks_today") {
-		const tasks = await ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
-			workspaceId,
-			from: todayFrom,
-			to: todayTo,
-			onlyIncomplete: true,
-		});
-		const groups = emptyPriorityGroup();
-		for (const t of tasks) {
-			const bucket = bucketByDueDate({
-				dueDate: t.dueDate,
-				explicitPriority: t.priority ?? undefined,
+		case "calendar_tomorrow":
+			return handleCalendarDayRoute(ctx, workspaceId, {
+				from: dates.tomorrowFrom,
+				to: dates.tomorrowTo,
+				title: "Tomorrow's Calendar:",
 			});
-			groups[bucket].push(
-				`${t.title}${t.dueDate ? ` (${shortDate(t.dueDate)})` : ""}`
-			);
-		}
-		return {
-			answer: renderTrafficLightPrioritySections({
+		case "calendar":
+			return handleCalendarCombinedRoute(ctx, workspaceId, dates);
+		case "boards":
+			return handleBoardsRoute(ctx, workspaceId);
+		case "tasks_today":
+			return handleTasksInRangeRoute(ctx, workspaceId, {
+				from: dates.todayFrom,
+				to: dates.todayTo,
 				header: "Today's Tasks:",
-				groups,
-			}),
-			sources: ["Tasks"],
-		};
-	}
-
-	if (intent.mode === "tasks_tomorrow") {
-		const tasks = await ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
-			workspaceId,
-			from: tomorrowFrom,
-			to: tomorrowTo,
-			onlyIncomplete: true,
-		});
-		const groups = emptyPriorityGroup();
-		for (const t of tasks) {
-			const bucket = bucketByDueDate({
-				dueDate: t.dueDate,
-				explicitPriority: t.priority ?? undefined,
 			});
-			groups[bucket].push(
-				`${t.title}${t.dueDate ? ` (${shortDate(t.dueDate)})` : ""}`
-			);
-		}
-		return {
-			answer: renderTrafficLightPrioritySections({
+		case "tasks_tomorrow":
+			return handleTasksInRangeRoute(ctx, workspaceId, {
+				from: dates.tomorrowFrom,
+				to: dates.tomorrowTo,
 				header: "Tomorrow's Tasks:",
-				groups,
-			}),
-			sources: ["Tasks"],
-		};
-	}
-
-	if (intent.mode === "tasks") {
-		const tasks = await ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
-			workspaceId,
-			limit: 25,
-		});
-		const groups = emptyPriorityGroup();
-		for (const t of tasks) {
-			const bucket = bucketByDueDate({
-				dueDate: t.dueDate,
-				explicitPriority: t.priority ?? undefined,
 			});
-			groups[bucket].push(
-				`${t.title}${t.dueDate ? ` (due ${shortDate(t.dueDate)})` : ""}`
+		case "agenda_today":
+			return handleAgendaTodayRoute(
+				ctx,
+				workspaceId,
+				dates.now,
+				dates.todayFrom,
+				dates.todayTo
 			);
-		}
-		return {
-			answer: renderTrafficLightPrioritySections({
-				header: "Your Tasks:",
-				groups,
-			}),
-			sources: ["Tasks"],
-		};
+		case "agenda_tomorrow":
+			return handleAgendaTomorrowRoute(
+				ctx,
+				workspaceId,
+				dates.now,
+				dates.todayFrom,
+				dates.tomorrowFrom,
+				dates.tomorrowTo,
+				recentChatMessages
+			);
+		default:
+			return null;
 	}
-
-	if (intent.mode === "agenda_today") {
-		return handleAgendaTodayRoute(ctx, workspaceId, now, todayFrom, todayTo);
-	}
-
-	if (intent.mode === "agenda_tomorrow") {
-		return handleAgendaTomorrowRoute(
-			ctx,
-			workspaceId,
-			now,
-			todayFrom,
-			tomorrowFrom,
-			tomorrowTo,
-			recentChatMessages
-		);
-	}
-
-	return null;
 }
 
 async function handleChannelsOverviewRoute(
@@ -2535,7 +2627,7 @@ async function handleChannelsOverviewRoute(
 		creationTime: number;
 	};
 	const byChannel = new Map<string, Rec[]>();
-	for (const r of recent as unknown as Rec[]) {
+	for (const r of recent as RecentWorkspaceChannelMessageRow[]) {
 		const name = String(r?.channelName ?? "").trim();
 		if (!name) continue;
 		const list = byChannel.get(name) ?? [];
@@ -2543,7 +2635,7 @@ async function handleChannelsOverviewRoute(
 			channelName: name,
 			authorName: String(r?.authorName ?? "").trim(),
 			body: String(r?.body ?? ""),
-			creationTime: typeof r?.creationTime === "number" ? r.creationTime : 0,
+			creationTime: typeof r?._creationTime === "number" ? r._creationTime : 0,
 		});
 		byChannel.set(name, list);
 	}
@@ -2670,14 +2762,18 @@ async function handleOverviewRoute(
 				: undefined,
 	}));
 	const cards = [
-		...mappedCards.filter((c: { dueDate?: number }) => {
-			const d = c.dueDate;
-			return typeof d === "number" && d >= todayFrom && d <= todayTo;
+		...mappedCards.filter((card: { dueDate?: number }) => {
+			const dueDate = card.dueDate;
+			return (
+				typeof dueDate === "number" &&
+				dueDate >= todayFrom &&
+				dueDate <= todayTo
+			);
 		}),
 		...mappedCards
-			.filter((c: { dueDate?: number }) => typeof c?.dueDate !== "number")
+			.filter((card: { dueDate?: number }) => typeof card?.dueDate !== "number")
 			.slice(0, 10),
-	].filter((c: { title: string }) => String(c?.title ?? "").trim());
+	].filter((card: { title: string }) => String(card?.title ?? "").trim());
 
 	const todaysMentions = (mentioned || []).filter((m: MentionRow) => {
 		const created = typeof m?._creationTime === "number" ? m._creationTime : 0;
@@ -2704,7 +2800,7 @@ async function handleOverviewRoute(
 			}
 		);
 		const lines = (recent || [])
-			.map((m: any) => {
+			.map((m: RecentWorkspaceChannelMessageRow) => {
 				const channelName = String(m?.channelName ?? "unknown").trim();
 				const who = String(m?.authorName ?? "").trim();
 				const body = truncateOneLine(String(m?.body ?? ""), 180);
