@@ -1801,7 +1801,11 @@ async function handleWorkspaceSummaryRoute(
 	}
 
 	const lines = (recent || [])
-		.map((m: any) => {
+		.map((m: {
+			channelName?: string | null;
+			authorName?: string | null;
+			body?: string | null;
+		}) => {
 			const channelName = String(m?.channelName ?? "unknown").trim();
 			const who = String(m?.authorName ?? "").trim();
 			const body = truncateOneLine(String(m?.body ?? ""), 180);
@@ -2182,6 +2186,44 @@ async function handleAgendaTomorrowRoute(
 	};
 }
 
+async function handleTasksIntent(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	query: string
+): Promise<AssistantResult> {
+	const queryNormalized = query.trim().toLowerCase();
+	const queryNoPunct = queryNormalized.replace(/[^a-z0-9\s#@'-]/g, " ");
+	if (/@\w+/.test(queryNoPunct) || /\b(\w+)'s\s+tasks\b/.test(queryNoPunct)) {
+		return {
+			answer:
+				'I can only show tasks assigned to you (the signed-in user). If you want, ask "What are my tasks for today?" or "Show my tasks".',
+			sources: [],
+		};
+	}
+
+	const tasks = await ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
+		workspaceId,
+		limit: 25,
+	});
+	const groups = emptyPriorityGroup();
+	for (const t of tasks) {
+		const bucket = bucketByDueDate({
+			dueDate: t.dueDate,
+			explicitPriority: t.priority ?? undefined,
+		});
+		groups[bucket].push(
+			`${t.title}${t.dueDate ? ` (due ${shortDate(t.dueDate)})` : ""}`
+		);
+	}
+	return {
+		answer: renderTrafficLightPrioritySections({
+			header: "Your Tasks:",
+			groups,
+		}),
+		sources: ["Tasks"],
+	};
+}
+
 async function handlePersonalAssistant(
 	ctx: ActionCtx,
 	workspaceId: Id<"workspaces">,
@@ -2224,15 +2266,7 @@ async function handlePersonalAssistant(
 	const tomorrowTo = endOfDayMs(tomorrow);
 
 	if (intent.mode === "tasks") {
-		const q = query.trim().toLowerCase();
-		const qNoPunct = q.replace(/[^a-z0-9\s#@'-]/g, " ");
-		if (/@\w+/.test(qNoPunct) || /\b(\w+)'s\s+tasks\b/.test(qNoPunct)) {
-			return {
-				answer:
-					'I can only show tasks assigned to you (the signed-in user). If you want, ask "What are my tasks for today?" or "Show my tasks".',
-				sources: [],
-			};
-		}
+		return await handleTasksIntent(ctx, workspaceId, query);
 	}
 
 	if (intent.mode === "incidents") {
@@ -2458,30 +2492,6 @@ async function handlePersonalAssistant(
 		};
 	}
 
-	if (intent.mode === "tasks") {
-		const tasks = await ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
-			workspaceId,
-			limit: 25,
-		});
-		const groups = emptyPriorityGroup();
-		for (const t of tasks) {
-			const bucket = bucketByDueDate({
-				dueDate: t.dueDate,
-				explicitPriority: t.priority ?? undefined,
-			});
-			groups[bucket].push(
-				`${t.title}${t.dueDate ? ` (due ${shortDate(t.dueDate)})` : ""}`
-			);
-		}
-		return {
-			answer: renderTrafficLightPrioritySections({
-				header: "Your Tasks:",
-				groups,
-			}),
-			sources: ["Tasks"],
-		};
-	}
-
 	if (intent.mode === "agenda_today") {
 		return handleAgendaTodayRoute(ctx, workspaceId, now, todayFrom, todayTo);
 	}
@@ -2671,8 +2681,12 @@ async function handleOverviewRoute(
 	}));
 	const cards = [
 		...mappedCards.filter((c: { dueDate?: number }) => {
-			const d = c.dueDate;
-			return typeof d === "number" && d >= todayFrom && d <= todayTo;
+			const dueDate = c.dueDate;
+			return (
+				typeof dueDate === "number" &&
+				dueDate >= todayFrom &&
+				dueDate <= todayTo
+			);
 		}),
 		...mappedCards
 			.filter((c: { dueDate?: number }) => typeof c?.dueDate !== "number")
@@ -2704,7 +2718,11 @@ async function handleOverviewRoute(
 			}
 		);
 		const lines = (recent || [])
-			.map((m: any) => {
+			.map((m: {
+				channelName?: string | null;
+				authorName?: string | null;
+				body?: string | null;
+			}) => {
 				const channelName = String(m?.channelName ?? "unknown").trim();
 				const who = String(m?.authorName ?? "").trim();
 				const body = truncateOneLine(String(m?.body ?? ""), 180);

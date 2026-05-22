@@ -708,6 +708,205 @@ function MessageBubble({
 	);
 }
 
+function ChatHeaderContent({
+	integrationStatus,
+	conversationId,
+	editingConversationId,
+	editingTitle,
+	isHistoryOpen,
+	recentConversations,
+	onCancelEditTitle,
+	onDeleteChat,
+	onNewChat,
+	onSaveTitle,
+	onSelectConversation,
+	onStartEditTitle,
+	setEditingTitle,
+	setIsHistoryOpen,
+}: {
+	integrationStatus: {
+		connected: IntegrationStatusApp[];
+		totalTools: number;
+		loading: boolean;
+	};
+	conversationId: string | null;
+	editingConversationId: string | null;
+	editingTitle: string;
+	isHistoryOpen: boolean;
+	recentConversations: RecentConversation[] | undefined;
+	onCancelEditTitle: () => void;
+	onDeleteChat: (id: string) => void;
+	onNewChat: () => void;
+	onSaveTitle: (id: string) => void;
+	onSelectConversation: (id: string) => void;
+	onStartEditTitle: (id: string, title: string) => void;
+	setEditingTitle: (title: string) => void;
+	setIsHistoryOpen: (open: boolean) => void;
+}) {
+	return (
+		<CardHeader className="pb-3 border-b bg-gradient-to-r from-background to-muted/20">
+			<div className="flex items-center justify-between">
+				<ChatHeaderTitle status={integrationStatus} />
+
+				<ChatHeaderActions
+					conversationId={conversationId}
+					isHistoryOpen={isHistoryOpen}
+					onDeleteChat={onDeleteChat}
+					onNewChat={onNewChat}
+					onSelectConversation={onSelectConversation}
+					onStartEditTitle={onStartEditTitle}
+					recentConversations={recentConversations}
+					setIsHistoryOpen={setIsHistoryOpen}
+				/>
+			</div>
+
+			{editingConversationId && (
+				<div className="flex items-center gap-2 mt-3 p-2 bg-muted/50 rounded-lg border">
+					<MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+					<Input
+						className="h-8 text-sm flex-1"
+						onChange={(e) => setEditingTitle(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								onSaveTitle(editingConversationId);
+							} else if (e.key === "Escape") {
+								onCancelEditTitle();
+							}
+						}}
+						placeholder="Enter chat title..."
+						value={editingTitle}
+					/>
+					<Button
+						className="h-8 w-8 p-0"
+						onClick={() => onSaveTitle(editingConversationId)}
+						size="sm"
+						variant="ghost"
+					>
+						<Check className="h-4 w-4 text-green-600" />
+					</Button>
+					<Button
+						className="h-8 w-8 p-0"
+						onClick={onCancelEditTitle}
+						size="sm"
+						variant="ghost"
+					>
+						<X className="h-4 w-4" />
+					</Button>
+				</div>
+			)}
+		</CardHeader>
+	);
+}
+
+function MessageList({
+	getActionIcon,
+	isLoading,
+	onNavigate,
+	renderSourceBadges,
+	renderedMessages,
+	scrollAreaRef,
+}: {
+	getActionIcon: (type: string) => React.ReactNode;
+	isLoading: boolean;
+	onNavigate: (action: NavigationAction) => void;
+	renderSourceBadges: (sources: Message["sources"]) => React.ReactNode;
+	renderedMessages: Message[];
+	scrollAreaRef: React.RefObject<HTMLDivElement>;
+}) {
+	return (
+		<CardContent className="flex-1 overflow-hidden p-0">
+			<ScrollArea className="h-[calc(100vh-240px)] px-4" ref={scrollAreaRef}>
+				<div className="flex flex-col gap-4 py-4 pb-4">
+					{renderedMessages.map((message) => (
+						<MessageBubble
+							getActionIcon={getActionIcon}
+							key={message.id}
+							message={message}
+							onNavigate={onNavigate}
+							renderSourceBadges={renderSourceBadges}
+						/>
+					))}
+					{isLoading && <ChatLoadingIndicator />}
+				</div>
+			</ScrollArea>
+		</CardContent>
+	);
+}
+
+function ChatFooterContent({
+	activeAutocomplete,
+	autocompleteOpen,
+	autocompleteQuery,
+	autocompleteRef,
+	closeAutocomplete,
+	handleChannelInsert,
+	handleKeyDown,
+	handleMentionInsert,
+	handleSendMessage,
+	input,
+	inputRef,
+	isLoading,
+	onInputChange,
+}: {
+	activeAutocomplete: "mention" | "channel" | null;
+	autocompleteOpen: boolean;
+	autocompleteQuery: string;
+	autocompleteRef: React.RefObject<HTMLDivElement>;
+	closeAutocomplete: () => void;
+	handleChannelInsert: (channelId: Id<"channels">, channelName: string) => void;
+	handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+	handleMentionInsert: (memberId: Id<"members">, memberName: string) => void;
+	handleSendMessage: () => void;
+	input: string;
+	inputRef: React.RefObject<HTMLInputElement>;
+	isLoading: boolean;
+	onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+	return (
+		<CardFooter className="p-4 pt-3 border-t mt-auto">
+			{autocompleteOpen && (
+				<div ref={autocompleteRef}>
+					{activeAutocomplete === "channel" ? (
+						<ChannelPicker
+							onClose={closeAutocomplete}
+							onSelect={handleChannelInsert}
+							open={autocompleteOpen}
+							searchQuery={autocompleteQuery}
+						/>
+					) : (
+						<MentionPicker
+							onClose={closeAutocomplete}
+							onSelect={handleMentionInsert}
+							open={autocompleteOpen}
+							searchQuery={autocompleteQuery}
+						/>
+					)}
+				</div>
+			)}
+
+			<div className="flex w-full items-center gap-2">
+				<Input
+					className="flex-1"
+					disabled={isLoading}
+					onChange={onInputChange}
+					onKeyDown={handleKeyDown}
+					placeholder="Ask a question about your workspace..."
+					ref={inputRef}
+					value={input}
+				/>
+				<Button
+					className="chat-send-button"
+					disabled={isLoading || !input.trim()}
+					onClick={handleSendMessage}
+					size="icon"
+				>
+					<Send className="h-4 w-4" />
+				</Button>
+			</div>
+		</CardFooter>
+	);
+}
+
 export const DashboardChatbot = ({
 	workspaceId,
 	member,
@@ -1252,6 +1451,23 @@ Try asking me things like:`;
 		router.push(url);
 	};
 
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const next = e.target.value;
+		const cursor = e.target.selectionStart ?? next.length;
+		setInput(next);
+
+		const trigger = findAutocompleteTrigger(next, cursor);
+		if (trigger) {
+			setAutocompleteOpen(true);
+			setActiveAutocomplete(trigger.type);
+			setAutocompleteQuery(trigger.query);
+			setAutocompleteStartIndex(trigger.startIndex);
+			setAutocompleteCursorIndex(trigger.cursorIndex);
+		} else {
+			closeAutocomplete();
+		}
+	};
+
 	const getActionIcon = (type: string) => {
 		switch (type) {
 			case "calendar":
@@ -1339,133 +1555,45 @@ Try asking me things like:`;
 		<div className="flex h-full">
 			{/* Main Chat Area - Full Width */}
 			<Card className="flex flex-col flex-1 shadow-md overflow-hidden">
-				<CardHeader className="pb-3 border-b bg-gradient-to-r from-background to-muted/20">
-					<div className="flex items-center justify-between">
-						<ChatHeaderTitle status={integrationStatus} />
-
-						<ChatHeaderActions
-							conversationId={conversationId}
-							isHistoryOpen={isHistoryOpen}
-							onDeleteChat={handleDeleteChat}
-							onNewChat={handleNewChat}
-							onSelectConversation={handleSelectConversation}
-							onStartEditTitle={handleStartEditTitle}
-							recentConversations={recentConversations}
-							setIsHistoryOpen={setIsHistoryOpen}
-						/>
-					</div>
-
-					{/* Inline Edit Mode */}
-					{editingConversationId && (
-						<div className="flex items-center gap-2 mt-3 p-2 bg-muted/50 rounded-lg border">
-							<MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-							<Input
-								className="h-8 text-sm flex-1"
-								onChange={(e) => setEditingTitle(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										handleSaveTitle(editingConversationId);
-									} else if (e.key === "Escape") {
-										handleCancelEditTitle();
-									}
-								}}
-								placeholder="Enter chat title..."
-								value={editingTitle}
-							/>
-							<Button
-								className="h-8 w-8 p-0"
-								onClick={() => handleSaveTitle(editingConversationId)}
-								size="sm"
-								variant="ghost"
-							>
-								<Check className="h-4 w-4 text-green-600" />
-							</Button>
-							<Button
-								className="h-8 w-8 p-0"
-								onClick={handleCancelEditTitle}
-								size="sm"
-								variant="ghost"
-							>
-								<X className="h-4 w-4" />
-							</Button>
-						</div>
-					)}
-				</CardHeader>
-				<CardContent className="flex-1 overflow-hidden p-0">
-					<ScrollArea
-						className="h-[calc(100vh-240px)] px-4"
-						ref={scrollAreaRef}
-					>
-						<div className="flex flex-col gap-4 py-4 pb-4">
-							{renderedMessages.map((message) => (
-								<MessageBubble
-									getActionIcon={getActionIcon}
-									key={message.id}
-									message={message}
-									onNavigate={handleNavigation}
-									renderSourceBadges={renderSourceBadges}
-								/>
-							))}
-							{isLoading && <ChatLoadingIndicator />}
-						</div>
-					</ScrollArea>
-				</CardContent>
-				<CardFooter className="p-4 pt-3 border-t mt-auto">
-					{autocompleteOpen && (
-						<div ref={autocompleteRef}>
-							{activeAutocomplete === "channel" ? (
-								<ChannelPicker
-									onClose={closeAutocomplete}
-									onSelect={handleChannelInsert}
-									open={autocompleteOpen}
-									searchQuery={autocompleteQuery}
-								/>
-							) : (
-								<MentionPicker
-									onClose={closeAutocomplete}
-									onSelect={handleMentionInsert}
-									open={autocompleteOpen}
-									searchQuery={autocompleteQuery}
-								/>
-							)}
-						</div>
-					)}
-
-					<div className="flex w-full items-center gap-2">
-						<Input
-							className="flex-1"
-							disabled={isLoading}
-							onChange={(e) => {
-								const next = e.target.value;
-								const cursor = e.target.selectionStart ?? next.length;
-								setInput(next);
-
-								const trigger = findAutocompleteTrigger(next, cursor);
-								if (trigger) {
-									setAutocompleteOpen(true);
-									setActiveAutocomplete(trigger.type);
-									setAutocompleteQuery(trigger.query);
-									setAutocompleteStartIndex(trigger.startIndex);
-									setAutocompleteCursorIndex(trigger.cursorIndex);
-								} else {
-									closeAutocomplete();
-								}
-							}}
-							onKeyDown={handleKeyDown}
-							placeholder="Ask a question about your workspace..."
-							ref={inputRef}
-							value={input}
-						/>
-						<Button
-							className="chat-send-button"
-							disabled={isLoading || !input.trim()}
-							onClick={handleSendMessage}
-							size="icon"
-						>
-							<Send className="h-4 w-4" />
-						</Button>
-					</div>
-				</CardFooter>
+				<ChatHeaderContent
+					conversationId={conversationId}
+					editingConversationId={editingConversationId}
+					editingTitle={editingTitle}
+					integrationStatus={integrationStatus}
+					isHistoryOpen={isHistoryOpen}
+					onCancelEditTitle={handleCancelEditTitle}
+					onDeleteChat={handleDeleteChat}
+					onNewChat={handleNewChat}
+					onSaveTitle={handleSaveTitle}
+					onSelectConversation={handleSelectConversation}
+					onStartEditTitle={handleStartEditTitle}
+					recentConversations={recentConversations}
+					setEditingTitle={setEditingTitle}
+					setIsHistoryOpen={setIsHistoryOpen}
+				/>
+				<MessageList
+					getActionIcon={getActionIcon}
+					isLoading={isLoading}
+					onNavigate={handleNavigation}
+					renderSourceBadges={renderSourceBadges}
+					renderedMessages={renderedMessages}
+					scrollAreaRef={scrollAreaRef}
+				/>
+				<ChatFooterContent
+					activeAutocomplete={activeAutocomplete}
+					autocompleteOpen={autocompleteOpen}
+					autocompleteQuery={autocompleteQuery}
+					autocompleteRef={autocompleteRef}
+					closeAutocomplete={closeAutocomplete}
+					handleChannelInsert={handleChannelInsert}
+					handleKeyDown={handleKeyDown}
+					handleMentionInsert={handleMentionInsert}
+					handleSendMessage={handleSendMessage}
+					input={input}
+					inputRef={inputRef}
+					isLoading={isLoading}
+					onInputChange={handleInputChange}
+				/>
 			</Card>
 		</div>
 	);
