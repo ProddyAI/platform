@@ -6,7 +6,7 @@ import {
 	type StreamVideoParticipant,
 	useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { FileText, Loader2, Phone, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -92,7 +92,7 @@ export const StreamAudioRoom = ({
 	};
 
 	// Function to actually leave audio room after confirmation
-	const confirmLeaveAudio = async () => {
+	const confirmLeaveAudio = useCallback(() => {
 		if (isLeavingConfirmed) return;
 
 		try {
@@ -111,14 +111,14 @@ export const StreamAudioRoom = ({
 		} finally {
 			setIsLeavingConfirmed(false);
 		}
-	};
+	}, [isLeavingConfirmed]);
 
 	// Function to cancel leave confirmation
-	const cancelLeaveAudio = () => {
+	const cancelLeaveAudio = useCallback(() => {
 		if (!isLeavingConfirmed) {
 			setShowLeaveConfirmation(false);
 		}
-	};
+	}, [isLeavingConfirmed]);
 
 	// Handle keyboard events for confirmation dialog
 	useEffect(() => {

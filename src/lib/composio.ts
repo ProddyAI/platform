@@ -12,6 +12,14 @@ interface ComposioConnection {
 }
 
 /**
+ * Options forwarded to the Composio connectedAccounts.initiate() call
+ */
+interface InitiateOptions {
+	allowMultiple: boolean;
+	callbackUrl?: string;
+}
+
+/**
  * Result type for connection deletion operations
  */
 type ConnectedAccountDeleteResult = boolean | undefined | { success: boolean };
@@ -27,7 +35,15 @@ export default composio;
  * Helper to resolve the appropriate list method for connected accounts
  * Handles SDK version compatibility between connectedAccounts.list and connections.list
  */
-function resolveComposioListMethod(composioInstance: Composio<any>) {
+type LegacyConnectionsApi = {
+	connections?: {
+		list?: (args: { entityId: string }) => Promise<unknown>;
+		get?: (connectionId: string) => Promise<unknown>;
+		delete?: (connectionId: string) => Promise<unknown>;
+	};
+};
+
+function resolveComposioListMethod(composioInstance: Composio) {
 	if (composioInstance.connectedAccounts?.list) {
 		return async (userId: string) => {
 			return await composioInstance.connectedAccounts.list({
@@ -37,7 +53,7 @@ function resolveComposioListMethod(composioInstance: Composio<any>) {
 	}
 	// Fallback for older SDK versions
 	return async (userId: string) => {
-		const connectionsApi = composioInstance as any;
+		const connectionsApi = composioInstance as LegacyConnectionsApi;
 		return await connectionsApi.connections?.list?.({
 			entityId: userId,
 		});
@@ -52,7 +68,11 @@ export function initializeComposio() {
 	const composioInstance = composio;
 
 	const apiClient = {
-		async createConnection(userId: string, appName: string) {
+		async createConnection(
+			userId: string,
+			appName: string,
+			callbackUrl?: string
+		) {
 			const { APP_CONFIGS } = await import("./composio-config");
 			const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
 			const appConfig = APP_CONFIGS[appKey];
@@ -76,12 +96,15 @@ export function initializeComposio() {
 				);
 			}
 
+			const initiateOptions: InitiateOptions = { allowMultiple: true };
+			if (callbackUrl) {
+				initiateOptions.callbackUrl = callbackUrl;
+			}
+
 			const connection = (await composioInstance.connectedAccounts?.initiate?.(
 				userId,
 				authConfigId,
-				{
-					allowMultiple: true,
-				}
+				initiateOptions
 			)) as ComposioConnection | undefined;
 
 			if (!connection) {
@@ -96,7 +119,7 @@ export function initializeComposio() {
 					userId,
 					authConfigId,
 					connectionId
-				).catch(() => {});
+				).catch(() => undefined);
 			}
 
 			return {
@@ -107,22 +130,40 @@ export function initializeComposio() {
 		},
 
 		async getConnections(userId: string) {
-			const listMethod = resolveComposioListMethod(composioInstance);
+			const listMethod = resolveComposioListMethod(
+				composioInstance as unknown as Parameters<
+					typeof resolveComposioListMethod
+				>[0]
+			);
 			return await listMethod(userId);
 		},
 
 		async getConnectionStatus(connectionId: string) {
 			return (
 				(await composioInstance.connectedAccounts?.get?.(connectionId)) ||
-				(await (composioInstance as any).connections?.get?.(connectionId))
+				(await (composioInstance as LegacyConnectionsApi).connections?.get?.(
+					connectionId
+				))
 			);
 		},
 
 		async getTools(entityId: string, appNames: string[]) {
 			try {
+				const { APP_CONFIGS } = await import("./composio-config");
+				const authConfigIds = appNames.flatMap((appName) => {
+					const appKey = appName.toUpperCase() as keyof typeof APP_CONFIGS;
+					const authConfigId = APP_CONFIGS[appKey]?.authConfigId;
+					return authConfigId ? [authConfigId] : [];
+				});
+
+				if (authConfigIds.length === 0) {
+					return { items: [] };
+				}
+
 				const tools = await composioInstance.tools.get(entityId, {
-					appNames: appNames,
-				} as any);
+					authConfigIds,
+					limit: 1000,
+				});
 
 				return { items: Array.isArray(tools) ? tools : [tools] };
 			} catch (err) {
@@ -140,8 +181,10 @@ export function initializeComposio() {
 
 			// Fallback to legacy API if modern API returns undefined or doesn't exist
 			if (result === undefined) {
-				const connectionsApi = composioInstance as any;
-				return await connectionsApi.connections?.delete?.(connectionId);
+				const connectionsApi = composioInstance as LegacyConnectionsApi;
+				return (await connectionsApi.connections?.delete?.(
+					connectionId
+				)) as ConnectedAccountDeleteResult;
 			}
 
 			return result;

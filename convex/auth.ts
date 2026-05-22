@@ -10,6 +10,7 @@ import {
 import { api, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { mutation } from "./_generated/server";
+import { safeDeleteDocument } from "./lib/safeDelete";
 
 /**
  * Hash a password using PBKDF2 with 100,000 iterations and SHA-256.
@@ -32,7 +33,7 @@ async function hashPasswordPBKDF2(password: string): Promise<string> {
 	const derivedBits = await crypto.subtle.deriveBits(
 		{
 			name: "PBKDF2",
-			salt: salt,
+			salt,
 			iterations: 100000,
 			hash: "SHA-256",
 		},
@@ -164,7 +165,7 @@ const CustomGitHub = GitHub({
 		return {
 			id: profile.id?.toString() ?? "",
 			name: profile.name ?? profile.login ?? "",
-			email: email,
+			email,
 			image: profile.avatar_url ?? "",
 		};
 	},
@@ -183,11 +184,19 @@ const CustomGoogle = Google({
 		return {
 			id: profile.sub ?? "",
 			name: profile.name ?? "",
-			email: email,
+			email,
 			image: profile.picture ?? "",
 		};
 	},
 });
+
+// Fix JWT private key newline encoding for Edge/Convex runtime environments
+if (process.env.JWT_PRIVATE_KEY) {
+	process.env.JWT_PRIVATE_KEY = process.env.JWT_PRIVATE_KEY.replace(
+		/\\n/g,
+		"\n"
+	);
+}
 
 export const { auth, signIn, signOut, store } = convexAuth({
 	providers: [CustomPassword, CustomGitHub, CustomGoogle],
@@ -285,23 +294,6 @@ export const deleteAccount = mutation({
 					.withIndex("by_user_id", (q) => q.eq("userId", userId))
 					.collect(),
 			]);
-
-			// Helper function to safely delete a document
-			const safeDelete = async (id: any) => {
-				try {
-					await ctx.db.delete(id);
-				} catch (error) {
-					// Ignore "document doesn't exist" errors
-					if (
-						error instanceof Error &&
-						error.message.includes("nonexistent document")
-					) {
-						console.log(`Skipping delete of nonexistent document: ${id}`);
-					} else {
-						throw error;
-					}
-				}
-			};
 
 			// Step 2: Delete data from owned workspaces
 			for (const workspace of ownedWorkspaces) {
@@ -431,14 +423,16 @@ export const deleteAccount = mutation({
 								]);
 
 								for (const reaction of reactions)
-									await safeDelete(reaction._id);
-								for (const event of events) await safeDelete(event._id);
-								for (const mention of mentions) await safeDelete(mention._id);
-								await safeDelete(message._id);
+									await safeDeleteDocument(ctx, reaction._id);
+								for (const event of events)
+									await safeDeleteDocument(ctx, event._id);
+								for (const mention of mentions)
+									await safeDeleteDocument(ctx, mention._id);
+								await safeDeleteDocument(ctx, message._id);
 							}
 
 							// Delete notes
-							for (const note of notes) await safeDelete(note._id);
+							for (const note of notes) await safeDeleteDocument(ctx, note._id);
 
 							// Delete lists and cards
 							for (const list of lists) {
@@ -452,13 +446,13 @@ export const deleteAccount = mutation({
 										.withIndex("by_card_id", (q) => q.eq("cardId", card._id))
 										.collect();
 									for (const mention of cardMentions)
-										await safeDelete(mention._id);
-									await safeDelete(card._id);
+										await safeDeleteDocument(ctx, mention._id);
+									await safeDeleteDocument(ctx, card._id);
 								}
-								await safeDelete(list._id);
+								await safeDeleteDocument(ctx, list._id);
 							}
 
-							await safeDelete(channel._id);
+							await safeDeleteDocument(ctx, channel._id);
 						} catch (error) {
 							console.error(`Error deleting channel ${channel._id}:`, error);
 							// Continue with other channels
@@ -490,12 +484,12 @@ export const deleteAccount = mutation({
 										.collect(),
 								]);
 								for (const reaction of reactions)
-									await safeDelete(reaction._id);
+									await safeDeleteDocument(ctx, reaction._id);
 								for (const directRead of directReads)
-									await safeDelete(directRead._id);
-								await safeDelete(message._id);
+									await safeDeleteDocument(ctx, directRead._id);
+								await safeDeleteDocument(ctx, message._id);
 							}
-							await safeDelete(conversation._id);
+							await safeDeleteDocument(ctx, conversation._id);
 						} catch (error) {
 							console.error(
 								`Error deleting conversation ${conversation._id}:`,
@@ -539,13 +533,15 @@ export const deleteAccount = mutation({
 							]);
 
 							for (const activity of memberActivities)
-								await safeDelete(activity._id);
+								await safeDeleteDocument(ctx, activity._id);
 							for (const session of memberSessions)
-								await safeDelete(session._id);
-							for (const stat of memberStats) await safeDelete(stat._id);
-							for (const hist of memberHistory) await safeDelete(hist._id);
+								await safeDeleteDocument(ctx, session._id);
+							for (const stat of memberStats)
+								await safeDeleteDocument(ctx, stat._id);
+							for (const hist of memberHistory)
+								await safeDeleteDocument(ctx, hist._id);
 
-							await safeDelete(member._id);
+							await safeDeleteDocument(ctx, member._id);
 						} catch (error) {
 							console.error(`Error deleting member ${member._id}:`, error);
 							// Continue with other members
@@ -553,15 +549,17 @@ export const deleteAccount = mutation({
 					}
 
 					// Delete other workspace data
-					for (const category of categories) await safeDelete(category._id);
-					for (const task of tasks) await safeDelete(task._id);
+					for (const category of categories)
+						await safeDeleteDocument(ctx, category._id);
+					for (const task of tasks) await safeDeleteDocument(ctx, task._id);
 					for (const chatHistory of chatHistories)
-						await safeDelete(chatHistory._id);
+						await safeDeleteDocument(ctx, chatHistory._id);
 					for (const authConfig of authConfigs)
-						await safeDelete(authConfig._id);
+						await safeDeleteDocument(ctx, authConfig._id);
 					for (const connectedAccount of connectedAccounts)
-						await safeDelete(connectedAccount._id);
-					for (const mcpServer of mcpServers) await safeDelete(mcpServer._id);
+						await safeDeleteDocument(ctx, connectedAccount._id);
+					for (const mcpServer of mcpServers)
+						await safeDeleteDocument(ctx, mcpServer._id);
 
 					// Delete remaining workspace-level analytics
 					const [workspaceActivities, workspaceStats] = await Promise.all([
@@ -579,11 +577,12 @@ export const deleteAccount = mutation({
 							.collect(),
 					]);
 					for (const activity of workspaceActivities)
-						await safeDelete(activity._id);
-					for (const stat of workspaceStats) await safeDelete(stat._id);
+						await safeDeleteDocument(ctx, activity._id);
+					for (const stat of workspaceStats)
+						await safeDeleteDocument(ctx, stat._id);
 
 					// Finally, delete the workspace
-					await safeDelete(workspaceId);
+					await safeDeleteDocument(ctx, workspaceId);
 				} catch (error) {
 					console.error(`Error deleting workspace ${workspaceId}:`, error);
 					// Continue with other workspaces
@@ -640,20 +639,24 @@ export const deleteAccount = mutation({
 							.collect(),
 					]);
 
-					for (const message of memberMessages) await safeDelete(message._id);
+					for (const message of memberMessages)
+						await safeDeleteDocument(ctx, message._id);
 					for (const reaction of memberReactions)
-						await safeDelete(reaction._id);
-					for (const mention of memberMentions) await safeDelete(mention._id);
-					for (const note of memberNotes) await safeDelete(note._id);
+						await safeDeleteDocument(ctx, reaction._id);
+					for (const mention of memberMentions)
+						await safeDeleteDocument(ctx, mention._id);
+					for (const note of memberNotes)
+						await safeDeleteDocument(ctx, note._id);
 					for (const activity of memberActivities)
-						await safeDelete(activity._id);
-					for (const session of memberSessions) await safeDelete(session._id);
+						await safeDeleteDocument(ctx, activity._id);
+					for (const session of memberSessions)
+						await safeDeleteDocument(ctx, session._id);
 					for (const directRead of memberDirectReads)
-						await safeDelete(directRead._id);
+						await safeDeleteDocument(ctx, directRead._id);
 					for (const chatHistory of memberChatHistories)
-						await safeDelete(chatHistory._id);
+						await safeDeleteDocument(ctx, chatHistory._id);
 
-					await safeDelete(member._id);
+					await safeDeleteDocument(ctx, member._id);
 				} catch (error) {
 					console.error(`Error deleting member ${member._id}:`, error);
 					// Continue with other members
@@ -681,21 +684,24 @@ export const deleteAccount = mutation({
 						.collect(),
 				]);
 
-			for (const task of userTasks) await safeDelete(task._id);
-			for (const category of userCategories) await safeDelete(category._id);
+			for (const task of userTasks) await safeDeleteDocument(ctx, task._id);
+			for (const category of userCategories)
+				await safeDeleteDocument(ctx, category._id);
 			for (const preference of userPreferences)
-				await safeDelete(preference._id);
-			for (const history of userHistory) await safeDelete(history._id);
+				await safeDeleteDocument(ctx, preference._id);
+			for (const history of userHistory)
+				await safeDeleteDocument(ctx, history._id);
 
 			// Step 5: Delete the user account
-			await safeDelete(userId);
+			await safeDeleteDocument(ctx, userId);
 
 			return { success: true };
 		} catch (error) {
 			console.error("Error deleting account:", error);
 			throw new Error(
-				"Failed to delete account: " +
-					(error instanceof Error ? error.message : String(error))
+				`Failed to delete account: ${
+					error instanceof Error ? error.message : String(error)
+				}`
 			);
 		}
 	},

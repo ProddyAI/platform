@@ -222,6 +222,7 @@ export const CanvasSidebar = ({
 												canvas.canvasName
 											);
 										}}
+										type="button"
 									>
 										<div className="flex items-start justify-between">
 											<div className="flex-1 min-w-0">

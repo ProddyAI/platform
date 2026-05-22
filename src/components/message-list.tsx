@@ -62,6 +62,7 @@ export const MessageList = ({
 
 	const { data: currentMember } = useCurrentMember({ workspaceId });
 
+	type MessageItem = GetMessagesReturnType[number];
 	const groupedMessages = data?.reduce(
 		(groups, message) => {
 			const date = new Date(message._creationTime);
@@ -75,7 +76,7 @@ export const MessageList = ({
 
 			return groups;
 		},
-		{} as Record<string, typeof data>
+		{} as Record<string, MessageItem[]>
 	);
 
 	const handleGenerateRecap = async (

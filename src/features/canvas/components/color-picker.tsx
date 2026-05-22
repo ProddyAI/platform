@@ -38,6 +38,7 @@ const ColorButton = ({ color, onClick }: ColorButtonProps) => {
 		<button
 			className="w-8 h-8 items-center flex justify-center hover:opacity-75 transition"
 			onClick={() => onClick(color)}
+			type="button"
 		>
 			<div
 				aria-hidden

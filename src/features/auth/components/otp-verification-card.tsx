@@ -274,6 +274,7 @@ export const OTPVerificationCard = ({
 							className="text-sm font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
 							disabled={pending}
 							onClick={handleResend}
+							type="button"
 						>
 							Resend OTP
 						</button>
@@ -289,6 +290,7 @@ export const OTPVerificationCard = ({
 						className="w-full text-center text-xs text-primary hover:text-primary/80 transition-colors disabled:pointer-events-none disabled:opacity-50"
 						disabled={pending}
 						onClick={onBack}
+						type="button"
 					>
 						← Back to signup
 					</button>

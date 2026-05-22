@@ -69,7 +69,7 @@ When working on Convex code, **always read `convex/_generated/ai/guidelines.md` 
 
 ## Folder Structure & Naming
 
-```
+```text
 platform/
 ├── convex/              # Backend (camelCase files)
 │   ├── _generated/      # DO NOT EDIT
@@ -96,9 +96,11 @@ platform/
 ## Workflow Rules
 
 ### Plan first for non-trivial work
+
 Anything 3+ steps or that touches architecture: write a short plan (file list, change per file, verification step) before editing.
 
 ### Verify before declaring done
+
 1. `bun run check` clean
 2. `bun run type` clean
 3. If UI changed: load the page in the browser via `bun next` and exercise the feature
@@ -107,15 +109,18 @@ Anything 3+ steps or that touches architecture: write a short plan (file list, c
 A passing type-check is not proof the feature works — actually use it.
 
 ### Root-cause, don't paper over
+
 - No `@ts-ignore` to silence a real type error
 - No `biome-ignore` to dodge a lint
 - No try/catch swallowing an error you don't understand
 - If a check fails, fix the underlying issue or stop and ask
 
 ### Minimal blast radius
+
 Touch only what the task requires. No drive-by refactors, no "while I'm here" cleanups, no new abstractions for hypothetical reuse. Match existing patterns in the feature you're editing rather than introducing new ones.
 
 ### Subagents for breadth
+
 Cross-cutting questions ("where is X used", "audit all routes for Y") → spawn an Explore subagent. Keep the main context focused on the change.
 
 ## Out of Scope / Don't Touch

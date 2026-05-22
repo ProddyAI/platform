@@ -3,12 +3,12 @@
 import { openai } from "@ai-sdk/openai";
 import { Composio } from "@composio/core";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { generateText } from "ai";
+import { generateText, type ModelMessage } from "ai";
 import { v } from "convex/values";
 import OpenAI from "openai";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action } from "./_generated/server";
+import { type ActionCtx, action } from "./_generated/server";
 
 // Define types for chat messages and responses
 type Source = {
@@ -33,9 +33,49 @@ type NavigationAction = {
 	channelId?: string;
 };
 
+type AssistantResult = {
+	answer: string;
+	sources: string[];
+	actions?: NavigationAction[];
+};
+
 type LLMMessage = {
 	role: "system" | "user" | "assistant";
 	content: string;
+};
+
+type PresenceRow = { online?: boolean; userId?: unknown };
+type MemberRow = { userId?: unknown; user?: { name?: string } };
+type TaskRow = { title?: unknown; dueDate?: unknown; priority?: unknown };
+type AssignedCardRow = {
+	title?: unknown;
+	dueDate?: unknown;
+	priority?: unknown;
+	channelName?: unknown;
+};
+type MentionRow = {
+	_creationTime?: number;
+	user?: { name?: string };
+	context?: { name?: string };
+	body?: string;
+};
+type MentionCandidateRow = {
+	who: string;
+	ctxName: string;
+	created: number;
+	body: string;
+};
+type RecentWorkspaceChannelMessageRow = {
+	channelName?: string;
+	authorName?: string;
+	body?: string;
+	_creationTime?: number;
+};
+type RagCatalogEntry = {
+	entryId: string;
+	metadata?: Record<string, unknown>;
+	title?: string;
+	key?: string;
 };
 
 const DEFAULT_SYSTEM_PROMPT = [
@@ -324,6 +364,302 @@ type ComposioIntent = {
 	keywords: string[];
 };
 
+type ComposioToolDefinition = {
+	function?: {
+		name?: string;
+		description?: string;
+		parameters?: Record<string, unknown>;
+	};
+	name?: string;
+	slug?: string;
+	description?: string;
+	parameters?: Record<string, unknown>;
+	schema?: Record<string, unknown>;
+};
+
+type ComposioToolResult = {
+	toolCallId: string;
+	toolName: string;
+	result?: unknown;
+	error?: string;
+};
+
+type ComposioActionResult = {
+	success: boolean;
+	response?: string;
+	error?: string;
+	toolCalls?: OpenAI.Chat.ChatCompletionMessageToolCall[];
+	toolResults?: ComposioToolResult[];
+};
+
+function normalizeComposioTools(appTools: unknown): ComposioToolDefinition[] {
+	if (Array.isArray(appTools)) {
+		return appTools as ComposioToolDefinition[];
+	}
+	if (typeof appTools === "object" && appTools !== null) {
+		return Object.values(appTools) as ComposioToolDefinition[];
+	}
+	return appTools ? [appTools as ComposioToolDefinition] : [];
+}
+
+function getComposioEnvError(): ComposioActionResult | null {
+	if (!process.env.COMPOSIO_API_KEY) {
+		return {
+			success: false,
+			error: "COMPOSIO_API_KEY is not configured",
+		};
+	}
+	if (!process.env.OPENAI_API_KEY) {
+		return {
+			success: false,
+			error: "OPENAI_API_KEY is not configured",
+		};
+	}
+	return null;
+}
+
+function isComposioConnectionError(errorMessage: string): boolean {
+	return (
+		errorMessage.includes("not connected") ||
+		errorMessage.includes("No connected account") ||
+		errorMessage.includes("401") ||
+		errorMessage.includes("403") ||
+		errorMessage.includes("No auth configs found")
+	);
+}
+
+function composioAssistantSystemPrompt(appNames: string[]): string {
+	return `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`;
+}
+
+function mapComposioToolsToOpenAI(
+	tools: ComposioToolDefinition[]
+): OpenAI.Chat.ChatCompletionTool[] {
+	return tools.flatMap((tool) => {
+		const name = tool.function?.name || tool.name || tool.slug;
+		if (!name) return [];
+
+		return [
+			{
+				type: "function" as const,
+				function: {
+					name,
+					description: tool.function?.description || tool.description || "",
+					parameters:
+						tool.parameters ?? tool.schema ?? tool.function?.parameters ?? {},
+				},
+			},
+		];
+	});
+}
+
+async function resolveActiveConnectedAccount(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	toolkit: string
+) {
+	let connectedAccount = await ctx.runQuery(
+		api.integrations.getMyConnectedAccountByToolkit,
+		{ workspaceId, toolkit }
+	);
+	if (!connectedAccount || connectedAccount.status !== "ACTIVE") {
+		connectedAccount = await ctx.runQuery(
+			api.integrations.getWorkspaceConnectedAccountByToolkit,
+			{ workspaceId, toolkit }
+		);
+	}
+	if (!connectedAccount || connectedAccount.status !== "ACTIVE") {
+		return null;
+	}
+	return connectedAccount;
+}
+
+async function fetchComposioToolsForApp(
+	ctx: ActionCtx,
+	composio: Composio,
+	entityId: string,
+	appName: string,
+	workspaceId: Id<"workspaces">
+): Promise<ComposioToolDefinition[]> {
+	const toolkit = appName.toLowerCase();
+	try {
+		const connectedAccount = await resolveActiveConnectedAccount(
+			ctx,
+			workspaceId,
+			toolkit
+		);
+		if (!connectedAccount) {
+			console.warn(
+				`[Composio] No active connected account for ${appName} (toolkit: ${toolkit})`
+			);
+			return [];
+		}
+
+		const authConfig = await ctx.runQuery(api.integrations.getAuthConfigById, {
+			authConfigId: connectedAccount.authConfigId,
+		});
+		if (!authConfig?.composioAuthConfigId) {
+			console.warn(`[Composio] No Composio auth config ID for ${appName}`);
+			return [];
+		}
+
+		const entityIdForTools =
+			connectedAccount.userId && connectedAccount.userId.length > 0
+				? connectedAccount.userId
+				: entityId;
+
+		const appTools = await composio.tools.get(entityIdForTools, {
+			authConfigIds: [authConfig.composioAuthConfigId],
+			limit: 100,
+		});
+
+		return normalizeComposioTools(appTools);
+	} catch (error) {
+		console.warn(`[Composio] No tools found for app ${appName}:`, error);
+		return [];
+	}
+}
+
+async function fetchComposioToolsForApps(
+	ctx: ActionCtx,
+	composio: Composio,
+	entityId: string,
+	appNames: string[],
+	workspaceId: Id<"workspaces">
+): Promise<ComposioToolDefinition[]> {
+	const tools: ComposioToolDefinition[] = [];
+	for (const appName of appNames) {
+		const appTools = await fetchComposioToolsForApp(
+			ctx,
+			composio,
+			entityId,
+			appName,
+			workspaceId
+		);
+		tools.push(...appTools);
+	}
+	return tools;
+}
+
+async function executeComposioToolCall(
+	composio: Composio,
+	entityId: string,
+	toolCall: OpenAI.Chat.ChatCompletionMessageToolCall
+): Promise<ComposioActionResult | ComposioToolResult> {
+	if (toolCall.type !== "function") {
+		return {
+			toolCallId: toolCall.id,
+			toolName: "",
+			error: "Unsupported tool call type",
+		};
+	}
+
+	try {
+		const actionParams = JSON.parse(toolCall.function.arguments);
+		const result = await composio.tools.execute(toolCall.function.name, {
+			userId: entityId,
+			arguments: actionParams,
+		});
+
+		return {
+			toolCallId: toolCall.id,
+			result,
+			toolName: toolCall.function.name,
+		};
+	} catch (error) {
+		console.error(
+			`[Composio] Tool execution error for ${toolCall.function.name}:`,
+			error
+		);
+
+		const errorMessage =
+			error instanceof Error ? error.message : "Unknown error";
+
+		if (isComposioConnectionError(errorMessage)) {
+			return {
+				success: false,
+				error: "not_connected",
+			};
+		}
+
+		return {
+			toolCallId: toolCall.id,
+			error: errorMessage,
+			toolName: toolCall.function.name,
+		};
+	}
+}
+
+async function runComposioToolCalls(
+	composio: Composio,
+	entityId: string,
+	toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[]
+): Promise<
+	| { connectionError: ComposioActionResult; toolResults: ComposioToolResult[] }
+	| { toolResults: ComposioToolResult[] }
+> {
+	const toolResults: ComposioToolResult[] = [];
+
+	for (const toolCall of toolCalls) {
+		const outcome = await executeComposioToolCall(composio, entityId, toolCall);
+		if ("success" in outcome) {
+			return { connectionError: outcome, toolResults };
+		}
+		toolResults.push(outcome);
+	}
+
+	return { toolResults };
+}
+
+async function generateComposioFollowUpResponse(
+	openaiClient: OpenAI,
+	systemPrompt: string,
+	message: string,
+	assistantMessage: OpenAI.Chat.ChatCompletionMessage,
+	toolResults: ComposioToolResult[],
+	fallbackResponse: string
+): Promise<string> {
+	const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+		{ role: "system", content: systemPrompt },
+		{ role: "user", content: message },
+		assistantMessage,
+		...toolResults.map((result) => ({
+			role: "tool" as const,
+			tool_call_id: result.toolCallId,
+			content: result.error
+				? `Error: ${result.error}`
+				: JSON.stringify(result.result),
+		})),
+	];
+
+	const followUpCompletion = await openaiClient.chat.completions.create({
+		model: "gpt-4o-mini",
+		messages: followUpMessages,
+		temperature: 0.7,
+		max_tokens: 1000,
+	});
+
+	return followUpCompletion.choices[0]?.message?.content || fallbackResponse;
+}
+
+function mapComposioExecutionError(error: unknown): ComposioActionResult {
+	console.error("[executeComposioAction] Error:", error);
+
+	const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+	if (isComposioConnectionError(errorMessage)) {
+		return {
+			success: false,
+			error: "not_connected",
+		};
+	}
+
+	return {
+		success: false,
+		error: errorMessage,
+	};
+}
+
 /**
  * Detect if a query should be routed to Composio based on keyword matching
  */
@@ -377,101 +713,30 @@ function detectComposioIntent(query: string): ComposioIntent | null {
  * Resolves auth config IDs from the member's connected accounts so tools.get uses valid authConfigIds.
  */
 async function executeComposioAction(
-	ctx: { runQuery: (query: any, args: any) => Promise<any> },
+	ctx: ActionCtx,
 	entityId: string,
 	appNames: string[],
 	message: string,
 	workspaceId: Id<"workspaces">
-): Promise<{
-	success: boolean;
-	response?: string;
-	error?: string;
-	toolCalls?: any[];
-	toolResults?: any[];
-}> {
+): Promise<ComposioActionResult> {
 	try {
-		// Validate environment variables
-		if (!process.env.COMPOSIO_API_KEY) {
-			return {
-				success: false,
-				error: "COMPOSIO_API_KEY is not configured",
-			};
-		}
+		const envError = getComposioEnvError();
+		if (envError) return envError;
 
-		if (!process.env.OPENAI_API_KEY) {
-			return {
-				success: false,
-				error: "OPENAI_API_KEY is not configured",
-			};
-		}
-
-		// Initialize Composio client
 		const composio = new Composio({
 			apiKey: process.env.COMPOSIO_API_KEY,
 		});
-
-		// Initialize OpenAI client
 		const openaiClient = new OpenAI({
 			apiKey: process.env.OPENAI_API_KEY,
 		});
 
-		// Resolve auth config IDs from member's or workspace's connected accounts (Composio requires authConfigIds, not appNames)
-		const tools: any[] = [];
-		for (const appName of appNames) {
-			const toolkit = appName.toLowerCase();
-			try {
-				let connectedAccount = await ctx.runQuery(
-					api.integrations.getMyConnectedAccountByToolkit,
-					{ workspaceId, toolkit }
-				);
-				// Fallback: workspace-level connections (e.g. stored without memberId from manage page)
-				if (!connectedAccount || connectedAccount.status !== "ACTIVE") {
-					connectedAccount = await ctx.runQuery(
-						api.integrations.getWorkspaceConnectedAccountByToolkit,
-						{ workspaceId, toolkit }
-					);
-				}
-				if (!connectedAccount || connectedAccount.status !== "ACTIVE") {
-					console.warn(
-						`[Composio] No active connected account for ${appName} (toolkit: ${toolkit})`
-					);
-					continue;
-				}
-
-				const authConfig = await ctx.runQuery(
-					api.integrations.getAuthConfigById,
-					{ authConfigId: connectedAccount.authConfigId }
-				);
-				if (!authConfig?.composioAuthConfigId) {
-					console.warn(`[Composio] No Composio auth config ID for ${appName}`);
-					continue;
-				}
-
-				// Use the connection's entityId: Composio links connections to an entity (e.g. workspace_xxx).
-				// tools.get must use that same entityId or Composio returns no tools.
-				const entityIdForTools =
-					connectedAccount.userId && connectedAccount.userId.length > 0
-						? connectedAccount.userId
-						: entityId;
-
-				const appTools = await composio.tools.get(entityIdForTools, {
-					authConfigIds: [authConfig.composioAuthConfigId],
-					limit: 100,
-				});
-
-				const toolsArray = Array.isArray(appTools)
-					? appTools
-					: typeof appTools === "object" && appTools !== null
-						? Object.values(appTools)
-						: appTools
-							? [appTools]
-							: [];
-				tools.push(...toolsArray);
-			} catch (error) {
-				console.warn(`[Composio] No tools found for app ${appName}:`, error);
-			}
-		}
-
+		const tools = await fetchComposioToolsForApps(
+			ctx,
+			composio,
+			entityId,
+			appNames,
+			workspaceId
+		);
 		if (tools.length === 0) {
 			return {
 				success: false,
@@ -479,155 +744,54 @@ async function executeComposioAction(
 			};
 		}
 
-		// Convert Composio tools to OpenAI format (align with composio-config shape)
-		const openaiTools = tools.map((tool: any) => ({
-			type: "function" as const,
-			function: {
-				name: tool.function?.name || tool.name || tool.slug,
-				description: tool.function?.description || tool.description,
-				parameters:
-					tool.parameters ?? tool.schema ?? tool.function?.parameters ?? {},
-			},
-		}));
-
-		// Create OpenAI completion with tools
+		const systemPrompt = composioAssistantSystemPrompt(appNames);
 		const completion = await openaiClient.chat.completions.create({
 			model: "gpt-4o-mini",
-			tools: openaiTools,
+			tools: mapComposioToolsToOpenAI(tools),
 			messages: [
-				{
-					role: "system",
-					content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-				},
-				{
-					role: "user",
-					content: message,
-				},
+				{ role: "system", content: systemPrompt },
+				{ role: "user", content: message },
 			],
 			temperature: 0.7,
 			max_tokens: 1000,
 		});
 
-		let responseText =
-			completion.choices[0]?.message?.content || "No response generated";
-		const toolResults: any[] = [];
+		const assistantMessage = completion.choices[0]?.message;
+		let responseText = assistantMessage?.content || "No response generated";
+		const toolCalls = assistantMessage?.tool_calls ?? [];
+		let toolResults: ComposioToolResult[] = [];
 
-		// Execute any tool calls with Composio
-		if (
-			completion.choices[0]?.message?.tool_calls &&
-			completion.choices[0].message.tool_calls.length > 0
-		) {
-			for (const toolCall of completion.choices[0].message.tool_calls) {
-				if (toolCall.type === "function") {
-					try {
-						const actionParams = JSON.parse(toolCall.function.arguments);
-						const result = await composio.tools.execute(
-							toolCall.function.name,
-							{
-								userId: entityId,
-								arguments: actionParams,
-							}
-						);
-
-						toolResults.push({
-							toolCallId: toolCall.id,
-							result: result,
-							toolName: toolCall.function.name,
-						});
-					} catch (error) {
-						console.error(
-							`[Composio] Tool execution error for ${toolCall.function.name}:`,
-							error
-						);
-
-						const errorMessage =
-							error instanceof Error ? error.message : "Unknown error";
-
-						// Check if it's a connection error
-						if (
-							errorMessage.includes("not connected") ||
-							errorMessage.includes("No connected account") ||
-							errorMessage.includes("401") ||
-							errorMessage.includes("403")
-						) {
-							return {
-								success: false,
-								error: "not_connected",
-							};
-						}
-
-						toolResults.push({
-							toolCallId: toolCall.id,
-							error: errorMessage,
-							toolName: toolCall.function.name,
-						});
-					}
-				}
+		if (toolCalls.length > 0) {
+			const execution = await runComposioToolCalls(
+				composio,
+				entityId,
+				toolCalls
+			);
+			if ("connectionError" in execution) {
+				return execution.connectionError;
 			}
 
-			// If we have tool results, create a follow-up completion
-			if (toolResults.length > 0) {
-				const followUpMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-					{
-						role: "system",
-						content: `You are a helpful assistant with access to ${appNames.join(", ")} tools. Help the user accomplish their tasks using these tools. Be concise and clear.`,
-					},
-					{
-						role: "user",
-						content: message,
-					},
-					completion.choices[0].message,
-					...toolResults.map((result) => ({
-						role: "tool" as const,
-						tool_call_id: result.toolCallId,
-						content: result.error
-							? `Error: ${result.error}`
-							: JSON.stringify(result.result),
-					})),
-				];
-
-				const followUpCompletion = await openaiClient.chat.completions.create({
-					model: "gpt-4o-mini",
-					messages: followUpMessages,
-					temperature: 0.7,
-					max_tokens: 1000,
-				});
-
-				responseText =
-					followUpCompletion.choices[0]?.message?.content || responseText;
+			toolResults = execution.toolResults;
+			if (toolResults.length > 0 && assistantMessage) {
+				responseText = await generateComposioFollowUpResponse(
+					openaiClient,
+					systemPrompt,
+					message,
+					assistantMessage,
+					toolResults,
+					responseText
+				);
 			}
 		}
 
 		return {
 			success: true,
 			response: responseText,
-			toolCalls: completion.choices[0]?.message?.tool_calls,
+			toolCalls: assistantMessage?.tool_calls,
 			toolResults,
 		};
 	} catch (error) {
-		console.error("[executeComposioAction] Error:", error);
-
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error";
-
-		// Check if it's a connection/auth error
-		if (
-			errorMessage.includes("not connected") ||
-			errorMessage.includes("No connected account") ||
-			errorMessage.includes("401") ||
-			errorMessage.includes("403") ||
-			errorMessage.includes("No auth configs found")
-		) {
-			return {
-				success: false,
-				error: "not_connected",
-			};
-		}
-
-		return {
-			success: false,
-			error: errorMessage,
-		};
+		return mapComposioExecutionError(error);
 	}
 }
 
@@ -712,7 +876,7 @@ async function generateLLMResponse(opts: {
 			content: truncateOneLine(String(m.content ?? "").trim(), 700),
 		}));
 
-	const messages: LLMMessage[] = [
+	const messages: ModelMessage[] = [
 		{ role: "system", content: system },
 		...previous,
 		{ role: "user", content: userPrompt },
@@ -721,7 +885,7 @@ async function generateLLMResponse(opts: {
 	try {
 		const { text } = await generateText({
 			model: openai("gpt-4o-mini"),
-			messages: messages as any,
+			messages,
 			temperature: 0.2,
 		});
 
@@ -1496,265 +1660,208 @@ function bucketByDueDate(opts: {
 	return "low" as const;
 }
 
-export const askAssistant = action({
-	args: {
-		query: v.string(),
-		userId: v.optional(v.id("users")),
-		workspaceId: v.optional(v.id("workspaces")),
-	},
+function calendarActionForWorkspace(
+	workspaceId: Id<"workspaces">
+): NavigationAction {
+	return {
+		label: "View calendar",
+		type: "calendar",
+		url: `/workspace/${workspaceId}/calendar`,
+	};
+}
 
-	handler: async (
-		ctx,
-		args
-	): Promise<{
-		answer: string;
-		sources: string[];
-		actions?: NavigationAction[];
-	}> => {
-		const workspaceId = args.workspaceId;
-		if (!workspaceId) {
-			return {
-				answer: "Workspace context is required.",
-				sources: [],
-			};
-		}
-
-		// Record AI usage
-		const trackingUserId = args.userId ?? (await getAuthUserId(ctx));
-		if (trackingUserId) {
-			try {
-				await ctx.runMutation(internal.usageTracking.recordAIRequest, {
-					userId: trackingUserId as Id<"users">,
-					workspaceId,
-					featureType: "aiRequest",
-				});
-			} catch (e) {
-				console.warn("[UsageTracking] Failed to record AI request:", e);
-			}
-		}
-
-		const recentChatMessages = await (async (): Promise<ChatMessage[]> => {
-			try {
-				const history = await ctx.runQuery(api.chatbotQueries.getChatHistory, {
-					workspaceId,
-				});
-				return history.messages.slice(-3);
-			} catch {
-				return [];
-			}
-		})();
-
-		const calendarActionForWorkspace = (
-			workspaceId: Id<"workspaces">
-		): NavigationAction => ({
-			label: "View calendar",
-			type: "calendar",
-			url: `/workspace/${workspaceId}/calendar`,
+async function fetchRecentChatMessages(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">
+): Promise<ChatMessage[]> {
+	try {
+		const history = await ctx.runQuery(api.chatbotQueries.getChatHistory, {
+			workspaceId,
 		});
+		return history.messages.slice(-3);
+	} catch {
+		return [];
+	}
+}
 
-		// ---------------------------------------------------------------------
-		// COMPOSIO INTENT DETECTION & ROUTING
-		// ---------------------------------------------------------------------
-		const composioIntent = detectComposioIntent(args.query);
+async function handleComposioRouting(
+	ctx: ActionCtx,
+	query: string,
+	workspaceId: Id<"workspaces">
+): Promise<AssistantResult | null> {
+	const composioIntent = detectComposioIntent(query);
+	if (!composioIntent) return null;
 
-		if (composioIntent) {
-			// Get current member for entity ID
-			let memberId: Id<"members">;
-			try {
-				const member = await ctx.runQuery(api.members.current, {
-					workspaceId,
-				});
-				if (!member?._id) {
-					return {
-						answer:
-							"I couldn't verify your workspace membership. Please make sure you're signed in and have access to this workspace.",
-						sources: [],
-					};
-				}
-				memberId = member._id;
-			} catch (error) {
-				console.error("[Composio] Error getting member:", error);
-				return {
-					answer:
-						"I couldn't verify your workspace membership. Please make sure you're signed in.",
-					sources: [],
-				};
-			}
-
-			// Construct member-scoped entity ID
-			const entityId = `member_${memberId}`;
-			const appNames = [composioIntent.app];
-
-			// Execute Composio action (pass ctx and workspaceId to resolve authConfigIds from connected accounts)
-			const composioResult = await executeComposioAction(
-				ctx,
-				entityId,
-				appNames,
-				args.query,
-				workspaceId
-			);
-
-			if (composioResult.success && composioResult.response) {
-				// Success - return the response from Composio
-				const appName =
-					composioIntent.app.charAt(0) +
-					composioIntent.app.slice(1).toLowerCase();
-				return {
-					answer: composioResult.response,
-					sources: [],
-					actions: [
-						{
-							label: `Powered by ${appName}`,
-							type: "integration",
-							url: `/workspace/${workspaceId}/settings/integrations`,
-						},
-					],
-				};
-			}
-
-			// Handle errors - check if it's a connection issue
-			const errorMsg = composioResult.error || "Unknown error";
-			const isConnectionError =
-				errorMsg === "not_connected" ||
-				errorMsg.includes("401") ||
-				errorMsg.includes("403") ||
-				errorMsg.includes("not connected") ||
-				errorMsg.includes("unauthorized") ||
-				errorMsg.includes("No connected account") ||
-				errorMsg.includes("No auth configs found") ||
-				errorMsg.includes("No tools found");
-
-			if (isConnectionError) {
-				const appName =
-					composioIntent.app.charAt(0) +
-					composioIntent.app.slice(1).toLowerCase();
-				return {
-					answer: `I can help you with ${appName}, but you need to connect your ${appName} account first. Please connect ${appName} in your workspace integrations.`,
-					sources: [],
-					actions: [
-						{
-							label: `Connect ${appName}`,
-							type: "integration",
-							url: `/workspace/${workspaceId}/settings/integrations`,
-						},
-					],
-				};
-			}
-
-			// Other errors - provide helpful message
-			const appName =
-				composioIntent.app.charAt(0) +
-				composioIntent.app.slice(1).toLowerCase();
+	let memberId: Id<"members">;
+	try {
+		const member = await ctx.runQuery(api.members.current, { workspaceId });
+		if (!member?._id) {
 			return {
-				answer: `I encountered an issue while trying to help with ${appName}: ${errorMsg}. Please try again or check your integration settings.`,
+				answer:
+					"I couldn't verify your workspace membership. Please make sure you're signed in and have access to this workspace.",
 				sources: [],
-				actions: [
-					{
-						label: "View Integrations",
-						type: "integration",
-						url: `/workspace/${workspaceId}/settings/integrations`,
-					},
-				],
 			};
 		}
+		memberId = member._id;
+	} catch (error) {
+		console.error("[Composio] Error getting member:", error);
+		return {
+			answer:
+				"I couldn't verify your workspace membership. Please make sure you're signed in.",
+			sources: [],
+		};
+	}
 
-		// Intent-first routing (no LLM call).
-		const intent = extractIntent(args.query);
-		const requestedChannelName = intent.channel;
+	const entityId = `member_${memberId}`;
+	const composioResult = await executeComposioAction(
+		ctx,
+		entityId,
+		[composioIntent.app],
+		query,
+		workspaceId
+	);
 
-		// ---------------------------------------------------------------------
-		// 2. RESOLVE CHANNEL ID (if name found)
-		// ---------------------------------------------------------------------
-		let channelId: Id<"channels"> | null = null;
-		let resolvedChannelName: string | null = null;
+	const appName =
+		composioIntent.app.charAt(0) + composioIntent.app.slice(1).toLowerCase();
+	const integrationsUrl = `/workspace/${workspaceId}/settings/integrations`;
 
-		if (intent.mode === "channel") {
-			const fallbackFromText = extractChannelFromQueryText(args.query);
-			const raw = requestedChannelName || fallbackFromText;
+	if (composioResult.success && composioResult.response) {
+		return {
+			answer: composioResult.response,
+			sources: [],
+			actions: [
+				{
+					label: `Powered by ${appName}`,
+					type: "integration",
+					url: integrationsUrl,
+				},
+			],
+		};
+	}
 
-			if (raw) {
-				type WorkspaceChannel = { _id: Id<"channels">; name: string };
-				let channels: WorkspaceChannel[] = [];
-				try {
-					channels = await ctx.runQuery(api.channels.get, {
-						workspaceId,
-					});
-				} catch {
-					channels = [];
-				}
+	const errorMsg = composioResult.error || "Unknown error";
+	const isConnectionError =
+		errorMsg === "not_connected" ||
+		errorMsg.includes("401") ||
+		errorMsg.includes("403") ||
+		errorMsg.includes("not connected") ||
+		errorMsg.includes("unauthorized") ||
+		errorMsg.includes("No connected account") ||
+		errorMsg.includes("No auth configs found") ||
+		errorMsg.includes("No tools found");
 
-				if (!channels.length) {
-					return {
-						answer:
-							"I can't access channels for this workspace. Make sure you're signed in and a member of the workspace.",
-						sources: [],
-					};
-				}
+	if (isConnectionError) {
+		return {
+			answer: `I can help you with ${appName}, but you need to connect your ${appName} account first. Please connect ${appName} in your workspace integrations.`,
+			sources: [],
+			actions: [
+				{
+					label: `Connect ${appName}`,
+					type: "integration",
+					url: integrationsUrl,
+				},
+			],
+		};
+	}
 
-				const querySlug = normalizeChannelQuery(raw);
-				let best: { channel: WorkspaceChannel; score: number } | null = null;
-				for (const ch of channels) {
-					const chSlug = normalizeChannelName(String(ch.name || ""));
-					const score = scoreChannelMatch(chSlug, querySlug);
-					if (!best || score > best.score) {
-						best = { channel: ch, score };
-					}
-				}
+	return {
+		answer: `I encountered an issue while trying to help with ${appName}: ${errorMsg}. Please try again or check your integration settings.`,
+		sources: [],
+		actions: [
+			{
+				label: "View Integrations",
+				type: "integration",
+				url: integrationsUrl,
+			},
+		],
+	};
+}
 
-				if (!best || best.score < 500) {
-					const sample = channels
-						.slice(0, 8)
-						.map((c) => `#${String(c.name)}`)
-						.join(", ");
-					return {
-						answer: `I couldn't find a channel matching "${raw}". Try using #channel-name. Available channels include: ${sample}`,
-						sources: [],
-					};
-				}
+async function handleChannelRoute(
+	ctx: ActionCtx,
+	query: string,
+	workspaceId: Id<"workspaces">,
+	intent: AssistantIntent,
+	recentChatMessages: ReadonlyArray<ChatMessage>
+): Promise<AssistantResult | null> {
+	if (intent.mode !== "channel") return null;
 
-				channelId = best.channel._id;
-				resolvedChannelName = String(best.channel.name);
-			}
+	const fallbackFromText = extractChannelFromQueryText(query);
+	const raw = intent.channel || fallbackFromText;
+	if (!raw) return null;
+
+	type WorkspaceChannel = { _id: Id<"channels">; name: string };
+	let channels: WorkspaceChannel[] = [];
+	try {
+		channels = await ctx.runQuery(api.channels.get, { workspaceId });
+	} catch {
+		channels = [];
+	}
+
+	if (!channels.length) {
+		return {
+			answer:
+				"I can't access channels for this workspace. Make sure you're signed in and a member of the workspace.",
+			sources: [],
+		};
+	}
+
+	const querySlug = normalizeChannelQuery(raw);
+	let best: { channel: WorkspaceChannel; score: number } | null = null;
+	for (const ch of channels) {
+		const chSlug = normalizeChannelName(String(ch.name || ""));
+		const score = scoreChannelMatch(chSlug, querySlug);
+		if (!best || score > best.score) {
+			best = { channel: ch, score };
 		}
+	}
 
-		// ---------------------------------------------------------------------
-		// 3. CHANNEL SUMMARY (if requested)
-		// ---------------------------------------------------------------------
-		if (channelId) {
-			let results: { page: Array<{ _creationTime: number; body: string }> };
-			try {
-				results = await ctx.runQuery(api.messages.get, {
-					channelId,
-					// Cost-safe: fetch a small slice; we further cap/truncate before sending to the model.
-					paginationOpts: { numItems: 40, cursor: null },
-				});
-			} catch {
-				return {
-					answer:
-						"I couldn't read messages in that channel. Make sure you're signed in and have access to it.",
-					sources: resolvedChannelName ? [`#${resolvedChannelName}`] : [],
-				};
-			}
-			const messages: Array<{ _creationTime: number; body: string }> =
-				results.page.map((m) => ({
-					_creationTime: m._creationTime,
-					body: String(m.body),
-				}));
+	if (!best || best.score < 500) {
+		const sample = channels
+			.slice(0, 8)
+			.map((c) => `#${String(c.name)}`)
+			.join(", ");
+		return {
+			answer: `I couldn't find a channel matching "${raw}". Try using #channel-name. Available channels include: ${sample}`,
+			sources: [],
+		};
+	}
 
-			if (!messages.length) {
-				return {
-					answer: `No messages found in #${resolvedChannelName}.`,
-					sources: [],
-				};
-			}
+	const channelId = best.channel._id;
+	const resolvedChannelName = String(best.channel.name);
 
-			// Token safety: only send a short, recent slice to the model.
-			const messageContext = formatRecentMessagesForLLM(messages, {
-				maxMessages: 10,
-				maxCharsPerMessage: 200,
-			});
+	let results: { page: Array<{ _creationTime: number; body: string }> };
+	try {
+		results = await ctx.runQuery(api.messages.get, {
+			channelId,
+			paginationOpts: { numItems: 40, cursor: null },
+		});
+	} catch {
+		return {
+			answer:
+				"I couldn't read messages in that channel. Make sure you're signed in and have access to it.",
+			sources: [`#${resolvedChannelName}`],
+		};
+	}
 
-			const chatPrompt = `You are Proddy, a personal work assistant.
+	const messages = results.page.map((m) => ({
+		_creationTime: m._creationTime,
+		body: String(m.body),
+	}));
+
+	if (!messages.length) {
+		return {
+			answer: `No messages found in #${resolvedChannelName}.`,
+			sources: [],
+		};
+	}
+
+	const messageContext = formatRecentMessagesForLLM(messages, {
+		maxMessages: 10,
+		maxCharsPerMessage: 200,
+	});
+
+	const chatPrompt = `You are Proddy, a personal work assistant.
 
 Task:
 - The user asked to summarize a channel. Use ONLY the provided recent messages as input.
@@ -1776,86 +1883,69 @@ Rules for bullets:
 - Keep it concise: 5-12 bullets max.
 - If something is unknown, omit it.
 
-User request: ${args.query}
+User request: ${query}
 
 Recent messages (most recent last):
 ${messageContext}`;
 
-			try {
-				const answer = await generateLLMResponse({
-					prompt: chatPrompt,
-					systemPrompt: "",
-					recentMessages: recentChatMessages,
-				});
-				return {
-					answer,
-					sources: [],
-				};
-			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "";
-				const detail = errorMessage.includes(
-					"GOOGLE_GENERATIVE_AI_API_KEY is required"
-				)
-					? "AI is not configured for this environment."
-					: "AI summarization is temporarily unavailable.";
+	try {
+		const answer = await generateLLMResponse({
+			prompt: chatPrompt,
+			systemPrompt: "",
+			recentMessages: recentChatMessages,
+		});
+		return { answer, sources: [] };
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : "";
+		const detail = errorMessage.includes(
+			"GOOGLE_GENERATIVE_AI_API_KEY is required"
+		)
+			? "AI is not configured for this environment."
+			: "AI summarization is temporarily unavailable.";
+		return {
+			answer: `${detail} I can't summarize #${resolvedChannelName} right now - please try again later.`,
+			sources: [`#${resolvedChannelName}`],
+		};
+	}
+}
 
-				return {
-					answer: `${detail} I can't summarize #${resolvedChannelName} right now - please try again later.`,
-					sources: resolvedChannelName ? [`#${resolvedChannelName}`] : [],
-				};
-			}
-		}
+async function handleWorkspaceSummaryRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	query: string,
+	recentChatMessages: ReadonlyArray<ChatMessage>
+): Promise<AssistantResult> {
+	const authUserId = await getAuthUserId(ctx);
+	if (!authUserId) {
+		return { answer: "Sign in to use the assistant.", sources: [] };
+	}
+	await ctx.runQuery(api.members.current, { workspaceId });
 
-		// ---------------------------------------------------------------------
-		// 3a. WORKSPACE SUMMARY (no channel specified)
-		// ---------------------------------------------------------------------
-		if (intent.mode === "workspace_summary") {
-			const authUserId = await getAuthUserId(ctx);
-			if (!authUserId) {
-				return { answer: "Sign in to use the assistant.", sources: [] };
-			}
-			// Ensure membership.
-			await ctx.runQuery(api.members.current, { workspaceId });
+	const recent = await ctx.runQuery(
+		api.messages.getRecentWorkspaceChannelMessages,
+		{ workspaceId, from: 0, limit: 220, perChannelLimit: 2 }
+	);
 
-			const recent = await ctx.runQuery(
-				api.messages.getRecentWorkspaceChannelMessages,
-				{
-					workspaceId,
-					// Use 0 to fetch the most recent messages irrespective of date.
-					from: 0,
-					// Keep token and query cost bounded.
-					limit: 220,
-					perChannelLimit: 2,
-				}
-			);
+	if (!recent?.length) {
+		return { answer: "No information available to summarize.", sources: [] };
+	}
 
-			if (!recent?.length) {
-				return {
-					answer: "No information available to summarize.",
-					sources: [],
-				};
-			}
+	const lines = (recent || [])
+		.map((m: RecentWorkspaceChannelMessageRow) => {
+			const channelName = String(m?.channelName ?? "unknown").trim();
+			const who = String(m?.authorName ?? "").trim();
+			const body = truncateOneLine(String(m?.body ?? ""), 180);
+			if (!body) return "";
+			return `#${channelName}${who ? ` @${who}` : ""}: ${body}`.trim();
+		})
+		.filter(Boolean)
+		.slice(-30);
 
-			const lines = (recent || [])
-				.map((m: any) => {
-					const channelName = String(m?.channelName ?? "unknown").trim();
-					const who = String(m?.authorName ?? "").trim();
-					const body = truncateOneLine(String(m?.body ?? ""), 180);
-					if (!body) return "";
-					const prefix = `#${channelName}${who ? ` @${who}` : ""}: `;
-					return `${prefix}${body}`.trim();
-				})
-				.filter(Boolean)
-				.slice(-30);
+	if (!lines.length) {
+		return { answer: "No information available to summarize.", sources: [] };
+	}
 
-			if (!lines.length) {
-				return {
-					answer: "No information available to summarize.",
-					sources: [],
-				};
-			}
-
-			const prompt = `You are Proddy, a personal work assistant.
+	const prompt = `You are Proddy, a personal work assistant.
 
 Task:
 - The user asked for a summary without specifying a channel.
@@ -1874,1170 +1964,1234 @@ Workspace Summary
 
 Keep it concise: 5-10 bullets max.
 
-User request: ${args.query}
+User request: ${query}
 
 Recent channel snippets (most recent last):
 ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 
-			try {
-				const answer = await generateLLMResponse({
-					prompt,
-					systemPrompt: "",
-					recentMessages: recentChatMessages,
-				});
-				return {
-					answer,
-					sources: ["Messages"],
-				};
-			} catch (e) {
-				const errorMessage = e instanceof Error ? e.message : "";
-				const detail = errorMessage.includes(
-					"GOOGLE_GENERATIVE_AI_API_KEY is required"
-				)
-					? "AI is not configured for workspace summaries."
-					: "AI workspace summary is temporarily unavailable.";
-
-				return {
-					answer: detail,
-					sources: ["Messages"],
-				};
-			}
-		}
-
-		// ---------------------------------------------------------------------
-		// 3b. PERSONAL ASSISTANT (today / next week / tasks / calendar / boards)
-		// ---------------------------------------------------------------------
-		{
-			const authUserId = await getAuthUserId(ctx);
-			if (!authUserId) {
-				return { answer: "Sign in to use the assistant.", sources: [] };
-			}
-			// STRICT: ignore any passed userId; always scope to auth user.
-			const workspaceId = args.workspaceId as Id<"workspaces">;
-
-			if (intent.mode === "team_status") {
-				// Ensure membership.
-				await ctx.runQuery(api.members.current, { workspaceId });
-
-				const [members, presenceState, channels] = await Promise.all([
-					ctx.runQuery(api.members.get, { workspaceId }),
-					ctx.runQuery(api.presence.listWorkspacePresence, { workspaceId }),
-					ctx.runQuery(api.channels.get, { workspaceId }),
-				]);
-
-				const onlineUserIds = new Set(
-					(presenceState || [])
-						.filter((p) => Boolean(p?.online))
-						.map((p) => String(p?.userId))
-				);
-
-				const totalMembers = Array.isArray(members) ? members.length : 0;
-				const onlineMembers = (members || []).filter((m) =>
-					onlineUserIds.has(String(m?.userId))
-				);
-				const offlineMembers = (members || []).filter(
-					(m) => !onlineUserIds.has(String(m?.userId))
-				);
-
-				const formatMember = (m: { user?: { name?: string } }) =>
-					`@${String(m?.user?.name ?? "Unknown").trim()}`;
-
-				const lines: string[] = [];
-				lines.push("Team Status Overview:");
-				lines.push(
-					`👥 Online: ${onlineMembers.length}/${totalMembers} team members`
-				);
-				if (onlineMembers.length) {
-					lines.push(
-						`🟢 Online: ${onlineMembers
-							.slice(0, 12)
-							.map(formatMember)
-							.join(", ")}${onlineMembers.length > 12 ? "…" : ""}`
-					);
-				}
-
-				type TeamUpdate = { author: string; channel: string; body: string };
-				const updates: TeamUpdate[] = [];
-				// Who said what: sample a small set of channels, take the most recent message in each.
-				for (const ch of (channels || []).slice(0, 6)) {
-					const recent = await ctx.runQuery(
-						api.messages.getRecentChannelMessages,
-						{
-							channelId: ch._id as Id<"channels">,
-							limit: 6,
-						}
-					);
-					const last = Array.isArray(recent) ? recent[recent.length - 1] : null;
-					if (!last?.body) continue;
-					const author = String(last.authorName || "Someone").trim();
-					const body = truncateOneLine(String(last.body), 140);
-					const channelName = String(ch?.name || "unknown");
-					updates.push({ author, channel: channelName, body });
-				}
-				if (updates.length) {
-					lines.push("");
-					lines.push("Recent updates (summary):");
-					const context = updates
-						.slice(0, 6)
-						.map((u) => `@${u.author} in #${u.channel}: ${u.body}`)
-						.join("\n");
-
-					try {
-						const prompt = `Summarize these recent team updates.
-
-Rules:
-- Do NOT paste the messages verbatim.
-- Keep it to 1-3 short bullet points.
-- If you mention a person, format as @Name.
-
-Updates:\n${context}`;
-						const summary = await generateLLMResponse({
-							prompt,
-							systemPrompt: "",
-							recentMessages: recentChatMessages,
-						});
-						lines.push(summary);
-					} catch {
-						// If AI isn't available, avoid showing raw messages; show a non-verbatim fallback.
-						const fallback = updates
-							.slice(0, 6)
-							.map((u) => `• @${u.author} posted in #${u.channel}`)
-							.join("\n");
-						lines.push(fallback);
-					}
-				}
-
-				if (offlineMembers.length) {
-					lines.push("");
-					lines.push(
-						`⚫ Offline: ${offlineMembers
-							.slice(0, 15)
-							.map(formatMember)
-							.join(", ")}${offlineMembers.length > 15 ? "…" : ""}`
-					);
-				}
-
-				return {
-					answer: lines.join("\n"),
-					sources: ["Presence", "Messages"],
-				};
-			}
-
-			if (
-				intent.mode === "agenda_today" ||
-				intent.mode === "agenda_tomorrow" ||
-				intent.mode === "tasks_today" ||
-				intent.mode === "tasks_tomorrow" ||
-				intent.mode === "calendar_next_week" ||
-				intent.mode === "calendar_today" ||
-				intent.mode === "calendar_tomorrow" ||
-				intent.mode === "calendar" ||
-				intent.mode === "incidents" ||
-				intent.mode === "boards" ||
-				intent.mode === "tasks"
-			) {
-				const now = new Date();
-				const todayFrom = startOfDayMs(now);
-				const todayTo = endOfDayMs(now);
-				const tomorrow = new Date(now);
-				tomorrow.setDate(now.getDate() + 1);
-				const tomorrowFrom = startOfDayMs(tomorrow);
-				const tomorrowTo = endOfDayMs(tomorrow);
-
-				const getAssignedCardsForUser = async () => {
-					const currentMember = await ctx.runQuery(api.members.current, {
-						workspaceId,
-					});
-					if (!currentMember) {
-						return [];
-					}
-					const cards = await ctx.runQuery(api.board.getAssignedCards, {
-						workspaceId,
-						memberId: currentMember._id,
-					});
-					return cards.map((c) => ({
-						title: String(c.title ?? ""),
-						dueDate: typeof c.dueDate === "number" ? c.dueDate : undefined,
-						priority: normalizePriority(c.priority),
-						channelName:
-							typeof c.channelName === "string" ? c.channelName : undefined,
-					}));
-				};
-
-				// Privacy: prevent requests for other users' tasks.
-				if (intent.mode === "tasks") {
-					const q = args.query.trim().toLowerCase();
-					const qNoPunct = q.replace(/[^a-z0-9\s#@'-]/g, " ");
-					const seemsLikeOtherPerson =
-						/@\w+/.test(qNoPunct) || /\b(\w+)'s\s+tasks\b/.test(qNoPunct);
-					if (seemsLikeOtherPerson) {
-						return {
-							answer:
-								'I can only show tasks assigned to you (the signed-in user). If you want, ask "What are my tasks for today?" or "Show my tasks".',
-							sources: [],
-						};
-					}
-				}
-
-				if (intent.mode === "incidents") {
-					// Ensure membership.
-					await ctx.runQuery(api.members.current, { workspaceId });
-
-					let channels: Array<{ _id: Id<"channels">; name: string }> = [];
-					try {
-						channels = await ctx.runQuery(api.channels.get, { workspaceId });
-					} catch {
-						channels = [];
-					}
-
-					const candidates = (channels || [])
-						.map((c) => String(c?.name ?? "").trim())
-						.filter(Boolean)
-						.filter((name) =>
-							/\b(incident|incidents|oncall|ops|status|alerts)\b/i.test(name)
-						)
-						.slice(0, 6)
-						.map((name) => `#${name}`);
-
-					const lines: string[] = [];
-					lines.push("Incident Status");
-
-					if (candidates.length) {
-						lines.push(`- Check incident channels: ${candidates.join(", ")}`);
-					} else {
-						lines.push(
-							"- Check your incident/oncall/status channels for the latest updates"
-						);
-					}
-					lines.push(
-						"- Identify owner, impact, current mitigation, and next update time"
-					);
-
-					return {
-						answer: lines.join("\n"),
-						sources: candidates.length ? ["Channels"] : [],
-					};
-				}
-
-				if (intent.mode === "calendar_next_week") {
-					const range = getNextWeekRange(now);
-					const events = await ctx.runQuery(
-						api.chatbotQueries.getMyCalendarEventsInRange,
-						{
-							workspaceId,
-							from: range.from,
-							to: range.to,
-						}
-					);
-
-					const sorted = sortEventsByTimeThenTitle(events);
-					const byDay = new Map<
-						string,
-						Array<{ title: string; time?: string }>
-					>();
-					for (const ev of sorted) {
-						const dayKey = shortDate(ev.date);
-						const list = byDay.get(dayKey) ?? [];
-						list.push({ title: ev.title, time: ev.time });
-						byDay.set(dayKey, list);
-					}
-					const lines: string[] = [];
-					lines.push("Next Week's Calendar:");
-					if (!sorted.length) {
-						lines.push("No events");
-					} else {
-						for (const [day, items] of Array.from(byDay.entries())) {
-							lines.push("");
-							lines.push(`📅 ${day}`);
-							for (const ev of items) {
-								const timePart = ev.time ? `${ev.time} - ` : "";
-								lines.push(
-									`${clockEmojiForTime(ev.time)} ${timePart}${ev.title}`
-								);
-							}
-						}
-					}
-
-					return {
-						answer: lines.join("\n"),
-						sources: ["Calendar"],
-						actions: [calendarActionForWorkspace(workspaceId)],
-					};
-				}
-
-				if (intent.mode === "calendar_today") {
-					const events = await ctx.runQuery(
-						api.chatbotQueries.getMyCalendarEventsInRange,
-						{
-							workspaceId,
-							from: todayFrom,
-							to: todayTo,
-						}
-					);
-					return {
-						answer: renderCalendarSection({
-							title: "Today's Meetings:",
-							events: sortEventsByTimeThenTitle(events).map((e) => ({
-								title: e.title,
-								time: e.time,
-							})),
-						}),
-						sources: ["Calendar"],
-						actions: [calendarActionForWorkspace(workspaceId)],
-					};
-				}
-
-				if (intent.mode === "calendar_tomorrow") {
-					const events = await ctx.runQuery(
-						api.chatbotQueries.getMyCalendarEventsInRange,
-						{
-							workspaceId,
-							from: tomorrowFrom,
-							to: tomorrowTo,
-						}
-					);
-
-					return {
-						answer: renderCalendarSection({
-							title: "Tomorrow's Calendar:",
-							events: sortEventsByTimeThenTitle(events).map((e) => ({
-								title: e.title,
-								time: e.time,
-							})),
-						}),
-						sources: ["Calendar"],
-						actions: [calendarActionForWorkspace(workspaceId)],
-					};
-				}
-
-				if (intent.mode === "calendar") {
-					// Match the example style: show Today + Tomorrow.
-					const [todayEvents, tomorrowEvents] = await Promise.all([
-						ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
-							workspaceId,
-							from: todayFrom,
-							to: todayTo,
-						}),
-						ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
-							workspaceId,
-							from: tomorrowFrom,
-							to: tomorrowTo,
-						}),
-					]);
-
-					const lines: string[] = [];
-					lines.push(
-						renderCalendarSection({
-							title: "Today's Calendar:",
-							events: sortEventsByTimeThenTitle(todayEvents).map((e) => ({
-								title: e.title,
-								time: e.time,
-							})),
-						})
-					);
-					lines.push("");
-					lines.push(
-						renderCalendarSection({
-							title: "Tomorrow's Calendar:",
-							events: sortEventsByTimeThenTitle(tomorrowEvents).map((e) => ({
-								title: e.title,
-								time: e.time,
-							})),
-						})
-					);
-
-					return {
-						answer: lines.join("\n"),
-						sources: ["Calendar"],
-						actions: [calendarActionForWorkspace(workspaceId)],
-					};
-				}
-
-				if (intent.mode === "boards") {
-					// Boards are represented by cards assigned to the user (cards.assignees).
-					const assignedCards = await getAssignedCardsForUser();
-					const groups = emptyPriorityGroup();
-					for (const c of assignedCards.slice(0, 80)) {
-						const bucket = bucketByDueDate({
-							dueDate: c.dueDate,
-							explicitPriority: c.priority,
-						});
-						const duePart = c.dueDate ? ` (due ${shortDate(c.dueDate)})` : "";
-						const boardPart = c.channelName ? ` (#${c.channelName})` : "";
-						groups[bucket].push(`${c.title}${boardPart}${duePart}`);
-					}
-					return {
-						answer: renderTrafficLightPrioritySections({
-							header: "Your Board Cards:",
-							groups,
-						}),
-						sources: ["Boards"],
-					};
-				}
-
-				if (intent.mode === "tasks_today") {
-					const tasks = await ctx.runQuery(
-						api.chatbotQueries.getMyTasksInRange,
-						{
-							workspaceId,
-							from: todayFrom,
-							to: todayTo,
-							onlyIncomplete: true,
-						}
-					);
-
-					const groups = emptyPriorityGroup();
-					for (const t of tasks) {
-						const bucket = bucketByDueDate({
-							dueDate: t.dueDate,
-							explicitPriority: t.priority ?? undefined,
-						});
-						groups[bucket].push(
-							`${t.title}${t.dueDate ? ` (${shortDate(t.dueDate)})` : ""}`
-						);
-					}
-					return {
-						answer: renderTrafficLightPrioritySections({
-							header: "Today's Tasks:",
-							groups,
-						}),
-						sources: ["Tasks"],
-					};
-				}
-
-				if (intent.mode === "tasks_tomorrow") {
-					const tasks = await ctx.runQuery(
-						api.chatbotQueries.getMyTasksInRange,
-						{
-							workspaceId,
-							from: tomorrowFrom,
-							to: tomorrowTo,
-							onlyIncomplete: true,
-						}
-					);
-
-					const groups = emptyPriorityGroup();
-					for (const t of tasks) {
-						const bucket = bucketByDueDate({
-							dueDate: t.dueDate,
-							explicitPriority: t.priority ?? undefined,
-						});
-						groups[bucket].push(
-							`${t.title}${t.dueDate ? ` (${shortDate(t.dueDate)})` : ""}`
-						);
-					}
-					return {
-						answer: renderTrafficLightPrioritySections({
-							header: "Tomorrow's Tasks:",
-							groups,
-						}),
-						sources: ["Tasks"],
-					};
-				}
-
-				if (intent.mode === "tasks") {
-					// Show upcoming/incomplete tasks (cost-safe, no model).
-					const tasks = await ctx.runQuery(
-						api.chatbotQueries.getMyUpcomingTasks,
-						{
-							workspaceId,
-							limit: 25,
-						}
-					);
-					const groups = emptyPriorityGroup();
-					for (const t of tasks) {
-						const bucket = bucketByDueDate({
-							dueDate: t.dueDate,
-							explicitPriority: t.priority ?? undefined,
-						});
-						const duePart = t.dueDate ? ` (due ${shortDate(t.dueDate)})` : "";
-						groups[bucket].push(`${t.title}${duePart}`);
-					}
-					return {
-						answer: renderTrafficLightPrioritySections({
-							header: "Your Tasks:",
-							groups,
-						}),
-						sources: ["Tasks"],
-					};
-				}
-
-				if (intent.mode === "agenda_today") {
-					const [
-						events,
-						tasksDueToday,
-						upcomingTasks,
-						assignedCards,
-						mentioned,
-					] = await Promise.all([
-						ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
-							workspaceId,
-							from: todayFrom,
-							to: todayTo,
-						}),
-						ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
-							workspaceId,
-							from: todayFrom,
-							to: todayTo,
-							onlyIncomplete: true,
-						}),
-						ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
-							workspaceId,
-							limit: 25,
-						}),
-						getAssignedCardsForUser(),
-						ctx.runQuery(api.messages.getMentionedMessages, {
-							workspaceId,
-							limit: 80,
-						}),
-					]);
-
-					const undatedTasks = (upcomingTasks || [])
-						.filter((t) => typeof t?.dueDate !== "number")
-						.slice(0, 10)
-						.map((t) => ({
-							title: String(t?.title ?? ""),
-							dueDate: undefined,
-							priority: t?.priority ?? undefined,
-						}));
-					const tasks = [...(tasksDueToday || []), ...undatedTasks].filter(
-						(t) => String(t?.title ?? "").trim()
-					);
-
-					const cardsDueToday = (assignedCards || []).filter(
-						(c) =>
-							typeof c?.dueDate === "number" &&
-							c.dueDate >= todayFrom &&
-							c.dueDate <= todayTo
-					);
-					const cardsUndated = (assignedCards || [])
-						.filter((c) => typeof c?.dueDate !== "number")
-						.slice(0, 10);
-					const cards = [...cardsDueToday, ...cardsUndated].filter((c) =>
-						String(c?.title ?? "").trim()
-					);
-
-					// Match example style: a compact day-ahead digest (still user-scoped).
-					const todaysMentions = (mentioned || []).filter((m) => {
-						const created =
-							typeof m?._creationTime === "number" ? m._creationTime : 0;
-						return created >= todayFrom && created <= todayTo;
-					});
-					const createdTodayMentionsCount = todaysMentions.length;
-					const mentionsSummary = todaysMentions
-						.slice(0, 6)
-						.map((m) => {
-							const who = String(m?.user?.name ?? "Someone").trim();
-							const ctxName = String(m?.context?.name ?? "Mention").trim();
-							return `- @${who} in ${ctxName}`;
-						})
-						.join("\n");
-
-					return {
-						answer: renderAgendaDigest({
-							now,
-							label: "your day",
-							windowLabel: "today",
-							events,
-							tasks,
-							cards,
-							mentionsCount: createdTodayMentionsCount,
-							mentionsSummary: mentionsSummary || undefined,
-						}),
-						sources: ["Calendar", "Tasks", "Boards"],
-						actions: [calendarActionForWorkspace(workspaceId)],
-					};
-				}
-
-				if (intent.mode === "agenda_tomorrow") {
-					const [
-						events,
-						tasksDueTomorrow,
-						upcomingTasks,
-						assignedCards,
-						mentioned,
-					] = await Promise.all([
-						ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
-							workspaceId,
-							from: tomorrowFrom,
-							to: tomorrowTo,
-						}),
-						ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
-							workspaceId,
-							from: tomorrowFrom,
-							to: tomorrowTo,
-							onlyIncomplete: true,
-						}),
-						ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
-							workspaceId,
-							limit: 25,
-						}),
-						getAssignedCardsForUser(),
-						ctx.runQuery(api.messages.getMentionedMessages, {
-							workspaceId,
-							limit: 120,
-						}),
-					]);
-
-					const undatedTasks = (upcomingTasks || [])
-						.filter((t) => typeof t?.dueDate !== "number")
-						.slice(0, 10)
-						.map((t) => ({
-							title: String(t?.title ?? ""),
-							dueDate: undefined,
-							priority: t?.priority ?? undefined,
-						}));
-					const tasks = [...(tasksDueTomorrow || []), ...undatedTasks].filter(
-						(t) => String(t?.title ?? "").trim()
-					);
-
-					const cardsDueTomorrow = (assignedCards || []).filter(
-						(c) =>
-							typeof c?.dueDate === "number" &&
-							c.dueDate >= tomorrowFrom &&
-							c.dueDate <= tomorrowTo
-					);
-					const cardsUndated = (assignedCards || [])
-						.filter((c) => typeof c?.dueDate !== "number")
-						.slice(0, 10);
-					const cards = [...cardsDueTomorrow, ...cardsUndated].filter((c) =>
-						String(c?.title ?? "").trim()
-					);
-
-					const tomorrowKey = shortDate(tomorrowFrom);
-					const mentionCandidates = (mentioned || [])
-						.filter((m) => {
-							const created =
-								typeof m?._creationTime === "number" ? m._creationTime : 0;
-							return created >= todayFrom;
-						})
-						.slice(0, 40)
-						.map((m) => {
-							const who = String(m?.user?.name ?? "Someone").trim();
-							const ctxName = String(m?.context?.name ?? "Mention");
-							const created =
-								typeof m?._creationTime === "number" ? m._creationTime : 0;
-							const body = String(m?.body ?? "");
-							return { who, ctxName, created, body };
-						});
-
-					const matches = mentionCandidates.filter((m) =>
-						isLikelyTomorrowReferenceFallback(m.body, tomorrowKey)
-					);
-					const tomorrowMentionsCount = matches.length;
-					let mentionsSummary: string | undefined;
-					if (mentionCandidates.length) {
-						try {
-							const mentionContext = mentionCandidates
-								.map((m, i) => {
-									const when = m.created
-										? new Date(m.created).toISOString()
-										: "";
-									const body = normalizeWhitespaceForPrompt(m.body, 260);
-									return `(${i + 1}) [${when}] @${m.who} in ${m.ctxName}: ${body}`;
-								})
-								.join("\n");
-
-							const prompt = `You are helping with a personal agenda for tomorrow.
-
-Task:
-- From the MENTIONS below, identify which items are relevant to TOMORROW (or the next day), even if the message has small spelling mistakes or informal phrasing.
-- Then summarize those relevant items.
-
-Strict rules:
-- Never quote or paste any message verbatim.
-- Do not include any continuous 5+ words copied from any message.
-- Do not include raw message text or long fragments.
-- Keep bullets short and action-oriented.
-- If you mention a person, format as @Name.
-
-Output format:
-- <summary>
-- <summary>
-- <summary>
-
-If there are no relevant mentions, output EXACTLY:
-No items
-
-Mentions:\n${mentionContext}`;
-
-							mentionsSummary = await generateLLMResponse({
-								prompt,
-								systemPrompt: "",
-								recentMessages: recentChatMessages,
-							});
-						} catch {
-							// AI isn't available: avoid topic/keyword heuristics; use a safe structured fallback.
-							if (matches.length) {
-								mentionsSummary = matches
-									.slice(0, 6)
-									.map((m) => `- @${m.who} in ${m.ctxName}`)
-									.join("\n");
-							}
-						}
-					}
-
-					return {
-						answer: renderAgendaDigest({
-							now,
-							label: "tomorrow",
-							windowLabel: "tomorrow",
-							events,
-							tasks,
-							cards,
-							mentionsCount: tomorrowMentionsCount,
-							mentionsSummary,
-						}),
-						sources: ["Calendar", "Tasks", "Boards"],
-						actions: [calendarActionForWorkspace(workspaceId)],
-					};
-				}
-			}
-		}
-
-		// ---------------------------------------------------------------------
-		// 3c. OVERVIEW SUMMARY ("what happened" across all channels)
-		// ---------------------------------------------------------------------
-		if (intent.mode === "channels_overview") {
-			const authUserId = await getAuthUserId(ctx);
-			if (!authUserId) {
-				return { answer: "Sign in to use the assistant.", sources: [] };
-			}
-			const workspaceId = args.workspaceId as Id<"workspaces">;
-			await ctx.runQuery(api.members.current, { workspaceId });
-
-			const now = new Date();
-			const todayFrom = startOfDayMs(now);
-			const todayTo = endOfDayMs(now);
-
-			const recent = await ctx.runQuery(
-				api.messages.getRecentWorkspaceChannelMessages,
-				{
-					workspaceId,
-					from: todayFrom,
-					to: todayTo,
-					limit: 350,
-					perChannelLimit: 4,
-				}
-			);
-
-			if (!recent?.length) {
-				return {
-					answer: "No channel updates found today.",
-					sources: ["Messages"],
-				};
-			}
-
-			type Rec = {
-				channelName: string;
-				authorName: string;
-				body: string;
-				creationTime: number;
-			};
-			const byChannel = new Map<string, Rec[]>();
-			for (const r of recent as unknown as Rec[]) {
-				const name = String(r?.channelName ?? "").trim();
-				if (!name) continue;
-				const list = byChannel.get(name) ?? [];
-				list.push({
-					channelName: name,
-					authorName: String(r?.authorName ?? "").trim(),
-					body: String(r?.body ?? ""),
-					creationTime:
-						typeof r?.creationTime === "number" ? r.creationTime : 0,
-				});
-				byChannel.set(name, list);
-			}
-
-			const activeChannels = Array.from(byChannel.entries())
-				.map(([channelName, msgs]) => ({
-					channelName,
-					count: msgs.length,
-					last: Math.max(...msgs.map((m) => m.creationTime || 0)),
-				}))
-				.sort((a, b) => b.last - a.last || b.count - a.count)
-				.slice(0, 12);
-
-			const channelBlocks = activeChannels
-				.map(({ channelName }) => {
-					const msgs = (byChannel.get(channelName) ?? [])
-						.sort((a, b) => a.creationTime - b.creationTime)
-						.slice(-4);
-					const snippets = msgs
-						.map((m) => {
-							const who = m.authorName ? `@${m.authorName}: ` : "";
-							return `- ${who}${truncateOneLine(m.body, 200)}`;
-						})
-						.join("\n");
-					return `#${channelName}\n${snippets}`;
-				})
-				.join("\n\n");
-
-			const prompt = `You are Proddy, a personal work assistant.
-
-Task:
-- The user asked: "summarize all channels".
-- Produce a short recap per channel, using ONLY the provided snippets.
-
-Strict rules:
-- Do NOT quote any snippet or copy 5+ consecutive words.
-- Do NOT output topic/keyword lists and do NOT mention message counts.
-- Do NOT invent details.
-- Keep it short.
-
-Output format (plain text):
-#<channel>
-- <1 short bullet>
-- <optional 2nd bullet>
-
-Only include channels provided.
-
-Channel snippets (today):
-${channelBlocks}`;
-
-			try {
-				const answer = await generateLLMResponse({
-					prompt,
-					systemPrompt: "",
-					recentMessages: recentChatMessages,
-				});
-				return {
-					answer,
-					sources: ["Messages"],
-				};
-			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "";
-				const detail = errorMessage.includes(
-					"GOOGLE_GENERATIVE_AI_API_KEY is required"
-				)
-					? "AI is not configured for channel summaries."
-					: "AI channel summary is temporarily unavailable.";
-
-				const fallback = activeChannels
-					.map(
-						({ channelName }) =>
-							`#${channelName}\n- Recent activity posted (summary unavailable)`
-					)
-					.join("\n\n");
-
-				return {
-					answer: `${detail}\n\n${fallback}`,
-					sources: ["Messages"],
-				};
-			}
-		}
-
-		if (intent.mode === "overview") {
-			// Workspace "summarize all": today's agenda + a short recap across recent channel messages.
-			const authUserId = await getAuthUserId(ctx);
-			if (!authUserId) {
-				return { answer: "Sign in to use the assistant.", sources: [] };
-			}
-			const now = new Date();
-			const todayFrom = startOfDayMs(now);
-			const todayTo = endOfDayMs(now);
-			const workspaceId = args.workspaceId as Id<"workspaces">;
-			await ctx.runQuery(api.members.current, { workspaceId });
-
-			const currentMember = await ctx.runQuery(api.members.current, {
-				workspaceId,
-			});
-			const memberId = currentMember?._id;
-
-			const [events, tasksDueToday, upcomingTasks, assignedCards, mentioned] =
-				await Promise.all([
-					ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
-						workspaceId,
-						from: todayFrom,
-						to: todayTo,
-					}),
-					ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
-						workspaceId,
-						from: todayFrom,
-						to: todayTo,
-						onlyIncomplete: true,
-					}),
-					ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
-						workspaceId,
-						limit: 25,
-					}),
-					memberId
-						? ctx.runQuery(api.board.getAssignedCards, {
-								workspaceId,
-								memberId,
-							})
-						: Promise.resolve([]),
-					ctx.runQuery(api.messages.getMentionedMessages, {
-						workspaceId,
-						limit: 40,
-					}),
-				]);
-
-			const undatedTasks = (upcomingTasks || [])
-				.filter((t) => typeof t?.dueDate !== "number")
-				.slice(0, 10)
-				.map((t) => ({
-					title: String(t?.title ?? ""),
-					dueDate: undefined,
-					priority: t?.priority ?? undefined,
-				}));
-			const tasks = [...(tasksDueToday || []), ...undatedTasks].filter((t) =>
-				String(t?.title ?? "").trim()
-			);
-
-			type AssignedCardShape = {
-				title?: unknown;
-				dueDate?: unknown;
-				priority?: unknown;
-				channelName?: unknown;
-			};
-			const mappedCards = (assignedCards || []).map((c: AssignedCardShape) => ({
-				title: String(c?.title ?? ""),
-				dueDate:
-					typeof c?.dueDate === "number" ? (c.dueDate as number) : undefined,
-				priority: normalizePriority(c?.priority),
-				channelName:
-					typeof c?.channelName === "string"
-						? (c.channelName as string)
-						: undefined,
-			}));
-			const cardsDueToday = mappedCards.filter((c) => {
-				const dueDate = c.dueDate;
-				if (typeof dueDate !== "number") return false;
-				return dueDate >= todayFrom && dueDate <= todayTo;
-			});
-			const cardsUndated = mappedCards
-				.filter((c) => typeof c?.dueDate !== "number")
-				.slice(0, 10);
-			const cards = [...cardsDueToday, ...cardsUndated].filter((c) =>
-				String(c?.title ?? "").trim()
-			);
-
-			const todaysMentions = (mentioned || []).filter((m) => {
-				const created =
-					typeof m?._creationTime === "number" ? m._creationTime : 0;
-				return created >= todayFrom && created <= todayTo;
-			});
-			const mentionsSummary = todaysMentions
-				.slice(0, 6)
-				.map((m) => {
-					const who = String(m?.user?.name ?? "Someone").trim();
-					const ctxName = String(m?.context?.name ?? "Mention").trim();
-					return `- @${who} in ${ctxName}`;
-				})
-				.join("\n");
-
-			let channelRecap: string | null = null;
-			try {
-				const recent = await ctx.runQuery(
-					api.messages.getRecentWorkspaceChannelMessages,
-					{
-						workspaceId,
-						from: todayFrom,
-						to: todayTo,
-						limit: 250,
-						perChannelLimit: 3,
-					}
-				);
-
-				const lines = (recent || [])
-					.map((m: any) => {
-						const channelName = String(m?.channelName ?? "unknown").trim();
-						const who = String(m?.authorName ?? "").trim();
-						const body = truncateOneLine(String(m?.body ?? ""), 180);
-						const prefix = `#${channelName}${who ? ` @${who}` : ""}: `;
-						return `${prefix}${body}`.trim();
-					})
-					.filter(Boolean)
-					.slice(-30);
-
-				if (lines.length) {
-					const prompt = `You are Proddy, a personal work assistant.
-
-Task:
-- Summarize what happened across the workspace today using ONLY the provided recent channel snippets.
-
-Strict rules:
-- Do NOT quote any snippet or copy 5+ consecutive words.
-- Do NOT output topic/keyword lists and do NOT mention message counts.
-- Do NOT invent details. If it isn't supported by the snippets, omit it.
-- Output plain bullet points only (no priority buckets).
-
-Output format:
-Workspace Updates (Today)
-- <bullet>
-- <bullet>
-
-Keep it concise: 5-12 bullets max.
-
-Recent channel snippets:
-${lines.map((l: string) => `- ${l}`).join("\n")}`;
-
-					channelRecap = await generateLLMResponse({
-						prompt,
-						systemPrompt: "",
-						recentMessages: recentChatMessages,
-					});
-				}
-			} catch (e) {
-				// Keep the agenda response even if the model fails.
-				const errorMessage = e instanceof Error ? e.message : "";
-				channelRecap = errorMessage.includes(
-					"GOOGLE_GENERATIVE_AI_API_KEY is required"
-				)
-					? "AI is not configured for workspace summaries."
-					: "AI workspace summary is temporarily unavailable.";
-			}
-
-			const agenda = renderAgendaDigest({
-				now,
-				label: "today",
-				windowLabel: "today",
-				events,
-				tasks,
-				cards,
-				mentionsCount: todaysMentions.length,
-				mentionsSummary: mentionsSummary || undefined,
-			});
-
-			const answer = [
-				agenda.trim(),
-				channelRecap ? `\n\n${channelRecap.trim()}` : "",
-			]
-				.join("")
-				.trim();
-
-			return {
-				answer,
-				sources: ["Calendar", "Tasks", "Boards", "Messages"],
-			};
-		}
-
-		// ---------------------------------------------------------------------
-		// 4. FALLBACK → KNOWLEDGE BASE (RAG) – used by assistant/chatbot only
-		// ---------------------------------------------------------------------
-		let ragResults: Array<{ text: string }> = [];
-		let isIndexing = false;
+	try {
+		const answer = await generateLLMResponse({
+			prompt,
+			systemPrompt: "",
+			recentMessages: recentChatMessages,
+		});
+		return { answer, sources: ["Messages"] };
+	} catch (e) {
+		const errorMessage = e instanceof Error ? e.message : "";
+		const detail = errorMessage.includes(
+			"GOOGLE_GENERATIVE_AI_API_KEY is required"
+		)
+			? "AI is not configured for workspace summaries."
+			: "AI workspace summary is temporarily unavailable.";
+		return { answer: detail, sources: ["Messages"] };
+	}
+}
+
+async function fetchAssignedCardsForUser(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">
+) {
+	const currentMember = await ctx.runQuery(api.members.current, {
+		workspaceId,
+	});
+	if (!currentMember) return [];
+	const cards = await ctx.runQuery(api.board.getAssignedCards, {
+		workspaceId,
+		memberId: currentMember._id,
+	});
+	return cards.map((c: AssignedCardRow) => ({
+		title: String(c.title ?? ""),
+		dueDate: typeof c.dueDate === "number" ? c.dueDate : undefined,
+		priority: normalizePriority(c.priority),
+		channelName: typeof c.channelName === "string" ? c.channelName : undefined,
+	}));
+}
+
+async function handleTeamStatusRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	recentChatMessages: ReadonlyArray<ChatMessage>
+): Promise<AssistantResult> {
+	await ctx.runQuery(api.members.current, { workspaceId });
+	const [members, presenceState, channels] = await Promise.all([
+		ctx.runQuery(api.members.get, { workspaceId }),
+		ctx.runQuery(api.presence.listWorkspacePresence, { workspaceId }),
+		ctx.runQuery(api.channels.get, { workspaceId }),
+	]);
+
+	const onlineUserIds = new Set(
+		(presenceState || [])
+			.filter((p: PresenceRow) => Boolean(p?.online))
+			.map((p: PresenceRow) => String(p?.userId))
+	);
+
+	const totalMembers = Array.isArray(members) ? members.length : 0;
+	const onlineMembers = (members || []).filter((m: MemberRow) =>
+		onlineUserIds.has(String(m?.userId))
+	);
+	const offlineMembers = (members || []).filter(
+		(m: MemberRow) => !onlineUserIds.has(String(m?.userId))
+	);
+
+	const formatMember = (m: { user?: { name?: string } }) =>
+		`@${String(m?.user?.name ?? "Unknown").trim()}`;
+
+	const lines: string[] = [];
+	lines.push("Team Status Overview:");
+	lines.push(`👥 Online: ${onlineMembers.length}/${totalMembers} team members`);
+	if (onlineMembers.length) {
+		lines.push(
+			`🟢 Online: ${onlineMembers.slice(0, 12).map(formatMember).join(", ")}${onlineMembers.length > 12 ? "…" : ""}`
+		);
+	}
+
+	type TeamUpdate = { author: string; channel: string; body: string };
+	const updates: TeamUpdate[] = [];
+	for (const ch of (channels || []).slice(0, 6)) {
+		const recent = await ctx.runQuery(api.messages.getRecentChannelMessages, {
+			channelId: ch._id as Id<"channels">,
+			limit: 6,
+		});
+		const last = Array.isArray(recent) ? recent[recent.length - 1] : null;
+		if (!last?.body) continue;
+		updates.push({
+			author: String(last.authorName || "Someone").trim(),
+			body: truncateOneLine(String(last.body), 140),
+			channel: String(ch?.name || "unknown"),
+		});
+	}
+
+	if (updates.length) {
+		lines.push("");
+		lines.push("Recent updates (summary):");
+		const context = updates
+			.slice(0, 6)
+			.map((u) => `@${u.author} in #${u.channel}: ${u.body}`)
+			.join("\n");
 		try {
-			const ragResponse = await ctx.runAction(api.ragchat.semanticSearch, {
-				workspaceId,
-				userId: args.userId,
-				query: args.query,
-				limit: 5,
-			});
-			ragResults = ragResponse.results.map(
-				(r: { content: Array<{ text: string }> }) => ({
-					text: r.content.map((c) => c.text).join("\n"),
-				})
-			);
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			if (errorMessage.includes("No compatible namespace found")) {
-				try {
-					await ctx.runMutation(api.ragchat.autoInitializeWorkspace, {
-						workspaceId,
-						limit: 1000,
-					});
-					isIndexing = true;
-				} catch {
-					// Ignore
-				}
-				ragResults = [];
-			} else {
-				console.error("RAG search error:", error);
-				ragResults = [];
-			}
-		}
-
-		const ragContext = ragResults
-			.map((c, i) => `[Doc ${i + 1}] ${c.text ?? ""}`)
-			.join("\n\n");
-
-		if (!ragContext) {
-			const generalPrompt = `You are Proddy, a personal work assistant. The user asked: "${args.query}"
-
-Provide a helpful, friendly response. You can:
-- Explain what you can help with (calendar, tasks, team status, messages, notes, boards)
-- Suggest they ask about specific features
-- Provide general productivity advice if relevant to their question
-
-Keep it brief and actionable.`;
-
-			try {
-				const answer = await generateLLMResponse({
-					prompt: generalPrompt,
-					systemPrompt: DEFAULT_SYSTEM_PROMPT,
-					recentMessages: recentChatMessages,
-				});
-				return {
-					answer:
-						answer +
-						(isIndexing
-							? "\n\n💡 *I'm learning about your workspace in the background to provide better answers soon!*"
-							: ""),
-					sources: [],
-				};
-			} catch (error) {
-				console.error("LLM generation error:", error);
-				return {
-					answer:
-						"I'm here to help! You can ask me about:\n• Your calendar and meetings\n• Tasks and deadlines\n• Team status updates\n• Messages in channels\n• Notes and boards\n\nWhat would you like to know?",
-					sources: [],
-				};
-			}
-		}
-
-		const combinedContext = `KNOWLEDGE BASE:\n${ragContext}`.trim();
-		const mixedPrompt = `Answer as a personal work assistant using ONLY the provided context.
-
-Rules:
-- Never quote or paste any context verbatim.
-- Do not include any continuous 5+ words copied from the context.
-- Do NOT output topic/keyword lists or message counts.
-- Prefer short headings and bullet points.
-
-Question: ${args.query}
-
-Context:\n${combinedContext}`;
-
-		try {
-			const answer = await generateLLMResponse({
-				prompt: mixedPrompt,
+			const summary = await generateLLMResponse({
+				prompt: `Summarize these recent team updates.\n\nRules:\n- Do NOT paste the messages verbatim.\n- Keep it to 1-3 short bullet points.\n- If you mention a person, format as @Name.\n\nUpdates:\n${context}`,
 				systemPrompt: "",
 				recentMessages: recentChatMessages,
 			});
-			const sources = [...(ragResults.length > 0 ? ["Knowledge Base"] : [])];
-			return { answer, sources };
-		} catch (error) {
-			console.error("LLM generation error in chatbot:", error);
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			if (errorMessage.includes("OPENAI_API_KEY")) {
-				return {
-					answer:
-						"AI service is not configured. Please contact your administrator to set up the OpenAI API key.",
-					sources: [],
-				};
+			lines.push(summary);
+		} catch {
+			lines.push(
+				updates
+					.slice(0, 6)
+					.map((u) => `• @${u.author} posted in #${u.channel}`)
+					.join("\n")
+			);
+		}
+	}
+
+	if (offlineMembers.length) {
+		lines.push("");
+		lines.push(
+			`⚫ Offline: ${offlineMembers.slice(0, 15).map(formatMember).join(", ")}${offlineMembers.length > 15 ? "…" : ""}`
+		);
+	}
+
+	return { answer: lines.join("\n"), sources: ["Presence", "Messages"] };
+}
+
+async function handleAgendaTodayRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	now: Date,
+	todayFrom: number,
+	todayTo: number
+): Promise<AssistantResult> {
+	const [events, tasksDueToday, upcomingTasks, assignedCards, mentioned] =
+		await Promise.all([
+			ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
+				workspaceId,
+				from: todayFrom,
+				to: todayTo,
+			}),
+			ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
+				workspaceId,
+				from: todayFrom,
+				to: todayTo,
+				onlyIncomplete: true,
+			}),
+			ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
+				workspaceId,
+				limit: 25,
+			}),
+			fetchAssignedCardsForUser(ctx, workspaceId),
+			ctx.runQuery(api.messages.getMentionedMessages, {
+				workspaceId,
+				limit: 80,
+			}),
+		]);
+
+	const undatedTasks = (upcomingTasks || [])
+		.filter((t: TaskRow) => typeof t?.dueDate !== "number")
+		.slice(0, 10)
+		.map((t: TaskRow) => ({
+			title: String(t?.title ?? ""),
+			dueDate: undefined as number | undefined,
+			priority: t?.priority ?? undefined,
+		}));
+	const tasks = [...(tasksDueToday || []), ...undatedTasks]
+		.filter((t: TaskRow) => String(t?.title ?? "").trim())
+		.map((t: TaskRow) => ({
+			title: String(t?.title ?? ""),
+			dueDate:
+				typeof t?.dueDate === "number" ? (t.dueDate as number) : undefined,
+			priority: normalizePriority(t?.priority),
+		}));
+
+	const cardsDueToday = (assignedCards || []).filter(
+		(c: AssignedCardRow) =>
+			typeof c?.dueDate === "number" &&
+			c.dueDate >= todayFrom &&
+			c.dueDate <= todayTo
+	);
+	const cards = [
+		...cardsDueToday,
+		...(assignedCards || [])
+			.filter((c: AssignedCardRow) => typeof c?.dueDate !== "number")
+			.slice(0, 10),
+	].filter((c: AssignedCardRow) => String(c?.title ?? "").trim());
+
+	const todaysMentions = (mentioned || []).filter((m: MentionRow) => {
+		const created = typeof m?._creationTime === "number" ? m._creationTime : 0;
+		return created >= todayFrom && created <= todayTo;
+	});
+	const mentionsSummary = todaysMentions
+		.slice(0, 6)
+		.map((m: MentionRow) => {
+			const who = String(m?.user?.name ?? "Someone").trim();
+			const ctxName = String(m?.context?.name ?? "Mention").trim();
+			return `- @${who} in ${ctxName}`;
+		})
+		.join("\n");
+
+	return {
+		answer: renderAgendaDigest({
+			now,
+			label: "your day",
+			windowLabel: "today",
+			events,
+			tasks,
+			cards,
+			mentionsCount: todaysMentions.length,
+			mentionsSummary: mentionsSummary || undefined,
+		}),
+		sources: ["Calendar", "Tasks", "Boards"],
+		actions: [calendarActionForWorkspace(workspaceId)],
+	};
+}
+
+async function handleAgendaTomorrowRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	now: Date,
+	todayFrom: number,
+	tomorrowFrom: number,
+	tomorrowTo: number,
+	recentChatMessages: ReadonlyArray<ChatMessage>
+): Promise<AssistantResult> {
+	const [events, tasksDueTomorrow, upcomingTasks, assignedCards, mentioned] =
+		await Promise.all([
+			ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
+				workspaceId,
+				from: tomorrowFrom,
+				to: tomorrowTo,
+			}),
+			ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
+				workspaceId,
+				from: tomorrowFrom,
+				to: tomorrowTo,
+				onlyIncomplete: true,
+			}),
+			ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
+				workspaceId,
+				limit: 25,
+			}),
+			fetchAssignedCardsForUser(ctx, workspaceId),
+			ctx.runQuery(api.messages.getMentionedMessages, {
+				workspaceId,
+				limit: 120,
+			}),
+		]);
+
+	const undatedTasks = (upcomingTasks || [])
+		.filter((t: TaskRow) => typeof t?.dueDate !== "number")
+		.slice(0, 10)
+		.map((t: TaskRow) => ({
+			title: String(t?.title ?? ""),
+			dueDate: undefined as number | undefined,
+			priority: t?.priority ?? undefined,
+		}));
+	const tasks = [...(tasksDueTomorrow || []), ...undatedTasks]
+		.filter((t: TaskRow) => String(t?.title ?? "").trim())
+		.map((t: TaskRow) => ({
+			title: String(t?.title ?? ""),
+			dueDate:
+				typeof t?.dueDate === "number" ? (t.dueDate as number) : undefined,
+			priority: normalizePriority(t?.priority),
+		}));
+
+	const cardsDueTomorrow = (assignedCards || []).filter(
+		(c: AssignedCardRow) =>
+			typeof c?.dueDate === "number" &&
+			c.dueDate >= tomorrowFrom &&
+			c.dueDate <= tomorrowTo
+	);
+	const cards = [
+		...cardsDueTomorrow,
+		...(assignedCards || [])
+			.filter((c: AssignedCardRow) => typeof c?.dueDate !== "number")
+			.slice(0, 10),
+	].filter((c: AssignedCardRow) => String(c?.title ?? "").trim());
+
+	const tomorrowKey = shortDate(tomorrowFrom);
+	const mentionCandidates = (mentioned || [])
+		.filter((m: MentionRow) => {
+			const created =
+				typeof m?._creationTime === "number" ? m._creationTime : 0;
+			return created >= todayFrom;
+		})
+		.slice(0, 40)
+		.map(
+			(m: MentionRow): MentionCandidateRow => ({
+				who: String(m?.user?.name ?? "Someone").trim(),
+				ctxName: String(m?.context?.name ?? "Mention"),
+				created: typeof m?._creationTime === "number" ? m._creationTime : 0,
+				body: String(m?.body ?? ""),
+			})
+		);
+
+	const matches = mentionCandidates.filter((m: MentionCandidateRow) =>
+		isLikelyTomorrowReferenceFallback(m.body, tomorrowKey)
+	);
+	let mentionsSummary: string | undefined;
+	if (mentionCandidates.length) {
+		try {
+			const mentionContext = mentionCandidates
+				.map((m: MentionCandidateRow, i: number) => {
+					const when = m.created ? new Date(m.created).toISOString() : "";
+					const body = normalizeWhitespaceForPrompt(m.body, 260);
+					return `(${i + 1}) [${when}] @${m.who} in ${m.ctxName}: ${body}`;
+				})
+				.join("\n");
+			mentionsSummary = await generateLLMResponse({
+				prompt: `You are helping with a personal agenda for tomorrow.\n\nTask:\n- From the MENTIONS below, identify which items are relevant to TOMORROW (or the next day), even if the message has small spelling mistakes or informal phrasing.\n- Then summarize those relevant items.\n\nStrict rules:\n- Never quote or paste any message verbatim.\n- Do not include any continuous 5+ words copied from any message.\n- Keep bullets short and action-oriented.\n- If you mention a person, format as @Name.\n\nOutput format:\n- <summary>\n\nIf there are no relevant mentions, output EXACTLY:\nNo items\n\nMentions:\n${mentionContext}`,
+				systemPrompt: "",
+				recentMessages: recentChatMessages,
+			});
+		} catch {
+			if (matches.length) {
+				mentionsSummary = matches
+					.slice(0, 6)
+					.map(
+						(m: { who: string; ctxName: string }) =>
+							`- @${m.who} in ${m.ctxName}`
+					)
+					.join("\n");
 			}
-			if (
-				errorMessage.includes("rate limit") ||
-				errorMessage.includes("quota")
-			) {
-				return {
-					answer:
-						"AI service is temporarily unavailable due to rate limits. Please try again in a moment.",
-					sources: [],
-				};
+		}
+	}
+
+	return {
+		answer: renderAgendaDigest({
+			now,
+			label: "tomorrow",
+			windowLabel: "tomorrow",
+			events,
+			tasks,
+			cards,
+			mentionsCount: matches.length,
+			mentionsSummary,
+		}),
+		sources: ["Calendar", "Tasks", "Boards"],
+		actions: [calendarActionForWorkspace(workspaceId)],
+	};
+}
+
+const PERSONAL_ASSISTANT_MODES = [
+	"agenda_today",
+	"agenda_tomorrow",
+	"tasks_today",
+	"tasks_tomorrow",
+	"calendar_next_week",
+	"calendar_today",
+	"calendar_tomorrow",
+	"calendar",
+	"incidents",
+	"boards",
+	"tasks",
+] as const;
+
+type PersonalAssistantMode = (typeof PERSONAL_ASSISTANT_MODES)[number];
+
+function isPersonalAssistantMode(
+	mode: AssistantIntent["mode"]
+): mode is PersonalAssistantMode {
+	return PERSONAL_ASSISTANT_MODES.includes(mode as PersonalAssistantMode);
+}
+
+type PersonalAssistantDateRange = {
+	now: Date;
+	todayFrom: number;
+	todayTo: number;
+	tomorrowFrom: number;
+	tomorrowTo: number;
+};
+
+function getPersonalAssistantDateRange(now: Date): PersonalAssistantDateRange {
+	const todayFrom = startOfDayMs(now);
+	const todayTo = endOfDayMs(now);
+	const tomorrow = new Date(now);
+	tomorrow.setDate(now.getDate() + 1);
+	return {
+		now,
+		todayFrom,
+		todayTo,
+		tomorrowFrom: startOfDayMs(tomorrow),
+		tomorrowTo: endOfDayMs(tomorrow),
+	};
+}
+
+function getTasksPrivacyBlock(query: string): AssistantResult | null {
+	const normalizedQuery = query.trim().toLowerCase();
+	const queryWithoutPunctuation = normalizedQuery.replace(
+		/[^a-z0-9\s#@'-]/g,
+		" "
+	);
+	if (
+		/@\w+/.test(queryWithoutPunctuation) ||
+		/\b(\w+)'s\s+tasks\b/.test(queryWithoutPunctuation)
+	) {
+		return {
+			answer:
+				'I can only show tasks assigned to you (the signed-in user). If you want, ask "What are my tasks for today?" or "Show my tasks".',
+			sources: [],
+		};
+	}
+	return null;
+}
+
+async function handleIncidentsRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">
+): Promise<AssistantResult> {
+	await ctx.runQuery(api.members.current, { workspaceId });
+	let channels: Array<{ _id: Id<"channels">; name: string }> = [];
+	try {
+		channels = await ctx.runQuery(api.channels.get, { workspaceId });
+	} catch {
+		channels = [];
+	}
+	const candidates = (channels || [])
+		.map((channel) => String(channel?.name ?? "").trim())
+		.filter(Boolean)
+		.filter((name) =>
+			/\b(incident|incidents|oncall|ops|status|alerts)\b/i.test(name)
+		)
+		.slice(0, 6)
+		.map((name) => `#${name}`);
+	const lines = ["Incident Status"];
+	lines.push(
+		candidates.length
+			? `- Check incident channels: ${candidates.join(", ")}`
+			: "- Check your incident/oncall/status channels for the latest updates"
+	);
+	lines.push(
+		"- Identify owner, impact, current mitigation, and next update time"
+	);
+	return {
+		answer: lines.join("\n"),
+		sources: candidates.length ? ["Channels"] : [],
+	};
+}
+
+async function handleCalendarNextWeekRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	now: Date
+): Promise<AssistantResult> {
+	const range = getNextWeekRange(now);
+	const events = await ctx.runQuery(
+		api.chatbotQueries.getMyCalendarEventsInRange,
+		{
+			workspaceId,
+			from: range.from,
+			to: range.to,
+		}
+	);
+	const sorted = sortEventsByTimeThenTitle(events);
+	const byDay = new Map<string, Array<{ title: string; time?: string }>>();
+	for (const event of sorted) {
+		const dayKey = shortDate(event.date);
+		const list = byDay.get(dayKey) ?? [];
+		list.push({ title: event.title, time: event.time });
+		byDay.set(dayKey, list);
+	}
+	const lines = ["Next Week's Calendar:"];
+	if (!sorted.length) {
+		lines.push("No events");
+	} else {
+		for (const [day, items] of Array.from(byDay.entries())) {
+			lines.push("", `📅 ${day}`);
+			for (const event of items) {
+				lines.push(
+					`${clockEmojiForTime(event.time)} ${event.time ? `${event.time} - ` : ""}${event.title}`
+				);
 			}
-			const contextInfo =
-				ragResults.length > 0
-					? `I found ${ragResults.length} relevant document(s), but couldn't generate a summary.`
-					: "I couldn't find relevant information to answer your question.";
+		}
+	}
+	return {
+		answer: lines.join("\n"),
+		sources: ["Calendar"],
+		actions: [calendarActionForWorkspace(workspaceId)],
+	};
+}
+
+async function handleCalendarDayRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	opts: { from: number; to: number; title: string }
+): Promise<AssistantResult> {
+	const events = await ctx.runQuery(
+		api.chatbotQueries.getMyCalendarEventsInRange,
+		{
+			workspaceId,
+			from: opts.from,
+			to: opts.to,
+		}
+	);
+	return {
+		answer: renderCalendarSection({
+			title: opts.title,
+			events: sortEventsByTimeThenTitle(events).map((event) => ({
+				title: event.title,
+				time: event.time,
+			})),
+		}),
+		sources: ["Calendar"],
+		actions: [calendarActionForWorkspace(workspaceId)],
+	};
+}
+
+async function handleCalendarCombinedRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	dates: PersonalAssistantDateRange
+): Promise<AssistantResult> {
+	const [todayEvents, tomorrowEvents] = await Promise.all([
+		ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
+			workspaceId,
+			from: dates.todayFrom,
+			to: dates.todayTo,
+		}),
+		ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
+			workspaceId,
+			from: dates.tomorrowFrom,
+			to: dates.tomorrowTo,
+		}),
+	]);
+	const lines = [
+		renderCalendarSection({
+			title: "Today's Calendar:",
+			events: sortEventsByTimeThenTitle(todayEvents).map((event) => ({
+				title: event.title,
+				time: event.time,
+			})),
+		}),
+		"",
+		renderCalendarSection({
+			title: "Tomorrow's Calendar:",
+			events: sortEventsByTimeThenTitle(tomorrowEvents).map((event) => ({
+				title: event.title,
+				time: event.time,
+			})),
+		}),
+	];
+	return {
+		answer: lines.join("\n"),
+		sources: ["Calendar"],
+		actions: [calendarActionForWorkspace(workspaceId)],
+	};
+}
+
+async function handleBoardsRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">
+): Promise<AssistantResult> {
+	const assignedCards = await fetchAssignedCardsForUser(ctx, workspaceId);
+	const groups = emptyPriorityGroup();
+	for (const card of assignedCards.slice(0, 80)) {
+		const bucket = bucketByDueDate({
+			dueDate: card.dueDate,
+			explicitPriority: card.priority,
+		});
+		groups[bucket].push(
+			`${card.title}${card.channelName ? ` (#${card.channelName})` : ""}${card.dueDate ? ` (due ${shortDate(card.dueDate)})` : ""}`
+		);
+	}
+	return {
+		answer: renderTrafficLightPrioritySections({
+			header: "Your Board Cards:",
+			groups,
+		}),
+		sources: ["Boards"],
+	};
+}
+
+function renderTasksPriorityAnswer(
+	tasks: Array<{
+		title: string;
+		dueDate?: number;
+		priority?: Priority | null;
+	}>,
+	header: string,
+	dueDateLabel: "paren" | "due" = "paren"
+): AssistantResult {
+	const groups = emptyPriorityGroup();
+	for (const task of tasks) {
+		const bucket = bucketByDueDate({
+			dueDate: task.dueDate,
+			explicitPriority: task.priority ?? undefined,
+		});
+		const dueSuffix =
+			task.dueDate && dueDateLabel === "due"
+				? ` (due ${shortDate(task.dueDate)})`
+				: task.dueDate
+					? ` (${shortDate(task.dueDate)})`
+					: "";
+		groups[bucket].push(`${task.title}${dueSuffix}`);
+	}
+	return {
+		answer: renderTrafficLightPrioritySections({ header, groups }),
+		sources: ["Tasks"],
+	};
+}
+
+async function handleTasksInRangeRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	opts: { from: number; to: number; header: string }
+): Promise<AssistantResult> {
+	const tasks = await ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
+		workspaceId,
+		from: opts.from,
+		to: opts.to,
+		onlyIncomplete: true,
+	});
+	return renderTasksPriorityAnswer(tasks, opts.header);
+}
+
+async function handleUpcomingTasksRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">
+): Promise<AssistantResult> {
+	const tasks = await ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
+		workspaceId,
+		limit: 25,
+	});
+	return renderTasksPriorityAnswer(tasks, "Your Tasks:", "due");
+}
+
+async function handlePersonalAssistant(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	intent: AssistantIntent,
+	query: string,
+	recentChatMessages: ReadonlyArray<ChatMessage>
+): Promise<AssistantResult | null> {
+	const authUserId = await getAuthUserId(ctx);
+	if (!authUserId) {
+		return { answer: "Sign in to use the assistant.", sources: [] };
+	}
+
+	if (intent.mode === "team_status") {
+		return handleTeamStatusRoute(ctx, workspaceId, recentChatMessages);
+	}
+
+	if (!isPersonalAssistantMode(intent.mode)) {
+		return null;
+	}
+
+	const dates = getPersonalAssistantDateRange(new Date());
+
+	switch (intent.mode) {
+		case "tasks": {
+			const privacyBlock = getTasksPrivacyBlock(query);
+			if (privacyBlock) return privacyBlock;
+			return handleUpcomingTasksRoute(ctx, workspaceId);
+		}
+		case "incidents":
+			return handleIncidentsRoute(ctx, workspaceId);
+		case "calendar_next_week":
+			return handleCalendarNextWeekRoute(ctx, workspaceId, dates.now);
+		case "calendar_today":
+			return handleCalendarDayRoute(ctx, workspaceId, {
+				from: dates.todayFrom,
+				to: dates.todayTo,
+				title: "Today's Meetings:",
+			});
+		case "calendar_tomorrow":
+			return handleCalendarDayRoute(ctx, workspaceId, {
+				from: dates.tomorrowFrom,
+				to: dates.tomorrowTo,
+				title: "Tomorrow's Calendar:",
+			});
+		case "calendar":
+			return handleCalendarCombinedRoute(ctx, workspaceId, dates);
+		case "boards":
+			return handleBoardsRoute(ctx, workspaceId);
+		case "tasks_today":
+			return handleTasksInRangeRoute(ctx, workspaceId, {
+				from: dates.todayFrom,
+				to: dates.todayTo,
+				header: "Today's Tasks:",
+			});
+		case "tasks_tomorrow":
+			return handleTasksInRangeRoute(ctx, workspaceId, {
+				from: dates.tomorrowFrom,
+				to: dates.tomorrowTo,
+				header: "Tomorrow's Tasks:",
+			});
+		case "agenda_today":
+			return handleAgendaTodayRoute(
+				ctx,
+				workspaceId,
+				dates.now,
+				dates.todayFrom,
+				dates.todayTo
+			);
+		case "agenda_tomorrow":
+			return handleAgendaTomorrowRoute(
+				ctx,
+				workspaceId,
+				dates.now,
+				dates.todayFrom,
+				dates.tomorrowFrom,
+				dates.tomorrowTo,
+				recentChatMessages
+			);
+		default:
+			return null;
+	}
+}
+
+async function handleChannelsOverviewRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	recentChatMessages: ReadonlyArray<ChatMessage>
+): Promise<AssistantResult> {
+	const authUserId = await getAuthUserId(ctx);
+	if (!authUserId) {
+		return { answer: "Sign in to use the assistant.", sources: [] };
+	}
+	await ctx.runQuery(api.members.current, { workspaceId });
+
+	const now = new Date();
+	const recent = await ctx.runQuery(
+		api.messages.getRecentWorkspaceChannelMessages,
+		{
+			workspaceId,
+			from: startOfDayMs(now),
+			to: endOfDayMs(now),
+			limit: 350,
+			perChannelLimit: 4,
+		}
+	);
+
+	if (!recent?.length) {
+		return { answer: "No channel updates found today.", sources: ["Messages"] };
+	}
+
+	type Rec = {
+		channelName: string;
+		authorName: string;
+		body: string;
+		creationTime: number;
+	};
+	const byChannel = new Map<string, Rec[]>();
+	for (const r of recent as RecentWorkspaceChannelMessageRow[]) {
+		const name = String(r?.channelName ?? "").trim();
+		if (!name) continue;
+		const list = byChannel.get(name) ?? [];
+		list.push({
+			channelName: name,
+			authorName: String(r?.authorName ?? "").trim(),
+			body: String(r?.body ?? ""),
+			creationTime: typeof r?._creationTime === "number" ? r._creationTime : 0,
+		});
+		byChannel.set(name, list);
+	}
+
+	const activeChannels = Array.from(byChannel.entries())
+		.map(([channelName, msgs]) => ({
+			channelName,
+			count: msgs.length,
+			last: Math.max(...msgs.map((m) => m.creationTime || 0)),
+		}))
+		.sort((a, b) => b.last - a.last || b.count - a.count)
+		.slice(0, 12);
+
+	const channelBlocks = activeChannels
+		.map(({ channelName }) => {
+			const msgs = (byChannel.get(channelName) ?? [])
+				.sort((a, b) => a.creationTime - b.creationTime)
+				.slice(-4);
+			const snippets = msgs
+				.map(
+					(m) =>
+						`- ${m.authorName ? `@${m.authorName}: ` : ""}${truncateOneLine(m.body, 200)}`
+				)
+				.join("\n");
+			return `#${channelName}\n${snippets}`;
+		})
+		.join("\n\n");
+
+	const prompt = `You are Proddy, a personal work assistant.\n\nTask:\n- The user asked: "summarize all channels".\n- Produce a short recap per channel, using ONLY the provided snippets.\n\nStrict rules:\n- Do NOT quote any snippet or copy 5+ consecutive words.\n- Do NOT output topic/keyword lists and do NOT mention message counts.\n- Do NOT invent details.\n- Keep it short.\n\nOutput format (plain text):\n#<channel>\n- <1 short bullet>\n- <optional 2nd bullet>\n\nOnly include channels provided.\n\nChannel snippets (today):\n${channelBlocks}`;
+
+	try {
+		const answer = await generateLLMResponse({
+			prompt,
+			systemPrompt: "",
+			recentMessages: recentChatMessages,
+		});
+		return { answer, sources: ["Messages"] };
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : "";
+		const detail = errorMessage.includes(
+			"GOOGLE_GENERATIVE_AI_API_KEY is required"
+		)
+			? "AI is not configured for channel summaries."
+			: "AI channel summary is temporarily unavailable.";
+		const fallback = activeChannels
+			.map(
+				({ channelName }) =>
+					`#${channelName}\n- Recent activity posted (summary unavailable)`
+			)
+			.join("\n\n");
+		return { answer: `${detail}\n\n${fallback}`, sources: ["Messages"] };
+	}
+}
+
+async function handleOverviewRoute(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	recentChatMessages: ReadonlyArray<ChatMessage>
+): Promise<AssistantResult> {
+	const authUserId = await getAuthUserId(ctx);
+	if (!authUserId) {
+		return { answer: "Sign in to use the assistant.", sources: [] };
+	}
+	const now = new Date();
+	const todayFrom = startOfDayMs(now);
+	const todayTo = endOfDayMs(now);
+	await ctx.runQuery(api.members.current, { workspaceId });
+
+	const currentMember = await ctx.runQuery(api.members.current, {
+		workspaceId,
+	});
+	const memberId = currentMember?._id;
+
+	const [events, tasksDueToday, upcomingTasks, assignedCards, mentioned] =
+		await Promise.all([
+			ctx.runQuery(api.chatbotQueries.getMyCalendarEventsInRange, {
+				workspaceId,
+				from: todayFrom,
+				to: todayTo,
+			}),
+			ctx.runQuery(api.chatbotQueries.getMyTasksInRange, {
+				workspaceId,
+				from: todayFrom,
+				to: todayTo,
+				onlyIncomplete: true,
+			}),
+			ctx.runQuery(api.chatbotQueries.getMyUpcomingTasks, {
+				workspaceId,
+				limit: 25,
+			}),
+			memberId
+				? ctx.runQuery(api.board.getAssignedCards, { workspaceId, memberId })
+				: Promise.resolve([]),
+			ctx.runQuery(api.messages.getMentionedMessages, {
+				workspaceId,
+				limit: 40,
+			}),
+		]);
+
+	const undatedTasks = (upcomingTasks || [])
+		.filter((t: TaskRow) => typeof t?.dueDate !== "number")
+		.slice(0, 10)
+		.map((t: TaskRow) => ({
+			title: String(t?.title ?? ""),
+			dueDate: undefined as number | undefined,
+			priority: t?.priority ?? undefined,
+		}));
+	const tasks = [...(tasksDueToday || []), ...undatedTasks]
+		.filter((t: TaskRow) => String(t?.title ?? "").trim())
+		.map((t: TaskRow) => ({
+			title: String(t?.title ?? ""),
+			dueDate:
+				typeof t?.dueDate === "number" ? (t.dueDate as number) : undefined,
+			priority: normalizePriority(t?.priority),
+		}));
+
+	const mappedCards = (assignedCards || []).map((c: AssignedCardRow) => ({
+		title: String(c?.title ?? ""),
+		dueDate: typeof c?.dueDate === "number" ? (c.dueDate as number) : undefined,
+		priority: normalizePriority(c?.priority),
+		channelName:
+			typeof c?.channelName === "string"
+				? (c.channelName as string)
+				: undefined,
+	}));
+	const cards = [
+		...mappedCards.filter((card: { dueDate?: number }) => {
+			const dueDate = card.dueDate;
+			return (
+				typeof dueDate === "number" &&
+				dueDate >= todayFrom &&
+				dueDate <= todayTo
+			);
+		}),
+		...mappedCards
+			.filter((card: { dueDate?: number }) => typeof card?.dueDate !== "number")
+			.slice(0, 10),
+	].filter((card: { title: string }) => String(card?.title ?? "").trim());
+
+	const todaysMentions = (mentioned || []).filter((m: MentionRow) => {
+		const created = typeof m?._creationTime === "number" ? m._creationTime : 0;
+		return created >= todayFrom && created <= todayTo;
+	});
+	const mentionsSummary = todaysMentions
+		.slice(0, 6)
+		.map(
+			(m: MentionRow) =>
+				`- @${String(m?.user?.name ?? "Someone").trim()} in ${String(m?.context?.name ?? "Mention").trim()}`
+		)
+		.join("\n");
+
+	let channelRecap: string | null = null;
+	try {
+		const recent = await ctx.runQuery(
+			api.messages.getRecentWorkspaceChannelMessages,
+			{
+				workspaceId,
+				from: todayFrom,
+				to: todayTo,
+				limit: 250,
+				perChannelLimit: 3,
+			}
+		);
+		const lines = (recent || [])
+			.map((m: RecentWorkspaceChannelMessageRow) => {
+				const channelName = String(m?.channelName ?? "unknown").trim();
+				const who = String(m?.authorName ?? "").trim();
+				const body = truncateOneLine(String(m?.body ?? ""), 180);
+				return `#${channelName}${who ? ` @${who}` : ""}: ${body}`.trim();
+			})
+			.filter(Boolean)
+			.slice(-30);
+
+		if (lines.length) {
+			channelRecap = await generateLLMResponse({
+				prompt: `You are Proddy, a personal work assistant.\n\nTask:\n- Summarize what happened across the workspace today using ONLY the provided recent channel snippets.\n\nStrict rules:\n- Do NOT quote any snippet or copy 5+ consecutive words.\n- Do NOT output topic/keyword lists and do NOT mention message counts.\n- Do NOT invent details.\n- Output plain bullet points only (no priority buckets).\n\nOutput format:\nWorkspace Updates (Today)\n- <bullet>\n\nKeep it concise: 5-12 bullets max.\n\nRecent channel snippets:\n${lines.map((l: string) => `- ${l}`).join("\n")}`,
+				systemPrompt: "",
+				recentMessages: recentChatMessages,
+			});
+		}
+	} catch (e) {
+		const errorMessage = e instanceof Error ? e.message : "";
+		channelRecap = errorMessage.includes(
+			"GOOGLE_GENERATIVE_AI_API_KEY is required"
+		)
+			? "AI is not configured for workspace summaries."
+			: "AI workspace summary is temporarily unavailable.";
+	}
+
+	const agenda = renderAgendaDigest({
+		now,
+		label: "today",
+		windowLabel: "today",
+		events,
+		tasks,
+		cards,
+		mentionsCount: todaysMentions.length,
+		mentionsSummary: mentionsSummary || undefined,
+	});
+
+	return {
+		answer: [agenda.trim(), channelRecap ? `\n\n${channelRecap.trim()}` : ""]
+			.join("")
+			.trim(),
+		sources: ["Calendar", "Tasks", "Boards", "Messages"],
+	};
+}
+
+async function handleRAGFallback(
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
+	args: { query: string; userId?: Id<"users"> },
+	recentChatMessages: ReadonlyArray<ChatMessage>
+): Promise<AssistantResult> {
+	let ragResults: Array<{ text: string; sourceRefs: string[] }> = [];
+	let isIndexing = false;
+
+	try {
+		const ragResponse = await ctx.runAction(api.ragchat.semanticSearch, {
+			workspaceId,
+			userId: args.userId,
+			query: args.query,
+			limit: 5,
+		});
+		const entriesById = new Map(
+			(ragResponse.entries ?? []).map((entry: RagCatalogEntry) => [
+				entry.entryId,
+				entry,
+			])
+		);
+		const dedupe = (items: string[]): string[] => {
+			const seen = new Set<string>();
+			const out: string[] = [];
+			for (const item of items) {
+				const cleaned = String(item ?? "").trim();
+				if (!cleaned || seen.has(cleaned)) continue;
+				seen.add(cleaned);
+				out.push(cleaned);
+			}
+			return out;
+		};
+		ragResults = ragResponse.results.map(
+			(r: {
+				entryId: string;
+				content: Array<{ text: string; metadata?: Record<string, unknown> }>;
+			}) => {
+				const entry = entriesById.get(r.entryId);
+				const firstContent = r.content?.[0];
+				const chunkMeta =
+					firstContent?.metadata && typeof firstContent.metadata === "object"
+						? firstContent.metadata
+						: {};
+				const entryMeta =
+					entry?.metadata && typeof entry.metadata === "object"
+						? entry.metadata
+						: {};
+				const contentType =
+					typeof chunkMeta.contentType === "string"
+						? chunkMeta.contentType
+						: typeof entryMeta.sourceType === "string"
+							? entryMeta.sourceType
+							: "content";
+				const sourceRefs = dedupe([
+					`source:${contentType}`,
+					entry?.title ? `title:${String(entry.title)}` : "",
+					entry?.key ? `entity:${String(entry.key)}` : "",
+					typeof entryMeta.parentTaskId === "string"
+						? `parentTask:${entryMeta.parentTaskId}`
+						: "",
+					typeof entryMeta.linkedIssueId === "string"
+						? `linkedIssue:${entryMeta.linkedIssueId}`
+						: "",
+					typeof entryMeta.issueId === "string"
+						? `issue:${entryMeta.issueId}`
+						: "",
+					typeof entryMeta.dependencyId === "string"
+						? `dependency:${entryMeta.dependencyId}`
+						: "",
+					typeof entryMeta.relatedEntityId === "string"
+						? `relatedEntity:${entryMeta.relatedEntityId}`
+						: "",
+					typeof entryMeta.channelId === "string"
+						? `workspaceContext:channel:${entryMeta.channelId}`
+						: "",
+					typeof entryMeta.documentId === "string"
+						? `document:${entryMeta.documentId}`
+						: "",
+					typeof chunkMeta.documentReference === "string"
+						? `documentRef:${chunkMeta.documentReference}`
+						: "",
+					typeof chunkMeta.sourceChain === "string"
+						? `sourceChain:${chunkMeta.sourceChain}`
+						: "",
+				]);
+				return { text: r.content.map((c) => c.text).join("\n"), sourceRefs };
+			}
+		);
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		if (errorMessage.includes("No compatible namespace found")) {
+			try {
+				await ctx.runMutation(api.ragchat.autoInitializeWorkspace, {
+					workspaceId,
+					limit: 1000,
+				});
+				isIndexing = true;
+			} catch {
+				// Ignore
+			}
+			ragResults = [];
+		} else {
+			console.error("RAG search error:", error);
+			ragResults = [];
+		}
+	}
+
+	const ragContext = ragResults
+		.map((c, i) => {
+			const citation = c.sourceRefs.length
+				? `Sources: ${c.sourceRefs.join(" | ")}`
+				: "Sources: unknown";
+			return `[Doc ${i + 1}] ${citation}\n${c.text ?? ""}`;
+		})
+		.join("\n\n");
+
+	if (!ragContext) {
+		const generalPrompt = `You are Proddy, a personal work assistant. The user asked: "${args.query}"\n\nProvide a helpful, friendly response. You can:\n- Explain what you can help with (calendar, tasks, team status, messages, notes, boards)\n- Suggest they ask about specific features\n- Provide general productivity advice if relevant to their question\n\nKeep it brief and actionable.`;
+		try {
+			const answer = await generateLLMResponse({
+				prompt: generalPrompt,
+				systemPrompt: DEFAULT_SYSTEM_PROMPT,
+				recentMessages: recentChatMessages,
+			});
 			return {
-				answer: `Unable to generate a response at this time. ${contextInfo}\n\nError: ${errorMessage.substring(0, 150)}`,
+				answer:
+					answer +
+					(isIndexing
+						? "\n\n💡 *I'm learning about your workspace in the background to provide better answers soon!*"
+						: ""),
+				sources: [],
+			};
+		} catch (error) {
+			console.error("LLM generation error:", error);
+			return {
+				answer:
+					"I'm here to help! You can ask me about:\n• Your calendar and meetings\n• Tasks and deadlines\n• Team status updates\n• Messages in channels\n• Notes and boards\n\nWhat would you like to know?",
 				sources: [],
 			};
 		}
+	}
+
+	const mixedPrompt =
+		`Answer as a personal work assistant using ONLY the provided context.\n\nRules:\n- Never quote or paste any context verbatim.\n- Do not include any continuous 5+ words copied from the context.\n- Do NOT output topic/keyword lists or message counts.\n- Prefer short headings and bullet points.\n\nQuestion: ${args.query}\n\nContext:\nKNOWLEDGE BASE:\n${ragContext}`.trim();
+
+	try {
+		const answer = await generateLLMResponse({
+			prompt: mixedPrompt,
+			systemPrompt: "",
+			recentMessages: recentChatMessages,
+		});
+		const uniqueSourceRefs = Array.from(
+			new Set(ragResults.flatMap((r) => r.sourceRefs))
+		).slice(0, 20);
+		const sources =
+			uniqueSourceRefs.length > 0
+				? uniqueSourceRefs
+				: ragResults.length > 0
+					? ["Knowledge Base"]
+					: [];
+		return { answer, sources };
+	} catch (error) {
+		console.error("LLM generation error in chatbot:", error);
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		if (errorMessage.includes("OPENAI_API_KEY")) {
+			return {
+				answer:
+					"AI service is not configured. Please contact your administrator to set up the OpenAI API key.",
+				sources: [],
+			};
+		}
+		if (errorMessage.includes("rate limit") || errorMessage.includes("quota")) {
+			return {
+				answer:
+					"AI service is temporarily unavailable due to rate limits. Please try again in a moment.",
+				sources: [],
+			};
+		}
+		const contextInfo =
+			ragResults.length > 0
+				? `I found ${ragResults.length} relevant document(s), but couldn't generate a summary.`
+				: "I couldn't find relevant information to answer your question.";
+		return {
+			answer: `Unable to generate a response at this time. ${contextInfo}\n\nError: ${errorMessage.substring(0, 150)}`,
+			sources: [],
+		};
+	}
+}
+
+export const askAssistant = action({
+	args: {
+		query: v.string(),
+		userId: v.optional(v.id("users")),
+		workspaceId: v.optional(v.id("workspaces")),
+	},
+
+	handler: async (ctx, args): Promise<AssistantResult> => {
+		const workspaceId = args.workspaceId;
+		if (!workspaceId) {
+			return { answer: "Workspace context is required.", sources: [] };
+		}
+
+		const trackingUserId = args.userId ?? (await getAuthUserId(ctx));
+		if (trackingUserId) {
+			try {
+				await ctx.runMutation(internal.usageTracking.recordAIRequest, {
+					userId: trackingUserId as Id<"users">,
+					workspaceId,
+					featureType: "aiRequest",
+				});
+			} catch (e) {
+				console.warn("[UsageTracking] Failed to record AI request:", e);
+			}
+		}
+
+		const recentChatMessages = await fetchRecentChatMessages(ctx, workspaceId);
+
+		const composioResult = await handleComposioRouting(
+			ctx,
+			args.query,
+			workspaceId
+		);
+		if (composioResult) return composioResult;
+
+		const intent = extractIntent(args.query);
+
+		const channelResult = await handleChannelRoute(
+			ctx,
+			args.query,
+			workspaceId,
+			intent,
+			recentChatMessages
+		);
+		if (channelResult) return channelResult;
+
+		if (intent.mode === "workspace_summary") {
+			return handleWorkspaceSummaryRoute(
+				ctx,
+				workspaceId,
+				args.query,
+				recentChatMessages
+			);
+		}
+
+		const personalResult = await handlePersonalAssistant(
+			ctx,
+			workspaceId,
+			intent,
+			args.query,
+			recentChatMessages
+		);
+		if (personalResult) return personalResult;
+
+		if (intent.mode === "channels_overview") {
+			return handleChannelsOverviewRoute(ctx, workspaceId, recentChatMessages);
+		}
+
+		if (intent.mode === "overview") {
+			return handleOverviewRoute(ctx, workspaceId, recentChatMessages);
+		}
+
+		return handleRAGFallback(ctx, workspaceId, args, recentChatMessages);
 	},
 });

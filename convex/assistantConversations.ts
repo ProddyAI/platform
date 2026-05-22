@@ -1,6 +1,61 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import {
+	internalMutation,
+	type MutationCtx,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
+import { canAssignTaskToMember } from "./assistant/taskAssignment";
+import {
+	formatPendingTaskDraftConfirmation,
+	mergePendingTaskDraftUpdate,
+} from "./assistant/taskDrafts";
+
+const TASK_PRIORITY_VALIDATOR = v.union(
+	v.literal("low"),
+	v.literal("medium"),
+	v.literal("high")
+);
+
+const getMember = async (
+	ctx: QueryCtx | MutationCtx,
+	workspaceId: Id<"workspaces">,
+	userId: Id<"users">
+) => {
+	return await ctx.db
+		.query("members")
+		.withIndex("by_workspace_id_user_id", (q) =>
+			q.eq("workspaceId", workspaceId).eq("userId", userId)
+		)
+		.unique();
+};
+
+const wasMemberInvitedByCurrentMember = async (
+	ctx: QueryCtx | MutationCtx,
+	workspaceId: Id<"workspaces">,
+	currentMemberId: Id<"members">,
+	targetUserId: Id<"users">
+) => {
+	const targetUser = await ctx.db.get(targetUserId);
+	const email = targetUser?.email?.trim().toLowerCase();
+	if (!email) return false;
+
+	const invites = await ctx.db
+		.query("workspaceInvites")
+		.withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+		.collect();
+
+	return invites.some(
+		(invite) =>
+			invite.invitedBy === currentMemberId &&
+			invite.used &&
+			invite.email.trim().toLowerCase() === email
+	);
+};
 
 export const getByWorkspaceAndUser = query({
 	args: {
@@ -13,7 +68,8 @@ export const getByWorkspaceAndUser = query({
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 	},
 });
 
@@ -31,35 +87,422 @@ export const getByConversationId = query({
 	},
 });
 
+export const listRecentConversations = query({
+	args: {
+		workspaceId: v.id("workspaces"),
+		limit: v.optional(v.number()),
+		userId: v.optional(v.id("users")), // accepted but ignored — auth provides the real userId
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) return [];
+
+		const limit = args.limit ?? 20;
+		const conversations = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+			)
+			.order("desc")
+			.take(limit);
+
+		return conversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+	},
+});
+
 export const upsertConversation = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
 		conversationId: v.string(),
+		title: v.optional(v.string()),
 		lastMessageAt: v.number(),
 	},
 	handler: async (ctx, args) => {
 		const existing = await ctx.db
 			.query("assistantConversations")
-			.withIndex("by_workspace_id_user_id", (q) =>
-				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
 			)
 			.unique();
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {
-				conversationId: args.conversationId,
+				title: args.title ?? existing.title,
 				lastMessageAt: args.lastMessageAt,
 			});
 			return existing._id;
 		}
 
+		const now = Date.now();
 		return await ctx.db.insert("assistantConversations", {
 			workspaceId: args.workspaceId,
 			userId: args.userId,
 			conversationId: args.conversationId,
+			title: args.title ?? "New Chat",
 			lastMessageAt: args.lastMessageAt,
+			createdAt: now,
 		});
+	},
+});
+
+export const updateConversationTitle = mutation({
+	args: {
+		conversationId: v.string(),
+		title: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Not authenticated");
+		}
+
+		const conversation = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
+			)
+			.unique();
+
+		if (!conversation) {
+			throw new Error("Conversation not found");
+		}
+
+		if (conversation.userId !== userId) {
+			throw new Error("Not authorized to update this conversation");
+		}
+
+		await ctx.db.patch(conversation._id, {
+			title: args.title,
+		});
+
+		return conversation._id;
+	},
+});
+
+export const updateConversationTitleWithSource = mutation({
+	args: {
+		conversationId: v.string(),
+		title: v.string(),
+		titleSource: v.optional(
+			v.union(v.literal("ai_generated"), v.literal("manual"))
+		),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Not authenticated");
+		}
+
+		const conversation = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
+			)
+			.unique();
+
+		if (!conversation) {
+			throw new Error("Conversation not found");
+		}
+
+		if (conversation.userId !== userId) {
+			throw new Error("Not authorized to update this conversation");
+		}
+
+		await ctx.db.patch(conversation._id, {
+			title: args.title,
+			titleSource: args.titleSource,
+		});
+
+		return conversation._id;
+	},
+});
+
+export const updateConversationTitleInternal = internalMutation({
+	args: {
+		conversationId: v.string(),
+		title: v.string(),
+		titleSource: v.optional(
+			v.union(v.literal("ai_generated"), v.literal("manual"))
+		),
+		userId: v.id("users"),
+	},
+	handler: async (ctx, args) => {
+		const conversation = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
+			)
+			.unique();
+
+		if (!conversation) {
+			console.warn(
+				"[autoTitle] Conversation not found, skipping title update",
+				args.conversationId
+			);
+			return null;
+		}
+
+		const isDefaultTitle =
+			!conversation.title ||
+			conversation.title === "New Chat" ||
+			conversation.title === "Assistant Chat";
+
+		if (!isDefaultTitle && conversation.titleSource !== "ai_generated") {
+			return null;
+		}
+
+		await ctx.db.patch(conversation._id, {
+			title: args.title,
+			titleSource: args.titleSource,
+		});
+
+		return conversation._id;
+	},
+});
+
+export const deleteConversation = mutation({
+	args: {
+		conversationId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error("Not authenticated");
+		}
+
+		const conversation = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_conversation_id", (q) =>
+				q.eq("conversationId", args.conversationId)
+			)
+			.unique();
+
+		if (!conversation) {
+			throw new Error("Conversation not found");
+		}
+
+		if (conversation.userId !== userId) {
+			throw new Error("Not authorized to delete this conversation");
+		}
+
+		await ctx.db.delete(conversation._id);
+		return { success: true };
+	},
+});
+
+export const savePendingTaskDraft = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"), // kept for tool-call compatibility; overridden by auth
+		title: v.optional(v.string()),
+		description: v.optional(v.string()),
+		assigneeMemberId: v.optional(v.id("members")),
+		dueDate: v.optional(v.number()),
+		priority: v.optional(TASK_PRIORITY_VALIDATOR),
+	},
+	handler: async (ctx, args) => {
+		const authUserId = await getAuthUserId(ctx);
+		if (!authUserId) throw new Error("Not authenticated");
+		const member = await getMember(ctx, args.workspaceId, authUserId);
+		if (!member) {
+			throw new Error("Not a member of this workspace");
+		}
+
+		const existing = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
+			)
+			.order("desc")
+			.first();
+		if (!existing) {
+			throw new Error("Assistant conversation not found");
+		}
+
+		let assigneeMemberId: Id<"members"> | undefined;
+		let assigneeUserId: Id<"users"> | undefined;
+		let assigneeName: string | undefined;
+
+		if (args.assigneeMemberId) {
+			const assigneeMember = await ctx.db.get(args.assigneeMemberId);
+			if (!assigneeMember || assigneeMember.workspaceId !== args.workspaceId) {
+				throw new Error(
+					"Tasks can only be assigned to accepted workspace members."
+				);
+			}
+
+			const targetWasInvitedByCurrentMember =
+				await wasMemberInvitedByCurrentMember(
+					ctx,
+					args.workspaceId,
+					member._id,
+					assigneeMember.userId
+				);
+			const canAssign = canAssignTaskToMember({
+				currentMemberId: member._id,
+				currentRole: member.role,
+				targetMemberId: assigneeMember._id,
+				targetWasInvitedByCurrentMember,
+			});
+
+			if (!canAssign) {
+				if (
+					assigneeMember.role === "owner" &&
+					member.role !== "owner" &&
+					member.role !== "admin"
+				) {
+					throw new Error(
+						"Members cannot assign tasks directly to the workspace owner."
+					);
+				}
+
+				throw new Error(
+					"Only owners, admins, or the original inviter can assign tasks to this member."
+				);
+			}
+
+			const assigneeUser = await ctx.db.get(assigneeMember.userId);
+			assigneeMemberId = assigneeMember._id;
+			assigneeUserId = assigneeMember.userId;
+			assigneeName =
+				assigneeUser?.name?.trim() ||
+				assigneeUser?.email?.trim() ||
+				"Assigned member";
+		}
+
+		const draft = mergePendingTaskDraftUpdate(
+			existing.pendingTaskDraft,
+			{
+				title: args.title,
+				description: args.description,
+				assigneeMemberId,
+				assigneeUserId,
+				assigneeName,
+				dueDate: args.dueDate,
+				priority: args.priority,
+			},
+			Date.now()
+		);
+
+		await ctx.db.patch(existing._id, {
+			pendingTaskDraft: draft,
+			lastMessageAt: Date.now(),
+		});
+
+		return {
+			draft,
+			confirmationMessage: formatPendingTaskDraftConfirmation(draft),
+		};
+	},
+});
+
+export const clearPendingTaskDraft = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"), // kept for tool-call compatibility; overridden by auth
+	},
+	returns: v.boolean(),
+	handler: async (ctx, args) => {
+		const authUserId = await getAuthUserId(ctx);
+		if (!authUserId) throw new Error("Not authenticated");
+
+		const existing = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
+			)
+			.order("desc")
+			.first();
+		if (!existing) {
+			return false;
+		}
+
+		await ctx.db.patch(existing._id, {
+			pendingTaskDraft: undefined,
+			lastMessageAt: Date.now(),
+		});
+		return true;
+	},
+});
+
+export const createTaskFromPendingDraft = mutation({
+	args: {
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"), // kept for tool-call compatibility; overridden by auth
+	},
+	returns: v.object({
+		taskId: v.id("tasks"),
+		title: v.string(),
+		assigneeName: v.optional(v.string()),
+	}),
+	handler: async (ctx, args) => {
+		const authUserId = await getAuthUserId(ctx);
+		if (!authUserId) throw new Error("Not authenticated");
+
+		const member = await getMember(ctx, args.workspaceId, authUserId);
+		if (!member) {
+			throw new Error("Not a member of this workspace");
+		}
+
+		const existing = await ctx.db
+			.query("assistantConversations")
+			.withIndex("by_workspace_id_user_id", (q) =>
+				q.eq("workspaceId", args.workspaceId).eq("userId", authUserId)
+			)
+			.order("desc")
+			.first();
+		const draft = existing?.pendingTaskDraft;
+		if (!existing || !draft) {
+			throw new Error("No pending task draft to create");
+		}
+
+		let assigneeUserId = authUserId;
+		if (draft.assigneeMemberId) {
+			const assigneeMember = await ctx.db.get(draft.assigneeMemberId);
+			if (!assigneeMember || assigneeMember.workspaceId !== args.workspaceId) {
+				throw new Error(
+					"The selected assignee is no longer an active member of this workspace."
+				);
+			}
+			assigneeUserId = assigneeMember.userId;
+		} else if (draft.assigneeUserId) {
+			assigneeUserId = draft.assigneeUserId;
+		}
+
+		const now = Date.now();
+		const taskId = await ctx.db.insert("tasks", {
+			title: draft.title,
+			description: draft.description,
+			completed: false,
+			status: "not_started",
+			dueDate: draft.dueDate,
+			priority: draft.priority,
+			tags: [],
+			createdAt: now,
+			updatedAt: now,
+			userId: assigneeUserId,
+			workspaceId: args.workspaceId,
+		});
+
+		await ctx.db.patch(existing._id, {
+			pendingTaskDraft: undefined,
+			lastMessageAt: now,
+		});
+
+		await ctx.scheduler.runAfter(0, internal.usageTracking.recordTaskCreated, {
+			userId: assigneeUserId,
+			workspaceId: args.workspaceId,
+		});
+		await ctx.scheduler.runAfter(0, api.ragchat.autoIndexTask, {
+			taskId,
+		});
+
+		return {
+			taskId,
+			title: draft.title,
+			assigneeName: draft.assigneeName,
+		};
 	},
 });
 
@@ -76,6 +519,7 @@ export const getMyConversation = query({
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 	},
 });

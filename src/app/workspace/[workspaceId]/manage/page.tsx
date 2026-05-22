@@ -56,6 +56,10 @@ function getTabFromLocation(): ManageTab {
 		return "billing";
 	}
 
+	if (params.has("connected") && params.get("connected") === "true") {
+		return "integrations";
+	}
+
 	return "workspace";
 }
 

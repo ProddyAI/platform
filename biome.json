@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.4.9/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -34,15 +34,15 @@
 		"rules": {
 			"recommended": true,
 			"a11y": {
-				"useButtonType": "off",
-				"useSemanticElements": "off",
+				"useButtonType": "warn",
+				"useSemanticElements": "warn",
 				"noStaticElementInteractions": "off",
-				"useKeyWithClickEvents": "off",
-				"noLabelWithoutControl": "off",
-				"noSvgWithoutTitle": "off",
-				"useAriaPropsSupportedByRole": "off",
-				"useFocusableInteractive": "off",
-				"useAriaPropsForRole": "off"
+				"useKeyWithClickEvents": "warn",
+				"noLabelWithoutControl": "warn",
+				"noSvgWithoutTitle": "warn",
+				"useAriaPropsSupportedByRole": "warn",
+				"useFocusableInteractive": "warn",
+				"useAriaPropsForRole": "warn"
 			},
 			"complexity": {
 				"noExtraBooleanCast": "error",
@@ -68,9 +68,9 @@
 				"noUnusedVariables": "off",
 				"useIsNan": "error",
 				"useValidForDirection": "error",
-				"useExhaustiveDependencies": "off",
-				"noUnusedFunctionParameters": "off",
-				"useHookAtTopLevel": "off"
+				"useExhaustiveDependencies": "warn",
+				"noUnusedFunctionParameters": "warn",
+				"useHookAtTopLevel": "error"
 			},
 			"style": {
 				"useConst": "error",
@@ -78,7 +78,7 @@
 				"noNonNullAssertion": "off"
 			},
 			"security": {
-				"noDangerouslySetInnerHtml": "off"
+				"noDangerouslySetInnerHtml": "warn"
 			},
 			"suspicious": {
 				"noAsyncPromiseExecutor": "warn",
@@ -131,5 +131,56 @@
 				"useSortedAttributes": "on"
 			}
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["src/components/3pc/**"],
+			"linter": {
+				"rules": {
+					"security": {
+						"noDangerouslySetInnerHtml": "off"
+					},
+					"correctness": {
+						"useExhaustiveDependencies": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/features/canvas/**"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"useExhaustiveDependencies": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"src/app/mockup/**",
+				"src/features/reports/components/charts/**",
+				"src/features/chats/components/**",
+				"src/features/landing/**",
+				"src/features/live/**",
+				"src/components/ui/**",
+				"src/components/AiNotemaker.tsx",
+				"src/features/board/**",
+				"src/features/canvas/**",
+				"src/components/label-input.tsx",
+				"src/components/member-selector.tsx"
+			],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useSemanticElements": "off",
+						"noLabelWithoutControl": "off",
+						"useFocusableInteractive": "off",
+						"useAriaPropsForRole": "off",
+						"useKeyWithClickEvents": "off"
+					}
+				}
+			}
+		}
+	]
 }

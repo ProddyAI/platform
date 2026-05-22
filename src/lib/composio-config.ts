@@ -709,11 +709,10 @@ const toolCache = new Map<string, { tools: any[]; timestamp: number }>();
 const TOOL_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 // API fallback mapping - when dashboard tools aren't available, use these alternatives
-const API_TOOL_FALLBACKS: Record<string, string[]> = {
+export const API_TOOL_FALLBACKS: Record<string, string[]> = {
 	GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER: [
 		"GITHUB_FIND_REPOSITORIES",
 		"GITHUB_LIST_ORGANIZATION_REPOSITORIES",
-		"GITHUB_ACTIVITY_LIST_REPO_S_STARRED_BY_AUTHENTICATED_USER",
 	],
 	GITHUB_LIST_PULL_REQUESTS: [
 		"GITHUB_FIND_PULL_REQUESTS",
@@ -870,7 +869,9 @@ export function filterToolsForQuery(
 		[
 			"github",
 			"repo",
+			"repos",
 			"repository",
+			"repositories",
 			"issue",
 			"pull",
 			"commit",
@@ -990,6 +991,26 @@ export function filterToolsForQuery(
 			score += 40;
 		}
 
+		// Prefer owned/authenticated repository listings for "my repos" style requests.
+		const isMyReposQuery =
+			/\bmy\s+(github\s+)?(repo|repos|repository|repositories)\b/i.test(
+				query
+			) ||
+			/\blist\s+(out\s+)?my\s+(repo|repos|repository|repositories)\b/i.test(
+				query
+			);
+		if (isMyReposQuery) {
+			if (toolName.includes("list_repositories_for_the_authenticated_user")) {
+				score += 500;
+			}
+			if (toolName.includes("starred")) {
+				score -= 300;
+			}
+			if (toolName.includes("find_repositories")) {
+				score -= 120;
+			}
+		}
+
 		return { ...tool, _score: score };
 	});
 
@@ -1037,7 +1058,9 @@ function extractKeywordsFromQuery(query: string): string[] {
 	// Object keywords
 	const objectKeywords = [
 		"repo",
+		"repos",
 		"repository",
+		"repositories",
 		"issue",
 		"pull",
 		"request",

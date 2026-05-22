@@ -254,7 +254,7 @@ export const BoardPageContent = ({
 	const [cardPriority, setCardPriority] = useState<
 		"lowest" | "low" | "medium" | "high" | "highest" | ""
 	>("");
-	const [cardDueDate, setCardDueDate] = useState<Date | undefined>(undefined);
+	const [cardDueDate, setCardDueDate] = useState<Date | undefined>();
 	const [cardAssignees, setCardAssignees] = useState<Id<"members">[]>([]);
 
 	// ── Mutations ───────────────────────────────────────────────────────────

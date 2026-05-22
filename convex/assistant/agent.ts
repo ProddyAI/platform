@@ -1,8 +1,3 @@
-/**
- * Proddy Assistant Agent - unified agent using @convex-dev/agent.
- * Uses thread-based conversations with workspace and Composio tools.
- */
-
 import { openai } from "@ai-sdk/openai";
 import { Agent } from "@convex-dev/agent";
 import { stepCountIs } from "ai";
@@ -23,18 +18,19 @@ Guidelines:
 - Format responses with clear headings and bullet points
 - When showing dates/times, use readable formats
 - If you don't have information, say so clearly
-- Never invent data; only use tool outputs and user-provided context`;
+- Never invent data; only use tool outputs and user-provided context
+- Prefer direct workspace tools for notes, tasks, channel activity, and general catch-up; use semantic search only as a fallback
+- For note matches, include titles, channels when available, and enough snippet context to be useful
+- For task lists, keep the answer compact and put overdue, in-progress, on-hold, urgent, or blocking work first
+- For task creation requests, draft the task first and ask the user to confirm or change it before anything is created
+- For broad catch-up questions like "what happened in general", summarize concrete updates instead of apologizing when data exists
+- Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."`;
 
-/** Custom context for tool handlers (workspaceId, userId). */
 export type ProddyAgentContext = {
 	workspaceId: Id<"workspaces">;
 	userId: Id<"users">;
 };
 
-/**
- * Agent with custom context (workspaceId, userId) so tools can call workspace-scoped APIs.
- * Pass { ...ctx, workspaceId, userId } when calling generateText / continueThread.
- */
 export const proddyAgent: Agent<ProddyAgentContext> =
 	new Agent<ProddyAgentContext>((components as any).agent, {
 		name: "Proddy Assistant",

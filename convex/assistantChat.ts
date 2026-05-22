@@ -1,9 +1,22 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
+import type { FunctionReference } from "convex/server";
 import { v } from "convex/values";
-import OpenAI from "openai";
-import { api, components, internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import { api, components } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
+import { getDatabaseChatConversation } from "./assistant/databaseChatConversation";
+import {
+	type AssistantProfileRecord,
+	buildAssistantProfilePrompt,
+} from "./assistant/profile";
+import {
+	finalizeSendMessageSuccess,
+	handleSendMessageFailure,
+	prepareSendMessageContext,
+	processSendMessageEarlyPaths,
+	recordAssistantSignal,
+	recordSendMessageUsage,
+	runSendMessageCompletion,
+	type SendMessageResult,
+} from "./assistant/sendMessageFlow";
 
 type ToolHandlerType = "query" | "mutation" | "action";
 
@@ -16,20 +29,75 @@ type ToolDefinition = {
 		required?: string[];
 	};
 	handlerType: ToolHandlerType;
-	handler: unknown;
+	handler: FunctionReference<"query" | "mutation" | "action", "public">;
 	contextParams?: {
 		needsWorkspaceId?: boolean;
 		needsUserId?: boolean;
 	};
 };
 
-// System prompt for Proddy AI assistant
-const SYSTEM_PROMPT = `You are Proddy, a personal work assistant for team workspaces.
+function buildCurrentDateContext() {
+	const now = new Date();
+	const utcIso = now.toISOString();
+	const localFormatter = new Intl.DateTimeFormat("en-US", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+		second: "2-digit",
+		timeZoneName: "short",
+	});
+	const localTimezone =
+		Intl.DateTimeFormat().resolvedOptions().timeZone || "local timezone";
+
+	return [
+		"Current date context:",
+		`- Local runtime time: ${localFormatter.format(now)} (${localTimezone})`,
+		`- UTC timestamp: ${utcIso}`,
+		"- Always interpret relative dates like today, tomorrow, and yesterday using this current date context, not training-time assumptions.",
+	].join("\n");
+}
+
+function buildSystemPrompt(options?: {
+	hasPendingTaskDraft?: boolean;
+	pendingTaskDraftSummary?: string;
+	pendingTaskDraftAssigneeMemberId?: string;
+	pendingTaskDraftAssigneeName?: string;
+	preflightContext?: string;
+	assistantProfile?: AssistantProfileRecord;
+}) {
+	const pendingTaskInstructions =
+		options?.hasPendingTaskDraft && options.pendingTaskDraftSummary
+			? `You currently have a pending task draft for this user:
+${options.pendingTaskDraftSummary}
+
+${
+	options.pendingTaskDraftAssigneeMemberId
+		? `Current pending draft assignee member ID: ${options.pendingTaskDraftAssigneeMemberId}
+Current pending draft assignee name: ${options.pendingTaskDraftAssigneeName ?? "Unknown"}
+If the user asks for revisions without changing the assignee, keep assigning the task to this same member.`
+		: "If the user asks for revisions without naming a different assignee, keep this as a self-assigned draft."
+}
+
+If the user wants changes, update the draft by calling draftTaskForConfirmation again with the revised fields.
+Do not create the task in the same turn as drafting it. Wait for an explicit confirmation reply in a later user message.`
+			: "";
+	const personalizationPrompt = options?.assistantProfile
+		? buildAssistantProfilePrompt(options.assistantProfile)
+		: "";
+	const preflightPrompt = options?.preflightContext?.trim()
+		? options.preflightContext.trim()
+		: "";
+
+	return `You are Proddy, a personal work assistant for team workspaces.
 
 Your role:
 - Help users manage their calendar, meetings, tasks, and workspace activities
 - Provide summaries of channels and conversations
 - Answer questions about workspace data
+- Use connected external services (GitHub, Gmail, Slack, etc.) when asked
 - Be concise, actionable, and friendly
 
 Guidelines:
@@ -38,18 +106,46 @@ Guidelines:
 - When showing dates/times, use readable formats
 - If you don't have information, say so clearly
 - Never invent data - only use what the tools return
+- If a tool returns notes, messages, or summaries, use that returned data directly and do not say you lack access
+- Prefer direct workspace tools for notes, tasks, channel activity, and general catch-up; use semantic search only as a fallback
+- For note matches, include titles, channel names when available, and a useful snippet
+- For task lists, keep the answer compact and put overdue, in-progress, on-hold, urgent, or blocking work first
+- For task creation requests, first draft the task with draftTaskForConfirmation and ask the user to confirm or change it before anything is created
+- When a task is for another person, first use getWorkspaceMembers to find an accepted workspace member ID, then pass that member ID into draftTaskForConfirmation
+- Never assign a task to someone who has only been invited but has not joined the workspace yet
+- For broad catch-up questions like "what happened in general", summarize concrete updates when data exists
+- Reuse recent conversation context for short follow-ups like "what about release?"
+- Never answer with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."
+- ALWAYS use integration tools (runGithubTool, runGmailTool, runSlackTool, etc.) when the user asks about those services - do NOT say you can't access them
 
 Available capabilities:
 - Calendar: View today's/tomorrow's/next week's meetings
-- Tasks: Check tasks due today/tomorrow or all tasks
+- Tasks: Check tasks due today/tomorrow or all tasks, and search tasks by topic
+- Task drafting: Prepare a task draft for confirmation before creating anything, including assignments to accepted workspace members
+- Members: List accepted workspace members so tasks can be assigned to the right person
+- Notes: List recent notes and search notes by topic
 - Channels: Search channels, get channel summaries
 - Boards: View assigned cards across all boards
-- Workspace: Get overview statistics
-- Search: Semantic search across messages, notes, tasks
+- Workspace: Get overview statistics and a general workspace catch-up summary
+- Search: Semantic search across messages, notes, tasks as fallback only
+- GitHub: List repos, create issues, and manage PRs with runGithubTool
+- GitHub repository policy: "my repos" means repositories for the authenticated user, not starred repositories and not public search results
+- Gmail: Send email, read inbox, and search messages with runGmailTool
+- Slack: Send messages and browse channels with runSlackTool
+- Notion: Create and read pages and databases with runNotionTool
+- ClickUp: Create and manage tasks with runClickupTool
+- Linear: Create and manage issues with runLinearTool
+
+${buildCurrentDateContext()}
+
+${preflightPrompt}
+
+${personalizationPrompt}
+
+${pendingTaskInstructions}
 
 When a user asks about their schedule, tasks, or workspace, use the appropriate tools to fetch current data.`;
-
-// Define tools that AI can use (handles are created inside the action)
+}
 const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "getMyCalendarToday",
@@ -117,9 +213,35 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
+		name: "getMyTasksThisWeek",
+		description:
+			"Get tasks assigned to the user that are due this week (the next 7 days starting from today). Use when the user asks about this week's or upcoming tasks.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyTasksThisWeek,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getMyTasksNextWeek",
+		description:
+			"Get tasks assigned to the user that are due next week (7-14 days from now). Returns incomplete tasks within that date window only.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getMyTasksNextWeek,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
 		name: "getMyAllTasks",
 		description:
-			"Get all tasks assigned to the user. Can optionally include completed tasks. Use this for general task queries like 'what are my tasks' or 'show all my work'.",
+			"Get all tasks assigned to the user. Results are ranked for visible triage, so overdue, in-progress, on-hold, and higher-priority work appears first.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -133,6 +255,117 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		handlerType: "query" as const,
 		handler: api.assistantTools.getMyAllTasks,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "searchTasks",
+		description:
+			"Search tasks directly in the workspace database by keyword or topic. Use this before semantic search for task/topic questions like 'what is blocked for release' or 'tasks about onboarding'.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				query: {
+					type: "string",
+					description: "Keyword or topic to search for in tasks",
+				},
+				limit: {
+					type: "number",
+					description: "Max number of matching tasks to return (default: 12)",
+				},
+			},
+			required: ["query"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.searchTasks,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getWorkspaceMembers",
+		description:
+			"List accepted workspace members with their IDs, names, emails, and roles. Use this before drafting a task for another person so you can resolve the assignee member ID. Pending invites do not appear here.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.members.get,
+		contextParams: { needsWorkspaceId: true },
+	},
+	{
+		name: "draftTaskForConfirmation",
+		description:
+			"Draft a task and save it for confirmation. Use this for any request to create a task. This tool does not create the task yet; it prepares a preview so the user can confirm or request changes first. If the task belongs to another accepted workspace member, include assigneeMemberId. For follow-up edits to an existing draft, title is optional and unchanged fields should be reused from the current draft.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				title: {
+					type: "string",
+					description:
+						"The task title. Optional when revising an existing pending draft.",
+				},
+				description: {
+					type: "string",
+					description: "Optional task description.",
+				},
+				dueDate: {
+					type: "number",
+					description: "Optional due date as a Unix timestamp in milliseconds.",
+				},
+				priority: {
+					type: "string",
+					description: "Optional priority. Must be one of: low, medium, high.",
+				},
+				assigneeMemberId: {
+					type: "string",
+					description:
+						"Optional member ID for another accepted workspace member. Find this with getWorkspaceMembers first.",
+				},
+			},
+			required: [],
+		},
+		handlerType: "mutation" as const,
+		handler: api.assistantConversations.savePendingTaskDraft,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getRecentNotes",
+		description:
+			"Get recent notes in the workspace. Use this first when the user asks whether there are notes, asks for recent notes, or wants a list of notes.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				limit: {
+					type: "number",
+					description: "Max number of recent notes to return (default: 10)",
+				},
+			},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getRecentNotes,
+		contextParams: { needsWorkspaceId: true },
+	},
+	{
+		name: "searchNotes",
+		description:
+			"Search notes directly in the workspace database by topic or keyword. Use this before semantic search for notes about onboarding, release planning, documentation, and similar topics.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				query: {
+					type: "string",
+					description: "Topic or keyword to search for in notes",
+				},
+				limit: {
+					type: "number",
+					description: "Max number of matching notes to return (default: 10)",
+				},
+			},
+			required: ["query"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.searchNotes,
+		contextParams: { needsWorkspaceId: true },
 	},
 	{
 		name: "searchChannels",
@@ -172,8 +405,31 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 			},
 			required: ["channelId"],
 		},
-		handlerType: "action" as const,
+		handlerType: "query" as const,
 		handler: api.assistantTools.getChannelSummary,
+		contextParams: { needsWorkspaceId: true },
+	},
+	{
+		name: "getChannelDebug",
+		description:
+			"Return the raw recent messages the assistant can see for a channel. Use this only when debugging why a channel summary appears empty.",
+		parameters: {
+			type: "object" as const,
+			properties: {
+				channelId: {
+					type: "string",
+					description: "The ID of the channel to inspect.",
+				},
+				limit: {
+					type: "number",
+					description:
+						"Maximum number of raw messages to return (default: 20).",
+				},
+			},
+			required: ["channelId"],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getChannelDebug,
 		contextParams: { needsWorkspaceId: true },
 	},
 	{
@@ -187,6 +443,19 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 		},
 		handlerType: "query" as const,
 		handler: api.assistantTools.getWorkspaceOverview,
+		contextParams: { needsWorkspaceId: true, needsUserId: true },
+	},
+	{
+		name: "getWorkspaceGeneralSummary",
+		description:
+			"Get a compact catch-up summary across recent channel activity, high-priority tasks, and recent notes. Use this first for broad workspace questions like 'what happened in general'.",
+		parameters: {
+			type: "object" as const,
+			properties: {},
+			required: [],
+		},
+		handlerType: "query" as const,
+		handler: api.assistantTools.getWorkspaceGeneralSummary,
 		contextParams: { needsWorkspaceId: true, needsUserId: true },
 	},
 	{
@@ -205,7 +474,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "semanticSearch",
 		description:
-			"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use this for general questions that don't fit other tools.",
+			"Perform hybrid retrieval across workspace content (messages, notes, tasks, cards, events) by combining direct keyword search with semantic search. Use this only after direct notes, tasks, channel, or general summary tools do not provide enough information.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -260,7 +529,7 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	{
 		name: "runGithubTool",
 		description:
-			"Use GitHub to create issues, comment on PRs, or search repositories. Provide a clear instruction like 'create an issue in repo X about bug Y'.",
+			"Use GitHub to list repositories for the authenticated user, list repositories starred by the authenticated user, create issues, comment on PRs, or manage repository data. For requests like 'list my repos', pass an instruction that explicitly says to list repositories for the authenticated user. For requests like 'my starred repositories', pass an instruction that explicitly says to list repositories starred by the authenticated user. Do not use public repository search unless the user explicitly asks for search.",
 		parameters: {
 			type: "object" as const,
 			properties: {
@@ -331,32 +600,6 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
 	},
 ];
 
-// =============================================================================
-// Chat Integration with database-chat component
-// =============================================================================
-
-async function getDatabaseChatConversation(
-	ctx: any,
-	conversationId: string | null | undefined
-) {
-	if (!conversationId) {
-		return null;
-	}
-
-	try {
-		return await ctx.runQuery(components.databaseChat.conversations.get, {
-			conversationId: conversationId as any,
-		});
-	} catch (error) {
-		console.warn(
-			"[Assistant] Stored database-chat conversation ID is invalid:",
-			conversationId,
-			error
-		);
-		return null;
-	}
-}
-
 export const createConversation = mutation({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -366,17 +609,39 @@ export const createConversation = mutation({
 	},
 	returns: v.string(),
 	handler: async (ctx, args) => {
+		if (args.forceNew) {
+			const conversationId = await ctx.runMutation(
+				components.databaseChat.conversations.create,
+				{
+					externalId: `workspace_${args.workspaceId}_user_${args.userId}_${Date.now()}`,
+					title: args.title ?? "New Chat",
+				}
+			);
+
+			const now = Date.now();
+			await ctx.db.insert("assistantConversations", {
+				workspaceId: args.workspaceId,
+				userId: args.userId,
+				conversationId,
+				title: args.title ?? "New Chat",
+				lastMessageAt: now,
+				createdAt: now,
+			});
+
+			return conversationId;
+		}
+
 		const existing = await ctx.db
 			.query("assistantConversations")
 			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)
 			)
-			.unique();
+			.order("desc")
+			.first();
 
-		const existingConversation =
-			!args.forceNew && existing?.conversationId
-				? await getDatabaseChatConversation(ctx, existing.conversationId)
-				: null;
+		const existingConversation = existing?.conversationId
+			? await getDatabaseChatConversation(ctx, existing.conversationId)
+			: null;
 
 		if (existingConversation) {
 			return existingConversation._id;
@@ -386,24 +651,19 @@ export const createConversation = mutation({
 			components.databaseChat.conversations.create,
 			{
 				externalId: `workspace_${args.workspaceId}_user_${args.userId}_${Date.now()}`,
-				title: args.title ?? "Chat with Proddy",
+				title: args.title ?? "New Chat",
 			}
 		);
 
-		if (existing && args.forceNew) {
-			// Update existing record instead of creating duplicate
-			await ctx.db.patch(existing._id, {
-				conversationId,
-				lastMessageAt: Date.now(),
-			});
-		} else {
-			await ctx.db.insert("assistantConversations", {
-				workspaceId: args.workspaceId,
-				userId: args.userId,
-				conversationId,
-				lastMessageAt: Date.now(),
-			});
-		}
+		const now = Date.now();
+		await ctx.db.insert("assistantConversations", {
+			workspaceId: args.workspaceId,
+			userId: args.userId,
+			conversationId,
+			title: args.title ?? "New Chat",
+			lastMessageAt: now,
+			createdAt: now,
+		});
 
 		return conversationId;
 	},
@@ -458,7 +718,7 @@ export const getStreamDeltas = query({
 	args: { streamId: v.string(), cursor: v.number() },
 	handler: async (ctx, args) => {
 		return await ctx.runQuery(components.databaseChat.stream.listDeltas, {
-			streamId: args.streamId as any,
+			streamId: args.streamId,
 			cursor: args.cursor,
 		});
 	},
@@ -486,10 +746,6 @@ export const abortStream = mutation({
 	},
 });
 
-// =============================================================================
-// Main AI Assistant Action
-// =============================================================================
-
 export const sendMessage = action({
 	args: {
 		conversationId: v.string(),
@@ -502,208 +758,59 @@ export const sendMessage = action({
 		content: v.optional(v.string()),
 		error: v.optional(v.string()),
 	}),
-	handler: async (
-		ctx,
-		args
-	): Promise<{ success: boolean; content?: string; error?: string }> => {
-		const apiKey = process.env.OPENAI_API_KEY;
-		if (!apiKey) {
-			return { success: false, error: "OPENAI_API_KEY not configured" };
+	handler: async (ctx, args): Promise<SendMessageResult> => {
+		const prepared = await prepareSendMessageContext(ctx, args);
+		if ("success" in prepared) {
+			return prepared;
 		}
 
-		const conversationMeta = await ctx.runQuery(
-			api.assistantConversations.getByConversationId,
-			{ conversationId: args.conversationId }
-		);
-
-		const resolvedWorkspaceId =
-			args.workspaceId ?? conversationMeta?.workspaceId ?? null;
-		const resolvedUserId =
-			args.userId ?? conversationMeta?.userId ?? (await getAuthUserId(ctx));
-
-		if (!resolvedWorkspaceId || !resolvedUserId) {
-			return {
-				success: false,
-				error: "Missing workspace or user context for this conversation.",
-			};
-		}
-
-		let activeConversationId = args.conversationId;
-		const existingConversation = await getDatabaseChatConversation(
-			ctx,
-			activeConversationId
-		);
-
-		if (!existingConversation) {
-			activeConversationId = await ctx.runMutation(
-				api.assistantChat.createConversation,
-				{
-					workspaceId: resolvedWorkspaceId,
-					userId: resolvedUserId,
-					title: "Assistant Chat",
-					forceNew: true,
-				}
-			);
-		}
-
-		// Record AI usage
-		try {
-			await ctx.runMutation(internal.usageTracking.recordAIRequest, {
-				userId: resolvedUserId as Id<"users">,
-				workspaceId: resolvedWorkspaceId as Id<"workspaces">,
-				featureType: "aiRequest",
-			});
-		} catch (e) {
-			console.warn("[UsageTracking] Failed to record AI request:", e);
-		}
+		const context = prepared;
+		let streamId: string | null = null;
 
 		try {
-			// Save user message
+			await recordSendMessageUsage(ctx, context);
+
 			await ctx.runMutation(components.databaseChat.messages.add, {
-				conversationId: activeConversationId as any,
+				conversationId: context.activeConversationId,
 				role: "user",
 				content: args.message,
 			});
 
-			// Get conversation history
-			const rawMessages = await ctx.runQuery(
-				components.databaseChat.messages.list,
-				{ conversationId: activeConversationId as any }
+			const earlyResult = await processSendMessageEarlyPaths(
+				ctx,
+				args,
+				context
 			);
-
-			// Build messages array with system prompt
-			const messages = [
-				{ role: "system", content: SYSTEM_PROMPT },
-				...rawMessages.map((m: any) => ({
-					role: m.role,
-					content: m.content,
-				})),
-			];
-
-			// Create stream for delta-based streaming
-			const streamId = await ctx.runMutation(
-				components.databaseChat.stream.create,
-				{
-					conversationId: activeConversationId as any,
-				}
-			);
-
-			const openai = new OpenAI({
-				apiKey: apiKey,
-			});
-
-			// Format tools for OpenAI
-			const openaiTools: OpenAI.Chat.ChatCompletionTool[] =
-				TOOL_DEFINITIONS.map((t) => ({
-					type: "function" as const,
-					function: {
-						name: t.name,
-						description: t.description,
-						parameters: t.parameters,
-					},
-				}));
-
-			// Call OpenAI with tools
-			const completion = await openai.chat.completions.create({
-				model: "gpt-4o-mini",
-				messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
-				tools: openaiTools,
-				temperature: 0.7,
-				max_tokens: 2000,
-			});
-
-			let responseText =
-				completion.choices[0]?.message?.content || "No response generated";
-			const toolCalls = completion.choices[0]?.message?.tool_calls;
-
-			// Execute tool calls if any
-			if (toolCalls && toolCalls.length > 0) {
-				for (const toolCall of toolCalls) {
-					if (toolCall.type === "function") {
-						try {
-							const toolName = toolCall.function.name;
-							const toolArgs = JSON.parse(toolCall.function.arguments);
-
-							// Find the tool definition
-							const tool = TOOL_DEFINITIONS.find((t) => t.name === toolName);
-							if (tool) {
-								// Inject context parameters based on tool's needs
-								const fullArgs: Record<string, any> = { ...toolArgs };
-
-								if (tool.contextParams?.needsWorkspaceId) {
-									fullArgs.workspaceId = resolvedWorkspaceId;
-								}
-								if (tool.contextParams?.needsUserId) {
-									fullArgs.userId = resolvedUserId;
-								}
-
-								let result: unknown;
-								if (tool.handlerType === "query") {
-									result = await ctx.runQuery(tool.handler as any, fullArgs);
-								} else {
-									result = await ctx.runAction(tool.handler as any, fullArgs);
-								}
-
-								// Call again with tool result
-								const followUpMessages = [
-									...messages,
-									completion.choices[0].message,
-									{
-										role: "tool" as const,
-										tool_call_id: toolCall.id,
-										content: JSON.stringify(result),
-									},
-								];
-
-								const followUpCompletion = await openai.chat.completions.create(
-									{
-										model: "gpt-4o-mini",
-										messages: followUpMessages as any,
-										temperature: 0.7,
-										max_tokens: 2000,
-									}
-								);
-
-								responseText =
-									followUpCompletion.choices[0]?.message?.content ||
-									responseText;
-							}
-						} catch (error) {
-							console.error(
-								`Tool execution error for ${toolCall.function.name}:`,
-								error
-							);
-						}
-					}
-				}
+			if (earlyResult) {
+				return earlyResult;
 			}
 
-			// Finish streaming
-			await ctx.runMutation(components.databaseChat.stream.finish, {
-				streamId,
-			});
+			const assistantProfile = await recordAssistantSignal(ctx, args, context);
 
-			// Save assistant response
-			await ctx.runMutation(components.databaseChat.messages.add, {
-				conversationId: activeConversationId as any,
-				role: "assistant",
-				content: responseText,
-			});
+			const completion = await runSendMessageCompletion(
+				ctx,
+				args,
+				context,
+				assistantProfile,
+				{
+					buildSystemPrompt,
+					toolDefinitions: TOOL_DEFINITIONS,
+				}
+			);
 
-			await ctx.runMutation(api.assistantConversations.upsertConversation, {
-				workspaceId: resolvedWorkspaceId,
-				userId: resolvedUserId,
-				conversationId: activeConversationId,
-				lastMessageAt: Date.now(),
-			});
+			if (completion.kind === "early") {
+				return { success: true, content: completion.responseText };
+			}
 
-			return { success: true, content: responseText };
+			streamId = completion.streamId;
+			return finalizeSendMessageSuccess(
+				ctx,
+				context,
+				completion.responseText,
+				completion.streamId
+			);
 		} catch (error) {
-			console.error("[Assistant] Error:", error);
-			return {
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			};
+			return handleSendMessageFailure(ctx, context, streamId, error, args);
 		}
 	},
 });

@@ -1,3 +1,8 @@
+import {
+	type AssistantProfileRecord,
+	buildAssistantProfilePrompt,
+} from "../../convex/assistant/profile";
+
 export const ASSISTANT_METADATA_SCHEMA_VERSION = "v1";
 
 export type AssistantExternalApp =
@@ -39,6 +44,11 @@ export type AssistantIntent = {
 	mode: AssistantQueryMode;
 	requiresExternalTools: boolean;
 	requestedExternalApps: AssistantExternalApp[];
+};
+
+type AssistantConversationMessage = {
+	role?: string;
+	content?: string;
 };
 
 const EXTERNAL_APP_PATTERNS: Array<{
@@ -93,7 +103,112 @@ Guidelines:
 - Format responses with clear headings and bullet points
 - When showing dates/times, use readable formats
 - If you don't have information, say so clearly
-- Never invent data; only use tool outputs and user-provided context`;
+- Never invent data; only use tool outputs and user-provided context
+- For workspace questions about notes, tasks, channels, or general activity, prefer direct workspace retrieval tools first and use semantic search only as a fallback
+- For notes, include the note title and channel when available, plus enough snippet context to be useful
+- For task lists, keep the answer compact and put overdue, in-progress, on-hold, urgent, or blocking work first
+- For broad catch-up questions like "what happened in general", summarize concrete updates instead of giving an apology when data exists
+- For short follow-ups like "what about release?", reuse the most recent resolved workspace topic from the conversation when it is relevant
+- Never respond with "No response generated"; if nothing relevant is found, say "I couldn't find anything relevant yet."`;
+
+function buildCurrentDateContext() {
+	const now = new Date();
+	const utcIso = now.toISOString();
+	const localFormatter = new Intl.DateTimeFormat("en-US", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+		second: "2-digit",
+		timeZoneName: "short",
+	});
+	const localTimezone =
+		Intl.DateTimeFormat().resolvedOptions().timeZone || "local timezone";
+
+	return [
+		"Current date context:",
+		`- Local runtime time: ${localFormatter.format(now)} (${localTimezone})`,
+		`- UTC timestamp: ${utcIso}`,
+		"- Always interpret relative dates like today, tomorrow, and yesterday using this current date context, not training-time assumptions.",
+	].join("\n");
+}
+
+function extractFollowUpSubject(message: string) {
+	const normalized = message.trim().toLowerCase();
+	const match = normalized.match(
+		/^(?:what about|how about|and|for|about)\s+(.+?)(?:\?+)?$/
+	);
+	return match?.[1]?.trim() ?? null;
+}
+
+function isShortFollowUp(message: string) {
+	const trimmed = message.trim();
+	if (!trimmed) return false;
+	if (trimmed.split(/\s+/).length <= 4) return true;
+	return /^(what about|how about|and|about)\b/i.test(trimmed);
+}
+
+const CONTROL_CHARS_PATTERN = "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]";
+const CONTROL_CHARS_REGEX = new RegExp(CONTROL_CHARS_PATTERN, "g");
+
+function sanitizeContextValue(value: string, maxLen = 200): string {
+	const cleaned = value
+		.replace(CONTROL_CHARS_REGEX, " ")
+		.replace(/[\r\n"']/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+	return cleaned.length > maxLen ? `${cleaned.slice(0, maxLen)}…` : cleaned;
+}
+
+export function buildFollowUpContextHint(options: {
+	message: string;
+	conversationHistory?: AssistantConversationMessage[];
+}) {
+	const subject = extractFollowUpSubject(options.message);
+	if (!subject && !isShortFollowUp(options.message)) {
+		return "";
+	}
+
+	const history = (options.conversationHistory ?? [])
+		.filter(
+			(entry) => typeof entry.content === "string" && entry.content.trim()
+		)
+		.slice(-6);
+	if (history.length === 0) {
+		return "";
+	}
+
+	const lastUserTopic = [...history]
+		.reverse()
+		.find(
+			(entry) =>
+				entry.role === "user" &&
+				typeof entry.content === "string" &&
+				entry.content.trim().toLowerCase() !==
+					options.message.trim().toLowerCase()
+		)?.content;
+	const lastAssistantAnswer = [...history]
+		.reverse()
+		.find((entry) => entry.role === "assistant")?.content;
+
+	const hints = [
+		subject
+			? `Quoted context: Short follow-up subject: "${sanitizeContextValue(subject)}"`
+			: "",
+		lastUserTopic
+			? `Quoted context: Most recent user topic: "${sanitizeContextValue(lastUserTopic)}"`
+			: "",
+		lastAssistantAnswer
+			? `Quoted context: Most recent assistant answer: "${sanitizeContextValue(lastAssistantAnswer)}"`
+			: "",
+	].filter(Boolean);
+
+	return hints.length > 0
+		? `Follow-up continuity hint:\n${hints.join("\n")}`
+		: "";
+}
 
 export function classifyAssistantQuery(message: string): AssistantIntent {
 	const normalized = message.toLowerCase();
@@ -118,15 +233,18 @@ export function classifyAssistantQuery(message: string): AssistantIntent {
 
 export function buildAssistantSystemPrompt(options?: {
 	workspaceContext?: string;
+	preflightContext?: string;
 	connectedApps?: string[];
 	externalToolsAllowed?: boolean;
+	conversationHistory?: AssistantConversationMessage[];
+	latestUserMessage?: string;
+	assistantProfile?: AssistantProfileRecord;
 }): string {
 	const connectedApps = options?.connectedApps ?? [];
 	const externalToolsAllowed = options?.externalToolsAllowed ?? false;
 
 	let policyLine = "";
 	if (externalToolsAllowed && connectedApps.length > 0) {
-		// User has connected apps - be very directive about using them
 		const appsList = connectedApps.join(", ");
 		policyLine = `IMPORTANT: The user has connected the following external apps: ${appsList}.
 
@@ -165,8 +283,28 @@ NEVER say you can't access these apps - you have active connections and tools to
 	const contextLine = options?.workspaceContext?.trim()
 		? `Workspace context: ${options.workspaceContext.trim()}`
 		: "";
+	const preflightContextLine = options?.preflightContext?.trim()
+		? options.preflightContext.trim()
+		: "";
+	const personalizationLine = options?.assistantProfile
+		? buildAssistantProfilePrompt(options.assistantProfile)
+		: "";
+	const followUpHint = options?.latestUserMessage?.trim()
+		? buildFollowUpContextHint({
+				message: options.latestUserMessage,
+				conversationHistory: options.conversationHistory,
+			})
+		: "";
 
-	return [BASE_SYSTEM_PROMPT, policyLine, contextLine]
+	return [
+		BASE_SYSTEM_PROMPT,
+		buildCurrentDateContext(),
+		policyLine,
+		contextLine,
+		preflightContextLine,
+		personalizationLine,
+		followUpHint,
+	]
 		.filter(Boolean)
 		.join("\n\n");
 }

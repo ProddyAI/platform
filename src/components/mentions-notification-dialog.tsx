@@ -355,6 +355,7 @@ export const MentionsNotificationDialog = ({
 												e.stopPropagation(); // Prevent event bubbling
 												handleToggleReadStatus(notification);
 											}}
+											type="button"
 										>
 											{notification.read ? (
 												<>

@@ -518,7 +518,7 @@ export default function MeetingPage({
 function BottomBarControls({
 	handRaised,
 	toggleHandRaise,
-	isRecording,
+	isRecording: _isRecording,
 	handleRecordingChange,
 	handleTranscriptUpdate,
 	params,

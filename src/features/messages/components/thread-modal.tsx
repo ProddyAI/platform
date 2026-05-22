@@ -423,7 +423,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 										{allReplies
 											.slice()
 											.sort((a, b) => a._creationTime - b._creationTime)
-											.map((reply: any) => {
+											.map((reply) => {
 												const parsedReplyBody = parseMessageBody(
 													reply.body,
 													reply.image

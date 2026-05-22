@@ -526,7 +526,9 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
-		.index("by_category_id", ["categoryId"]),
+		.index("by_category_id", ["categoryId"])
+		.index("by_workspace_id_status", ["workspaceId", "status"])
+		.index("by_workspace_id_due_date", ["workspaceId", "dueDate"]),
 
 	mentions: defineTable({
 		messageId: v.optional(v.id("messages")),
@@ -777,12 +779,42 @@ const schema = defineSchema({
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
 		conversationId: v.string(),
+		title: v.optional(v.string()),
+		titleSource: v.optional(
+			v.union(
+				v.literal("ai_generated"),
+				v.literal("manual"),
+				v.literal("default")
+			)
+		),
+		preview: v.optional(v.string()),
+		isPinned: v.optional(v.boolean()),
 		lastMessageAt: v.number(),
+		createdAt: v.optional(v.number()),
 		source: v.optional(v.string()),
+		pendingTaskDraft: v.optional(
+			v.object({
+				title: v.string(),
+				description: v.optional(v.string()),
+				assigneeMemberId: v.optional(v.id("members")),
+				assigneeUserId: v.optional(v.id("users")),
+				assigneeName: v.optional(v.string()),
+				dueDate: v.optional(v.number()),
+				priority: v.optional(
+					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+				),
+				updatedAt: v.number(),
+			})
+		),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_workspace_id_user_id_last_message", [
+			"workspaceId",
+			"userId",
+			"lastMessageAt",
+		])
 		.index("by_conversation_id", ["conversationId"]),
 
 	assistantToolAuditEvents: defineTable({
@@ -818,6 +850,58 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"])
 		.index("by_user_id_timestamp", ["userId", "timestamp"]),
+
+	assistantProfiles: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		responseStyle: v.optional(
+			v.union(
+				v.literal("concise"),
+				v.literal("balanced"),
+				v.literal("detailed")
+			)
+		),
+		actionPreference: v.optional(
+			v.union(v.literal("suggestive"), v.literal("proactive"))
+		),
+		prioritizationStrategy: v.optional(
+			v.union(
+				v.literal("balanced"),
+				v.literal("blockers_first"),
+				v.literal("deadlines_first"),
+				v.literal("meetings_first")
+			)
+		),
+		summaryFocus: v.optional(
+			v.array(
+				v.union(
+					v.literal("tasks"),
+					v.literal("channels"),
+					v.literal("notes"),
+					v.literal("general")
+				)
+			)
+		),
+		memoryBullets: v.optional(v.array(v.string())),
+		activeContexts: v.optional(
+			v.array(
+				v.object({
+					kind: v.union(v.literal("release"), v.literal("project")),
+					label: v.string(),
+					aliases: v.optional(v.array(v.string())),
+					ownerHints: v.optional(v.array(v.string())),
+					statusHint: v.optional(v.string()),
+					lastMentionedAt: v.number(),
+				})
+			)
+		),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+		lastUsedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_user_id", ["workspaceId", "userId"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({

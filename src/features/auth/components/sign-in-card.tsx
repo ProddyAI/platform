@@ -157,6 +157,7 @@ export const SignInCard = ({
 							className="cursor-pointer font-medium text-primary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
 							disabled={pending}
 							onClick={() => setState?.("signUp")}
+							type="button"
 						>
 							Sign up
 						</button>
