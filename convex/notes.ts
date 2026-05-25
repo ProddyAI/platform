@@ -4,6 +4,7 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalQuery, mutation, query } from "./_generated/server";
 import { prosemirrorSync } from "./prosemirror";
+import { enforceWorkspaceLimit } from "./usageTracking";
 
 // Create a new note
 export const create = mutation({
@@ -33,6 +34,8 @@ export const create = mutation({
 		if (!member) {
 			throw new Error("Unauthorized");
 		}
+
+		await enforceWorkspaceLimit(ctx, args.workspaceId, "note");
 
 		const now = Date.now();
 

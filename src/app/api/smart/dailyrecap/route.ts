@@ -142,6 +142,29 @@ export async function POST(req: NextRequest) {
 
 		const { messages, date, channelName, workspaceId } = requestData ?? {};
 
+		if (workspaceId) {
+			try {
+				const trackingConvex = createConvexClient();
+				const trackingToken = convexAuthNextjsToken();
+				if (trackingToken) trackingConvex.setAuth(trackingToken);
+				const limitCheck = await trackingConvex.query(
+					api.usageTracking.checkAIUsageLimitPublic,
+					{
+						workspaceId,
+						featureType: "aiSummary",
+					}
+				);
+				if (!limitCheck.allowed) {
+					return NextResponse.json(
+						{ error: "Limit reached. Upgrade your plan to continue." },
+						{ status: 403 }
+					);
+				}
+			} catch (err) {
+				console.warn("[UsageTracking] Failed to check AI recap limit:", err);
+			}
+		}
+
 		if (!messages || !Array.isArray(messages)) {
 			console.error("Invalid messages format:", messages);
 			return NextResponse.json(

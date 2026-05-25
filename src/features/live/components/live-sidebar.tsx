@@ -57,6 +57,7 @@ interface LiveSidebarProps {
 
 	// Styling
 	className?: string;
+	disableCreate?: boolean;
 }
 
 export const LiveSidebar = ({
@@ -70,6 +71,7 @@ export const LiveSidebar = ({
 	onDeleteItem,
 	onRenameItem,
 	className,
+	disableCreate = false,
 }: LiveSidebarProps) => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
@@ -190,7 +192,13 @@ export const LiveSidebar = ({
 				</div>
 
 				<div className="p-2">
-					<Button className="w-full h-8 p-0" onClick={onCreateItem} size="sm">
+					<Button
+						className="w-full h-8 p-0"
+						disabled={disableCreate}
+						onClick={onCreateItem}
+						size="sm"
+						title={disableCreate ? `${type === "notes" ? "Note" : "Canvas"} limit reached` : `Create ${type === "notes" ? "Note" : "Canvas"}`}
+					>
 						<Plus className="h-4 w-4" />
 					</Button>
 				</div>
@@ -238,7 +246,12 @@ export const LiveSidebar = ({
 							value={searchQuery}
 						/>
 					</div>
-					<Button onClick={onCreateItem} size="sm">
+					<Button
+						disabled={disableCreate}
+						onClick={onCreateItem}
+						size="sm"
+						title={disableCreate ? `${type === "notes" ? "Note" : "Canvas"} limit reached` : `Create ${type === "notes" ? "Note" : "Canvas"}`}
+					>
 						<Plus className="h-4 w-4" />
 					</Button>
 				</div>
@@ -260,12 +273,13 @@ export const LiveSidebar = ({
 							{!searchQuery && (
 								<Button
 									className="mt-2"
+									disabled={disableCreate}
 									onClick={onCreateItem}
 									size="sm"
 									variant="outline"
 								>
 									<Plus className="h-4 w-4 mr-1" />
-									Create {type === "notes" ? "Note" : "Canvas"}
+									{disableCreate ? "Limit Reached" : `Create ${type === "notes" ? "Note" : "Canvas"}`}
 								</Button>
 							)}
 						</div>

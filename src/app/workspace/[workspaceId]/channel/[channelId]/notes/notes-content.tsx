@@ -33,6 +33,7 @@ interface NotesContentProps {
 	onCreateNote: () => Promise<void>;
 	onDeleteNote: (noteId: Id<"notes">) => Promise<void>;
 	onUpdateNote: (noteId: Id<"notes">, updates: Partial<Note>) => Promise<void>;
+	noteLimitReached?: boolean;
 }
 
 export const NotesContent = ({
@@ -50,6 +51,7 @@ export const NotesContent = ({
 	onCreateNote,
 	onDeleteNote,
 	onUpdateNote,
+	noteLimitReached = false,
 }: NotesContentProps) => {
 	// Local state for sidebar
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -211,6 +213,7 @@ export const NotesContent = ({
 						selectedItemId={activeNoteId}
 						type="notes"
 						workspaceId={workspaceId}
+						disableCreate={noteLimitReached}
 					/>
 				)}
 
@@ -254,6 +257,7 @@ export const NotesContent = ({
 									</div>
 									<Button
 										className="gap-2"
+										disabled={noteLimitReached}
 										onClick={() => {
 											onCreateNote().catch((error) => {
 												console.error("Failed to create note:", error);
@@ -262,7 +266,7 @@ export const NotesContent = ({
 										}}
 									>
 										<Plus className="h-4 w-4" />
-										Create Note
+										{noteLimitReached ? "Limit Reached" : "Create Note"}
 									</Button>
 								</div>
 							</div>

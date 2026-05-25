@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, type QueryCtx, query } from "./_generated/server";
+import { enforceWorkspaceLimit } from "./usageTracking";
 
 const populateThread = async (ctx: QueryCtx, messageId: Id<"messages">) => {
 	const messages = await ctx.db
@@ -285,6 +286,8 @@ export const create = mutation({
 		);
 
 		if (!member) throw new Error("Unauthorized.");
+
+		await enforceWorkspaceLimit(ctx, args.workspaceId, "message");
 
 		let _conversationId = args.conversationId;
 

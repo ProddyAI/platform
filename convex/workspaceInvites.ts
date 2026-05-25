@@ -15,9 +15,17 @@ const BILLABLE_MEMBER_ROLES = new Set(["owner", "admin", "member"]);
 
 const getWorkspaceSeatTier = (workspace: {
 	plan?: string;
+	subscriptionStatus?: string;
+	dodoSubscriptionId?: string;
+	subscriptionId?: string;
 }): "pro" | "enterprise" | undefined => {
-	if (workspace.plan === "pro" || workspace.plan === "enterprise") {
-		return workspace.plan;
+	const plan = workspace.plan;
+	if (plan === "pro" || plan === "enterprise") {
+		const status = workspace.subscriptionStatus;
+		const subId = workspace.dodoSubscriptionId ?? workspace.subscriptionId;
+		if (subId && ["active", "trialing", "on_hold"].includes(status ?? "")) {
+			return plan;
+		}
 	}
 	return undefined;
 };
@@ -26,9 +34,17 @@ const getPaidSeatLimit = (workspace: {
 	plan?: string;
 	proSeats?: number;
 	enterpriseSeats?: number;
+	subscriptionStatus?: string;
+	dodoSubscriptionId?: string;
+	subscriptionId?: string;
 }) => {
-	if (workspace.plan === "enterprise") return workspace.enterpriseSeats ?? 0;
-	if (workspace.plan === "pro") return workspace.proSeats ?? 0;
+	const plan = workspace.plan;
+	const status = workspace.subscriptionStatus;
+	const subId = workspace.dodoSubscriptionId ?? workspace.subscriptionId;
+	if (subId && ["active", "trialing", "on_hold"].includes(status ?? "")) {
+		if (plan === "enterprise") return workspace.enterpriseSeats ?? 0;
+		if (plan === "pro") return workspace.proSeats ?? 0;
+	}
 	return 0;
 };
 
@@ -268,7 +284,7 @@ export const insertInvite = mutation({
 
 			if (totalOccupied >= totalSeatsPurchased) {
 				throw new Error(
-					`Seat limit reached for ${workspaceSeatTier}. You have ${totalSeatsPurchased} seats and all are occupied or invited. Remove a member, wait for an invite to expire, or add seats before inviting another user.`
+					`Seat limit reached for ${workspaceSeatTier}. You have ${totalSeatsPurchased} seats and all are occupied or invited. Remove a member or wait for an invite to expire before inviting another user.`
 				);
 			}
 		}
@@ -474,7 +490,7 @@ export const consumeInvite = mutation({
 
 			if (occupiedSeats >= totalSeatsPurchased) {
 				throw new Error(
-					`Seat limit reached for ${workspaceSeatTier}. Ask a workspace owner or admin to free a seat or add seats before joining.`
+					`Seat limit reached for ${workspaceSeatTier}. Ask a workspace owner or admin to free a seat before joining.`
 				);
 			}
 		}

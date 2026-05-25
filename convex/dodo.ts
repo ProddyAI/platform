@@ -319,8 +319,7 @@ export const subscriptions = {
 		const body: Record<string, unknown> = {
 			product_id: args.product_id,
 			quantity: args.quantity,
-			proration_billing_mode:
-				args.proration_billing_mode || "prorated_immediately",
+			proration_billing_mode: args.proration_billing_mode || "do_not_bill",
 			effective_at: args.effective_at || "immediately",
 			on_payment_failure: args.on_payment_failure || "prevent_change",
 		};
@@ -533,6 +532,60 @@ export const subscriptions = {
 			}
 		);
 	},
+
+	charge: async (
+		_ctx: ConvexCtx,
+		args: {
+			subscription_id: string;
+			product_price: number;
+			product_currency?: string | null;
+			product_description?: string | null;
+			metadata?: Record<string, string>;
+		}
+	) => {
+		const {
+			subscription_id,
+			product_price,
+			product_currency,
+			product_description,
+			metadata,
+		} = args;
+		const body: Record<string, unknown> = {
+			product_price,
+			customer_balance_config: {
+				allow_customer_credits_purchase: false,
+				allow_customer_credits_usage: true,
+			},
+		};
+		if (product_currency) body.product_currency = product_currency;
+		if (product_description) body.product_description = product_description;
+		if (metadata) body.metadata = metadata;
+
+		return await fetchDodo(
+			"chargeSubscription",
+			`${apiBase}/subscriptions/${subscription_id}/charge`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${dodoApiKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(body),
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"chargeSubscription",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return res.headers.get("content-type")?.includes("application/json")
+					? await res.json()
+					: null;
+			}
+		);
+	},
 };
 
 export const payments = {
@@ -631,6 +684,31 @@ export const refunds = {
 					const error = await res.text();
 					throwDodoApiError(
 						"refund",
+						error || `${res.status} ${res.statusText}`
+					);
+				}
+				return await res.json();
+			}
+		);
+	},
+};
+
+export const products = {
+	retrieve: async (_ctx: ConvexCtx, args: { product_id: string }) => {
+		return await fetchDodo(
+			"retrieve product",
+			`${apiBase}/products/${args.product_id}`,
+			{
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${dodoApiKey}`,
+				},
+			},
+			async (res) => {
+				if (!res.ok) {
+					const error = await res.text();
+					throwDodoApiError(
+						"retrieve product",
 						error || `${res.status} ${res.statusText}`
 					);
 				}

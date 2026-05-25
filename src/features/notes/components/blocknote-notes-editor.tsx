@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { Note } from "../types";
 import { BlockNoteEditor } from "./blocknote-editor";
+import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
 
 interface BlockNoteNotesEditorProps {
 	note: Note;
@@ -21,6 +22,7 @@ export const BlockNoteNotesEditor = ({
 }: BlockNoteNotesEditorProps) => {
 	const [isFormatting, setIsFormatting] = useState(false);
 	const editorRef = useRef<BlockNoteEditorType | null>(null);
+	const { maxReached: aiLimitReached } = useWorkspaceLimit("aiRequest");
 
 	const handleEditorReady = useCallback((editor: BlockNoteEditorType) => {
 		editorRef.current = editor;
@@ -111,10 +113,11 @@ export const BlockNoteNotesEditor = ({
 			<div className="absolute top-4 right-4 z-10">
 				<Button
 					className="shadow-lg hover:shadow-xl transition-shadow"
-					disabled={isFormatting || isLoading}
+					disabled={isFormatting || isLoading || aiLimitReached}
 					onClick={handleFormatNote}
 					size="sm"
 					variant="secondary"
+					title={aiLimitReached ? "AI limit reached. Upgrade plan to format notes." : undefined}
 				>
 					{isFormatting ? (
 						<>
@@ -124,7 +127,7 @@ export const BlockNoteNotesEditor = ({
 					) : (
 						<>
 							<Wand2 className="h-4 w-4 mr-2" />
-							Format
+							{aiLimitReached ? "Limit Reached" : "Format"}
 						</>
 					)}
 				</Button>

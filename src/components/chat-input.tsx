@@ -13,6 +13,8 @@ import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicat
 import { Suggestions } from "@/features/smart/components/suggestions";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
+import { LimitIndicator } from "@/components/limit-indicator";
 
 const Editor = dynamic(() => import("@/components/editor"), {
 	ssr: false,
@@ -229,10 +231,18 @@ export const ChatInput = ({
 		}
 	};
 
+	const { maxReached } = useWorkspaceLimit("message");
+
 	// Only show suggestions for channel messages, not for direct messages
 	return (
 		<div className="w-full px-1 md:px-5">
-			{channelId && channelName && !conversationId ? (
+			{maxReached && (
+				<div className="mb-2 flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+					<span>You have reached the message limit for your plan. Upgrade to send more messages.</span>
+					<LimitIndicator featureLabel="Messages" />
+				</div>
+			)}
+			{channelId && channelName && !conversationId && !maxReached ? (
 				<Suggestions
 					channelName={channelName}
 					onSelectSuggestion={handleSuggestionSelect}
@@ -241,7 +251,7 @@ export const ChatInput = ({
 			<Editor
 				channelId={channelId}
 				conversationId={conversationId}
-				disabled={isPending}
+				disabled={isPending || maxReached}
 				disableMentions={Boolean(conversationId)}
 				innerRef={innerRef}
 				key={editorKey}
@@ -250,7 +260,7 @@ export const ChatInput = ({
 					// Signal typing when user types
 					signalTyping();
 				}}
-				placeholder={placeholder}
+				placeholder={maxReached ? "Limit reached. Upgrade plan to send messages." : placeholder}
 			/>
 		</div>
 	);

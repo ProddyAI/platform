@@ -8,6 +8,7 @@ import {
 	type QueryCtx,
 	query,
 } from "./_generated/server";
+import { enforceWorkspaceLimit } from "./usageTracking";
 
 // Helper function to get the current member
 const getMember = async (
@@ -151,6 +152,8 @@ export const createTask = mutation({
 		// Check if the user is a member of the workspace
 		const member = await getMember(ctx, args.workspaceId, userId);
 		if (!member) throw new Error("Not a member of this workspace");
+
+		await enforceWorkspaceLimit(ctx, args.workspaceId, "task");
 
 		const now = Date.now();
 
@@ -426,6 +429,8 @@ export const createTaskFromMessage = mutation({
 		// Check if the user is a member of the workspace
 		const member = await getMember(ctx, args.workspaceId, userId);
 		if (!member) throw new Error("Not a member of this workspace");
+
+		await enforceWorkspaceLimit(ctx, args.workspaceId, "task");
 
 		// Get the message
 		const message = await ctx.db.get(args.messageId);

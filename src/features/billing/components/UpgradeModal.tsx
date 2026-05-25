@@ -1,7 +1,15 @@
 "use client";
 
 import { useAction } from "convex/react";
-import { Check, Loader, Minus, Plus, Sparkles } from "lucide-react";
+import {
+	ArrowRight,
+	Check,
+	Loader,
+	Minus,
+	Plus,
+	Sparkles,
+	Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -62,8 +70,14 @@ export function UpgradeModal({
 	const createCheckout = useAction(api.payments.createCheckoutSession);
 	const createUpgradeCheckout = useAction(api.payments.createUpgradeCheckout);
 	const getPlanChangePreview = useAction(api.payments.getPlanChangePreview);
+	const getLivePlanPrices = useAction(api.payments.getLivePlanPrices);
 	const [loading, setLoading] = useState(false);
 	const [previewLoading, setPreviewLoading] = useState(false);
+	const [pricesLoading, setPricesLoading] = useState(false);
+	const [livePrices, setLivePrices] = useState<{
+		pro: number;
+		enterprise: number;
+	} | null>(null);
 	const [fairBillingPreview, setFairBillingPreview] = useState<{
 		amountDue?: number;
 		refundAmount?: number;
@@ -92,11 +106,28 @@ export function UpgradeModal({
 
 	const proPlan = PLANS.pro;
 	const enterprisePlan = PLANS.enterprise;
-	const proTotalPrice = proPlan.pricePerSeatMonthly * proSeatCount;
-	const enterpriseTotalPrice =
-		enterprisePlan.pricePerSeatMonthly * enterpriseSeatCount;
+
+	const proPriceMonthly = livePrices
+		? livePrices.pro / 100
+		: proPlan.pricePerSeatMonthly;
+	const enterprisePriceMonthly = livePrices
+		? livePrices.enterprise / 100
+		: enterprisePlan.pricePerSeatMonthly;
+
+	const proTotalPrice = proPriceMonthly * proSeatCount;
+	const enterpriseTotalPrice = enterprisePriceMonthly * enterpriseSeatCount;
 	const selectedSeatCount =
 		targetPlan === "enterprise" ? enterpriseSeatCount : proSeatCount;
+
+	useEffect(() => {
+		if (open) {
+			setPricesLoading(true);
+			getLivePlanPrices()
+				.then((prices) => setLivePrices(prices))
+				.catch((err) => console.warn("Failed to load live prices", err))
+				.finally(() => setPricesLoading(false));
+		}
+	}, [open, getLivePlanPrices]);
 
 	const formatMoney = (amount?: number | null, currency?: string | null) => {
 		if (amount === null || amount === undefined || amount === 0) return "$0.00";
@@ -254,224 +285,296 @@ export function UpgradeModal({
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className={targetPlan ? "max-w-md" : "max-w-2xl"}>
-				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">
-						<Sparkles className="size-5" />
-						Upgrade Your Plan
+			<DialogContent
+				className={
+					targetPlan
+						? "max-w-xl gap-0 overflow-visible p-0"
+						: "max-w-4xl gap-0 overflow-visible p-0"
+				}
+			>
+				<DialogHeader className="border-b bg-muted/20 px-5 py-4">
+					<DialogTitle className="flex items-center gap-3 text-lg">
+						<span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+							<Sparkles className="size-4" />
+						</span>
+						Upgrade your plan
 					</DialogTitle>
-					<DialogDescription>
+					<DialogDescription className="max-w-xl text-sm leading-5">
 						Choose a plan that fits your team. Pricing is per user, per month.
 					</DialogDescription>
 				</DialogHeader>
 
 				<div
 					className={
-						targetPlan ? "mt-4" : "grid grid-cols-1 md:grid-cols-2 gap-6 mt-4"
+						targetPlan
+							? "px-5 py-4"
+							: "grid grid-cols-1 gap-4 px-5 py-4 md:grid-cols-2"
 					}
 				>
 					{(targetPlan === "pro" || (!targetPlan && currentPlan !== "pro")) && (
-						<div className="rounded-lg border border-primary p-5 space-y-4">
-							<div>
-								<h3 className="text-lg font-semibold">{proPlan.label}</h3>
-								<p className="text-2xl font-bold mt-1">
-									${proPlan.pricePerSeatMonthly}
-									<span className="text-sm font-normal text-muted-foreground">
-										/user/mo
+						<div className="flex min-h-full flex-col rounded-[10px] border bg-background shadow-sm">
+							<div className="space-y-3 border-b p-4">
+								<div className="flex items-start justify-between gap-4">
+									<div>
+										<h3 className="text-lg font-semibold">{proPlan.label}</h3>
+										<p className="mt-1 text-sm leading-5 text-muted-foreground">
+											{proPlan.description}
+										</p>
+									</div>
+									<span className="rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+										Growth
 									</span>
-								</p>
-								<p className="text-sm text-muted-foreground mt-1">
-									{proPlan.description}
-								</p>
-							</div>
-
-							<div className="rounded-md border p-3 space-y-2">
-								<p className="text-sm font-medium">Number of users</p>
-								<div className="flex items-center gap-3">
-									<Button
-										aria-label="Decrease Pro seats"
-										className="h-8 w-8"
-										disabled={proSeatCount <= requiredSeats}
-										onClick={() => {
-											setProSeatCount(
-												Math.max(requiredSeats, proSeatCount - 1)
-											);
-										}}
-										size="icon"
-										variant="outline"
-									>
-										<Minus className="size-4" />
-									</Button>
-									<span className="text-lg font-semibold tabular-nums w-8 text-center">
-										{proSeatCount}
-									</span>
-									<Button
-										aria-label="Increase Pro seats"
-										className="h-8 w-8"
-										disabled={proSeatCount >= maxSeats}
-										onClick={() => {
-											setProSeatCount(Math.min(maxSeats, proSeatCount + 1));
-										}}
-										size="icon"
-										variant="outline"
-									>
-										<Plus className="size-4" />
-									</Button>
 								</div>
-								<p className="text-sm text-muted-foreground">
-									Total:{" "}
-									<span className="font-semibold text-foreground">
-										${proTotalPrice}/month
+								<div className="flex items-end gap-2">
+									<p className="text-3xl font-semibold tracking-normal">
+										{pricesLoading ? (
+											<Loader className="mb-1 size-6 animate-spin text-muted-foreground" />
+										) : (
+											`$${proPriceMonthly}`
+										)}
+									</p>
+									<span className="pb-1 text-sm text-muted-foreground">
+										per user / month
 									</span>
-								</p>
-								<p className="text-xs text-muted-foreground">
-									Minimum {requiredSeats} seats required for all active
-									workspace members.
-								</p>
+								</div>
 							</div>
 
-							<ul className="space-y-2">
-								{PRO_FEATURES.map((feature) => (
-									<li className="flex items-center gap-2 text-sm" key={feature}>
-										<Check className="size-4 text-green-500 shrink-0" />
-										<span>{feature}</span>
-									</li>
-								))}
-							</ul>
+							<div className="flex flex-1 flex-col gap-4 p-4">
+								<div className="rounded-[10px] border bg-muted/20 p-3">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3">
+											<span className="flex size-8 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm">
+												<Users className="size-4" />
+											</span>
+											<div>
+												<p className="text-sm font-medium">Seats</p>
+												<p className="text-xs text-muted-foreground">
+													Minimum {requiredSeats} required
+												</p>
+											</div>
+										</div>
+										<div className="flex items-center rounded-full border bg-background p-1 shadow-sm">
+											<Button
+												aria-label="Decrease Pro seats"
+												className="size-8 rounded-full border-0 shadow-none"
+												disabled={proSeatCount <= requiredSeats}
+												onClick={() => {
+													setProSeatCount(
+														Math.max(requiredSeats, proSeatCount - 1)
+													);
+												}}
+												size="icon"
+												variant="outline"
+											>
+												<Minus className="size-4" />
+											</Button>
+											<span className="w-10 text-center text-base font-semibold tabular-nums">
+												{proSeatCount}
+											</span>
+											<Button
+												aria-label="Increase Pro seats"
+												className="size-8 rounded-full border-0 shadow-none"
+												disabled={proSeatCount >= maxSeats}
+												onClick={() => {
+													setProSeatCount(Math.min(maxSeats, proSeatCount + 1));
+												}}
+												size="icon"
+												variant="outline"
+											>
+												<Plus className="size-4" />
+											</Button>
+										</div>
+									</div>
+									<div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
+										<span className="text-muted-foreground">Monthly total</span>
+										<span className="font-semibold text-foreground">
+											{pricesLoading ? (
+												<Loader className="mx-1 inline size-3 animate-spin" />
+											) : (
+												`$${proTotalPrice}`
+											)}
+											/month
+										</span>
+									</div>
+								</div>
 
-							<Button
-								className="w-full"
-								disabled={loading}
-								onClick={() => {
-									handleUpgrade("pro");
-								}}
-								variant="secondary"
-							>
-								{loading ? (
-									<>
-										<Loader className="size-4 animate-spin mr-2" />
-										Processing...
-									</>
-								) : (
-									<>
-										<Sparkles className="size-4 mr-2" />
-										{currentPlan === "pro"
-											? "Update Pro"
-											: currentPlan === "enterprise"
-												? "Switch to Pro"
-												: "Upgrade to Pro"}
-									</>
-								)}
-							</Button>
+								<ul className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+									{PRO_FEATURES.map((feature) => (
+										<li
+											className="flex items-center gap-2 text-sm leading-5"
+											key={feature}
+										>
+											<Check className="size-4 shrink-0 text-emerald-500" />
+											<span>{feature}</span>
+										</li>
+									))}
+								</ul>
+
+								<Button
+									className="mt-auto h-10 w-full"
+									disabled={loading}
+									onClick={() => {
+										handleUpgrade("pro");
+									}}
+									variant="primary"
+								>
+									{loading ? (
+										<>
+											<Loader className="mr-2 size-4 animate-spin" />
+											Processing...
+										</>
+									) : (
+										<>
+											{currentPlan === "pro"
+												? "Update Pro"
+												: currentPlan === "enterprise"
+													? "Switch to Pro"
+													: "Upgrade to Pro"}
+											<ArrowRight className="ml-2 size-4" />
+										</>
+									)}
+								</Button>
+							</div>
 						</div>
 					)}
 
 					{(targetPlan === "enterprise" ||
 						(!targetPlan && currentPlan !== "enterprise")) && (
-						<div className="rounded-lg border border-primary p-5 space-y-4">
-							<div>
-								<h3 className="text-lg font-semibold">
-									{enterprisePlan.label}
-								</h3>
-								<p className="text-2xl font-bold mt-1">
-									{enterprisePlan.priceDisplayLabel ?? "Custom"}
-									<span className="text-sm font-normal text-muted-foreground">
-										/user/mo
+						<div className="flex min-h-full flex-col rounded-[10px] border border-primary/40 bg-background shadow-sm ring-1 ring-primary/10">
+							<div className="space-y-3 border-b bg-primary/[0.03] p-4">
+								<div className="flex items-start justify-between gap-4">
+									<div>
+										<h3 className="text-lg font-semibold">
+											{enterprisePlan.label}
+										</h3>
+										<p className="mt-1 text-sm leading-5 text-muted-foreground">
+											{enterprisePlan.description}
+										</p>
+									</div>
+									<span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+										Scale
 									</span>
-								</p>
-								<p className="text-sm text-muted-foreground mt-1">
-									{enterprisePlan.description}
-								</p>
-							</div>
-
-							<div className="rounded-md border p-3 space-y-2">
-								<p className="text-sm font-medium">Number of users</p>
-								<div className="flex items-center gap-3">
-									<Button
-										aria-label="Decrease Enterprise seats"
-										className="h-8 w-8"
-										disabled={enterpriseSeatCount <= requiredSeats}
-										onClick={() => {
-											setEnterpriseSeatCount(
-												Math.max(requiredSeats, enterpriseSeatCount - 1)
-											);
-										}}
-										size="icon"
-										variant="outline"
-									>
-										<Minus className="size-4" />
-									</Button>
-									<span className="text-lg font-semibold tabular-nums w-8 text-center">
-										{enterpriseSeatCount}
-									</span>
-									<Button
-										aria-label="Increase Enterprise seats"
-										className="h-8 w-8"
-										disabled={enterpriseSeatCount >= maxSeats}
-										onClick={() => {
-											setEnterpriseSeatCount(
-												Math.min(maxSeats, enterpriseSeatCount + 1)
-											);
-										}}
-										size="icon"
-										variant="outline"
-									>
-										<Plus className="size-4" />
-									</Button>
 								</div>
-								<p className="text-sm text-muted-foreground">
-									Total:{" "}
-									<span className="font-semibold text-foreground">
-										${enterpriseTotalPrice}/month
+								<div className="flex items-end gap-2">
+									<p className="text-3xl font-semibold tracking-normal">
+										{pricesLoading ? (
+											<Loader className="mb-1 size-6 animate-spin text-muted-foreground" />
+										) : (
+											`$${enterprisePriceMonthly}`
+										)}
+									</p>
+									<span className="pb-1 text-sm text-muted-foreground">
+										per user / month
 									</span>
-								</p>
-								<p className="text-xs text-muted-foreground">
-									Minimum {requiredSeats} seats required for all active
-									workspace members.
-								</p>
+								</div>
 							</div>
 
-							<ul className="space-y-2">
-								{ENTERPRISE_FEATURES.map((feature) => (
-									<li className="flex items-center gap-2 text-sm" key={feature}>
-										<Check className="size-4 text-green-500 shrink-0" />
-										<span>{feature}</span>
-									</li>
-								))}
-							</ul>
+							<div className="flex flex-1 flex-col gap-4 p-4">
+								<div className="rounded-[10px] border bg-muted/20 p-3">
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-3">
+											<span className="flex size-8 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm">
+												<Users className="size-4" />
+											</span>
+											<div>
+												<p className="text-sm font-medium">Seats</p>
+												<p className="text-xs text-muted-foreground">
+													Minimum {requiredSeats} required
+												</p>
+											</div>
+										</div>
+										<div className="flex items-center rounded-full border bg-background p-1 shadow-sm">
+											<Button
+												aria-label="Decrease Enterprise seats"
+												className="size-8 rounded-full border-0 shadow-none"
+												disabled={enterpriseSeatCount <= requiredSeats}
+												onClick={() => {
+													setEnterpriseSeatCount(
+														Math.max(requiredSeats, enterpriseSeatCount - 1)
+													);
+												}}
+												size="icon"
+												variant="outline"
+											>
+												<Minus className="size-4" />
+											</Button>
+											<span className="w-10 text-center text-base font-semibold tabular-nums">
+												{enterpriseSeatCount}
+											</span>
+											<Button
+												aria-label="Increase Enterprise seats"
+												className="size-8 rounded-full border-0 shadow-none"
+												disabled={enterpriseSeatCount >= maxSeats}
+												onClick={() => {
+													setEnterpriseSeatCount(
+														Math.min(maxSeats, enterpriseSeatCount + 1)
+													);
+												}}
+												size="icon"
+												variant="outline"
+											>
+												<Plus className="size-4" />
+											</Button>
+										</div>
+									</div>
+									<div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
+										<span className="text-muted-foreground">Monthly total</span>
+										<span className="font-semibold text-foreground">
+											{pricesLoading ? (
+												<Loader className="mx-1 inline size-3 animate-spin" />
+											) : (
+												`$${enterpriseTotalPrice}`
+											)}
+											/month
+										</span>
+									</div>
+								</div>
 
-							<Button
-								className="w-full"
-								disabled={loading}
-								onClick={() => {
-									handleUpgrade("enterprise");
-								}}
-								variant="secondary"
-							>
-								{loading ? (
-									<>
-										<Loader className="size-4 animate-spin mr-2" />
-										Processing...
-									</>
-								) : (
-									<>
-										<Sparkles className="size-4 mr-2" />
-										{currentPlan === "enterprise"
-											? "Update Enterprise"
-											: "Switch to Enterprise"}
-									</>
-								)}
-							</Button>
+								<ul className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+									{ENTERPRISE_FEATURES.map((feature) => (
+										<li
+											className="flex items-center gap-2 text-sm leading-5"
+											key={feature}
+										>
+											<Check className="size-4 shrink-0 text-emerald-500" />
+											<span>{feature}</span>
+										</li>
+									))}
+								</ul>
+
+								<Button
+									className="mt-auto h-10 w-full"
+									disabled={loading}
+									onClick={() => {
+										handleUpgrade("enterprise");
+									}}
+									variant="primary"
+								>
+									{loading ? (
+										<>
+											<Loader className="mr-2 size-4 animate-spin" />
+											Processing...
+										</>
+									) : (
+										<>
+											{currentPlan === "enterprise"
+												? "Update Enterprise"
+												: "Switch to Enterprise"}
+											<ArrowRight className="ml-2 size-4" />
+										</>
+									)}
+								</Button>
+							</div>
 						</div>
 					)}
 				</div>
 
 				{targetPlan && (
-					<div className="mt-4 rounded-md border p-3 text-sm">
+					<div className="mx-5 mb-5 rounded-[10px] border bg-muted/20 p-3 text-sm">
 						<div className="flex items-center justify-between gap-4">
 							<span className="font-medium">Fair billing today</span>
 							<span className="text-muted-foreground">
-								{previewLoading ? "Calculating..." : "Prorated unused period"}
+								{previewLoading ? "Calculating..." : "Activity-based usage"}
 							</span>
 						</div>
 						{hasActiveSubscription && fairBillingPreview ? (
@@ -496,7 +599,7 @@ export function UpgradeModal({
 								</div>
 							</div>
 						) : (
-							<p className="mt-2 text-muted-foreground">
+							<p className="mt-1 text-muted-foreground">
 								New subscriptions start with the selected monthly seat total.
 							</p>
 						)}

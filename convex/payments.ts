@@ -64,18 +64,6 @@ type DodoRefund = Record<string, unknown> & {
 	amount?: number;
 	currency?: string;
 };
-type DodoPlanChangePreview = Record<string, unknown> & {
-	immediate_charge?: {
-		summary?: {
-			total_amount?: number;
-			tax?: number;
-			currency?: string;
-			settlement_amount?: number;
-			settlement_currency?: string;
-			settlement_tax?: number;
-		};
-	};
-};
 type DodoLineItem = Record<string, unknown> & {
 	item_id?: string;
 	items_id?: string;
@@ -113,8 +101,7 @@ type DodoRefundsApi = {
 type ReadableCtx = Pick<QueryCtx | MutationCtx, "db">;
 
 const DODO_MINIMUM_PAYMENT_AMOUNT_CENTS = 100;
-const BILLING_MINIMUM_CONSUMED_PERCENT = 20;
-const BILLING_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+const BILLING_MINIMUM_CONSUMED_PERCENT = 0;
 const PENDING_PAYMENT_LINK_TTL_MS = 14 * 60 * 1000;
 
 const BILLING_USAGE_UNIT_COST_CENTS: Record<string, number> = {
@@ -189,19 +176,10 @@ const dodoProviderErrorResult = (error: unknown) => {
 	};
 };
 
-const dodoPreviousPaymentPendingResult = (
-	paymentUrl?: string | null,
-	message?: string
-) => ({
-	success: false,
-	status: paymentUrl ? "payment_required" : "previous_payment_pending",
-	...(paymentUrl ? { paymentUrl } : {}),
-	message:
-		message ??
-		(paymentUrl
-			? "Dodo has an unpaid previous subscription change. Complete this payment setup, then add the seats again after Dodo confirms payment."
-			: "Dodo has an unpaid previous subscription change. Complete or clear that payment in Dodo, then try adding seats again."),
-});
+const isMissingScheduledPlanChangeCode = (code: string | null) =>
+	code === "NOT_FOUND" ||
+	code === "SCHEDULED_CHANGE_NOT_FOUND" ||
+	code === "SCHEDULED_PLAN_CHANGE_NOT_FOUND";
 
 const inactiveSubscriptionCheckoutResult = () => ({
 	success: false,
@@ -253,6 +231,34 @@ const getActivePendingBillingPayment = (
 		taxAmount: workspace.pendingBillingTaxAmount ?? 0,
 		expiresAt: workspace.pendingBillingExpiresAt,
 	};
+};
+
+const clearLocalAndDodoPendingPlanChange = async (
+	ctx: ActionCtx,
+	args: {
+		workspaceId: Id<"workspaces">;
+		subscriptionId: string;
+		reason: string;
+	}
+) => {
+	await ctx.runMutation(internal.payments.clearPendingUpgrade, {
+		workspaceId: args.workspaceId,
+	});
+
+	try {
+		const { subscriptions } = await import("./dodo");
+		await subscriptions.cancelPlanChange(ctx, {
+			subscription_id: args.subscriptionId,
+		});
+	} catch (error) {
+		const code = parseDodoErrorCode(error);
+		if (!isMissingScheduledPlanChangeCode(code)) {
+			console.warn(
+				`[billing] Failed to cancel stale pending Dodo plan change (${args.reason}):`,
+				error
+			);
+		}
+	}
 };
 
 const clearWorkspacePendingBilling = async (
@@ -322,31 +328,6 @@ const findDodoCheckoutSessionId = (value: unknown): string | null => {
 		if (nestedId) return nestedId;
 	}
 	return null;
-};
-
-const getDodoPreviewCharge = (
-	preview: DodoPlanChangePreview | null | undefined
-) => {
-	const summary = preview?.immediate_charge?.summary;
-	const amount =
-		typeof summary?.settlement_amount === "number"
-			? summary.settlement_amount
-			: typeof summary?.total_amount === "number"
-				? summary.total_amount
-				: null;
-	const tax =
-		typeof summary?.settlement_tax === "number"
-			? summary.settlement_tax
-			: typeof summary?.tax === "number"
-				? summary.tax
-				: 0;
-	const currency =
-		typeof summary?.settlement_currency === "string"
-			? summary.settlement_currency
-			: typeof summary?.currency === "string"
-				? summary.currency
-				: null;
-	return { amount, tax, currency };
 };
 
 const planNameFromDodoProductId = (
@@ -469,7 +450,9 @@ const getPaymentInvoiceUrl = (payment: DodoPayment | null | undefined) => {
 	return typeof invoiceUrl === "string" ? invoiceUrl : undefined;
 };
 
-const calculateUnusedPeriodRefundAmount = (
+const calculateUnusedPeriodRefundAmount = async (
+	ctx: ActionCtx,
+	workspaceId: Id<"workspaces">,
 	subscription: DodoSubscription | null | undefined,
 	payment: DodoPayment | null | undefined
 ) => {
@@ -489,44 +472,60 @@ const calculateUnusedPeriodRefundAmount = (
 	const now = Date.now();
 	if (now >= periodEnd) return 0;
 
-	const remainingRatio = Math.max(
-		0,
-		Math.min(1, (periodEnd - now) / (periodEnd - periodStart))
-	);
-	const alreadyRefunded = sumSucceededRefunds(payment);
-	const refundableAmount = Math.max(0, totalAmount - alreadyRefunded);
-	return Math.min(
-		refundableAmount,
-		Math.floor(refundableAmount * remainingRatio)
-	);
-};
-
-const getPlanMonthlyValueCents = (
-	planName: "pro" | "enterprise",
-	quantity: number
-) => PLANS[planName].pricePerSeatMonthly * 100 * quantity;
-
-const calculateTimeCost = (
-	paidAmountCents: number,
-	periodStart: number | null,
-	periodEnd: number | null,
-	now = Date.now()
-) => {
-	if (
-		paidAmountCents <= 0 ||
-		!periodStart ||
-		!periodEnd ||
-		periodEnd <= periodStart
-	) {
+	try {
+		const usage = await ctx.runQuery(
+			internal.payments.getBillingConsumptionForPeriod,
+			{
+				workspaceId,
+				periodStart,
+				periodEnd: Math.min(now, periodEnd),
+			}
+		);
+		const actualUsageCost =
+			usage.featureUsageCost + usage.workspaceActivityCost;
+		const consumedRatio =
+			totalAmount > 0 ? Math.min(1.0, actualUsageCost / totalAmount) : 0;
+		const remainingRatio = Math.max(0, 1.0 - consumedRatio);
+		const alreadyRefunded = sumSucceededRefunds(payment);
+		const refundableAmount = Math.max(0, totalAmount - alreadyRefunded);
+		return Math.min(
+			refundableAmount,
+			Math.floor(refundableAmount * remainingRatio)
+		);
+	} catch (error) {
+		console.warn(
+			"Failed to fetch billing consumption for activity-based refund calculation:",
+			error
+		);
 		return 0;
 	}
+};
 
-	const consumedMs = Math.max(0, Math.min(now, periodEnd) - periodStart);
-	const periodMs = periodEnd - periodStart;
-	return Math.min(
-		paidAmountCents,
-		Math.floor((paidAmountCents * consumedMs) / periodMs)
-	);
+const getPlanMonthlyValueCents = async (
+	ctx: ActionCtx,
+	planName: "pro" | "enterprise",
+	quantity: number
+) => {
+	const { products } = await import("./dodo");
+	let price = PLANS[planName].pricePerSeatMonthly * 100;
+	try {
+		const productId =
+			planName === "pro"
+				? process.env.DODO_PAYMENTS_PRODUCTID_PRO
+				: process.env.DODO_PAYMENTS_PRODUCTID_ENTERPRISE;
+		if (productId) {
+			const product: any = await products.retrieve(ctx, {
+				product_id: productId,
+			});
+			if (typeof product?.price === "number") price = product.price;
+		}
+	} catch (error) {
+		console.warn(
+			"Failed to fetch live product price for fallback calculation:",
+			error
+		);
+	}
+	return price * quantity;
 };
 
 const calculateUsageCost = (usage: {
@@ -579,12 +578,6 @@ const calculateRefundOrCredit = (args: {
 	workspaceActivityCostCents: number;
 	now?: number;
 }) => {
-	const timeConsumedCost = calculateTimeCost(
-		args.paidAmountCents,
-		args.periodStart,
-		args.periodEnd,
-		args.now
-	);
 	const actualUsageCost =
 		args.featureUsageCostCents + args.workspaceActivityCostCents;
 	const minimumConsumed = Math.max(
@@ -592,12 +585,11 @@ const calculateRefundOrCredit = (args: {
 		actualUsageCost
 	);
 
-	// Hybrid billing charges for both elapsed subscription time and metered
-	// premium usage. The floor prevents same-day downgrade abuse even when
-	// event tracking is sparse, and all values are integer cents.
+	// Activity-based billing charges only for metered premium usage and
+	// workspace activity. All values are integer cents.
 	const consumedAmount = Math.min(
 		args.paidAmountCents,
-		Math.max(timeConsumedCost + actualUsageCost, minimumConsumed)
+		Math.max(actualUsageCost, minimumConsumed)
 	);
 	const refundOrCreditAmount = Math.min(
 		args.maxRefundableCents,
@@ -605,7 +597,6 @@ const calculateRefundOrCredit = (args: {
 	);
 
 	return {
-		timeConsumedCost,
 		featureUsageCost: args.featureUsageCostCents,
 		workspaceActivityCost: args.workspaceActivityCostCents,
 		minimumConsumed,
@@ -614,7 +605,8 @@ const calculateRefundOrCredit = (args: {
 	};
 };
 
-const calculateFairBillingDelta = (
+const calculateFairBillingDelta = async (
+	ctx: ActionCtx,
 	subscription: DodoSubscription | null | undefined,
 	args: {
 		currentPlan: "pro" | "enterprise";
@@ -623,6 +615,7 @@ const calculateFairBillingDelta = (
 		nextQuantity: number;
 		periodStartFallback?: number | null;
 		periodEndFallback?: number | null;
+		workspaceId?: Id<"workspaces">;
 	}
 ) => {
 	const periodStart =
@@ -634,11 +627,13 @@ const calculateFairBillingDelta = (
 		parseTime(subscription?.current_period_end) ??
 		args.periodEndFallback ??
 		null;
-	const currentMonthlyValue = getPlanMonthlyValueCents(
+	const currentMonthlyValue = await getPlanMonthlyValueCents(
+		ctx,
 		args.currentPlan,
 		args.currentQuantity
 	);
-	const nextMonthlyValue = getPlanMonthlyValueCents(
+	const nextMonthlyValue = await getPlanMonthlyValueCents(
+		ctx,
 		args.nextPlan,
 		args.nextQuantity
 	);
@@ -676,14 +671,59 @@ const calculateFairBillingDelta = (
 		};
 	}
 
-	const remainingRatio = Math.max(
-		0,
-		Math.min(1, (periodEnd - now) / (periodEnd - periodStart))
+	if (!args.workspaceId) {
+		return {
+			amountDue: 0,
+			refundAmount: 0,
+			remainingRatio: 0,
+			periodStart,
+			periodEnd,
+			monthlyDelta,
+			currentMonthlyValue,
+			nextMonthlyValue,
+		};
+	}
+
+	let remainingRatio = 0;
+	try {
+		const usage = await ctx.runQuery(
+			internal.payments.getBillingConsumptionForPeriod,
+			{
+				workspaceId: args.workspaceId,
+				periodStart,
+				periodEnd: Math.min(now, periodEnd),
+			}
+		);
+		const actualUsageCost =
+			usage.featureUsageCost + usage.workspaceActivityCost;
+		const consumedRatio =
+			currentMonthlyValue > 0
+				? Math.min(1.0, actualUsageCost / currentMonthlyValue)
+				: 0;
+		remainingRatio = Math.max(0, 1.0 - consumedRatio);
+	} catch (error) {
+		console.warn(
+			"Failed to fetch billing consumption for activity-based billing:",
+			error
+		);
+		return {
+			amountDue: 0,
+			refundAmount: 0,
+			remainingRatio: 0,
+			periodStart,
+			periodEnd,
+			monthlyDelta,
+			currentMonthlyValue,
+			nextMonthlyValue,
+		};
+	}
+
+	const activityBasedDelta = Math.floor(
+		Math.abs(monthlyDelta) * remainingRatio
 	);
-	const proratedDelta = Math.floor(Math.abs(monthlyDelta) * remainingRatio);
 	return {
-		amountDue: monthlyDelta > 0 ? proratedDelta : 0,
-		refundAmount: monthlyDelta < 0 ? proratedDelta : 0,
+		amountDue: monthlyDelta > 0 ? activityBasedDelta : 0,
+		refundAmount: monthlyDelta < 0 ? activityBasedDelta : 0,
 		remainingRatio,
 		periodStart,
 		periodEnd,
@@ -724,7 +764,7 @@ const getPaymentPeriodEndFallback = (
 	if (typeof workspaceCurrentPeriodEnd === "number")
 		return workspaceCurrentPeriodEnd;
 	const paymentCreatedAt = getPaymentCreatedAt(payment);
-	return paymentCreatedAt ? paymentCreatedAt + BILLING_MONTH_MS : null;
+	return paymentCreatedAt ? paymentCreatedAt : null;
 };
 
 const collectLineItems = (value: unknown): DodoLineItem[] => {
@@ -954,7 +994,7 @@ const syncDodoSubscriptionToWorkspace = async (
 		workspaceId?: string;
 		subscriptionId: string;
 		status: string;
-		plan?: "pro" | "enterprise" | null;
+		plan?: "pro" | "enterprise" | "free" | null;
 		customerId?: string | null;
 		quantity?: number | null;
 		cancelAtNextBillingDate?: boolean | null;
@@ -967,7 +1007,7 @@ const syncDodoSubscriptionToWorkspace = async (
 		workspaceId?: string;
 		subscriptionId: string;
 		status: string;
-		plan?: "pro" | "enterprise";
+		plan?: "pro" | "enterprise" | "free";
 		customerId?: string;
 		quantity?: number;
 		cancelAtNextBillingDate?: boolean;
@@ -1356,7 +1396,13 @@ export const applyWorkspaceFreePlan = internalMutation({
 			pendingBillingSubscriptionId: undefined,
 		});
 
-		for (const member of billableMembers) {
+		const members = await ctx.db
+			.query("members")
+			.withIndex("by_workspace_id", (q) =>
+				q.eq("workspaceId", args.workspaceId)
+			)
+			.collect();
+		for (const member of members) {
 			await ctx.db.patch(member._id, { seatTier: undefined });
 		}
 
@@ -1405,6 +1451,41 @@ export const applyWorkspaceFreePlan = internalMutation({
 		}
 
 		return { ok: true };
+	},
+});
+
+export const getLivePlanPrices = action({
+	args: {},
+	handler: async (ctx) => {
+		const { products } = await import("./dodo");
+		const proProductId = process.env.DODO_PAYMENTS_PRODUCTID_PRO;
+		const enterpriseProductId = process.env.DODO_PAYMENTS_PRODUCTID_ENTERPRISE;
+
+		let proPrice = PLANS.pro.pricePerSeatMonthly * 100;
+		let enterprisePrice = PLANS.enterprise.pricePerSeatMonthly * 100;
+
+		try {
+			if (proProductId) {
+				const proProduct: any = await products.retrieve(ctx, {
+					product_id: proProductId,
+				});
+				if (typeof proProduct?.price === "number") proPrice = proProduct.price;
+			}
+			if (enterpriseProductId) {
+				const entProduct: any = await products.retrieve(ctx, {
+					product_id: enterpriseProductId,
+				});
+				if (typeof entProduct?.price === "number")
+					enterprisePrice = entProduct.price;
+			}
+		} catch (error) {
+			console.warn("Failed to fetch live prices from Dodo:", error);
+		}
+
+		return {
+			pro: proPrice,
+			enterprise: enterprisePrice,
+		};
 	},
 });
 
@@ -1738,9 +1819,19 @@ function mapSubscriptionStatus(
 	billableMemberCount: number,
 	memberPlan: string
 ) {
+	const plan = workspace.plan;
+	const status = workspace.subscriptionStatus;
+	const subId = workspace.dodoSubscriptionId ?? workspace.subscriptionId;
+	const activePlan =
+		(plan === "pro" || plan === "enterprise") &&
+		subId &&
+		["active", "trialing", "on_hold"].includes(status ?? "")
+			? plan
+			: "free";
+
 	return {
-		plan: (workspace.plan as PlanName) ?? "free",
-		memberPlan: memberPlan as PlanName,
+		plan: activePlan as PlanName,
+		memberPlan: activePlan === "free" ? "free" : (memberPlan as PlanName),
 		subscriptionStatus: workspace.subscriptionStatus ?? null,
 		cancellationAtPeriodEnd: workspace.cancellationAtPeriodEnd ?? false,
 		scheduledCancellationDate: workspace.scheduledCancellationDate ?? null,
@@ -1766,8 +1857,18 @@ export const getSubscriptionStatus = query({
 		if (!workspace) return null;
 		const billableMembers = await getBillableMembers(ctx, workspaceId);
 
+		const plan = workspace.plan;
+		const status = workspace.subscriptionStatus;
+		const subId = workspace.dodoSubscriptionId ?? workspace.subscriptionId;
+		const activePlan =
+			(plan === "pro" || plan === "enterprise") &&
+			subId &&
+			["active", "trialing", "on_hold"].includes(status ?? "")
+				? plan
+				: "free";
+
 		let memberPlan = "free";
-		if (identity) {
+		if (identity && activePlan !== "free") {
 			const baseUserId = (identity.subject || "").split("|")[0] as Id<"users">;
 			const member = await ctx.db
 				.query("members")
@@ -1908,7 +2009,6 @@ export const getPlanChangePreview = action({
 			)
 		);
 		const nextQuantity = Math.max(1, Math.floor(args.newQuantity));
-		const nextPlan = PLANS[args.newPlan];
 		if (
 			hasActivePendingBillingPayment(workspace, {
 				subscriptionId: workspace.dodoSubscriptionId,
@@ -1928,28 +2028,8 @@ export const getPlanChangePreview = action({
 				pendingExpiresAt: workspace.pendingBillingExpiresAt,
 			};
 		}
-		let dodoPreviewCharge: ReturnType<typeof getDodoPreviewCharge> | null =
-			null;
-		if (nextPlan?.dodoProductId) {
-			try {
-				const preview: DodoPlanChangePreview =
-					await subscriptions.previewChangePlan(ctx, {
-						subscription_id: workspace.dodoSubscriptionId,
-						product_id: nextPlan.dodoProductId,
-						quantity: nextQuantity,
-						proration_billing_mode: "prorated_immediately",
-						effective_at: "immediately",
-						metadata: {
-							workspace_id: args.workspaceId,
-							plan: args.newPlan,
-						},
-					});
-				dodoPreviewCharge = getDodoPreviewCharge(preview);
-			} catch (error) {
-				console.warn("[getPlanChangePreview] Dodo preview failed:", error);
-			}
-		}
-		const fairBilling = calculateFairBillingDelta(subscription, {
+		const previewCurrency = subscription?.currency ?? "USD";
+		const fairBilling = await calculateFairBillingDelta(ctx, subscription, {
 			currentPlan,
 			currentQuantity,
 			nextPlan: args.newPlan,
@@ -1959,9 +2039,10 @@ export const getPlanChangePreview = action({
 				latestPayment,
 				workspace.currentPeriodEnd
 			),
+			workspaceId: args.workspaceId,
 		});
 		const isPaidUpgrade = fairBilling.monthlyDelta > 0;
-		const amountDue =
+		const activityBasedAmountDue =
 			fairBilling.amountDue > 0
 				? fairBilling.amountDue
 				: isPaidUpgrade &&
@@ -1970,30 +2051,30 @@ export const getPlanChangePreview = action({
 							fairBilling.periodEnd <= fairBilling.periodStart)
 					? fairBilling.monthlyDelta
 					: 0;
+		const shouldChargeFullPlanDifference =
+			isPaidUpgrade &&
+			activityBasedAmountDue > 0 &&
+			activityBasedAmountDue < DODO_MINIMUM_PAYMENT_AMOUNT_CENTS &&
+			fairBilling.monthlyDelta >= DODO_MINIMUM_PAYMENT_AMOUNT_CENTS;
+		const amountDue = shouldChargeFullPlanDifference
+			? fairBilling.monthlyDelta
+			: activityBasedAmountDue;
 
 		return {
 			status: "fair_billing",
-			amountDue:
-				typeof dodoPreviewCharge?.amount === "number"
-					? dodoPreviewCharge.amount
-					: amountDue >= DODO_MINIMUM_PAYMENT_AMOUNT_CENTS
-						? amountDue
-						: 0,
+			amountDue: amountDue >= DODO_MINIMUM_PAYMENT_AMOUNT_CENTS ? amountDue : 0,
 			refundAmount:
 				fairBilling.refundAmount >= DODO_MINIMUM_PAYMENT_AMOUNT_CENTS
 					? fairBilling.refundAmount
 					: 0,
-			currency: dodoPreviewCharge?.currency ?? subscription?.currency ?? "USD",
-			taxAmount: dodoPreviewCharge?.tax ?? 0,
-			priceSource: dodoPreviewCharge ? "dodo_preview" : "local_estimate",
+			currency: previewCurrency,
+			taxAmount: 0,
+			priceSource: "activity_based",
 			periodStart: fairBilling.periodStart,
 			periodEnd: fairBilling.periodEnd,
 			remainingRatio: fairBilling.remainingRatio,
-			currentMonthlyAmount: getPlanMonthlyValueCents(
-				currentPlan,
-				currentQuantity
-			),
-			nextMonthlyAmount: getPlanMonthlyValueCents(args.newPlan, nextQuantity),
+			currentMonthlyAmount: fairBilling.currentMonthlyValue,
+			nextMonthlyAmount: fairBilling.nextMonthlyValue,
 		};
 	},
 });
@@ -2151,7 +2232,7 @@ export const getCustomerPortal = action({
 							typeof subscription.next_billing_date === "string"
 								? subscription.next_billing_date
 								: null,
-						paymentConfirmed: true,
+						paymentConfirmed: false,
 						raw: JSON.stringify(subscription),
 					});
 				}
@@ -2274,7 +2355,7 @@ export const getCustomerPortal = action({
 						typeof subscription.next_billing_date === "string"
 							? subscription.next_billing_date
 							: null,
-					paymentConfirmed: true,
+					paymentConfirmed: false,
 					raw: JSON.stringify(subscription),
 				});
 
@@ -2598,6 +2679,16 @@ export const updateSubscriptionQuantity = action({
 				? workspace.plan
 				: null);
 		const earlyQuantity = Math.max(1, Math.floor(newQuantity));
+		const earlyWorkspaceSeatQuantity =
+			earlyRequestedPlan === "enterprise"
+				? (workspace.enterpriseSeats ?? workspace.totalPaidSeats ?? 0)
+				: earlyRequestedPlan === "pro"
+					? (workspace.proSeats ?? workspace.totalPaidSeats ?? 0)
+					: 0;
+		const isDirectSeatIncreaseRequest =
+			earlyRequestedPlan !== null &&
+			workspace.plan === earlyRequestedPlan &&
+			earlyQuantity > earlyWorkspaceSeatQuantity;
 		if (
 			earlyRequestedPlan &&
 			hasActivePendingBillingPayment(workspace, {
@@ -2611,21 +2702,34 @@ export const updateSubscriptionQuantity = action({
 				workspace.pendingBillingPaymentUrl.startsWith("http")
 					? workspace.pendingBillingPaymentUrl
 					: null;
-			console.log("[billing] reusing pending upgrade checkout", {
+			if (reusablePaymentUrl) {
+				if (isDirectSeatIncreaseRequest) {
+					await clearLocalAndDodoPendingPlanChange(ctx, {
+						workspaceId,
+						subscriptionId: dodoSubscriptionId,
+						reason: "direct seat increase replaces pending payment",
+					});
+				} else {
+					console.log("[billing] reusing pending upgrade checkout", {
+						workspaceId,
+						plan: earlyRequestedPlan,
+						quantity: earlyQuantity,
+					});
+					return {
+						success: true,
+						status: "payment_required",
+						paymentUrl: reusablePaymentUrl,
+						amountDue: workspace.pendingBillingAmount ?? 0,
+						currency: workspace.pendingBillingCurrency ?? "USD",
+						taxAmount: workspace.pendingBillingTaxAmount ?? 0,
+						message:
+							"An upgrade payment is already pending. Complete that payment; your workspace will update after Dodo confirms it.",
+					};
+				}
+			}
+			await ctx.runMutation(internal.payments.clearPendingUpgrade, {
 				workspaceId,
-				plan: earlyRequestedPlan,
-				quantity: earlyQuantity,
 			});
-			return {
-				success: true,
-				status: reusablePaymentUrl ? "payment_required" : "pending_payment",
-				paymentUrl: reusablePaymentUrl,
-				amountDue: workspace.pendingBillingAmount ?? 0,
-				currency: workspace.pendingBillingCurrency ?? "USD",
-				taxAmount: workspace.pendingBillingTaxAmount ?? 0,
-				message:
-					"An upgrade payment is already pending. Complete that payment; your workspace will update after Dodo confirms it.",
-			};
 		}
 		if (
 			workspace.pendingBillingStatus === "pending_payment" &&
@@ -2642,31 +2746,48 @@ export const updateSubscriptionQuantity = action({
 			dodoSubscriptionId
 		);
 		if (activePendingPayment) {
-			console.log("[billing] blocked duplicate Dodo upgrade while pending", {
-				workspaceId,
-				subscriptionId: dodoSubscriptionId,
-				pendingPlan: activePendingPayment.planName,
-				pendingQuantity: activePendingPayment.quantity,
-				requestedPlan: earlyRequestedPlan,
-				requestedQuantity: earlyQuantity,
-			});
-			return {
-				success: true,
-				status: activePendingPayment.paymentUrl
-					? "payment_required"
-					: "pending_payment",
-				paymentUrl: activePendingPayment.paymentUrl,
-				amountDue: activePendingPayment.amountDue,
-				currency: activePendingPayment.currency,
-				taxAmount: activePendingPayment.taxAmount,
-				pendingExpiresAt: activePendingPayment.expiresAt,
-				message:
-					"A Dodo upgrade payment is already pending for this subscription. Complete that payment before starting another plan or seat change.",
-			};
+			const pendingMatchesRequest =
+				activePendingPayment.planName === earlyRequestedPlan &&
+				activePendingPayment.quantity === earlyQuantity;
+			if (!activePendingPayment.paymentUrl || !pendingMatchesRequest) {
+				await clearLocalAndDodoPendingPlanChange(ctx, {
+					workspaceId,
+					subscriptionId: dodoSubscriptionId,
+					reason: pendingMatchesRequest
+						? "missing payment url"
+						: "requested plan or quantity changed",
+				});
+			} else if (isDirectSeatIncreaseRequest) {
+				await clearLocalAndDodoPendingPlanChange(ctx, {
+					workspaceId,
+					subscriptionId: dodoSubscriptionId,
+					reason: "direct seat increase replaces active pending payment",
+				});
+			} else {
+				console.log("[billing] blocked duplicate Dodo upgrade while pending", {
+					workspaceId,
+					subscriptionId: dodoSubscriptionId,
+					pendingPlan: activePendingPayment.planName,
+					pendingQuantity: activePendingPayment.quantity,
+					requestedPlan: earlyRequestedPlan,
+					requestedQuantity: earlyQuantity,
+				});
+				return {
+					success: true,
+					status: "payment_required",
+					paymentUrl: activePendingPayment.paymentUrl,
+					amountDue: activePendingPayment.amountDue,
+					currency: activePendingPayment.currency,
+					taxAmount: activePendingPayment.taxAmount,
+					pendingExpiresAt: activePendingPayment.expiresAt,
+					message:
+						"A Dodo upgrade payment is already pending for this subscription. Complete that payment before starting another plan or seat change.",
+				};
+			}
 		}
 
 		// Ask Dodo first so stale local workspace state cannot fall back to
-		// a full checkout and bypass fair-billing proration.
+		// a full checkout and bypass fair billing.
 		const { subscriptions, payments: dodoPayments } = await import("./dodo");
 		let currentSubscription: DodoSubscription;
 		try {
@@ -2695,7 +2816,8 @@ export const updateSubscriptionQuantity = action({
 			subscriptionStatus === "on_hold" &&
 			workspacePaidPlan !== null &&
 			requestedPlan !== null &&
-			requestedPlan !== workspacePaidPlan
+			(requestedPlan !== workspacePaidPlan ||
+				workspace.pendingBillingQuantity !== earlyQuantity)
 		) {
 			try {
 				await subscriptions.cancelPlanChange(ctx, {
@@ -2736,15 +2858,6 @@ export const updateSubscriptionQuantity = action({
 		) {
 			return inactiveSubscriptionCheckoutResult();
 		}
-		if (subscriptionStatus === "on_hold") {
-			return {
-				success: false,
-				status: "previous_payment_pending",
-				message:
-					"Dodo still has an old pending upgrade payment for this subscription. Please wait a moment and try again so it can be cleared before creating a fresh fair-billing upgrade.",
-			};
-		}
-
 		const dodoQuantity =
 			typeof currentSubscription?.quantity === "number"
 				? currentSubscription.quantity
@@ -2777,7 +2890,7 @@ export const updateSubscriptionQuantity = action({
 					typeof currentSubscription?.next_billing_date === "string"
 						? currentSubscription.next_billing_date
 						: null,
-				paymentConfirmed: !isUnconfirmedDodoPlanChange,
+				paymentConfirmed: false,
 				raw: JSON.stringify(currentSubscription),
 			});
 		}
@@ -2798,6 +2911,32 @@ export const updateSubscriptionQuantity = action({
 		});
 		requireSeatsForEveryMember(quantity, billingContext.billableMemberCount);
 		if (
+			isUnconfirmedDodoPlanChange &&
+			dodoPlan === planName &&
+			(dodoQuantity === null || dodoQuantity === quantity)
+		) {
+			await ctx.runMutation(
+				internal.payments.applyWorkspaceSubscriptionQuantity,
+				{
+					workspaceId,
+					planName,
+					quantity,
+					subscriptionStatus: subscriptionStatus ?? "active",
+					auditAction: "subscription_reconciled_from_dodo_plan_change",
+				}
+			);
+			return {
+				success: true,
+				status: "updated",
+				quantity,
+				amountDue: 0,
+				currency: currentSubscription?.currency ?? "USD",
+				taxAmount: 0,
+				message:
+					"Enterprise is active in Dodo, so your workspace has been updated.",
+			};
+		}
+		if (
 			hasActivePendingBillingPayment(workspace, {
 				subscriptionId: dodoSubscriptionId,
 				planName,
@@ -2809,19 +2948,24 @@ export const updateSubscriptionQuantity = action({
 				workspace.pendingBillingPaymentUrl.startsWith("http")
 					? workspace.pendingBillingPaymentUrl
 					: null;
-			return {
-				success: true,
-				status: reusablePaymentUrl ? "payment_required" : "pending_payment",
-				paymentUrl: reusablePaymentUrl,
-				amountDue: workspace.pendingBillingAmount ?? 0,
-				currency:
-					workspace.pendingBillingCurrency ??
-					currentSubscription?.currency ??
-					"USD",
-				taxAmount: workspace.pendingBillingTaxAmount ?? 0,
-				message:
-					"An Enterprise upgrade payment is already pending. Complete that payment; your workspace will update after Dodo confirms it.",
-			};
+			if (reusablePaymentUrl) {
+				return {
+					success: true,
+					status: "payment_required",
+					paymentUrl: reusablePaymentUrl,
+					amountDue: workspace.pendingBillingAmount ?? 0,
+					currency:
+						workspace.pendingBillingCurrency ??
+						currentSubscription?.currency ??
+						"USD",
+					taxAmount: workspace.pendingBillingTaxAmount ?? 0,
+					message:
+						"An Enterprise upgrade payment is already pending. Complete that payment; your workspace will update after Dodo confirms it.",
+				};
+			}
+			await ctx.runMutation(internal.payments.clearPendingUpgrade, {
+				workspaceId,
+			});
 		}
 		if (
 			workspace.pendingBillingSubscriptionId === dodoSubscriptionId &&
@@ -2837,10 +2981,7 @@ export const updateSubscriptionQuantity = action({
 				});
 			} catch (cancelError) {
 				const cancelCode = parseDodoErrorCode(cancelError);
-				if (
-					cancelCode !== "NOT_FOUND" &&
-					cancelCode !== "SCHEDULED_CHANGE_NOT_FOUND"
-				) {
+				if (!isMissingScheduledPlanChangeCode(cancelCode)) {
 					console.warn(
 						"[updateSubscriptionQuantity] Failed to cancel expired pending Dodo plan change:",
 						cancelError
@@ -2852,22 +2993,106 @@ export const updateSubscriptionQuantity = action({
 		const firstPositiveSeatCount = (
 			...values: Array<number | null | undefined>
 		) => values.find((value) => typeof value === "number" && value > 0);
+		const dodoQuantityIsUnconfirmed =
+			subscriptionStatus === "on_hold" ||
+			isUnconfirmedDodoPlanChange ||
+			workspace.pendingBillingStatus === "pending_payment";
 		const currentQuantityBase =
 			workspacePlan === "enterprise"
-				? firstPositiveSeatCount(
-						currentSubscription?.quantity,
-						workspace.enterpriseSeats,
-						workspace.totalPaidSeats
-					)
-				: firstPositiveSeatCount(
-						currentSubscription?.quantity,
-						workspace.proSeats,
-						workspace.totalPaidSeats
-					);
+				? dodoQuantityIsUnconfirmed
+					? firstPositiveSeatCount(
+							workspace.enterpriseSeats,
+							workspace.totalPaidSeats,
+							currentSubscription?.quantity
+						)
+					: firstPositiveSeatCount(
+							currentSubscription?.quantity,
+							workspace.enterpriseSeats,
+							workspace.totalPaidSeats
+						)
+				: dodoQuantityIsUnconfirmed
+					? firstPositiveSeatCount(
+							workspace.proSeats,
+							workspace.totalPaidSeats,
+							currentSubscription?.quantity
+						)
+					: firstPositiveSeatCount(
+							currentSubscription?.quantity,
+							workspace.proSeats,
+							workspace.totalPaidSeats
+						);
 		const currentQuantity = Math.max(
 			1,
 			Math.floor(currentQuantityBase ?? quantity)
 		);
+		const isSeatOnlyIncrease =
+			planName === workspacePlan &&
+			requestedPlan === workspacePlan &&
+			quantity > currentQuantity;
+		if (isSeatOnlyIncrease) {
+			let updatedSubscription: DodoSubscription | null = null;
+			try {
+				updatedSubscription = await subscriptions.changePlan(ctx, {
+					subscription_id: dodoSubscriptionId,
+					product_id: dodoProductId,
+					quantity,
+					proration_billing_mode: "do_not_bill",
+					effective_at: "immediately",
+					on_payment_failure: "apply_change",
+					metadata: {
+						workspace_id: workspaceId,
+						plan: planName,
+					},
+				});
+			} catch (error) {
+				if (isDodoRbacAccessDenied(error)) {
+					return dodoBillingPermissionRequiredResult();
+				}
+				if (isDodoProviderError(error)) {
+					return dodoProviderErrorResult(error);
+				}
+				throw error;
+			}
+
+			if (!updatedSubscription) {
+				try {
+					updatedSubscription = await subscriptions.retrieve(ctx, {
+						subscription_id: dodoSubscriptionId,
+					});
+				} catch (retrieveError) {
+					console.warn(
+						"[updateSubscriptionQuantity] Failed to retrieve Dodo subscription after direct no-bill seat change:",
+						retrieveError
+					);
+				}
+			}
+
+			await ctx.runMutation(
+				internal.payments.applyWorkspaceSubscriptionQuantity,
+				{
+					workspaceId,
+					planName,
+					quantity,
+					subscriptionStatus:
+						updatedSubscription?.status ?? subscriptionStatus ?? "active",
+					auditAction: "seat_quantity_updated_directly",
+				}
+			);
+
+			return {
+				success: true,
+				status: "updated",
+				quantity,
+				amountDue: 0,
+				currency:
+					updatedSubscription?.currency ??
+					currentSubscription?.currency ??
+					"USD",
+				taxAmount: 0,
+				message:
+					"Seat added directly. Dodo subscription quantity and workspace seats were updated without payment.",
+			};
+		}
 		const recentPaidSeatChange: Doc<"billingHistory"> | null =
 			quantity > currentQuantity
 				? await ctx.runQuery(internal.payments.getRecentSuccessfulSeatPayment, {
@@ -2914,12 +3139,17 @@ export const updateSubscriptionQuantity = action({
 					"Dodo quantity was updated using your recent successful seat payment. No extra charge was collected.",
 			};
 		}
-		let fairBilling = calculateFairBillingDelta(currentSubscription, {
-			currentPlan: workspacePlan,
-			currentQuantity,
-			nextPlan: planName,
-			nextQuantity: quantity,
-		});
+		let fairBilling = await calculateFairBillingDelta(
+			ctx,
+			currentSubscription,
+			{
+				currentPlan: workspacePlan,
+				currentQuantity,
+				nextPlan: planName,
+				nextQuantity: quantity,
+				workspaceId,
+			}
+		);
 		const isPaidUpgrade = fairBilling.monthlyDelta > 0;
 		const shouldWaiveSmallDowngradeRefund =
 			fairBilling.refundAmount > 0 &&
@@ -2937,7 +3167,7 @@ export const updateSubscriptionQuantity = action({
 			);
 		}
 		if (isPaidUpgrade) {
-			fairBilling = calculateFairBillingDelta(currentSubscription, {
+			fairBilling = await calculateFairBillingDelta(ctx, currentSubscription, {
 				currentPlan: workspacePlan,
 				currentQuantity,
 				nextPlan: planName,
@@ -2947,82 +3177,26 @@ export const updateSubscriptionQuantity = action({
 					latestPaymentForFairBilling,
 					workspace.currentPeriodEnd
 				),
+				workspaceId,
 			});
 		}
-		let dodoUpgradePreviewCharge: ReturnType<
-			typeof getDodoPreviewCharge
-		> | null = null;
-		if (isPaidUpgrade) {
-			try {
-				const preview: DodoPlanChangePreview =
-					await subscriptions.previewChangePlan(ctx, {
-						subscription_id: dodoSubscriptionId,
-						product_id: dodoProductId,
-						quantity,
-						proration_billing_mode: "prorated_immediately",
-						effective_at: "immediately",
-						metadata: {
-							workspace_id: workspaceId,
-							plan: planName,
-						},
-					});
-				dodoUpgradePreviewCharge = getDodoPreviewCharge(preview);
-			} catch (error) {
-				console.warn(
-					"[updateSubscriptionQuantity] Dodo preview failed:",
-					error
-				);
-				if (parseDodoErrorCode(error) === "PREVIOUS_PAYMENT_PENDING") {
-					try {
-						const siteUrl =
-							process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-						const paymentSetupResult = await subscriptions.updatePaymentMethod(
-							ctx,
-							{
-								subscription_id: dodoSubscriptionId,
-								return_url: siteUrl
-									? `${siteUrl}/workspace/${workspaceId}/manage#billing`
-									: undefined,
-							}
-						);
-						const paymentUrl = findDodoPaymentUrl(paymentSetupResult);
-						if (paymentUrl) {
-							await ctx.runMutation(
-								internal.payments.recordWorkspacePendingPlanPayment,
-								{
-									workspaceId,
-									subscriptionId: dodoSubscriptionId,
-									planName,
-									quantity,
-									paymentUrl,
-									amountDue: fairBilling.amountDue,
-									currency: currentSubscription?.currency ?? "USD",
-									taxAmount: 0,
-								}
-							);
-						}
-						return dodoPreviousPaymentPendingResult(paymentUrl);
-					} catch (paymentSetupError) {
-						console.warn(
-							"[updateSubscriptionQuantity] Failed to recover Dodo pending payment after preview:",
-							paymentSetupError
-						);
-						return dodoPreviousPaymentPendingResult();
-					}
-				}
-			}
-		}
-		const upgradeChargeAmount =
-			typeof dodoUpgradePreviewCharge?.amount === "number"
-				? dodoUpgradePreviewCharge.amount
-				: fairBilling.amountDue > 0
-					? fairBilling.amountDue
-					: isPaidUpgrade &&
-							(!fairBilling.periodStart ||
-								!fairBilling.periodEnd ||
-								fairBilling.periodEnd <= fairBilling.periodStart)
-						? fairBilling.monthlyDelta
-						: 0;
+		const activityBasedUpgradeChargeAmount =
+			fairBilling.amountDue > 0
+				? fairBilling.amountDue
+				: isPaidUpgrade &&
+						(!fairBilling.periodStart ||
+							!fairBilling.periodEnd ||
+							fairBilling.periodEnd <= fairBilling.periodStart)
+					? fairBilling.monthlyDelta
+					: 0;
+		const shouldChargeFullPlanDifference =
+			isPaidUpgrade &&
+			activityBasedUpgradeChargeAmount > 0 &&
+			activityBasedUpgradeChargeAmount < DODO_MINIMUM_PAYMENT_AMOUNT_CENTS &&
+			fairBilling.monthlyDelta >= DODO_MINIMUM_PAYMENT_AMOUNT_CENTS;
+		const upgradeChargeAmount = shouldChargeFullPlanDifference
+			? fairBilling.monthlyDelta
+			: activityBasedUpgradeChargeAmount;
 		const shouldWaiveSmallUpgradeCharge =
 			upgradeChargeAmount > 0 &&
 			upgradeChargeAmount < DODO_MINIMUM_PAYMENT_AMOUNT_CENTS;
@@ -3091,8 +3265,12 @@ export const updateSubscriptionQuantity = action({
 		const shouldApplyImmediatelyWithoutProration =
 			shouldWaiveSmallUpgradeCharge || shouldWaiveSmallDowngradeRefund;
 		const changeSubscriptionPlan = async (
-			mode: "immediate" | "no_proration" = "immediate"
+			mode: "immediate" | "no_proration" | "full_difference" = "immediate"
 		) => {
+			const prorationBillingMode =
+				mode === "no_proration" || shouldSkipDodoProration
+					? "do_not_bill"
+					: "difference_immediately";
 			const result = await subscriptions.changePlan(ctx, {
 				subscription_id: dodoSubscriptionId,
 				product_id: dodoProductId,
@@ -3101,14 +3279,11 @@ export const updateSubscriptionQuantity = action({
 					workspace_id: workspaceId,
 					plan: planName,
 				},
-				// Fair billing: charge only the prorated difference for upgrades,
+				// Fair billing: charge only the activity-based difference for upgrades,
 				// and do not let Dodo also credit/refund when we refund downgrades.
-				proration_billing_mode:
-					mode === "no_proration" || shouldSkipDodoProration
-						? "do_not_bill"
-						: "prorated_immediately",
+				proration_billing_mode: prorationBillingMode,
 				effective_at: "immediately",
-				// Paid prorated upgrades must stay pending until payment succeeds.
+				// Paid activity-based upgrades must stay pending until payment succeeds.
 				// No-proration changes have no payment to wait for, so apply them now.
 				on_payment_failure:
 					mode === "no_proration" || shouldSkipDodoProration
@@ -3118,35 +3293,82 @@ export const updateSubscriptionQuantity = action({
 			return result;
 		};
 
-		const createPaymentSetupUrl = async () => {
-			const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-			const paymentSetupResult = await subscriptions.updatePaymentMethod(ctx, {
-				subscription_id: dodoSubscriptionId,
-				return_url: siteUrl
-					? `${siteUrl}/workspace/${workspaceId}/manage#billing`
-					: undefined,
-			});
-			return findDodoPaymentUrl(paymentSetupResult);
-		};
-
 		const paymentRequiredResult = async (
 			changeResult: unknown
 		): Promise<Record<string, unknown>> => {
 			let paymentUrl: string | null = findDodoPaymentUrl(changeResult);
-			const checkoutSessionId: string | null =
+			let checkoutSessionId: string | null =
 				findDodoCheckoutSessionId(changeResult);
+
 			if (!paymentUrl) {
+				const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
 				try {
-					paymentUrl = await createPaymentSetupUrl();
+					const paymentSetupResult = await subscriptions.updatePaymentMethod(
+						ctx,
+						{
+							subscription_id: dodoSubscriptionId,
+							return_url: siteUrl
+								? `${siteUrl}/workspace/${workspaceId}/manage#billing`
+								: undefined,
+						}
+					);
+					paymentUrl = findDodoPaymentUrl(paymentSetupResult);
+					checkoutSessionId =
+						checkoutSessionId ?? findDodoCheckoutSessionId(paymentSetupResult);
 				} catch (paymentSetupError) {
 					console.warn(
-						"[updateSubscriptionQuantity] Failed to create Dodo payment setup link:",
+						"[updateSubscriptionQuantity] Dodo did not return a payment link and payment setup could not be created:",
 						paymentSetupError
 					);
 				}
 			}
 
 			if (!paymentUrl) {
+				try {
+					const liveSubscription: DodoSubscription =
+						await subscriptions.retrieve(ctx, {
+							subscription_id: dodoSubscriptionId,
+						});
+					const livePlan = planNameFromDodoSubscription(liveSubscription);
+					const liveQuantity =
+						typeof liveSubscription?.quantity === "number"
+							? Math.max(1, Math.floor(liveSubscription.quantity))
+							: null;
+					if (
+						livePlan === planName &&
+						(liveQuantity === null || liveQuantity === quantity)
+					) {
+						await ctx.runMutation(
+							internal.payments.applyWorkspaceSubscriptionQuantity,
+							{
+								workspaceId,
+								planName,
+								quantity,
+								subscriptionStatus: liveSubscription.status ?? "active",
+								auditAction: "subscription_updated_without_payment_link",
+								amountDue: upgradeChargeAmount,
+								currency: liveSubscription.currency ?? "USD",
+								taxAmount: 0,
+							}
+						);
+						return {
+							success: true,
+							status: "updated",
+							quantity,
+							amountDue: upgradeChargeAmount,
+							currency: liveSubscription.currency ?? "USD",
+							taxAmount: 0,
+							message:
+								"Enterprise is active in Dodo, so your workspace has been updated.",
+						};
+					}
+				} catch (retrieveError) {
+					console.warn(
+						"[updateSubscriptionQuantity] Failed to verify Dodo subscription after missing payment link:",
+						retrieveError
+					);
+				}
+
 				await ctx.runMutation(
 					internal.payments.recordWorkspacePendingPlanPayment,
 					{
@@ -3156,18 +3378,15 @@ export const updateSubscriptionQuantity = action({
 						quantity,
 						...(checkoutSessionId ? { checkoutSessionId } : {}),
 						amountDue: upgradeChargeAmount,
-						currency:
-							dodoUpgradePreviewCharge?.currency ??
-							currentSubscription?.currency ??
-							"USD",
-						taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+						currency: currentSubscription?.currency ?? "USD",
+						taxAmount: 0,
 					}
 				);
 				return {
 					success: true,
 					status: "pending_payment",
 					message:
-						"Dodo is processing the fair-billing plan change. Your workspace will update after the payment succeeds.",
+						"Dodo is preparing the fair-billing payment. Try again in a moment to continue the upgrade.",
 				};
 			}
 
@@ -3181,11 +3400,8 @@ export const updateSubscriptionQuantity = action({
 					...(checkoutSessionId ? { checkoutSessionId } : {}),
 					paymentUrl,
 					amountDue: upgradeChargeAmount,
-					currency:
-						dodoUpgradePreviewCharge?.currency ??
-						currentSubscription?.currency ??
-						"USD",
-					taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+					currency: currentSubscription?.currency ?? "USD",
+					taxAmount: 0,
 				}
 			);
 
@@ -3198,6 +3414,55 @@ export const updateSubscriptionQuantity = action({
 			};
 		};
 
+		const updateSeatQuantityBeforePendingPayment = async () => {
+			const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+			await subscriptions.update(ctx, {
+				subscription_id: dodoSubscriptionId,
+				quantity,
+				metadata: {
+					workspace_id: workspaceId,
+					plan: planName,
+				},
+			});
+			const paymentSetupResult = await subscriptions.updatePaymentMethod(ctx, {
+				subscription_id: dodoSubscriptionId,
+				return_url: siteUrl
+					? `${siteUrl}/workspace/${workspaceId}/manage#billing`
+					: undefined,
+			});
+			const paymentUrl = findDodoPaymentUrl(paymentSetupResult);
+			const checkoutSessionId = findDodoCheckoutSessionId(paymentSetupResult);
+			if (!paymentUrl) {
+				return await pendingPaymentRecoveryResult(
+					"Dodo has a pending seat payment. Complete it in billing to activate the new seats."
+				);
+			}
+			await ctx.runMutation(
+				internal.payments.recordWorkspacePendingPlanPayment,
+				{
+					workspaceId,
+					subscriptionId: dodoSubscriptionId,
+					planName,
+					quantity,
+					...(checkoutSessionId ? { checkoutSessionId } : {}),
+					paymentUrl,
+					amountDue: upgradeChargeAmount,
+					currency: currentSubscription?.currency ?? "USD",
+					taxAmount: 0,
+				}
+			);
+			return {
+				success: true,
+				status: "payment_required",
+				paymentUrl,
+				amountDue: upgradeChargeAmount,
+				currency: currentSubscription?.currency ?? "USD",
+				taxAmount: 0,
+				message:
+					"Dodo recalculated the pending seat payment for the requested seat count. Complete the payment to activate the new seats.",
+			};
+		};
+
 		const recreatePaidUpgradeAfterPendingChange = async () => {
 			try {
 				await subscriptions.cancelPlanChange(ctx, {
@@ -3205,10 +3470,7 @@ export const updateSubscriptionQuantity = action({
 				});
 			} catch (cancelError) {
 				const cancelCode = parseDodoErrorCode(cancelError);
-				if (
-					cancelCode !== "NOT_FOUND" &&
-					cancelCode !== "SCHEDULED_CHANGE_NOT_FOUND"
-				) {
+				if (!isMissingScheduledPlanChangeCode(cancelCode)) {
 					console.warn(
 						"[updateSubscriptionQuantity] Failed to cancel pending Dodo plan change:",
 						cancelError
@@ -3221,15 +3483,25 @@ export const updateSubscriptionQuantity = action({
 				return {
 					...(await paymentRequiredResult(changeResult)),
 					amountDue: upgradeChargeAmount,
-					currency:
-						dodoUpgradePreviewCharge?.currency ??
-						currentSubscription?.currency ??
-						"USD",
-					taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+					currency: currentSubscription?.currency ?? "USD",
+					taxAmount: 0,
 				};
 			} catch (changeError) {
 				if (parseDodoErrorCode(changeError) !== "PENDING_PLAN_CHANGE_EXISTS") {
 					throw changeError;
+				}
+
+				const isSeatOnlyChange =
+					planName === workspacePlan && requestedPlan === workspacePlan;
+				if (isSeatOnlyChange) {
+					try {
+						return await updateSeatQuantityBeforePendingPayment();
+					} catch (seatQuantityError) {
+						console.warn(
+							"[updateSubscriptionQuantity] Failed to refresh Dodo pending seat quantity:",
+							seatQuantityError
+						);
+					}
 				}
 
 				await ctx.runMutation(
@@ -3240,24 +3512,18 @@ export const updateSubscriptionQuantity = action({
 						planName,
 						quantity,
 						amountDue: upgradeChargeAmount,
-						currency:
-							dodoUpgradePreviewCharge?.currency ??
-							currentSubscription?.currency ??
-							"USD",
-						taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+						currency: currentSubscription?.currency ?? "USD",
+						taxAmount: 0,
 					}
 				);
 				return {
 					success: true,
 					status: "pending_payment",
 					amountDue: upgradeChargeAmount,
-					currency:
-						dodoUpgradePreviewCharge?.currency ??
-						currentSubscription?.currency ??
-						"USD",
-					taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+					currency: currentSubscription?.currency ?? "USD",
+					taxAmount: 0,
 					message:
-						"Dodo already has an unpaid upgrade for this subscription. Your workspace is still on the current plan and will move to Enterprise only after payment succeeds.",
+						"Dodo is holding an unpaid seat change for this subscription. The amount has been recalculated for the requested seat count; complete or clear the pending payment in Dodo, then try again.",
 				};
 			}
 		};
@@ -3284,7 +3550,20 @@ export const updateSubscriptionQuantity = action({
 		};
 
 		const applyImmediateNoProrationPlanChange = async (message: string) => {
-			await changeSubscriptionPlan("no_proration");
+			try {
+				await changeSubscriptionPlan("no_proration");
+			} catch (noProrationError) {
+				if (
+					parseDodoErrorCode(noProrationError) !==
+					"TOTAL_PAYMENT_AMOUNT_BELOW_MINIMUM_AMOUNT"
+				) {
+					throw noProrationError;
+				}
+				console.warn(
+					"[updateSubscriptionQuantity] Dodo rejected no-proration plan change below minimum; applying local no-charge update:",
+					noProrationError
+				);
+			}
 			const result = await applyNoImmediateBillingUpdate(message);
 			if (
 				shouldWaiveSmallDowngradeRefund &&
@@ -3337,6 +3616,238 @@ export const updateSubscriptionQuantity = action({
 			return result;
 		};
 
+		const chargeFullDifferenceUpgrade = async () => {
+			const changeResult = await changeSubscriptionPlan("full_difference");
+			await sendDodoCustomerPortalEmail(ctx, workspaceId);
+			return {
+				...(await paymentRequiredResult(changeResult)),
+				amountDue: upgradeChargeAmount,
+				currency: currentSubscription?.currency ?? "USD",
+				taxAmount: 0,
+			};
+		};
+
+		const cancelPendingDodoPlanChange = async (context: string) => {
+			try {
+				await subscriptions.cancelPlanChange(ctx, {
+					subscription_id: dodoSubscriptionId,
+				});
+				return true;
+			} catch (cancelError) {
+				const cancelCode = parseDodoErrorCode(cancelError);
+				if (!isMissingScheduledPlanChangeCode(cancelCode)) {
+					console.warn(
+						`[updateSubscriptionQuantity] Failed to cancel pending Dodo plan change ${context}:`,
+						cancelError
+					);
+					return false;
+				}
+				return true;
+			}
+		};
+
+		const pendingPaymentRecoveryResult = async (message: string) => {
+			let paymentUrl: string | null = null;
+			const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+			try {
+				const paymentSetupResult = await subscriptions.updatePaymentMethod(
+					ctx,
+					{
+						subscription_id: dodoSubscriptionId,
+						return_url: siteUrl
+							? `${siteUrl}/workspace/${workspaceId}/manage#billing`
+							: undefined,
+					}
+				);
+				paymentUrl = findDodoPaymentUrl(paymentSetupResult);
+			} catch (paymentSetupError) {
+				console.warn(
+					"[updateSubscriptionQuantity] Failed to create Dodo payment-method recovery link:",
+					paymentSetupError
+				);
+			}
+			await ctx.runMutation(
+				internal.payments.recordWorkspacePendingPlanPayment,
+				{
+					workspaceId,
+					subscriptionId: dodoSubscriptionId,
+					planName,
+					quantity,
+					...(paymentUrl ? { paymentUrl } : {}),
+					amountDue: upgradeChargeAmount,
+					currency: currentSubscription?.currency ?? "USD",
+					taxAmount: 0,
+				}
+			);
+
+			if (paymentUrl) {
+				return {
+					success: true,
+					status: "payment_required",
+					paymentUrl,
+					quantity,
+					amountDue: upgradeChargeAmount,
+					currency: currentSubscription?.currency ?? "USD",
+					taxAmount: 0,
+					message,
+				};
+			}
+
+			return {
+				success: false,
+				status: "billing_provider_error",
+				quantity,
+				amountDue: upgradeChargeAmount,
+				currency: currentSubscription?.currency ?? "USD",
+				taxAmount: 0,
+				message:
+					"Dodo has a pending unpaid subscription change, but did not return a payment link. Clear or complete the pending change in Dodo, then add the seat again.",
+			};
+		};
+
+		const createExactActivityChargePayment = async () => {
+			const currency = currentSubscription?.currency ?? "USD";
+			await ctx.runMutation(
+				internal.payments.recordWorkspacePendingPlanPayment,
+				{
+					workspaceId,
+					subscriptionId: dodoSubscriptionId,
+					planName,
+					quantity,
+					amountDue: upgradeChargeAmount,
+					currency,
+					taxAmount: 0,
+				}
+			);
+
+			try {
+				const chargeResult = await subscriptions.charge(ctx, {
+					subscription_id: dodoSubscriptionId,
+					product_price: upgradeChargeAmount,
+					product_currency: currency,
+					product_description: `${PLANS[planName].label} seat expansion (${quantity} seats)`,
+					metadata: {
+						workspace_id: workspaceId,
+						workspaceId,
+						plan: planName,
+						quantity: String(quantity),
+						billing_reason: "seat_expansion_activity_charge",
+					},
+				});
+				const paymentUrl = findDodoPaymentUrl(chargeResult);
+				const checkoutSessionId = findDodoCheckoutSessionId(chargeResult);
+				if (paymentUrl || checkoutSessionId) {
+					await ctx.runMutation(
+						internal.payments.recordWorkspacePendingPlanPayment,
+						{
+							workspaceId,
+							subscriptionId: dodoSubscriptionId,
+							planName,
+							quantity,
+							...(checkoutSessionId ? { checkoutSessionId } : {}),
+							...(paymentUrl ? { paymentUrl } : {}),
+							amountDue: upgradeChargeAmount,
+							currency,
+							taxAmount: 0,
+						}
+					);
+				}
+				if (paymentUrl) {
+					return {
+						success: true,
+						status: "payment_required",
+						paymentUrl,
+						quantity,
+						amountDue: upgradeChargeAmount,
+						currency,
+						taxAmount: 0,
+						message:
+							"Dodo created the seat expansion payment. Complete payment to activate the added seats.",
+					};
+				}
+
+				return {
+					success: true,
+					status: "pending_payment",
+					quantity,
+					amountDue: upgradeChargeAmount,
+					currency,
+					taxAmount: 0,
+					message:
+						"Dodo is processing the exact seat expansion charge. The added seats will activate after payment succeeds.",
+				};
+			} catch (chargeError) {
+				if (isDodoRbacAccessDenied(chargeError)) {
+					return dodoBillingPermissionRequiredResult();
+				}
+				const errorCode = parseDodoErrorCode(chargeError);
+				if (
+					errorCode === "PREVIOUS_PAYMENT_PENDING" ||
+					errorCode === "PENDING_PLAN_CHANGE_EXISTS"
+				) {
+					return await pendingPaymentRecoveryResult(
+						"Dodo has a pending seat payment. Complete it to activate the new seats."
+					);
+				}
+				if (isDodoProviderError(chargeError)) {
+					const recovery = await pendingPaymentRecoveryResult(
+						"Dodo needs a payment method for the exact seat expansion charge. Complete payment to activate the new seats."
+					);
+					if (recovery.status === "payment_required") {
+						return recovery;
+					}
+					return dodoProviderErrorResult(chargeError);
+				}
+				throw chargeError;
+			}
+		};
+
+		const completeChangedSubscription = async (changeResult: unknown) => {
+			if (shouldRefundDowngrade) {
+				const latestTotalAmount =
+					typeof latestPaymentForDowngradeRefund?.total_amount === "number"
+						? latestPaymentForDowngradeRefund.total_amount
+						: null;
+				const latestTaxAmount =
+					typeof latestPaymentForDowngradeRefund?.tax === "number"
+						? latestPaymentForDowngradeRefund.tax
+						: null;
+				return await processRefundedDowngrade(ctx, {
+					workspaceId,
+					planName,
+					quantity,
+					fairBilling,
+					dodoSubscriptionId,
+					downgradeRefundCurrency,
+					currentSubscription,
+					downgradeInvoiceUrl: getPaymentInvoiceUrl(
+						latestPaymentForDowngradeRefund
+					),
+					latestTotalAmount,
+					latestTaxAmount,
+					billingAdjustment: downgradeBillingAdjustment ?? undefined,
+				});
+			}
+
+			if (!shouldChargeUpgrade) {
+				return await applyNoImmediateBillingUpdate(
+					shouldWaiveSmallUpgradeCharge
+						? "Plan updated. The activity-based charge was below Dodo's $1.00 minimum, so no immediate payment was collected."
+						: shouldWaiveSmallDowngradeRefund
+							? "Plan updated. The activity-based refund was below Dodo's $1.00 minimum, so no refund was issued."
+							: "Plan updated with no additional charge under fair billing."
+				);
+			}
+
+			await sendDodoCustomerPortalEmail(ctx, workspaceId);
+			return {
+				...(await paymentRequiredResult(changeResult)),
+				amountDue: upgradeChargeAmount,
+				currency: currentSubscription?.currency ?? "USD",
+				taxAmount: 0,
+			};
+		};
+
 		const handlePendingOrProviderError = async (error: unknown) => {
 			if (isDodoRbacAccessDenied(error)) {
 				return dodoBillingPermissionRequiredResult();
@@ -3345,32 +3856,20 @@ export const updateSubscriptionQuantity = action({
 			const errorCode = parseDodoErrorCode(error);
 			if (errorCode === "PREVIOUS_PAYMENT_PENDING") {
 				try {
-					const paymentUrl = await createPaymentSetupUrl();
-					if (paymentUrl) {
-						await ctx.runMutation(
-							internal.payments.recordWorkspacePendingPlanPayment,
-							{
-								workspaceId,
-								subscriptionId: dodoSubscriptionId,
-								planName,
-								quantity,
-								paymentUrl,
-								amountDue: upgradeChargeAmount,
-								currency:
-									dodoUpgradePreviewCharge?.currency ??
-									currentSubscription?.currency ??
-									"USD",
-								taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
-							}
-						);
-					}
-					return dodoPreviousPaymentPendingResult(paymentUrl);
-				} catch (paymentSetupError) {
+					await clearLocalAndDodoPendingPlanChange(ctx, {
+						workspaceId,
+						subscriptionId: dodoSubscriptionId,
+						reason: "Dodo reported previous payment pending",
+					});
+					return await recreatePaidUpgradeAfterPendingChange();
+				} catch (retryError) {
 					console.warn(
-						"[updateSubscriptionQuantity] Failed to recover previous pending Dodo payment:",
-						paymentSetupError
+						"[updateSubscriptionQuantity] Failed to recreate plan change after previous pending payment:",
+						retryError
 					);
-					return dodoPreviousPaymentPendingResult();
+					return await pendingPaymentRecoveryResult(
+						"Dodo has a pending unpaid subscription change. Complete it in billing to continue adding seats."
+					);
 				}
 			}
 			if (isDodoProviderError(error)) {
@@ -3380,11 +3879,15 @@ export const updateSubscriptionQuantity = action({
 		};
 
 		try {
+			if (shouldChargeUpgrade) {
+				return await createExactActivityChargePayment();
+			}
+
 			if (shouldApplyImmediatelyWithoutProration) {
 				return await applyImmediateNoProrationPlanChange(
 					shouldWaiveSmallUpgradeCharge
-						? "Plan updated immediately. The prorated charge was below Dodo's $1.00 minimum, so no immediate payment was collected."
-						: "Plan updated immediately. The prorated refund was below Dodo's $1.00 minimum, so no refund was issued."
+						? "Plan updated immediately. The activity-based charge was below Dodo's $1.00 minimum, so no immediate payment was collected."
+						: "Plan updated immediately. The activity-based refund was below Dodo's $1.00 minimum, so no refund was issued."
 				);
 			}
 
@@ -3418,9 +3921,9 @@ export const updateSubscriptionQuantity = action({
 			if (!shouldChargeUpgrade) {
 				return await applyNoImmediateBillingUpdate(
 					shouldWaiveSmallUpgradeCharge
-						? "Plan updated. The prorated charge was below Dodo's $1.00 minimum, so no immediate payment was collected."
+						? "Plan updated. The activity-based charge was below Dodo's $1.00 minimum, so no immediate payment was collected."
 						: shouldWaiveSmallDowngradeRefund
-							? "Plan updated. The prorated refund was below Dodo's $1.00 minimum, so no refund was issued."
+							? "Plan updated. The activity-based refund was below Dodo's $1.00 minimum, so no refund was issued."
 							: "Plan updated with no additional charge under fair billing."
 				);
 			}
@@ -3428,11 +3931,8 @@ export const updateSubscriptionQuantity = action({
 			return {
 				...(await paymentRequiredResult(changeResult)),
 				amountDue: upgradeChargeAmount,
-				currency:
-					dodoUpgradePreviewCharge?.currency ??
-					currentSubscription?.currency ??
-					"USD",
-				taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+				currency: currentSubscription?.currency ?? "USD",
+				taxAmount: 0,
 			};
 		} catch (error) {
 			if (isDodoRbacAccessDenied(error)) {
@@ -3441,8 +3941,14 @@ export const updateSubscriptionQuantity = action({
 
 			const errorCode = parseDodoErrorCode(error);
 			if (errorCode === "TOTAL_PAYMENT_AMOUNT_BELOW_MINIMUM_AMOUNT") {
+				if (
+					isPaidUpgrade &&
+					fairBilling.monthlyDelta >= DODO_MINIMUM_PAYMENT_AMOUNT_CENTS
+				) {
+					return await chargeFullDifferenceUpgrade();
+				}
 				return await applyImmediateNoProrationPlanChange(
-					"Plan updated immediately. The prorated payment was below Dodo's $1.00 minimum, so no immediate charge or refund was processed."
+					"Plan updated immediately. The activity-based payment was below Dodo's $1.00 minimum, so no immediate charge or refund was processed."
 				);
 			}
 			if (errorCode === "INACTIVE_SUBSCRIPTION_PLAN_CHANGE_NOT_SUPPORTED") {
@@ -3501,9 +4007,9 @@ export const updateSubscriptionQuantity = action({
 					if (!shouldChargeUpgrade) {
 						return await applyNoImmediateBillingUpdate(
 							shouldWaiveSmallUpgradeCharge
-								? "Plan updated. The prorated charge was below Dodo's $1.00 minimum, so no immediate payment was collected."
+								? "Plan updated. The activity-based charge was below Dodo's $1.00 minimum, so no immediate payment was collected."
 								: shouldWaiveSmallDowngradeRefund
-									? "Plan updated. The prorated refund was below Dodo's $1.00 minimum, so no refund was issued."
+									? "Plan updated. The activity-based refund was below Dodo's $1.00 minimum, so no refund was issued."
 									: "Plan updated with no additional charge under fair billing."
 						);
 					}
@@ -3511,11 +4017,8 @@ export const updateSubscriptionQuantity = action({
 					return {
 						...(await paymentRequiredResult(retryResult)),
 						amountDue: upgradeChargeAmount,
-						currency:
-							dodoUpgradePreviewCharge?.currency ??
-							currentSubscription?.currency ??
-							"USD",
-						taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
+						currency: currentSubscription?.currency ?? "USD",
+						taxAmount: 0,
 					};
 				} catch (retryError) {
 					if (isDodoRbacAccessDenied(retryError)) {
@@ -3526,8 +4029,14 @@ export const updateSubscriptionQuantity = action({
 						parseDodoErrorCode(retryError) ===
 						"TOTAL_PAYMENT_AMOUNT_BELOW_MINIMUM_AMOUNT"
 					) {
+						if (
+							isPaidUpgrade &&
+							fairBilling.monthlyDelta >= DODO_MINIMUM_PAYMENT_AMOUNT_CENTS
+						) {
+							return await chargeFullDifferenceUpgrade();
+						}
 						return await applyImmediateNoProrationPlanChange(
-							"Plan updated immediately. The prorated payment was below Dodo's $1.00 minimum, so no immediate charge or refund was processed."
+							"Plan updated immediately. The activity-based payment was below Dodo's $1.00 minimum, so no immediate charge or refund was processed."
 						);
 					}
 
@@ -3536,6 +4045,22 @@ export const updateSubscriptionQuantity = action({
 					}
 					if (shouldChargeUpgrade) {
 						return await recreatePaidUpgradeAfterPendingChange();
+					}
+
+					if (await cancelPendingDodoPlanChange("after reactivation")) {
+						try {
+							const retryAfterCancelResult = await changeSubscriptionPlan();
+							return await completeChangedSubscription(retryAfterCancelResult);
+						} catch (retryAfterCancelError) {
+							if (
+								parseDodoErrorCode(retryAfterCancelError) !==
+								"PENDING_PLAN_CHANGE_EXISTS"
+							) {
+								return await handlePendingOrProviderError(
+									retryAfterCancelError
+								);
+							}
+						}
 					}
 
 					const subscription = await subscriptions.retrieve(ctx, {
@@ -3556,16 +4081,9 @@ export const updateSubscriptionQuantity = action({
 							Math.floor(scheduledChange.quantity)
 						);
 						if (shouldChargeUpgrade) {
-							return {
-								...(await paymentRequiredResult({})),
-								quantity: scheduledQuantity,
-								amountDue: upgradeChargeAmount,
-								currency:
-									dodoUpgradePreviewCharge?.currency ??
-									currentSubscription?.currency ??
-									"USD",
-								taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
-							};
+							return await pendingPaymentRecoveryResult(
+								"Dodo has a pending seat payment. Complete it in billing to activate the new seats."
+							);
 						}
 
 						return {
@@ -3577,18 +4095,29 @@ export const updateSubscriptionQuantity = action({
 						};
 					}
 
-					return {
-						success: false,
-						status: "pending_plan_change",
-						message:
-							"Your subscription was reactivated, but a seat change is already pending in Dodo. Please wait for the current payment to complete.",
-					};
+					return await pendingPaymentRecoveryResult(
+						"Dodo has a pending seat payment. Complete it in billing to activate the new seats."
+					);
 				}
 			} else if (errorCode !== "PENDING_PLAN_CHANGE_EXISTS") {
 				return await handlePendingOrProviderError(error);
 			}
 			if (shouldChargeUpgrade) {
 				return await recreatePaidUpgradeAfterPendingChange();
+			}
+
+			if (await cancelPendingDodoPlanChange("before non-upgrade plan change")) {
+				try {
+					const retryAfterCancelResult = await changeSubscriptionPlan();
+					return await completeChangedSubscription(retryAfterCancelResult);
+				} catch (retryAfterCancelError) {
+					if (
+						parseDodoErrorCode(retryAfterCancelError) !==
+						"PENDING_PLAN_CHANGE_EXISTS"
+					) {
+						return await handlePendingOrProviderError(retryAfterCancelError);
+					}
+				}
 			}
 
 			const subscription = await subscriptions.retrieve(ctx, {
@@ -3606,16 +4135,9 @@ export const updateSubscriptionQuantity = action({
 					Math.floor(scheduledChange.quantity)
 				);
 				if (shouldChargeUpgrade) {
-					return {
-						...(await paymentRequiredResult({})),
-						quantity: scheduledQuantity,
-						amountDue: upgradeChargeAmount,
-						currency:
-							dodoUpgradePreviewCharge?.currency ??
-							currentSubscription?.currency ??
-							"USD",
-						taxAmount: dodoUpgradePreviewCharge?.tax ?? 0,
-					};
+					return await pendingPaymentRecoveryResult(
+						"Dodo has a pending seat payment. Complete it in billing to activate the new seats."
+					);
 				}
 
 				return {
@@ -3627,12 +4149,9 @@ export const updateSubscriptionQuantity = action({
 				};
 			}
 
-			return {
-				success: false,
-				status: "pending_plan_change",
-				message:
-					"A seat change is already pending in Dodo. Please wait for the current payment to complete.",
-			};
+			return await pendingPaymentRecoveryResult(
+				"Dodo has a pending seat payment. Complete it in billing to activate the new seats."
+			);
 		}
 	},
 });
@@ -3688,36 +4207,12 @@ export const cancelSubscription = action({
 			workspace.dodoSubscriptionId
 		);
 
-		const timeOnlyRefundAmount = calculateUnusedPeriodRefundAmount(
+		const refundAmount = await calculateUnusedPeriodRefundAmount(
+			ctx,
+			workspaceId,
 			subscription,
 			latestPayment
 		);
-		const periodStart = parseTime(subscription?.previous_billing_date);
-		const periodEnd = parseTime(subscription?.next_billing_date);
-		let refundAmount = timeOnlyRefundAmount;
-		if (timeOnlyRefundAmount > 0 && periodStart && periodEnd) {
-			const usage = await ctx.runQuery(
-				internal.payments.getBillingConsumptionForPeriod,
-				{
-					workspaceId,
-					periodStart,
-					periodEnd: Math.min(Date.now(), periodEnd),
-				}
-			);
-			const paidAmountCents =
-				typeof latestPayment?.total_amount === "number" &&
-				latestPayment.total_amount > 0
-					? latestPayment.total_amount
-					: timeOnlyRefundAmount;
-			refundAmount = calculateRefundOrCredit({
-				paidAmountCents,
-				maxRefundableCents: timeOnlyRefundAmount,
-				periodStart,
-				periodEnd,
-				featureUsageCostCents: usage.featureUsageCost,
-				workspaceActivityCostCents: usage.workspaceActivityCost,
-			}).refundOrCreditAmount;
-		}
 
 		await subscriptions.cancel(ctx, {
 			subscription_id: workspace.dodoSubscriptionId,
@@ -3738,6 +4233,40 @@ export const cancelSubscription = action({
 			);
 		}
 
+		let refundSuccess = false;
+		let refundId: string | undefined;
+
+		const finalRefundAmount = refundAmount;
+		if (finalRefundAmount > 0 && latestPayment) {
+			const { refunds } = await import("./dodo");
+			try {
+				const dodoRefundResult = await _refundLatestSubscriptionPayment(
+					ctx,
+					payments,
+					refunds,
+					{
+						latestPayment,
+						amount: finalRefundAmount,
+						reason: "Subscription cancelled / downgrade to Free",
+						metadata: {
+							workspaceId,
+							subscriptionId: workspace.dodoSubscriptionId,
+						},
+					}
+				);
+				const refundObj = dodoRefundResult?.refund as any;
+				if (refundObj) {
+					refundSuccess = true;
+					refundId = String(refundObj.refund_id ?? refundObj.id ?? "");
+				}
+			} catch (refundError) {
+				console.error(
+					"[cancelSubscription] Dodo real money refund failed, falling back to credit:",
+					refundError
+				);
+			}
+		}
+
 		const freePlanArgs: {
 			workspaceId: Id<"workspaces">;
 			refundAmount: number;
@@ -3753,6 +4282,7 @@ export const cancelSubscription = action({
 		if (refundCurrency) freePlanArgs.refundCurrency = refundCurrency;
 		const latestInvoiceUrl = getPaymentInvoiceUrl(latestPayment);
 		if (latestInvoiceUrl) freePlanArgs.invoiceUrl = latestInvoiceUrl;
+		if (refundId) freePlanArgs.refundId = refundId;
 		const latestTotalAmount =
 			typeof latestPayment?.total_amount === "number"
 				? latestPayment.total_amount
@@ -3768,50 +4298,80 @@ export const cancelSubscription = action({
 			internal.payments.applyWorkspaceFreePlan,
 			freePlanArgs
 		);
-		const finalRefundAmount = refundAmount;
+
 		if (finalRefundAmount > 0) {
-			const refundHistoryArgs: {
-				workspaceId: Id<"workspaces">;
-				amount: number;
-				currency: string;
-				status: string;
-				type: "credit";
-				description: string;
-				dodoInvoiceId: string;
-				invoiceUrl?: string;
-				usedAmount?: number;
-			} = {
-				workspaceId,
-				amount: finalRefundAmount,
-				currency: subscription?.currency ?? "USD",
-				status: "succeeded",
-				type: "credit",
-				description: "Fair billing credit for downgrade to Free",
-				dodoInvoiceId: `credit_${workspace.dodoSubscriptionId}_${Date.now().toString()}`,
-			};
-			if (latestInvoiceUrl) refundHistoryArgs.invoiceUrl = latestInvoiceUrl;
-			if (typeof freePlanArgs.usedAmount === "number") {
-				refundHistoryArgs.usedAmount = freePlanArgs.usedAmount;
+			if (refundSuccess && refundId) {
+				const refundHistoryArgs: {
+					workspaceId: Id<"workspaces">;
+					amount: number;
+					currency: string;
+					status: string;
+					type: "refund";
+					description: string;
+					dodoInvoiceId: string;
+					invoiceUrl?: string;
+					usedAmount?: number;
+				} = {
+					workspaceId,
+					amount: finalRefundAmount,
+					currency: subscription?.currency ?? "USD",
+					status: "succeeded",
+					type: "refund",
+					description: "UPI/payment source refund for downgrade to Free",
+					dodoInvoiceId: refundId,
+				};
+				if (latestInvoiceUrl) refundHistoryArgs.invoiceUrl = latestInvoiceUrl;
+				if (typeof freePlanArgs.usedAmount === "number") {
+					refundHistoryArgs.usedAmount = freePlanArgs.usedAmount;
+				}
+				await ctx.runMutation(
+					internal.payments.recordBillingHistoryEntry,
+					refundHistoryArgs
+				);
+			} else {
+				const refundHistoryArgs: {
+					workspaceId: Id<"workspaces">;
+					amount: number;
+					currency: string;
+					status: string;
+					type: "credit";
+					description: string;
+					dodoInvoiceId: string;
+					invoiceUrl?: string;
+					usedAmount?: number;
+				} = {
+					workspaceId,
+					amount: finalRefundAmount,
+					currency: subscription?.currency ?? "USD",
+					status: "succeeded",
+					type: "credit",
+					description: "Fair billing credit for downgrade to Free",
+					dodoInvoiceId: `credit_${workspace.dodoSubscriptionId}_${Date.now().toString()}`,
+				};
+				if (latestInvoiceUrl) refundHistoryArgs.invoiceUrl = latestInvoiceUrl;
+				if (typeof freePlanArgs.usedAmount === "number") {
+					refundHistoryArgs.usedAmount = freePlanArgs.usedAmount;
+				}
+				await ctx.runMutation(
+					internal.payments.recordBillingHistoryEntry,
+					refundHistoryArgs
+				);
+				await ctx.runMutation(internal.payments.addWorkspaceBillingCredit, {
+					workspaceId,
+					amount: finalRefundAmount,
+					currency: subscription?.currency ?? "USD",
+					reason: "Account credit from downgrade to Free",
+				});
 			}
-			await ctx.runMutation(
-				internal.payments.recordBillingHistoryEntry,
-				refundHistoryArgs
-			);
-			await ctx.runMutation(internal.payments.addWorkspaceBillingCredit, {
-				workspaceId,
-				amount: finalRefundAmount,
-				currency: subscription?.currency ?? "USD",
-				reason: "Account credit from downgrade to Free",
-			});
 		}
 		await sendDodoCustomerPortalEmail(ctx, workspaceId);
 
 		return {
 			success: true,
-			refundAmount: 0,
+			refundAmount: refundSuccess ? finalRefundAmount : 0,
 			refundCurrency: subscription?.currency ?? null,
-			refundId: null,
-			creditAmount: finalRefundAmount,
+			refundId: refundId ?? null,
+			creditAmount: refundSuccess ? 0 : finalRefundAmount,
 			creditCurrency: subscription?.currency ?? null,
 		};
 	},

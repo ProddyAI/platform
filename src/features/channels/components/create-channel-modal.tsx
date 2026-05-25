@@ -20,6 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
+import { LimitIndicator } from "@/components/limit-indicator";
 
 import { useCreateChannel } from "../api/use-create-channel";
 import { useCreateChannelModal } from "../store/use-create-channel-modal";
@@ -39,6 +41,7 @@ export const CreateChannelModal = () => {
 
 	const { mutate, isPending } = useCreateChannel();
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();
+	const { maxReached } = useWorkspaceLimit("channel");
 
 	// Cleanup blob URL on unmount to prevent memory leaks
 	useEffect(() => {
@@ -195,6 +198,12 @@ export const CreateChannelModal = () => {
 				</DialogHeader>
 
 				<form className="space-y-4" onSubmit={handleSubmit}>
+					{maxReached && (
+						<div className="flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+							<span>You have reached the channel limit for your plan. Upgrade to create channels.</span>
+							<LimitIndicator featureLabel="Channels" />
+						</div>
+					)}
 					<div className="space-y-4 py-4">
 						<div className="flex flex-col gap-2">
 							<div className="flex items-center justify-between">
@@ -217,9 +226,9 @@ export const CreateChannelModal = () => {
 									<button
 										aria-label="Upload channel icon"
 										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={isUploading}
+										disabled={isUploading || maxReached}
 										onClick={() =>
-											!isUploading && imageInputRef.current?.click()
+											!isUploading && !maxReached && imageInputRef.current?.click()
 										}
 										type="button"
 									>
@@ -274,7 +283,8 @@ export const CreateChannelModal = () => {
 									>
 										<button
 											aria-label="Select emoji icon"
-											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50 disabled:opacity-50 disabled:cursor-not-allowed"
+											disabled={maxReached}
 											type="button"
 										>
 											<Smile className="h-4 w-4" />
@@ -291,7 +301,7 @@ export const CreateChannelModal = () => {
 									<Input
 										autoFocus
 										className="h-10"
-										disabled={isPending}
+										disabled={isPending || maxReached}
 										id="name"
 										maxLength={20}
 										minLength={3}
@@ -309,7 +319,7 @@ export const CreateChannelModal = () => {
 					</div>
 
 					<div className="flex justify-end">
-						<Button disabled={isPending}>Create</Button>
+						<Button disabled={isPending || maxReached}>Create</Button>
 					</div>
 				</form>
 			</DialogContent>

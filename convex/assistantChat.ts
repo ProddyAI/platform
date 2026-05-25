@@ -528,6 +528,18 @@ export const sendMessage = action({
 			};
 		}
 
+		// Check AI limit
+		const usageLimitCheck = await ctx.runQuery(
+			internal.usageTracking.checkAIUsageLimit,
+			{
+				workspaceId: resolvedWorkspaceId,
+				featureType: "aiRequest",
+			}
+		);
+		if (!usageLimitCheck.allowed) {
+			throw new Error("Limit reached. Upgrade your plan to continue.");
+		}
+
 		let activeConversationId = args.conversationId;
 		const existingConversation = await getDatabaseChatConversation(
 			ctx,

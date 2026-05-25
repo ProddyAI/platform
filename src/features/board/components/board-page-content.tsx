@@ -24,6 +24,8 @@ import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
+import { LimitIndicator } from "@/components/limit-indicator";
 
 interface BoardPageContentProps {
 	channelId: Id<"channels">;
@@ -41,6 +43,7 @@ export const BoardPageContent = ({
 	const workspaceId = useWorkspaceId();
 	const searchParams = useSearchParams();
 	const [, setConnectProjectChannelModal] = useConnectProjectChannelModal();
+	const { maxReached: boardLimitReached } = useWorkspaceLimit("board");
 
 	// Board search store integration
 	const {
@@ -352,8 +355,11 @@ export const BoardPageContent = ({
 		}
 	};
 
-	// ── Issue handlers ──────────────────────────────────────────────────────
 	const handleCreateIssue = async (statusId: Id<"statuses">, title: string) => {
+		if (boardLimitReached) {
+			toast.error("Board cards limit reached. Upgrade your plan to create more.");
+			return;
+		}
 		const statusIssues = (optimisticIssues ?? allIssues).filter(
 			(i) => i.statusId === statusId
 		);
@@ -501,6 +507,10 @@ export const BoardPageContent = ({
 
 	// ── Old card/list handlers (table + gantt views) ─────────────────────────
 	const handleAddCard = async (listId: Id<"lists">) => {
+		if (boardLimitReached) {
+			toast.error("Board cards limit reached. Upgrade your plan to create more.");
+			return;
+		}
 		if (!cardTitle.trim()) return;
 		const cards = allCards.filter((c) => c.listId === listId) || [];
 		await createCard({
@@ -583,6 +593,12 @@ export const BoardPageContent = ({
 
 	return (
 		<div className="h-full w-full max-w-full flex flex-col bg-background dark:bg-gray-950 overflow-x-hidden overflow-y-hidden min-w-0">
+			{boardLimitReached && (
+				<div className="flex-shrink-0 m-4 flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+					<span>You have reached the board card limit for your plan. Upgrade to create more cards/issues.</span>
+					<LimitIndicator featureLabel="Board Cards" />
+				</div>
+			)}
 			{view === "kanban" ? (
 				statuses === undefined ? (
 					<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
@@ -592,6 +608,7 @@ export const BoardPageContent = ({
 					<BoardKanbanView
 						connectedChannelName={projectConnectedChannelName}
 						disableIssueDrag={isFilteredBoardView}
+						disableCreateIssue={boardLimitReached}
 						focusedStatusId={focusedStatusId}
 						isProjectChannelConnected={isProjectChannelConnected}
 						issues={filteredIssues}

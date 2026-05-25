@@ -242,12 +242,26 @@ const findWorkspaceMemberByBillingEmail = async (
 		.first();
 };
 
+const hasSucceededBillingPayment = async (
+	ctx: Pick<MutationCtx, "db">,
+	workspaceId: Id<"workspaces">
+) => {
+	const payment = await ctx.db
+		.query("billingHistory")
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
+		.filter((q) =>
+			q.and(q.eq(q.field("type"), "payment"), q.eq(q.field("status"), "succeeded"))
+		)
+		.first();
+	return Boolean(payment);
+};
+
 const getEffectiveBilling = (
 	workspace: Doc<"workspaces"> | null,
 	args: {
 		subscriptionId?: string;
 		applyPendingBilling?: boolean;
-		plan?: "pro" | "enterprise";
+		plan?: "pro" | "enterprise" | "free";
 		quantity?: number;
 	}
 ) => {
@@ -297,7 +311,7 @@ export const createPayment = internalMutation({
 		workspaceId: v.optional(v.string()),
 		subscriptionId: v.optional(v.string()),
 		applyPendingBilling: v.optional(v.boolean()),
-		plan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
+		plan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"), v.literal("free"))),
 		quantity: v.optional(v.number()),
 		customerId: v.optional(v.string()),
 		customerEmail: v.optional(v.union(v.string(), v.null())),
@@ -646,7 +660,7 @@ async function processSubscriptionSync(
 			? previousWorkspace.pendingBillingPlan
 			: null;
 	const eventPlan =
-		args.plan === "pro" || args.plan === "enterprise" ? args.plan : null;
+		(args.plan === "pro" || args.plan === "enterprise" || args.plan === "free" ? args.plan : null) as "pro" | "enterprise" | "free" | null;
 	const isStaleSubscriptionEventForPendingUpgrade =
 		args.paymentConfirmed !== true &&
 		pendingPlan !== null &&
@@ -685,10 +699,23 @@ async function processSubscriptionSync(
 			(typeof nextQuantity === "number" &&
 				nextQuantity > 0 &&
 				nextQuantity !== (previousWorkspace?.totalPaidSeats ?? 0)));
+	const hasPriorSucceededPayment = await hasSucceededBillingPayment(
+		ctx,
+		workspaceObjId
+	);
+	const hasConfirmedPayment = args.paymentConfirmed === true;
 	const canApplyPaidPlan =
-		args.paymentConfirmed === true ||
+		hasConfirmedPayment ||
 		args.status === "trialing" ||
-		(args.status === "active" && !isPaidPlanOrQuantityChange);
+		(args.status === "active" &&
+			!isPaidPlanOrQuantityChange &&
+			previousPaidPlan === nextPaidPlan &&
+			hasPriorSucceededPayment);
+	const shouldHoldUnpaidActivePlan =
+		args.status === "active" &&
+		Boolean(nextPaidPlan) &&
+		!canApplyPaidPlan &&
+		!hasConfirmedPayment;
 	const patch: WorkspaceBillingPatch = {
 		subscriptionId: args.subscriptionId,
 		dodoSubscriptionId: args.subscriptionId,
@@ -696,7 +723,7 @@ async function processSubscriptionSync(
 		customerId: args.customerId,
 		dodoCustomerId: args.customerId,
 	};
-	const isInactive = INACTIVE_SUBSCRIPTION_STATUSES.has(args.status);
+	const isInactive = INACTIVE_SUBSCRIPTION_STATUSES.has(args.status) || nextPaidPlan === "free";
 	if (isInactive) {
 		patch.plan = "free";
 		patch.subscriptionId = undefined;
@@ -719,6 +746,15 @@ async function processSubscriptionSync(
 		patch.pendingBillingCreatedAt = undefined;
 		patch.pendingBillingExpiresAt = undefined;
 		patch.pendingBillingSubscriptionId = undefined;
+	} else if (shouldHoldUnpaidActivePlan) {
+		if (previousPaidPlan && hasPriorSucceededPayment) {
+			patch.plan = previousPaidPlan;
+		} else {
+			patch.plan = "free";
+			patch.proSeats = 0;
+			patch.enterpriseSeats = 0;
+			patch.totalPaidSeats = 0;
+		}
 	} else if (nextPaidPlan && canApplyPaidPlan) {
 		patch.plan = nextPaidPlan;
 		const quantity =

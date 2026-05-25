@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { enforceWorkspaceLimit } from "./usageTracking";
 
 // Helper query to get a channel by ID (for internal use)
 export const _getChannelById = query({
@@ -160,6 +161,8 @@ export const create = mutation({
 
 		if (!member || (member.role !== "admin" && member.role !== "owner"))
 			throw new Error("Unauthorized.");
+
+		await enforceWorkspaceLimit(ctx, args.workspaceId, "channel");
 
 		if (args.name.length < 3 || args.name.length > 20)
 			throw new Error("Invalid channel name.");

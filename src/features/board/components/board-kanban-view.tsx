@@ -81,6 +81,7 @@ interface BoardKanbanViewProps {
 	isProjectChannelConnected?: boolean;
 	connectedChannelName?: string;
 	disableIssueDrag?: boolean;
+	disableCreateIssue?: boolean;
 	focusedStatusId?: Id<"statuses"> | null;
 }
 
@@ -119,6 +120,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	setView,
 	onAddStatus,
 	disableIssueDrag = false,
+	disableCreateIssue = false,
 	focusedStatusId = null,
 }) => {
 	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
@@ -341,6 +343,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 										<BoardStatusColumn
 											assigneeData={memberDataMap}
 											disableIssueDrag={disableIssueDrag}
+											disableCreateIssue={disableCreateIssue}
 											isFocused={focusedStatusId === status._id}
 											issues={issuesByStatus[status._id] || []}
 											onClickIssue={onClickIssue}

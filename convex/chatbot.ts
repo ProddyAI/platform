@@ -1519,6 +1519,18 @@ export const askAssistant = action({
 			};
 		}
 
+		// Check AI limit
+		const usageLimitCheck = await ctx.runQuery(
+			internal.usageTracking.checkAIUsageLimit,
+			{
+				workspaceId,
+				featureType: "aiRequest",
+			}
+		);
+		if (!usageLimitCheck.allowed) {
+			throw new Error("Limit reached. Upgrade your plan to continue.");
+		}
+
 		// Record AI usage
 		const trackingUserId = args.userId ?? (await getAuthUserId(ctx));
 		if (trackingUserId) {

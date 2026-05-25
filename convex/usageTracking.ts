@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import {
 	internalMutation,
 	internalQuery,
@@ -25,14 +26,27 @@ type FeatureType =
 	| "aiRequest"
 	| "aiDiagram"
 	| "aiSummary"
+	| "aiSearch"
 	| "message"
 	| "task"
 	| "channel"
 	| "board"
 	| "note";
 
-const toPlanName = (plan?: string | null): PlanName => {
-	if (plan === "pro" || plan === "enterprise") return plan;
+const toPlanName = (workspace: {
+	plan?: string | null;
+	subscriptionStatus?: string | null;
+	dodoSubscriptionId?: string | null;
+	subscriptionId?: string | null;
+}): PlanName => {
+	const plan = workspace.plan;
+	if (plan === "pro" || plan === "enterprise") {
+		const status = workspace.subscriptionStatus;
+		const subId = workspace.dodoSubscriptionId ?? workspace.subscriptionId;
+		if (subId && ["active", "trialing", "on_hold"].includes(status ?? "")) {
+			return plan;
+		}
+	}
 	return "free";
 };
 
@@ -41,6 +55,7 @@ const FEATURE_FIELD_MAP: Record<FeatureType, string> = {
 	aiRequest: "aiRequestCount",
 	aiDiagram: "aiDiagramCount",
 	aiSummary: "aiSummaryCount",
+	aiSearch: "aiRequestCount",
 	message: "messageCount",
 	task: "taskCount",
 	channel: "channelCount",
@@ -53,6 +68,7 @@ const FEATURE_LIMIT_MAP: Record<FeatureType, string> = {
 	aiRequest: "aiRequestsPerMonth",
 	aiDiagram: "aiDiagramGenerationsPerMonth",
 	aiSummary: "aiSummaryRequestsPerMonth",
+	aiSearch: "aiRequestsPerMonth",
 	message: "messagesPerMonth",
 	task: "tasksPerMonth",
 	channel: "channelsPerMonth",
@@ -280,7 +296,7 @@ export const checkAIUsageLimit = internalQuery({
 		if (!workspace) return { allowed: false, used: 0, limit: 0 };
 
 		// Fallback to workspace plan if no member-specific plan is checked (admin view)
-		const plan = getPlanConfig(toPlanName(workspace.plan));
+		const plan = getPlanConfig(toPlanName(workspace));
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const limitKey = FEATURE_LIMIT_MAP[featureType];
 		const limit = (plan.limits as unknown as Record<string, number>)[
@@ -331,7 +347,7 @@ export const getWorkspaceUsage = query({
 		if (!workspace) throw new Error("Workspace not found");
 
 		// Use workspace plan for limits (everyone shares the same plan)
-		const plan = getPlanConfig(toPlanName(workspace.plan));
+		const plan = getPlanConfig(toPlanName(workspace));
 		const month = getCurrentMonth();
 
 		const rows = await ctx.db
@@ -433,7 +449,7 @@ export const checkAIUsageLimitPublic = query({
 		if (!member) return { allowed: false, used: 0, limit: 0 };
 
 		// Use workspace plan for limits (everyone shares the same plan)
-		const plan = getPlanConfig(toPlanName(workspace.plan));
+		const plan = getPlanConfig(toPlanName(workspace));
 
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const limitKey = FEATURE_LIMIT_MAP[featureType];
@@ -523,3 +539,37 @@ export const recordAIRequestPublic = mutation({
 		}
 	},
 });
+
+export async function enforceWorkspaceLimit(
+	ctx: { db: any },
+	workspaceId: Id<"workspaces">,
+	featureType: FeatureType
+) {
+	const workspace = await ctx.db.get(workspaceId);
+	if (!workspace) throw new Error("Workspace not found");
+
+	const plan = getPlanConfig(toPlanName(workspace));
+	const limitKey = FEATURE_LIMIT_MAP[featureType];
+	if (!limitKey) return; // Feature has no limits
+
+	const limit = (plan.limits as unknown as Record<string, number>)[limitKey] as number;
+	if (isUnlimited(limit)) return; // Unlimited is allowed
+
+	const month = getCurrentMonth();
+	const rows = await ctx.db
+		.query("usageStats")
+		.withIndex("by_workspace_month", (q: any) =>
+			q.eq("workspaceId", workspaceId).eq("month", month)
+		)
+		.collect();
+
+	const fieldName = FEATURE_FIELD_MAP[featureType];
+	let used = 0;
+	for (const row of rows) {
+		used += (row as any)[fieldName] ?? 0;
+	}
+
+	if (used >= limit) {
+		throw new Error("Limit reached. Upgrade your plan to continue.");
+	}
+}

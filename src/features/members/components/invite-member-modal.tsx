@@ -145,19 +145,15 @@ const WorkspaceRoleSelect = ({ role, setRole }: WorkspaceRoleSelectProps) => {
 
 interface SeatFullWarningBannerProps {
 	isSeatsFull: boolean;
-	seatChangePending: boolean;
 	addingSeats: boolean;
+	seatChangePending: boolean;
 	seatsToAdd: number;
-	setSeatsToAdd: (seats: number) => void;
 	newTotalSeats: number;
+	setSeatsToAdd: (seats: number) => void;
 	handleAddSeat: () => void;
 }
 
-interface SeatWarningHeaderProps {
-	seatChangePending: boolean;
-}
-
-const SeatWarningHeader = ({ seatChangePending }: SeatWarningHeaderProps) => {
+const SeatWarningHeader = () => {
 	return (
 		<div className="flex items-center gap-3">
 			<div className="size-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600">
@@ -165,142 +161,23 @@ const SeatWarningHeader = ({ seatChangePending }: SeatWarningHeaderProps) => {
 			</div>
 			<div className="flex flex-col">
 				<span className="text-sm font-bold text-amber-900 dark:text-amber-100">
-					{seatChangePending ? "Billing Pending" : "Seats Finished"}
+					Seats Finished
 				</span>
 				<span className="text-[12px] text-amber-700 dark:text-amber-300">
-					{seatChangePending
-						? "Your new seat is processing."
-						: "You've reached your seat limit."}
+					You&apos;ve reached your seat limit.
 				</span>
 			</div>
 		</div>
 	);
 };
 
-interface SeatStepperProps {
-	addingSeats: boolean;
-	seatChangePending: boolean;
-	seatsToAdd: number;
-	updateSeatsToAdd: (value: number) => void;
-}
-
-const SeatStepper = ({
-	addingSeats,
-	seatChangePending,
-	seatsToAdd,
-	updateSeatsToAdd,
-}: SeatStepperProps) => {
-	return (
-		<div className="flex items-center gap-2">
-			<Button
-				aria-label="Decrease seats to add"
-				className="size-9 rounded-lg"
-				disabled={addingSeats || seatChangePending || seatsToAdd <= 1}
-				onClick={() => updateSeatsToAdd(seatsToAdd - 1)}
-				size="icon"
-				type="button"
-				variant="outline"
-			>
-				<Minus className="size-4" />
-			</Button>
-			<Input
-				className="h-9 w-20 text-center font-semibold bg-white dark:bg-zinc-950"
-				min={1}
-				onChange={(event) => updateSeatsToAdd(Number(event.target.value))}
-				type="number"
-				value={seatsToAdd}
-			/>
-			<Button
-				aria-label="Increase seats to add"
-				className="size-9 rounded-lg"
-				disabled={addingSeats || seatChangePending}
-				onClick={() => updateSeatsToAdd(seatsToAdd + 1)}
-				size="icon"
-				type="button"
-				variant="outline"
-			>
-				<Plus className="size-4" />
-			</Button>
-		</div>
-	);
-};
-
-interface SeatQuantityControlsProps {
-	addingSeats: boolean;
-	seatChangePending: boolean;
-	seatsToAdd: number;
-	newTotalSeats: number;
-	updateSeatsToAdd: (value: number) => void;
-}
-
-const SeatQuantityControls = ({
-	addingSeats,
-	seatChangePending,
-	seatsToAdd,
-	newTotalSeats,
-	updateSeatsToAdd,
-}: SeatQuantityControlsProps) => {
-	return (
-		<div className="space-y-1">
-			<Label className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">
-				Seats to add
-			</Label>
-			<SeatStepper
-				addingSeats={addingSeats}
-				seatChangePending={seatChangePending}
-				seatsToAdd={seatsToAdd}
-				updateSeatsToAdd={updateSeatsToAdd}
-			/>
-			<p className="text-xs text-amber-700 dark:text-amber-300">
-				New Dodo quantity: {newTotalSeats} seats
-			</p>
-		</div>
-	);
-};
-
-interface AddSeatsButtonProps {
-	addingSeats: boolean;
-	seatChangePending: boolean;
-	seatsToAdd: number;
-	handleAddSeat: () => void;
-}
-
-const AddSeatsButton = ({
-	addingSeats,
-	seatChangePending,
-	seatsToAdd,
-	handleAddSeat,
-}: AddSeatsButtonProps) => {
-	const buttonLabel = seatChangePending
-		? "Pending"
-		: `Add ${seatsToAdd} Seat${seatsToAdd === 1 ? "" : "s"}`;
-
-	return (
-		<Button
-			className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm"
-			disabled={addingSeats || seatChangePending}
-			onClick={handleAddSeat}
-			size="sm"
-		>
-			{addingSeats ? (
-				<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-			) : (
-				<div className="flex items-center gap-1">
-					<Plus className="size-4" />
-					{buttonLabel}
-				</div>
-			)}
-		</Button>
-	);
-};
-
 const SeatFullWarningBanner = ({
 	isSeatsFull,
-	seatChangePending,
 	addingSeats,
+	seatChangePending,
 	seatsToAdd,
-	setSeatsToAdd,
 	newTotalSeats,
+	setSeatsToAdd,
 	handleAddSeat,
 }: SeatFullWarningBannerProps) => {
 	if (!isSeatsFull) return null;
@@ -308,24 +185,69 @@ const SeatFullWarningBanner = ({
 	const updateSeatsToAdd = (value: number) => {
 		setSeatsToAdd(Math.max(1, Math.floor(value) || 1));
 	};
+	const buttonLabel = seatChangePending
+		? "Pending"
+		: `Add ${seatsToAdd} Seat${seatsToAdd === 1 ? "" : "s"}`;
 
 	return (
 		<div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-			<SeatWarningHeader seatChangePending={seatChangePending} />
+			<SeatWarningHeader />
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-				<SeatQuantityControls
-					addingSeats={addingSeats}
-					newTotalSeats={newTotalSeats}
-					seatChangePending={seatChangePending}
-					seatsToAdd={seatsToAdd}
-					updateSeatsToAdd={updateSeatsToAdd}
-				/>
-				<AddSeatsButton
-					addingSeats={addingSeats}
-					handleAddSeat={handleAddSeat}
-					seatChangePending={seatChangePending}
-					seatsToAdd={seatsToAdd}
-				/>
+				<div className="space-y-1">
+					<Label className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">
+						Seats to add
+					</Label>
+					<div className="flex items-center gap-2">
+						<Button
+							aria-label="Decrease seats to add"
+							className="size-9 rounded-lg"
+							disabled={addingSeats || seatChangePending || seatsToAdd <= 1}
+							onClick={() => updateSeatsToAdd(seatsToAdd - 1)}
+							size="icon"
+							type="button"
+							variant="outline"
+						>
+							<Minus className="size-4" />
+						</Button>
+						<Input
+							className="h-9 w-20 text-center font-semibold bg-white dark:bg-zinc-950"
+							min={1}
+							onChange={(event) => updateSeatsToAdd(Number(event.target.value))}
+							type="number"
+							value={seatsToAdd}
+						/>
+						<Button
+							aria-label="Increase seats to add"
+							className="size-9 rounded-lg"
+							disabled={addingSeats || seatChangePending}
+							onClick={() => updateSeatsToAdd(seatsToAdd + 1)}
+							size="icon"
+							type="button"
+							variant="outline"
+						>
+							<Plus className="size-4" />
+						</Button>
+					</div>
+					<p className="text-xs text-amber-700 dark:text-amber-300">
+						New Dodo quantity: {newTotalSeats} seats
+					</p>
+				</div>
+				<Button
+					className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm"
+					disabled={addingSeats || seatChangePending}
+					onClick={handleAddSeat}
+					size="sm"
+					type="button"
+				>
+					{addingSeats ? (
+						<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+					) : (
+						<div className="flex items-center gap-1">
+							<Plus className="size-4" />
+							{buttonLabel}
+						</div>
+					)}
+				</Button>
 			</div>
 		</div>
 	);
@@ -389,10 +311,10 @@ interface InviteMemberFieldsProps {
 	email: string;
 	role: WorkspaceInviteRole;
 	comment: string;
+	isSeatsFull: boolean;
 	addingSeats: boolean;
 	seatChangePending: boolean;
 	seatsToAdd: number;
-	isSeatsFull: boolean;
 	newTotalSeats: number;
 	setEmail: (email: string) => void;
 	setRole: (role: WorkspaceInviteRole) => void;
@@ -454,10 +376,10 @@ const InviteMemberFields = ({
 	email,
 	role,
 	comment,
+	isSeatsFull,
 	addingSeats,
 	seatChangePending,
 	seatsToAdd,
-	isSeatsFull,
 	newTotalSeats,
 	setEmail,
 	setRole,
@@ -649,6 +571,17 @@ export const InviteMemberModal = () => {
 		});
 	};
 
+	const handleClose = () => {
+		setOpen(false);
+		setEmail("");
+		setRole("member");
+		setComment("");
+		setInviteLoading(false);
+		setAddingSeats(false);
+		setSeatChangePending(false);
+		setSeatsToAdd(1);
+	};
+
 	const handleAddSeat = async () => {
 		if (!workspaceId) return;
 		setAddingSeats(true);
@@ -680,17 +613,18 @@ export const InviteMemberModal = () => {
 					window.location.href = billingResult.paymentUrl;
 					return;
 				}
-				setSeatChangePending(true);
+				setSeatChangePending(false);
 				toast.info(
 					billingResult.message ||
-						"Dodo is processing the prorated seat charge. The seat will be available after payment succeeds."
+						"Complete the pending billing step to activate the new seat."
 				);
 				return;
 			}
 			if (billingResult.status === "pending_plan_change") {
-				setSeatChangePending(true);
+				setSeatChangePending(false);
 				toast.info(
-					billingResult.message || "A seat change is already processing."
+					billingResult.message ||
+						"A billing change is already pending for this workspace."
 				);
 				return;
 			}
@@ -700,16 +634,6 @@ export const InviteMemberModal = () => {
 		} finally {
 			setAddingSeats(false);
 		}
-	};
-
-	const handleClose = () => {
-		setOpen(false);
-		setEmail("");
-		setRole("member");
-		setComment("");
-		setInviteLoading(false);
-		setSeatChangePending(false);
-		setSeatsToAdd(1);
 	};
 
 	const sendInvite = async () => {

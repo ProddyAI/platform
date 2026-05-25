@@ -56,6 +56,7 @@ import type * as reactions from "../reactions.js";
 import type * as richText from "../richText.js";
 import type * as search from "../search.js";
 import type * as tasks from "../tasks.js";
+import type * as test_dodo from "../test_dodo.js";
 import type * as threadTitles from "../threadTitles.js";
 import type * as typing from "../typing.js";
 import type * as upload from "../upload.js";
@@ -122,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   richText: typeof richText;
   search: typeof search;
   tasks: typeof tasks;
+  test_dodo: typeof test_dodo;
   threadTitles: typeof threadTitles;
   typing: typeof typing;
   upload: typeof upload;

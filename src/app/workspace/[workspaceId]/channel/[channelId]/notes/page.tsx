@@ -11,12 +11,15 @@ import { Button } from "@/components/ui/button";
 import { LiveblocksRoom } from "@/features/live";
 import type { Note } from "@/features/notes/types";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
+import { LimitIndicator } from "@/components/limit-indicator";
 import { NotesContent } from "./notes-content";
 
 const NotesPage = () => {
 	const params = useParams();
 	const workspaceId = params.workspaceId as Id<"workspaces">;
 	const channelId = params.channelId as Id<"channels">;
+	const { maxReached: noteLimitReached } = useWorkspaceLimit("note");
 
 	// State
 	const [activeNoteId, setActiveNoteId] = useState<Id<"notes"> | null>(null);
@@ -80,6 +83,10 @@ const NotesPage = () => {
 
 	// Handle note creation
 	const handleCreateNote = async () => {
+		if (noteLimitReached) {
+			toast.error("Note limit reached. Upgrade your plan to create more notes.");
+			return;
+		}
 		try {
 			const defaultTitle = "Untitled Note";
 			const defaultContent = ""; // Empty content for BlockNote
@@ -123,14 +130,20 @@ const NotesPage = () => {
 	// Show empty state if no notes and no folders
 	if (notes.length === 0) {
 		return (
-			<div className="flex h-full items-center justify-center text-muted-foreground">
+			<div className="flex h-full flex-col items-center justify-center text-muted-foreground p-4">
+				{noteLimitReached && (
+					<div className="mb-4 flex w-full max-w-md items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+						<span>You have reached the note limit for your plan. Upgrade to create notes.</span>
+						<LimitIndicator featureLabel="Notes" />
+					</div>
+				)}
 				<div className="text-center">
 					<FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
 					<h3 className="text-lg font-medium mb-2">No notes yet</h3>
 					<p className="text-sm mb-4">Create your first note to get started</p>
-					<Button onClick={() => handleCreateNote()}>
+					<Button onClick={() => handleCreateNote()} disabled={noteLimitReached}>
 						<Plus className="h-4 w-4 mr-2" />
-						Create Note
+						{noteLimitReached ? "Limit Reached" : "Create Note"}
 					</Button>
 				</div>
 			</div>
@@ -158,6 +171,7 @@ const NotesPage = () => {
 				setShowExportDialog={setShowExportDialog}
 				showExportDialog={showExportDialog}
 				workspaceId={workspaceId}
+				noteLimitReached={noteLimitReached}
 			/>
 		</LiveblocksRoom>
 	);
