@@ -514,9 +514,9 @@ const getPlanMonthlyValueCents = async (
 				? process.env.DODO_PAYMENTS_PRODUCTID_PRO
 				: process.env.DODO_PAYMENTS_PRODUCTID_ENTERPRISE;
 		if (productId) {
-			const product: any = await products.retrieve(ctx, {
+			const product = (await products.retrieve(ctx, {
 				product_id: productId,
-			});
+			})) as { price?: number };
 			if (typeof product?.price === "number") price = product.price;
 		}
 	} catch (error) {
@@ -1466,15 +1466,15 @@ export const getLivePlanPrices = action({
 
 		try {
 			if (proProductId) {
-				const proProduct: any = await products.retrieve(ctx, {
+				const proProduct = (await products.retrieve(ctx, {
 					product_id: proProductId,
-				});
+				})) as { price?: number };
 				if (typeof proProduct?.price === "number") proPrice = proProduct.price;
 			}
 			if (enterpriseProductId) {
-				const entProduct: any = await products.retrieve(ctx, {
+				const entProduct = (await products.retrieve(ctx, {
 					product_id: enterpriseProductId,
-				});
+				})) as { price?: number };
 				if (typeof entProduct?.price === "number")
 					enterprisePrice = entProduct.price;
 			}
@@ -3202,6 +3202,65 @@ export const updateSubscriptionQuantity = action({
 			upgradeChargeAmount < DODO_MINIMUM_PAYMENT_AMOUNT_CENTS;
 		const shouldChargeUpgrade =
 			upgradeChargeAmount >= DODO_MINIMUM_PAYMENT_AMOUNT_CENTS;
+
+		const pendingPaymentRecoveryResult = async (message: string) => {
+			let paymentUrl: string | null = null;
+			const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+			try {
+				const paymentSetupResult = await subscriptions.updatePaymentMethod(
+					ctx,
+					{
+						subscription_id: dodoSubscriptionId,
+						return_url: siteUrl
+							? `${siteUrl}/workspace/${workspaceId}/manage#billing`
+							: undefined,
+					}
+				);
+				paymentUrl = findDodoPaymentUrl(paymentSetupResult);
+			} catch (paymentSetupError) {
+				console.warn(
+					"[updateSubscriptionQuantity] Failed to create Dodo payment-method recovery link:",
+					paymentSetupError
+				);
+			}
+			await ctx.runMutation(
+				internal.payments.recordWorkspacePendingPlanPayment,
+				{
+					workspaceId,
+					subscriptionId: dodoSubscriptionId,
+					planName,
+					quantity,
+					...(paymentUrl ? { paymentUrl } : {}),
+					amountDue: upgradeChargeAmount,
+					currency: currentSubscription?.currency ?? "USD",
+					taxAmount: 0,
+				}
+			);
+
+			if (paymentUrl) {
+				return {
+					success: true,
+					status: "payment_required",
+					paymentUrl,
+					quantity,
+					amountDue: upgradeChargeAmount,
+					currency: currentSubscription?.currency ?? "USD",
+					taxAmount: 0,
+					message,
+				};
+			}
+
+			return {
+				success: false,
+				status: "billing_provider_error",
+				quantity,
+				amountDue: upgradeChargeAmount,
+				currency: currentSubscription?.currency ?? "USD",
+				taxAmount: 0,
+				message:
+					"Dodo has a pending unpaid subscription change, but did not return a payment link. Clear or complete the pending change in Dodo, then add the seat again.",
+			};
+		};
 		let downgradeBillingAdjustment: ReturnType<
 			typeof calculateRefundOrCredit
 		> | null = null;
@@ -3646,64 +3705,6 @@ export const updateSubscriptionQuantity = action({
 			}
 		};
 
-		const pendingPaymentRecoveryResult = async (message: string) => {
-			let paymentUrl: string | null = null;
-			const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-			try {
-				const paymentSetupResult = await subscriptions.updatePaymentMethod(
-					ctx,
-					{
-						subscription_id: dodoSubscriptionId,
-						return_url: siteUrl
-							? `${siteUrl}/workspace/${workspaceId}/manage#billing`
-							: undefined,
-					}
-				);
-				paymentUrl = findDodoPaymentUrl(paymentSetupResult);
-			} catch (paymentSetupError) {
-				console.warn(
-					"[updateSubscriptionQuantity] Failed to create Dodo payment-method recovery link:",
-					paymentSetupError
-				);
-			}
-			await ctx.runMutation(
-				internal.payments.recordWorkspacePendingPlanPayment,
-				{
-					workspaceId,
-					subscriptionId: dodoSubscriptionId,
-					planName,
-					quantity,
-					...(paymentUrl ? { paymentUrl } : {}),
-					amountDue: upgradeChargeAmount,
-					currency: currentSubscription?.currency ?? "USD",
-					taxAmount: 0,
-				}
-			);
-
-			if (paymentUrl) {
-				return {
-					success: true,
-					status: "payment_required",
-					paymentUrl,
-					quantity,
-					amountDue: upgradeChargeAmount,
-					currency: currentSubscription?.currency ?? "USD",
-					taxAmount: 0,
-					message,
-				};
-			}
-
-			return {
-				success: false,
-				status: "billing_provider_error",
-				quantity,
-				amountDue: upgradeChargeAmount,
-				currency: currentSubscription?.currency ?? "USD",
-				taxAmount: 0,
-				message:
-					"Dodo has a pending unpaid subscription change, but did not return a payment link. Clear or complete the pending change in Dodo, then add the seat again.",
-			};
-		};
 
 		const createExactActivityChargePayment = async () => {
 			const currency = currentSubscription?.currency ?? "USD";
@@ -4254,7 +4255,7 @@ export const cancelSubscription = action({
 						},
 					}
 				);
-				const refundObj = dodoRefundResult?.refund as any;
+				const refundObj = (dodoRefundResult as Record<string, unknown>)?.refund as Record<string, unknown> | undefined;
 				if (refundObj) {
 					refundSuccess = true;
 					refundId = String(refundObj.refund_id ?? refundObj.id ?? "");

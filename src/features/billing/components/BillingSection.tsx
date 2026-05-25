@@ -583,76 +583,15 @@ export function BillingSection({
 								const isCurrent = planName === optionName;
 								const isPaid = optionName !== "free";
 								return (
-									<div
-										className={`flex min-h-[250px] flex-col rounded-lg border p-5 transition-standard ${
-											isCurrent
-												? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-												: isPaid
-													? "border-primary/40 bg-primary/[0.03] hover:border-primary/70 hover:bg-primary/5"
-													: "border-border bg-background hover:border-primary/30"
-										}`}
+									<PlanOptionCard
+										cancelLoading={cancelLoading}
+										formatPlanPrice={formatPlanPrice}
+										getPlanActionLabel={getPlanActionLabel}
+										handlePlanAction={handlePlanAction}
 										key={optionName}
-									>
-										<div className="flex items-start justify-between gap-3">
-											<div>
-												<h4 className="text-base font-semibold">
-													{plan.label}
-												</h4>
-												<div className="mt-3 flex items-baseline gap-1">
-													<span className="text-3xl font-semibold leading-none">
-														{formatPlanPrice(plan)}
-													</span>
-													{plan.pricePerSeatMonthly > 0 && (
-														<span className="text-sm text-muted-foreground">
-															/user/mo
-														</span>
-													)}
-												</div>
-											</div>
-											{isCurrent && (
-												<span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-													<CheckCircle2 className="size-4" />
-												</span>
-											)}
-										</div>
-
-										<p className="mt-5 flex-1 text-sm leading-6 text-muted-foreground">
-											{plan.description}
-										</p>
-
-										<div className="mt-5 border-t pt-4">
-											{isCurrent ? (
-												<div className="flex h-9 items-center justify-center rounded-[10px] border border-primary/20 bg-background text-sm font-medium text-primary">
-													Current Plan
-												</div>
-											) : (
-												<Button
-													className={`w-full ${
-														optionName !== "free" && planName !== "enterprise"
-															? "bg-secondary text-white shadow-md hover:bg-secondary/90"
-															: ""
-													}`}
-													disabled={optionName === "free" && cancelLoading}
-													onClick={() => handlePlanAction(optionName)}
-													size="sm"
-													variant={
-														optionName === "free" || planName === "enterprise"
-															? "outline"
-															: "default"
-													}
-												>
-													{optionName === "free" && cancelLoading ? (
-														<>
-															<Loader className="mr-2 size-4 animate-spin" />
-															Cancelling...
-														</>
-													) : (
-														getPlanActionLabel(optionName)
-													)}
-												</Button>
-											)}
-										</div>
-									</div>
+										optionName={optionName}
+										planName={planName}
+									/>
 								);
 							})}
 						</div>
@@ -686,5 +625,92 @@ export function BillingSection({
 				</DialogContent>
 			</Dialog>
 		</>
+	);
+}
+
+function PlanOptionCard({
+	optionName,
+	planName,
+	cancelLoading,
+	handlePlanAction,
+	getPlanActionLabel,
+	formatPlanPrice,
+}: {
+	optionName: PlanName;
+	planName: PlanName;
+	cancelLoading: boolean;
+	handlePlanAction: (optionName: PlanName) => void;
+	getPlanActionLabel: (optionName: PlanName) => string;
+	formatPlanPrice: (plan: typeof PLANS[PlanName]) => string;
+}) {
+	const plan = PLANS[optionName];
+	const isCurrent = planName === optionName;
+	const isPaid = optionName !== "free";
+	return (
+		<div
+			className={`flex min-h-[250px] flex-col rounded-lg border p-5 transition-standard ${
+				isCurrent
+					? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+					: isPaid
+						? "border-primary/40 bg-primary/[0.03] hover:border-primary/70 hover:bg-primary/5"
+						: "border-border bg-background hover:border-primary/30"
+			}`}
+		>
+			<div className="flex items-start justify-between gap-3">
+				<div>
+					<h4 className="text-base font-semibold">{plan.label}</h4>
+					<div className="mt-3 flex items-baseline gap-1">
+						<span className="text-3xl font-semibold leading-none">
+							{formatPlanPrice(plan)}
+						</span>
+						{plan.pricePerSeatMonthly > 0 && (
+							<span className="text-sm text-muted-foreground">/user/mo</span>
+						)}
+					</div>
+				</div>
+				{isCurrent && (
+					<span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+						<CheckCircle2 className="size-4" />
+					</span>
+				)}
+			</div>
+
+			<p className="mt-5 flex-1 text-sm leading-6 text-muted-foreground">
+				{plan.description}
+			</p>
+
+			<div className="mt-5 border-t pt-4">
+				{isCurrent ? (
+					<div className="flex h-9 items-center justify-center rounded-[10px] border border-primary/20 bg-background text-sm font-medium text-primary">
+						Current Plan
+					</div>
+				) : (
+					<Button
+						className={`w-full ${
+							optionName !== "free" && planName !== "enterprise"
+								? "bg-secondary text-white shadow-md hover:bg-secondary/90"
+								: ""
+						}`}
+						disabled={optionName === "free" && cancelLoading}
+						onClick={() => handlePlanAction(optionName)}
+						size="sm"
+						variant={
+							optionName === "free" || planName === "enterprise"
+								? "outline"
+								: "default"
+						}
+					>
+						{optionName === "free" && cancelLoading ? (
+							<>
+								<Loader className="mr-2 size-4 animate-spin" />
+								Cancelling...
+							</>
+						) : (
+							getPlanActionLabel(optionName)
+						)}
+					</Button>
+				)}
+			</div>
+		</div>
 	);
 }

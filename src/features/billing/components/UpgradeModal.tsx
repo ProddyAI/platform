@@ -398,17 +398,7 @@ export function UpgradeModal({
 									</div>
 								</div>
 
-								<ul className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
-									{PRO_FEATURES.map((feature) => (
-										<li
-											className="flex items-center gap-2 text-sm leading-5"
-											key={feature}
-										>
-											<Check className="size-4 shrink-0 text-emerald-500" />
-											<span>{feature}</span>
-										</li>
-									))}
-								</ul>
+								<PlanFeatures features={PRO_FEATURES} />
 
 								<Button
 									className="mt-auto h-10 w-full"
@@ -530,17 +520,7 @@ export function UpgradeModal({
 									</div>
 								</div>
 
-								<ul className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
-									{ENTERPRISE_FEATURES.map((feature) => (
-										<li
-											className="flex items-center gap-2 text-sm leading-5"
-											key={feature}
-										>
-											<Check className="size-4 shrink-0 text-emerald-500" />
-											<span>{feature}</span>
-										</li>
-									))}
-								</ul>
+								<PlanFeatures features={ENTERPRISE_FEATURES} />
 
 								<Button
 									className="mt-auto h-10 w-full"
@@ -607,5 +587,18 @@ export function UpgradeModal({
 				)}
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+function PlanFeatures({ features }: { features: string[] }) {
+	return (
+		<ul className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+			{features.map((feature) => (
+				<li className="flex items-center gap-2 text-sm leading-5" key={feature}>
+					<Check className="size-4 shrink-0 text-emerald-500" />
+					<span>{feature}</span>
+				</li>
+			))}
+		</ul>
 	);
 }

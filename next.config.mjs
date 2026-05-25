@@ -167,7 +167,7 @@ const baseConfig = withPWA({
 			},
 		],
 	},
-	distDir: process.env.NEXT_DIST_DIR || ".next",
+
 	async headers() {
 		await Promise.resolve();
 		return [
