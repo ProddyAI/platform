@@ -6,13 +6,14 @@ import {
 	type StreamVideoParticipant,
 	useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
-import { Loader2, Phone, PhoneOff } from "lucide-react";
+import { FileText, Loader2, Phone, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAudioRoom } from ".."; // Import from index to get the new implementation
 import { AudioControlButton } from "./AudioControlButton";
 import { AudioToolbarButton } from "./AudioToolbarButton";
+import { MeetingNotesPanel } from "./MeetingNotesPanel";
 
 interface StreamAudioRoomProps {
 	roomId: string;
@@ -20,6 +21,7 @@ interface StreamAudioRoomProps {
 	channelId: string;
 	canvasName?: string;
 	isFullScreen?: boolean;
+	initialShowNotes?: boolean;
 }
 
 export const StreamAudioRoom = ({
@@ -28,10 +30,11 @@ export const StreamAudioRoom = ({
 	channelId,
 	canvasName,
 	isFullScreen,
+	initialShowNotes,
 }: StreamAudioRoomProps) => {
 	const [_retryKey, setRetryKey] = useState(0);
 	const [showFallbackUI, setShowFallbackUI] = useState(false);
-	const [shouldConnect, setShouldConnect] = useState(false);
+	const [shouldConnect, setShouldConnect] = useState(initialShowNotes || false);
 	const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
 	const [isLeavingConfirmed, setIsLeavingConfirmed] = useState(false);
 
@@ -89,7 +92,7 @@ export const StreamAudioRoom = ({
 	};
 
 	// Function to actually leave audio room after confirmation
-	const confirmLeaveAudio = async () => {
+	const confirmLeaveAudio = useCallback(() => {
 		if (isLeavingConfirmed) return;
 
 		try {
@@ -108,14 +111,14 @@ export const StreamAudioRoom = ({
 		} finally {
 			setIsLeavingConfirmed(false);
 		}
-	};
+	}, [isLeavingConfirmed]);
 
 	// Function to cancel leave confirmation
-	const cancelLeaveAudio = () => {
+	const cancelLeaveAudio = useCallback(() => {
 		if (!isLeavingConfirmed) {
 			setShowLeaveConfirmation(false);
 		}
-	};
+	}, [isLeavingConfirmed]);
 
 	// Handle keyboard events for confirmation dialog
 	useEffect(() => {
@@ -250,8 +253,12 @@ export const StreamAudioRoom = ({
 				<StreamVideo client={client}>
 					<StreamCall call={call}>
 						<AudioRoomUI
+							channelId={channelId}
+							initialShowNotes={initialShowNotes}
 							isFullScreen={isFullScreen}
 							onLeaveAudio={handleLeaveAudio}
+							roomId={roomId}
+							workspaceId={workspaceId}
 						/>
 					</StreamCall>
 				</StreamVideo>
@@ -297,14 +304,29 @@ export const StreamAudioRoom = ({
 };
 
 interface AudioRoomUIProps {
+	roomId: string;
+	workspaceId: string;
+	channelId: string;
 	isFullScreen?: boolean;
 	onLeaveAudio?: () => void;
+	initialShowNotes?: boolean;
 }
 
-const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
-	const { useParticipants } = useCallStateHooks();
+const AudioRoomUI = ({
+	roomId,
+	workspaceId,
+	channelId,
+	isFullScreen,
+	onLeaveAudio,
+	initialShowNotes,
+}: AudioRoomUIProps) => {
+	const { useParticipants, useMicrophoneState } = useCallStateHooks();
 	const participants = useParticipants();
+	const { isMute } = useMicrophoneState();
 	const [isLeaving, _setIsLeaving] = useState(false);
+	const [showNotesPanel, setShowNotesPanel] = useState(
+		initialShowNotes || false
+	);
 
 	const _hasAudio = (p: StreamVideoParticipant) =>
 		p.publishedTracks.includes(SfuModels.TrackType.AUDIO);
@@ -321,12 +343,35 @@ const AudioRoomUI = ({ isFullScreen, onLeaveAudio }: AudioRoomUIProps) => {
 
 			{/* Audio controls container */}
 			<div
-				className={`fixed ${isFullScreen ? "bottom-8 right-8" : "bottom-4 right-4"} z-50`}
+				className={`fixed ${isFullScreen ? "bottom-8 right-8" : "bottom-4 right-4"} z-50 flex items-end gap-4`}
 			>
+				{showNotesPanel && (
+					<div className="h-[500px] mb-4 shadow-xl rounded-xl overflow-hidden">
+						<MeetingNotesPanel
+							channelId={channelId}
+							isAudioMuted={isMute}
+							onClose={() => setShowNotesPanel(false)}
+							roomId={roomId}
+							workspaceId={workspaceId}
+						/>
+					</div>
+				)}
+
 				<div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200">
 					{/* Main audio controls */}
-					<div className="flex items-center justify-center mb-3">
+					<div className="flex items-center justify-center mb-3 gap-3">
 						<AudioToolbarButton />
+						<AudioControlButton
+							className={
+								showNotesPanel
+									? "bg-indigo-100 text-indigo-700 border-indigo-200"
+									: ""
+							}
+							icon={FileText}
+							label="Meeting Notes"
+							onClick={() => setShowNotesPanel(!showNotesPanel)}
+							variant="action"
+						/>
 					</div>
 
 					{/* Leave audio button */}

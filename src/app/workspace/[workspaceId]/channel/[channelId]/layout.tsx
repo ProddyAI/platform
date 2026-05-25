@@ -9,6 +9,7 @@ import { type PropsWithChildren, useEffect, useRef, useState } from "react";
 import { FaChevronDown } from "react-icons/fa";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { AiNotemaker } from "@/components/AiNotemaker";
 import { EmojiPopover } from "@/components/emoji-popover";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
 import { useGetChannel } from "@/features/channels/api/use-get-channel";
 import { useRemoveChannel } from "@/features/channels/api/use-remove-channel";
 import { useUpdateChannel } from "@/features/channels/api/use-update-channel";
@@ -582,6 +584,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
 		workspaceId,
 	});
+	const { isExpanded, isOpen } = useAiNotemakerStore();
 	const [ConfirmDialog, confirm] = useConfirm(
 		"Delete this channel?",
 		"You are about to delete this channel and any of its associated messages. This action is irreversible."
@@ -899,8 +902,26 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 				</Dialog>
 			</WorkspaceToolbar>
 
-			<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
-				{children}
+			<div className="flex-1 flex min-h-0 min-w-0">
+				{(!isExpanded || !isOpen) && (
+					<div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+						{children}
+					</div>
+				)}
+				{isOpen && (
+					<div
+						className={
+							isExpanded
+								? "w-full h-full"
+								: "hidden lg:flex w-[380px] border-l border-border"
+						}
+					>
+						<AiNotemaker
+							channelId={channelId as string}
+							workspaceId={workspaceId as string}
+						/>
+					</div>
+				)}
 			</div>
 		</div>
 	);

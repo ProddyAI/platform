@@ -1,7 +1,7 @@
 "use client";
 
 import Quill from "quill";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { UnifiedMessage } from "@/features/messages/components/unified-message";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -16,7 +16,9 @@ interface RendererProps {
 	};
 }
 
-type UnifiedMessagePayload = React.ComponentProps<typeof UnifiedMessage>["data"];
+type UnifiedMessagePayload = React.ComponentProps<
+	typeof UnifiedMessage
+>["data"];
 
 const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 	const [isEmpty, setIsEmpty] = useState(false);
@@ -24,8 +26,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 	const workspaceId = useWorkspaceId();
 	useGetMembers({ workspaceId });
 
-	// Check if this is a unified message (canvas or note type)
-	const isUnifiedMessage = () => {
+	const isUnifiedMessage = useMemo(() => {
 		try {
 			const parsed = JSON.parse(value);
 			return (
@@ -38,12 +39,13 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 					"note-live",
 					"note-export",
 					"file",
+					"meeting",
 				].includes(parsed.type)
 			);
 		} catch (_e) {
 			return false;
 		}
-	};
+	}, [value]);
 
 	// Get parsed message data
 	const getMessageData = () => {
@@ -61,6 +63,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 				"note-live",
 				"note-export",
 				"file",
+				"meeting",
 			];
 
 			if (
@@ -87,7 +90,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 
 	useEffect(() => {
 		// If this is a unified message (canvas or note type), don't process with Quill
-		if (isUnifiedMessage()) {
+		if (isUnifiedMessage) {
 			setIsEmpty(false);
 			return;
 		}
@@ -225,10 +228,10 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 		return () => {
 			if (container) container.innerHTML = "";
 		};
-	}, [value, image, calendarEvent, isUnifiedMessage]);
+	}, [value, calendarEvent, isUnifiedMessage]);
 
 	// If this is a unified message (canvas or note type), render the UnifiedMessage component
-	if (isUnifiedMessage()) {
+	if (isUnifiedMessage) {
 		const messageData = getMessageData();
 		if (messageData) {
 			return <UnifiedMessage data={messageData} />;

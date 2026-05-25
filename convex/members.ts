@@ -109,9 +109,7 @@ export const get = query({
 
 		const data = await ctx.db
 			.query("members")
-			.withIndex("by_workspace_id", (q) =>
-				q.eq("workspaceId", workspaceId)
-			)
+			.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 			.collect();
 
 		const members = [];
@@ -156,7 +154,12 @@ export const current = query({
 export const update = mutation({
 	args: {
 		id: v.id("members"),
-		role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+		role: v.union(
+			v.literal("owner"),
+			v.literal("admin"),
+			v.literal("member"),
+			v.literal("viewer")
+		),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
@@ -176,6 +179,13 @@ export const update = mutation({
 
 		// Check permissions based on role hierarchy
 		if (!currentMember) throw new Error("Unauthorized.");
+
+		// Only owners and admins can modify member roles
+		if (currentMember.role !== "owner" && currentMember.role !== "admin") {
+			throw new Error(
+				"Unauthorized: Only owners and admins can modify member roles."
+			);
+		}
 
 		// Only owners can promote to owner
 		if (args.role === "owner" && currentMember.role !== "owner") {
@@ -239,9 +249,13 @@ export const remove = mutation({
 		// Owners cannot be removed
 		if (member.role === "owner") throw new Error("Owners cannot be removed.");
 
-		// Admins can only remove members
-		if (currentMember.role === "admin" && member.role !== "member") {
-			throw new Error("Admins can only remove members.");
+		// Admins can only remove members and viewers
+		if (
+			currentMember.role === "admin" &&
+			member.role !== "member" &&
+			member.role !== "viewer"
+		) {
+			throw new Error("Admins can only remove members and viewers.");
 		}
 
 		// Cannot remove self if admin or owner

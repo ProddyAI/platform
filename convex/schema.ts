@@ -2,6 +2,26 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const planName = v.union(
+	v.literal("free"),
+	v.literal("pro"),
+	v.literal("enterprise")
+);
+
+const billingAuditValue = v.object({
+	plan: v.optional(v.union(planName, v.null())),
+	quantity: v.optional(v.number()),
+	proSeats: v.optional(v.number()),
+	enterpriseSeats: v.optional(v.number()),
+	cancellationAtPeriodEnd: v.optional(v.boolean()),
+	scheduledCancellationDate: v.optional(v.union(v.number(), v.null())),
+	refundAmount: v.optional(v.number()),
+	refundCurrency: v.optional(v.union(v.string(), v.null())),
+	refundId: v.optional(v.union(v.string(), v.null())),
+	creditAmount: v.optional(v.number()),
+	creditCurrency: v.optional(v.union(v.string(), v.null())),
+});
+
 const schema = defineSchema({
 	...authTables,
 	// Extend the users table with additional profile fields
@@ -18,7 +38,10 @@ const schema = defineSchema({
 		bio: v.optional(v.string()),
 		location: v.optional(v.string()),
 		website: v.optional(v.string()),
-	}).index("email", ["email"]),
+		onesignalExternalId: v.optional(v.string()),
+	})
+		.index("by_email", ["email"])
+		.index("by_onesignal_external_id", ["onesignalExternalId"]),
 
 	// Email OTP verifications
 	emailVerifications: defineTable({
@@ -36,16 +59,104 @@ const schema = defineSchema({
 		name: v.string(),
 		userId: v.id("users"),
 		joinCode: v.string(),
-		plan: v.optional(
-			v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise"))
-		),
+		plan: v.optional(planName),
+		subscriptionStatus: v.optional(v.string()),
+		subscriptionId: v.optional(v.string()),
+		customerId: v.optional(v.string()),
 		dodoCustomerId: v.optional(v.string()),
 		dodoSubscriptionId: v.optional(v.string()),
+		proSeats: v.optional(v.number()),
+		enterpriseSeats: v.optional(v.number()),
+
+		// Enterprise Billing Fields
+		totalPaidSeats: v.optional(v.number()),
+		activeUserCount: v.optional(v.number()),
+		nextBillingDate: v.optional(v.number()),
+		currentPeriodEnd: v.optional(v.number()),
+		cancellationAtPeriodEnd: v.optional(v.boolean()),
+		scheduledCancellationDate: v.optional(v.number()),
+		AIAddonEnabled: v.optional(v.boolean()),
+		billingInterval: v.optional(v.union(v.literal("month"), v.literal("year"))),
+		billingCredits: v.optional(v.number()),
+		pendingBillingStatus: v.optional(
+			v.union(
+				v.literal("pending_payment"),
+				v.literal("expired"),
+				v.literal("cleared")
+			)
+		),
+		pendingBillingPlan: v.optional(
+			v.union(v.literal("pro"), v.literal("enterprise"))
+		),
+		pendingBillingQuantity: v.optional(v.number()),
+		pendingBillingCheckoutSessionId: v.optional(v.string()),
+		pendingBillingPaymentUrl: v.optional(v.string()),
+		pendingBillingAmount: v.optional(v.number()),
+		pendingBillingCurrency: v.optional(v.string()),
+		pendingBillingTaxAmount: v.optional(v.number()),
+		pendingBillingCreatedAt: v.optional(v.number()),
+		pendingBillingExpiresAt: v.optional(v.number()),
+		pendingBillingSubscriptionId: v.optional(v.string()),
+		needsDodoReview: v.optional(v.boolean()),
+		dodoReviewReason: v.optional(v.string()),
+		dodoReviewUpdatedAt: v.optional(v.number()),
 	})
 		.index("by_user_id", ["userId"])
 		.index("by_plan", ["plan"])
 		.index("by_dodo_subscription_id", ["dodoSubscriptionId"])
 		.index("by_dodo_customer_id", ["dodoCustomerId"]),
+
+	// Local Ledger: Stores transaction history and invoice links
+	billingHistory: defineTable({
+		workspaceId: v.id("workspaces"),
+		amount: v.number(),
+		currency: v.string(),
+		status: v.string(),
+		taxAmount: v.optional(v.number()),
+		type: v.optional(
+			v.union(v.literal("payment"), v.literal("refund"), v.literal("credit"))
+		),
+		description: v.optional(v.string()),
+		plan: v.optional(v.string()),
+		seats: v.optional(v.number()),
+		invoiceUrl: v.optional(v.string()),
+		usedAmount: v.optional(v.number()),
+		dodoInvoiceId: v.string(),
+		createdAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_dodo_invoice_id", ["dodoInvoiceId"]),
+
+	// Audit Log: Tracks internal billing changes (seat expansion, plan changes)
+	billingAuditLogs: defineTable({
+		workspaceId: v.id("workspaces"),
+		action: v.string(), // "seat_expansion", "plan_change", "cancellation_scheduled"
+		previousValue: billingAuditValue,
+		newValue: billingAuditValue,
+		timestamp: v.number(),
+	}).index("by_workspace_id", ["workspaceId"]),
+
+	billingUsageEvents: defineTable({
+		workspaceId: v.id("workspaces"),
+		eventType: v.string(),
+		quantity: v.number(),
+		unitCostCents: v.number(),
+		totalCostCents: v.number(),
+		occurredAt: v.number(),
+		idempotencyKey: v.optional(v.string()),
+		metadata: v.optional(v.any()),
+	})
+		.index("by_workspace_id_occurred_at", ["workspaceId", "occurredAt"])
+		.index("by_workspace_id_event_type", ["workspaceId", "eventType"])
+		.index("by_idempotency_key", ["idempotencyKey"]),
+
+	webhookEvents: defineTable({
+		webhookId: v.string(),
+		eventType: v.string(),
+		processedAt: v.number(),
+	})
+		.index("by_webhook_id", ["webhookId"])
+		.index("by_processed_at", ["processedAt"]),
 
 	// Usage tracking - rolling monthly counts per workspace
 	usageStats: defineTable({
@@ -74,7 +185,13 @@ const schema = defineSchema({
 	members: defineTable({
 		userId: v.id("users"),
 		workspaceId: v.id("workspaces"),
-		role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+		role: v.union(
+			v.literal("owner"),
+			v.literal("admin"),
+			v.literal("member"),
+			v.literal("viewer")
+		),
+		seatTier: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 	})
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id", ["workspaceId"])
@@ -246,6 +363,10 @@ const schema = defineSchema({
 		projectId: v.optional(v.id("projects")),
 		blockedIssueId: v.id("issues"), // The issue that is blocked
 		blockingIssueId: v.id("issues"), // The issue that is blocking
+		// Optional metadata (manual or auto-detected)
+		reasoning: v.optional(v.string()),
+		resolutionSteps: v.optional(v.array(v.string())),
+		updatedAt: v.optional(v.number()),
 		createdAt: v.number(),
 		createdBy: v.id("members"),
 	})
@@ -388,6 +509,15 @@ const schema = defineSchema({
 		),
 		categoryId: v.optional(v.id("categories")),
 		tags: v.optional(v.array(v.string())),
+		// Dependency fields (used by blocker detector / legacy data)
+		blockedBy: v.optional(v.array(v.id("tasks"))),
+		blocking: v.optional(v.array(v.id("tasks"))),
+		/**
+		 * Optional per-blocker metadata keyed by task id as string.
+		 * (Some existing docs use `{}` maps; keep as `any` for backward compatibility.)
+		 */
+		blockerDetailsByTaskId: v.optional(v.record(v.string(), v.any())),
+		blockerExplanationsByTaskId: v.optional(v.record(v.string(), v.any())),
 		createdAt: v.number(),
 		updatedAt: v.optional(v.number()),
 		userId: v.id("users"),
@@ -396,7 +526,9 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
-		.index("by_category_id", ["categoryId"]),
+		.index("by_category_id", ["categoryId"])
+		.index("by_workspace_id_status", ["workspaceId", "status"])
+		.index("by_workspace_id_due_date", ["workspaceId", "dueDate"]),
 
 	mentions: defineTable({
 		messageId: v.optional(v.id("messages")),
@@ -503,7 +635,11 @@ const schema = defineSchema({
 						v.literal("offline")
 					)
 				), // User's custom status (e.g., DND)
-				// Notification preferences
+				// Notification preferences: two-stage migration
+				// Legacy fields (mentions, assignee, threadReply, directMessage, inviteSent, onlineStatus, workspaceJoin)
+				// are deprecated in favor of channel-specific preferences (notificationBrowserPrefs, notificationEmailPrefs).
+				// Current behavior: channel-specific prefs take precedence; if absent, the legacy field is used as fallback.
+				// Deprecation timeline: legacy fields will be removed in Q3 2026. All new code should use channel-specific prefs.
 				notifications: v.optional(
 					v.object({
 						mentions: v.optional(v.boolean()), // Default: true
@@ -525,6 +661,33 @@ const schema = defineSchema({
 								v.literal("sunday")
 							)
 						), // Default: 'monday'
+						notificationBrowserPrefs: v.optional(
+							v.object({
+								mentions: v.optional(v.boolean()),
+								assignee: v.optional(v.boolean()),
+								threadReply: v.optional(v.boolean()),
+								directMessage: v.optional(v.boolean()),
+								inviteSent: v.optional(v.boolean()),
+								workspaceJoin: v.optional(v.boolean()),
+								onlineStatus: v.optional(v.boolean()),
+							})
+						),
+						notificationEmailPrefs: v.optional(
+							v.object({
+								mentions: v.optional(v.boolean()),
+								assignee: v.optional(v.boolean()),
+								threadReply: v.optional(v.boolean()),
+								directMessage: v.optional(v.boolean()),
+								inviteSent: v.optional(v.boolean()),
+								workspaceJoin: v.optional(v.boolean()),
+								onlineStatus: v.optional(v.boolean()),
+							})
+						),
+						browserNotificationsEnabled: v.optional(v.boolean()),
+						emailNotificationsEnabled: v.optional(v.boolean()),
+						notificationSummaryMode: v.optional(
+							v.union(v.literal("realtime"), v.literal("batched30m"))
+						),
 					})
 				),
 			})
@@ -616,12 +779,42 @@ const schema = defineSchema({
 		workspaceId: v.id("workspaces"),
 		userId: v.id("users"),
 		conversationId: v.string(),
+		title: v.optional(v.string()),
+		titleSource: v.optional(
+			v.union(
+				v.literal("ai_generated"),
+				v.literal("manual"),
+				v.literal("default")
+			)
+		),
+		preview: v.optional(v.string()),
+		isPinned: v.optional(v.boolean()),
 		lastMessageAt: v.number(),
+		createdAt: v.optional(v.number()),
 		source: v.optional(v.string()),
+		pendingTaskDraft: v.optional(
+			v.object({
+				title: v.string(),
+				description: v.optional(v.string()),
+				assigneeMemberId: v.optional(v.id("members")),
+				assigneeUserId: v.optional(v.id("users")),
+				assigneeName: v.optional(v.string()),
+				dueDate: v.optional(v.number()),
+				priority: v.optional(
+					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+				),
+				updatedAt: v.number(),
+			})
+		),
 	})
 		.index("by_workspace_id", ["workspaceId"])
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_user_id", ["workspaceId", "userId"])
+		.index("by_workspace_id_user_id_last_message", [
+			"workspaceId",
+			"userId",
+			"lastMessageAt",
+		])
 		.index("by_conversation_id", ["conversationId"]),
 
 	assistantToolAuditEvents: defineTable({
@@ -657,6 +850,58 @@ const schema = defineSchema({
 		.index("by_user_id", ["userId"])
 		.index("by_workspace_id_timestamp", ["workspaceId", "timestamp"])
 		.index("by_user_id_timestamp", ["userId", "timestamp"]),
+
+	assistantProfiles: defineTable({
+		workspaceId: v.id("workspaces"),
+		userId: v.id("users"),
+		responseStyle: v.optional(
+			v.union(
+				v.literal("concise"),
+				v.literal("balanced"),
+				v.literal("detailed")
+			)
+		),
+		actionPreference: v.optional(
+			v.union(v.literal("suggestive"), v.literal("proactive"))
+		),
+		prioritizationStrategy: v.optional(
+			v.union(
+				v.literal("balanced"),
+				v.literal("blockers_first"),
+				v.literal("deadlines_first"),
+				v.literal("meetings_first")
+			)
+		),
+		summaryFocus: v.optional(
+			v.array(
+				v.union(
+					v.literal("tasks"),
+					v.literal("channels"),
+					v.literal("notes"),
+					v.literal("general")
+				)
+			)
+		),
+		memoryBullets: v.optional(v.array(v.string())),
+		activeContexts: v.optional(
+			v.array(
+				v.object({
+					kind: v.union(v.literal("release"), v.literal("project")),
+					label: v.string(),
+					aliases: v.optional(v.array(v.string())),
+					ownerHints: v.optional(v.array(v.string())),
+					statusHint: v.optional(v.string()),
+					lastMentionedAt: v.number(),
+				})
+			)
+		),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+		lastUsedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_user_id", ["userId"])
+		.index("by_workspace_id_user_id", ["workspaceId", "userId"]),
 
 	// Composio v3 Auth Configs (formerly integrations) - Now user-specific
 	auth_configs: defineTable({
@@ -758,8 +1003,20 @@ const schema = defineSchema({
 		workspaceId: v.id("workspaces"), // which workspace
 		email: v.string(), // who the invite is for
 		hash: v.string(), // token from email link
+		role: v.optional(
+			v.union(
+				v.literal("owner"),
+				v.literal("admin"),
+				v.literal("member"),
+				// Kept only so older pending invite documents do not break schema
+				// validation. New invites are validated without viewer.
+				v.literal("viewer")
+			)
+		),
+		invitePlan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
 		used: v.boolean(), // one-time use
 		expiresAt: v.number(), // auto-expiry
+		comment: v.optional(v.string()), // added comment field
 		createdAt: v.optional(v.number()), // when the invite was created (optional for backward compatibility)
 		invitedBy: v.optional(v.id("members")), // who sent the invite (optional for backward compatibility; new records should set this)
 	})
@@ -893,78 +1150,131 @@ const schema = defineSchema({
 		.index("by_connection_id", ["connectionId"])
 		.index("by_status", ["status"])
 		.index("by_workspace_status", ["workspaceId", "status"]),
-		// Sprints (Linear-style cycles) - time-boxed iterations
-sprints: defineTable({
-    projectId: v.id("projects"),
-    workspaceId: v.id("workspaces"),
-    name: v.string(), // e.g., "Sprint 1", "Q2 Planning"
-    description: v.optional(v.string()),
-    status: v.union(
-        v.literal("planning"),
-        v.literal("active"),
-        v.literal("completed"),
-        v.literal("cancelled")
-    ),
-    startDate: v.number(), // timestamp
-    endDate: v.number(), // timestamp
-    goal: v.optional(v.string()), // Sprint goal/objective
-    createdBy: v.id("members"),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-})
-    .index("by_workspace_id", ["workspaceId"])
-    .index("by_project_id", ["projectId"])
-    .index("by_status", ["status"]),
 
-// Sprint Issues - Link issues to sprints
-sprintIssues: defineTable({
-    sprintId: v.id("sprints"),
-    issueId: v.id("issues"),
-    projectId: v.id("projects"),
-    workspaceId: v.id("workspaces"),
-    order: v.number(), // For drag-and-drop ordering
-    addedAt: v.number(),
-})
-    .index("by_sprint_id", ["sprintId"])
-    .index("by_issue_id", ["issueId"])
-    .index("by_sprint_id_order", ["sprintId", "order"])
-    .index("by_workspace_id", ["workspaceId"]),
+	// Sprints (Linear-style cycles) - time-boxed iterations
+	sprints: defineTable({
+		projectId: v.id("projects"),
+		workspaceId: v.id("workspaces"),
+		name: v.string(), // e.g., "Sprint 1", "Q2 Planning"
+		description: v.optional(v.string()),
+		status: v.union(
+			v.literal("planning"),
+			v.literal("active"),
+			v.literal("completed"),
+			v.literal("cancelled")
+		),
+		startDate: v.number(), // timestamp
+		endDate: v.number(), // timestamp
+		goal: v.optional(v.string()), // Sprint goal/objective
+		createdBy: v.id("members"),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_project_id", ["projectId"])
+		.index("by_status", ["status"]),
 
-// Milestones (Roadmap) - Long-term goals
-milestones: defineTable({
-    projectId: v.id("projects"),
-    workspaceId: v.id("workspaces"),
-    name: v.string(), // e.g., "MVP", "v2.0", "Launch"
-    description: v.optional(v.string()),
-    targetDate: v.optional(v.number()), // When milestone should be completed
-    status: v.union(
-        v.literal("planned"),
-        v.literal("in_progress"),
-        v.literal("completed"),
-        v.literal("archived")
-    ),
-    color: v.optional(v.string()), // For roadmap timeline visualization
-    order: v.number(), // For sorting in roadmap
-    createdBy: v.id("members"),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-})
-    .index("by_workspace_id", ["workspaceId"])
-    .index("by_project_id", ["projectId"])
-    .index("by_status", ["status"])
-    .index("by_target_date", ["targetDate"]),
+	// Sprint Issues - Link issues to sprints
+	sprintIssues: defineTable({
+		sprintId: v.id("sprints"),
+		issueId: v.id("issues"),
+		projectId: v.id("projects"),
+		workspaceId: v.id("workspaces"),
+		order: v.number(), // For drag-and-drop ordering
+		addedAt: v.number(),
+	})
+		.index("by_sprint_id", ["sprintId"])
+		.index("by_issue_id", ["issueId"])
+		.index("by_sprint_id_order", ["sprintId", "order"])
+		.index("by_workspace_id", ["workspaceId"]),
 
-// Milestone Issues - Link issues to milestones
-milestoneIssues: defineTable({
-    milestoneId: v.id("milestones"),
-    issueId: v.id("issues"),
-    projectId: v.id("projects"),
-    workspaceId: v.id("workspaces"),
-    linkedAt: v.number(),
-})
-    .index("by_milestone_id", ["milestoneId"])
-    .index("by_issue_id", ["issueId"])
-    .index("by_workspace_id", ["workspaceId"]),
+	// Milestones (Roadmap) - Long-term goals
+	milestones: defineTable({
+		projectId: v.id("projects"),
+		workspaceId: v.id("workspaces"),
+		name: v.string(), // e.g., "MVP", "v2.0", "Launch"
+		description: v.optional(v.string()),
+		targetDate: v.optional(v.number()), // When milestone should be completed
+		status: v.union(
+			v.literal("planned"),
+			v.literal("in_progress"),
+			v.literal("completed"),
+			v.literal("archived")
+		),
+		color: v.optional(v.string()), // For roadmap timeline visualization
+		order: v.number(), // For sorting in roadmap
+		createdBy: v.id("members"),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_project_id", ["projectId"])
+		.index("by_status", ["status"])
+		.index("by_target_date", ["targetDate"]),
+
+	// Milestone Issues - Link issues to milestones
+	milestoneIssues: defineTable({
+		milestoneId: v.id("milestones"),
+		issueId: v.id("issues"),
+		projectId: v.id("projects"),
+		workspaceId: v.id("workspaces"),
+		linkedAt: v.number(),
+	})
+		.index("by_milestone_id", ["milestoneId"])
+		.index("by_issue_id", ["issueId"])
+		.index("by_workspace_id", ["workspaceId"]),
+
+	meetingNotes: defineTable({
+		roomId: v.string(),
+		title: v.optional(v.string()),
+		workspaceId: v.id("workspaces"),
+		channelId: v.optional(v.id("channels")),
+		transcript: v.string(),
+		summary: v.optional(v.string()),
+		actionItems: v.optional(v.array(v.string())),
+		decisions: v.optional(v.array(v.string())),
+		status: v.union(
+			v.literal("recording"),
+			v.literal("generating"),
+			v.literal("completed"),
+			v.literal("failed")
+		),
+		userId: v.id("users"),
+		createdAt: v.number(),
+		// Incremental processing checkpoint
+		lastProcessedIndex: v.optional(v.number()),
+		// Source type for upload vs live
+		source: v.optional(v.union(v.literal("live"), v.literal("upload"))),
+		// Tracks when AI notes were last generated for "Since last generation" mode
+		lastGeneratedAt: v.optional(v.number()),
+	})
+		.index("by_room", ["roomId"])
+		.index("by_workspace", ["workspaceId"]),
+
+	// Versioned AI note generations — each generation is a separate record
+	meetingNoteGenerations: defineTable({
+		meetingNoteId: v.id("meetingNotes"),
+		generationNumber: v.number(),
+		summary: v.string(),
+		actionItems: v.array(
+			v.object({
+				title: v.string(),
+				assignee: v.optional(v.string()),
+				assigneeUserId: v.optional(v.string()),
+				dueDate: v.optional(v.string()),
+				priority: v.optional(
+					v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+				),
+			})
+		),
+		decisions: v.array(v.string()),
+		// Transcript range this generation covers
+		processedTranscriptStart: v.number(),
+		processedTranscriptEnd: v.number(),
+		createdAt: v.number(),
+	})
+		.index("by_meeting_note", ["meetingNoteId"])
+		.index("by_meeting_note_generation", ["meetingNoteId", "generationNumber"]),
 });
 
 export default schema;

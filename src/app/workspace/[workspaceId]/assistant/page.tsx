@@ -1,6 +1,7 @@
 "use client";
 
 import { Bot, Loader } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
@@ -17,9 +18,12 @@ const AssistantPage = () => {
 
 	const workspaceId = useWorkspaceId();
 
+	const searchParams = useSearchParams();
+	const initialPrompt = searchParams.get("prompt") ?? undefined;
+
 	// Track user activity and time spent on assistant page
 	useTrackActivity({
-		workspaceId,
+		workspaceId: workspaceId ?? null,
 		activityType: "assistant_view",
 	});
 
@@ -70,7 +74,11 @@ const AssistantPage = () => {
 			<div className="flex flex-1 overflow-hidden p-4 md:p-6">
 				<div className="flex w-full flex-col">
 					{/* Full-width Proddy AI Chatbot */}
-					<DashboardChatbot member={enhancedMember} workspaceId={workspaceId} />
+					<DashboardChatbot
+						initialPrompt={initialPrompt}
+						member={enhancedMember}
+						workspaceId={workspaceId}
+					/>
 				</div>
 			</div>
 		</div>

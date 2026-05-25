@@ -1,57 +1,139 @@
-## Workflow Orchestration
+# Proddy — Claude Code Instructions
 
-### 1. Plan Mode Default
+Agentic work-management platform: messaging, boards, notes, calendar, canvas, meetings, AI features.
 
-- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
-- If something goes sideways, STOP and re-plan — don't keep pushing
-- Use plan mode for verification steps, not just building
-- Write detailed specs upfront to reduce ambiguity
+## Tech Stack
 
-### 2. Subagent Strategy to keep main context window clean
+- **Next.js 14** (App Router, `src/app/`)
+- **Convex** — backend, real-time data, auth, crons (`convex/`)
+- **TypeScript** (strict mode, `noImplicitAny`, `strictNullChecks`)
+- **Bun 1.3.6** — package manager and runtime (see `packageManager` in `package.json`)
+- **Biome 2.x** — formatter + linter (NOT ESLint/Prettier — `eslint.ignoreDuringBuilds: true` in `next.config.mjs`)
+- **Tailwind CSS** + **Shadcn UI** / **Radix UI** — styling and components
+- **Liveblocks** — real-time presence/collab
+- **Stream Video SDK** — meetings
+- **AI SDK** (`ai`, `@ai-sdk/openai`, `@ai-sdk/google`) — LLM features
 
-- Offload research, exploration, parallel analysis to subagents
-- For complex problems, throw more compute via subagents
-- One task per subagent for focused execution
+## Required Checks (run before declaring work done)
 
-### 3. Self-Improvement Loop
+| Command | What it does | When to run |
+|---|---|---|
+| `bun run check` | `biome check --write .` — format + lint + organize imports + auto-fix | After every edit to `.ts/.tsx/.js/.jsx/.json/.mjs/.cjs` |
+| `bun run type` | `tsc --noEmit` — TypeScript type-check across the project | Before declaring task complete |
+| `bun run build` | `tsc --noEmit && node scripts/next-build.js` — full production build | When change touches build config, env, or routing |
 
-- After ANY correction: update `tasks/lessons.md` with pattern
-- Write rules preventing same mistake
-- Ruthlessly iterate until mistake rate drops
-- Review lessons at session start
+**Pre-commit minimum**: `bun run check && bun run type`. If routing/config/env/Next config changed, also `bun run build`.
 
-### 4. Verification Before Done
+Never bypass: `--no-verify`, disabling Biome rules inline (`biome-ignore`), `@ts-ignore`/`@ts-expect-error`, or `eslint-disable` (ESLint isn't even active — comments do nothing and signal a hack).
 
-- Never mark task complete without proving it works
-- Diff behavior between main and changes when relevant
-- Ask: "Would staff engineer approve this?"
-- Run tests, check logs, demonstrate correctness
+## Dev Commands
 
-### 5. Demand Elegance (Balanced)
+```bash
+bun i                 # install
+bun next              # Next.js dev (turbo + https) → https://localhost:3000
+bun convex            # Convex dev (run in second terminal)
+bun run dev           # Next.js dev (no turbo)
+bun run dev:https     # Next.js dev with https only
+bun start             # production server (after `bun run build`)
+```
 
-- For non-trivial changes: pause, ask "is there more elegant way?"
-- If fix feels hacky: "Knowing everything I know now, implement elegant solution"
-- Skip for simple, obvious fixes — don't over-engineer
-- Challenge own work before presenting
+Two terminals are required for full local dev: one for `bun next`, one for `bun convex`.
 
-### 6. Autonomous Bug Fixing
+## Biome Config — Things That Will Bite
 
-- Given bug report: just fix it. No hand-holding
-- Point at logs, errors, failing tests → resolve them
-- Zero context switching from user
-- Fix failing CI tests without being told how
+`biome.json` ignores `convex/_generated/`, `.next/`, `dist/`, `out/`, `public/`, `node_modules/`. Don't edit anything under those paths.
 
-## Task Management
+Active style/correctness rules to keep in mind:
+- `useConst`, `useTemplate` (no `+` for string concat) — errors
+- `noUndeclaredVariables`, `noUnreachable`, `noConstAssign` — errors
+- `noVar`, `noDebugger`, `noExplicitAny` — **`noExplicitAny` is off**, but prefer real types
+- A11y rules largely relaxed (`useButtonType`, `useKeyWithClickEvents`, etc. all off) — don't add a11y warnings back via inline disables
+- Indentation: **tabs, width 2**; line width 80; double quotes; trailing commas `es5`; semicolons always; LF line endings — Biome enforces all of this on `bun run check`
 
-1. **Plan First**: Write plan to `tasks/todo.md` with checkable items
-2. **Verify Plan**: Check in before implementation
-3. **Track Progress**: Mark items complete as you go
-4. **Explain Changes**: High-level summary each step
-5. **Document Results**: Add review to `tasks/todo.md`
-6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
+## TypeScript
 
-## Core Principles
+- Strict mode is on. Path alias: `@/* → ./src/*` (use `@/components`, `@/lib`, `@/hooks`, `@/features/...`).
+- Tests are excluded from the project (`**/*.test.ts(x)` not compiled). The project ships no test runner today — don't pretend tests exist; if you add one, wire up a script and a CI step.
+- `next.config.mjs` allows skipping Next's own TS worker via `NEXT_IGNORE_TS_ERRORS=true` (set by `scripts/next-build.js`). That is **not** a license to ship type errors — `bun run build` runs `tsc --noEmit` first.
 
-- **Simplicity First**: Every change as simple as possible. Minimal code impact.
-- **No Laziness**: Find root causes. No temp fixes. Senior dev standards.
-- **Minimal Impact**: Touch only what's necessary. Avoid introducing bugs.
+## Convex
+
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
+
+- Never edit anything under `convex/_generated/` — it's regenerated by `bun convex`.
+- Convex modules use **camelCase** filenames (`workspaceInvites.ts`, `ragchat.ts`).
+- Run `bun convex` while editing schema/functions so codegen + type errors surface live.
+- Convex agent skills for common tasks: `npx convex ai-files install`.
+
+## Folder Structure & Naming
+
+```text
+platform/
+├── convex/              # Backend (camelCase files)
+│   ├── _generated/      # DO NOT EDIT
+│   └── lib/, assistant/ # Shared helpers, agent code
+├── src/
+│   ├── app/             # Next.js App Router (kebab-case dirs)
+│   ├── components/      # Shared UI (+ ui/ from shadcn)
+│   ├── features/<name>/ # api/ components/ hooks/ utils/ types/ store/
+│   ├── hooks/           # Shared hooks (use- prefix, kebab-case)
+│   ├── lib/             # Utilities, clients
+│   └── middleware.ts
+├── worker/              # PWA service worker scripts
+└── scripts/             # Build helpers (next-build.js)
+```
+
+| What | Convention | Example |
+|---|---|---|
+| Convex modules | camelCase | `workspaceInvites.ts` |
+| React components | kebab-case or PascalCase | `board-card.tsx`, `SignInCard.tsx` |
+| Hooks | `use-` prefix, kebab-case | `use-channel-id.ts` |
+| API routes | kebab-case dirs | `src/app/api/connections/` |
+| Path alias | `@/` | `@/features/board/components/board-card` |
+
+## Workflow Rules
+
+### Plan first for non-trivial work
+
+Anything 3+ steps or that touches architecture: write a short plan (file list, change per file, verification step) before editing.
+
+### Verify before declaring done
+
+1. `bun run check` clean
+2. `bun run type` clean
+3. If UI changed: load the page in the browser via `bun next` and exercise the feature
+4. If Convex schema/function changed: confirm `bun convex` codegen succeeded with no errors
+
+A passing type-check is not proof the feature works — actually use it.
+
+### Root-cause, don't paper over
+
+- No `@ts-ignore` to silence a real type error
+- No `biome-ignore` to dodge a lint
+- No try/catch swallowing an error you don't understand
+- If a check fails, fix the underlying issue or stop and ask
+
+### Minimal blast radius
+
+Touch only what the task requires. No drive-by refactors, no "while I'm here" cleanups, no new abstractions for hypothetical reuse. Match existing patterns in the feature you're editing rather than introducing new ones.
+
+### Subagents for breadth
+
+Cross-cutting questions ("where is X used", "audit all routes for Y") → spawn an Explore subagent. Keep the main context focused on the change.
+
+## Out of Scope / Don't Touch
+
+- `convex/_generated/**` — regenerated
+- `.next/**`, `.next-win/**`, `dist/**`, `out/**` — build output
+- `bun.lock` — only changes via `bun i` / `bun add`
+- `tsconfig.tsbuildinfo` — incremental build cache
+
+<!-- convex-ai-start -->
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
+<!-- convex-ai-end -->

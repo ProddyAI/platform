@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
@@ -13,8 +13,8 @@ type FilterTypes = {
 };
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: openai.embedding("text-embedding-3-small") as any,
-	embeddingDimension: 1536,
+	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004") as any,
+	embeddingDimension: 768,
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";
@@ -39,6 +39,36 @@ function extractTextFromRichText(body: string): string {
 	return body.trim();
 }
 
+function createContentTitle(
+	contentType: "message" | "task" | "note" | "card" | "event",
+	text: string,
+	fallbackId?: string
+) {
+	const normalized = text.replace(/\s+/g, " ").trim();
+	if (normalized) {
+		const clipped =
+			normalized.length > 80
+				? `${normalized.slice(0, 77).trimEnd()}...`
+				: normalized;
+		return clipped;
+	}
+
+	switch (contentType) {
+		case "message":
+			return fallbackId ? `Message ${fallbackId}` : "Message";
+		case "task":
+			return fallbackId ? `Task ${fallbackId}` : "Task";
+		case "note":
+			return fallbackId ? `Note ${fallbackId}` : "Note";
+		case "card":
+			return fallbackId ? `Board Card ${fallbackId}` : "Board Card";
+		case "event":
+			return fallbackId ? `Calendar Event ${fallbackId}` : "Calendar Event";
+		default:
+			return fallbackId ?? "Workspace Item";
+	}
+}
+
 export const indexContent = action({
 	args: {
 		workspaceId: v.id("workspaces"),
@@ -56,31 +86,49 @@ export const indexContent = action({
 	handler: async (ctx, args) => {
 		if (!args.text || args.text.trim().length < 3) return;
 		if (!process.env.OPENAI_API_KEY) return;
-		const channelIdFilterValue = (() => {
-			const metadata = args.metadata as unknown;
-			if (!metadata || typeof metadata !== "object") {
+		try {
+			const channelIdFilterValue = (() => {
+				const metadata = args.metadata as unknown;
+				if (!metadata || typeof metadata !== "object") {
+					return NO_CHANNEL_FILTER_VALUE;
+				}
+				const maybeChannelId = (metadata as { channelId?: unknown }).channelId;
+				if (typeof maybeChannelId === "string" && maybeChannelId.length > 0) {
+					return maybeChannelId;
+				}
 				return NO_CHANNEL_FILTER_VALUE;
-			}
-			const maybeChannelId = (metadata as { channelId?: unknown }).channelId;
-			if (typeof maybeChannelId === "string" && maybeChannelId.length > 0) {
-				return maybeChannelId;
-			}
-			return NO_CHANNEL_FILTER_VALUE;
-		})();
-		const filterValues: Array<{
-			name: "workspaceId" | "contentType" | "channelId";
-			value: string;
-		}> = [
-			{ name: "workspaceId", value: args.workspaceId as string },
-			{ name: "contentType", value: args.contentType },
-			{ name: "channelId", value: channelIdFilterValue },
-		];
-		await rag.add(ctx, {
-			namespace: args.workspaceId,
-			key: args.contentId,
-			text: args.text,
-			filterValues,
-		});
+			})();
+			const filterValues: Array<{
+				name: "workspaceId" | "contentType" | "channelId";
+				value: string;
+			}> = [
+				{ name: "workspaceId", value: args.workspaceId as string },
+				{ name: "contentType", value: args.contentType },
+				{ name: "channelId", value: channelIdFilterValue },
+			];
+			const metadataInput =
+				args.metadata && typeof args.metadata === "object" ? args.metadata : {};
+			const entryTitle =
+				typeof (metadataInput as { title?: unknown }).title === "string"
+					? String((metadataInput as { title?: unknown }).title).trim()
+					: undefined;
+			const entryMetadata = {
+				...metadataInput,
+				sourceType: args.contentType,
+				sourceId: args.contentId,
+			};
+			await rag.add(ctx, {
+				namespace: args.workspaceId,
+				key: args.contentId,
+				text: args.text,
+				filterValues,
+				title: entryTitle,
+				metadata: entryMetadata,
+			});
+		} catch (e) {
+			// Embedding model errors should not crash the app
+			console.error("indexContent failed (non-fatal):", e);
+		}
 	},
 });
 
@@ -145,7 +193,11 @@ export const getWorkspaceCards = query({
 				q.eq("workspaceId", args.workspaceId)
 			)
 			.collect();
-		const result: Array<{ card: any; list: any; channel: any }> = [];
+		const result: Array<{
+			card: Doc<"cards">;
+			list: Doc<"lists">;
+			channel: Doc<"channels">;
+		}> = [];
 		for (const channel of channels) {
 			const lists = await ctx.db
 				.query("lists")
@@ -173,12 +225,14 @@ export const autoIndexMessage = action({
 			id: args.messageId,
 		});
 		if (message) {
+			const messageText = extractTextFromRichText(message.body);
 			await ctx.runAction(api.ragchat.indexContent, {
 				workspaceId: message.workspaceId,
 				contentId: message._id,
 				contentType: "message",
-				text: extractTextFromRichText(message.body),
+				text: messageText,
 				metadata: {
+					title: createContentTitle("message", messageText, message._id),
 					channelId: message.channelId,
 					memberId: message.memberId,
 					conversationId: message.conversationId,
@@ -191,20 +245,27 @@ export const autoIndexMessage = action({
 export const autoIndexNote = action({
 	args: { noteId: v.id("notes") },
 	handler: async (ctx, args) => {
-		const note = await ctx.runQuery(internal.notes._getNoteById, {
-			noteId: args.noteId,
-		});
-		if (note) {
-			await ctx.runAction(api.ragchat.indexContent, {
-				workspaceId: note.workspaceId,
-				contentId: note._id,
-				contentType: "note",
-				text: `${note.title}: ${extractTextFromRichText(note.content)}`,
-				metadata: {
-					channelId: note.channelId,
-					memberId: note.memberId,
-				},
+		try {
+			const note = await ctx.runQuery(internal.notes._getNoteById, {
+				noteId: args.noteId,
 			});
+			if (note) {
+				const noteText = `${note.title}: ${extractTextFromRichText(note.content)}`;
+				await ctx.runAction(api.ragchat.indexContent, {
+					workspaceId: note.workspaceId,
+					contentId: note._id,
+					contentType: "note",
+					text: noteText,
+					metadata: {
+						title: createContentTitle("note", note.title || noteText, note._id),
+						channelId: note.channelId,
+						memberId: note.memberId,
+					},
+				});
+			}
+		} catch (e) {
+			// Don't let embedding model errors crash the entire note flow
+			console.error("autoIndexNote failed (non-fatal):", e);
 		}
 	},
 });
@@ -242,6 +303,7 @@ export const autoIndexTask = action({
 				contentType: "task",
 				text: task.title + (task.description ? `: ${task.description}` : ""),
 				metadata: {
+					title: task.title,
 					userId: task.userId,
 					status: task.status,
 					completed: task.completed,
@@ -265,6 +327,7 @@ export const autoIndexCard = action({
 				contentType: "card",
 				text: card.title + (card.description ? `: ${card.description}` : ""),
 				metadata: {
+					title: card.title,
 					listId: card.listId,
 					channelId: list.channelId,
 				},
@@ -288,6 +351,7 @@ export const autoIndexCalendarEvent = action({
 					contentType: "event",
 					text,
 					metadata: {
+						title: event.title,
 						date: event.date,
 						memberId: event.memberId,
 					},
@@ -342,6 +406,7 @@ export const bulkIndexWorkspace = action({
 					contentType: "message",
 					text: extractTextFromRichText(message.body),
 					metadata: {
+						title: `Message ${message._id}`,
 						channelId: message.channelId,
 						memberId: message.memberId,
 						conversationId: message.conversationId,
@@ -366,6 +431,7 @@ export const bulkIndexWorkspace = action({
 					contentType: "note",
 					text: `${note.title}: ${extractTextFromRichText(note.content)}`,
 					metadata: {
+						title: note.title,
 						channelId: note.channelId,
 						memberId: note.memberId,
 					},
@@ -389,6 +455,7 @@ export const bulkIndexWorkspace = action({
 					contentType: "task",
 					text: task.title + (task.description ? `: ${task.description}` : ""),
 					metadata: {
+						title: task.title,
 						userId: task.userId,
 						status: task.status,
 						completed: task.completed,
@@ -414,6 +481,7 @@ export const bulkIndexWorkspace = action({
 					contentType: "card",
 					text: card.title + (card.description ? `: ${card.description}` : ""),
 					metadata: {
+						title: card.title,
 						listId: card.listId,
 						channelId: list.channelId,
 					},
@@ -505,17 +573,24 @@ export const semanticSearch = action({
 	},
 	handler: async (ctx, args) => {
 		const userId = args.userId ?? (await getAuthUserId(ctx));
-		if (!userId) throw new Error("Unauthorized");
 
-		const member = await ctx.runQuery(api.members.current, {
-			workspaceId: args.workspaceId,
-		});
-		if (!member) throw new Error("User is not a member of this workspace");
+		const skipAuth =
+			process.env.CONVEX_SKIP_AUTH === "true" &&
+			process.env.CONVEX_LOCAL === "true";
+		if (!userId && !skipAuth) throw new Error("Unauthorized");
 
-		const channels = await ctx.runQuery(api.channels.get, {
-			workspaceId: args.workspaceId,
-		});
-		const channelIds = channels.map((c: { _id: string }) => c._id);
+		let channelIds: string[] = [];
+		if (userId) {
+			const member = await ctx.runQuery(api.members.current, {
+				workspaceId: args.workspaceId,
+			});
+			if (!member) throw new Error("User is not a member of this workspace");
+
+			const channels = await ctx.runQuery(api.channels.get, {
+				workspaceId: args.workspaceId,
+			});
+			channelIds = channels.map((c: { _id: string }) => c._id);
+		}
 
 		const filters: Array<{
 			name: "workspaceId" | "contentType" | "channelId";

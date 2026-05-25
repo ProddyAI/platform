@@ -20,8 +20,8 @@ import {
 	BoardEditCardModal,
 	BoardEditStatusModal,
 } from "@/features/board/components/board-models";
-import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
+import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
@@ -109,6 +109,34 @@ export const BoardPageContent = ({
 	useDocumentTitle(channel ? `Board – ${channel.name}` : "Board");
 
 	const [view, setView] = useState<"kanban" | "gantt">("kanban");
+	const [analyzeBlockersLoading, setAnalyzeBlockersLoading] = useState(false);
+
+	const handleAnalyzeBlockers = async () => {
+		setAnalyzeBlockersLoading(true);
+		try {
+			const res = await fetch("/api/analyze-blockers", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ channelId }),
+			});
+			const data = (await res.json()) as
+				| { ok: true; applied: number }
+				| { error: string; details?: string };
+			if (!res.ok || "error" in data) {
+				throw new Error(
+					"error" in data ? data.error : "Failed to analyze blockers"
+				);
+			}
+			toast.success(`Analyze blockers: applied ${data.applied} dependencies`);
+		} catch (error) {
+			console.error("Analyze blockers failed:", error);
+			toast.error(
+				error instanceof Error ? error.message : "Failed to analyze blockers"
+			);
+		} finally {
+			setAnalyzeBlockersLoading(false);
+		}
+	};
 
 	// Set board page flag for global search
 	useEffect(() => {
@@ -182,12 +210,12 @@ export const BoardPageContent = ({
 	// ── Optimistic statuses (for drag reorder) ──────────────────────────────
 	const [optimisticStatuses, setOptimisticStatuses] = useState<
 		| {
-			_id: Id<"statuses">;
-			name: string;
-			color: string;
-			order: number;
-			channelId: Id<"channels">;
-		}[]
+				_id: Id<"statuses">;
+				name: string;
+				color: string;
+				order: number;
+				channelId: Id<"channels">;
+		  }[]
 		| null
 	>(null);
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
@@ -226,7 +254,7 @@ export const BoardPageContent = ({
 	const [cardPriority, setCardPriority] = useState<
 		"lowest" | "low" | "medium" | "high" | "highest" | ""
 	>("");
-	const [cardDueDate, setCardDueDate] = useState<Date | undefined>(undefined);
+	const [cardDueDate, setCardDueDate] = useState<Date | undefined>();
 	const [cardAssignees, setCardAssignees] = useState<Id<"members">[]>([]);
 
 	// ── Mutations ───────────────────────────────────────────────────────────
@@ -590,6 +618,8 @@ export const BoardPageContent = ({
 					</div>
 				) : (
 					<BoardKanbanView
+						analyzeBlockersLoading={analyzeBlockersLoading}
+						channelId={channelId}
 						connectedChannelName={projectConnectedChannelName}
 						disableIssueDrag={isFilteredBoardView}
 						focusedStatusId={focusedStatusId}
@@ -601,6 +631,7 @@ export const BoardPageContent = ({
 							setStatusColor("#5e6ad2");
 							setAddStatusOpen(true);
 						}}
+						onAnalyzeBlockersClick={handleAnalyzeBlockers}
 						onClickIssue={handleClickIssue}
 						onConnectChannelClick={
 							canManageProjectConnection
@@ -653,6 +684,7 @@ export const BoardPageContent = ({
 				)
 			) : (
 				<BoardHeader
+					analyzeBlockersLoading={analyzeBlockersLoading}
 					connectedChannelName={projectConnectedChannelName}
 					isProjectChannelConnected={isProjectChannelConnected}
 					onAddStatus={() => {
@@ -660,6 +692,7 @@ export const BoardPageContent = ({
 						setStatusColor("#5e6ad2");
 						setAddStatusOpen(true);
 					}}
+					onAnalyzeBlockersClick={handleAnalyzeBlockers}
 					onConnectChannelClick={
 						canManageProjectConnection ? handleConnectProjectChannel : undefined
 					}

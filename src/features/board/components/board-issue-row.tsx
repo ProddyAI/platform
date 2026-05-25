@@ -47,6 +47,7 @@ interface IssueRowProps {
 	isDragOverlay?: boolean;
 	subIssueStats?: { total: number; completed: number };
 	disableDrag?: boolean;
+	dependencyIndicators?: { blockedByCount: number; blockingCount: number };
 }
 
 export function priorityIcon(priority?: IssuePriority, size = "w-3.5 h-3.5") {
@@ -233,6 +234,7 @@ interface BoardIssueRowContentProps {
 	statusColor: string;
 	assigneeData: NonNullable<IssueRowProps["assigneeData"]>;
 	subIssueStats?: { total: number; completed: number };
+	dependencyIndicators?: IssueRowProps["dependencyIndicators"];
 }
 
 const BoardIssueRowContent = ({
@@ -240,6 +242,7 @@ const BoardIssueRowContent = ({
 	statusColor,
 	assigneeData,
 	subIssueStats,
+	dependencyIndicators,
 }: BoardIssueRowContentProps) => (
 	<>
 		<PriorityIndicator priority={issue.priority} />
@@ -248,6 +251,34 @@ const BoardIssueRowContent = ({
 			className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
 			style={{ backgroundColor: statusColor }}
 		/>
+
+		{(dependencyIndicators?.blockedByCount ?? 0) > 0 && (
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span className="flex-shrink-0 w-2 h-2 rounded-full bg-red-500 ring-1 ring-inset ring-black/10" />
+					</TooltipTrigger>
+					<TooltipContent side="top">
+						Blocked by {dependencyIndicators?.blockedByCount} issue
+						{dependencyIndicators?.blockedByCount === 1 ? "" : "s"}
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		)}
+
+		{(dependencyIndicators?.blockingCount ?? 0) > 0 && (
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground/80 ring-1 ring-inset ring-black/10" />
+					</TooltipTrigger>
+					<TooltipContent side="top">
+						Blocking {dependencyIndicators?.blockingCount} issue
+						{dependencyIndicators?.blockingCount === 1 ? "" : "s"}
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		)}
 
 		<span className="flex-shrink-0 text-[10px] font-mono text-muted-foreground/60 w-12 leading-tight">
 			{formatIssueId(issue._id)}
@@ -283,25 +314,8 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	isDragOverlay = false,
 	subIssueStats,
 	disableDrag = false,
+	dependencyIndicators,
 }: IssueRowProps) {
-	if (isDragOverlay) {
-		return (
-			<div
-				className={cn(
-					"group flex items-center gap-2 px-3 py-2 rounded-md border transition-colors duration-100 select-none",
-					"shadow-lg bg-background border-border opacity-100"
-				)}
-			>
-				<BoardIssueRowContent
-					assigneeData={assigneeData}
-					issue={issue}
-					statusColor={statusColor}
-					subIssueStats={subIssueStats}
-				/>
-			</div>
-		);
-	}
-
 	const {
 		attributes,
 		listeners,
@@ -313,8 +327,27 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	} = useSortable({
 		id: issue._id,
 		data: { type: "issue", issue },
-		disabled: disableDrag,
+		disabled: disableDrag || isDragOverlay,
 	});
+
+	if (isDragOverlay) {
+		return (
+			<div
+				className={cn(
+					"group flex items-center gap-2 px-3 py-2 rounded-md border transition-colors duration-100 select-none",
+					"shadow-lg bg-background border-border opacity-100"
+				)}
+			>
+				<BoardIssueRowContent
+					assigneeData={assigneeData}
+					dependencyIndicators={dependencyIndicators}
+					issue={issue}
+					statusColor={statusColor}
+					subIssueStats={subIssueStats}
+				/>
+			</div>
+		);
+	}
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -344,6 +377,7 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 		>
 			<BoardIssueRowContent
 				assigneeData={assigneeData}
+				dependencyIndicators={dependencyIndicators}
 				issue={issue}
 				statusColor={statusColor}
 				subIssueStats={subIssueStats}

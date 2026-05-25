@@ -7,7 +7,7 @@ import {
 	HelpCircle,
 	Loader,
 	LogOut,
-	Map,
+	MessageSquare,
 	Settings,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -43,10 +43,10 @@ export const UserButton = ({
 	const { signOut } = useAuthActions();
 	const { data, isLoading } = useCurrentUser();
 	const [settingsOpen, setSettingsOpen] = useState(false);
-	const roadmapUrl = process.env.NEXT_PUBLIC_ROADMAP_URL;
+	const feedbackUrl = process.env.NEXT_PUBLIC_FEEDBACK_URL;
 	const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL;
 	const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_URL;
-	const hasRoadmapUrl = Boolean(roadmapUrl && roadmapUrl !== "#");
+	const hasFeedbackUrl = Boolean(feedbackUrl && feedbackUrl !== "#");
 	const hasDocsUrl = Boolean(docsUrl && docsUrl !== "#");
 	const hasStatusUrl = Boolean(statusPageUrl && statusPageUrl !== "#");
 
@@ -112,14 +112,14 @@ export const UserButton = ({
 						</>
 					)}
 
-					{hasRoadmapUrl && (
+					{hasFeedbackUrl && (
 						<DropdownMenuItem
 							onClick={() =>
-								window.open(roadmapUrl, "_blank", "noopener,noreferrer")
+								window.open(feedbackUrl, "_blank", "noopener,noreferrer")
 							}
 						>
-							<Map className="mr-2 size-4" />
-							Roadmap & Feedback
+							<MessageSquare className="mr-2 size-4" />
+							Feedback
 						</DropdownMenuItem>
 					)}
 

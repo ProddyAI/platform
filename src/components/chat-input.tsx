@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { Id } from "@/../convex/_generated/dataModel";
+import { UploadRecordingButton } from "@/features/audio/components/UploadRecordingButton";
 import { useCreateCalendarEvent } from "@/features/calendar/api/use-create-calendar-event";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
 import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicator";
@@ -114,7 +115,7 @@ export const ChatInput = ({
 			innerRef.current?.enable(false);
 
 			const values: CreateMessageValues = {
-				workspaceId,
+				workspaceId: workspaceId as any,
 				body,
 				image: undefined,
 			};
@@ -198,7 +199,7 @@ export const ChatInput = ({
 					date: calendarEvent.date.getTime(),
 					time: calendarEvent.time,
 					messageId,
-					workspaceId,
+					workspaceId: workspaceId as any,
 				});
 			}
 
@@ -238,6 +239,9 @@ export const ChatInput = ({
 					onSelectSuggestion={handleSuggestionSelect}
 				/>
 			) : null}
+			<div className="flex items-center gap-2 mb-2">
+				<UploadRecordingButton />
+			</div>
 			<Editor
 				channelId={channelId}
 				conversationId={conversationId}

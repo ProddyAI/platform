@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -71,7 +72,7 @@ const ReportsPage = () => {
 
 	// Get current member to check permissions
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
-		workspaceId,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 
 	// Calculate date range based on selected time range
@@ -91,7 +92,7 @@ const ReportsPage = () => {
 
 	// Track page view
 	useTrackActivity({
-		workspaceId,
+		workspaceId: workspaceId ?? null,
 		activityType: "reports_page_view",
 	});
 

@@ -53,6 +53,7 @@ interface Issue {
 }
 
 interface BoardKanbanViewProps {
+	channelId: Id<"channels">;
 	statuses: Status[];
 	issues: Issue[];
 	members?: Member[];
@@ -77,6 +78,8 @@ interface BoardKanbanViewProps {
 	onAddStatus?: () => void;
 	onSearchClick?: () => void;
 	onLinkageDiagramClick?: () => void;
+	onAnalyzeBlockersClick?: () => void;
+	analyzeBlockersLoading?: boolean;
 	onConnectChannelClick?: () => void;
 	isProjectChannelConnected?: boolean;
 	connectedChannelName?: string;
@@ -97,6 +100,7 @@ type ActiveItem =
 	| { type: "issue"; item: Issue };
 
 const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
+	channelId,
 	statuses,
 	issues,
 	members = [],
@@ -109,6 +113,8 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	onReorderStatusesPersist,
 	onSearchClick,
 	onLinkageDiagramClick,
+	onAnalyzeBlockersClick,
+	analyzeBlockersLoading,
 	onConnectChannelClick,
 	isProjectChannelConnected,
 	connectedChannelName,
@@ -126,6 +132,12 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	const subIssueStatsMap = useQuery(
 		api.board.getBatchSubIssueStats,
 		issueIds.length > 0 ? { issueIds } : "skip"
+	);
+	const dependencyStats = useQuery(
+		api.board.getIssueDependencyStatsForChannel,
+		{
+			channelId,
+		}
 	);
 
 	const memberDataMap = useMemo(() => {
@@ -191,7 +203,9 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	};
 
 	// Required by DndContext but no custom drag-over behavior needed
-	const handleDragOver = (_event: DragOverEvent) => { };
+	const handleDragOver = (_event: DragOverEvent) => {
+		return undefined;
+	};
 
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -299,9 +313,11 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			{showHeader && setView && (
 				<div className="flex-shrink-0 sticky top-0 z-10">
 					<BoardHeader
-						onAddStatus={onAddStatus}
+						analyzeBlockersLoading={analyzeBlockersLoading}
 						connectedChannelName={connectedChannelName}
 						isProjectChannelConnected={isProjectChannelConnected}
+						onAddStatus={onAddStatus}
+						onAnalyzeBlockersClick={onAnalyzeBlockersClick}
 						onConnectChannelClick={onConnectChannelClick}
 						onLinkageDiagramClick={onLinkageDiagramClick}
 						onSearchClick={onSearchClick}
@@ -340,6 +356,7 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 									>
 										<BoardStatusColumn
 											assigneeData={memberDataMap}
+											dependencyStatsMap={dependencyStats ?? undefined}
 											disableIssueDrag={disableIssueDrag}
 											isFocused={focusedStatusId === status._id}
 											issues={issuesByStatus[status._id] || []}

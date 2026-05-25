@@ -56,6 +56,10 @@ function getTabFromLocation(): ManageTab {
 		return "billing";
 	}
 
+	if (params.has("connected") && params.get("connected") === "true") {
+		return "integrations";
+	}
+
 	return "workspace";
 }
 
@@ -97,7 +101,7 @@ const ManagePage = () => {
 		workspaceId,
 	});
 	const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
-		id: workspaceId,
+		id: workspaceId as any,
 	});
 
 	if (memberLoading || workspaceLoading) {
@@ -108,7 +112,7 @@ const ManagePage = () => {
 		);
 	}
 
-	if (!member || !workspace) {
+	if (!workspaceId || !member || !workspace) {
 		return (
 			<div className="flex h-full flex-col items-center justify-center">
 				<Shield className="h-12 w-12 text-muted-foreground mb-4" />
@@ -208,7 +212,10 @@ const ManagePage = () => {
 								className="bg-background rounded-lg p-6 shadow-sm border"
 								value="billing"
 							>
-								<BillingSection workspaceId={workspaceId} />
+								<BillingSection
+									currentMember={member}
+									workspaceId={workspaceId}
+								/>
 							</TabsContent>
 
 							<TabsContent

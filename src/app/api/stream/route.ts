@@ -3,7 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 
 // Stream API credentials from environment variables
 const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
-const apiSecret = process.env.STREAM_API_SECRET;
+const apiSecret =
+	process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET;
 
 export async function POST(req: NextRequest) {
 	try {

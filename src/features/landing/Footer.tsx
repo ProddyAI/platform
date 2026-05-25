@@ -136,11 +136,11 @@ export const Footer = () => {
 								<li>
 									<Link
 										className="text-sm text-gray-500 hover:text-primary transition-colors inline-flex items-center gap-1"
-										href={process.env.NEXT_PUBLIC_ROADMAP_URL || "#"}
+										href={process.env.NEXT_PUBLIC_FEEDBACK_URL || "#"}
 										rel="noopener noreferrer"
 										target="_blank"
 									>
-										Roadmap <ExternalLink className="size-3" />
+										Feedback <ExternalLink className="size-3" />
 									</Link>
 								</li>
 								<li>

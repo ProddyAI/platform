@@ -1,7 +1,7 @@
-# Ignore custom build script
-scripts/next-build.js
 /node_modules
 /.pnp
+# Bun patch workflow scratch (only patches/ is committed)
+.patch-tmp/
 .env.local
 .env.convex
 /coverage
@@ -12,6 +12,8 @@ scripts/next-build.js
 .DS_Store
 *.pem
 npm-debug.log*
+npm-install.log
+bun-install.log
 package-lock.json
 .vercel
 *.tsbuildinfo
@@ -19,6 +21,9 @@ next-env.d.ts
 .vscode/mcp.json
 # Build logs
 build.*.log
+
+# Local scratch files can contain temporary webhook payloads/secrets.
+scratch_test.js
 
 # next-pwa generated assets (created during build)
 /public/sw.js*

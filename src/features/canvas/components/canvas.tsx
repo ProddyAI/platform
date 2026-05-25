@@ -435,6 +435,7 @@ export const Canvas = ({
 				/>
 
 				<svg
+					aria-label="Canvas drawing surface"
 					className={`h-full w-full ${getCursorStyle()}`}
 					onPointerDown={onPointerDown}
 					onPointerLeave={onPointerLeave}

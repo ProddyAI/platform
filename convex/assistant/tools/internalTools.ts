@@ -1,8 +1,3 @@
-/**
- * Internal workspace tools for the Proddy agent.
- * Wraps assistantTools (calendar, tasks, channels, etc.) with createTool for @convex-dev/agent.
- */
-
 import type { ToolCtx } from "@convex-dev/agent";
 import { createTool } from "@convex-dev/agent";
 import { z } from "zod";
@@ -13,6 +8,17 @@ export type AssistantCtx = ToolCtx & {
 	workspaceId: Id<"workspaces">;
 	userId: Id<"users">;
 };
+
+const CHANNEL_NOT_FOUND_MESSAGE =
+	"Channel not found or you don't have access to it. Use searchChannels to find valid channel IDs.";
+
+function resolveChannelId(channelId: string): Id<"channels"> {
+	const trimmed = channelId.trim();
+	if (!trimmed || /\s/.test(trimmed) || trimmed.startsWith("#")) {
+		throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
+	}
+	return trimmed as Id<"channels">;
+}
 
 export const getMyCalendarToday = createTool({
 	description:
@@ -98,9 +104,21 @@ export const getMyTasksThisWeek = createTool({
 	},
 });
 
+export const getMyTasksNextWeek = createTool({
+	description:
+		"Get tasks assigned to the user that are due next week (7-14 days from now). Use when the user explicitly asks about next week's tasks.",
+	args: z.object({}),
+	handler: async (ctx: AssistantCtx): Promise<unknown> => {
+		return await ctx.runQuery(api.assistantTools.getMyTasksNextWeek, {
+			workspaceId: ctx.workspaceId,
+			userId: ctx.userId,
+		});
+	},
+});
+
 export const getMyAllTasks = createTool({
 	description:
-		"Get all tasks assigned to the user. Can optionally include completed tasks. Use for general task queries like 'what are my tasks' or 'show all my work'.",
+		"Get all tasks assigned to the user. Results are ranked for visible triage, so overdue, in-progress, on-hold, and higher-priority work appears first.",
 	args: z.object({
 		includeCompleted: z
 			.boolean()
@@ -112,6 +130,134 @@ export const getMyAllTasks = createTool({
 			workspaceId: ctx.workspaceId,
 			userId: ctx.userId,
 			includeCompleted: args.includeCompleted,
+		});
+	},
+});
+
+export const searchTasks = createTool({
+	description:
+		"Search tasks directly in the workspace database by keyword or topic. Use this before semantic search for task/topic questions like 'what is blocked for release'.",
+	args: z.object({
+		query: z.string().describe("Keyword or topic to search for in tasks."),
+		limit: z
+			.number()
+			.optional()
+			.describe("Maximum number of matching tasks to return (default: 12)."),
+	}),
+	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
+		return await ctx.runQuery(api.assistantTools.searchTasks, {
+			workspaceId: ctx.workspaceId,
+			userId: ctx.userId,
+			query: args.query,
+			limit: args.limit,
+		});
+	},
+});
+
+export const getWorkspaceMembers = createTool({
+	description:
+		"List accepted workspace members with their IDs, names, emails, and roles. Use this before drafting a task for another person so you can resolve the assignee member ID.",
+	args: z.object({}),
+	handler: async (ctx: AssistantCtx): Promise<unknown> => {
+		return await ctx.runQuery(api.members.get, {
+			workspaceId: ctx.workspaceId,
+		});
+	},
+});
+
+export const draftTaskForConfirmation = createTool({
+	description:
+		"Draft a task and save it for confirmation. Use this for task-creation requests so the user can review and change fields before anything is created. Include assigneeMemberId when the task belongs to another accepted workspace member. For follow-up edits to an existing draft, title is optional and unchanged fields should be reused from the current draft.",
+	args: z.object({
+		title: z
+			.string()
+			.optional()
+			.describe(
+				"The task title. Optional when revising an existing pending draft."
+			),
+		description: z.string().optional().describe("Optional task description."),
+		dueDate: z
+			.number()
+			.optional()
+			.describe("Optional due date as a Unix timestamp in milliseconds."),
+		priority: z
+			.enum(["low", "medium", "high"])
+			.optional()
+			.describe("Optional task priority."),
+		assigneeMemberId: z
+			.string()
+			.optional()
+			.describe(
+				"Optional member ID for another accepted workspace member. Resolve it with getWorkspaceMembers first."
+			),
+	}),
+	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
+		let assigneeMemberId: Id<"members"> | undefined;
+		if (typeof args.assigneeMemberId === "string") {
+			const normalizedAssigneeMemberId = args.assigneeMemberId.trim();
+			if (normalizedAssigneeMemberId) {
+				const workspaceMembers = (await ctx.runQuery(api.members.get, {
+					workspaceId: ctx.workspaceId,
+				})) as Array<{ _id: Id<"members"> }>;
+				const matchingMember = workspaceMembers.find(
+					(member) => member._id === normalizedAssigneeMemberId
+				);
+				if (!matchingMember) {
+					throw new Error(
+						"Invalid assigneeMemberId. Resolve it with getWorkspaceMembers before drafting the task."
+					);
+				}
+				assigneeMemberId = matchingMember._id;
+			}
+		}
+
+		return await ctx.runMutation(
+			api.assistantConversations.savePendingTaskDraft,
+			{
+				workspaceId: ctx.workspaceId,
+				userId: ctx.userId,
+				title: args.title,
+				description: args.description,
+				dueDate: args.dueDate,
+				priority: args.priority,
+				assigneeMemberId,
+			}
+		);
+	},
+});
+
+export const getRecentNotes = createTool({
+	description:
+		"Get recent notes directly from the workspace. Use this first when the user asks if there are any notes or asks for recent notes.",
+	args: z.object({
+		limit: z
+			.number()
+			.optional()
+			.describe("Maximum number of notes to return (default: 10)."),
+	}),
+	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
+		return await ctx.runQuery(api.assistantTools.getRecentNotes, {
+			workspaceId: ctx.workspaceId,
+			limit: args.limit,
+		});
+	},
+});
+
+export const searchNotes = createTool({
+	description:
+		"Search notes directly in the workspace database by keyword or topic. Use this before semantic search for note questions like 'what notes mention onboarding'.",
+	args: z.object({
+		query: z.string().describe("Keyword or topic to search for in notes."),
+		limit: z
+			.number()
+			.optional()
+			.describe("Maximum number of matching notes to return (default: 10)."),
+	}),
+	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
+		return await ctx.runQuery(api.assistantTools.searchNotes, {
+			workspaceId: ctx.workspaceId,
+			query: args.query,
+			limit: args.limit,
 		});
 	},
 });
@@ -150,9 +296,52 @@ export const getChannelSummary = createTool({
 			.describe("Max number of messages to analyze (default: 40)"),
 	}),
 	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
-		return await ctx.runAction(api.assistantTools.getChannelSummary, {
+		const channelId = resolveChannelId(args.channelId);
+		let channel: unknown;
+		try {
+			channel = await ctx.runQuery(api.channels.getById, {
+				id: channelId,
+			});
+		} catch {
+			throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
+		}
+		if (!channel) {
+			throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
+		}
+		return await ctx.runQuery(api.assistantTools.getChannelSummary, {
 			workspaceId: ctx.workspaceId,
-			channelId: args.channelId as Id<"channels">,
+			channelId,
+			limit: args.limit,
+		});
+	},
+});
+
+export const getChannelDebug = createTool({
+	description:
+		"Return the raw recent messages the assistant can see for a channel. Use this only when debugging why a channel summary appears empty.",
+	args: z.object({
+		channelId: z.string().describe("The ID of the channel to inspect."),
+		limit: z
+			.number()
+			.optional()
+			.describe("Maximum number of raw messages to return (default: 20)."),
+	}),
+	handler: async (ctx: AssistantCtx, args): Promise<unknown> => {
+		const channelId = resolveChannelId(args.channelId);
+		let channel: unknown;
+		try {
+			channel = await ctx.runQuery(api.channels.getById, {
+				id: channelId,
+			});
+		} catch {
+			throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
+		}
+		if (!channel) {
+			throw new Error(CHANNEL_NOT_FOUND_MESSAGE);
+		}
+		return await ctx.runQuery(api.assistantTools.getChannelDebug, {
+			workspaceId: ctx.workspaceId,
+			channelId,
 			limit: args.limit,
 		});
 	},
@@ -164,6 +353,18 @@ export const getWorkspaceOverview = createTool({
 	args: z.object({}),
 	handler: async (ctx: AssistantCtx): Promise<unknown> => {
 		return await ctx.runQuery(api.assistantTools.getWorkspaceOverview, {
+			workspaceId: ctx.workspaceId,
+			userId: ctx.userId,
+		});
+	},
+});
+
+export const getWorkspaceGeneralSummary = createTool({
+	description:
+		"Get a compact catch-up summary across recent channel activity, high-priority tasks, and recent notes. Use this first for broad workspace questions like 'what happened in general'.",
+	args: z.object({}),
+	handler: async (ctx: AssistantCtx): Promise<unknown> => {
+		return await ctx.runQuery(api.assistantTools.getWorkspaceGeneralSummary, {
 			workspaceId: ctx.workspaceId,
 			userId: ctx.userId,
 		});
@@ -184,7 +385,7 @@ export const getMyCards = createTool({
 
 export const semanticSearch = createTool({
 	description:
-		"Perform semantic search across all workspace content (messages, notes, tasks, cards). Use for general questions that don't fit other tools.",
+		"Perform hybrid retrieval across workspace content (messages, notes, tasks, cards, events) by combining direct keyword search with semantic search. Use only after direct notes, tasks, channel, or general summary tools do not provide enough information.",
 	args: z.object({
 		query: z.string().describe("Search query"),
 		limit: z
