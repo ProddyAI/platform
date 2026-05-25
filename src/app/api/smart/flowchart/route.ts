@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 		if (workspaceId) {
 			try {
 				const trackingConvex = createConvexClient();
-				const trackingToken = convexAuthNextjsToken();
+				const trackingToken = await convexAuthNextjsToken();
 				if (trackingToken) trackingConvex.setAuth(trackingToken);
 				const limitCheck = await trackingConvex.query(
 					api.usageTracking.checkAIUsageLimitPublic,
@@ -63,6 +63,10 @@ export async function POST(req: NextRequest) {
 				}
 			} catch (err) {
 				console.warn("[UsageTracking] Failed to check AI flowchart limit:", err);
+				return NextResponse.json(
+					{ error: "Service temporarily unavailable: failed to validate usage limits" },
+					{ status: 503 }
+				);
 			}
 		}
 

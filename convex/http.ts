@@ -246,13 +246,13 @@ const syncSubscriptionFromDodo = async (
 			buildSubscriptionMutationArgs(
 				{
 					subscription_id: subscriptionId,
-					status: "active",
+					status: "sync_failed",
 					metadata: fallbackWorkspaceId
 						? { workspace_id: fallbackWorkspaceId, plan: fallbackPlan }
 						: undefined,
 					quantity: fallbackQuantity,
 				},
-				JSON.stringify({ subscription_id: subscriptionId, fallback: true }),
+				JSON.stringify({ subscription_id: subscriptionId, fallback: true, error: String(error) }),
 				fallbackWorkspaceId,
 				billingDetails,
 				fallbackPlan,

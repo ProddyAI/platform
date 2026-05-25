@@ -233,13 +233,20 @@ const findWorkspaceMemberByBillingEmail = async (
 		.first();
 	if (!user) return null;
 
-	return await ctx.db
+	const memberships = await ctx.db
 		.query("members")
 		.withIndex("by_user_id", (q) => q.eq("userId", user._id))
 		.filter((q) =>
 			q.or(q.eq(q.field("role"), "owner"), q.eq(q.field("role"), "admin"))
 		)
-		.first();
+		.collect();
+
+	if (memberships.length === 0) return null;
+	if (memberships.length > 1) {
+		console.warn(`[Billing] Ambiguous workspace mapping for email ${email}: found ${memberships.length} admin/owner memberships. Manual review required.`);
+		return null;
+	}
+	return memberships[0];
 };
 
 const hasSucceededBillingPayment = async (
