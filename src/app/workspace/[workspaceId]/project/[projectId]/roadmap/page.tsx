@@ -8,7 +8,7 @@ import { ProjectNavTabs } from "@/features/projects/components/project-nav-tabs"
 import { RoadmapPanel } from "@/features/roadmap/components/roadmap-panel";
 import { useProjectId } from "@/hooks/use-project-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../../../../toolbar";
+import { WorkspaceToolbar } from "../../../toolbar";
 
 const ProjectRoadmapPage = () => {
     const projectId = useProjectId();
