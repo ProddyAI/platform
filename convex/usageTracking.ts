@@ -1,13 +1,21 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
 	internalMutation,
 	internalQuery,
+	type MutationCtx,
 	mutation,
+	type QueryCtx,
 	query,
 } from "./_generated/server";
-import { getPlanConfig, isUnlimited, type PlanName } from "./plans";
+import {
+	getPlanConfig,
+	isUnlimited,
+	type PlanLimits,
+	type PlanName,
+} from "./plans";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -25,22 +33,56 @@ type FeatureType =
 	| "aiRequest"
 	| "aiDiagram"
 	| "aiSummary"
+	| "aiSearch"
 	| "message"
 	| "task"
 	| "channel"
 	| "board"
 	| "note";
 
-const toPlanName = (plan?: string | null): PlanName => {
-	if (plan === "pro" || plan === "enterprise") return plan;
+type UsageStatsDoc = Doc<"usageStats">;
+type UsageCounterField =
+	| "aiRequestCount"
+	| "aiDiagramCount"
+	| "aiSummaryCount"
+	| "messageCount"
+	| "taskCount"
+	| "channelCount"
+	| "boardCount"
+	| "noteCount";
+type LegacyUsageCounterField =
+	| "diagramsGenerated"
+	| "messagesCreated"
+	| "tasksCreated"
+	| "channelsCreated"
+	| "boardsCreated"
+	| "notesCreated";
+type LegacyUsageStatsDoc = UsageStatsDoc &
+	Partial<Record<LegacyUsageCounterField, number>>;
+
+const toPlanName = (workspace: {
+	plan?: string | null;
+	subscriptionStatus?: string | null;
+	dodoSubscriptionId?: string | null;
+	subscriptionId?: string | null;
+}): PlanName => {
+	const plan = workspace.plan;
+	if (plan === "pro" || plan === "enterprise") {
+		const status = workspace.subscriptionStatus;
+		const subId = workspace.dodoSubscriptionId ?? workspace.subscriptionId;
+		if (subId && ["active", "trialing", "on_hold"].includes(status ?? "")) {
+			return plan;
+		}
+	}
 	return "free";
 };
 
 /** Maps a feature type to the DB column name on `usageStats`. */
-const FEATURE_FIELD_MAP: Record<FeatureType, string> = {
+const FEATURE_FIELD_MAP: Record<FeatureType, UsageCounterField> = {
 	aiRequest: "aiRequestCount",
 	aiDiagram: "aiDiagramCount",
 	aiSummary: "aiSummaryCount",
+	aiSearch: "aiRequestCount",
 	message: "messageCount",
 	task: "taskCount",
 	channel: "channelCount",
@@ -49,16 +91,22 @@ const FEATURE_FIELD_MAP: Record<FeatureType, string> = {
 };
 
 /** Maps a feature type to the plan-limits key on `PlanLimits`. */
-const FEATURE_LIMIT_MAP: Record<FeatureType, string> = {
+const FEATURE_LIMIT_MAP: Record<FeatureType, keyof PlanLimits> = {
 	aiRequest: "aiRequestsPerMonth",
 	aiDiagram: "aiDiagramGenerationsPerMonth",
 	aiSummary: "aiSummaryRequestsPerMonth",
+	aiSearch: "aiRequestsPerMonth",
 	message: "messagesPerMonth",
 	task: "tasksPerMonth",
 	channel: "channelsPerMonth",
 	board: "boardsPerMonth",
 	note: "notesPerMonth",
 };
+
+const getUsageCount = (
+	row: UsageStatsDoc,
+	fieldName: UsageCounterField
+): number => row[fieldName] ?? 0;
 
 // ---------------------------------------------------------------------------
 // Core upsert-and-increment  (internal – called by other mutations/actions)
@@ -90,7 +138,7 @@ export const incrementUsage = internalMutation({
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {
-				[fieldName]: ((existing as any)[fieldName] ?? 0) + 1,
+				[fieldName]: getUsageCount(existing, fieldName) + 1,
 				updatedAt: Date.now(),
 			});
 		} else {
@@ -142,7 +190,7 @@ export const recordAIRequest = internalMutation({
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {
-				[fieldName]: ((existing as any)[fieldName] ?? 0) + 1,
+				[fieldName]: getUsageCount(existing, fieldName) + 1,
 				updatedAt: Date.now(),
 			});
 		} else {
@@ -189,7 +237,7 @@ export const recordTaskCreated = internalMutation({
 export const recordEventCreated = internalMutation({
 	args: { userId: v.id("users"), workspaceId: v.id("workspaces") },
 	// Deprecated: calendar events are no longer tracked. Kept as no-op
-	// so any in-flight scheduled calls don't crash.
+	// so in-flight scheduled calls don't crash.
 	handler: async (_ctx, _args) => {},
 });
 
@@ -280,12 +328,10 @@ export const checkAIUsageLimit = internalQuery({
 		if (!workspace) return { allowed: false, used: 0, limit: 0 };
 
 		// Fallback to workspace plan if no member-specific plan is checked (admin view)
-		const plan = getPlanConfig(toPlanName(workspace.plan));
+		const plan = getPlanConfig(toPlanName(workspace));
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const limitKey = FEATURE_LIMIT_MAP[featureType];
-		const limit = (plan.limits as unknown as Record<string, number>)[
-			limitKey
-		] as number;
+		const limit = plan.limits[limitKey];
 
 		if (isUnlimited(limit)) return { allowed: true, used: 0, limit: -1 };
 
@@ -300,7 +346,7 @@ export const checkAIUsageLimit = internalQuery({
 		const fieldName = FEATURE_FIELD_MAP[featureType];
 		let used = 0;
 		for (const row of rows) {
-			used += (row as any)[fieldName] ?? 0;
+			used += getUsageCount(row, fieldName);
 		}
 
 		return { allowed: used < limit, used, limit };
@@ -331,7 +377,7 @@ export const getWorkspaceUsage = query({
 		if (!workspace) throw new Error("Workspace not found");
 
 		// Use workspace plan for limits (everyone shares the same plan)
-		const plan = getPlanConfig(toPlanName(workspace.plan));
+		const plan = getPlanConfig(toPlanName(workspace));
 		const month = getCurrentMonth();
 
 		const rows = await ctx.db
@@ -353,20 +399,21 @@ export const getWorkspaceUsage = query({
 		};
 
 		for (const row of rows) {
+			const legacyRow = row as LegacyUsageStatsDoc;
 			totals.aiRequestCount += row.aiRequestCount ?? 0;
 			totals.aiDiagramCount +=
-				(row.aiDiagramCount ?? 0) + ((row as any).diagramsGenerated ?? 0);
+				(row.aiDiagramCount ?? 0) + (legacyRow.diagramsGenerated ?? 0);
 			totals.aiSummaryCount += row.aiSummaryCount ?? 0;
 			totals.messageCount +=
-				(row.messageCount ?? 0) + ((row as any).messagesCreated ?? 0);
+				(row.messageCount ?? 0) + (legacyRow.messagesCreated ?? 0);
 			totals.taskCount +=
-				(row.taskCount ?? 0) + ((row as any).tasksCreated ?? 0);
+				(row.taskCount ?? 0) + (legacyRow.tasksCreated ?? 0);
 			totals.channelCount +=
-				(row.channelCount ?? 0) + ((row as any).channelsCreated ?? 0);
+				(row.channelCount ?? 0) + (legacyRow.channelsCreated ?? 0);
 			totals.boardCount +=
-				(row.boardCount ?? 0) + ((row as any).boardsCreated ?? 0);
+				(row.boardCount ?? 0) + (legacyRow.boardsCreated ?? 0);
 			totals.noteCount +=
-				(row.noteCount ?? 0) + ((row as any).notesCreated ?? 0);
+				(row.noteCount ?? 0) + (legacyRow.notesCreated ?? 0);
 		}
 
 		return {
@@ -433,13 +480,11 @@ export const checkAIUsageLimitPublic = query({
 		if (!member) return { allowed: false, used: 0, limit: 0 };
 
 		// Use workspace plan for limits (everyone shares the same plan)
-		const plan = getPlanConfig(toPlanName(workspace.plan));
+		const plan = getPlanConfig(toPlanName(workspace));
 
 		const featureType = (args.featureType ?? "aiRequest") as FeatureType;
 		const limitKey = FEATURE_LIMIT_MAP[featureType];
-		const limit = (plan.limits as unknown as Record<string, number>)[
-			limitKey
-		] as number;
+		const limit = plan.limits[limitKey];
 
 		if (isUnlimited(limit)) return { allowed: true, used: 0, limit: -1 };
 
@@ -454,7 +499,7 @@ export const checkAIUsageLimitPublic = query({
 		const fieldName = FEATURE_FIELD_MAP[featureType];
 		let used = 0;
 		for (const row of rows) {
-			used += (row as any)[fieldName] ?? 0;
+			used += getUsageCount(row, fieldName);
 		}
 
 		return { allowed: used < limit, used, limit };
@@ -500,7 +545,7 @@ export const recordAIRequestPublic = mutation({
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {
-				[fieldName]: ((existing as any)[fieldName] ?? 0) + 1,
+				[fieldName]: getUsageCount(existing, fieldName) + 1,
 				updatedAt: Date.now(),
 			});
 		} else {
@@ -523,3 +568,37 @@ export const recordAIRequestPublic = mutation({
 		}
 	},
 });
+
+export async function enforceWorkspaceLimit(
+	ctx: Pick<QueryCtx | MutationCtx, "db">,
+	workspaceId: Id<"workspaces">,
+	featureType: FeatureType
+) {
+	const workspace = await ctx.db.get(workspaceId);
+	if (!workspace) throw new Error("Workspace not found");
+
+	const plan = getPlanConfig(toPlanName(workspace));
+	const limitKey = FEATURE_LIMIT_MAP[featureType];
+	if (!limitKey) return; // Feature has no limits
+
+	const limit = plan.limits[limitKey];
+	if (isUnlimited(limit)) return; // Unlimited is allowed
+
+	const month = getCurrentMonth();
+	const rows = await ctx.db
+		.query("usageStats")
+		.withIndex("by_workspace_month", (q) =>
+			q.eq("workspaceId", workspaceId).eq("month", month)
+		)
+		.collect();
+
+	const fieldName = FEATURE_FIELD_MAP[featureType];
+	let used = 0;
+	for (const row of rows) {
+		used += getUsageCount(row, fieldName);
+	}
+
+	if (used >= limit) {
+		throw new Error("Limit reached. Upgrade your plan to continue.");
+	}
+}

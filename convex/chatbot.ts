@@ -3133,6 +3133,17 @@ export const askAssistant = action({
 			return { answer: "Workspace context is required.", sources: [] };
 		}
 
+		const usageLimitCheck = await ctx.runQuery(
+			internal.usageTracking.checkAIUsageLimit,
+			{
+				workspaceId,
+				featureType: "aiRequest",
+			}
+		);
+		if (!usageLimitCheck.allowed) {
+			throw new Error("Limit reached. Upgrade your plan to continue.");
+		}
+
 		const trackingUserId = args.userId ?? (await getAuthUserId(ctx));
 		if (trackingUserId) {
 			try {

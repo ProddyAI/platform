@@ -2,13 +2,20 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalQuery, mutation, query } from "./_generated/server";
+import {
+	internalQuery,
+	type MutationCtx,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 import { prosemirrorSync } from "./prosemirror";
+import { enforceWorkspaceLimit } from "./usageTracking";
 import { mapWorkspaceId } from "./utils";
 
 // Helper: find a member for this user in ANY workspace (fallback for ID mismatches)
 async function findMemberForUser(
-	ctx: any, // Context type varies in Convex but we can use GenericQueryCtx or similar
+	ctx: Pick<QueryCtx | MutationCtx, "db">,
 	workspaceId: Id<"workspaces">,
 	userId: Id<"users">
 ) {
@@ -18,7 +25,7 @@ async function findMemberForUser(
 	// 1. Try the mapped/correct workspace ID
 	let member = await ctx.db
 		.query("members")
-		.withIndex("by_workspace_id_user_id", (q: any) =>
+		.withIndex("by_workspace_id_user_id", (q) =>
 			q.eq("workspaceId", workspaceId).eq("userId", userId)
 		)
 		.first();
@@ -35,13 +42,13 @@ async function findMemberForUser(
 	// 2. Try the "Personal" workspace if it exists (very common fallback)
 	const personalWorkspace = await ctx.db
 		.query("workspaces")
-		.filter((q: any) => q.eq(q.field("name"), "Peronal")) // Match the user's specific typo name
+		.filter((q) => q.eq(q.field("name"), "Peronal")) // Match the user's specific typo name
 		.first();
 
 	if (personalWorkspace) {
 		member = await ctx.db
 			.query("members")
-			.withIndex("by_workspace_id_user_id", (q: any) =>
+			.withIndex("by_workspace_id_user_id", (q) =>
 				q.eq("workspaceId", personalWorkspace._id).eq("userId", userId)
 			)
 			.first();
@@ -51,7 +58,7 @@ async function findMemberForUser(
 	// 3. Absolute fallback: find ANY member record for this authenticated user
 	member = await ctx.db
 		.query("members")
-		.withIndex("by_user_id", (q: any) => q.eq("userId", userId))
+		.withIndex("by_user_id", (q) => q.eq("userId", userId))
 		.first();
 
 	if (member) return member;
@@ -85,6 +92,8 @@ export const create = mutation({
 		if (!member) {
 			throw new Error("Unauthorized: No member record found");
 		}
+
+		await enforceWorkspaceLimit(ctx, workspaceId, "note");
 
 		const now = Date.now();
 
