@@ -144,7 +144,7 @@ const schema = defineSchema({
 		totalCostCents: v.number(),
 		occurredAt: v.number(),
 		idempotencyKey: v.optional(v.string()),
-		metadata: v.optional(v.any()),
+		metadata: v.optional(v.record(v.string(), v.any())),
 	})
 		.index("by_workspace_id_occurred_at", ["workspaceId", "occurredAt"])
 		.index("by_workspace_id_event_type", ["workspaceId", "eventType"])

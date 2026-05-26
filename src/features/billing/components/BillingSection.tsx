@@ -3,13 +3,16 @@
 import { useAction, useConvexAuth, useQuery } from "convex/react";
 import {
 	CalendarDays,
+	CheckCircle2,
 	CreditCard,
 	Download,
 	ExternalLink,
 	Loader,
 	Lock,
 	ReceiptText,
+	ShieldCheck,
 	Sparkles,
+	Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -287,6 +290,27 @@ export function BillingSection({
 		openPlanChange(optionName);
 	};
 
+	const formatPlanPrice = (plan: (typeof PLANS)[PlanName]) => {
+		if (plan.priceDisplayLabel) return plan.priceDisplayLabel;
+		if (plan.name === "free") return "Free";
+		return `$${plan.pricePerSeatMonthly}`;
+	};
+
+	const currentPriceLabel =
+		currentPlan.name === "free"
+			? "Free"
+			: `${formatPlanPrice(currentPlan)}/user/month`;
+	const seatLabel =
+		planName === "free"
+			? "No paid seats"
+			: `${currentSeatCount} paid seat${currentSeatCount === 1 ? "" : "s"}`;
+	const nextBillingLabel =
+		planName === "free"
+			? "No active renewal"
+			: formatBillingDate(
+					subscription.currentPeriodEnd ?? subscription.nextBillingDate
+				);
+
 	const billingDetails = showBillingSummary ? (
 		<div className="space-y-4">
 			{planName !== "free" && (
@@ -443,82 +467,72 @@ export function BillingSection({
 
 	return (
 		<>
-			<div className="space-y-6">
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<CreditCard className="size-5" />
-							Current Plan
-						</CardTitle>
-						<CardDescription>
-							{isFreeSeatInPaidWorkspace ? (
-								<>
-									You are on a <span className="font-semibold">Free</span> seat.
-									The workspace is on the{" "}
-									<span className="font-semibold">{workspacePlan.label}</span>{" "}
-									plan.
-								</>
-							) : (
-								<>
-									Your workspace is on the{" "}
-									<span className="font-semibold">{currentPlan.label}</span>{" "}
-									plan
-								</>
-							)}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<div className="flex items-center justify-between">
-							<div className="space-y-1">
-								<div className="flex items-center gap-2">
-									<h3 className="text-2xl font-bold">{currentPlan.label}</h3>
-									<Badge
-										variant={
-											currentPlan.name === "enterprise"
-												? "default"
-												: currentPlan.name === "pro"
-													? "secondary"
-													: "outline"
-										}
-									>
-										{currentPlan.priceDisplayLabel
-											? currentPlan.priceDisplayLabel
-											: currentPlan.name === "free"
-												? "Free"
-												: `$${currentPlan.pricePerSeatMonthly}/user/month`}
+			<div className="space-y-5">
+				<Card className="overflow-hidden border-primary/15 shadow-sm">
+					<div className="border-b bg-primary/5 px-6 py-5">
+						<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+							<div className="min-w-0">
+								<div className="mb-3 flex items-center gap-2 text-sm font-medium text-primary">
+									<span className="flex size-8 items-center justify-center rounded-md bg-primary/10">
+										<CreditCard className="size-4" />
+									</span>
+									Current Plan
+								</div>
+								<div className="flex flex-wrap items-end gap-3">
+									<h3 className="text-3xl font-semibold leading-none">
+										{currentPlan.label}
+									</h3>
+									<Badge className="bg-secondary px-3 py-1 text-white hover:bg-secondary">
+										{currentPriceLabel}
 									</Badge>
 								</div>
-								<p className="text-sm text-muted-foreground">
-									{currentPlan.description}
+								<p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+									{isFreeSeatInPaidWorkspace ? (
+										<>
+											You are on a <span className="font-semibold">Free</span>{" "}
+											seat. The workspace is on the{" "}
+											<span className="font-semibold">
+												{workspacePlan.label}
+											</span>{" "}
+											plan.
+										</>
+									) : (
+										currentPlan.description
+									)}
 								</p>
 							</div>
 
-							<div className="flex gap-2">
+							<div className="flex flex-col gap-2 sm:flex-row">
 								{canOpenBillingPortal && (
 									<Button
+										className="border-primary/20 bg-white/80 hover:border-primary/40"
 										disabled={portalLoading}
 										onClick={handleManageBilling}
 										variant="outline"
 									>
 										{portalLoading ? (
-											<Loader className="size-4 animate-spin mr-2" />
+											<Loader className="mr-2 size-4 animate-spin" />
 										) : (
-											<ExternalLink className="size-4 mr-2" />
+											<ExternalLink className="mr-2 size-4" />
 										)}
 										Manage Billing
 									</Button>
 								)}
 								{planName !== "enterprise" ? (
 									<Button
+										className="bg-secondary px-5 text-white shadow-md hover:bg-secondary/90"
 										onClick={() =>
 											openPlanChange(planName === "free" ? "pro" : "enterprise")
 										}
 									>
-										<Sparkles className="size-4 mr-2" />
-										{planName === "free" ? "Upgrade" : "Upgrade to Enterprise"}
+										<Sparkles className="mr-2 size-4" />
+										{planName === "free"
+											? "Upgrade Plan"
+											: "Upgrade to Enterprise"}
 									</Button>
 								) : (
 									<Button
+										className="border-primary/20 bg-white/80 hover:border-primary/40"
 										onClick={() => openPlanChange("pro")}
 										variant="outline"
 									>
@@ -527,89 +541,54 @@ export function BillingSection({
 								)}
 							</div>
 						</div>
+					</div>
+					<CardContent className="grid gap-3 p-6 sm:grid-cols-3">
+						<div className="rounded-md border bg-background p-4">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<Users className="size-4 text-primary" />
+								Seats
+							</div>
+							<p className="text-xl font-semibold">{seatLabel}</p>
+						</div>
+						<div className="rounded-md border bg-background p-4">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<CalendarDays className="size-4 text-primary" />
+								Billing
+							</div>
+							<p className="text-xl font-semibold">{nextBillingLabel}</p>
+						</div>
+						<div className="rounded-md border bg-background p-4">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<ShieldCheck className="size-4 text-primary" />
+								Status
+							</div>
+							<p className="text-xl font-semibold capitalize">
+								{subscription.subscriptionStatus ?? "active"}
+							</p>
+						</div>
 					</CardContent>
 				</Card>
 
-				<Card>
-					<CardHeader>
-						<CardTitle>Available Plans</CardTitle>
+				<Card className="border-primary/10 shadow-sm">
+					<CardHeader className="pb-4">
+						<CardTitle className="text-xl">Available Plans</CardTitle>
 						<CardDescription>
 							Compare plans and choose the best fit for your team
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 							{(["free", "pro", "enterprise"] as const).map((optionName) => {
-								const plan = PLANS[optionName];
-								const isCurrent = planName === optionName;
 								return (
-									<div
-										className={`rounded-lg border p-4 flex flex-col h-full ${
-											isCurrent ||
-											optionName === "pro" ||
-											optionName === "enterprise"
-												? "border-primary bg-primary/5"
-												: "border-border"
-										}`}
+									<PlanOptionCard
+										cancelLoading={cancelLoading}
+										formatPlanPrice={formatPlanPrice}
+										getPlanActionLabel={getPlanActionLabel}
+										handlePlanAction={handlePlanAction}
 										key={optionName}
-									>
-										<div className="mb-3">
-											<h4 className="font-semibold">{plan.label}</h4>
-											<p className="text-2xl font-bold mt-1">
-												{optionName === "enterprise" ? (
-													<>
-														{plan.priceDisplayLabel}
-														<span className="text-sm font-normal text-muted-foreground">
-															/user/mo
-														</span>
-													</>
-												) : plan.pricePerSeatMonthly === 0 ? (
-													"Free"
-												) : (
-													<>
-														${plan.pricePerSeatMonthly}
-														<span className="text-sm font-normal text-muted-foreground">
-															/user/mo
-														</span>
-													</>
-												)}
-											</p>
-										</div>
-										<div className="flex-grow">
-											<p className="text-sm text-muted-foreground mb-3">
-												{plan.description}
-											</p>
-										</div>
-										{isCurrent ? (
-											<Badge
-												className="w-full justify-center"
-												variant="outline"
-											>
-												Current Plan
-											</Badge>
-										) : (
-											<Button
-												className="w-full"
-												disabled={optionName === "free" && cancelLoading}
-												onClick={() => handlePlanAction(optionName)}
-												size="sm"
-												variant={
-													optionName === "free" || planName === "enterprise"
-														? "outline"
-														: "default"
-												}
-											>
-												{optionName === "free" && cancelLoading ? (
-													<>
-														<Loader className="size-4 animate-spin mr-2" />
-														Cancelling...
-													</>
-												) : (
-													getPlanActionLabel(optionName)
-												)}
-											</Button>
-										)}
-									</div>
+										optionName={optionName}
+										planName={planName}
+									/>
 								);
 							})}
 						</div>
@@ -643,5 +622,133 @@ export function BillingSection({
 				</DialogContent>
 			</Dialog>
 		</>
+	);
+}
+
+function PlanOptionCard({
+	optionName,
+	planName,
+	cancelLoading,
+	handlePlanAction,
+	getPlanActionLabel,
+	formatPlanPrice,
+}: {
+	optionName: PlanName;
+	planName: PlanName;
+	cancelLoading: boolean;
+	handlePlanAction: (optionName: PlanName) => void;
+	getPlanActionLabel: (optionName: PlanName) => string;
+	formatPlanPrice: (plan: typeof PLANS[PlanName]) => string;
+}) {
+	const plan = PLANS[optionName];
+	const isCurrent = planName === optionName;
+	const isPaid = optionName !== "free";
+	return (
+		<div
+			className={`flex min-h-[250px] flex-col rounded-lg border p-5 transition-standard ${
+				isCurrent
+					? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+					: isPaid
+						? "border-primary/40 bg-primary/[0.03] hover:border-primary/70 hover:bg-primary/5"
+						: "border-border bg-background hover:border-primary/30"
+			}`}
+		>
+			<PlanOptionHeader formatPlanPrice={formatPlanPrice} isCurrent={isCurrent} plan={plan} />
+
+			<p className="mt-5 flex-1 text-sm leading-6 text-muted-foreground">
+				{plan.description}
+			</p>
+
+			<PlanOptionAction
+				cancelLoading={cancelLoading}
+				getPlanActionLabel={getPlanActionLabel}
+				handlePlanAction={handlePlanAction}
+				isCurrent={isCurrent}
+				optionName={optionName}
+				planName={planName}
+			/>
+		</div>
+	);
+}
+
+function PlanOptionHeader({
+	plan,
+	isCurrent,
+	formatPlanPrice,
+}: {
+	plan: typeof PLANS[PlanName];
+	isCurrent: boolean;
+	formatPlanPrice: (plan: typeof PLANS[PlanName]) => string;
+}) {
+	return (
+		<div className="flex items-start justify-between gap-3">
+			<div>
+				<h4 className="text-base font-semibold">{plan.label}</h4>
+				<div className="mt-3 flex items-baseline gap-1">
+					<span className="text-3xl font-semibold leading-none">
+						{formatPlanPrice(plan)}
+					</span>
+					{plan.pricePerSeatMonthly > 0 && (
+						<span className="text-sm text-muted-foreground">/user/mo</span>
+					)}
+				</div>
+			</div>
+			{isCurrent && (
+				<span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+					<CheckCircle2 className="size-4" />
+				</span>
+			)}
+		</div>
+	);
+}
+
+function PlanOptionAction({
+	optionName,
+	planName,
+	isCurrent,
+	cancelLoading,
+	handlePlanAction,
+	getPlanActionLabel,
+}: {
+	optionName: PlanName;
+	planName: PlanName;
+	isCurrent: boolean;
+	cancelLoading: boolean;
+	handlePlanAction: (optionName: PlanName) => void;
+	getPlanActionLabel: (optionName: PlanName) => string;
+}) {
+	return (
+		<div className="mt-5 border-t pt-4">
+			{isCurrent ? (
+				<div className="flex h-9 items-center justify-center rounded-[10px] border border-primary/20 bg-background text-sm font-medium text-primary">
+					Current Plan
+				</div>
+			) : (
+				<Button
+					className={`w-full ${
+						optionName !== "free" && planName !== "enterprise"
+							? "bg-secondary text-white shadow-md hover:bg-secondary/90"
+							: ""
+					}`}
+					disabled={optionName === "free" && cancelLoading}
+					onClick={() => handlePlanAction(optionName)}
+					size="sm"
+					variant={
+						optionName === "free" || planName === "enterprise"
+							? "outline"
+							: "default"
+					}
+				>
+					{optionName === "free" && cancelLoading ? (
+						<>
+							<Loader className="mr-2 size-4 animate-spin" />
+							Cancelling...
+						</>
+					) : (
+						getPlanActionLabel(optionName)
+					)}
+				</Button>
+			)}
+		</div>
 	);
 }

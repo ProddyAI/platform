@@ -142,6 +142,17 @@ export async function recordSendMessageUsage(
 	ctx: ActionCtx,
 	context: SendMessageContext
 ) {
+	const usageLimitCheck = await ctx.runQuery(
+		internal.usageTracking.checkAIUsageLimit,
+		{
+			workspaceId: context.resolvedWorkspaceId,
+			featureType: "aiRequest",
+		}
+	);
+	if (!usageLimitCheck.allowed) {
+		throw new Error("Limit reached. Upgrade your plan to continue.");
+	}
+
 	try {
 		await ctx.runMutation(internal.usageTracking.recordAIRequest, {
 			userId: context.resolvedUserId,

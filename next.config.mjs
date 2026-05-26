@@ -167,6 +167,7 @@ const baseConfig = withPWA({
 			},
 		],
 	},
+
 	async headers() {
 		await Promise.resolve();
 		return [
