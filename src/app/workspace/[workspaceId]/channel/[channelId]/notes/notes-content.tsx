@@ -193,6 +193,7 @@ export const NotesContent = ({
 					<LiveSidebar
 						channelId={channelId}
 						collapsed={sidebarCollapsed}
+						disableCreate={noteLimitReached}
 						items={memoizedItems}
 						onCreateItem={onCreateNote}
 						onDeleteItem={handleDeleteItem}
@@ -202,7 +203,6 @@ export const NotesContent = ({
 						selectedItemId={activeNoteId}
 						type="notes"
 						workspaceId={workspaceId}
-						disableCreate={noteLimitReached}
 					/>
 				)}
 

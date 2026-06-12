@@ -38,7 +38,7 @@ const authMiddleware = convexAuthNextjsMiddleware(
 	(req) => {
 		// If trying to access authenticated-only pages without being logged in
 		if (isAuthenticatedOnlyPage(req) && !isAuthenticatedNextjs()) {
-			return nextjsMiddlewareRedirect(req, "/auto-login");
+			return nextjsMiddlewareRedirect(req, "/auth/signin");
 		}
 
 		if (
@@ -55,9 +55,9 @@ const authMiddleware = convexAuthNextjsMiddleware(
 			return nextjsMiddlewareRedirect(req, "/workspace");
 		}
 
-		// If accessing the root page while not authenticated, redirect to auto-login
+		// If accessing the root page while not authenticated, redirect to home
 		if (req.nextUrl.pathname === "/" && !isAuthenticatedNextjs()) {
-			return nextjsMiddlewareRedirect(req, "/auto-login");
+			return nextjsMiddlewareRedirect(req, "/home");
 		}
 	},
 	convexUrl ? { convexUrl } : undefined

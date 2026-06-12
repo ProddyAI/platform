@@ -22,6 +22,10 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
 import { NotesContent } from "./notes-content";
 
+// Stable empty reference so the notes effect doesn't re-run every render while
+// the query is still loading (`notes` is undefined).
+const EMPTY_NOTES: Note[] = [];
+
 const NotesPage = () => {
 	const params = useParams();
 	const searchParams = useSearchParams();
@@ -62,7 +66,7 @@ const NotesPage = () => {
 		activeNoteId ? { id: activeNoteId } : "skip"
 	);
 
-	const finalNotes = notes || [];
+	const finalNotes = notes ?? EMPTY_NOTES;
 
 	useEffect(() => {
 		// If we have a noteId in the URL but it's not the active one, sync it
@@ -151,7 +155,9 @@ const NotesPage = () => {
 	const handleCreateNote = async (isAI = false) => {
 		if (isCreating) return;
 		if (noteLimitReached) {
-			toast.error("Note limit reached. Upgrade your plan to create more notes.");
+			toast.error(
+				"Note limit reached. Upgrade your plan to create more notes."
+			);
 			return;
 		}
 		setIsCreating(true);
@@ -172,9 +178,7 @@ const NotesPage = () => {
 		} catch (error) {
 			console.error("Failed to create note:", error);
 			const message = error instanceof Error ? error.message : "Unknown error";
-			toast.error(
-				`Failed to create note: ${message}`
-			);
+			toast.error(`Failed to create note: ${message}`);
 		} finally {
 			setIsCreating(false);
 		}
@@ -256,6 +260,7 @@ const NotesPage = () => {
 					activeNoteId={activeNoteId}
 					channelId={channelId}
 					isFullScreen={isFullScreen}
+					noteLimitReached={noteLimitReached}
 					notes={finalNotes}
 					onCreateNote={handleCreateNote}
 					onDeleteNote={handleDeleteNote}
@@ -266,7 +271,6 @@ const NotesPage = () => {
 					setShowExportDialog={setShowExportDialog}
 					showExportDialog={showExportDialog}
 					workspaceId={workspaceId}
-					noteLimitReached={noteLimitReached}
 				/>
 			</div>
 		</LiveblocksRoom>

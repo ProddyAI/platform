@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { LimitIndicator } from "@/components/limit-indicator";
 import BoardGanttView from "@/features/board/components/board-gantt-view";
 import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
@@ -25,7 +26,6 @@ import { useConnectProjectChannelModal } from "@/features/projects/store/use-con
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
-import { LimitIndicator } from "@/components/limit-indicator";
 
 interface BoardPageContentProps {
 	channelId: Id<"channels">;
@@ -385,7 +385,9 @@ export const BoardPageContent = ({
 
 	const handleCreateIssue = async (statusId: Id<"statuses">, title: string) => {
 		if (boardLimitReached) {
-			toast.error("Board cards limit reached. Upgrade your plan to create more.");
+			toast.error(
+				"Board cards limit reached. Upgrade your plan to create more."
+			);
 			return;
 		}
 		const statusIssues = (optimisticIssues ?? allIssues).filter(
@@ -536,7 +538,9 @@ export const BoardPageContent = ({
 	// ── Old card/list handlers (table + gantt views) ─────────────────────────
 	const handleAddCard = async (listId: Id<"lists">) => {
 		if (boardLimitReached) {
-			toast.error("Board cards limit reached. Upgrade your plan to create more.");
+			toast.error(
+				"Board cards limit reached. Upgrade your plan to create more."
+			);
 			return;
 		}
 		if (!cardTitle.trim()) return;
@@ -623,7 +627,10 @@ export const BoardPageContent = ({
 		<div className="h-full w-full max-w-full flex flex-col bg-background dark:bg-gray-950 overflow-x-hidden overflow-y-hidden min-w-0">
 			{boardLimitReached && (
 				<div className="flex-shrink-0 m-4 flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
-					<span>You have reached the board card limit for your plan. Upgrade to create more cards/issues.</span>
+					<span>
+						You have reached the board card limit for your plan. Upgrade to
+						create more cards/issues.
+					</span>
 					<LimitIndicator featureLabel="Board Cards" />
 				</div>
 			)}
@@ -637,8 +644,8 @@ export const BoardPageContent = ({
 						analyzeBlockersLoading={analyzeBlockersLoading}
 						channelId={channelId}
 						connectedChannelName={projectConnectedChannelName}
-						disableIssueDrag={isFilteredBoardView}
 						disableCreateIssue={boardLimitReached}
+						disableIssueDrag={isFilteredBoardView}
 						focusedStatusId={focusedStatusId}
 						isProjectChannelConnected={isProjectChannelConnected}
 						issues={filteredIssues}

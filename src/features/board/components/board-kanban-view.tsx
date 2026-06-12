@@ -359,8 +359,8 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 										<BoardStatusColumn
 											assigneeData={memberDataMap}
 											dependencyStatsMap={dependencyStats ?? undefined}
-											disableIssueDrag={disableIssueDrag}
 											disableCreateIssue={disableCreateIssue}
+											disableIssueDrag={disableIssueDrag}
 											isFocused={focusedStatusId === status._id}
 											issues={issuesByStatus[status._id] || []}
 											onClickIssue={onClickIssue}

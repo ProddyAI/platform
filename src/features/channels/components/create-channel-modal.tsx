@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 import { EmojiPopover } from "@/components/emoji-popover";
+import { LimitIndicator } from "@/components/limit-indicator";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -21,7 +22,6 @@ import { Label } from "@/components/ui/label";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
-import { LimitIndicator } from "@/components/limit-indicator";
 
 import { useCreateChannel } from "../api/use-create-channel";
 import { useCreateChannelModal } from "../store/use-create-channel-modal";
@@ -205,7 +205,10 @@ export const CreateChannelModal = () => {
 				<form className="space-y-4" onSubmit={handleSubmit}>
 					{maxReached && (
 						<div className="flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
-							<span>You have reached the channel limit for your plan. Upgrade to create channels.</span>
+							<span>
+								You have reached the channel limit for your plan. Upgrade to
+								create channels.
+							</span>
 							<LimitIndicator featureLabel="Channels" />
 						</div>
 					)}
@@ -233,7 +236,9 @@ export const CreateChannelModal = () => {
 										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
 										disabled={isUploading || maxReached}
 										onClick={() =>
-											!isUploading && !maxReached && imageInputRef.current?.click()
+											!isUploading &&
+											!maxReached &&
+											imageInputRef.current?.click()
 										}
 										type="button"
 									>

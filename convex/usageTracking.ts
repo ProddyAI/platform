@@ -406,14 +406,12 @@ export const getWorkspaceUsage = query({
 			totals.aiSummaryCount += row.aiSummaryCount ?? 0;
 			totals.messageCount +=
 				(row.messageCount ?? 0) + (legacyRow.messagesCreated ?? 0);
-			totals.taskCount +=
-				(row.taskCount ?? 0) + (legacyRow.tasksCreated ?? 0);
+			totals.taskCount += (row.taskCount ?? 0) + (legacyRow.tasksCreated ?? 0);
 			totals.channelCount +=
 				(row.channelCount ?? 0) + (legacyRow.channelsCreated ?? 0);
 			totals.boardCount +=
 				(row.boardCount ?? 0) + (legacyRow.boardsCreated ?? 0);
-			totals.noteCount +=
-				(row.noteCount ?? 0) + (legacyRow.notesCreated ?? 0);
+			totals.noteCount += (row.noteCount ?? 0) + (legacyRow.notesCreated ?? 0);
 		}
 
 		return {

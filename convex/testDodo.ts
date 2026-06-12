@@ -1,4 +1,4 @@
-import { dodoApiKey, apiBase } from "./dodo";
+import { apiBase, dodoApiKey } from "./dodo";
 
 export default async function run() {
 	const res = await fetch(`${apiBase}/products`, {

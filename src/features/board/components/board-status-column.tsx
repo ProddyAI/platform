@@ -191,7 +191,11 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					disabled={disableCreateIssue}
 					onClick={handleStartCreating}
 					size="icon"
-					title={disableCreateIssue ? "Issue limit reached. Upgrade plan to create issues." : "Add issue"}
+					title={
+						disableCreateIssue
+							? "Issue limit reached. Upgrade plan to create issues."
+							: "Add issue"
+					}
 					variant="ghost"
 				>
 					<Plus className="w-3.5 h-3.5" />

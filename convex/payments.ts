@@ -3705,7 +3705,6 @@ export const updateSubscriptionQuantity = action({
 			}
 		};
 
-
 		const createExactActivityChargePayment = async () => {
 			const currency = currentSubscription?.currency ?? "USD";
 			await ctx.runMutation(
@@ -4255,7 +4254,8 @@ export const cancelSubscription = action({
 						},
 					}
 				);
-				const refundObj = (dodoRefundResult as Record<string, unknown>)?.refund as Record<string, unknown> | undefined;
+				const refundObj = (dodoRefundResult as Record<string, unknown>)
+					?.refund as Record<string, unknown> | undefined;
 				if (refundObj) {
 					refundSuccess = true;
 					refundId = String(refundObj.refund_id ?? refundObj.id ?? "");

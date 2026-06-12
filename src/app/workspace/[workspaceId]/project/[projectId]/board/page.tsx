@@ -6,6 +6,7 @@ import { KanbanSquare, Loader } from "lucide-react";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import BoardPageContent from "@/features/board/components/board-page-content";
+import { ProjectNavTabs } from "@/features/projects/components/project-nav-tabs";
 import { useProjectId } from "@/hooks/use-project-id";
 import { WorkspaceToolbar } from "../../../toolbar";
 
@@ -44,6 +45,8 @@ const ProjectBoardPage = () => {
 					<span className="truncate">{project.name} Board</span>
 				</Button>
 			</WorkspaceToolbar>
+
+			<ProjectNavTabs />
 
 			<div className="flex-1 min-h-0 overflow-hidden">
 				<BoardPageContent

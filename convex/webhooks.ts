@@ -243,7 +243,9 @@ const findWorkspaceMemberByBillingEmail = async (
 
 	if (memberships.length === 0) return null;
 	if (memberships.length > 1) {
-		console.warn(`[Billing] Ambiguous workspace mapping for email ${email}: found ${memberships.length} admin/owner memberships. Manual review required.`);
+		console.warn(
+			`[Billing] Ambiguous workspace mapping for email ${email}: found ${memberships.length} admin/owner memberships. Manual review required.`
+		);
 		return null;
 	}
 	return memberships[0];
@@ -257,7 +259,10 @@ const hasSucceededBillingPayment = async (
 		.query("billingHistory")
 		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", workspaceId))
 		.filter((q) =>
-			q.and(q.eq(q.field("type"), "payment"), q.eq(q.field("status"), "succeeded"))
+			q.and(
+				q.eq(q.field("type"), "payment"),
+				q.eq(q.field("status"), "succeeded")
+			)
 		)
 		.first();
 	return Boolean(payment);
@@ -318,7 +323,9 @@ export const createPayment = internalMutation({
 		workspaceId: v.optional(v.string()),
 		subscriptionId: v.optional(v.string()),
 		applyPendingBilling: v.optional(v.boolean()),
-		plan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"), v.literal("free"))),
+		plan: v.optional(
+			v.union(v.literal("pro"), v.literal("enterprise"), v.literal("free"))
+		),
 		quantity: v.optional(v.number()),
 		customerId: v.optional(v.string()),
 		customerEmail: v.optional(v.union(v.string(), v.null())),
@@ -666,8 +673,11 @@ async function processSubscriptionSync(
 			previousWorkspace?.pendingBillingPlan === "enterprise")
 			? previousWorkspace.pendingBillingPlan
 			: null;
-	const eventPlan =
-		(args.plan === "pro" || args.plan === "enterprise" || args.plan === "free" ? args.plan : null) as "pro" | "enterprise" | "free" | null;
+	const eventPlan = (
+		args.plan === "pro" || args.plan === "enterprise" || args.plan === "free"
+			? args.plan
+			: null
+	) as "pro" | "enterprise" | "free" | null;
 	const isStaleSubscriptionEventForPendingUpgrade =
 		args.paymentConfirmed !== true &&
 		pendingPlan !== null &&
@@ -730,7 +740,8 @@ async function processSubscriptionSync(
 		customerId: args.customerId,
 		dodoCustomerId: args.customerId,
 	};
-	const isInactive = INACTIVE_SUBSCRIPTION_STATUSES.has(args.status) || nextPaidPlan === "free";
+	const isInactive =
+		INACTIVE_SUBSCRIPTION_STATUSES.has(args.status) || nextPaidPlan === "free";
 	if (isInactive) {
 		patch.plan = "free";
 		patch.subscriptionId = undefined;

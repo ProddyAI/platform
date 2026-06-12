@@ -638,7 +638,7 @@ function PlanOptionCard({
 	cancelLoading: boolean;
 	handlePlanAction: (optionName: PlanName) => void;
 	getPlanActionLabel: (optionName: PlanName) => string;
-	formatPlanPrice: (plan: typeof PLANS[PlanName]) => string;
+	formatPlanPrice: (plan: (typeof PLANS)[PlanName]) => string;
 }) {
 	const plan = PLANS[optionName];
 	const isCurrent = planName === optionName;
@@ -653,7 +653,11 @@ function PlanOptionCard({
 						: "border-border bg-background hover:border-primary/30"
 			}`}
 		>
-			<PlanOptionHeader formatPlanPrice={formatPlanPrice} isCurrent={isCurrent} plan={plan} />
+			<PlanOptionHeader
+				formatPlanPrice={formatPlanPrice}
+				isCurrent={isCurrent}
+				plan={plan}
+			/>
 
 			<p className="mt-5 flex-1 text-sm leading-6 text-muted-foreground">
 				{plan.description}
@@ -676,9 +680,9 @@ function PlanOptionHeader({
 	isCurrent,
 	formatPlanPrice,
 }: {
-	plan: typeof PLANS[PlanName];
+	plan: (typeof PLANS)[PlanName];
 	isCurrent: boolean;
-	formatPlanPrice: (plan: typeof PLANS[PlanName]) => string;
+	formatPlanPrice: (plan: (typeof PLANS)[PlanName]) => string;
 }) {
 	return (
 		<div className="flex items-start justify-between gap-3">

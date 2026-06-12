@@ -252,7 +252,11 @@ const syncSubscriptionFromDodo = async (
 						: undefined,
 					quantity: fallbackQuantity,
 				},
-				JSON.stringify({ subscription_id: subscriptionId, fallback: true, error: String(error) }),
+				JSON.stringify({
+					subscription_id: subscriptionId,
+					fallback: true,
+					error: String(error),
+				}),
 				fallbackWorkspaceId,
 				billingDetails,
 				fallbackPlan,

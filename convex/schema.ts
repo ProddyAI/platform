@@ -1151,6 +1151,79 @@ const schema = defineSchema({
 		.index("by_status", ["status"])
 		.index("by_workspace_status", ["workspaceId", "status"]),
 
+	// Sprints (Linear-style cycles) — time-boxed iterations of a project's board
+	sprints: defineTable({
+		projectId: v.id("projects"),
+		workspaceId: v.id("workspaces"),
+		name: v.string(),
+		description: v.optional(v.string()),
+		status: v.union(
+			v.literal("planning"),
+			v.literal("active"),
+			v.literal("completed"),
+			v.literal("cancelled")
+		),
+		startDate: v.number(),
+		endDate: v.number(),
+		goal: v.optional(v.string()),
+		createdBy: v.id("members"),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_project_id", ["projectId"])
+		.index("by_status", ["status"]),
+
+	// Sprint <-> issue membership with manual ordering
+	sprintIssues: defineTable({
+		sprintId: v.id("sprints"),
+		issueId: v.id("issues"),
+		projectId: v.id("projects"),
+		workspaceId: v.id("workspaces"),
+		order: v.number(),
+		addedAt: v.number(),
+	})
+		.index("by_sprint_id", ["sprintId"])
+		.index("by_issue_id", ["issueId"])
+		.index("by_sprint_id_order", ["sprintId", "order"])
+		.index("by_workspace_id", ["workspaceId"]),
+
+	// Milestones (Roadmap) — long-term goals visualised on a timeline
+	milestones: defineTable({
+		projectId: v.id("projects"),
+		workspaceId: v.id("workspaces"),
+		name: v.string(),
+		description: v.optional(v.string()),
+		targetDate: v.optional(v.number()),
+		status: v.union(
+			v.literal("planned"),
+			v.literal("in_progress"),
+			v.literal("completed"),
+			v.literal("archived")
+		),
+		color: v.optional(v.string()),
+		order: v.number(),
+		createdBy: v.id("members"),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_project_id", ["projectId"])
+		.index("by_status", ["status"])
+		.index("by_target_date", ["targetDate"]),
+
+	// Milestone <-> issue links
+	milestoneIssues: defineTable({
+		milestoneId: v.id("milestones"),
+		issueId: v.id("issues"),
+		projectId: v.id("projects"),
+		workspaceId: v.id("workspaces"),
+		linkedAt: v.number(),
+	})
+		.index("by_milestone_id", ["milestoneId"])
+		.index("by_issue_id", ["issueId"])
+		.index("by_workspace_id", ["workspaceId"]),
+
 	meetingNotes: defineTable({
 		roomId: v.string(),
 		title: v.optional(v.string()),

@@ -134,7 +134,7 @@ export default function MeetingPage({
 	useEffect(() => {
 		if (isLoading) return;
 		if (!isAuthenticated) {
-			router.replace("/auto-login");
+			router.replace("/auth/signin");
 			return;
 		}
 		if (!user?._id) return;

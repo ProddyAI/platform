@@ -20,7 +20,7 @@ const WorkspacePage = () => {
 
 	useEffect(() => {
 		if (!isAuthLoading && !isAuthenticated) {
-			router.replace("/auto-login");
+			router.replace("/auth/signin");
 		}
 	}, [isAuthenticated, isAuthLoading, router]);
 
@@ -67,7 +67,7 @@ const WorkspacePage = () => {
 					</button>
 					<button
 						className="px-4 py-2 bg-white/20 text-white rounded-md font-medium text-sm hover:bg-white/30"
-						onClick={() => router.replace("/auto-login")}
+						onClick={() => router.replace("/auth/signin")}
 						type="button"
 					>
 						Back to Sign In

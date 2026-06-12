@@ -62,9 +62,15 @@ export async function POST(req: NextRequest) {
 					);
 				}
 			} catch (err) {
-				console.warn("[UsageTracking] Failed to check AI flowchart limit:", err);
+				console.warn(
+					"[UsageTracking] Failed to check AI flowchart limit:",
+					err
+				);
 				return NextResponse.json(
-					{ error: "Service temporarily unavailable: failed to validate usage limits" },
+					{
+						error:
+							"Service temporarily unavailable: failed to validate usage limits",
+					},
 					{ status: 503 }
 				);
 			}

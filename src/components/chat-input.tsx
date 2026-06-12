@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { Id } from "@/../convex/_generated/dataModel";
+import { LimitIndicator } from "@/components/limit-indicator";
 import { UploadRecordingButton } from "@/features/audio/components/UploadRecordingButton";
 import { useCreateCalendarEvent } from "@/features/calendar/api/use-create-calendar-event";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
@@ -15,7 +16,6 @@ import { Suggestions } from "@/features/smart/components/suggestions";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
-import { LimitIndicator } from "@/components/limit-indicator";
 
 const Editor = dynamic(() => import("@/components/editor"), {
 	ssr: false,
@@ -239,7 +239,10 @@ export const ChatInput = ({
 		<div className="w-full px-1 md:px-5">
 			{maxReached && (
 				<div className="mb-2 flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
-					<span>You have reached the message limit for your plan. Upgrade to send more messages.</span>
+					<span>
+						You have reached the message limit for your plan. Upgrade to send
+						more messages.
+					</span>
 					<LimitIndicator featureLabel="Messages" />
 				</div>
 			)}
@@ -264,7 +267,11 @@ export const ChatInput = ({
 					// Signal typing when user types
 					signalTyping();
 				}}
-				placeholder={maxReached ? "Limit reached. Upgrade plan to send messages." : placeholder}
+				placeholder={
+					maxReached
+						? "Limit reached. Upgrade plan to send messages."
+						: placeholder
+				}
 			/>
 		</div>
 	);
