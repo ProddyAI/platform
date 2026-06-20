@@ -40,7 +40,14 @@ const schema = defineSchema({
 		website: v.optional(v.string()),
 		onesignalExternalId: v.optional(v.string()),
 	})
-		.index("by_email", ["email"])
+		// `email` and `phone` are required by @convex-dev/auth (it calls
+		// `.withIndex("email"/"phone")` internally). They live on the library's
+		// `authTables.users`, but redefining `users` here overrides that table —
+		// indexes included — so they must be re-declared or OAuth sign-up fails
+		// with "Index users.email not found". App code queries the `email` index
+		// directly (Convex forbids a second same-fields `by_email` index here).
+		.index("email", ["email"])
+		.index("phone", ["phone"])
 		.index("by_onesignal_external_id", ["onesignalExternalId"]),
 
 	// Email OTP verifications
