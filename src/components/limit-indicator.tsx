@@ -1,6 +1,5 @@
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import React from "react";
 import { Hint } from "@/components/hint";
 import { Badge } from "@/components/ui/badge";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";

@@ -12,7 +12,7 @@
 		"next": "next dev --turbo --experimental-https",
 		"convex": "convex dev",
 		"type": "tsc --noEmit",
-		"check": "biome check --write .",
+		"check": "biome check --write --unsafe .",
 		"start": "next start",
 		"build": "tsc --noEmit && next build",
 		"postinstall": "node scripts/apply-patches.js"
