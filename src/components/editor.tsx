@@ -1235,6 +1235,7 @@ const Editor = ({
 										variant="ghost"
 									>
 										<svg
+											aria-hidden="true"
 											className="size-3.5 md:size-4"
 											fill="none"
 											height="16"

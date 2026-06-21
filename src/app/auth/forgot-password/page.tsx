@@ -81,7 +81,16 @@ const ForgotPasswordPage = () => {
 				}),
 			});
 
-			const result = await response.json();
+			// Parse the body defensively — when the server returns an HTML
+			// error page (e.g. Next.js's default 500), `response.json()` would
+			// otherwise throw with an unhelpful "Unexpected token" message.
+			const rawBody = await response.text();
+			let result: { success?: boolean; error?: string } = {};
+			try {
+				result = rawBody ? JSON.parse(rawBody) : {};
+			} catch {
+				result = {};
+			}
 
 			if (response.ok && result.success) {
 				const now = Date.now();

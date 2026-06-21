@@ -33,6 +33,7 @@ interface NotesContentProps {
 	onCreateNote: (isAI?: boolean) => Promise<void>;
 	onDeleteNote: (noteId: Id<"notes">) => Promise<void>;
 	onUpdateNote: (noteId: Id<"notes">, updates: Partial<Note>) => Promise<void>;
+	noteLimitReached?: boolean;
 }
 
 export const NotesContent = ({
@@ -50,6 +51,7 @@ export const NotesContent = ({
 	onCreateNote,
 	onDeleteNote,
 	onUpdateNote,
+	noteLimitReached = false,
 }: NotesContentProps) => {
 	// Local state for sidebar
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -191,6 +193,7 @@ export const NotesContent = ({
 					<LiveSidebar
 						channelId={channelId}
 						collapsed={sidebarCollapsed}
+						disableCreate={noteLimitReached}
 						items={memoizedItems}
 						onCreateItem={onCreateNote}
 						onDeleteItem={handleDeleteItem}

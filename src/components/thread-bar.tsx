@@ -15,6 +15,7 @@ export const ThreadBar = ({ count, timestamp, onClick }: ThreadBarProps) => {
 		<button
 			className="group mt-2 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
 			onClick={onClick}
+			type="button"
 		>
 			<span className="font-medium">Show thread</span>
 			<ChevronRight className="size-3 transition-transform group-hover:translate-x-0.5" />

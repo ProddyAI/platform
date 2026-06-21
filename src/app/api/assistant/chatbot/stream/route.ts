@@ -22,9 +22,6 @@ export const dynamic = "force-dynamic";
 const CONTROL_CHARS_PATTERN = "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]";
 const CONTROL_CHARS_REGEX = new RegExp(CONTROL_CHARS_PATTERN, "g");
 
-/**
- * Create a Convex HTTP client
- */
 function createConvexClient(): ConvexHttpClient {
 	if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
 		throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
@@ -32,9 +29,6 @@ function createConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 }
 
-/**
- * Log external tool audit events
- */
 async function logExternalToolAuditEvent(params: {
 	convex: ConvexHttpClient;
 	workspaceId: Id<"workspaces">;
@@ -74,15 +68,6 @@ async function logExternalToolAuditEvent(params: {
 	}
 }
 
-/**
- * Streaming chatbot handler using Vercel AI SDK
- *
- * Provides real-time streaming of assistant responses with:
- * - AI-powered query classification
- * - Unified tool management (internal + external)
- * - Real-time confirmation prompts
- * - Streaming text responses
- */
 export async function POST(req: NextRequest) {
 	try {
 		const convex = createConvexClient();
@@ -266,6 +251,8 @@ export async function POST(req: NextRequest) {
 					typeof workspaceContext === "string" ? workspaceContext : "",
 				connectedApps,
 				externalToolsAllowed: true,
+				conversationHistory: sanitizedHistory,
+				latestUserMessage: message,
 			}),
 			messages: [
 				...sanitizedHistory,

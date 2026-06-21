@@ -58,6 +58,7 @@ interface LiveSidebarProps {
 
 	// Styling
 	className?: string;
+	disableCreate?: boolean;
 }
 
 export const LiveSidebar = ({
@@ -71,6 +72,7 @@ export const LiveSidebar = ({
 	onDeleteItem,
 	onRenameItem,
 	className,
+	disableCreate = false,
 }: LiveSidebarProps) => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
@@ -193,8 +195,14 @@ export const LiveSidebar = ({
 				<div className="p-2">
 					<Button
 						className="w-full h-8 p-0"
+						disabled={disableCreate}
 						onClick={() => onCreateItem(false)}
 						size="sm"
+						title={
+							disableCreate
+								? `${type === "notes" ? "Note" : "Canvas"} limit reached`
+								: `Create ${type === "notes" ? "Note" : "Canvas"}`
+						}
 					>
 						<Plus className="h-4 w-4" />
 					</Button>
@@ -247,25 +255,36 @@ export const LiveSidebar = ({
 						<div className="flex gap-1.5">
 							<Button
 								className="h-9 px-2"
+								disabled={disableCreate}
 								onClick={() => onCreateItem(false)}
 								size="sm"
-								title="New Note"
+								title={disableCreate ? "Note limit reached" : "New Note"}
 								variant="outline"
 							>
 								<Plus className="h-4 w-4" />
 							</Button>
 							<Button
 								className="h-9 px-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-md gap-1.5 font-medium"
+								disabled={disableCreate}
 								onClick={() => onCreateItem(true)}
 								size="sm"
-								title="Create AI Meeting Note"
+								title={
+									disableCreate
+										? "Note limit reached"
+										: "Create AI Meeting Note"
+								}
 							>
 								<Brain className="h-4 w-4" />
 								<span className="text-xs">AI Note</span>
 							</Button>
 						</div>
 					) : (
-						<Button onClick={() => onCreateItem(false)} size="sm">
+						<Button
+							disabled={disableCreate}
+							onClick={() => onCreateItem(false)}
+							size="sm"
+							title={disableCreate ? "Canvas limit reached" : "Create Canvas"}
+						>
 							<Plus className="h-4 w-4" />
 						</Button>
 					)}
@@ -288,12 +307,15 @@ export const LiveSidebar = ({
 							{!searchQuery && (
 								<Button
 									className="mt-2"
+									disabled={disableCreate}
 									onClick={() => onCreateItem(false)}
 									size="sm"
 									variant="outline"
 								>
 									<Plus className="h-4 w-4 mr-1" />
-									Create {type === "notes" ? "Note" : "Canvas"}
+									{disableCreate
+										? "Limit Reached"
+										: `Create ${type === "notes" ? "Note" : "Canvas"}`}
 								</Button>
 							)}
 						</div>

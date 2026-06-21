@@ -30,7 +30,9 @@ export const Path = ({
 			(pt) =>
 				!Array.isArray(pt) ||
 				pt.length < 2 ||
-				pt.some((v) => typeof v !== "number" || isNaN(v) || !isFinite(v))
+				pt.some(
+					(v) => typeof v !== "number" || Number.isNaN(v) || !Number.isFinite(v)
+				)
 		)
 	) {
 		return null;

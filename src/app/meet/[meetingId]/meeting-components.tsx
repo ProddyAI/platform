@@ -207,6 +207,7 @@ export const MeetingRecordButton = ({
 				className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${isRecording ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
 				onClick={isRecording ? stopRecording : startRecording}
 				title={isRecording ? "Stop Recording" : "Start Recording"}
+				type="button"
 			>
 				<div
 					className={`rounded-full ${isRecording ? "w-2.5 h-2.5 bg-white animate-pulse" : "w-3 h-3 bg-red-500"}`}
@@ -292,6 +293,7 @@ export const MeetingReactions = () => {
 								key={emoji}
 								onClick={() => sendReaction(emoji)}
 								title={emoji}
+								type="button"
 							>
 								{emoji}
 							</button>
@@ -302,6 +304,7 @@ export const MeetingReactions = () => {
 					className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${showPicker ? "bg-[#c2e7ff] text-[#001d35]" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
 					onClick={() => setShowPicker(!showPicker)}
 					title="Reactions"
+					type="button"
 				>
 					😊
 				</button>
@@ -511,7 +514,7 @@ export const NotesSidebar = ({
 		if (scrollRef.current) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
-	}, [transcript]);
+	}, []);
 
 	const handleCopyTranscript = () => {
 		if (!transcript) return;
@@ -647,6 +650,7 @@ export const NotesSidebar = ({
 												setShowHistoryDropdown(false);
 												setActiveTab("summary");
 											}}
+											type="button"
 										>
 											<span>Generation #{gen.generationNumber}</span>
 											<span className="text-[10px] text-gray-500">
@@ -742,6 +746,7 @@ export const NotesSidebar = ({
 										<button
 											className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-400 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg"
 											onClick={handleCopyTranscript}
+											type="button"
 										>
 											{copied ? (
 												<>
@@ -1117,7 +1122,13 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 						onClick={sendMessage}
 						size="icon"
 					>
-						<svg fill="none" height="16" viewBox="0 0 24 24" width="16">
+						<svg
+							aria-hidden="true"
+							fill="none"
+							height="16"
+							viewBox="0 0 24 24"
+							width="16"
+						>
 							<path
 								d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"
 								fill="currentColor"

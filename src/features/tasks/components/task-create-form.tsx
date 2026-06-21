@@ -5,6 +5,7 @@ import { CalendarIcon, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { LimitIndicator } from "@/components/limit-indicator";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
 import { cn } from "@/lib/utils";
 import { useCreateTask } from "../api/use-create-task";
 import { TaskCategorySelector } from "./task-category-selector";
@@ -126,21 +128,35 @@ export const TaskCreateForm = ({
 		}
 	};
 
+	const { maxReached } = useWorkspaceLimit("task");
+
 	if (!isExpanded) {
 		return (
-			<Button
-				className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group dark:bg-secondary dark:hover:bg-rose-900"
-				onClick={() => setIsExpanded(true)}
-				variant="default"
-			>
-				<span className="absolute inset-0 rounded-lg bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-				<span className="absolute right-0 bottom-0 size-16 rounded-full -translate-x-5 translate-y-5 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-				<span className="absolute size-4 rounded-full bg-white/30 animate-ping" />
-				<Plus className="h-5 w-5 relative z-10" />
-				<span className="font-semibold text-base relative z-10 dark:group-hover:text-white">
-					Add new task
-				</span>
-			</Button>
+			<div className="space-y-2">
+				{maxReached && (
+					<div className="flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+						<span>
+							You have reached the task limit for your plan. Upgrade to create
+							tasks.
+						</span>
+						<LimitIndicator featureLabel="Tasks" />
+					</div>
+				)}
+				<Button
+					className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group dark:bg-secondary dark:hover:bg-rose-900"
+					disabled={maxReached}
+					onClick={() => {
+						if (!maxReached) setIsExpanded(true);
+					}}
+					variant="default"
+				>
+					<span className="absolute inset-0 rounded-lg bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+					<Plus className="h-5 w-5 relative z-10" />
+					<span className="font-semibold text-base relative z-10 dark:group-hover:text-white">
+						{maxReached ? "Task Limit Reached" : "Add new task"}
+					</span>
+				</Button>
+			</div>
 		);
 	}
 

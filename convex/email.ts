@@ -1,12 +1,9 @@
 import { v } from "convex/values";
-import { logger } from "../src/lib/logger";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
 	type ActionCtx,
-	action,
 	internalAction,
-	internalMutation,
 	internalQuery,
 	type QueryCtx,
 	query,

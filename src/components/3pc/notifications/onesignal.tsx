@@ -12,6 +12,20 @@ interface OneSignalTrackingProps {
 
 type OneSignalInterface = any;
 
+const waitForOneSignal = async (
+	maxWaitMs = 10000
+): Promise<OneSignalInterface | null> => {
+	const startTime = Date.now();
+	while (Date.now() - startTime < maxWaitMs) {
+		if (window.OneSignal) {
+			return window.OneSignal;
+		}
+		await new Promise((resolve) => setTimeout(resolve, 100));
+	}
+	logger.error("OneSignal SDK not available after waiting");
+	return null;
+};
+
 export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 	const setOneSignalExternalId = useMutation(api.users.setOneSignalExternalId);
@@ -19,21 +33,6 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	const initAttemptedRef = useRef(false);
 	const currentUserRef = useRef<string | undefined>();
 	const loginInFlightRef = useRef(false);
-
-	// Wait for OneSignal SDK to be available on window
-	const waitForOneSignal = async (
-		maxWaitMs = 10000
-	): Promise<OneSignalInterface | null> => {
-		const startTime = Date.now();
-		while (Date.now() - startTime < maxWaitMs) {
-			if (window.OneSignal) {
-				return window.OneSignal;
-			}
-			await new Promise((resolve) => setTimeout(resolve, 100));
-		}
-		logger.error("OneSignal SDK not available after waiting");
-		return null;
-	};
 
 	// ============================================================================
 	// Initialize OneSignal SDK - runs once when component mounts

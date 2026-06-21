@@ -1,10 +1,12 @@
-# Proddy - Agentic Work Management Suite 
+# Proddy - Agentic Work Management Suite
 
 Collaborate with your team using real-time messaging, boards, notes, calendar, and AI features. Built with Next.js, Convex, and Shadcn UI.
 
 [![GitHub branches](https://flat.badgen.net/github/branches/george-bobby/proddy-platform?icon=github&color=black&scale=1.01)](https://github.com/george-bobby/proddy-platform/branches)
-[![Github commits](https://flat.badgen.net/github/commits/george-bobby/proddy-platform?icon=github&color=black&scale=1.01)](https://github.com/george-bobby/proddy-platform/commits)
+[![GitHub commits](https://flat.badgen.net/github/commits/george-bobby/proddy-platform?icon=github&color=black&scale=1.01)](https://github.com/george-bobby/proddy-platform/commits)
 [![GitHub pull requests](https://flat.badgen.net/github/prs/george-bobby/proddy-platform?icon=github&color=black&scale=1.01)](https://github.com/george-bobby/proddy-platform/pulls)
+
+---
 
 ## Tech stack
 
@@ -35,26 +37,26 @@ Collaborate with your team using real-time messaging, boards, notes, calendar, a
    bun i
    ```
 
-3. **Environment — Next.js**  
+3. **Environment — Next.js**
    Copy `.env.next.example` to `.env.local` in the project root and fill in the values.
 
-4. **Environment — Convex**  
+4. **Environment — Convex**
    In the [Convex dashboard](https://dashboard.convex.dev/), open your project → **Settings** → **Environment Variables**, and add the variables listed in `.env.convex.example`.
 
 5. **Run the app**
    - Terminal 1 (Next.js): `bun next` → open [https://localhost:3000](https://localhost:3000)
    - Terminal 2 (Convex): `bun convex`
 
-6. You’re set to contribute.
+6. You're set to contribute.
 
 ## Folder structure
 
-```
+```text
 platform/
 ├── .github/           # PR template, agents
 ├── convex/            # Convex backend
 │   ├── _generated/    # Convex generated (do not edit)
-│   └── *.ts           # Domain modules (auth, board, messages, etc.)
+│   └── *.ts           # Domain modules (auth, board, messages, hybridRag, etc.)
 ├── public/            # Static assets
 ├── src/
 │   ├── app/           # Next.js App Router (routes, layouts, api/)
@@ -76,8 +78,10 @@ platform/
 
 | What              | Convention        | Example                          |
 |-------------------|-------------------|----------------------------------|
-| **Convex modules**| camelCase         | `workspaceInvites.ts`, `ragchat.ts` |
+| **Convex modules**| camelCase         | `workspaceInvites.ts`, `ragchat.ts`, `hybridRag.ts` |
 | **React components** | kebab-case or PascalCase | `board-card.tsx`, `sign-in-card.tsx` |
 | **Hooks**         | `use-` prefix, kebab-case | `use-channel-id.ts`, `use-debounce.ts` |
 | **API routes**    | kebab-case dirs   | `src/app/api/connections/`, `password-reset/` |
 | **Path aliases**  | `@/`              | `@/components`, `@/lib`, `@/hooks`, `@/components/ui` |
+
+---

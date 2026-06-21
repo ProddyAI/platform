@@ -29,6 +29,33 @@ export async function POST(req: NextRequest) {
 		const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
 		const workspaceId = body?.workspaceId as Id<"workspaces"> | undefined;
 
+		if (workspaceId) {
+			try {
+				const trackingConvex = createConvexClient();
+				const trackingToken = await convexAuthNextjsToken();
+				if (trackingToken) trackingConvex.setAuth(trackingToken);
+				const limitCheck = await trackingConvex.query(
+					api.usageTracking.checkAIUsageLimitPublic,
+					{
+						workspaceId,
+						featureType: "aiDiagram",
+					}
+				);
+				if (!limitCheck.allowed) {
+					return NextResponse.json(
+						{ error: "Limit reached. Upgrade your plan to continue." },
+						{ status: 403 }
+					);
+				}
+			} catch (err) {
+				console.warn("[UsageTracking] Failed to check AI diagram limit:", err);
+				return NextResponse.json(
+					{ error: "Limit reached. Upgrade your plan to continue." },
+					{ status: 403 }
+				);
+			}
+		}
+
 		if (!prompt) {
 			return NextResponse.json(
 				{ error: "Prompt is required" },

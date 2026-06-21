@@ -12,9 +12,10 @@
 		"next": "next dev --turbo --experimental-https",
 		"convex": "convex dev",
 		"type": "tsc --noEmit",
-		"check": "biome check --write .",
+		"check": "biome check --write --unsafe .",
 		"start": "next start",
-		"build": "tsc --noEmit && node scripts/next-build.js"
+		"build": "tsc --noEmit && next build",
+		"postinstall": "node scripts/apply-patches.js"
 	},
 	"author": {
 		"name": "ProddyAI",
@@ -50,9 +51,9 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@ai-sdk/google": "^3.0.6",
-		"@ai-sdk/openai": "^3.0.26",
-		"@ai-sdk/provider": "^1.0.8",
+		"@ai-sdk/google": "^3.0.0",
+		"@ai-sdk/openai": "^3.0.0",
+		"@ai-sdk/provider": "^3.0.0",
 		"@auth/core": "^0.34.2",
 		"@blocknote/core": "^0.33.0",
 		"@blocknote/mantine": "^0.33.0",
@@ -64,9 +65,9 @@
 		"@convex-dev/auth": "^0.0.65",
 		"@convex-dev/presence": "^0.1.5",
 		"@convex-dev/prosemirror-sync": "^0.1.25",
-		"@convex-dev/rag": "^0.6.1",
+		"@convex-dev/rag": "^0.7.5",
 		"@convex-dev/workpool": "^0.4.3",
-		"@dayhaysoos/convex-database-chat": "^0.3.0-alpha.1",
+		"@dayhaysoos/convex-database-chat": "0.3.0-alpha.1",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
@@ -103,7 +104,7 @@
 		"@stream-io/node-sdk": "^0.4.25",
 		"@stream-io/video-react-sdk": "^1.18.8",
 		"@types/dompurify": "^3.2.0",
-		"ai": "^6.0.20",
+		"ai": "^6.0.0",
 		"autoprefixer": "^10.4.21",
 		"baseline-browser-mapping": "^2.9.11",
 		"caniuse-lite": "^1.0.30001762",
@@ -117,13 +118,13 @@
 		"dompurify": "^3.2.6",
 		"dotenv": "^16.5.0",
 		"emoji-picker-react": "^4.12.0",
-		"framer-motion": "^12.11.0",
 		"file-saver": "^2.0.5",
+		"framer-motion": "^12.11.0",
 		"input-otp": "^1.4.2",
 		"jotai": "^2.9.3",
 		"jspdf": "^3.0.1",
 		"lucide-react": "^0.439.0",
-		"mermaid": "^11.8.1",
+		"mermaid": "^11.15.0",
 		"minimatch": "^10.1.1",
 		"moment": "^2.30.1",
 		"next": "14.2.35",
@@ -151,8 +152,15 @@
 		"tailwind-merge": "^2.5.2",
 		"tailwindcss-animate": "^1.0.7",
 		"usetiful-sdk": "^0.2.0",
-		"zod": "^3.24.4",
+		"zod": "^3.25.76",
 		"zustand": "^5.0.4"
+	},
+	"overrides": {
+		"axios": ">=1.15.2",
+		"fast-uri": ">=3.1.2",
+		"@babel/plugin-transform-modules-systemjs": ">=7.29.4",
+		"langsmith": ">=0.6.0",
+		"uuid": ">=11.1.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.9",
@@ -163,10 +171,13 @@
 		"@types/node": "^20",
 		"@types/react": "^18",
 		"@types/react-dom": "^18",
-		"postcss": "^8",
+		"postcss": "^8.5.10",
 		"tailwindcss": "^3.4.1",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.3"
+	},
+	"patchedDependencies": {
+		"@dayhaysoos/convex-database-chat@0.3.0-alpha.1": "patches/@dayhaysoos+convex-database-chat@0.3.0-alpha.1.patch"
 	},
 	"trustedDependencies": [
 		"core-js"

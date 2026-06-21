@@ -134,7 +134,7 @@ export default function MeetingPage({
 	useEffect(() => {
 		if (isLoading) return;
 		if (!isAuthenticated) {
-			router.replace("/auto-login");
+			router.replace("/auth/signin");
 			return;
 		}
 		if (!user?._id) return;
@@ -518,7 +518,7 @@ export default function MeetingPage({
 function BottomBarControls({
 	handRaised,
 	toggleHandRaise,
-	isRecording,
+	isRecording: _isRecording,
 	handleRecordingChange,
 	handleTranscriptUpdate,
 	params,

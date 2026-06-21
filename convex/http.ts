@@ -27,6 +27,20 @@ const parseWorkspaceIdFromMetadata = (
 	return typeof workspaceId === "string" ? workspaceId : undefined;
 };
 
+const parseQuantityFromMetadata = (
+	metadata: Record<string, unknown> | undefined
+): number | undefined => {
+	const quantity = metadata?.quantity;
+	if (typeof quantity === "number" && Number.isFinite(quantity)) {
+		return Math.max(1, Math.floor(quantity));
+	}
+	if (typeof quantity === "string") {
+		const parsed = Number(quantity);
+		if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
+	}
+	return undefined;
+};
+
 const parsePlanFromProductId = (
 	productId: unknown
 ): "pro" | "enterprise" | undefined => {
@@ -232,13 +246,17 @@ const syncSubscriptionFromDodo = async (
 			buildSubscriptionMutationArgs(
 				{
 					subscription_id: subscriptionId,
-					status: "active",
+					status: "sync_failed",
 					metadata: fallbackWorkspaceId
 						? { workspace_id: fallbackWorkspaceId, plan: fallbackPlan }
 						: undefined,
 					quantity: fallbackQuantity,
 				},
-				JSON.stringify({ subscription_id: subscriptionId, fallback: true }),
+				JSON.stringify({
+					subscription_id: subscriptionId,
+					fallback: true,
+					error: String(error),
+				}),
 				fallbackWorkspaceId,
 				billingDetails,
 				fallbackPlan,
@@ -368,6 +386,18 @@ const handlePaymentSucceededEvent = async (
 			{ subscriptionId }
 		);
 		if (pendingChange) {
+			if (plan !== pendingChange.plan) {
+				console.warn(
+					"[Dodo Webhook] Payment succeeded for subscription with pending plan change, but payment metadata did not match the pending plan. Leaving workspace on current plan.",
+					{
+						subscriptionId,
+						paymentPlan: plan ?? null,
+						pendingPlan: pendingChange.plan,
+						workspaceId: pendingChange.workspaceId,
+					}
+				);
+				dodoQuantityAligned = false;
+			}
 			const productId = PLANS[pendingChange.plan].dodoProductId;
 			if (!productId) {
 				console.error(
@@ -378,7 +408,7 @@ const handlePaymentSucceededEvent = async (
 					}
 				);
 				dodoQuantityAligned = false;
-			} else {
+			} else if (dodoQuantityAligned) {
 				try {
 					const liveSubscription = await subscriptions.retrieve(ctx, {
 						subscription_id: subscriptionId,
@@ -445,6 +475,11 @@ const handlePaymentSucceededEvent = async (
 	if (plan) paymentArgs.plan = plan;
 	if (typeof payload.data?.quantity === "number") {
 		paymentArgs.quantity = payload.data.quantity;
+	} else {
+		const metadataQuantity = parseQuantityFromMetadata(payload.data?.metadata);
+		if (typeof metadataQuantity === "number") {
+			paymentArgs.quantity = metadataQuantity;
+		}
 	}
 	if (typeof payload.data?.tax === "number") {
 		paymentArgs.taxAmount = payload.data.tax;

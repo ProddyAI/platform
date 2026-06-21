@@ -1,7 +1,7 @@
 "use node";
 
+import crypto from "node:crypto";
 import { v } from "convex/values";
-import crypto from "crypto";
 import { Resend } from "resend";
 import { logger } from "../src/lib/logger";
 import { api, internal } from "./_generated/api";
@@ -923,7 +923,7 @@ export const sendWeeklyDigestEmail = internalAction({
 		weekRange: v.string(),
 		digestData: v.any(),
 	},
-	handler: async (ctx, args): Promise<EmailNotificationResult> => {
+	handler: async (_ctx, args): Promise<EmailNotificationResult> => {
 		try {
 			const { fromAddress, replyToAddress } = getEmailConfig();
 			const subject = `Your Proddy Weekly Digest - ${args.weekRange}`;
@@ -1115,7 +1115,7 @@ export const sendCardAssignmentEmail = internalAction({
 									<div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea;">
 										<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(card.title)}</h3>
 										${card.description ? `<p style="margin: 5px 0; color: #666;"><strong>Description:</strong> ${escapeHtml(card.description)}</p>` : ""}
-										${card.dueDate ? `<p style="margin: 5px 0; color: #666;"><strong>Due:</strong> ${new Date(typeof card.dueDate === "string" ? parseInt(card.dueDate) : card.dueDate).toLocaleDateString()}</p>` : ""}
+										${card.dueDate ? `<p style="margin: 5px 0; color: #666;"><strong>Due:</strong> ${new Date(typeof card.dueDate === "string" ? parseInt(card.dueDate, 10) : card.dueDate).toLocaleDateString()}</p>` : ""}
 										${card.priority ? `<p style="margin: 5px 0; color: #666;"><strong>Priority:</strong> ${escapeHtml(card.priority)}</p>` : ""}
 										<p style="margin: 5px 0; color: #666;"><strong>List:</strong> ${escapeHtml(card.listName)}</p>
 									</div>
@@ -1241,7 +1241,7 @@ export const sendIssueAssignmentEmail = internalAction({
 									<div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea;">
 										<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(issue.title)}</h3>
 										${issue.description ? `<p style="margin: 5px 0; color: #666;"><strong>Description:</strong> ${escapeHtml(issue.description)}</p>` : ""}
-										${issue.dueDate ? `<p style="margin: 5px 0; color: #666;"><strong>Due:</strong> ${new Date(typeof issue.dueDate === "string" ? parseInt(issue.dueDate) : issue.dueDate).toLocaleDateString()}</p>` : ""}
+										${issue.dueDate ? `<p style="margin: 5px 0; color: #666;"><strong>Due:</strong> ${new Date(typeof issue.dueDate === "string" ? parseInt(issue.dueDate, 10) : issue.dueDate).toLocaleDateString()}</p>` : ""}
 										${issue.priority ? `<p style="margin: 5px 0; color: #666;"><strong>Priority:</strong> ${escapeHtml(issue.priority)}</p>` : ""}
 										<p style="margin: 5px 0; color: #666;"><strong>Status:</strong> ${escapeHtml(issue.statusName || "Board")}</p>
 									</div>

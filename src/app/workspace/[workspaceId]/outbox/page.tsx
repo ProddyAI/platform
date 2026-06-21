@@ -14,7 +14,7 @@ import {
 	User,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +80,7 @@ export default function OutboxPage() {
 	// Sort state
 	const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
 
-	const parseMessageBody = (body: string) => {
+	const parseMessageBody = useCallback((body: string) => {
 		try {
 			const parsed = JSON.parse(body);
 			if (
@@ -100,7 +100,7 @@ export default function OutboxPage() {
 			return body;
 		}
 		return body;
-	};
+	}, []);
 
 	const getMessageUrl = (message: Message) => {
 		const parsedBody = parseMessageBody(message.body);

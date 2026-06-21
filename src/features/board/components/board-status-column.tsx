@@ -66,6 +66,7 @@ interface BoardStatusColumnProps {
 		{ blockedByCount: number; blockingCount: number }
 	>;
 	disableIssueDrag?: boolean;
+	disableCreateIssue?: boolean;
 	isFocused?: boolean;
 }
 
@@ -81,6 +82,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 	subIssueStatsMap,
 	dependencyStatsMap,
 	disableIssueDrag = false,
+	disableCreateIssue = false,
 	isFocused = false,
 }) => {
 	const [creating, setCreating] = useState(false);
@@ -186,9 +188,14 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 
 				<Button
 					className="h-6 w-6 hover:bg-muted dark:hover:bg-gray-700"
+					disabled={disableCreateIssue}
 					onClick={handleStartCreating}
 					size="icon"
-					title="Add issue"
+					title={
+						disableCreateIssue
+							? "Issue limit reached. Upgrade plan to create issues."
+							: "Add issue"
+					}
 					variant="ghost"
 				>
 					<Plus className="w-3.5 h-3.5" />
@@ -282,12 +289,13 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 
 				{!creating && issues.length > 0 && (
 					<button
-						className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 dark:hover:bg-gray-800/40 rounded-b-xl transition-colors border-t border-border/60 dark:border-gray-800/60"
+						className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 dark:hover:bg-gray-800/40 rounded-b-xl transition-colors border-t border-border/60 dark:border-gray-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
+						disabled={disableCreateIssue}
 						onClick={handleStartCreating}
 						type="button"
 					>
 						<Plus className="w-3.5 h-3.5" />
-						Add issue
+						{disableCreateIssue ? "Issue limit reached" : "Add issue"}
 					</button>
 				)}
 			</div>

@@ -134,16 +134,15 @@ export const Mermaid = ({
 				// Dynamic import of mermaid to avoid SSR issues
 				const mermaid = (await import("mermaid")).default;
 
-				// Initialize mermaid with configuration
 				mermaid.initialize({
 					startOnLoad: false,
 					theme: "default",
-					securityLevel: "loose",
+					securityLevel: "strict",
 					fontFamily: "Arial, sans-serif",
 					fontSize: 12,
 					flowchart: {
 						useMaxWidth: false,
-						htmlLabels: true,
+						htmlLabels: false,
 						curve: "basis",
 					},
 				});

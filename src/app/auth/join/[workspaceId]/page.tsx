@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useGetWorkspaceInfo } from "@/features/workspaces/api/use-get-workspace-info";
 import { useJoin } from "@/features/workspaces/api/use-join";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { parseJsonResponse } from "@/lib/safe-fetch";
 import { cn } from "@/lib/utils";
 
 const JoinWorkspaceIdPage = () => {
@@ -56,7 +57,10 @@ const JoinWorkspaceIdPage = () => {
 					body: JSON.stringify({ workspaceId, invite: inviteHash }),
 				});
 
-				const data = await response.json();
+				const data = await parseJsonResponse<{
+					success?: boolean;
+					error?: string;
+				}>(response, "Failed to verify invite");
 
 				if (data.success) {
 					toast.success("Workspace joined successfully!");
@@ -65,9 +69,11 @@ const JoinWorkspaceIdPage = () => {
 					setInviteError(data.error || "Failed to verify invite");
 					toast.error(data.error || "Failed to verify invite");
 				}
-			} catch (_error) {
-				setInviteError("Failed to verify invite");
-				toast.error("Failed to verify invite");
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : "Failed to verify invite";
+				setInviteError(message);
+				toast.error(message);
 			} finally {
 				setInviteLoading(false);
 			}

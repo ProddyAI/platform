@@ -14,19 +14,24 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { LimitIndicator } from "@/components/limit-indicator";
 import { Button } from "@/components/ui/button";
 import { LiveblocksRoom } from "@/features/live";
 import type { Note } from "@/features/notes/types";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
 import { NotesContent } from "./notes-content";
+
+// Stable empty reference so the notes effect doesn't re-run every render while
+// the query is still loading (`notes` is undefined).
+const EMPTY_NOTES: Note[] = [];
 
 const NotesPage = () => {
 	const params = useParams();
 	const searchParams = useSearchParams();
-	const workspaceId =
-		(params?.workspaceId as Id<"workspaces">) || (params as any)?.workspaceId;
-	const channelId =
-		(params?.channelId as Id<"channels">) || (params as any)?.channelId;
+	const workspaceId = params?.workspaceId as Id<"workspaces"> | undefined;
+	const channelId = params?.channelId as Id<"channels"> | undefined;
+	const { maxReached: noteLimitReached } = useWorkspaceLimit("note");
 
 	// Get noteId from URL if present
 	const urlNoteId = searchParams.get("noteId") as Id<"notes"> | null;
@@ -43,7 +48,10 @@ const NotesPage = () => {
 	const pageContainerRef = useRef<HTMLDivElement>(null);
 
 	// Channel info for the title
-	const channel = useQuery(api.channels.getById, { id: channelId });
+	const channel = useQuery(
+		api.channels.getById,
+		channelId ? { id: channelId } : "skip"
+	);
 	useDocumentTitle(channel ? `Notes — ${channel.name}` : "Notes");
 
 	// Convex queries
@@ -58,7 +66,7 @@ const NotesPage = () => {
 		activeNoteId ? { id: activeNoteId } : "skip"
 	);
 
-	const finalNotes = notes || [];
+	const finalNotes = notes ?? EMPTY_NOTES;
 
 	useEffect(() => {
 		// If we have a noteId in the URL but it's not the active one, sync it
@@ -146,6 +154,12 @@ const NotesPage = () => {
 
 	const handleCreateNote = async (isAI = false) => {
 		if (isCreating) return;
+		if (noteLimitReached) {
+			toast.error(
+				"Note limit reached. Upgrade your plan to create more notes."
+			);
+			return;
+		}
 		setIsCreating(true);
 		try {
 			const noteId = await createNote({
@@ -161,11 +175,10 @@ const NotesPage = () => {
 				setActiveNoteId(noteId);
 				toast.success("Note created");
 			}
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Failed to create note:", error);
-			toast.error(
-				`Failed to create note: ${error?.message || "Unknown error"}`
-			);
+			const message = error instanceof Error ? error.message : "Unknown error";
+			toast.error(`Failed to create note: ${message}`);
 		} finally {
 			setIsCreating(false);
 		}
@@ -191,6 +204,12 @@ const NotesPage = () => {
 		return (
 			<div className="flex h-full items-center justify-center">
 				<div className="text-center space-y-5 max-w-sm px-6">
+					{noteLimitReached && (
+						<div className="mb-4 flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+							<span>You have reached the note limit for your plan.</span>
+							<LimitIndicator featureLabel="Notes" />
+						</div>
+					)}
 					<div className="mx-auto w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/30 dark:to-blue-900/30 flex items-center justify-center shadow-sm">
 						<FileText className="h-10 w-10 text-violet-500 dark:text-violet-400" />
 					</div>
@@ -204,16 +223,16 @@ const NotesPage = () => {
 					<div className="flex flex-col items-center gap-3">
 						<div className="flex flex-col sm:flex-row gap-3 justify-center">
 							<Button
-								disabled={isCreating}
+								disabled={isCreating || noteLimitReached}
 								onClick={() => handleCreateNote()}
 								variant="outline"
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Standard Note
+								{noteLimitReached ? "Limit Reached" : "Standard Note"}
 							</Button>
 							<Button
 								className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg"
-								disabled={isCreating}
+								disabled={isCreating || noteLimitReached}
 								onClick={() => handleCreateNote(true)}
 							>
 								<Brain className="h-4 w-4" />
@@ -241,6 +260,7 @@ const NotesPage = () => {
 					activeNoteId={activeNoteId}
 					channelId={channelId}
 					isFullScreen={isFullScreen}
+					noteLimitReached={noteLimitReached}
 					notes={finalNotes}
 					onCreateNote={handleCreateNote}
 					onDeleteNote={handleDeleteNote}

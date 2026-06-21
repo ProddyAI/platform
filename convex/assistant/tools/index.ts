@@ -1,7 +1,3 @@
-/**
- * Proddy assistant tools - internal workspace + external integrations.
- */
-
 import * as composio from "./composioTools";
 import * as internal from "./internalTools";
 
@@ -15,10 +11,17 @@ export const internalTools: Record<string, unknown> = {
 	getMyTasksToday: internal.getMyTasksToday,
 	getMyTasksTomorrow: internal.getMyTasksTomorrow,
 	getMyTasksThisWeek: internal.getMyTasksThisWeek,
+	getMyTasksNextWeek: internal.getMyTasksNextWeek,
 	getMyAllTasks: internal.getMyAllTasks,
+	searchTasks: internal.searchTasks,
+	draftTaskForConfirmation: internal.draftTaskForConfirmation,
+	getRecentNotes: internal.getRecentNotes,
+	searchNotes: internal.searchNotes,
 	searchChannels: internal.searchChannels,
 	getChannelSummary: internal.getChannelSummary,
+	getChannelDebug: internal.getChannelDebug,
 	getWorkspaceOverview: internal.getWorkspaceOverview,
+	getWorkspaceGeneralSummary: internal.getWorkspaceGeneralSummary,
 	getMyCards: internal.getMyCards,
 	semanticSearch: internal.semanticSearch,
 };

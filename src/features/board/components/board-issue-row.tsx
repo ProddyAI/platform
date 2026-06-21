@@ -316,6 +316,20 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	disableDrag = false,
 	dependencyIndicators,
 }: IssueRowProps) {
+	const {
+		attributes,
+		listeners,
+		setActivatorNodeRef,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({
+		id: issue._id,
+		data: { type: "issue", issue },
+		disabled: disableDrag || isDragOverlay,
+	});
+
 	if (isDragOverlay) {
 		return (
 			<div
@@ -334,20 +348,6 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 			</div>
 		);
 	}
-
-	const {
-		attributes,
-		listeners,
-		setActivatorNodeRef,
-		setNodeRef,
-		transform,
-		transition,
-		isDragging,
-	} = useSortable({
-		id: issue._id,
-		data: { type: "issue", issue },
-		disabled: disableDrag,
-	});
 
 	const style = {
 		transform: CSS.Transform.toString(transform),

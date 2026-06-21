@@ -147,6 +147,7 @@ const baseConfig = withPWA({
 		},
 	],
 })({
+	distDir: process.env.NEXT_DIST_DIR || ".next",
 	images: {
 		remotePatterns: [
 			{
@@ -166,8 +167,9 @@ const baseConfig = withPWA({
 			},
 		],
 	},
-	distDir: process.env.NEXT_DIST_DIR || ".next",
+
 	async headers() {
+		await Promise.resolve();
 		return [
 			{
 				source: "/OneSignalSDK.sw.js",
@@ -209,16 +211,6 @@ const baseConfig = withPWA({
 		// Ensure Convex URL is available in client bundle
 		NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
 	},
-	experimental: {
-		serverComponentsExternalPackages: ["yjs"],
-	},
-	webpack: (config) => {
-		config.resolve.alias = {
-			...config.resolve.alias,
-			yjs: "yjs",
-		};
-		return config;
-	},
 	eslint: {
 		ignoreDuringBuilds: true,
 	},
@@ -228,6 +220,7 @@ const baseConfig = withPWA({
 		ignoreBuildErrors: process.env.NEXT_IGNORE_TS_ERRORS === "true",
 	},
 	experimental: {
+		serverComponentsExternalPackages: ["yjs"],
 		// Windows + OneDrive can throw EPERM while Next forks workers and renames
 		// cache/export folders. Keep local Windows builds single-worker; CI/Linux
 		// builds can still use the default parallelism.
@@ -238,6 +231,10 @@ const baseConfig = withPWA({
 		workerThreads: true,
 	},
 	webpack(config, { dev }) {
+		config.resolve.alias = {
+			...config.resolve.alias,
+			yjs: "yjs",
+		};
 		if (!dev) {
 			config.cache = false;
 		}

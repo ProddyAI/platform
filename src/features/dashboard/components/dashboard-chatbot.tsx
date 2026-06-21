@@ -5,22 +5,28 @@ import {
 	useDatabaseChat,
 	useMessagesWithStreaming,
 } from "@dayhaysoos/convex-database-chat";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
 	Bot,
 	Calendar,
+	Check,
 	CheckCircle,
 	CheckSquare,
+	ChevronDown,
+	Edit2,
 	ExternalLink,
 	FileText,
 	Github,
-	Info,
+	History,
 	Kanban,
 	Loader,
 	Mail,
 	MessageSquare,
+	Plus,
 	Send,
+	Sparkles,
 	Trash2,
+	X,
 	Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -41,6 +47,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
 	Popover,
@@ -49,10 +62,21 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
 interface DashboardChatbotProps {
 	workspaceId: Id<"workspaces">;
-	member: any;
+	member: {
+		_id: Id<"members">;
+		userId: Id<"users">;
+		role: string;
+		workspaceId: Id<"workspaces">;
+		user?: {
+			name: string;
+			image?: string;
+		};
+	};
+	initialPrompt?: string;
 }
 
 type NavigationAction = {
@@ -67,7 +91,7 @@ type Message = {
 	id: string;
 	content: string;
 	sender: "user" | "assistant";
-	role?: "user" | "assistant"; // Add role property for API compatibility
+	role?: "user" | "assistant";
 	timestamp: Date;
 	sources?: Array<{
 		id: string;
@@ -159,9 +183,979 @@ const INTEGRATION_METADATA: Record<
 const getIntegrationMetadata = (app: string) =>
 	INTEGRATION_METADATA[app as SupportedIntegration];
 
+const SOURCES_HEADING = "\nSources:\n";
+
+function inferSourceType(sourceText: string) {
+	const prefix = sourceText.split(":")[0]?.trim().toLowerCase();
+	switch (prefix) {
+		case "task":
+			return "task";
+		case "note":
+			return "note";
+		case "message":
+		case "channel messages":
+			return "message";
+		case "board card":
+			return "card";
+		case "calendar event":
+			return "event";
+		case "channel":
+			return "channel";
+		default:
+			return "source";
+	}
+}
+
+function parseAssistantMessageContent(content: string) {
+	const markerIndex = content.lastIndexOf(SOURCES_HEADING);
+	if (markerIndex < 0) {
+		return { body: content, sources: [] as NonNullable<Message["sources"]> };
+	}
+
+	const body = content.slice(0, markerIndex).trimEnd();
+	const rawSources = content
+		.slice(markerIndex + SOURCES_HEADING.length)
+		.split("\n")
+		.map((line) => line.trim())
+		.filter((line) => line.startsWith("- "))
+		.map((line) => line.slice(2).trim())
+		.filter(Boolean);
+
+	return {
+		body,
+		sources: rawSources.map((sourceText, index) => ({
+			id: `source-${index}-${sourceText}`,
+			type: inferSourceType(sourceText),
+			text: sourceText,
+		})),
+	};
+}
+
+function getSourceDisplayText(sourceText: string, displayLabel: string) {
+	const prefix = `${displayLabel}:`;
+	if (sourceText.startsWith(`${prefix} `)) {
+		return sourceText.slice(prefix.length + 1);
+	}
+	if (sourceText.startsWith(prefix)) {
+		return sourceText.slice(prefix.length).trimStart();
+	}
+	return sourceText;
+}
+
+function formatRelativeTime(timestamp: number): string {
+	const now = Date.now();
+	const diff = now - timestamp;
+	const minutes = Math.floor(diff / 60000);
+	const hours = Math.floor(diff / 3600000);
+	const days = Math.floor(diff / 86400000);
+
+	if (minutes < 1) return "Just now";
+	if (minutes < 60) return `${minutes}m ago`;
+	if (hours < 24) return `${hours}h ago`;
+	if (days < 7) return `${days}d ago`;
+	return new Date(timestamp).toLocaleDateString();
+}
+
+function ProddyChatAvatar() {
+	return (
+		<Avatar className="h-9 w-9 bg-primary/10 ring-2 ring-primary/20">
+			<AvatarFallback>
+				<Bot className="h-5 w-5 text-primary" />
+			</AvatarFallback>
+		</Avatar>
+	);
+}
+
+const CHAT_TOOL_STATUS_LABELS = [
+	"Calendar",
+	"Tasks",
+	"Search",
+	"Integrations",
+] as const;
+
+function ChatLoadingStatusTags() {
+	return (
+		<div className="mt-2 flex flex-wrap gap-1">
+			{CHAT_TOOL_STATUS_LABELS.map((label) => (
+				<span
+					className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+					key={label}
+				>
+					{label}
+				</span>
+			))}
+		</div>
+	);
+}
+
+function ChatLoadingBody() {
+	return (
+		<div className="min-w-0 flex-1">
+			<p className="text-sm font-medium">Using tools when needed</p>
+			<p className="text-xs text-muted-foreground mt-1">
+				Checking calendar, tasks, search, and integrations…
+			</p>
+			<ChatLoadingStatusTags />
+		</div>
+	);
+}
+
+function ChatLoadingIndicator() {
+	return (
+		<div className="flex justify-start">
+			<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3 flex items-start gap-2">
+				<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+					<Zap className="h-4 w-4 animate-pulse text-primary" />
+				</div>
+				<ChatLoadingBody />
+				<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+			</div>
+		</div>
+	);
+}
+
+function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
+	const metadata = getIntegrationMetadata(app.app);
+	const Icon = metadata?.icon ?? Zap;
+	return (
+		<div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border">
+			<Icon
+				className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
+			/>
+			<div className="flex-1">
+				<div className="font-medium text-sm">{metadata?.name ?? app.app}</div>
+				<div className="text-xs text-muted-foreground">
+					{metadata?.description ??
+						"Connected and available for assistant actions"}
+				</div>
+			</div>
+			<CheckCircle className="h-4 w-4 text-green-600" />
+		</div>
+	);
+}
+
+function ConnectedIntegrationsPopover({
+	connected,
+	totalTools,
+}: {
+	connected: IntegrationStatusApp[];
+	totalTools: number;
+}) {
+	return (
+		<Popover>
+			<PopoverTrigger asChild>
+				<Button
+					className="h-5 px-2 text-xs hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
+					size="sm"
+					variant="ghost"
+				>
+					<Zap className="h-3 w-3 mr-1 text-green-600" />
+					<span className="text-green-700 dark:text-green-300 font-medium">
+						{connected.length} connected
+					</span>
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent className="w-80 p-3">
+				<div className="space-y-3">
+					<h4 className="font-medium text-sm flex items-center gap-2">
+						<CheckCircle className="h-4 w-4 text-green-600" />
+						Connected Integrations
+					</h4>
+					<div className="space-y-2">
+						{connected.map((app) => (
+							<ConnectedIntegrationRow app={app} key={app.app} />
+						))}
+					</div>
+					<div className="text-xs text-muted-foreground pt-2 border-t">
+						{totalTools} tools available
+					</div>
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
+function IntegrationStatusBlock({
+	status,
+}: {
+	status: {
+		connected: IntegrationStatusApp[];
+		totalTools: number;
+		loading: boolean;
+	};
+}) {
+	if (status.loading) {
+		return (
+			<div className="flex items-center gap-1">
+				<Loader className="h-3 w-3 animate-spin text-muted-foreground" />
+				<span className="text-xs text-muted-foreground">
+					Checking integrations...
+				</span>
+			</div>
+		);
+	}
+	if (status.connected.length > 0) {
+		return (
+			<ConnectedIntegrationsPopover
+				connected={status.connected}
+				totalTools={status.totalTools}
+			/>
+		);
+	}
+	return (
+		<Badge className="text-xs px-2 py-0.5 h-5" variant="outline">
+			No integrations
+		</Badge>
+	);
+}
+
+function ChatHeaderTitle({
+	status,
+}: {
+	status: {
+		connected: IntegrationStatusApp[];
+		totalTools: number;
+		loading: boolean;
+	};
+}) {
+	return (
+		<div className="flex items-center gap-3">
+			<ProddyChatAvatar />
+			<div>
+				<CardTitle className="text-lg font-semibold">Proddy AI</CardTitle>
+				<div className="flex items-center gap-2 mt-0.5">
+					<IntegrationStatusBlock status={status} />
+				</div>
+			</div>
+		</div>
+	);
+}
+
+type RecentConversation = {
+	_id: string;
+	conversationId: string;
+	title?: string;
+	titleSource?: string;
+	lastMessageAt: number;
+};
+
+function ChatHeaderActions({
+	isHistoryOpen,
+	setIsHistoryOpen,
+	recentConversations,
+	conversationId,
+	onNewChat,
+	onDeleteChat,
+	onSelectConversation,
+	onStartEditTitle,
+}: {
+	isHistoryOpen: boolean;
+	setIsHistoryOpen: (open: boolean) => void;
+	recentConversations: RecentConversation[] | undefined;
+	conversationId: string | null;
+	onNewChat: () => void;
+	onDeleteChat: (id: string) => void;
+	onSelectConversation: (id: string) => void;
+	onStartEditTitle: (id: string, title: string) => void;
+}) {
+	return (
+		<div className="flex items-center gap-2">
+			<Button
+				className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-md"
+				onClick={onNewChat}
+				size="sm"
+				variant="default"
+			>
+				<Plus className="h-4 w-4 mr-1.5" />
+				New Chat
+			</Button>
+
+			<DropdownMenu onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
+				<DropdownMenuTrigger asChild>
+					<Button
+						className="h-8 px-3 rounded-lg border-2 hover:bg-accent transition-all"
+						size="sm"
+						variant="outline"
+					>
+						<History className="h-4 w-4 mr-1.5" />
+						Recent Chats
+						<ChevronDown className="h-3 w-3 ml-1.5 opacity-50" />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent
+					align="end"
+					className="w-80 max-h-[400px] overflow-y-auto"
+					sideOffset={8}
+				>
+					{recentConversations && recentConversations.length > 0 ? (
+						recentConversations.map((conv, index) => (
+							<div key={conv._id}>
+								{index > 0 && <DropdownMenuSeparator />}
+								<ChatHistoryItem
+									conv={conv}
+									isActive={conversationId === conv.conversationId}
+									onDelete={() => onDeleteChat(conv.conversationId)}
+									onSelect={() => {
+										onSelectConversation(conv.conversationId);
+										setIsHistoryOpen(false);
+									}}
+									onStartEdit={() => {
+										onStartEditTitle(conv.conversationId, conv.title || "");
+										setIsHistoryOpen(false);
+									}}
+								/>
+							</div>
+						))
+					) : (
+						<div className="p-4 text-center text-sm text-muted-foreground">
+							No conversations yet
+						</div>
+					)}
+				</DropdownMenuContent>
+			</DropdownMenu>
+
+			<Button
+				className="h-8 px-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+				onClick={onNewChat}
+				size="sm"
+				variant="ghost"
+			>
+				<Trash2 className="h-4 w-4 mr-1.5" />
+				Clear
+			</Button>
+		</div>
+	);
+}
+
+function ChatHistoryItem({
+	conv,
+	isActive,
+	onSelect,
+	onStartEdit,
+	onDelete,
+}: {
+	conv: RecentConversation;
+	isActive: boolean;
+	onSelect: () => void;
+	onStartEdit: () => void;
+	onDelete: () => void;
+}) {
+	return (
+		<DropdownMenuItem
+			className={cn(
+				"flex items-start gap-2 p-3 cursor-pointer group",
+				isActive && "bg-accent"
+			)}
+			onSelect={(e) => {
+				e.preventDefault();
+				onSelect();
+			}}
+		>
+			<MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+			<div className="flex-1 min-w-0">
+				<p
+					className={`text-sm font-medium truncate transition-all duration-500 ${
+						conv.title && conv.title !== "New Chat"
+							? "opacity-100"
+							: "opacity-60"
+					}`}
+				>
+					{conv.title || "New Chat"}
+					{conv.titleSource === "ai_generated" &&
+						conv.title &&
+						conv.title !== "New Chat" && (
+							<Sparkles className="inline-block ml-1 h-3 w-3 text-primary/40" />
+						)}
+				</p>
+				<p className="text-xs text-muted-foreground mt-0.5">
+					{formatRelativeTime(conv.lastMessageAt)}
+				</p>
+			</div>
+			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+				<Button
+					className="h-6 w-6 p-0"
+					onClick={(e) => {
+						e.stopPropagation();
+						onStartEdit();
+					}}
+					size="sm"
+					variant="ghost"
+				>
+					<Edit2 className="h-3 w-3" />
+				</Button>
+				<Button
+					className="h-6 w-6 p-0 hover:text-destructive"
+					onClick={(e) => {
+						e.stopPropagation();
+						onDelete();
+					}}
+					size="sm"
+					variant="ghost"
+				>
+					<Trash2 className="h-3 w-3" />
+				</Button>
+			</div>
+		</DropdownMenuItem>
+	);
+}
+
+const MARKDOWN_COMPONENTS = {
+	a: ({
+		href,
+		children,
+		...props
+	}: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+		<a
+			className="text-primary hover:text-primary/80 underline"
+			href={href}
+			rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
+			target={href?.startsWith("http") ? "_blank" : "_self"}
+			{...props}
+		>
+			{children}
+		</a>
+	),
+	code: ({
+		className,
+		children,
+		...props
+	}: React.HTMLAttributes<HTMLElement>) => (
+		<code
+			className={`${className} bg-muted px-1 py-0.5 rounded text-sm font-mono`}
+			{...props}
+		>
+			{children}
+		</code>
+	),
+	pre: ({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) => (
+		<pre className="bg-muted p-3 rounded-md overflow-x-auto text-sm" {...props}>
+			{children}
+		</pre>
+	),
+};
+
+function AssistantMarkdown({ content }: { content: string }) {
+	return (
+		<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300 prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
+			<ReactMarkdown
+				components={MARKDOWN_COMPONENTS}
+				remarkPlugins={[remarkGfm]}
+			>
+				{content}
+			</ReactMarkdown>
+		</div>
+	);
+}
+
+function MessageActions({
+	actions,
+	getActionIcon,
+	onNavigate,
+}: {
+	actions: NavigationAction[];
+	getActionIcon: (type: string) => React.ReactNode;
+	onNavigate: (action: NavigationAction) => void;
+}) {
+	return (
+		<div className="flex flex-wrap gap-2 mt-3">
+			{actions.map((action) => (
+				<Button
+					className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
+					key={`${action.type}-${action.url}-${action.label}`}
+					onClick={() => onNavigate(action)}
+					size="sm"
+					variant="outline"
+				>
+					{getActionIcon(action.type)}
+					<span className="ml-1.5">{action.label}</span>
+				</Button>
+			))}
+		</div>
+	);
+}
+
+function getSourceTypeDisplay(type: string) {
+	switch (type.toLowerCase()) {
+		case "message":
+			return "Chat Message";
+		case "task":
+			return "Task";
+		case "note":
+			return "Note";
+		case "card":
+			return "Board Card";
+		case "event":
+		case "calendar-event":
+			return "Calendar Event";
+		case "tool":
+			return "Integration Tool";
+		case "github":
+			return "GitHub";
+		case "gmail":
+			return "Gmail";
+		case "slack":
+			return "Slack";
+		case "notion":
+			return "Notion";
+		case "clickup":
+			return "ClickUp";
+		case "linear":
+			return "Linear";
+		default:
+			return type.charAt(0).toUpperCase() + type.slice(1);
+	}
+}
+
+function SourceBadge({
+	source,
+}: {
+	source: NonNullable<Message["sources"]>[number];
+}) {
+	const sourceTypeDisplay = getSourceTypeDisplay(source.type);
+	return (
+		<Badge
+			className="max-w-full whitespace-normal break-words text-xs leading-relaxed"
+			variant="secondary"
+		>
+			<span className="font-medium">{sourceTypeDisplay}:</span>
+			<span className="ml-1">
+				{getSourceDisplayText(source.text, sourceTypeDisplay)}
+			</span>
+		</Badge>
+	);
+}
+
+function MessageSourceBadges({ sources }: { sources: Message["sources"] }) {
+	if (!sources || sources.length === 0) return null;
+
+	return (
+		<div className="mt-3 rounded-md border border-border/70 bg-background/70 p-3">
+			<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+				Sources
+			</p>
+			<div className="mt-2 flex flex-wrap gap-1.5">
+				{sources.map((source) => (
+					<SourceBadge key={source.id} source={source} />
+				))}
+			</div>
+		</div>
+	);
+}
+
+function ConversationTitleEditor({
+	editingTitle,
+	onCancel,
+	onChange,
+	onSave,
+}: {
+	editingTitle: string;
+	onCancel: () => void;
+	onChange: (value: string) => void;
+	onSave: () => void;
+}) {
+	return (
+		<div className="flex items-center gap-2 mt-3 p-2 bg-muted/50 rounded-lg border">
+			<MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+			<Input
+				className="h-8 text-sm flex-1"
+				onChange={(event) => onChange(event.target.value)}
+				onKeyDown={(event) => {
+					if (event.key === "Enter") {
+						onSave();
+					} else if (event.key === "Escape") {
+						onCancel();
+					}
+				}}
+				placeholder="Enter chat title..."
+				value={editingTitle}
+			/>
+			<Button
+				className="h-8 w-8 p-0"
+				onClick={onSave}
+				size="sm"
+				variant="ghost"
+			>
+				<Check className="h-4 w-4 text-green-600" />
+			</Button>
+			<Button
+				className="h-8 w-8 p-0"
+				onClick={onCancel}
+				size="sm"
+				variant="ghost"
+			>
+				<X className="h-4 w-4" />
+			</Button>
+		</div>
+	);
+}
+
+function DashboardChatHeader({
+	editingConversationId,
+	editingTitle,
+	integrationStatus,
+	isHistoryOpen,
+	conversationId,
+	recentConversations,
+	onCancelEditTitle,
+	onDeleteChat,
+	onNewChat,
+	onSaveTitle,
+	onSelectConversation,
+	onStartEditTitle,
+	setEditingTitle,
+	setIsHistoryOpen,
+}: {
+	editingConversationId: string | null;
+	editingTitle: string;
+	integrationStatus: {
+		connected: IntegrationStatusApp[];
+		totalTools: number;
+		loading: boolean;
+	};
+	isHistoryOpen: boolean;
+	conversationId: string | null;
+	recentConversations: RecentConversation[] | undefined;
+	onCancelEditTitle: () => void;
+	onDeleteChat: (id: string) => void;
+	onNewChat: () => void;
+	onSaveTitle: (id: string) => void;
+	onSelectConversation: (id: string) => void;
+	onStartEditTitle: (id: string, title: string) => void;
+	setEditingTitle: (title: string) => void;
+	setIsHistoryOpen: (open: boolean) => void;
+}) {
+	return (
+		<CardHeader className="pb-3 border-b bg-gradient-to-r from-background to-muted/20">
+			<div className="flex items-center justify-between">
+				<ChatHeaderTitle status={integrationStatus} />
+				<ChatHeaderActions
+					conversationId={conversationId}
+					isHistoryOpen={isHistoryOpen}
+					onDeleteChat={onDeleteChat}
+					onNewChat={onNewChat}
+					onSelectConversation={onSelectConversation}
+					onStartEditTitle={onStartEditTitle}
+					recentConversations={recentConversations}
+					setIsHistoryOpen={setIsHistoryOpen}
+				/>
+			</div>
+			{editingConversationId ? (
+				<ConversationTitleEditor
+					editingTitle={editingTitle}
+					onCancel={onCancelEditTitle}
+					onChange={setEditingTitle}
+					onSave={() => onSaveTitle(editingConversationId)}
+				/>
+			) : null}
+		</CardHeader>
+	);
+}
+
+function ChatMessagesArea({
+	isLoading,
+	messages,
+	scrollAreaRef,
+	getActionIcon,
+	onNavigate,
+}: {
+	isLoading: boolean;
+	messages: Message[];
+	scrollAreaRef: React.Ref<HTMLDivElement>;
+	getActionIcon: (type: string) => React.ReactNode;
+	onNavigate: (action: NavigationAction) => void;
+}) {
+	return (
+		<CardContent className="flex-1 overflow-hidden p-0">
+			<ScrollArea className="h-[calc(100vh-240px)] px-4" ref={scrollAreaRef}>
+				<div className="flex flex-col gap-4 py-4 pb-4">
+					{messages.map((message) => (
+						<MessageBubble
+							getActionIcon={getActionIcon}
+							key={message.id}
+							message={message}
+							onNavigate={onNavigate}
+						/>
+					))}
+					{isLoading ? <ChatLoadingIndicator /> : null}
+				</div>
+			</ScrollArea>
+		</CardContent>
+	);
+}
+
+function ChatAutocompletePicker({
+	activeAutocomplete,
+	autocompleteOpen,
+	autocompleteQuery,
+	autocompleteRef,
+	onChannelSelect,
+	onClose,
+	onMentionSelect,
+}: {
+	activeAutocomplete: "mention" | "channel" | null;
+	autocompleteOpen: boolean;
+	autocompleteQuery: string;
+	autocompleteRef: React.Ref<HTMLDivElement>;
+	onChannelSelect: (channelId: Id<"channels">, channelName: string) => void;
+	onClose: () => void;
+	onMentionSelect: (memberId: Id<"members">, memberName: string) => void;
+}) {
+	if (!autocompleteOpen) return null;
+
+	return (
+		<div ref={autocompleteRef}>
+			{activeAutocomplete === "channel" ? (
+				<ChannelPicker
+					onClose={onClose}
+					onSelect={onChannelSelect}
+					open={autocompleteOpen}
+					searchQuery={autocompleteQuery}
+				/>
+			) : (
+				<MentionPicker
+					onClose={onClose}
+					onSelect={onMentionSelect}
+					open={autocompleteOpen}
+					searchQuery={autocompleteQuery}
+				/>
+			)}
+		</div>
+	);
+}
+
+function ChatComposer({
+	activeAutocomplete,
+	autocompleteOpen,
+	autocompleteQuery,
+	autocompleteRef,
+	input,
+	inputRef,
+	isLoading,
+	onChannelSelect,
+	onCloseAutocomplete,
+	onInputChange,
+	onKeyDown,
+	onMentionSelect,
+	onSend,
+}: {
+	activeAutocomplete: "mention" | "channel" | null;
+	autocompleteOpen: boolean;
+	autocompleteQuery: string;
+	autocompleteRef: React.Ref<HTMLDivElement>;
+	input: string;
+	inputRef: React.Ref<HTMLInputElement>;
+	isLoading: boolean;
+	onChannelSelect: (channelId: Id<"channels">, channelName: string) => void;
+	onCloseAutocomplete: () => void;
+	onInputChange: (
+		value: string,
+		cursorIndex: number,
+		inputElement: HTMLInputElement | null
+	) => void;
+	onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+	onMentionSelect: (memberId: Id<"members">, memberName: string) => void;
+	onSend: () => void;
+}) {
+	return (
+		<CardFooter className="p-4 pt-3 border-t mt-auto">
+			<ChatAutocompletePicker
+				activeAutocomplete={activeAutocomplete}
+				autocompleteOpen={autocompleteOpen}
+				autocompleteQuery={autocompleteQuery}
+				autocompleteRef={autocompleteRef}
+				onChannelSelect={onChannelSelect}
+				onClose={onCloseAutocomplete}
+				onMentionSelect={onMentionSelect}
+			/>
+			<div className="flex w-full items-center gap-2">
+				<Input
+					className="flex-1"
+					disabled={isLoading}
+					onChange={(event) => {
+						const next = event.target.value;
+						const cursor = event.target.selectionStart ?? next.length;
+						onInputChange(next, cursor, event.target);
+					}}
+					onKeyDown={onKeyDown}
+					placeholder="Ask a question about your workspace..."
+					ref={inputRef}
+					value={input}
+				/>
+				<Button
+					className="chat-send-button"
+					disabled={isLoading || !input.trim()}
+					onClick={onSend}
+					size="icon"
+				>
+					<Send className="h-4 w-4" />
+				</Button>
+			</div>
+		</CardFooter>
+	);
+}
+
+function DashboardChatMainCard({
+	editingConversationId,
+	editingTitle,
+	integrationStatus,
+	isHistoryOpen,
+	conversationId,
+	recentConversations,
+	renderedMessages,
+	isLoading,
+	scrollAreaRef,
+	inputRef,
+	autocompleteRef,
+	activeAutocomplete,
+	autocompleteOpen,
+	autocompleteQuery,
+	input,
+	onCancelEditTitle,
+	onDeleteChat,
+	onNewChat,
+	onSaveTitle,
+	onSelectConversation,
+	onStartEditTitle,
+	setEditingTitle,
+	setIsHistoryOpen,
+	getActionIcon,
+	onNavigate,
+	onChannelInsert,
+	closeAutocomplete,
+	onMentionInsert,
+	onInputChange,
+	onKeyDown,
+	onSend,
+}: {
+	editingConversationId: string | null;
+	editingTitle: string;
+	integrationStatus: {
+		connected: IntegrationStatusApp[];
+		totalTools: number;
+		loading: boolean;
+	};
+	isHistoryOpen: boolean;
+	conversationId: string | null;
+	recentConversations: RecentConversation[] | undefined;
+	renderedMessages: Message[];
+	isLoading: boolean;
+	scrollAreaRef: React.Ref<HTMLDivElement>;
+	inputRef: React.Ref<HTMLInputElement>;
+	autocompleteRef: React.Ref<HTMLDivElement>;
+	activeAutocomplete: "mention" | "channel" | null;
+	autocompleteOpen: boolean;
+	autocompleteQuery: string;
+	input: string;
+	onCancelEditTitle: () => void;
+	onDeleteChat: (id: string) => void;
+	onNewChat: () => void;
+	onSaveTitle: (id: string) => void;
+	onSelectConversation: (id: string) => void;
+	onStartEditTitle: (id: string, title: string) => void;
+	setEditingTitle: (title: string) => void;
+	setIsHistoryOpen: (open: boolean) => void;
+	getActionIcon: (type: string) => React.ReactNode;
+	onNavigate: (action: NavigationAction) => void;
+	onChannelInsert: (channelId: Id<"channels">, channelName: string) => void;
+	closeAutocomplete: () => void;
+	onMentionInsert: (memberId: Id<"members">, memberName: string) => void;
+	onInputChange: (
+		value: string,
+		cursorIndex: number,
+		inputElement: HTMLInputElement | null
+	) => void;
+	onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+	onSend: () => void;
+}) {
+	return (
+		<Card className="flex flex-col flex-1 shadow-md overflow-hidden">
+			<DashboardChatHeader
+				conversationId={conversationId}
+				editingConversationId={editingConversationId}
+				editingTitle={editingTitle}
+				integrationStatus={integrationStatus}
+				isHistoryOpen={isHistoryOpen}
+				onCancelEditTitle={onCancelEditTitle}
+				onDeleteChat={onDeleteChat}
+				onNewChat={onNewChat}
+				onSaveTitle={onSaveTitle}
+				onSelectConversation={onSelectConversation}
+				onStartEditTitle={onStartEditTitle}
+				recentConversations={recentConversations}
+				setEditingTitle={setEditingTitle}
+				setIsHistoryOpen={setIsHistoryOpen}
+			/>
+			<ChatMessagesArea
+				getActionIcon={getActionIcon}
+				isLoading={isLoading}
+				messages={renderedMessages}
+				onNavigate={onNavigate}
+				scrollAreaRef={scrollAreaRef}
+			/>
+			<ChatComposer
+				activeAutocomplete={activeAutocomplete}
+				autocompleteOpen={autocompleteOpen}
+				autocompleteQuery={autocompleteQuery}
+				autocompleteRef={autocompleteRef}
+				input={input}
+				inputRef={inputRef}
+				isLoading={isLoading}
+				onChannelSelect={onChannelInsert}
+				onCloseAutocomplete={closeAutocomplete}
+				onInputChange={onInputChange}
+				onKeyDown={onKeyDown}
+				onMentionSelect={onMentionInsert}
+				onSend={onSend}
+			/>
+		</Card>
+	);
+}
+
+function MessageBubble({
+	message,
+	getActionIcon,
+	onNavigate,
+}: {
+	message: Message;
+	getActionIcon: (type: string) => React.ReactNode;
+	onNavigate: (action: NavigationAction) => void;
+}) {
+	const isUser = message.sender === "user";
+	return (
+		<div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+			<div
+				className={`max-w-[80%] rounded-lg px-4 py-3 ${
+					isUser ? "bg-primary text-primary-foreground" : "bg-muted"
+				}`}
+			>
+				{isUser ? (
+					<p className="text-sm">{message.content}</p>
+				) : (
+					<AssistantMarkdown content={message.content} />
+				)}
+				<MessageSourceBadges sources={message.sources} />
+				{message.actions && message.actions.length > 0 ? (
+					<MessageActions
+						actions={message.actions}
+						getActionIcon={getActionIcon}
+						onNavigate={onNavigate}
+					/>
+				) : null}
+				<p className="mt-2 text-right text-xs opacity-70">
+					{message.timestamp.toLocaleTimeString([], {
+						hour: "2-digit",
+						minute: "2-digit",
+					})}
+				</p>
+			</div>
+		</div>
+	);
+}
+
 export const DashboardChatbot = ({
 	workspaceId,
 	member,
+	initialPrompt,
 }: DashboardChatbotProps) => (
 	<DatabaseChatProvider
 		api={{
@@ -174,13 +1168,18 @@ export const DashboardChatbot = ({
 			sendMessage: api.assistantChat.sendMessage,
 		}}
 	>
-		<DashboardChatbotBody member={member} workspaceId={workspaceId} />
+		<DashboardChatbotBody
+			initialPrompt={initialPrompt}
+			member={member}
+			workspaceId={workspaceId}
+		/>
 	</DatabaseChatProvider>
 );
 
 const DashboardChatbotBody = ({
 	workspaceId,
 	member,
+	initialPrompt,
 }: DashboardChatbotProps) => {
 	const [conversationId, setConversationId] = useState<string | null>(null);
 	const [welcomeMessage, setWelcomeMessage] = useState<Message | null>(null);
@@ -190,9 +1189,21 @@ const DashboardChatbotBody = ({
 		totalTools: number;
 		loading: boolean;
 	}>({ connected: [], totalTools: 0, loading: true });
+	const [editingConversationId, setEditingConversationId] = useState<
+		string | null
+	>(null);
+	const [editingTitle, setEditingTitle] = useState("");
+	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const { toast } = useToast();
 	const router = useRouter();
+
+	const recentConversations = useQuery(
+		api.assistantConversations.listRecentConversations,
+		workspaceId && member?.userId
+			? { workspaceId, userId: member.userId, limit: 20 }
+			: "skip"
+	);
 
 	// Autocomplete for @users and #channels in the chatbot input
 	const [autocompleteOpen, setAutocompleteOpen] = useState(false);
@@ -208,6 +1219,18 @@ const DashboardChatbotBody = ({
 	>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const autocompleteRef = useRef<HTMLDivElement>(null);
+	const initialPromptSentRef = useRef<boolean>(false);
+	const isNearBottomRef = useRef<boolean>(true);
+	const createConversationInFlightRef = useRef<boolean>(false);
+
+	const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+		const viewport = scrollAreaRef.current?.querySelector<HTMLElement>(
+			"[data-radix-scroll-area-viewport]"
+		);
+		if (viewport) {
+			viewport.scrollTo({ top: viewport.scrollHeight, behavior });
+		}
+	}, []);
 
 	const findAutocompleteTrigger = (text: string, cursorIndex: number) => {
 		const prefix = text.slice(0, cursorIndex);
@@ -219,12 +1242,10 @@ const DashboardChatbotBody = ({
 		const triggerChar = prefix[startIndex];
 		const type = triggerChar === "@" ? "mention" : "channel";
 
-		// Only treat it as a trigger if it starts a token
 		const charBefore = startIndex > 0 ? prefix[startIndex - 1] : "";
 		if (startIndex > 0 && !/\s/.test(charBefore)) return null;
 
 		const query = prefix.slice(startIndex + 1);
-		// Close if user typed whitespace in the token
 		if (/\s/.test(query)) return null;
 
 		return { type, startIndex, query, cursorIndex } as const;
@@ -246,7 +1267,6 @@ const DashboardChatbotBody = ({
 		const newText = input.slice(0, start) + replacement + input.slice(end);
 		setInput(newText);
 
-		// Restore caret after React state update
 		const newCursor = start + replacement.length;
 		requestAnimationFrame(() => {
 			inputRef.current?.focus();
@@ -290,6 +1310,12 @@ const DashboardChatbotBody = ({
 	}, [autocompleteOpen, closeAutocomplete]);
 
 	const createConversation = useMutation(api.assistantChat.createConversation);
+	const updateConversationTitle = useMutation(
+		api.assistantConversations.updateConversationTitle
+	);
+	const deleteConversation = useMutation(
+		api.assistantConversations.deleteConversation
+	);
 	const {
 		send,
 		abort,
@@ -302,13 +1328,28 @@ const DashboardChatbotBody = ({
 	});
 	const isLoading = isSending || isStreaming;
 
-	const displayMessages: Message[] = allMessages.map((msg, index) => ({
-		id: String((msg as any)._id ?? index),
-		content: msg.content ?? "",
-		sender: msg.role === "user" ? "user" : "assistant",
-		role: msg.role === "user" ? "user" : "assistant",
-		timestamp: new Date((msg as any)._creationTime ?? Date.now()),
-	}));
+	const displayMessages: Message[] = allMessages.map((msg, index) => {
+		const streamMessage = msg as {
+			_id?: string;
+			_creationTime?: number;
+			role: string;
+			content?: string | null;
+		};
+		const sender = streamMessage.role === "user" ? "user" : "assistant";
+		const parsed =
+			sender === "assistant"
+				? parseAssistantMessageContent(streamMessage.content ?? "")
+				: { body: streamMessage.content ?? "", sources: [] };
+
+		return {
+			id: String(streamMessage._id ?? index),
+			content: parsed.body,
+			sender,
+			role: sender,
+			timestamp: new Date(streamMessage._creationTime ?? Date.now()),
+			sources: parsed.sources,
+		};
+	});
 
 	const renderedMessages = displayMessages.length
 		? displayMessages
@@ -316,17 +1357,59 @@ const DashboardChatbotBody = ({
 			? [welcomeMessage]
 			: [];
 
+	// Initialize with most recent conversation or create new one
 	useEffect(() => {
-		if (!conversationId && workspaceId && member?.userId) {
-			createConversation({
-				workspaceId,
-				userId: member.userId,
-				title: "Assistant Chat",
-			}).then(setConversationId);
+		if (createConversationInFlightRef.current) {
+			return;
 		}
-	}, [conversationId, workspaceId, member, createConversation]);
+		if (!conversationId && workspaceId && member?.userId) {
+			if (recentConversations !== undefined && recentConversations.length > 0) {
+				// Load the most recent conversation
+				setConversationId(recentConversations[0].conversationId);
+			} else if (recentConversations !== undefined) {
+				// Query resolved as empty — create first conversation
+				createConversationInFlightRef.current = true;
+				createConversation({
+					workspaceId,
+					userId: member.userId,
+					title: "New Chat",
+				})
+					.then(setConversationId)
+					.catch((error) => {
+						console.error(
+							"[DashboardChatbot] Failed to create conversation:",
+							error
+						);
+					})
+					.finally(() => {
+						createConversationInFlightRef.current = false;
+					});
+			}
+			// else: recentConversations is still loading (undefined) — do nothing yet
+		}
+	}, [
+		conversationId,
+		workspaceId,
+		member,
+		recentConversations,
+		createConversation,
+	]);
 
-	// Update welcome message when integration status changes
+	// Auto-send initial prompt
+	useEffect(() => {
+		initialPromptSentRef.current = false;
+	}, []);
+
+	useEffect(() => {
+		if (initialPrompt && conversationId && !initialPromptSentRef.current) {
+			initialPromptSentRef.current = true;
+			send(initialPrompt).catch((error) => {
+				console.error("Error sending initial prompt:", error);
+			});
+		}
+	}, [initialPrompt, conversationId, send]);
+
+	// Update welcome message
 	useEffect(() => {
 		if (!integrationStatus.loading) {
 			if (!displayMessages.length) {
@@ -398,7 +1481,6 @@ Try asking me things like:`;
 	useEffect(() => {
 		const checkIntegrations = async () => {
 			try {
-				// Pass memberId to get user-specific integrations
 				const response = await fetch(
 					`/api/assistant/composio/status?workspaceId=${workspaceId}&memberId=${member._id}`
 				);
@@ -423,17 +1505,40 @@ Try asking me things like:`;
 		}
 	}, [workspaceId, member]);
 
-	// Scroll to bottom when messages change (e.g. after sending or receiving)
+	// Smart scroll management
 	useEffect(() => {
-		if (scrollAreaRef.current) {
-			const scrollContainer = scrollAreaRef.current.querySelector(
-				"[data-radix-scroll-area-viewport]"
-			);
-			if (scrollContainer) {
-				scrollContainer.scrollTop = scrollContainer.scrollHeight;
-			}
+		const viewport = scrollAreaRef.current?.querySelector<HTMLElement>(
+			"[data-radix-scroll-area-viewport]"
+		);
+		if (!viewport) {
+			return undefined;
 		}
+
+		const handleScroll = () => {
+			const { scrollTop, scrollHeight, clientHeight } = viewport;
+			isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 120;
+		};
+
+		viewport.addEventListener("scroll", handleScroll, { passive: true });
+		return () => viewport.removeEventListener("scroll", handleScroll);
 	}, []);
+
+	useEffect(() => {
+		if (!conversationId) {
+			return undefined;
+		}
+		const timer = setTimeout(() => {
+			isNearBottomRef.current = true;
+			scrollToBottom("instant");
+		}, 100);
+		return () => clearTimeout(timer);
+	}, [conversationId, scrollToBottom]);
+
+	useEffect(() => {
+		if (isNearBottomRef.current) {
+			scrollToBottom(isStreaming ? "instant" : "smooth");
+		}
+	}, [isStreaming, scrollToBottom]);
 
 	const handleSendMessage = async () => {
 		if (!input.trim() || !conversationId) return;
@@ -462,7 +1567,6 @@ Try asking me things like:`;
 			return;
 		}
 
-		// Prevent sending while picker is open
 		if (e.key === "Enter" && autocompleteOpen) {
 			e.preventDefault();
 			return;
@@ -474,7 +1578,7 @@ Try asking me things like:`;
 		}
 	};
 
-	const clearConversation = async () => {
+	const handleNewChat = async () => {
 		try {
 			if (isStreaming) {
 				await abort();
@@ -482,35 +1586,109 @@ Try asking me things like:`;
 			const newConversationId = await createConversation({
 				workspaceId,
 				userId: member.userId,
-				title: "Assistant Chat",
+				title: "New Chat",
 				forceNew: true,
 			});
 			setConversationId(newConversationId);
 			setWelcomeMessage(null);
 			toast({
 				title: "Success",
-				description: "Chat history cleared.",
+				description: "New chat started.",
 			});
 		} catch (error) {
-			console.error("Error clearing chat history:", error);
+			console.error("Error creating new chat:", error);
 			toast({
 				title: "Error",
-				description: "Failed to clear conversation history.",
+				description: "Failed to create new chat.",
 				variant: "destructive",
 			});
 		}
 	};
 
-	// Handle navigation actions
+	const handleSelectConversation = (convId: string) => {
+		if (convId !== conversationId) {
+			setConversationId(convId);
+			setWelcomeMessage(null);
+		}
+	};
+
+	const handleStartEditTitle = (convId: string, currentTitle: string) => {
+		setEditingConversationId(convId);
+		setEditingTitle(currentTitle || "");
+	};
+
+	const handleCancelEditTitle = () => {
+		setEditingConversationId(null);
+		setEditingTitle("");
+	};
+
+	const handleSaveTitle = async (convId: string) => {
+		if (!editingTitle.trim()) {
+			toast({
+				title: "Error",
+				description: "Title cannot be empty",
+				variant: "destructive",
+			});
+			return;
+		}
+
+		try {
+			await updateConversationTitle({
+				conversationId: convId,
+				title: editingTitle.trim(),
+			});
+			setEditingConversationId(null);
+			setEditingTitle("");
+			toast({
+				title: "Success",
+				description: "Chat renamed successfully",
+			});
+		} catch (_error) {
+			toast({
+				title: "Error",
+				description: "Failed to rename chat",
+				variant: "destructive",
+			});
+		}
+	};
+
+	const handleDeleteChat = async (convId: string) => {
+		try {
+			await deleteConversation({ conversationId: convId });
+
+			// If deleting current conversation, switch to a new one
+			if (convId === conversationId) {
+				const remaining = recentConversations?.filter(
+					(c) => c.conversationId !== convId
+				);
+				if (remaining && remaining.length > 0) {
+					setConversationId(remaining[0].conversationId);
+				} else {
+					// Create new conversation if no others exist
+					await handleNewChat();
+				}
+			}
+
+			toast({
+				title: "Success",
+				description: "Chat deleted successfully",
+			});
+		} catch (_error) {
+			toast({
+				title: "Error",
+				description: "Failed to delete chat",
+				variant: "destructive",
+			});
+		}
+	};
+
 	const handleNavigation = (action: NavigationAction) => {
 		let url = action.url.replace("[workspaceId]", workspaceId);
 
-		// Handle channelId replacement
 		if (url.includes("[channelId]") && action.channelId) {
 			url = url.replace("[channelId]", action.channelId);
 		}
 
-		// Handle noteId replacement
 		if (url.includes("[noteId]") && action.noteId) {
 			url = url.replace("[noteId]", action.noteId);
 		}
@@ -518,7 +1696,6 @@ Try asking me things like:`;
 		router.push(url);
 	};
 
-	// Get icon for action type
 	const getActionIcon = (type: string) => {
 		switch (type) {
 			case "calendar":
@@ -541,385 +1718,60 @@ Try asking me things like:`;
 		}
 	};
 
-	// Helper function to clean and format source text
-	const cleanSourceText = (text: string, _type: string) => {
-		// Remove markdown formatting for cleaner display
-		let cleaned = text
-			.replace(/#{1,6}\s/g, "") // Remove markdown headers
-			.replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold formatting
-			.replace(/\*(.*?)\*/g, "$1") // Remove italic formatting
-			.replace(/\n+/g, " ") // Replace newlines with spaces
-			.trim();
+	const handleInputChange = (
+		next: string,
+		cursor: number,
+		_inputElement: HTMLInputElement | null
+	) => {
+		setInput(next);
 
-		// Truncate if too long
-		if (cleaned.length > 100) {
-			cleaned = `${cleaned.substring(0, 100)}...`;
+		const trigger = findAutocompleteTrigger(next, cursor);
+		if (trigger) {
+			setAutocompleteOpen(true);
+			setActiveAutocomplete(trigger.type);
+			setAutocompleteQuery(trigger.query);
+			setAutocompleteStartIndex(trigger.startIndex);
+			setAutocompleteCursorIndex(trigger.cursorIndex);
+		} else {
+			closeAutocomplete();
 		}
-
-		return cleaned;
-	};
-
-	// Helper function to get source type display name
-	const getSourceTypeDisplay = (type: string) => {
-		switch (type.toLowerCase()) {
-			case "message":
-				return "Chat Message";
-			case "task":
-				return "Task";
-			case "note":
-				return "Note";
-			case "card":
-				return "Board Card";
-			case "event":
-			case "calendar-event":
-				return "Calendar Event";
-			case "tool":
-				return "Integration Tool";
-			case "github":
-				return "GitHub";
-			case "gmail":
-				return "Gmail";
-			case "slack":
-				return "Slack";
-			case "notion":
-				return "Notion";
-			case "clickup":
-				return "ClickUp";
-			case "linear":
-				return "Linear";
-			default:
-				return type.charAt(0).toUpperCase() + type.slice(1);
-		}
-	};
-
-	// Helper function to render source badges
-	const renderSourceBadges = (sources: Message["sources"]) => {
-		if (!sources || sources.length === 0) return null;
-
-		// Group sources by type
-		const sourcesByType: Record<string, number> = {};
-		sources.forEach((source) => {
-			sourcesByType[source.type] = (sourcesByType[source.type] || 0) + 1;
-		});
-
-		return (
-			<div className="flex flex-wrap gap-1.5 mt-3 mb-1">
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button className="h-6 px-2 text-xs" size="sm" variant="outline">
-							<Info className="h-3 w-3 mr-1" />
-							Sources ({sources.length})
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-96 p-3">
-						<div className="space-y-2">
-							<h4 className="font-medium text-sm">
-								Sources used for this response:
-							</h4>
-							<div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-								{sources.map((source) => (
-									<div
-										className="text-xs p-2 bg-muted/50 rounded border"
-										key={source.id}
-									>
-										<div className="font-semibold text-primary mb-1">
-											{getSourceTypeDisplay(source.type)}
-										</div>
-										<div className="text-muted-foreground leading-relaxed">
-											{cleanSourceText(source.text, source.type)}
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
-					</PopoverContent>
-				</Popover>
-
-				{Object.entries(sourcesByType).map(([type, count]) => (
-					<Badge className="text-xs px-2 py-0.5" key={type} variant="outline">
-						{getSourceTypeDisplay(type)}: {count}
-					</Badge>
-				))}
-			</div>
-		);
 	};
 
 	return (
-		<Card className="flex flex-col h-full shadow-md overflow-hidden">
-			<CardHeader className="pb-2 border-b">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<Avatar className="h-8 w-8 bg-primary/10">
-							<AvatarFallback>
-								<Bot className="h-5 w-5" />
-							</AvatarFallback>
-						</Avatar>
-						<div>
-							<CardTitle className="text-lg">Proddy AI</CardTitle>
-							<div className="flex items-center gap-2 mt-1">
-								{integrationStatus.loading ? (
-									<div className="flex items-center gap-1">
-										<Loader className="h-3 w-3 animate-spin" />
-										<span className="text-xs text-muted-foreground">
-											Checking integrations...
-										</span>
-									</div>
-								) : integrationStatus.connected.length > 0 ? (
-									<Popover>
-										<PopoverTrigger asChild>
-											<Button
-												className="h-6 px-2 text-xs hover:bg-green-50 dark:hover:bg-green-950"
-												size="sm"
-												variant="ghost"
-											>
-												<Zap className="h-3 w-3 mr-1 text-green-600" />
-												<span className="text-green-700 dark:text-green-300">
-													{integrationStatus.connected.length} integrations
-												</span>
-											</Button>
-										</PopoverTrigger>
-										<PopoverContent className="w-80 p-3">
-											<div className="space-y-3">
-												<h4 className="font-medium text-sm flex items-center gap-2">
-													<CheckCircle className="h-4 w-4 text-green-600" />
-													Connected Integrations
-												</h4>
-												<div className="space-y-2">
-													{integrationStatus.connected.map((app) => {
-														const metadata = getIntegrationMetadata(app.app);
-														const Icon = metadata?.icon ?? Zap;
-
-														return (
-															<div
-																className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border"
-																key={app.app}
-															>
-																<Icon
-																	className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
-																/>
-																<div className="flex-1">
-																	<div className="font-medium text-sm">
-																		{metadata?.name ?? app.app}
-																	</div>
-																	<div className="text-xs text-muted-foreground">
-																		{metadata?.description ??
-																			"Connected and available for assistant actions"}
-																	</div>
-																</div>
-																<CheckCircle className="h-4 w-4 text-green-600" />
-															</div>
-														);
-													})}
-												</div>
-												<div className="text-xs text-muted-foreground pt-2 border-t">
-													{integrationStatus.totalTools} tools available for
-													enhanced productivity
-												</div>
-											</div>
-										</PopoverContent>
-									</Popover>
-								) : (
-									<Badge className="text-xs px-2 py-0.5" variant="outline">
-										No integrations
-									</Badge>
-								)}
-							</div>
-						</div>
-					</div>
-					<Button
-						className="text-xs text-muted-foreground hover:text-destructive border border-gray-300"
-						onClick={clearConversation}
-						size="sm"
-						variant="ghost"
-					>
-						<Trash2 className="h-3.5 w-3.5 mr-1.5" />
-						Clear chat
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent className="flex-1 overflow-hidden p-0">
-				<ScrollArea className="h-[calc(100vh-240px)] px-4" ref={scrollAreaRef}>
-					<div className="flex flex-col gap-4 py-4 pb-10">
-						{renderedMessages.map((message) => (
-							<div
-								className={`flex ${
-									message.sender === "user" ? "justify-end" : "justify-start"
-								}`}
-								key={message.id}
-							>
-								<div
-									className={`max-w-[80%] rounded-lg px-4 py-3 ${
-										message.sender === "user"
-											? "bg-primary text-primary-foreground"
-											: "bg-muted"
-									}`}
-								>
-									{message.sender === "user" ? (
-										<p className="text-sm">{message.content}</p>
-									) : (
-										<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300 prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
-											<ReactMarkdown
-												components={{
-													// Custom link component to handle internal links
-													a: ({ href, children, ...props }) => (
-														<a
-															className="text-primary hover:text-primary/80 underline"
-															href={href}
-															rel={
-																href?.startsWith("http")
-																	? "noopener noreferrer"
-																	: undefined
-															}
-															target={
-																href?.startsWith("http") ? "_blank" : "_self"
-															}
-															{...props}
-														>
-															{children}
-														</a>
-													),
-													// Custom code block styling
-													code: ({ className, children, ...props }) => (
-														<code
-															className={`${className} bg-muted px-1 py-0.5 rounded text-sm font-mono`}
-															{...props}
-														>
-															{children}
-														</code>
-													),
-													// Custom pre block styling
-													pre: ({ children, ...props }) => (
-														<pre
-															className="bg-muted p-3 rounded-md overflow-x-auto text-sm"
-															{...props}
-														>
-															{children}
-														</pre>
-													),
-												}}
-												remarkPlugins={[remarkGfm]}
-											>
-												{message.content}
-											</ReactMarkdown>
-										</div>
-									)}
-									{message.sources && renderSourceBadges(message.sources)}
-									{message.actions && message.actions.length > 0 && (
-										<div className="flex flex-wrap gap-2 mt-3">
-											{message.actions.map((action) => (
-												<Button
-													className="h-8 px-3 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
-													key={`${action.type}-${action.url}-${action.label}`}
-													onClick={() => handleNavigation(action)}
-													size="sm"
-													variant="outline"
-												>
-													{getActionIcon(action.type)}
-													<span className="ml-1.5">{action.label}</span>
-												</Button>
-											))}
-										</div>
-									)}
-									<p className="mt-2 text-right text-xs opacity-70">
-										{message.timestamp.toLocaleTimeString([], {
-											hour: "2-digit",
-											minute: "2-digit",
-										})}
-									</p>
-								</div>
-							</div>
-						))}
-						{isLoading && (
-							<div className="flex justify-start">
-								<div className="max-w-[80%] rounded-lg bg-muted px-4 py-3">
-									<div className="flex items-start gap-2">
-										<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-											<Zap className="h-4 w-4 animate-pulse text-primary" />
-										</div>
-										<div className="min-w-0 flex-1">
-											<p className="text-sm font-medium">
-												Using tools when needed
-											</p>
-											<p className="text-xs text-muted-foreground mt-1">
-												Checking calendar, tasks, search, and integrations…
-											</p>
-											<div className="mt-2 flex flex-wrap gap-1">
-												{["Calendar", "Tasks", "Search", "Integrations"].map(
-													(label) => (
-														<span
-															className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
-															key={label}
-														>
-															{label}
-														</span>
-													)
-												)}
-											</div>
-										</div>
-										<Loader className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-									</div>
-								</div>
-							</div>
-						)}
-					</div>
-				</ScrollArea>
-			</CardContent>
-			<CardFooter className="p-4 pt-3 border-t mt-auto">
-				{autocompleteOpen && (
-					<div ref={autocompleteRef}>
-						{activeAutocomplete === "channel" ? (
-							<ChannelPicker
-								onClose={closeAutocomplete}
-								onSelect={handleChannelInsert}
-								open={autocompleteOpen}
-								searchQuery={autocompleteQuery}
-							/>
-						) : (
-							<MentionPicker
-								onClose={closeAutocomplete}
-								onSelect={handleMentionInsert}
-								open={autocompleteOpen}
-								searchQuery={autocompleteQuery}
-							/>
-						)}
-					</div>
-				)}
-
-				<div className="flex w-full items-center gap-2">
-					<Input
-						className="flex-1"
-						disabled={isLoading}
-						onChange={(e) => {
-							const next = e.target.value;
-							const cursor = e.target.selectionStart ?? next.length;
-							setInput(next);
-
-							const trigger = findAutocompleteTrigger(next, cursor);
-							if (trigger) {
-								setAutocompleteOpen(true);
-								setActiveAutocomplete(trigger.type);
-								setAutocompleteQuery(trigger.query);
-								setAutocompleteStartIndex(trigger.startIndex);
-								setAutocompleteCursorIndex(trigger.cursorIndex);
-							} else {
-								closeAutocomplete();
-							}
-						}}
-						onKeyDown={handleKeyDown}
-						placeholder="Ask a question about your workspace..."
-						ref={inputRef}
-						value={input}
-					/>
-					<Button
-						className="chat-send-button"
-						disabled={isLoading || !input.trim()}
-						onClick={handleSendMessage}
-						size="icon"
-					>
-						<Send className="h-4 w-4" />
-					</Button>
-				</div>
-			</CardFooter>
-		</Card>
+		<div className="flex h-full">
+			<DashboardChatMainCard
+				activeAutocomplete={activeAutocomplete}
+				autocompleteOpen={autocompleteOpen}
+				autocompleteQuery={autocompleteQuery}
+				autocompleteRef={autocompleteRef}
+				closeAutocomplete={closeAutocomplete}
+				conversationId={conversationId}
+				editingConversationId={editingConversationId}
+				editingTitle={editingTitle}
+				getActionIcon={getActionIcon}
+				input={input}
+				inputRef={inputRef}
+				integrationStatus={integrationStatus}
+				isHistoryOpen={isHistoryOpen}
+				isLoading={isLoading}
+				onCancelEditTitle={handleCancelEditTitle}
+				onChannelInsert={handleChannelInsert}
+				onDeleteChat={handleDeleteChat}
+				onInputChange={handleInputChange}
+				onKeyDown={handleKeyDown}
+				onMentionInsert={handleMentionInsert}
+				onNavigate={handleNavigation}
+				onNewChat={handleNewChat}
+				onSaveTitle={handleSaveTitle}
+				onSelectConversation={handleSelectConversation}
+				onSend={handleSendMessage}
+				onStartEditTitle={handleStartEditTitle}
+				recentConversations={recentConversations}
+				renderedMessages={renderedMessages}
+				scrollAreaRef={scrollAreaRef}
+				setEditingTitle={setEditingTitle}
+				setIsHistoryOpen={setIsHistoryOpen}
+			/>
+		</div>
 	);
 };

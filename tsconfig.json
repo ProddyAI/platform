@@ -34,7 +34,8 @@
 		".next/types/**/*.ts",
 		// "src/features/landing/components/Replacement.tsx",
 		// "src/features/canvas/types/**/*.d.ts"
-		".next-win/types/**/*.ts"
+		".next-win/types/**/*.ts",
+		".next/dev/types/**/*.ts"
 	],
 	"exclude": ["node_modules", "**/*.test.ts", "**/*.test.tsx"]
 }

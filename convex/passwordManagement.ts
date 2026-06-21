@@ -289,7 +289,7 @@ export const generatePasswordResetTokenInternal = internalMutation({
 
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_email", (q) => q.eq("email", email))
+			.withIndex("email", (q) => q.eq("email", email))
 			.first();
 		if (!user) {
 			return { success: true, token: null, reason: "user_not_found" };
@@ -442,7 +442,7 @@ export const resetPassword = mutation({
 
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_email", (q) => q.eq("email", resetToken.email))
+			.withIndex("email", (q) => q.eq("email", resetToken.email))
 			.first();
 
 		if (!user) {
@@ -519,7 +519,7 @@ export const adminForcePasswordChange = mutation({
 		const email = args.email.toLowerCase().trim();
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_email", (q) => q.eq("email", email))
+			.withIndex("email", (q) => q.eq("email", email))
 			.first();
 		if (!user) throw new Error("User not found");
 
@@ -544,7 +544,7 @@ export const adminForceCreateWorkspace = mutation({
 		const email = args.email.toLowerCase().trim();
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_email", (q) => q.eq("email", email))
+			.withIndex("email", (q) => q.eq("email", email))
 			.first();
 		if (!user) throw new Error("User not found");
 

@@ -43,6 +43,7 @@ import { CalendarPreviewWidget } from "./widgets/calendar-preview-widget";
 import { CanvasWidget } from "./widgets/canvas-widget";
 import { MentionsWidget } from "./widgets/mentions-widget";
 import { NotesWidget } from "./widgets/notes-widget";
+import { StressWidget } from "./widgets/stress-widget";
 import { TasksWidget } from "./widgets/tasks-widget";
 import { TeamStatusWidget } from "./widgets/team-status-widget";
 import { ThreadRepliesWidget } from "./widgets/thread-replies-widget";
@@ -70,7 +71,8 @@ type WidgetType =
 	| "calendar"
 	| "notes"
 	| "canvas"
-	| "team";
+	| "team"
+	| "stress";
 
 // Available widgets configuration
 const AVAILABLE_WIDGETS = [
@@ -97,6 +99,11 @@ const AVAILABLE_WIDGETS = [
 		id: "team",
 		title: "Team Status",
 		description: "See who's online and message teammates",
+	},
+	{
+		id: "stress",
+		title: "Stress & Focus",
+		description: "AI-driven workload analysis and daily focus session",
 	},
 ];
 
@@ -395,6 +402,14 @@ export const DashboardWidgets = ({
 					return (
 						<TeamStatusWidget
 							isEditMode={isEditMode}
+							workspaceId={workspaceId}
+						/>
+					);
+				case "stress":
+					return (
+						<StressWidget
+							isEditMode={isEditMode}
+							member={member}
 							workspaceId={workspaceId}
 						/>
 					);

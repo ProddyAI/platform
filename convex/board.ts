@@ -4,6 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { addIssueBlockingRelationshipHelper } from "./lib/issueBlocking";
+import { enforceWorkspaceLimit } from "./usageTracking";
 import { getUserEmailFromMemberId, getUserNameFromMemberId } from "./utils";
 
 const DONE_STATUS_KEYWORDS = [
@@ -267,6 +268,8 @@ export const createCard = mutation({
 
 		const channel = await ctx.db.get(list.channelId);
 		if (!channel) throw new Error("Channel not found");
+
+		await enforceWorkspaceLimit(ctx, channel.workspaceId, "board");
 
 		// Insert the card
 		const cardId = await ctx.db.insert("cards", args);
@@ -1035,6 +1038,8 @@ export const createIssue = mutation({
 
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
+
+		await enforceWorkspaceLimit(ctx, channel.workspaceId, "board");
 
 		const validatedAssignees =
 			args.assignees === undefined
@@ -1968,6 +1973,8 @@ export const createSubIssue = mutation({
 		// Verify caller is a member of the workspace
 		await assertWorkspaceMember(ctx, channel.workspaceId);
 
+		await enforceWorkspaceLimit(ctx, channel.workspaceId, "board");
+
 		// Get the next order for sub-issues
 		const existingSubIssues = await ctx.db
 			.query("issues")
@@ -2463,6 +2470,12 @@ export const createSubtask = mutation({
 			throw new Error("Cannot create subtasks of subtasks");
 		}
 
+		const list = await ctx.db.get(parentCard.listId);
+		if (!list) throw new Error("List not found");
+		const channel = await ctx.db.get(list.channelId);
+		if (!channel) throw new Error("Channel not found");
+		await enforceWorkspaceLimit(ctx, channel.workspaceId, "board");
+
 		// Get the highest order for existing subtasks
 		const existingSubtasks = await ctx.db
 			.query("cards")
@@ -2488,28 +2501,22 @@ export const createSubtask = mutation({
 		const auth = await ctx.auth.getUserIdentity();
 		if (auth) {
 			const userId = auth.subject.split("|")[0] as Id<"users">;
-			const list = await ctx.db.get(parentCard.listId);
-			if (list) {
-				const channel = await ctx.db.get(list.channelId);
-				if (channel) {
-					const creator = await ctx.db
-						.query("members")
-						.withIndex("by_workspace_id_user_id", (q) =>
-							q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
-						)
-						.unique();
+			const creator = await ctx.db
+				.query("members")
+				.withIndex("by_workspace_id_user_id", (q) =>
+					q.eq("workspaceId", channel.workspaceId).eq("userId", userId)
+				)
+				.unique();
 
-					if (creator) {
-						await ctx.db.insert("card_activity", {
-							cardId: args.parentCardId,
-							memberId: creator._id,
-							workspaceId: channel.workspaceId,
-							action: "created",
-							details: JSON.stringify({ subtaskId, title: args.title }),
-							timestamp: Date.now(),
-						});
-					}
-				}
+			if (creator) {
+				await ctx.db.insert("card_activity", {
+					cardId: args.parentCardId,
+					memberId: creator._id,
+					workspaceId: channel.workspaceId,
+					action: "created",
+					details: JSON.stringify({ subtaskId, title: args.title }),
+					timestamp: Date.now(),
+				});
 			}
 		}
 

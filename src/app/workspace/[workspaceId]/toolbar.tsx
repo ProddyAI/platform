@@ -47,6 +47,7 @@ import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetUnreadMentionsCount } from "@/features/messages/api/use-get-unread-mentions-count";
+import { PomodoroTimer } from "@/features/pomodoro/components/pomodoro-timer";
 import { useAISearch } from "@/features/workspaces/api/use-ai-search";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useSearchMessages } from "@/features/workspaces/api/use-search-messages";
@@ -900,6 +901,8 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					onOpenChange={setNotificationsOpen}
 					open={notificationsOpen}
 				/>
+
+				<PomodoroTimer />
 
 				<ThemeToggle />
 

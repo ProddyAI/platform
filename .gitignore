@@ -1,5 +1,7 @@
 /node_modules
 /.pnp
+# Bun patch workflow scratch (only patches/ is committed)
+.patch-tmp/
 .env.local
 .env.convex
 /coverage
@@ -10,6 +12,8 @@
 .DS_Store
 *.pem
 npm-debug.log*
+npm-install.log
+bun-install.log
 package-lock.json
 .vercel
 *.tsbuildinfo

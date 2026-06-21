@@ -31,7 +31,7 @@ import { exportToPDF, exportToWord } from "@/lib/export-utils";
 import { cn } from "@/lib/utils";
 
 export const AiNotemaker = ({
-	variant = "toolbar",
+	variant: _variant = "toolbar",
 	channelId: propChannelId,
 	workspaceId: propWorkspaceId,
 }: {
@@ -450,6 +450,7 @@ export const AiNotemaker = ({
 													setSelectedPeriod(opt.key);
 													generateAiNotes(opt.key);
 												}}
+												type="button"
 											>
 												<div className="flex items-center gap-3">
 													<span className="text-lg">{opt.icon}</span>
@@ -486,6 +487,7 @@ export const AiNotemaker = ({
 														setSelectedPeriod("since_last");
 														generateAiNotes("since_last");
 													}}
+													type="button"
 												>
 													<div className="flex flex-col items-start gap-0.5">
 														<div className="flex items-center gap-3">
@@ -521,6 +523,7 @@ export const AiNotemaker = ({
 								<button
 									className="text-xs text-gray-400 hover:text-gray-600 mt-1"
 									onClick={() => setShowPeriodPicker(false)}
+									type="button"
 								>
 									Cancel
 								</button>

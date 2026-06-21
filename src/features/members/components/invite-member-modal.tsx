@@ -652,6 +652,7 @@ export const InviteMemberModal = () => {
 	const handleAddSeat = async () => {
 		if (!workspaceId) return;
 		setAddingSeats(true);
+		setSeatChangePending(true);
 		try {
 			const result = await updateQuantity({
 				workspaceId,
@@ -680,7 +681,6 @@ export const InviteMemberModal = () => {
 					window.location.href = billingResult.paymentUrl;
 					return;
 				}
-				setSeatChangePending(true);
 				toast.info(
 					billingResult.message ||
 						"Dodo is processing the prorated seat charge. The seat will be available after payment succeeds."
@@ -688,7 +688,6 @@ export const InviteMemberModal = () => {
 				return;
 			}
 			if (billingResult.status === "pending_plan_change") {
-				setSeatChangePending(true);
 				toast.info(
 					billingResult.message || "A seat change is already processing."
 				);
@@ -699,6 +698,7 @@ export const InviteMemberModal = () => {
 			toast.error(getErrorMessage(error, "Failed to add seat"));
 		} finally {
 			setAddingSeats(false);
+			setSeatChangePending(false);
 		}
 	};
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Quill from "quill";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { UnifiedMessage } from "@/features/messages/components/unified-message";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
@@ -26,8 +26,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 	const workspaceId = useWorkspaceId();
 	useGetMembers({ workspaceId });
 
-	// Check if this is a unified message (canvas or note type)
-	const isUnifiedMessage = () => {
+	const isUnifiedMessage = useMemo(() => {
 		try {
 			const parsed = JSON.parse(value);
 			return (
@@ -46,7 +45,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 		} catch (_e) {
 			return false;
 		}
-	};
+	}, [value]);
 
 	// Get parsed message data
 	const getMessageData = () => {
@@ -91,7 +90,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 
 	useEffect(() => {
 		// If this is a unified message (canvas or note type), don't process with Quill
-		if (isUnifiedMessage()) {
+		if (isUnifiedMessage) {
 			setIsEmpty(false);
 			return;
 		}
@@ -232,7 +231,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 	}, [value, calendarEvent, isUnifiedMessage]);
 
 	// If this is a unified message (canvas or note type), render the UnifiedMessage component
-	if (isUnifiedMessage()) {
+	if (isUnifiedMessage) {
 		const messageData = getMessageData();
 		if (messageData) {
 			return <UnifiedMessage data={messageData} />;
