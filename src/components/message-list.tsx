@@ -62,8 +62,6 @@ export const MessageList = ({
 	type MessageItem = NonNullable<GetMessagesReturnType>[number];
 
 	const { data: currentMember } = useCurrentMember({ workspaceId });
-
-	type MessageItem = GetMessagesReturnType[number];
 	const groupedMessages = data?.reduce(
 		(groups: Record<string, MessageItem[]>, message: MessageItem) => {
 			const date = new Date(message._creationTime);

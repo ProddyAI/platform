@@ -428,7 +428,7 @@ export class SlackImportProvider {
 				"team.info"
 			);
 
-			if (!response.team || !response.team.id) {
+			if (!response.team?.id) {
 				throw new Error("Invalid team info response");
 			}
 		} catch (error) {
@@ -828,7 +828,7 @@ export async function executeSlackImport(
 						{
 							workspaceId: ctx.workspaceId,
 							email: user.email,
-							name: user.displayName || user.name || "Unknown",
+							name: user.displayName || "Unknown",
 							avatarUrl: user.avatarUrl,
 							importSource: "Slack Import",
 							importJobUserId: (ctx as any).userId,
@@ -836,23 +836,23 @@ export async function executeSlackImport(
 						}
 					)) as any;
 
-					if (memberResult && memberResult.member) {
+					if (memberResult?.member) {
 						slackCtx.userMap.set(user.externalId, memberResult.member._id);
 						await ctx.log(
 							"info",
-							`Mapped Slack user ${user.displayName || user.name} to member ${memberResult.member._id}`
+							`Mapped Slack user ${user.displayName || "Unknown"} to member ${memberResult.member._id}`
 						);
 					}
 				} catch (error) {
 					await ctx.log(
 						"warn",
-						`Failed to create member for Slack user ${user.displayName || user.name}: ${error instanceof Error ? error.message : "Unknown error"}`
+						`Failed to create member for Slack user ${user.displayName || "Unknown"}: ${error instanceof Error ? error.message : "Unknown error"}`
 					);
 				}
 			} else {
 				await ctx.log(
 					"warn",
-					`Slack user ${user.displayName || user.name} has no email, cannot auto-invite`
+					`Slack user ${user.displayName || "Unknown"} has no email, cannot auto-invite`
 				);
 			}
 		}

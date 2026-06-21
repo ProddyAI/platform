@@ -13,6 +13,8 @@ import type * as analytics from "../analytics.js";
 import type * as assistantChat from "../assistantChat.js";
 import type * as assistantComposioTools from "../assistantComposioTools.js";
 import type * as assistantConversations from "../assistantConversations.js";
+import type * as assistantProfiles from "../assistantProfiles.js";
+import type * as assistantTitles from "../assistantTitles.js";
 import type * as assistantToolAudits from "../assistantToolAudits.js";
 import type * as assistantTools from "../assistantTools.js";
 import type * as assistant_agent from "../assistant/agent.js";
@@ -35,13 +37,6 @@ import type * as assistant_toolResults from "../assistant/toolResults.js";
 import type * as assistant_tools_composioTools from "../assistant/tools/composioTools.js";
 import type * as assistant_tools_index from "../assistant/tools/index.js";
 import type * as assistant_tools_internalTools from "../assistant/tools/internalTools.js";
-import type * as assistantChat from "../assistantChat.js";
-import type * as assistantComposioTools from "../assistantComposioTools.js";
-import type * as assistantConversations from "../assistantConversations.js";
-import type * as assistantProfiles from "../assistantProfiles.js";
-import type * as assistantTitles from "../assistantTitles.js";
-import type * as assistantToolAudits from "../assistantToolAudits.js";
-import type * as assistantTools from "../assistantTools.js";
 import type * as auth from "../auth.js";
 import type * as board from "../board.js";
 import type * as boardDependency from "../boardDependency.js";
@@ -64,6 +59,7 @@ import type * as importPipeline from "../importPipeline.js";
 import type * as integrations from "../integrations.js";
 import type * as lib_issueBlocking from "../lib/issueBlocking.js";
 import type * as lib_safeDelete from "../lib/safeDelete.js";
+import type * as linearImportProvider from "../linearImportProvider.js";
 import type * as meetingNotes from "../meetingNotes.js";
 import type * as members from "../members.js";
 import type * as mentions from "../mentions.js";
@@ -85,6 +81,7 @@ import type * as rateLimit from "../rateLimit.js";
 import type * as reactions from "../reactions.js";
 import type * as richText from "../richText.js";
 import type * as search from "../search.js";
+import type * as slackImportProvider from "../slackImportProvider.js";
 import type * as sprints from "../sprints.js";
 import type * as stress from "../stress.js";
 import type * as tasks from "../tasks.js";
@@ -113,6 +110,8 @@ declare const fullApi: ApiFromModules<{
   assistantChat: typeof assistantChat;
   assistantComposioTools: typeof assistantComposioTools;
   assistantConversations: typeof assistantConversations;
+  assistantProfiles: typeof assistantProfiles;
+  assistantTitles: typeof assistantTitles;
   assistantToolAudits: typeof assistantToolAudits;
   assistantTools: typeof assistantTools;
   "assistant/agent": typeof assistant_agent;
@@ -135,13 +134,6 @@ declare const fullApi: ApiFromModules<{
   "assistant/tools/composioTools": typeof assistant_tools_composioTools;
   "assistant/tools/index": typeof assistant_tools_index;
   "assistant/tools/internalTools": typeof assistant_tools_internalTools;
-  assistantChat: typeof assistantChat;
-  assistantComposioTools: typeof assistantComposioTools;
-  assistantConversations: typeof assistantConversations;
-  assistantProfiles: typeof assistantProfiles;
-  assistantTitles: typeof assistantTitles;
-  assistantToolAudits: typeof assistantToolAudits;
-  assistantTools: typeof assistantTools;
   auth: typeof auth;
   board: typeof board;
   boardDependency: typeof boardDependency;
@@ -164,6 +156,7 @@ declare const fullApi: ApiFromModules<{
   integrations: typeof integrations;
   "lib/issueBlocking": typeof lib_issueBlocking;
   "lib/safeDelete": typeof lib_safeDelete;
+  linearImportProvider: typeof linearImportProvider;
   meetingNotes: typeof meetingNotes;
   members: typeof members;
   mentions: typeof mentions;
@@ -185,6 +178,7 @@ declare const fullApi: ApiFromModules<{
   reactions: typeof reactions;
   richText: typeof richText;
   search: typeof search;
+  slackImportProvider: typeof slackImportProvider;
   sprints: typeof sprints;
   stress: typeof stress;
   tasks: typeof tasks;
@@ -722,12 +716,17 @@ export declare const components: {
         "internal",
         {
           chunkContext?: { after: number; before: number };
-          embedding: Array<number>;
+          dimension?: number;
+          embedding?: Array<number>;
           filters: Array<{ name: string; value: any }>;
           limit: number;
           modelId: string;
           namespace: string;
+          searchType?: "vector" | "text" | "hybrid";
+          textQuery?: string;
+          textWeight?: number;
           vectorScoreThreshold?: number;
+          vectorWeight?: number;
         },
         {
           entries: Array<{

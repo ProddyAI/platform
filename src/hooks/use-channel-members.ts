@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-presence";
 import { api } from "../../convex/_generated/api";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 
 export const useChannelMembers = (
 	workspaceId: Id<"workspaces">,

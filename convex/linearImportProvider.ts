@@ -110,7 +110,7 @@ export class LinearImportProvider {
 			query: query.substring(0, 100),
 			tokenLength: ctx.accessToken?.length,
 			tokenPreview: ctx.accessToken
-				? ctx.accessToken.substring(0, 20) + "..."
+				? `${ctx.accessToken.substring(0, 20)}...`
 				: "missing",
 		});
 
@@ -510,13 +510,13 @@ export async function executeLinearImport(
 					{ workspaceId: ctx.workspaceId, name: user.name }
 				)) as any;
 
-				if (memberByName && memberByName.member && !memberByName.conflict) {
+				if (memberByName?.member && !memberByName.conflict) {
 					linearCtx.memberMap.set(user.id, memberByName.member._id);
 					await ctx.log(
 						"info",
 						`Mapped Linear user ${user.name} to member ${memberByName.member._id} (by name, ${memberByName.matchType} match)`
 					);
-				} else if (memberByName && memberByName.conflict) {
+				} else if (memberByName?.conflict) {
 					await ctx.log(
 						"warn",
 						`Name conflict for Linear user ${user.name}: possible matches are ${memberByName.possibleMatches?.join(", ")}. Falling back to email.`
@@ -546,7 +546,7 @@ export async function executeLinearImport(
 						}
 					)) as any;
 
-					if (memberResult && memberResult.member) {
+					if (memberResult?.member) {
 						linearCtx.memberMap.set(user.id, memberResult.member._id);
 						if (memberResult.created) {
 							await ctx.log(
@@ -559,7 +559,7 @@ export async function executeLinearImport(
 								`Found existing member for Linear user ${user.name}: ${memberResult.member._id}`
 							);
 						}
-					} else if (memberResult && memberResult.reason) {
+					} else if (memberResult?.reason) {
 						await ctx.log(
 							"warn",
 							`Failed to auto-invite Linear user ${user.name}: ${memberResult.reason}`

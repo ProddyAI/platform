@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "proddy",
@@ -128,13 +127,14 @@
   "trustedDependencies": [
     "core-js",
   ],
+  "patchedDependencies": {
+    "@dayhaysoos/convex-database-chat@0.3.0-alpha.1": "patches/@dayhaysoos+convex-database-chat@0.3.0-alpha.1.patch",
+  },
   "overrides": {
     "@babel/plugin-transform-modules-systemjs": ">=7.29.4",
     "axios": ">=1.15.2",
     "fast-uri": ">=3.1.2",
     "langsmith": ">=0.6.0",
-    "mermaid": ">=11.15.0",
-    "postcss": ">=8.5.10",
     "uuid": ">=11.1.1",
   },
   "packages": {
@@ -2831,6 +2831,8 @@
     "mdast-util-find-and-replace/escape-string-regexp": ["escape-string-regexp@5.0.0", "", {}, "sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw=="],
 
     "mermaid/@mermaid-js/parser": ["@mermaid-js/parser@1.1.1", "", { "dependencies": { "@chevrotain/types": "~11.1.1" } }, "sha512-VuHdsYMK1bT6X2JbcAaWAhugTRvRBRyuZgd+c22swUeI9g/ntaxF7CY7dYarhZovofCbUNO0G7JesfmNtjYOCw=="],
+
+    "next/postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3.3.6", "picocolors": "^1.0.0", "source-map-js": "^1.0.2" } }, "sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ=="],
 
     "p-queue/eventemitter3": ["eventemitter3@4.0.7", "", {}, "sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw=="],
 

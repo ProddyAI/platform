@@ -453,7 +453,7 @@ export const storeLinearConnection = internalMutation({
 			organizationId: args.organizationId,
 			organizationName: args.organizationName,
 			tokenLength: args.accessToken.length,
-			tokenPreview: args.accessToken.substring(0, 20) + "...",
+			tokenPreview: `${args.accessToken.substring(0, 20)}...`,
 			hasRefreshToken: !!args.refreshToken,
 		});
 
@@ -1510,6 +1510,7 @@ export const notifyImportComplete = internalAction({
 			status: job.status,
 			channelsImported: job.result?.channelsCreated?.length || 0,
 			messagesImported: job.result?.messagesCreated || 0,
+			workspaceId: job.workspaceId,
 		});
 
 		// Send in-app notification
@@ -2487,7 +2488,7 @@ type MemberCreationResult = {
 	created: boolean;
 	createdUser: boolean;
 	reason?: string;
-	role?: "owner" | "admin" | "member";
+	role?: "owner" | "admin" | "member" | "viewer";
 };
 
 /**
@@ -2507,7 +2508,7 @@ export const _getOrCreateMemberByEmail = internalMutation({
 	},
 	handler: async (ctx, args): Promise<MemberCreationResult> => {
 		// Validate inputs
-		if (!args.email || !args.email.includes("@")) {
+		if (!args.email?.includes("@")) {
 			return {
 				member: null,
 				created: false,
@@ -2566,10 +2567,9 @@ export const _getOrCreateMemberByEmail = internalMutation({
 			const userName = args.name.trim().substring(0, 100);
 
 			// Handle avatar URL - just store the external URL since we can't download in mutations
-			const imageValue: string | undefined =
-				args.avatarUrl && args.avatarUrl.startsWith("http")
-					? args.avatarUrl
-					: undefined;
+			const imageValue: string | undefined = args.avatarUrl?.startsWith("http")
+				? args.avatarUrl
+				: undefined;
 
 			const userId = await ctx.db.insert("users", {
 				email: normalizedEmail,

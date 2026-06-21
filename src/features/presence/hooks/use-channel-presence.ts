@@ -4,7 +4,7 @@ import usePresence from "@convex-dev/presence/react";
 import { useQuery } from "convex/react";
 
 import { api } from "@/../convex/_generated/api";
-import type { Doc, Id } from "@/../convex/_generated/dataModel";
+import type { Id } from "@/../convex/_generated/dataModel";
 
 interface UseChannelPresenceProps {
 	workspaceId: Id<"workspaces">;

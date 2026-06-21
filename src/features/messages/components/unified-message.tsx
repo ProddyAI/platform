@@ -13,7 +13,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
-import type { Doc } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { useChannelId } from "@/hooks/use-channel-id";

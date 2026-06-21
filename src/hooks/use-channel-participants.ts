@@ -2,7 +2,6 @@
 
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
-import type { Doc } from "@/../convex/_generated/dataModel";
 import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-presence";
 import { getUserImageUrl } from "@/lib/placeholder-image";
 import { api } from "../../convex/_generated/api";

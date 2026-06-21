@@ -30,7 +30,7 @@ type AIInsightsResponse = {
  */
 async function executeAIGeneration(
 	prompt: string,
-	schema: z.ZodType<AIInsightsResponse>
+	schema: z.ZodTypeAny
 ): Promise<AIInsightsResponse | null> {
 	const models = [
 		"gemini-2.0-flash",
@@ -51,8 +51,9 @@ async function executeAIGeneration(
 	for (const modelName of models) {
 		try {
 			const result = await generateObject({
+				output: "object",
 				model: google(modelName),
-				schema,
+				schema: schema as z.ZodTypeAny,
 				prompt,
 			});
 			resultObject = result.object;
@@ -605,7 +606,7 @@ ${newTranscript}`;
 				decisions: z.array(z.string()),
 			});
 
-			const object = await executeAIGeneration(prompt, schema);
+			const object = await executeAIGeneration(prompt, schema as z.ZodTypeAny);
 
 			if (object) {
 				await ctx.runMutation(internal.meetingNotes.saveGeneration, {

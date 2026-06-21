@@ -1165,6 +1165,106 @@ const schema = defineSchema({
 		.index("by_status", ["status"])
 		.index("by_workspace_status", ["workspaceId", "status"]),
 
+	// Import metadata tables used for idempotency and cross-platform mapping
+	import_channel_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalChannelId: v.id("channels"),
+		name: v.string(),
+		type: v.string(),
+		description: v.optional(v.string()),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
+
+	import_message_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalMessageId: v.id("messages"),
+		authorMemberId: v.optional(v.id("members")),
+		timestamp: v.number(),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
+
+	import_issue_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalIssueId: v.id("issues"),
+		authorMemberId: v.optional(v.id("members")),
+		timestamp: v.number(),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
+
+	import_file_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalMessageId: v.id("messages"),
+		storageId: v.id("_storage"),
+		name: v.string(),
+		mimeType: v.string(),
+		size: v.number(),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
+
 	// Sprints (Linear-style cycles) — time-boxed iterations of a project's board
 	sprints: defineTable({
 		projectId: v.id("projects"),

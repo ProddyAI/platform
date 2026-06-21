@@ -558,6 +558,7 @@ const ChannelBoardPage = () => {
 					</div>
 				) : (
 					<BoardKanbanView
+						channelId={channelId}
 						disableIssueDrag={isFilteredBoardView}
 						focusedStatusId={focusedStatusId}
 						issues={filteredIssues}

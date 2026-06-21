@@ -4,7 +4,6 @@ import { shallow } from "@liveblocks/client";
 import { useQuery } from "convex/react";
 import { memo, useEffect } from "react";
 import { api } from "@/../convex/_generated/api";
-import type { Doc } from "@/../convex/_generated/dataModel";
 import {
 	useOthers,
 	useOthersConnectionIds,
