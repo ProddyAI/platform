@@ -6,8 +6,17 @@ import {
 	Paragraph,
 	TextRun,
 } from "docx";
-import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
+
+/** Native browser file download — no external package needed */
+const saveAs = (blob: Blob, filename: string) => {
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = filename;
+	a.click();
+	URL.revokeObjectURL(url);
+};
 
 interface ExportData {
 	title: string;

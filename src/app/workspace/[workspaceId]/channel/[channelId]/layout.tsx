@@ -913,7 +913,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 						className={
 							isExpanded
 								? "w-full h-full"
-								: "hidden lg:flex w-[380px] border-l border-border"
+								: "flex w-[380px] border-l border-border"
 						}
 					>
 						<AiNotemaker
