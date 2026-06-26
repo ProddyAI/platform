@@ -1,5 +1,4 @@
 diff --git a/dist/convex/component/_generated/component.d.ts b/dist/convex/component/_generated/component.d.ts
-index 42ad3aab..61cd91b2 100644
 --- a/dist/convex/component/_generated/component.d.ts
 +++ b/dist/convex/component/_generated/component.d.ts
 @@ -133,22 +133,91 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
@@ -104,7 +103,6 @@ index 42ad3aab..61cd91b2 100644
      };
  };
 diff --git a/convex/component/_generated/component.ts b/convex/component/_generated/component.ts
-index b1e1b12a..d37ba2f0 100644
 --- a/convex/component/_generated/component.ts
 +++ b/convex/component/_generated/component.ts
 @@ -143,33 +143,132 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
