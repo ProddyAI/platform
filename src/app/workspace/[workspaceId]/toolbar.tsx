@@ -25,6 +25,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
@@ -830,21 +831,23 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 			{/* Right section - Actions */}
 			<div className="ml-auto flex flex-1 items-center justify-end gap-x-1.5 md:gap-x-3 px-3 md:px-6">
-				{/* AI Notemaker Component */}
-				<div className="hidden md:flex">
-					<Button
-						className="gap-2 h-9 bg-white/10 hover:bg-white/20 text-white border-white/20"
-						onClick={() => {
-							setAiNotemakerOpen(true);
-							generateNotes();
-						}}
-						size="sm"
-						variant="outline"
-					>
-						<Sparkles className="size-4" />
-						<span className="hidden sm:inline">Generate AI Notes</span>
-					</Button>
-				</div>
+				{/* AI Notemaker Component - only shown on channel pages */}
+				{channelId && (
+					<div className="hidden md:flex">
+						<Button
+							className="gap-2 h-9 bg-white/10 hover:bg-white/20 text-white border-white/20"
+							onClick={() => {
+								setAiNotemakerOpen(true);
+								generateNotes();
+							}}
+							size="sm"
+							variant="outline"
+						>
+							<Sparkles className="size-4" />
+							<span className="hidden sm:inline">Generate AI Notes</span>
+						</Button>
+					</div>
+				)}
 
 				{/* Mobile Search Button */}
 				<div className="md:hidden">
