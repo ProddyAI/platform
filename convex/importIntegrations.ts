@@ -2004,6 +2004,14 @@ export const storeImportedMessage = internalMutation({
 		externalId: v.string(),
 		idempotencyKey: v.string(),
 		body: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
 		authorMemberId: v.optional(v.id("members")),
 		timestamp: v.number(),
 		parentMessageId: v.optional(v.id("messages")),
@@ -2020,7 +2028,7 @@ export const storeImportedMessage = internalMutation({
 			body: args.body,
 			updatedAt: args.timestamp,
 			parentMessageId: args.parentMessageId,
-			tags: ["imported", "slack"],
+			tags: ["imported", args.platform],
 		});
 
 		// Store metadata about the external message
@@ -2029,7 +2037,7 @@ export const storeImportedMessage = internalMutation({
 			jobId: undefined, // Will be set by caller if needed
 			externalId: args.externalId,
 			idempotencyKey: args.idempotencyKey,
-			platform: "slack",
+			platform: args.platform,
 			internalMessageId: messageId,
 			authorMemberId: args.authorMemberId,
 			timestamp: args.timestamp,

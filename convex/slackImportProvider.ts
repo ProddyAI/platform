@@ -1014,6 +1014,7 @@ async function storeChannel(
 				idempotencyKey,
 				name: channel.name,
 				type: channel.type,
+				platform: "slack",
 				description: channel.description,
 				metadata: channel.metadata,
 			}
@@ -1033,6 +1034,7 @@ async function storeChannel(
 			idempotencyKey,
 			name: channel.name,
 			type: channel.type,
+			platform: "slack",
 			description: channel.description,
 			metadata: channel.metadata,
 		}
@@ -1105,6 +1107,7 @@ async function storeMessages(
 					externalId: message.externalId,
 					idempotencyKey,
 					body: message.body,
+					platform: "slack",
 					authorMemberId: memberId,
 					timestamp: message.timestamp,
 					parentMessageId: parentMessageId as Id<"messages"> | undefined,

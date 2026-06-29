@@ -576,6 +576,7 @@ async function storeProject(
 			idempotencyKey,
 			name: project.name,
 			type: project.type,
+			platform: "todoist",
 			description: project.description,
 			metadata: project.metadata,
 		}
@@ -646,6 +647,7 @@ async function storeTask(
 			externalId: task.id,
 			idempotencyKey,
 			body,
+			platform: "todoist",
 			timestamp: task.created_at
 				? new Date(task.created_at).getTime()
 				: Date.now(),
@@ -704,6 +706,7 @@ async function storeComment(
 			externalId: comment.id,
 			idempotencyKey,
 			body: comment.content,
+			platform: "todoist",
 			timestamp: new Date(comment.posted_at).getTime(),
 			parentMessageId: parentMessageId as any,
 			metadata: {
