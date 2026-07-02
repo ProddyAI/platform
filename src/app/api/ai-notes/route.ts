@@ -1,14 +1,26 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { openai } from "@ai-sdk/openai";
+import { generateObject } from "ai";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
-const apiKey =
-	process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+const notesSchema = z.object({
+	summary: z.string(),
+	actionItems: z.array(
+		z.object({
+			title: z.string(),
+			assigneeName: z.string().nullable(),
+			assigneeUserId: z.string().nullable(),
+			priority: z.enum(["high", "medium", "low"]),
+		})
+	),
+	decisions: z.array(z.string()),
+});
 
 export async function POST(req: Request) {
 	try {
-		if (!apiKey) {
+		if (!process.env.OPENAI_API_KEY) {
 			return NextResponse.json(
-				{ error: "Missing GEMINI API Key" },
+				{ error: "AI service is not configured. Missing OPENAI_API_KEY." },
 				{ status: 500 }
 			);
 		}
@@ -22,9 +34,6 @@ export async function POST(req: Request) {
 				{ status: 400 }
 			);
 		}
-
-		const genAI = new GoogleGenerativeAI(apiKey);
-		const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 		const prompt = `
 You are an expert AI Meeting Assistant. Your job is to analyze the following meeting transcript and extract structured intelligence.
@@ -41,44 +50,18 @@ Instructions:
    - Determine the priority (high, medium, or low).
 3. Identify all key decisions made during the meeting.
 
-You MUST respond in valid JSON format exactly matching this schema:
-{
-  "summary": "String",
-  "actionItems": [
-    {
-      "title": "String",
-      "assigneeName": "String | null",
-      "assigneeUserId": "String | null",
-      "priority": "high | medium | low"
-    }
-  ],
-  "decisions": ["String"]
-}
-
 Meeting Transcript:
 ${transcript}
 `;
 
-		const result = await model.generateContent({
-			contents: [{ role: "user", parts: [{ text: prompt }] }],
-			generationConfig: {
-				responseMimeType: "application/json",
-				temperature: 0.2,
-			},
+		const { object } = await generateObject({
+			model: openai("gpt-4o-mini"),
+			schema: notesSchema,
+			prompt,
+			temperature: 0.2,
 		});
 
-		const responseText = result.response.text();
-
-		try {
-			const parsedNotes = JSON.parse(responseText);
-			return NextResponse.json({ notes: parsedNotes });
-		} catch (_parseError) {
-			console.error("[AI-NOTES] Failed to parse JSON:", responseText);
-			return NextResponse.json(
-				{ error: "AI generated an invalid response format." },
-				{ status: 500 }
-			);
-		}
+		return NextResponse.json({ notes: object });
 	} catch (error) {
 		console.error(
 			"[AI-NOTES] Error:",

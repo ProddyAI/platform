@@ -82,8 +82,15 @@ export default async function middleware(
 	req: Parameters<typeof authMiddleware>[0],
 	event: Parameters<typeof authMiddleware>[1]
 ) {
-	// Allow Slack OAuth callback to pass through without auth handling
-	if (req.nextUrl.pathname === "/api/import/slack/callback") {
+	// Allow OAuth callback routes to pass through without auth handling
+	// These routes must be publicly accessible for OAuth to work
+	const oauthCallbackPaths = [
+		"/api/import/slack/callback",
+		"/api/import/todoist/callback",
+		"/api/import/linear/callback",
+	];
+
+	if (oauthCallbackPaths.some((path) => req.nextUrl.pathname === path)) {
 		return NextResponse.next();
 	}
 

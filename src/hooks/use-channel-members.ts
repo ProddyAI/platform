@@ -10,10 +10,10 @@ export const useChannelMembers = (
 	_channelId: Id<"channels">
 ) => {
 	// Get all members of the workspace
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	// Get the current user's member info
-	const currentMember = useQuery(api.members.current, { workspaceId });
+	const currentMember = useQuery(api.members.current, { workspaceId }) as any;
 
 	// Get presence data using the new presence system
 	const { presenceState } = useWorkspacePresence({ workspaceId });

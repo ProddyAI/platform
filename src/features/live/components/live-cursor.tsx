@@ -27,7 +27,7 @@ export const LiveCursor = memo(
 		}));
 
 		// Fetch members from Convex database
-		const members = useQuery(api.members.get, { workspaceId });
+		const members = useQuery(api.members.get, { workspaceId }) as any;
 
 		// Update the user name whenever other or members changes
 		useEffect(() => {

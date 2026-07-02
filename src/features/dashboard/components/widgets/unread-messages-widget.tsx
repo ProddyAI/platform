@@ -41,9 +41,10 @@ export const UnreadMessagesWidget = ({
 		useGetUnreadDirectMessagesCount();
 	const markAsRead = useMarkDirectMessageAsRead();
 	const markAllAsRead = useMarkAllDirectMessagesAsRead();
+	type DirectMessageItem = NonNullable<typeof rawMessages>[number];
 
 	// Filter out messages with invalid data
-	const messages = rawMessages
+	const messages: DirectMessageItem[] = rawMessages
 		? rawMessages.filter(
 				(message) =>
 					message !== undefined &&

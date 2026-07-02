@@ -14,6 +14,12 @@ interface ChartData {
 	value: number;
 }
 
+interface MetricItem {
+	title: string;
+	value: string | number;
+	description?: string;
+}
+
 export class PDFExporter {
 	private doc: jsPDF;
 	private currentY: number = 20;
@@ -106,13 +112,7 @@ export class PDFExporter {
 		this.doc.setTextColor(0, 0, 0);
 	}
 
-	private addMetricGrid(
-		metrics: Array<{
-			title: string;
-			value: string | number;
-			description?: string;
-		}>
-	) {
+	private addMetricGrid(metrics: MetricItem[]) {
 		const cardsPerRow = 2;
 		const cardWidth = 85;
 		const cardSpacing = 10;
@@ -207,7 +207,7 @@ export class PDFExporter {
 				this.addSpace(10);
 
 				// Prepare overview metrics for grid layout
-				const overviewMetrics = [];
+				const overviewMetrics: MetricItem[] = [];
 
 				if (data.overview.totalMessages !== undefined) {
 					overviewMetrics.push({
@@ -255,7 +255,7 @@ export class PDFExporter {
 				this.addSpace(10);
 
 				// Prepare message metrics
-				const messageMetrics = [];
+				const messageMetrics: MetricItem[] = [];
 
 				if (data.messages.totalMessages !== undefined) {
 					messageMetrics.push({
@@ -322,7 +322,7 @@ export class PDFExporter {
 				this.addSpace(10);
 
 				// Prepare task metrics
-				const taskMetrics = [];
+				const taskMetrics: MetricItem[] = [];
 
 				if (data.tasks.totalTasks !== undefined) {
 					taskMetrics.push({

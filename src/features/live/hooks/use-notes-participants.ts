@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
 import { api } from "@/../convex/_generated/api";
+import type { Doc } from "@/../convex/_generated/dataModel";
 import { useOthers, useRoom, useSelf } from "@/../liveblocks.config";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { getUserImageUrl } from "@/lib/placeholder-image";
@@ -17,7 +18,7 @@ export const useNotesParticipants = () => {
 	const [participantCount, setParticipantCount] = useState(0);
 
 	// Fetch members from the database
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	// Get the current user's member info
 	const currentMember = useQuery(api.members.current, { workspaceId });
@@ -46,7 +47,7 @@ export const useNotesParticipants = () => {
 	}
 
 	// Create a map of Convex users by their ID for quick lookup
-	const userMap = new Map();
+	const userMap = new Map<string, Doc<"members">>();
 	if (members) {
 		members.forEach((member) => {
 			userMap.set(member.user._id, member);
@@ -56,9 +57,9 @@ export const useNotesParticipants = () => {
 	// Format participants with their user info - DIRECT DATABASE APPROACH
 	const participants = others.map((other) => {
 		const userId = other.id;
-		let member = null;
-		let userName = null;
-		let userPicture = null;
+		let member: Doc<"members"> | null = null;
+		let userName: string | null = null;
+		let userPicture: string | undefined | null = null;
 
 		// DIRECT DATABASE APPROACH: Always try to get the actual user name from the database first
 		if (userId && members) {

@@ -22,7 +22,7 @@ export function formatDuration(
 			return `${seconds}s`;
 		}
 	} else {
-		const parts = [];
+		const parts: string[] = [];
 
 		if (days > 0) {
 			parts.push(`${days} ${days === 1 ? "day" : "days"}`);

@@ -26,7 +26,7 @@ export const Cursor = memo(({ connectionId }: CursorProps) => {
 	}));
 
 	// Fetch members from Convex database
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	// Fetch current user to get their ID
 	const _currentUser = useQuery(api.users.current);

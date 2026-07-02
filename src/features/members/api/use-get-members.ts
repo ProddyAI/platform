@@ -9,6 +9,8 @@ interface UseGetMembersProps {
 	workspaceId?: Id<"workspaces">;
 }
 
+export type GetMembersReturnType = typeof api.members.get._returnType;
+
 export const useGetMembers = ({ workspaceId }: UseGetMembersProps) => {
 	const data = useQuery(
 		api.members.get,

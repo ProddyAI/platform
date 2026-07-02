@@ -1897,9 +1897,7 @@ ${messageContext}`;
 		return { answer, sources: [] };
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : "";
-		const detail = errorMessage.includes(
-			"GOOGLE_GENERATIVE_AI_API_KEY is required"
-		)
+		const detail = errorMessage.includes("OPENAI_API_KEY is required")
 			? "AI is not configured for this environment."
 			: "AI summarization is temporarily unavailable.";
 		return {
@@ -1978,9 +1976,7 @@ ${lines.map((l: string) => `- ${l}`).join("\n")}`;
 		return { answer, sources: ["Messages"] };
 	} catch (e) {
 		const errorMessage = e instanceof Error ? e.message : "";
-		const detail = errorMessage.includes(
-			"GOOGLE_GENERATIVE_AI_API_KEY is required"
-		)
+		const detail = errorMessage.includes("OPENAI_API_KEY is required")
 			? "AI is not configured for workspace summaries."
 			: "AI workspace summary is temporarily unavailable.";
 		return { answer: detail, sources: ["Messages"] };
@@ -2761,9 +2757,7 @@ async function handleChannelsOverviewRoute(
 		return { answer, sources: ["Messages"] };
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : "";
-		const detail = errorMessage.includes(
-			"GOOGLE_GENERATIVE_AI_API_KEY is required"
-		)
+		const detail = errorMessage.includes("OPENAI_API_KEY is required")
 			? "AI is not configured for channel summaries."
 			: "AI channel summary is temporarily unavailable.";
 		const fallback = activeChannels
@@ -2904,9 +2898,7 @@ async function handleOverviewRoute(
 		}
 	} catch (e) {
 		const errorMessage = e instanceof Error ? e.message : "";
-		channelRecap = errorMessage.includes(
-			"GOOGLE_GENERATIVE_AI_API_KEY is required"
-		)
+		channelRecap = errorMessage.includes("OPENAI_API_KEY is required")
 			? "AI is not configured for workspace summaries."
 			: "AI workspace summary is temporarily unavailable.";
 	}

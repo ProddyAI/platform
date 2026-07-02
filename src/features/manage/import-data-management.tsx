@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import {
 	AlertCircle,
 	CheckCircle2,
@@ -21,6 +22,7 @@ import {
 	SiTodoist,
 } from "react-icons/si";
 import { toast } from "sonner";
+import { api } from "@/../convex/_generated/api";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,8 +57,12 @@ import { useCancelImportJob } from "@/features/imports/api/use-cancel-import-job
 import { useDisconnectImport } from "@/features/imports/api/use-disconnect-import";
 import { useGetImportConnections } from "@/features/imports/api/use-get-import-connections";
 import { useGetImportJobs } from "@/features/imports/api/use-get-import-jobs";
+import { useInitiateLinearOAuth } from "@/features/imports/api/use-initiate-linear-oauth";
 import { useInitiateSlackOAuth } from "@/features/imports/api/use-initiate-slack-oauth";
+import { useInitiateTodoistOAuth } from "@/features/imports/api/use-initiate-todoist-oauth";
+import { useStartLinearImport } from "@/features/imports/api/use-start-linear-import";
 import { useStartSlackImport } from "@/features/imports/api/use-start-slack-import";
+import { useStartTodoistImport } from "@/features/imports/api/use-start-todoist-import";
 
 interface ImportDataManagementProps {
 	workspaceId: Id<"workspaces">;
@@ -80,7 +86,7 @@ const PLATFORMS = [
 		description: "Import tasks, projects, and labels from Todoist",
 		icon: SiTodoist,
 		color: "bg-red-100 text-red-700 border-red-300",
-		available: false, // Coming soon
+		available: true,
 	},
 	{
 		id: "linear",
@@ -88,7 +94,7 @@ const PLATFORMS = [
 		description: "Import issues, projects, and workflows from Linear",
 		icon: SiLinear,
 		color: "bg-blue-100 text-blue-700 border-blue-300",
-		available: false, // Coming soon
+		available: true,
 	},
 	{
 		id: "notion",
@@ -128,7 +134,10 @@ export const ImportDataManagement = ({
 	const [importConfig, setImportConfig] = useState({
 		includeFiles: true,
 		includeThreads: true,
+		includeCompleted: true,
+		includeComments: true,
 		channels: [] as string[],
+		targetChannelId: undefined as string | undefined,
 	});
 
 	// Hooks
@@ -138,27 +147,58 @@ export const ImportDataManagement = ({
 		limit: 10,
 	});
 	const initiateSlackOAuth = useInitiateSlackOAuth();
+	const initiateTodoistOAuth = useInitiateTodoistOAuth();
+	const initiateLinearOAuth = useInitiateLinearOAuth();
 	const startSlackImport = useStartSlackImport();
+	const startTodoistImport = useStartTodoistImport();
+	const startLinearImport = useStartLinearImport();
 	const disconnectImport = useDisconnectImport();
 	const cancelImportJob = useCancelImportJob();
 
+	// Fetch channels for Linear import target selection
+	const channels = useQuery(api.channels.get, {
+		workspaceId,
+	});
+
 	const handleConnect = async (platformId: string) => {
-		if (platformId !== "slack") {
-			toast.info("This platform will be available soon!");
-			return;
-		}
-
-		try {
-			const result = await initiateSlackOAuth.mutate(
-				{ workspaceId },
-				{ throwError: true }
-			);
-
-			if (result?.authUrl) {
-				window.location.href = result.authUrl;
+		if (platformId === "slack") {
+			try {
+				const result = await initiateSlackOAuth.mutate(
+					{ workspaceId },
+					{ throwError: true }
+				);
+				if (result?.authUrl) window.location.href = result.authUrl;
+			} catch (error) {
+				toast.error(
+					error instanceof Error ? error.message : "Failed to start connection"
+				);
 			}
-		} catch (_error) {
-			toast.error("Failed to start connection");
+		} else if (platformId === "todoist") {
+			try {
+				const result = await initiateTodoistOAuth.mutate(
+					{ workspaceId },
+					{ throwError: true }
+				);
+				if (result?.authUrl) window.location.href = result.authUrl;
+			} catch (error) {
+				toast.error(
+					error instanceof Error ? error.message : "Failed to start connection"
+				);
+			}
+		} else if (platformId === "linear") {
+			try {
+				const result = await initiateLinearOAuth.mutate(
+					{ workspaceId },
+					{ throwError: true }
+				);
+				if (result?.authUrl) window.location.href = result.authUrl;
+			} catch (error) {
+				toast.error(
+					error instanceof Error ? error.message : "Failed to start connection"
+				);
+			}
+		} else {
+			toast.info("This platform will be available soon!");
 		}
 	};
 
@@ -183,15 +223,48 @@ export const ImportDataManagement = ({
 					{ throwError: true }
 				);
 				toast.success(
-					"Import started! You'll receive an email when it's complete."
+					"Import started! You'll receive a notification when it's complete."
+				);
+			} else if (selectedPlatform === "todoist") {
+				await startTodoistImport.mutate(
+					{
+						workspaceId,
+						config: {
+							includeCompleted: importConfig.includeCompleted,
+							includeComments: importConfig.includeComments,
+						},
+					},
+					{ throwError: true }
+				);
+				toast.success(
+					"Import started! You'll receive a notification when it's complete."
+				);
+			} else if (selectedPlatform === "linear") {
+				await startLinearImport.mutate(
+					{
+						workspaceId,
+						config: {
+							includeArchived: importConfig.includeCompleted,
+							includeComments: importConfig.includeComments,
+							targetChannelId: importConfig.targetChannelId as
+								| Id<"channels">
+								| undefined,
+						},
+					},
+					{ throwError: true }
+				);
+				toast.success(
+					"Import started! You'll receive a notification when it's complete."
 				);
 			} else {
 				toast.info("This platform import is not yet implemented");
 			}
 
 			setConfigDialogOpen(false);
-		} catch (_error) {
-			toast.error("Failed to start import");
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : "Failed to start import"
+			);
 		}
 	};
 
@@ -229,12 +302,13 @@ export const ImportDataManagement = ({
 
 	const getConnectionForPlatform = (platformId: string) => {
 		return connections?.find(
-			(c) => c.platform === platformId && c.status === "active"
+			(c: Doc<"import_connections">) =>
+				c.platform === platformId && c.status === "active"
 		);
 	};
 
 	const getLatestJobForPlatform = (platformId: string) => {
-		return jobs?.find((j) => j.platform === platformId);
+		return jobs?.find((j: Doc<"import_jobs">) => j.platform === platformId);
 	};
 
 	const formatDate = (timestamp: number) => {
@@ -295,8 +369,8 @@ export const ImportDataManagement = ({
 			<div>
 				<h3 className="text-lg font-medium">Import Data</h3>
 				<p className="text-sm text-muted-foreground">
-					Connect to external platforms and import your data into Proddy.
-					Currently supports Slack with more platforms coming soon.
+					Connect to external platforms and import your data into Proddy. Slack
+					and Linear are fully supported. More platforms coming soon.
 				</p>
 			</div>
 
@@ -349,7 +423,13 @@ export const ImportDataManagement = ({
 											<Button
 												className="flex-1"
 												disabled={
-													!platform.available || startSlackImport.isPending
+													!platform.available ||
+													(platform.id === "slack" &&
+														startSlackImport.isPending) ||
+													(platform.id === "linear" &&
+														startLinearImport.isPending) ||
+													(platform.id === "todoist" &&
+														startTodoistImport.isPending)
 												}
 												onClick={() => handleStartImport(platform.id)}
 												size="sm"
@@ -407,11 +487,16 @@ export const ImportDataManagement = ({
 										{latestJob.status === "completed" && latestJob.result && (
 											<p className="text-xs text-muted-foreground">
 												{latestJob.result?.channelsCreated?.length ?? 0}{" "}
-												channels,{" "}
+												{latestJob.platform === "linear"
+													? "projects"
+													: "channels"}
+												,{" "}
 												{(
 													latestJob.result?.messagesCreated ?? 0
 												).toLocaleString()}{" "}
-												messages
+												{latestJob.platform === "linear"
+													? "issues"
+													: "messages"}
 											</p>
 										)}
 									</div>
@@ -441,7 +526,7 @@ export const ImportDataManagement = ({
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{jobs.map((job) => (
+									{jobs.map((job: Doc<"import_jobs">) => (
 										<TableRow key={job._id}>
 											<TableCell className="font-medium">
 												{PLATFORMS.find((p) => p.id === job.platform)?.name ||
@@ -479,13 +564,17 @@ export const ImportDataManagement = ({
 													<div className="text-xs space-y-1">
 														<div>
 															{job.result?.channelsCreated?.length ?? 0}{" "}
-															channels
+															{job.platform === "linear"
+																? "projects"
+																: "channels"}
 														</div>
 														<div>
 															{(
 																job.result?.messagesCreated ?? 0
 															).toLocaleString()}{" "}
-															messages
+															{job.platform === "linear"
+																? "issues"
+																: "messages"}
 														</div>
 													</div>
 												) : (
@@ -537,42 +626,152 @@ export const ImportDataManagement = ({
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">
-						<div className="flex items-center space-x-2">
-							<Checkbox
-								checked={importConfig.includeFiles}
-								id="includeFiles"
-								onCheckedChange={(checked) =>
-									setImportConfig((prev) => ({
-										...prev,
-										includeFiles: checked as boolean,
-									}))
-								}
-							/>
-							<Label className="text-sm font-normal" htmlFor="includeFiles">
-								Include file attachments
-							</Label>
-						</div>
-						<div className="flex items-center space-x-2">
-							<Checkbox
-								checked={importConfig.includeThreads}
-								id="includeThreads"
-								onCheckedChange={(checked) =>
-									setImportConfig((prev) => ({
-										...prev,
-										includeThreads: checked as boolean,
-									}))
-								}
-							/>
-							<Label className="text-sm font-normal" htmlFor="includeThreads">
-								Include threaded conversations
-							</Label>
-						</div>
-						<div className="pt-2">
-							<p className="text-sm text-muted-foreground">
-								The import will include all accessible channels and messages.
-								This may take several minutes depending on the amount of data.
-							</p>
-						</div>
+						{selectedPlatform === "slack" && (
+							<>
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										checked={importConfig.includeFiles}
+										id="includeFiles"
+										onCheckedChange={(checked) =>
+											setImportConfig((prev) => ({
+												...prev,
+												includeFiles: checked as boolean,
+											}))
+										}
+									/>
+									<Label htmlFor="includeFiles">Include file attachments</Label>
+								</div>
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										checked={importConfig.includeThreads}
+										id="includeThreads"
+										onCheckedChange={(checked) =>
+											setImportConfig((prev) => ({
+												...prev,
+												includeThreads: checked as boolean,
+											}))
+										}
+									/>
+									<Label htmlFor="includeThreads">
+										Include threaded conversations
+									</Label>
+								</div>
+								<p className="text-sm text-muted-foreground">
+									The import will include all accessible channels and messages.
+								</p>
+							</>
+						)}
+
+						{selectedPlatform === "todoist" && (
+							<>
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										checked={importConfig.includeCompleted}
+										id="includeCompleted"
+										onCheckedChange={(checked) =>
+											setImportConfig((prev) => ({
+												...prev,
+												includeCompleted: checked as boolean,
+											}))
+										}
+									/>
+									<Label htmlFor="includeCompleted">
+										Include completed tasks
+									</Label>
+								</div>
+								<div className="flex items-center space-x-2">
+									<Checkbox
+										checked={importConfig.includeComments}
+										id="includeComments"
+										onCheckedChange={(checked) =>
+											setImportConfig((prev) => ({
+												...prev,
+												includeComments: checked as boolean,
+											}))
+										}
+									/>
+									<Label htmlFor="includeComments">Include task comments</Label>
+								</div>
+								<p className="text-sm text-muted-foreground">
+									The import will include all projects and tasks from your
+									Todoist account.
+								</p>
+							</>
+						)}
+
+						{selectedPlatform === "linear" && (
+							<>
+								<div className="space-y-3">
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											checked={importConfig.includeCompleted}
+											id="linearIncludeArchived"
+											onCheckedChange={(checked) =>
+												setImportConfig((prev) => ({
+													...prev,
+													includeCompleted: checked as boolean,
+												}))
+											}
+										/>
+										<Label htmlFor="linearIncludeArchived">
+											Include completed issues
+										</Label>
+									</div>
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											checked={importConfig.includeComments}
+											id="linearIncludeComments"
+											onCheckedChange={(checked) =>
+												setImportConfig((prev) => ({
+													...prev,
+													includeComments: checked as boolean,
+												}))
+											}
+										/>
+										<Label htmlFor="linearIncludeComments">
+											Include issue comments
+										</Label>
+									</div>
+								</div>
+
+								<div className="space-y-2 pt-2">
+									<Label htmlFor="targetChannel">Import Destination</Label>
+									<select
+										className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+										id="targetChannel"
+										onChange={(e) =>
+											setImportConfig((prev) => ({
+												...prev,
+												targetChannelId: e.target.value || undefined,
+											}))
+										}
+										value={importConfig.targetChannelId || ""}
+									>
+										<option value="">
+											Create new projects (one per Linear team)
+										</option>
+										{channels?.map((channel) => (
+											<option key={channel._id} value={channel._id}>
+												Import into: {channel.name}
+											</option>
+										))}
+									</select>
+									<p className="text-xs text-muted-foreground">
+										{importConfig.targetChannelId
+											? "All Linear teams and issues will be imported into the selected channel."
+											: "Each Linear team will be created as a separate project in the Projects tab. Issues are imported and assignees are matched automatically."}
+									</p>
+								</div>
+
+								<div className="space-y-2 pt-2">
+									<div className="text-xs text-muted-foreground">
+										<strong>Note:</strong> Linear states (Todo, In Progress,
+										Done, etc.) will be automatically mapped to existing channel
+										statuses.
+									</div>
+								</div>
+							</>
+						)}
 					</div>
 					<DialogFooter>
 						<Button
@@ -582,7 +781,11 @@ export const ImportDataManagement = ({
 							Cancel
 						</Button>
 						<Button
-							disabled={startSlackImport.isPending}
+							disabled={
+								startSlackImport.isPending ||
+								startTodoistImport.isPending ||
+								startLinearImport.isPending
+							}
 							onClick={handleConfirmImport}
 						>
 							<Download className="h-4 w-4 mr-2" />

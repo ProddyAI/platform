@@ -164,6 +164,7 @@ export const BlockNoteEditor = ({
 	}
 
 	if (!sync.editor) {
+		const canCreate = "create" in sync && typeof sync.create === "function";
 		return (
 			<div className="flex h-full w-full items-center justify-center">
 				<div className="text-center space-y-3">
@@ -172,9 +173,15 @@ export const BlockNoteEditor = ({
 					</p>
 					<button
 						className="px-4 py-2 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 transition-colors"
-						onClick={() =>
-							sync.create({ type: "doc", content: [{ type: "paragraph" }] })
-						}
+						disabled={!canCreate}
+						onClick={() => {
+							if ("create" in sync && typeof sync.create === "function") {
+								sync.create({
+									type: "doc",
+									content: [{ type: "paragraph" }],
+								});
+							}
+						}}
 						type="button"
 					>
 						Initialize Editor

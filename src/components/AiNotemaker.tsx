@@ -216,18 +216,12 @@ export const AiNotemaker = ({
 					title: notes.title || undefined,
 					transcript,
 					summary: notes.summary || "",
-					actionItems: (notes.actionItems || []).map(
-						(a: {
-							title: string;
-							assigneeName?: string;
-							priority?: string;
-						}) => {
-							let label = a.title;
-							if (a.assigneeName) label += ` → ${a.assigneeName}`;
-							if (a.priority) label += ` [${a.priority}]`;
-							return label;
-						}
-					),
+					actionItems: (notes.actionItems || []).map((a: any) => {
+						let label = a.title;
+						if (a.assigneeName) label += ` → ${a.assigneeName}`;
+						if (a.priority) label += ` [${a.priority}]`;
+						return label;
+					}),
 					decisions: notes.decisions || [],
 				});
 				toast.success("✅ Notes saved to Meeting Notes history!");
@@ -364,7 +358,7 @@ export const AiNotemaker = ({
 								AI Meeting Assistant
 							</h2>
 							<p className="text-xs text-gray-500 font-medium">
-								Powered by Gemini
+								Smart notes, action items & decisions
 							</p>
 						</div>
 					</div>
@@ -540,7 +534,7 @@ export const AiNotemaker = ({
 										Structuring your intelligence...
 									</p>
 									<p className="text-sm text-gray-500 animate-pulse">
-										Gemini is analyzing the transcript
+										AI is analyzing the transcript
 									</p>
 								</div>
 							</div>
@@ -959,7 +953,7 @@ export const AiNotemaker = ({
 									className="bg-gray-50 border-gray-200 focus-visible:ring-blue-500 h-12 rounded-xl px-5 shadow-inner transition-all hover:bg-gray-100 focus:bg-white text-[15px]"
 									disabled={isChatting}
 									onChange={(e) => setChatInput(e.target.value)}
-									placeholder="Ask Gemini to refine notes or extract more details..."
+									placeholder="Ask AI to refine notes or extract more details..."
 									value={chatInput}
 								/>
 								<Button

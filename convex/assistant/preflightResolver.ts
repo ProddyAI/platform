@@ -159,15 +159,23 @@ async function appendNoteLookupContext(
 	plan: PreflightPlan
 ) {
 	if (plan.intent === "note_lookup") {
-		const toolName = plan.noteQuery ? "searchNotes" : "getRecentNotes";
-		const noteResult = (await args.ctx.runQuery(
-			plan.noteQuery
-				? api.assistantTools.searchNotes
-				: api.assistantTools.getRecentNotes,
-			plan.noteQuery
-				? { workspaceId: args.workspaceId, query: plan.noteQuery, limit: 6 }
-				: { workspaceId: args.workspaceId, limit: 6 }
-		)) as { notes?: unknown[] } | null;
+		let toolName: "searchNotes" | "getRecentNotes";
+		let noteResult: { notes?: unknown[] } | null;
+
+		if (plan.noteQuery) {
+			toolName = "searchNotes";
+			noteResult = (await args.ctx.runQuery(api.assistantTools.searchNotes, {
+				workspaceId: args.workspaceId,
+				query: plan.noteQuery,
+				limit: 6,
+			})) as { notes?: unknown[] } | null;
+		} else {
+			toolName = "getRecentNotes";
+			noteResult = (await args.ctx.runQuery(api.assistantTools.getRecentNotes, {
+				workspaceId: args.workspaceId,
+				limit: 6,
+			})) as { notes?: unknown[] } | null;
+		}
 
 		pushSourceRefs(state, toolName, noteResult);
 		state.summaryLines.push(

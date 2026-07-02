@@ -16,7 +16,7 @@ export const useChannelPresence = ({
 	channelId,
 }: UseChannelPresenceProps) => {
 	const currentUser = useQuery(api.users.current);
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.members.get, { workspaceId }) as any;
 
 	const userIdForHook = (currentUser?._id as string | undefined) || "anonymous";
 

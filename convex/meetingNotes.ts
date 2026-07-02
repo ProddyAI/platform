@@ -1,6 +1,6 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { v } from "convex/values";
 import { z } from "zod";
 import { api, internal } from "./_generated/api";
@@ -30,29 +30,23 @@ type AIInsightsResponse = {
  */
 async function executeAIGeneration(
 	prompt: string,
-	schema: z.ZodType<AIInsightsResponse>
+	schema: z.ZodTypeAny
 ): Promise<AIInsightsResponse | null> {
-	const models = [
-		"gemini-2.0-flash",
-		"gemini-2.5-flash",
-		"gemini-2.0-flash-lite",
-	];
-	const apiKey =
-		process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+	const models = ["gpt-4o-mini", "gpt-4o"];
 
-	if (!apiKey) {
-		throw new Error("GEMINI_API_KEY is not set.");
+	if (!process.env.OPENAI_API_KEY) {
+		throw new Error("OPENAI_API_KEY is not set.");
 	}
 
-	const google = createGoogleGenerativeAI({ apiKey });
 	let lastError: unknown = null;
 	let resultObject: AIInsightsResponse | null = null;
 
 	for (const modelName of models) {
 		try {
 			const result = await generateObject({
-				model: google(modelName),
-				schema,
+				output: "object",
+				model: openai(modelName),
+				schema: schema as z.ZodTypeAny,
 				prompt,
 			});
 			resultObject = result.object;
@@ -82,74 +76,11 @@ async function executeAIGeneration(
 		}
 	}
 
-	if (!resultObject && process.env.OPENAI_API_KEY) {
-		// skipcq: JS-0002
-		console.log(
-			"All Gemini models failed. Falling back to OpenAI gpt-4o-mini..."
-		);
-		resultObject = await fallbackToOpenAI(prompt);
-	}
-
 	if (!resultObject) {
 		throw lastError || new Error("All AI models are currently unavailable.");
 	}
 
 	return resultObject;
-}
-
-/**
- * Fallback to OpenAI if Gemini fails.
- */
-async function fallbackToOpenAI(
-	prompt: string
-): Promise<AIInsightsResponse | null> {
-	try {
-		const response = await fetch("https://api.openai.com/v1/chat/completions", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-			},
-			body: JSON.stringify({
-				model: "gpt-4o-mini",
-				response_format: { type: "json_object" },
-				messages: [
-					{
-						role: "system",
-						content: `You must respond with valid JSON matching exactly this format:
-{
-  "summary": "Concise executive summary",
-  "actionItems": [
-    {
-      "title": "Task description",
-      "assignee": "Person name or null",
-      "dueDate": "Due date or null",
-      "priority": "low" | "medium" | "high"
-    }
-  ],
-  "decisions": ["Decision 1", "Decision 2"]
-}`,
-					},
-					{ role: "user", content: prompt },
-				],
-				temperature: 0.2,
-			}),
-		});
-
-		if (response.ok) {
-			const data = (await response.json()) as {
-				choices: { message: { content: string } }[];
-			};
-			const parsed = JSON.parse(data.choices[0].message.content);
-			if (parsed.summary && parsed.actionItems && parsed.decisions) {
-				return parsed as AIInsightsResponse;
-			}
-		}
-	} catch (openaiErr) {
-		// skipcq: JS-0002
-		console.error("OpenAI Fallback Error:", openaiErr);
-	}
-	return null;
 }
 
 // ─── QUERIES ─────────────────────────────────────────────────────────────────
@@ -605,7 +536,7 @@ ${newTranscript}`;
 				decisions: z.array(z.string()),
 			});
 
-			const object = await executeAIGeneration(prompt, schema);
+			const object = await executeAIGeneration(prompt, schema as z.ZodTypeAny);
 
 			if (object) {
 				await ctx.runMutation(internal.meetingNotes.saveGeneration, {
@@ -739,16 +670,25 @@ export const generateChatNotes = action({
 			throw new Error("Transcript is required.");
 		}
 
-		const apiKey =
-			process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-		if (!apiKey) {
+		if (!process.env.OPENAI_API_KEY) {
 			throw new Error(
-				"GEMINI_API_KEY is not set in Convex environment variables."
+				"OPENAI_API_KEY is not set in Convex environment variables."
 			);
 		}
 
-		const { GoogleGenerativeAI } = await import("@google/generative-ai");
-		const genAI = new GoogleGenerativeAI(apiKey);
+		const chatNotesSchema = z.object({
+			title: z.string(),
+			summary: z.string(),
+			actionItems: z.array(
+				z.object({
+					title: z.string(),
+					assigneeName: z.string().nullable(),
+					assigneeUserId: z.string().nullable(),
+					priority: z.enum(["high", "medium", "low"]),
+				})
+			),
+			decisions: z.array(z.string()),
+		});
 
 		const prompt = `
 You are an expert AI Meeting Assistant. Your job is to analyze the following meeting transcript and extract structured intelligence.
@@ -785,39 +725,30 @@ Transcript:
 ${args.transcript}
 `;
 
-		// Try primary model, fallback to secondary on 503
-		const models = [
-			"gemini-2.0-flash",
-			"gemini-2.5-flash",
-			"gemini-2.0-flash-lite",
-		];
+		// Try primary model, fall back to secondary on transient errors
+		const models = ["gpt-4o-mini", "gpt-4o"];
 		let lastError: unknown = null;
 
 		for (const modelName of models) {
 			try {
-				const model = genAI.getGenerativeModel({ model: modelName });
-				const result = await model.generateContent({
-					contents: [{ role: "user", parts: [{ text: prompt }] }],
-					generationConfig: {
-						responseMimeType: "application/json",
-						temperature: 0.2,
-					},
+				const result = await generateObject({
+					output: "object",
+					model: openai(modelName),
+					schema: chatNotesSchema,
+					prompt,
+					temperature: 0.2,
 				});
-
-				const responseText = result.response.text();
-				const parsed = JSON.parse(responseText);
-				return parsed;
+				return result.object;
 			} catch (e) {
 				lastError = e;
 				const errMsg = e instanceof Error ? e.message : String(e);
 				if (
 					errMsg.includes("503") ||
 					errMsg.includes("429") ||
-					errMsg.includes("404") ||
-					errMsg.includes("Not Found") ||
+					errMsg.includes("500") ||
 					errMsg.includes("Service Unavailable") ||
 					errMsg.includes("overloaded") ||
-					errMsg.includes("RESOURCE_EXHAUSTED") ||
+					errMsg.includes("rate limit") ||
 					errMsg.includes("quota")
 				) {
 					console.log(
@@ -828,62 +759,6 @@ ${args.transcript}
 				throw e;
 			}
 		}
-
-		let parsed: any = null;
-		if (!parsed && process.env.OPENAI_API_KEY) {
-			console.log(
-				"All Gemini models failed. Falling back to OpenAI gpt-4o-mini..."
-			);
-			try {
-				const response = await fetch(
-					"https://api.openai.com/v1/chat/completions",
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-						},
-						body: JSON.stringify({
-							model: "gpt-4o-mini",
-							response_format: { type: "json_object" },
-							messages: [
-								{
-									role: "system",
-									content: `You must respond with valid JSON matching exactly this format:
-{
-  "title": "Short meeting title",
-  "summary": "Concise executive summary",
-  "actionItems": [
-    {
-      "title": "Task description",
-      "assigneeName": "Person name or null",
-      "assigneeUserId": "User ID or null",
-      "priority": "low" | "medium" | "high"
-    }
-  ],
-  "decisions": ["Decision 1", "Decision 2"]
-}`,
-								},
-								{
-									role: "user",
-									content: prompt,
-								},
-							],
-							temperature: 0.2,
-						}),
-					}
-				);
-
-				if (response.ok) {
-					const data = await response.json();
-					parsed = JSON.parse(data.choices[0].message.content);
-				}
-			} catch (openaiErr) {
-				console.error("OpenAI Fallback Error:", openaiErr);
-			}
-		}
-
-		if (parsed) return parsed;
 
 		throw (
 			lastError ||
@@ -909,17 +784,11 @@ export const chatWithNotes = action({
 		message: v.string(),
 	},
 	handler: async (_ctx, args) => {
-		const apiKey =
-			process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-		if (!apiKey) {
+		if (!process.env.OPENAI_API_KEY) {
 			throw new Error(
-				"GEMINI_API_KEY is not set in Convex environment variables."
+				"OPENAI_API_KEY is not set in Convex environment variables."
 			);
 		}
-
-		const { GoogleGenerativeAI } = await import("@google/generative-ai");
-		const genAI = new GoogleGenerativeAI(apiKey);
-		const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 		const systemContext = `You are an AI assistant helping a user understand their meeting or channel transcript.
 Here are the AI-generated notes for the transcript:
@@ -931,26 +800,20 @@ ${args.transcript}
 Please answer the user's latest question concisely and accurately based on the transcript and notes.`;
 
 		const chatHistory = args.history.map((m) => ({
-			role: m.role === "assistant" ? ("model" as const) : ("user" as const),
-			parts: [{ text: m.content }],
+			role:
+				m.role === "assistant" ? ("assistant" as const) : ("user" as const),
+			content: m.content,
 		}));
 
-		const result = await model.generateContent({
-			contents: [
-				{ role: "user", parts: [{ text: systemContext }] },
-				{
-					role: "model",
-					parts: [
-						{
-							text: "I understand. I'll help you with questions about this meeting. What would you like to know?",
-						},
-					],
-				},
+		const result = await generateText({
+			model: openai("gpt-4o-mini"),
+			messages: [
+				{ role: "system", content: systemContext },
 				...chatHistory,
-				{ role: "user", parts: [{ text: args.message }] },
+				{ role: "user", content: args.message },
 			],
 		});
 
-		return result.response.text();
+		return result.text;
 	},
 });

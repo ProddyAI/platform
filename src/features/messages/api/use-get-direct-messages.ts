@@ -3,6 +3,9 @@ import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
+type DirectMessagesReturnType =
+	typeof api.direct.getDirectMessagesForCurrentUser._returnType;
+
 export const useGetDirectMessages = (includeRead?: boolean) => {
 	const workspaceId = useWorkspaceId();
 
@@ -20,9 +23,10 @@ export const useGetDirectMessages = (includeRead?: boolean) => {
 	const isLoading = result === undefined;
 
 	// Filter by read status if needed
-	let data = result || [];
+	let data: DirectMessagesReturnType = (result ||
+		[]) as DirectMessagesReturnType;
 	if (includeRead === false && data.length > 0) {
-		data = data.filter((message: any) => !message.read);
+		data = data.filter((message) => !message.read);
 	}
 
 	return { data, isLoading };

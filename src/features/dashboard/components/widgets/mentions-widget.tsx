@@ -71,13 +71,13 @@ export const MentionsWidget = ({
 
 	// Memoize mentions array to avoid recalculating on every render
 	const mentions = useMemo(
-		() =>
+		(): Mention[] =>
 			rawMentions
 				? rawMentions.filter(
 						(mention): mention is NonNullable<typeof mention> =>
 							mention !== undefined && mention !== null
 					)
-				: [],
+				: ([] as Mention[]),
 		[rawMentions]
 	);
 

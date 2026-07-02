@@ -1039,7 +1039,8 @@ const schema = defineSchema({
 			v.literal("user_invite"),
 			v.literal("workspace_invite"),
 			v.literal("email_invite"),
-			v.literal("password_reset") // For password reset rate limiting
+			v.literal("password_reset"), // For password reset rate limiting
+			v.literal("auto_invite") // For automatic invites during imports
 		),
 		expiresAt: v.number(), // When this rate limit entry expires
 		createdAt: v.number(),
@@ -1115,16 +1116,22 @@ const schema = defineSchema({
 			v.literal("failed"),
 			v.literal("cancelled")
 		),
-		// Import configuration
+		// Import configuration - supports all platforms
 		config: v.object({
+			// Slack-specific
 			channels: v.optional(v.array(v.string())), // Slack channel IDs to import
 			dateFrom: v.optional(v.number()), // Import messages from this date
 			dateTo: v.optional(v.number()), // Import messages until this date
 			includeFiles: v.optional(v.boolean()), // Whether to import file attachments
 			includeThreads: v.optional(v.boolean()), // Whether to import threaded messages
-			includeArchived: v.optional(v.boolean()), // Whether to import archived items
-			includeComments: v.optional(v.boolean()), // Whether to import comments
-			includeCompleted: v.optional(v.boolean()), // Whether to import completed items
+			// Todoist-specific
+			projects: v.optional(v.array(v.string())), // Todoist project IDs to import
+			includeCompleted: v.optional(v.boolean()), // Include completed tasks
+			// Linear-specific
+			teams: v.optional(v.array(v.string())), // Linear team IDs to import
+			includeArchived: v.optional(v.boolean()), // Include archived/completed items
+			// Common
+			includeComments: v.optional(v.boolean()), // Include comments (Todoist/Linear)
 		}),
 		// Progress tracking
 		progress: v.object({
@@ -1157,6 +1164,106 @@ const schema = defineSchema({
 		.index("by_connection_id", ["connectionId"])
 		.index("by_status", ["status"])
 		.index("by_workspace_status", ["workspaceId", "status"]),
+
+	// Import metadata tables used for idempotency and cross-platform mapping
+	import_channel_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalChannelId: v.id("channels"),
+		name: v.string(),
+		type: v.string(),
+		description: v.optional(v.string()),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
+
+	import_message_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalMessageId: v.id("messages"),
+		authorMemberId: v.optional(v.id("members")),
+		timestamp: v.number(),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
+
+	import_issue_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalIssueId: v.id("issues"),
+		authorMemberId: v.optional(v.id("members")),
+		timestamp: v.number(),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
+
+	import_file_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalMessageId: v.id("messages"),
+		storageId: v.id("_storage"),
+		name: v.string(),
+		mimeType: v.string(),
+		size: v.number(),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
 
 	// Sprints (Linear-style cycles) — time-boxed iterations of a project's board
 	sprints: defineTable({

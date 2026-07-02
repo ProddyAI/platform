@@ -169,7 +169,7 @@ async function ensureMemberAuthorized(memberId: unknown, stage: string) {
 	}
 
 	const verifyResult = await verifyMemberOwnership(memberId, convex);
-	if (!verifyResult.success) {
+	if ("response" in verifyResult) {
 		return { ok: false as const, response: verifyResult.response };
 	}
 	return { ok: true as const, memberId };
@@ -579,12 +579,13 @@ export async function GET(req: NextRequest) {
 		// Check connection status
 		if (action === "check-status" && composioAccountId) {
 			try {
-				const connectedAccount =
-					await apiClient.getConnectionStatus(composioAccountId);
+				const connectedAccount = (await apiClient.getConnectionStatus(
+					composioAccountId
+				)) as { status?: string; [key: string]: unknown };
 
 				return NextResponse.json({
 					connected: true,
-					status: connectedAccount.status,
+					status: connectedAccount.status ?? "UNKNOWN",
 					account: connectedAccount,
 				});
 			} catch (error) {
@@ -712,7 +713,8 @@ export async function DELETE(req: NextRequest) {
 		// Verify authentication and member ownership
 		const verifyResult = await verifyMemberOwnership(memberId, convex);
 		if (!verifyResult.success) {
-			return verifyResult.response;
+			return (verifyResult as { success: false; response: NextResponse })
+				.response;
 		}
 
 		const { apiClient } = initializeComposio();

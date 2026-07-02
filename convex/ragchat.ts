@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
@@ -13,8 +13,8 @@ type FilterTypes = {
 };
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004") as any,
-	embeddingDimension: 768,
+	textEmbeddingModel: openai.textEmbeddingModel("text-embedding-3-small") as any,
+	embeddingDimension: 1536,
 });
 
 const NO_CHANNEL_FILTER_VALUE = "__none__";

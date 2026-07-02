@@ -1,12 +1,16 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { openai } from "@ai-sdk/openai";
+import { experimental_transcribe as transcribe } from "ai";
 import { type NextRequest, NextResponse } from "next/server";
-
-const genAI = new GoogleGenerativeAI(
-	process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || ""
-);
 
 export async function POST(req: NextRequest) {
 	try {
+		if (!process.env.OPENAI_API_KEY) {
+			return NextResponse.json(
+				{ error: "AI service is not configured. Missing OPENAI_API_KEY." },
+				{ status: 500 }
+			);
+		}
+
 		const formData = await req.formData();
 		const file = formData.get("file") as File | null;
 
@@ -14,46 +18,22 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "No file provided" }, { status: 400 });
 		}
 
-		// Limit to 100MB for inline processing
-		if (file.size > 100 * 1024 * 1024) {
+		// Limit to 25MB (Whisper's per-request cap)
+		if (file.size > 25 * 1024 * 1024) {
 			return NextResponse.json(
-				{ error: "File too large. Maximum size is 100MB." },
+				{ error: "File too large. Maximum size is 25MB." },
 				{ status: 400 }
 			);
 		}
 
 		const fileBytes = await file.arrayBuffer();
-		const base64Data = Buffer.from(fileBytes).toString("base64");
 
-		// Determine mimetype
-		let mimeType = file.type;
-		if (!mimeType || mimeType === "application/octet-stream") {
-			mimeType = file.name.endsWith(".wav")
-				? "audio/wav"
-				: file.name.endsWith(".webm")
-					? "audio/webm"
-					: "audio/mp3";
-		}
+		const result = await transcribe({
+			model: openai.transcription("whisper-1"),
+			audio: new Uint8Array(fileBytes),
+		});
 
-		// Use Gemini 1.5 Pro for audio transcription
-		const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-		const prompt =
-			"You are a professional transcriber. Listen to the following audio and provide a highly accurate, verbatim transcript. Do NOT summarize. Do NOT add any conversational filler like 'Here is the transcript'. Just output the raw transcribed text exactly as spoken in the audio.";
-
-		const result = await model.generateContent([
-			{
-				inlineData: {
-					mimeType,
-					data: base64Data,
-				},
-			},
-			prompt,
-		]);
-
-		const transcript = result.response.text();
-
-		return NextResponse.json({ transcript });
+		return NextResponse.json({ transcript: result.text });
 	} catch (error) {
 		console.error("Transcription error:", error);
 		return NextResponse.json(

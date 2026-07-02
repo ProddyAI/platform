@@ -59,12 +59,11 @@ export const MessageList = ({
 	const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);
 
 	const workspaceId = useWorkspaceId();
+	type MessageItem = NonNullable<GetMessagesReturnType>[number];
 
 	const { data: currentMember } = useCurrentMember({ workspaceId });
-
-	type MessageItem = GetMessagesReturnType[number];
 	const groupedMessages = data?.reduce(
-		(groups, message) => {
+		(groups: Record<string, MessageItem[]>, message: MessageItem) => {
 			const date = new Date(message._creationTime);
 			const dateKey = format(date, "yyyy-MM-dd");
 
@@ -81,7 +80,7 @@ export const MessageList = ({
 
 	const handleGenerateRecap = async (
 		dateKey: string,
-		messages: typeof data
+		messages: MessageItem[]
 	) => {
 		if (!messages || messages.length === 0 || isGeneratingRecap) return;
 

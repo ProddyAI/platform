@@ -295,8 +295,6 @@ export const getMyActiveConnectedAppNames = query({
 		// Map toolkit names to uppercase app names for assistant
 		const appNames = toolkitNames.map((toolkit) => toolkit.toUpperCase());
 
-		console.log("[getMyActiveConnectedAppNames] Final app names:", appNames);
-
 		return appNames;
 	},
 });
