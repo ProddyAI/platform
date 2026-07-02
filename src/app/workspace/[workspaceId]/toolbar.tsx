@@ -160,10 +160,10 @@ const SearchDialogContent = ({
 			return "The AI service is not configured. Please contact your administrator.";
 		}
 		if (error.includes("not found") || error.includes("not supported")) {
-			return "Selected OpenAI model is unavailable for this API version.";
+			return "The selected AI model is currently unavailable.";
 		}
 		if (error.includes("quota")) {
-			return "OpenAI quota/rate limit exceeded. Check billing/limits or retry later.";
+			return "AI usage limit reached. Please try again later.";
 		}
 		return "Failed to search with AI";
 	}, []);

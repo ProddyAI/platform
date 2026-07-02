@@ -1,18 +1,12 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
 import { NextResponse } from "next/server";
-
-const apiKey =
-	process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey || "");
 
 export async function POST(req: Request) {
 	try {
-		if (!apiKey) {
+		if (!process.env.OPENAI_API_KEY) {
 			return NextResponse.json(
-				{
-					error:
-						"AI service is not configured. Missing GOOGLE_GENERATIVE_AI_API_KEY.",
-				},
+				{ error: "AI service is not configured. Missing OPENAI_API_KEY." },
 				{ status: 500 }
 			);
 		}
@@ -27,10 +21,8 @@ export async function POST(req: Request) {
 			);
 		}
 
-		const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
 		const systemPrompt = `
-You are a helpful AI Meeting Assistant inside a collaboration tool. 
+You are a helpful AI Meeting Assistant inside a collaboration tool.
 You are currently chatting with a user about a specific channel/meeting.
 
 Here is the meeting transcript context:
@@ -45,32 +37,25 @@ Instructions:
 3. Keep your answers concise, well-formatted, and professional.
 `;
 
-		// Format history for Gemini
-		const chat = model.startChat({
-			history: [
-				{
-					role: "user",
-					parts: [{ text: systemPrompt }],
-				},
-				{
-					role: "model",
-					parts: [
-						{
-							text: "Understood. I'm ready to answer questions about the meeting.",
-						},
-					],
-				},
-				...(history || []).map((msg: any) => ({
-					role: msg.role === "user" ? "user" : "model",
-					parts: [{ text: msg.content }],
-				})),
+		const chatHistory = ((history || []) as { role: string; content: string }[])
+			.map((msg) => ({
+				role:
+					msg.role === "assistant"
+						? ("assistant" as const)
+						: ("user" as const),
+				content: msg.content,
+			}));
+
+		const { text } = await generateText({
+			model: openai("gpt-4o-mini"),
+			messages: [
+				{ role: "system", content: systemPrompt },
+				...chatHistory,
+				{ role: "user", content: message },
 			],
 		});
 
-		const result = await chat.sendMessage(message);
-		const responseText = result.response.text();
-
-		return NextResponse.json({ response: responseText });
+		return NextResponse.json({ response: text });
 	} catch (error) {
 		console.error("Error in AI Chat:", error);
 		return NextResponse.json(

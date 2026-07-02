@@ -51,9 +51,9 @@ export const UploadRecordingButton = () => {
 			return;
 		}
 
-		// Validate file size (20MB max)
-		if (file.size > 100 * 1024 * 1024) {
-			toast.error("File too large. Maximum size is 100MB.");
+		// Validate file size (25MB max — transcription per-request limit)
+		if (file.size > 25 * 1024 * 1024) {
+			toast.error("File too large. Maximum size is 25MB.");
 			return;
 		}
 

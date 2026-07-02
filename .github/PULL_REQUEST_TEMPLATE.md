@@ -8,7 +8,6 @@
 
 - [ ] Performed a proper self-review of my own code
 - [ ] My changes generate no new warnings or errors
-- [ ] All the AI slop has been removed using `/deslop`
 - [ ] I have ran `bun type` and ensured type safety
 - [ ] I have ran `bun check` and passed biome checks
 
@@ -25,7 +24,6 @@
 ### PR Comments
 
 - [ ] All **CodeRabbitAI** review comments have been resolved
-- [ ] All **Copilot** review comments have been resolved
 - [ ] All **DeepSource** static analysis comments have been resolved
 - [ ] All **Vercel** build and deployment comments have been addressed
 

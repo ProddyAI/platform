@@ -51,7 +51,6 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@ai-sdk/google": "^3.0.0",
 		"@ai-sdk/openai": "^3.0.0",
 		"@ai-sdk/provider": "^3.0.0",
 		"@auth/core": "^0.34.2",
@@ -75,7 +74,6 @@
 		"@excalidraw/excalidraw": "^0.17.2",
 		"@excalidraw/mermaid-to-excalidraw": "^2.0.0",
 		"@formbricks/js": "^4.3.0",
-		"@google/generative-ai": "^0.24.0",
 		"@langchain/core": "^0.3.57",
 		"@liveblocks/node": "^2.24.1",
 		"@liveblocks/react": "^2.24.1",
