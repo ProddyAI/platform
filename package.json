@@ -14,8 +14,7 @@
 		"type": "tsc --noEmit",
 		"check": "biome check --write --unsafe .",
 		"start": "next start",
-		"build": "tsc --noEmit && next build",
-		"postinstall": "node scripts/apply-patches.js"
+		"build": "tsc --noEmit && next build"
 	},
 	"author": {
 		"name": "ProddyAI",
@@ -173,9 +172,6 @@
 		"tailwindcss": "^3.4.1",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.3"
-	},
-	"patchedDependencies": {
-		"@dayhaysoos/convex-database-chat@0.3.0-alpha.1": "patches/@dayhaysoos+convex-database-chat@0.3.0-alpha.1.patch"
 	},
 	"trustedDependencies": [
 		"core-js"

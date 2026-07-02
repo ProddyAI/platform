@@ -499,7 +499,7 @@ export async function runSendMessageCompletion(
 	});
 
 	const streamId = await ctx.runMutation(
-		components.databaseChat.stream.create,
+		(components.databaseChat.stream as any).create,
 		{
 			conversationId: context.activeConversationId,
 		}
@@ -574,7 +574,7 @@ export async function finalizeSendMessageSuccess(
 	responseText: string,
 	streamId: string
 ): Promise<SendMessageResult> {
-	await ctx.runMutation(components.databaseChat.stream.finish, {
+	await ctx.runMutation((components.databaseChat.stream as any).finish, {
 		streamId,
 	});
 	await persistAssistantTurn(ctx, context, responseText);
@@ -602,7 +602,7 @@ export async function handleSendMessageFailure(
 
 	if (streamId) {
 		try {
-			await ctx.runMutation(components.databaseChat.stream.finish, {
+			await ctx.runMutation((components.databaseChat.stream as any).finish, {
 				streamId,
 			});
 		} catch (streamError) {

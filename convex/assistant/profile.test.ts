@@ -119,7 +119,7 @@ describe("assistant profile memory merging", () => {
 		const prompt = buildAssistantProfilePrompt({
 			...existing,
 			memoryBullets: [
-				...existing.memoryBullets,
+				...(existing.memoryBullets ?? []),
 				"User is currently focused on release rollout.",
 			].slice(-6),
 		});

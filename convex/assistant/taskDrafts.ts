@@ -51,7 +51,9 @@ export function isPendingTaskCancellation(message: string) {
 	return CANCELLATION_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
-export function formatPendingTaskDraftConfirmation(draft: PendingTaskDraft) {
+export function formatPendingTaskDraftConfirmation(
+	draft: Omit<PendingTaskDraft, "updatedAt"> & { updatedAt?: number },
+) {
 	const lines = [
 		"Please review this task before I create it:",
 		`- Title: ${draft.title}`,

@@ -708,7 +708,7 @@ export const getStreamState = query({
 			return null;
 		}
 
-		return await ctx.runQuery(components.databaseChat.stream.getStream, {
+		return await ctx.runQuery((components.databaseChat.stream as any).getStream, {
 			conversationId: conversation._id,
 		});
 	},
@@ -717,7 +717,7 @@ export const getStreamState = query({
 export const getStreamDeltas = query({
 	args: { streamId: v.string(), cursor: v.number() },
 	handler: async (ctx, args) => {
-		return await ctx.runQuery(components.databaseChat.stream.listDeltas, {
+		return await ctx.runQuery((components.databaseChat.stream as any).listDeltas, {
 			streamId: args.streamId,
 			cursor: args.cursor,
 		});
@@ -737,7 +737,7 @@ export const abortStream = mutation({
 		}
 
 		return await ctx.runMutation(
-			components.databaseChat.stream.abortByConversation,
+			(components.databaseChat.stream as any).abortByConversation,
 			{
 				conversationId: conversation._id,
 				reason: args.reason ?? "User cancelled",
