@@ -147,6 +147,7 @@ function Calendar({
 					</tr>
 				</thead>
 				<tbody>
+					{/* Deterministic date-math grid, never reordered — index is a safe key */}
 					{weeks.map((week, weekIndex) => (
 						<tr
 							className="flex w-full justify-between mt-2"

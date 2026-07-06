@@ -155,6 +155,7 @@ export const SprintDetail = ({ sprint, onBack }: SprintDetailProps) => {
 			<ScrollArea className="flex-1">
 				{isLoading ? (
 					<div className="space-y-2 p-4">
+						{/* Fixed-size decorative placeholders, no underlying data — index is a safe key */}
 						{Array.from({ length: 4 }).map((_, index) => (
 							<Skeleton className="h-12 w-full" key={index} />
 						))}

@@ -42,6 +42,7 @@ export const PasswordStrengthIndicator = ({
 					</span>
 				</div>
 				<div className="flex gap-1 h-1.5">
+					{/* Fixed 5-segment strength meter, positions not entities — index is a safe key */}
 					{[...Array(5)].map((_, index) => (
 						<div
 							className={`flex-1 rounded-full transition-all duration-300 ${
