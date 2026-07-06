@@ -27,9 +27,7 @@ interface SpeechRecognitionInstance {
 	onend: (() => void) | null;
 }
 
-interface SpeechRecognitionConstructor {
-	new (): SpeechRecognitionInstance;
-}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
 
 type WindowWithSpeechRecognition = Window &
 	typeof globalThis & {

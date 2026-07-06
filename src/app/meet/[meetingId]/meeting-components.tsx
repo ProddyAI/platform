@@ -54,9 +54,7 @@ interface SpeechRecognitionInstance {
 	stop: () => void;
 }
 
-interface SpeechRecognitionConstructor {
-	new (): SpeechRecognitionInstance;
-}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
 
 interface SpeechRecognitionWindow {
 	SpeechRecognition?: SpeechRecognitionConstructor;
