@@ -3,9 +3,12 @@ import { api, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { mutation, query } from "../_generated/server";
-import { addIssueBlockingRelationshipHelper } from "../lib/issueBlocking";
 import { enforceWorkspaceLimit } from "../billing/usageTracking";
-import { getUserEmailFromMemberId, getUserNameFromMemberId } from "../lib/utils";
+import { addIssueBlockingRelationshipHelper } from "../lib/issueBlocking";
+import {
+	getUserEmailFromMemberId,
+	getUserNameFromMemberId,
+} from "../lib/utils";
 
 const DONE_STATUS_KEYWORDS = [
 	"done",

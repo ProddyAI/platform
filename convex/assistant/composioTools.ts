@@ -526,10 +526,13 @@ async function getMemberId(
 	workspaceId: Id<"workspaces">,
 	userId: Id<"users">
 ): Promise<Id<"members"> | null> {
-	const member = await ctx.runQuery(internal.workspace.members._getByWorkspaceAndUser, {
-		workspaceId,
-		userId,
-	});
+	const member = await ctx.runQuery(
+		internal.workspace.members._getByWorkspaceAndUser,
+		{
+			workspaceId,
+			userId,
+		}
+	);
 	return (member as { _id: Id<"members"> } | null)?._id ?? null;
 }
 

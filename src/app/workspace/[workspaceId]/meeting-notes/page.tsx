@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { exportToPDF, exportToWord } from "@/lib/export-utils";
+import { exportToPDF, exportToWord } from "@/lib/client/export-utils";
 
 export default function MeetingNotesPage() {
 	const workspaceId = useWorkspaceId();

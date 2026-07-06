@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import MemberSelector from "@/components/member-selector";
+import MemberSelector from "@/components/pickers/member-selector";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
@@ -778,7 +778,9 @@ const BlockingSection = ({
 		}
 	);
 	const addBlocking = useMutation(api.board.board.addIssueBlockingRelationship);
-	const removeBlocking = useMutation(api.board.board.removeIssueBlockingRelationship);
+	const removeBlocking = useMutation(
+		api.board.board.removeIssueBlockingRelationship
+	);
 
 	const handleSelectBlocking = async (selectedIssueId: string) => {
 		if (!selectedIssueId) return;
@@ -1049,7 +1051,9 @@ interface DiscussionSectionProps {
 }
 
 const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
-	const comments = useQuery(api.board.board.getIssueComments, { issueId: issue._id });
+	const comments = useQuery(api.board.board.getIssueComments, {
+		issueId: issue._id,
+	});
 	const createComment = useMutation(api.board.board.createIssueComment);
 	const deleteComment = useMutation(api.board.board.deleteIssueComment);
 

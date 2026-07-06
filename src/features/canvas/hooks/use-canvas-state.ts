@@ -9,7 +9,7 @@ import {
 	type Point,
 	type Side,
 	type XYWH,
-} from "../types/canvas";
+} from "../types";
 
 export function useCanvasState(initialColor: Color = { r: 0, g: 0, b: 0 }) {
 	const [canvasState, setCanvasState] = useState<CanvasState>({

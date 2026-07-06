@@ -9,12 +9,12 @@ import { GoogleAnalyticsTracking } from "@/components/3pc/google-analytics-track
 import { AuthenticatedOneSignalTracking } from "@/components/3pc/notifications";
 import { TidioChat } from "@/components/3pc/tidio-chat";
 import { UsetifulProvider } from "@/components/3pc/usetiful-provider";
-import { JotaiProvider } from "@/components/jotai-provider";
-import { ModalProvider } from "@/components/modal-provider";
+import { AdBlockerProvider } from "@/components/providers/ad-blocker-provider";
+import { ConvexClientProvider } from "@/components/providers/convex-client-provider";
+import { JotaiProvider } from "@/components/providers/jotai-provider";
+import { ModalProvider } from "@/components/providers/modal-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config";
-import { ConvexClientProvider } from "@/config/convex-client-provider";
-import { AdBlockerProvider } from "@/lib/ad-blocker-context";
 
 import "./globals.css";
 

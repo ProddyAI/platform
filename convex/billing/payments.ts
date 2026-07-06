@@ -1032,7 +1032,10 @@ const syncDodoSubscriptionToWorkspace = async (
 		mutationArgs.paymentConfirmed = args.paymentConfirmed;
 	}
 
-	await ctx.runMutation(internal.billing.webhooks.updateSubscription, mutationArgs);
+	await ctx.runMutation(
+		internal.billing.webhooks.updateSubscription,
+		mutationArgs
+	);
 };
 
 // Internal query: identify the Dodo customer ID for a user
@@ -1961,9 +1964,12 @@ export const getPlanChangePreview = action({
 	},
 	// skipcq: JS-0128
 	handler: async (ctx, args): Promise<Record<string, unknown>> => {
-		const isAdmin = await ctx.runQuery(internal.billing.payments.checkWorkspaceAdmin, {
-			workspaceId: args.workspaceId,
-		});
+		const isAdmin = await ctx.runQuery(
+			internal.billing.payments.checkWorkspaceAdmin,
+			{
+				workspaceId: args.workspaceId,
+			}
+		);
 		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
 		const workspace: Doc<"workspaces"> | null = await ctx.runQuery(
@@ -2090,9 +2096,12 @@ export const createCheckoutSession = action({
 		ctx,
 		{ workspaceId, planName, quantity }
 	): Promise<string> => {
-		const isAdmin = await ctx.runQuery(internal.billing.payments.checkWorkspaceAdmin, {
-			workspaceId,
-		});
+		const isAdmin = await ctx.runQuery(
+			internal.billing.payments.checkWorkspaceAdmin,
+			{
+				workspaceId,
+			}
+		);
 		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
 		const plan = PLANS[planName];
@@ -2391,9 +2400,12 @@ export const syncWorkspaceSubscription = action({
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, { workspaceId }) => {
-		const isAdmin = await ctx.runQuery(internal.billing.payments.checkWorkspaceAdmin, {
-			workspaceId,
-		});
+		const isAdmin = await ctx.runQuery(
+			internal.billing.payments.checkWorkspaceAdmin,
+			{
+				workspaceId,
+			}
+		);
 		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
 		const workspace = await ctx.runQuery(
@@ -2651,9 +2663,12 @@ export const updateSubscriptionQuantity = action({
 		ctx,
 		{ workspaceId, newQuantity, newPlan }
 	): Promise<Record<string, unknown>> => {
-		const isAdmin = await ctx.runQuery(internal.billing.payments.checkWorkspaceAdmin, {
-			workspaceId,
-		});
+		const isAdmin = await ctx.runQuery(
+			internal.billing.payments.checkWorkspaceAdmin,
+			{
+				workspaceId,
+			}
+		);
 		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
 		const workspace: Doc<"workspaces"> | null = await ctx.runQuery(
@@ -3095,12 +3110,15 @@ export const updateSubscriptionQuantity = action({
 		}
 		const recentPaidSeatChange: Doc<"billingHistory"> | null =
 			quantity > currentQuantity
-				? await ctx.runQuery(internal.billing.payments.getRecentSuccessfulSeatPayment, {
-						workspaceId,
-						planName,
-						quantity,
-						since: Date.now() - 24 * 60 * 60 * 1000,
-					})
+				? await ctx.runQuery(
+						internal.billing.payments.getRecentSuccessfulSeatPayment,
+						{
+							workspaceId,
+							planName,
+							quantity,
+							since: Date.now() - 24 * 60 * 60 * 1000,
+						}
+					)
 				: null;
 		if (recentPaidSeatChange) {
 			const updatedSubscription = await subscriptions.changePlan(ctx, {
@@ -3647,24 +3665,31 @@ export const updateSubscriptionQuantity = action({
 					workspaceActivityCostCents: usage.workspaceActivityCost,
 				});
 				if (adjustment.refundOrCreditAmount > 0) {
-					await ctx.runMutation(internal.billing.payments.addWorkspaceBillingCredit, {
-						workspaceId,
-						amount: adjustment.refundOrCreditAmount,
-						currency: currentSubscription?.currency ?? "USD",
-						reason: "Small fair-billing downgrade credit below payment minimum",
-					});
-					await ctx.runMutation(internal.billing.payments.recordBillingHistoryEntry, {
-						workspaceId,
-						amount: adjustment.refundOrCreditAmount,
-						currency: currentSubscription?.currency ?? "USD",
-						status: "succeeded",
-						type: "credit",
-						description: "Small fair-billing downgrade credit",
-						dodoInvoiceId: `credit_${dodoSubscriptionId}_${Date.now().toString()}`,
-						plan: planName,
-						seats: quantity,
-						usedAmount: adjustment.consumedAmount,
-					});
+					await ctx.runMutation(
+						internal.billing.payments.addWorkspaceBillingCredit,
+						{
+							workspaceId,
+							amount: adjustment.refundOrCreditAmount,
+							currency: currentSubscription?.currency ?? "USD",
+							reason:
+								"Small fair-billing downgrade credit below payment minimum",
+						}
+					);
+					await ctx.runMutation(
+						internal.billing.payments.recordBillingHistoryEntry,
+						{
+							workspaceId,
+							amount: adjustment.refundOrCreditAmount,
+							currency: currentSubscription?.currency ?? "USD",
+							status: "succeeded",
+							type: "credit",
+							description: "Small fair-billing downgrade credit",
+							dodoInvoiceId: `credit_${dodoSubscriptionId}_${Date.now().toString()}`,
+							plan: planName,
+							seats: quantity,
+							usedAmount: adjustment.consumedAmount,
+						}
+					);
 					return {
 						...result,
 						creditAmount: adjustment.refundOrCreditAmount,
@@ -4168,11 +4193,14 @@ export const createUpgradeCheckout = action({
 			plan: args.planName,
 			quantity: Math.max(1, Math.floor(args.quantity)),
 		});
-		return await ctx.runAction(api.billing.payments.updateSubscriptionQuantity, {
-			workspaceId: args.workspaceId,
-			newPlan: args.planName,
-			newQuantity: args.quantity,
-		});
+		return await ctx.runAction(
+			api.billing.payments.updateSubscriptionQuantity,
+			{
+				workspaceId: args.workspaceId,
+				newPlan: args.planName,
+				newQuantity: args.quantity,
+			}
+		);
 	},
 });
 
@@ -4182,9 +4210,12 @@ export const cancelSubscription = action({
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, { workspaceId }) => {
-		const isAdmin = await ctx.runQuery(internal.billing.payments.checkWorkspaceAdmin, {
-			workspaceId,
-		});
+		const isAdmin = await ctx.runQuery(
+			internal.billing.payments.checkWorkspaceAdmin,
+			{
+				workspaceId,
+			}
+		);
 		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
 		const workspace = await ctx.runQuery(
@@ -4357,12 +4388,15 @@ export const cancelSubscription = action({
 					internal.billing.payments.recordBillingHistoryEntry,
 					refundHistoryArgs
 				);
-				await ctx.runMutation(internal.billing.payments.addWorkspaceBillingCredit, {
-					workspaceId,
-					amount: finalRefundAmount,
-					currency: subscription?.currency ?? "USD",
-					reason: "Account credit from downgrade to Free",
-				});
+				await ctx.runMutation(
+					internal.billing.payments.addWorkspaceBillingCredit,
+					{
+						workspaceId,
+						amount: finalRefundAmount,
+						currency: subscription?.currency ?? "USD",
+						reason: "Account credit from downgrade to Free",
+					}
+				);
 			}
 		}
 		await sendDodoCustomerPortalEmail(ctx, workspaceId);
@@ -4384,9 +4418,12 @@ export const reactivateSubscription = action({
 		workspaceId: v.id("workspaces"),
 	},
 	handler: async (ctx, { workspaceId }) => {
-		const isAdmin = await ctx.runQuery(internal.billing.payments.checkWorkspaceAdmin, {
-			workspaceId,
-		});
+		const isAdmin = await ctx.runQuery(
+			internal.billing.payments.checkWorkspaceAdmin,
+			{
+				workspaceId,
+			}
+		);
 		if (!isAdmin) throw new Error("Only workspace admins can manage billing");
 
 		const workspace = await ctx.runQuery(

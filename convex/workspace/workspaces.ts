@@ -10,8 +10,8 @@ import {
 	type QueryCtx,
 	query,
 } from "../_generated/server";
-import { createDefaultCategoriesForWorkspace } from "../planning/tasks";
 import { mapWorkspaceId } from "../lib/utils";
+import { createDefaultCategoriesForWorkspace } from "../planning/tasks";
 
 const generateCode = () => {
 	const code = Array.from(

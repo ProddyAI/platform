@@ -3,7 +3,7 @@
 import { ArrowLeft, CreditCard, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { BillingSection } from "@/features/billing/components/BillingSection";
+import { BillingSection } from "@/features/billing/components/billing-section";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 

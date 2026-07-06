@@ -12,7 +12,7 @@ import {
 	type Color,
 	LayerType,
 	type Point,
-} from "../types/canvas";
+} from "../types";
 
 interface CanvasEventHandlerProps {
 	camera: Camera;

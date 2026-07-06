@@ -15,7 +15,9 @@ export const WorkspacePresenceTracker = ({
 	children,
 }: WorkspacePresenceTrackerProps) => {
 	const { isAuthenticated, isLoading } = useConvexAuth();
-	const workspaceHeartbeat = useMutation(api.messaging.presence.workspaceHeartbeat);
+	const workspaceHeartbeat = useMutation(
+		api.messaging.presence.workspaceHeartbeat
+	);
 	const sessionIdRef = useRef(`session-${Date.now()}-${Math.random()}`);
 
 	const sendHeartbeat = useCallback(() => {

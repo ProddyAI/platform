@@ -1,15 +1,15 @@
 // Components
-export { CompactMessage } from "./components/compact-message";
-export { FullMessage } from "./components/full-message";
-export { MessageContent } from "./components/message-content";
-export { MessageContextMenu } from "./components/message-context-menu";
-export { TaskCreationModal } from "./components/task-creation-modal";
 
 // Contexts
 export {
 	ContextMenuProvider,
 	useContextMenu,
-} from "./contexts/context-menu-context";
+} from "@/contexts/context-menu-context";
+export { CompactMessage } from "./components/compact-message";
+export { FullMessage } from "./components/full-message";
+export { MessageContent } from "./components/message-content";
+export { MessageContextMenu } from "./components/message-context-menu";
+export { TaskCreationModal } from "./components/task-creation-modal";
 
 // Hooks
 export { useMessageActions } from "./hooks/use-message-actions";
@@ -19,7 +19,7 @@ export type {
 	ContextMenuState,
 	MessageProps,
 	TaskModalState,
-} from "./types/message";
+} from "./types";
 
 // Utils
 export { extractTextFromBody, formatFullTime } from "./utils/message-utils";

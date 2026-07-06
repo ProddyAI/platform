@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, Circle, Clock, X } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
-import { IssuePickerPopover } from "@/components/issue-picker-popover";
+import { IssuePickerPopover } from "@/components/pickers/issue-picker-popover";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";

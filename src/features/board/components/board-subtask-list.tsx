@@ -17,7 +17,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { BoardMember } from "./board-models";
+import type { BoardMember } from "./board-card-edit-dialog";
 
 interface BoardSubtaskListProps {
 	parentCardId: Id<"cards">;

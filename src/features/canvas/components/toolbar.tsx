@@ -2,7 +2,7 @@ import { LiveList } from "@liveblocks/client";
 import { Redo2, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useCallback } from "react";
 import { useMutation } from "../../../../liveblocks.config";
-import type { Color, Point } from "../types/canvas";
+import type { Color, Point } from "../types";
 import { ColorPicker } from "./color-picker";
 import { FlowchartGenerator } from "./flowchart-generator";
 import { ToolButton } from "./tool-button";

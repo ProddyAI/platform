@@ -7,7 +7,7 @@ import { Hint } from "../../../components/hint";
 import { Button } from "../../../components/ui/button";
 import { useDeleteLayers } from "../hooks/use-delete-layers";
 import { useSelectionBounds } from "../hooks/use-selection-bounds";
-import type { Camera, Color } from "../types/canvas";
+import type { Camera, Color } from "../types";
 
 import { ColorPicker } from "./color-picker";
 

@@ -6,7 +6,9 @@ import { api } from "@/../convex/_generated/api";
 
 export const useUserPreferences = () => {
 	const data = useQuery(api.workspace.preferences.getUserPreferences);
-	const updatePreferences = useMutation(api.workspace.preferences.updateUserPreferences);
+	const updatePreferences = useMutation(
+		api.workspace.preferences.updateUserPreferences
+	);
 
 	const updateSettings = useCallback(
 		async (settings: {

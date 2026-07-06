@@ -33,7 +33,9 @@ export const useStartLinearImport = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.imports.importIntegrations.startLinearImport);
+	const mutation = useMutation(
+		api.imports.importIntegrations.startLinearImport
+	);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

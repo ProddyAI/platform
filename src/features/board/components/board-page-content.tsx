@@ -7,11 +7,6 @@ import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { LimitIndicator } from "@/components/limit-indicator";
-import BoardGanttView from "@/features/board/components/board-gantt-view";
-import BoardHeader from "@/features/board/components/board-header";
-import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
-import BoardKanbanView from "@/features/board/components/board-kanban-view";
-import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import {
 	// Keep old card/list modals for gantt view
 	BoardAddCardModal,
@@ -20,7 +15,12 @@ import {
 	BoardDeleteStatusModal,
 	BoardEditCardModal,
 	BoardEditStatusModal,
-} from "@/features/board/components/board-models";
+} from "@/features/board/components/board-card-edit-dialog";
+import BoardGanttView from "@/features/board/components/board-gantt-view";
+import BoardHeader from "@/features/board/components/board-header";
+import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
+import BoardKanbanView from "@/features/board/components/board-kanban-view";
+import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -90,10 +90,14 @@ export const BoardPageContent = ({
 	const lists = useQuery(api.board.board.getLists, { channelId });
 	const allCards =
 		useQuery(api.board.board.getAllCardsForChannel, { channelId }) || [];
-	const uniqueLabels = useQuery(api.board.board.getUniqueLabels, { channelId }) || [];
-	const members = useQuery(api.board.board.getMembersForChannel, { channelId }) || [];
+	const uniqueLabels =
+		useQuery(api.board.board.getUniqueLabels, { channelId }) || [];
+	const members =
+		useQuery(api.board.board.getMembersForChannel, { channelId }) || [];
 	const channel = useQuery(api.messaging.channels.getById, { id: channelId });
-	const currentMember = useQuery(api.workspace.members.current, { workspaceId });
+	const currentMember = useQuery(api.workspace.members.current, {
+		workspaceId,
+	});
 	const canManageProjectConnection =
 		Boolean(projectId) &&
 		(currentMember?.role === "admin" || currentMember?.role === "owner");

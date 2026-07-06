@@ -2,9 +2,9 @@
 
 import { format } from "date-fns";
 import { Hint } from "@/components/hint";
+import { useContextMenu } from "@/contexts/context-menu-context";
 import { cn } from "@/lib/utils";
-import { useContextMenu } from "../contexts/context-menu-context";
-import type { MessageProps } from "../types/message";
+import type { MessageProps } from "../types";
 import { formatFullTime } from "../utils/message-utils";
 import { MessageContent } from "./message-content";
 import { MessageContextMenu } from "./message-context-menu";

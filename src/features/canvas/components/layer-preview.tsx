@@ -4,9 +4,9 @@ import type React from "react";
 import { memo } from "react";
 import { useStorage } from "../../../../liveblocks.config";
 import { colorToCSS } from "../../../lib/utils";
-import { LayerType } from "../types/canvas";
+import { LayerType } from "../types";
 
-import { Ellipse } from "./eliipse";
+import { Ellipse } from "./ellipse";
 import { Mermaid } from "./mermaid";
 import { Note } from "./note";
 import { Path } from "./path";

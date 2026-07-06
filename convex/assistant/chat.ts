@@ -708,19 +708,25 @@ export const getStreamState = query({
 			return null;
 		}
 
-		return await ctx.runQuery((components.databaseChat.stream as any).getStream, {
-			conversationId: conversation._id,
-		});
+		return await ctx.runQuery(
+			(components.databaseChat.stream as any).getStream,
+			{
+				conversationId: conversation._id,
+			}
+		);
 	},
 });
 
 export const getStreamDeltas = query({
 	args: { streamId: v.string(), cursor: v.number() },
 	handler: async (ctx, args) => {
-		return await ctx.runQuery((components.databaseChat.stream as any).listDeltas, {
-			streamId: args.streamId,
-			cursor: args.cursor,
-		});
+		return await ctx.runQuery(
+			(components.databaseChat.stream as any).listDeltas,
+			{
+				streamId: args.streamId,
+				cursor: args.cursor,
+			}
+		);
 	},
 });
 

@@ -1,7 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import { action, internalMutation, mutation, query } from "../_generated/server";
+import {
+	action,
+	internalMutation,
+	mutation,
+	query,
+} from "../_generated/server";
 
 // Character set for token generation
 const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

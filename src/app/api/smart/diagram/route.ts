@@ -116,10 +116,13 @@ Mermaid:`;
 				const trackingConvex = createConvexClient();
 				const trackingToken = convexAuthNextjsToken();
 				if (trackingToken) trackingConvex.setAuth(trackingToken);
-				await trackingConvex.mutation(api.billing.usageTracking.recordAIRequestPublic, {
-					workspaceId,
-					featureType: "aiDiagram",
-				});
+				await trackingConvex.mutation(
+					api.billing.usageTracking.recordAIRequestPublic,
+					{
+						workspaceId,
+						featureType: "aiDiagram",
+					}
+				);
 			} catch (trackErr) {
 				console.warn("[UsageTracking] Failed to record AI diagram:", trackErr);
 			}

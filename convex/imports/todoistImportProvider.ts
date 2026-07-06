@@ -691,7 +691,8 @@ async function storeTask(
 			: undefined;
 
 	const dueMs = task.due?.date ? new Date(task.due.date).getTime() : undefined;
-	const dueDate = dueMs !== undefined && !Number.isNaN(dueMs) ? dueMs : undefined;
+	const dueDate =
+		dueMs !== undefined && !Number.isNaN(dueMs) ? dueMs : undefined;
 
 	// In Todoist API v1 a task's `labels` are label names (not ids).
 	const tags = (task.labels ?? []).filter(Boolean);

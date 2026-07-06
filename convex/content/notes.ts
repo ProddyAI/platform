@@ -9,9 +9,9 @@ import {
 	type QueryCtx,
 	query,
 } from "../_generated/server";
-import { prosemirrorSync } from "./prosemirror";
 import { enforceWorkspaceLimit } from "../billing/usageTracking";
 import { mapWorkspaceId } from "../lib/utils";
+import { prosemirrorSync } from "./prosemirror";
 
 // Helper: find a member for this user in ANY workspace (fallback for ID mismatches)
 async function findMemberForUser(

@@ -591,7 +591,9 @@ export const InviteMemberModal = () => {
 	const [hasMoreBelow, setHasMoreBelow] = useState(false);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-	const updateQuantity = useAction(api.billing.payments.updateSubscriptionQuantity);
+	const updateQuantity = useAction(
+		api.billing.payments.updateSubscriptionQuantity
+	);
 
 	const seatUsage = useQuery(
 		api.workspace.invites.getSeatUsage,

@@ -8,7 +8,7 @@ import {
 	type Point,
 	type Side,
 	type XYWH,
-} from "../features/canvas/types/canvas";
+} from "../features/canvas/types";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));

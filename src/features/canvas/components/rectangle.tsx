@@ -1,5 +1,5 @@
 import type React from "react";
-import type { RectangleLayer } from "@/features/canvas/types/canvas";
+import type { RectangleLayer } from "@/features/canvas/types";
 import { colorToCSS } from "@/lib/utils";
 
 type RectangleProps = {

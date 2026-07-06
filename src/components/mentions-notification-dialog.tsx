@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { useAdBlockerDetectionContext } from "@/components/providers/ad-blocker-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,6 @@ import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-m
 import { useMarkDirectMessageAsRead } from "@/features/messages/api/use-mark-direct-message-as-read";
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { useAdBlockerDetectionContext } from "@/lib/ad-blocker-context";
 
 interface MentionsNotificationDialogProps {
 	open: boolean;

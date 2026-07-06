@@ -156,9 +156,12 @@ export const sendDirectMessageEmail = internalAction({
 	handler: async (ctx, args): Promise<EmailNotificationResult> => {
 		try {
 			// Get the message using the existing query
-			const message = await ctx.runQuery(api.messaging.messages._getMessageById, {
-				messageId: args.messageId,
-			});
+			const message = await ctx.runQuery(
+				api.messaging.messages._getMessageById,
+				{
+					messageId: args.messageId,
+				}
+			);
 			if (!message) {
 				logger.error("Message not found:", args.messageId);
 				return { success: false, error: "Message not found" };
@@ -196,9 +199,12 @@ export const sendDirectMessageEmail = internalAction({
 					? conversation.memberTwoId
 					: conversation.memberOneId;
 
-			const recipient = await ctx.runQuery(api.workspace.members.getMemberById, {
-				memberId: recipientMemberId,
-			});
+			const recipient = await ctx.runQuery(
+				api.workspace.members.getMemberById,
+				{
+					memberId: recipientMemberId,
+				}
+			);
 			if (!recipient?.user?.email) {
 				return { success: true, skipped: true };
 			}
@@ -296,18 +302,24 @@ export const sendMentionEmail = internalAction({
 	handler: async (ctx, args): Promise<EmailNotificationResult> => {
 		try {
 			// Get the mention using the existing query
-			const mention = await ctx.runQuery(api.messaging.mentions._getMentionById, {
-				mentionId: args.mentionId,
-			});
+			const mention = await ctx.runQuery(
+				api.messaging.mentions._getMentionById,
+				{
+					mentionId: args.mentionId,
+				}
+			);
 			if (!mention) {
 				logger.error("Mention not found:", args.mentionId);
 				return { success: false, error: "Mention not found" };
 			}
 
 			// Get the mentioned member
-			const mentionedMember = await ctx.runQuery(api.workspace.members.getMemberById, {
-				memberId: mention.mentionedMemberId,
-			});
+			const mentionedMember = await ctx.runQuery(
+				api.workspace.members.getMemberById,
+				{
+					memberId: mention.mentionedMemberId,
+				}
+			);
 			if (!mentionedMember?.user?.email) {
 				return { success: true, skipped: true };
 			}
@@ -322,9 +334,12 @@ export const sendMentionEmail = internalAction({
 			}
 
 			// Get the mentioner
-			const mentioner = await ctx.runQuery(api.workspace.members.getMemberById, {
-				memberId: mention.mentionerMemberId,
-			});
+			const mentioner = await ctx.runQuery(
+				api.workspace.members.getMemberById,
+				{
+					memberId: mention.mentionerMemberId,
+				}
+			);
 			if (!mentioner?.user) {
 				logger.error("Mentioner not found:", mention.mentionerMemberId);
 				return { success: false, error: "Mentioner not found" };
@@ -338,9 +353,12 @@ export const sendMentionEmail = internalAction({
 			// Get the message if it exists
 			let messagePreview = "You were mentioned in a message";
 			if (mention.messageId) {
-				const message = await ctx.runQuery(api.messaging.messages._getMessageById, {
-					messageId: mention.messageId,
-				});
+				const message = await ctx.runQuery(
+					api.messaging.messages._getMessageById,
+					{
+						messageId: mention.messageId,
+					}
+				);
 				if (message) {
 					messagePreview = extractMessagePreview(
 						message.body,
@@ -352,9 +370,12 @@ export const sendMentionEmail = internalAction({
 			// Get channel name if it exists
 			let channelName = "a channel";
 			if (mention.channelId) {
-				const channel = await ctx.runQuery(api.messaging.channels._getChannelById, {
-					channelId: mention.channelId,
-				});
+				const channel = await ctx.runQuery(
+					api.messaging.channels._getChannelById,
+					{
+						channelId: mention.channelId,
+					}
+				);
 				if (channel) {
 					channelName = channel.name;
 				}
@@ -433,27 +454,36 @@ export const sendThreadReplyEmail = internalAction({
 	handler: async (ctx, args): Promise<EmailNotificationResult> => {
 		try {
 			// Get the reply message
-			const replyMessage = await ctx.runQuery(api.messaging.messages._getMessageById, {
-				messageId: args.messageId,
-			});
+			const replyMessage = await ctx.runQuery(
+				api.messaging.messages._getMessageById,
+				{
+					messageId: args.messageId,
+				}
+			);
 			if (!replyMessage) {
 				logger.error("Reply message not found:", args.messageId);
 				return { success: false, error: "Reply message not found" };
 			}
 
 			// Get the parent message
-			const parentMessage = await ctx.runQuery(api.messaging.messages._getMessageById, {
-				messageId: args.parentMessageId,
-			});
+			const parentMessage = await ctx.runQuery(
+				api.messaging.messages._getMessageById,
+				{
+					messageId: args.parentMessageId,
+				}
+			);
 			if (!parentMessage) {
 				logger.error("Parent message not found:", args.parentMessageId);
 				return { success: false, error: "Parent message not found" };
 			}
 
 			// Get the original author (parent message author)
-			const originalAuthor = await ctx.runQuery(api.workspace.members.getMemberById, {
-				memberId: parentMessage.memberId,
-			});
+			const originalAuthor = await ctx.runQuery(
+				api.workspace.members.getMemberById,
+				{
+					memberId: parentMessage.memberId,
+				}
+			);
 			if (!originalAuthor?.user?.email) {
 				return { success: true, skipped: true };
 			}
@@ -494,9 +524,12 @@ export const sendThreadReplyEmail = internalAction({
 			// Get channel name if it exists
 			let channelName = "a channel";
 			if (replyMessage.channelId) {
-				const channel = await ctx.runQuery(api.messaging.channels._getChannelById, {
-					channelId: replyMessage.channelId,
-				});
+				const channel = await ctx.runQuery(
+					api.messaging.channels._getChannelById,
+					{
+						channelId: replyMessage.channelId,
+					}
+				);
 				if (channel) {
 					channelName = channel.name;
 				}
@@ -613,16 +646,19 @@ export const sendWeeklyDigestEmails = internalAction({
 	handler: async (ctx, args): Promise<any> => {
 		try {
 			// Get users who have weekly digest enabled for this day
-			const users = await ctx.runQuery(api.notify.email.getUsersForWeeklyDigest, {
-				dayOfWeek: args.dayOfWeek as
-					| "monday"
-					| "tuesday"
-					| "wednesday"
-					| "thursday"
-					| "friday"
-					| "saturday"
-					| "sunday",
-			});
+			const users = await ctx.runQuery(
+				api.notify.email.getUsersForWeeklyDigest,
+				{
+					dayOfWeek: args.dayOfWeek as
+						| "monday"
+						| "tuesday"
+						| "wednesday"
+						| "thursday"
+						| "friday"
+						| "saturday"
+						| "sunday",
+				}
+			);
 
 			const results = [];
 			const weekRange = getWeekRange();
@@ -847,20 +883,26 @@ export const sendWeeklyDigests = internalAction({
 			const weekRange = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
 			// Get users who should receive digest today
-			const users = await ctx.runQuery(api.notify.email.getUsersForWeeklyDigest, {
-				dayOfWeek: args.dayOfWeek,
-			});
+			const users = await ctx.runQuery(
+				api.notify.email.getUsersForWeeklyDigest,
+				{
+					dayOfWeek: args.dayOfWeek,
+				}
+			);
 
 			const results = [];
 
 			for (const user of users) {
 				try {
 					// Get user's weekly digest data
-					const digestData = await ctx.runQuery(api.notify.email.getUserWeeklyDigest, {
-						userId: user.userId,
-						startDate: weekStart.getTime(),
-						endDate: weekEnd.getTime(),
-					});
+					const digestData = await ctx.runQuery(
+						api.notify.email.getUserWeeklyDigest,
+						{
+							userId: user.userId,
+							startDate: weekStart.getTime(),
+							endDate: weekEnd.getTime(),
+						}
+					);
 
 					// Only trigger action if user has activity
 					if (
@@ -1065,9 +1107,12 @@ export const sendCardAssignmentEmail = internalAction({
 				}
 			);
 
-			const assigneeMember = await ctx.runQuery(api.workspace.members.getMemberById, {
-				memberId: assigneeId,
-			});
+			const assigneeMember = await ctx.runQuery(
+				api.workspace.members.getMemberById,
+				{
+					memberId: assigneeId,
+				}
+			);
 			if (!assigneeMember?.userId) {
 				return { success: true, skipped: true };
 			}
@@ -1178,7 +1223,9 @@ export const sendIssueAssignmentEmail = internalAction({
 		}
 	): Promise<EmailNotificationResult> => {
 		try {
-			const issue = await ctx.runQuery(api.board.board._getIssueDetails, { issueId });
+			const issue = await ctx.runQuery(api.board.board._getIssueDetails, {
+				issueId,
+			});
 			if (!issue) {
 				return { success: false, error: "Issue not found" };
 			}
@@ -1194,9 +1241,12 @@ export const sendIssueAssignmentEmail = internalAction({
 				{ memberId: assigneeId }
 			);
 
-			const assigneeMember = await ctx.runQuery(api.workspace.members.getMemberById, {
-				memberId: assigneeId,
-			});
+			const assigneeMember = await ctx.runQuery(
+				api.workspace.members.getMemberById,
+				{
+					memberId: assigneeId,
+				}
+			);
 			if (!assigneeMember?.userId) {
 				return { success: true, skipped: true };
 			}

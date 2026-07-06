@@ -15,14 +15,14 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CTASection } from "@/features/landing/CTASection";
-import { Footer } from "@/features/landing/Footer";
+import { CTASection } from "@/features/landing/components/cta-section";
+import { Footer } from "@/features/landing/components/footer";
+import { Header } from "@/features/landing/components/header";
 import {
 	type Feature,
 	featureGroups,
 	features,
 } from "@/features/landing/features/features-data";
-import { Header } from "@/features/landing/Header";
 import { cn } from "@/lib/utils";
 
 const FeaturesPage = () => {

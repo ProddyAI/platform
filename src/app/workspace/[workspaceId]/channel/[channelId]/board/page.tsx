@@ -6,11 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import BoardGanttView from "@/features/board/components/board-gantt-view";
-import BoardHeader from "@/features/board/components/board-header";
-import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
-import BoardKanbanView from "@/features/board/components/board-kanban-view";
-import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import {
 	BoardAddCardModal,
 	BoardAddStatusModal,
@@ -18,7 +13,12 @@ import {
 	BoardDeleteStatusModal,
 	BoardEditCardModal,
 	BoardEditStatusModal,
-} from "@/features/board/components/board-models";
+} from "@/features/board/components/board-card-edit-dialog";
+import BoardGanttView from "@/features/board/components/board-gantt-view";
+import BoardHeader from "@/features/board/components/board-header";
+import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
+import BoardKanbanView from "@/features/board/components/board-kanban-view";
+import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import BoardPageContent from "@/features/board/components/board-page-content";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useChannelId } from "@/hooks/use-channel-id";
@@ -71,10 +71,14 @@ const ChannelBoardPage = () => {
 	const lists = useQuery(api.board.board.getLists, { channelId });
 	const allCards =
 		useQuery(api.board.board.getAllCardsForChannel, { channelId }) || [];
-	const uniqueLabels = useQuery(api.board.board.getUniqueLabels, { channelId }) || [];
-	const members = useQuery(api.board.board.getMembersForChannel, { channelId }) || [];
+	const uniqueLabels =
+		useQuery(api.board.board.getUniqueLabels, { channelId }) || [];
+	const members =
+		useQuery(api.board.board.getMembersForChannel, { channelId }) || [];
 	const channel = useQuery(api.messaging.channels.getById, { id: channelId });
-	const currentMember = useQuery(api.workspace.members.current, { workspaceId });
+	const currentMember = useQuery(api.workspace.members.current, {
+		workspaceId,
+	});
 
 	useDocumentTitle(channel ? `Board – ${channel.name}` : "Board");
 

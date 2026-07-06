@@ -14,8 +14,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Footer } from "@/features/landing/Footer";
-import { Header } from "@/features/landing/Header";
+import { Footer } from "@/features/landing/components/footer";
+import { Header } from "@/features/landing/components/header";
 
 const ContactPage = () => {
 	const [formState, setFormState] = useState({

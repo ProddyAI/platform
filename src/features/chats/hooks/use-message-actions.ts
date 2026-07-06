@@ -2,16 +2,16 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useMessageSelection } from "@/contexts/message-selection-context";
 import { useRemoveMessage } from "@/features/messages/api/use-remove-message";
+import { useToggleReaction } from "@/features/messages/api/use-toggle-reaction";
 import { useUpdateMessage } from "@/features/messages/api/use-update-message";
-import { useToggleReaction } from "@/features/reactions/api/use-toggle-reaction";
-import { useMessageSelection } from "@/features/smart/contexts/message-selection-context";
 import { useCreateTaskFromMessage } from "@/features/tasks/api/use-create-task-from-message";
 import { useConfirm } from "@/hooks/use-confirm";
 import { usePanel } from "@/hooks/use-panel";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import type { TaskModalState } from "../types/message";
+import type { TaskModalState } from "../types";
 import { extractTextFromBody } from "../utils/message-utils";
 
 interface UseMessageActionsProps {

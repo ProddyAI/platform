@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Bell, BellOff, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useAdBlockerDetectionContext } from "@/components/providers/ad-blocker-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { useAdBlockerDetectionContext } from "@/lib/ad-blocker-context";
 import { logger } from "@/lib/logger";
 
 export type PushNotificationPromptProps = Record<string, never>;

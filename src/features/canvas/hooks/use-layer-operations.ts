@@ -4,12 +4,7 @@ import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 import { nanoid } from "nanoid";
 import { useMutation } from "../../../../liveblocks.config";
 import { penPointsToPathLayer } from "../../../lib/utils";
-import {
-	type Color,
-	LayerType,
-	type MermaidLayer,
-	type Point,
-} from "../types/canvas";
+import { type Color, LayerType, type MermaidLayer, type Point } from "../types";
 
 const MAX_LAYERS = 100;
 

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import {
 	convertMermaidToExcalidrawScene,
 	normalizeMermaidCode,
-} from "@/features/canvas/diagram-ai/mermaid";
+} from "@/features/canvas/lib/mermaid";
 import { LiveParticipants } from "@/features/live/components/live-participants";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { generateUserColor } from "@/lib/placeholder-image";

@@ -31,7 +31,9 @@ export const BoardCardBlockingRelationships: React.FC<
 		api.board.board.getBlockingCards,
 		cardId ? { cardId } : "skip"
 	);
-	const allCards = useQuery(api.board.board.getAllCardsForChannel, { channelId });
+	const allCards = useQuery(api.board.board.getAllCardsForChannel, {
+		channelId,
+	});
 
 	const addBlockingRelationship = useMutation(
 		api.board.board.addBlockingRelationship

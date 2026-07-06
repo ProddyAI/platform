@@ -4,7 +4,7 @@ import { memo } from "react";
 
 import { useSelf, useStorage } from "../../../../liveblocks.config";
 import { useSelectionBounds } from "../hooks/use-selection-bounds";
-import { combineSides, LayerType, Side, type XYWH } from "../types/canvas";
+import { combineSides, LayerType, Side, type XYWH } from "../types";
 
 interface SelectionBoxProps {
 	onResizeHandlePointerDown: (corner: Side, initialBounds: XYWH) => void;

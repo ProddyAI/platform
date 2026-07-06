@@ -25,7 +25,9 @@ export const useInitiateTodoistOAuth = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.imports.importIntegrations.initiateTodoistOAuth);
+	const mutation = useMutation(
+		api.imports.importIntegrations.initiateTodoistOAuth
+	);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

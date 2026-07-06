@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import type { NavigationEvent } from "@/lib/navigation-utils";
+import type { NavigationEvent } from "@/lib/client/navigation-utils";
 
 export const NavigationListener = () => {
 	const router = useRouter();

@@ -25,7 +25,9 @@ export const useInitiateLinearOAuth = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.imports.importIntegrations.initiateLinearOAuth);
+	const mutation = useMutation(
+		api.imports.importIntegrations.initiateLinearOAuth
+	);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

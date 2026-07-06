@@ -4,7 +4,12 @@ import { generateObject, generateText } from "ai";
 import { v } from "convex/values";
 import { z } from "zod";
 import { api, internal } from "../_generated/api";
-import { action, internalMutation, mutation, query } from "../_generated/server";
+import {
+	action,
+	internalMutation,
+	mutation,
+	query,
+} from "../_generated/server";
 import { getMember } from "../lib/utils";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
@@ -800,8 +805,7 @@ ${args.transcript}
 Please answer the user's latest question concisely and accurately based on the transcript and notes.`;
 
 		const chatHistory = args.history.map((m) => ({
-			role:
-				m.role === "assistant" ? ("assistant" as const) : ("user" as const),
+			role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
 			content: m.content,
 		}));
 

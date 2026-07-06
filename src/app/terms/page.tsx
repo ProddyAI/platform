@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CTASection } from "@/features/landing/CTASection";
-import { Footer } from "@/features/landing/Footer";
-import { Header } from "@/features/landing/Header";
+import { CTASection } from "@/features/landing/components/cta-section";
+import { Footer } from "@/features/landing/components/footer";
+import { Header } from "@/features/landing/components/header";
 
 const TermsPage = () => {
 	return (

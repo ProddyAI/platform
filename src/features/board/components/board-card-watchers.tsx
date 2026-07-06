@@ -19,7 +19,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { BoardMember } from "./board-models";
+import type { BoardMember } from "./board-card-edit-dialog";
 
 interface BoardCardWatchersProps {
 	cardId: Id<"cards">;

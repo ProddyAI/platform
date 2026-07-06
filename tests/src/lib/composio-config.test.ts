@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { API_TOOL_FALLBACKS, filterToolsForQuery } from "../../../src/lib/composio-config";
+import {
+	API_TOOL_FALLBACKS,
+	filterToolsForQuery,
+} from "../../../src/lib/composio-config";
 
 describe("API_TOOL_FALLBACKS", () => {
 	test("does not use starred repositories as a fallback for listing the authenticated user's repositories", () => {

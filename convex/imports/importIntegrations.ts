@@ -960,9 +960,12 @@ export const processSlackImport = internalAction({
 
 		try {
 			// Get job details
-			const job = await ctx.runQuery(internal.imports.importIntegrations._getJob, {
-				jobId: args.jobId,
-			});
+			const job = await ctx.runQuery(
+				internal.imports.importIntegrations._getJob,
+				{
+					jobId: args.jobId,
+				}
+			);
 
 			if (!job) {
 				throw new Error("Job not found");
@@ -974,12 +977,15 @@ export const processSlackImport = internalAction({
 			}
 
 			// Update job status to in_progress
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "in_progress",
-				startedAt: Date.now(),
-				currentStep: "Validating Slack connection...",
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "in_progress",
+					startedAt: Date.now(),
+					currentStep: "Validating Slack connection...",
+				}
+			);
 
 			// Get the connection with access token
 			const connection = await ctx.runQuery(
@@ -1030,15 +1036,18 @@ export const processSlackImport = internalAction({
 					return currentJob?.status === "cancelled";
 				},
 				updateProgress: async (progress: any) => {
-					await ctx.runMutation(internal.imports.importIntegrations.updateJobProgress, {
-						jobId: args.jobId,
-						currentStep: progress.currentStep || "",
-						channelsImported: progress.channelsImported || 0,
-						messagesImported: progress.messagesImported || 0,
-						usersImported: progress.usersImported || 0,
-						filesImported: progress.filesImported,
-						messagesTotal: progress.messagesTotal,
-					});
+					await ctx.runMutation(
+						internal.imports.importIntegrations.updateJobProgress,
+						{
+							jobId: args.jobId,
+							currentStep: progress.currentStep || "",
+							channelsImported: progress.channelsImported || 0,
+							messagesImported: progress.messagesImported || 0,
+							usersImported: progress.usersImported || 0,
+							filesImported: progress.filesImported,
+							messagesTotal: progress.messagesTotal,
+						}
+					);
 				},
 				log: async (
 					level: "info" | "warn" | "error",
@@ -1065,26 +1074,32 @@ export const processSlackImport = internalAction({
 			const result = await executeSlackImport(importContext, provider);
 
 			// Update job with results
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "completed",
-				completedAt: Date.now(),
-				currentStep: "Import completed successfully",
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "completed",
+					completedAt: Date.now(),
+					currentStep: "Import completed successfully",
+				}
+			);
 
 			// Store result summary
-			await ctx.runMutation(internal.imports.importIntegrations.storeImportResult, {
-				jobId: args.jobId,
-				result: {
-					channelsCreated: result.itemsCreated as any[],
-					messagesCreated: result.messagesCreated,
-					tasksCreated: result.tasksCreated ?? 0,
-					usersMatched: result.usersMatched,
-					filesImported: result.filesImported,
-					errors: result.errors,
-					warnings: result.warnings,
-				},
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.storeImportResult,
+				{
+					jobId: args.jobId,
+					result: {
+						channelsCreated: result.itemsCreated as any[],
+						messagesCreated: result.messagesCreated,
+						tasksCreated: result.tasksCreated ?? 0,
+						usersMatched: result.usersMatched,
+						filesImported: result.filesImported,
+						errors: result.errors,
+						warnings: result.warnings,
+					},
+				}
+			);
 
 			// Log completion
 			const duration = Date.now() - startTime;
@@ -1109,13 +1124,16 @@ export const processSlackImport = internalAction({
 			console.error("[SlackImport] Failed:", errorMessage, error);
 
 			// Mark job as failed
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "failed",
-				completedAt: Date.now(),
-				errorMessage,
-				currentStep: `Import failed: ${errorMessage}`,
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "failed",
+					completedAt: Date.now(),
+					errorMessage,
+					currentStep: `Import failed: ${errorMessage}`,
+				}
+			);
 
 			// Schedule failure notification
 			await ctx.scheduler.runAfter(
@@ -1142,9 +1160,12 @@ export const processTodoistImport = internalAction({
 
 		try {
 			// Get job details
-			const job = await ctx.runQuery(internal.imports.importIntegrations._getJob, {
-				jobId: args.jobId,
-			});
+			const job = await ctx.runQuery(
+				internal.imports.importIntegrations._getJob,
+				{
+					jobId: args.jobId,
+				}
+			);
 
 			if (!job) {
 				throw new Error("Job not found");
@@ -1156,12 +1177,15 @@ export const processTodoistImport = internalAction({
 			}
 
 			// Update job status to in_progress
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "in_progress",
-				startedAt: Date.now(),
-				currentStep: "Validating Todoist connection...",
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "in_progress",
+					startedAt: Date.now(),
+					currentStep: "Validating Todoist connection...",
+				}
+			);
 
 			// Get the connection with access token
 			const connection = await ctx.runQuery(
@@ -1197,15 +1221,18 @@ export const processTodoistImport = internalAction({
 					return currentJob?.status === "cancelled";
 				},
 				updateProgress: async (progress: any) => {
-					await ctx.runMutation(internal.imports.importIntegrations.updateJobProgress, {
-						jobId: args.jobId,
-						currentStep: progress.currentStep || "",
-						channelsImported: progress.channelsImported || 0,
-						messagesImported: progress.messagesImported || 0,
-						usersImported: progress.usersImported || 0,
-						filesImported: progress.filesImported,
-						messagesTotal: progress.messagesTotal,
-					});
+					await ctx.runMutation(
+						internal.imports.importIntegrations.updateJobProgress,
+						{
+							jobId: args.jobId,
+							currentStep: progress.currentStep || "",
+							channelsImported: progress.channelsImported || 0,
+							messagesImported: progress.messagesImported || 0,
+							usersImported: progress.usersImported || 0,
+							filesImported: progress.filesImported,
+							messagesTotal: progress.messagesTotal,
+						}
+					);
 				},
 				log: async (
 					level: "info" | "warn" | "error",
@@ -1232,26 +1259,32 @@ export const processTodoistImport = internalAction({
 			const result = await executeTodoistImport(importContext, provider);
 
 			// Update job with results
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "completed",
-				completedAt: Date.now(),
-				currentStep: "Import completed successfully",
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "completed",
+					completedAt: Date.now(),
+					currentStep: "Import completed successfully",
+				}
+			);
 
 			// Store result summary
-			await ctx.runMutation(internal.imports.importIntegrations.storeImportResult, {
-				jobId: args.jobId,
-				result: {
-					channelsCreated: result.itemsCreated as any[],
-					messagesCreated: result.messagesCreated,
-					tasksCreated: result.tasksCreated ?? 0,
-					usersMatched: result.usersMatched,
-					filesImported: result.filesImported,
-					errors: result.errors,
-					warnings: result.warnings,
-				},
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.storeImportResult,
+				{
+					jobId: args.jobId,
+					result: {
+						channelsCreated: result.itemsCreated as any[],
+						messagesCreated: result.messagesCreated,
+						tasksCreated: result.tasksCreated ?? 0,
+						usersMatched: result.usersMatched,
+						filesImported: result.filesImported,
+						errors: result.errors,
+						warnings: result.warnings,
+					},
+				}
+			);
 
 			// Schedule completion notification
 			await ctx.scheduler.runAfter(
@@ -1267,13 +1300,16 @@ export const processTodoistImport = internalAction({
 			console.error("[TodoistImport] Failed:", errorMessage, error);
 
 			// Mark job as failed
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "failed",
-				completedAt: Date.now(),
-				errorMessage,
-				currentStep: `Import failed: ${errorMessage}`,
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "failed",
+					completedAt: Date.now(),
+					errorMessage,
+					currentStep: `Import failed: ${errorMessage}`,
+				}
+			);
 
 			// Schedule failure notification
 			await ctx.scheduler.runAfter(
@@ -1300,9 +1336,12 @@ export const processLinearImport = internalAction({
 
 		try {
 			// Get job details
-			const job = await ctx.runQuery(internal.imports.importIntegrations._getJob, {
-				jobId: args.jobId,
-			});
+			const job = await ctx.runQuery(
+				internal.imports.importIntegrations._getJob,
+				{
+					jobId: args.jobId,
+				}
+			);
 
 			if (!job) {
 				throw new Error("Job not found");
@@ -1314,12 +1353,15 @@ export const processLinearImport = internalAction({
 			}
 
 			// Update job status to in_progress
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "in_progress",
-				startedAt: Date.now(),
-				currentStep: "Validating Linear connection...",
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "in_progress",
+					startedAt: Date.now(),
+					currentStep: "Validating Linear connection...",
+				}
+			);
 
 			// Get the connection with access token
 			const connection = await ctx.runQuery(
@@ -1352,9 +1394,12 @@ export const processLinearImport = internalAction({
 			});
 
 			// Create import context
-			const member = await ctx.runQuery(internal.workspace.members._getMemberById, {
-				id: job.memberId,
-			});
+			const member = await ctx.runQuery(
+				internal.workspace.members._getMemberById,
+				{
+					id: job.memberId,
+				}
+			);
 
 			const importContext: any = {
 				accessToken: connection.accessToken,
@@ -1378,15 +1423,18 @@ export const processLinearImport = internalAction({
 					return currentJob?.status === "cancelled";
 				},
 				updateProgress: async (progress: any) => {
-					await ctx.runMutation(internal.imports.importIntegrations.updateJobProgress, {
-						jobId: args.jobId,
-						currentStep: progress.currentStep || "",
-						channelsImported: progress.channelsImported || 0,
-						messagesImported: progress.messagesImported || 0,
-						usersImported: progress.usersImported || 0,
-						filesImported: progress.filesImported,
-						messagesTotal: progress.messagesTotal,
-					});
+					await ctx.runMutation(
+						internal.imports.importIntegrations.updateJobProgress,
+						{
+							jobId: args.jobId,
+							currentStep: progress.currentStep || "",
+							channelsImported: progress.channelsImported || 0,
+							messagesImported: progress.messagesImported || 0,
+							usersImported: progress.usersImported || 0,
+							filesImported: progress.filesImported,
+							messagesTotal: progress.messagesTotal,
+						}
+					);
 				},
 				log: async (
 					level: "info" | "warn" | "error",
@@ -1413,26 +1461,32 @@ export const processLinearImport = internalAction({
 			const result = await executeLinearImport(importContext, provider);
 
 			// Update job with results
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "completed",
-				completedAt: Date.now(),
-				currentStep: "Import completed successfully",
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "completed",
+					completedAt: Date.now(),
+					currentStep: "Import completed successfully",
+				}
+			);
 
 			// Store result summary
-			await ctx.runMutation(internal.imports.importIntegrations.storeImportResult, {
-				jobId: args.jobId,
-				result: {
-					channelsCreated: result.itemsCreated as any[],
-					messagesCreated: result.messagesCreated,
-					tasksCreated: result.tasksCreated ?? 0,
-					usersMatched: result.usersMatched,
-					filesImported: result.filesImported,
-					errors: result.errors,
-					warnings: result.warnings,
-				},
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.storeImportResult,
+				{
+					jobId: args.jobId,
+					result: {
+						channelsCreated: result.itemsCreated as any[],
+						messagesCreated: result.messagesCreated,
+						tasksCreated: result.tasksCreated ?? 0,
+						usersMatched: result.usersMatched,
+						filesImported: result.filesImported,
+						errors: result.errors,
+						warnings: result.warnings,
+					},
+				}
+			);
 
 			// Schedule completion notification
 			await ctx.scheduler.runAfter(
@@ -1448,13 +1502,16 @@ export const processLinearImport = internalAction({
 			console.error("[LinearImport] Failed:", errorMessage, error);
 
 			// Mark job as failed
-			await ctx.runMutation(internal.imports.importIntegrations.updateJobStatus, {
-				jobId: args.jobId,
-				status: "failed",
-				completedAt: Date.now(),
-				errorMessage,
-				currentStep: `Import failed: ${errorMessage}`,
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.updateJobStatus,
+				{
+					jobId: args.jobId,
+					status: "failed",
+					completedAt: Date.now(),
+					errorMessage,
+					currentStep: `Import failed: ${errorMessage}`,
+				}
+			);
 
 			// Schedule failure notification
 			await ctx.scheduler.runAfter(
@@ -1476,16 +1533,22 @@ export const notifyImportComplete = internalAction({
 		jobId: v.id("import_jobs"),
 	},
 	handler: async (ctx, args) => {
-		const job = await ctx.runQuery(internal.imports.importIntegrations._getJob, {
-			jobId: args.jobId,
-		});
+		const job = await ctx.runQuery(
+			internal.imports.importIntegrations._getJob,
+			{
+				jobId: args.jobId,
+			}
+		);
 
 		if (!job) return;
 
 		// Get member
-		const member = await ctx.runQuery(internal.workspace.members._getMemberById, {
-			id: job.memberId,
-		});
+		const member = await ctx.runQuery(
+			internal.workspace.members._getMemberById,
+			{
+				id: job.memberId,
+			}
+		);
 
 		if (!member) return;
 
@@ -1506,15 +1569,18 @@ export const notifyImportComplete = internalAction({
 		}
 
 		// Send email notification
-		await ctx.runAction(internal.notify.emailActions.sendImportCompletionEmail, {
-			email: user.email,
-			userName: user.name || "User",
-			platform: job.platform,
-			status: job.status,
-			channelsImported: job.result?.channelsCreated?.length || 0,
-			messagesImported: job.result?.messagesCreated || 0,
-			workspaceId: job.workspaceId,
-		});
+		await ctx.runAction(
+			internal.notify.emailActions.sendImportCompletionEmail,
+			{
+				email: user.email,
+				userName: user.name || "User",
+				platform: job.platform,
+				status: job.status,
+				channelsImported: job.result?.channelsCreated?.length || 0,
+				messagesImported: job.result?.messagesCreated || 0,
+				workspaceId: job.workspaceId,
+			}
+		);
 
 		// Send in-app notification
 		await ctx.runAction(internal.notify.onesignal.sendInAppImportNotification, {

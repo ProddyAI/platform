@@ -354,13 +354,16 @@ async function storeOrUpdateConnectedAccount(
 		);
 
 		if (existingConnectedAccount) {
-			await convex.mutation(api.imports.integrations.updateConnectedAccountStatus, {
-				connectedAccountId: existingConnectedAccount._id,
-				status: "ACTIVE",
-				lastUsed: Date.now(),
-				composioAccountId,
-				metadata: resolvedConnection,
-			});
+			await convex.mutation(
+				api.imports.integrations.updateConnectedAccountStatus,
+				{
+					connectedAccountId: existingConnectedAccount._id,
+					status: "ACTIVE",
+					lastUsed: Date.now(),
+					composioAccountId,
+					metadata: resolvedConnection,
+				}
+			);
 		} else {
 			await convex.mutation(api.imports.integrations.storeConnectedAccount, {
 				workspaceId: workspaceId as Id<"workspaces">,

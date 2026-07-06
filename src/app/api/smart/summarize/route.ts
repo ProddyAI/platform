@@ -115,10 +115,13 @@ async function fetchRecentChannelMessages(opts: {
 		}
 	}
 
-	const messages = await convex.query(api.messaging.messages.getRecentChannelMessages, {
-		channelId: resolvedChannelId,
-		limit: opts.limit,
-	});
+	const messages = await convex.query(
+		api.messaging.messages.getRecentChannelMessages,
+		{
+			channelId: resolvedChannelId,
+			limit: opts.limit,
+		}
+	);
 
 	return {
 		resolvedChannelName:
@@ -413,10 +416,13 @@ Output format (Markdown, no intro text):
 			try {
 				const trackingToken = await convexAuthNextjsToken();
 				if (trackingToken) trackingConvex.setAuth(trackingToken);
-				await trackingConvex.mutation(api.billing.usageTracking.recordAIRequestPublic, {
-					workspaceId,
-					featureType: "aiSummary",
-				});
+				await trackingConvex.mutation(
+					api.billing.usageTracking.recordAIRequestPublic,
+					{
+						workspaceId,
+						featureType: "aiSummary",
+					}
+				);
 			} catch (trackErr) {
 				console.warn("[UsageTracking] Failed to record AI summary:", trackErr);
 			}

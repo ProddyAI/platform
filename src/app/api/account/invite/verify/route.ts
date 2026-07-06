@@ -61,9 +61,12 @@ export async function POST(req: Request) {
 		);
 
 		// 3. Fetch invite by hash
-		const inviteDoc = await convex.query(api.workspace.invites.getInviteByHash, {
-			hash: invite,
-		});
+		const inviteDoc = await convex.query(
+			api.workspace.invites.getInviteByHash,
+			{
+				hash: invite,
+			}
+		);
 
 		if (!inviteDoc) {
 			console.error(

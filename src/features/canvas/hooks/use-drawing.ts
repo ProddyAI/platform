@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "../../../../liveblocks.config";
-import { CanvasMode, type Color, type Point } from "../types/canvas";
+import { CanvasMode, type Color, type Point } from "../types";
 
 export function useDrawing(
 	canvasMode: CanvasMode,

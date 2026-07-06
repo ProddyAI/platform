@@ -4,7 +4,12 @@ import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { api, components, internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { action, internalMutation, mutation, query } from "../_generated/server";
+import {
+	action,
+	internalMutation,
+	mutation,
+	query,
+} from "../_generated/server";
 
 type FilterTypes = {
 	workspaceId: string;
@@ -13,7 +18,9 @@ type FilterTypes = {
 };
 const rag = new RAG<FilterTypes>(components.rag as any, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: openai.textEmbeddingModel("text-embedding-3-small") as any,
+	textEmbeddingModel: openai.textEmbeddingModel(
+		"text-embedding-3-small"
+	) as any,
 	embeddingDimension: 1536,
 });
 

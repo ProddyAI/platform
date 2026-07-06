@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VoiceWaveform } from "@/features/audio/components/voice-waveform";
-import { exportToPDF, exportToWord } from "@/lib/export-utils";
+import { exportToPDF, exportToWord } from "@/lib/client/export-utils";
 
 // ─── RECORDING BUTTON ───────────────────────────────────────────────────────
 
@@ -477,9 +477,13 @@ export const NotesSidebar = ({
 		roomId,
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
-	const generations = useQuery(api.content.meetingNotes.getGenerations, { roomId });
+	const generations = useQuery(api.content.meetingNotes.getGenerations, {
+		roomId,
+	});
 	const generateAI = useAction(api.content.meetingNotes.generateAIInsights);
-	const finalizeTranscript = useMutation(api.content.meetingNotes.finalizeTranscript);
+	const finalizeTranscript = useMutation(
+		api.content.meetingNotes.finalizeTranscript
+	);
 	const saveTranscript = useMutation(api.content.meetingNotes.saveTranscript);
 
 	// Fetch workspace members so AI can map names to user IDs

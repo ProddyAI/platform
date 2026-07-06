@@ -460,10 +460,13 @@ const handlePaymentSucceededEvent = async (
 							error: errorDetails,
 						}
 					);
-					await ctx.runMutation(internal.billing.webhooks.markDodoSyncManualReview, {
-						workspaceId: pendingChange.workspaceId,
-						reason: `Failed to apply paid Dodo plan change after payment: ${errorDetails}`,
-					});
+					await ctx.runMutation(
+						internal.billing.webhooks.markDodoSyncManualReview,
+						{
+							workspaceId: pendingChange.workspaceId,
+							reason: `Failed to apply paid Dodo plan change after payment: ${errorDetails}`,
+						}
+					);
 				}
 			}
 			paymentArgs.applyPendingBilling = dodoQuantityAligned;
@@ -575,7 +578,10 @@ const handleSubscriptionCancelledEvent = async (
 	if (workspaceId) cancelArgs.workspaceId = workspaceId;
 	if (customerId) cancelArgs.customerId = customerId;
 
-	await ctx.runMutation(internal.billing.webhooks.cancelSubscription, cancelArgs);
+	await ctx.runMutation(
+		internal.billing.webhooks.cancelSubscription,
+		cancelArgs
+	);
 };
 
 http.route({
@@ -842,19 +848,22 @@ http.route({
 			}
 
 			// Store the connection
-			await ctx.runMutation(internal.imports.importIntegrations.storeSlackConnection, {
-				workspaceId: workspaceId as Id<"workspaces">,
-				memberId: memberId as Id<"members">,
-				accessToken: tokenData.access_token,
-				refreshToken: tokenData.refresh_token || undefined,
-				expiresAt:
-					tokenData.expires_in && typeof tokenData.expires_in === "number"
-						? Date.now() + tokenData.expires_in * 1000
-						: undefined,
-				scope: tokenData.scope,
-				teamId: tokenData.team.id,
-				teamName: tokenData.team.name,
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.storeSlackConnection,
+				{
+					workspaceId: workspaceId as Id<"workspaces">,
+					memberId: memberId as Id<"members">,
+					accessToken: tokenData.access_token,
+					refreshToken: tokenData.refresh_token || undefined,
+					expiresAt:
+						tokenData.expires_in && typeof tokenData.expires_in === "number"
+							? Date.now() + tokenData.expires_in * 1000
+							: undefined,
+					scope: tokenData.scope,
+					teamId: tokenData.team.id,
+					teamName: tokenData.team.name,
+				}
+			);
 
 			// Redirect back to manage page with success
 			return new Response(null, {
@@ -1157,16 +1166,19 @@ http.route({
 			console.log("[LinearOAuth] Organization:", org.name);
 
 			// Store the connection
-			await ctx.runMutation(internal.imports.importIntegrations.storeLinearConnection, {
-				workspaceId: workspaceId as Id<"workspaces">,
-				memberId: memberId as Id<"members">,
-				accessToken: tokenData.access_token,
-				refreshToken: tokenData.refresh_token || undefined,
-				expiresAt: undefined, // Linear tokens don't expire
-				scope: tokenData.scope || "read",
-				organizationId: org.id,
-				organizationName: org.name || "Linear Organization",
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.storeLinearConnection,
+				{
+					workspaceId: workspaceId as Id<"workspaces">,
+					memberId: memberId as Id<"members">,
+					accessToken: tokenData.access_token,
+					refreshToken: tokenData.refresh_token || undefined,
+					expiresAt: undefined, // Linear tokens don't expire
+					scope: tokenData.scope || "read",
+					organizationId: org.id,
+					organizationName: org.name || "Linear Organization",
+				}
+			);
 
 			console.log("[LinearOAuth] Connection stored successfully");
 

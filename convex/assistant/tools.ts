@@ -3,12 +3,12 @@ import { v } from "convex/values";
 import { api } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { action, type QueryCtx, query } from "../_generated/server";
+import { extractTextFromRichText } from "../content/richText";
 import {
 	buildHybridRetrievalResults,
 	type DirectSearchAllResults,
 	type SemanticRetrievalResult,
 } from "./hybridRetrieval";
-import { extractTextFromRichText } from "../content/richText";
 
 function startOfDayMs(date: Date) {
 	const d = new Date(date);

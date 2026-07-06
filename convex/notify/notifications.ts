@@ -54,13 +54,18 @@ export const sendPushNotification = internalAction({
 		// Fetch all users and preferences in parallel to avoid N+1 query pattern
 		const userIds = args.userIds;
 		const users = await Promise.all(
-			userIds.map((id) => ctx.runQuery(internal.workspace.users._getUserById, { id }))
+			userIds.map((id) =>
+				ctx.runQuery(internal.workspace.users._getUserById, { id })
+			)
 		);
 		const notificationPrefs = await Promise.all(
 			userIds.map((userId) =>
-				ctx.runQuery(api.workspace.preferences.getNotificationPreferencesByUserId, {
-					userId,
-				})
+				ctx.runQuery(
+					api.workspace.preferences.getNotificationPreferencesByUserId,
+					{
+						userId,
+					}
+				)
 			)
 		);
 
@@ -112,21 +117,24 @@ export const sendPushNotification = internalAction({
 			});
 
 			// Send notification via OneSignal REST API
-			const response = await fetch("https://api.notify.onesignal.com/notifications", {
-				method: "POST",
-				headers: {
-					Authorization: `Basic ${oneSignalApiKey}`,
-					"content-type": "application/json; charset=utf-8",
-				},
-				body: JSON.stringify({
-					app_id: oneSignalAppId,
-					include_external_user_ids: filteredUserIds,
-					target_channel: "push",
-					headings: { en: args.title },
-					contents: { en: args.message },
-					data: args.data || {},
-				}),
-			});
+			const response = await fetch(
+				"https://api.notify.onesignal.com/notifications",
+				{
+					method: "POST",
+					headers: {
+						Authorization: `Basic ${oneSignalApiKey}`,
+						"content-type": "application/json; charset=utf-8",
+					},
+					body: JSON.stringify({
+						app_id: oneSignalAppId,
+						include_external_user_ids: filteredUserIds,
+						target_channel: "push",
+						headings: { en: args.title },
+						contents: { en: args.message },
+						data: args.data || {},
+					}),
+				}
+			);
 
 			const responseText = await response.text();
 			let result: Record<string, any> = {};

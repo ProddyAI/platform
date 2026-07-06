@@ -171,10 +171,13 @@ async function appendNoteLookupContext(
 			})) as { notes?: unknown[] } | null;
 		} else {
 			toolName = "getRecentNotes";
-			noteResult = (await args.ctx.runQuery(api.assistant.tools.getRecentNotes, {
-				workspaceId: args.workspaceId,
-				limit: 6,
-			})) as { notes?: unknown[] } | null;
+			noteResult = (await args.ctx.runQuery(
+				api.assistant.tools.getRecentNotes,
+				{
+					workspaceId: args.workspaceId,
+					limit: 6,
+				}
+			)) as { notes?: unknown[] } | null;
 		}
 
 		pushSourceRefs(state, toolName, noteResult);

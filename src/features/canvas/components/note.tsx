@@ -3,7 +3,7 @@ import ContentEditable, {
 } from "react-contenteditable";
 import { useMutation } from "../../../../liveblocks.config";
 import { cn, colorToCSS, getContrastingTextColor } from "../../../lib/utils";
-import type { NoteLayer } from "../types/canvas";
+import type { NoteLayer } from "../types";
 
 const calculateFontSize = (width: number, height: number) => {
 	const maxFontSize = 96;

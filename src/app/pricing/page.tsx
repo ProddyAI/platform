@@ -5,9 +5,9 @@ import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { Fragment } from "react";
 import { Button } from "@/components/ui/button";
-import { CTASection } from "@/features/landing/CTASection";
-import { Footer } from "@/features/landing/Footer";
-import { Header } from "@/features/landing/Header";
+import { CTASection } from "@/features/landing/components/cta-section";
+import { Footer } from "@/features/landing/components/footer";
+import { Header } from "@/features/landing/components/header";
 
 const PricingPage = () => {
 	return (

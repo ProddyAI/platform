@@ -28,7 +28,7 @@ import {
 } from "../hooks";
 import { useDeleteLayers } from "../hooks/use-delete-layers";
 import { useDisableScrollBounce } from "../hooks/use-disable-scroll-bounce";
-import { CanvasMode, LayerType, type Point } from "../types/canvas";
+import { CanvasMode, LayerType, type Point } from "../types";
 import { CanvasName } from "./canvas-name";
 import { LayerPreview } from "./layer-preview";
 import { Path } from "./path";

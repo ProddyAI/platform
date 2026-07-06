@@ -2,10 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { api, components, internal } from "../_generated/api";
 import { action, internalAction } from "../_generated/server";
-import {
-	generateConversationTitle,
-	isFillerMessage,
-} from "./titleGeneration";
+import { generateConversationTitle, isFillerMessage } from "./titleGeneration";
 
 const DEFAULT_TITLES = new Set(["New Chat", "Assistant Chat"]);
 

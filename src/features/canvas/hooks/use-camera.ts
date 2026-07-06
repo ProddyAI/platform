@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { Camera } from "../types/canvas";
+import type { Camera } from "../types";
 
 export function useCamera(initialPosition: Camera = { x: 0, y: 0 }) {
 	const [camera, setCamera] = useState<Camera>(initialPosition);

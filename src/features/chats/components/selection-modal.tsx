@@ -7,10 +7,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { useMessageSelection } from "@/contexts/message-selection-context";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useRemoveMessage } from "@/features/messages/api/use-remove-message";
 import { SummaryModal } from "@/features/smart/components/summary-modal";
-import { useMessageSelection } from "@/features/smart/contexts/message-selection-context";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 

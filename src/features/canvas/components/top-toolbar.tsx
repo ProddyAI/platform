@@ -12,12 +12,7 @@ import {
 import { useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { useMyPresence } from "../../../../liveblocks.config";
-import {
-	CanvasMode,
-	type CanvasState,
-	type Color,
-	LayerType,
-} from "../types/canvas";
+import { CanvasMode, type CanvasState, type Color, LayerType } from "../types";
 import { ToolButton } from "./tool-button";
 
 type TopToolbarProps = {

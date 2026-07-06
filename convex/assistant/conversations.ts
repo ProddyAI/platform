@@ -490,10 +490,14 @@ export const createTaskFromPendingDraft = mutation({
 			lastMessageAt: now,
 		});
 
-		await ctx.scheduler.runAfter(0, internal.billing.usageTracking.recordTaskCreated, {
-			userId: assigneeUserId,
-			workspaceId: args.workspaceId,
-		});
+		await ctx.scheduler.runAfter(
+			0,
+			internal.billing.usageTracking.recordTaskCreated,
+			{
+				userId: assigneeUserId,
+				workspaceId: args.workspaceId,
+			}
+		);
 		await ctx.scheduler.runAfter(0, api.search.ragchat.autoIndexTask, {
 			taskId,
 		});
