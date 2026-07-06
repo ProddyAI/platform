@@ -167,7 +167,7 @@ export const TaskItem = ({
 					<div className="flex items-start justify-between gap-2">
 						<h3
 							className={cn(
-								"font-medium text-base truncate",
+								"font-medium text-base flex-1 min-w-0 break-words",
 								completed
 									? "line-through text-gray-500 dark:text-gray-500"
 									: "text-gray-900 dark:text-gray-100"
@@ -218,7 +218,7 @@ export const TaskItem = ({
 					{description && (
 						<p
 							className={cn(
-								"text-sm text-gray-600 mt-2 line-clamp-2 dark:text-gray-400",
+								"text-sm text-gray-600 mt-2 line-clamp-2 break-words dark:text-gray-400",
 								completed && "text-gray-400 dark:text-gray-500"
 							)}
 						>
