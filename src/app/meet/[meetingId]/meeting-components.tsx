@@ -414,6 +414,8 @@ export const CaptionsOverlay = ({
 						</span>
 					)}
 					<div className="flex flex-wrap gap-x-1.5 items-center">
+						{/* captionText is fully re-split fresh each render, not incrementally
+						appended — index is a safe key and drives the stagger animation */}
 						{captionText.split(" ").map((word, i) => (
 							<span
 								className="animate-in fade-in slide-in-from-bottom-1 duration-300"
@@ -798,6 +800,8 @@ export const NotesSidebar = ({
 										className="space-y-3 max-h-[60vh] overflow-y-auto pr-1"
 										ref={scrollRef}
 									>
+										{/* transcript only ever grows by appending new lines —
+										earlier lines never shift position, so index is a safe key */}
 										{transcript
 											.split("\n")
 											.filter((l: string) => l.trim())
@@ -902,10 +906,10 @@ export const NotesSidebar = ({
 											{currentGen.actionItems.length}
 										</span>
 									</h3>
-									{currentGen.actionItems.map((task, i) => (
+									{currentGen.actionItems.map((task) => (
 										<div
 											className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-1.5"
-											key={i}
+											key={task.title}
 										>
 											<div className="flex items-start gap-2.5">
 												<div className="mt-0.5 w-4 h-4 rounded border border-gray-600 flex-shrink-0" />
@@ -959,10 +963,10 @@ export const NotesSidebar = ({
 											{currentGen.decisions.length}
 										</span>
 									</h3>
-									{currentGen.decisions.map((decision, i) => (
+									{currentGen.decisions.map((decision) => (
 										<div
 											className="text-sm text-gray-300 flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5"
-											key={i}
+											key={decision}
 										>
 											<div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
 											<span className="leading-relaxed">{decision}</span>
@@ -1121,6 +1125,8 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 						<p className="text-xs">Send a message to everyone in the call</p>
 					</div>
 				)}
+				{/* messages only ever grows by appending — earlier entries never
+				shift position, so index is a safe key */}
 				{messages.map((msg, i) => (
 					<div className="flex gap-3" key={i}>
 						<div className="w-8 h-8 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xs font-medium shrink-0">
