@@ -6,6 +6,9 @@
 	"compilerOptions": {
 		/* These settings are not required by Convex and can be modified. */
 		"allowJs": true,
+		/* Scope implicit @types inclusion so tsc doesn't choke on deprecated
+		 * stub packages (e.g. @types/minimatch, which ships no declarations). */
+		"types": ["node"],
 		"strict": true,
 		"moduleResolution": "Bundler",
 		"jsx": "react-jsx",
