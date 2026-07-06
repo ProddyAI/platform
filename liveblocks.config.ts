@@ -11,16 +11,16 @@ import type { Color, Layer } from "./src/features/canvas/types";
 const client = createClient({
 	throttle: 16,
 	authEndpoint: "/api/liveblocks/auth",
-	async resolveUsers() {
+	resolveUsers() {
 		// Used only for Comments and Notifications. Return a list of user information
 		// This info is used in comments, mentions etc.
 		return [];
 	},
-	async resolveMentionSuggestions() {
+	resolveMentionSuggestions() {
 		// Used only for Comments. Return a list of userIds that match text.
 		return [];
 	},
-	async resolveRoomsInfo() {
+	resolveRoomsInfo() {
 		// Used only for Comments and Notifications. Return a list of room information
 		return [];
 	},

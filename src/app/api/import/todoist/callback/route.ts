@@ -16,7 +16,7 @@ function buildCallbackRedirect(
 	return NextResponse.redirect(targetUrl.toString(), 302);
 }
 
-export async function GET(request: Request) {
+export function GET(request: Request) {
 	let convexUrl = process.env.NEXT_PUBLIC_CONVEX_HTTP_URL;
 
 	if (!convexUrl) {

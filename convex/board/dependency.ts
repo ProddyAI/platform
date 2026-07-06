@@ -190,7 +190,7 @@ export const analyzeIssueDependencies = action({
 			})
 		),
 	},
-	handler: async (_ctx, args): Promise<DependencySuggestion[]> => {
+	handler: (_ctx, args): DependencySuggestion[] => {
 		const issues: AnalyzeInputIssue[] = args.issues;
 
 		// Build quick lookup for explicit title mentions.

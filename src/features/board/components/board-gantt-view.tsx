@@ -481,7 +481,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 											</div>
 										</div>
 										<div style={{ height: listHeight }}>
-											{rows.map((row, rowIndex) => (
+											{rows.map((row) => (
 												<div
 													className={cn(
 														"flex items-center px-3 text-xs border-b dark:border-gray-800",
@@ -489,7 +489,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 															? "pl-7 text-muted-foreground"
 															: "text-foreground"
 													)}
-													key={`${row.card._id}-${rowIndex}`}
+													key={row.card._id}
 													style={{ height: rowHeight }}
 												>
 													<span className="truncate">{row.card.title}</span>
@@ -652,10 +652,10 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 										Labels
 									</div>
 									<div className="flex flex-wrap gap-1">
-										{selectedTask.labels.map((label, index) => (
+										{selectedTask.labels.map((label) => (
 											<span
 												className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 text-xs rounded-full"
-												key={`${selectedTask.id}-${label}-${index}`}
+												key={`${selectedTask.id}-${label}`}
 											>
 												{label}
 											</span>

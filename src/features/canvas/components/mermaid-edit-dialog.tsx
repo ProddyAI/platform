@@ -37,7 +37,7 @@ export const MermaidEditDialog = ({
 		onOpenChange(newOpen);
 	};
 
-	const handleSave = async () => {
+	const handleSave = () => {
 		const trimmedCode = code.trim();
 
 		if (!trimmedCode) {

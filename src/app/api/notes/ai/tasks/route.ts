@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { streamNoteAction } from "../stream-note-action";
 
-export async function POST(req: NextRequest) {
+export function POST(req: NextRequest) {
 	return streamNoteAction(req, {
 		actionLabel: "Tasks",
 		systemPrompt:

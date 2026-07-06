@@ -50,7 +50,7 @@ export const CreateProjectModal = () => {
 		setConnectedChannelId("none");
 	};
 
-	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
 		if (!workspaceId) {

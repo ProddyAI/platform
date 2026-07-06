@@ -52,7 +52,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
 			const filtered = suggestions.filter((suggestion) =>
 				suggestion.toLowerCase().includes(currentInput.toLowerCase())
 			);
-			setFilteredSuggestions(filtered);
+			setFilteredSuggestions(Array.from(new Set(filtered)));
 			setShowSuggestions(filtered.length > 0);
 		} else {
 			setShowSuggestions(false);
@@ -152,7 +152,7 @@ const LabelInput: React.FC<LabelInputProps> = ({
 						const filtered = suggestions.filter((suggestion) =>
 							suggestion.toLowerCase().includes(currentInput.toLowerCase())
 						);
-						setFilteredSuggestions(filtered);
+						setFilteredSuggestions(Array.from(new Set(filtered)));
 						setShowSuggestions(filtered.length > 0);
 					}
 				}}
@@ -168,13 +168,13 @@ const LabelInput: React.FC<LabelInputProps> = ({
 					className="absolute z-10 mt-1 w-full max-h-40 overflow-auto bg-white border rounded-md shadow-lg"
 					ref={suggestionsRef}
 				>
-					{filteredSuggestions.map((suggestion, index) => (
+					{filteredSuggestions.map((suggestion) => (
 						<div
 							className={cn(
 								"px-3 py-1.5 cursor-pointer hover:bg-secondary/10",
 								"text-sm text-foreground"
 							)}
-							key={`${suggestion}-${index}`}
+							key={suggestion}
 							onClick={() => handleSuggestionClick(suggestion)}
 						>
 							{suggestion}

@@ -945,10 +945,10 @@ const BlockingSection = ({
 													Resolution steps
 												</div>
 												<ol className="mt-1 list-decimal pl-4 space-y-0.5">
-													{resolutionSteps.slice(0, 7).map((step, idx) => (
+													{resolutionSteps.slice(0, 7).map((step) => (
 														<li
 															className="text-xs text-foreground/90"
-															key={idx}
+															key={step}
 														>
 															{step}
 														</li>
