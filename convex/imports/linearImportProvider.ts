@@ -182,7 +182,7 @@ export class LinearImportProvider {
 			await ctx.log("info", "Validating Linear connection...");
 			const result = await this.graphqlCall<{
 				organization: { id: string; name: string };
-			}>(ctx, `{ organization { id name } }`);
+			}>(ctx, "{ organization { id name } }");
 			await ctx.log(
 				"info",
 				`Connected to organization: ${result.organization.name}`
@@ -204,7 +204,7 @@ export class LinearImportProvider {
 	async fetchWorkspace(ctx: ImportContext): Promise<WorkspaceMetadata> {
 		const result = await this.graphqlCall<{
 			organization: { id: string; name: string };
-		}>(ctx, `{ organization { id name } }`);
+		}>(ctx, "{ organization { id name } }");
 
 		return {
 			externalId: result.organization.id,
@@ -219,7 +219,7 @@ export class LinearImportProvider {
 	async fetchTeams(ctx: ImportContext): Promise<LinearTeam[]> {
 		const result = await this.graphqlCall<{ teams: { nodes: LinearTeam[] } }>(
 			ctx,
-			`{ teams { nodes { id name key } } }`
+			"{ teams { nodes { id name key } } }"
 		);
 
 		return result.teams.nodes;
@@ -231,7 +231,7 @@ export class LinearImportProvider {
 	async fetchProjects(ctx: ImportContext): Promise<LinearProject[]> {
 		const result = await this.graphqlCall<{
 			projects: { nodes: LinearProject[] };
-		}>(ctx, `{ projects { nodes { id name teams { nodes { id } } } } }`);
+		}>(ctx, "{ projects { nodes { id name teams { nodes { id } } } } }");
 
 		// Transform to include teamId from first team
 		return result.projects.nodes.map((project) => ({
@@ -433,7 +433,7 @@ export class LinearImportProvider {
 	async fetchUsers(ctx: ImportContext): Promise<LinearUser[]> {
 		const result = await this.graphqlCall<{ users: { nodes: LinearUser[] } }>(
 			ctx,
-			`{ users { nodes { id name email avatarUrl } } }`
+			"{ users { nodes { id name email avatarUrl } } }"
 		);
 
 		return result.users.nodes;
@@ -670,7 +670,8 @@ export async function executeLinearImport(
 		);
 
 		if (linearCtx.teamMap.size === 0) {
-			const errorMsg = `No teams/channels were created! Import will fail to assign issues.`;
+			const errorMsg =
+				"No teams/channels were created! Import will fail to assign issues.";
 			result.warnings?.push(errorMsg);
 			await ctx.log("warn", errorMsg);
 		}

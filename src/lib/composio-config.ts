@@ -1278,7 +1278,7 @@ export async function getConnectedApps(
 
 			return {
 				app,
-				connected: !!connection && connection.status === "ACTIVE",
+				connected: Boolean(connection) && connection.status === "ACTIVE",
 				connectionId: connection?.id,
 			};
 		});
@@ -1454,7 +1454,7 @@ export async function getAnyConnectedApps(
 
 			return {
 				app,
-				connected: !!connection,
+				connected: Boolean(connection),
 				connectionId: connection?.id,
 				// Return the actual entity ID used for this connection
 				entityId: connection ? targetEntityId : undefined,

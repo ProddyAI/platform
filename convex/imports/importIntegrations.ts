@@ -454,7 +454,7 @@ export const storeLinearConnection = internalMutation({
 			organizationName: args.organizationName,
 			tokenLength: args.accessToken.length,
 			tokenPreview: `${args.accessToken.substring(0, 20)}...`,
-			hasRefreshToken: !!args.refreshToken,
+			hasRefreshToken: Boolean(args.refreshToken),
 		});
 
 		// Check if connection already exists
@@ -1380,7 +1380,7 @@ export const processLinearImport = internalAction({
 					connectionId: connection._id,
 					platform: connection.platform,
 					status: connection.status,
-					hasToken: !!connection.accessToken,
+					hasToken: Boolean(connection.accessToken),
 				});
 				throw new Error("Access token not found. Please reconnect to Linear.");
 			}

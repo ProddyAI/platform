@@ -165,7 +165,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 				// Call login
 				await OneSignal.login(userId);
-				logger.debug(`✅ OneSignal login call completed`);
+				logger.debug("✅ OneSignal login call completed");
 
 				// Wait a bit for the SDK to update User object
 				await new Promise((resolve) => setTimeout(resolve, 500));
@@ -208,7 +208,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				}
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				logger.error(`❌ OneSignal login error:`, errorMsg);
+				logger.error("❌ OneSignal login error:", errorMsg);
 			} finally {
 				loginInFlightRef.current = false;
 			}

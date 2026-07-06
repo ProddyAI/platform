@@ -234,7 +234,7 @@ export class TodoistImportProvider {
 	async validateConnection(ctx: ImportContext): Promise<void> {
 		const url = "https://api.todoist.com/api/v1/projects";
 		console.log("[TodoistValidate] Calling URL:", url);
-		console.log("[TodoistValidate] Token present:", !!ctx.accessToken);
+		console.log("[TodoistValidate] Token present:", Boolean(ctx.accessToken));
 
 		try {
 			await ctx.log("info", "Validating Todoist connection");
@@ -683,7 +683,7 @@ async function storeTask(
 	// no matching project — still imported, just uncategorised).
 	const categoryId = ctx.projectMap.get(task.project_id);
 
-	const completed = !!task.completed_at;
+	const completed = Boolean(task.completed_at);
 
 	const description =
 		task.description && task.description.trim().length > 0

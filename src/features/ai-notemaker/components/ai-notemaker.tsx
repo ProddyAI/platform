@@ -477,7 +477,7 @@ export const AiNotemaker = ({
 														: `${Math.round(ago / 1440)}d ago`;
 											return (
 												<button
-													className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 border-indigo-200 bg-indigo-50/50 text-indigo-700 hover:border-indigo-300`}
+													className="w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 border-indigo-200 bg-indigo-50/50 text-indigo-700 hover:border-indigo-300"
 													disabled={count === 0}
 													onClick={() => {
 														setSelectedPeriod("since_last");

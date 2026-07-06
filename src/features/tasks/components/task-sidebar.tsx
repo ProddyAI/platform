@@ -314,7 +314,7 @@ export const TaskSidebar = ({
 									className={cn(
 										"w-full justify-start text-sm h-9 rounded-md",
 										filterOptions.categoryId === category._id
-											? `font-medium`
+											? "font-medium"
 											: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
 									)}
 									key={category._id}

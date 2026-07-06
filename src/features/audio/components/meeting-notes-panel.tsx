@@ -103,18 +103,18 @@ export const MeetingNotesPanel = ({
 			content += `## Executive Summary\n\n${meetingNotes.summary}\n\n`;
 		}
 		if (meetingNotes.decisions && meetingNotes.decisions.length > 0) {
-			content += `## Key Decisions\n\n`;
+			content += "## Key Decisions\n\n";
 			meetingNotes.decisions.forEach((d: string) => {
 				content += `- ${d}\n`;
 			});
-			content += `\n`;
+			content += "\n";
 		}
 		if (meetingNotes.actionItems && meetingNotes.actionItems.length > 0) {
-			content += `## Action Items\n\n`;
+			content += "## Action Items\n\n";
 			meetingNotes.actionItems.forEach((a: string) => {
 				content += `- [ ] ${a}\n`;
 			});
-			content += `\n`;
+			content += "\n";
 		}
 
 		window.dispatchEvent(

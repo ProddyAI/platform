@@ -1145,7 +1145,7 @@ http.route({
 					Authorization: `Bearer ${tokenData.access_token}`,
 				},
 				body: JSON.stringify({
-					query: `{ organization { id name } }`,
+					query: "{ organization { id name } }",
 				}),
 			});
 

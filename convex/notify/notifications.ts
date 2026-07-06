@@ -210,7 +210,7 @@ export const sendTestPushNotification = action({
 		});
 
 		return {
-			success: !!result?.success,
+			success: Boolean(result?.success),
 			recipients: result?.recipients ?? 0,
 		};
 	},

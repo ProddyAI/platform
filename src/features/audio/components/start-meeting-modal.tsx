@@ -72,7 +72,7 @@ export const StartMeetingModal = ({
 			const allUserIds = new Set(
 				filteredMembers
 					.map((m) => m.user?._id)
-					.filter((id): id is Id<"users"> => !!id)
+					.filter((id): id is Id<"users"> => Boolean(id))
 			);
 			setSelectedMembers(allUserIds);
 		}

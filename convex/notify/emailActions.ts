@@ -145,7 +145,7 @@ const shouldSendEmailNotification = async (
 			? emailPrefFromMap
 			: (emailPrefFromLegacy ?? true);
 
-	return !!emailEnabled && !!emailPref;
+	return Boolean(emailEnabled) && Boolean(emailPref);
 };
 
 // Action to send email notification for direct messages

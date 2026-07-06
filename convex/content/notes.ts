@@ -36,7 +36,7 @@ async function findMemberForUser(
 	}
 
 	console.log(
-		`DEBUG: Member not found for exact workspace, trying fallbacks...`
+		"DEBUG: Member not found for exact workspace, trying fallbacks..."
 	);
 
 	// 2. Try the "Personal" workspace if it exists (very common fallback)

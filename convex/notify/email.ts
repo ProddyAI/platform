@@ -238,7 +238,7 @@ export const shouldSendEmailNotification = async (
 			? emailPrefFromMap
 			: (emailPrefFromLegacy ?? true);
 
-	return !!emailEnabled && !!emailPref;
+	return Boolean(emailEnabled) && Boolean(emailPref);
 };
 
 type BillingRecipient = {
