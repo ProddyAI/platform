@@ -4,6 +4,11 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, type QueryCtx, query } from "../_generated/server";
 
+// Minimal shape of a Quill Delta op, capturing only the field we read.
+interface QuillDeltaOp {
+	insert?: unknown;
+}
+
 // Helper function to get a member by workspace and user ID
 const getMember = async (
 	ctx: QueryCtx,
@@ -194,7 +199,7 @@ export const getMentionsForCurrentUser = query({
 						const parsedBody = JSON.parse(message.body);
 						if (parsedBody.ops) {
 							messageText = parsedBody.ops
-								.map((op: any) =>
+								.map((op: QuillDeltaOp) =>
 									typeof op.insert === "string" ? op.insert : ""
 								)
 								.join("")
@@ -448,7 +453,7 @@ export const getProcessedMentions = query({
 							const parsedBody = JSON.parse(message.body);
 							if (parsedBody.ops) {
 								messageText = parsedBody.ops
-									.map((op: any) =>
+									.map((op: QuillDeltaOp) =>
 										typeof op.insert === "string" ? op.insert : ""
 									)
 									.join("")

@@ -1,12 +1,56 @@
 import { format } from "date-fns";
 import { jsPDF } from "jspdf";
 
+interface OverviewData {
+	totalMessages?: number;
+	totalUsers?: number;
+	totalChannels?: number;
+	averageResponseTime?: number;
+}
+
+interface MessageSender {
+	name: string;
+	count: number;
+}
+
+interface MessageByDate {
+	date: string | number;
+	count: number;
+}
+
+interface MessagesData {
+	totalMessages: number;
+	messagesByDate?: MessageByDate[];
+	topSenders?: MessageSender[];
+}
+
+interface TaskStatusCounts {
+	not_started: number;
+	in_progress: number;
+	completed: number;
+	on_hold: number;
+	cancelled: number;
+}
+
+interface TaskPriorityCounts {
+	low: number;
+	medium: number;
+	high: number;
+}
+
+interface TasksData {
+	totalTasks: number;
+	completedTasks?: number;
+	statusCounts?: TaskStatusCounts;
+	priorityCounts?: TaskPriorityCounts;
+}
+
 interface ExportData {
 	generatedAt: string;
 	timeRange: string;
-	overview: any;
-	messages: any;
-	tasks: any;
+	overview?: OverviewData;
+	messages?: MessagesData;
+	tasks?: TasksData;
 }
 
 interface ChartData {
@@ -30,21 +74,21 @@ export class PDFExporter {
 		this.doc = new jsPDF();
 	}
 
-	private addTitle(title: string, fontSize: number = 16) {
+	private addTitle(title: string, fontSize = 16) {
 		this.doc.setFontSize(fontSize);
 		this.doc.setFont("helvetica", "bold");
 		this.doc.text(title, this.margin, this.currentY);
 		this.currentY += fontSize * 0.6;
 	}
 
-	private addSubtitle(subtitle: string, fontSize: number = 12) {
+	private addSubtitle(subtitle: string, fontSize = 12) {
 		this.doc.setFontSize(fontSize);
 		this.doc.setFont("helvetica", "normal");
 		this.doc.text(subtitle, this.margin, this.currentY);
 		this.currentY += fontSize * 0.6;
 	}
 
-	private addText(text: string, fontSize: number = 10) {
+	private addText(text: string, fontSize = 10) {
 		this.doc.setFontSize(fontSize);
 		this.doc.setFont("helvetica", "normal");
 
@@ -60,7 +104,7 @@ export class PDFExporter {
 		this.currentY += lines.length * fontSize * 0.4;
 	}
 
-	private addSpace(space: number = 10) {
+	private addSpace(space = 10) {
 		this.currentY += space;
 	}
 

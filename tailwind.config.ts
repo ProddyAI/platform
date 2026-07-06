@@ -1,5 +1,6 @@
 import tailwindcssTypography from "@tailwindcss/typography";
 import type { Config } from "tailwindcss";
+import type { CSSRuleObject } from "tailwindcss/types/config";
 import tailwindcssAnimate from "tailwindcss-animate";
 
 const config: Config = {
@@ -78,7 +79,7 @@ const config: Config = {
 		({
 			addUtilities,
 		}: {
-			addUtilities: (utilities: Record<string, any>) => void;
+			addUtilities: (utilities: CSSRuleObject | CSSRuleObject[]) => void;
 		}) => {
 			const newUtilities = {
 				".scrollbar-hide": {

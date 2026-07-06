@@ -12,6 +12,7 @@
  * - ImportProgress: Tracks and reports import progress
  */
 
+import type { FunctionReference } from "convex/server";
 import type { Id } from "../_generated/dataModel";
 
 // ============================================================================
@@ -148,6 +149,8 @@ export interface ImportContext {
 	workspaceId: Id<"workspaces">;
 	/** Member ID */
 	memberId: Id<"members">;
+	/** User ID of the user who started the import (for rate limiting) */
+	userId?: Id<"users">;
 	/** Signal to check if import was cancelled */
 	isCancelled: () => Promise<boolean>;
 	/** Update progress callback */
@@ -159,9 +162,15 @@ export interface ImportContext {
 		data?: unknown
 	) => Promise<void>;
 	/** Run mutation callback */
-	runMutation: <T>(mutation: any, args: any) => Promise<T>;
+	runMutation: <T>(
+		mutation: FunctionReference<"mutation", "public" | "internal">,
+		args: Record<string, unknown>
+	) => Promise<T>;
 	/** Run query callback */
-	runQuery: <T>(query: any, args: any) => Promise<T>;
+	runQuery: <T>(
+		query: FunctionReference<"query", "public" | "internal">,
+		args: Record<string, unknown>
+	) => Promise<T>;
 }
 
 /**
@@ -542,8 +551,8 @@ export async function withRetry<T>(
 		initialDelay,
 		maxDelay,
 		backoffMultiplier,
-		retryStatusCodes = DEFAULT_RETRY_CONFIG.retryStatusCodes!,
-		retryErrorTypes = DEFAULT_RETRY_CONFIG.retryErrorTypes!,
+		retryStatusCodes = DEFAULT_RETRY_CONFIG.retryStatusCodes ?? [],
+		retryErrorTypes = DEFAULT_RETRY_CONFIG.retryErrorTypes ?? [],
 	} = { ...DEFAULT_RETRY_CONFIG, ...config };
 
 	let lastError: Error | undefined;

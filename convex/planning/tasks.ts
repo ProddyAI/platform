@@ -466,7 +466,7 @@ export const createTaskFromMessage = mutation({
 							if (node.text) return node.text;
 							if (node.children) {
 								return node.children
-									.map((child: any) =>
+									.map((child: string | { text?: string }) =>
 										typeof child === "string" ? child : child.text || ""
 									)
 									.join("");

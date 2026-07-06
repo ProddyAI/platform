@@ -19,6 +19,16 @@ type NotificationType =
 	| "workspaceJoin"
 	| "onlineStatus";
 
+// Shape of the fields we actually read from the OneSignal REST API response
+interface OneSignalPushResponse {
+	id?: string;
+	recipients?: number;
+	recipients_count?: number;
+	errors?: unknown;
+	error_message?: string;
+	raw?: string;
+}
+
 /**
  * Send a push notification to specific users
  * This should be called from your backend or Convex actions
@@ -137,7 +147,7 @@ export const sendPushNotification = internalAction({
 			);
 
 			const responseText = await response.text();
-			let result: Record<string, any> = {};
+			let result: OneSignalPushResponse = {};
 			try {
 				result = responseText ? JSON.parse(responseText) : {};
 			} catch {

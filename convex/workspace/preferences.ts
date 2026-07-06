@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 
 export type ExpandedSections = Record<string, boolean>;
@@ -21,6 +21,14 @@ export type WorkspacePreference = {
 	expandedSections?: ExpandedSections;
 	dashboardWidgets?: DashboardWidget[];
 };
+
+// Shape of `preferences.settings.notifications` as defined in the schema.
+// Some legacy documents may not conform to this (see fixNotificationsSchema /
+// checkNotificationsSchema below), which is why those two migration helpers
+// read the raw value as `unknown` before narrowing.
+type LegacyNotifications = NonNullable<
+	NonNullable<Doc<"preferences">["settings"]>["notifications"]
+>;
 
 const notificationDayValidator = v.union(
 	v.literal("monday"),
@@ -61,7 +69,7 @@ const defaultEmailPrefs: Record<NotificationKey, boolean> = {
 	onlineStatus: false,
 };
 
-const buildNotificationDefaults = (notifications?: Record<string, any>) => {
+const buildNotificationDefaults = (notifications?: LegacyNotifications) => {
 	const legacy = notifications || {};
 	return {
 		mentions: legacy.mentions ?? true,
@@ -333,7 +341,7 @@ export const getNotificationPreferences = query({
 			.unique();
 
 		const notifications = preferences?.settings?.notifications as
-			| Record<string, any>
+			| LegacyNotifications
 			| undefined;
 
 		return buildNotificationDefaults(notifications);
@@ -370,7 +378,7 @@ export const updateBrowserPrefs = mutation({
 			.unique();
 
 		const merged = buildNotificationDefaults(
-			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+			(existingPrefs?.settings?.notifications as LegacyNotifications) ||
 				undefined
 		);
 		const nextNotifications = {
@@ -429,7 +437,7 @@ export const updateEmailPrefs = mutation({
 			.unique();
 
 		const merged = buildNotificationDefaults(
-			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+			(existingPrefs?.settings?.notifications as LegacyNotifications) ||
 				undefined
 		);
 		const nextNotifications = {
@@ -473,7 +481,7 @@ export const updateChannelToggle = mutation({
 			.unique();
 
 		const merged = buildNotificationDefaults(
-			(existingPrefs?.settings?.notifications as Record<string, any>) ||
+			(existingPrefs?.settings?.notifications as LegacyNotifications) ||
 				undefined
 		);
 		const nextNotifications = {
@@ -554,7 +562,7 @@ export const fixNotificationsSchema = mutation({
 		for (const pref of allPreferences) {
 			// Check if settings.notifications is a boolean (the problematic case)
 			// Use type assertion to bypass TypeScript checking since we know the data might be inconsistent
-			const notifications = pref.settings?.notifications as any;
+			const notifications = pref.settings?.notifications as unknown;
 
 			if (notifications === true || notifications === false) {
 				// Convert boolean to proper object structure with defaults
@@ -603,7 +611,7 @@ export const checkNotificationsSchema = mutation({
 		let validDocs = 0;
 
 		for (const pref of allPreferences) {
-			const notifications = pref.settings?.notifications as any;
+			const notifications = pref.settings?.notifications as unknown;
 
 			if (notifications === true || notifications === false) {
 				problematicDocs.push({
@@ -860,7 +868,7 @@ export const updateNotificationPreferencesByUserId = mutation({
 		if (existingPrefs) {
 			// Get current notifications or initialize with defaults
 			const currentNotifications = buildNotificationDefaults(
-				existingPrefs.settings?.notifications as Record<string, any> | undefined
+				existingPrefs.settings?.notifications as LegacyNotifications | undefined
 			);
 
 			// Update the specific notification preference
@@ -909,7 +917,7 @@ export const getNotificationPreferencesByUserId = query({
 			.unique();
 
 		const notifications = preferences?.settings?.notifications as
-			| Record<string, any>
+			| LegacyNotifications
 			| undefined;
 
 		return buildNotificationDefaults(notifications);

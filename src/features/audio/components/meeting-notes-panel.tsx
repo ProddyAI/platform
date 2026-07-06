@@ -346,9 +346,13 @@ export const MeetingNotesPanel = ({
 												}
 												await createBulkTasks({
 													workspaceId: workspaceId as Id<"workspaces">,
-													tasks: latestGen.actionItems.map((t: any) => ({
+													tasks: latestGen.actionItems.map((t) => ({
 														title: t.title,
-														assigneeUserId: t.assigneeUserId || undefined,
+														// AI-generated assigneeUserId is a plain string,
+														// not guaranteed to be a valid Id<"users">
+														assigneeUserId: (t.assigneeUserId || undefined) as
+															| Id<"users">
+															| undefined,
 														priority: t.priority || "medium",
 													})),
 												});

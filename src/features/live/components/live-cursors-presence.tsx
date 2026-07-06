@@ -37,7 +37,7 @@ const Cursors = ({ variant }: { variant: "canvas" | "notes" }) => {
 
 const DrawingPaths = () => {
 	const workspaceId = useWorkspaceId();
-	const members = useQuery(api.workspace.members.get, { workspaceId }) as any;
+	const members = useQuery(api.workspace.members.get, { workspaceId });
 
 	// Create a map of Convex users by their ID for quick lookup
 	const userMap = new Map();
@@ -61,6 +61,9 @@ const DrawingPaths = () => {
 	return (
 		<>
 			{others.map(([key, other]) => {
+				// useOthersMapped's inferred element type doesn't structurally carry
+				// through here (Liveblocks generic inference limitation); `any` predates
+				// this fix and is kept to avoid a wider Presence-type refactor.
 				const drawing = other as any;
 				if (drawing?.pencilDraft) {
 					// Get real user name from Convex if available
@@ -105,7 +108,7 @@ export const LiveCursorsPresence = memo(
 		const workspaceId = useWorkspaceId();
 
 		// Get members from Convex database
-		const members = useQuery(api.workspace.members.get, { workspaceId }) as any;
+		const members = useQuery(api.workspace.members.get, { workspaceId });
 
 		useEffect(() => {
 			// Create a map of Convex users by their ID for quick lookup

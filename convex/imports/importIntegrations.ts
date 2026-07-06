@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import type { FunctionReference } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
 	internalAction,
 	internalMutation,
@@ -9,6 +10,7 @@ import {
 	mutation,
 	query,
 } from "../_generated/server";
+import type { ImportProgress } from "./importPipeline";
 
 // ============================================================================
 // QUERIES
@@ -627,7 +629,7 @@ export const findDuplicateChannels = query({
 
 		// Use internal query to find duplicates
 		const duplicates: unknown = await ctx.runQuery(
-			internal.imports.importIntegrations._findDuplicateChannels as any,
+			internal.imports.importIntegrations._findDuplicateChannels,
 			{
 				workspaceId: args.workspaceId,
 				platform: args.platform,
@@ -670,7 +672,7 @@ export const cleanupDuplicateChannels = mutation({
 
 		// Use internal mutation to cleanup duplicates
 		const cleanedUp: unknown = await ctx.runMutation(
-			internal.imports.importIntegrations._cleanupDuplicateChannels as any,
+			internal.imports.importIntegrations._cleanupDuplicateChannels,
 			{
 				workspaceId: args.workspaceId,
 				platform: args.platform,
@@ -1035,7 +1037,7 @@ export const processSlackImport = internalAction({
 					);
 					return currentJob?.status === "cancelled";
 				},
-				updateProgress: async (progress: any) => {
+				updateProgress: async (progress: Partial<ImportProgress>) => {
 					await ctx.runMutation(
 						internal.imports.importIntegrations.updateJobProgress,
 						{
@@ -1056,10 +1058,16 @@ export const processSlackImport = internalAction({
 				) => {
 					console.log(`[SlackImport:${level}] ${message}`, data);
 				},
-				runMutation: async (mutation: any, args: any) => {
+				runMutation: async (
+					mutation: FunctionReference<"mutation", "public" | "internal">,
+					args: Record<string, unknown>
+				) => {
 					return await ctx.runMutation(mutation, args);
 				},
-				runQuery: async (query: any, args: any) => {
+				runQuery: async (
+					query: FunctionReference<"query", "public" | "internal">,
+					args: Record<string, unknown>
+				) => {
 					return await ctx.runQuery(query, args);
 				},
 			};
@@ -1090,7 +1098,7 @@ export const processSlackImport = internalAction({
 				{
 					jobId: args.jobId,
 					result: {
-						channelsCreated: result.itemsCreated as any[],
+						channelsCreated: result.itemsCreated as Id<"channels">[],
 						messagesCreated: result.messagesCreated,
 						tasksCreated: result.tasksCreated ?? 0,
 						usersMatched: result.usersMatched,
@@ -1220,7 +1228,7 @@ export const processTodoistImport = internalAction({
 					);
 					return currentJob?.status === "cancelled";
 				},
-				updateProgress: async (progress: any) => {
+				updateProgress: async (progress: Partial<ImportProgress>) => {
 					await ctx.runMutation(
 						internal.imports.importIntegrations.updateJobProgress,
 						{
@@ -1241,10 +1249,16 @@ export const processTodoistImport = internalAction({
 				) => {
 					console.log(`[TodoistImport:${level}] ${message}`, data);
 				},
-				runMutation: async (mutation: any, args: any) => {
+				runMutation: async (
+					mutation: FunctionReference<"mutation", "public" | "internal">,
+					args: Record<string, unknown>
+				) => {
 					return await ctx.runMutation(mutation, args);
 				},
-				runQuery: async (query: any, args: any) => {
+				runQuery: async (
+					query: FunctionReference<"query", "public" | "internal">,
+					args: Record<string, unknown>
+				) => {
 					return await ctx.runQuery(query, args);
 				},
 			};
@@ -1275,7 +1289,7 @@ export const processTodoistImport = internalAction({
 				{
 					jobId: args.jobId,
 					result: {
-						channelsCreated: result.itemsCreated as any[],
+						channelsCreated: result.itemsCreated as Id<"channels">[],
 						messagesCreated: result.messagesCreated,
 						tasksCreated: result.tasksCreated ?? 0,
 						usersMatched: result.usersMatched,
@@ -1404,9 +1418,10 @@ export const processLinearImport = internalAction({
 			const importContext: any = {
 				accessToken: connection.accessToken,
 				config: {
-					includeArchived: (job.config as any).includeArchived,
-					includeComments: (job.config as any).includeComments,
-					targetChannelId: (job.config as any).targetChannelId, // Target channel to import into
+					includeArchived: job.config.includeArchived,
+					includeComments: job.config.includeComments,
+					targetChannelId: (job.config as { targetChannelId?: Id<"channels"> })
+						.targetChannelId, // Target channel to import into
 				},
 				progress: job.progress,
 				jobId: args.jobId,
@@ -1422,7 +1437,7 @@ export const processLinearImport = internalAction({
 					);
 					return currentJob?.status === "cancelled";
 				},
-				updateProgress: async (progress: any) => {
+				updateProgress: async (progress: Partial<ImportProgress>) => {
 					await ctx.runMutation(
 						internal.imports.importIntegrations.updateJobProgress,
 						{
@@ -1443,10 +1458,16 @@ export const processLinearImport = internalAction({
 				) => {
 					console.log(`[LinearImport:${level}] ${message}`, data);
 				},
-				runMutation: async (mutation: any, args: any) => {
+				runMutation: async (
+					mutation: FunctionReference<"mutation", "public" | "internal">,
+					args: Record<string, unknown>
+				) => {
 					return await ctx.runMutation(mutation, args);
 				},
-				runQuery: async (query: any, args: any) => {
+				runQuery: async (
+					query: FunctionReference<"query", "public" | "internal">,
+					args: Record<string, unknown>
+				) => {
 					return await ctx.runQuery(query, args);
 				},
 			};
@@ -1477,7 +1498,7 @@ export const processLinearImport = internalAction({
 				{
 					jobId: args.jobId,
 					result: {
-						channelsCreated: result.itemsCreated as any[],
+						channelsCreated: result.itemsCreated as Id<"channels">[],
 						messagesCreated: result.messagesCreated,
 						tasksCreated: result.tasksCreated ?? 0,
 						usersMatched: result.usersMatched,
@@ -2270,6 +2291,9 @@ export const uploadFileToStorage = internalMutation({
 		const blob = new Blob([new Uint8Array(args.fileData)], {
 			type: args.mimeType,
 		});
+		// ctx.storage.store() is only typed on StorageActionWriter (actions), not
+		// StorageWriter (mutations) — this mutation calling it anyway is a pre-existing
+		// architectural quirk, not something to silently retype away.
 		const storageId = await (ctx.storage as any).store(blob);
 
 		return storageId as Id<"_storage">;
@@ -2562,7 +2586,7 @@ export const _getMemberByName = internalQuery({
  * Result type for member creation
  */
 type MemberCreationResult = {
-	member: any | null;
+	member: Doc<"members"> | null;
 	created: boolean;
 	createdUser: boolean;
 	reason?: string;

@@ -1,5 +1,6 @@
 "use client";
 
+import type { LiveObject } from "@liveblocks/client";
 import DOMPurify from "dompurify";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
@@ -37,8 +38,8 @@ export const Mermaid = ({
 			if (liveLayers) {
 				const layer = liveLayers.get(id);
 				if (layer) {
-					// Type assertion to ensure we can access mermaidCode property
-					(layer as any).set("mermaidCode", newCode);
+					// This mutation only ever targets Mermaid layers.
+					(layer as LiveObject<MermaidLayer>).set("mermaidCode", newCode);
 				}
 			}
 		},

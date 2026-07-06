@@ -13,8 +13,20 @@ import { useCurrentUser } from "@/features/auth/api/use-current-user";
 import { ExcalidrawCanvas } from "@/features/canvas/components/excalidraw-canvas";
 import { LiveblocksRoom, LiveHeader, LiveSidebar } from "@/features/live";
 import { useChannelId } from "@/hooks/use-channel-id";
+import { useConfirm } from "@/hooks/use-confirm";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+
+interface CanvasItem {
+	_id: Id<"messages">;
+	body: string;
+	canvasName: string;
+	roomId: string;
+	savedCanvasId?: string;
+	createdAt: number;
+	updatedAt: number;
+	tags: string[];
+}
 
 const CanvasPage = () => {
 	const channelId = useChannelId();
@@ -28,6 +40,11 @@ const CanvasPage = () => {
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 	const [isFullScreen, setIsFullScreen] = useState(false);
 	const [isCreatingCanvas, setIsCreatingCanvas] = useState(false);
+
+	const [ConfirmDeleteCanvasDialog, confirmDeleteCanvas] = useConfirm(
+		"Delete canvas?",
+		"Are you sure you want to delete this canvas? This action cannot be undone."
+	);
 
 	// Create a reference to the main container for full screen functionality
 	const pageContainerRef = useRef<HTMLDivElement>(null);
@@ -57,7 +74,7 @@ const CanvasPage = () => {
 
 	// Parse canvas messages for the sidebar
 	const canvasItems = useMemo(() => {
-		const canvasMessages: any[] = [];
+		const canvasMessages: CanvasItem[] = [];
 		if (messages?.page) {
 			messages.page.forEach((message) => {
 				try {
@@ -185,21 +202,22 @@ const CanvasPage = () => {
 	// Handle canvas deletion
 	const handleDeleteCanvas = useCallback(
 		async (canvasId: string) => {
-			if (window.confirm("Are you sure you want to delete this canvas?")) {
-				try {
-					await deleteMessage({ id: canvasId as Id<"messages"> });
-					toast.success("Canvas deleted successfully");
-					// If the deleted canvas was active, clear the selection
-					if (activeCanvasId === canvasId) {
-						setActiveCanvasId(null);
-					}
-				} catch (error) {
-					toast.error("Failed to delete canvas");
-					console.error("Error deleting canvas:", error);
+			const ok = await confirmDeleteCanvas();
+			if (!ok) return;
+
+			try {
+				await deleteMessage({ id: canvasId as Id<"messages"> });
+				toast.success("Canvas deleted successfully");
+				// If the deleted canvas was active, clear the selection
+				if (activeCanvasId === canvasId) {
+					setActiveCanvasId(null);
 				}
+			} catch (error) {
+				toast.error("Failed to delete canvas");
+				console.error("Error deleting canvas:", error);
 			}
 		},
-		[deleteMessage, activeCanvasId]
+		[deleteMessage, activeCanvasId, confirmDeleteCanvas]
 	);
 
 	// Handle canvas rename
@@ -342,6 +360,7 @@ const CanvasPage = () => {
 						)}
 					</Button>
 				</div>
+				<ConfirmDeleteCanvasDialog />
 			</div>
 		);
 	}
@@ -423,6 +442,7 @@ const CanvasPage = () => {
 						workspaceId={workspaceId as Id<"workspaces">}
 					/>
 				)}
+				<ConfirmDeleteCanvasDialog />
 			</div>
 		</LiveblocksRoom>
 	);

@@ -31,6 +31,38 @@ import { exportToPDF, exportToWord } from "@/lib/client/export-utils";
 
 // ─── RECORDING BUTTON ───────────────────────────────────────────────────────
 
+// Minimal shape of the (non-standard, vendor-prefixed) Web Speech API used
+// here — TypeScript's DOM lib doesn't ship the full SpeechRecognition
+// interface, so we declare just the members this component reads/sets.
+interface SpeechRecognitionEvent {
+	resultIndex: number;
+	results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+	error: string;
+}
+
+interface SpeechRecognitionInstance {
+	continuous: boolean;
+	interimResults: boolean;
+	lang: string;
+	onresult: ((event: SpeechRecognitionEvent) => void) | null;
+	onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+	onend: (() => void) | null;
+	start: () => void;
+	stop: () => void;
+}
+
+interface SpeechRecognitionConstructor {
+	new (): SpeechRecognitionInstance;
+}
+
+interface SpeechRecognitionWindow {
+	SpeechRecognition?: SpeechRecognitionConstructor;
+	webkitSpeechRecognition?: SpeechRecognitionConstructor;
+}
+
 interface RecordingButtonProps {
 	roomId: string;
 	workspaceId: string;
@@ -47,7 +79,7 @@ export const MeetingRecordButton = ({
 	onRecordingChange,
 }: RecordingButtonProps) => {
 	const [isRecording, setIsRecording] = useState(false);
-	const recognitionRef = useRef<any | null>(null);
+	const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 	const transcriptRef = useRef("");
 	const saveTranscript = useMutation(api.content.meetingNotes.saveTranscript);
 	const saveBufferRef = useRef("");
@@ -71,22 +103,22 @@ export const MeetingRecordButton = ({
 
 	const startRecording = useCallback(async () => {
 		if (typeof window === "undefined") return;
-		const SpeechRecognition =
-			(window as any).SpeechRecognition ||
-			(window as any).webkitSpeechRecognition;
-		if (!SpeechRecognition) {
+		const speechWindow = window as unknown as SpeechRecognitionWindow;
+		const SpeechRecognitionCtor =
+			speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
+		if (!SpeechRecognitionCtor) {
 			toast.error(
 				"Speech recognition not supported in this browser. Use Chrome."
 			);
 			return;
 		}
 
-		const recognition = new SpeechRecognition();
+		const recognition = new SpeechRecognitionCtor();
 		recognition.continuous = true;
 		recognition.interimResults = true;
 		recognition.lang = "en-US";
 
-		recognition.onresult = (event: any) => {
+		recognition.onresult = (event: SpeechRecognitionEvent) => {
 			for (let i = event.resultIndex; i < event.results.length; ++i) {
 				if (event.results[i].isFinal) {
 					const rawText = event.results[i][0].transcript.trim();
@@ -106,7 +138,7 @@ export const MeetingRecordButton = ({
 			}
 		};
 
-		recognition.onerror = (event: any) => {
+		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
 			if (event.error === "not-allowed") {
 				toast.error("Microphone permission denied");
 				setIsRecording(false);

@@ -11,6 +11,7 @@
  * - File attachment support
  */
 
+import type { FunctionReturnType } from "convex/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import {
@@ -265,6 +266,17 @@ interface SlackTeamInfoResponse {
 	};
 }
 
+/**
+ * Minimal shape of a Slack Web API response envelope, capturing only the
+ * fields read when checking for API-level errors (the full response is
+ * otherwise typed per-endpoint via the `apiCall<T>` generic).
+ */
+interface SlackApiEnvelope {
+	ok: boolean;
+	error?: string;
+	retry_after?: string;
+}
+
 // ============================================================================
 // SLACK IMPORT PROVIDER CLASS
 // ============================================================================
@@ -353,7 +365,7 @@ export class SlackImportProvider {
 				}
 
 				// Check Slack API error
-				const anyData = data as any;
+				const anyData = data as unknown as SlackApiEnvelope;
 				if (!anyData.ok) {
 					const slackError = anyData.error || "Unknown Slack error";
 
@@ -803,18 +815,19 @@ export async function executeSlackImport(
 		for (const user of users) {
 			if (user.email) {
 				try {
-					const memberResult = (await ctx.runMutation(
-						internal.imports.importIntegrations._getOrCreateMemberByEmail,
-						{
-							workspaceId: ctx.workspaceId,
-							email: user.email,
-							name: user.displayName || "Unknown",
-							avatarUrl: user.avatarUrl,
-							importSource: "Slack Import",
-							importJobUserId: (ctx as any).userId,
-							platform: "slack",
-						}
-					)) as any;
+					const memberResult = await ctx.runMutation<
+						FunctionReturnType<
+							typeof internal.imports.importIntegrations._getOrCreateMemberByEmail
+						>
+					>(internal.imports.importIntegrations._getOrCreateMemberByEmail, {
+						workspaceId: ctx.workspaceId,
+						email: user.email,
+						name: user.displayName || "Unknown",
+						avatarUrl: user.avatarUrl,
+						importSource: "Slack Import",
+						importJobUserId: ctx.userId,
+						platform: "slack",
+					});
 
 					if (memberResult?.member) {
 						slackCtx.userMap.set(user.externalId, memberResult.member._id);
@@ -975,13 +988,13 @@ async function storeChannel(
 	);
 
 	// Check if channel already exists by external ID
-	const existingChannel = (await ctx.runQuery(
+	const existingChannel = await ctx.runQuery(
 		internal.imports.importIntegrations.getChannelByExternalId,
 		{
 			workspaceId: ctx.workspaceId,
 			externalId: channel.externalId,
 		}
-	)) as any;
+	);
 
 	if (existingChannel) {
 		// Channel exists, update metadata via storeImportedChannel
@@ -1048,13 +1061,14 @@ async function storeMessages(
 			);
 
 			// Check if message already exists
-			const existingMessage = (await ctx.runQuery(
-				internal.imports.importIntegrations.getMessageByExternalId,
-				{
-					workspaceId: ctx.workspaceId,
-					externalId: message.externalId,
-				}
-			)) as any;
+			const existingMessage = await ctx.runQuery<
+				FunctionReturnType<
+					typeof internal.imports.importIntegrations.getMessageByExternalId
+				>
+			>(internal.imports.importIntegrations.getMessageByExternalId, {
+				workspaceId: ctx.workspaceId,
+				externalId: message.externalId,
+			});
 
 			if (existingMessage) {
 				// Message already imported, skip but add to map for thread replies

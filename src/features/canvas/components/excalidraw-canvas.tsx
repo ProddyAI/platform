@@ -1,6 +1,13 @@
 "use client";
 
-import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
+import type { ExcalidrawElementSkeleton } from "@excalidraw/excalidraw/types/data/transform";
+import type { ExcalidrawElement } from "@excalidraw/excalidraw/types/element/types";
+import type {
+	AppState,
+	BinaryFiles,
+	ExcalidrawImperativeAPI,
+} from "@excalidraw/excalidraw/types/types";
+import type { Mutable } from "@excalidraw/excalidraw/types/utility-types";
 import { LiveObject } from "@liveblocks/client";
 import { useQuery } from "convex/react";
 import { nanoid } from "nanoid";
@@ -35,22 +42,29 @@ const _STICKY_NOTE_MIN_HEIGHT = 80;
 const STICKY_NOTE_PADDING = 18;
 const STICKY_NOTE_SHADOW_OFFSET = 6;
 
-function isStickyNoteElement(el: any) {
+function isStickyNoteElement(el: ExcalidrawElement | null | undefined) {
 	return el?.customData?.proddy?.type === "sticky-note";
 }
 
-function getStickyNoteDecorType(el: any): string | null {
+function getStickyNoteDecorType(
+	el: ExcalidrawElement | null | undefined
+): string | null {
 	const t = el?.customData?.proddy?.type;
 	if (t === "sticky-note-shadow") return t;
 	return null;
 }
 
-function getStickyNoteParentId(el: any): string | null {
+function getStickyNoteParentId(
+	el: ExcalidrawElement | null | undefined
+): string | null {
 	const noteId = el?.customData?.proddy?.noteId;
 	return typeof noteId === "string" ? noteId : null;
 }
 
-function isElementNewer(incoming: any, existing: any) {
+function isElementNewer(
+	incoming: ExcalidrawElement | null | undefined,
+	existing: ExcalidrawElement | null | undefined
+) {
 	if (!existing) return true;
 	if (
 		typeof incoming?.version === "number" &&
@@ -84,20 +98,28 @@ const Excalidraw = dynamic(
 	}
 );
 
-const DEFAULT_APP_STATE: Record<string, any> = {
+const DEFAULT_APP_STATE = {
 	viewBackgroundColor: "#0000",
 	currentItemFontFamily: 1,
 };
 
-function sanitizeAppState(appState: any) {
+function sanitizeAppState(appState: unknown): Record<string, unknown> {
 	if (!appState || typeof appState !== "object") return {};
 	// Excalidraw uses a non-serializable Map for collaborators.
 	// Never persist or hydrate it.
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const { collaborators, ...rest } = appState;
+	const { collaborators, ...rest } = appState as Record<string, unknown>;
 	return rest;
 }
 
+// Kept as a loose (any-backed) bag rather than the real Excalidraw types:
+// `PersistedScene` is the generic parameter of `LiveObject<PersistedScene>`
+// (from @liveblocks/client), which requires its shape to structurally satisfy
+// `LsonObject` (values assignable to `Json`). `ExcalidrawElement`/`AppState`
+// carry readonly arrays, branded numeric types, and non-JSON fields (e.g. a
+// `Map` for collaborators), so swapping in the precise Excalidraw types here
+// makes `new LiveObject<PersistedScene>(...)` fail to satisfy that
+// constraint. `any` is what lets this bypass the JSON-shape check.
 type PersistedScene = {
 	elements: any[];
 	appState: Record<string, any>;
@@ -105,7 +127,20 @@ type PersistedScene = {
 	version: number;
 };
 
-function _scenePointToViewport(point: { x: number; y: number }, appState: any) {
+// Legacy/corrupted Liveblocks storage may hold a plain object instead of the
+// expected LiveObject<PersistedScene>; this captures only the fields
+// normalizeExcalidrawStorage defensively reads off of it.
+interface LegacyExcalidrawStorageShape {
+	elements?: unknown;
+	appState?: unknown;
+	files?: unknown;
+	version?: unknown;
+}
+
+function _scenePointToViewport(
+	point: { x: number; y: number },
+	appState: Partial<AppState> | null | undefined
+) {
 	const scrollX = typeof appState?.scrollX === "number" ? appState.scrollX : 0;
 	const scrollY = typeof appState?.scrollY === "number" ? appState.scrollY : 0;
 	const zoomValue =
@@ -121,7 +156,7 @@ function _scenePointToViewport(point: { x: number; y: number }, appState: any) {
 	};
 }
 
-function getCommonBoundsFallback(elements: any[]) {
+function getCommonBoundsFallback(elements: readonly ExcalidrawElement[]) {
 	let x1 = Number.POSITIVE_INFINITY;
 	let y1 = Number.POSITIVE_INFINITY;
 	let x2 = Number.NEGATIVE_INFINITY;
@@ -156,8 +191,10 @@ export const ExcalidrawCanvas = () => {
 	const saveTimerRef = useRef<number | null>(null);
 	const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
 	const excalidrawHostRef = useRef<HTMLDivElement | null>(null);
-	const latestAppStateRef = useRef<any>(null);
-	const excalidrawLibRef = useRef<any>(null);
+	const latestAppStateRef = useRef<AppState | null>(null);
+	const excalidrawLibRef = useRef<
+		typeof import("@excalidraw/excalidraw") | null
+	>(null);
 	const [_excalidrawLibVersion, setExcalidrawLibVersion] = useState(0);
 	const isApplyingRemoteSceneRef = useRef(false);
 	const suppressBroadcastRef = useRef(false);
@@ -207,10 +244,19 @@ export const ExcalidrawCanvas = () => {
 
 	const hasExcalidrawStorage = useStorage((root) => Boolean(root.excalidraw));
 	const needsExcalidrawNormalization = useStorage((root) => {
-		const value = root.excalidraw as any;
+		const value: unknown = root.excalidraw;
 		if (!value) return false;
-		return typeof value.toObject !== "function";
+		return typeof (value as { toObject?: unknown }).toObject !== "function";
 	});
+	// `value` is intentionally left as `any` here (rather than `unknown`):
+	// `root.excalidraw` is declared as `LiveObject<ExcalidrawSceneData>`, but
+	// legacy/corrupted storage can hold a plain object instead (that's what
+	// `needsExcalidrawNormalization`/`normalizeExcalidrawStorage` detect and
+	// fix up). `storedScene`'s inferred type flows into ~10 call sites across
+	// this component (`initialData`, the remote-scene-apply effect, the
+	// version-tracking effect) that all read it with loose/defensive
+	// `typeof`/`Array.isArray` checks; typing it as `unknown` would require
+	// re-typing every one of those unrelated call sites too.
 	const storedScene = useStorage((root) => {
 		const value = root.excalidraw as any;
 		if (!value) return null;
@@ -282,18 +328,25 @@ export const ExcalidrawCanvas = () => {
 	}, []);
 
 	const normalizeExcalidrawStorage = useMutation(({ storage }) => {
-		const existing = storage.get("excalidraw") as any;
+		const existing = storage.get("excalidraw") as unknown;
 		if (!existing) return;
-		if (typeof existing.toObject === "function") return;
+		if (typeof (existing as { toObject?: unknown }).toObject === "function") {
+			return;
+		}
 
-		const raw = typeof existing === "object" && existing ? existing : {};
+		const raw = (
+			typeof existing === "object" && existing ? existing : {}
+		) as LegacyExcalidrawStorageShape;
 		const migrated: PersistedScene = {
 			elements: Array.isArray(raw.elements) ? raw.elements : [],
 			appState: {
 				...DEFAULT_APP_STATE,
 				...sanitizeAppState(raw.appState),
 			},
-			files: raw.files && typeof raw.files === "object" ? raw.files : {},
+			files:
+				raw.files && typeof raw.files === "object"
+					? (raw.files as Record<string, unknown>)
+					: {},
 			version: typeof raw.version === "number" ? raw.version : 1,
 		};
 
@@ -379,18 +432,16 @@ export const ExcalidrawCanvas = () => {
 			const viewportCenterX = -appState.scrollX + appState.width / 2 / zoom;
 			const viewportCenterY = -appState.scrollY + appState.height / 2 / zoom;
 
-			const getCommonBounds = excalidrawLibRef.current?.getCommonBounds as
-				| ((els: any[]) => [number, number, number, number])
-				| undefined;
+			const getCommonBounds = excalidrawLibRef.current?.getCommonBounds;
 			const [x1, y1, x2, y2] = (getCommonBounds || getCommonBoundsFallback)(
-				newElements
+				newElements as ExcalidrawElement[]
 			);
 			const diagramCenterX = (x1 + x2) / 2;
 			const diagramCenterY = (y1 + y2) / 2;
 			const dx = viewportCenterX - diagramCenterX;
 			const dy = viewportCenterY - diagramCenterY;
 
-			const moved = (newElements as any[]).map((el) => ({
+			const moved = (newElements as ExcalidrawElement[]).map((el) => ({
 				...el,
 				x: (el?.x ?? 0) + dx,
 				y: (el?.y ?? 0) + dy,
@@ -403,7 +454,7 @@ export const ExcalidrawCanvas = () => {
 				api.updateScene({
 					elements: [...existing, ...moved],
 					commitToHistory: true,
-				} as any);
+				});
 			} finally {
 				isApplyingRemoteSceneRef.current = false;
 			}
@@ -494,6 +545,16 @@ export const ExcalidrawCanvas = () => {
 
 		isApplyingRemoteSceneRef.current = true;
 		try {
+			// `nextScene` can't be typed precisely here: `updateScene`'s real
+			// signature is `<K extends keyof AppState>(sceneData: {
+			// appState?: Pick<AppState, K> | null; ... })`, and TS can only infer
+			// `K` from a fresh object literal with concrete keys. `nextScene.appState`
+			// is built by spreading `sanitizeAppState(storedScene.appState)` — the
+			// sanitized result of an arbitrary, dynamically-shaped stored value —
+			// so it can never have statically-known keys. Passing it as anything
+			// other than `any` (including the library's own exported `SceneData`
+			// type) makes `K` default to `keyof AppState`, which then requires
+			// every AppState field to be present.
 			api.updateScene(nextScene as any);
 		} finally {
 			isApplyingRemoteSceneRef.current = false;
@@ -523,8 +584,10 @@ export const ExcalidrawCanvas = () => {
 			: [];
 		if (!incomingElements.length) return;
 
-		const existing = api.getSceneElements() as any[];
-		const byId = new Map<string, any>(existing.map((el) => [el.id, el]));
+		const existing = api.getSceneElements();
+		const byId = new Map<string, ExcalidrawElement>(
+			existing.map((el) => [el.id, el])
+		);
 
 		let didChange = false;
 		for (const incoming of incomingElements) {
@@ -549,7 +612,7 @@ export const ExcalidrawCanvas = () => {
 			api.updateScene({
 				elements: Array.from(byId.values()),
 				commitToHistory: false,
-			} as any);
+			});
 		} finally {
 			suppressBroadcastRef.current = false;
 		}
@@ -567,7 +630,7 @@ export const ExcalidrawCanvas = () => {
 			}
 		}
 
-		const appState: any = api.getAppState();
+		const appState = api.getAppState();
 		const zoom =
 			typeof appState?.zoom?.value === "number" ? appState.zoom.value : 1;
 		const centerX = -appState.scrollX + appState.width / 2 / zoom;
@@ -606,7 +669,7 @@ export const ExcalidrawCanvas = () => {
 			locked: false,
 			groupIds: [groupId],
 			customData: { proddy: { type: "sticky-note-shadow", noteId } },
-		} as any;
+		} as ExcalidrawElementSkeleton;
 
 		const rectSkeleton = {
 			type: "rectangle",
@@ -624,7 +687,7 @@ export const ExcalidrawCanvas = () => {
 			boundElements: [{ id: textId, type: "text" }],
 			groupIds: [groupId],
 			customData: STICKY_NOTE_CUSTOM_DATA,
-		} as any;
+		} as ExcalidrawElementSkeleton;
 
 		const textSkeleton = {
 			type: "text",
@@ -639,10 +702,18 @@ export const ExcalidrawCanvas = () => {
 			textAlign: "left",
 			verticalAlign: "top",
 			lineHeight: 1.25,
-			strokeColor: appState?.currentItemTextColor ?? "#1f1f1f",
+			strokeColor:
+				(appState as { currentItemTextColor?: string }).currentItemTextColor ??
+				"#1f1f1f",
 			backgroundColor: "transparent",
 			containerId: noteId,
 			groupIds: [groupId],
+			// Kept as `any` (unlike the shadow/rect skeletons above): Excalidraw's own
+			// `ExcalidrawTextElement.lineHeight` is a branded type
+			// (`number & { _brand: "unitlessLineHeight" }`) that only its internal
+			// `getLineHeight()` helper can produce — a plain numeric literal like
+			// `1.25` can't satisfy `ExcalidrawElementSkeleton` without an equally
+			// unsafe brand cast.
 		} as any;
 
 		const convertToExcalidrawElements =
@@ -673,12 +744,12 @@ export const ExcalidrawCanvas = () => {
 					? selection
 					: { [noteId]: true },
 			},
-		} as any);
+		});
 
 		// Ensure the inserted note is visible even if the user is panned elsewhere.
 		window.requestAnimationFrame(() => {
 			try {
-				(api as any).scrollToContent?.(newElements, { animate: true });
+				api.scrollToContent?.(newElements, { animate: true });
 			} catch {
 				// Best-effort. If scrollToContent isn't available, insertion still works.
 			}
@@ -719,7 +790,11 @@ export const ExcalidrawCanvas = () => {
 						excalidrawApiRef.current = api;
 					}}
 					initialData={initialData}
-					onChange={(elements: readonly any[], appState: any, files: any) => {
+					onChange={(
+						elements: readonly ExcalidrawElement[],
+						appState: AppState,
+						files: BinaryFiles
+					) => {
 						latestAppStateRef.current = appState;
 						if (isApplyingRemoteSceneRef.current) return;
 						if (suppressBroadcastRef.current) return;
@@ -751,7 +826,7 @@ export const ExcalidrawCanvas = () => {
 											},
 										},
 										commitToHistory: false,
-									} as any);
+									});
 								} finally {
 									window.setTimeout(() => {
 										isAutoLockingToolRef.current = false;
@@ -792,7 +867,7 @@ export const ExcalidrawCanvas = () => {
 												selectedElementIds: { [parentNote.id]: true },
 											},
 											commitToHistory: false,
-										} as any);
+										});
 									} finally {
 										window.setTimeout(() => {
 											isSyncingStickyDecorRef.current = false;
@@ -835,7 +910,7 @@ export const ExcalidrawCanvas = () => {
 													selectedElementIds: { [parentNote.id]: true },
 												},
 												commitToHistory: false,
-											} as any);
+											});
 										} finally {
 											window.setTimeout(() => {
 												isSyncingStickyDecorRef.current = false;
@@ -874,7 +949,11 @@ export const ExcalidrawCanvas = () => {
 								if (mutateElement) {
 									mutateElement(shadow, { locked: false }, false);
 								} else {
-									shadow.locked = false;
+									// ExcalidrawElement's fields are readonly; mutateElement is the
+									// library's sanctioned way to write through that. When it isn't
+									// loaded yet, fall back to the same escape hatch it uses
+									// internally (`Mutable<ExcalidrawElement>`) rather than `any`.
+									(shadow as Mutable<ExcalidrawElement>).locked = false;
 								}
 								didSyncDecor = true;
 							}
@@ -895,10 +974,11 @@ export const ExcalidrawCanvas = () => {
 										false
 									);
 								} else {
-									shadow.x = nextShadowX;
-									shadow.y = nextShadowY;
-									shadow.width = w;
-									shadow.height = h;
+									const mutableShadow = shadow as Mutable<ExcalidrawElement>;
+									mutableShadow.x = nextShadowX;
+									mutableShadow.y = nextShadowY;
+									mutableShadow.width = w;
+									mutableShadow.height = h;
 								}
 								didSyncDecor = true;
 							}
@@ -912,7 +992,7 @@ export const ExcalidrawCanvas = () => {
 									api.updateScene({
 										elements: elementsArray,
 										commitToHistory: false,
-									} as any);
+									});
 								} finally {
 									window.setTimeout(() => {
 										isSyncingStickyDecorRef.current = false;
@@ -970,7 +1050,13 @@ export const ExcalidrawCanvas = () => {
 							});
 						}, 250);
 					}}
-					onPointerUpdate={({ pointer, button }: any) => {
+					onPointerUpdate={({
+						pointer,
+						button,
+					}: {
+						pointer: { x: number; y: number; tool: "pointer" | "laser" };
+						button: "down" | "up";
+					}) => {
 						if (!pointer) return;
 						const api = excalidrawApiRef.current;
 						const appState = api?.getAppState?.() || latestAppStateRef.current;
@@ -1011,6 +1097,13 @@ export const ExcalidrawCanvas = () => {
 							: (pointer.y + scrollY) * zoom;
 
 						updateMyPresence({
+							// The `Presence.cursor` type declared in liveblocks.config.ts is
+							// `{ x, y, tool?, button? } | null` (flat coordinates only), but
+							// this payload deliberately sends richer `viewport`/`scene`
+							// sub-objects instead — the reader below (`other.presence.cursor`)
+							// falls back to flat `x`/`y` for older/other clients. Fixing this
+							// precisely means widening the shared, unexported `Presence` type
+							// in liveblocks.config.ts, which is outside this file.
 							cursor: {
 								viewport: { x: viewportX, y: viewportY },
 								scene: { x: sceneX, y: sceneY },
@@ -1023,7 +1116,7 @@ export const ExcalidrawCanvas = () => {
 					renderTopRightUI={() => {
 						const name = currentUser?.name || "Anonymous";
 						const image = currentUser?.image;
-						const bg = generateUserColor((currentUser as any)?._id || name);
+						const bg = generateUserColor(currentUser?._id || name);
 						const showToolFallback = !toolbarPortalTarget;
 
 						return (
@@ -1125,6 +1218,10 @@ export const ExcalidrawCanvas = () => {
 				{/* Live cursors overlay (Liveblocks presence). */}
 				<div className="pointer-events-none absolute inset-0 z-50">
 					{others.map((other) => {
+						// See the matching comment in `onPointerUpdate` above: the real
+						// `Presence.cursor` type only declares flat `x`/`y`, but this reads
+						// the richer `viewport`/`scene` shape this component actually
+						// writes (with a flat-`x`/`y` fallback for other clients).
 						const cursor = (other as any)?.presence?.cursor;
 						if (!cursor) return null;
 

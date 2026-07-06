@@ -333,11 +333,10 @@ export const UserProfileModal = ({
 			await updateUser({ banner: bannerId });
 
 			toast.success("Banner updated successfully!");
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Banner upload error:", error);
-			toast.error(
-				error?.message || "Failed to upload banner. Please try again."
-			);
+			const message = error instanceof Error ? error.message : undefined;
+			toast.error(message || "Failed to upload banner. Please try again.");
 		} finally {
 			URL.revokeObjectURL(previewUrl);
 			setBannerPreview(null);

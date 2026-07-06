@@ -3,6 +3,40 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
+// Minimal shape of the (non-standard, vendor-prefixed) Web Speech API surface
+// actually used here. `SpeechRecognitionResultList` and friends come from
+// lib.dom.d.ts; the recognition instance/constructor themselves are not
+// part of TypeScript's DOM types, so they're modeled locally.
+interface SpeechRecognitionResultEvent {
+	resultIndex: number;
+	results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+	error: string;
+}
+
+interface SpeechRecognitionInstance {
+	continuous: boolean;
+	interimResults: boolean;
+	lang: string;
+	start: () => void;
+	stop: () => void;
+	onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+	onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+	onend: (() => void) | null;
+}
+
+interface SpeechRecognitionConstructor {
+	new (): SpeechRecognitionInstance;
+}
+
+type WindowWithSpeechRecognition = Window &
+	typeof globalThis & {
+		SpeechRecognition?: SpeechRecognitionConstructor;
+		webkitSpeechRecognition?: SpeechRecognitionConstructor;
+	};
+
 export const useMeetingTranscription = (
 	roomId: string,
 	workspaceId: string,
@@ -22,7 +56,7 @@ export const useMeetingTranscription = (
 	const [isListening, setIsListening] = useState(false);
 	const [_localTranscript, setLocalTranscript] = useState("");
 
-	const recognitionRef = useRef<any | null>(null);
+	const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 	const chunkRef = useRef("");
 	const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -45,16 +79,17 @@ export const useMeetingTranscription = (
 
 		if (isListening) return undefined;
 
-		const SpeechRecognition =
-			(window as any).SpeechRecognition ||
-			(window as any).webkitSpeechRecognition;
-		const recognition = new SpeechRecognition();
+		const SpeechRecognitionCtor = ((window as WindowWithSpeechRecognition)
+			.SpeechRecognition ||
+			(window as WindowWithSpeechRecognition)
+				.webkitSpeechRecognition) as SpeechRecognitionConstructor;
+		const recognition = new SpeechRecognitionCtor();
 
 		recognition.continuous = true;
 		recognition.interimResults = true;
 		recognition.lang = "en-US";
 
-		recognition.onresult = (event: any) => {
+		recognition.onresult = (event: SpeechRecognitionResultEvent) => {
 			let _interimTranscript = "";
 			let finalTranscript = "";
 
@@ -100,7 +135,7 @@ export const useMeetingTranscription = (
 			}
 		};
 
-		recognition.onerror = (event: any) => {
+		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
 			console.error("Speech recognition error", event.error);
 			if (event.error === "not-allowed") {
 				setIsListening(false);

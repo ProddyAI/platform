@@ -3,6 +3,11 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, type QueryCtx, query } from "../_generated/server";
 
+// Minimal shape of a Quill Delta op, capturing only the field we read.
+interface QuillDeltaOp {
+	insert?: unknown;
+}
+
 // Helper query to check if a direct message has been read by a specific member
 export const _isDirectMessageRead = query({
 	args: {
@@ -134,7 +139,7 @@ const getUnreadDirectMessages = async (
 					const parsedBody = JSON.parse(message.body);
 					if (parsedBody.ops) {
 						messageText = parsedBody.ops
-							.map((op: any) =>
+							.map((op: QuillDeltaOp) =>
 								typeof op.insert === "string" ? op.insert : ""
 							)
 							.join("")
@@ -262,7 +267,7 @@ export const getDirectMessagesForCurrentUser = query({
 						const parsedBody = JSON.parse(message.body);
 						if (parsedBody.ops) {
 							messageText = parsedBody.ops
-								.map((op: any) =>
+								.map((op: QuillDeltaOp) =>
 									typeof op.insert === "string" ? op.insert : ""
 								)
 								.join("")

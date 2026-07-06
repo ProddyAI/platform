@@ -5,6 +5,7 @@
  * Handles teams, projects, issues, and comments import.
  */
 
+import type { FunctionReturnType } from "convex/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import {
@@ -18,6 +19,18 @@ import {
 	type WorkspaceMetadata,
 	withRetry,
 } from "./importPipeline";
+
+/**
+ * Result shape for member-by-name matching, from `_getMemberByName`.
+ * Captures only the fields read at the call site below (the query's
+ * actual return type is a union of variously-shaped match results).
+ */
+interface MemberByNameMatch {
+	member: { _id: Id<"members"> } | null;
+	conflict: boolean;
+	matchType?: "exact" | "partial";
+	possibleMatches?: string[];
+}
 
 // ============================================================================
 // LINEAR GRAPHQL TYPES
@@ -505,10 +518,10 @@ export async function executeLinearImport(
 
 			// Try to find matching member by name first
 			try {
-				const memberByName = (await ctx.runQuery(
+				const memberByName = await ctx.runQuery<MemberByNameMatch | null>(
 					internal.imports.importIntegrations._getMemberByName,
 					{ workspaceId: ctx.workspaceId, name: user.name }
-				)) as any;
+				);
 
 				if (memberByName?.member && !memberByName.conflict) {
 					linearCtx.memberMap.set(user.id, memberByName.member._id);
@@ -533,18 +546,19 @@ export async function executeLinearImport(
 							? user.avatarUrl
 							: undefined;
 
-					const memberResult = (await ctx.runMutation(
-						internal.imports.importIntegrations._getOrCreateMemberByEmail,
-						{
-							workspaceId: ctx.workspaceId,
-							email: user.email,
-							name: user.name,
-							avatarUrl: cleanAvatarUrl,
-							importSource: "Linear Import",
-							importJobUserId: (ctx as any).userId,
-							platform: "linear",
-						}
-					)) as any;
+					const memberResult = await ctx.runMutation<
+						FunctionReturnType<
+							typeof internal.imports.importIntegrations._getOrCreateMemberByEmail
+						>
+					>(internal.imports.importIntegrations._getOrCreateMemberByEmail, {
+						workspaceId: ctx.workspaceId,
+						email: user.email,
+						name: user.name,
+						avatarUrl: cleanAvatarUrl,
+						importSource: "Linear Import",
+						importJobUserId: ctx.userId,
+						platform: "linear",
+					});
 
 					if (memberResult?.member) {
 						linearCtx.memberMap.set(user.id, memberResult.member._id);
@@ -763,10 +777,14 @@ async function storeTeam(
 	);
 
 	// Check if this Linear team was already imported (idempotency via metadata)
-	const existingMetadata = (await ctx.runQuery(
-		internal.imports.importIntegrations.getLinearChannelMetadataByExternalId,
-		{ workspaceId: ctx.workspaceId, externalId: team.id }
-	)) as any;
+	const existingMetadata = await ctx.runQuery<
+		FunctionReturnType<
+			typeof internal.imports.importIntegrations.getLinearChannelMetadataByExternalId
+		>
+	>(internal.imports.importIntegrations.getLinearChannelMetadataByExternalId, {
+		workspaceId: ctx.workspaceId,
+		externalId: team.id,
+	});
 
 	if (existingMetadata) {
 		await ctx.log(
@@ -917,13 +935,17 @@ async function storeIssue(
 	);
 
 	// Check for existing issue
-	const existingIssue = await ctx.runQuery(
-		internal.imports.importIntegrations.getLinearIssueByExternalId,
-		{ workspaceId: ctx.workspaceId, externalId: issue.id }
-	);
+	const existingIssue = await ctx.runQuery<
+		FunctionReturnType<
+			typeof internal.imports.importIntegrations.getLinearIssueByExternalId
+		>
+	>(internal.imports.importIntegrations.getLinearIssueByExternalId, {
+		workspaceId: ctx.workspaceId,
+		externalId: issue.id,
+	});
 
 	if (existingIssue) {
-		ctx.issueMap.set(issue.id, (existingIssue as any)._id);
+		ctx.issueMap.set(issue.id, existingIssue._id);
 		await ctx.log(
 			"info",
 			`Skipped existing issue ${issue.identifier} (already imported)`

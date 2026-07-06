@@ -20,9 +20,14 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 				const stream = await navigator.mediaDevices.getUserMedia({
 					audio: true,
 				});
-				const ctx = new (
-					window.AudioContext || (window as any).webkitAudioContext
-				)();
+				const AudioContextCtor =
+					window.AudioContext ||
+					(
+						window as typeof window & {
+							webkitAudioContext?: typeof AudioContext;
+						}
+					).webkitAudioContext;
+				const ctx = new AudioContextCtor();
 				const analyser = ctx.createAnalyser();
 				const source = ctx.createMediaStreamSource(stream);
 

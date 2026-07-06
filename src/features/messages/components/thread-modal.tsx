@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { format } from "date-fns";
 import {
 	Download,
@@ -68,13 +69,17 @@ interface ThreadModalProps {
 	thread: ThreadMessage;
 }
 
+type ThreadReply = FunctionReturnType<
+	typeof api.messaging.messages.get
+>["page"][number];
+
 export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 	const workspaceId = useWorkspaceId();
 	const [editorKey, setEditorKey] = useState(0);
 	const editorRef = useRef<Quill | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
-	const [allReplies, setAllReplies] = useState<any[]>([]);
+	const [allReplies, setAllReplies] = useState<ThreadReply[]>([]);
 
 	const { mutate: createMessage, isPending } = useCreateMessage();
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();

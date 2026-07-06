@@ -48,13 +48,16 @@ export async function convertMermaidToExcalidrawScene(
 	]);
 
 	// parseMermaidToExcalidraw returns element skeletons + optional files.
+	// NOTE: the library's MermaidConfig type doesn't declare `fontSize` (only
+	// `themeVariables.fontSize`); `as any` predates this fix and is kept as-is
+	// rather than risk changing the rendered font size.
 	const { elements, files } = await (
 		mermaidToExcalidraw as any
 	).parseMermaidToExcalidraw(code, {
 		fontSize: 20,
 	});
 
-	const excalidrawElements = (excalidraw as any).convertToExcalidrawElements(
+	const excalidrawElements = excalidraw.convertToExcalidrawElements(
 		elements ?? null,
 		{
 			regenerateIds: true,

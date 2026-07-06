@@ -10,7 +10,40 @@ interface OneSignalTrackingProps {
 	userId?: string;
 }
 
-type OneSignalInterface = any;
+// The ambient `OneSignal` type declared in global.d.ts only models the
+// small slice of the SDK used elsewhere; this component drives more of
+// the real (v16) Web SDK surface (User/PushSubscription namespaces plus
+// extra init options), so it declares a fuller local shape and bridges
+// from the ambient type via `unknown` where the two don't structurally
+// line up.
+interface OneSignalPushSubscription {
+	optedIn: boolean;
+	optIn: () => Promise<void>;
+}
+
+interface OneSignalUser {
+	externalId?: string;
+	PushSubscription: OneSignalPushSubscription;
+}
+
+interface OneSignalInterface {
+	User: OneSignalUser;
+	init: (config: {
+		appId: string;
+		serviceWorkerPath?: string;
+		serviceWorkerUpdaterPath?: string;
+		serviceWorkerParam?: { scope: string };
+		allowLocalhostAsSecureOrigin?: boolean;
+	}) => Promise<void>;
+	login: (externalId: string) => Promise<void>;
+	logout: () => Promise<void>;
+}
+
+declare global {
+	interface Window {
+		__oneSignalInitialized?: boolean;
+	}
+}
 
 const waitForOneSignal = async (
 	maxWaitMs = 10000
@@ -18,7 +51,7 @@ const waitForOneSignal = async (
 	const startTime = Date.now();
 	while (Date.now() - startTime < maxWaitMs) {
 		if (window.OneSignal) {
-			return window.OneSignal;
+			return window.OneSignal as unknown as OneSignalInterface;
 		}
 		await new Promise((resolve) => setTimeout(resolve, 100));
 	}
@@ -61,12 +94,9 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				}
 
 				// Check if already initialized by another instance
-				if (
-					OneSignal.User?.externalId ||
-					(window as any).__oneSignalInitialized
-				) {
+				if (OneSignal.User?.externalId || window.__oneSignalInitialized) {
 					logger.debug("🔔 OneSignal already initialized");
-					(window as any).__oneSignalInitialized = true;
+					window.__oneSignalInitialized = true;
 					sdkLoadedRef.current = true;
 					return;
 				}
@@ -85,7 +115,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 					allowLocalhostAsSecureOrigin: true,
 				});
 
-				(window as any).__oneSignalInitialized = true;
+				window.__oneSignalInitialized = true;
 				sdkLoadedRef.current = true;
 				logger.debug("✅ OneSignal SDK initialized successfully");
 			} catch (error) {
@@ -149,7 +179,9 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				}
 
 				// Now check SDK is available
-				const OneSignal: any = window.OneSignal as any;
+				const OneSignal = window.OneSignal as unknown as
+					| OneSignalInterface
+					| undefined;
 				if (!OneSignal) {
 					logger.error("❌ OneSignal not available on window");
 					return;

@@ -1,6 +1,8 @@
 import { LiveList } from "@liveblocks/client";
 import { Redo2, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useCallback } from "react";
+import { toast } from "sonner";
+import { useConfirm } from "@/hooks/use-confirm";
 import { useMutation } from "../../../../liveblocks.config";
 import type { Color, Point } from "../types";
 import { ColorPicker } from "./color-picker";
@@ -31,6 +33,11 @@ export const Toolbar = ({
 	camera = { x: 0, y: 0 },
 	workspaceId,
 }: ToolbarProps = {}) => {
+	const [ConfirmClearCanvasDialog, confirmClearCanvas] = useConfirm(
+		"Clear canvas?",
+		"This will remove all drawings for everyone in this channel. This action cannot be undone."
+	);
+
 	// Handle color change
 	const handleColorChange = useCallback(
 		(color: Color) => {
@@ -104,13 +111,22 @@ export const Toolbar = ({
 				storage.set("lastUpdate", Date.now());
 
 				// Notify the user that the canvas has been cleared
-				alert("Canvas cleared for all users in this channel");
+				toast.success("Canvas cleared for all users in this channel");
 			} catch (_error) {
-				alert("Failed to clear canvas. Please try again.");
+				toast.error("Failed to clear canvas. Please try again.");
 			}
 		},
 		[effectiveId]
 	);
+
+	// Confirm before clearing the canvas, since this is a destructive,
+	// irreversible action for everyone in the channel.
+	const handleClearCanvas = useCallback(async () => {
+		const ok = await confirmClearCanvas();
+		if (!ok) return;
+
+		clearCanvas();
+	}, [clearCanvas, confirmClearCanvas]);
 
 	return (
 		<div className="absolute top-[55%] -translate-y-[50%] left-2 flex flex-col gap-y-4">
@@ -162,10 +178,11 @@ export const Toolbar = ({
 				<ToolButton
 					icon={Trash2}
 					label="Clear Canvas"
-					onClick={clearCanvas}
+					onClick={handleClearCanvas}
 					variant="danger"
 				/>
 			</div>
+			<ConfirmClearCanvasDialog />
 		</div>
 	);
 };

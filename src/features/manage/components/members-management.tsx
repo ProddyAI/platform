@@ -135,9 +135,10 @@ const EmailInviteSection = ({
 			setInviteRole("member");
 			setInviteComment("");
 			toast.success("Invite sent successfully");
-		} catch (err: any) {
-			setInviteError(err.message);
-			toast.error(err.message || "Failed to send invite");
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			setInviteError(message);
+			toast.error(message || "Failed to send invite");
 		} finally {
 			setInviteLoading(false);
 		}

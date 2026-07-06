@@ -2532,7 +2532,7 @@ async function processRefundedDowngrade(
 		workspaceId: Id<"workspaces">;
 		planName: "pro" | "enterprise";
 		quantity: number;
-		fairBilling: any;
+		fairBilling: Awaited<ReturnType<typeof calculateFairBillingDelta>>;
 		dodoSubscriptionId: string;
 		downgradeRefundCurrency: string | null;
 		currentSubscription: DodoSubscription;

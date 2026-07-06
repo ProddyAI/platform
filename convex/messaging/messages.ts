@@ -574,7 +574,7 @@ export const update = mutation({
 		if (!member || member._id !== message.memberId)
 			throw new Error("Unauthorized.");
 
-		const updateData: any = {
+		const updateData: { body: string; updatedAt: number; tags?: string[] } = {
 			body: args.body,
 			updatedAt: Date.now(),
 		};
@@ -1109,7 +1109,7 @@ export const getMentionedMessages = query({
 				.order("desc")
 				.take(limit);
 
-			const mentionedMessages: any[] = [];
+			const mentionedMessages = [];
 			const seenMessageIds = new Set<string>();
 
 			const messageIds = Array.from(

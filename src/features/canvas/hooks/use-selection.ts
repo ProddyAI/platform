@@ -1,5 +1,6 @@
 "use client";
 
+import type { History } from "@liveblocks/client";
 import { useCallback } from "react";
 import { useMutation } from "../../../../liveblocks.config";
 import {
@@ -20,7 +21,7 @@ export function useSelection(
 	canvasState: CanvasState,
 	setCanvasState: (state: CanvasState) => void,
 	layerIds: readonly string[],
-	history: any
+	history: History
 ) {
 	const unselectLayers = useMutation(({ self, setMyPresence }) => {
 		if (self.presence.selection.length > 0) {
@@ -157,7 +158,10 @@ export function useSelection(
 								console.warn(
 									"Using direct property access on layer - this may cause type errors"
 								);
-								const layerAny = layer as any;
+								const layerAny = layer as unknown as {
+									x?: unknown;
+									y?: unknown;
+								};
 								currentX = layerAny.x;
 								currentY = layerAny.y;
 							}

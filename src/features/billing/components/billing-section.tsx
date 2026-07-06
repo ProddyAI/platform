@@ -36,6 +36,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { useConfirm } from "@/hooks/use-confirm";
 import { UpgradeModal } from "./upgrade-modal";
 
 interface BillingSectionProps {
@@ -81,6 +82,10 @@ export function BillingSection({
 	const [upgradeOpen, setUpgradeOpen] = useState(false);
 	const [selectedPlan, setSelectedPlan] = useState<"pro" | "enterprise">("pro");
 	const lastSyncedSubscriptionId = useRef<string | null>(null);
+	const [ConfirmCancelPlanDialog, confirmCancelPlan] = useConfirm(
+		"Downgrade to Free?",
+		"This cancels the paid plan immediately and requests a refund for unused time."
+	);
 
 	useEffect(() => {
 		if (!(canManageBilling && subscription?.dodoSubscriptionId)) return;
@@ -238,13 +243,8 @@ export function BillingSection({
 	};
 
 	const handleCancelPlan = async () => {
-		if (
-			!window.confirm(
-				"Downgrade to Free now? This cancels the paid plan immediately and requests a refund for unused time."
-			)
-		) {
-			return;
-		}
+		const ok = await confirmCancelPlan();
+		if (!ok) return;
 
 		setCancelLoading(true);
 		try {
@@ -623,6 +623,7 @@ export function BillingSection({
 					{billingDetails}
 				</DialogContent>
 			</Dialog>
+			<ConfirmCancelPlanDialog />
 		</>
 	);
 }

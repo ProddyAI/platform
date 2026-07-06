@@ -92,16 +92,16 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 		// If this is a unified message (canvas or note type), don't process with Quill
 		if (isUnifiedMessage) {
 			setIsEmpty(false);
-			return;
+			return undefined;
 		}
 
-		if (!rendererRef.current) return;
+		if (!rendererRef.current) return undefined;
 
 		const container = rendererRef.current;
 
 		// Check if we're in a browser environment
 		if (typeof document === "undefined") {
-			return;
+			return undefined;
 		}
 
 		const quill = new Quill(document.createElement("div"), {

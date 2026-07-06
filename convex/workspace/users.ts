@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { internalQuery, mutation, query } from "../_generated/server";
 
 export const current = query({
@@ -28,12 +29,11 @@ export const current = query({
 
 		// Get banner URL if user has a banner
 		let bannerUrl: string | undefined;
-		if ((user as any).banner) {
-			if ((user as any).banner.startsWith("http")) {
-				bannerUrl = (user as any).banner;
+		if (user.banner) {
+			if (user.banner.startsWith("http")) {
+				bannerUrl = user.banner;
 			} else {
-				bannerUrl =
-					(await ctx.storage.getUrl((user as any).banner)) || undefined;
+				bannerUrl = (await ctx.storage.getUrl(user.banner)) || undefined;
 			}
 		}
 
@@ -103,12 +103,11 @@ export const getUserById = query({
 
 		// Get banner URL if user has a banner
 		let bannerUrl: string | undefined;
-		if ((user as any).banner) {
-			if ((user as any).banner.startsWith("http")) {
-				bannerUrl = (user as any).banner;
+		if (user.banner) {
+			if (user.banner.startsWith("http")) {
+				bannerUrl = user.banner;
 			} else {
-				bannerUrl =
-					(await ctx.storage.getUrl((user as any).banner)) || undefined;
+				bannerUrl = (await ctx.storage.getUrl(user.banner)) || undefined;
 			}
 		}
 
@@ -149,7 +148,7 @@ export const updateProfile = mutation({
 		}
 
 		// Prepare update data, filtering out undefined values
-		const updateData: Record<string, any> = {};
+		const updateData: Partial<Doc<"users">> = {};
 
 		if (args.name !== undefined) {
 			updateData.name = args.name.trim();
@@ -169,10 +168,10 @@ export const updateProfile = mutation({
 		if (args.image !== undefined) {
 			updateData.image = args.image;
 		}
-		if ((args as any).banner !== undefined) {
-			updateData.banner = (args as any).banner;
+		if (args.banner !== undefined) {
+			updateData.banner = args.banner;
 		}
-		if ((args as any).removeBanner === true) {
+		if (args.removeBanner === true) {
 			// Explicitly clear the banner
 			updateData.banner = null;
 		}

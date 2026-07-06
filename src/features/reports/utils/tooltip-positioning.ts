@@ -60,9 +60,9 @@ export function calculateSvgTooltipPosition({
 export function calculateDomTooltipPosition(
 	element: HTMLElement,
 	containerRect: DOMRect,
-	tooltipWidth: number = 60,
-	tooltipHeight: number = 24,
-	offsetY: number = -30
+	tooltipWidth = 60,
+	tooltipHeight = 24,
+	offsetY = -30
 ): { top: string; left: string } {
 	const elementRect = element.getBoundingClientRect();
 	const elementCenterX =
@@ -91,7 +91,7 @@ export function calculateDomTooltipPosition(
 	};
 }
 
-export function getTooltipRectAttrs(width: number = 36, height: number = 18) {
+export function getTooltipRectAttrs(width = 36, height = 18) {
 	return {
 		x: -width / 2,
 		y: -height / 2,

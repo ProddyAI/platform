@@ -31,6 +31,7 @@ export interface ComposioConnection {
 		slug?: string;
 	};
 	appName?: string;
+	integrationId?: string;
 	createdAt: string;
 }
 
@@ -734,7 +735,7 @@ export const API_TOOL_FALLBACKS: Record<string, string[]> = {
 
 // Fetch ALL available tools for connected apps and cache them
 export async function getAllToolsForApps(
-	composio: Composio<any>,
+	composio: Composio<OpenAIProvider>,
 	entityId: string,
 	apps: AvailableApp[],
 	useCache = true
@@ -779,7 +780,10 @@ export async function getAllToolsForApps(
 					limit: 1000, // Get as many as possible
 				});
 
-				const toolsArray = Object.values(tools || {});
+				// Composio<OpenAIProvider>.tools.get() is typed to return OpenAI's
+				// ChatCompletionTool shape, but the actual runtime objects carry the
+				// richer Composio tool shape this file works with everywhere else.
+				const toolsArray = Object.values(tools || {}) as ComposioTool[];
 
 				// Process tools to standard format without filtering
 				const processedTools = toolsArray
@@ -851,15 +855,22 @@ export async function getAllToolsForApps(
  * @param options.keywords - Additional keywords to consider alongside those extracted from `query`.
  * @returns An array of the selected tool objects sorted by descending relevance. Each returned tool includes an added `_score` numeric field representing its computed relevance.
  */
+interface ScorableComposioTool extends ComposioTool {
+	name: string;
+	_isDashboardTool?: boolean;
+	_priority?: number;
+	_score?: number;
+}
+
 export function filterToolsForQuery(
-	allTools: any[],
+	allTools: ScorableComposioTool[],
 	query: string,
 	options: {
 		maxTools?: number;
 		preferDashboard?: boolean;
 		keywords?: string[];
 	} = {}
-): any[] {
+): ScorableComposioTool[] {
 	const { maxTools = 100, preferDashboard = true, keywords = [] } = options;
 
 	const queryLower = query.toLowerCase();
@@ -1259,7 +1270,7 @@ export function getWorkspaceEntityId(workspaceId: string): string {
 
 // Helper to check if user has connected accounts for specific apps
 export async function getConnectedApps(
-	composio: Composio<any>,
+	composio: Composio<OpenAIProvider>,
 	entityId: string
 ): Promise<{ app: AvailableApp; connected: boolean; connectionId?: string }[]> {
 	try {
@@ -1271,7 +1282,7 @@ export async function getConnectedApps(
 
 		return Object.values(AVAILABLE_APPS).map((app) => {
 			const connection = connections.find(
-				(conn: any) =>
+				(conn: ComposioConnection) =>
 					conn.toolkit?.slug?.toUpperCase() === app ||
 					conn.appName?.toUpperCase() === app ||
 					conn.integrationId?.toUpperCase() === app
@@ -1380,7 +1391,7 @@ function validateToolsForOpenAI(tools: ComposioTool[]): ComposioTool[] {
  * @returns An array of ConnectedApp objects for each supported app indicating whether it is connected, the chosen connection id when connected, and the entity id used for the connection (present only when a connection was found).
  */
 export async function getAnyConnectedApps(
-	composio: Composio<any>,
+	composio: Composio<OpenAIProvider>,
 	workspaceId: string, // Keep workspaceId for backward compatibility
 	entityId?: string // Optional: specific entity ID (e.g., member_123 or workspace_456)
 ): Promise<ConnectedApp[]> {
@@ -1585,7 +1596,7 @@ export async function cleanupOldConnections(
  * @returns An object `{ success: true, redirectUrl, connectionId }` on success, or `{ success: false, error }` on failure
  */
 export async function initiateAppConnection(
-	composio: Composio<any>,
+	composio: Composio<OpenAIProvider>,
 	entityId: string,
 	app: AvailableApp,
 	callbackUrl?: string

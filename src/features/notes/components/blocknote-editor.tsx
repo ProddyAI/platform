@@ -1,6 +1,9 @@
 "use client";
 
-import type { BlockNoteEditor as BlockNoteEditorType } from "@blocknote/core";
+import type {
+	BlockNoteEditor as BlockNoteEditorType,
+	PartialBlock,
+} from "@blocknote/core";
 import { useBlockNoteSync } from "@convex-dev/prosemirror-sync/blocknote";
 import "@blocknote/core/fonts/inter.css";
 import { BlockNoteView } from "@blocknote/mantine";
@@ -112,7 +115,7 @@ export const BlockNoteEditor = ({
 						try {
 							const topLevel = editor.document;
 							const lastBlock = topLevel[topLevel.length - 1];
-							const fallback = [{ type: "paragraph", content }] as any;
+							const fallback: PartialBlock[] = [{ type: "paragraph", content }];
 
 							if (lastBlock) {
 								editor.insertBlocks(fallback, lastBlock, "after");

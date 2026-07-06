@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import type { ConvexHttpClient } from "convex/browser";
+import type { Id } from "../../convex/_generated/dataModel";
 
 export type EmailType =
 	| "mentions"
@@ -139,9 +141,9 @@ export interface NotificationPreferences {
  * This function should be called before sending any email
  */
 export async function shouldSendEmail(
-	userId: string,
+	userId: Id<"users">,
 	emailType: EmailType,
-	convexClient: any // ConvexHttpClient or similar
+	convexClient: ConvexHttpClient
 ): Promise<boolean> {
 	try {
 		// Import the API here to avoid circular dependencies

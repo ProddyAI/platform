@@ -15,6 +15,54 @@ type CurrentMember = {
 	role: "owner" | "admin" | "member" | "viewer";
 };
 
+// Mirrors the (unexported) `AuthConfig`/`ConnectedAccount` shapes in
+// ./service-integration-card so the fetched data can be typed precisely
+// while remaining structurally assignable to that component's props.
+type IntegrationToolkit =
+	| "github"
+	| "gmail"
+	| "slack"
+	| "linear"
+	| "notion"
+	| "clickup";
+
+type AuthConfig = {
+	_id: Id<"auth_configs">;
+	workspaceId: Id<"workspaces">;
+	toolkit: IntegrationToolkit;
+	name: string;
+	type:
+		| "use_composio_managed_auth"
+		| "use_custom_auth"
+		| "service_connection"
+		| "no_auth";
+	authScheme?: string;
+	composioAuthConfigId: string;
+	credentials?: unknown;
+	isComposioManaged: boolean;
+	isDisabled: boolean;
+	createdAt: number;
+	updatedAt: number;
+	createdBy: Id<"members">;
+};
+
+type ConnectedAccount = {
+	_id: Id<"connected_accounts">;
+	workspaceId: Id<"workspaces">;
+	authConfigId: Id<"auth_configs">;
+	userId: string;
+	composioAccountId: string;
+	toolkit: string;
+	status: "ACTIVE" | "PENDING" | "EXPIRED" | "ERROR" | "DISABLED";
+	statusReason?: string;
+	metadata?: unknown;
+	testRequestEndpoint?: string;
+	isDisabled: boolean;
+	connectedAt: number;
+	lastUsed?: number;
+	connectedBy: Id<"members">;
+};
+
 interface IntegrationsManagementProps {
 	workspaceId: Id<"workspaces">;
 	currentMember: CurrentMember;
@@ -72,8 +120,10 @@ export const IntegrationsManagement = ({
 	const handledCallbackRef = useRef(false);
 
 	// State for data fetching
-	const [authConfigs, setAuthConfigs] = useState<any[]>([]);
-	const [connectedAccounts, setConnectedAccounts] = useState<any[]>([]);
+	const [authConfigs, setAuthConfigs] = useState<AuthConfig[]>([]);
+	const [connectedAccounts, setConnectedAccounts] = useState<
+		ConnectedAccount[]
+	>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
 	// Fetch data from AgentAuth API route
@@ -186,7 +236,7 @@ export const IntegrationsManagement = ({
 				acc[config.toolkit] = config;
 				return acc;
 			},
-			{} as Record<string, any>
+			{} as Record<string, AuthConfig>
 		) || {};
 
 	const connectedAccountsByToolkit =
@@ -195,7 +245,7 @@ export const IntegrationsManagement = ({
 				acc[account.toolkit] = account;
 				return acc;
 			},
-			{} as Record<string, any>
+			{} as Record<string, ConnectedAccount>
 		) || {};
 
 	return (

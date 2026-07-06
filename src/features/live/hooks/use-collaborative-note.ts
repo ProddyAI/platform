@@ -1,11 +1,11 @@
-import { LiveMap, LiveObject } from "@liveblocks/client";
+import { LiveMap, LiveObject, type Lson } from "@liveblocks/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useMutation, useStorage } from "@/../liveblocks.config";
 import type { Note } from "@/features/notes/types";
 
 interface CollaborativeNoteData {
-	[key: string]: any; // Index signature for Liveblocks compatibility
+	[key: string]: Lson | undefined; // Index signature for Liveblocks compatibility
 	content: string;
 	title: string;
 	lastModified: number;

@@ -18,7 +18,7 @@ export const useNotesParticipants = () => {
 	const [participantCount, setParticipantCount] = useState(0);
 
 	// Fetch members from the database
-	const members = useQuery(api.workspace.members.get, { workspaceId }) as any;
+	const members = useQuery(api.workspace.members.get, { workspaceId });
 
 	// Get the current user's member info
 	const currentMember = useQuery(api.workspace.members.current, {

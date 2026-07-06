@@ -83,7 +83,7 @@ export const getUserWeeklyDigest = query({
 async function getWorkspaceWeeklyStats(
 	ctx: QueryCtx,
 	args: {
-		workspaceId: any;
+		workspaceId: Id<"workspaces">;
 		startDate: number;
 		endDate: number;
 	}
@@ -91,10 +91,8 @@ async function getWorkspaceWeeklyStats(
 	// Get messages count
 	const messages = await ctx.db
 		.query("messages")
-		.withIndex("by_workspace_id", (q: any) =>
-			q.eq("workspaceId", args.workspaceId)
-		)
-		.filter((q: any) =>
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+		.filter((q) =>
 			q.and(
 				q.gte(q.field("_creationTime"), args.startDate),
 				q.lte(q.field("_creationTime"), args.endDate)
@@ -105,10 +103,8 @@ async function getWorkspaceWeeklyStats(
 	// Get tasks count
 	const tasks = await ctx.db
 		.query("tasks")
-		.withIndex("by_workspace_id", (q: any) =>
-			q.eq("workspaceId", args.workspaceId)
-		)
-		.filter((q: any) =>
+		.withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+		.filter((q) =>
 			q.and(
 				q.gte(q.field("createdAt"), args.startDate),
 				q.lte(q.field("createdAt"), args.endDate)
@@ -117,11 +113,11 @@ async function getWorkspaceWeeklyStats(
 		.collect();
 
 	const completedTasks = tasks.filter(
-		(task: any) => task.completed || task.status === "completed"
+		(task) => task.completed || task.status === "completed"
 	);
 
 	// Get active users (users who sent messages)
-	const activeUserIds = new Set(messages.map((msg: any) => msg.memberId));
+	const activeUserIds = new Set(messages.map((msg) => msg.memberId));
 
 	// Get top channels by message count
 	const channelMessageCounts: { [key: string]: number } = {};
@@ -136,7 +132,7 @@ async function getWorkspaceWeeklyStats(
 	for (const channelId in channelMessageCounts) {
 		if (Object.hasOwn(channelMessageCounts, channelId)) {
 			const count = channelMessageCounts[channelId];
-			const channel = await ctx.db.get(channelId as any);
+			const channel = await ctx.db.get(channelId as Id<"channels">);
 			if (channel && "name" in channel && count) {
 				topChannels.push({
 					name: channel.name,
@@ -150,7 +146,7 @@ async function getWorkspaceWeeklyStats(
 	topChannels.sort((a, b) => b.messageCount - a.messageCount);
 
 	// Get recent tasks (created or updated this week)
-	const recentTasks = tasks.slice(0, 5).map((task: any) => ({
+	const recentTasks = tasks.slice(0, 5).map((task) => ({
 		title: task.title,
 		status: task.completed ? "completed" : task.status || "not_started",
 		dueDate: task.dueDate
@@ -555,6 +551,11 @@ export const getLatestWorkspaceInvoiceUrl = internalQuery({
 	},
 });
 
+// Shape of a single op in a Quill Delta document - only the field we read
+interface QuillDeltaOp {
+	insert?: unknown;
+}
+
 // Helper function to extract message preview from body
 export const extractMessagePreview = (
 	body: string | undefined,
@@ -567,7 +568,9 @@ export const extractMessagePreview = (
 		const parsedBody = JSON.parse(body);
 		if (parsedBody.ops) {
 			return parsedBody.ops
-				.map((op: any) => (typeof op.insert === "string" ? op.insert : ""))
+				.map((op: QuillDeltaOp) =>
+					typeof op.insert === "string" ? op.insert : ""
+				)
 				.join("")
 				.trim();
 		}

@@ -7,7 +7,13 @@ export function getEmailConfig() {
 	// Prefer the server-only sender env var, but keep backward compatibility
 	// with the older NEXT_PUBLIC_RESEND_FROM_EMAIL name used in legacy flows.
 	// As a final fallback, use support inbox when configured.
-	const fromAddress = process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL!;
+	const fromAddress = process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL;
+
+	if (!fromAddress) {
+		throw new Error(
+			"NEXT_PUBLIC_RESEND_FROM_EMAIL environment variable is required"
+		);
+	}
 
 	const replyToAddress =
 		process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL ?? fromAddress;

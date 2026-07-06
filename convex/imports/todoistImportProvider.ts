@@ -15,6 +15,7 @@ import type { Id } from "../_generated/dataModel";
 import {
 	chunkArray,
 	type ExternalChannel,
+	type ExternalUser,
 	formatDuration,
 	generateIdempotencyKey,
 	type ImportContext,
@@ -320,7 +321,7 @@ export class TodoistImportProvider {
 	/**
 	 * Fetch all sections from Todoist.
 	 */
-	async fetchSections(ctx: ImportContext): Promise<any[]> {
+	async fetchSections(ctx: ImportContext): Promise<TodoistSection[]> {
 		try {
 			return await this.apiCallPaginated<TodoistSection>(ctx, "sections");
 		} catch (error) {
@@ -376,7 +377,7 @@ export class TodoistImportProvider {
 	/**
 	 * Fetch users from Todoist (collaborators).
 	 */
-	async fetchUsers(ctx: ImportContext): Promise<any[]> {
+	async fetchUsers(ctx: ImportContext): Promise<ExternalUser[]> {
 		// Get current user
 		const user = await this.apiCall<TodoistUser>(ctx, "user");
 		const displayName = user.full_name || user.name || "Todoist User";

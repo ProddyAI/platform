@@ -16,11 +16,9 @@ type FilterTypes = {
 	contentType: string;
 	channelId: string;
 };
-const rag = new RAG<FilterTypes>(components.rag as any, {
+const rag = new RAG<FilterTypes>(components.rag, {
 	filterNames: ["workspaceId", "contentType", "channelId"],
-	textEmbeddingModel: openai.textEmbeddingModel(
-		"text-embedding-3-small"
-	) as any,
+	textEmbeddingModel: openai.textEmbeddingModel("text-embedding-3-small"),
 	embeddingDimension: 1536,
 });
 

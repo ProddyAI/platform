@@ -18,6 +18,7 @@ import { LimitIndicator } from "@/components/limit-indicator";
 import { Button } from "@/components/ui/button";
 import { LiveblocksRoom } from "@/features/live";
 import type { Note } from "@/features/notes/types";
+import { useConfirm } from "@/hooks/use-confirm";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
 import { NotesContent } from "./notes-content";
@@ -43,6 +44,11 @@ const NotesPage = () => {
 	const [isFullScreen, setIsFullScreen] = useState(false);
 	const [showExportDialog, setShowExportDialog] = useState(false);
 	const [isCreating, setIsCreating] = useState(false);
+
+	const [ConfirmDeleteNoteDialog, confirmDeleteNote] = useConfirm(
+		"Delete note?",
+		"Are you sure you want to delete this note? This action cannot be undone."
+	);
 
 	// Ref for fullscreen container
 	const pageContainerRef = useRef<HTMLDivElement>(null);
@@ -185,17 +191,18 @@ const NotesPage = () => {
 	};
 
 	const handleDeleteNote = async (noteId: Id<"notes">) => {
-		if (window.confirm("Are you sure you want to delete this note?")) {
-			try {
-				await deleteNote({ id: noteId });
-				toast.success("Note deleted");
-				if (activeNoteId === noteId) {
-					setActiveNoteId(null);
-				}
-			} catch (error) {
-				toast.error("Failed to delete note");
-				console.error("Error deleting note:", error);
+		const ok = await confirmDeleteNote();
+		if (!ok) return;
+
+		try {
+			await deleteNote({ id: noteId });
+			toast.success("Note deleted");
+			if (activeNoteId === noteId) {
+				setActiveNoteId(null);
 			}
+		} catch (error) {
+			toast.error("Failed to delete note");
+			console.error("Error deleting note:", error);
 		}
 	};
 
@@ -272,6 +279,7 @@ const NotesPage = () => {
 					showExportDialog={showExportDialog}
 					workspaceId={workspaceId}
 				/>
+				<ConfirmDeleteNoteDialog />
 			</div>
 		</LiveblocksRoom>
 	);

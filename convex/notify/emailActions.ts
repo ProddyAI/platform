@@ -91,6 +91,11 @@ const escapeHtml = (unsafe: string): string => {
 		.replace(/'/g, "&#039;");
 };
 
+// Shape of a single op in a Quill Delta document - only the field we read
+interface QuillDeltaOp {
+	insert?: unknown;
+}
+
 // Helper function to extract message preview from body
 const extractMessagePreview = (
 	body: string | undefined,
@@ -103,7 +108,9 @@ const extractMessagePreview = (
 		const parsedBody = JSON.parse(body);
 		if (parsedBody.ops) {
 			return parsedBody.ops
-				.map((op: any) => (typeof op.insert === "string" ? op.insert : ""))
+				.map((op: QuillDeltaOp) =>
+					typeof op.insert === "string" ? op.insert : ""
+				)
 				.join("")
 				.trim();
 		}
@@ -863,6 +870,10 @@ export const sendWeeklyDigests = internalAction({
 			v.literal("sunday")
 		),
 	},
+	// NOTE: this handler's inferred return type is too complex for Convex's
+	// internal-function type extraction (it silently drops this export from
+	// `internal.notify.emailActions`, breaking crons.ts's reference). Keep the
+	// explicit annotation.
 	handler: async (ctx, args): Promise<any> => {
 		try {
 			const now = Date.now();
@@ -978,13 +989,14 @@ export const sendWeeklyDigestEmail = internalAction({
 			);
 
 			// Build simple HTML digest
-			const workspacesHtml = (args.digestData.workspaces || [])
+			const digestData = args.digestData as DigestData;
+			const workspacesHtml = (digestData.workspaces || [])
 				.map(
-					(ws: any) => `
+					(ws) => `
 					<div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
 						<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(ws.workspaceName)}</h3>
 						<p style="margin: 5px 0; color: #666;">📊 <strong>${ws.stats.totalMessages}</strong> messages | 📋 <strong>${ws.stats.totalTasks}</strong> tasks (${ws.stats.completedTasks} completed)</p>
-						${ws.topChannels.length > 0 ? `<p style="margin: 5px 0; color: #666;"><strong>Top channels:</strong> ${ws.topChannels.map((c: any) => `${escapeHtml(c.name ?? "")} (${c.messageCount ?? 0})`).join(", ")}</p>` : ""}
+						${ws.topChannels.length > 0 ? `<p style="margin: 5px 0; color: #666;"><strong>Top channels:</strong> ${ws.topChannels.map((c) => `${escapeHtml(c.name ?? "")} (${c.messageCount ?? 0})`).join(", ")}</p>` : ""}
 					</div>
 				`
 				)
@@ -1056,7 +1068,7 @@ type CardDetails = {
 	listId: Id<"lists">;
 	_id: Id<"cards">;
 	_creationTime: number;
-	[key: string]: any;
+	[key: string]: unknown;
 };
 
 // Action to send email notification for card assignment
