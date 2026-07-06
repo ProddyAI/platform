@@ -7,5 +7,5 @@ export default function AboutLayout({ children }: PropsWithChildren) {
 	// Set document title for the about page
 	useDocumentTitle("About Us");
 
-	return <>{children}</>;
+	return children;
 }

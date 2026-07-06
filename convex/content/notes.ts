@@ -407,8 +407,7 @@ export const remove = mutation({
 		} catch (error) {
 			console.error(`Error deleting note ${args.id}:`, error);
 			throw new Error(
-				"Failed to delete note: " +
-					(error instanceof Error ? error.message : String(error))
+				`Failed to delete note: ${error instanceof Error ? error.message : String(error)}`
 			);
 		}
 	},

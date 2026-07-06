@@ -220,8 +220,8 @@ export const NotesContent = ({
 							onSave={handleSave}
 							onTagsChange={memoizedOnTagsChange}
 							onTitleChange={handleNoteTitleChange}
-							showFullScreenToggle={true}
-							showTags={true}
+							showFullScreenToggle
+							showTags
 							tags={activeNote?.tags || []}
 							title={
 								isTyping ? localTitle : activeNote?.title || "Untitled Note"

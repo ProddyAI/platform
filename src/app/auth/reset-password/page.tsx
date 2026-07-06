@@ -199,7 +199,7 @@ const ResetPasswordContent = () => {
 								{newPassword && (
 									<PasswordStrengthIndicator
 										password={newPassword}
-										showRequirements={true}
+										showRequirements
 									/>
 								)}
 							</div>

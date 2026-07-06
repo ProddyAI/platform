@@ -58,5 +58,5 @@ export const UsetifulProvider = ({ children }: UsetifulProviderProps) => {
 		}
 	}, [currentUser, isLoading]);
 
-	return <>{children}</>;
+	return children;
 };

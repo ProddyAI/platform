@@ -495,7 +495,7 @@ export const Canvas = ({
 									y={Math.min(canvasState.origin.y, canvasState.current.y)}
 								/>
 							)}
-						<LiveCursorsPresence showDrawingPaths={true} variant="canvas" />
+						<LiveCursorsPresence showDrawingPaths variant="canvas" />
 						{pencilDraft != null && pencilDraft.length > 0 && (
 							<Path
 								fill={colorToCSS(lastUsedColor)}

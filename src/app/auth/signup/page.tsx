@@ -10,7 +10,7 @@ const SignUpPage = () => {
 	return (
 		<div className="flex h-full items-center justify-center bg-primary">
 			<div className="md:h-auto md:w-[420px] animate-fade-in">
-				<SignUpCard isStandalone={true} />
+				<SignUpCard isStandalone />
 			</div>
 		</div>
 	);

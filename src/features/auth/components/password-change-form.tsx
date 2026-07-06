@@ -127,7 +127,7 @@ export const PasswordChangeForm = () => {
 						{newPassword && (
 							<PasswordStrengthIndicator
 								password={newPassword}
-								showRequirements={true}
+								showRequirements
 							/>
 						)}
 					</div>

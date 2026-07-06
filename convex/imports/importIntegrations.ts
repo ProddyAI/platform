@@ -306,7 +306,7 @@ export const initiateLinearOAuth = mutation({
 
 function base64UrlEncode(value: string): string {
 	const base64 = btoa(value);
-	return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+	return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/[=]+$/g, "");
 }
 
 /**

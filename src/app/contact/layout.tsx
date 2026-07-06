@@ -7,5 +7,5 @@ export default function ContactLayout({ children }: PropsWithChildren) {
 	// Set document title for the contact page
 	useDocumentTitle("Contact Us");
 
-	return <>{children}</>;
+	return children;
 }

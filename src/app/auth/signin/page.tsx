@@ -37,7 +37,7 @@ const SignInPage = () => {
 						</AlertDescription>
 					</Alert>
 				)}
-				<SignInCard isStandalone={true} />
+				<SignInCard isStandalone />
 			</div>
 		</div>
 	);

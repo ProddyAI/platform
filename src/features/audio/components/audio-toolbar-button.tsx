@@ -180,7 +180,7 @@ export const AudioToolbarButton = () => {
 			{/* Microphone control */}
 			{micPermissionError ? (
 				<AudioControlButton
-					disabled={true}
+					disabled
 					icon={AlertCircle}
 					label="Mic Permission Denied"
 					onClick={() => toast.error("Microphone permission denied")}

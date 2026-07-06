@@ -7,5 +7,5 @@ export default function FeaturesLayout({ children }: PropsWithChildren) {
 	// Set document title for the features page
 	useDocumentTitle("Features");
 
-	return <>{children}</>;
+	return children;
 }

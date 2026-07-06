@@ -47,5 +47,5 @@ export const WorkspacePresenceTracker = ({
 		};
 	}, [sendHeartbeat, isAuthenticated, isLoading]);
 
-	return <>{children}</>;
+	return children;
 };

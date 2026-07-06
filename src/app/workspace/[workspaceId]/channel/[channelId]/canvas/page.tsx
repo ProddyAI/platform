@@ -396,8 +396,8 @@ const CanvasPage = () => {
 									toast.error("Failed to update canvas title");
 								}
 							}}
-							showFullScreenToggle={true}
-							showTags={true} // You can track canvas changes here
+							showFullScreenToggle
+							showTags // You can track canvas changes here
 							tags={activeCanvas.tags || []}
 							title={activeCanvas.canvasName}
 							toggleFullScreen={toggleFullScreen}

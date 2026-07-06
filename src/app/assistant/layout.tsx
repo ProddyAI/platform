@@ -7,5 +7,5 @@ export default function AssistantLayout({ children }: PropsWithChildren) {
 	// Set document title for the assistant page
 	useDocumentTitle("Assistant");
 
-	return <>{children}</>;
+	return children;
 }

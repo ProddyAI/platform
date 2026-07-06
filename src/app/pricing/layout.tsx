@@ -7,5 +7,5 @@ export default function PricingLayout({ children }: PropsWithChildren) {
 	// Set document title for the pricing page
 	useDocumentTitle("Pricing");
 
-	return <>{children}</>;
+	return children;
 }

@@ -7,5 +7,5 @@ export default function PrivacyLayout({ children }: PropsWithChildren) {
 	// Set document title for the privacy page
 	useDocumentTitle("Privacy Policy");
 
-	return <>{children}</>;
+	return children;
 }
