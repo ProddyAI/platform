@@ -1,12 +1,19 @@
 "use client";
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import { Loader, Smile, Trash, TriangleAlert, Upload, X } from "lucide-react";
+import {
+	ChevronDown,
+	Loader,
+	Smile,
+	Trash,
+	TriangleAlert,
+	Upload,
+	X,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { type PropsWithChildren, useEffect, useRef, useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { EmojiPopover } from "@/components/pickers/emoji-popover";
@@ -837,7 +844,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 								/>
 								<span className="truncate"># {channel.name}</span>
 							</div>
-							<FaChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
+							<ChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
 						</Button>
 					</DialogTrigger>
 

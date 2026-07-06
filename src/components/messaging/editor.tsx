@@ -7,7 +7,9 @@ import {
 	Hash,
 	ImageIcon,
 	PaintBucket,
+	Send,
 	Smile,
+	Type,
 	Video,
 	XIcon,
 } from "lucide-react";
@@ -25,8 +27,6 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { MdSend } from "react-icons/md";
-import { PiTextAa } from "react-icons/pi";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -44,7 +44,7 @@ import { useCreateNote } from "@/features/notes/api/use-create-note";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { createMentionElement } from "@/lib/client/mention-handler";
-import { cn } from "@/lib/utils";
+import { cn, formatFileSize } from "@/lib/utils";
 import { Hint } from "../hint";
 import { CalendarPicker } from "../pickers/calendar-picker";
 import { ChannelPicker } from "../pickers/channel-picker";
@@ -636,13 +636,6 @@ const Editor = ({
 		return attachments;
 	}, [contextMessages]);
 
-	const formatFileSize = (bytes?: number) => {
-		if (!bytes || Number.isNaN(bytes)) return "Unknown size";
-		if (bytes < 1024) return `${bytes} B`;
-		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-	};
-
 	const createNoteReferenceMessage = async (
 		noteId: Id<"notes">,
 		noteTitle: string
@@ -1189,7 +1182,7 @@ const Editor = ({
 							size="iconSm"
 							variant="ghost"
 						>
-							<PiTextAa className="size-3.5 md:size-4" />
+							<Type className="size-3.5 md:size-4" />
 						</Button>
 					</Hint>
 
@@ -1330,7 +1323,7 @@ const Editor = ({
 							size="iconSm"
 							title="Send Message"
 						>
-							<MdSend className="size-3.5 md:size-4" />
+							<Send className="size-3.5 md:size-4" />
 						</Button>
 					)}
 				</div>

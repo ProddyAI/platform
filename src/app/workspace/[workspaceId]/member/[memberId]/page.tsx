@@ -1,8 +1,7 @@
 "use client";
 
-import { AlertTriangle, Loader } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
 import { toast } from "sonner";
 
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -111,7 +110,7 @@ const MemberIdPage = () => {
 						<AvatarFallback>{avatarFallback}</AvatarFallback>
 					</Avatar>
 					<span className="truncate">{member?.user.name || "Member"}</span>
-					<FaChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
+					<ChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
 				</Button>
 			</WorkspaceToolbar>
 
