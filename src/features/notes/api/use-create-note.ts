@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import type { CreateNoteRequest } from "../types/index";
+import type { CreateNoteRequest } from "../types";
 
 type ResponseType = Id<"notes"> | null;
 

@@ -2,7 +2,7 @@ import { useMutation } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
 
 import { api } from "@/../convex/_generated/api";
-import type { UpdateNoteRequest } from "../types/index";
+import type { UpdateNoteRequest } from "../types";
 
 type ResponseType = boolean | null;
 
