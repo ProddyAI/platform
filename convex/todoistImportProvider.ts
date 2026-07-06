@@ -11,6 +11,7 @@
  */
 
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import {
 	chunkArray,
 	type ExternalChannel,
@@ -497,9 +498,9 @@ export async function executeTodoistImport(
 			}
 
 			try {
-				const channelId = await storeProject(todoistCtx, project);
-				todoistCtx.projectMap.set(project.externalId, channelId);
-				result.itemsCreated.push(channelId);
+				const categoryId = await storeProjectAsCategory(todoistCtx, project);
+				todoistCtx.projectMap.set(project.externalId, categoryId);
+				result.itemsCreated.push(categoryId);
 
 				await ctx.updateProgress({
 					itemsImported: index + 1,
@@ -572,76 +573,90 @@ export async function executeTodoistImport(
 	return result;
 }
 
+// ============================================================================
+// STORAGE HELPERS
+// ============================================================================
+
+const DEFAULT_CATEGORY_COLOR = "#808080";
+
+/** Map Todoist project color names to hex for Tasks-feature categories. */
+const TODOIST_COLOR_HEX: Record<string, string> = {
+	berry_red: "#b8256f",
+	red: "#db4035",
+	orange: "#ff9933",
+	yellow: "#fad000",
+	olive_green: "#afb83b",
+	lime_green: "#7ecc49",
+	green: "#299438",
+	mint_green: "#6accbc",
+	teal: "#158fad",
+	sky_blue: "#14aaf5",
+	light_blue: "#96c3eb",
+	blue: "#4073ff",
+	grape: "#884dff",
+	violet: "#af38eb",
+	lavender: "#eb96eb",
+	magenta: "#e05194",
+	salmon: "#ff8d85",
+	charcoal: "#808080",
+	grey: "#b8b8b8",
+	taupe: "#ccac93",
+};
+
 /**
- * Store a project in the database (idempotent).
- * Checks for existing channels by external ID to prevent duplicates.
+ * Map a Todoist priority (1 = default … 4 = urgent) to a Tasks priority.
+ * Priority 1 (default) maps to no explicit priority.
  */
-async function storeProject(
-	ctx: TodoistImportContext,
-	project: ExternalChannel
-): Promise<string> {
-	const idempotencyKey = generateIdempotencyKey(
-		"todoist",
-		ctx.workspaceId,
-		project.externalId,
-		"channel"
-	);
-
-	// Check if project already exists by external ID
-	const existingChannel = (await ctx.runQuery(
-		internal.importIntegrations.getChannelByExternalId,
-		{
-			workspaceId: ctx.workspaceId,
-			externalId: project.externalId,
-		}
-	)) as any;
-
-	if (existingChannel) {
-		// Update project name if it changed (user might have renamed it)
-		if (existingChannel.name !== project.name) {
-			await ctx.runMutation(
-				internal.importIntegrations.updateImportedChannelName,
-				{
-					channelId: existingChannel._id,
-					name: project.name,
-				}
-			);
-		}
-		await ctx.log(
-			"info",
-			`Project ${project.name} already exists, using existing`
-		);
-		ctx.projectMap.set(project.externalId, existingChannel._id);
-		return existingChannel._id;
+function mapTodoistPriority(
+	priority?: number
+): "low" | "medium" | "high" | undefined {
+	switch (priority) {
+		case 4:
+			return "high";
+		case 3:
+			return "medium";
+		case 2:
+			return "low";
+		default:
+			return undefined;
 	}
-
-	// Create channel in database
-	const channelId = await ctx.runMutation<string>(
-		internal.importIntegrations.storeImportedChannel,
-		{
-			workspaceId: ctx.workspaceId,
-			memberId: ctx.memberId,
-			externalId: project.externalId,
-			idempotencyKey,
-			name: project.name,
-			type: project.type,
-			platform: "todoist",
-			description: project.description,
-			metadata: project.metadata,
-		}
-	);
-
-	await ctx.log("info", `Created project ${project.name}`);
-	return channelId;
 }
 
 /**
- * Store a task in the database (idempotent).
- * Checks for existing messages by external ID to prevent duplicates.
+ * Map a Todoist project to a task category (idempotent by name). Returns the
+ * internal category id used to group the project's imported tasks.
+ */
+async function storeProjectAsCategory(
+	ctx: TodoistImportContext,
+	project: ExternalChannel
+): Promise<string> {
+	const todoistColor = (project.metadata as { color?: string } | undefined)
+		?.color;
+	const color =
+		(todoistColor && TODOIST_COLOR_HEX[todoistColor]) || DEFAULT_CATEGORY_COLOR;
+
+	const categoryId = await ctx.runMutation<string>(
+		internal.importTasks.getOrCreateImportedCategory,
+		{
+			workspaceId: ctx.workspaceId,
+			memberId: ctx.memberId,
+			name: project.name,
+			color,
+		}
+	);
+
+	ctx.projectMap.set(project.externalId, categoryId);
+	await ctx.log("info", `Mapped project ${project.name} to task category`);
+	return categoryId;
+}
+
+/**
+ * Store a Todoist task as a Task in the Tasks feature (idempotent).
+ * Tasks are grouped under the category mapped from their Todoist project.
  */
 async function storeTask(
 	ctx: TodoistImportContext,
-	provider: TodoistImportProvider,
+	_provider: TodoistImportProvider,
 	task: TodoistTask,
 	result: ImportResult
 ): Promise<void> {
@@ -649,121 +664,65 @@ async function storeTask(
 		"todoist",
 		ctx.workspaceId,
 		task.id,
-		"message"
+		"task"
 	);
 
-	// Check if task already exists
-	const existingMessage = (await ctx.runQuery(
-		internal.importIntegrations.getMessageByExternalId,
-		{
-			workspaceId: ctx.workspaceId,
-			externalId: task.id,
-		}
-	)) as any;
-
-	if (existingMessage) {
-		ctx.taskMap.set(task.id, existingMessage._id);
-		return; // Skip, already imported
-	}
-
-	// Get channel ID from project map
-	const channelId = ctx.projectMap.get(task.project_id);
-	if (!channelId) {
-		const warning = `Project not found for task: ${task.content}`;
-		result.warnings?.push(warning);
-		await ctx.log("warn", warning);
+	// Skip tasks that were already imported.
+	const existingTaskId = await ctx.runQuery(
+		internal.importTasks.getImportedTaskId,
+		{ idempotencyKey }
+	);
+	if (existingTaskId) {
+		ctx.taskMap.set(task.id, existingTaskId as string);
 		return;
 	}
 
-	// Build task content with metadata
-	let body = task.content;
-	if (task.description) {
-		body += `\n\n${task.description}`;
-	}
+	// Category mapped from the task's Todoist project (undefined for tasks with
+	// no matching project — still imported, just uncategorised).
+	const categoryId = ctx.projectMap.get(task.project_id);
 
-	// Get labels as tags
-	const tags = task.labels
-		?.map((labelId) => ctx.labelMap.get(labelId))
-		.filter(Boolean) as string[];
+	const completed = !!task.completed_at;
 
-	// Store task
-	const messageId = await ctx.runMutation<string>(
-		internal.importIntegrations.storeImportedMessage,
+	const description =
+		task.description && task.description.trim().length > 0
+			? task.description
+			: undefined;
+
+	const dueMs = task.due?.date ? new Date(task.due.date).getTime() : undefined;
+	const dueDate = dueMs !== undefined && !Number.isNaN(dueMs) ? dueMs : undefined;
+
+	// In Todoist API v1 a task's `labels` are label names (not ids).
+	const tags = (task.labels ?? []).filter(Boolean);
+
+	const createdMs = task.created_at
+		? new Date(task.created_at).getTime()
+		: Date.now();
+
+	const taskId = await ctx.runMutation<string>(
+		internal.importTasks.storeImportedTask,
 		{
 			workspaceId: ctx.workspaceId,
 			memberId: ctx.memberId,
-			channelId: channelId as any,
+			platform: "todoist",
 			externalId: task.id,
 			idempotencyKey,
-			body,
-			platform: "todoist",
-			timestamp: task.created_at
-				? new Date(task.created_at).getTime()
-				: Date.now(),
+			title: task.content,
+			description,
+			status: completed ? "completed" : "not_started",
+			completed,
+			priority: mapTodoistPriority(task.priority),
+			dueDate,
+			categoryId: categoryId as Id<"categories"> | undefined,
+			tags,
+			timestamp: Number.isNaN(createdMs) ? Date.now() : createdMs,
 			metadata: {
-				priority: task.priority,
-				due: task.due,
-				labels: tags,
-				isCompleted: !!task.completed_at,
-				completedAt: task.completed_at,
 				sectionId: task.section_id,
 				parentId: task.parent_id,
+				todoistPriority: task.priority,
 			},
 		}
 	);
 
-	ctx.taskMap.set(task.id, messageId);
-	result.messagesCreated++;
-
-	// Fetch and store comments if enabled
-	if (ctx.config.includeComments) {
-		try {
-			const comments = await provider.fetchTaskComments(ctx, task.id);
-			for (const comment of comments) {
-				await storeComment(ctx, messageId, comment, result);
-			}
-		} catch (error) {
-			const errorMsg = `Failed to fetch comments for task ${task.content}: ${error instanceof Error ? error.message : "Unknown error"}`;
-			result.warnings?.push(errorMsg);
-			await ctx.log("warn", errorMsg, error);
-		}
-	}
-}
-
-/**
- * Store a comment as a reply to a task.
- */
-async function storeComment(
-	ctx: TodoistImportContext,
-	parentMessageId: string,
-	comment: TodoistComment,
-	result: ImportResult
-): Promise<void> {
-	const idempotencyKey = generateIdempotencyKey(
-		"todoist",
-		ctx.workspaceId,
-		comment.id,
-		"message"
-	);
-
-	const _messageId = await ctx.runMutation<string>(
-		internal.importIntegrations.storeImportedMessage,
-		{
-			workspaceId: ctx.workspaceId,
-			memberId: ctx.memberId,
-			channelId: "" as any, // Not needed for replies
-			externalId: comment.id,
-			idempotencyKey,
-			body: comment.content,
-			platform: "todoist",
-			timestamp: new Date(comment.posted_at).getTime(),
-			parentMessageId: parentMessageId as any,
-			metadata: {
-				userId: comment.user_id,
-				attachment: comment.attachment,
-			},
-		}
-	);
-
+	ctx.taskMap.set(task.id, taskId);
 	result.messagesCreated++;
 }

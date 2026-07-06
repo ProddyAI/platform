@@ -1239,6 +1239,33 @@ const schema = defineSchema({
 		.index("by_idempotency_key", ["idempotencyKey"])
 		.index("by_platform_external_id", ["platform", "externalId"]),
 
+	// Idempotency store for items imported into the personal Tasks feature
+	// (the `tasks` table). Distinct from import_issue_metadata, which targets
+	// the `issues` table.
+	import_task_metadata: defineTable({
+		workspaceId: v.id("workspaces"),
+		jobId: v.optional(v.id("import_jobs")),
+		externalId: v.string(),
+		idempotencyKey: v.string(),
+		platform: v.union(
+			v.literal("slack"),
+			v.literal("todoist"),
+			v.literal("linear"),
+			v.literal("notion"),
+			v.literal("miro"),
+			v.literal("clickup")
+		),
+		internalTaskId: v.id("tasks"),
+		authorMemberId: v.optional(v.id("members")),
+		timestamp: v.number(),
+		metadata: v.optional(v.any()),
+		importedAt: v.number(),
+	})
+		.index("by_workspace_id", ["workspaceId"])
+		.index("by_job_id", ["jobId"])
+		.index("by_idempotency_key", ["idempotencyKey"])
+		.index("by_platform_external_id", ["platform", "externalId"]),
+
 	import_file_metadata: defineTable({
 		workspaceId: v.id("workspaces"),
 		jobId: v.optional(v.id("import_jobs")),

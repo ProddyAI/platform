@@ -56,6 +56,7 @@ import type * as http from "../http.js";
 import type * as hybridRag from "../hybridRag.js";
 import type * as importIntegrations from "../importIntegrations.js";
 import type * as importPipeline from "../importPipeline.js";
+import type * as importTasks from "../importTasks.js";
 import type * as integrations from "../integrations.js";
 import type * as lib_issueBlocking from "../lib/issueBlocking.js";
 import type * as lib_safeDelete from "../lib/safeDelete.js";
@@ -153,6 +154,7 @@ declare const fullApi: ApiFromModules<{
   hybridRag: typeof hybridRag;
   importIntegrations: typeof importIntegrations;
   importPipeline: typeof importPipeline;
+  importTasks: typeof importTasks;
   integrations: typeof integrations;
   "lib/issueBlocking": typeof lib_issueBlocking;
   "lib/safeDelete": typeof lib_safeDelete;

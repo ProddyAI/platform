@@ -635,7 +635,7 @@ export function generateIdempotencyKey(
 	platform: ImportPlatform,
 	workspaceId: string,
 	externalId: string,
-	type: "user" | "channel" | "message" | "file" | "issue" | "comment"
+	type: "user" | "channel" | "message" | "file" | "issue" | "comment" | "task"
 ): string {
 	return `${platform}:${workspaceId}:${type}:${externalId}`;
 }
