@@ -7,15 +7,13 @@
 		"node": ">=20"
 	},
 	"scripts": {
-		"dev": "next dev",
-		"dev:https": "next dev --experimental-https",
 		"next": "next dev --turbo --experimental-https",
 		"convex": "convex dev",
 		"type": "tsc --noEmit",
+		"test": "bun test tests",
 		"check": "biome check --write --unsafe .",
 		"start": "next start",
-		"build": "tsc --noEmit && next build",
-		"test": "bun test tests"
+		"build": "tsc --noEmit && next build"
 	},
 	"author": {
 		"name": "ProddyAI",
