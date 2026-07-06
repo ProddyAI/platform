@@ -133,7 +133,7 @@ export const RoadmapPanel = ({ projectId, workspaceId }: RoadmapPanelProps) => {
 			<div className="flex-1 overflow-auto p-4">
 				{isLoading ? (
 					<div className="space-y-3">
-						{/* Fixed-size decorative placeholders, no underlying data — index is a safe key */}
+						{/* Fixed-size decorative placeholders with no underlying data (JS-0437 exemption) — index is a safe key here */}
 						{Array.from({ length: 3 }).map((_, index) => (
 							<Skeleton className="h-40 w-full rounded-lg" key={index} />
 						))}
