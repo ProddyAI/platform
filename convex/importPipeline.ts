@@ -100,6 +100,8 @@ export interface ImportResult {
 	itemsCreated: string[];
 	/** Number of messages/sub-items created */
 	messagesCreated: number;
+	/** Number of tasks created (imported into the Tasks feature) */
+	tasksCreated?: number;
 	/** Number of users matched */
 	usersMatched: number;
 	/** Number of files imported */

@@ -1078,6 +1078,7 @@ export const processSlackImport = internalAction({
 				result: {
 					channelsCreated: result.itemsCreated as any[],
 					messagesCreated: result.messagesCreated,
+					tasksCreated: result.tasksCreated ?? 0,
 					usersMatched: result.usersMatched,
 					filesImported: result.filesImported,
 					errors: result.errors,
@@ -1244,6 +1245,7 @@ export const processTodoistImport = internalAction({
 				result: {
 					channelsCreated: result.itemsCreated as any[],
 					messagesCreated: result.messagesCreated,
+					tasksCreated: result.tasksCreated ?? 0,
 					usersMatched: result.usersMatched,
 					filesImported: result.filesImported,
 					errors: result.errors,
@@ -1424,6 +1426,7 @@ export const processLinearImport = internalAction({
 				result: {
 					channelsCreated: result.itemsCreated as any[],
 					messagesCreated: result.messagesCreated,
+					tasksCreated: result.tasksCreated ?? 0,
 					usersMatched: result.usersMatched,
 					filesImported: result.filesImported,
 					errors: result.errors,
@@ -1893,6 +1896,7 @@ export const storeImportResult = internalMutation({
 		result: v.object({
 			channelsCreated: v.array(v.id("channels")),
 			messagesCreated: v.number(),
+			tasksCreated: v.optional(v.number()),
 			usersMatched: v.number(),
 			filesImported: v.number(),
 			errors: v.optional(v.array(v.string())),

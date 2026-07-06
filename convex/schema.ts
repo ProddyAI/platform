@@ -1148,6 +1148,7 @@ const schema = defineSchema({
 			v.object({
 				channelsCreated: v.array(v.id("channels")),
 				messagesCreated: v.number(),
+				tasksCreated: v.optional(v.number()),
 				usersMatched: v.number(),
 				filesImported: v.number(),
 				errors: v.optional(v.array(v.string())),

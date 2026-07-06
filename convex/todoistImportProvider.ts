@@ -423,6 +423,7 @@ export async function executeTodoistImport(
 	const result: ImportResult = {
 		itemsCreated: [],
 		messagesCreated: 0,
+		tasksCreated: 0,
 		usersMatched: 0,
 		filesImported: 0,
 		errors: [],
@@ -546,8 +547,8 @@ export async function executeTodoistImport(
 			}
 
 			await ctx.updateProgress({
-				subItemsImported: result.messagesCreated,
-				currentStep: `Processed ${result.messagesCreated}/${tasks.length} tasks`,
+				subItemsImported: result.tasksCreated ?? 0,
+				currentStep: `Processed ${result.tasksCreated ?? 0}/${tasks.length} tasks`,
 			});
 		}
 
@@ -560,7 +561,7 @@ export async function executeTodoistImport(
 		await ctx.log("info", "Todoist import completed", {
 			duration: formatDuration(duration),
 			projects: todoistCtx.projectMap.size,
-			tasks: result.messagesCreated,
+			tasks: result.tasksCreated ?? 0,
 			users: result.usersMatched,
 			errors: result.errors?.length || 0,
 		});
@@ -725,5 +726,5 @@ async function storeTask(
 	);
 
 	ctx.taskMap.set(task.id, taskId);
-	result.messagesCreated++;
+	result.tasksCreated = (result.tasksCreated ?? 0) + 1;
 }

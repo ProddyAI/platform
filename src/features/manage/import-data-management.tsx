@@ -486,17 +486,20 @@ export const ImportDataManagement = ({
 										)}
 										{latestJob.status === "completed" && latestJob.result && (
 											<p className="text-xs text-muted-foreground">
-												{latestJob.result?.channelsCreated?.length ?? 0}{" "}
-												{latestJob.platform === "linear"
-													? "projects"
-													: "channels"}
-												,{" "}
-												{(
-													latestJob.result?.messagesCreated ?? 0
-												).toLocaleString()}{" "}
-												{latestJob.platform === "linear"
-													? "issues"
-													: "messages"}
+												{latestJob.platform === "todoist" ? (
+												<>
+													{(latestJob.result?.tasksCreated ?? 0).toLocaleString()}{" "}
+													tasks
+												</>
+											) : (
+												<>
+													{latestJob.result?.channelsCreated?.length ?? 0}{" "}
+													{latestJob.platform === "linear" ? "projects" : "channels"}
+													,{" "}
+													{(latestJob.result?.messagesCreated ?? 0).toLocaleString()}{" "}
+													{latestJob.platform === "linear" ? "issues" : "messages"}
+												</>
+											)}
 											</p>
 										)}
 									</div>
@@ -562,20 +565,23 @@ export const ImportDataManagement = ({
 											<TableCell>
 												{job.result ? (
 													<div className="text-xs space-y-1">
-														<div>
-															{job.result?.channelsCreated?.length ?? 0}{" "}
-															{job.platform === "linear"
-																? "projects"
-																: "channels"}
-														</div>
-														<div>
-															{(
-																job.result?.messagesCreated ?? 0
-															).toLocaleString()}{" "}
-															{job.platform === "linear"
-																? "issues"
-																: "messages"}
-														</div>
+														{job.platform === "todoist" ? (
+											<div>
+												{(job.result?.tasksCreated ?? 0).toLocaleString()}{" "}
+												tasks
+											</div>
+										) : (
+											<>
+												<div>
+													{job.result?.channelsCreated?.length ?? 0}{" "}
+													{job.platform === "linear" ? "projects" : "channels"}
+												</div>
+												<div>
+													{(job.result?.messagesCreated ?? 0).toLocaleString()}{" "}
+													{job.platform === "linear" ? "issues" : "messages"}
+												</div>
+											</>
+										)}
 													</div>
 												) : (
 													<span className="text-sm text-muted-foreground">
