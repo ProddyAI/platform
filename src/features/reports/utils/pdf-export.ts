@@ -22,9 +22,9 @@ interface MetricItem {
 
 export class PDFExporter {
 	private doc: jsPDF;
-	private currentY: number = 20;
-	private pageHeight: number = 280;
-	private margin: number = 20;
+	private currentY = 20;
+	private pageHeight = 280;
+	private margin = 20;
 
 	constructor() {
 		this.doc = new jsPDF();
@@ -298,10 +298,12 @@ export class PDFExporter {
 				) {
 					this.addChartPlaceholder(
 						"Messages Over Time",
-						data.messages.messagesByDate.map((item: any) => ({
-							label: format(new Date(item.date), "MMM dd"),
-							value: item.count,
-						}))
+						data.messages.messagesByDate.map(
+							(item: { date: string | number; count: number }) => ({
+								label: format(new Date(item.date), "MMM dd"),
+								value: item.count,
+							})
+						)
 					);
 				}
 
@@ -309,7 +311,10 @@ export class PDFExporter {
 					this.addSubtitle("Top Message Senders");
 					const senderRows = data.messages.topSenders
 						.slice(0, 10)
-						.map((sender: any) => [sender.name, sender.count.toString()]);
+						.map((sender: { name: string; count: number }) => [
+							sender.name,
+							sender.count.toString(),
+						]);
 					this.addTable(["User", "Messages"], senderRows);
 				}
 

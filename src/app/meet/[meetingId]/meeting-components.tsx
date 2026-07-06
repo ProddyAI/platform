@@ -553,7 +553,7 @@ export const NotesSidebar = ({
 
 			await finalizeTranscript({ roomId });
 			await generateAI({
-				noteId: noteId!,
+				noteId,
 				transcript: currentTranscript,
 				membersContext: membersContext || undefined,
 			});
@@ -577,8 +577,7 @@ export const NotesSidebar = ({
 			title: `Meeting Notes #${currentGen.generationNumber}`,
 			summary: currentGen.summary,
 			actionItems: currentGen.actionItems.map(
-				(a: any) =>
-					`${a.title}${a.assignee ? ` (Assigned to: ${a.assignee})` : ""}`
+				(a) => `${a.title}${a.assignee ? ` (Assigned to: ${a.assignee})` : ""}`
 			),
 			decisions: currentGen.decisions,
 			date: new Date(currentGen.createdAt).toLocaleString(),

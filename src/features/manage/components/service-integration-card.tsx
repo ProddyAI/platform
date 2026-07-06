@@ -35,7 +35,7 @@ type AuthConfig = {
 		| "no_auth";
 	authScheme?: string;
 	composioAuthConfigId: string;
-	credentials?: any;
+	credentials?: unknown;
 	isComposioManaged: boolean;
 	isDisabled: boolean;
 	createdAt: number;
@@ -52,7 +52,7 @@ type ConnectedAccount = {
 	toolkit: string;
 	status: "ACTIVE" | "PENDING" | "EXPIRED" | "ERROR" | "DISABLED";
 	statusReason?: string;
-	metadata?: any;
+	metadata?: unknown;
 	testRequestEndpoint?: string;
 	isDisabled: boolean;
 	connectedAt: number;

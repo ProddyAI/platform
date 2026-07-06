@@ -126,7 +126,7 @@ export const useMessageActions = ({
 		try {
 			await createTaskFromMessage({
 				messageId,
-				workspaceId: workspaceId as any,
+				workspaceId: workspaceId as Id<"workspaces">,
 				title: taskModal.title,
 				dueDate: taskModal.dueDate
 					? new Date(taskModal.dueDate).getTime()

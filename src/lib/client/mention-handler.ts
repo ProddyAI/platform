@@ -63,9 +63,10 @@ export const addMentionClickHandlers = (container: HTMLElement): void => {
 // Add a global click handler for mentions
 export const setupGlobalMentionHandler = (): void => {
 	if (typeof window === "undefined") return;
-	if ((window as any).__mentionHandlerSetup) return;
+	const globalWindow = window as Window & { __mentionHandlerSetup?: boolean };
+	if (globalWindow.__mentionHandlerSetup) return;
 
-	(window as any).__mentionHandlerSetup = true;
+	globalWindow.__mentionHandlerSetup = true;
 
 	document.addEventListener("click", (e) => {
 		const target = e.target as HTMLElement;

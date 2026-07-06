@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	type Call,
 	PaginatedGridLayout,
 	SpeakerLayout,
 	SpeakingWhileMutedNotification,
@@ -52,9 +53,9 @@ export default function MeetingPage({
 	params: { meetingId: string };
 }) {
 	const [client, setClient] = useState<StreamVideoClient | null>(null);
-	const [call, setCall] = useState<any>(null);
+	const [call, setCall] = useState<Call | null>(null);
 	const clientRef = useRef<StreamVideoClient | null>(null);
-	const callRef = useRef<any>(null);
+	const callRef = useRef<Call | null>(null);
 	const { isAuthenticated, isLoading } = useConvexAuth();
 	const user = useQuery(api.workspace.users.current);
 	const router = useRouter();
@@ -519,6 +520,18 @@ export default function MeetingPage({
 	);
 }
 
+interface BottomBarControlsProps {
+	handRaised: boolean;
+	toggleHandRaise: () => void;
+	isRecording: boolean;
+	handleRecordingChange: (recording: boolean) => void;
+	handleTranscriptUpdate: (transcript: string) => void;
+	params: { meetingId: string };
+	user: { name?: string | null };
+	workspaceId: string;
+	handleLeave: () => void;
+}
+
 function BottomBarControls({
 	handRaised,
 	toggleHandRaise,
@@ -529,7 +542,7 @@ function BottomBarControls({
 	user,
 	workspaceId,
 	handleLeave,
-}: any) {
+}: BottomBarControlsProps) {
 	const { useMicrophoneState, useCameraState, useScreenShareState } =
 		useCallStateHooks();
 	const { isMute: micMuted, microphone } = useMicrophoneState();

@@ -548,7 +548,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	);
 
 	const { results: searchResults, isLoading: isSearching } = useSearchMessages({
-		workspaceId: workspaceId as any,
+		workspaceId: workspaceId as Id<"workspaces">,
 		query: useAI || isBoardPage ? "" : searchQuery,
 		enabled: (!useAI && !isBoardPage && searchQuery.trim().length > 0) || false,
 	});
@@ -558,7 +558,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		isLoading: isAISearching,
 		result: aiResult,
 		reset: resetAISearch,
-	} = useAISearch(workspaceId as any);
+	} = useAISearch(workspaceId as Id<"workspaces">);
 
 	// Reset search state when dialog closes
 	useEffect(() => {

@@ -107,7 +107,9 @@ export const LiveSidebar = ({
 			const delta = JSON.parse(content);
 			if (delta.ops) {
 				return delta.ops
-					.map((op: any) => (typeof op.insert === "string" ? op.insert : ""))
+					.map((op: { insert?: unknown }) =>
+						typeof op.insert === "string" ? op.insert : ""
+					)
 					.join("")
 					.replace(/\n/g, " ")
 					.trim()

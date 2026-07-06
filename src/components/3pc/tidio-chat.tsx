@@ -15,7 +15,7 @@ declare global {
 			open: () => void;
 			on: (event: string, callback: () => void) => void;
 			isOpen: () => boolean;
-			setVisitorData: (data: Record<string, any>) => void;
+			setVisitorData: (data: Record<string, unknown>) => void;
 			addVisitorTags: (tags: string[]) => void;
 		};
 		tidioIdentify?: {

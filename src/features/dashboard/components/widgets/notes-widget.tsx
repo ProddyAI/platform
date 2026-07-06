@@ -164,7 +164,7 @@ export const NotesWidget = ({
 													insert?: string | object;
 													delete?: number;
 													retain?: number;
-													attributes?: Record<string, any>;
+													attributes?: Record<string, unknown>;
 												}
 
 												// Handle different content formats

@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import VerificationInput from "react-verification-input";
 import { toast } from "sonner";
 
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { useGetWorkspaceInfo } from "@/features/workspaces/api/use-get-workspace-info";
 import { useJoin } from "@/features/workspaces/api/use-join";
@@ -27,7 +28,9 @@ const JoinWorkspaceIdPage = () => {
 	const verificationAttemptedRef = useRef(false);
 
 	const { mutate, isPending } = useJoin();
-	const { data, isLoading } = useGetWorkspaceInfo({ id: workspaceId as any });
+	const { data, isLoading } = useGetWorkspaceInfo({
+		id: workspaceId as Id<"workspaces">,
+	});
 
 	const isMember = useMemo(() => data?.isMember, [data?.isMember]);
 
@@ -85,7 +88,7 @@ const JoinWorkspaceIdPage = () => {
 	const handleComplete = useCallback(
 		(value: string) => {
 			mutate(
-				{ workspaceId: workspaceId as any, joinCode: value },
+				{ workspaceId: workspaceId as Id<"workspaces">, joinCode: value },
 				{
 					onSuccess: (id) => {
 						router.replace(`/workspace/${id}`);

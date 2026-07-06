@@ -39,7 +39,7 @@ interface CalendarEvent {
 
 interface CalendarPreviewWidgetProps {
 	workspaceId: Id<"workspaces">;
-	member: any;
+	member: unknown;
 	isEditMode?: boolean;
 	controls?: React.ReactNode;
 }

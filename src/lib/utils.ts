@@ -157,7 +157,7 @@ export function findLayerAtPoint(
 	layerIds: readonly string[],
 	layers: any, // Use any type to accommodate different map implementations
 	point: Point,
-	tolerance: number = 5 // Tolerance radius in pixels
+	tolerance = 5 // Tolerance radius in pixels
 ): string | null {
 	if (!layerIds || !layers || !point) {
 		return null;

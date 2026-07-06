@@ -101,7 +101,7 @@ const ManagePage = () => {
 		workspaceId,
 	});
 	const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
-		id: workspaceId as any,
+		id: workspaceId,
 	});
 
 	if (memberLoading || workspaceLoading) {

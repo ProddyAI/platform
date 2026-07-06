@@ -27,6 +27,12 @@ interface ExportNoteDialogProps {
 	note: Note;
 }
 
+type ExportBlock = {
+	type?: string;
+	content?: string;
+	props?: { level?: number };
+};
+
 export const ExportNoteDialog = ({
 	isOpen,
 	onClose,
@@ -57,7 +63,7 @@ export const ExportNoteDialog = ({
 			try {
 				const content = JSON.parse(note.content);
 				if (Array.isArray(content)) {
-					content.forEach((block: any) => {
+					content.forEach((block: ExportBlock) => {
 						markdown += convertBlockToMarkdown(block);
 					});
 				} else {
@@ -71,7 +77,7 @@ export const ExportNoteDialog = ({
 		return markdown;
 	};
 
-	const convertBlockToMarkdown = (block: any): string => {
+	const convertBlockToMarkdown = (block: ExportBlock): string => {
 		if (!block?.type) return "";
 
 		switch (block.type) {
@@ -123,7 +129,7 @@ export const ExportNoteDialog = ({
 			try {
 				const content = JSON.parse(note.content);
 				if (Array.isArray(content)) {
-					content.forEach((block: any) => {
+					content.forEach((block: ExportBlock) => {
 						html += convertBlockToHTML(block);
 					});
 				} else {
@@ -141,7 +147,7 @@ export const ExportNoteDialog = ({
 		return html;
 	};
 
-	const convertBlockToHTML = (block: any): string => {
+	const convertBlockToHTML = (block: ExportBlock): string => {
 		if (!block?.type) return "";
 
 		switch (block.type) {

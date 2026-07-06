@@ -28,7 +28,7 @@ export function normalizeMermaidCode(input: string): string {
 export async function convertMermaidToExcalidrawScene(
 	mermaidCode: string
 ): Promise<{
-	elements: any[];
+	elements: unknown[];
 	files: unknown;
 }> {
 	// This function is used from client-only flows, but the module can still be

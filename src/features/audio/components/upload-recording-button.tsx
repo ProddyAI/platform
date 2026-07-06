@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle2, Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
@@ -88,7 +89,7 @@ export const UploadRecordingButton = () => {
 
 			const noteId = await saveUploadTranscript({
 				roomId,
-				workspaceId: workspaceId as any,
+				workspaceId: workspaceId as Id<"workspaces">,
 				transcript,
 			});
 
@@ -107,11 +108,12 @@ export const UploadRecordingButton = () => {
 				setStep("idle");
 				setFileName("");
 			}, 3000);
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Upload pipeline error:", error);
-			setErrorMsg(error.message || "An error occurred");
+			const message = (error as { message?: string }).message;
+			setErrorMsg(message || "An error occurred");
 			setStep("error");
-			toast.error(error.message || "Upload failed");
+			toast.error(message || "Upload failed");
 
 			// Reset after 5 seconds
 			setTimeout(() => {

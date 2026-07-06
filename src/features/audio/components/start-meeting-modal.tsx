@@ -92,7 +92,7 @@ export const StartMeetingModal = ({
 			if (selectedMembers.size > 0 || channelId || conversationId) {
 				// Send unified message payload to chat
 				await createMessage({
-					workspaceId: workspaceId as any,
+					workspaceId: workspaceId as Id<"workspaces">,
 					channelId,
 					conversationId,
 					body: JSON.stringify({

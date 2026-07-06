@@ -1,9 +1,9 @@
 export function generatePlaceholderImage(
 	text: string,
-	width: number = 40,
-	height: number = 40,
-	bgColor: string = "#4f46e5",
-	textColor: string = "#ffffff"
+	width = 40,
+	height = 40,
+	bgColor = "#4f46e5",
+	textColor = "#ffffff"
 ): string {
 	if (typeof window === "undefined" || typeof document === "undefined") {
 		return generateSVGPlaceholder(text, width, height, bgColor, textColor);
@@ -40,10 +40,10 @@ export function generatePlaceholderImage(
  */
 function generateSVGPlaceholder(
 	text: string,
-	width: number = 40,
-	height: number = 40,
-	bgColor: string = "#4f46e5",
-	textColor: string = "#ffffff"
+	width = 40,
+	height = 40,
+	bgColor = "#4f46e5",
+	textColor = "#ffffff"
 ): string {
 	const svg = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">

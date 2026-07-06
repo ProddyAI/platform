@@ -179,7 +179,7 @@ export const ExcalidrawCanvas = () => {
 
 	const currentUser = useQuery(api.workspace.users.current);
 
-	const ExcalidrawSidebar = excalidrawLibRef.current?.Sidebar as any;
+	const ExcalidrawSidebar = excalidrawLibRef.current?.Sidebar;
 
 	useEffect(() => {
 		let cancelled = false;
@@ -221,14 +221,12 @@ export const ExcalidrawCanvas = () => {
 
 	useEffect(() => {
 		const nextVersion =
-			typeof (storedScene as any)?.version === "number"
-				? (storedScene as any).version
-				: 0;
+			typeof storedScene?.version === "number" ? storedScene.version : 0;
 		currentVersionRef.current = nextVersion;
 	}, [storedScene]);
 
 	const ensureExcalidrawStorage = useMutation(({ storage }) => {
-		const existing = storage.get("excalidraw") as any;
+		const existing = storage.get("excalidraw");
 		if (existing) return;
 
 		storage.set(
@@ -290,19 +288,13 @@ export const ExcalidrawCanvas = () => {
 
 		const raw = typeof existing === "object" && existing ? existing : {};
 		const migrated: PersistedScene = {
-			elements: Array.isArray((raw as any).elements)
-				? (raw as any).elements
-				: [],
+			elements: Array.isArray(raw.elements) ? raw.elements : [],
 			appState: {
 				...DEFAULT_APP_STATE,
-				...sanitizeAppState((raw as any).appState),
+				...sanitizeAppState(raw.appState),
 			},
-			files:
-				(raw as any).files && typeof (raw as any).files === "object"
-					? (raw as any).files
-					: {},
-			version:
-				typeof (raw as any).version === "number" ? (raw as any).version : 1,
+			files: raw.files && typeof raw.files === "object" ? raw.files : {},
+			version: typeof raw.version === "number" ? raw.version : 1,
 		};
 
 		storage.set("excalidraw", new LiveObject<PersistedScene>(migrated));
@@ -310,7 +302,7 @@ export const ExcalidrawCanvas = () => {
 	}, []);
 
 	const persistScene = useMutation(({ storage }, scene: PersistedScene) => {
-		const excalidraw = storage.get("excalidraw") as any;
+		const excalidraw = storage.get("excalidraw");
 
 		const safeScene: PersistedScene = {
 			elements: Array.isArray(scene.elements) ? scene.elements : [],
@@ -372,16 +364,16 @@ export const ExcalidrawCanvas = () => {
 			}
 
 			// Add any generated files (e.g. embedded images).
-			const maybeFiles: any = files as any;
+			const maybeFiles = files;
 			if (Array.isArray(maybeFiles)) {
 				api.addFiles(maybeFiles);
 			} else if (maybeFiles && typeof maybeFiles === "object") {
 				const values = Object.values(maybeFiles);
-				if (values.length) api.addFiles(values as any);
+				if (values.length) api.addFiles(values);
 			}
 
 			// Center the generated diagram in the current viewport.
-			const appState: any = api.getAppState();
+			const appState = api.getAppState();
 			const zoom =
 				typeof appState?.zoom?.value === "number" ? appState.zoom.value : 1;
 			const viewportCenterX = -appState.scrollX + appState.width / 2 / zoom;
@@ -391,7 +383,7 @@ export const ExcalidrawCanvas = () => {
 				| ((els: any[]) => [number, number, number, number])
 				| undefined;
 			const [x1, y1, x2, y2] = (getCommonBounds || getCommonBoundsFallback)(
-				newElements as any
+				newElements
 			);
 			const diagramCenterX = (x1 + x2) / 2;
 			const diagramCenterY = (y1 + y2) / 2;
@@ -405,7 +397,7 @@ export const ExcalidrawCanvas = () => {
 				locked: false,
 			}));
 
-			const existing = api.getSceneElements() as any[];
+			const existing = api.getSceneElements();
 			isApplyingRemoteSceneRef.current = true;
 			try {
 				api.updateScene({
@@ -417,8 +409,8 @@ export const ExcalidrawCanvas = () => {
 			}
 
 			toast.success("Diagram added");
-		} catch (err: any) {
-			toast.error(err?.message || "AI Format failed");
+		} catch (err) {
+			toast.error((err as Error)?.message || "AI Format failed");
 		} finally {
 			setIsGenerating(false);
 		}
@@ -484,9 +476,7 @@ export const ExcalidrawCanvas = () => {
 		if (!storedScene) return;
 
 		const version =
-			typeof (storedScene as any).version === "number"
-				? (storedScene as any).version
-				: 0;
+			typeof storedScene.version === "number" ? storedScene.version : 0;
 		if (version === lastAppliedVersionRef.current) return;
 		if (version === lastLocalWriteVersionRef.current) {
 			lastAppliedVersionRef.current = version;
@@ -494,14 +484,12 @@ export const ExcalidrawCanvas = () => {
 		}
 
 		const nextScene = {
-			elements: Array.isArray((storedScene as any).elements)
-				? (storedScene as any).elements
-				: [],
+			elements: Array.isArray(storedScene.elements) ? storedScene.elements : [],
 			appState: {
 				...DEFAULT_APP_STATE,
-				...sanitizeAppState((storedScene as any).appState || {}),
+				...sanitizeAppState(storedScene.appState || {}),
 			},
-			files: (storedScene as any).files || {},
+			files: storedScene.files || {},
 		};
 
 		isApplyingRemoteSceneRef.current = true;
@@ -525,13 +513,13 @@ export const ExcalidrawCanvas = () => {
 
 	// Receive incremental element updates and merge into current scene.
 	useEventListener(({ event }) => {
-		if (!event || (event as any).type !== "excalidraw:delta") return;
+		if (!event || event.type !== "excalidraw:delta") return;
 
 		const api = excalidrawApiRef.current;
 		if (!api) return;
 
-		const incomingElements = Array.isArray((event as any).elements)
-			? (event as any).elements
+		const incomingElements = Array.isArray(event.elements)
+			? event.elements
 			: [];
 		if (!incomingElements.length) return;
 
@@ -657,9 +645,9 @@ export const ExcalidrawCanvas = () => {
 			groupIds: [groupId],
 		} as any;
 
-		const convertToExcalidrawElements = excalidrawLibRef.current
-			?.convertToExcalidrawElements as any;
-		const restoreElements = excalidrawLibRef.current?.restoreElements as any;
+		const convertToExcalidrawElements =
+			excalidrawLibRef.current?.convertToExcalidrawElements;
+		const restoreElements = excalidrawLibRef.current?.restoreElements;
 		const newElements =
 			restoreElements && convertToExcalidrawElements
 				? restoreElements(
@@ -667,18 +655,18 @@ export const ExcalidrawCanvas = () => {
 							shadowSkeleton,
 							rectSkeleton,
 							textSkeleton,
-						]) as any,
+						]),
 						null
 					)
-				: ([shadowSkeleton, rectSkeleton, textSkeleton] as any[]);
-		const existing = api.getSceneElements() as any[];
+				: [shadowSkeleton, rectSkeleton, textSkeleton];
+		const existing = api.getSceneElements();
 
 		const selection = Object.fromEntries(
-			(newElements as any[]).filter((el) => el?.id).map((el) => [el.id, true])
+			newElements.filter((el) => el?.id).map((el) => [el.id, true])
 		);
 
 		api.updateScene({
-			elements: [...existing, ...(newElements as any[])],
+			elements: [...existing, ...newElements],
 			commitToHistory: true,
 			appState: {
 				selectedElementIds: Object.keys(selection).length
@@ -690,7 +678,7 @@ export const ExcalidrawCanvas = () => {
 		// Ensure the inserted note is visible even if the user is panned elsewhere.
 		window.requestAnimationFrame(() => {
 			try {
-				(api as any).scrollToContent?.(newElements as any, { animate: true });
+				(api as any).scrollToContent?.(newElements, { animate: true });
 			} catch {
 				// Best-effort. If scrollToContent isn't available, insertion still works.
 			}
@@ -704,7 +692,7 @@ export const ExcalidrawCanvas = () => {
 			const isTypingTarget =
 				target?.tagName === "INPUT" ||
 				target?.tagName === "TEXTAREA" ||
-				(target as any)?.isContentEditable;
+				target?.isContentEditable;
 			if (isTypingTarget) return;
 			if (e.key.toLowerCase() === "n") {
 				e.preventDefault();
@@ -789,8 +777,8 @@ export const ExcalidrawCanvas = () => {
 							const parentNote = elementsArray.find(
 								(el) =>
 									isStickyNoteElement(el) &&
-									Array.isArray((el as any).groupIds) &&
-									(el as any).groupIds.includes(editingGroupId)
+									Array.isArray(el.groupIds) &&
+									el.groupIds.includes(editingGroupId)
 							);
 							if (parentNote) {
 								const api = excalidrawApiRef.current;
@@ -821,7 +809,7 @@ export const ExcalidrawCanvas = () => {
 						const selectedIds = appState?.selectedElementIds;
 						if (selectedIds && typeof selectedIds === "object") {
 							const selectedKeys = Object.keys(selectedIds).filter(
-								(k) => (selectedIds as any)[k]
+								(k) => selectedIds[k]
 							);
 							const selectedShadow = selectedKeys
 								.map((id) => elementsArray.find((el) => el?.id === id))
@@ -882,12 +870,11 @@ export const ExcalidrawCanvas = () => {
 
 							// Ensure existing shadows participate in group transforms.
 							if (shadow.locked) {
-								const mutateElement = excalidrawLibRef.current
-									?.mutateElement as any;
+								const mutateElement = excalidrawLibRef.current?.mutateElement;
 								if (mutateElement) {
 									mutateElement(shadow, { locked: false }, false);
 								} else {
-									(shadow as any).locked = false;
+									shadow.locked = false;
 								}
 								didSyncDecor = true;
 							}
@@ -900,8 +887,7 @@ export const ExcalidrawCanvas = () => {
 								Math.abs((shadow.width ?? 0) - w) > 0.5 ||
 								Math.abs((shadow.height ?? 0) - h) > 0.5
 							) {
-								const mutateElement = excalidrawLibRef.current
-									?.mutateElement as any;
+								const mutateElement = excalidrawLibRef.current?.mutateElement;
 								if (mutateElement) {
 									mutateElement(
 										shadow,
@@ -909,10 +895,10 @@ export const ExcalidrawCanvas = () => {
 										false
 									);
 								} else {
-									(shadow as any).x = nextShadowX;
-									(shadow as any).y = nextShadowY;
-									(shadow as any).width = w;
-									(shadow as any).height = h;
+									shadow.x = nextShadowX;
+									shadow.y = nextShadowY;
+									shadow.width = w;
+									shadow.height = h;
 								}
 								didSyncDecor = true;
 							}
@@ -942,7 +928,7 @@ export const ExcalidrawCanvas = () => {
 
 						// Broadcast incremental changes (low-latency). Persisting is still done via debounced snapshot.
 						const lastById = lastBroadcastedByIdRef.current;
-						const changed: any[] = [];
+						const changed: unknown[] = [];
 						for (const el of elementsArray) {
 							if (!el?.id) continue;
 							const prev = lastById.get(el.id);
@@ -964,7 +950,7 @@ export const ExcalidrawCanvas = () => {
 							broadcast({
 								type: "excalidraw:delta",
 								elements: changed,
-							} as any);
+							});
 						}
 
 						saveTimerRef.current = window.setTimeout(() => {

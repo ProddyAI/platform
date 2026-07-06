@@ -62,7 +62,7 @@ export const AssignedCardsWidget = ({
 		: []; // Limit to 10 cards for the widget
 
 	// Handle viewing a board card
-	const handleViewCard = (card: any) => {
+	const handleViewCard = (card: (typeof sortedCards)[number]) => {
 		const channelId = card.channelId;
 		router.push(
 			`/workspace/${workspaceId}/channel/${channelId}/board?cardId=${card._id}`

@@ -364,7 +364,7 @@ export const Text = ({
 	}, [handlePointerMove, handlePointerUp]);
 
 	// Set up ref to access the ContentEditable element
-	const setContentRef = (el: any) => {
+	const setContentRef = (el: HTMLElement | null) => {
 		contentRef.current = el;
 	};
 

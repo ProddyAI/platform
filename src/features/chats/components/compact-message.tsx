@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { Hint } from "@/components/hint";
 import { useContextMenu } from "@/contexts/context-menu-context";
 import { cn } from "@/lib/utils";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import type { MessageProps } from "../types";
 import { formatFullTime } from "../utils/message-utils";
 import { MessageContent } from "./message-content";
@@ -14,7 +15,7 @@ interface CompactMessageProps extends MessageProps {
 	isSelected: boolean;
 	onUpdate: ({ body }: { body: string }) => void;
 	onReaction: (value: string) => void;
-	onOpenMessage: (id: any) => void;
+	onOpenMessage: (id: Id<"messages">) => void;
 	onContextMenuAction: (action: string) => void;
 }
 

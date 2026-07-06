@@ -243,7 +243,11 @@ export const NotificationSettings = () => {
 						| "denied") ?? "default"
 				);
 			}
-			await (window as any).OneSignal?.User?.PushSubscription?.optIn?.();
+			await (
+				window.OneSignal as
+					| { User?: { PushSubscription?: { optIn?: () => Promise<unknown> } } }
+					| undefined
+			)?.User?.PushSubscription?.optIn?.();
 			await sendTestPush({});
 			setTestPushState("sent");
 			toast.success("Test notification sent");

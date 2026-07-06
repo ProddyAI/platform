@@ -104,9 +104,9 @@ export const UserProfileModal = ({
 	useEffect(() => {
 		if (currentUser) {
 			setDisplayName(currentUser.name || "");
-			setBio((currentUser as any).bio || "");
-			setLocation((currentUser as any).location || "");
-			setWebsite((currentUser as any).website || "");
+			setBio(currentUser.bio || "");
+			setLocation(currentUser.location || "");
+			setWebsite(currentUser.website || "");
 			setPhone(currentUser.phone || "");
 		}
 	}, [currentUser]);
@@ -115,10 +115,9 @@ export const UserProfileModal = ({
 	useEffect(() => {
 		if (currentUser) {
 			const hasNameChange = displayName !== (currentUser.name || "");
-			const hasBioChange = bio !== ((currentUser as any).bio || "");
-			const hasLocationChange =
-				location !== ((currentUser as any).location || "");
-			const hasWebsiteChange = website !== ((currentUser as any).website || "");
+			const hasBioChange = bio !== (currentUser.bio || "");
+			const hasLocationChange = location !== (currentUser.location || "");
+			const hasWebsiteChange = website !== (currentUser.website || "");
 			const hasPhoneChange = phone !== (currentUser.phone || "");
 
 			setHasChanges(
@@ -173,9 +172,9 @@ export const UserProfileModal = ({
 	const handleCancel = () => {
 		if (currentUser) {
 			setDisplayName(currentUser.name || "");
-			setBio((currentUser as any).bio || "");
-			setLocation((currentUser as any).location || "");
-			setWebsite((currentUser as any).website || "");
+			setBio(currentUser.bio || "");
+			setLocation(currentUser.location || "");
+			setWebsite(currentUser.website || "");
 			setPhone(currentUser.phone || "");
 		}
 		setIsEditing(false);
@@ -766,34 +765,34 @@ export const UserProfileModal = ({
 																	</div>
 																</div>
 
-																{((currentUser as any)?.bio ||
-																	(currentUser as any)?.location ||
-																	(currentUser as any)?.website ||
+																{(currentUser?.bio ||
+																	currentUser?.location ||
+																	currentUser?.website ||
 																	currentUser?.phone) && (
 																	<>
 																		<Separator />
 																		<div className="grid grid-cols-2 gap-6">
-																			{(currentUser as any)?.bio && (
+																			{currentUser?.bio && (
 																				<div className="col-span-2">
 																					<Label className="text-sm font-medium text-muted-foreground">
 																						Bio
 																					</Label>
 																					<p className="text-sm">
-																						{(currentUser as any).bio}
+																						{currentUser.bio}
 																					</p>
 																				</div>
 																			)}
-																			{(currentUser as any)?.location && (
+																			{currentUser?.location && (
 																				<div>
 																					<Label className="text-sm font-medium text-muted-foreground">
 																						Location
 																					</Label>
 																					<p className="text-sm">
-																						{(currentUser as any).location}
+																						{currentUser.location}
 																					</p>
 																				</div>
 																			)}
-																			{(currentUser as any)?.website && (
+																			{currentUser?.website && (
 																				<div>
 																					<Label className="text-sm font-medium text-muted-foreground">
 																						Website
@@ -801,16 +800,16 @@ export const UserProfileModal = ({
 																					<a
 																						className="text-sm text-primary hover:underline"
 																						href={
-																							(
-																								currentUser as any
-																							).website.startsWith("http")
-																								? (currentUser as any).website
-																								: `https://${(currentUser as any).website}`
+																							currentUser.website.startsWith(
+																								"http"
+																							)
+																								? currentUser.website
+																								: `https://${currentUser.website}`
 																						}
 																						rel="noopener noreferrer"
 																						target="_blank"
 																					>
-																						{(currentUser as any).website}
+																						{currentUser.website}
 																					</a>
 																				</div>
 																			)}

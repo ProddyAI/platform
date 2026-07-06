@@ -57,7 +57,7 @@ export const MeetingNotesPanel = ({
 	const handleGenerate = () => {
 		const membersContext = members
 			.map(
-				(m: any) =>
+				(m) =>
 					`- ${m.user?.name || "Unknown"} (ID: ${m.user?._id || "Unknown"})`
 			)
 			.join("\n");

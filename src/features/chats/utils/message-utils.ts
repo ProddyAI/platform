@@ -18,7 +18,9 @@ export const extractTextFromBody = (bodyJson: string): string => {
 		// Try to extract text directly from the Delta object
 		if (contents?.ops && Array.isArray(contents.ops)) {
 			const text = contents.ops
-				.map((op: any) => (typeof op.insert === "string" ? op.insert : ""))
+				.map((op: { insert?: unknown }) =>
+					typeof op.insert === "string" ? op.insert : ""
+				)
 				.join("")
 				.trim();
 

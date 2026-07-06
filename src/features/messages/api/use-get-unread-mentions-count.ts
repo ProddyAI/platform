@@ -35,10 +35,10 @@ export const useGetUnreadMentionsCount = () => {
 	// Calculate counts by type if we have data
 	if (result && result.length > 0) {
 		// Filter for unread mentions only
-		const unreadMentions = result.filter((mention: any) => !mention.read);
+		const unreadMentions = result.filter((mention) => !mention.read);
 		counts.total = unreadMentions.length;
 
-		unreadMentions.forEach((mention: any) => {
+		unreadMentions.forEach((mention) => {
 			if (mention.source?.type) {
 				const type = mention.source.type as string;
 				counts[type] = (counts[type] || 0) + 1;

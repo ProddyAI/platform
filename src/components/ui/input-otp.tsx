@@ -18,7 +18,7 @@ const InputOTP = React.forwardRef<
 	const inputRef = React.useRef<HTMLInputElement>(null);
 
 	// Merge refs if external ref is provided
-	React.useImperativeHandle(ref, () => inputRef.current as any);
+	React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
 
 	return (
 		<InputOTPRefContext.Provider value={inputRef}>

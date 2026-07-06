@@ -30,6 +30,21 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { exportToPDF, exportToWord } from "@/lib/client/export-utils";
 import { cn } from "@/lib/utils";
 
+type AiActionItem = {
+	title?: string;
+	assigneeName?: string | null;
+	assigneeUserId?: string | null;
+	priority?: string;
+	selected?: boolean;
+};
+
+type AiNotesData = {
+	title?: string;
+	summary?: string;
+	actionItems?: AiActionItem[];
+	decisions?: string[];
+};
+
 export const AiNotemaker = ({
 	variant: _variant = "toolbar",
 	channelId: propChannelId,
@@ -79,8 +94,8 @@ export const AiNotemaker = ({
 	const [isSaving, setIsSaving] = useState(false);
 	const [isCreatingTasks, setIsCreatingTasks] = useState(false);
 	const [lastProcessedTrigger, setLastProcessedTrigger] = useState(0);
-	const [notesData, setNotesData] = useState<any | null>(null);
-	const [editableTasks, setEditableTasks] = useState<any[]>([]);
+	const [notesData, setNotesData] = useState<AiNotesData | null>(null);
+	const [editableTasks, setEditableTasks] = useState<AiActionItem[]>([]);
 	const [transcriptString, setTranscriptString] = useState("");
 	const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
 	const [activeDropdown, setActiveDropdown] = useState<{
@@ -193,7 +208,7 @@ export const AiNotemaker = ({
 
 			const membersContext = members
 				.map(
-					(m: any) =>
+					(m) =>
 						`- ${m.user?.name || "Unknown"} (ID: ${m.user?._id || "Unknown"})`
 				)
 				.join("\n");
@@ -207,18 +222,18 @@ export const AiNotemaker = ({
 			setGeneratedAt(new Date());
 			if (notes?.actionItems) {
 				setEditableTasks(
-					notes.actionItems.map((item: any) => ({ ...item, selected: true }))
+					notes.actionItems.map((item) => ({ ...item, selected: true }))
 				);
 			}
 
 			try {
 				await saveChatToMeetingNotes({
-					workspaceId: workspaceId as any,
+					workspaceId: workspaceId as Id<"workspaces">,
 					channelId,
 					title: notes.title || undefined,
 					transcript,
 					summary: notes.summary || "",
-					actionItems: (notes.actionItems || []).map((a: any) => {
+					actionItems: (notes.actionItems || []).map((a) => {
 						let label = a.title;
 						if (a.assigneeName) label += ` → ${a.assigneeName}`;
 						if (a.priority) label += ` [${a.priority}]`;
@@ -250,7 +265,7 @@ export const AiNotemaker = ({
 			title: notesData.title || "Meeting Notes",
 			summary: notesData.summary,
 			actionItems: (notesData.actionItems || []).map(
-				(a: any) =>
+				(a) =>
 					`${a.title}${a.assigneeName ? ` (Assigned to: ${a.assigneeName})` : ""}`
 			),
 			decisions: notesData.decisions || [],
@@ -268,14 +283,14 @@ export const AiNotemaker = ({
 		if (!notesData) return;
 		setIsSaving(true);
 		try {
-			const textRep = `Summary:\n${notesData.summary}\n\nAction Items:\n${(notesData.actionItems || []).map((a: any) => `- ${a.title}`).join("\n")}\n\nDecisions:\n${(notesData.decisions || []).map((d: string) => `- ${d}`).join("\n")}`;
+			const textRep = `Summary:\n${notesData.summary}\n\nAction Items:\n${(notesData.actionItems || []).map((a) => `- ${a.title}`).join("\n")}\n\nDecisions:\n${(notesData.decisions || []).map((d: string) => `- ${d}`).join("\n")}`;
 			const delta = JSON.stringify({ ops: [{ insert: textRep }] });
 
 			await createNote({
 				title: `AI Meeting Notes - ${new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`,
 				content: delta,
-				workspaceId: workspaceId as any,
-				channelId: channelId as any,
+				workspaceId: workspaceId as Id<"workspaces">,
+				channelId: channelId as Id<"channels">,
 				icon: "✨",
 				tags: ["AI", "Meeting"],
 			});
@@ -296,11 +311,13 @@ export const AiNotemaker = ({
 		setIsCreatingTasks(true);
 		try {
 			await createBulkTasks({
-				workspaceId: workspaceId as any,
-				tasks: selectedTasks.map((item: any) => ({
+				workspaceId: workspaceId as Id<"workspaces">,
+				tasks: selectedTasks.map((item) => ({
 					title: item.title,
-					assigneeUserId: item.assigneeUserId || undefined,
-					priority: item.priority || "medium",
+					assigneeUserId: (item.assigneeUserId || undefined) as
+						| Id<"users">
+						| undefined,
+					priority: (item.priority || "medium") as "low" | "medium" | "high",
 				})),
 			});
 			toast.success(
@@ -585,7 +602,7 @@ export const AiNotemaker = ({
 												Action Items
 											</h3>
 											<div className="space-y-3">
-												{editableTasks.map((item: any, i: number) => {
+												{editableTasks.map((item, i: number) => {
 													const assignedMember = members.find(
 														(m) => m.user._id === item.assigneeUserId
 													);

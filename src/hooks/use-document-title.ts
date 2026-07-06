@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export const useDocumentTitle = (title: string, suffix: string = "Proddy") => {
+export const useDocumentTitle = (title: string, suffix = "Proddy") => {
 	useEffect(() => {
 		document.title = title ? `${title} | ${suffix}` : suffix;
 

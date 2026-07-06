@@ -6,7 +6,7 @@ import { CanvasMode, type Color, type Point } from "../types";
 export function useDrawing(
 	canvasMode: CanvasMode,
 	lastUsedColor: Color,
-	strokeWidth: number = 16
+	strokeWidth = 16
 ) {
 	const startDrawing = useMutation(
 		({ setMyPresence }, point: Point, pressure: number) => {

@@ -241,7 +241,9 @@ export const TaskCreateForm = ({
 
 					<div>
 						<Select
-							onValueChange={(value: any) => setPriority(value)}
+							onValueChange={(value: string) =>
+								setPriority(value as "low" | "medium" | "high")
+							}
 							value={priority}
 						>
 							<SelectTrigger className="border-gray-300">

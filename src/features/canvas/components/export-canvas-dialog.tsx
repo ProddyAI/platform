@@ -277,7 +277,7 @@ export const ExportCanvasDialog = ({
 			const roomIdToExport = room.id;
 
 			// Prepare the message data
-			const messageData: any = {
+			const messageData: Record<string, unknown> = {
 				type: "canvas-export",
 				canvasName,
 				roomId: roomIdToExport,
@@ -457,7 +457,11 @@ export const ExportCanvasDialog = ({
 				console.error("Error drawing element to canvas:", e);
 
 				// Try using a different approach - take a screenshot of the area
-				const html2canvas = (window as any).html2canvas;
+				const html2canvas = (
+					window as {
+						html2canvas?: (el: HTMLElement) => Promise<HTMLCanvasElement>;
+					}
+				).html2canvas;
 				if (html2canvas) {
 					try {
 						const capturedCanvas = await html2canvas(mainCanvas as HTMLElement);

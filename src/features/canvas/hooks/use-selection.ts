@@ -6,13 +6,19 @@ import {
 	findIntersectingLayersWithRectangle,
 	resizeBounds,
 } from "../../../lib/utils";
-import { CanvasMode, type Point, type Side, type XYWH } from "../types";
+import {
+	CanvasMode,
+	type CanvasState,
+	type Point,
+	type Side,
+	type XYWH,
+} from "../types";
 
 const MULTISELECTION_THRESHOLD = 2;
 
 export function useSelection(
-	canvasState: any,
-	setCanvasState: (state: any) => void,
+	canvasState: CanvasState,
+	setCanvasState: (state: CanvasState) => void,
 	layerIds: readonly string[],
 	history: any
 ) {

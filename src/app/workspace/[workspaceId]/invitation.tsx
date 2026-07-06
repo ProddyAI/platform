@@ -3,6 +3,7 @@
 import { CopyIcon, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -44,7 +45,7 @@ export const InviteModal = ({
 
 		mutate(
 			{
-				workspaceId: workspaceId as any,
+				workspaceId: workspaceId as Id<"workspaces">,
 			},
 			{
 				onSuccess: () => {

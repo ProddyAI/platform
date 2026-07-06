@@ -178,7 +178,7 @@ export const ChannelsManagement = ({
 
 				// Throw error with HTTP status for better error handling
 				const error = new Error(errorMessage);
-				(error as any).status = result.status;
+				(error as Error & { status?: number }).status = result.status;
 				throw error;
 			}
 
@@ -203,7 +203,7 @@ export const ChannelsManagement = ({
 					"Network error: Unable to connect to the server. Please check your internet connection."
 				);
 			} else if (error instanceof Error) {
-				const status = (error as any).status;
+				const status = (error as Error & { status?: number }).status;
 
 				// Handle HTTP status codes
 				if (status === 400) {

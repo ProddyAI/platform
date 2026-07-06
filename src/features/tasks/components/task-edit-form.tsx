@@ -133,7 +133,9 @@ export const TaskEditForm = ({
 
 					<div>
 						<Select
-							onValueChange={(value: any) => setPriority(value)}
+							onValueChange={(value: string) =>
+								setPriority(value as "low" | "medium" | "high")
+							}
 							value={priority}
 						>
 							<SelectTrigger>

@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { useWorkspacePresence } from "@/features/presence/hooks/use-workspace-presence";
 import { getUserImageUrl } from "@/lib/placeholder-image";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { useWorkspaceId } from "./use-workspace-id";
 
 export const useChannelParticipants = () => {
@@ -12,16 +13,16 @@ export const useChannelParticipants = () => {
 	const workspaceId = useWorkspaceId();
 
 	// Fetch members from the database
-	const members = useQuery(api.workspace.members.get, { workspaceId }) as any;
+	const members = useQuery(api.workspace.members.get, { workspaceId });
 
 	// Get the current user's member info
 	const currentMember = useQuery(api.workspace.members.current, {
 		workspaceId,
-	}) as any;
+	});
 
 	// Get presence data using the new presence system
 	const { presenceState } = useWorkspacePresence({
-		workspaceId: workspaceId as any, // workspaceId is handled by useQuery skipping, but hook needs a type
+		workspaceId: workspaceId as Id<"workspaces">, // workspaceId is handled by useQuery skipping, but hook needs a type
 	});
 
 	// Check if data is still loading

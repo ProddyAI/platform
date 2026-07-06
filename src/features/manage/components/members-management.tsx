@@ -304,8 +304,10 @@ export const MembersManagement = ({
 			});
 
 			toast.success(`User role updated to ${role}`);
-		} catch (error: any) {
-			toast.error(error.message || "Failed to update user role");
+		} catch (error) {
+			toast.error(
+				(error as { message?: string }).message || "Failed to update user role"
+			);
 		} finally {
 			setIsUpdating(false);
 		}
@@ -328,8 +330,10 @@ export const MembersManagement = ({
 
 			toast.success("Member removed from workspace");
 			setRemoveDialogOpen(false);
-		} catch (error: any) {
-			toast.error(error.message || "Failed to remove member");
+		} catch (error) {
+			toast.error(
+				(error as { message?: string }).message || "Failed to remove member"
+			);
 		} finally {
 			setIsRemoving(false);
 		}

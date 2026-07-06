@@ -206,7 +206,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 		const parsedParentBody = parseMessageBody(thread.parentMessage.body);
 		const threadReplyCount =
 			threadReplyCounts?.find(
-				(tc: any) => tc.parentMessageId === thread.message.parentMessageId
+				(tc) => tc.parentMessageId === thread.message.parentMessageId
 			)?.count || 0;
 
 		return (

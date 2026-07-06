@@ -705,7 +705,10 @@ export function createComposioClient(): Composio<OpenAIProvider> {
 }
 
 // Tool cache to avoid repeated API calls
-const toolCache = new Map<string, { tools: any[]; timestamp: number }>();
+const toolCache = new Map<
+	string,
+	{ tools: ComposioTool[]; timestamp: number }
+>();
 const TOOL_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 // API fallback mapping - when dashboard tools aren't available, use these alternatives
@@ -734,7 +737,7 @@ export async function getAllToolsForApps(
 	composio: Composio<any>,
 	entityId: string,
 	apps: AvailableApp[],
-	useCache: boolean = true
+	useCache = true
 ): Promise<ComposioTool[]> {
 	try {
 		if (apps.length === 0) {
@@ -780,7 +783,7 @@ export async function getAllToolsForApps(
 
 				// Process tools to standard format without filtering
 				const processedTools = toolsArray
-					.map((tool: any) => {
+					.map((tool: ComposioTool) => {
 						const functionName = tool.function?.name || tool.name || "";
 						return {
 							...tool,
@@ -790,13 +793,13 @@ export async function getAllToolsForApps(
 							app: app.toLowerCase(),
 							_originalName: functionName,
 							// Add metadata for smart filtering later
-							_isDashboardTool: ((DASHBOARD_TOOLS as any)[app] || []).includes(
-								functionName
-							),
+							_isDashboardTool: (
+								(DASHBOARD_TOOLS[app] || []) as readonly string[]
+							).includes(functionName),
 							_priority: TOOL_PRIORITY_MAP[functionName] || TOOL_PRIORITIES.LOW,
 						};
 					})
-					.filter((tool: any) => {
+					.filter((tool) => {
 						const toolName = tool.name || "";
 
 						// Basic validation only
@@ -1132,7 +1135,7 @@ function _processAppTools(
 				_originalName: functionName,
 			};
 		})
-		.filter((tool: any) => {
+		.filter((tool) => {
 			const toolName = tool.name || "";
 
 			// Basic validation
@@ -1143,7 +1146,7 @@ function _processAppTools(
 		});
 
 	// Apply smart filtering strategy
-	let filteredTools: any[] = [];
+	let filteredTools: ComposioTool[] = [];
 
 	// Strategy 1: Try to get dashboard tools first
 	if (dashboardTools.length > 0) {
@@ -1162,7 +1165,7 @@ function _processAppTools(
 				)
 		);
 
-		const fallbackMatches: any[] = [];
+		const fallbackMatches: ComposioTool[] = [];
 		missingDashboardTools.forEach((missingTool) => {
 			const fallbacks = API_TOOL_FALLBACKS[missingTool] || [];
 			fallbacks.forEach((fallback) => {

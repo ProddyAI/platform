@@ -35,14 +35,14 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 
 	// Redirect if workspaceId is "create" (which happens if user hits /workspace/create manually)
 	useEffect(() => {
-		if (workspaceId === ("create" as any)) {
+		if ((workspaceId as string | undefined) === "create") {
 			router.replace("/workspace");
 		}
 	}, [workspaceId, router]);
 
 	// Use the Convex-backed sidebar collapsed state
 	const [isCollapsed, setIsCollapsed] = useSidebarCollapsed({
-		workspaceId: workspaceId as any,
+		workspaceId: workspaceId as Id<"workspaces">,
 	});
 
 	// Handle mobile menu toggle
@@ -109,7 +109,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 				`}
 			</Script>
 			<MessageSelectionProvider>
-				<WorkspacePresenceTracker workspaceId={workspaceId as any}>
+				<WorkspacePresenceTracker workspaceId={workspaceId as Id<"workspaces">}>
 					<div className="h-full w-full min-w-0 flex flex-col overflow-hidden">
 						<div className="flex h-full min-w-0 overflow-hidden">
 							{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}
@@ -165,7 +165,7 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 
 							{/* Main content area - remove overflow-auto to prevent toolbar scrolling */}
 							<div className="flex-1 h-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-0">
-								{workspaceId === ("create" as any) ? (
+								{(workspaceId as string | undefined) === "create" ? (
 									<div className="flex h-full items-center justify-center">
 										<Loader className="size-6 animate-spin text-muted-foreground" />
 									</div>

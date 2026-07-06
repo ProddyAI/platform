@@ -48,7 +48,7 @@ export const ThreadReplyTemplate: React.FC<
 					<Img
 						alt="Proddy"
 						height="40"
-						src={process.env.NEXT_PUBLIC_LOGO_URL!}
+						src={process.env.NEXT_PUBLIC_LOGO_URL}
 						style={logo}
 						width="40"
 					/>

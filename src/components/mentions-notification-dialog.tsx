@@ -46,6 +46,14 @@ interface MentionsNotificationDialogProps {
 	onOpenChange: (open: boolean) => void;
 }
 
+type NotificationItem =
+	| ((typeof api.messaging.mentions.getProcessedMentions._returnType)[number] & {
+			type: "mention";
+	  })
+	| ((typeof api.messaging.direct.getDirectMessagesForCurrentUser._returnType)[number] & {
+			type: "direct";
+	  });
+
 export const MentionsNotificationDialog = ({
 	open,
 	onOpenChange,
@@ -79,22 +87,22 @@ export const MentionsNotificationDialog = ({
 
 	// Combine mentions and direct messages
 	const allNotifications = [
-		...(mentions || []).map((mention: any) => ({
+		...(mentions || []).map((mention) => ({
 			...mention,
-			type: "mention",
+			type: "mention" as const,
 		})),
-		...(directMessages || []).map((message: any) => ({
+		...(directMessages || []).map((message) => ({
 			...message,
-			type: "direct",
+			type: "direct" as const,
 		})),
 	];
 
 	// Sort by timestamp (newest first)
-	allNotifications.sort((a: any, b: any) => b.timestamp - a.timestamp);
+	allNotifications.sort((a, b) => b.timestamp - a.timestamp);
 
 	const isLoading = isLoadingMentions || isLoadingDirectMessages;
 
-	const handleToggleReadStatus = async (notification: any) => {
+	const handleToggleReadStatus = async (notification: NotificationItem) => {
 		if (notification.type === "mention") {
 			await markMentionAsRead(
 				notification.id as Id<"mentions">,
@@ -136,7 +144,7 @@ export const MentionsNotificationDialog = ({
 		}
 	};
 
-	const getSourceLink = (mention: any) => {
+	const getSourceLink = (mention: NotificationItem) => {
 		// Safety check: ensure mention has source with type and id
 		if (!mention?.source?.type || !mention?.source?.id) {
 			return `/workspace/${workspaceId}`;
@@ -166,7 +174,7 @@ export const MentionsNotificationDialog = ({
 	};
 
 	// Filter notifications based on active tab
-	const filteredNotifications = allNotifications.filter((notification: any) => {
+	const filteredNotifications = allNotifications.filter((notification) => {
 		// Check if the notification has the required properties
 		if (!notification) return false;
 
@@ -192,10 +200,10 @@ export const MentionsNotificationDialog = ({
 
 	// Count unread notifications by type
 	const unreadCounts = {
-		all: allNotifications.filter((n: any) => !n.read).length || 0,
+		all: allNotifications.filter((n) => !n.read).length || 0,
 		channel:
 			allNotifications.filter(
-				(n: any) =>
+				(n) =>
 					n.type === "mention" &&
 					!n.read &&
 					n.source &&
@@ -203,7 +211,7 @@ export const MentionsNotificationDialog = ({
 			).length || 0,
 		direct:
 			allNotifications.filter(
-				(n: any) =>
+				(n) =>
 					(n.type === "direct" && !n.read) ||
 					(n.type === "mention" &&
 						!n.read &&
@@ -212,7 +220,7 @@ export const MentionsNotificationDialog = ({
 			).length || 0,
 		thread:
 			allNotifications.filter(
-				(n: any) =>
+				(n) =>
 					n.type === "mention" &&
 					!n.read &&
 					n.source &&
@@ -220,7 +228,7 @@ export const MentionsNotificationDialog = ({
 			).length || 0,
 		card:
 			allNotifications.filter(
-				(n: any) =>
+				(n) =>
 					n.type === "mention" &&
 					!n.read &&
 					n.source &&
@@ -228,7 +236,7 @@ export const MentionsNotificationDialog = ({
 			).length || 0,
 	};
 
-	const renderNotificationsList = (notificationsList: any[]) => (
+	const renderNotificationsList = (notificationsList: NotificationItem[]) => (
 		<div className="divide-y divide-border/20 dark:divide-border/10 max-h-[450px] overflow-y-auto">
 			{notificationsList?.length === 0 ? (
 				<div className="flex h-[250px] w-full flex-col items-center justify-center gap-y-3 bg-gray-50 dark:bg-gray-900/50">
@@ -283,7 +291,7 @@ export const MentionsNotificationDialog = ({
 					)}
 				</div>
 			) : (
-				notificationsList?.map((notification: any) => {
+				notificationsList?.map((notification) => {
 					// Determine if this is a direct message or a mention
 					const isDirect = notification.type === "direct";
 

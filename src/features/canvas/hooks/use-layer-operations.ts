@@ -4,7 +4,13 @@ import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 import { nanoid } from "nanoid";
 import { useMutation } from "../../../../liveblocks.config";
 import { penPointsToPathLayer } from "../../../lib/utils";
-import { type Color, LayerType, type MermaidLayer, type Point } from "../types";
+import {
+	type Color,
+	type Layer,
+	LayerType,
+	type MermaidLayer,
+	type Point,
+} from "../types";
 
 const MAX_LAYERS = 100;
 
@@ -25,7 +31,7 @@ export function useLayerOperations(lastUsedColor: Color) {
 				let liveLayerIds = storage.get("layerIds");
 
 				if (!liveLayers || typeof liveLayers.set !== "function") {
-					liveLayers = new LiveMap<string, LiveObject<any>>();
+					liveLayers = new LiveMap<string, LiveObject<Layer>>();
 					storage.set("layers", liveLayers);
 				}
 
@@ -121,7 +127,7 @@ export function useLayerOperations(lastUsedColor: Color) {
 
 				// Initialize storage if needed
 				if (!liveLayers || typeof liveLayers.set !== "function") {
-					liveLayers = new LiveMap<string, LiveObject<any>>();
+					liveLayers = new LiveMap<string, LiveObject<Layer>>();
 					storage.set("layers", liveLayers);
 				}
 
@@ -207,7 +213,7 @@ export function useLayerOperations(lastUsedColor: Color) {
 
 				// Initialize storage if needed
 				if (!liveLayers || typeof liveLayers.set !== "function") {
-					liveLayers = new LiveMap<string, LiveObject<any>>();
+					liveLayers = new LiveMap<string, LiveObject<Layer>>();
 					storage.set("layers", liveLayers);
 				}
 

@@ -44,7 +44,7 @@ interface UnifiedMessageProps {
 		exportFormat?: "png" | "svg" | "json" | "pdf" | "markdown" | "html";
 		exportTime?: string;
 		imageData?: string;
-		jsonData?: any;
+		jsonData?: unknown;
 		exportData?: string;
 		fileSize?: string;
 		// File specific
@@ -86,7 +86,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 	// Determine if the meeting is over
 	const meetingStatus = useMemo(() => {
 		if (!isMeeting || !data.meetingId || !meetingNotes) return null;
-		const note = meetingNotes.find((n: any) => n.roomId === data.meetingId);
+		const note = meetingNotes.find((n) => n.roomId === data.meetingId);
 		if (note && note.status === "completed") {
 			const duration = data.startedAt
 				? Math.round((note.createdAt - data.startedAt) / 60000)

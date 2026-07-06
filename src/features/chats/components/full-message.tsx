@@ -5,6 +5,7 @@ import { Hint } from "@/components/hint";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useContextMenu } from "@/contexts/context-menu-context";
 import { cn } from "@/lib/utils";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import type { MessageProps } from "../types";
 import { formatFullTime } from "../utils/message-utils";
 import { MessageContent } from "./message-content";
@@ -15,8 +16,8 @@ interface FullMessageProps extends MessageProps {
 	isSelected: boolean;
 	onUpdate: ({ body }: { body: string }) => void;
 	onReaction: (value: string) => void;
-	onOpenMessage: (id: any) => void;
-	onOpenProfile: (id: any) => void;
+	onOpenMessage: (id: Id<"messages">) => void;
+	onOpenProfile: (id: Id<"members">) => void;
 	onContextMenuAction: (action: string) => void;
 }
 
