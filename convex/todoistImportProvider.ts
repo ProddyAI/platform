@@ -30,9 +30,13 @@ import {
 
 interface TodoistUser {
 	id: string;
-	name: string;
+	name?: string;
+	full_name?: string;
 	email: string;
 	avatar?: string;
+	avatar_big?: string;
+	avatar_medium?: string;
+	avatar_small?: string;
 }
 
 interface TodoistProject {
@@ -141,7 +145,7 @@ export class TodoistImportProvider {
 				// Wait for rate limiter
 				await this.rateLimiter.wait();
 
-				const url = `https://api.todoist.com/rest/v2/${endpoint}`;
+				const url = `https://api.todoist.com/api/v1/${endpoint}`;
 				const searchParams = new URLSearchParams(params);
 
 				const response = await fetch(
@@ -187,10 +191,47 @@ export class TodoistImportProvider {
 	}
 
 	/**
+	 * Make a paginated Todoist API v1 call, following `next_cursor` until
+	 * exhausted, and return the flattened list of `results`.
+	 *
+	 * The v1 API wraps list responses in `{ results, next_cursor }` (unlike the
+	 * deprecated REST v2 API, which returned bare arrays).
+	 */
+	private async apiCallPaginated<T>(
+		ctx: ImportContext,
+		endpoint: string,
+		params: Record<string, string> = {}
+	): Promise<T[]> {
+		const all: T[] = [];
+		let cursor: string | undefined;
+
+		do {
+			const page = await this.apiCall<
+				{ results?: T[]; next_cursor?: string | null } | T[]
+			>(ctx, endpoint, {
+				...params,
+				limit: "200",
+				...(cursor ? { cursor } : {}),
+			});
+
+			// Defensive: tolerate a bare array in case an endpoint isn't paginated.
+			if (Array.isArray(page)) {
+				all.push(...page);
+				break;
+			}
+
+			all.push(...(page.results ?? []));
+			cursor = page.next_cursor ?? undefined;
+		} while (cursor);
+
+		return all;
+	}
+
+	/**
 	 * Validate the Todoist connection.
 	 */
 	async validateConnection(ctx: ImportContext): Promise<void> {
-		const url = "https://api.todoist.com/rest/v2/projects";
+		const url = "https://api.todoist.com/api/v1/projects";
 		console.log("[TodoistValidate] Calling URL:", url);
 		console.log("[TodoistValidate] Token present:", !!ctx.accessToken);
 
@@ -231,13 +272,16 @@ export class TodoistImportProvider {
 	 */
 	async fetchWorkspace(ctx: ImportContext): Promise<WorkspaceMetadata> {
 		const user = await this.apiCall<TodoistUser>(ctx, "user");
+		const displayName = user.full_name || user.name || "Todoist User";
+		const avatarUrl =
+			user.avatar_big || user.avatar_medium || user.avatar_small || user.avatar;
 
 		return {
 			externalId: user.id,
-			name: `${user.name}'s Todoist`,
+			name: `${displayName}'s Todoist`,
 			metadata: {
 				email: user.email,
-				avatar: user.avatar,
+				avatar: avatarUrl,
 			},
 		};
 	}
@@ -246,7 +290,10 @@ export class TodoistImportProvider {
 	 * Fetch all projects from Todoist.
 	 */
 	async fetchProjects(ctx: ImportContext): Promise<ExternalChannel[]> {
-		const projects = await this.apiCall<TodoistProject[]>(ctx, "projects");
+		const projects = await this.apiCallPaginated<TodoistProject>(
+			ctx,
+			"projects"
+		);
 
 		return projects.map((project) => ({
 			externalId: project.id,
@@ -274,7 +321,7 @@ export class TodoistImportProvider {
 	 */
 	async fetchSections(ctx: ImportContext): Promise<any[]> {
 		try {
-			return await this.apiCall<TodoistSection[]>(ctx, "sections");
+			return await this.apiCallPaginated<TodoistSection>(ctx, "sections");
 		} catch (error) {
 			// Sections endpoint might not be available
 			ctx.log("warn", "Failed to fetch sections", error);
@@ -286,7 +333,7 @@ export class TodoistImportProvider {
 	 * Fetch all tasks from Todoist.
 	 */
 	async fetchAllTasks(ctx: ImportContext): Promise<TodoistTask[]> {
-		const tasks = await this.apiCall<TodoistTask[]>(ctx, "tasks");
+		const tasks = await this.apiCallPaginated<TodoistTask>(ctx, "tasks");
 
 		// Filter by completed status if configured
 		if (!ctx.config.includeCompleted) {
@@ -304,10 +351,9 @@ export class TodoistImportProvider {
 		taskId: string
 	): Promise<TodoistComment[]> {
 		try {
-			return await this.apiCall<TodoistComment[]>(
-				ctx,
-				`tasks/${taskId}/comments`
-			);
+			return await this.apiCallPaginated<TodoistComment>(ctx, "comments", {
+				task_id: taskId,
+			});
 		} catch (error) {
 			ctx.log("warn", `Failed to fetch comments for task ${taskId}`, error);
 			return [];
@@ -319,7 +365,7 @@ export class TodoistImportProvider {
 	 */
 	async fetchLabels(ctx: ImportContext): Promise<TodoistLabel[]> {
 		try {
-			return await this.apiCall<TodoistLabel[]>(ctx, "labels");
+			return await this.apiCallPaginated<TodoistLabel>(ctx, "labels");
 		} catch (error) {
 			ctx.log("warn", "Failed to fetch labels", error);
 			return [];
@@ -332,13 +378,16 @@ export class TodoistImportProvider {
 	async fetchUsers(ctx: ImportContext): Promise<any[]> {
 		// Get current user
 		const user = await this.apiCall<TodoistUser>(ctx, "user");
+		const displayName = user.full_name || user.name || "Todoist User";
+		const avatarUrl =
+			user.avatar_big || user.avatar_medium || user.avatar_small || user.avatar;
 
 		return [
 			{
 				externalId: user.id,
-				displayName: user.name,
+				displayName,
 				email: user.email,
-				avatarUrl: user.avatar,
+				avatarUrl,
 				isBot: false,
 				isDeleted: false,
 				metadata: {},

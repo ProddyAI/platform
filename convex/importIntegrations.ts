@@ -240,7 +240,7 @@ export const initiateTodoistOAuth = mutation({
 		const state = base64UrlEncode(stateJson);
 
 		// Todoist OAuth - must include response_type=code
-		const authUrl = `https://todoist.com/oauth/authorize?client_id=${clientId}&scope=data:read_write&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`;
+		const authUrl = `https://app.todoist.com/oauth/authorize?client_id=${clientId}&scope=data:read_write&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`;
 
 		return {
 			authUrl,

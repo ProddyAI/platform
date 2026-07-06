@@ -952,7 +952,7 @@ http.route({
 
 			// Exchange code for token
 			const tokenResponse = await fetch(
-				"https://todoist.com/oauth/access_token",
+				"https://api.todoist.com/oauth/access_token",
 				{
 					method: "POST",
 					headers: {
