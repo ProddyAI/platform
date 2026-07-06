@@ -36,8 +36,8 @@ export const BoardCardWatchers: React.FC<BoardCardWatchersProps> = ({
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 
-	const addWatcher = useMutation(api.board.addWatcher);
-	const removeWatcher = useMutation(api.board.removeWatcher);
+	const addWatcher = useMutation(api.board.board.addWatcher);
+	const removeWatcher = useMutation(api.board.board.removeWatcher);
 
 	const isCurrentUserWatching =
 		currentMemberId && watchers.includes(currentMemberId);

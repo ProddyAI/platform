@@ -62,7 +62,7 @@ export const useAudioRoom = ({
 	const clientRef = useRef<StreamVideoClient | null>(null);
 
 	// Get current user from Convex
-	const currentUser = useQuery(api.users.current);
+	const currentUser = useQuery(api.workspace.users.current);
 
 	const connectToAudioRoom = useCallback(async () => {
 		if (!apiKey) {

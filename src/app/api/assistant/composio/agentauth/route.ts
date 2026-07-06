@@ -55,7 +55,7 @@ async function verifyMemberOwnership(
 		convexClient.setAuth(token);
 	}
 
-	const currentUser = await convexClient.query(api.users.current);
+	const currentUser = await convexClient.query(api.workspace.users.current);
 	if (!currentUser) {
 		return {
 			success: false,
@@ -64,7 +64,7 @@ async function verifyMemberOwnership(
 	}
 
 	// Get the member for this workspace and verify ownership
-	const member = await convexClient.query(api.members.getMemberById, {
+	const member = await convexClient.query(api.workspace.members.getMemberById, {
 		memberId: memberId as Id<"members">,
 	});
 
@@ -130,7 +130,7 @@ async function persistAuthConfigForToolkit(
 			return;
 		}
 
-		await convex.mutation(api.integrations.storeAuthConfig, {
+		await convex.mutation(api.imports.integrations.storeAuthConfig, {
 			workspaceId: workspaceId as Id<"workspaces">,
 			memberId: memberId as Id<"members">,
 			toolkit,
@@ -290,12 +290,12 @@ async function resolveAuthConfigId(
 	let existingAuthConfig: { _id: Id<"auth_configs"> } | null = null;
 	try {
 		existingAuthConfig = await convex.query(
-			api.integrations.getMyAuthConfigByToolkit,
+			api.imports.integrations.getMyAuthConfigByToolkit,
 			{ workspaceId: workspaceId as Id<"workspaces">, toolkit }
 		);
 		if (!existingAuthConfig) {
 			existingAuthConfig = await convex.query(
-				api.integrations.getAuthConfigByToolkit,
+				api.imports.integrations.getAuthConfigByToolkit,
 				{ workspaceId: workspaceId as Id<"workspaces">, toolkit }
 			);
 		}
@@ -317,7 +317,7 @@ async function resolveAuthConfigId(
 		);
 	}
 
-	return await convex.mutation(api.integrations.storeAuthConfig, {
+	return await convex.mutation(api.imports.integrations.storeAuthConfig, {
 		workspaceId: workspaceId as Id<"workspaces">,
 		memberId: memberId as Id<"members">,
 		toolkit,
@@ -349,12 +349,12 @@ async function storeOrUpdateConnectedAccount(
 		const authConfigId = authConfigIdOrResponse;
 
 		const existingConnectedAccount = await convex.query(
-			api.integrations.getMyConnectedAccountByToolkit,
+			api.imports.integrations.getMyConnectedAccountByToolkit,
 			{ workspaceId: workspaceId as Id<"workspaces">, toolkit }
 		);
 
 		if (existingConnectedAccount) {
-			await convex.mutation(api.integrations.updateConnectedAccountStatus, {
+			await convex.mutation(api.imports.integrations.updateConnectedAccountStatus, {
 				connectedAccountId: existingConnectedAccount._id,
 				status: "ACTIVE",
 				lastUsed: Date.now(),
@@ -362,7 +362,7 @@ async function storeOrUpdateConnectedAccount(
 				metadata: resolvedConnection,
 			});
 		} else {
-			await convex.mutation(api.integrations.storeConnectedAccount, {
+			await convex.mutation(api.imports.integrations.storeConnectedAccount, {
 				workspaceId: workspaceId as Id<"workspaces">,
 				memberId: memberId as Id<"members">,
 				authConfigId,
@@ -537,7 +537,7 @@ export async function GET(req: NextRequest) {
 			try {
 				// Fetch auth configs from database (member-specific if memberId provided)
 				const authConfigs = await convex.query(
-					api.integrations.getAuthConfigsPublic,
+					api.imports.integrations.getAuthConfigsPublic,
 					{
 						workspaceId: workspaceId as Id<"workspaces">,
 						memberId: memberId ? (memberId as Id<"members">) : undefined,
@@ -547,7 +547,7 @@ export async function GET(req: NextRequest) {
 				// Fetch connected accounts from Convex DB (member-specific, not global Composio API)
 				// This is the source of truth — only apps the user explicitly connected appear here
 				const connectedAccountsFromDB = await convex.query(
-					api.integrations.getConnectedAccountsPublic,
+					api.imports.integrations.getConnectedAccountsPublic,
 					{
 						workspaceId: workspaceId as Id<"workspaces">,
 						memberId: memberId ? (memberId as Id<"members">) : undefined,
@@ -741,7 +741,7 @@ export async function DELETE(req: NextRequest) {
 			!connectedAccountId.startsWith("ca_")
 		) {
 			try {
-				await convex.mutation(api.integrations.deleteConnectedAccount, {
+				await convex.mutation(api.imports.integrations.deleteConnectedAccount, {
 					connectedAccountId: connectedAccountId as Id<"connected_accounts">,
 					memberId: memberId as Id<"members">,
 				});

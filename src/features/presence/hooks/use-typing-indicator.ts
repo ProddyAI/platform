@@ -14,11 +14,11 @@ export const useTypingIndicator = ({
 	channelId,
 	conversationId,
 }: UseTypingIndicatorProps) => {
-	const setTyping = useMutation(api.typing.setTyping);
+	const setTyping = useMutation(api.messaging.typing.setTyping);
 	const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Get list of users currently typing
-	const typingUsers = useQuery(api.typing.getTypingUsers, {
+	const typingUsers = useQuery(api.messaging.typing.getTypingUsers, {
 		channelId,
 		conversationId,
 	});

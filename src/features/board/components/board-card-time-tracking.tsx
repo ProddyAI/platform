@@ -25,7 +25,7 @@ export const BoardCardTimeTracking: React.FC<BoardCardTimeTrackingProps> = ({
 	const [localEstimate, setLocalEstimate] = useState(estimate);
 	const [localTimeSpent, setLocalTimeSpent] = useState(timeSpent);
 
-	const updateTimeTracking = useMutation(api.board.updateTimeTracking);
+	const updateTimeTracking = useMutation(api.board.board.updateTimeTracking);
 
 	const handleUpdateEstimate = async (value: number) => {
 		setLocalEstimate(value);

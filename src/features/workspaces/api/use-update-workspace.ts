@@ -26,7 +26,7 @@ export const useUpdateWorkspace = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.workspaces.update);
+	const mutation = useMutation(api.workspace.workspaces.update);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

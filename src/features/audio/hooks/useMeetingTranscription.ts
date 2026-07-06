@@ -9,10 +9,10 @@ export const useMeetingTranscription = (
 	channelId?: string,
 	isRecording: boolean = false
 ) => {
-	const saveTranscriptChunk = useMutation(api.meetingNotes.saveTranscript);
-	const generateAI = useAction(api.meetingNotes.generateAIInsights);
+	const saveTranscriptChunk = useMutation(api.content.meetingNotes.saveTranscript);
+	const generateAI = useAction(api.content.meetingNotes.generateAIInsights);
 
-	const meetingNotes = useQuery(api.meetingNotes.getByRoom, {
+	const meetingNotes = useQuery(api.content.meetingNotes.getByRoom, {
 		roomId,
 		workspaceId: workspaceId as Id<"workspaces">,
 	});

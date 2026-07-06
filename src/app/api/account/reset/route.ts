@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
 		// Validate and record rate limit using Convex
 		const rateLimitCheck = await convex.mutation(
-			api.rateLimit.validatePasswordResetRateLimit,
+			api.billing.rateLimit.validatePasswordResetRateLimit,
 			{
 				email: normalizedEmail,
 			}
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 		// Generate token server-side via Convex action
 		// This ensures the token is never exposed to the client
 		const result = await convex.action(
-			api.passwordManagement.generatePasswordResetToken,
+			api.authn.passwordManagement.generatePasswordResetToken,
 			{
 				email: normalizedEmail,
 			}

@@ -41,7 +41,7 @@ export const OTPVerificationCard = ({
 	const [canResend, setCanResend] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
 
-	const verifyOTP = useMutation(api.emailVerification.verifyOTP);
+	const verifyOTP = useMutation(api.authn.emailVerification.verifyOTP);
 
 	// Track mobile state with resize listener
 	useEffect(() => {

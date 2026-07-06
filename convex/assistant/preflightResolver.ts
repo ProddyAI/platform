@@ -57,7 +57,7 @@ async function resolveChannelSummaryContext(
 	}
 
 	const channelSearch = (await args.ctx.runQuery(
-		api.assistantTools.searchChannels,
+		api.assistant.tools.searchChannels,
 		{ workspaceId: args.workspaceId, query: plan.channelQuery }
 	)) as { channels?: Array<{ id: string; name?: string }> } | null;
 
@@ -98,7 +98,7 @@ async function resolveChannelSummaryContext(
 	}
 
 	const channelSummary = (await args.ctx.runQuery(
-		api.assistantTools.getChannelSummary,
+		api.assistant.tools.getChannelSummary,
 		{
 			workspaceId: args.workspaceId,
 			channelId: resolvedChannel.id as Id<"channels">,
@@ -133,7 +133,7 @@ async function appendWorkspaceCatchupContext(
 ) {
 	if (plan.intent === "workspace_catchup") {
 		const summary = (await args.ctx.runQuery(
-			api.assistantTools.getWorkspaceGeneralSummary,
+			api.assistant.tools.getWorkspaceGeneralSummary,
 			{ workspaceId: args.workspaceId, userId: args.userId }
 		)) as {
 			recentMessages?: unknown[];
@@ -164,14 +164,14 @@ async function appendNoteLookupContext(
 
 		if (plan.noteQuery) {
 			toolName = "searchNotes";
-			noteResult = (await args.ctx.runQuery(api.assistantTools.searchNotes, {
+			noteResult = (await args.ctx.runQuery(api.assistant.tools.searchNotes, {
 				workspaceId: args.workspaceId,
 				query: plan.noteQuery,
 				limit: 6,
 			})) as { notes?: unknown[] } | null;
 		} else {
 			toolName = "getRecentNotes";
-			noteResult = (await args.ctx.runQuery(api.assistantTools.getRecentNotes, {
+			noteResult = (await args.ctx.runQuery(api.assistant.tools.getRecentNotes, {
 				workspaceId: args.workspaceId,
 				limit: 6,
 			})) as { notes?: unknown[] } | null;
@@ -193,8 +193,8 @@ async function appendTaskLookupContext(
 		const toolName = plan.taskQuery ? "searchTasks" : "getMyAllTasks";
 		const taskResult = (await args.ctx.runQuery(
 			plan.taskQuery
-				? api.assistantTools.searchTasks
-				: api.assistantTools.getMyAllTasks,
+				? api.assistant.tools.searchTasks
+				: api.assistant.tools.getMyAllTasks,
 			plan.taskQuery
 				? {
 						workspaceId: args.workspaceId,
@@ -225,10 +225,10 @@ async function appendCalendarLookupContext(
 		const calendarTool = plan.recommendedToolOrder[0];
 		const handler =
 			calendarTool === "getMyCalendarTomorrow"
-				? api.assistantTools.getMyCalendarTomorrow
+				? api.assistant.tools.getMyCalendarTomorrow
 				: calendarTool === "getMyCalendarNextWeek"
-					? api.assistantTools.getMyCalendarNextWeek
-					: api.assistantTools.getMyCalendarToday;
+					? api.assistant.tools.getMyCalendarNextWeek
+					: api.assistant.tools.getMyCalendarToday;
 
 		const calendarResult = (await args.ctx.runQuery(handler, {
 			workspaceId: args.workspaceId,
@@ -251,7 +251,7 @@ async function appendTaskCreateContext(
 	plan: PreflightPlan
 ) {
 	if (plan.intent === "task_create" && plan.needsMemberResolution) {
-		const members = (await args.ctx.runQuery(api.members.get, {
+		const members = (await args.ctx.runQuery(api.workspace.members.get, {
 			workspaceId: args.workspaceId,
 		})) as unknown[];
 		state.summaryLines.push(

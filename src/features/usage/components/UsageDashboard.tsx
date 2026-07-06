@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { isUnlimited } from "@/../convex/plans";
+import { isUnlimited } from "@/../convex/billing/plans";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -371,7 +371,7 @@ export function UsageDashboard({
 	workspaceId,
 	onUpgradeClick,
 }: UsageDashboardProps) {
-	const usage = useQuery(api.usageTracking.getWorkspaceUsage, { workspaceId });
+	const usage = useQuery(api.billing.usageTracking.getWorkspaceUsage, { workspaceId });
 
 	if (!usage?.plan || !usage.ai || !usage.collaboration) {
 		return (

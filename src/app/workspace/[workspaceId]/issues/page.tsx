@@ -24,7 +24,7 @@ const IssuesContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	});
 
 	const assignedIssues = useQuery(
-		api.board.getAssignedIssues,
+		api.board.board.getAssignedIssues,
 		currentMember
 			? {
 					workspaceId,

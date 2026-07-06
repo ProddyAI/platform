@@ -28,7 +28,7 @@ export const useRemoveMember = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.members.remove);
+	const mutation = useMutation(api.workspace.members.remove);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

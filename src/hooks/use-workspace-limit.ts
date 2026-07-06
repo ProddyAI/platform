@@ -17,7 +17,7 @@ export type FeatureKey =
 export const useWorkspaceLimit = (featureKey: FeatureKey) => {
 	const workspaceId = useWorkspaceId();
 	const usage = useQuery(
-		api.usageTracking.getWorkspaceUsage,
+		api.billing.usageTracking.getWorkspaceUsage,
 		workspaceId ? { workspaceId } : "skip"
 	);
 

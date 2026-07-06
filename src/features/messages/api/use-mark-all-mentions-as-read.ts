@@ -5,7 +5,7 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 export const useMarkAllMentionsAsRead = () => {
 	const workspaceId = useWorkspaceId();
-	const markAllAsRead = useMutation(api.mentions.markAllMentionsAsRead);
+	const markAllAsRead = useMutation(api.messaging.mentions.markAllMentionsAsRead);
 
 	const execute = async () => {
 		try {

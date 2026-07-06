@@ -14,7 +14,7 @@ export const useGetChannelPresence = ({
 }: UseGetChannelPresenceProps) => {
 	// Use the new presence system for channel presence
 	const roomToken = `channel-${channelId}`;
-	const data = useQuery(api.presence.list, { roomToken });
+	const data = useQuery(api.messaging.presence.list, { roomToken });
 
 	const isLoading = data === undefined;
 

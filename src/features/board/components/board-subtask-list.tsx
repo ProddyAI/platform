@@ -32,12 +32,12 @@ export const BoardSubtaskList: React.FC<BoardSubtaskListProps> = ({
 	const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
 
 	const subtasks = useQuery(
-		api.board.getSubtasks,
+		api.board.board.getSubtasks,
 		parentCardId ? { parentCardId } : "skip"
 	);
-	const createSubtask = useMutation(api.board.createSubtask);
-	const toggleCompletion = useMutation(api.board.toggleCardCompletion);
-	const deleteCard = useMutation(api.board.deleteCard);
+	const createSubtask = useMutation(api.board.board.createSubtask);
+	const toggleCompletion = useMutation(api.board.board.toggleCardCompletion);
+	const deleteCard = useMutation(api.board.board.deleteCard);
 
 	const handleAddSubtask = async () => {
 		if (!newSubtaskTitle.trim()) return;

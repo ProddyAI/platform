@@ -37,7 +37,7 @@ export const ExportNoteDialog = ({
 	const [isExporting, setIsExporting] = useState(false);
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
-	const createMessage = useMutation(api.messages.create);
+	const createMessage = useMutation(api.messaging.messages.create);
 
 	// Client-side conversion functions (moved from API route)
 	const convertToMarkdown = (note: Note): string => {

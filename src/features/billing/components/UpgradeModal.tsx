@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { PLANS, type PlanName } from "@/../convex/plans";
+import { PLANS, type PlanName } from "@/../convex/billing/plans";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -67,10 +67,10 @@ export function UpgradeModal({
 	minimumSeatCount = 1,
 	hasActiveSubscription = false,
 }: UpgradeModalProps) {
-	const createCheckout = useAction(api.payments.createCheckoutSession);
-	const createUpgradeCheckout = useAction(api.payments.createUpgradeCheckout);
-	const getPlanChangePreview = useAction(api.payments.getPlanChangePreview);
-	const getLivePlanPrices = useAction(api.payments.getLivePlanPrices);
+	const createCheckout = useAction(api.billing.payments.createCheckoutSession);
+	const createUpgradeCheckout = useAction(api.billing.payments.createUpgradeCheckout);
+	const getPlanChangePreview = useAction(api.billing.payments.getPlanChangePreview);
+	const getLivePlanPrices = useAction(api.billing.payments.getLivePlanPrices);
 	const [loading, setLoading] = useState(false);
 	const [previewLoading, setPreviewLoading] = useState(false);
 	const [pricesLoading, setPricesLoading] = useState(false);

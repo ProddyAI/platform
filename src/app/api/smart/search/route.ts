@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
 		// Check usage limits before proceeding
 		const usageCheck = await client.query(
-			api.usageTracking.checkAIUsageLimitPublic,
+			api.billing.usageTracking.checkAIUsageLimitPublic,
 			{
 				workspaceId: trimmedWorkspaceId as Id<"workspaces">,
 				featureType: "aiSearch",
@@ -98,19 +98,19 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Fetch search data from Convex
-		const searchData = await client.query(api.aiSearch.getSearchData, {
+		const searchData = await client.query(api.search.aiSearch.getSearchData, {
 			workspaceId: trimmedWorkspaceId as Id<"workspaces">,
 		});
 
 		// Call Convex AI search action
-		const result = await client.action(api.aiSearch.aiSearch, {
+		const result = await client.action(api.search.aiSearch.aiSearch, {
 			query: trimmedQuery,
 			searchData,
 		});
 
 		// Record successful usage
 		if (isAiSearchResult(result) && result.success) {
-			await client.mutation(api.usageTracking.recordAIRequestPublic, {
+			await client.mutation(api.billing.usageTracking.recordAIRequestPublic, {
 				workspaceId: trimmedWorkspaceId as Id<"workspaces">,
 				featureType: "aiSearch",
 			});

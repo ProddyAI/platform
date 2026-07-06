@@ -74,13 +74,13 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	);
 
 	// Get all thread titles for this workspace
-	const threadTitles = useQuery(api.threadTitles.getByWorkspaceId, {
+	const threadTitles = useQuery(api.messaging.threadTitles.getByWorkspaceId, {
 		workspaceId,
 	});
 
 	// Get thread reply counts
 	const threadReplyCounts = useQuery(
-		api.messages.getThreadReplyCounts,
+		api.messaging.messages.getThreadReplyCounts,
 		threads && threads.length > 0
 			? {
 					parentMessageIds: threads

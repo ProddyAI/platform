@@ -33,7 +33,7 @@ export const useLiveNoteSession = ({
 
 	const others = useOthers();
 	const self = useSelf();
-	const createMessage = useMutation(api.messages.create);
+	const createMessage = useMutation(api.messaging.messages.create);
 
 	// Get all participants (including self) - memoized to prevent infinite loops
 	const participants = useMemo(

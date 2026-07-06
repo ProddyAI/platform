@@ -132,11 +132,11 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 	const [activeItem, setActiveItem] = React.useState<ActiveItem | null>(null);
 	const issueIds = useMemo(() => issues.map((issue) => issue._id), [issues]);
 	const subIssueStatsMap = useQuery(
-		api.board.getBatchSubIssueStats,
+		api.board.board.getBatchSubIssueStats,
 		issueIds.length > 0 ? { issueIds } : "skip"
 	);
 	const dependencyStats = useQuery(
-		api.board.getIssueDependencyStatsForChannel,
+		api.board.board.getIssueDependencyStatsForChannel,
 		{
 			channelId,
 		}

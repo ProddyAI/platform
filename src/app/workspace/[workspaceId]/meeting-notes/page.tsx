@@ -29,7 +29,7 @@ import { exportToPDF, exportToWord } from "@/lib/export-utils";
 
 export default function MeetingNotesPage() {
 	const workspaceId = useWorkspaceId();
-	const allNotes = useQuery(api.meetingNotes.getByWorkspace, {
+	const allNotes = useQuery(api.content.meetingNotes.getByWorkspace, {
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
 	const [expandedNote, setExpandedNote] = useState<string | null>(null);
@@ -169,14 +169,14 @@ function NoteCard({
 	const [isPushingTasks, setIsPushingTasks] = useState(false);
 	const [isSavingNote, setIsSavingNote] = useState(false);
 
-	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
-	const createNote = useMutation(api.notes.create);
+	const createBulkTasks = useMutation(api.planning.tasks.createBulkFromAI);
+	const createNote = useMutation(api.content.notes.create);
 
-	const channels = useQuery(api.channels.get, {
+	const channels = useQuery(api.messaging.channels.get, {
 		workspaceId: note.workspaceId as Id<"workspaces">,
 	});
 
-	const generations = useQuery(api.meetingNotes.getGenerations, {
+	const generations = useQuery(api.content.meetingNotes.getGenerations, {
 		roomId: note.roomId,
 	});
 	const [selectedGen, setSelectedGen] = useState(-1);

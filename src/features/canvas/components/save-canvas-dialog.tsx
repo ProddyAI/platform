@@ -36,7 +36,7 @@ export const SaveCanvasDialog = ({
 	const [isSaving, setIsSaving] = useState(false);
 
 	// Convex mutation for creating a message
-	const _createMessage = useMutation(api.messages.create);
+	const _createMessage = useMutation(api.messaging.messages.create);
 
 	const handleClose = () => {
 		setFileName("");

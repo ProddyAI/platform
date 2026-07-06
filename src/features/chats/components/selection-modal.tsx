@@ -33,7 +33,7 @@ export const SelectionModal = () => {
 	);
 
 	// Fetch message content for each selected message - more efficiently
-	const messageContents = useQuery(api.messages.getMessageBodies, {
+	const messageContents = useQuery(api.messaging.messages.getMessageBodies, {
 		messageIds: selectedMessages.length > 0 ? selectedMessages : [],
 	});
 

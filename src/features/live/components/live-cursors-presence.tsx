@@ -37,7 +37,7 @@ const Cursors = ({ variant }: { variant: "canvas" | "notes" }) => {
 
 const DrawingPaths = () => {
 	const workspaceId = useWorkspaceId();
-	const members = useQuery(api.members.get, { workspaceId }) as any;
+	const members = useQuery(api.workspace.members.get, { workspaceId }) as any;
 
 	// Create a map of Convex users by their ID for quick lookup
 	const userMap = new Map();
@@ -105,7 +105,7 @@ export const LiveCursorsPresence = memo(
 		const workspaceId = useWorkspaceId();
 
 		// Get members from Convex database
-		const members = useQuery(api.members.get, { workspaceId }) as any;
+		const members = useQuery(api.workspace.members.get, { workspaceId }) as any;
 
 		useEffect(() => {
 			// Create a map of Convex users by their ID for quick lookup

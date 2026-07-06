@@ -65,7 +65,7 @@ export const OverviewDashboard = ({
 
 	// Fetch current period data
 	const overviewData = useQuery(
-		api.analytics.getWorkspaceOverview,
+		api.workspace.analytics.getWorkspaceOverview,
 		workspaceId
 			? {
 					workspaceId,
@@ -77,7 +77,7 @@ export const OverviewDashboard = ({
 
 	// Fetch current active users count for the selected time period
 	const activeUsersData = useQuery(
-		api.analytics.getActiveUsersCount,
+		api.workspace.analytics.getActiveUsersCount,
 		workspaceId
 			? {
 					workspaceId,
@@ -89,7 +89,7 @@ export const OverviewDashboard = ({
 
 	// Fetch previous period data for comparison
 	const previousOverviewData = useQuery(
-		api.analytics.getWorkspaceOverview,
+		api.workspace.analytics.getWorkspaceOverview,
 		workspaceId
 			? {
 					workspaceId,
@@ -101,7 +101,7 @@ export const OverviewDashboard = ({
 
 	// Fetch message analytics
 	const messageData = useQuery(
-		api.analytics.getMessageAnalytics,
+		api.workspace.analytics.getMessageAnalytics,
 		workspaceId
 			? {
 					workspaceId,
@@ -113,7 +113,7 @@ export const OverviewDashboard = ({
 
 	// Fetch task analytics
 	const taskData = useQuery(
-		api.analytics.getTaskAnalytics,
+		api.workspace.analytics.getTaskAnalytics,
 		workspaceId
 			? {
 					workspaceId,

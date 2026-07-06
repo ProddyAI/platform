@@ -177,7 +177,7 @@ export const ExcalidrawCanvas = () => {
 	const [toolbarPortalTarget, setToolbarPortalTarget] =
 		useState<HTMLElement | null>(null);
 
-	const currentUser = useQuery(api.users.current);
+	const currentUser = useQuery(api.workspace.users.current);
 
 	const ExcalidrawSidebar = excalidrawLibRef.current?.Sidebar as any;
 

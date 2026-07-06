@@ -14,7 +14,7 @@ export const useGetActiveSprint = ({
 	projectId,
 	workspaceId,
 }: UseActiveSprintProps) => {
-	const data = useQuery(api.sprints.getActiveSprint, {
+	const data = useQuery(api.planning.sprints.getActiveSprint, {
 		projectId,
 		workspaceId,
 	});
@@ -27,7 +27,7 @@ export const useGetSprintIssues = ({
 	sprintId: Id<"sprints"> | null;
 }) => {
 	const data = useQuery(
-		api.sprints.getSprintIssues,
+		api.planning.sprints.getSprintIssues,
 		sprintId ? { sprintId } : "skip"
 	);
 	return { data: data ?? [], isLoading: data === undefined };
@@ -39,7 +39,7 @@ export const useGetSprintStats = ({
 	sprintId: Id<"sprints"> | null;
 }) => {
 	const data = useQuery(
-		api.sprints.getSprintStats,
+		api.planning.sprints.getSprintStats,
 		sprintId ? { sprintId } : "skip"
 	);
 	return { data, isLoading: data === undefined };
@@ -51,7 +51,7 @@ export const useGetAddableSprintIssues = ({
 	sprintId: Id<"sprints"> | null;
 }) => {
 	const data = useQuery(
-		api.sprints.getAddableIssues,
+		api.planning.sprints.getAddableIssues,
 		sprintId ? { sprintId } : "skip"
 	);
 	return { data: data ?? [], isLoading: data === undefined };

@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { api } from "@/../convex/_generated/api";
 
 export const useChangePassword = () => {
-	const changePassword = useMutation(api.passwordManagement.changePassword);
+	const changePassword = useMutation(api.authn.passwordManagement.changePassword);
 
 	const handleChangePassword = useCallback(
 		async (currentPassword: string, newPassword: string) => {

@@ -30,11 +30,11 @@ export const NotesRoom = ({ children, noteId, fallback }: NotesRoomProps) => {
 	const workspaceId = useWorkspaceId();
 
 	// Get the current user from Convex
-	const currentUser = useQuery(api.users.current);
+	const currentUser = useQuery(api.workspace.users.current);
 
 	// Get current member info to pass to Liveblocks
 	const currentMember = useQuery(
-		api.members.current,
+		api.workspace.members.current,
 		workspaceId ? { workspaceId } : "skip"
 	);
 

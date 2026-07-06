@@ -29,7 +29,7 @@ export const useCreateOrGetConversation = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.conversations.createOrGet);
+	const mutation = useMutation(api.messaging.conversations.createOrGet);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

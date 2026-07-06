@@ -507,7 +507,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	const { data: channels } = useGetChannels({ workspaceId });
 	const { data: members } = useGetMembers({ workspaceId });
 	const projects = useQuery(
-		api.projects.get,
+		api.planning.projects.get,
 		workspaceId ? { workspaceId } : "skip"
 	);
 	const { counts, isLoading: isLoadingMentions } = useGetUnreadMentionsCount();
@@ -541,7 +541,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 
 	// Board search when on board page
 	const boardSearchResults = useQuery(
-		api.board.searchBoardContent,
+		api.board.board.searchBoardContent,
 		isBoardPage && activeBoardChannelId && searchQuery.trim()
 			? { channelId: activeBoardChannelId, query: searchQuery }
 			: "skip"

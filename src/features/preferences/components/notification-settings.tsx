@@ -74,11 +74,11 @@ export const NotificationSettings = () => {
 		"default" | "granted" | "denied"
 	>("default");
 
-	const updateSettings = useMutation(api.preferences.updateUserPreferences);
-	const updateBrowserPrefs = useMutation(api.preferences.updateBrowserPrefs);
-	const updateEmailPrefs = useMutation(api.preferences.updateEmailPrefs);
-	const updateChannelToggle = useMutation(api.preferences.updateChannelToggle);
-	const sendTestPush = useAction(api.notifications.sendTestPushNotification);
+	const updateSettings = useMutation(api.workspace.preferences.updateUserPreferences);
+	const updateBrowserPrefs = useMutation(api.workspace.preferences.updateBrowserPrefs);
+	const updateEmailPrefs = useMutation(api.workspace.preferences.updateEmailPrefs);
+	const updateChannelToggle = useMutation(api.workspace.preferences.updateChannelToggle);
+	const sendTestPush = useAction(api.notify.notifications.sendTestPushNotification);
 
 	const browserPrefs = notifications?.notificationBrowserPrefs || {
 		mentions: true,

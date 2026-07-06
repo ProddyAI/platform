@@ -10,7 +10,7 @@ interface UseGetMessagesWithCalendarEventsProps {
 export const useGetMessagesWithCalendarEvents = ({
 	workspaceId,
 }: UseGetMessagesWithCalendarEventsProps) => {
-	const data = useQuery(api.calendar.getMessagesWithCalendarEvents, {
+	const data = useQuery(api.planning.calendar.getMessagesWithCalendarEvents, {
 		workspaceId,
 		paginationOpts: { numItems: 100, cursor: null },
 	});

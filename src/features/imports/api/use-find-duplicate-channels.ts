@@ -10,7 +10,7 @@ export const useFindDuplicateChannels = (
 	platform: "slack" | "todoist" | "linear" | "notion" | "miro" | "clickup"
 ) => {
 	return useQuery(
-		api.importIntegrations.findDuplicateChannels,
+		api.imports.importIntegrations.findDuplicateChannels,
 		workspaceId && platform ? { workspaceId, platform } : "skip"
 	);
 };

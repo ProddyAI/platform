@@ -18,10 +18,10 @@ export const useNotesParticipants = () => {
 	const [participantCount, setParticipantCount] = useState(0);
 
 	// Fetch members from the database
-	const members = useQuery(api.members.get, { workspaceId }) as any;
+	const members = useQuery(api.workspace.members.get, { workspaceId }) as any;
 
 	// Get the current user's member info
-	const currentMember = useQuery(api.members.current, { workspaceId });
+	const currentMember = useQuery(api.workspace.members.current, { workspaceId });
 
 	// Get Liveblocks participants (users currently in the note)
 	const others = useOthers();

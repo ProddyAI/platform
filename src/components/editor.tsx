@@ -527,18 +527,18 @@ const Editor = ({
 	};
 
 	// Create message mutation
-	const createMessage = useMutation(api.messages.create);
+	const createMessage = useMutation(api.messaging.messages.create);
 
 	// Create note mutation
 	const { mutate: createNote } = useCreateNote();
 
 	const notes = useQuery(
-		api.notes.list,
+		api.content.notes.list,
 		workspaceId && channelId ? { workspaceId, channelId } : "skip"
 	);
 
 	const contextMessages = useQuery(
-		api.messages.get,
+		api.messaging.messages.get,
 		channelId || conversationId
 			? {
 					channelId,

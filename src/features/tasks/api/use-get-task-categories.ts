@@ -12,7 +12,7 @@ interface UseGetTaskCategoriesProps {
 export const useGetTaskCategories = ({
 	workspaceId,
 }: UseGetTaskCategoriesProps) => {
-	const data = useQuery(api.tasks.getTaskCategories, { workspaceId });
+	const data = useQuery(api.planning.tasks.getTaskCategories, { workspaceId });
 	const isLoading = data === undefined;
 
 	return { data, isLoading };

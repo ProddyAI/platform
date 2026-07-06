@@ -28,7 +28,7 @@ export const useRemoveMessage = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.messages.remove);
+	const mutation = useMutation(api.messaging.messages.remove);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

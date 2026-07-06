@@ -26,7 +26,7 @@ export const useNewJoinCode = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.workspaces.newJoinCode);
+	const mutation = useMutation(api.workspace.workspaces.newJoinCode);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

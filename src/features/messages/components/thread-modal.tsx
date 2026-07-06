@@ -80,7 +80,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();
 
 	const threadReplies = useQuery(
-		api.messages.get,
+		api.messaging.messages.get,
 		thread.message.parentMessageId
 			? {
 					channelId: thread.message.channelId,

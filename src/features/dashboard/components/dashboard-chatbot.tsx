@@ -1159,13 +1159,13 @@ export const DashboardChatbot = ({
 }: DashboardChatbotProps) => (
 	<DatabaseChatProvider
 		api={{
-			getMessages: api.assistantChat.getMessages,
-			listConversations: api.assistantChat.listConversations,
-			getStreamState: api.assistantChat.getStreamState,
-			getStreamDeltas: api.assistantChat.getStreamDeltas,
-			createConversation: api.assistantChat.createConversation,
-			abortStream: api.assistantChat.abortStream,
-			sendMessage: api.assistantChat.sendMessage,
+			getMessages: api.assistant.chat.getMessages,
+			listConversations: api.assistant.chat.listConversations,
+			getStreamState: api.assistant.chat.getStreamState,
+			getStreamDeltas: api.assistant.chat.getStreamDeltas,
+			createConversation: api.assistant.chat.createConversation,
+			abortStream: api.assistant.chat.abortStream,
+			sendMessage: api.assistant.chat.sendMessage,
 		}}
 	>
 		<DashboardChatbotBody
@@ -1198,7 +1198,7 @@ const DashboardChatbotBody = ({
 	const router = useRouter();
 
 	const recentConversations = useQuery(
-		api.assistantConversations.listRecentConversations,
+		api.assistant.conversations.listRecentConversations,
 		workspaceId && member?.userId
 			? { workspaceId, userId: member.userId, limit: 20 }
 			: "skip"
@@ -1308,12 +1308,12 @@ const DashboardChatbotBody = ({
 		return () => document.removeEventListener("mousedown", onMouseDown);
 	}, [autocompleteOpen, closeAutocomplete]);
 
-	const createConversation = useMutation(api.assistantChat.createConversation);
+	const createConversation = useMutation(api.assistant.chat.createConversation);
 	const updateConversationTitle = useMutation(
-		api.assistantConversations.updateConversationTitle
+		api.assistant.conversations.updateConversationTitle
 	);
 	const deleteConversation = useMutation(
-		api.assistantConversations.deleteConversation
+		api.assistant.conversations.deleteConversation
 	);
 	const {
 		send,

@@ -29,7 +29,7 @@ export const useUpdateMember = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.members.update);
+	const mutation = useMutation(api.workspace.members.update);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

@@ -26,7 +26,7 @@ export const useCreateNote = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.notes.create);
+	const mutation = useMutation(api.content.notes.create);
 
 	const mutate = useCallback(
 		async (request: CreateNoteRequest, options?: Options) => {

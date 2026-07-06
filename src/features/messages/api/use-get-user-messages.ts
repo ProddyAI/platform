@@ -6,7 +6,7 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 export const useGetUserMessages = () => {
 	const workspaceId = useWorkspaceId();
 
-	const data = useQuery(api.messages.getUserMessages, {
+	const data = useQuery(api.messaging.messages.getUserMessages, {
 		workspaceId: workspaceId as any,
 	});
 

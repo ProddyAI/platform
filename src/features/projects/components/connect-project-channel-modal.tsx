@@ -35,7 +35,7 @@ export const ConnectProjectChannelModal = () => {
 	const { mutate, isPending } = useSetProjectConnectedChannel();
 
 	const project = useQuery(
-		api.projects.getById,
+		api.planning.projects.getById,
 		state.projectId ? { id: state.projectId } : "skip"
 	);
 

@@ -9,7 +9,7 @@ interface UseGetChannelProps {
 
 export const useGetChannel = ({ id }: UseGetChannelProps) => {
 	// Skip the query if id is undefined
-	const data = useQuery(api.channels.getById, id ? { id } : "skip");
+	const data = useQuery(api.messaging.channels.getById, id ? { id } : "skip");
 
 	const isLoading = id !== undefined && data === undefined;
 

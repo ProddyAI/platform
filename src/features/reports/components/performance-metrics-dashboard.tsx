@@ -50,7 +50,7 @@ export const PerformanceMetricsDashboard = ({
 
 	// Fetch task analytics
 	const taskData = useQuery(
-		api.analytics.getTaskAnalytics,
+		api.workspace.analytics.getTaskAnalytics,
 		workspaceId
 			? {
 					workspaceId,
@@ -62,7 +62,7 @@ export const PerformanceMetricsDashboard = ({
 
 	// Fetch user activity data
 	const userActivityData = useQuery(
-		api.analytics.getUserActivitySummary,
+		api.workspace.analytics.getUserActivitySummary,
 		workspaceId
 			? {
 					workspaceId,

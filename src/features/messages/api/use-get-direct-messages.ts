@@ -4,14 +4,14 @@ import { api } from "@/../convex/_generated/api";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 type DirectMessagesReturnType =
-	typeof api.direct.getDirectMessagesForCurrentUser._returnType;
+	typeof api.messaging.direct.getDirectMessagesForCurrentUser._returnType;
 
 export const useGetDirectMessages = (includeRead?: boolean) => {
 	const workspaceId = useWorkspaceId();
 
 	// Use the direct query
 	const result = useQuery(
-		api.direct.getDirectMessagesForCurrentUser,
+		api.messaging.direct.getDirectMessagesForCurrentUser,
 		workspaceId
 			? {
 					workspaceId,

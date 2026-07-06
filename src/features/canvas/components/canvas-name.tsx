@@ -46,12 +46,12 @@ export const CanvasName = ({ savedCanvasName }: CanvasNameProps) => {
 	const room = useRoom();
 
 	// Get Convex mutation for creating messages
-	const createMessage = useMutation(api.messages.create);
+	const createMessage = useMutation(api.messaging.messages.create);
 
 	// Get channel data to use as initial canvas name
 	// Always call the hook, but skip the query if channelId is undefined
 	const channelData = useQuery(
-		api.channels.getById,
+		api.messaging.channels.getById,
 		channelId ? { id: channelId } : "skip"
 	);
 

@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
-import { PLANS, type PlanName } from "@/../convex/plans";
+import { PLANS, type PlanName } from "@/../convex/billing/plans";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,11 +57,11 @@ export function BillingSection({
 	const { isAuthenticated } = useConvexAuth();
 	const router = useRouter();
 	const subscription = useQuery(
-		api.payments.getSubscriptionStatus,
+		api.billing.payments.getSubscriptionStatus,
 		isAuthenticated ? { workspaceId } : "skip"
 	);
 	const billingSummary = useQuery(
-		api.payments.getBillingSummary,
+		api.billing.payments.getBillingSummary,
 		isAuthenticated && canManageBilling && showBillingSummary
 			? { workspaceId }
 			: "skip"
@@ -70,9 +70,9 @@ export function BillingSection({
 		[]) as BillingHistoryEntry[];
 	const billingAuditLogs = (billingSummary?.auditLogs ??
 		[]) as BillingAuditLogEntry[];
-	const createPortal = useAction(api.payments.getCustomerPortal);
-	const cancelPlan = useAction(api.payments.cancelSubscription);
-	const syncSubscription = useAction(api.payments.syncWorkspaceSubscription);
+	const createPortal = useAction(api.billing.payments.getCustomerPortal);
+	const cancelPlan = useAction(api.billing.payments.cancelSubscription);
+	const syncSubscription = useAction(api.billing.payments.syncWorkspaceSubscription);
 	const [portalLoading, setPortalLoading] = useState(false);
 	const [cancelLoading, setCancelLoading] = useState(false);
 	const [billingDetailsOpen, setBillingDetailsOpen] = useState(false);

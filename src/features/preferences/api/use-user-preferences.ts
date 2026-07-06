@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 
 export const useUserPreferences = () => {
-	const data = useQuery(api.preferences.getUserPreferences);
-	const updatePreferences = useMutation(api.preferences.updateUserPreferences);
+	const data = useQuery(api.workspace.preferences.getUserPreferences);
+	const updatePreferences = useMutation(api.workspace.preferences.updateUserPreferences);
 
 	const updateSettings = useCallback(
 		async (settings: {
@@ -50,7 +50,7 @@ export const useUserPreferences = () => {
 };
 
 export const useStatusTrackingEnabled = () => {
-	const data = useQuery(api.preferences.isStatusTrackingEnabled);
+	const data = useQuery(api.workspace.preferences.isStatusTrackingEnabled);
 	return {
 		isEnabled: data ?? true, // Default to true
 		isLoading: data === undefined,
@@ -58,7 +58,7 @@ export const useStatusTrackingEnabled = () => {
 };
 
 export const useNotificationPreferences = () => {
-	const data = useQuery(api.preferences.getNotificationPreferences);
+	const data = useQuery(api.workspace.preferences.getNotificationPreferences);
 	return {
 		data,
 		isLoading: data === undefined,

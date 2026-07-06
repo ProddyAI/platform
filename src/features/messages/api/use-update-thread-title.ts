@@ -3,7 +3,7 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 export const useUpdateThreadTitle = () => {
-	const mutate = useMutation(api.threadTitles.upsert);
+	const mutate = useMutation(api.messaging.threadTitles.upsert);
 
 	return {
 		updateTitle: async (

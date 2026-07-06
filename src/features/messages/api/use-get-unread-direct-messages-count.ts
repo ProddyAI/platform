@@ -7,7 +7,7 @@ export const useGetUnreadDirectMessagesCount = () => {
 	const workspaceId = useWorkspaceId();
 
 	const result = useQuery(
-		api.direct.getUnreadDirectMessageCount,
+		api.messaging.direct.getUnreadDirectMessageCount,
 		workspaceId
 			? {
 					workspaceId,

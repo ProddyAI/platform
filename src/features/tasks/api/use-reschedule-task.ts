@@ -26,7 +26,7 @@ export const useRescheduleTask = () => {
 
 	const isPending = useMemo(() => status === "pending", [status]);
 
-	const mutation = useMutation(api.stress.rescheduleTask);
+	const mutation = useMutation(api.planning.stress.rescheduleTask);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

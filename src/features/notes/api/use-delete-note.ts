@@ -25,7 +25,7 @@ export const useDeleteNote = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.notes.remove);
+	const mutation = useMutation(api.content.notes.remove);
 
 	const mutate = useCallback(
 		async (id: Id<"notes"> | string, options?: Options) => {

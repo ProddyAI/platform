@@ -83,7 +83,7 @@ export async function prepareSendMessageContext(
 	}
 
 	const conversationMeta = await ctx.runQuery(
-		api.assistantConversations.getByConversationId,
+		api.assistant.conversations.getByConversationId,
 		{ conversationId: args.conversationId }
 	);
 
@@ -107,7 +107,7 @@ export async function prepareSendMessageContext(
 
 	if (!existingConversation) {
 		activeConversationId = await ctx.runMutation(
-			api.assistantChat.createConversation,
+			api.assistant.chat.createConversation,
 			{
 				workspaceId: resolvedWorkspaceId,
 				userId: resolvedUserId,
@@ -118,7 +118,7 @@ export async function prepareSendMessageContext(
 	}
 
 	const latestConversationMeta = await ctx.runQuery(
-		api.assistantConversations.getByWorkspaceAndUser,
+		api.assistant.conversations.getByWorkspaceAndUser,
 		{
 			workspaceId: resolvedWorkspaceId,
 			userId: resolvedUserId,
@@ -143,7 +143,7 @@ export async function recordSendMessageUsage(
 	context: SendMessageContext
 ) {
 	const usageLimitCheck = await ctx.runQuery(
-		internal.usageTracking.checkAIUsageLimit,
+		internal.billing.usageTracking.checkAIUsageLimit,
 		{
 			workspaceId: context.resolvedWorkspaceId,
 			featureType: "aiRequest",
@@ -154,7 +154,7 @@ export async function recordSendMessageUsage(
 	}
 
 	try {
-		await ctx.runMutation(internal.usageTracking.recordAIRequest, {
+		await ctx.runMutation(internal.billing.usageTracking.recordAIRequest, {
 			userId: context.resolvedUserId,
 			workspaceId: context.resolvedWorkspaceId,
 			featureType: "aiRequest",
@@ -174,7 +174,7 @@ export async function persistAssistantTurn(
 		role: "assistant",
 		content: responseText,
 	});
-	await ctx.runMutation(api.assistantConversations.upsertConversation, {
+	await ctx.runMutation(api.assistant.conversations.upsertConversation, {
 		workspaceId: context.resolvedWorkspaceId,
 		userId: context.resolvedUserId,
 		conversationId: context.activeConversationId,
@@ -192,7 +192,7 @@ async function handlePendingTaskConfirmation(
 	}
 
 	const created = await ctx.runMutation(
-		api.assistantConversations.createTaskFromPendingDraft,
+		api.assistant.conversations.createTaskFromPendingDraft,
 		{
 			workspaceId: context.resolvedWorkspaceId,
 			userId: context.resolvedUserId,
@@ -218,7 +218,7 @@ async function handlePendingTaskCancellation(
 		return null;
 	}
 
-	await ctx.runMutation(api.assistantConversations.clearPendingTaskDraft, {
+	await ctx.runMutation(api.assistant.conversations.clearPendingTaskDraft, {
 		workspaceId: context.resolvedWorkspaceId,
 		userId: context.resolvedUserId,
 	});
@@ -252,7 +252,7 @@ export async function recordAssistantSignal(
 	context: SendMessageContext
 ): Promise<AssistantProfileRecord | null> {
 	try {
-		return await ctx.runMutation(api.assistantProfiles.recordSignal, {
+		return await ctx.runMutation(api.assistant.profiles.recordSignal, {
 			workspaceId: context.resolvedWorkspaceId,
 			userId: context.resolvedUserId,
 			message: args.message,
@@ -271,7 +271,7 @@ async function applySemanticSearchFallback(
 	defaultResponseText: string
 ): Promise<string> {
 	try {
-		const search = await ctx.runAction(api.assistantTools.semanticSearch, {
+		const search = await ctx.runAction(api.assistant.tools.semanticSearch, {
 			workspaceId: context.resolvedWorkspaceId,
 			query: args.message,
 			limit: 5,
@@ -580,7 +580,7 @@ export async function finalizeSendMessageSuccess(
 	await persistAssistantTurn(ctx, context, responseText);
 	await ctx.scheduler.runAfter(
 		0,
-		internal.assistantTitles.autoGenerateTitleIfNeeded,
+		internal.assistant.titles.autoGenerateTitleIfNeeded,
 		{
 			conversationId: context.activeConversationId,
 			workspaceId: context.resolvedWorkspaceId,

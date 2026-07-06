@@ -51,19 +51,19 @@ export const AiNotemaker = ({
 		channelId,
 	});
 
-	const members = useQuery(api.members.get, { workspaceId }) || [];
+	const members = useQuery(api.workspace.members.get, { workspaceId }) || [];
 	const chatNoteInfo = useQuery(
-		api.meetingNotes.getChatNoteForChannel,
+		api.content.meetingNotes.getChatNoteForChannel,
 		channelId && workspaceId
 			? { channelId: String(channelId), workspaceId }
 			: "skip"
 	);
-	const createNote = useMutation(api.notes.create);
-	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
-	const generateChatNotesAction = useAction(api.meetingNotes.generateChatNotes);
-	const chatWithNotesAction = useAction(api.meetingNotes.chatWithNotes);
+	const createNote = useMutation(api.content.notes.create);
+	const createBulkTasks = useMutation(api.planning.tasks.createBulkFromAI);
+	const generateChatNotesAction = useAction(api.content.meetingNotes.generateChatNotes);
+	const chatWithNotesAction = useAction(api.content.meetingNotes.chatWithNotes);
 	const saveChatToMeetingNotes = useMutation(
-		api.meetingNotes.saveChatNotesToHistory
+		api.content.meetingNotes.saveChatNotesToHistory
 	);
 
 	const {

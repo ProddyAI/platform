@@ -56,7 +56,7 @@ export default function MeetingPage({
 	const clientRef = useRef<StreamVideoClient | null>(null);
 	const callRef = useRef<any>(null);
 	const { isAuthenticated, isLoading } = useConvexAuth();
-	const user = useQuery(api.users.current);
+	const user = useQuery(api.workspace.users.current);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspaceId") || "";

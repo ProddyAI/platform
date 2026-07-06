@@ -29,7 +29,7 @@ export const useToggleReaction = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.reactions.toggle);
+	const mutation = useMutation(api.messaging.reactions.toggle);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

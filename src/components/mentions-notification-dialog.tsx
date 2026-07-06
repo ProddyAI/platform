@@ -63,7 +63,7 @@ export const MentionsNotificationDialog = ({
 	const [activeTab, setActiveTab] = useState("all");
 	const { isAdBlockerActive } = useAdBlockerDetectionContext();
 	const projects = useQuery(
-		api.projects.get,
+		api.planning.projects.get,
 		workspaceId ? { workspaceId } : "skip"
 	);
 

@@ -156,7 +156,7 @@ export const ImportDataManagement = ({
 	const cancelImportJob = useCancelImportJob();
 
 	// Fetch channels for Linear import target selection
-	const channels = useQuery(api.channels.get, {
+	const channels = useQuery(api.messaging.channels.get, {
 		workspaceId,
 	});
 

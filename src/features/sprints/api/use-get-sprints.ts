@@ -14,6 +14,6 @@ export const useGetSprints = ({
 	projectId,
 	workspaceId,
 }: UseGetSprintsProps) => {
-	const data = useQuery(api.sprints.getByProject, { projectId, workspaceId });
+	const data = useQuery(api.planning.sprints.getByProject, { projectId, workspaceId });
 	return { data, isLoading: data === undefined };
 };

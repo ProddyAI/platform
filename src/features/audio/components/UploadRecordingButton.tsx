@@ -23,10 +23,10 @@ export const UploadRecordingButton = () => {
 	const fileRef = useRef<HTMLInputElement>(null);
 
 	const saveUploadTranscript = useMutation(
-		api.meetingNotes.saveUploadTranscript
+		api.content.meetingNotes.saveUploadTranscript
 	);
-	const generateAI = useAction(api.meetingNotes.generateAIInsights);
-	const _user = useQuery(api.users.current);
+	const generateAI = useAction(api.content.meetingNotes.generateAIInsights);
+	const _user = useQuery(api.workspace.users.current);
 
 	const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];

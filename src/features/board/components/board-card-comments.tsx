@@ -22,10 +22,10 @@ export const BoardCardComments: React.FC<BoardCardCommentsProps> = ({
 	const [commentContent, setCommentContent] = useState("");
 
 	const comments = useQuery(
-		api.board.getComments,
+		api.board.board.getComments,
 		cardId ? { cardId } : "skip"
 	);
-	const addComment = useMutation(api.board.addComment);
+	const addComment = useMutation(api.board.board.addComment);
 
 	const handleAddComment = async () => {
 		if (!commentContent.trim()) return;

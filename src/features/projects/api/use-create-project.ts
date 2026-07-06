@@ -31,7 +31,7 @@ export const useCreateProject = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.projects.create);
+	const mutation = useMutation(api.planning.projects.create);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

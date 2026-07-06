@@ -25,7 +25,7 @@ export const useUpdateNote = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.notes.update);
+	const mutation = useMutation(api.content.notes.update);
 
 	const mutate = useCallback(
 		async (request: UpdateNoteRequest, options?: Options) => {

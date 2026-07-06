@@ -9,7 +9,7 @@ interface UseGetProjectsProps {
 
 export const useGetProjects = ({ workspaceId }: UseGetProjectsProps) => {
 	const data = useQuery(
-		api.projects.get,
+		api.planning.projects.get,
 		workspaceId ? { workspaceId } : "skip"
 	);
 

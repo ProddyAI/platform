@@ -33,12 +33,12 @@ export const MeetingNotesPanel = ({
 	isAudioMuted,
 }: MeetingNotesPanelProps) => {
 	const members =
-		useQuery(api.members.get, {
+		useQuery(api.workspace.members.get, {
 			workspaceId: workspaceId as Id<"workspaces">,
 		}) || [];
-	const createBulkTasks = useMutation(api.tasks.createBulkFromAI);
-	const createNote = useMutation(api.notes.create);
-	const generations = useQuery(api.meetingNotes.getGenerations, { roomId });
+	const createBulkTasks = useMutation(api.planning.tasks.createBulkFromAI);
+	const createNote = useMutation(api.content.notes.create);
+	const generations = useQuery(api.content.meetingNotes.getGenerations, { roomId });
 
 	const { meetingNotes, isListening, triggerGenerateInsights } =
 		useMeetingTranscription(

@@ -53,7 +53,7 @@ export const CanvasWidget = ({
 
 	// Get messages from the channel to find canvas items
 	const messages = useQuery(
-		api.messages.get,
+		api.messaging.messages.get,
 		firstChannelId
 			? {
 					channelId: firstChannelId,

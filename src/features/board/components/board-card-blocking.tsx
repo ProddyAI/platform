@@ -28,16 +28,16 @@ export const BoardCardBlockingRelationships: React.FC<
 	const [searchQuery, setSearchQuery] = useState("");
 
 	const blockingCards = useQuery(
-		api.board.getBlockingCards,
+		api.board.board.getBlockingCards,
 		cardId ? { cardId } : "skip"
 	);
-	const allCards = useQuery(api.board.getAllCardsForChannel, { channelId });
+	const allCards = useQuery(api.board.board.getAllCardsForChannel, { channelId });
 
 	const addBlockingRelationship = useMutation(
-		api.board.addBlockingRelationship
+		api.board.board.addBlockingRelationship
 	);
 	const removeBlockingRelationship = useMutation(
-		api.board.removeBlockingRelationship
+		api.board.board.removeBlockingRelationship
 	);
 
 	const handleAddBlocker = async (blockedByCardId: Id<"cards">) => {

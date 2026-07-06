@@ -15,16 +15,16 @@ export const useChannelPresence = ({
 	workspaceId,
 	channelId,
 }: UseChannelPresenceProps) => {
-	const currentUser = useQuery(api.users.current);
-	const members = useQuery(api.members.get, { workspaceId }) as any;
+	const currentUser = useQuery(api.workspace.users.current);
+	const members = useQuery(api.workspace.members.get, { workspaceId }) as any;
 
 	const userIdForHook = (currentUser?._id as string | undefined) || "anonymous";
 
 	const presenceState = usePresence(
 		{
-			heartbeat: api.presence.heartbeat,
-			list: api.presence.list,
-			disconnect: api.presence.disconnect,
+			heartbeat: api.messaging.presence.heartbeat,
+			list: api.messaging.presence.list,
+			disconnect: api.messaging.presence.disconnect,
 		},
 		`channel-${channelId}`,
 		userIdForHook

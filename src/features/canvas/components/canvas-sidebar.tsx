@@ -69,7 +69,7 @@ export const CanvasSidebar = ({
 
 	// Get messages from the channel to find saved canvases
 	const messages = useQuery(
-		api.messages.get,
+		api.messaging.messages.get,
 		channelId
 			? {
 					channelId: channelId,

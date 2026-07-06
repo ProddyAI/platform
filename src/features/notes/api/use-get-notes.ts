@@ -10,7 +10,7 @@ export const useGetNotes = (
 	channelId?: Id<"channels">
 ) => {
 	const notes = useQuery(
-		api.notes.getByChannel,
+		api.content.notes.getByChannel,
 		workspaceId && channelId ? { workspaceId, channelId } : "skip"
 	);
 

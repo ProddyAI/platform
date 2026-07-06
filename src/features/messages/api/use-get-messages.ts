@@ -12,7 +12,7 @@ interface UseGetMessagesProps {
 }
 
 export type GetMessagesReturnType =
-	(typeof api.messages.get._returnType)["page"];
+	(typeof api.messaging.messages.get._returnType)["page"];
 
 export const useGetMessages = ({
 	channelId,
@@ -23,7 +23,7 @@ export const useGetMessages = ({
 	const shouldSkip = !channelId && !conversationId && !parentMessageId;
 
 	const { results, status, loadMore } = usePaginatedQuery(
-		api.messages.get,
+		api.messaging.messages.get,
 		shouldSkip ? "skip" : { channelId, conversationId, parentMessageId },
 		{ initialNumItems: BATCH_SIZE }
 	);

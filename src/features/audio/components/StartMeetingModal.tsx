@@ -44,10 +44,10 @@ export const StartMeetingModal = ({
 	const [date, setDate] = useState("");
 	const [time, setTime] = useState("");
 
-	const members = useQuery(api.members.get, {
+	const members = useQuery(api.workspace.members.get, {
 		workspaceId,
 	});
-	const createMessage = useMutation(api.messages.create);
+	const createMessage = useMutation(api.messaging.messages.create);
 	// In a real app we might have api.meetings.schedule, but for now we'll just send a message.
 
 	const filteredMembers =

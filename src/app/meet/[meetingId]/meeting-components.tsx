@@ -49,7 +49,7 @@ export const MeetingRecordButton = ({
 	const [isRecording, setIsRecording] = useState(false);
 	const recognitionRef = useRef<any | null>(null);
 	const transcriptRef = useRef("");
-	const saveTranscript = useMutation(api.meetingNotes.saveTranscript);
+	const saveTranscript = useMutation(api.content.meetingNotes.saveTranscript);
 	const saveBufferRef = useRef("");
 	const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const broadcast = useBroadcastEvent();
@@ -473,18 +473,18 @@ export const NotesSidebar = ({
 	const [copied, setCopied] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
-	const savedNotes = useQuery(api.meetingNotes.getByRoom, {
+	const savedNotes = useQuery(api.content.meetingNotes.getByRoom, {
 		roomId,
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
-	const generations = useQuery(api.meetingNotes.getGenerations, { roomId });
-	const generateAI = useAction(api.meetingNotes.generateAIInsights);
-	const finalizeTranscript = useMutation(api.meetingNotes.finalizeTranscript);
-	const saveTranscript = useMutation(api.meetingNotes.saveTranscript);
+	const generations = useQuery(api.content.meetingNotes.getGenerations, { roomId });
+	const generateAI = useAction(api.content.meetingNotes.generateAIInsights);
+	const finalizeTranscript = useMutation(api.content.meetingNotes.finalizeTranscript);
+	const saveTranscript = useMutation(api.content.meetingNotes.saveTranscript);
 
 	// Fetch workspace members so AI can map names to user IDs
 	const members = useQuery(
-		api.members.get,
+		api.workspace.members.get,
 		workspaceId ? { workspaceId: workspaceId as Id<"workspaces"> } : "skip"
 	);
 	const membersContext =
@@ -961,7 +961,7 @@ interface AdminPushProps {
 
 const AdminPushButton = ({ workspaceId, actionItems }: AdminPushProps) => {
 	const [pushing, setPushing] = useState(false);
-	const createBulk = useMutation(api.tasks.createBulkFromAI);
+	const createBulk = useMutation(api.planning.tasks.createBulkFromAI);
 
 	const handlePush = async () => {
 		setPushing(true);

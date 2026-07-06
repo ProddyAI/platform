@@ -28,7 +28,7 @@ const waitForOneSignal = async (
 
 export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 	const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
-	const setOneSignalExternalId = useMutation(api.users.setOneSignalExternalId);
+	const setOneSignalExternalId = useMutation(api.workspace.users.setOneSignalExternalId);
 	const sdkLoadedRef = useRef(false);
 	const initAttemptedRef = useRef(false);
 	const currentUserRef = useRef<string | undefined>();

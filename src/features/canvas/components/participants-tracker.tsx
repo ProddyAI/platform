@@ -24,7 +24,7 @@ export const CanvasParticipantsTracker = ({
 	const self = useSelf();
 
 	// Mutation for updating messages
-	const updateMessage = useMutation(api.messages.update);
+	const updateMessage = useMutation(api.messaging.messages.update);
 
 	// Effect to update the live message when participants change
 	useEffect(() => {

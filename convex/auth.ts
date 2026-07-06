@@ -92,7 +92,7 @@ const CustomPassword = ConvexCredentials<DataModel>({
 
 			// Critical security check: enforce OTP verification on the server.
 			const verifiedOtpStatus = await ctx.runQuery(
-				api.emailVerification.hasVerifiedOTP,
+				api.authn.emailVerification.hasVerifiedOTP,
 				{ email }
 			);
 
@@ -112,7 +112,7 @@ const CustomPassword = ConvexCredentials<DataModel>({
 
 			// Consume verified OTP records after successful account creation.
 			await ctx.runMutation(
-				internal.emailVerification.consumeVerifiedOTPsInternal,
+				internal.authn.emailVerification.consumeVerifiedOTPsInternal,
 				{ email }
 			);
 

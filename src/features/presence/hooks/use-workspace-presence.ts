@@ -14,22 +14,22 @@ export const useWorkspacePresence = ({
 	workspaceId,
 }: UseWorkspacePresenceProps) => {
 	// Get current user to use their actual name
-	const currentUser = useQuery(api.users.current);
+	const currentUser = useQuery(api.workspace.users.current);
 	const actualUserName = currentUser?.name || "Anonymous";
 
 	// Use the Convex presence hook for workspace-level presence
 	const presenceState = usePresence(
 		{
-			heartbeat: api.presence.heartbeat,
-			list: api.presence.list,
-			disconnect: api.presence.disconnect,
+			heartbeat: api.messaging.presence.heartbeat,
+			list: api.messaging.presence.list,
+			disconnect: api.messaging.presence.disconnect,
 		},
 		`workspace-${workspaceId}`,
 		actualUserName
 	);
 
 	// Get members data to enrich presence information
-	const members = useQuery(api.members.get, {
+	const members = useQuery(api.workspace.members.get, {
 		workspaceId: workspaceId as Id<"workspaces">,
 	});
 
@@ -56,7 +56,7 @@ export const useWorkspacePresence = ({
 
 export const useUserPresence = (userId?: Id<"users">) => {
 	const presenceData = useQuery(
-		api.presence.listUserPresence,
+		api.messaging.presence.listUserPresence,
 		userId ? { userId } : "skip"
 	);
 

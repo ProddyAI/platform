@@ -74,7 +74,7 @@ async function fetchRecentChannelMessages(opts: {
 			throw new Error("channel or channelId is required");
 		}
 
-		const channels = await convex.query(api.channels.get, {
+		const channels = await convex.query(api.messaging.channels.get, {
 			workspaceId: opts.workspaceId,
 		});
 
@@ -103,7 +103,7 @@ async function fetchRecentChannelMessages(opts: {
 	} else {
 		// If caller gave an ID, we still attempt to resolve name for nicer output.
 		try {
-			const channels = await convex.query(api.channels.get, {
+			const channels = await convex.query(api.messaging.channels.get, {
 				workspaceId: opts.workspaceId,
 			});
 			const found = (
@@ -115,7 +115,7 @@ async function fetchRecentChannelMessages(opts: {
 		}
 	}
 
-	const messages = await convex.query(api.messages.getRecentChannelMessages, {
+	const messages = await convex.query(api.messaging.messages.getRecentChannelMessages, {
 		channelId: resolvedChannelId,
 		limit: opts.limit,
 	});
@@ -306,7 +306,7 @@ export async function POST(req: NextRequest) {
 			if (token) convex.setAuth(token);
 
 			const usageCheck = await convex.query(
-				api.usageTracking.checkAIUsageLimitPublic,
+				api.billing.usageTracking.checkAIUsageLimitPublic,
 				{
 					workspaceId,
 					featureType: "aiSummary",
@@ -413,7 +413,7 @@ Output format (Markdown, no intro text):
 			try {
 				const trackingToken = await convexAuthNextjsToken();
 				if (trackingToken) trackingConvex.setAuth(trackingToken);
-				await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
+				await trackingConvex.mutation(api.billing.usageTracking.recordAIRequestPublic, {
 					workspaceId,
 					featureType: "aiSummary",
 				});

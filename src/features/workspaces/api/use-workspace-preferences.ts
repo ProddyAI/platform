@@ -2,14 +2,14 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import type { DashboardWidget } from "../../../../convex/preferences";
+import type { DashboardWidget } from "../../../../convex/workspace/preferences";
 
 export const useWorkspacePreferences = ({
 	workspaceId,
 }: {
 	workspaceId: Id<"workspaces">;
 }) => {
-	const data = useQuery(api.preferences.getWorkspacePreferences, {
+	const data = useQuery(api.workspace.preferences.getWorkspacePreferences, {
 		workspaceId,
 	});
 	const isLoading = data === undefined;
@@ -18,7 +18,7 @@ export const useWorkspacePreferences = ({
 };
 
 export const useUpdateWorkspacePreferences = () => {
-	return useMutation(api.preferences.updateWorkspacePreferences);
+	return useMutation(api.workspace.preferences.updateWorkspacePreferences);
 };
 
 export const useSidebarCollapsed = ({
@@ -33,7 +33,7 @@ export const useSidebarCollapsed = ({
 	});
 
 	const updateSidebarCollapsed = useMutation(
-		api.preferences.updateSidebarCollapsed
+		api.workspace.preferences.updateSidebarCollapsed
 	);
 
 	useEffect(() => {
@@ -116,7 +116,7 @@ export const useDashboardWidgets = ({
 	});
 
 	const updateDashboardWidgets = useMutation(
-		api.preferences.updateDashboardWidgets
+		api.workspace.preferences.updateDashboardWidgets
 	);
 
 	useEffect(() => {

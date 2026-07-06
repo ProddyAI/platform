@@ -29,7 +29,7 @@ export const useDisconnectImport = () => {
 	);
 
 	const mutation = useMutation(
-		api.importIntegrations.disconnectImportConnection
+		api.imports.importIntegrations.disconnectImportConnection
 	);
 
 	const mutate = useCallback(

@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 
 export const useCleanupDuplicateChannels = () => {
-	const mutation = useMutation(api.importIntegrations.cleanupDuplicateChannels);
+	const mutation = useMutation(api.imports.importIntegrations.cleanupDuplicateChannels);
 
 	return {
 		cleanup: mutation,

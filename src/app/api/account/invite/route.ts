@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
 		// Atomically validate and record rate limit to prevent race conditions
 		const rateLimitCheck = await convex.mutation(
-			api.rateLimit.validateAndRecordRateLimit,
+			api.billing.rateLimit.validateAndRecordRateLimit,
 			{
 				workspaceId,
 				email: email.toLowerCase(),
@@ -113,8 +113,8 @@ export async function POST(req: Request) {
 		}
 
 		const [inviteDetails, joinCode] = await Promise.all([
-			convex.query(api.workspaceInvites.getInviteDetails, { workspaceId }),
-			convex.query(api.workspaceInvites.getWorkspaceJoinCode, { workspaceId }),
+			convex.query(api.workspace.invites.getInviteDetails, { workspaceId }),
+			convex.query(api.workspace.invites.getWorkspaceJoinCode, { workspaceId }),
 		]);
 		const senderName = inviteDetails?.senderName;
 		const senderEmail = inviteDetails?.senderEmail;
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
 
 		console.log("[Invite Send] Creating invite for workspace:", workspaceId);
 
-		await convex.mutation(api.workspaceInvites.insertInvite, {
+		await convex.mutation(api.workspace.invites.insertInvite, {
 			workspaceId,
 			email: email.toLowerCase(),
 			hash,
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
 
 		// Best-effort push notification for existing workspace members.
 		try {
-			await convex.mutation(api.notifications.notifyInviteSent, {
+			await convex.mutation(api.notify.notifications.notifyInviteSent, {
 				workspaceId,
 				invitedEmail: email.toLowerCase(),
 			});
