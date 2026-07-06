@@ -500,7 +500,8 @@ export async function executeTodoistImport(
 			try {
 				const categoryId = await storeProjectAsCategory(todoistCtx, project);
 				todoistCtx.projectMap.set(project.externalId, categoryId);
-				result.itemsCreated.push(categoryId);
+				// Categories are not channels — leave result.itemsCreated empty so the
+				// job's channelsCreated (typed v.id("channels")[]) stays valid.
 
 				await ctx.updateProgress({
 					itemsImported: index + 1,
@@ -558,7 +559,7 @@ export async function executeTodoistImport(
 
 		await ctx.log("info", "Todoist import completed", {
 			duration: formatDuration(duration),
-			projects: result.itemsCreated.length,
+			projects: todoistCtx.projectMap.size,
 			tasks: result.messagesCreated,
 			users: result.usersMatched,
 			errors: result.errors?.length || 0,
