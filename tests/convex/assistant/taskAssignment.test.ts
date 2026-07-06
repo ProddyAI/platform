@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canAssignTaskToMember } from "./taskAssignment";
+import { canAssignTaskToMember } from "../../../convex/assistant/taskAssignment";
 
 describe("canAssignTaskToMember", () => {
 	test("allows self-assignment", () => {

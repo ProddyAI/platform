@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { validateRelativeDueDateSelection } from "./relativeDate";
+import { validateRelativeDueDateSelection } from "../../../convex/assistant/relativeDate";
 
 describe("validateRelativeDueDateSelection", () => {
 	test("flags weekday/date mismatches", () => {

@@ -3,7 +3,7 @@ import {
 	buildHybridRetrievalResults,
 	type DirectSearchAllResults,
 	type SemanticRetrievalResult,
-} from "./hybridRetrieval";
+} from "../../../convex/assistant/hybridRetrieval";
 
 describe("buildHybridRetrievalResults", () => {
 	test("ranks exact direct matches above fuzzier semantic matches", () => {

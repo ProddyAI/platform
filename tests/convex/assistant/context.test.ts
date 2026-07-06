@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	buildPreflightContextPlan,
 	buildPreflightContextPrompt,
-} from "./context";
+} from "../../../convex/assistant/context";
 
 describe("buildPreflightContextPlan", () => {
 	test("plans channel resolution for explicit channel questions", () => {

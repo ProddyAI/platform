@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { filterItemsInRelativeDayWindow } from "./tools";
+import { filterItemsInRelativeDayWindow } from "../../../convex/assistant/tools";
 
 describe("filterItemsInRelativeDayWindow", () => {
 	test("returns only items due within the next-week window", () => {

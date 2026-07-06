@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	buildDailyFocusPrompt,
 	buildReschedulingPrompt,
-} from "./stress-prompts";
+} from "../../../src/lib/stress-prompts";
 
 describe("stress prompt builders", () => {
 	test("sanitizes task titles before embedding them in prompts", () => {

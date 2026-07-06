@@ -3,7 +3,7 @@ import {
 	isAuthenticatedRepoListRequest,
 	isStarredRepoListRequest,
 	normalizeGithubInstruction,
-} from "./composioTools";
+} from "../../../convex/assistant/composioTools";
 
 describe("GitHub repo instruction normalization", () => {
 	test("normalizes owned repository listing requests", () => {

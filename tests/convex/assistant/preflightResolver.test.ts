@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { Id } from "../_generated/dataModel";
-import type { ActionCtx } from "../_generated/server";
-import { resolvePreflightContext } from "./preflightResolver";
+import type { Id } from "../../../convex/_generated/dataModel";
+import type { ActionCtx } from "../../../convex/_generated/server";
+import { resolvePreflightContext } from "../../../convex/assistant/preflightResolver";
 
 function createCtx(responses: unknown[]) {
 	let index = 0;

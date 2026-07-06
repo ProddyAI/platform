@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { toOpenAIChatMessages } from "./toolExecutor";
+import { toOpenAIChatMessages } from "../../../convex/assistant/toolExecutor";
 
 describe("toOpenAIChatMessages", () => {
 	test("accepts valid assistant and tool messages", () => {

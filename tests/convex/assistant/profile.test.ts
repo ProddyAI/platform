@@ -3,7 +3,7 @@ import {
 	type AssistantProfileRecord,
 	buildAssistantProfilePrompt,
 	extractAssistantProfileUpdateFromMessage,
-} from "./profile";
+} from "../../../convex/assistant/profile";
 
 describe("buildAssistantProfilePrompt", () => {
 	test("renders bounded memory and personalization instructions", () => {

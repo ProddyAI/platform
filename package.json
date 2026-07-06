@@ -14,7 +14,8 @@
 		"type": "tsc --noEmit",
 		"check": "biome check --write --unsafe .",
 		"start": "next start",
-		"build": "tsc --noEmit && next build"
+		"build": "tsc --noEmit && next build",
+		"test": "bun test tests"
 	},
 	"author": {
 		"name": "ProddyAI",

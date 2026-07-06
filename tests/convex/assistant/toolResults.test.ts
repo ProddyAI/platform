@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { collectSourceRefsFromToolResult } from "./toolResults";
+import { collectSourceRefsFromToolResult } from "../../../convex/assistant/toolResults";
 
 describe("collectSourceRefsFromToolResult", () => {
 	test("skips blank channel names in search results", () => {

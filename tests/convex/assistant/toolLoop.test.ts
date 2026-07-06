@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolveAssistantToolLoop } from "./toolLoop";
+import { resolveAssistantToolLoop } from "../../../convex/assistant/toolLoop";
 
 describe("resolveAssistantToolLoop", () => {
 	test("allows multi-step internal retrieval chains before finalizing the answer", async () => {

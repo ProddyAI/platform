@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Id } from "../_generated/dataModel";
+import type { Id } from "../../../convex/_generated/dataModel";
 import {
 	buildTaskDraftFailureMessage,
 	formatPendingTaskDraftConfirmation,
@@ -7,7 +7,7 @@ import {
 	isPendingTaskConfirmation,
 	mergePendingTaskDraftUpdate,
 	type PendingTaskDraft,
-} from "./taskDrafts";
+} from "../../../convex/assistant/taskDrafts";
 
 describe("task draft confirmation helpers", () => {
 	test("detects explicit confirmation replies", () => {

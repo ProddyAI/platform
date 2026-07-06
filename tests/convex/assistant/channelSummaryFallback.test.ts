@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildChannelSummaryFallback } from "./channelSummaryFallback";
+import { buildChannelSummaryFallback } from "../../../convex/assistant/channelSummaryFallback";
 
 describe("buildChannelSummaryFallback", () => {
 	test("turns recent channel messages into a synthesized summary instead of echoing raw chat", () => {
