@@ -19,7 +19,6 @@ import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
 import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
-import BoardPageContent from "@/features/board/components/board-page-content";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -766,7 +765,6 @@ const ChannelBoardPage = () => {
 			/>
 		</div>
 	);
-	return <BoardPageContent channelId={channelId} />;
 };
 
 export default ChannelBoardPage;

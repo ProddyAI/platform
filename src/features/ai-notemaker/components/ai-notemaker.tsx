@@ -386,7 +386,7 @@ export const AiNotemaker = ({
 								<Maximize2 className="size-4.5" />
 							</Button>
 						)}
-						<div className="w-px h-5 bg-gray-200 mx-1"></div>
+						<div className="w-px h-5 bg-gray-200 mx-1" />
 						<Button
 							className="h-9 w-9 rounded-full hover:bg-red-50 hover:text-red-600 text-gray-500 transition-all hover:scale-105 active:scale-95"
 							onClick={() => setIsOpen(false)}
@@ -527,7 +527,7 @@ export const AiNotemaker = ({
 						) : isLoading ? (
 							<div className="flex flex-col items-center justify-center h-full space-y-6 pt-16">
 								<div className="relative inline-flex">
-									<div className="absolute inset-0 bg-blue-100 rounded-full blur-xl animate-pulse opacity-50"></div>
+									<div className="absolute inset-0 bg-blue-100 rounded-full blur-xl animate-pulse opacity-50" />
 									<Loader2 className="size-12 animate-spin text-blue-600 relative z-10" />
 									<Sparkles className="size-5 text-blue-400 absolute -top-1 -right-3 animate-bounce z-20" />
 								</div>
@@ -620,7 +620,7 @@ export const AiNotemaker = ({
 																				? "opacity-100"
 																				: "opacity-0"
 																		)}
-																	></div>
+																	/>
 																</div>
 															</div>
 															<div className="flex-1 space-y-2">
@@ -694,7 +694,7 @@ export const AiNotemaker = ({
 																							? `${item.assigneeName} (Unmapped)`
 																							: "Unassigned"}
 																					</div>
-																					<div className="h-px bg-gray-100 my-1"></div>
+																					<div className="h-px bg-gray-100 my-1" />
 																					{members.map((m) => (
 																						<div
 																							className="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer flex items-center gap-2"
@@ -815,7 +815,7 @@ export const AiNotemaker = ({
 												<ul className="space-y-4 text-[15px] text-gray-700">
 													{notesData.decisions.map((d: string, i: number) => (
 														<li className="flex gap-3 items-start" key={i}>
-															<div className="mt-1.5 size-1.5 rounded-full bg-purple-500 flex-shrink-0"></div>
+															<div className="mt-1.5 size-1.5 rounded-full bg-purple-500 flex-shrink-0" />
 															<span className="leading-relaxed font-medium">
 																{d}
 															</span>
@@ -868,11 +868,11 @@ export const AiNotemaker = ({
 										)}
 									>
 										<div className="flex items-center gap-4 mb-8">
-											<div className="h-px bg-gray-200 flex-1"></div>
+											<div className="h-px bg-gray-200 flex-1" />
 											<h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
 												Follow-up Discussion
 											</h3>
-											<div className="h-px bg-gray-200 flex-1"></div>
+											<div className="h-px bg-gray-200 flex-1" />
 										</div>
 										<div className="space-y-6">
 											{chatHistory.map((msg, i) => (

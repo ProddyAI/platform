@@ -123,7 +123,6 @@ export const WorkspaceManagement = ({
 	workspace,
 	currentMember,
 }: WorkspaceManagementProps) => {
-	const router = useRouter();
 	const [name, setName] = useState(workspace.name);
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [_isGeneratingCode, setIsGeneratingCode] = useState(false);

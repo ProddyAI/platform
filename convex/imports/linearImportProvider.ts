@@ -625,7 +625,7 @@ export async function executeLinearImport(
 
 				// Map Linear states to channel statuses and cache state names
 				for (const state of states) {
-					const statusId = await getOrCreateStatusForState(
+					await getOrCreateStatusForState(
 						linearCtx,
 						channelId as Id<"channels">,
 						state.id,

@@ -202,7 +202,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 						// Check new status
 						const newStatus = OneSignal.User?.PushSubscription?.optedIn;
 						logger.debug("📱 Push subscription after opt-in:", newStatus);
-					} catch (subError) {
+					} catch {
 						logger.warn("⚠️ Push subscription opt-in request failed");
 					}
 				}

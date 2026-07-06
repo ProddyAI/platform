@@ -580,22 +580,3 @@ export const extractMessagePreview = (
 
 	return defaultText;
 };
-
-// Helper function to get week range string
-function getWeekRange(): string {
-	const now = new Date();
-	const startOfWeek = new Date(now);
-	startOfWeek.setDate(now.getDate() - now.getDay());
-
-	const endOfWeek = new Date(startOfWeek);
-	endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-	const formatDate = (date: Date) => {
-		return date.toLocaleDateString("en-US", {
-			month: "short",
-			day: "numeric",
-		});
-	};
-
-	return `${formatDate(startOfWeek)} - ${formatDate(endOfWeek)}, ${now.getFullYear()}`;
-}

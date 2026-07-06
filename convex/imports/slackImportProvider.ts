@@ -37,23 +37,6 @@ import {
 // SLACK API TYPES
 // ============================================================================
 
-interface SlackAuthResponse {
-	ok: boolean;
-	access_token: string;
-	refresh_token?: string;
-	team_id: string;
-	team: {
-		id: string;
-		name: string;
-		domain: string;
-		icon?: Record<string, unknown>;
-	};
-	scope: string;
-	bot_user_id?: string;
-	app_id?: string;
-	error?: string;
-}
-
 interface SlackUser {
 	id: string;
 	team_id: string;
