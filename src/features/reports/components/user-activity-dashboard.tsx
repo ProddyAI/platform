@@ -47,7 +47,7 @@ export const UserActivityDashboard = ({
 
 	// Fetch user activity data
 	const userActivityResult = useQuery(
-		api.analytics.getUserActivitySummary,
+		api.workspace.analytics.getUserActivitySummary,
 		workspaceId
 			? {
 					workspaceId,
@@ -59,7 +59,7 @@ export const UserActivityDashboard = ({
 
 	// Fetch current active users count for the selected time period
 	const activeUsersData = useQuery(
-		api.analytics.getActiveUsersCount,
+		api.workspace.analytics.getActiveUsersCount,
 		workspaceId
 			? {
 					workspaceId,

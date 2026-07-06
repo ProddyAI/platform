@@ -26,9 +26,9 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 	open,
 	onOpenChange,
 }) => {
-	const issues = useQuery(api.board.getIssues, { channelId });
+	const issues = useQuery(api.board.board.getIssues, { channelId });
 	const relationships = useQuery(
-		api.board.getActiveBlockingRelationshipsForChannel,
+		api.board.board.getActiveBlockingRelationshipsForChannel,
 		{ channelId }
 	);
 

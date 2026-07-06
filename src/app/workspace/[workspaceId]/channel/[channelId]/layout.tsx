@@ -1,16 +1,22 @@
 "use client";
 
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import { Loader, Smile, Trash, TriangleAlert, Upload, X } from "lucide-react";
+import {
+	ChevronDown,
+	Loader,
+	Smile,
+	Trash,
+	TriangleAlert,
+	Upload,
+	X,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { type PropsWithChildren, useEffect, useRef, useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { AiNotemaker } from "@/components/AiNotemaker";
-import { EmojiPopover } from "@/components/emoji-popover";
+import { EmojiPopover } from "@/components/pickers/emoji-popover";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -23,14 +29,15 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { AiNotemaker } from "@/features/ai-notemaker/components/ai-notemaker";
 import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
 import { useGetChannel } from "@/features/channels/api/use-get-channel";
 import { useRemoveChannel } from "@/features/channels/api/use-remove-channel";
 import { useUpdateChannel } from "@/features/channels/api/use-update-channel";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
-import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useConfirm } from "@/hooks/use-confirm";
+import { useGenerateUploadUrl } from "@/hooks/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../../toolbar";
 
@@ -837,7 +844,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 								/>
 								<span className="truncate"># {channel.name}</span>
 							</div>
-							<FaChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
+							<ChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
 						</Button>
 					</DialogTrigger>
 

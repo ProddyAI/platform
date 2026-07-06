@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { FAQSection } from "@/features/landing/assistant/FAQSection";
-import { FeaturesSection } from "@/features/landing/assistant/FeaturesSection";
-import { HeroSection } from "@/features/landing/assistant/HeroSection";
-import { UseCasesSection } from "@/features/landing/assistant/UseCasesSection";
-import { CTASection } from "@/features/landing/CTASection";
-import { Footer } from "@/features/landing/Footer";
-import { Header } from "@/features/landing/Header";
+import { FAQSection } from "@/features/landing/assistant/faq-section";
+import { FeaturesSection } from "@/features/landing/assistant/features-section";
+import { HeroSection } from "@/features/landing/assistant/hero-section";
+import { UseCasesSection } from "@/features/landing/assistant/use-cases-section";
+import { CTASection } from "@/features/landing/components/cta-section";
+import { Footer } from "@/features/landing/components/footer";
+import { Header } from "@/features/landing/components/header";
 
 export const metadata: Metadata = {
 	title: "Assistant | Proddy",

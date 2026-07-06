@@ -2,7 +2,7 @@
 
 import { Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { UsageDashboard } from "@/features/usage/components/UsageDashboard";
+import { UsageDashboard } from "@/features/usage/components/usage-dashboard";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { WorkspaceToolbar } from "../toolbar";
 

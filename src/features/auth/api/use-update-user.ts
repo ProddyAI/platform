@@ -16,7 +16,7 @@ interface UpdateUserData {
 }
 
 export const useUpdateUser = () => {
-	const updateUserMutation = useMutation(api.users.updateProfile);
+	const updateUserMutation = useMutation(api.workspace.users.updateProfile);
 
 	const updateUser = useCallback(
 		async (data: UpdateUserData) => {

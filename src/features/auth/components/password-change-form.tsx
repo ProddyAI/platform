@@ -23,7 +23,9 @@ import { PasswordStrengthIndicator } from "./password-strength-indicator";
 export const PasswordChangeForm = () => {
 	const router = useRouter();
 	const { signOut } = useAuthActions();
-	const changePassword = useMutation(api.passwordManagement.changePassword);
+	const changePassword = useMutation(
+		api.authn.passwordManagement.changePassword
+	);
 
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");

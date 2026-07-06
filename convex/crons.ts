@@ -10,7 +10,7 @@ const crons = cronJobs();
 crons.weekly(
 	"weekly-digest-monday",
 	{ dayOfWeek: "monday", hourUTC: 9, minuteUTC: 0 },
-	internal.emailActions.sendWeeklyDigests,
+	internal.notify.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "monday" }
 );
 
@@ -18,7 +18,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-tuesday",
 	{ dayOfWeek: "tuesday", hourUTC: 9, minuteUTC: 0 },
-	internal.emailActions.sendWeeklyDigests,
+	internal.notify.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "tuesday" }
 );
 
@@ -26,7 +26,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-wednesday",
 	{ dayOfWeek: "wednesday", hourUTC: 9, minuteUTC: 0 },
-	internal.emailActions.sendWeeklyDigests,
+	internal.notify.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "wednesday" }
 );
 
@@ -34,7 +34,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-thursday",
 	{ dayOfWeek: "thursday", hourUTC: 9, minuteUTC: 0 },
-	internal.emailActions.sendWeeklyDigests,
+	internal.notify.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "thursday" }
 );
 
@@ -42,7 +42,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-friday",
 	{ dayOfWeek: "friday", hourUTC: 9, minuteUTC: 0 },
-	internal.emailActions.sendWeeklyDigests,
+	internal.notify.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "friday" }
 );
 
@@ -50,7 +50,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-saturday",
 	{ dayOfWeek: "saturday", hourUTC: 9, minuteUTC: 0 },
-	internal.emailActions.sendWeeklyDigests,
+	internal.notify.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "saturday" }
 );
 
@@ -58,7 +58,7 @@ crons.weekly(
 crons.weekly(
 	"weekly-digest-sunday",
 	{ dayOfWeek: "sunday", hourUTC: 9, minuteUTC: 0 },
-	internal.emailActions.sendWeeklyDigests,
+	internal.notify.emailActions.sendWeeklyDigests,
 	{ dayOfWeek: "sunday" }
 );
 
@@ -66,21 +66,21 @@ crons.weekly(
 crons.hourly(
 	"cleanup-expired-rate-limits",
 	{ minuteUTC: 0 }, // Run at the top of every hour
-	internal.rateLimit.cleanupExpiredLimits
+	internal.billing.rateLimit.cleanupExpiredLimits
 );
 
 // Clean up expired OTP entries every hour
 crons.hourly(
 	"cleanup-expired-otps",
 	{ minuteUTC: 15 }, // Run 15 minutes past every hour
-	internal.emailVerification.cleanupExpiredOTPs
+	internal.authn.emailVerification.cleanupExpiredOTPs
 );
 
 // Clean up expired password reset tokens every hour
 crons.hourly(
 	"cleanup-expired-reset-tokens",
 	{ minuteUTC: 30 }, // Run 30 minutes past every hour
-	internal.passwordManagement.cleanupExpiredTokens
+	internal.authn.passwordManagement.cleanupExpiredTokens
 );
 
 export default crons;

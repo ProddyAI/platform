@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 				const trackingToken = await convexAuthNextjsToken();
 				if (trackingToken) trackingConvex.setAuth(trackingToken);
 				const limitCheck = await trackingConvex.query(
-					api.usageTracking.checkAIUsageLimitPublic,
+					api.billing.usageTracking.checkAIUsageLimitPublic,
 					{
 						workspaceId,
 						featureType: "aiDiagram",
@@ -116,10 +116,13 @@ Mermaid:`;
 				const trackingConvex = createConvexClient();
 				const trackingToken = convexAuthNextjsToken();
 				if (trackingToken) trackingConvex.setAuth(trackingToken);
-				await trackingConvex.mutation(api.usageTracking.recordAIRequestPublic, {
-					workspaceId,
-					featureType: "aiDiagram",
-				});
+				await trackingConvex.mutation(
+					api.billing.usageTracking.recordAIRequestPublic,
+					{
+						workspaceId,
+						featureType: "aiDiagram",
+					}
+				);
 			} catch (trackErr) {
 				console.warn("[UsageTracking] Failed to record AI diagram:", trackErr);
 			}

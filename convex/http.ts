@@ -3,8 +3,8 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type ActionCtx, httpAction } from "./_generated/server";
 import { auth } from "./auth";
-import { subscriptions } from "./dodo";
-import { PLANS } from "./plans";
+import { subscriptions } from "./billing/dodo";
+import { PLANS } from "./billing/plans";
 
 const http = httpRouter();
 
@@ -226,7 +226,7 @@ const syncSubscriptionFromDodo = async (
 		});
 
 		await ctx.runMutation(
-			internal.webhooks.updateSubscription,
+			internal.billing.webhooks.updateSubscription,
 			buildSubscriptionMutationArgs(
 				{
 					...subscription,
@@ -242,7 +242,7 @@ const syncSubscriptionFromDodo = async (
 	} catch (error) {
 		console.error("[Dodo Webhook] Failed to retrieve subscription:", error);
 		await ctx.runMutation(
-			internal.webhooks.updateSubscription,
+			internal.billing.webhooks.updateSubscription,
 			buildSubscriptionMutationArgs(
 				{
 					subscription_id: subscriptionId,
@@ -382,7 +382,7 @@ const handlePaymentSucceededEvent = async (
 	if (typeof subscriptionId === "string") {
 		paymentArgs.subscriptionId = subscriptionId;
 		pendingChange = await ctx.runQuery(
-			internal.webhooks.getPendingSubscriptionChange,
+			internal.billing.webhooks.getPendingSubscriptionChange,
 			{ subscriptionId }
 		);
 		if (pendingChange) {
@@ -460,10 +460,13 @@ const handlePaymentSucceededEvent = async (
 							error: errorDetails,
 						}
 					);
-					await ctx.runMutation(internal.webhooks.markDodoSyncManualReview, {
-						workspaceId: pendingChange.workspaceId,
-						reason: `Failed to apply paid Dodo plan change after payment: ${errorDetails}`,
-					});
+					await ctx.runMutation(
+						internal.billing.webhooks.markDodoSyncManualReview,
+						{
+							workspaceId: pendingChange.workspaceId,
+							reason: `Failed to apply paid Dodo plan change after payment: ${errorDetails}`,
+						}
+					);
 				}
 			}
 			paymentArgs.applyPendingBilling = dodoQuantityAligned;
@@ -487,7 +490,7 @@ const handlePaymentSucceededEvent = async (
 	if (typeof payload.data?.invoice_url === "string") {
 		paymentArgs.invoiceUrl = payload.data.invoice_url;
 	}
-	await ctx.runMutation(internal.webhooks.createPayment, paymentArgs);
+	await ctx.runMutation(internal.billing.webhooks.createPayment, paymentArgs);
 	if (pendingChange && dodoQuantityAligned) {
 		return;
 	}
@@ -533,7 +536,7 @@ const handleSubscriptionActiveEvent = async (
 	payload: DodoWebhookPayload
 ) => {
 	await ctx.runMutation(
-		internal.webhooks.createSubscription,
+		internal.billing.webhooks.createSubscription,
 		buildSubscriptionMutationArgs(payload.data, JSON.stringify(payload))
 	);
 };
@@ -543,7 +546,7 @@ const handleSubscriptionUpdatedEvent = async (
 	payload: DodoWebhookPayload
 ) => {
 	await ctx.runMutation(
-		internal.webhooks.updateSubscription,
+		internal.billing.webhooks.updateSubscription,
 		buildSubscriptionMutationArgs(payload.data, JSON.stringify(payload))
 	);
 };
@@ -575,7 +578,10 @@ const handleSubscriptionCancelledEvent = async (
 	if (workspaceId) cancelArgs.workspaceId = workspaceId;
 	if (customerId) cancelArgs.customerId = customerId;
 
-	await ctx.runMutation(internal.webhooks.cancelSubscription, cancelArgs);
+	await ctx.runMutation(
+		internal.billing.webhooks.cancelSubscription,
+		cancelArgs
+	);
 };
 
 http.route({
@@ -642,7 +648,7 @@ http.route({
 		const webhookId = getWebhookId(payload);
 		if (webhookId) {
 			const isDuplicate = await ctx.runQuery(
-				(internal.webhooks as Record<string, unknown>)
+				(internal.billing.webhooks as Record<string, unknown>)
 					.checkWebhook as FunctionReference<
 					"query",
 					"internal",
@@ -678,7 +684,7 @@ http.route({
 					paymentId: payload.data?.payment_id,
 				});
 				if (failedWorkspaceId) {
-					await ctx.runMutation(internal.payments.clearPendingUpgrade, {
+					await ctx.runMutation(internal.billing.payments.clearPendingUpgrade, {
 						workspaceId: failedWorkspaceId as Id<"workspaces">,
 					});
 				}
@@ -695,7 +701,7 @@ http.route({
 
 			if (webhookId) {
 				await ctx.runMutation(
-					(internal.webhooks as Record<string, unknown>)
+					(internal.billing.webhooks as Record<string, unknown>)
 						.recordWebhook as FunctionReference<
 						"mutation",
 						"internal",
@@ -842,19 +848,22 @@ http.route({
 			}
 
 			// Store the connection
-			await ctx.runMutation(internal.importIntegrations.storeSlackConnection, {
-				workspaceId: workspaceId as Id<"workspaces">,
-				memberId: memberId as Id<"members">,
-				accessToken: tokenData.access_token,
-				refreshToken: tokenData.refresh_token || undefined,
-				expiresAt:
-					tokenData.expires_in && typeof tokenData.expires_in === "number"
-						? Date.now() + tokenData.expires_in * 1000
-						: undefined,
-				scope: tokenData.scope,
-				teamId: tokenData.team.id,
-				teamName: tokenData.team.name,
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.storeSlackConnection,
+				{
+					workspaceId: workspaceId as Id<"workspaces">,
+					memberId: memberId as Id<"members">,
+					accessToken: tokenData.access_token,
+					refreshToken: tokenData.refresh_token || undefined,
+					expiresAt:
+						tokenData.expires_in && typeof tokenData.expires_in === "number"
+							? Date.now() + tokenData.expires_in * 1000
+							: undefined,
+					scope: tokenData.scope,
+					teamId: tokenData.team.id,
+					teamName: tokenData.team.name,
+				}
+			);
 
 			// Redirect back to manage page with success
 			return new Response(null, {
@@ -979,7 +988,7 @@ http.route({
 
 			// Store the connection
 			await ctx.runMutation(
-				internal.importIntegrations.storeTodoistConnection,
+				internal.imports.importIntegrations.storeTodoistConnection,
 				{
 					workspaceId: workspaceId as Id<"workspaces">,
 					memberId: memberId as Id<"members">,
@@ -1157,16 +1166,19 @@ http.route({
 			console.log("[LinearOAuth] Organization:", org.name);
 
 			// Store the connection
-			await ctx.runMutation(internal.importIntegrations.storeLinearConnection, {
-				workspaceId: workspaceId as Id<"workspaces">,
-				memberId: memberId as Id<"members">,
-				accessToken: tokenData.access_token,
-				refreshToken: tokenData.refresh_token || undefined,
-				expiresAt: undefined, // Linear tokens don't expire
-				scope: tokenData.scope || "read",
-				organizationId: org.id,
-				organizationName: org.name || "Linear Organization",
-			});
+			await ctx.runMutation(
+				internal.imports.importIntegrations.storeLinearConnection,
+				{
+					workspaceId: workspaceId as Id<"workspaces">,
+					memberId: memberId as Id<"members">,
+					accessToken: tokenData.access_token,
+					refreshToken: tokenData.refresh_token || undefined,
+					expiresAt: undefined, // Linear tokens don't expire
+					scope: tokenData.scope || "read",
+					organizationId: org.id,
+					organizationName: org.name || "Linear Organization",
+				}
+			);
 
 			console.log("[LinearOAuth] Connection stored successfully");
 

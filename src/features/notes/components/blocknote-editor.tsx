@@ -30,7 +30,7 @@ export const BlockNoteEditor = ({
 	// useRef so timer management doesn't trigger re-renders
 	const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const sync = useBlockNoteSync(api.prosemirror, noteId, {
+	const sync = useBlockNoteSync(api.content.prosemirror, noteId, {
 		snapshotDebounceMs: 2000,
 	});
 

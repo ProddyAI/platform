@@ -4,7 +4,7 @@ import type { Id } from "@/../convex/_generated/dataModel";
 
 export const useGetThreadTitle = (messageId: Id<"messages"> | null) => {
 	const data = useQuery(
-		api.threadTitles.getByMessageId,
+		api.messaging.threadTitles.getByMessageId,
 		messageId ? { messageId } : "skip"
 	);
 

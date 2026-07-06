@@ -50,7 +50,7 @@ export const ChannelActivityDashboard = ({
 
 	// Fetch channel activity data
 	const channelActivityResult = useQuery(
-		api.analytics.getChannelActivitySummary,
+		api.workspace.analytics.getChannelActivitySummary,
 		workspaceId
 			? {
 					workspaceId,

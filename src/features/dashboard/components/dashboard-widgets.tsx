@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import type {
 	DashboardWidget,
 	WidgetSize,
-} from "../../../../convex/preferences";
+} from "../../../../convex/workspace/preferences";
 import { AssignedCardsWidget } from "./widgets/assigned-cards-widget";
 import { CalendarPreviewWidget } from "./widgets/calendar-preview-widget";
 import { CanvasWidget } from "./widgets/canvas-widget";

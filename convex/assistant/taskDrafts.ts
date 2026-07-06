@@ -52,7 +52,7 @@ export function isPendingTaskCancellation(message: string) {
 }
 
 export function formatPendingTaskDraftConfirmation(
-	draft: Omit<PendingTaskDraft, "updatedAt"> & { updatedAt?: number },
+	draft: Omit<PendingTaskDraft, "updatedAt"> & { updatedAt?: number }
 ) {
 	const lines = [
 		"Please review this task before I create it:",

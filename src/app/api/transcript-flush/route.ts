@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 			convex.setAuth(token);
 		}
 
-		await convex.mutation(api.meetingNotes.saveTranscript, {
+		await convex.mutation(api.content.meetingNotes.saveTranscript, {
 			roomId,
 			workspaceId,
 			transcriptChunk,

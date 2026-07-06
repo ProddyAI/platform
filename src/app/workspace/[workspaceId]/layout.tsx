@@ -9,16 +9,16 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
 import { NavigationListener } from "@/components/navigation-listener";
+import { MessageSelectionProvider } from "@/contexts/message-selection-context";
 import { SelectionModal } from "@/features/chats/components/selection-modal";
 import { Profile } from "@/features/members/components/profile";
 import { Thread } from "@/features/messages/components/thread";
 import { WorkspacePresenceTracker } from "@/features/presence/components/workspace-presence-tracker";
-import { MessageSelectionProvider } from "@/features/smart/contexts/message-selection-context";
 import { useUpdateLastActiveWorkspace } from "@/features/workspaces/api/use-update-last-active-workspace";
 import { useSidebarCollapsed } from "@/features/workspaces/api/use-workspace-preferences";
 import { usePanel } from "@/hooks/use-panel";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { setupGlobalMentionHandler } from "@/lib/mention-handler";
+import { setupGlobalMentionHandler } from "@/lib/client/mention-handler";
 
 import { cn } from "@/lib/utils";
 

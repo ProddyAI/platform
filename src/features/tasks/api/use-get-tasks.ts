@@ -10,7 +10,7 @@ interface UseGetTasksProps {
 }
 
 export const useGetTasks = ({ workspaceId }: UseGetTasksProps) => {
-	const data = useQuery(api.tasks.getTasks, { workspaceId });
+	const data = useQuery(api.planning.tasks.getTasks, { workspaceId });
 	const isLoading = data === undefined;
 
 	return { data, isLoading };

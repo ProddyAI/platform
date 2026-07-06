@@ -9,7 +9,7 @@ interface UseGetChannelsProps {
 
 export const useGetChannels = ({ workspaceId }: UseGetChannelsProps) => {
 	const data = useQuery(
-		api.channels.get,
+		api.messaging.channels.get,
 		workspaceId ? { workspaceId } : "skip"
 	);
 

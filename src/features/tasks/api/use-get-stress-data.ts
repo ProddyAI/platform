@@ -7,7 +7,7 @@ interface UseGetStressDataProps {
 }
 
 export const useGetStressData = ({ workspaceId }: UseGetStressDataProps) => {
-	const data = useQuery(api.stress.getStressMetrics, { workspaceId });
+	const data = useQuery(api.planning.stress.getStressMetrics, { workspaceId });
 	const isLoading = data === undefined;
 	return { data, isLoading };
 };

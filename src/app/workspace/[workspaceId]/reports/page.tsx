@@ -98,7 +98,7 @@ const ReportsPage = () => {
 
 	// Fetch workspace overview data
 	const overviewData = useQuery(
-		api.analytics.getWorkspaceOverview,
+		api.workspace.analytics.getWorkspaceOverview,
 		workspaceId
 			? {
 					workspaceId,
@@ -111,7 +111,7 @@ const ReportsPage = () => {
 
 	// Fetch message analytics data
 	const messageData = useQuery(
-		api.analytics.getMessageAnalytics,
+		api.workspace.analytics.getMessageAnalytics,
 		workspaceId
 			? {
 					workspaceId,
@@ -124,7 +124,7 @@ const ReportsPage = () => {
 
 	// Fetch task analytics data
 	const taskData = useQuery(
-		api.analytics.getTaskAnalytics,
+		api.workspace.analytics.getTaskAnalytics,
 		workspaceId
 			? {
 					workspaceId,

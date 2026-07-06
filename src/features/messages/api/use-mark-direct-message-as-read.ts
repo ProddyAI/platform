@@ -3,7 +3,7 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 export const useMarkDirectMessageAsRead = () => {
-	const markAsRead = useMutation(api.direct.markDirectMessageAsRead);
+	const markAsRead = useMutation(api.messaging.direct.markDirectMessageAsRead);
 
 	return async (messageId: Id<"messages">) => {
 		try {

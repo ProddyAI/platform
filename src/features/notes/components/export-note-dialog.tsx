@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { formatFileSize } from "@/lib/utils";
 import type { Note } from "../types";
 
 interface ExportNoteDialogProps {
@@ -37,7 +38,7 @@ export const ExportNoteDialog = ({
 	const [isExporting, setIsExporting] = useState(false);
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
-	const createMessage = useMutation(api.messages.create);
+	const createMessage = useMutation(api.messaging.messages.create);
 
 	// Client-side conversion functions (moved from API route)
 	const convertToMarkdown = (note: Note): string => {
@@ -164,16 +165,6 @@ export const ExportNoteDialog = ({
 
 		// This is a placeholder - in production you'd generate actual PDF
 		return `data:text/html;base64,${btoa(htmlContent)}`;
-	};
-
-	const formatFileSize = (bytes: number): string => {
-		if (bytes === 0) return "0 Bytes";
-
-		const k = 1024;
-		const sizes = ["Bytes", "KB", "MB", "GB"];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-		return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 	};
 
 	// Export to chat (save as a message in the channel)

@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import type { CreateNoteRequest } from "../types/index";
+import type { CreateNoteRequest } from "../types";
 
 type ResponseType = Id<"notes"> | null;
 
@@ -26,7 +26,7 @@ export const useCreateNote = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.notes.create);
+	const mutation = useMutation(api.content.notes.create);
 
 	const mutate = useCallback(
 		async (request: CreateNoteRequest, options?: Options) => {

@@ -11,7 +11,7 @@ interface UseCurrentMemberProps {
 
 export const useCurrentMember = ({ workspaceId }: UseCurrentMemberProps) => {
 	const data = useQuery(
-		api.members.current,
+		api.workspace.members.current,
 		workspaceId ? { workspaceId } : "skip"
 	);
 

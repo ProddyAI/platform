@@ -1,18 +1,17 @@
 "use client";
 
-import { AlertTriangle, Loader } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
 import { toast } from "sonner";
 
 import type { Id } from "@/../convex/_generated/dataModel";
-import { ChatInput } from "@/components/chat-input";
-import { MessageList } from "@/components/message-list";
-import { TypingIndicator } from "@/components/typing-indicator";
+import { ChatInput } from "@/components/messaging/chat-input";
+import { MessageList } from "@/components/messaging/message-list";
+import { TypingIndicator } from "@/components/messaging/typing-indicator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useCreateOrGetConversation } from "@/features/conversations/api/use-create-or-get-conversation";
 import { useGetMember } from "@/features/members/api/use-get-member";
+import { useCreateOrGetConversation } from "@/features/messages/api/use-create-or-get-conversation";
 import { useGetMessages } from "@/features/messages/api/use-get-messages";
 import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicator";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -111,7 +110,7 @@ const MemberIdPage = () => {
 						<AvatarFallback>{avatarFallback}</AvatarFallback>
 					</Avatar>
 					<span className="truncate">{member?.user.name || "Member"}</span>
-					<FaChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
+					<ChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
 				</Button>
 			</WorkspaceToolbar>
 

@@ -34,12 +34,12 @@ export const SavedCanvasesDropdown = () => {
 	const [isLoading, setIsLoading] = useState(true);
 
 	// Get the delete message mutation
-	const deleteMessage = useMutation(api.messages.remove);
+	const deleteMessage = useMutation(api.messaging.messages.remove);
 
 	// Get messages from the channel
 	// Always call the hook, but skip the query if channelId is undefined
 	const messages = useQuery(
-		api.messages.get,
+		api.messaging.messages.get,
 		channelId
 			? {
 					channelId: channelId,

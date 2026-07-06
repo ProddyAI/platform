@@ -101,7 +101,10 @@ export async function POST(req: NextRequest) {
 		let currentUser: { _id: string; name?: string; image?: string } | null =
 			null;
 		try {
-			const maybeUser: unknown = await convex.query(api.users.current, {});
+			const maybeUser: unknown = await convex.query(
+				api.workspace.users.current,
+				{}
+			);
 			if (isRecord(maybeUser) && typeof maybeUser._id === "string") {
 				const name = maybeUser.name;
 				const image = maybeUser.image;

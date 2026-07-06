@@ -1,4 +1,4 @@
-import type { StressMetrics } from "../../convex/stress";
+import type { StressMetrics } from "../../convex/planning/stress";
 
 const TITLE_CONTROL_CHARS_REGEX = /\p{Cc}/gu;
 const INSTRUCTION_PREFIX_REGEX =

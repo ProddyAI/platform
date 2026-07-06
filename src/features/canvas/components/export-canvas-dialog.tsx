@@ -41,7 +41,7 @@ export const ExportCanvasDialog = ({
 	);
 
 	// Convex mutation for creating a message
-	const createMessage = useMutation(api.messages.create);
+	const createMessage = useMutation(api.messaging.messages.create);
 
 	const handleClose = () => {
 		onOpenChange(false);

@@ -33,7 +33,7 @@ export const useGetMilestones = ({
 	projectId: Id<"projects">;
 	workspaceId: Id<"workspaces">;
 }) => {
-	const data = useQuery(api.milestones.getByProject, {
+	const data = useQuery(api.planning.milestones.getByProject, {
 		projectId,
 		workspaceId,
 	});
@@ -46,7 +46,7 @@ export const useGetMilestoneStats = ({
 	milestoneId: Id<"milestones"> | null;
 }) => {
 	const data = useQuery(
-		api.milestones.getMilestoneStats,
+		api.planning.milestones.getMilestoneStats,
 		milestoneId ? { milestoneId } : "skip"
 	);
 	return { data, isLoading: data === undefined };
@@ -58,7 +58,7 @@ export const useGetMilestoneIssues = ({
 	milestoneId: Id<"milestones"> | null;
 }) => {
 	const data = useQuery(
-		api.milestones.getMilestoneIssues,
+		api.planning.milestones.getMilestoneIssues,
 		milestoneId ? { milestoneId } : "skip"
 	);
 	return { data: data ?? [], isLoading: data === undefined };
@@ -70,23 +70,23 @@ export const useGetLinkableMilestoneIssues = ({
 	milestoneId: Id<"milestones"> | null;
 }) => {
 	const data = useQuery(
-		api.milestones.getLinkableIssues,
+		api.planning.milestones.getLinkableIssues,
 		milestoneId ? { milestoneId } : "skip"
 	);
 	return { data: data ?? [], isLoading: data === undefined };
 };
 
 export const useCreateMilestone = () =>
-	useTrackedMutation(useMutation(api.milestones.create));
+	useTrackedMutation(useMutation(api.planning.milestones.create));
 
 export const useUpdateMilestone = () =>
-	useTrackedMutation(useMutation(api.milestones.update));
+	useTrackedMutation(useMutation(api.planning.milestones.update));
 
 export const useRemoveMilestone = () =>
-	useTrackedMutation(useMutation(api.milestones.remove));
+	useTrackedMutation(useMutation(api.planning.milestones.remove));
 
 export const useLinkMilestoneIssues = () =>
-	useTrackedMutation(useMutation(api.milestones.linkIssues));
+	useTrackedMutation(useMutation(api.planning.milestones.linkIssues));
 
 export const useUnlinkMilestoneIssue = () =>
-	useTrackedMutation(useMutation(api.milestones.unlinkIssue));
+	useTrackedMutation(useMutation(api.planning.milestones.unlinkIssue));

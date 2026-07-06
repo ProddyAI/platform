@@ -13,7 +13,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import type { Point } from "../types/canvas";
+import type { Point } from "../types";
 
 type FlowchartGeneratorProps = {
 	onGenerateFlowchart: (mermaidCode: string, position: Point) => void;

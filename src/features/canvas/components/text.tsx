@@ -8,7 +8,7 @@ import {
 	useStorage,
 } from "../../../../liveblocks.config";
 import { cn, colorToCSS } from "../../../lib/utils";
-import type { TextLayer } from "../types/canvas";
+import type { TextLayer } from "../types";
 
 const calculateFontSize = (width: number, height: number) => {
 	const maxFontSize = 96;

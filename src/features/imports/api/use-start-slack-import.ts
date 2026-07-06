@@ -34,7 +34,7 @@ export const useStartSlackImport = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.importIntegrations.startSlackImport);
+	const mutation = useMutation(api.imports.importIntegrations.startSlackImport);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

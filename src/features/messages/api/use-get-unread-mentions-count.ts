@@ -8,7 +8,7 @@ export const useGetUnreadMentionsCount = () => {
 
 	// Use the direct query
 	const result = useQuery(
-		api.mentions.getProcessedMentions,
+		api.messaging.mentions.getProcessedMentions,
 		workspaceId
 			? {
 					workspaceId,

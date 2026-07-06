@@ -229,6 +229,14 @@ const baseConfig = withPWA({
 				? 1
 				: undefined,
 		workerThreads: true,
+		// Mirror the webpack `resolve.alias` below so Turbopack (`next dev --turbo`)
+		// resolves yjs to a single instance too. Without a Turbopack config, Next
+		// warns "Webpack is configured while Turbopack is not".
+		turbo: {
+			resolveAlias: {
+				yjs: "yjs",
+			},
+		},
 	},
 	webpack(config, { dev }) {
 		config.resolve.alias = {

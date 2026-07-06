@@ -1,5 +1,5 @@
 import { useSelf, useStorage } from "../../../../liveblocks.config";
-import type { XYWH } from "../types/canvas";
+import type { XYWH } from "../types";
 
 export const useSelectionBounds = (): XYWH | null => {
 	const selection = useSelf((me) => me.presence.selection);

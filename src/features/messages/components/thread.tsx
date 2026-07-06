@@ -8,20 +8,20 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { Id } from "@/../convex/_generated/dataModel";
-import { Message } from "@/components/message";
+import { Message } from "@/components/messaging/message";
 import { Button } from "@/components/ui/button";
-import { ContextMenuProvider } from "@/features/chats/contexts/context-menu-context";
+import { ContextMenuProvider } from "@/contexts/context-menu-context";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
 import { useGetMessage } from "@/features/messages/api/use-get-message";
 import { useGetMessages } from "@/features/messages/api/use-get-messages";
 import { useGetThreadTitle } from "@/features/messages/api/use-get-thread-title";
 import { useUpdateThreadTitle } from "@/features/messages/api/use-update-thread-title";
-import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useChannelId } from "@/hooks/use-channel-id";
+import { useGenerateUploadUrl } from "@/hooks/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
-const Editor = dynamic(() => import("@/components/editor"), {
+const Editor = dynamic(() => import("@/components/messaging/editor"), {
 	ssr: false,
 	loading: () => (
 		<div className="flex h-full items-center justify-center">

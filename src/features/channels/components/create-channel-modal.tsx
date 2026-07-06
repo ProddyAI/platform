@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
-
-import { EmojiPopover } from "@/components/emoji-popover";
 import { LimitIndicator } from "@/components/limit-indicator";
+import { EmojiPopover } from "@/components/pickers/emoji-popover";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -19,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
+import { useGenerateUploadUrl } from "@/hooks/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
 

@@ -10,7 +10,7 @@ interface UseGetMemberProps {
 }
 
 export const useGetMember = ({ id }: UseGetMemberProps) => {
-	const data = useQuery(api.members.getById, { id });
+	const data = useQuery(api.workspace.members.getById, { id });
 
 	const isLoading = data === undefined;
 

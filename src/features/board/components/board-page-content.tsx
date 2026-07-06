@@ -7,11 +7,6 @@ import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { LimitIndicator } from "@/components/limit-indicator";
-import BoardGanttView from "@/features/board/components/board-gantt-view";
-import BoardHeader from "@/features/board/components/board-header";
-import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
-import BoardKanbanView from "@/features/board/components/board-kanban-view";
-import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import {
 	// Keep old card/list modals for gantt view
 	BoardAddCardModal,
@@ -20,7 +15,12 @@ import {
 	BoardDeleteStatusModal,
 	BoardEditCardModal,
 	BoardEditStatusModal,
-} from "@/features/board/components/board-models";
+} from "@/features/board/components/board-card-edit-dialog";
+import BoardGanttView from "@/features/board/components/board-gantt-view";
+import BoardHeader from "@/features/board/components/board-header";
+import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
+import BoardKanbanView from "@/features/board/components/board-kanban-view";
+import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -54,10 +54,10 @@ export const BoardPageContent = ({
 	} = useBoardSearchStore();
 
 	// ── New: issues & statuses ──────────────────────────────────────────────
-	const statuses = useQuery(api.board.getStatuses, { channelId });
-	const allIssues = useQuery(api.board.getIssues, { channelId }) || [];
+	const statuses = useQuery(api.board.board.getStatuses, { channelId });
+	const allIssues = useQuery(api.board.board.getIssues, { channelId }) || [];
 	const _uniqueIssueLabels =
-		useQuery(api.board.getUniqueIssueLabels, { channelId }) || [];
+		useQuery(api.board.board.getUniqueIssueLabels, { channelId }) || [];
 	const [optimisticIssues, setOptimisticIssues] = useState<
 		typeof allIssues | null
 	>(null);
@@ -87,13 +87,17 @@ export const BoardPageContent = ({
 	}, [allIssues, optimisticIssues]);
 
 	// ── Existing: lists & cards (kept for table/gantt) ──────────────────────
-	const lists = useQuery(api.board.getLists, { channelId });
+	const lists = useQuery(api.board.board.getLists, { channelId });
 	const allCards =
-		useQuery(api.board.getAllCardsForChannel, { channelId }) || [];
-	const uniqueLabels = useQuery(api.board.getUniqueLabels, { channelId }) || [];
-	const members = useQuery(api.board.getMembersForChannel, { channelId }) || [];
-	const channel = useQuery(api.channels.getById, { id: channelId });
-	const currentMember = useQuery(api.members.current, { workspaceId });
+		useQuery(api.board.board.getAllCardsForChannel, { channelId }) || [];
+	const uniqueLabels =
+		useQuery(api.board.board.getUniqueLabels, { channelId }) || [];
+	const members =
+		useQuery(api.board.board.getMembersForChannel, { channelId }) || [];
+	const channel = useQuery(api.messaging.channels.getById, { id: channelId });
+	const currentMember = useQuery(api.workspace.members.current, {
+		workspaceId,
+	});
 	const canManageProjectConnection =
 		Boolean(projectId) &&
 		(currentMember?.role === "admin" || currentMember?.role === "owner");
@@ -261,20 +265,20 @@ export const BoardPageContent = ({
 	const [cardAssignees, setCardAssignees] = useState<Id<"members">[]>([]);
 
 	// ── Mutations ───────────────────────────────────────────────────────────
-	const migrate = useMutation(api.board.migrateListsToStatuses);
-	const createStatus = useMutation(api.board.createStatus);
-	const updateStatus = useMutation(api.board.updateStatus);
-	const deleteStatus = useMutation(api.board.deleteStatus);
-	const reorderStatuses = useMutation(api.board.reorderStatuses);
-	const moveIssueStatus = useMutation(api.board.moveIssueStatus);
-	const createIssue = useMutation(api.board.createIssue);
+	const migrate = useMutation(api.board.board.migrateListsToStatuses);
+	const createStatus = useMutation(api.board.board.createStatus);
+	const updateStatus = useMutation(api.board.board.updateStatus);
+	const deleteStatus = useMutation(api.board.board.deleteStatus);
+	const reorderStatuses = useMutation(api.board.board.reorderStatuses);
+	const moveIssueStatus = useMutation(api.board.board.moveIssueStatus);
+	const createIssue = useMutation(api.board.board.createIssue);
 
 	// Existing card mutations
-	const createCard = useMutation(api.board.createCard);
-	const updateCard = useMutation(api.board.updateCard);
-	const deleteCard = useMutation(api.board.deleteCard);
-	const _moveCard = useMutation(api.board.moveCard);
-	const deleteList = useMutation(api.board.deleteList);
+	const createCard = useMutation(api.board.board.createCard);
+	const updateCard = useMutation(api.board.board.updateCard);
+	const deleteCard = useMutation(api.board.board.deleteCard);
+	const _moveCard = useMutation(api.board.board.moveCard);
+	const deleteList = useMutation(api.board.board.deleteList);
 
 	// ── Auto-migration on first load ────────────────────────────────────────
 	useEffect(() => {

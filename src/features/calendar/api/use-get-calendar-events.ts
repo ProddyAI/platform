@@ -14,7 +14,7 @@ export const useGetCalendarEvents = ({
 	month,
 	year,
 }: UseGetCalendarEventsProps) => {
-	const data = useQuery(api.calendar.getCalendarEvents, {
+	const data = useQuery(api.planning.calendar.getCalendarEvents, {
 		workspaceId,
 		month,
 		year,

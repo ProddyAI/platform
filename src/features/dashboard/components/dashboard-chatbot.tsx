@@ -33,10 +33,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { ChannelPicker } from "@/components/channel-picker";
-import { MentionPicker } from "@/components/mention-picker";
+import { ChannelPicker } from "@/components/pickers/channel-picker";
+import { MentionPicker } from "@/components/pickers/mention-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,6 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 interface DashboardChatbotProps {
@@ -1159,13 +1159,13 @@ export const DashboardChatbot = ({
 }: DashboardChatbotProps) => (
 	<DatabaseChatProvider
 		api={{
-			getMessages: api.assistantChat.getMessages,
-			listConversations: api.assistantChat.listConversations,
-			getStreamState: api.assistantChat.getStreamState,
-			getStreamDeltas: api.assistantChat.getStreamDeltas,
-			createConversation: api.assistantChat.createConversation,
-			abortStream: api.assistantChat.abortStream,
-			sendMessage: api.assistantChat.sendMessage,
+			getMessages: api.assistant.chat.getMessages,
+			listConversations: api.assistant.chat.listConversations,
+			getStreamState: api.assistant.chat.getStreamState,
+			getStreamDeltas: api.assistant.chat.getStreamDeltas,
+			createConversation: api.assistant.chat.createConversation,
+			abortStream: api.assistant.chat.abortStream,
+			sendMessage: api.assistant.chat.sendMessage,
 		}}
 	>
 		<DashboardChatbotBody
@@ -1195,11 +1195,10 @@ const DashboardChatbotBody = ({
 	const [editingTitle, setEditingTitle] = useState("");
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
-	const { toast } = useToast();
 	const router = useRouter();
 
 	const recentConversations = useQuery(
-		api.assistantConversations.listRecentConversations,
+		api.assistant.conversations.listRecentConversations,
 		workspaceId && member?.userId
 			? { workspaceId, userId: member.userId, limit: 20 }
 			: "skip"
@@ -1309,12 +1308,12 @@ const DashboardChatbotBody = ({
 		return () => document.removeEventListener("mousedown", onMouseDown);
 	}, [autocompleteOpen, closeAutocomplete]);
 
-	const createConversation = useMutation(api.assistantChat.createConversation);
+	const createConversation = useMutation(api.assistant.chat.createConversation);
 	const updateConversationTitle = useMutation(
-		api.assistantConversations.updateConversationTitle
+		api.assistant.conversations.updateConversationTitle
 	);
 	const deleteConversation = useMutation(
-		api.assistantConversations.deleteConversation
+		api.assistant.conversations.deleteConversation
 	);
 	const {
 		send,
@@ -1552,10 +1551,8 @@ Try asking me things like:`;
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error occurred";
 			console.error("Error in chatbot:", error);
-			toast({
-				title: "Assistant Error",
+			toast.error("Assistant Error", {
 				description: errorMessage,
-				variant: "destructive",
 			});
 		}
 	};
@@ -1591,17 +1588,10 @@ Try asking me things like:`;
 			});
 			setConversationId(newConversationId);
 			setWelcomeMessage(null);
-			toast({
-				title: "Success",
-				description: "New chat started.",
-			});
+			toast.success("New chat started.");
 		} catch (error) {
 			console.error("Error creating new chat:", error);
-			toast({
-				title: "Error",
-				description: "Failed to create new chat.",
-				variant: "destructive",
-			});
+			toast.error("Failed to create new chat.");
 		}
 	};
 
@@ -1624,11 +1614,7 @@ Try asking me things like:`;
 
 	const handleSaveTitle = async (convId: string) => {
 		if (!editingTitle.trim()) {
-			toast({
-				title: "Error",
-				description: "Title cannot be empty",
-				variant: "destructive",
-			});
+			toast.error("Title cannot be empty");
 			return;
 		}
 
@@ -1639,16 +1625,9 @@ Try asking me things like:`;
 			});
 			setEditingConversationId(null);
 			setEditingTitle("");
-			toast({
-				title: "Success",
-				description: "Chat renamed successfully",
-			});
+			toast.success("Chat renamed successfully");
 		} catch (_error) {
-			toast({
-				title: "Error",
-				description: "Failed to rename chat",
-				variant: "destructive",
-			});
+			toast.error("Failed to rename chat");
 		}
 	};
 
@@ -1669,16 +1648,9 @@ Try asking me things like:`;
 				}
 			}
 
-			toast({
-				title: "Success",
-				description: "Chat deleted successfully",
-			});
+			toast.success("Chat deleted successfully");
 		} catch (_error) {
-			toast({
-				title: "Error",
-				description: "Failed to delete chat",
-				variant: "destructive",
-			});
+			toast.error("Failed to delete chat");
 		}
 	};
 

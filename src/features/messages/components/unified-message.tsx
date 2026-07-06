@@ -75,11 +75,11 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 	const isMeeting = data.type === "meeting";
 
 	// Get members from the database to display real names for live sessions
-	const members = useQuery(api.members.get, { workspaceId });
+	const members = useQuery(api.workspace.members.get, { workspaceId });
 
 	// Check meeting status by looking for completed meetingNotes
 	const meetingNotes = useQuery(
-		api.meetingNotes.getByWorkspace,
+		api.content.meetingNotes.getByWorkspace,
 		isMeeting && workspaceId ? { workspaceId } : "skip"
 	);
 

@@ -12,11 +12,11 @@ import {
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BillingSection } from "@/features/billing/components/BillingSection";
-import { ImportDataManagement } from "@/features/manage/import-data-management";
-import { IntegrationsManagement } from "@/features/manage/integrations-management";
-import { MembersManagement } from "@/features/manage/members-management";
-import { WorkspaceManagement } from "@/features/manage/workspace-management";
+import { BillingSection } from "@/features/billing/components/billing-section";
+import { ImportDataManagement } from "@/features/manage/components/import-data-management";
+import { IntegrationsManagement } from "@/features/manage/components/integrations-management";
+import { MembersManagement } from "@/features/manage/components/members-management";
+import { WorkspaceManagement } from "@/features/manage/components/workspace-management";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useDocumentTitle } from "@/hooks/use-document-title";

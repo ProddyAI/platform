@@ -13,7 +13,7 @@ import { WorkspaceToolbar } from "../../../toolbar";
 const ProjectBoardPage = () => {
 	const projectId = useProjectId();
 	const project = useQuery(
-		api.projects.getById,
+		api.planning.projects.getById,
 		projectId ? { id: projectId } : "skip"
 	);
 

@@ -21,7 +21,7 @@ export const useGetRecentChannelMessages = ({
 	const isValidId = typeof channelId === "string" && channelId.length > 0;
 
 	const data = useQuery(
-		api.messages.getRecentChannelMessages,
+		api.messaging.messages.getRecentChannelMessages,
 		shouldEnable && isValidId
 			? { channelId: channelId as Id<"channels">, limit }
 			: "skip"

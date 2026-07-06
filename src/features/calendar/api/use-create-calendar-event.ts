@@ -28,7 +28,7 @@ export const useCreateCalendarEvent = () => {
 		"idle" | "pending" | "success" | "error" | "settled"
 	>("idle");
 
-	const mutation = useMutation(api.calendar.createCalendarEvent);
+	const mutation = useMutation(api.planning.calendar.createCalendarEvent);
 
 	const isPending = status === "pending";
 	const isError = status === "error";

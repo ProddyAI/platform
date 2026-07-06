@@ -20,14 +20,14 @@ export const useGetAssignedCards = ({
 
 	// Get all channels in the workspace
 	const channels = useQuery(
-		api.channels.get,
+		api.messaging.channels.get,
 		workspaceId ? { workspaceId } : "skip"
 	);
 	const channelsLoading = channels === undefined;
 
 	// Get all cards assigned to the current member across all channels
 	const assignedCardsResult = useQuery(
-		api.board.getAssignedCards,
+		api.board.board.getAssignedCards,
 		workspaceId && currentMember
 			? {
 					workspaceId,

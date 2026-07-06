@@ -4,7 +4,7 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
 export const useMarkMentionAsRead = () => {
-	const markMention = useMutation(api.mentions.markMentionAsRead);
+	const markMention = useMutation(api.messaging.mentions.markMentionAsRead);
 
 	const execute = async (mentionId: Id<"mentions">, status?: boolean) => {
 		try {

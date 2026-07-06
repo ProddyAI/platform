@@ -75,7 +75,7 @@ export const useSearchMessages = ({
 	const shouldQuery = enabled && debouncedQuery.trim().length > 0;
 
 	const textResults = useQuery(
-		api.search.searchAll,
+		api.search.search.searchAll,
 		shouldQuery
 			? {
 					workspaceId,

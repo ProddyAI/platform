@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import {
 	convertMermaidToExcalidrawScene,
 	normalizeMermaidCode,
-} from "@/features/canvas/diagram-ai/mermaid";
+} from "@/features/canvas/lib/mermaid";
 import { LiveParticipants } from "@/features/live/components/live-participants";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { generateUserColor } from "@/lib/placeholder-image";
@@ -177,7 +177,7 @@ export const ExcalidrawCanvas = () => {
 	const [toolbarPortalTarget, setToolbarPortalTarget] =
 		useState<HTMLElement | null>(null);
 
-	const currentUser = useQuery(api.users.current);
+	const currentUser = useQuery(api.workspace.users.current);
 
 	const ExcalidrawSidebar = excalidrawLibRef.current?.Sidebar as any;
 

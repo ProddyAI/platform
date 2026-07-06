@@ -3,7 +3,9 @@ import { api } from "@/../convex/_generated/api";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 export const useMarkAllDirectMessagesAsRead = () => {
-	const markAllAsRead = useMutation(api.direct.markAllDirectMessagesAsRead);
+	const markAllAsRead = useMutation(
+		api.messaging.direct.markAllDirectMessagesAsRead
+	);
 	const workspaceId = useWorkspaceId();
 
 	return async () => {

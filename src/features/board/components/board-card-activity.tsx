@@ -90,7 +90,7 @@ const isCardActivityArray = (value: unknown): value is CardActivity[] => {
 export const BoardCardActivity: React.FC<BoardCardActivityProps> = ({
 	cardId,
 }) => {
-	const rawActivities = useQuery(api.board.getCardActivity, {
+	const rawActivities = useQuery(api.board.board.getCardActivity, {
 		cardId,
 	});
 	const hasInvalidActivityData =

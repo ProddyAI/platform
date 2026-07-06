@@ -15,7 +15,7 @@ const ProjectSprintsPage = () => {
 	const projectId = useProjectId();
 	const workspaceId = useWorkspaceId();
 	const project = useQuery(
-		api.projects.getById,
+		api.planning.projects.getById,
 		projectId ? { id: projectId } : "skip"
 	);
 

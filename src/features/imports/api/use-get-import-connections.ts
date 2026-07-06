@@ -9,7 +9,9 @@ interface UseGetImportConnectionsProps {
 export const useGetImportConnections = ({
 	workspaceId,
 }: UseGetImportConnectionsProps) => {
-	const data = useQuery(api.importIntegrations.getConnections, { workspaceId });
+	const data = useQuery(api.imports.importIntegrations.getConnections, {
+		workspaceId,
+	});
 	const isLoading = data === undefined;
 
 	return { data, isLoading };

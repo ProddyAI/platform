@@ -34,7 +34,9 @@ export const useStartTodoistImport = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.importIntegrations.startTodoistImport);
+	const mutation = useMutation(
+		api.imports.importIntegrations.startTodoistImport
+	);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

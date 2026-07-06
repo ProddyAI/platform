@@ -2,13 +2,13 @@
 
 import { CalendarIcon, Loader } from "lucide-react";
 import dynamic from "next/dynamic";
-import { Reactions } from "@/components/reactions";
-import { ThreadBar } from "@/components/thread-bar";
-import { Thumbnail } from "@/components/thumbnail";
+import { Reactions } from "@/components/messaging/reactions";
+import { ThreadBar } from "@/components/messaging/thread-bar";
+import { Thumbnail } from "@/components/messaging/thumbnail";
 import { cn } from "@/lib/utils";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 
-const Renderer = dynamic(() => import("@/components/renderer"), {
+const Renderer = dynamic(() => import("@/components/messaging/renderer"), {
 	ssr: false,
 	loading: () => (
 		<div className="flex h-full items-center justify-center">
@@ -17,7 +17,7 @@ const Renderer = dynamic(() => import("@/components/renderer"), {
 	),
 });
 
-const Editor = dynamic(() => import("@/components/editor"), {
+const Editor = dynamic(() => import("@/components/messaging/editor"), {
 	ssr: false,
 	loading: () => (
 		<div className="flex h-full items-center justify-center">

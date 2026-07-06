@@ -49,20 +49,20 @@ const NotesPage = () => {
 
 	// Channel info for the title
 	const channel = useQuery(
-		api.channels.getById,
+		api.messaging.channels.getById,
 		channelId ? { id: channelId } : "skip"
 	);
 	useDocumentTitle(channel ? `Notes — ${channel.name}` : "Notes");
 
 	// Convex queries
 	const notes = useQuery(
-		api.notes.getByChannel,
+		api.content.notes.getByChannel,
 		workspaceId && channelId ? { workspaceId, channelId } : "skip"
 	);
 
 	// Get active note
 	const activeNote = useQuery(
-		api.notes.get,
+		api.content.notes.get,
 		activeNoteId ? { id: activeNoteId } : "skip"
 	);
 
@@ -91,9 +91,9 @@ const NotesPage = () => {
 	}, [activeNoteId, finalNotes, urlNoteId]);
 
 	// Convex mutations
-	const createNote = useMutation(api.notes.create);
-	const updateNote = useMutation(api.notes.update);
-	const deleteNote = useMutation(api.notes.remove);
+	const createNote = useMutation(api.content.notes.create);
+	const updateNote = useMutation(api.content.notes.update);
+	const deleteNote = useMutation(api.content.notes.remove);
 
 	// Loading check
 	if (notes === undefined && workspaceId && channelId) {

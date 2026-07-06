@@ -4,14 +4,14 @@ import { api } from "@/../convex/_generated/api";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 type MentionedMessagesReturnType =
-	typeof api.mentions.getProcessedMentions._returnType;
+	typeof api.messaging.mentions.getProcessedMentions._returnType;
 
 export const useGetMentionedMessages = (includeRead?: boolean) => {
 	const workspaceId = useWorkspaceId();
 
 	// Use the direct query
 	const result = useQuery(
-		api.mentions.getProcessedMentions,
+		api.messaging.mentions.getProcessedMentions,
 		workspaceId
 			? {
 					workspaceId,

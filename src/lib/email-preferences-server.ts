@@ -19,7 +19,7 @@ export async function shouldSendEmailServer(
 		const convex = getConvexClient();
 
 		const preferences = await convex.query(
-			api.preferences.getNotificationPreferencesByUserId,
+			api.workspace.preferences.getNotificationPreferencesByUserId,
 			{
 				userId,
 			}
@@ -55,7 +55,7 @@ export async function updateNotificationPreferencesServer(
 		const notificationKey = getNotificationKey(emailType);
 
 		await convex.mutation(
-			api.preferences.updateNotificationPreferencesByUserId,
+			api.workspace.preferences.updateNotificationPreferencesByUserId,
 			{
 				userId: userId,
 				notificationKey,

@@ -11,7 +11,7 @@ export const useGetImportJobs = ({
 	workspaceId,
 	limit,
 }: UseGetImportJobsProps) => {
-	const data = useQuery(api.importIntegrations.getJobs, {
+	const data = useQuery(api.imports.importIntegrations.getJobs, {
 		workspaceId,
 		limit,
 	});

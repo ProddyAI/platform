@@ -30,7 +30,7 @@ export const useUpdateChannel = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.channels.update);
+	const mutation = useMutation(api.messaging.channels.update);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

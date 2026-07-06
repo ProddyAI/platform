@@ -30,7 +30,7 @@ export const useSetProjectConnectedChannel = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.projects.setConnectedChannel);
+	const mutation = useMutation(api.planning.projects.setConnectedChannel);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

@@ -4,7 +4,7 @@ import { useQuery } from "convex/react";
 import { useCallback, useMemo } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import type { UserStatus } from "@/../convex/userStatus";
+import type { UserStatus } from "@/../convex/workspace/userStatus";
 
 interface UseUserStatusProps {
 	userId?: Id<"users">;
@@ -13,7 +13,7 @@ interface UseUserStatusProps {
 
 export const useUserStatus = ({ userId, workspaceId }: UseUserStatusProps) => {
 	const data = useQuery(
-		api.userStatus.getUserStatus,
+		api.workspace.userStatus.getUserStatus,
 		userId ? { userId, workspaceId } : "skip"
 	);
 
@@ -29,7 +29,7 @@ export const useMultipleUserStatuses = (
 	userIds: Id<"users">[],
 	workspaceId: Id<"workspaces">
 ) => {
-	const data = useQuery(api.userStatus.getMultipleUserStatuses, {
+	const data = useQuery(api.workspace.userStatus.getMultipleUserStatuses, {
 		userIds,
 		workspaceId,
 	});

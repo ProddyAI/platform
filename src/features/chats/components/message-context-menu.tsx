@@ -1,10 +1,10 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useMessageSelection } from "@/features/smart/contexts/message-selection-context";
+import { useContextMenu } from "@/contexts/context-menu-context";
+import { useMessageSelection } from "@/contexts/message-selection-context";
 import { cn } from "@/lib/utils";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { useContextMenu } from "../contexts/context-menu-context";
 
 interface MessageContextMenuProps {
 	messageId: Id<"messages">;

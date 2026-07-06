@@ -3,7 +3,9 @@ import { useCallback } from "react";
 import { api } from "@/../convex/_generated/api";
 
 export const useRequestPasswordReset = () => {
-	const requestReset = useMutation(api.passwordManagement.requestPasswordReset);
+	const requestReset = useMutation(
+		api.authn.passwordManagement.requestPasswordReset
+	);
 
 	const handleRequestReset = useCallback(
 		async (email: string) => {
@@ -17,7 +19,7 @@ export const useRequestPasswordReset = () => {
 
 export const useVerifyResetToken = (token: string | null) => {
 	const result = useQuery(
-		api.passwordManagement.verifyResetToken,
+		api.authn.passwordManagement.verifyResetToken,
 		token ? { token } : "skip"
 	);
 
@@ -25,7 +27,7 @@ export const useVerifyResetToken = (token: string | null) => {
 };
 
 export const useResetPassword = () => {
-	const resetPassword = useMutation(api.passwordManagement.resetPassword);
+	const resetPassword = useMutation(api.authn.passwordManagement.resetPassword);
 
 	const handleResetPassword = useCallback(
 		async (token: string, newPassword: string) => {

@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { Clock, Heart, Lightbulb, Target, Users, Zap } from "lucide-react";
 import Image from "next/image";
 
-import { CTASection } from "@/features/landing/CTASection";
-import { Footer } from "@/features/landing/Footer";
-import { Header } from "@/features/landing/Header";
+import { CTASection } from "@/features/landing/components/cta-section";
+import { Footer } from "@/features/landing/components/footer";
+import { Header } from "@/features/landing/components/header";
 
 const AboutPage = () => {
 	return (

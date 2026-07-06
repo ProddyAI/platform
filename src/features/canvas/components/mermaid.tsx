@@ -5,7 +5,7 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "../../../../liveblocks.config";
 import { colorToCSS } from "../../../lib/utils";
-import type { MermaidLayer } from "../types/canvas";
+import type { MermaidLayer } from "../types";
 import { MermaidEditDialog } from "./mermaid-edit-dialog";
 
 type MermaidProps = {

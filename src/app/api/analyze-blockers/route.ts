@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 		let channelId = body.channelId;
 
 		if (!channelId && body.projectId) {
-			const project = await convex.query(api.projects.getById, {
+			const project = await convex.query(api.planning.projects.getById, {
 				id: body.projectId,
 			});
 			channelId = project?.boardChannelId as Id<"channels"> | undefined;
@@ -115,8 +115,8 @@ export async function POST(req: NextRequest) {
 		}
 
 		const [issues, statuses] = await Promise.all([
-			convex.query(api.board.getAllIssuesForBlocking, { channelId }),
-			convex.query(api.board.getStatuses, { channelId }),
+			convex.query(api.board.board.getAllIssuesForBlocking, { channelId }),
+			convex.query(api.board.board.getStatuses, { channelId }),
 		]);
 
 		const statusNameById = new Map<string, string>();
@@ -158,14 +158,14 @@ export async function POST(req: NextRequest) {
 		// If OpenAI isn't configured, fall back to heuristic analysis.
 		if (!process.env.OPENAI_API_KEY) {
 			const suggestions = await convex.action(
-				(api as any).boardDependency.analyzeIssueDependencies,
+				api.board.dependency.analyzeIssueDependencies,
 				{
 					issues: issuesForHeuristic,
 				}
 			);
 
 			const result = await convex.mutation(
-				api.board.applyDetectedIssueDependencies,
+				api.board.board.applyDetectedIssueDependencies,
 				{
 					channelId,
 					dependencies: suggestions,
@@ -211,14 +211,14 @@ ${JSON.stringify(issuesPayload)}`;
 			} else {
 				// Fallback: heuristic analyzer if model output isn't strict JSON.
 				const suggestions = await convex.action(
-					(api as any).boardDependency.analyzeIssueDependencies,
+					api.board.dependency.analyzeIssueDependencies,
 					{
 						issues: issuesForHeuristic,
 					}
 				);
 
 				const result = await convex.mutation(
-					api.board.applyDetectedIssueDependencies,
+					api.board.board.applyDetectedIssueDependencies,
 					{
 						channelId,
 						dependencies: suggestions,
@@ -236,14 +236,14 @@ ${JSON.stringify(issuesPayload)}`;
 			// Fallback: heuristic analyzer if model call fails.
 			console.error("[Analyze Blockers] LLM call failed:", err);
 			const suggestions = await convex.action(
-				(api as any).boardDependency.analyzeIssueDependencies,
+				api.board.dependency.analyzeIssueDependencies,
 				{
 					issues: issuesForHeuristic,
 				}
 			);
 
 			const result = await convex.mutation(
-				api.board.applyDetectedIssueDependencies,
+				api.board.board.applyDetectedIssueDependencies,
 				{
 					channelId,
 					dependencies: suggestions,
@@ -281,7 +281,7 @@ ${JSON.stringify(issuesPayload)}`;
 			.filter((d) => d.resolutionSteps.length > 0);
 
 		const result = await convex.mutation(
-			api.board.applyDetectedIssueDependencies,
+			api.board.board.applyDetectedIssueDependencies,
 			{
 				channelId,
 				dependencies: normalized,

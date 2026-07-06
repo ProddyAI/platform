@@ -6,7 +6,7 @@ import {
 	findIntersectingLayersWithRectangle,
 	resizeBounds,
 } from "../../../lib/utils";
-import { CanvasMode, type Point, type Side, type XYWH } from "../types/canvas";
+import { CanvasMode, type Point, type Side, type XYWH } from "../types";
 
 const MULTISELECTION_THRESHOLD = 2;
 

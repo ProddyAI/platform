@@ -577,7 +577,7 @@ export const InviteMemberModal = () => {
 	const workspaceId = useWorkspaceId();
 	const [open, setOpen] = useInviteMemberModal();
 	const workspace = useQuery(
-		api.workspaces.getById,
+		api.workspace.workspaces.getById,
 		workspaceId ? { id: workspaceId } : "skip"
 	);
 
@@ -591,10 +591,12 @@ export const InviteMemberModal = () => {
 	const [hasMoreBelow, setHasMoreBelow] = useState(false);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-	const updateQuantity = useAction(api.payments.updateSubscriptionQuantity);
+	const updateQuantity = useAction(
+		api.billing.payments.updateSubscriptionQuantity
+	);
 
 	const seatUsage = useQuery(
-		api.workspaceInvites.getSeatUsage,
+		api.workspace.invites.getSeatUsage,
 		workspaceId ? { workspaceId } : "skip"
 	);
 

@@ -65,7 +65,7 @@ const sendOtpWithLegacyAction = async (
 	email: string
 ) => {
 	const legacyResult = await convex.action(
-		api.emailVerification.generateAndSendOTP,
+		api.authn.emailVerification.generateAndSendOTP,
 		{
 			email,
 		}

@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import Editor from "@/components/editor";
+import Editor from "@/components/messaging/editor";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
-import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
+import { useGenerateUploadUrl } from "@/hooks/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface ThreadMessage {
@@ -80,7 +80,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();
 
 	const threadReplies = useQuery(
-		api.messages.get,
+		api.messaging.messages.get,
 		thread.message.parentMessageId
 			? {
 					channelId: thread.message.channelId,

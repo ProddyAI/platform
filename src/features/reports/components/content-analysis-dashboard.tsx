@@ -50,7 +50,7 @@ export const ContentAnalysisDashboard = ({
 
 	// Fetch message analytics
 	const messageData = useQuery(
-		api.analytics.getMessageAnalytics,
+		api.workspace.analytics.getMessageAnalytics,
 		workspaceId
 			? {
 					workspaceId,
@@ -62,7 +62,7 @@ export const ContentAnalysisDashboard = ({
 
 	// Fetch content analysis data
 	const contentAnalysisData = useQuery(
-		api.analytics.getContentAnalysis,
+		api.workspace.analytics.getContentAnalysis,
 		workspaceId
 			? {
 					workspaceId,

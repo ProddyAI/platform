@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
-import MemberSelector from "@/components/member-selector";
+import MemberSelector from "@/components/pickers/member-selector";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
@@ -482,12 +482,12 @@ const SubIssuesSection = ({
 	onClickIssue,
 }: SubIssuesSectionProps) => {
 	const newSubIssueInputRef = useRef<HTMLInputElement>(null);
-	const subIssues = useQuery(api.board.getSubIssues, {
+	const subIssues = useQuery(api.board.board.getSubIssues, {
 		parentIssueId: parentIssue._id,
 	});
-	const createSubIssue = useMutation(api.board.createSubIssue);
-	const deleteSubIssue = useMutation(api.board.deleteSubIssue);
-	const updateIssue = useMutation(api.board.updateIssue);
+	const createSubIssue = useMutation(api.board.board.createSubIssue);
+	const deleteSubIssue = useMutation(api.board.board.deleteSubIssue);
+	const updateIssue = useMutation(api.board.board.updateIssue);
 
 	const [isAdding, setIsAdding] = useState(false);
 	const [newTitle, setNewTitle] = useState("");
@@ -768,17 +768,19 @@ const BlockingSection = ({
 	allIssues,
 	onClickIssue,
 }: BlockingSectionProps) => {
-	const blockingIssues = useQuery(api.board.getBlockingIssues, {
+	const blockingIssues = useQuery(api.board.board.getBlockingIssues, {
 		issueId: issue._id,
 	});
 	const blockedByIssuesDetailed = useQuery(
-		api.board.getBlockedByIssuesWithDetails,
+		api.board.board.getBlockedByIssuesWithDetails,
 		{
 			issueId: issue._id,
 		}
 	);
-	const addBlocking = useMutation(api.board.addIssueBlockingRelationship);
-	const removeBlocking = useMutation(api.board.removeIssueBlockingRelationship);
+	const addBlocking = useMutation(api.board.board.addIssueBlockingRelationship);
+	const removeBlocking = useMutation(
+		api.board.board.removeIssueBlockingRelationship
+	);
 
 	const handleSelectBlocking = async (selectedIssueId: string) => {
 		if (!selectedIssueId) return;
@@ -1049,9 +1051,11 @@ interface DiscussionSectionProps {
 }
 
 const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
-	const comments = useQuery(api.board.getIssueComments, { issueId: issue._id });
-	const createComment = useMutation(api.board.createIssueComment);
-	const deleteComment = useMutation(api.board.deleteIssueComment);
+	const comments = useQuery(api.board.board.getIssueComments, {
+		issueId: issue._id,
+	});
+	const createComment = useMutation(api.board.board.createIssueComment);
+	const deleteComment = useMutation(api.board.board.deleteIssueComment);
 
 	const [message, setMessage] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1209,8 +1213,8 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 	onDelete,
 	onClickIssue,
 }) => {
-	const updateIssue = useMutation(api.board.updateIssue);
-	const deleteIssue = useMutation(api.board.deleteIssue);
+	const updateIssue = useMutation(api.board.board.updateIssue);
+	const deleteIssue = useMutation(api.board.board.deleteIssue);
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
@@ -1225,7 +1229,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 
 	// Fetch parent issue if this is a sub-issue
 	const parentIssue = useQuery(
-		api.board.getIssueDetails,
+		api.board.board.getIssueDetails,
 		issue?.parentIssueId ? { issueId: issue.parentIssueId } : "skip"
 	);
 

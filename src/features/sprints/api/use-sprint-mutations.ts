@@ -28,19 +28,19 @@ const useTrackedMutation = <Args, Result>(
 };
 
 export const useCreateSprint = () =>
-	useTrackedMutation(useMutation(api.sprints.create));
+	useTrackedMutation(useMutation(api.planning.sprints.create));
 
 export const useUpdateSprint = () =>
-	useTrackedMutation(useMutation(api.sprints.update));
+	useTrackedMutation(useMutation(api.planning.sprints.update));
 
 export const useRemoveSprint = () =>
-	useTrackedMutation(useMutation(api.sprints.remove));
+	useTrackedMutation(useMutation(api.planning.sprints.remove));
 
 export const useAddSprintIssues = () =>
-	useTrackedMutation(useMutation(api.sprints.addIssues));
+	useTrackedMutation(useMutation(api.planning.sprints.addIssues));
 
 export const useRemoveSprintIssue = () =>
-	useTrackedMutation(useMutation(api.sprints.removeIssue));
+	useTrackedMutation(useMutation(api.planning.sprints.removeIssue));
 
 export const useRolloverSprint = () =>
-	useTrackedMutation(useMutation(api.sprints.rolloverIncomplete));
+	useTrackedMutation(useMutation(api.planning.sprints.rolloverIncomplete));

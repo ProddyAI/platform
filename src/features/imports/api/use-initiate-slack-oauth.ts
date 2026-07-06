@@ -25,7 +25,9 @@ export const useInitiateSlackOAuth = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.importIntegrations.initiateSlackOAuth);
+	const mutation = useMutation(
+		api.imports.importIntegrations.initiateSlackOAuth
+	);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

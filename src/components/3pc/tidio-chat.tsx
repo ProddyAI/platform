@@ -36,7 +36,6 @@ const PUBLIC_ROUTES = [
 	"/pricing",
 	"/why-proddy",
 	"/assistant",
-	"/mockup",
 	"/auth/signup",
 	"/auth/signin",
 	"/auth",
@@ -47,7 +46,7 @@ export const TidioChat = () => {
 	const pathname = usePathname();
 
 	// Get current user from Convex
-	const currentUser = useQuery(api.users.current);
+	const currentUser = useQuery(api.workspace.users.current);
 
 	useEffect(() => {
 		// Set up user identification for Tidio

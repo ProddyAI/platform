@@ -34,11 +34,11 @@ export const LiveblocksRoom = ({
 	const workspaceId = useWorkspaceId();
 
 	// Get the current user from Convex
-	const _currentUser = useQuery(api.users.current);
+	const _currentUser = useQuery(api.workspace.users.current);
 
 	// Get current member info to pass to Liveblocks
 	const _currentMember = useQuery(
-		api.members.current,
+		api.workspace.members.current,
 		workspaceId ? { workspaceId } : "skip"
 	);
 

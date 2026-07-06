@@ -5,7 +5,7 @@ import { CalendarIcon, Loader } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
-import Renderer from "@/components/renderer";
+import Renderer from "@/components/messaging/renderer";
 import { Button } from "@/components/ui/button";
 import { useGetCalendarEvents } from "@/features/calendar/api/use-get-calendar-events";
 import type { CalendarFilterOptions } from "@/features/calendar/components/calendar-filter";

@@ -25,7 +25,7 @@ export const useCancelImportJob = () => {
 	const isError = status === "error";
 	const isSettled = status === "success" || status === "error";
 
-	const mutation = useMutation(api.importIntegrations.cancelImportJob);
+	const mutation = useMutation(api.imports.importIntegrations.cancelImportJob);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

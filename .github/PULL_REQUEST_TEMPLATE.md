@@ -9,6 +9,8 @@
 - [ ] Performed a proper self-review of my own code
 - [ ] My changes generate no new warnings or errors
 - [ ] I have ran `bun type` and ensured type safety
+- [ ] I have ran `bun build` and ensured type safety
+- [ ] I have ran `bun test` and ensured type safety
 - [ ] I have ran `bun check` and passed biome checks
 
 ### Performance & Security

@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 		}
 		convex.setAuth(token);
 
-		const currentUser = await convex.query(api.users.current);
+		const currentUser = await convex.query(api.workspace.users.current);
 		if (!currentUser?.email) {
 			console.error("[Invite Verify] User not found or email missing");
 			return NextResponse.json(
@@ -61,9 +61,12 @@ export async function POST(req: Request) {
 		);
 
 		// 3. Fetch invite by hash
-		const inviteDoc = await convex.query(api.workspaceInvites.getInviteByHash, {
-			hash: invite,
-		});
+		const inviteDoc = await convex.query(
+			api.workspace.invites.getInviteByHash,
+			{
+				hash: invite,
+			}
+		);
 
 		if (!inviteDoc) {
 			console.error(
@@ -112,7 +115,7 @@ export async function POST(req: Request) {
 		// 5. Recompute hash to verify email binding
 		// Use server-side action to securely get joinCode
 		const joinCode = await convex.action(
-			api.workspaceInvites.getJoinCodeForVerification,
+			api.workspace.invites.getJoinCodeForVerification,
 			{ workspaceId: workspaceId as Id<"workspaces"> }
 		);
 
@@ -156,7 +159,7 @@ export async function POST(req: Request) {
 		// 6. Consume invite
 		console.log("[Invite Verify] Consuming invite for workspace:", workspaceId);
 		// The mutation will get userId from the authenticated context
-		await convex.mutation(api.workspaceInvites.consumeInvite, {
+		await convex.mutation(api.workspace.invites.consumeInvite, {
 			inviteId: inviteDoc._id,
 		});
 

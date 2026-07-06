@@ -149,7 +149,7 @@ export async function shouldSendEmail(
 
 		// Get user notification preferences
 		const preferences = await convexClient.query(
-			api.preferences.getNotificationPreferencesByUserId,
+			api.workspace.preferences.getNotificationPreferencesByUserId,
 			{
 				userId,
 			}

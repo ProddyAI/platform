@@ -33,7 +33,7 @@ const CanvasPage = () => {
 	const pageContainerRef = useRef<HTMLDivElement>(null);
 
 	// Get channel information for the title
-	const channel = useQuery(api.channels.getById, { id: channelId });
+	const channel = useQuery(api.messaging.channels.getById, { id: channelId });
 
 	// Set document title based on channel name
 	useDocumentTitle(channel ? `Canvas - ${channel.name}` : "Canvas");
@@ -43,7 +43,7 @@ const CanvasPage = () => {
 
 	// Get messages from the channel to find saved canvases
 	const messages = useQuery(
-		api.messages.get,
+		api.messaging.messages.get,
 		channelId
 			? {
 					channelId: channelId,
@@ -173,9 +173,9 @@ const CanvasPage = () => {
 	}, []);
 
 	// Mutations for updating and creating messages
-	const createMessage = useMutation(api.messages.create);
-	const updateMessage = useMutation(api.messages.update);
-	const deleteMessage = useMutation(api.messages.remove);
+	const createMessage = useMutation(api.messaging.messages.create);
+	const updateMessage = useMutation(api.messaging.messages.update);
+	const deleteMessage = useMutation(api.messaging.messages.remove);
 
 	// Handle canvas selection from sidebar - simplified like notes
 	const handleCanvasSelect = useCallback((canvasId: string) => {

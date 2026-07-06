@@ -29,7 +29,7 @@ export const useUpdateMessage = () => {
 	const isError = useMemo(() => status === "error", [status]);
 	const isSettled = useMemo(() => status === "settled", [status]);
 
-	const mutation = useMutation(api.messages.update);
+	const mutation = useMutation(api.messaging.messages.update);
 
 	const mutate = useCallback(
 		async (values: RequestType, options?: Options) => {

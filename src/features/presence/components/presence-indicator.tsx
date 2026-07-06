@@ -1,7 +1,7 @@
 "use client";
 
 import { Minus, Moon } from "lucide-react";
-import type { UserStatus } from "@/../convex/userStatus";
+import type { UserStatus } from "@/../convex/workspace/userStatus";
 import {
 	Tooltip,
 	TooltipContent,

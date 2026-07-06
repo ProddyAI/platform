@@ -1,9 +1,9 @@
 "use client";
 
 import { Loader, TriangleAlert } from "lucide-react";
-import { ChatInput } from "@/components/chat-input";
-import { MessageList } from "@/components/message-list";
-import { TypingIndicator } from "@/components/typing-indicator";
+import { ChatInput } from "@/components/messaging/chat-input";
+import { MessageList } from "@/components/messaging/message-list";
+import { TypingIndicator } from "@/components/messaging/typing-indicator";
 import { useGetChannel } from "@/features/channels/api/use-get-channel";
 import { useGetMessages } from "@/features/messages/api/use-get-messages";
 import { useTypingIndicator } from "@/features/presence/hooks/use-typing-indicator";

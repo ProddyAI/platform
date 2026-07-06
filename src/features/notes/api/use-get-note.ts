@@ -13,13 +13,13 @@ export const useGetNote = (noteId?: Id<"notes">) => {
 	const workspaceId = useWorkspaceId();
 	const channelId = useChannelId();
 	const member = useQuery(
-		api.members.current,
+		api.workspace.members.current,
 		workspaceId ? { workspaceId } : "skip"
 	);
 
 	// Only query Convex if we have a valid (non-temporary) ID
 	const note = useQuery(
-		api.notes.getById,
+		api.content.notes.getById,
 		noteId && !isTempId ? { noteId } : "skip"
 	);
 

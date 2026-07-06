@@ -15,7 +15,7 @@ import {
 
 export const StatusSelector = () => {
 	const workspaceId = useWorkspaceId();
-	const setUserStatus = useMutation(api.userStatus.setUserStatus);
+	const setUserStatus = useMutation(api.workspace.userStatus.setUserStatus);
 	const { isEnabled: statusTrackingEnabled, isLoading: isLoadingTracking } =
 		useStatusTrackingEnabled();
 	const { data: preferences } = useUserPreferences();
