@@ -176,13 +176,10 @@ export const MentionsNotificationDialog = ({
 		if (activeTab === "direct") {
 			// For the direct tab, show both direct messages and mentions in direct chats
 			if (notification.type === "direct") return true;
-			if (
+			return (
 				notification.type === "mention" &&
-				notification.source &&
-				notification.source.type === "direct"
-			)
-				return true;
-			return false;
+				notification.source?.type === "direct"
+			);
 		}
 
 		// For other tabs, only show mentions of that type

@@ -56,6 +56,7 @@ export const useStartSlackImport = () => {
 				if (options?.throwError) {
 					throw error;
 				}
+				return undefined;
 			} finally {
 				setStatus("settled");
 				options?.onSettled?.();

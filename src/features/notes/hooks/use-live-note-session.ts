@@ -131,6 +131,7 @@ export const useLiveNoteSession = ({
 		try {
 			// Update presence to indicate active editing
 			if (self) {
+				// presence is tracked by the liveblocks room
 			}
 
 			setIsLiveSession(true);

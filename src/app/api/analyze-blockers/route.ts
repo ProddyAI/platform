@@ -68,7 +68,7 @@ function normalizeSteps(
 	const s = String(steps ?? "").trim();
 	if (!s) return [];
 	return s
-		.split(/\r?\n|•|\u2022|-\s+/g)
+		.split(/\r?\n|•|\u2022|-\s+/gu)
 		.map((x) => x.trim())
 		.filter(Boolean)
 		.slice(0, 12);

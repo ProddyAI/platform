@@ -802,9 +802,8 @@ export async function getAllToolsForApps(
 						// Basic validation only
 						if (!toolName || toolName.length === 0) return false;
 						if (toolName.length > 64) return false; // OpenAI limit
-						if (!/^[a-zA-Z0-9_-]+$/.test(toolName)) return false; // Valid characters only
-
-						return true;
+						// Valid characters only
+						return /^[a-zA-Z0-9_-]+$/.test(toolName);
 					});
 
 				allTools.push(...processedTools);
@@ -1139,9 +1138,8 @@ function _processAppTools(
 			// Basic validation
 			if (!toolName || toolName.length === 0) return false;
 			if (toolName.length > 64) return false; // OpenAI limit
-			if (!/^[a-zA-Z0-9_-]+$/.test(toolName)) return false; // Valid characters only
-
-			return true;
+			// Valid characters only
+			return /^[a-zA-Z0-9_-]+$/.test(toolName);
 		});
 
 	// Apply smart filtering strategy
@@ -1614,7 +1612,9 @@ export async function initiateAppConnection(
 			entityId,
 			authConfigId,
 			connection.id
-		).catch(() => {});
+		).catch(() => {
+			// ignore cleanup errors
+		});
 
 		return {
 			success: true,
