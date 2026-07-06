@@ -59,6 +59,8 @@ const authMiddleware = convexAuthNextjsMiddleware(
 		if (req.nextUrl.pathname === "/" && !isAuthenticatedNextjs()) {
 			return nextjsMiddlewareRedirect(req, "/home");
 		}
+
+		return undefined;
 	},
 	convexUrl ? { convexUrl } : undefined
 );

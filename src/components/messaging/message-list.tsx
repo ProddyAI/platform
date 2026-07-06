@@ -239,6 +239,8 @@ export const MessageList = ({
 
 							return () => observer.disconnect();
 						}
+
+						return undefined;
 					}}
 				/>
 

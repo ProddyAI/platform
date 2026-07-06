@@ -23,6 +23,7 @@ const SignInPage = () => {
 			}, 5000);
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, [searchParams]);
 
 	return (

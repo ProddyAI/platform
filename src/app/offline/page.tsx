@@ -40,11 +40,11 @@ export default function OfflinePage() {
 
 			<div className="mb-6 flex items-center justify-center gap-3">
 				<WifiOff className="h-8 w-8 text-primary" />
-				<h1 className="text-3xl font-bold text-primary">You're Offline</h1>
+				<h1 className="text-3xl font-bold text-primary">You&apos;re Offline</h1>
 			</div>
 
 			<p className="mb-8 max-w-md text-lg text-gray-600">
-				It seems you've lost your internet connection. Proddy requires an
+				It seems you&apos;ve lost your internet connection. Proddy requires an
 				internet connection to work properly.
 			</p>
 

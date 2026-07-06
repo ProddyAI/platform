@@ -117,8 +117,8 @@ const NotesPage = () => {
 						Workspace context missing
 					</h3>
 					<p className="text-sm mb-6">
-						We couldn't determine which workspace or channel you're in. This can
-						happen after a session timeout or direct link mismatch.
+						We couldn&apos;t determine which workspace or channel you&apos;re
+						in. This can happen after a session timeout or direct link mismatch.
 					</p>
 					<Button
 						className="w-full"

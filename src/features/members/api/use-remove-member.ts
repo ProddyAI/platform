@@ -50,6 +50,8 @@ export const useRemoveMember = () => {
 				setStatus("settled");
 				options?.onSettled?.();
 			}
+
+			return undefined;
 		},
 		[mutation]
 	);

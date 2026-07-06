@@ -205,10 +205,10 @@ export const IntegrationsManagement = ({
 					My Integrations
 				</h3>
 				<p className="text-sm text-muted-foreground">
-					Connect your personal accounts to external services using Composio's
-					unified AgentAuth system for AI-powered automation and enhanced
-					productivity features. These connections are unique to you and not
-					shared with other workspace members.
+					Connect your personal accounts to external services using
+					Composio&apos;s unified AgentAuth system for AI-powered automation and
+					enhanced productivity features. These connections are unique to you
+					and not shared with other workspace members.
 				</p>
 			</div>
 

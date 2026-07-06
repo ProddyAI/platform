@@ -32,7 +32,7 @@ export const useMeetingTranscription = (
 			!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)
 		) {
 			console.warn("Speech Recognition API not supported in this browser.");
-			return;
+			return undefined;
 		}
 
 		if (!isRecording) {
@@ -40,10 +40,10 @@ export const useMeetingTranscription = (
 				recognitionRef.current.stop();
 				setIsListening(false);
 			}
-			return;
+			return undefined;
 		}
 
-		if (isListening) return;
+		if (isListening) return undefined;
 
 		const SpeechRecognition =
 			(window as any).SpeechRecognition ||

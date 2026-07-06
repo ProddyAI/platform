@@ -304,7 +304,7 @@ export const MeetingNotesPanel = ({
 								<Brain className="w-8 h-8 mb-3 opacity-20" />
 								<p className="text-sm">Summary not generated yet.</p>
 								<p className="text-xs mt-1">
-									Click "Generate AI Notes" to analyze the transcript.
+									Click &quot;Generate AI Notes&quot; to analyze the transcript.
 								</p>
 							</div>
 						)}

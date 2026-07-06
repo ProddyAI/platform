@@ -89,6 +89,8 @@ export const TidioChat = () => {
 				document.removeEventListener("tidioChat-ready", handleTidioLoaded);
 			};
 		}
+
+		return undefined;
 	}, [currentUser]);
 
 	useEffect(() => {

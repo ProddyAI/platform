@@ -130,6 +130,8 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 				case "no-date":
 					filtered = filtered.filter((task) => !task.dueDate);
 					break;
+				default:
+					break;
 			}
 		}
 
@@ -159,6 +161,8 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 					comparison = bPriority - aPriority;
 					break;
 				}
+				default:
+					break;
 			}
 
 			return filterOptions.sortDirection === "asc" ? comparison : -comparison;

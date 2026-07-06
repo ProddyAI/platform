@@ -122,7 +122,9 @@ export const MeetingRecordButton = ({
 			if (recognitionRef.current) {
 				try {
 					recognitionRef.current.start();
-				} catch (_e) {}
+				} catch (_e) {
+					// intentionally empty
+				}
 			}
 		};
 
@@ -358,7 +360,7 @@ export const CaptionsOverlay = ({
 
 	// Auto-hide caption after 5 seconds of no change
 	useEffect(() => {
-		if (!displayCaption) return;
+		if (!displayCaption) return undefined;
 		const timer = setTimeout(() => setDisplayCaption(""), 5000);
 		return () => clearTimeout(timer);
 	}, [displayCaption]);
@@ -816,7 +818,8 @@ export const NotesSidebar = ({
 								<div className="flex flex-col items-center justify-center py-16 text-gray-500 text-center gap-3">
 									<MicOff className="w-8 h-8 opacity-30" />
 									<p className="text-sm">
-										Press "Record" to start capturing the meeting transcript.
+										Press &quot;Record&quot; to start capturing the meeting
+										transcript.
 									</p>
 								</div>
 							)}

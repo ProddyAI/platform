@@ -93,7 +93,6 @@ export const CreateMilestoneModal = ({
 					<div className="space-y-1.5">
 						<Label htmlFor="milestone-name">Milestone name</Label>
 						<Input
-							autoFocus
 							id="milestone-name"
 							onChange={(event) => setName(event.target.value)}
 							placeholder="e.g. MVP Launch, v2.0, Beta"

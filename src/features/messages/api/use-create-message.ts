@@ -54,6 +54,7 @@ export const useCreateMessage = () => {
 				options?.onError?.(err);
 
 				if (options?.throwError) throw error;
+				return undefined;
 			} finally {
 				setStatus("settled");
 				options?.onSettled?.();

@@ -31,7 +31,7 @@ const ForgotPasswordPage = () => {
 
 	// Handle cooldown timer
 	useEffect(() => {
-		if (!lastSentTimestamp) return;
+		if (!lastSentTimestamp) return undefined;
 
 		const updateCooldown = () => {
 			const now = Date.now();
@@ -184,13 +184,14 @@ const ForgotPasswordPage = () => {
 								<div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-800">
 									<p className="font-medium mb-1">Email Sent Successfully!</p>
 									<p>
-										We've sent a password reset link to <strong>{email}</strong>
-										. Please check your inbox and follow the instructions.
+										We&apos;ve sent a password reset link to{" "}
+										<strong>{email}</strong>. Please check your inbox and follow
+										the instructions.
 									</p>
 								</div>
 
 								<p className="text-sm text-muted-foreground text-center">
-									Didn't receive the email? Check your spam folder or{" "}
+									Didn&apos;t receive the email? Check your spam folder or{" "}
 									<button
 										className={`font-medium transition-colors ${
 											remainingCooldown > 0

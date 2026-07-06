@@ -183,7 +183,6 @@ export const BoardSubtaskList: React.FC<BoardSubtaskListProps> = ({
 				<div className="flex items-center gap-2 p-2 rounded-md border bg-card">
 					<Checkbox className="shrink-0" disabled />
 					<Input
-						autoFocus
 						className="flex-1 h-7 text-sm"
 						onChange={(e) => setNewSubtaskTitle(e.target.value)}
 						onKeyDown={(e) => {
@@ -221,7 +220,8 @@ export const BoardSubtaskList: React.FC<BoardSubtaskListProps> = ({
 			{/* Empty state */}
 			{!isAdding && totalCount === 0 && (
 				<div className="text-center py-6 text-sm text-muted-foreground">
-					No subtasks yet. Click "Add Subtask" to break down this task.
+					No subtasks yet. Click &quot;Add Subtask&quot; to break down this
+					task.
 				</div>
 			)}
 		</div>

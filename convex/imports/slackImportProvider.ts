@@ -614,10 +614,7 @@ export class SlackImportProvider {
 					return false;
 				}
 				// Skip messages with no text and no files
-				if (!msg.text && (!msg.files || msg.files.length === 0)) {
-					return false;
-				}
-				return true;
+				return !(!msg.text && (!msg.files || msg.files.length === 0));
 			})
 			.map((msg) => {
 				// Extract attachments (files)

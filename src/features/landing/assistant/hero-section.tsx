@@ -110,10 +110,10 @@ export const HeroSection = () => {
 								Dashboard Integration
 							</Badge>
 							<p className="text-gray-600 mb-6">
-								Proddy AI lives in your team's dashboard, making it instantly
-								accessible whenever you need assistance. No need to switch
-								contexts or open new tools – just ask your question and get
-								immediate answers.
+								Proddy AI lives in your team&apos;s dashboard, making it
+								instantly accessible whenever you need assistance. No need to
+								switch contexts or open new tools – just ask your question and
+								get immediate answers.
 							</p>
 
 							<div className="space-y-4 mb-8">
@@ -184,7 +184,7 @@ export const HeroSection = () => {
 									{/* User Message */}
 									<div className="flex justify-end">
 										<div className="bg-primary/10 text-gray-800 rounded-lg rounded-tr-none p-3 max-w-[80%]">
-											<p>How's my day looking?</p>
+											<p>How&apos;s my day looking?</p>
 										</div>
 									</div>
 
@@ -192,7 +192,7 @@ export const HeroSection = () => {
 									<div className="flex">
 										<div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 max-w-[80%]">
 											<p className="text-sm">
-												Good morning! Here's your day ahead:
+												Good morning! Here&apos;s your day ahead:
 												<br />
 												<br />📅{" "}
 												<span className="font-semibold">3 meetings</span> -
@@ -213,7 +213,9 @@ export const HeroSection = () => {
 									{/* User Message */}
 									<div className="flex justify-end">
 										<div className="bg-primary/10 text-gray-800 rounded-lg rounded-tr-none p-3 max-w-[80%]">
-											<p>What's the context for the 10am sprint planning?</p>
+											<p>
+												What&apos;s the context for the 10am sprint planning?
+											</p>
 										</div>
 									</div>
 

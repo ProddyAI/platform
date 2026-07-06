@@ -118,7 +118,7 @@ const ManagePage = () => {
 				<Shield className="h-12 w-12 text-muted-foreground mb-4" />
 				<h2 className="text-2xl font-bold">Access Denied</h2>
 				<p className="text-muted-foreground">
-					You don't have permission to access this page.
+					You don&apos;t have permission to access this page.
 				</p>
 			</div>
 		);

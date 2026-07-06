@@ -359,7 +359,7 @@ export const ExportNoteDialog = ({
 				<DialogHeader>
 					<DialogTitle>Export Note</DialogTitle>
 					<DialogDescription>
-						Export "{note?.title}" in your preferred format
+						Export &quot;{note?.title}&quot; in your preferred format
 					</DialogDescription>
 				</DialogHeader>
 

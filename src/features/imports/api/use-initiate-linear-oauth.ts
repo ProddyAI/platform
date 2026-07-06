@@ -49,6 +49,8 @@ export const useInitiateLinearOAuth = () => {
 				if (options?.throwError) {
 					throw error;
 				}
+
+				return undefined;
 			} finally {
 				setStatus("settled");
 				options?.onSettled?.();

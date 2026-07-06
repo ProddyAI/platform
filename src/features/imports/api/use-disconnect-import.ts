@@ -52,6 +52,7 @@ export const useDisconnectImport = () => {
 				if (options?.throwError) {
 					throw error;
 				}
+				return undefined;
 			} finally {
 				options?.onSettled?.();
 			}

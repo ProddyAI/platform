@@ -158,7 +158,7 @@ export const AssignedCardsWidget = ({
 						No assigned cards
 					</h3>
 					<p className="text-sm text-muted-foreground mt-1">
-						You don't have any board cards assigned
+						You don&apos;t have any board cards assigned
 					</p>
 					{channels && channels.length > 0 && (
 						<Button

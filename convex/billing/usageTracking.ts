@@ -238,7 +238,9 @@ export const recordEventCreated = internalMutation({
 	args: { userId: v.id("users"), workspaceId: v.id("workspaces") },
 	// Deprecated: calendar events are no longer tracked. Kept as no-op
 	// so in-flight scheduled calls don't crash.
-	handler: async (_ctx, _args) => {},
+	handler: async (_ctx, _args) => {
+		// no-op
+	},
 });
 
 export const recordChannelCreated = internalMutation({

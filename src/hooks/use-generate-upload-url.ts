@@ -42,6 +42,8 @@ export const useGenerateUploadUrl = () => {
 				options?.onError?.(error as Error);
 
 				if (!options?.throwError) throw error;
+
+				return undefined;
 			} finally {
 				setStatus("settled");
 				options?.onSettled?.();

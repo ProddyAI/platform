@@ -66,15 +66,13 @@ export const ChannelsManagement = ({
 
 	const { data: channels, isLoading } = useGetChannels({ workspaceId });
 	const [editChannelName, setEditChannelName] = useState("");
-	const [editChannelIcon, setEditChannelIcon] = useState<string | undefined>(
-		undefined
-	);
+	const [editChannelIcon, setEditChannelIcon] = useState<string | undefined>();
 	const [editChannelIconImage, setEditChannelIconImage] = useState<
 		Id<"_storage"> | undefined
-	>(undefined);
+	>();
 	const [editChannelIconPreview, setEditChannelIconPreview] = useState<
 		string | undefined
-	>(undefined);
+	>();
 	const [editChannelId, setEditChannelId] = useState<Id<"channels"> | null>(
 		null
 	);

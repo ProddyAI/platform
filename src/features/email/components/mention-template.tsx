@@ -56,7 +56,7 @@ export const MentionTemplate: React.FC<Readonly<MentionTemplateProps>> = ({
 						</Text>
 
 						<Section style={messageContainer}>
-							<Text style={messageText}>"{messagePreview}"</Text>
+							<Text style={messageText}>&quot;{messagePreview}&quot;</Text>
 						</Section>
 
 						<Section style={buttonContainer}>
@@ -79,12 +79,13 @@ export const MentionTemplate: React.FC<Readonly<MentionTemplateProps>> = ({
 
 					<Text style={footer}>
 						This email was sent from {workspaceName}, your team collaboration
-						platform. If you didn't expect this email, you can safely ignore it.
+						platform. If you didn&apos;t expect this email, you can safely
+						ignore it.
 					</Text>
 
 					{unsubscribeUrl && (
 						<Text style={unsubscribeText}>
-							Don't want to receive mention notifications?{" "}
+							Don&apos;t want to receive mention notifications?{" "}
 							<Link href={unsubscribeUrl} style={unsubscribeLink}>
 								Unsubscribe from these emails
 							</Link>

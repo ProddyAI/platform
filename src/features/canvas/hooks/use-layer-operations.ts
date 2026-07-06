@@ -97,7 +97,9 @@ export function useLayerOperations(lastUsedColor: Color) {
 				storage.set("lastUpdate", Date.now());
 
 				setMyPresence({ selection: [layerId] }, { addToHistory: true });
-			} catch (_error) {}
+			} catch (_error) {
+				// intentionally empty
+			}
 		},
 		[lastUsedColor]
 	);
@@ -190,7 +192,9 @@ export function useLayerOperations(lastUsedColor: Color) {
 
 			// Force a storage update to ensure changes are synchronized
 			storage.set("lastUpdate", Date.now());
-		} catch (_error) {}
+		} catch (_error) {
+			// intentionally empty
+		}
 	}, []);
 
 	// Insert a Mermaid diagram with custom code
@@ -215,7 +219,7 @@ export function useLayerOperations(lastUsedColor: Color) {
 				// Check layer limit
 				if (liveLayerIds.length >= MAX_LAYERS) {
 					console.warn("Maximum number of layers reached");
-					return;
+					return undefined;
 				}
 
 				const layerId = nanoid();

@@ -199,7 +199,6 @@ export const CanvasName = ({ savedCanvasName }: CanvasNameProps) => {
 				{isEditing ? (
 					<div className="flex items-center">
 						<Input
-							autoFocus
 							className="h-8 w-40 text-sm"
 							onBlur={handleSave}
 							onChange={(e) => setInputValue(e.target.value)}

@@ -53,6 +53,7 @@ export const useSetProjectConnectedChannel = () => {
 				if (options?.throwError) {
 					throw err;
 				}
+				return undefined;
 			} finally {
 				setStatus("settled");
 				options?.onSettled?.();

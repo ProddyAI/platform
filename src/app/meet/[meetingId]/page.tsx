@@ -97,7 +97,7 @@ export default function MeetingPage({
 	}, []);
 
 	useEffect(() => {
-		if (!isRecording) return;
+		if (!isRecording) return undefined;
 		const interval = setInterval(() => {
 			setLiveTranscript(liveTranscriptRef.current);
 		}, 3000);
@@ -132,12 +132,12 @@ export default function MeetingPage({
 	}, [workspaceId, channelId, params.meetingId]);
 
 	useEffect(() => {
-		if (isLoading) return;
+		if (isLoading) return undefined;
 		if (!isAuthenticated) {
 			router.replace("/auth/signin");
-			return;
+			return undefined;
 		}
-		if (!user?._id) return;
+		if (!user?._id) return undefined;
 
 		let mounted = true;
 		const initStream = async () => {
@@ -179,10 +179,14 @@ export default function MeetingPage({
 		return () => {
 			mounted = false;
 			if (callRef.current) {
-				callRef.current.leave().catch(() => {});
+				callRef.current.leave().catch(() => {
+					// no-op
+				});
 			}
 			if (clientRef.current) {
-				clientRef.current.disconnectUser().catch(() => {});
+				clientRef.current.disconnectUser().catch(() => {
+					// no-op
+				});
 			}
 		};
 	}, [

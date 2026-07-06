@@ -370,6 +370,9 @@ export const Canvas = ({
 
 						break;
 					}
+					break;
+				default:
+					break;
 			}
 		}
 

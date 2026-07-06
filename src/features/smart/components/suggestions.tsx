@@ -131,6 +131,7 @@ export const Suggestions = ({
 
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, [channelId, channelMessagesLoading, channelMessages, fetchSuggestions]);
 
 	// Refresh suggestions manually

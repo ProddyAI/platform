@@ -156,8 +156,8 @@ export const ComparisonSection = () => {
 									Customer Quote
 								</p>
 								<p className="text-xs text-gray-600">
-									"Switching to Proddy cut our tool costs by 40% while improving
-									team collaboration."
+									&quot;Switching to Proddy cut our tool costs by 40% while
+									improving team collaboration.&quot;
 								</p>
 							</div>
 						</div>
@@ -178,7 +178,7 @@ export const ComparisonSection = () => {
 									))}
 								</div>
 								<p className="text-xs text-gray-600">
-									"4.9/5 average rating from over 1,000 teams"
+									&quot;4.9/5 average rating from over 1,000 teams&quot;
 								</p>
 							</div>
 						</div>

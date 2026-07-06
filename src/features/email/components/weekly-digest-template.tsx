@@ -71,8 +71,8 @@ export const WeeklyDigestTemplate: React.FC<
 					<Section style={section}>
 						<Text style={text}>Hi {firstName},</Text>
 						<Text style={text}>
-							Here's your weekly summary for <strong>{weekRange}</strong> across
-							all your Proddy workspaces.
+							Here&apos;s your weekly summary for <strong>{weekRange}</strong>{" "}
+							across all your Proddy workspaces.
 						</Text>
 
 						{/* Overall Stats */}

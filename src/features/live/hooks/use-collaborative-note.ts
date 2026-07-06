@@ -134,7 +134,7 @@ export const useCollaborativeNote = ({
 
 	// Set up auto-save
 	useEffect(() => {
-		if (!noteData) return;
+		if (!noteData) return undefined;
 
 		const currentContent = JSON.stringify({
 			content: noteData.content,

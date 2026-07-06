@@ -40,10 +40,10 @@ export const TaskCreateForm = ({
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
-	const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+	const [dueDate, setDueDate] = useState<Date | undefined>();
 	const [priority, setPriority] = useState<
 		"low" | "medium" | "high" | undefined
-	>(undefined);
+	>();
 	const [categoryId, setCategoryId] = useState<Id<"categories"> | null>(null);
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,7 +182,6 @@ export const TaskCreateForm = ({
 
 			<div className="space-y-4">
 				<Input
-					autoFocus
 					className="text-base font-medium border-gray-300 focus-visible:ring-secondary"
 					onChange={(e) => setTitle(e.target.value)}
 					placeholder="Task title"

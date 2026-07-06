@@ -249,7 +249,7 @@ export const MentionsWidget = ({
 					<AtSign className="mb-2 h-10 w-10 text-muted-foreground" />
 					<h3 className="text-lg font-medium">No mentions</h3>
 					<p className="text-sm text-muted-foreground">
-						You haven't been mentioned recently
+						You haven&apos;t been mentioned recently
 					</p>
 				</div>
 			)}

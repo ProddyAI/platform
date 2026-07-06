@@ -92,6 +92,8 @@ export const SignUpCard = ({
 		} finally {
 			setPending(false);
 		}
+
+		return undefined;
 	};
 
 	// Show OTP verification screen if needed

@@ -1043,7 +1043,9 @@ http.route({
 					const parsed = JSON.parse(base64UrlDecode(state));
 					workspaceId = parsed.workspaceId || "";
 				}
-			} catch (_e) {}
+			} catch (_e) {
+				// ignore malformed state param
+			}
 
 			const redirectPath = workspaceId
 				? `/workspace/${workspaceId}/manage?tab=import&error=${encodeURIComponent(error)}`

@@ -1290,7 +1290,7 @@ const DashboardChatbotBody = ({
 	};
 
 	useEffect(() => {
-		if (!autocompleteOpen) return;
+		if (!autocompleteOpen) return undefined;
 
 		const onMouseDown = (e: MouseEvent) => {
 			const target = e.target as Node;

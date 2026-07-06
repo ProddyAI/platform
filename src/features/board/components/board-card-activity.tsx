@@ -76,14 +76,9 @@ const isCardActivityArray = (value: unknown): value is CardActivity[] => {
 		if (userRecord.name !== undefined && typeof userRecord.name !== "string") {
 			return false;
 		}
-		if (
-			userRecord.image !== undefined &&
-			typeof userRecord.image !== "string"
-		) {
-			return false;
-		}
-
-		return true;
+		return !(
+			userRecord.image !== undefined && typeof userRecord.image !== "string"
+		);
 	});
 };
 

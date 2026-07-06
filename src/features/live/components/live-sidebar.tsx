@@ -351,7 +351,6 @@ export const LiveSidebar = ({
 										<div className="flex-1 min-w-0">
 											{renamingItemId === item._id ? (
 												<Input
-													autoFocus
 													className="h-6 text-sm font-medium border-none shadow-none p-0 focus-visible:ring-0"
 													onBlur={() => handleRenameSubmit(item._id)}
 													onChange={(e) => setRenameValue(e.target.value)}

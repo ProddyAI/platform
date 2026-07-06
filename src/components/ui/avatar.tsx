@@ -1,15 +1,15 @@
 "use client";
 
-import * as AvatarPrimitive from "@radix-ui/react-avatar";
+import { Fallback, Image, Root } from "@radix-ui/react-avatar";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 const Avatar = React.forwardRef<
-	React.ElementRef<typeof AvatarPrimitive.Root>,
-	React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
+	React.ElementRef<typeof Root>,
+	React.ComponentPropsWithoutRef<typeof Root>
 >(({ className, ...props }, ref) => (
-	<AvatarPrimitive.Root
+	<Root
 		className={cn(
 			"relative flex h-10 w-10 shrink-0 overflow-hidden rounded-md transition-all duration-200 hover:shadow-md",
 			className
@@ -18,13 +18,13 @@ const Avatar = React.forwardRef<
 		{...props}
 	/>
 ));
-Avatar.displayName = AvatarPrimitive.Root.displayName;
+Avatar.displayName = Root.displayName;
 
 const AvatarImage = React.forwardRef<
-	React.ElementRef<typeof AvatarPrimitive.Image>,
-	React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
+	React.ElementRef<typeof Image>,
+	React.ComponentPropsWithoutRef<typeof Image>
 >(({ className, ...props }, ref) => (
-	<AvatarPrimitive.Image
+	<Image
 		className={cn(
 			"aspect-square h-full w-full object-cover transition-opacity duration-200",
 			className
@@ -33,13 +33,13 @@ const AvatarImage = React.forwardRef<
 		{...props}
 	/>
 ));
-AvatarImage.displayName = AvatarPrimitive.Image.displayName;
+AvatarImage.displayName = Image.displayName;
 
 const AvatarFallback = React.forwardRef<
-	React.ElementRef<typeof AvatarPrimitive.Fallback>,
-	React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
+	React.ElementRef<typeof Fallback>,
+	React.ComponentPropsWithoutRef<typeof Fallback>
 >(({ className, ...props }, ref) => (
-	<AvatarPrimitive.Fallback
+	<Fallback
 		className={cn(
 			"flex h-full w-full items-center justify-center rounded-md bg-secondary text-sm font-semibold text-white transition-all duration-200",
 			className
@@ -48,6 +48,6 @@ const AvatarFallback = React.forwardRef<
 		{...props}
 	/>
 ));
-AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
+AvatarFallback.displayName = Fallback.displayName;
 
 export { Avatar, AvatarFallback, AvatarImage };

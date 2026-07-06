@@ -157,10 +157,7 @@ const CalendarContent = ({
 			) {
 				return true;
 			}
-			if (event.type === "task" && filterOptions.eventTypes.includes("task")) {
-				return true;
-			}
-			return false;
+			return event.type === "task" && filterOptions.eventTypes.includes("task");
 		});
 	}, [events, filterOptions]);
 

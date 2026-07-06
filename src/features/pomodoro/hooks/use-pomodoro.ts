@@ -58,7 +58,13 @@ const playChime = () => {
 			osc.start(now + offset);
 			osc.stop(now + offset + 0.4);
 		}
-		window.setTimeout(() => ctx.close().catch(() => {}), 1000);
+		window.setTimeout(
+			() =>
+				ctx.close().catch(() => {
+					// no-op
+				}),
+			1000
+		);
 	} catch {
 		// Audio is best-effort; never let it break the timer.
 	}
@@ -251,7 +257,7 @@ export const usePomodoro = (): UsePomodoro => {
 
 	// The ticking loop. Recomputes "now" and fires completion at zero.
 	useEffect(() => {
-		if (!isActive || endAt === null) return;
+		if (!isActive || endAt === null) return undefined;
 		const id = window.setInterval(() => {
 			if (Date.now() >= endAt) {
 				handleComplete();
@@ -265,7 +271,9 @@ export const usePomodoro = (): UsePomodoro => {
 	const requestNotificationPermission = useCallback(() => {
 		if (typeof window === "undefined" || !("Notification" in window)) return;
 		if (Notification.permission === "default") {
-			Notification.requestPermission().catch(() => {});
+			Notification.requestPermission().catch(() => {
+				// no-op
+			});
 		}
 	}, []);
 

@@ -164,7 +164,6 @@ const JoinWorkspaceIdPage = () => {
 				</div>
 
 				<VerificationInput
-					autoFocus={!codeFromUrl}
 					classNames={{
 						container: cn(
 							"flex gap-x-2",

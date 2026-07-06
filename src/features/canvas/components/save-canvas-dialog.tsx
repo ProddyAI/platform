@@ -80,7 +80,6 @@ export const SaveCanvasDialog = ({
 
 				<form className="space-y-4" onSubmit={handleSubmit}>
 					<Input
-						autoFocus
 						disabled={isSaving}
 						onChange={(e) => setFileName(e.target.value)}
 						placeholder="Canvas name"

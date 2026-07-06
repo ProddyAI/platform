@@ -70,6 +70,7 @@ const MessageComponent = ({
 			}, 100);
 			return () => document.removeEventListener("click", handleClickOutside);
 		}
+		return undefined;
 	}, [contextMenu.show, closeContextMenu]);
 
 	const commonProps = {

@@ -115,7 +115,7 @@ export const Mermaid = ({
 	}, [renderedSvg]);
 
 	useEffect(() => {
-		if (!isMounted) return;
+		if (!isMounted) return undefined;
 
 		const renderMermaid = async () => {
 			if (!mermaidCode) {

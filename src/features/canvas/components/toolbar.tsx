@@ -148,7 +148,9 @@ export const Toolbar = ({
 						<ToolButton
 							icon={Sparkles}
 							label="AI Flowchart"
-							onClick={() => {}} // Handled by FlowchartGenerator
+							onClick={() => {
+								// Handled by FlowchartGenerator
+							}}
 							variant="default"
 						/>
 					</FlowchartGenerator>

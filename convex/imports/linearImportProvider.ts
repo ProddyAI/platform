@@ -871,9 +871,7 @@ async function getOrCreateStatusForState(
 			return true;
 		if (normalizedStateName.includes("done") && doneMatch) return true;
 		if (normalizedStateName.includes("backlog") && backlogMatch) return true;
-		if (normalizedStateName.includes("triage") && backlogMatch) return true;
-
-		return false;
+		return normalizedStateName.includes("triage") && backlogMatch;
 	});
 
 	// If no matching status found, use the first status (lowest order) as default

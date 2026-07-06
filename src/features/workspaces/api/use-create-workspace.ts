@@ -48,6 +48,8 @@ export const useCreateWorkspace = () => {
 				setStatus("settled");
 				options?.onSettled?.();
 			}
+
+			return undefined;
 		},
 		[mutation]
 	);

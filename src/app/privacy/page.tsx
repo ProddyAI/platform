@@ -192,7 +192,7 @@ const PrivacyPage = () => {
 							</ul>
 
 							<h2 className="text-2xl font-semibold mt-8 mb-4">
-								Children's Privacy
+								Children&apos;s Privacy
 							</h2>
 							<p>
 								Our service is not intended for use by children under the age of
@@ -208,9 +208,9 @@ const PrivacyPage = () => {
 							<p>
 								We may update our Privacy Policy from time to time. We will
 								notify you of any changes by posting the new Privacy Policy on
-								this page and updating the "Last Updated" date at the top of
-								this Privacy Policy. You are advised to review this Privacy
-								Policy periodically for any changes.
+								this page and updating the &quot;Last Updated&quot; date at the
+								top of this Privacy Policy. You are advised to review this
+								Privacy Policy periodically for any changes.
 							</p>
 
 							<h2 className="text-2xl font-semibold mt-8 mb-4">Contact Us</h2>

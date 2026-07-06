@@ -173,9 +173,9 @@ export const UseCasesSection = () => {
 												Campaign Coordination
 											</p>
 											<p className="text-gray-600 text-sm">
-												"What's the status of our Q3 social media campaign?"
-												gets you instant updates on progress, deadlines, and
-												assigned tasks.
+												&quot;What&apos;s the status of our Q3 social media
+												campaign?&quot; gets you instant updates on progress,
+												deadlines, and assigned tasks.
 											</p>
 										</div>
 									</li>
@@ -188,9 +188,9 @@ export const UseCasesSection = () => {
 												Content Research
 											</p>
 											<p className="text-gray-600 text-sm">
-												"Find all our blog posts about product features"
-												instantly retrieves relevant content from your
-												workspace.
+												&quot;Find all our blog posts about product
+												features&quot; instantly retrieves relevant content from
+												your workspace.
 											</p>
 										</div>
 									</li>
@@ -203,8 +203,9 @@ export const UseCasesSection = () => {
 												Meeting Summaries
 											</p>
 											<p className="text-gray-600 text-sm">
-												"Summarize yesterday's marketing strategy meeting"
-												provides key points and action items at a glance.
+												&quot;Summarize yesterday&apos;s marketing strategy
+												meeting&quot; provides key points and action items at a
+												glance.
 											</p>
 										</div>
 									</li>
@@ -222,17 +223,17 @@ export const UseCasesSection = () => {
 								<div className="space-y-4">
 									<div className="bg-blue-50 text-gray-800 rounded-lg rounded-tr-none p-4 border-l-4 border-blue-500">
 										<p className="font-medium">
-											What's our content calendar for next week?
+											What&apos;s our content calendar for next week?
 										</p>
 									</div>
 									<div className="bg-gray-50 text-gray-800 rounded-lg rounded-tl-none p-4 border-l-4 border-gray-400">
 										<p className="mb-3 font-medium text-blue-600">
-											Here's your content calendar for next week:
+											Here&apos;s your content calendar for next week:
 										</p>
 										<ul className="space-y-2 pl-4 list-disc text-sm">
 											<li>
-												<strong>Monday:</strong> Blog post on "10 Productivity
-												Tips" (Writer: Jamie)
+												<strong>Monday:</strong> Blog post on &quot;10
+												Productivity Tips&quot; (Writer: Jamie)
 											</li>
 											<li>
 												<strong>Wednesday:</strong> Product feature announcement
@@ -286,8 +287,9 @@ export const UseCasesSection = () => {
 												Feature Tracking
 											</p>
 											<p className="text-gray-600 text-sm">
-												"What's the status of the new dashboard feature?"
-												provides current progress, blockers, and timeline.
+												&quot;What&apos;s the status of the new dashboard
+												feature?&quot; provides current progress, blockers, and
+												timeline.
 											</p>
 										</div>
 									</li>
@@ -300,8 +302,9 @@ export const UseCasesSection = () => {
 												Requirement Lookup
 											</p>
 											<p className="text-gray-600 text-sm">
-												"Find the requirements for the mobile app redesign"
-												instantly retrieves relevant documentation.
+												&quot;Find the requirements for the mobile app
+												redesign&quot; instantly retrieves relevant
+												documentation.
 											</p>
 										</div>
 									</li>
@@ -314,8 +317,9 @@ export const UseCasesSection = () => {
 												Sprint Planning
 											</p>
 											<p className="text-gray-600 text-sm">
-												"What tasks are scheduled for our next sprint?" gives
-												you a quick overview of upcoming work.
+												&quot;What tasks are scheduled for our next
+												sprint?&quot; gives you a quick overview of upcoming
+												work.
 											</p>
 										</div>
 									</li>
@@ -339,10 +343,11 @@ export const UseCasesSection = () => {
 									<div className="bg-gray-50 text-gray-800 rounded-lg rounded-tl-none p-4 border-l-4 border-gray-400">
 										<p className="mb-3 font-medium text-green-600">
 											The Canvas feature is scheduled for release on October
-											15th. According to the product roadmap, it's currently in
-											the final testing phase with 85% of tasks completed. The
-											engineering team has reported no critical blockers, and
-											the design team signed off on the UI last week.
+											15th. According to the product roadmap, it&apos;s
+											currently in the final testing phase with 85% of tasks
+											completed. The engineering team has reported no critical
+											blockers, and the design team signed off on the UI last
+											week.
 										</p>
 										<p className="text-xs text-gray-500 mt-3 italic">
 											Sources: Product Roadmap, Engineering Sprint Board
@@ -383,8 +388,9 @@ export const UseCasesSection = () => {
 												Sprint Management
 											</p>
 											<p className="text-gray-600 text-sm">
-												"What tasks are still open in our current sprint?" gives
-												you immediate visibility into remaining work.
+												&quot;What tasks are still open in our current
+												sprint?&quot; gives you immediate visibility into
+												remaining work.
 											</p>
 										</div>
 									</li>
@@ -397,8 +403,9 @@ export const UseCasesSection = () => {
 												Documentation Access
 											</p>
 											<p className="text-gray-600 text-sm">
-												"Find the API documentation for the user service"
-												instantly retrieves relevant technical docs.
+												&quot;Find the API documentation for the user
+												service&quot; instantly retrieves relevant technical
+												docs.
 											</p>
 										</div>
 									</li>
@@ -411,8 +418,8 @@ export const UseCasesSection = () => {
 												Meeting Coordination
 											</p>
 											<p className="text-gray-600 text-sm">
-												"When is our next code review scheduled?" provides
-												immediate calendar information.
+												&quot;When is our next code review scheduled?&quot;
+												provides immediate calendar information.
 											</p>
 										</div>
 									</li>
@@ -490,8 +497,9 @@ export const UseCasesSection = () => {
 												Project Status
 											</p>
 											<p className="text-gray-600 text-sm">
-												"What's the status of our Q3 initiatives?" provides a
-												high-level overview across all teams.
+												&quot;What&apos;s the status of our Q3
+												initiatives?&quot; provides a high-level overview across
+												all teams.
 											</p>
 										</div>
 									</li>
@@ -504,8 +512,8 @@ export const UseCasesSection = () => {
 												Meeting Preparation
 											</p>
 											<p className="text-gray-600 text-sm">
-												"Summarize the key points from last week's leadership
-												meeting" helps with quick follow-ups.
+												&quot;Summarize the key points from last week&apos;s
+												leadership meeting&quot; helps with quick follow-ups.
 											</p>
 										</div>
 									</li>
@@ -518,8 +526,8 @@ export const UseCasesSection = () => {
 												Strategic Planning
 											</p>
 											<p className="text-gray-600 text-sm">
-												"Find all documents related to our 2024 strategy"
-												instantly retrieves relevant materials.
+												&quot;Find all documents related to our 2024
+												strategy&quot; instantly retrieves relevant materials.
 											</p>
 										</div>
 									</li>
@@ -542,7 +550,7 @@ export const UseCasesSection = () => {
 									</div>
 									<div className="bg-gray-50 text-gray-800 rounded-lg rounded-tl-none p-4 border-l-4 border-gray-400">
 										<p className="mb-3 font-medium text-indigo-600">
-											Here's the current status of your key Q3 initiatives:
+											Here&apos;s the current status of your key Q3 initiatives:
 										</p>
 										<ul className="space-y-2 pl-4 list-disc text-sm">
 											<li>

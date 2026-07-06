@@ -119,12 +119,12 @@ export const CardAssignmentTemplate: React.FC<
 
 					<Text style={footer}>
 						This email was sent from Proddy, your team collaboration platform.
-						If you didn't expect this email, you can safely ignore it.
+						If you didn&apos;t expect this email, you can safely ignore it.
 					</Text>
 
 					{unsubscribeUrl && (
 						<Text style={unsubscribeText}>
-							Don't want to receive task assignment notifications?{" "}
+							Don&apos;t want to receive task assignment notifications?{" "}
 							<Link href={unsubscribeUrl} style={unsubscribeLink}>
 								Unsubscribe from these emails
 							</Link>

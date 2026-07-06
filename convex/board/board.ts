@@ -62,8 +62,7 @@ const isActiveBlockingRelationship = (
 		return false;
 	}
 	if (completedStatusIds.has(blockerStatusId)) return false;
-	if (completedStatusIds.has(blockedStatusId)) return false;
-	return true;
+	return !completedStatusIds.has(blockedStatusId);
 };
 
 const richTextBodyFromPlainText = (text: string) => {

@@ -51,6 +51,8 @@ export const useUpdateMessage = () => {
 				setStatus("settled");
 				options?.onSettled?.();
 			}
+
+			return undefined;
 		},
 		[mutation]
 	);

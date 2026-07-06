@@ -43,8 +43,8 @@ export const FAQSection = () => {
 							<p className="text-gray-600">
 								Proddy AI only accesses the data within your workspace that it
 								needs to answer your specific questions. It uses a secure
-								retrieval system that maintains privacy and doesn't store or use
-								your data for training purposes.
+								retrieval system that maintains privacy and doesn&apos;t store
+								or use your data for training purposes.
 							</p>
 						</div>
 
@@ -93,13 +93,13 @@ export const FAQSection = () => {
 
 						<div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
 							<h3 className="text-lg font-semibold mb-2 text-gray-900">
-								Does Proddy AI learn from my team's usage?
+								Does Proddy AI learn from my team&apos;s usage?
 							</h3>
 							<p className="text-gray-600">
 								Proddy AI maintains conversation context to provide more
-								relevant responses, but it doesn't currently learn from your
-								team's usage patterns over time. Each interaction is based on
-								the current state of your workspace data.
+								relevant responses, but it doesn&apos;t currently learn from
+								your team&apos;s usage patterns over time. Each interaction is
+								based on the current state of your workspace data.
 							</p>
 						</div>
 
@@ -109,9 +109,9 @@ export const FAQSection = () => {
 							</h3>
 							<p className="text-gray-600">
 								Yes, Proddy AI is completely free during our public beta period.
-								We're using a freemium model where core AI features will remain
-								free, with advanced features available in paid plans once we
-								exit beta.
+								We&apos;re using a freemium model where core AI features will
+								remain free, with advanced features available in paid plans once
+								we exit beta.
 							</p>
 						</div>
 					</motion.div>

@@ -48,6 +48,8 @@ export const useRemoveChannel = () => {
 				setStatus("settled");
 				options?.onSettled?.();
 			}
+
+			return undefined;
 		},
 		[mutation]
 	);

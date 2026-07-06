@@ -64,14 +64,16 @@ export const ThreadReplyTemplate: React.FC<
 							<Text style={originalMessageText}>
 								<strong>Your message:</strong>
 							</Text>
-							<Text style={messageText}>"{originalMessagePreview}"</Text>
+							<Text style={messageText}>
+								&quot;{originalMessagePreview}&quot;
+							</Text>
 
 							<Hr style={messageDivider} />
 
 							<Text style={replyMessageText}>
 								<strong>Reply from {replierName}:</strong>
 							</Text>
-							<Text style={messageText}>"{replyMessagePreview}"</Text>
+							<Text style={messageText}>&quot;{replyMessagePreview}&quot;</Text>
 						</Section>
 
 						<Section style={buttonContainer}>
@@ -94,12 +96,13 @@ export const ThreadReplyTemplate: React.FC<
 
 					<Text style={footer}>
 						This email was sent from {workspaceName}, your team collaboration
-						platform. If you didn't expect this email, you can safely ignore it.
+						platform. If you didn&apos;t expect this email, you can safely
+						ignore it.
 					</Text>
 
 					{unsubscribeUrl && (
 						<Text style={unsubscribeText}>
-							Don't want to receive thread reply notifications?{" "}
+							Don&apos;t want to receive thread reply notifications?{" "}
 							<Link href={unsubscribeUrl} style={unsubscribeLink}>
 								Unsubscribe from these emails
 							</Link>

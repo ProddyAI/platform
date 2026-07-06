@@ -340,8 +340,8 @@ const FeaturesPage = () => {
 								{...fadeInAnimation}
 								transition={{ duration: 0.5, delay: 0.2 }}
 							>
-								Proddy's modular design built for teams of all sizes - starting
-								from college projects to scaling startups.
+								Proddy&apos;s modular design built for teams of all sizes -
+								starting from college projects to scaling startups.
 							</motion.p>
 
 							<motion.div

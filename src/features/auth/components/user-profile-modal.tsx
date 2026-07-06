@@ -550,7 +550,7 @@ export const UserProfileModal = ({
 							<div className="flex-shrink-0 flex flex-col justify-center space-y-4 w-full min-h-0 mt-6">
 								{bio && (
 									<p className="text-sm text-muted-foreground italic max-w-full break-words">
-										"{bio}"
+										&quot;{bio}&quot;
 									</p>
 								)}
 

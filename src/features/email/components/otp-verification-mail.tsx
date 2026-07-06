@@ -51,7 +51,8 @@ export const OTPVerificationMail: React.FC<
 						</Text>
 
 						<Text style={text}>
-							If you didn't request this code, you can safely ignore this email.
+							If you didn&apos;t request this code, you can safely ignore this
+							email.
 						</Text>
 					</Section>
 

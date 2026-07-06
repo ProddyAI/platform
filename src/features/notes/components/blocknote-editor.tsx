@@ -146,6 +146,7 @@ export const BlockNoteEditor = ({
 				});
 			};
 		}
+		return undefined;
 		// savedTimerRef is a stable useRef object — its identity never changes,
 		// so it does not belong in the dependency array. ESLint/Biome may flag
 		// .current reads, but adding the ref itself would cause an infinite loop.

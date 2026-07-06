@@ -88,7 +88,6 @@ export const CreateSprintModal = ({
 					<div className="space-y-1.5">
 						<Label htmlFor="sprint-name">Sprint name</Label>
 						<Input
-							autoFocus
 							id="sprint-name"
 							onChange={(event) => setName(event.target.value)}
 							placeholder="Sprint 1"

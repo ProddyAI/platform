@@ -12,7 +12,7 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 	useEffect(() => {
 		if (!isRecording) {
 			if (animationRef.current) cancelAnimationFrame(animationRef.current);
-			return;
+			return undefined;
 		}
 
 		const initAudio = async () => {

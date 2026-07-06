@@ -63,7 +63,8 @@ export const useTrackActivity = ({
 
 	// Start channel session if channelId is provided
 	useEffect(() => {
-		if (!workspaceId || !channelId || isLoading || !isAuthenticated) return;
+		if (!workspaceId || !channelId || isLoading || !isAuthenticated)
+			return undefined;
 
 		const startSession = async () => {
 			try {
@@ -104,7 +105,7 @@ export const useTrackActivity = ({
 
 	// Track time spent on page
 	useEffect(() => {
-		if (!workspaceId || isLoading || !isAuthenticated) return;
+		if (!workspaceId || isLoading || !isAuthenticated) return undefined;
 
 		// Record time spent when user leaves the page
 		const handleVisibilityChange = async () => {

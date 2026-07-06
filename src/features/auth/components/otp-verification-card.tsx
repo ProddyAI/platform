@@ -67,6 +67,7 @@ export const OTPVerificationCard = ({
 			return () => clearTimeout(timer);
 		} else {
 			setCanResend(true);
+			return undefined;
 		}
 	}, [resendCooldown]);
 
@@ -216,7 +217,6 @@ export const OTPVerificationCard = ({
 			<CardContent className="space-y-6 px-0 pb-0">
 				<div className="flex justify-center">
 					<InputOTP
-						autoFocus
 						disabled={pending}
 						maxLength={6}
 						onChange={(value) => {
@@ -267,7 +267,7 @@ export const OTPVerificationCard = ({
 
 				<div className="text-center space-y-2">
 					<p className="text-sm text-muted-foreground">
-						Didn't receive the code?
+						Didn&apos;t receive the code?
 					</p>
 					{canResend ? (
 						<button

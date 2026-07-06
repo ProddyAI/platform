@@ -166,7 +166,7 @@ const Editor = ({
 
 	// Add click outside handler to close the mention picker
 	useEffect(() => {
-		if (!mentionPickerOpen) return;
+		if (!mentionPickerOpen) return undefined;
 
 		const handleClickOutside = (e: MouseEvent) => {
 			// If the click is outside the picker and not on an autocomplete action button, close it.
@@ -194,7 +194,7 @@ const Editor = ({
 	}, [mentionPickerOpen]);
 
 	useEffect(() => {
-		if (!containerRef.current) return;
+		if (!containerRef.current) return undefined;
 
 		const container = containerRef.current;
 		const editorContainer = container.appendChild(

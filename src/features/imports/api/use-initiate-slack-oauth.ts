@@ -53,6 +53,8 @@ export const useInitiateSlackOAuth = () => {
 				setStatus("settled");
 				options?.onSettled?.();
 			}
+
+			return undefined;
 		},
 		[mutation]
 	);

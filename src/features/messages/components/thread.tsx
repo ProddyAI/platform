@@ -364,6 +364,8 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 								return () => observer.disconnect();
 							}
+
+							return undefined;
 						}}
 					/>
 

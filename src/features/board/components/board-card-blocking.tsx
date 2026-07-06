@@ -131,7 +131,6 @@ export const BoardCardBlockingRelationships: React.FC<
 						</div>
 
 						<Input
-							autoFocus
 							className="h-8 text-sm"
 							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="Search cards..."

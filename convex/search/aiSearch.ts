@@ -28,9 +28,9 @@ function cleanAiAnswer(answer: string, userQuery: string): string {
 		let after = cleaned
 			.slice(keyPointsIndex + keyPointsLabel.length)
 			// Remove a leading bullet marker if present right after "Key Points:".
-			.replace(/^\s*[-*•]\s*/g, "")
+			.replace(/^\s*[-*•]\s*/gu, "")
 			// Split inline bullets (" - item - item") into one-item-per-line.
-			.replace(/\s+[-*•]\s+/g, "\n- ")
+			.replace(/\s+[-*•]\s+/gu, "\n- ")
 			// Ensure first item starts on its own line.
 			.replace(/^\s+/, "\n- ");
 

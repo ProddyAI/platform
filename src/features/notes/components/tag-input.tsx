@@ -102,7 +102,6 @@ export const TagInput = ({
 			{/* Add tag input or button */}
 			{isInputVisible ? (
 				<Input
-					autoFocus
 					className="h-6 text-xs px-2 py-1 w-24 min-w-0"
 					onBlur={handleInputBlur}
 					onChange={(e) => setInputValue(e.target.value)}

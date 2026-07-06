@@ -230,7 +230,7 @@ export const ThreadRepliesWidget = ({
 						No thread replies
 					</h3>
 					<p className="text-sm text-muted-foreground mt-1">
-						You don't have any recent thread replies
+						You don&apos;t have any recent thread replies
 					</p>
 				</div>
 			)}

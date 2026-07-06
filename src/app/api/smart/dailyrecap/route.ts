@@ -3,7 +3,7 @@ import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { generateText } from "ai";
 import { ConvexHttpClient } from "convex/browser";
 import { format } from "date-fns";
-import * as dotenv from "dotenv";
+import { config } from "dotenv";
 import { type NextRequest, NextResponse } from "next/server";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -16,7 +16,7 @@ function createConvexClient(): ConvexHttpClient {
 }
 
 // Load environment variables
-dotenv.config();
+config();
 
 interface MessageData {
 	id?: string;

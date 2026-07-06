@@ -31,8 +31,8 @@ const AboutPage = () => {
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
-							We're building the future of team productivity with AI-powered
-							tools that help teams work smarter, not harder.
+							We&apos;re building the future of team productivity with
+							AI-powered tools that help teams work smarter, not harder.
 						</motion.p>
 					</div>
 				</div>
@@ -52,7 +52,7 @@ const AboutPage = () => {
 							<div className="space-y-4 text-gray-700">
 								<p>
 									Proddy was born in Bengaluru, India in 2023 out of frustration
-									with fragmented productivity tools that didn't work well
+									with fragmented productivity tools that didn&apos;t work well
 									together. Our founders experienced firsthand how teams waste
 									countless hours switching between different applications,
 									losing context, and struggling to keep information organized.
@@ -61,14 +61,14 @@ const AboutPage = () => {
 									We set out to build a unified platform that brings together
 									all the essential tools teams need—messaging, tasks,
 									calendars, boards, and more—into one seamless experience. But
-									we didn't just want to create another productivity suite; we
-									wanted to reimagine how teams work together.
+									we didn&apos;t just want to create another productivity suite;
+									we wanted to reimagine how teams work together.
 								</p>
 								<p>
-									By integrating AI throughout the platform, we've created a
-									system that not only organizes your work but actively helps
+									By integrating AI throughout the platform, we&apos;ve created
+									a system that not only organizes your work but actively helps
 									you get it done faster and better. Proddy learns from your
-									team's patterns, automates repetitive tasks, and provides
+									team&apos;s patterns, automates repetitive tasks, and provides
 									insights that help you make better decisions.
 								</p>
 								<p>
@@ -139,7 +139,7 @@ const AboutPage = () => {
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Innovation</h3>
 							<p className="text-gray-700">
-								We're not satisfied with the status quo. We constantly push
+								We&apos;re not satisfied with the status quo. We constantly push
 								boundaries to find better ways to help teams work together more
 								effectively.
 							</p>
@@ -158,8 +158,8 @@ const AboutPage = () => {
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Customer Focus</h3>
 							<p className="text-gray-700">
-								Our customers' success is our success. We listen carefully to
-								feedback and continuously improve our product to meet their
+								Our customers&apos; success is our success. We listen carefully
+								to feedback and continuously improve our product to meet their
 								evolving needs.
 							</p>
 						</motion.div>
@@ -214,8 +214,9 @@ const AboutPage = () => {
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Passion</h3>
 							<p className="text-gray-700">
-								We're passionate about creating tools that people love to use.
-								This passion drives us to go the extra mile in everything we do.
+								We&apos;re passionate about creating tools that people love to
+								use. This passion drives us to go the extra mile in everything
+								we do.
 							</p>
 						</motion.div>
 					</div>

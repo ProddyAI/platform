@@ -307,8 +307,10 @@ export const BoardPageContent = ({
 
 	useEffect(() => {
 		const focusStatus = searchParams.get("focusStatus");
-		if (!focusStatus || handledFocusStatusRef.current === focusStatus) return;
-		if (!displayedStatuses.some((status) => status._id === focusStatus)) return;
+		if (!focusStatus || handledFocusStatusRef.current === focusStatus)
+			return undefined;
+		if (!displayedStatuses.some((status) => status._id === focusStatus))
+			return undefined;
 
 		handledFocusStatusRef.current = focusStatus;
 		setFocusedStatusId(focusStatus as Id<"statuses">);

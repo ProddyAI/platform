@@ -48,8 +48,8 @@ const TermsPage = () => {
 								1. Agreement to Terms
 							</h2>
 							<p>
-								By accessing or using Proddy's platform, you agree to be bound
-								by these Terms of Service and all applicable laws and
+								By accessing or using Proddy&apos;s platform, you agree to be
+								bound by these Terms of Service and all applicable laws and
 								regulations. If you do not agree with any of these terms, you
 								are prohibited from using or accessing this platform.
 							</p>
@@ -58,9 +58,9 @@ const TermsPage = () => {
 								2. Use License
 							</h2>
 							<p>
-								Permission is granted to temporarily use Proddy's platform for
-								personal, educational, or commercial purposes, subject to the
-								following restrictions:
+								Permission is granted to temporarily use Proddy&apos;s platform
+								for personal, educational, or commercial purposes, subject to
+								the following restrictions:
 							</p>
 							<ul className="list-disc pl-6 space-y-2">
 								<li>
@@ -208,8 +208,8 @@ const TermsPage = () => {
 							<p>
 								We reserve the right, at our sole discretion, to modify or
 								replace these Terms at any time. If a revision is material we
-								will provide at least 30 days' notice prior to any new terms
-								taking effect. What constitutes a material change will be
+								will provide at least 30 days&apos; notice prior to any new
+								terms taking effect. What constitutes a material change will be
 								determined at our sole discretion.
 							</p>
 

@@ -106,7 +106,7 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 						<p className="text-sm text-muted-foreground">
 							Allow push notifications to stay updated with mentions, direct
 							messages, task assignments, and workspace activity in real-time -
-							even when you're not actively using the app.
+							even when you&apos;re not actively using the app.
 						</p>
 						<Button
 							className="w-full"

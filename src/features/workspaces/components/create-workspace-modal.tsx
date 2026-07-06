@@ -61,7 +61,6 @@ export const CreateWorkspaceModal = () => {
 
 				<form className="space-y-4" onSubmit={handleSubmit}>
 					<Input
-						autoFocus
 						disabled={isPending}
 						maxLength={20}
 						minLength={3}

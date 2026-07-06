@@ -49,8 +49,8 @@ export const StatusTrackingSettings = () => {
 						Status Tracking
 					</Label>
 					<p className="text-sm text-muted-foreground">
-						Allow others to see when you're online and your last seen time. When
-						disabled, your status bubble will be hidden.
+						Allow others to see when you&apos;re online and your last seen time.
+						When disabled, your status bubble will be hidden.
 					</p>
 				</div>
 				<Switch
@@ -66,7 +66,7 @@ export const StatusTrackingSettings = () => {
 						<EyeOff className="h-4 w-4 text-muted-foreground" />
 						<span className="text-muted-foreground">
 							Your status bubble will be hidden from others, and your last seen
-							time won't be tracked
+							time won&apos;t be tracked
 						</span>
 					</div>
 				</div>

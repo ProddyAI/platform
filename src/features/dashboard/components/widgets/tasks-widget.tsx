@@ -221,7 +221,7 @@ export const TasksWidget = ({
 					<CheckSquare className="mb-3 h-12 w-12 text-muted-foreground/40" />
 					<h3 className="text-base font-semibold text-foreground">No tasks</h3>
 					<p className="text-sm text-muted-foreground mt-1">
-						You don't have any tasks created
+						You don&apos;t have any tasks created
 					</p>
 					<Button
 						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"

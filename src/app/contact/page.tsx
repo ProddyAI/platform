@@ -79,8 +79,8 @@ const ContactPage = () => {
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
-							Have questions about Proddy? We're here to help. Reach out to our
-							team and we'll get back to you as soon as possible.
+							Have questions about Proddy? We&apos;re here to help. Reach out to
+							our team and we&apos;ll get back to you as soon as possible.
 						</motion.p>
 					</div>
 				</div>
@@ -235,8 +235,8 @@ const ContactPage = () => {
 									</div>
 									<h2 className="text-2xl font-bold mb-4">Thank You!</h2>
 									<p className="text-gray-600 mb-6">
-										Your message has been sent successfully. We'll get back to
-										you as soon as possible.
+										Your message has been sent successfully. We&apos;ll get back
+										to you as soon as possible.
 									</p>
 									<Button
 										onClick={() => setIsSubmitted(false)}

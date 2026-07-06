@@ -122,7 +122,7 @@ export const StreamAudioRoom = ({
 
 	// Handle keyboard events for confirmation dialog
 	useEffect(() => {
-		if (!showLeaveConfirmation) return;
+		if (!showLeaveConfirmation) return undefined;
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === "Escape") {

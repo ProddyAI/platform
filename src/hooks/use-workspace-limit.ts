@@ -68,6 +68,8 @@ export const useWorkspaceLimit = (featureKey: FeatureKey) => {
 		case "note":
 			featureStats = usage.collaboration.notes;
 			break;
+		default:
+			break;
 	}
 
 	const used = featureStats?.used ?? 0;

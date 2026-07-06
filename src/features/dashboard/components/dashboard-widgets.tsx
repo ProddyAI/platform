@@ -521,7 +521,9 @@ export const DashboardWidgets = ({
 								<div className="text-muted-foreground mb-4">
 									<Plus className="h-12 w-12 mx-auto mb-2 opacity-50" />
 									<p className="text-lg font-medium">No widgets added yet</p>
-									<p className="text-sm">Click "Add Card" to get started</p>
+									<p className="text-sm">
+										Click &quot;Add Card&quot; to get started
+									</p>
 								</div>
 							</div>
 						)}

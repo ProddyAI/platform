@@ -30,11 +30,9 @@ export const CreateChannelModal = () => {
 	const workspaceId = useWorkspaceId();
 	const [open, setOpen] = useCreateChannelModal();
 	const [name, setName] = useState("");
-	const [icon, setIcon] = useState<string | undefined>(undefined);
-	const [iconImage, setIconImage] = useState<Id<"_storage"> | undefined>(
-		undefined
-	);
-	const [iconPreview, setIconPreview] = useState<string | undefined>(undefined);
+	const [icon, setIcon] = useState<string | undefined>();
+	const [iconImage, setIconImage] = useState<Id<"_storage"> | undefined>();
+	const [iconPreview, setIconPreview] = useState<string | undefined>();
 	const [isUploading, setIsUploading] = useState(false);
 	const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -308,7 +306,6 @@ export const CreateChannelModal = () => {
 										Channel Name
 									</Label>
 									<Input
-										autoFocus
 										className="h-10"
 										disabled={isPending || maxReached}
 										id="name"

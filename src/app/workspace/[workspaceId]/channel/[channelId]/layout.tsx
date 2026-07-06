@@ -1,6 +1,6 @@
 "use client";
 
-import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+import { Root as VisuallyHiddenRoot } from "@radix-ui/react-visually-hidden";
 import {
 	ChevronDown,
 	Loader,
@@ -364,11 +364,11 @@ const ChannelNameDialog = ({
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Edit channel name and icon</DialogTitle>
-					<VisuallyHidden.Root>
+					<VisuallyHiddenRoot>
 						<DialogDescription>
 							Rename this channel to match your case.
 						</DialogDescription>
-					</VisuallyHidden.Root>
+					</VisuallyHiddenRoot>
 				</DialogHeader>
 
 				<form className="space-y-4" onSubmit={onSubmit}>
@@ -598,11 +598,9 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 	);
 
 	const [value, setValue] = useState("");
-	const [icon, setIcon] = useState<string | undefined>(undefined);
-	const [iconImage, setIconImage] = useState<Id<"_storage"> | undefined>(
-		undefined
-	);
-	const [iconPreview, setIconPreview] = useState<string | undefined>(undefined);
+	const [icon, setIcon] = useState<string | undefined>();
+	const [iconImage, setIconImage] = useState<Id<"_storage"> | undefined>();
+	const [iconPreview, setIconPreview] = useState<string | undefined>();
 	const [editOpen, setEditOpen] = useState(false);
 	const [iconEditOpen, setIconEditOpen] = useState(false);
 	const [channelDialogOpen, setChannelDialogOpen] = useState(false);
@@ -862,9 +860,9 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 								<span># {channel.name}</span>
 							</DialogTitle>
 
-							<VisuallyHidden.Root>
+							<VisuallyHiddenRoot>
 								<DialogDescription>Your channel preferences</DialogDescription>
-							</VisuallyHidden.Root>
+							</VisuallyHiddenRoot>
 						</DialogHeader>
 
 						<div className="flex flex-col gap-y-2 px-4 pb-4 pt-4">

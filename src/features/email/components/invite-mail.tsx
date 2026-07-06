@@ -158,7 +158,9 @@ function InviteMailContent({
 			{logoUrl ? (
 				<Img alt="Proddy" height="40" src={logoUrl} style={logo} width="40" />
 			) : null}
-			<Heading style={heading}>You've been invited to join a workspace</Heading>
+			<Heading style={heading}>
+				You&apos;ve been invited to join a workspace
+			</Heading>
 			<Section style={section}>
 				<Text style={text}>
 					<strong>{senderName}</strong> ({senderEmail}) has invited you to join
@@ -202,7 +204,8 @@ function InviteMailContent({
 			</Section>
 
 			<Text style={footer}>
-				If you didn't expect this invitation, you can safely ignore this email.
+				If you didn&apos;t expect this invitation, you can safely ignore this
+				email.
 			</Text>
 		</>
 	);

@@ -33,7 +33,7 @@ export const FeaturesSection = () => {
 						initial={{ opacity: 0, y: 20 }}
 						transition={{ duration: 0.5, delay: 0.1 }}
 					>
-						Designed to enhance your team's productivity with contextual
+						Designed to enhance your team&apos;s productivity with contextual
 						intelligence
 					</motion.p>
 				</div>
@@ -54,7 +54,7 @@ export const FeaturesSection = () => {
 						<h3 className="text-xl font-semibold mb-2">Contextual Search</h3>
 						<p className="text-gray-600 mb-4">
 							Instantly find information across your workspace with natural
-							language queries that understand your team's context.
+							language queries that understand your team&apos;s context.
 						</p>
 						<ul className="space-y-2">
 							<li className="flex items-start">
@@ -101,7 +101,7 @@ export const FeaturesSection = () => {
 							<li className="flex items-start">
 								<div className="mr-2 mt-1 text-primary">•</div>
 								<span className="text-sm text-gray-600">
-									Summarizes today's meetings and events
+									Summarizes today&apos;s meetings and events
 								</span>
 							</li>
 							<li className="flex items-start">
@@ -133,8 +133,8 @@ export const FeaturesSection = () => {
 						</div>
 						<h3 className="text-xl font-semibold mb-2">Workspace Memory</h3>
 						<p className="text-gray-600 mb-4">
-							Proddy AI remembers your team's context and previous interactions
-							to provide more relevant assistance.
+							Proddy AI remembers your team&apos;s context and previous
+							interactions to provide more relevant assistance.
 						</p>
 						<ul className="space-y-2">
 							<li className="flex items-start">

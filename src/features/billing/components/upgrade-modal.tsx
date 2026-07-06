@@ -153,7 +153,7 @@ export function UpgradeModal({
 	useEffect(() => {
 		if (!open || !hasActiveSubscription || !targetPlan) {
 			setFairBillingPreview(null);
-			return;
+			return undefined;
 		}
 
 		let cancelled = false;

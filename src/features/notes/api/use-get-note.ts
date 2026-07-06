@@ -24,7 +24,7 @@ export const useGetNote = (noteId?: Id<"notes">) => {
 	);
 
 	// For temporary notes, we'll use local state
-	const [tempNote, setTempNote] = useState<Note | undefined>(undefined);
+	const [tempNote, setTempNote] = useState<Note | undefined>();
 
 	// When the noteId changes and it's a temporary ID, create a placeholder note
 	useEffect(() => {

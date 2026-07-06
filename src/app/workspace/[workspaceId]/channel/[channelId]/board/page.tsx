@@ -197,7 +197,7 @@ const ChannelBoardPage = () => {
 	const [cardPriority, setCardPriority] = useState<
 		"lowest" | "low" | "medium" | "high" | "highest" | ""
 	>("");
-	const [cardDueDate, setCardDueDate] = useState<Date | undefined>(undefined);
+	const [cardDueDate, setCardDueDate] = useState<Date | undefined>();
 	const [cardAssignees, setCardAssignees] = useState<Id<"members">[]>([]);
 
 	// ── Mutations ───────────────────────────────────────────────────────────
@@ -243,8 +243,10 @@ const ChannelBoardPage = () => {
 
 	useEffect(() => {
 		const focusStatus = searchParams.get("focusStatus");
-		if (!focusStatus || handledFocusStatusRef.current === focusStatus) return;
-		if (!displayedStatuses.some((status) => status._id === focusStatus)) return;
+		if (!focusStatus || handledFocusStatusRef.current === focusStatus)
+			return undefined;
+		if (!displayedStatuses.some((status) => status._id === focusStatus))
+			return undefined;
 
 		handledFocusStatusRef.current = focusStatus;
 		setFocusedStatusId(focusStatus as Id<"statuses">);
