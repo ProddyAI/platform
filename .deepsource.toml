@@ -6,6 +6,10 @@ test_patterns = [
   "tests/**",
 ]
 
+exclude_patterns = [
+  "public/OneSignalSDK*.js",
+]
+
 [[analyzers]]
 name = "javascript"
 

@@ -2,8 +2,6 @@
 
 /* eslint-disable no-undef */
 
-/* global process */
-
 /** @type {import('next').NextConfig} */
 import withPWA from "next-pwa";
 

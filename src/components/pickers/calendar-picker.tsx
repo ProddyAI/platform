@@ -45,14 +45,13 @@ const generateTimeOptions = (startDate: Date) => {
 	now.setMilliseconds(0);
 
 	// Generate times in 15-minute intervals for the next 24 hours
-	const current = new Date(now);
-	while (current < end) {
+	const endTime = end.getTime();
+	const stepMs = 15 * 60 * 1000;
+	for (let time = now.getTime(); time < endTime; time += stepMs) {
+		const current = new Date(time);
 		const hours = current.getHours().toString().padStart(2, "0");
 		const minutes = current.getMinutes().toString().padStart(2, "0");
 		options.push(`${hours}:${minutes}`);
-
-		// Add 15 minutes
-		current.setMinutes(current.getMinutes() + 15);
 	}
 
 	return options;
