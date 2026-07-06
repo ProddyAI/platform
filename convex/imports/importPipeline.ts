@@ -418,7 +418,7 @@ export class RateLimiter {
 	/** Current delay (ms) */
 	private currentDelay: number;
 	/** Last request timestamp */
-	private lastRequestAt: number = 0;
+	private lastRequestAt = 0;
 	/** Rate limit info from last response */
 	private rateLimitInfo?: RateLimitInfo;
 
@@ -687,10 +687,7 @@ function isValidType(
 /**
  * Check if a token is expired or about to expire.
  */
-export function isTokenExpired(
-	expiresAt?: number,
-	bufferMs: number = 60000
-): boolean {
+export function isTokenExpired(expiresAt?: number, bufferMs = 60000): boolean {
 	if (!expiresAt) return false;
 	return Date.now() + bufferMs >= expiresAt;
 }
