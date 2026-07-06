@@ -218,7 +218,7 @@ export const useAudioRoom = ({
 									description: "Collaborate with audio",
 									workspaceId,
 									channelId,
-									roomId: roomId,
+									roomId,
 								},
 							},
 						});

@@ -57,7 +57,7 @@ export async function updateNotificationPreferencesServer(
 		await convex.mutation(
 			api.workspace.preferences.updateNotificationPreferencesByUserId,
 			{
-				userId: userId,
+				userId,
 				notificationKey,
 				enabled,
 			}

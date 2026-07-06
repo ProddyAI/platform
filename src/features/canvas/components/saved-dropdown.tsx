@@ -42,7 +42,7 @@ export const SavedCanvasesDropdown = () => {
 		api.messaging.messages.get,
 		channelId
 			? {
-					channelId: channelId,
+					channelId,
 					paginationOpts: {
 						numItems: 100,
 						cursor: null,

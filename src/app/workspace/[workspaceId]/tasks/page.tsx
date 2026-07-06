@@ -21,7 +21,7 @@ import { WorkspaceToolbar } from "../toolbar";
 
 const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	useTrackActivity({
-		workspaceId: workspaceId,
+		workspaceId,
 		activityType: "tasks_view",
 	});
 	const { data: tasks, isLoading } = useGetTasks({

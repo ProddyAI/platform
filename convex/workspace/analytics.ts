@@ -92,7 +92,7 @@ export const recordChannelSession = mutation({
 
 			await ctx.db.patch(args.sessionId, {
 				endTime: timestamp,
-				duration: duration,
+				duration,
 			});
 
 			return args.sessionId;

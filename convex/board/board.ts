@@ -320,7 +320,7 @@ export const createCard = mutation({
 						channelId: list.channelId,
 						read: false,
 						createdAt: Date.now(),
-						cardId: cardId, // Add the card ID to the mention
+						cardId, // Add the card ID to the mention
 						cardTitle: args.title, // Include the card title for context
 					});
 
@@ -461,7 +461,7 @@ export const updateCard = mutation({
 						channelId: list.channelId,
 						read: false,
 						createdAt: Date.now(),
-						cardId: cardId, // Add the card ID to the mention
+						cardId, // Add the card ID to the mention
 						cardTitle: updates.title || card.title, // Include the card title for context
 					});
 

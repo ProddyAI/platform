@@ -86,8 +86,8 @@ export const DailyRecapModal = ({
 
 	const _handleExportJSON = () => {
 		const jsonData = {
-			date: date,
-			messageCount: messageCount,
+			date,
+			messageCount,
 			content: recap,
 			exportedAt: new Date().toISOString(),
 		};
@@ -186,7 +186,7 @@ export const DailyRecapModal = ({
 
 					paragraphs.push(
 						new Paragraph({
-							text: text,
+							text,
 							heading:
 								level <= 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
 						})

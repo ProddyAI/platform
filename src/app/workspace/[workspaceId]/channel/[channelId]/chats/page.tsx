@@ -26,7 +26,7 @@ const ChannelChatPage = () => {
 
 	// Pass the channelId to useGetMessages - the hook will handle undefined values
 	const { results, status, loadMore } = useGetMessages({
-		channelId: channelId,
+		channelId,
 	});
 
 	// If channelId is undefined, this will be handled by the hook

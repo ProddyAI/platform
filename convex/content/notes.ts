@@ -100,8 +100,8 @@ export const create = mutation({
 		const noteId = await ctx.db.insert("notes", {
 			title: args.title,
 			content: args.content,
-			workspaceId: workspaceId,
-			channelId: channelId,
+			workspaceId,
+			channelId,
 			memberId: member._id,
 			icon: args.icon,
 			coverImage: args.coverImage,
@@ -117,7 +117,7 @@ export const create = mutation({
 				internal.billing.usageTracking.recordNoteCreated,
 				{
 					userId: userId as Id<"users">,
-					workspaceId: workspaceId,
+					workspaceId,
 				}
 			);
 		} catch (e) {

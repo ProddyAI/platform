@@ -98,7 +98,7 @@ const CalendarContent = ({
 
 	// Track user activity and time spent on calendar page
 	useTrackActivity({
-		workspaceId: workspaceId,
+		workspaceId,
 		activityType: "calendar_view",
 	});
 

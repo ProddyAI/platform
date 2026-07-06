@@ -232,16 +232,16 @@ export const ExportNoteDialog = ({
 				type: "note-export",
 				noteId: note._id,
 				noteTitle: note.title,
-				exportFormat: exportFormat,
+				exportFormat,
 				exportTime: new Date().toISOString(),
-				exportData: exportData,
+				exportData,
 				fileSize: fileSizeFormatted,
 				fileName: `${note.title}.${fileExtension}`,
 			};
 
 			// Create a message in the channel with the note export
 			await createMessage({
-				workspaceId: workspaceId,
+				workspaceId,
 				channelId: channelId as Id<"channels">,
 				body: JSON.stringify(messageData),
 			});

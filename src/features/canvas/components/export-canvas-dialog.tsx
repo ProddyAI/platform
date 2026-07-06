@@ -279,10 +279,10 @@ export const ExportCanvasDialog = ({
 			// Prepare the message data
 			const messageData: any = {
 				type: "canvas-export",
-				canvasName: canvasName,
+				canvasName,
 				roomId: roomIdToExport,
-				exportedCanvasId: exportedCanvasId,
-				exportFormat: exportFormat,
+				exportedCanvasId,
+				exportFormat,
 				exportTime: new Date().toISOString(),
 			};
 
@@ -315,7 +315,7 @@ export const ExportCanvasDialog = ({
 
 					// Create a JSON representation of the canvas
 					messageData.jsonData = {
-						canvasName: canvasName,
+						canvasName,
 						exportTime: new Date().toISOString(),
 						roomId: room.id,
 					};
@@ -329,7 +329,7 @@ export const ExportCanvasDialog = ({
 
 			// Create a message in the channel with the canvas export
 			await createMessage({
-				workspaceId: workspaceId,
+				workspaceId,
 				channelId: channelId as Id<"channels">,
 				body: JSON.stringify(messageData),
 			});
@@ -552,7 +552,7 @@ export const ExportCanvasDialog = ({
 					// Create a JSON representation of the canvas with more data
 					const jsonData = JSON.stringify(
 						{
-							canvasName: canvasName,
+							canvasName,
 							exportTime: new Date().toISOString(),
 							roomId: room.id,
 							// Include any additional data you want to export

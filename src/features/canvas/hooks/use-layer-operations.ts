@@ -227,7 +227,7 @@ export function useLayerOperations(lastUsedColor: Color) {
 					height: 300,
 					width: 400,
 					fill: lastUsedColor,
-					mermaidCode: mermaidCode,
+					mermaidCode,
 				};
 
 				// Create a LiveObject and set it in the map

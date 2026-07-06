@@ -13,7 +13,7 @@ export function useDrawing(
 			setMyPresence({
 				pencilDraft: [[point.x, point.y, pressure]],
 				penColor: lastUsedColor,
-				strokeWidth: strokeWidth,
+				strokeWidth,
 			});
 		},
 		[lastUsedColor, strokeWidth]

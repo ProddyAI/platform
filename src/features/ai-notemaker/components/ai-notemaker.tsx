@@ -214,7 +214,7 @@ export const AiNotemaker = ({
 			try {
 				await saveChatToMeetingNotes({
 					workspaceId: workspaceId as any,
-					channelId: channelId,
+					channelId,
 					title: notes.title || undefined,
 					transcript,
 					summary: notes.summary || "",
@@ -327,7 +327,7 @@ export const AiNotemaker = ({
 				transcript: transcriptString,
 				notes: JSON.stringify(notesData),
 				history: chatHistory,
-				message: message,
+				message,
 			});
 
 			setChatHistory((prev) => [

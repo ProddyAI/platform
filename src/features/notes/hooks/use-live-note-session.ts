@@ -66,14 +66,14 @@ export const useLiveNoteSession = ({
 			// Create a message announcing the live session
 			const messageData = {
 				type: "note-live",
-				noteId: noteId,
-				noteTitle: noteTitle,
-				participants: participants,
+				noteId,
+				noteTitle,
+				participants,
 			};
 
 			await createMessage({
-				workspaceId: workspaceId,
-				channelId: channelId,
+				workspaceId,
+				channelId,
 				body: JSON.stringify(messageData),
 			});
 

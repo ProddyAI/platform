@@ -171,13 +171,13 @@ export const CanvasName = ({ savedCanvasName }: CanvasNameProps) => {
 
 			// Create a message in the channel with the canvas link
 			await createMessage({
-				workspaceId: workspaceId,
+				workspaceId,
 				channelId: channelId as Id<"channels">,
 				body: JSON.stringify({
 					type: "canvas",
 					canvasName: fileName,
 					roomId: roomIdToSave,
-					savedCanvasId: savedCanvasId,
+					savedCanvasId,
 				}),
 			});
 

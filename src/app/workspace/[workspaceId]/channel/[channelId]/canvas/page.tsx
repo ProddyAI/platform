@@ -46,7 +46,7 @@ const CanvasPage = () => {
 		api.messaging.messages.get,
 		channelId
 			? {
-					channelId: channelId,
+					channelId,
 					paginationOpts: {
 						numItems: 100,
 						cursor: null,
@@ -251,12 +251,12 @@ const CanvasPage = () => {
 
 			// Create a canvas message in the channel
 			const messageId = await createMessage({
-				workspaceId: workspaceId,
+				workspaceId,
 				channelId: channelId as Id<"channels">,
 				body: JSON.stringify({
 					type: "canvas",
-					roomId: roomId,
-					canvasName: canvasName,
+					roomId,
+					canvasName,
 					savedCanvasId: canvasId,
 				}),
 				tags: [], // Initialize with empty tags

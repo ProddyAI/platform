@@ -119,7 +119,7 @@ export const PerformanceMetricsDashboard = ({
 					label: user.member?.user?.name || "Unknown",
 					value: taskValue,
 					color: "bg-pink-500",
-					completionRate: completionRate,
+					completionRate,
 				};
 			})
 			.sort((a, b) => b.value - a.value)
@@ -204,9 +204,9 @@ export const PerformanceMetricsDashboard = ({
 
 				return {
 					name: user.member?.user?.name || "Unknown",
-					taskCompletion: taskCompletion,
-					responseTime: responseTime,
-					activityScore: activityScore,
+					taskCompletion,
+					responseTime,
+					activityScore,
 					messages: messageCount,
 					tasks: taskCount,
 				};
