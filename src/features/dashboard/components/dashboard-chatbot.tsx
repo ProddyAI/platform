@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { ChannelPicker } from "@/components/channel-picker";
@@ -61,7 +62,6 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 interface DashboardChatbotProps {
@@ -1195,7 +1195,6 @@ const DashboardChatbotBody = ({
 	const [editingTitle, setEditingTitle] = useState("");
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
-	const { toast } = useToast();
 	const router = useRouter();
 
 	const recentConversations = useQuery(
@@ -1552,10 +1551,8 @@ Try asking me things like:`;
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error occurred";
 			console.error("Error in chatbot:", error);
-			toast({
-				title: "Assistant Error",
+			toast.error("Assistant Error", {
 				description: errorMessage,
-				variant: "destructive",
 			});
 		}
 	};
@@ -1591,17 +1588,10 @@ Try asking me things like:`;
 			});
 			setConversationId(newConversationId);
 			setWelcomeMessage(null);
-			toast({
-				title: "Success",
-				description: "New chat started.",
-			});
+			toast.success("New chat started.");
 		} catch (error) {
 			console.error("Error creating new chat:", error);
-			toast({
-				title: "Error",
-				description: "Failed to create new chat.",
-				variant: "destructive",
-			});
+			toast.error("Failed to create new chat.");
 		}
 	};
 
@@ -1624,11 +1614,7 @@ Try asking me things like:`;
 
 	const handleSaveTitle = async (convId: string) => {
 		if (!editingTitle.trim()) {
-			toast({
-				title: "Error",
-				description: "Title cannot be empty",
-				variant: "destructive",
-			});
+			toast.error("Title cannot be empty");
 			return;
 		}
 
@@ -1639,16 +1625,9 @@ Try asking me things like:`;
 			});
 			setEditingConversationId(null);
 			setEditingTitle("");
-			toast({
-				title: "Success",
-				description: "Chat renamed successfully",
-			});
+			toast.success("Chat renamed successfully");
 		} catch (_error) {
-			toast({
-				title: "Error",
-				description: "Failed to rename chat",
-				variant: "destructive",
-			});
+			toast.error("Failed to rename chat");
 		}
 	};
 
@@ -1669,16 +1648,9 @@ Try asking me things like:`;
 				}
 			}
 
-			toast({
-				title: "Success",
-				description: "Chat deleted successfully",
-			});
+			toast.success("Chat deleted successfully");
 		} catch (_error) {
-			toast({
-				title: "Error",
-				description: "Failed to delete chat",
-				variant: "destructive",
-			});
+			toast.error("Failed to delete chat");
 		}
 	};
 

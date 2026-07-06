@@ -36,7 +36,6 @@ const PUBLIC_ROUTES = [
 	"/pricing",
 	"/why-proddy",
 	"/assistant",
-	"/mockup",
 	"/auth/signup",
 	"/auth/signin",
 	"/auth",
