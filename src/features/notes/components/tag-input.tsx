@@ -16,12 +16,12 @@ interface TagInputProps {
 }
 
 const TAG_COLORS = [
-	"bg-pink-100 text-pink-800 border-pink-200",
-	"bg-purple-100 text-purple-800 border-purple-200",
-	"bg-blue-100 text-blue-800 border-blue-200",
-	"bg-green-100 text-green-800 border-green-200",
-	"bg-yellow-100 text-yellow-800 border-yellow-200",
-	"bg-orange-100 text-orange-800 border-orange-200",
+	"bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-950 dark:text-pink-300 dark:border-pink-800",
+	"bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
+	"bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
+	"bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
+	"bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800",
+	"bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800",
 ];
 
 export const TagInput = ({
@@ -57,7 +57,7 @@ export const TagInput = ({
 	};
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") {
+		if (e.key === "Enter" || e.key === ",") {
 			e.preventDefault();
 			addTag(inputValue);
 		} else if (e.key === "Escape") {
@@ -90,6 +90,7 @@ export const TagInput = ({
 				>
 					<span>{tag}</span>
 					<button
+						aria-label={`Remove ${tag}`}
 						className="hover:bg-black/10 rounded-full p-0.5 transition-colors"
 						onClick={() => removeTag(tag)}
 						type="button"

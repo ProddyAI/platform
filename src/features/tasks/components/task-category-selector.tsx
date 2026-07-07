@@ -2,6 +2,7 @@
 
 import { Check, Loader, Plus } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
@@ -89,6 +90,10 @@ export const TaskCategorySelector = ({
 			setCreateDialogOpen(false);
 		} catch (error) {
 			console.error("Failed to create category:", error);
+			toast.error("Failed to create category", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
 		}
 	};
 
@@ -209,10 +214,11 @@ export const TaskCategorySelector = ({
 								<div className="grid grid-cols-5 gap-2">
 									{CATEGORY_COLORS.map((color) => (
 										<button
+											aria-label={`Select color ${color.label}`}
 											className={cn(
-												"h-8 w-8 rounded-full cursor-pointer flex items-center justify-center border-2",
+												"h-8 w-8 rounded-full cursor-pointer flex items-center justify-center border-2 ring-offset-2 ring-offset-background transition-colors hover:ring-2 hover:ring-muted-foreground",
 												newCategoryColor === color.value
-													? "border-black dark:border-white"
+													? "border-foreground"
 													: "border-transparent"
 											)}
 											key={color.value}

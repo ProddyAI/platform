@@ -22,8 +22,23 @@ export const LiveParticipants = ({
 	// Fetch real participants from the database
 	const { participants, isLoading } = useChannelParticipants();
 
-	// If still loading, show nothing
-	if (isLoading) return null;
+	// While loading, show skeleton avatars instead of nothing so the row doesn't pop in
+	if (isLoading) {
+		return (
+			<div
+				className={`flex items-center -space-x-2 ${className}`}
+				data-fullscreen={isFullScreen}
+				data-variant={variant}
+			>
+				{Array.from({ length: 2 }).map((_, index) => (
+					<div
+						className="h-7 w-7 animate-pulse rounded-full border-2 border-muted bg-muted"
+						key={index}
+					/>
+				))}
+			</div>
+		);
+	}
 
 	const hasMoreUsers = participants.length > MAX_SHOWN_OTHER_USERS;
 
@@ -31,7 +46,7 @@ export const LiveParticipants = ({
 	// This ensures consistent appearance.
 	return (
 		<div
-			className={`flex items-center gap-2 ${className}`}
+			className={`flex items-center -space-x-2 ${className}`}
 			data-fullscreen={isFullScreen}
 			data-variant={variant}
 		>
@@ -62,8 +77,8 @@ export const LiveParticipants = ({
 					side="bottom"
 				>
 					<div className="relative">
-						<Avatar className="h-7 w-7 border-2 border-gray-300">
-							<AvatarFallback className="text-xs font-semibold bg-gray-100">
+						<Avatar className="h-7 w-7 border-2 border-muted">
+							<AvatarFallback className="text-xs font-semibold bg-muted">
 								+{participants.length - MAX_SHOWN_OTHER_USERS}
 							</AvatarFallback>
 						</Avatar>

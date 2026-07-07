@@ -54,7 +54,7 @@ export const LiveblocksRoom = ({
 				<div className="flex flex-col items-center gap-y-4">
 					<Loader className="size-6 animate-spin text-muted-foreground" />
 					<p className="text-sm text-muted-foreground">
-						Initializing workspace...
+						Connecting to live session...
 					</p>
 				</div>
 			</div>

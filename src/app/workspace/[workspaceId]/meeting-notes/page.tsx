@@ -10,6 +10,7 @@ import {
 	Download,
 	FileDown,
 	FileText,
+	Loader,
 	MessageSquare,
 	Mic,
 	Search,
@@ -26,8 +27,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { exportToPDF, exportToWord } from "@/lib/client/export-utils";
+import {
+	useSetWorkspaceTitle,
+	WorkspaceTitle,
+} from "../workspace-title-context";
 
 export default function MeetingNotesPage() {
+	useSetWorkspaceTitle(<WorkspaceTitle icon={Brain} label="Meeting Notes" />);
+
 	const workspaceId = useWorkspaceId();
 	const allNotes = useQuery(api.content.meetingNotes.getByWorkspace, {
 		workspaceId: workspaceId as Id<"workspaces">,
@@ -70,11 +77,11 @@ export default function MeetingNotesPage() {
 		.sort((a, b) => b.createdAt - a.createdAt);
 
 	return (
-		<div className="flex flex-col h-full bg-white dark:bg-zinc-950">
+		<div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-950">
 			{/* Header */}
 			<div className="border-b px-8 py-6 flex-shrink-0">
 				<div className="flex items-center gap-3 mb-4">
-					<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+					<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
 						<Brain className="w-5 h-5 text-white" />
 					</div>
 					<div className="flex-1">
@@ -94,7 +101,7 @@ export default function MeetingNotesPage() {
 					<div className="relative flex-1 max-w-md">
 						<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
 						<input
-							className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 dark:bg-zinc-800 border-0 rounded-xl focus:bg-white dark:focus:bg-zinc-900 focus:ring-1 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder:text-gray-400 transition-colors"
+							className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 dark:bg-zinc-800 border-0 rounded-xl focus:bg-white dark:focus:bg-zinc-900 focus:ring-1 focus:ring-primary outline-none text-gray-900 dark:text-white placeholder:text-gray-400 transition-colors"
 							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="Search notes, transcripts, tasks..."
 							type="text"
@@ -128,7 +135,7 @@ export default function MeetingNotesPage() {
 			<ScrollArea className="flex-1 px-8 py-6">
 				{!allNotes ? (
 					<div className="flex items-center justify-center py-20">
-						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+						<Loader className="size-8 animate-spin text-muted-foreground" />
 					</div>
 				) : sortedNotes.length === 0 ? (
 					<div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-4">
@@ -423,28 +430,28 @@ function NoteCard({
 						<div className="px-5 pt-3">
 							<TabsList className="bg-gray-100 dark:bg-zinc-800 w-full p-1 h-10 rounded-xl grid grid-cols-4">
 								<TabsTrigger
-									className="text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+									className="text-xs font-semibold rounded-lg gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
 									value="summary"
 								>
-									📋 Summary
+									<FileText className="w-3.5 h-3.5" /> Summary
 								</TabsTrigger>
 								<TabsTrigger
-									className="text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+									className="text-xs font-semibold rounded-lg gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
 									value="tasks"
 								>
-									✅ Tasks
+									<CheckSquare className="w-3.5 h-3.5" /> Tasks
 								</TabsTrigger>
 								<TabsTrigger
-									className="text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+									className="text-xs font-semibold rounded-lg gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
 									value="decisions"
 								>
-									🎯 Decisions
+									<Target className="w-3.5 h-3.5" /> Decisions
 								</TabsTrigger>
 								<TabsTrigger
-									className="text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+									className="text-xs font-semibold rounded-lg gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
 									value="transcript"
 								>
-									📝 Transcript
+									<MessageSquare className="w-3.5 h-3.5" /> Transcript
 								</TabsTrigger>
 							</TabsList>
 						</div>
@@ -567,11 +574,6 @@ function NoteCard({
 																							: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
 																				}`}
 																			>
-																				{task.priority === "high"
-																					? "🔴"
-																					: task.priority === "medium"
-																						? "🟡"
-																						: "🟢"}{" "}
 																				{task.priority.charAt(0).toUpperCase() +
 																					task.priority.slice(1)}
 																			</span>
@@ -653,11 +655,6 @@ function NoteCard({
 																					<span
 																						className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priority === "high" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" : priority === "medium" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"}`}
 																					>
-																						{priority === "high"
-																							? "🔴"
-																							: priority === "medium"
-																								? "🟡"
-																								: "🟢"}{" "}
 																						{priority.charAt(0).toUpperCase() +
 																							priority.slice(1)}
 																					</span>

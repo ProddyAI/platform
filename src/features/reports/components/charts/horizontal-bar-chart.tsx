@@ -20,6 +20,7 @@ interface HorizontalBarChartProps {
 
 export const HorizontalBarChart = ({
 	data,
+	height,
 	showValues = true,
 	className,
 	animate = true,
@@ -50,52 +51,67 @@ export const HorizontalBarChart = ({
 					const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
 					const isHovered = hoveredIndex === index;
 
-					return (
-						<button
-							aria-disabled={!onBarClick}
-							className="space-y-1"
-							key={item.id ?? item.label}
-							onClick={
-								onBarClick
-									? () => onBarClick(item.label, item.value, index)
-									: undefined
-							}
-							onKeyDown={(event) => {
-								if (event.key === "Enter" || event.key === " ") {
-									event.preventDefault();
-									onBarClick?.(item.label, item.value, index);
-								}
-							}}
-							onMouseEnter={() => setHoveredIndex(index)}
-							onMouseLeave={() => setHoveredIndex(null)}
-							tabIndex={0}
-							type="button"
-						>
+					const barContent = (
+						<>
 							<div className="flex justify-between items-center">
 								<span className="text-sm truncate">{item.label}</span>
 								{showValues && (
-									<span className="text-sm text-muted-foreground">
+									<span className="text-sm text-muted-foreground tabular-nums">
 										{formatValue(item.value)}
 									</span>
 								)}
 							</div>
 
-							<div className="h-3 w-full bg-muted rounded-full overflow-hidden">
+							<div
+								className="w-full bg-muted rounded-full overflow-hidden"
+								style={{ height: `${height ?? 12}px` }}
+							>
 								<div
 									className={cn(
 										"h-full rounded-full transition-all duration-500",
 										item.color || "bg-secondary",
 										isHovered ? "opacity-80" : "opacity-100",
-										animate && "animate-in slide-in-from-left",
+										animate &&
+											"animate-in slide-in-from-left motion-reduce:animate-none",
 										onBarClick && "cursor-pointer"
 									)}
-									style={{
-										width: `${percentage}%`,
-										transitionDelay: animate ? `${index * 50}ms` : "0ms",
-									}}
+									style={{ width: `${percentage}%` }}
 								/>
 							</div>
-						</button>
+						</>
+					);
+
+					if (onBarClick) {
+						return (
+							<button
+								aria-label={`${item.label}: ${formatValue(item.value)}`}
+								className="w-full space-y-1 text-left"
+								key={item.id ?? item.label}
+								onClick={() => onBarClick(item.label, item.value, index)}
+								onKeyDown={(event) => {
+									if (event.key === "Enter" || event.key === " ") {
+										event.preventDefault();
+										onBarClick(item.label, item.value, index);
+									}
+								}}
+								onMouseEnter={() => setHoveredIndex(index)}
+								onMouseLeave={() => setHoveredIndex(null)}
+								type="button"
+							>
+								{barContent}
+							</button>
+						);
+					}
+
+					return (
+						<div
+							className="space-y-1"
+							key={item.id ?? item.label}
+							onMouseEnter={() => setHoveredIndex(index)}
+							onMouseLeave={() => setHoveredIndex(null)}
+						>
+							{barContent}
+						</div>
 					);
 				})}
 			</div>

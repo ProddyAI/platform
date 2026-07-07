@@ -6,7 +6,7 @@ import {
 	useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import { AlertCircle, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AudioControlButton } from "./audio-control-button";
 
@@ -22,23 +22,27 @@ export const AudioToolbarButton = () => {
 	// If autoplay is blocked, we'll attempt play() and log a warning.
 	const [speakerMuted, setSpeakerMuted] = useState(false);
 
+	// Checks (and re-checks) the browser's microphone permission. Returns
+	// whether access is currently granted so callers can react to the result.
+	const checkMicrophonePermission = useCallback(async () => {
+		try {
+			const devices = await navigator.mediaDevices.getUserMedia({
+				audio: true,
+			});
+			setMicPermissionError(false);
+			devices.getTracks().forEach((track) => track.stop());
+			return true;
+		} catch (error) {
+			console.error("Microphone permission error:", error);
+			setMicPermissionError(true);
+			return false;
+		}
+	}, []);
+
 	// Check browser microphone permissions on mount
 	useEffect(() => {
-		const checkMicrophonePermission = async () => {
-			try {
-				const devices = await navigator.mediaDevices.getUserMedia({
-					audio: true,
-				});
-				setMicPermissionError(false);
-				devices.getTracks().forEach((track) => track.stop());
-			} catch (error) {
-				console.error("Microphone permission error:", error);
-				setMicPermissionError(true);
-			}
-		};
-
 		void checkMicrophonePermission();
-	}, []);
+	}, [checkMicrophonePermission]);
 
 	// Request Stream audio permission if we don't have it
 	useEffect(() => {
@@ -143,6 +147,19 @@ export const AudioToolbarButton = () => {
 		}
 	};
 
+	// Re-checks browser mic permission when the user clicks the blocked mic
+	// button, so denying access on first join is never a dead end.
+	const handleRetryMicPermission = async () => {
+		const granted = await checkMicrophonePermission();
+		if (granted) {
+			toast.success("Microphone access granted. You can unmute now.");
+		} else {
+			toast.error(
+				"Microphone is still blocked. Allow mic access for this site in your browser's settings, then try again."
+			);
+		}
+	};
+
 	// Function to toggle speaker (audio output)
 	const toggleSpeaker = () => {
 		try {
@@ -180,10 +197,10 @@ export const AudioToolbarButton = () => {
 			{/* Microphone control */}
 			{micPermissionError ? (
 				<AudioControlButton
-					disabled
 					icon={AlertCircle}
-					label="Mic Permission Denied"
-					onClick={() => toast.error("Microphone permission denied")}
+					isMuted
+					label="Microphone blocked — click to retry"
+					onClick={() => void handleRetryMicPermission()}
 					variant="mic"
 				/>
 			) : (

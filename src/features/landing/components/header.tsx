@@ -1,16 +1,24 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import {
+	BarChart,
+	Calendar,
+	CheckSquare,
 	ChevronDown,
 	ExternalLink,
+	FileText,
 	LayoutDashboard,
+	LayoutGrid,
 	Menu,
+	MessageSquare,
+	PaintBucket,
 	X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
@@ -20,7 +28,7 @@ import { cn } from "@/lib/utils";
 interface Module {
 	name: string;
 	description: string;
-	icon: string;
+	icon: LucideIcon;
 	href: string;
 }
 
@@ -40,49 +48,49 @@ const modules: Module[] = [
 	{
 		name: "Messaging",
 		description: "Real-time team communication",
-		icon: "💬",
+		icon: MessageSquare,
 		href: `/features?tab=${featureToTabMap.messaging}&feature=messaging`,
 	},
 	{
 		name: "Tasks",
 		description: "Organize and track work",
-		icon: "✅",
+		icon: CheckSquare,
 		href: `/features?tab=${featureToTabMap.tasks}&feature=tasks`,
 	},
 	{
 		name: "Calendar",
 		description: "Schedule and manage events",
-		icon: "📅",
+		icon: Calendar,
 		href: `/features?tab=${featureToTabMap.calendar}&feature=calendar`,
 	},
 	{
 		name: "Boards",
 		description: "Visual project management",
-		icon: "📋",
+		icon: LayoutGrid,
 		href: `/features?tab=${featureToTabMap.boards}&feature=boards`,
 	},
 	{
 		name: "Canvas",
 		description: "Collaborative whiteboarding",
-		icon: "🎨",
+		icon: PaintBucket,
 		href: `/features?tab=${featureToTabMap.canvas}&feature=canvas`,
 	},
 	{
 		name: "Notes",
 		description: "Document and share knowledge",
-		icon: "📝",
+		icon: FileText,
 		href: `/features?tab=${featureToTabMap.notes}&feature=notes`,
 	},
 	{
 		name: "Reports",
 		description: "Analytics and insights",
-		icon: "📊",
+		icon: BarChart,
 		href: `/features?tab=${featureToTabMap.reports}&feature=reports`,
 	},
 	{
 		name: "Dashboard",
 		description: "Your workspace command center",
-		icon: "🎛️",
+		icon: LayoutDashboard,
 		href: `/features?tab=${featureToTabMap.dashboard}&feature=dashboard`,
 	},
 ];
@@ -107,12 +115,40 @@ export const Header = () => {
 		setIsMenuOpen(!isMenuOpen);
 	};
 
+	const modulesCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null
+	);
+
+	// Small close delay so moving the pointer from the trigger into the mega
+	// menu (hover-intent) doesn't cause it to flicker shut.
+	const openModules = () => {
+		if (modulesCloseTimeoutRef.current) {
+			clearTimeout(modulesCloseTimeoutRef.current);
+			modulesCloseTimeoutRef.current = null;
+		}
+		setIsModulesOpen(true);
+	};
+
+	const closeModulesWithIntent = () => {
+		modulesCloseTimeoutRef.current = setTimeout(() => {
+			setIsModulesOpen(false);
+		}, 150);
+	};
+
+	useEffect(() => {
+		return () => {
+			if (modulesCloseTimeoutRef.current) {
+				clearTimeout(modulesCloseTimeoutRef.current);
+			}
+		};
+	}, []);
+
 	return (
 		<header
 			className={cn(
 				"fixed top-0 left-0 right-0 z-50 transition-all duration-300",
 				isScrolled
-					? "bg-white/95 backdrop-blur-md shadow-sm py-3"
+					? "bg-background/95 backdrop-blur-md shadow-sm py-3"
 					: "bg-transparent py-5"
 			)}
 		>
@@ -128,12 +164,7 @@ export const Header = () => {
 								src="/logo-nobg.png"
 							/>
 						</div>
-						<span
-							className={cn(
-								"text-xl font-bold transition-colors duration-300",
-								isScrolled ? "text-gray-900" : "text-gray-800"
-							)}
-						>
+						<span className="text-xl font-bold text-foreground transition-colors duration-300">
 							Proddy
 						</span>
 					</Link>
@@ -145,27 +176,21 @@ export const Header = () => {
 						<div
 							className="relative"
 							onBlur={() => setIsModulesOpen(false)}
-							onFocus={() => setIsModulesOpen(true)}
+							onFocus={openModules}
 							onKeyDown={(event) => {
 								if (event.key === "Escape") {
 									setIsModulesOpen(false);
 								}
-								if (event.key === "Enter" || event.key === " ") {
-									event.preventDefault();
-									setIsModulesOpen((prev) => !prev);
-								}
 							}}
-							onMouseEnter={() => setIsModulesOpen(true)}
-							onMouseLeave={() => setIsModulesOpen(false)}
-							role="button"
-							tabIndex={0}
+							onMouseEnter={openModules}
+							onMouseLeave={closeModulesWithIntent}
 						>
 							<Link
+								aria-controls="features-mega-menu"
+								aria-expanded={isModulesOpen}
+								aria-haspopup="true"
 								className={cn(
-									"flex items-center gap-1 text-sm font-medium transition-colors duration-200",
-									isScrolled
-										? "text-gray-700 hover:text-primary"
-										: "text-gray-700 hover:text-primary",
+									"flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-primary",
 									isModulesOpen && "text-primary"
 								)}
 								href="/features"
@@ -184,8 +209,9 @@ export const Header = () => {
 								{isModulesOpen && (
 									<motion.div
 										animate={{ opacity: 1, y: 0 }}
-										className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-[600px] bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50"
+										className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-[600px] bg-card rounded-xl shadow-lg border border-border overflow-hidden z-50"
 										exit={{ opacity: 0, y: 10 }}
+										id="features-mega-menu"
 										initial={{ opacity: 0, y: 10 }}
 										transition={{ duration: 0.2 }}
 									>
@@ -193,18 +219,18 @@ export const Header = () => {
 											<div className="grid grid-cols-2 gap-4 mb-4">
 												{modules.map((module) => (
 													<Link
-														className="flex items-start p-3 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:translate-x-1"
+														className="flex items-start p-3 rounded-lg hover:bg-muted transition-all duration-200 hover:translate-x-1"
 														href={module.href}
 														key={module.name}
 													>
-														<div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-md bg-primary/5 text-xl">
-															{module.icon}
+														<div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-md bg-primary/5">
+															<module.icon className="size-5 text-primary" />
 														</div>
 														<div className="ml-4">
-															<p className="text-sm font-medium text-gray-900">
+															<p className="text-sm font-medium text-foreground">
 																{module.name}
 															</p>
-															<p className="mt-1 text-xs text-gray-500">
+															<p className="mt-1 text-xs text-muted-foreground">
 																{module.description}
 															</p>
 														</div>
@@ -213,7 +239,7 @@ export const Header = () => {
 											</div>
 
 											{/* Special Assistant Feature */}
-											<div className="mt-4 pt-4 border-t border-gray-100">
+											<div className="mt-4 pt-4 border-t border-border">
 												<Link
 													className="flex items-start p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-all duration-200"
 													href="/assistant"
@@ -223,14 +249,14 @@ export const Header = () => {
 													</div>
 													<div className="ml-4">
 														<div className="flex items-center gap-2">
-															<p className="text-base font-medium text-gray-900">
+															<p className="text-base font-medium text-foreground">
 																Proddy AI Assistant
 															</p>
 															<span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
 																New
 															</span>
 														</div>
-														<p className="mt-1 text-sm text-gray-600">
+														<p className="mt-1 text-sm text-muted-foreground">
 															Your intelligent workspace companion powered by AI
 														</p>
 													</div>
@@ -245,18 +271,13 @@ export const Header = () => {
               href="/why-proddy"
               className={cn(
                 "text-sm font-medium transition-colors duration-200",
-                isScrolled ? "text-gray-700 hover:text-primary" : "text-gray-700 hover:text-primary"
+                isScrolled ? "text-muted-foreground hover:text-primary" : "text-muted-foreground hover:text-primary"
               )}
             >
               Why Proddy?
             </Link> */}
 						<Link
-							className={cn(
-								"text-sm font-medium transition-colors duration-200 flex items-center gap-1",
-								isScrolled
-									? "text-gray-700 hover:text-primary"
-									: "text-gray-700 hover:text-primary"
-							)}
+							className="text-sm font-medium text-muted-foreground transition-colors duration-200 flex items-center gap-1 hover:text-primary"
 							href="/assistant"
 						>
 							<span>AI Assistant</span>
@@ -265,23 +286,13 @@ export const Header = () => {
 							</span>
 						</Link>
 						<Link
-							className={cn(
-								"text-sm font-medium transition-colors duration-200",
-								isScrolled
-									? "text-gray-700 hover:text-primary"
-									: "text-gray-700 hover:text-primary"
-							)}
+							className="text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-primary"
 							href="/pricing"
 						>
-							Pricing/-
+							Pricing
 						</Link>
 						<Link
-							className={cn(
-								"text-sm font-medium transition-colors duration-200 flex items-center gap-1",
-								isScrolled
-									? "text-gray-700 hover:text-primary"
-									: "text-gray-700 hover:text-primary"
-							)}
+							className="text-sm font-medium text-muted-foreground transition-colors duration-200 flex items-center gap-1 hover:text-primary"
 							href={process.env.NEXT_PUBLIC_GITHUB_URL || "#"}
 							rel="noopener noreferrer"
 							target="_blank"
@@ -293,54 +304,60 @@ export const Header = () => {
 					{/* CTA Button */}
 					<div className="hidden md:flex items-center gap-3">
 						{currentUser ? (
-							<Link href="/workspace">
+							<Button
+								asChild
+								className={cn(
+									"rounded-full transition-all duration-300 flex items-center gap-2",
+									isScrolled
+										? "bg-primary hover:bg-primary/90 text-white shadow-sm"
+										: "bg-primary hover:bg-primary/90 text-white shadow-md"
+								)}
+							>
+								<Link href="/workspace">
+									<LayoutDashboard className="size-4" />
+									Dashboard
+								</Link>
+							</Button>
+						) : (
+							<>
 								<Button
+									asChild
+									className="rounded-full border-border hover:border-primary/50 hover:text-primary"
+									variant="outline"
+								>
+									<Link href="/auth/signin">Sign In</Link>
+								</Button>
+								<Button
+									asChild
 									className={cn(
-										"rounded-full transition-all duration-300 flex items-center gap-2",
+										"rounded-full transition-all duration-300",
 										isScrolled
 											? "bg-primary hover:bg-primary/90 text-white shadow-sm"
 											: "bg-primary hover:bg-primary/90 text-white shadow-md"
 									)}
 								>
-									<LayoutDashboard className="size-4" />
-									Dashboard
+									<Link href="/auth/signup">Get Started</Link>
 								</Button>
-							</Link>
-						) : (
-							<>
-								<Link href="/auth/signin">
-									<Button
-										className="rounded-full border-gray-300 hover:border-primary/50 hover:text-primary"
-										variant="outline"
-									>
-										Sign In
-									</Button>
-								</Link>
-								<Link href="/auth/signup">
-									<Button
-										className={cn(
-											"rounded-full transition-all duration-300",
-											isScrolled
-												? "bg-primary hover:bg-primary/90 text-white shadow-sm"
-												: "bg-primary hover:bg-primary/90 text-white shadow-md"
-										)}
-									>
-										Get Started
-									</Button>
-								</Link>
 							</>
 						)}
 					</div>
 
-					{/* Mobile Menu Button */}
-					<button
-						aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-						className="md:hidden p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-						onClick={toggleMenu}
-						type="button"
-					>
-						{isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-					</button>
+					{/* Mobile CTA + Menu Button */}
+					<div className="flex items-center gap-2 md:hidden">
+						<Button asChild className="rounded-full" size="sm">
+							<Link href={currentUser ? "/workspace" : "/auth/signup"}>
+								{currentUser ? "Dashboard" : "Get Started"}
+							</Link>
+						</Button>
+						<button
+							aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+							className="p-2 rounded-full text-muted-foreground hover:bg-muted transition-colors"
+							onClick={toggleMenu}
+							type="button"
+						>
+							{isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -349,7 +366,7 @@ export const Header = () => {
 				{isMenuOpen && (
 					<motion.div
 						animate={{ opacity: 1, height: "auto" }}
-						className="md:hidden bg-white border-t border-gray-100 shadow-lg"
+						className="md:hidden bg-background border-t border-border shadow-lg"
 						exit={{ opacity: 0, height: 0 }}
 						initial={{ opacity: 0, height: 0 }}
 						transition={{ duration: 0.3 }}
@@ -360,7 +377,7 @@ export const Header = () => {
 								<div className="space-y-3">
 									<div className="flex items-center justify-between">
 										<Link
-											className="block text-base font-medium text-gray-700 hover:text-primary transition-colors"
+											className="block text-base font-medium text-muted-foreground hover:text-primary transition-colors"
 											href="/features"
 											onClick={() => setIsMenuOpen(false)}
 										>
@@ -371,12 +388,12 @@ export const Header = () => {
 									<div className="pl-4 grid grid-cols-2 gap-3">
 										{modules.map((module) => (
 											<Link
-												className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary transition-colors"
+												className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
 												href={module.href}
 												key={module.name}
 												onClick={() => setIsMenuOpen(false)}
 											>
-												<span className="text-lg">{module.icon}</span>
+												<module.icon className="size-4" />
 												<span>{module.name}</span>
 											</Link>
 										))}
@@ -399,22 +416,22 @@ export const Header = () => {
 								</div>
 								{/* <Link
                   href="/why-proddy"
-                  className="block text-base font-medium text-gray-700 hover:text-primary transition-colors"
+                  className="block text-base font-medium text-muted-foreground hover:text-primary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Why Proddy?
                 </Link> */}
 
 								<Link
-									className="block text-base font-medium text-gray-700 hover:text-primary transition-colors"
+									className="block text-base font-medium text-muted-foreground hover:text-primary transition-colors"
 									href="/pricing"
 									onClick={() => setIsMenuOpen(false)}
 								>
-									Pricing/-
+									Pricing
 								</Link>
 
 								<Link
-									className="flex items-center gap-1 text-base font-medium text-gray-700 hover:text-primary transition-colors"
+									className="flex items-center gap-1 text-base font-medium text-muted-foreground hover:text-primary transition-colors"
 									href={process.env.NEXT_PUBLIC_GITHUB_URL || "#"}
 									onClick={() => setIsMenuOpen(false)}
 									rel="noopener noreferrer"
@@ -423,32 +440,42 @@ export const Header = () => {
 									GitHub <ExternalLink className="size-3" />
 								</Link>
 							</div>
-							<div className="pt-4 border-t border-gray-200 space-y-3">
+							<div className="pt-4 border-t border-border space-y-3">
 								{currentUser ? (
-									<Link href="/workspace" onClick={() => setIsMenuOpen(false)}>
-										<Button className="w-full rounded-full flex items-center justify-center gap-2">
+									<Button
+										asChild
+										className="w-full rounded-full flex items-center justify-center gap-2"
+									>
+										<Link
+											href="/workspace"
+											onClick={() => setIsMenuOpen(false)}
+										>
 											<LayoutDashboard className="size-4" />
 											Dashboard
-										</Button>
-									</Link>
+										</Link>
+									</Button>
 								) : (
 									<>
-										<Link
-											href="/auth/signin"
-											onClick={() => setIsMenuOpen(false)}
+										<Button
+											asChild
+											className="w-full rounded-full"
+											variant="outline"
 										>
-											<Button className="w-full rounded-full" variant="outline">
+											<Link
+												href="/auth/signin"
+												onClick={() => setIsMenuOpen(false)}
+											>
 												Sign In
-											</Button>
-										</Link>
-										<Link
-											href="/auth/signup"
-											onClick={() => setIsMenuOpen(false)}
-										>
-											<Button className="w-full rounded-full">
+											</Link>
+										</Button>
+										<Button asChild className="w-full rounded-full">
+											<Link
+												href="/auth/signup"
+												onClick={() => setIsMenuOpen(false)}
+											>
 												Get Started
-											</Button>
-										</Link>
+											</Link>
+										</Button>
 									</>
 								)}
 							</div>

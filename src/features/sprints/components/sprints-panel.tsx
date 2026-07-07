@@ -1,11 +1,20 @@
 "use client";
 
+import { format } from "date-fns";
 import { CheckCircle, Clock, ListTodo, Plus, Zap } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import {
 	Select,
 	SelectContent,
@@ -14,6 +23,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { useGetSprints } from "../api/use-get-sprints";
 import { useRolloverSprint } from "../api/use-sprint-mutations";
 import { CreateSprintModal } from "./create-sprint-modal";
@@ -21,6 +31,18 @@ import { SprintCard } from "./sprint-card";
 import { SprintDetail } from "./sprint-detail";
 
 type SprintFilter = "all" | Doc<"sprints">["status"];
+
+const SPRINT_STATUSES: Doc<"sprints">["status"][] = [
+	"planning",
+	"active",
+	"completed",
+	"cancelled",
+];
+
+const isSprintStatus = (
+	value: string | null
+): value is Doc<"sprints">["status"] =>
+	value !== null && (SPRINT_STATUSES as string[]).includes(value);
 
 interface SprintsPanelProps {
 	projectId: Id<"projects">;
@@ -32,12 +54,51 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 		projectId,
 		workspaceId,
 	});
-	const { mutate: rollover } = useRolloverSprint();
+	const { mutate: rollover, isPending: isRollingOver } = useRolloverSprint();
+
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
 
 	const [createOpen, setCreateOpen] = useState(false);
-	const [selectedSprintId, setSelectedSprintId] =
+	const [rolloverSourceId, setRolloverSourceId] =
 		useState<Id<"sprints"> | null>(null);
-	const [filter, setFilter] = useState<SprintFilter>("all");
+
+	// Selection and filter live in the URL (not component state) so sprint
+	// detail views are deep-linkable and browser Back returns to the list
+	// instead of leaving the module.
+	const selectedSprintId = searchParams.get("sprint") as Id<"sprints"> | null;
+	const statusParam = searchParams.get("status");
+	const filter: SprintFilter = isSprintStatus(statusParam)
+		? statusParam
+		: "all";
+
+	const buildQuery = (updates: Record<string, string | null>) => {
+		const params = new URLSearchParams(searchParams.toString());
+		for (const [key, value] of Object.entries(updates)) {
+			if (value === null) {
+				params.delete(key);
+			} else {
+				params.set(key, value);
+			}
+		}
+		const query = params.toString();
+		return query ? `${pathname ?? ""}?${query}` : (pathname ?? "");
+	};
+
+	const setFilter = (next: SprintFilter) => {
+		router.replace(buildQuery({ status: next === "all" ? null : next }), {
+			scroll: false,
+		});
+	};
+
+	const openSprint = (sprintId: Id<"sprints">) => {
+		router.push(buildQuery({ sprint: sprintId }), { scroll: false });
+	};
+
+	const closeSprint = () => {
+		router.push(buildQuery({ sprint: null }), { scroll: false });
+	};
 
 	const selectedSprint = sprints?.find(
 		(sprint) => sprint._id === selectedSprintId
@@ -48,36 +109,42 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 	const countOf = (status: Doc<"sprints">["status"]) =>
 		sprints?.filter((sprint) => sprint.status === status).length ?? 0;
 
-	const handleRollover = async (fromSprintId: Id<"sprints">) => {
-		const target = sprints?.find(
+	const rolloverSource = sprints?.find(
+		(sprint) => sprint._id === rolloverSourceId
+	);
+	const rolloverTargets =
+		sprints?.filter(
 			(sprint) =>
-				sprint._id !== fromSprintId &&
-				(sprint.status === "planning" || sprint.status === "active")
-		);
-		if (!target) {
-			toast.error("Create another planning sprint to roll issues into first.");
-			return;
-		}
+				sprint._id !== rolloverSourceId && sprint.status === "planning"
+		) ?? [];
+
+	const handleRolloverConfirm = async (toSprintId: Id<"sprints">) => {
+		if (!rolloverSourceId) return;
+		const target = sprints?.find((sprint) => sprint._id === toSprintId);
 		try {
 			const result = await rollover({
-				fromSprintId,
-				toSprintId: target._id,
+				fromSprintId: rolloverSourceId,
+				toSprintId,
 			});
 			toast.success(
-				`Rolled over ${result?.rolledOver ?? 0} incomplete issues to ${target.name}`
+				`Rolled over ${result?.rolledOver ?? 0} incomplete issues to ${
+					target?.name ?? "the sprint"
+				}`
 			);
+			setRolloverSourceId(null);
 		} catch {
 			toast.error("Rollover failed");
 		}
 	};
 
-	if (selectedSprint) {
-		return (
-			<SprintDetail
-				onBack={() => setSelectedSprintId(null)}
-				sprint={selectedSprint}
-			/>
+	const pillClass = (status: Doc<"sprints">["status"]) =>
+		cn(
+			"flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+			filter === status && "border-primary/50 bg-primary/10"
 		);
+
+	if (selectedSprint) {
+		return <SprintDetail onBack={closeSprint} sprint={selectedSprint} />;
 	}
 
 	const hasSprints = !isLoading && sprints && sprints.length > 0;
@@ -99,21 +166,40 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 
 			{hasSprints && (
 				<div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
-					<div className="flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs">
-						<Zap className="size-3 text-emerald-500" />
+					<button
+						aria-pressed={filter === "active"}
+						className={pillClass("active")}
+						onClick={() => setFilter(filter === "active" ? "all" : "active")}
+						type="button"
+					>
+						<Zap className="size-3 text-blue-500" />
 						<span className="font-medium">{countOf("active")}</span>
 						<span className="text-muted-foreground">active</span>
-					</div>
-					<div className="flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs">
+					</button>
+					<button
+						aria-pressed={filter === "planning"}
+						className={pillClass("planning")}
+						onClick={() =>
+							setFilter(filter === "planning" ? "all" : "planning")
+						}
+						type="button"
+					>
 						<ListTodo className="size-3 text-muted-foreground" />
 						<span className="font-medium">{countOf("planning")}</span>
 						<span className="text-muted-foreground">planning</span>
-					</div>
-					<div className="flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs">
-						<CheckCircle className="size-3 text-blue-400" />
+					</button>
+					<button
+						aria-pressed={filter === "completed"}
+						className={pillClass("completed")}
+						onClick={() =>
+							setFilter(filter === "completed" ? "all" : "completed")
+						}
+						type="button"
+					>
+						<CheckCircle className="size-3 text-emerald-500" />
 						<span className="font-medium">{countOf("completed")}</span>
 						<span className="text-muted-foreground">completed</span>
-					</div>
+					</button>
 
 					<Select
 						onValueChange={(value) => setFilter(value as SprintFilter)}
@@ -171,8 +257,8 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 						{filtered.map((sprint) => (
 							<SprintCard
 								key={sprint._id}
-								onClick={() => setSelectedSprintId(sprint._id)}
-								onRollover={handleRollover}
+								onClick={() => openSprint(sprint._id)}
+								onRollover={setRolloverSourceId}
 								sprint={sprint}
 							/>
 						))}
@@ -187,6 +273,59 @@ export const SprintsPanel = ({ projectId, workspaceId }: SprintsPanelProps) => {
 				sprintNumber={(sprints?.length ?? 0) + 1}
 				workspaceId={workspaceId}
 			/>
+
+			<Dialog
+				onOpenChange={(open) => !open && setRolloverSourceId(null)}
+				open={!!rolloverSourceId}
+			>
+				<DialogContent className="sm:max-w-sm">
+					<DialogHeader>
+						<DialogTitle>Roll over incomplete issues</DialogTitle>
+						<DialogDescription>
+							{rolloverSource
+								? `Choose a planning sprint to move ${rolloverSource.name}'s incomplete issues into.`
+								: "Choose a planning sprint to move the incomplete issues into."}
+						</DialogDescription>
+					</DialogHeader>
+
+					{rolloverTargets.length === 0 ? (
+						<div className="space-y-3 py-2 text-center">
+							<p className="text-muted-foreground text-sm">
+								Create another planning sprint to roll issues into first.
+							</p>
+							<Button
+								onClick={() => {
+									setRolloverSourceId(null);
+									setCreateOpen(true);
+								}}
+								size="sm"
+								variant="outline"
+							>
+								<Plus className="mr-1 size-4" />
+								New sprint
+							</Button>
+						</div>
+					) : (
+						<div className="space-y-1.5 py-1">
+							{rolloverTargets.map((sprint) => (
+								<button
+									className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+									disabled={isRollingOver}
+									key={sprint._id}
+									onClick={() => handleRolloverConfirm(sprint._id)}
+									type="button"
+								>
+									<span className="font-medium">{sprint.name}</span>
+									<span className="text-muted-foreground text-xs">
+										{format(new Date(sprint.startDate), "MMM d")} →{" "}
+										{format(new Date(sprint.endDate), "MMM d")}
+									</span>
+								</button>
+							))}
+						</div>
+					)}
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 };

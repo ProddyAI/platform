@@ -10,7 +10,9 @@ import {
 	Calendar,
 	Circle,
 	Flame,
+	GripVertical,
 	ListChecks,
+	Lock,
 } from "lucide-react";
 import React from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -154,7 +156,7 @@ const DueDateDisplay = ({ dueDate }: DueDateDisplayProps) => {
 					<span
 						className={cn(
 							"hidden sm:flex flex-shrink-0 items-center gap-1 text-[10px] leading-tight",
-							overdue ? "text-destructive" : "text-muted-foreground/70"
+							overdue ? "text-destructive" : "text-muted-foreground"
 						)}
 					>
 						<Calendar className="w-3 h-3" />
@@ -248,6 +250,7 @@ const BoardIssueRowContent = ({
 		<PriorityIndicator priority={issue.priority} />
 
 		<span
+			aria-hidden="true"
 			className="flex-shrink-0 w-2 h-2 rounded-full ring-1 ring-inset ring-black/10"
 			style={{ backgroundColor: statusColor }}
 		/>
@@ -256,7 +259,13 @@ const BoardIssueRowContent = ({
 			<TooltipProvider>
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<span className="flex-shrink-0 w-2 h-2 rounded-full bg-red-500 ring-1 ring-inset ring-black/10" />
+						<span
+							aria-label={`Blocked by ${dependencyIndicators?.blockedByCount} issue${dependencyIndicators?.blockedByCount === 1 ? "" : "s"}`}
+							className="flex-shrink-0 flex items-center justify-center text-blue-500"
+							role="img"
+						>
+							<Lock className="w-2.5 h-2.5" />
+						</span>
 					</TooltipTrigger>
 					<TooltipContent side="top">
 						Blocked by {dependencyIndicators?.blockedByCount} issue
@@ -270,7 +279,11 @@ const BoardIssueRowContent = ({
 			<TooltipProvider>
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<span className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground/80 ring-1 ring-inset ring-black/10" />
+						<span
+							aria-label={`Blocking ${dependencyIndicators?.blockingCount} issue${dependencyIndicators?.blockingCount === 1 ? "" : "s"}`}
+							className="flex-shrink-0 w-2 h-2 rounded-full bg-orange-500 ring-1 ring-inset ring-black/10"
+							role="img"
+						/>
 					</TooltipTrigger>
 					<TooltipContent side="top">
 						Blocking {dependencyIndicators?.blockingCount} issue
@@ -280,7 +293,7 @@ const BoardIssueRowContent = ({
 			</TooltipProvider>
 		)}
 
-		<span className="flex-shrink-0 text-[10px] font-mono text-muted-foreground/60 w-12 leading-tight">
+		<span className="flex-shrink-0 text-[11px] font-mono text-muted-foreground w-12 leading-tight">
 			{formatIssueId(issue._id)}
 		</span>
 
@@ -355,34 +368,43 @@ const BoardIssueRow = React.memo(function BoardIssueRow({
 	};
 
 	return (
-		<button
-			ref={(node) => {
-				setNodeRef(node);
-				if (!isDragOverlay) {
-					setActivatorNodeRef(node);
-				}
-			}}
-			style={style}
-			type="button"
-			{...attributes}
-			{...listeners}
+		<div
 			className={cn(
-				"group flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/60 dark:hover:bg-gray-800/60 transition-colors duration-100 border border-transparent hover:border-border/40 select-none",
-				disableDrag ? "cursor-pointer" : "cursor-grab",
+				"group flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/60 transition-colors duration-100 border border-transparent hover:border-border/40 select-none",
 				isDragging && "opacity-40"
 			)}
-			onClick={() => {
-				if (!isDragging) onClick();
-			}}
+			ref={setNodeRef}
+			style={style}
 		>
-			<BoardIssueRowContent
-				assigneeData={assigneeData}
-				dependencyIndicators={dependencyIndicators}
-				issue={issue}
-				statusColor={statusColor}
-				subIssueStats={subIssueStats}
-			/>
-		</button>
+			{!disableDrag && (
+				<button
+					aria-label="Drag to reorder issue"
+					className="flex-shrink-0 flex items-center justify-center p-0.5 rounded cursor-grab text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background hover:bg-muted hover:text-foreground"
+					ref={setActivatorNodeRef}
+					type="button"
+					{...attributes}
+					{...listeners}
+				>
+					<GripVertical className="w-3.5 h-3.5" />
+				</button>
+			)}
+
+			<button
+				className="flex flex-1 min-w-0 items-center gap-2 text-left cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
+				onClick={() => {
+					if (!isDragging) onClick();
+				}}
+				type="button"
+			>
+				<BoardIssueRowContent
+					assigneeData={assigneeData}
+					dependencyIndicators={dependencyIndicators}
+					issue={issue}
+					statusColor={statusColor}
+					subIssueStats={subIssueStats}
+				/>
+			</button>
+		</div>
 	);
 });
 

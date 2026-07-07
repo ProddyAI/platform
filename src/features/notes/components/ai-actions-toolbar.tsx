@@ -11,7 +11,7 @@ import {
 	Wand2,
 	X,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { Fragment, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -246,7 +246,7 @@ export const AIActionsToolbar = ({
 								}
 							});
 
-							toast.success(`${action.label} applied!`);
+							toast.success(`${action.label} applied.`);
 						} else {
 							toast.error("Could not parse AI response");
 						}
@@ -279,16 +279,16 @@ export const AIActionsToolbar = ({
 	return (
 		<div
 			className={cn(
-				"flex items-center gap-1.5 px-3 py-2 border-b bg-gradient-to-r from-violet-50/80 to-blue-50/80 dark:from-violet-950/30 dark:to-blue-950/30 backdrop-blur-sm",
+				"flex items-center gap-1.5 px-3 py-2 border-b bg-secondary/5",
 				className
 			)}
 		>
 			{/* AI Label */}
 			<div className="flex items-center gap-1.5 mr-1">
-				<div className="flex items-center justify-center w-6 h-6 rounded-md bg-gradient-to-br from-violet-500 to-blue-600 shadow-sm">
-					<Sparkles className="h-3.5 w-3.5 text-white" />
+				<div className="flex items-center justify-center w-6 h-6 rounded-md bg-secondary/10 border border-secondary/20 shadow-sm">
+					<Sparkles className="h-3.5 w-3.5 text-secondary" />
 				</div>
-				<span className="text-xs font-semibold text-violet-700 dark:text-violet-300 hidden sm:block">
+				<span className="text-xs font-semibold text-secondary hidden sm:block">
 					AI Actions
 				</span>
 			</div>
@@ -302,8 +302,7 @@ export const AIActionsToolbar = ({
 					<Button
 						className={cn(
 							"h-7 px-2.5 text-xs gap-1.5 transition-all duration-200",
-							activeAction === action.id &&
-								"bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300"
+							activeAction === action.id && "bg-secondary/10 text-secondary"
 						)}
 						disabled={isDisabled}
 						key={action.id}
@@ -341,16 +340,18 @@ export const AIActionsToolbar = ({
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
 						{AI_ACTIONS.map((action, index) => (
-							<>
-								{index > 0 && index === 2 && (
-									<DropdownMenuSeparator key={`sep-${action.id}`} />
-								)}
+							<Fragment key={action.id}>
+								{index > 0 && index === 2 && <DropdownMenuSeparator />}
 								<DropdownMenuItem
 									className="gap-2"
-									key={action.id}
+									disabled={isDisabled}
 									onClick={() => runAIAction(action)}
 								>
-									{action.icon}
+									{activeAction === action.id ? (
+										<Loader2 className="h-4 w-4 animate-spin" />
+									) : (
+										action.icon
+									)}
 									<div>
 										<div className="font-medium">{action.label}</div>
 										<div className="text-xs text-muted-foreground">
@@ -358,7 +359,7 @@ export const AIActionsToolbar = ({
 										</div>
 									</div>
 								</DropdownMenuItem>
-							</>
+							</Fragment>
 						))}
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -367,11 +368,20 @@ export const AIActionsToolbar = ({
 			{/* Streaming indicator */}
 			{isStreaming && (
 				<div className="flex items-center gap-2 ml-auto">
-					<div className="flex items-center gap-1.5 text-xs text-violet-600 dark:text-violet-400">
+					<div className="flex items-center gap-1.5 text-xs text-secondary">
 						<div className="flex gap-0.5">
-							<span className="w-1 h-1 rounded-full bg-violet-500 animate-bounce [animation-delay:-0.3s]" />
-							<span className="w-1 h-1 rounded-full bg-violet-500 animate-bounce [animation-delay:-0.15s]" />
-							<span className="w-1 h-1 rounded-full bg-violet-500 animate-bounce" />
+							<span
+								className="w-1 h-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
+								style={{ animationDelay: "0ms" }}
+							/>
+							<span
+								className="w-1 h-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
+								style={{ animationDelay: "150ms" }}
+							/>
+							<span
+								className="w-1 h-1 rounded-full bg-secondary animate-pulse motion-reduce:animate-none"
+								style={{ animationDelay: "300ms" }}
+							/>
 						</div>
 						<span className="hidden sm:block">
 							{AI_ACTIONS.find((a) => a.id === activeAction)?.label}...

@@ -75,20 +75,24 @@ export const MessageContent = ({
 	onOpenMessage,
 	onContextMenu,
 }: MessageContentProps) => {
-	// Check if this contains a custom message component
-	const hasCustomMessageComponent =
-		body &&
-		typeof body === "string" &&
-		(body.includes('"type":"canvas"') ||
-			body.includes('"type":"note"') ||
-			body.includes('"type":"canvas-live"') ||
-			body.includes('"type":"note-live"') ||
-			body.includes('"type":"canvas-export"') ||
-			body.includes('"type":"note-export"') ||
-			body.includes('"type":"file"'));
+	// Custom message components (canvas/note/file) are JSON payloads with a
+	// `type` field; parse it instead of matching substrings against the raw body.
+	const parsedBodyType = (() => {
+		try {
+			const parsed = JSON.parse(body);
+			return typeof parsed?.type === "string" ? parsed.type : null;
+		} catch {
+			return null;
+		}
+	})();
 
-	const isFileMessage =
-		body && typeof body === "string" && body.includes('"type":"file"');
+	const hasCustomMessageComponent =
+		parsedBodyType !== null &&
+		(parsedBodyType.includes("canvas") ||
+			parsedBodyType.includes("note") ||
+			parsedBodyType === "file");
+
+	const isFileMessage = parsedBodyType === "file";
 
 	return (
 		<div
@@ -109,9 +113,7 @@ export const MessageContent = ({
 								? "p-0 bg-transparent" // No padding, no background for custom components
 								: cn(
 										"max-w-md px-3 pt-2 pb-1.5", // Normal styling for regular messages
-										isAuthor
-											? "bg-primary text-primary-foreground"
-											: "bg-muted dark:bg-gray-800"
+										isAuthor ? "bg-primary text-primary-foreground" : "bg-muted"
 									)
 						)}
 						onContextMenu={onContextMenu}
@@ -136,7 +138,7 @@ export const MessageContent = ({
 								className={cn(
 									isAuthor &&
 										!hasCustomMessageComponent &&
-										"text-white [&_.ql-editor]:text-white [&_.ql-editor_*]:text-white [&_p]:text-white [&_span]:text-white [&_div]:text-white [&_strong]:text-white [&_em]:text-white [&_u]:text-white [&_s]:text-white [&_a]:text-white [&_li]:text-white [&_ol]:text-white [&_ul]:text-white [&_blockquote]:text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_h4]:text-white [&_h5]:text-white [&_h6]:text-white"
+										"text-primary-foreground [&_.ql-editor]:text-primary-foreground [&_.ql-editor_*]:text-primary-foreground [&_p]:text-primary-foreground [&_span]:text-primary-foreground [&_div]:text-primary-foreground [&_strong]:text-primary-foreground [&_em]:text-primary-foreground [&_u]:text-primary-foreground [&_s]:text-primary-foreground [&_a]:text-primary-foreground [&_li]:text-primary-foreground [&_ol]:text-primary-foreground [&_ul]:text-primary-foreground [&_blockquote]:text-primary-foreground [&_h1]:text-primary-foreground [&_h2]:text-primary-foreground [&_h3]:text-primary-foreground [&_h4]:text-primary-foreground [&_h5]:text-primary-foreground [&_h6]:text-primary-foreground"
 								)}
 							>
 								<Renderer
@@ -150,7 +152,7 @@ export const MessageContent = ({
 									<div
 										className={cn(
 											"flex items-center gap-1 text-xs mt-1",
-											isAuthor ? "text-white/80" : "text-secondary"
+											isAuthor ? "text-primary-foreground/80" : "text-secondary"
 										)}
 									>
 										<CalendarIcon className="h-3 w-3" />
@@ -166,14 +168,7 @@ export const MessageContent = ({
 					</div>
 
 					{!isEditing && updatedAt ? (
-						<span
-							className={cn(
-								"text-xs italic animate-fade-in bg-transparent px-1",
-								isAuthor
-									? "text-gray-500 dark:text-gray-400"
-									: "text-gray-500 dark:text-gray-400"
-							)}
-						>
+						<span className="text-xs italic animate-fade-in bg-transparent px-1 text-muted-foreground">
 							(edited)
 						</span>
 					) : null}

@@ -31,28 +31,30 @@ export const PasswordChangeForm = () => {
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [formError, setFormError] = useState<string | null>(null);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		setFormError(null);
 
 		// Validation
 		if (!currentPassword || !newPassword || !confirmPassword) {
-			toast.error("All fields are required");
+			setFormError("All fields are required");
 			return;
 		}
 
 		if (newPassword !== confirmPassword) {
-			toast.error("New passwords do not match");
+			setFormError("New passwords do not match");
 			return;
 		}
 
 		if (!isPasswordValid(newPassword)) {
-			toast.error("Password does not meet all requirements");
+			setFormError("Password does not meet all requirements");
 			return;
 		}
 
 		if (currentPassword === newPassword) {
-			toast.error("New password must be different from current password");
+			setFormError("New password must be different from current password");
 			return;
 		}
 
@@ -93,7 +95,7 @@ export const PasswordChangeForm = () => {
 		<Card className="bg-muted/50 border-border">
 			<CardHeader>
 				<div className="flex items-center gap-2">
-					<Lock className="h-5 w-5 text-purple-500" />
+					<Lock className="h-5 w-5 text-primary" />
 					<CardTitle>Change Password</CardTitle>
 				</div>
 				<CardDescription>
@@ -107,7 +109,10 @@ export const PasswordChangeForm = () => {
 						<Input
 							disabled={isSubmitting}
 							id="current-password"
-							onChange={(e) => setCurrentPassword(e.target.value)}
+							onChange={(e) => {
+								setCurrentPassword(e.target.value);
+								setFormError(null);
+							}}
 							placeholder="Enter current password"
 							type="password"
 							value={currentPassword}
@@ -119,7 +124,10 @@ export const PasswordChangeForm = () => {
 						<Input
 							disabled={isSubmitting}
 							id="new-password"
-							onChange={(e) => setNewPassword(e.target.value)}
+							onChange={(e) => {
+								setNewPassword(e.target.value);
+								setFormError(null);
+							}}
 							placeholder="Enter new password"
 							type="password"
 							value={newPassword}
@@ -137,7 +145,10 @@ export const PasswordChangeForm = () => {
 						<Input
 							disabled={isSubmitting}
 							id="confirm-password"
-							onChange={(e) => setConfirmPassword(e.target.value)}
+							onChange={(e) => {
+								setConfirmPassword(e.target.value);
+								setFormError(null);
+							}}
 							placeholder="Confirm new password"
 							type="password"
 							value={confirmPassword}
@@ -147,11 +158,9 @@ export const PasswordChangeForm = () => {
 						)}
 					</div>
 
-					<Button
-						className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-						disabled={isSubmitting}
-						type="submit"
-					>
+					{formError && <p className="text-sm text-destructive">{formError}</p>}
+
+					<Button className="w-full" disabled={isSubmitting} type="submit">
 						{isSubmitting ? "Changing Password..." : "Change Password"}
 					</Button>
 				</form>

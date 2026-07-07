@@ -25,7 +25,12 @@ interface CreateSprintModalProps {
 	sprintNumber?: number;
 }
 
-const toDateInput = (date: Date) => date.toISOString().split("T")[0];
+const toDateInput = (date: Date) => {
+	const year = date.getFullYear();
+	const month = `${date.getMonth() + 1}`.padStart(2, "0");
+	const day = `${date.getDate()}`.padStart(2, "0");
+	return `${year}-${month}-${day}`;
+};
 
 export const CreateSprintModal = ({
 	open,
@@ -121,6 +126,7 @@ export const CreateSprintModal = ({
 							<Label htmlFor="sprint-end">End date</Label>
 							<Input
 								id="sprint-end"
+								min={startDate}
 								onChange={(event) => setEndDate(event.target.value)}
 								required
 								type="date"
@@ -141,7 +147,12 @@ export const CreateSprintModal = ({
 					</div>
 
 					<div className="flex justify-end gap-2 pt-1">
-						<Button onClick={onClose} type="button" variant="outline">
+						<Button
+							disabled={isPending}
+							onClick={onClose}
+							type="button"
+							variant="outline"
+						>
 							Cancel
 						</Button>
 						<Button disabled={isPending || !name.trim()} type="submit">

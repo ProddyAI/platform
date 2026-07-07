@@ -133,10 +133,14 @@ const LabelInput: React.FC<LabelInputProps> = ({
 							variant="secondary"
 						>
 							{label}
-							<X
-								className="h-3 w-3 cursor-pointer hover:text-destructive"
+							<button
+								aria-label={`Remove ${label} label`}
+								className="rounded-sm hover:text-destructive focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 								onClick={() => removeLabel(label)}
-							/>
+								type="button"
+							>
+								<X className="h-3 w-3" />
+							</button>
 						</Badge>
 					))}
 				</div>
@@ -165,20 +169,23 @@ const LabelInput: React.FC<LabelInputProps> = ({
 			{/* Suggestions dropdown */}
 			{showSuggestions && (
 				<div
-					className="absolute z-10 mt-1 w-full max-h-40 overflow-auto bg-white border rounded-md shadow-lg"
+					className="absolute z-10 mt-1 w-full max-h-40 overflow-auto bg-popover border rounded-md shadow-lg"
 					ref={suggestionsRef}
+					role="listbox"
 				>
 					{filteredSuggestions.map((suggestion) => (
-						<div
+						<button
 							className={cn(
-								"px-3 py-1.5 cursor-pointer hover:bg-secondary/10",
-								"text-sm text-foreground"
+								"block w-full px-3 py-1.5 text-left cursor-pointer hover:bg-secondary/10",
+								"text-sm text-foreground focus:outline-none focus-visible:bg-secondary/10"
 							)}
 							key={suggestion}
 							onClick={() => handleSuggestionClick(suggestion)}
+							role="option"
+							type="button"
 						>
 							{suggestion}
-						</div>
+						</button>
 					))}
 				</div>
 			)}

@@ -236,13 +236,14 @@ export const MeetingRecordButton = ({
 		<div className="flex items-center gap-3">
 			{isRecording && <VoiceWaveform isRecording={isRecording} />}
 			<button
-				className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${isRecording ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
+				aria-pressed={isRecording}
+				className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${isRecording ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-[#232529] hover:bg-[#2a2c32] text-white"}`}
 				onClick={isRecording ? stopRecording : startRecording}
 				title={isRecording ? "Stop Recording" : "Start Recording"}
 				type="button"
 			>
 				<div
-					className={`rounded-full ${isRecording ? "w-2.5 h-2.5 bg-white animate-pulse" : "w-3 h-3 bg-red-500"}`}
+					className={`rounded-full ${isRecording ? "w-2.5 h-2.5 bg-white animate-pulse motion-reduce:animate-none" : "w-3 h-3 bg-red-500"}`}
 				/>
 				{isRecording ? "Stop" : "Record"}
 			</button>
@@ -261,6 +262,28 @@ export const MeetingReactions = () => {
 	const nextId = useRef(0);
 	const lastReactionTime = useRef(0);
 	const broadcast = useBroadcastEvent();
+	const pickerRef = useRef<HTMLDivElement>(null);
+
+	// Close the reaction picker on Escape or an outside click/tap.
+	useEffect(() => {
+		if (!showPicker) return undefined;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") setShowPicker(false);
+		};
+		const handlePointerDown = (e: MouseEvent) => {
+			if (!pickerRef.current?.contains(e.target as Node)) {
+				setShowPicker(false);
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+		document.addEventListener("mousedown", handlePointerDown);
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+			document.removeEventListener("mousedown", handlePointerDown);
+		};
+	}, [showPicker]);
 
 	const handleAddReaction = useCallback(
 		(emoji: string, isExternal = false) => {
@@ -304,7 +327,7 @@ export const MeetingReactions = () => {
 			{/* Floating reactions overlay */}
 			{floatingReactions.map((r) => (
 				<div
-					className="fixed bottom-28 z-[100] pointer-events-none"
+					className="fixed bottom-28 z-[100] pointer-events-none motion-reduce:hidden"
 					key={r.id}
 					style={{
 						left: `${r.x}%`,
@@ -316,9 +339,9 @@ export const MeetingReactions = () => {
 			))}
 
 			{/* Reaction picker popover */}
-			<div className="relative">
+			<div className="relative" ref={pickerRef}>
 				{showPicker && (
-					<div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-[#2d2e31] rounded-2xl px-3 py-2 flex gap-1.5 shadow-2xl border border-white/10 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+					<div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-[#232529] rounded-2xl px-3 py-2 flex gap-1.5 shadow-2xl border border-white/10 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 motion-reduce:animate-none">
 						{emojis.map((emoji) => (
 							<button
 								className="text-2xl hover:scale-125 active:scale-95 transition-transform p-1 rounded-lg hover:bg-white/10"
@@ -333,7 +356,9 @@ export const MeetingReactions = () => {
 					</div>
 				)}
 				<button
-					className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${showPicker ? "bg-[#c2e7ff] text-[#001d35]" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
+					aria-expanded={showPicker}
+					aria-haspopup="true"
+					className={`flex items-center gap-2 px-4 h-11 rounded-full transition-all text-sm font-medium ${showPicker ? "bg-secondary text-secondary-foreground" : "bg-[#232529] hover:bg-[#2a2c32] text-white"}`}
 					onClick={() => setShowPicker(!showPicker)}
 					title="Reactions"
 					type="button"
@@ -405,26 +430,19 @@ export const CaptionsOverlay = ({
 
 	return (
 		<div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[85%] w-auto">
-			<div className="bg-[#0a0a12]/80 backdrop-blur-3xl border border-white/10 text-white px-6 py-4 rounded-2xl text-base leading-relaxed shadow-2xl animate-in fade-in zoom-in duration-500 overflow-hidden group">
-				<div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-transparent to-purple-500/10 opacity-50" />
+			<div className="bg-[#232529]/80 backdrop-blur-3xl border border-white/10 text-white px-6 py-4 rounded-2xl text-base leading-relaxed shadow-2xl animate-in fade-in duration-300 motion-reduce:animate-none overflow-hidden">
 				<div className="relative flex flex-col gap-1">
 					{speaker && (
-						<span className="text-indigo-400 font-bold text-xs uppercase tracking-widest mb-0.5 opacity-80">
+						<span className="text-secondary font-bold text-xs mb-0.5 opacity-80">
 							{speaker}
 						</span>
 					)}
-					<div className="flex flex-wrap gap-x-1.5 items-center">
-						{/* captionText is fully re-split fresh each render, not incrementally
-						appended — index is a safe key and drives the stagger animation */}
-						{captionText.split(" ").map((word, i) => (
-							<span
-								className="animate-in fade-in slide-in-from-bottom-1 duration-300"
-								key={i}
-								style={{ animationDelay: `${i * 100}ms` }}
-							>
-								{word}
-							</span>
-						))}
+					{/* Single fade per caption update — no per-word stagger */}
+					<div
+						className="animate-in fade-in duration-200 motion-reduce:animate-none"
+						key={captionText}
+					>
+						{captionText}
 					</div>
 				</div>
 			</div>
@@ -445,7 +463,7 @@ export const CustomParticipantList = () => {
 			</p>
 			{participants.map((p) => {
 				const colors = [
-					"bg-[#0b57d0]",
+					"bg-secondary",
 					"bg-emerald-600",
 					"bg-purple-600",
 					"bg-orange-600",
@@ -466,9 +484,6 @@ export const CustomParticipantList = () => {
 						<div className="flex-1 flex flex-col min-w-0">
 							<span className="text-[14px] text-white font-medium truncate">
 								{p.name || "Anonymous"} {p.isLocalParticipant ? "(You)" : ""}
-							</span>
-							<span className="text-[12px] text-gray-400">
-								{p.isLocalParticipant ? "Meeting host" : "Contributor"}
 							</span>
 						</div>
 						{!p.audioStream && (
@@ -506,6 +521,7 @@ export const NotesSidebar = ({
 	const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
 	const [copied, setCopied] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const historyDropdownRef = useRef<HTMLDivElement>(null);
 
 	const savedNotes = useQuery(api.content.meetingNotes.getByRoom, {
 		roomId,
@@ -554,11 +570,32 @@ export const NotesSidebar = ({
 		}
 	}, []);
 
+	// Close the history dropdown on Escape or an outside click/tap.
+	useEffect(() => {
+		if (!showHistoryDropdown) return undefined;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") setShowHistoryDropdown(false);
+		};
+		const handlePointerDown = (e: MouseEvent) => {
+			if (!historyDropdownRef.current?.contains(e.target as Node)) {
+				setShowHistoryDropdown(false);
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+		document.addEventListener("mousedown", handlePointerDown);
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+			document.removeEventListener("mousedown", handlePointerDown);
+		};
+	}, [showHistoryDropdown]);
+
 	const handleCopyTranscript = () => {
 		if (!transcript) return;
 		navigator.clipboard.writeText(transcript);
 		setCopied(true);
-		toast.success("Transcript copied to clipboard!");
+		toast.success("Transcript copied to clipboard.");
 		setTimeout(() => setCopied(false), 2000);
 	};
 
@@ -589,7 +626,7 @@ export const NotesSidebar = ({
 				transcript: currentTranscript,
 				membersContext: membersContext || undefined,
 			});
-			toast.success("AI notes generated!");
+			toast.success("AI notes generated.");
 			setSelectedGenIdx(-1);
 			setActiveTab("summary");
 		} catch (e) {
@@ -626,10 +663,11 @@ export const NotesSidebar = ({
 		<>
 			<div className="flex items-center justify-between p-5 pb-3 border-b border-white/10">
 				<div className="flex items-center gap-2.5">
-					<Sparkles className="w-5 h-5 text-indigo-400" />
+					<Sparkles className="w-5 h-5 text-secondary" />
 					<h2 className="text-base font-semibold text-white">AI Notemaker</h2>
 				</div>
 				<Button
+					aria-label="Close notes panel"
 					className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-9 w-9"
 					onClick={onClose}
 					size="icon"
@@ -643,7 +681,7 @@ export const NotesSidebar = ({
 			<div className="px-5 py-3 border-b border-white/10 flex flex-col gap-2">
 				<div className="flex items-center gap-2 w-full">
 					<Button
-						className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full h-9 text-xs font-medium gap-2 shadow-lg shadow-indigo-500/20"
+						className="flex-1 bg-secondary hover:bg-secondary/90 text-white rounded-full h-9 text-xs font-medium gap-2 shadow-lg shadow-secondary/20"
 						disabled={
 							isGenerating ||
 							(!transcript && !liveTranscript) ||
@@ -663,8 +701,11 @@ export const NotesSidebar = ({
 					</Button>
 
 					{generations && generations.length > 0 && (
-						<div className="relative">
+						<div className="relative" ref={historyDropdownRef}>
 							<Button
+								aria-expanded={showHistoryDropdown}
+								aria-haspopup="true"
+								aria-label="Note generation history"
 								className="rounded-full h-9 text-xs gap-1 border-white/10 text-gray-300 hover:bg-white/10"
 								onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
 								size="sm"
@@ -674,13 +715,13 @@ export const NotesSidebar = ({
 								<ChevronDown className="w-3 h-3" />
 							</Button>
 							{showHistoryDropdown && (
-								<div className="absolute right-0 top-11 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-xl z-50 w-52 py-1 animate-in fade-in slide-in-from-top-2">
-									<p className="px-3 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-										Note History
+								<div className="absolute right-0 top-11 bg-[#232529] border border-white/10 rounded-xl shadow-xl z-50 w-52 py-1 animate-in fade-in slide-in-from-top-2 motion-reduce:animate-none">
+									<p className="px-3 py-2 text-[11px] font-semibold text-gray-500">
+										Note history
 									</p>
 									{generations.map((gen, idx) => (
 										<button
-											className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between ${selectedGenIdx === idx ? "bg-indigo-500/10 text-indigo-400" : "text-gray-300"}`}
+											className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between ${selectedGenIdx === idx ? "bg-secondary/10 text-secondary" : "text-gray-300"}`}
 											key={gen._id}
 											onClick={() => {
 												setSelectedGenIdx(idx);
@@ -707,14 +748,14 @@ export const NotesSidebar = ({
 				{currentGen && (
 					<div className="flex items-center gap-2">
 						<Button
-							className="flex-1 h-9 text-[11px] font-bold gap-2 border-indigo-500/20 bg-indigo-500/5 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-xl transition-all shadow-sm"
+							className="flex-1 h-9 text-[11px] font-bold gap-2 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl transition-all shadow-sm"
 							onClick={() => handleExport("pdf")}
 							variant="outline"
 						>
 							<FileDown className="w-3.5 h-3.5" /> Export PDF
 						</Button>
 						<Button
-							className="flex-1 h-9 text-[11px] font-bold gap-2 border-emerald-500/20 bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-sm"
+							className="flex-1 h-9 text-[11px] font-bold gap-2 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl transition-all shadow-sm"
 							onClick={() => handleExport("word")}
 							variant="outline"
 						>
@@ -728,7 +769,7 @@ export const NotesSidebar = ({
 			{isRecording && (
 				<div className="px-5 py-2 bg-red-500/10 border-b border-red-500/20 flex items-center gap-2">
 					<span className="relative flex h-2.5 w-2.5">
-						<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+						<span className="motion-reduce:hidden animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
 						<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
 					</span>
 					<span className="text-xs font-medium text-red-400">
@@ -747,25 +788,25 @@ export const NotesSidebar = ({
 					<div className="px-5 pt-3 pb-1">
 						<TabsList className="bg-white/5 w-full p-1 h-10 rounded-xl grid grid-cols-4 border border-white/5">
 							<TabsTrigger
-								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium"
+								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
 								value="transcript"
 							>
 								Transcript
 							</TabsTrigger>
 							<TabsTrigger
-								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium"
+								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
 								value="summary"
 							>
 								Summary
 							</TabsTrigger>
 							<TabsTrigger
-								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium"
+								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
 								value="tasks"
 							>
 								Tasks
 							</TabsTrigger>
 							<TabsTrigger
-								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-indigo-400 text-gray-500 rounded-lg font-medium"
+								className="text-[11px] data-[state=active]:bg-white/10 data-[state=active]:text-secondary text-gray-500 rounded-lg font-medium"
 								value="decisions"
 							>
 								Decisions
@@ -781,13 +822,13 @@ export const NotesSidebar = ({
 									{/* Copy button */}
 									<div className="flex justify-end">
 										<button
-											className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-400 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg"
+											className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-secondary transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg"
 											onClick={handleCopyTranscript}
 											type="button"
 										>
 											{copied ? (
 												<>
-													<CheckSquare className="w-3 h-3" /> Copied!
+													<CheckSquare className="w-3 h-3" /> Copied
 												</>
 											) : (
 												<>
@@ -812,7 +853,7 @@ export const NotesSidebar = ({
 												const text =
 													colonIdx > -1 ? line.slice(colonIdx + 2) : line;
 												const colors = [
-													"bg-indigo-500",
+													"bg-secondary",
 													"bg-emerald-500",
 													"bg-purple-500",
 													"bg-orange-500",
@@ -834,7 +875,7 @@ export const NotesSidebar = ({
 														</div>
 														<div className="flex-1 min-w-0">
 															{speaker && (
-																<span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide">
+																<span className="text-[11px] font-bold text-secondary">
 																	{speaker}
 																</span>
 															)}
@@ -863,11 +904,11 @@ export const NotesSidebar = ({
 							{currentGen ? (
 								<div className="space-y-3">
 									<div className="flex items-center gap-2 mb-1">
-										<FileText className="w-4 h-4 text-indigo-400" />
+										<FileText className="w-4 h-4 text-secondary" />
 										<h3 className="text-sm font-semibold text-white">
 											Executive Summary
 										</h3>
-										<span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-medium">
+										<span className="text-[10px] bg-secondary/20 text-secondary px-2 py-0.5 rounded-full font-medium">
 											Gen #{currentGen.generationNumber}
 										</span>
 									</div>
@@ -878,7 +919,7 @@ export const NotesSidebar = ({
 							) : savedNotes?.summary ? (
 								<div className="space-y-3">
 									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<FileText className="w-4 h-4 text-indigo-400" /> Executive
+										<FileText className="w-4 h-4 text-secondary" /> Executive
 										Summary
 									</h3>
 									<p className="text-sm text-gray-300 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5">
@@ -919,7 +960,7 @@ export const NotesSidebar = ({
 											</div>
 											<div className="ml-6 flex flex-wrap gap-1.5">
 												{task.assignee && (
-													<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-400">
+													<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-secondary/20 text-secondary">
 														@ {task.assignee}
 													</span>
 												)}
@@ -1018,7 +1059,7 @@ const AdminPushButton = ({ workspaceId, actionItems }: AdminPushProps) => {
 					priority: (item.priority as "low" | "medium" | "high") || "medium",
 				})),
 			});
-			toast.success(`${actionItems.length} tasks pushed to dashboard!`);
+			toast.success(`${actionItems.length} tasks pushed to dashboard.`);
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : "Failed to push tasks");
 		} finally {
@@ -1028,7 +1069,7 @@ const AdminPushButton = ({ workspaceId, actionItems }: AdminPushProps) => {
 
 	return (
 		<Button
-			className="w-full rounded-full h-9 text-xs font-medium gap-2 border-orange-200 text-orange-700 hover:bg-orange-50 mt-2"
+			className="w-full rounded-full h-9 text-xs font-medium gap-2 border-orange-500/20 bg-orange-500/5 text-orange-400 hover:bg-orange-500 hover:text-white mt-2"
 			disabled={pushing}
 			onClick={handlePush}
 			variant="outline"
@@ -1102,6 +1143,7 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 			<div className="flex items-center justify-between p-5 pb-3 border-b border-white/5">
 				<h2 className="text-lg font-semibold text-white">In-call messages</h2>
 				<Button
+					aria-label="Close chat"
 					className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full h-9 w-9"
 					onClick={onClose}
 					size="icon"
@@ -1129,7 +1171,7 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 				shift position, so index is a safe key */}
 				{messages.map((msg, i) => (
 					<div className="flex gap-3" key={i}>
-						<div className="w-8 h-8 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xs font-medium shrink-0">
+						<div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center text-xs font-medium shrink-0">
 							{msg.name[0]?.toUpperCase() || "A"}
 						</div>
 						<div className="flex-1 min-w-0">
@@ -1149,7 +1191,8 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 			<div className="p-4 border-t border-white/5">
 				<div className="flex items-center gap-2">
 					<input
-						className="flex-1 text-sm bg-white/5 border-0 rounded-full px-4 py-2.5 focus:bg-white/10 focus:ring-1 focus:ring-indigo-500 outline-none text-white placeholder:text-gray-500"
+						aria-label="Send a message to everyone"
+						className="flex-1 text-sm bg-white/5 border-0 rounded-full px-4 py-2.5 focus:bg-white/10 focus:ring-1 focus:ring-secondary outline-none text-white placeholder:text-gray-500"
 						onChange={(e) => setInput(e.target.value)}
 						onKeyDown={(e) => {
 							if (e.key === "Enter") sendMessage();
@@ -1159,7 +1202,8 @@ export const MeetingChat = ({ onClose }: MeetingChatProps) => {
 						value={input}
 					/>
 					<Button
-						className="rounded-full h-9 w-9 bg-[#0b57d0] hover:bg-[#0b57d0]/90 shrink-0"
+						aria-label="Send message"
+						className="rounded-full h-9 w-9 bg-secondary hover:bg-secondary/90 shrink-0"
 						disabled={!input.trim()}
 						onClick={sendMessage}
 						size="icon"

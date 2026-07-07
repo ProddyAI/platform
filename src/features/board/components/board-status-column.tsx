@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,12 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { IssuePriority } from "./board-issue-row";
 import BoardIssueRow from "./board-issue-row";
@@ -127,10 +134,10 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 		try {
 			await onCreateIssue(status._id, newTitle.trim());
 			setNewTitle("");
+			setCreating(false);
 		} catch (error) {
 			console.error("Failed to create issue:", error);
-		} finally {
-			setCreating(false);
+			toast.error("Failed to create issue");
 		}
 	};
 
@@ -148,30 +155,33 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 
 	return (
 		<div
-			ref={setSortableRef}
-			style={style}
-			{...attributes}
 			className={cn(
-				"flex flex-col bg-background dark:bg-gray-900 rounded-xl border border-border/70 dark:border-gray-800 shadow-sm w-full",
+				"flex flex-col bg-background rounded-xl border border-border/70 shadow-sm w-full",
 				isDragging && "opacity-50 shadow-xl border-dashed",
 				isDockedEmpty ? "h-auto" : "h-full",
 				isFocused &&
 					"ring-2 ring-primary/60 ring-offset-2 ring-offset-background"
 			)}
+			ref={setSortableRef}
+			style={style}
 		>
-			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70 dark:border-gray-800 rounded-t-xl bg-muted/50 dark:bg-gray-800/40 flex-shrink-0">
-				<div
+			<div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/70 rounded-t-xl bg-muted/50 flex-shrink-0">
+				<button
+					aria-label="Drag to reorder column"
 					className={cn(
-						"cursor-grab hover:bg-muted rounded p-0.5 transition-colors",
+						"cursor-grab hover:bg-muted rounded p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
 						disableColumnDrag && "cursor-default opacity-0 pointer-events-none"
 					)}
+					disabled={disableColumnDrag}
+					type="button"
+					{...attributes}
 					{...listeners}
 				>
 					<GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
-				</div>
+				</button>
 
 				<span
-					className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10"
+					className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
 					style={{ backgroundColor: status.color }}
 				/>
 
@@ -180,31 +190,41 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 				</span>
 
 				<Badge
-					className="text-[11px] h-5 px-1.5 font-normal bg-muted/60 dark:bg-gray-700/60 text-muted-foreground"
+					className="text-[11px] h-5 px-1.5 font-normal bg-muted/60 text-muted-foreground"
 					variant="secondary"
 				>
 					{issues.length}
 				</Badge>
 
-				<Button
-					className="h-6 w-6 hover:bg-muted dark:hover:bg-gray-700"
-					disabled={disableCreateIssue}
-					onClick={handleStartCreating}
-					size="icon"
-					title={
-						disableCreateIssue
-							? "Issue limit reached. Upgrade plan to create issues."
-							: "Add issue"
-					}
-					variant="ghost"
-				>
-					<Plus className="w-3.5 h-3.5" />
-				</Button>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span>
+								<Button
+									className="h-6 w-6 hover:bg-muted"
+									disabled={disableCreateIssue}
+									onClick={handleStartCreating}
+									size="icon"
+									variant="ghost"
+								>
+									<Plus className="w-3.5 h-3.5" />
+								</Button>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent side="top">
+							<p>
+								{disableCreateIssue
+									? "Issue limit reached. Upgrade plan to create issues."
+									: "Add issue"}
+							</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
-							className="h-6 w-6 hover:bg-muted dark:hover:bg-gray-700"
+							className="h-6 w-6 hover:bg-muted"
 							size="icon"
 							variant="ghost"
 						>
@@ -233,7 +253,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 					isDockedEmpty && !showDockedDropHint
 						? "min-h-2 overflow-hidden"
 						: "flex-1 flex flex-col min-h-0 overflow-y-auto",
-					isOver && "bg-muted/40 dark:bg-gray-800/40"
+					isOver && "bg-muted/40"
 				)}
 				ref={setDropRef}
 			>
@@ -259,7 +279,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 						{isOver && (
 							<div
 								className={cn(
-									"rounded-md border-2 border-dashed border-primary/40 bg-primary/5 flex items-center justify-center text-xs text-primary/60",
+									"rounded-md border-2 border-dashed border-primary/40 bg-primary/5 flex items-center justify-center text-xs text-primary",
 									isEmpty ? "h-12" : "h-8",
 									issues.length > 0 && "mt-1"
 								)}
@@ -289,7 +309,7 @@ const BoardStatusColumn: React.FC<BoardStatusColumnProps> = ({
 
 				{!creating && issues.length > 0 && (
 					<button
-						className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 dark:hover:bg-gray-800/40 rounded-b-xl transition-colors border-t border-border/60 dark:border-gray-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
+						className="flex items-center gap-2 px-4 py-2 w-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-b-xl transition-colors border-t border-border/60 disabled:opacity-50 disabled:cursor-not-allowed"
 						disabled={disableCreateIssue}
 						onClick={handleStartCreating}
 						type="button"

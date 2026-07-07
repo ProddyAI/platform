@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import React, { useRef } from "react";
 import {
@@ -27,6 +27,7 @@ interface AnimatedArrowProps {
 	endX: number;
 	endY: number;
 	delay: number;
+	reduceMotion: boolean;
 }
 
 // Arrow component with animated dots
@@ -36,6 +37,7 @@ const AnimatedArrow: React.FC<AnimatedArrowProps> = ({
 	endX,
 	endY,
 	delay,
+	reduceMotion,
 }) => {
 	const midX = (startX + endX) / 2;
 	const curveOffsetY = -30;
@@ -47,32 +49,35 @@ const AnimatedArrow: React.FC<AnimatedArrowProps> = ({
 			<path
 				d={path}
 				fill="none"
-				stroke="rgba(209, 213, 219, 0.5)"
 				strokeLinecap="round"
 				strokeWidth={1.5}
+				style={{ stroke: "hsl(var(--border))" }}
 			/>
-			{[0, 1, 2].map((i) => (
-				<g key={i}>
-					<circle
-						fill="var(--primary)"
-						filter="drop-shadow(0 0 2px rgba(99, 102, 241, 0.6))"
-						r={3}
-					>
-						<animateMotion
-							begin={`${delay + i * 0.5}s`}
-							dur="3s"
-							path={path}
-							repeatCount="indefinite"
-							rotate="auto"
-						/>
-					</circle>
-				</g>
-			))}
+			{!reduceMotion &&
+				[0, 1, 2].map((i) => (
+					<g key={i}>
+						<circle
+							r={3}
+							style={{
+								fill: "hsl(var(--primary))",
+								filter: "drop-shadow(0 0 2px hsl(var(--primary) / 0.6))",
+							}}
+						>
+							<animateMotion
+								begin={`${delay + i * 0.5}s`}
+								dur="3s"
+								path={path}
+								repeatCount="indefinite"
+								rotate="auto"
+							/>
+						</circle>
+					</g>
+				))}
 			<polygon
-				fill="rgba(209, 213, 219, 0.7)"
 				points={`${endX - 5},${endY - 5} ${endX},${endY} ${endX - 5},${endY + 5}`}
 				rx="1"
 				ry="1"
+				style={{ fill: "hsl(var(--muted-foreground) / 0.6)" }}
 				transform={`rotate(${Math.atan2(endY - (startY + curveOffsetY), endX - midX) * (180 / Math.PI)}, ${endX}, ${endY})`}
 			/>
 		</svg>
@@ -82,31 +87,28 @@ const AnimatedArrow: React.FC<AnimatedArrowProps> = ({
 export const ReplacementSection = () => {
 	const sectionRef = useRef<HTMLDivElement>(null);
 	const isInView = useInView(sectionRef, { once: true, margin: "-100px 0px" });
+	const shouldReduceMotion = useReducedMotion();
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const toolRefs = useRef<(HTMLDivElement | null)[]>([]);
-	const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 });
+	const logoRef = useRef<HTMLDivElement>(null);
+	const [containerWidth, setContainerWidth] = React.useState(0);
 	const [toolPositions, setToolPositions] = React.useState<
 		{ x: number; y: number }[]
 	>([]);
+	const [logoPosition, setLogoPosition] = React.useState<{
+		x: number;
+		y: number;
+	} | null>(null);
 
-	React.useEffect(() => {
-		const updateDimensions = () => {
-			if (containerRef.current) {
-				setDimensions({
-					width: containerRef.current.offsetWidth,
-					height: containerRef.current.offsetHeight,
-				});
-			}
-		};
-		updateDimensions();
-		window.addEventListener("resize", updateDimensions);
-		return () => window.removeEventListener("resize", updateDimensions);
-	}, []);
-
-	React.useEffect(() => {
+	// Measures tool/logo card centers relative to the container so arrows can
+	// target real DOM positions instead of guessed percentages. Re-run on
+	// resize and once the entrance animation settles (cards animate in from an
+	// offset, so a measurement taken mid-animation would be wrong).
+	const measurePositions = React.useCallback(() => {
 		if (!containerRef.current) return;
 		const containerRect = containerRef.current.getBoundingClientRect();
+		setContainerWidth(containerRect.width);
 		const positions = toolRefs.current.map((ref) => {
 			if (!ref) return { x: 0, y: 0 };
 			const rect = ref.getBoundingClientRect();
@@ -116,24 +118,38 @@ export const ReplacementSection = () => {
 			};
 		});
 		setToolPositions(positions);
+		if (logoRef.current) {
+			const logoRect = logoRef.current.getBoundingClientRect();
+			setLogoPosition({
+				x: logoRect.left - containerRect.left + logoRect.width / 2,
+				y: logoRect.top - containerRect.top + logoRect.height / 2,
+			});
+		}
 	}, []);
+
+	React.useEffect(() => {
+		measurePositions();
+		const container = containerRef.current;
+		if (!container) return;
+		const observer = new ResizeObserver(() => measurePositions());
+		observer.observe(container);
+		return () => observer.disconnect();
+	}, [measurePositions]);
 
 	return (
 		<section
-			className="py-16 md:py-24 bg-gray-50 relative overflow-hidden w-full"
+			className="py-16 md:py-24 bg-muted/30 relative overflow-hidden w-full"
 			ref={sectionRef}
 		>
-			{/* Background decorative elements */}
-			<div className="absolute inset-0 overflow-hidden">
-				<div className="absolute top-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-3xl" />
-				<div className="absolute bottom-[20%] -left-[5%] w-[30%] h-[30%] rounded-full bg-secondary/5 blur-3xl" />
-			</div>
-
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-7xl">
 				<motion.h2
-					animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-					className="text-3xl md:text-4xl font-bold text-center mb-6 text-gray-900"
-					initial={{ opacity: 0, y: 20 }}
+					animate={
+						isInView
+							? { opacity: 1, y: 0 }
+							: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
+					}
+					className="text-3xl md:text-4xl font-bold text-center mb-6 text-foreground"
+					initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 					transition={{ duration: 0.5, delay: 0.1 }}
 				>
 					Replace Multiple Tools with{" "}
@@ -158,11 +174,12 @@ export const ReplacementSection = () => {
 												opacity: 1,
 												scale: 1,
 											}
-										: { x: -50, opacity: 0 }
+										: { x: shouldReduceMotion ? 0 : -50, opacity: 0 }
 								}
-								className="flex items-center p-3 rounded-lg shadow-md bg-white border border-gray-100 hover:border-primary/20"
-								initial={{ x: -50, opacity: 0 }}
+								className="flex items-center p-3 rounded-lg shadow-md bg-card border border-border hover:border-primary/20"
+								initial={{ x: shouldReduceMotion ? 0 : -50, opacity: 0 }}
 								key={tool.name}
+								onAnimationComplete={measurePositions}
 								ref={(el) => {
 									toolRefs.current[index] = el;
 								}}
@@ -178,39 +195,48 @@ export const ReplacementSection = () => {
 								<motion.div>
 									<tool.icon className="mr-2" color={tool.color} size={24} />
 								</motion.div>
-								<span className="font-medium text-gray-800">{tool.name}</span>
+								<span className="font-medium text-card-foreground">
+									{tool.name}
+								</span>
 							</motion.div>
 						))}
 					</div>
 
 					{/* Arrows */}
-					{dimensions.width > 0 &&
+					{containerWidth > 0 &&
+						logoPosition &&
 						toolPositions.length === tools.length &&
 						tools.map((tool, index) => {
 							const { x, y } = toolPositions[index];
-							// Adjusted endX to align with the new Proddy center
-							const endX = dimensions.width * 0.85; // Adjusted from 0.70 to 0.85
-							const endY = dimensions.height / 2;
 							return (
 								<AnimatedArrow
 									delay={index * 0.2}
-									endX={endX}
-									endY={endY}
+									endX={logoPosition.x}
+									endY={logoPosition.y}
 									key={`arrow-${tool.name}`}
+									reduceMotion={Boolean(shouldReduceMotion)}
 									startX={x}
 									startY={y}
 								/>
 							);
 						})}
 
-					{/* Right: Proddy - Adjusted to center horizontally at the new arrow convergence point */}
+					{/* Right: Proddy */}
 					<motion.div
-						animate={isInView ? { x: 0, opacity: 1 } : { x: 50, opacity: 0 }} // Adjusted left-[70%] to left-[85%]
+						animate={
+							isInView
+								? { x: 0, opacity: 1 }
+								: { x: shouldReduceMotion ? 0 : 50, opacity: 0 }
+						}
 						className="absolute left-[70%] top-[40%] -translate-x-1/2 -translate-y-1/2 w-1/3 flex justify-center z-30"
-						initial={{ x: 50, opacity: 0 }}
+						initial={{ x: shouldReduceMotion ? 0 : 50, opacity: 0 }}
+						onAnimationComplete={measurePositions}
 						transition={{ duration: 0.7, delay: 0.5 }}
 					>
-						<div className="bg-primary text-white p-6 md:p-8 rounded-2xl shadow-lg flex flex-col items-center justify-center">
+						<div
+							className="bg-primary text-primary-foreground p-6 md:p-8 rounded-2xl shadow-lg flex flex-col items-center justify-center"
+							ref={logoRef}
+						>
 							<div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center">
 								<div className="relative w-full h-full">
 									<Image

@@ -48,7 +48,7 @@ export default PricingPage;
 
 function HeroSection() {
 	return (
-		<section className="py-20 bg-white">
+		<section className="py-20 bg-background">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="text-center">
 					<motion.div
@@ -201,7 +201,7 @@ function ComparisonTable() {
 		},
 	];
 	return (
-		<section className="py-16 bg-white" id="comparison">
+		<section className="py-16 bg-background" id="comparison">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="mb-10">
 					<h2 className="text-3xl font-semibold text-gray-900">
@@ -263,7 +263,7 @@ function FreePlan() {
 	return (
 		<motion.div
 			animate={{ opacity: 1, y: 0 }}
-			className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 relative"
+			className="bg-card rounded-xl shadow-sm p-8 border border-border relative"
 			initial={{ opacity: 0, y: 20 }}
 			transition={{ duration: 0.5, delay: 0.3 }}
 		>
@@ -310,7 +310,7 @@ function StarterPlan() {
 	return (
 		<motion.div
 			animate={{ opacity: 1, y: 0 }}
-			className="bg-white rounded-xl shadow-sm p-8 border border-primary/20 relative ring-1 ring-primary/20"
+			className="bg-card rounded-xl shadow-sm p-8 border border-primary/20 relative ring-1 ring-primary/20"
 			initial={{ opacity: 0, y: 20 }}
 			transition={{ duration: 0.5, delay: 0.4 }}
 		>
@@ -361,7 +361,7 @@ function EnterprisePlan() {
 	return (
 		<motion.div
 			animate={{ opacity: 1, y: 0 }}
-			className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 relative"
+			className="bg-card rounded-xl shadow-sm p-8 border border-border relative"
 			initial={{ opacity: 0, y: 20 }}
 			transition={{ duration: 0.5, delay: 0.6 }}
 		>

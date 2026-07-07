@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { cn } from "@/lib/utils";
 
 interface ChannelPickerProps {
 	open: boolean;
@@ -34,11 +35,13 @@ export const ChannelPicker = ({
 		[]
 	);
 	const [searchTerm, setSearchTerm] = useState("");
+	const [highlightedIndex, setHighlightedIndex] = useState(0);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		if (open) {
 			setSearchTerm(searchQuery || "");
+			setHighlightedIndex(0);
 		}
 	}, [open, searchQuery]);
 
@@ -79,14 +82,52 @@ export const ChannelPicker = ({
 		e.stopPropagation();
 	};
 
+	const handlePickerKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		if (event.key === "Escape") {
+			event.preventDefault();
+			onClose();
+			return;
+		}
+
+		if (event.key === "ArrowDown") {
+			event.preventDefault();
+			setHighlightedIndex((prev) =>
+				filteredChannels.length === 0 ? 0 : (prev + 1) % filteredChannels.length
+			);
+			return;
+		}
+
+		if (event.key === "ArrowUp") {
+			event.preventDefault();
+			setHighlightedIndex((prev) =>
+				filteredChannels.length === 0
+					? 0
+					: (prev - 1 + filteredChannels.length) % filteredChannels.length
+			);
+			return;
+		}
+
+		if (event.key === "Enter") {
+			const channel = filteredChannels[highlightedIndex];
+			if (channel) {
+				event.preventDefault();
+				handleSelect(channel._id, channel.name);
+			}
+			return;
+		}
+
+		event.stopPropagation();
+	};
+
+	const activeChannel = filteredChannels[highlightedIndex];
+
 	return (
 		<div
-			className="fixed bottom-[120px] left-0 right-0 mx-auto w-[90%] max-w-[500px] bg-white border border-gray-200 rounded-md shadow-lg z-[9999] overflow-hidden"
+			className="fixed bottom-[120px] left-0 right-0 mx-auto w-[90%] max-w-[500px] bg-popover border border-border rounded-md shadow-lg z-[9999] overflow-hidden"
 			onClick={handlePickerClick}
-			onKeyDown={(event) => event.stopPropagation()}
-			role="presentation"
+			onKeyDown={handlePickerKeyDown}
 		>
-			<div className="border-b p-2 bg-gray-50">
+			<div className="border-b p-2 bg-muted">
 				<div className="flex items-center">
 					<Hash className="mr-2 h-4 w-4 text-muted-foreground" />
 					<span className="text-sm font-medium">Mention a channel</span>
@@ -103,12 +144,25 @@ export const ChannelPicker = ({
 						<p className="text-sm text-muted-foreground">No channels found</p>
 					</div>
 				) : (
-					<div className="space-y-1">
-						{filteredChannels.map((channel) => (
+					<div
+						aria-label="Channels"
+						className="space-y-1"
+						id="channel-picker-listbox"
+						role="listbox"
+					>
+						{filteredChannels.map((channel, index) => (
 							<Button
-								className="w-full justify-start px-2 py-1.5 h-auto hover:bg-gray-100"
+								aria-selected={index === highlightedIndex}
+								className={cn(
+									"w-full justify-start px-2 py-1.5 h-auto hover:bg-accent hover:text-accent-foreground",
+									index === highlightedIndex &&
+										"bg-accent text-accent-foreground"
+								)}
+								id={`channel-option-${channel._id}`}
 								key={channel._id}
 								onClick={() => handleSelect(channel._id, channel.name)}
+								onMouseEnter={() => setHighlightedIndex(index)}
+								role="option"
 								variant="ghost"
 							>
 								<div className="flex items-center gap-2">
@@ -121,14 +175,25 @@ export const ChannelPicker = ({
 				)}
 			</div>
 
-			<div className="border-t p-2 bg-gray-50">
+			<div className="border-t p-2 bg-muted">
 				<div className="relative">
 					<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
 					<Input
+						aria-activedescendant={
+							activeChannel ? `channel-option-${activeChannel._id}` : undefined
+						}
+						aria-autocomplete="list"
+						aria-controls="channel-picker-listbox"
+						aria-expanded={open}
+						aria-label="Search channels"
 						className="pl-8"
-						onChange={(e) => setSearchTerm(e.target.value)}
+						onChange={(e) => {
+							setSearchTerm(e.target.value);
+							setHighlightedIndex(0);
+						}}
 						placeholder="Search channels..."
 						ref={searchInputRef}
+						role="combobox"
 						value={searchTerm}
 					/>
 				</div>

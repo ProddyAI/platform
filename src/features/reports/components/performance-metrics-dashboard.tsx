@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { format, subDays } from "date-fns";
 import { Award, CheckSquare, Loader, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,18 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	HorizontalBarChart,
 	LineChart,
+	NEUTRAL_COLOR,
 	PieChart,
+	PRIORITY_COLORS,
+	PRIORITY_LABELS,
+	STATUS_COLORS,
+	STATUS_LABELS,
+	seriesColorClass,
 } from "@/features/reports/components/charts";
 
 interface PerformanceMetricsDashboardProps {
@@ -33,23 +40,23 @@ export const PerformanceMetricsDashboard = ({
 }: PerformanceMetricsDashboardProps) => {
 	const [_activeTab, setActiveTab] = useState("tasks");
 
-	// Calculate date ranges
-	const endDate = useMemo(() => Date.now(), []);
-	const startDate = useMemo(() => {
+	// Calculate date ranges. Recompute "now" whenever the range changes so
+	// switching 1d/7d/30d doesn't keep querying against a timestamp frozen at
+	// mount.
+	const { startDate, endDate } = useMemo(() => {
+		const now = Date.now();
 		switch (timeRange) {
 			case "1d":
-				return subDays(endDate, 1).getTime();
-			case "7d":
-				return subDays(endDate, 7).getTime();
+				return { startDate: subDays(now, 1).getTime(), endDate: now };
 			case "30d":
-				return subDays(endDate, 30).getTime();
+				return { startDate: subDays(now, 30).getTime(), endDate: now };
 			default:
-				return subDays(endDate, 7).getTime();
+				return { startDate: subDays(now, 7).getTime(), endDate: now };
 		}
-	}, [timeRange, endDate]);
+	}, [timeRange]);
 
 	// Fetch task analytics
-	const taskData = useQuery(
+	const rawTaskData = useQuery(
 		api.workspace.analytics.getTaskAnalytics,
 		workspaceId
 			? {
@@ -61,7 +68,7 @@ export const PerformanceMetricsDashboard = ({
 	);
 
 	// Fetch user activity data
-	const userActivityData = useQuery(
+	const rawUserActivityData = useQuery(
 		api.workspace.analytics.getUserActivitySummary,
 		workspaceId
 			? {
@@ -72,7 +79,22 @@ export const PerformanceMetricsDashboard = ({
 			: "skip"
 	);
 
-	const isLoading = !taskData || !userActivityData;
+	// Keep the last successful result on screen while a time-range change is
+	// refetching, instead of blanking the whole dashboard back to a spinner.
+	const taskDataRef = useRef(rawTaskData);
+	if (rawTaskData !== undefined) taskDataRef.current = rawTaskData;
+	const taskData = taskDataRef.current;
+
+	const userActivityDataRef = useRef(rawUserActivityData);
+	if (rawUserActivityData !== undefined) {
+		userActivityDataRef.current = rawUserActivityData;
+	}
+	const userActivityData = userActivityDataRef.current;
+
+	const isLoading = taskData === undefined || userActivityData === undefined;
+	const isRefreshing =
+		!isLoading &&
+		(rawTaskData === undefined || rawUserActivityData === undefined);
 
 	// Check if we have actual task data
 	const hasTaskData = useMemo(() => {
@@ -90,135 +112,162 @@ export const PerformanceMetricsDashboard = ({
 		return Math.round((taskData.completedTasks / taskData.totalTasks) * 100);
 	}, [taskData]);
 
-	// Calculate average task completion time (mock data - would come from backend)
-	const avgCompletionTime = useMemo(() => {
-		if (!hasTaskData) return null;
-		return 2.5; // days
-	}, [hasTaskData]);
+	// Task distribution by category (real data already returned by the
+	// analytics query; there is no per-assignee breakdown available yet).
+	// Shows every category (not just the top 5) so this can absorb the
+	// "Tasks by Category" chart that used to live in the reports page's
+	// standalone Tasks tab without dropping any category from the list.
+	const tasksByCategory = useMemo(() => {
+		if (!taskData || !hasTaskData) return [];
 
-	// Calculate on-time completion rate (mock data - would come from backend)
-	const onTimeCompletionRate = useMemo(() => {
-		if (!hasTaskData) return null;
-		return 78; // percent
-	}, [hasTaskData]);
+		return taskData.categoryData.map((category) => ({
+			label: category.name,
+			value: category.count,
+			share: taskData.totalTasks > 0 ? category.count / taskData.totalTasks : 0,
+		}));
+	}, [taskData, hasTaskData]);
 
-	// Calculate task distribution by assignee (creator in this case)
-	const tasksByAssignee = useMemo(() => {
-		if (!userActivityData || !taskData || !hasTaskData || !hasUserData)
-			return [];
-
-		// Generate mock data since we don't have real task assignment data
-		return userActivityData
-			.filter((user) => user.member?.user?._id) // Only users with IDs
-			.map((user) => {
-				const _messageCount = user.messageCount || 0;
-				const taskValue = Math.floor(5 + Math.random() * 10);
-				const completionRate = 0.4 + Math.random() * 0.5; // Random completion rate between 40-90%
-
-				return {
-					label: user.member?.user?.name || "Unknown",
-					value: taskValue,
-					color: "bg-pink-500",
-					completionRate,
-				};
-			})
-			.sort((a, b) => b.value - a.value)
-			.slice(0, 5);
-	}, [userActivityData, taskData, hasTaskData, hasUserData]);
-
-	// Mock data for task priority distribution
-	const _taskPriorityData = useMemo(() => {
-		if (!taskData) return [];
-
-		return [
-			{ label: "High", value: taskData.priorityCounts.high, color: "#ec4899" },
-			{
-				label: "Medium",
-				value: taskData.priorityCounts.medium,
-				color: "#f472b6",
-			},
-			{ label: "Low", value: taskData.priorityCounts.low, color: "#fb7185" },
-		].filter((item) => item.value > 0);
-	}, [taskData]);
-
-	// Mock data for task status distribution
+	// Task status distribution
 	const taskStatusData = useMemo(() => {
 		if (!taskData || !hasTaskData) return [];
 
 		return [
 			{
-				label: "Completed",
+				label: STATUS_LABELS.completed,
 				value: taskData.statusCounts.completed,
-				color: "#22c55e",
+				color: STATUS_COLORS.completed,
 			},
 			{
-				label: "In Progress",
+				label: STATUS_LABELS.in_progress,
 				value: taskData.statusCounts.in_progress,
-				color: "#3b82f6",
+				color: STATUS_COLORS.in_progress,
 			},
 			{
-				label: "Not Started",
+				label: STATUS_LABELS.not_started,
 				value: taskData.statusCounts.not_started,
-				color: "#a855f7",
+				color: STATUS_COLORS.not_started,
 			},
 			{
-				label: "On Hold",
+				label: STATUS_LABELS.on_hold,
 				value: taskData.statusCounts.on_hold,
-				color: "#eab308",
+				color: STATUS_COLORS.on_hold,
 			},
 			{
-				label: "Cancelled",
+				label: STATUS_LABELS.cancelled,
 				value: taskData.statusCounts.cancelled,
-				color: "#ef4444",
+				color: STATUS_COLORS.cancelled,
 			},
 		].filter((item) => item.value > 0);
 	}, [taskData, hasTaskData]);
 
-	// Mock data for task completion trend
-	const taskCompletionTrend = useMemo(() => {
+	// Task priority distribution — relocated here from the reports page's old
+	// standalone Tasks tab, which duplicated the rest of this dashboard's task
+	// charts but was the only place priority breakdown was shown.
+	const taskPriorityData = useMemo(() => {
+		if (!taskData || !hasTaskData) return [];
+
+		return [
+			{
+				label: PRIORITY_LABELS.high,
+				value: taskData.priorityCounts.high,
+				color: PRIORITY_COLORS.high,
+			},
+			{
+				label: PRIORITY_LABELS.medium,
+				value: taskData.priorityCounts.medium,
+				color: PRIORITY_COLORS.medium,
+			},
+			{
+				label: PRIORITY_LABELS.low,
+				value: taskData.priorityCounts.low,
+				color: PRIORITY_COLORS.low,
+			},
+		].filter((item) => item.value > 0);
+	}, [taskData, hasTaskData]);
+
+	// Tasks created per day (real data). The backend doesn't track a separate
+	// completion date, so this reflects creation volume, not completions.
+	const tasksCreatedTrend = useMemo(() => {
 		if (!taskData?.tasksByDate || !hasTaskData) return [];
 
 		return taskData.tasksByDate.map((item) => ({
 			label: format(new Date(item.date), "MMM dd"),
-			value: Math.round(item.count * 0.7), // Mock data - in real app would be actual completed tasks
+			value: item.count,
 		}));
 	}, [taskData, hasTaskData]);
 
-	// User performance metrics
+	// User performance, derived only from activity the backend actually
+	// tracks (messages, reactions, time spent in channels).
 	const userPerformanceData = useMemo(() => {
 		if (!userActivityData || !hasUserData) return [];
 
 		return userActivityData
 			.filter((user) => {
-				const messageCount = user.messageCount || 0;
-				return messageCount > 0; // Only include users with messages
+				return (user.messageCount || 0) > 0 || (user.reactionCount || 0) > 0;
 			})
 			.map((user) => {
-				const messageCount = user.messageCount || 0;
-
-				// Generate random data for demonstration
-				const taskCount = Math.floor(3 + Math.random() * 10);
-				const taskCompletion = Math.floor(50 + Math.random() * 50); // Between 50-100%
-				const responseTime = Math.floor(Math.random() * 30 + 5); // Between 5-35 minutes
-				const activityScore = Math.floor(messageCount * 0.3 + taskCount * 0.7);
+				const messages = user.messageCount || 0;
+				const reactions = user.reactionCount || 0;
 
 				return {
 					name: user.member?.user?.name || "Unknown",
-					taskCompletion,
-					responseTime,
-					activityScore,
-					messages: messageCount,
-					tasks: taskCount,
+					messages,
+					reactions,
+					timeSpentMinutes: Math.round((user.totalTimeSpent || 0) / 60000),
+					activityScore: messages + reactions,
 				};
 			})
 			.sort((a, b) => b.activityScore - a.activityScore)
 			.slice(0, 5);
 	}, [userActivityData, hasUserData]);
 
+	const maxActivityScore = useMemo(() => {
+		return userPerformanceData.reduce(
+			(max, user) => Math.max(max, user.activityScore),
+			0
+		);
+	}, [userPerformanceData]);
+
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center h-64">
-				<Loader className="h-8 w-8 animate-spin text-secondary" />
+			<div className="space-y-6">
+				<div className="flex justify-between items-center">
+					<h2 className="text-xl font-semibold">Performance Metrics</h2>
+				</div>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+					{/* Fixed-size loading placeholders with no underlying data — index is a safe key here */}
+					{Array.from({ length: 3 }).map((_, index) => (
+						<Card key={index}>
+							<CardHeader className="pb-2">
+								<Skeleton className="h-4 w-32" />
+							</CardHeader>
+							<CardContent className="space-y-3">
+								<Skeleton className="h-7 w-20" />
+								<Skeleton className="h-2 w-full" />
+							</CardContent>
+						</Card>
+					))}
+				</div>
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+					<Card>
+						<CardHeader>
+							<Skeleton className="h-5 w-40" />
+							<Skeleton className="h-4 w-52 mt-1" />
+						</CardHeader>
+						<CardContent>
+							<Skeleton className="h-[300px] w-full" />
+						</CardContent>
+					</Card>
+					<Card>
+						<CardHeader>
+							<Skeleton className="h-5 w-40" />
+							<Skeleton className="h-4 w-52 mt-1" />
+						</CardHeader>
+						<CardContent className="flex items-center justify-center">
+							<Skeleton className="h-[300px] w-[300px] rounded-full" />
+						</CardContent>
+					</Card>
+				</div>
 			</div>
 		);
 	}
@@ -227,6 +276,12 @@ export const PerformanceMetricsDashboard = ({
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<h2 className="text-xl font-semibold">Performance Metrics</h2>
+				{isRefreshing && (
+					<Loader
+						aria-label="Refreshing metrics"
+						className="h-4 w-4 animate-spin text-muted-foreground"
+					/>
+				)}
 			</div>
 
 			{/* Performance tabs */}
@@ -248,6 +303,74 @@ export const PerformanceMetricsDashboard = ({
 
 				{/* Task Performance Tab */}
 				<TabsContent className="space-y-4" value="tasks">
+					{/* Volume metrics — relocated from the reports page's old standalone
+					    Tasks tab; "Completed Tasks" isn't repeated here since the Task
+					    Completion Rate card below already covers that same metric. */}
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<Card className={!hasTaskData ? "opacity-50" : ""}>
+							<CardHeader className="pb-2">
+								<CardTitle className="text-sm font-medium text-muted-foreground">
+									Total Tasks
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="flex items-center">
+									<CheckSquare className="h-5 w-5 text-secondary mr-2" />
+									<div className="text-2xl font-bold">
+										{taskData?.totalTasks ?? 0}
+									</div>
+								</div>
+								<CardDescription className="mt-2">
+									in the selected time period
+								</CardDescription>
+							</CardContent>
+						</Card>
+
+						<Card className={!hasTaskData ? "opacity-50" : ""}>
+							<CardHeader className="pb-2">
+								<CardTitle className="text-sm font-medium text-muted-foreground">
+									In Progress
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="flex items-center">
+									<CheckSquare
+										className="h-5 w-5 mr-2"
+										style={{ color: STATUS_COLORS.in_progress }}
+									/>
+									<div className="text-2xl font-bold">
+										{taskData?.statusCounts.in_progress ?? 0}
+									</div>
+								</div>
+								<CardDescription className="mt-2">
+									tasks currently in progress
+								</CardDescription>
+							</CardContent>
+						</Card>
+
+						<Card className={!hasTaskData ? "opacity-50" : ""}>
+							<CardHeader className="pb-2">
+								<CardTitle className="text-sm font-medium text-muted-foreground">
+									High Priority
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="flex items-center">
+									<CheckSquare
+										className="h-5 w-5 mr-2"
+										style={{ color: PRIORITY_COLORS.high }}
+									/>
+									<div className="text-2xl font-bold">
+										{taskData?.priorityCounts.high ?? 0}
+									</div>
+								</div>
+								<CardDescription className="mt-2">
+									high priority tasks
+								</CardDescription>
+							</CardContent>
+						</Card>
+					</div>
+
 					{/* Key metrics */}
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 						<Card className={!hasTaskData ? "opacity-50" : ""}>
@@ -282,7 +405,7 @@ export const PerformanceMetricsDashboard = ({
 											</div>
 											<Progress className="h-2" value={taskCompletionRate} />
 										</div>
-										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
+										<CardDescription className="mt-2">
 											{taskData?.completedTasks || 0} of{" "}
 											{taskData?.totalTasks || 0} tasks completed
 										</CardDescription>
@@ -293,8 +416,8 @@ export const PerformanceMetricsDashboard = ({
 											<div className="text-2xl font-bold text-muted-foreground/40">
 												0%
 											</div>
-											<Badge className="opacity-50" variant="secondary">
-												Needs Improvement
+											<Badge className="opacity-50" variant="outline">
+												No data yet
 											</Badge>
 										</div>
 										<Progress className="h-2 opacity-30" value={0} />
@@ -306,116 +429,45 @@ export const PerformanceMetricsDashboard = ({
 							</CardContent>
 						</Card>
 
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
+						<Card className="opacity-50">
 							<CardHeader className="pb-2">
 								<CardTitle className="text-sm font-medium text-muted-foreground">
 									Avg. Completion Time
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								{hasTaskData && avgCompletionTime != null ? (
-									<>
-										<div className="space-y-2">
-											<div className="flex items-center justify-between">
-												<div className="text-2xl font-bold">
-													{avgCompletionTime} days
-												</div>
-												<Badge
-													variant={
-														avgCompletionTime <= 2
-															? "success"
-															: avgCompletionTime <= 4
-																? "warning"
-																: "destructive"
-													}
-												>
-													{avgCompletionTime <= 2
-														? "Fast"
-														: avgCompletionTime <= 4
-															? "Average"
-															: "Slow"}
-												</Badge>
-											</div>
-											<Progress
-												className="h-2"
-												value={100 - avgCompletionTime * 10}
-											/>
+								<div className="space-y-2">
+									<div className="flex items-center justify-between">
+										<div className="text-2xl font-bold text-muted-foreground/40">
+											—
 										</div>
-										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
-											Target: 2 days per task
-										</CardDescription>
-									</>
-								) : (
-									<div className="space-y-2">
-										<div className="flex items-center justify-between">
-											<div className="text-2xl font-bold text-muted-foreground/40">
-												2.5 days
-											</div>
-											<Badge className="opacity-50" variant="secondary">
-												Average
-											</Badge>
-										</div>
-										<Progress className="h-2 opacity-30" value={0} />
-										<CardDescription className="mt-2 text-muted-foreground/60">
-											Target: 2 days per task
-										</CardDescription>
+										<Badge variant="outline">Not tracked yet</Badge>
 									</div>
-								)}
+									<CardDescription className="mt-2 text-muted-foreground/60">
+										Add due dates to tasks to unlock this metric
+									</CardDescription>
+								</div>
 							</CardContent>
 						</Card>
 
-						<Card className={!hasTaskData ? "opacity-50" : ""}>
+						<Card className="opacity-50">
 							<CardHeader className="pb-2">
 								<CardTitle className="text-sm font-medium text-muted-foreground">
 									On-Time Completion
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								{hasTaskData && onTimeCompletionRate != null ? (
-									<>
-										<div className="space-y-2">
-											<div className="flex items-center justify-between">
-												<div className="text-2xl font-bold">
-													{onTimeCompletionRate}%
-												</div>
-												<Badge
-													variant={
-														onTimeCompletionRate >= 80
-															? "success"
-															: onTimeCompletionRate >= 60
-																? "warning"
-																: "destructive"
-													}
-												>
-													{onTimeCompletionRate >= 80
-														? "Good"
-														: onTimeCompletionRate >= 60
-															? "Average"
-															: "Needs Improvement"}
-												</Badge>
-											</div>
-											<Progress className="h-2" value={onTimeCompletionRate} />
+								<div className="space-y-2">
+									<div className="flex items-center justify-between">
+										<div className="text-2xl font-bold text-muted-foreground/40">
+											—
 										</div>
-										<CardDescription className="mt-2 text-slate-600 dark:text-slate-400">
-											Tasks completed before deadline
-										</CardDescription>
-									</>
-								) : (
-									<div className="space-y-2">
-										<div className="flex items-center justify-between">
-											<div className="text-2xl font-bold text-muted-foreground/40">
-												78%
-											</div>
-											<Badge className="opacity-50" variant="secondary">
-												Average
-											</Badge>
-										</div>
-										<Progress className="h-2 opacity-30" value={0} />
-										<CardDescription className="mt-2 text-muted-foreground/60">
-											Tasks completed before deadline
-										</CardDescription>
+										<Badge variant="outline">Not tracked yet</Badge>
 									</div>
-								)}
+									<CardDescription className="mt-2 text-muted-foreground/60">
+										Add task deadlines to unlock this metric
+									</CardDescription>
+								</div>
 							</CardContent>
 						</Card>
 					</div>
@@ -424,14 +476,14 @@ export const PerformanceMetricsDashboard = ({
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<Card className="flex flex-col">
 							<CardHeader>
-								<CardTitle>Task Completion Trend</CardTitle>
-								<CardDescription>Tasks completed over time</CardDescription>
+								<CardTitle>Tasks Created Over Time</CardTitle>
+								<CardDescription>New tasks created per day</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
 								<div className="h-[320px] max-h-[320px] overflow-hidden">
-									{hasTaskData && taskCompletionTrend.length > 0 ? (
+									{hasTaskData && tasksCreatedTrend.length > 0 ? (
 										<LineChart
-											data={taskCompletionTrend}
+											data={tasksCreatedTrend}
 											formatValue={(value) => `${value} tasks`}
 											height={300}
 										/>
@@ -444,7 +496,7 @@ export const PerformanceMetricsDashboard = ({
 												No task data available
 											</p>
 											<p className="text-muted-foreground/40 text-xs mt-1">
-												Create tasks to see completion trends
+												Create tasks to see how volume trends over time
 											</p>
 										</div>
 									)}
@@ -467,7 +519,7 @@ export const PerformanceMetricsDashboard = ({
 														{
 															label: "No Data Available",
 															value: 100,
-															color: "#6b7280",
+															color: NEUTRAL_COLOR,
 														},
 													]
 										}
@@ -483,51 +535,93 @@ export const PerformanceMetricsDashboard = ({
 						</Card>
 					</div>
 
-					<Card className="flex flex-col">
-						<CardHeader>
-							<CardTitle>Tasks by Assignee</CardTitle>
-							<CardDescription>
-								Task distribution and completion rates by user
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="flex-1 min-h-0">
-							<div className="max-h-[300px] overflow-auto">
-								{hasTaskData && hasUserData && tasksByAssignee.length > 0 ? (
-									<div className="space-y-4">
-										{tasksByAssignee.map((user, index) => (
-											<div className="space-y-2" key={`${user.label}-${index}`}>
-												<div className="flex items-center justify-between">
-													<div className="font-medium">{user.label}</div>
-													<div className="text-sm text-muted-foreground">
-														{user.value} tasks
+					{/* Relocated from the reports page's old standalone Tasks tab —
+					    priority breakdown wasn't shown anywhere else in this dashboard. */}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<Card className="flex flex-col">
+							<CardHeader>
+								<CardTitle>Task Priority Distribution</CardTitle>
+								<CardDescription>Tasks by priority level</CardDescription>
+							</CardHeader>
+							<CardContent className="flex-1 min-h-0">
+								<div className="h-[400px] max-h-[400px] flex items-center justify-center overflow-auto">
+									<PieChart
+										data={
+											hasTaskData && taskPriorityData.length > 0
+												? taskPriorityData
+												: [
+														{
+															label: "No Data Available",
+															value: 100,
+															color: NEUTRAL_COLOR,
+														},
+													]
+										}
+										formatValue={(value) =>
+											hasTaskData && taskPriorityData.length > 0
+												? `${value} tasks`
+												: ""
+										}
+										size={380}
+									/>
+								</div>
+							</CardContent>
+						</Card>
+
+						<Card className="flex flex-col">
+							<CardHeader>
+								<CardTitle>Tasks by Category</CardTitle>
+								<CardDescription>
+									Share of tasks in each category
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="flex-1 min-h-0">
+								<div className="max-h-[400px] overflow-auto">
+									{hasTaskData && tasksByCategory.length > 0 ? (
+										<div className="space-y-4">
+											{tasksByCategory.map((category, index) => (
+												<div
+													className="space-y-2"
+													key={`${category.label}-${index}`}
+												>
+													<div className="flex items-center justify-between">
+														<div className="flex items-center gap-2 font-medium">
+															<span
+																className={`h-2.5 w-2.5 rounded-full ${seriesColorClass(index)}`}
+															/>
+															{category.label}
+														</div>
+														<div className="text-sm text-muted-foreground">
+															{category.value} tasks
+														</div>
+													</div>
+													<div className="flex items-center gap-2">
+														<Progress
+															className="h-2 flex-1"
+															value={category.share * 100}
+														/>
+														<div className="text-sm font-medium w-12 text-right">
+															{Math.round(category.share * 100)}%
+														</div>
 													</div>
 												</div>
-												<div className="flex items-center gap-2">
-													<Progress
-														className="h-2 flex-1"
-														value={user.completionRate * 100}
-													/>
-													<div className="text-sm font-medium w-12 text-right">
-														{Math.round(user.completionRate * 100)}%
-													</div>
-												</div>
-											</div>
-										))}
-									</div>
-								) : (
-									<div className="flex flex-col items-center justify-center h-40 bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
-										<Users className="h-10 w-10 text-muted-foreground/40 mb-2" />
-										<p className="text-muted-foreground/60 text-sm">
-											No assignee data available
-										</p>
-										<p className="text-muted-foreground/40 text-xs mt-1">
-											Create and assign tasks to see distribution
-										</p>
-									</div>
-								)}
-							</div>
-						</CardContent>
-					</Card>
+											))}
+										</div>
+									) : (
+										<div className="flex flex-col items-center justify-center h-40 bg-muted/10 rounded-md border border-dashed border-muted-foreground/20">
+											<CheckSquare className="h-10 w-10 text-muted-foreground/40 mb-2" />
+											<p className="text-muted-foreground/60 text-sm">
+												No category data available
+											</p>
+											<p className="text-muted-foreground/40 text-xs mt-1">
+												Categorize tasks to see distribution
+											</p>
+										</div>
+									)}
+								</div>
+							</CardContent>
+						</Card>
+					</div>
 				</TabsContent>
 
 				{/* User Performance Tab */}
@@ -537,7 +631,7 @@ export const PerformanceMetricsDashboard = ({
 							<CardHeader>
 								<CardTitle>Top Performers</CardTitle>
 								<CardDescription>
-									Users with highest activity scores
+									Users with the highest message and reaction activity
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
@@ -563,10 +657,15 @@ export const PerformanceMetricsDashboard = ({
 													<div className="flex items-center gap-2">
 														<Progress
 															className="h-2 flex-1"
-															value={user.activityScore / 2}
+															value={
+																maxActivityScore > 0
+																	? (user.activityScore / maxActivityScore) *
+																		100
+																	: 0
+															}
 														/>
 														<div className="text-xs text-muted-foreground">
-															{user.messages} msgs, {user.tasks} tasks
+															{user.messages} msgs, {user.reactions} reactions
 														</div>
 													</div>
 												</div>
@@ -585,9 +684,9 @@ export const PerformanceMetricsDashboard = ({
 
 						<Card className="flex flex-col">
 							<CardHeader>
-								<CardTitle>Task Completion by User</CardTitle>
+								<CardTitle>Time in Channels by User</CardTitle>
 								<CardDescription>
-									Percentage of assigned tasks completed
+									Total time active in channels (minutes)
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="flex-1 min-h-0">
@@ -596,20 +695,15 @@ export const PerformanceMetricsDashboard = ({
 										<HorizontalBarChart
 											data={userPerformanceData.map((user) => ({
 												label: user.name,
-												value: user.taskCompletion,
-												color:
-													user.taskCompletion >= 70
-														? "bg-green-500"
-														: user.taskCompletion >= 50
-															? "bg-yellow-500"
-															: "bg-red-500",
+												value: user.timeSpentMinutes,
+												color: "bg-secondary",
 											}))}
-											formatValue={(value) => `${value}%`}
+											formatValue={(value) => `${value} min`}
 										/>
 									) : (
 										<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
 											<p className="text-muted-foreground">
-												No task completion data available
+												No time-in-channel data available
 											</p>
 										</div>
 									)}
@@ -620,9 +714,9 @@ export const PerformanceMetricsDashboard = ({
 
 					<Card className="flex flex-col">
 						<CardHeader>
-							<CardTitle>Response Time by User</CardTitle>
+							<CardTitle>Reactions by User</CardTitle>
 							<CardDescription>
-								Average time to respond to messages (minutes)
+								Reactions given during this period
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="flex-1 min-h-0">
@@ -631,20 +725,15 @@ export const PerformanceMetricsDashboard = ({
 									<HorizontalBarChart
 										data={userPerformanceData.map((user) => ({
 											label: user.name,
-											value: user.responseTime,
-											color:
-												user.responseTime <= 10
-													? "bg-green-500"
-													: user.responseTime <= 20
-														? "bg-yellow-500"
-														: "bg-red-500",
+											value: user.reactions,
+											color: "bg-secondary",
 										}))}
-										formatValue={(value) => `${value} min`}
+										formatValue={(value) => `${value} reactions`}
 									/>
 								) : (
 									<div className="flex items-center justify-center h-full bg-muted/20 rounded-md">
 										<p className="text-muted-foreground">
-											No response time data available
+											No reaction data available
 										</p>
 									</div>
 								)}

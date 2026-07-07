@@ -23,6 +23,48 @@ export interface CalendarProps {
 	month?: Date;
 	defaultMonth?: Date;
 	disabled?: boolean | ((date: Date) => boolean);
+	onMonthChange?: (month: Date) => void;
+}
+
+// Day-of-week labels: abbreviation for display, full word for screen readers.
+const DAY_LABELS = [
+	{ short: "Su", full: "Sunday" },
+	{ short: "Mo", full: "Monday" },
+	{ short: "Tu", full: "Tuesday" },
+	{ short: "We", full: "Wednesday" },
+	{ short: "Th", full: "Thursday" },
+	{ short: "Fr", full: "Friday" },
+	{ short: "Sa", full: "Saturday" },
+] as const;
+
+// The day (of the displayed month) that should hold the roving tabindex:
+// the selected day if it falls in this month, else today if it falls in
+// this month, else the 1st.
+function getDefaultFocusDay(
+	month: Date,
+	selected: Date | Date[] | undefined
+): number {
+	const candidates = Array.isArray(selected)
+		? selected
+		: selected
+			? [selected]
+			: [];
+	const selectedInMonth = candidates.find(
+		(date) =>
+			date.getFullYear() === month.getFullYear() &&
+			date.getMonth() === month.getMonth()
+	);
+	if (selectedInMonth) return selectedInMonth.getDate();
+
+	const today = new Date();
+	if (
+		today.getFullYear() === month.getFullYear() &&
+		today.getMonth() === month.getMonth()
+	) {
+		return today.getDate();
+	}
+
+	return 1;
 }
 
 function Calendar({
@@ -32,15 +74,21 @@ function Calendar({
 	month: controlledMonth,
 	defaultMonth = new Date(),
 	disabled,
+	onMonthChange,
 }: CalendarProps) {
 	const [month, setMonth] = React.useState(controlledMonth || defaultMonth);
+	const [focusedDay, setFocusedDay] = React.useState(() =>
+		getDefaultFocusDay(controlledMonth || defaultMonth, selected)
+	);
+	const dayRefs = React.useRef<Map<number, HTMLButtonElement>>(new Map());
 
 	// Update month when controlled month changes
 	React.useEffect(() => {
 		if (controlledMonth) {
 			setMonth(controlledMonth);
+			setFocusedDay(getDefaultFocusDay(controlledMonth, selected));
 		}
-	}, [controlledMonth]);
+	}, [controlledMonth, selected]);
 
 	// Get days in month
 	const daysInMonth = getDaysInMonth(month);
@@ -70,43 +118,83 @@ function Calendar({
 		}
 	}
 
-	// Day names
-	const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+	// Precompute per-day metadata once per render (date, selected, disabled)
+	// instead of re-deriving it — and re-running `disabled()` — separately
+	// for click handling, selection, and rendering of every cell.
+	const dayMeta = new Map<
+		number,
+		{ date: Date; isSelected: boolean; isToday: boolean; isDisabled: boolean }
+	>();
+	for (let day = 1; day <= daysInMonth; day++) {
+		const date = new Date(month.getFullYear(), month.getMonth(), day);
+		const isSelected = Array.isArray(selected)
+			? selected.some((selectedDate) => isSameDay(selectedDate, date))
+			: selected
+				? isSameDay(selected, date)
+				: false;
+		const isDisabled =
+			typeof disabled === "function" ? disabled(date) : disabled === true;
+		dayMeta.set(day, { date, isSelected, isToday: isToday(date), isDisabled });
+	}
 
 	// Handle month navigation
-	const handlePrevMonth = () => setMonth(subMonths(month, 1));
-	const handleNextMonth = () => setMonth(addMonths(month, 1));
+	const handlePrevMonth = () => {
+		const newMonth = subMonths(month, 1);
+		setMonth(newMonth);
+		setFocusedDay(getDefaultFocusDay(newMonth, selected));
+		onMonthChange?.(newMonth);
+	};
+	const handleNextMonth = () => {
+		const newMonth = addMonths(month, 1);
+		setMonth(newMonth);
+		setFocusedDay(getDefaultFocusDay(newMonth, selected));
+		onMonthChange?.(newMonth);
+	};
 
 	// Handle day selection
 	const handleDayClick = (day: number) => {
 		if (!onSelect) return;
 
-		const date = new Date(month.getFullYear(), month.getMonth(), day);
+		const meta = dayMeta.get(day);
+		if (!meta || meta.isDisabled) return;
 
-		// Check if disabled
-		if (typeof disabled === "function" && disabled(date)) return;
-		if (disabled === true) return;
-
-		onSelect(date);
+		onSelect(meta.date);
 	};
 
-	// Check if a day is selected
-	const isDaySelected = (day: number) => {
-		if (!selected) return false;
-
-		const date = new Date(month.getFullYear(), month.getMonth(), day);
-
-		if (Array.isArray(selected)) {
-			return selected.some((selectedDate) => isSameDay(selectedDate, date));
+	// Roving-tabindex arrow-key navigation within the visible month grid
+	const handleDayKeyDown = (
+		event: React.KeyboardEvent<HTMLButtonElement>,
+		day: number
+	) => {
+		let nextDay: number | null = null;
+		switch (event.key) {
+			case "ArrowLeft":
+				nextDay = day - 1;
+				break;
+			case "ArrowRight":
+				nextDay = day + 1;
+				break;
+			case "ArrowUp":
+				nextDay = day - 7;
+				break;
+			case "ArrowDown":
+				nextDay = day + 7;
+				break;
+			case "Home":
+				nextDay = 1;
+				break;
+			case "End":
+				nextDay = daysInMonth;
+				break;
+			default:
+				return;
 		}
 
-		return isSameDay(selected, date);
-	};
+		if (nextDay < 1 || nextDay > daysInMonth) return;
 
-	// Check if a day is today
-	const isDayToday = (day: number) => {
-		const date = new Date(month.getFullYear(), month.getMonth(), day);
-		return isToday(date);
+		event.preventDefault();
+		setFocusedDay(nextDay);
+		dayRefs.current.get(nextDay)?.focus();
 	};
 
 	return (
@@ -114,6 +202,7 @@ function Calendar({
 			{/* Month navigation */}
 			<div className="flex items-center justify-between mb-4">
 				<Button
+					aria-label="Previous month"
 					className="h-7 w-7 bg-transparent p-0"
 					onClick={handlePrevMonth}
 					size="icon"
@@ -123,6 +212,7 @@ function Calendar({
 				</Button>
 				<div className="font-medium text-sm">{format(month, "MMMM yyyy")}</div>
 				<Button
+					aria-label="Next month"
 					className="h-7 w-7 bg-transparent p-0"
 					onClick={handleNextMonth}
 					size="icon"
@@ -133,67 +223,77 @@ function Calendar({
 			</div>
 
 			{/* Calendar grid */}
-			<table className="w-full border-collapse">
-				<thead>
-					<tr className="flex w-full justify-between">
-						{dayNames.map((day) => (
-							<th
-								className="text-muted-foreground text-xs font-normal w-8 text-center"
-								key={day}
-							>
-								{day}
-							</th>
-						))}
-					</tr>
-				</thead>
-				<tbody>
+			<div
+				aria-label={format(month, "MMMM yyyy")}
+				className="w-full"
+				role="grid"
+			>
+				<div className="grid grid-cols-7 justify-items-center" role="row">
+					{DAY_LABELS.map((day) => (
+						<div
+							aria-label={day.full}
+							className="text-muted-foreground text-xs font-normal text-center"
+							key={day.short}
+							role="columnheader"
+						>
+							{day.short}
+						</div>
+					))}
+				</div>
+				<div role="rowgroup">
 					{/* Deterministic date-math grid, never reordered (JS-0437 exemption) — index is a safe key here */}
 					{weeks.map((week, weekIndex) => (
-						<tr
-							className="flex w-full justify-between mt-2"
+						<div
+							className="grid grid-cols-7 justify-items-center mt-2"
 							key={`week-${month.getFullYear()}-${month.getMonth()}-${weekIndex}`}
+							role="row"
 						>
-							{week.map((day, dayIndex) => (
-								<td
-									className="p-0 text-center"
-									key={day !== null ? day : `empty-${weekIndex}-${dayIndex}`}
-								>
-									{day !== null ? (
-										<Button
-											className={cn(
-												"h-8 w-8 p-0 font-normal text-sm",
-												isDaySelected(day) &&
-													"bg-secondary text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground",
-												isDayToday(day) &&
-													!isDaySelected(day) &&
-													"bg-accent text-accent-foreground"
-											)}
-											disabled={
-												typeof disabled === "function"
-													? disabled(
-															new Date(
-																month.getFullYear(),
-																month.getMonth(),
-																day
-															)
-														)
-													: disabled === true
-											}
-											onClick={() => handleDayClick(day)}
-											size="icon"
-											variant="ghost"
-										>
-											{day}
-										</Button>
-									) : (
-										<div className="h-8 w-8" />
-									)}
-								</td>
-							))}
-						</tr>
+							{week.map((day, dayIndex) => {
+								const meta = day !== null ? dayMeta.get(day) : undefined;
+								return (
+									<div
+										className="p-0"
+										key={day !== null ? day : `empty-${weekIndex}-${dayIndex}`}
+										role="gridcell"
+									>
+										{day !== null && meta ? (
+											<Button
+												aria-current={meta.isToday ? "date" : undefined}
+												aria-selected={meta.isSelected}
+												className={cn(
+													"h-8 w-8 p-0 font-normal text-sm",
+													meta.isSelected &&
+														"bg-secondary text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground",
+													meta.isToday &&
+														!meta.isSelected &&
+														"bg-accent text-accent-foreground"
+												)}
+												disabled={meta.isDisabled}
+												onClick={() => handleDayClick(day)}
+												onKeyDown={(event) => handleDayKeyDown(event, day)}
+												ref={(el) => {
+													if (el) {
+														dayRefs.current.set(day, el);
+													} else {
+														dayRefs.current.delete(day);
+													}
+												}}
+												size="icon"
+												tabIndex={day === focusedDay ? 0 : -1}
+												variant="ghost"
+											>
+												{day}
+											</Button>
+										) : (
+											<div className="h-8 w-8" />
+										)}
+									</div>
+								);
+							})}
+						</div>
 					))}
-				</tbody>
-			</table>
+				</div>
+			</div>
 		</div>
 	);
 }

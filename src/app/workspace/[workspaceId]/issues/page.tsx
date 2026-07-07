@@ -7,15 +7,19 @@ import { useMemo } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useGetProjects } from "@/features/projects/api/use-get-projects";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
-import { WorkspaceToolbar } from "../toolbar";
+import {
+	useSetWorkspaceTitle,
+	WorkspaceTitle,
+} from "../workspace-title-context";
 
 const IssuesContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
+	useSetWorkspaceTitle(<WorkspaceTitle icon={LayoutGrid} label="Issues" />);
+
 	const { data: currentMember, isLoading: isMemberLoading } = useCurrentMember({
 		workspaceId,
 	});
@@ -56,25 +60,14 @@ const IssuesContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 	return (
 		<div className="flex h-full flex-col">
-			<WorkspaceToolbar>
-				<Button
-					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
-					size="sm"
-					variant="ghost"
-				>
-					<LayoutGrid className="mr-2 size-5" />
-					<span className="truncate">Issue</span>
-				</Button>
-			</WorkspaceToolbar>
-
-			<div className="flex-1 overflow-y-auto bg-white px-4 py-6 md:px-8">
+			<div className="flex-1 overflow-y-auto bg-background px-4 py-6 md:px-8">
 				<div className="mx-auto w-full max-w-4xl space-y-4">
 					{issues.length === 0 ? (
-						<div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-							<p className="text-base font-medium text-gray-700">
+						<div className="rounded-xl border border-dashed border-muted-foreground/20 bg-muted/5 p-8 text-center">
+							<p className="text-base font-medium text-foreground">
 								No assigned issues yet
 							</p>
-							<p className="mt-2 text-sm text-gray-500">
+							<p className="mt-2 text-sm text-muted-foreground">
 								Assigned board issues for your account will appear here.
 							</p>
 						</div>
@@ -87,13 +80,13 @@ const IssuesContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 							return (
 								<Link
-									className="group block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
+									className="group block rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
 									href={href}
 									key={issue._id}
 								>
 									<div className="flex items-start justify-between gap-4">
 										<div className="min-w-0 flex-1">
-											<p className="truncate text-base font-semibold text-gray-900">
+											<p className="truncate text-base font-semibold text-foreground">
 												{issue.title}
 											</p>
 											<div className="mt-2 flex flex-wrap items-center gap-2">
@@ -124,7 +117,7 @@ const IssuesContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 };
 
 const IssuesPage = () => {
-	useDocumentTitle("Issue");
+	useDocumentTitle("Issues");
 	const workspaceId = useWorkspaceId();
 
 	if (!workspaceId) {

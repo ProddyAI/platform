@@ -27,7 +27,7 @@ export const Hint = ({
 				<TooltipTrigger asChild>{children}</TooltipTrigger>
 				<TooltipContent
 					align={align}
-					className="border border-white/5 bg-black text-white"
+					className="border border-border bg-popover text-popover-foreground"
 					side={side}
 					sideOffset={8}
 				>

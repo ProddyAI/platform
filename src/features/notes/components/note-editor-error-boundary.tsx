@@ -84,7 +84,7 @@ export class NoteEditorErrorBoundary extends Component<
 						{/* Actions */}
 						<div className="flex flex-col gap-2">
 							<button
-								className="flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 transition-colors"
+								className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
 								onClick={this.handleReset}
 								type="button"
 							>
@@ -92,8 +92,7 @@ export class NoteEditorErrorBoundary extends Component<
 								Try Again
 							</button>
 							<p className="text-xs text-muted-foreground">
-								If this keeps happening, contact your admin to re-initialize
-								this note.
+								If this keeps happening, try resetting the note's content.
 							</p>
 						</div>
 					</div>

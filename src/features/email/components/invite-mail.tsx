@@ -1,17 +1,17 @@
-import {
-	Body,
-	Button,
-	Container,
-	Head,
-	Heading,
-	Hr,
-	Html,
-	Img,
-	Preview,
-	Section,
-	Text,
-} from "@react-email/components";
+import { Button, Heading, Hr, Section, Text } from "@react-email/components";
 import type * as React from "react";
+import {
+	EmailLayout,
+	emailButton,
+	emailButtonContainer,
+	emailCalloutBox,
+	emailCalloutLabel,
+	emailFooter,
+	emailHeading,
+	emailMutedText,
+	emailSection,
+	emailText,
+} from "./email-layout";
 
 interface InviteMailTemplateProps {
 	senderName: string;
@@ -21,72 +21,7 @@ interface InviteMailTemplateProps {
 	comment?: string;
 }
 
-// Styles
-const main = {
-	backgroundColor: "#f6f9fc",
-	fontFamily:
-		'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-	padding: "40px 0",
-};
-
-const container = {
-	backgroundColor: "#ffffff",
-	border: "1px solid #eee",
-	borderRadius: "5px",
-	boxShadow: "0 5px 10px rgba(20, 50, 70, 0.05)",
-	margin: "0 auto",
-	maxWidth: "600px",
-	padding: "20px",
-};
-
-const logo = {
-	margin: "0 auto 20px",
-	display: "block",
-};
-
-const heading = {
-	color: "#0E1C36",
-	fontSize: "24px",
-	fontWeight: "600",
-	lineHeight: "1.3",
-	margin: "15px 0",
-	textAlign: "center" as const,
-};
-
-const section = {
-	padding: "0 10px",
-};
-
-const text = {
-	color: "#4A5568",
-	fontSize: "16px",
-	lineHeight: "1.5",
-	margin: "16px 0",
-};
-
-const buttonContainer = {
-	margin: "30px 0",
-	textAlign: "center" as const,
-};
-
-const noteContainer = {
-	backgroundColor: "#f8fafc",
-	border: "1px solid #e5e7eb",
-	borderRadius: "6px",
-	margin: "20px 0",
-	padding: "14px 16px",
-};
-
-const noteLabel = {
-	color: "#64748b",
-	fontSize: "12px",
-	fontWeight: "600",
-	letterSpacing: "0.04em",
-	lineHeight: "1.4",
-	margin: "0 0 6px",
-	textTransform: "uppercase" as const,
-};
-
+// Styles specific to this template (not shared across other templates)
 const noteText = {
 	color: "#334155",
 	fontSize: "15px",
@@ -95,51 +30,11 @@ const noteText = {
 	whiteSpace: "pre-wrap" as const,
 };
 
-const button = {
-	backgroundColor: "#0070f3",
-	borderRadius: "5px",
-	color: "#fff",
-	display: "inline-block",
-	fontSize: "14px",
-	fontWeight: "600",
-	textDecoration: "none",
-	textAlign: "center" as const,
-};
-
-const expiryText = {
-	color: "#666",
-	fontSize: "14px",
-	lineHeight: "1.5",
-	margin: "16px 0",
-	textAlign: "center" as const,
-};
-
-const hr = {
-	borderColor: "#e5e7eb",
-	margin: "30px 0",
-};
-
-const warningContainer = {
-	backgroundColor: "#fff3cd",
-	borderLeft: "4px solid #ffc107",
-	padding: "15px",
-	margin: "20px 0",
-	borderRadius: "4px",
-};
-
 const warningText = {
-	color: "#856404",
+	color: "#334155",
 	fontSize: "14px",
 	lineHeight: "1.5",
 	margin: "0",
-};
-
-const footer = {
-	color: "#999",
-	fontSize: "12px",
-	lineHeight: "1.5",
-	textAlign: "center" as const,
-	marginTop: "30px",
 };
 
 // Helper component to create the email content
@@ -151,59 +46,46 @@ function InviteMailContent({
 	comment,
 }: InviteMailTemplateProps) {
 	const invitationNote = comment?.trim();
-	const logoUrl = process.env.NEXT_PUBLIC_LOGO_URL;
 
 	return (
 		<>
-			{logoUrl ? (
-				<Img alt="Proddy" height="40" src={logoUrl} style={logo} width="40" />
-			) : null}
-			<Heading style={heading}>
+			<Heading style={emailHeading}>
 				You&apos;ve been invited to join a workspace
 			</Heading>
-			<Section style={section}>
-				<Text style={text}>
+			<Section style={emailSection}>
+				<Text style={emailText}>
 					<strong>{senderName}</strong> ({senderEmail}) has invited you to join
 					the workspace <strong>{workspaceName}</strong> on Proddy.
 				</Text>
 
 				{invitationNote ? (
-					<Section style={noteContainer}>
-						<Text style={noteLabel}>Invitation note</Text>
+					<Section style={emailCalloutBox}>
+						<Text style={emailCalloutLabel}>Invitation note</Text>
 						<Text style={noteText}>{invitationNote}</Text>
 					</Section>
 				) : null}
 
-				<Section style={buttonContainer}>
-					<Button
-						href={inviteLink}
-						style={{
-							...button,
-							paddingLeft: "24px",
-							paddingRight: "24px",
-							paddingTop: "12px",
-							paddingBottom: "12px",
-						}}
-					>
+				<Section style={emailButtonContainer}>
+					<Button href={inviteLink} style={emailButton}>
 						Accept Invite
 					</Button>
 				</Section>
 
-				<Text style={expiryText}>
+				<Text style={emailMutedText}>
 					This invite will expire in <strong>48 hours</strong>.
 				</Text>
 			</Section>
 
 			<Hr style={hr} />
 
-			<Section style={warningContainer}>
+			<Section style={emailCalloutBox}>
 				<Text style={warningText}>
-					<strong>⚠️ Security Notice:</strong> Only accept this invite if you
-					trust the sender. Never share your login credentials with anyone.
+					<strong>Security notice:</strong> Only accept this invite if you trust
+					the sender. Never share your login credentials with anyone.
 				</Text>
 			</Section>
 
-			<Text style={footer}>
+			<Text style={emailFooter}>
 				If you didn&apos;t expect this invitation, you can safely ignore this
 				email.
 			</Text>
@@ -211,26 +93,25 @@ function InviteMailContent({
 	);
 }
 
+const hr = {
+	borderColor: "#e5e7eb",
+	margin: "30px 0",
+};
+
 export const InviteMailTemplate: React.FC<
 	Readonly<InviteMailTemplateProps>
 > = ({ senderName, senderEmail, workspaceName, inviteLink, comment }) => {
 	const previewText = `You've been invited to join ${workspaceName}`;
 
 	return (
-		<Html>
-			<Head />
-			<Preview>{previewText}</Preview>
-			<Body style={main}>
-				<Container style={container}>
-					<InviteMailContent
-						comment={comment}
-						inviteLink={inviteLink}
-						senderEmail={senderEmail}
-						senderName={senderName}
-						workspaceName={workspaceName}
-					/>
-				</Container>
-			</Body>
-		</Html>
+		<EmailLayout previewText={previewText}>
+			<InviteMailContent
+				comment={comment}
+				inviteLink={inviteLink}
+				senderEmail={senderEmail}
+				senderName={senderName}
+				workspaceName={workspaceName}
+			/>
+		</EmailLayout>
 	);
 };

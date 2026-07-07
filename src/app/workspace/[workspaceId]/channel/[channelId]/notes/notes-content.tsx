@@ -243,8 +243,8 @@ export const NotesContent = ({
 						) : (
 							<div className="flex items-center justify-center h-full text-muted-foreground">
 								<div className="text-center space-y-4 max-w-sm px-4">
-									<div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/30 dark:to-blue-900/30 flex items-center justify-center">
-										<FileText className="h-8 w-8 text-violet-500 dark:text-violet-400" />
+									<div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+										<FileText className="h-8 w-8 text-primary" />
 									</div>
 									<div>
 										<h3 className="text-lg font-semibold mb-1">
@@ -256,13 +256,14 @@ export const NotesContent = ({
 										</p>
 									</div>
 									<Button
-										className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg"
+										className="gap-2"
 										onClick={() => {
 											onCreateNote(true).catch((error) => {
 												console.error("Failed to create note:", error);
 												toast.error("Failed to create note");
 											});
 										}}
+										variant="primary"
 									>
 										<Brain className="h-4 w-4" />
 										Start AI Meeting Note

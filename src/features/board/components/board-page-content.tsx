@@ -8,21 +8,17 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { LimitIndicator } from "@/components/limit-indicator";
 import {
-	// Keep old card/list modals for gantt view
-	BoardAddCardModal,
 	BoardAddStatusModal,
-	BoardDeleteListModal,
 	BoardDeleteStatusModal,
-	BoardEditCardModal,
 	BoardEditStatusModal,
 } from "@/features/board/components/board-card-edit-dialog";
-import BoardGanttView from "@/features/board/components/board-gantt-view";
 import BoardHeader from "@/features/board/components/board-header";
 import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
 import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useConnectProjectChannelModal } from "@/features/projects/store/use-connect-project-channel-modal";
+import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useWorkspaceLimit } from "@/hooks/use-workspace-limit";
@@ -44,6 +40,7 @@ export const BoardPageContent = ({
 	const searchParams = useSearchParams();
 	const [, setConnectProjectChannelModal] = useConnectProjectChannelModal();
 	const { maxReached: boardLimitReached } = useWorkspaceLimit("board");
+	const [, setSearchOpen] = useWorkspaceSearch();
 
 	// Board search store integration
 	const {
@@ -56,8 +53,6 @@ export const BoardPageContent = ({
 	// ── New: issues & statuses ──────────────────────────────────────────────
 	const statuses = useQuery(api.board.board.getStatuses, { channelId });
 	const allIssues = useQuery(api.board.board.getIssues, { channelId }) || [];
-	const _uniqueIssueLabels =
-		useQuery(api.board.board.getUniqueIssueLabels, { channelId }) || [];
 	const [optimisticIssues, setOptimisticIssues] = useState<
 		typeof allIssues | null
 	>(null);
@@ -86,12 +81,6 @@ export const BoardPageContent = ({
 		}
 	}, [allIssues, optimisticIssues]);
 
-	// ── Existing: lists & cards (kept for table/gantt) ──────────────────────
-	const lists = useQuery(api.board.board.getLists, { channelId });
-	const allCards =
-		useQuery(api.board.board.getAllCardsForChannel, { channelId }) || [];
-	const uniqueLabels =
-		useQuery(api.board.board.getUniqueLabels, { channelId }) || [];
 	const members =
 		useQuery(api.board.board.getMembersForChannel, { channelId }) || [];
 	const channel = useQuery(api.messaging.channels.getById, { id: channelId });
@@ -134,7 +123,11 @@ export const BoardPageContent = ({
 					"error" in data ? data.error : "Failed to analyze blockers"
 				);
 			}
-			toast.success(`Analyze blockers: applied ${data.applied} dependencies`);
+			toast.success(
+				data.applied === 1
+					? "Applied 1 dependency"
+					: `Applied ${data.applied} dependencies`
+			);
 		} catch (error) {
 			console.error("Analyze blockers failed:", error);
 			toast.error(
@@ -228,42 +221,6 @@ export const BoardPageContent = ({
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
 	const previousStatusOrderRef = useRef<typeof displayedStatuses | null>(null);
 
-	// ── Old card modal state (for table/gantt views) ────────────────────────
-	const [deleteListOpen, setDeleteListOpen] = useState(false);
-	const [listToDelete, setListToDelete] = useState<{
-		_id: Id<"lists">;
-		title: string;
-		order: number;
-		channelId: Id<"channels">;
-	} | null>(null);
-	const [addCardOpen, setAddCardOpen] = useState<null | Id<"lists">>(null);
-	const [editCardOpen, setEditCardOpen] = useState<{
-		card: {
-			_id: Id<"cards">;
-			title: string;
-			description?: string;
-			listId: Id<"lists">;
-			order: number;
-			labels?: string[];
-			priority?: "lowest" | "low" | "medium" | "high" | "highest";
-			dueDate?: number;
-			assignees?: Id<"members">[];
-			isCompleted?: boolean;
-			estimate?: number;
-			timeSpent?: number;
-			watchers?: Id<"members">[];
-			blockedBy?: Id<"cards">[];
-		};
-	} | null>();
-	const [cardTitle, setCardTitle] = useState("");
-	const [cardDesc, setCardDesc] = useState("");
-	const [cardLabels, setCardLabels] = useState("");
-	const [cardPriority, setCardPriority] = useState<
-		"lowest" | "low" | "medium" | "high" | "highest" | ""
-	>("");
-	const [cardDueDate, setCardDueDate] = useState<Date | undefined>();
-	const [cardAssignees, setCardAssignees] = useState<Id<"members">[]>([]);
-
 	// ── Mutations ───────────────────────────────────────────────────────────
 	const migrate = useMutation(api.board.board.migrateListsToStatuses);
 	const createStatus = useMutation(api.board.board.createStatus);
@@ -272,13 +229,6 @@ export const BoardPageContent = ({
 	const reorderStatuses = useMutation(api.board.board.reorderStatuses);
 	const moveIssueStatus = useMutation(api.board.board.moveIssueStatus);
 	const createIssue = useMutation(api.board.board.createIssue);
-
-	// Existing card mutations
-	const createCard = useMutation(api.board.board.createCard);
-	const updateCard = useMutation(api.board.board.updateCard);
-	const deleteCard = useMutation(api.board.board.deleteCard);
-	const _moveCard = useMutation(api.board.board.moveCard);
-	const deleteList = useMutation(api.board.board.deleteList);
 
 	// ── Auto-migration on first load ────────────────────────────────────────
 	useEffect(() => {
@@ -541,98 +491,18 @@ export const BoardPageContent = ({
 
 	// ── Search filter is now handled by global search via boardSearchQuery ──
 
-	// ── Old card/list handlers (table + gantt views) ─────────────────────────
-	const handleAddCard = async (listId: Id<"lists">) => {
-		if (boardLimitReached) {
-			toast.error(
-				"Board cards limit reached. Upgrade your plan to create more."
-			);
-			return;
-		}
-		if (!cardTitle.trim()) return;
-		const cards = allCards.filter((c) => c.listId === listId) || [];
-		await createCard({
-			listId,
-			title: cardTitle,
-			description: cardDesc,
-			order: cards.length,
-			labels: cardLabels
-				.split(",")
-				.map((l) => l.trim())
-				.filter(Boolean),
-			priority: cardPriority || undefined,
-			dueDate: cardDueDate ? cardDueDate.getTime() : undefined,
-			assignees: cardAssignees.length > 0 ? cardAssignees : undefined,
-		});
-		setCardTitle("");
-		setCardDesc("");
-		setCardLabels("");
-		setCardPriority("");
-		setCardDueDate(undefined);
-		setCardAssignees([]);
-		setAddCardOpen(null);
-	};
-
-	const handleEditCard = async () => {
-		if (!editCardOpen || !cardTitle.trim()) return;
-		await updateCard({
-			cardId: editCardOpen.card._id,
-			title: cardTitle,
-			description: cardDesc,
-			labels: cardLabels
-				.split(",")
-				.map((l) => l.trim())
-				.filter(Boolean),
-			priority: cardPriority || undefined,
-			dueDate: cardDueDate ? cardDueDate.getTime() : undefined,
-			assignees: cardAssignees.length > 0 ? cardAssignees : undefined,
-		});
-		setEditCardOpen(null);
-	};
-
-	const _handleDeleteCard = async (cardId: Id<"cards">) => {
-		await deleteCard({ cardId });
-		setEditCardOpen(null);
-	};
-
-	const handleDeleteList = async () => {
-		if (!listToDelete) return;
-		await deleteList({ listId: listToDelete._id });
-		setDeleteListOpen(false);
-		setListToDelete(null);
-	};
-
-	// Card group by list (for table/gantt)
-	const cardsByList: Record<
-		string,
-		{
-			_id: Id<"cards">;
-			title: string;
-			description?: string;
-			listId: Id<"lists">;
-			order: number;
-			labels?: string[];
-			priority?: "lowest" | "low" | "medium" | "high" | "highest";
-			dueDate?: number;
-			assignees?: Id<"members">[];
-			isCompleted?: boolean;
-			estimate?: number;
-			timeSpent?: number;
-			watchers?: Id<"members">[];
-			blockedBy?: Id<"cards">[];
-		}[]
-	> = {};
-	allCards.forEach((card) => {
-		if (!cardsByList[card.listId]) cardsByList[card.listId] = [];
-		cardsByList[card.listId].push(card);
-	});
-
-	if (!channelId) return <div className="p-4">No channel selected.</div>;
+	if (!channelId) {
+		return (
+			<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+				No channel selected.
+			</div>
+		);
+	}
 
 	return (
-		<div className="h-full w-full max-w-full flex flex-col bg-background dark:bg-gray-950 overflow-x-hidden overflow-y-hidden min-w-0">
+		<div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
 			{boardLimitReached && (
-				<div className="flex-shrink-0 m-4 flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+				<div className="flex-shrink-0 m-4 flex items-center justify-between rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-600 dark:text-amber-400">
 					<span>
 						You have reached the board card limit for your plan. Upgrade to
 						create more cards/issues.
@@ -695,15 +565,7 @@ export const BoardPageContent = ({
 								throw error;
 							}
 						}}
-						onSearchClick={() => {
-							// Trigger global search open
-							const event = new KeyboardEvent("keydown", {
-								key: "k",
-								ctrlKey: true,
-								bubbles: true,
-							});
-							document.dispatchEvent(event);
-						}}
+						onSearchClick={() => setSearchOpen(true)}
 						setView={setView}
 						showHeader
 						statusCount={displayedStatuses.length}
@@ -727,33 +589,23 @@ export const BoardPageContent = ({
 						canManageProjectConnection ? handleConnectProjectChannel : undefined
 					}
 					onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
-					onSearchClick={() => {
-						// Trigger global search open
-						const event = new KeyboardEvent("keydown", {
-							key: "k",
-							ctrlKey: true,
-							bubbles: true,
-						});
-						document.dispatchEvent(event);
-					}}
+					onSearchClick={() => setSearchOpen(true)}
 					setView={setView}
 					statusCount={displayedStatuses.length}
-					totalIssues={allCards.length}
+					totalIssues={filteredIssues.length}
 					view={view}
 				/>
 			)}
 
-			{view !== "kanban" && (
-				<div className="flex-1 overflow-auto min-h-0">
-					{/* ── Gantt (legacy cards) ─── */}
-					{view === "gantt" && (
-						<BoardGanttView
-							allCards={allCards}
-							lists={lists || []}
-							members={members}
-							readOnly
-						/>
-					)}
+			{view === "gantt" && (
+				<div className="flex flex-1 flex-col items-center justify-center gap-1.5 overflow-auto p-8 text-center min-h-0">
+					<p className="text-sm font-medium text-foreground">
+						Timeline view is temporarily unavailable
+					</p>
+					<p className="max-w-sm text-sm text-muted-foreground">
+						It's being rebuilt to work with your current issues. Switch to Board
+						view to see and manage them.
+					</p>
 				</div>
 			)}
 
@@ -802,69 +654,6 @@ export const BoardPageContent = ({
 				channelId={channelId}
 				onOpenChange={setLinkageDiagramOpen}
 				open={linkageDiagramOpen}
-			/>
-
-			{/* ── Legacy card modals (table/gantt) ──────────────────────────── */}
-			<BoardDeleteListModal
-				onDelete={handleDeleteList}
-				onOpenChange={setDeleteListOpen}
-				open={deleteListOpen}
-			/>
-			<BoardAddCardModal
-				assignees={cardAssignees}
-				description={cardDesc}
-				dueDate={cardDueDate}
-				labelSuggestions={uniqueLabels}
-				labels={cardLabels}
-				members={members}
-				onAdd={() => addCardOpen && handleAddCard(addCardOpen)}
-				onOpenChange={(open) => {
-					if (!open) {
-						setAddCardOpen(null);
-						setCardTitle("");
-						setCardDesc("");
-						setCardLabels("");
-						setCardPriority("");
-						setCardDueDate(undefined);
-						setCardAssignees([]);
-					}
-				}}
-				open={Boolean(addCardOpen)}
-				priority={cardPriority}
-				setAssignees={setCardAssignees}
-				setDescription={setCardDesc}
-				setDueDate={setCardDueDate}
-				setLabels={setCardLabels}
-				setPriority={setCardPriority}
-				setTitle={setCardTitle}
-				title={cardTitle}
-			/>
-			<BoardEditCardModal
-				assignees={cardAssignees}
-				cardId={editCardOpen?.card._id as Id<"cards">}
-				channelId={channelId}
-				currentMemberId={currentMember?._id}
-				description={cardDesc}
-				dueDate={cardDueDate}
-				estimate={editCardOpen?.card.estimate}
-				labelSuggestions={uniqueLabels}
-				labels={cardLabels}
-				members={members}
-				onOpenChange={(open: boolean) => {
-					if (!open) setEditCardOpen(null);
-				}}
-				onSave={handleEditCard}
-				open={Boolean(editCardOpen)}
-				priority={cardPriority}
-				setAssignees={setCardAssignees}
-				setDescription={setCardDesc}
-				setDueDate={setCardDueDate}
-				setLabels={setCardLabels}
-				setPriority={setCardPriority}
-				setTitle={setCardTitle}
-				timeSpent={editCardOpen?.card.timeSpent}
-				title={cardTitle}
-				watchers={editCardOpen?.card.watchers}
 			/>
 		</div>
 	);

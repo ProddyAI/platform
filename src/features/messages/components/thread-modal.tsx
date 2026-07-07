@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import Editor from "@/components/messaging/editor";
+import { Thumbnail } from "@/components/messaging/thumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,13 +74,63 @@ type ThreadReply = FunctionReturnType<
 	typeof api.messaging.messages.get
 >["page"][number];
 
+interface ParsedMessageBody {
+	type: "text" | "canvas" | "note" | "file";
+	content: string;
+	caption?: string;
+	fileUrl?: string;
+	isSpecial: boolean;
+}
+
+const SpecialContentChip = ({ parsed }: { parsed: ParsedMessageBody }) => (
+	<div className="space-y-2">
+		<div className="flex items-center gap-2 rounded-md bg-muted p-2 border border-primary/20">
+			{parsed.type === "canvas" ? (
+				<span className="text-sm font-medium flex items-center gap-1.5">
+					<Paintbrush className="h-4 w-4 text-primary" />
+					{parsed.content}
+				</span>
+			) : parsed.type === "file" ? (
+				<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+					<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
+						<File className="h-4 w-4 text-primary" />
+						<span className="truncate">{parsed.content}</span>
+					</span>
+					{parsed.fileUrl && (
+						<Button
+							onClick={() =>
+								window.open(parsed.fileUrl, "_blank", "noopener,noreferrer")
+							}
+							size="iconSm"
+							variant="ghost"
+						>
+							<Download className="h-4 w-4" />
+						</Button>
+					)}
+				</div>
+			) : (
+				<span className="text-sm font-medium flex items-center gap-1.5">
+					<FileText className="h-4 w-4 text-primary" />
+					{parsed.content}
+				</span>
+			)}
+		</div>
+		{parsed.type === "file" && parsed.caption && (
+			<p className="text-xs text-muted-foreground break-words">
+				{parsed.caption}
+			</p>
+		)}
+	</div>
+);
+
 export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 	const workspaceId = useWorkspaceId();
 	const [editorKey, setEditorKey] = useState(0);
 	const editorRef = useRef<Quill | null>(null);
-	const scrollRef = useRef<HTMLDivElement>(null);
+	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
 	const [allReplies, setAllReplies] = useState<ThreadReply[]>([]);
+	const [hasMoreReplies, setHasMoreReplies] = useState(false);
 
 	const { mutate: createMessage, isPending } = useCreateMessage();
 	const { mutate: generateUploadUrl } = useGenerateUploadUrl();
@@ -136,21 +187,20 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 			} else {
 				setAllReplies((prev) => [...prev, ...threadReplies.page]);
 			}
+			setHasMoreReplies(Boolean(threadReplies.continueCursor));
 		}
-	}, [threadReplies?.page, paginationCursor]);
+	}, [threadReplies?.page, threadReplies?.continueCursor, paginationCursor]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: parentMessageId is a manual trigger to reset pagination when the modal is reused for a different thread, not read directly.
 	useEffect(() => {
 		setPaginationCursor(null);
 		setAllReplies([]);
-	}, []);
+		setHasMoreReplies(false);
+	}, [thread.message.parentMessageId]);
 
 	useEffect(() => {
-		if (
-			scrollRef.current &&
-			allReplies.length > 0 &&
-			paginationCursor === null
-		) {
-			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+		if (allReplies.length > 0 && paginationCursor === null) {
+			messagesEndRef.current?.scrollIntoView({ block: "end" });
 		}
 	}, [allReplies.length, paginationCursor]);
 
@@ -160,16 +210,12 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 		}
 	};
 
+	const isLoadingMoreReplies = paginationCursor !== null && !threadReplies;
+
 	const parseMessageBody = (
 		body: string,
 		image?: string
-	): {
-		type: "text" | "canvas" | "note" | "file";
-		content: string;
-		caption?: string;
-		fileUrl?: string;
-		isSpecial: boolean;
-	} => {
+	): ParsedMessageBody => {
 		try {
 			const parsed = JSON.parse(body);
 
@@ -203,10 +249,17 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 				};
 			}
 
-			if (parsed.ops?.[0]?.insert) {
+			if (Array.isArray(parsed.ops)) {
+				const text = parsed.ops
+					.map((op: { insert?: unknown }) =>
+						typeof op.insert === "string" ? op.insert : ""
+					)
+					.join("")
+					.trim();
+
 				return {
 					type: "text",
-					content: parsed.ops[0].insert,
+					content: text,
 					isSpecial: false,
 				};
 			}
@@ -297,27 +350,27 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 			<DialogContent className="max-w-2xl h-[80vh] p-0 flex flex-col gap-0">
 				{/* Header */}
 				<div className="flex items-center gap-3 p-4 border-b flex-shrink-0">
-					<MessageSquare className="h-5 w-5 text-primary" />
-					<div>
+					<MessageSquare className="h-5 w-5 text-primary flex-shrink-0" />
+					<div className="min-w-0 flex-1">
 						<h2 className="text-lg font-semibold">Thread</h2>
-						<div className="flex items-center gap-2 mt-1">
+						<div className="flex min-w-0 items-center gap-2 mt-1">
 							<Badge
-								className={`rounded-full text-xs ${
+								className={`min-w-0 max-w-full rounded-full text-xs ${
 									thread.context.type === "channel"
-										? "bg-blue-50 text-blue-700 border-blue-200"
-										: "bg-purple-50 text-purple-700 border-purple-200"
+										? "bg-primary/10 text-primary border-primary/30"
+										: "bg-secondary/10 text-secondary border-secondary/30"
 								}`}
 								variant="outline"
 							>
 								{thread.context.type === "channel" ? (
-									<span className="flex items-center gap-1">
-										<Hash className="h-3 w-3" />
-										{thread.context.name}
+									<span className="flex min-w-0 items-center gap-1">
+										<Hash className="h-3 w-3 flex-shrink-0" />
+										<span className="truncate">{thread.context.name}</span>
 									</span>
 								) : (
-									<span className="flex items-center gap-1">
-										<User className="h-3 w-3" />
-										{thread.context.name}
+									<span className="flex min-w-0 items-center gap-1">
+										<User className="h-3 w-3 flex-shrink-0" />
+										<span className="truncate">{thread.context.name}</span>
 									</span>
 								)}
 							</Badge>
@@ -325,7 +378,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 					</div>
 				</div>
 
-				<ScrollArea className="flex-1 p-4" ref={scrollRef}>
+				<ScrollArea className="flex-1 p-4">
 					<div className="space-y-4">
 						<div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
 							<div className="flex items-start gap-3">
@@ -348,53 +401,9 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 										</span>
 									</div>
 									{parsedParentBody.isSpecial ? (
-										<div className="space-y-2">
-											<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-2 border border-primary/20">
-												{parsedParentBody.type === "canvas" ? (
-													<span className="text-sm font-medium flex items-center gap-1.5">
-														<Paintbrush className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-														{parsedParentBody.content}
-													</span>
-												) : parsedParentBody.type === "file" ? (
-													<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-														<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
-															<File className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
-															<span className="truncate">
-																{parsedParentBody.content}
-															</span>
-														</span>
-														{parsedParentBody.fileUrl && (
-															<Button
-																onClick={() =>
-																	window.open(
-																		parsedParentBody.fileUrl,
-																		"_blank",
-																		"noopener,noreferrer"
-																	)
-																}
-																size="iconSm"
-																variant="ghost"
-															>
-																<Download className="h-4 w-4" />
-															</Button>
-														)}
-													</div>
-												) : (
-													<span className="text-sm font-medium flex items-center gap-1.5">
-														<FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-														{parsedParentBody.content}
-													</span>
-												)}
-											</div>
-											{parsedParentBody.type === "file" &&
-												parsedParentBody.caption && (
-													<p className="text-xs text-muted-foreground break-words">
-														{parsedParentBody.caption}
-													</p>
-												)}
-										</div>
+										<SpecialContentChip parsed={parsedParentBody} />
 									) : (
-										<p className="text-sm break-words">
+										<p className="text-sm break-words whitespace-pre-wrap">
 											{parsedParentBody.content}
 										</p>
 									)}
@@ -404,21 +413,29 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 
 						<Separator />
 
-						{!threadReplies ? (
+						{allReplies.length === 0 && !threadReplies ? (
 							<div className="flex items-center justify-center py-8">
 								<Loader className="h-6 w-6 animate-spin text-muted-foreground" />
 							</div>
 						) : (
 							<>
-								{threadReplies.continueCursor && (
+								{hasMoreReplies && (
 									<div className="flex justify-center pb-4">
 										<Button
 											className="text-xs"
+											disabled={isLoadingMoreReplies}
 											onClick={handleLoadMore}
 											size="sm"
 											variant="outline"
 										>
-											Load older replies
+											{isLoadingMoreReplies ? (
+												<>
+													<Loader className="mr-1.5 h-3 w-3 animate-spin" />
+													Loading…
+												</>
+											) : (
+												"Load older replies"
+											)}
 										</Button>
 									</div>
 								)}
@@ -457,55 +474,16 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 																</span>
 															</div>
 															{parsedReplyBody.isSpecial ? (
-																<div className="space-y-2">
-																	<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-2 border border-primary/20">
-																		{parsedReplyBody.type === "canvas" ? (
-																			<span className="text-sm font-medium flex items-center gap-1.5">
-																				<Paintbrush className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-																				{parsedReplyBody.content}
-																			</span>
-																		) : parsedReplyBody.type === "file" ? (
-																			<div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-																				<span className="text-sm font-medium flex min-w-0 items-center gap-1.5 truncate">
-																					<File className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
-																					<span className="truncate">
-																						{parsedReplyBody.content}
-																					</span>
-																				</span>
-																				{parsedReplyBody.fileUrl && (
-																					<Button
-																						onClick={() =>
-																							window.open(
-																								parsedReplyBody.fileUrl,
-																								"_blank",
-																								"noopener,noreferrer"
-																							)
-																						}
-																						size="iconSm"
-																						variant="ghost"
-																					>
-																						<Download className="h-4 w-4" />
-																					</Button>
-																				)}
-																			</div>
-																		) : (
-																			<span className="text-sm font-medium flex items-center gap-1.5">
-																				<FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-																				{parsedReplyBody.content}
-																			</span>
-																		)}
-																	</div>
-																	{parsedReplyBody.type === "file" &&
-																		parsedReplyBody.caption && (
-																			<p className="text-xs text-muted-foreground break-words">
-																				{parsedReplyBody.caption}
-																			</p>
-																		)}
-																</div>
+																<SpecialContentChip parsed={parsedReplyBody} />
 															) : (
-																<p className="text-sm break-words">
-																	{parsedReplyBody.content}
-																</p>
+																<>
+																	<p className="text-sm break-words whitespace-pre-wrap">
+																		{parsedReplyBody.content}
+																	</p>
+																	{reply.image && (
+																		<Thumbnail url={reply.image} />
+																	)}
+																</>
 															)}
 														</div>
 													</div>
@@ -520,10 +498,11 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 								)}
 							</>
 						)}
+						<div ref={messagesEndRef} />
 					</div>
 				</ScrollArea>
 
-				<div className="border-t p-4 flex-shrink-0 bg-white dark:bg-card">
+				<div className="border-t p-4 flex-shrink-0 bg-card">
 					<Editor
 						channelId={thread.message.channelId}
 						conversationId={thread.message.conversationId}

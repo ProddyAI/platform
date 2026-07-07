@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import { Bot, Briefcase, CheckSquare, Code, Target, Users } from "lucide-react";
 import { useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ export const UseCasesSection = () => {
 		once: true,
 		margin: "-100px 0px",
 	});
+	const shouldReduceMotion = useReducedMotion();
 
 	// Tab configuration with colors and icons
 	const tabConfig = [
@@ -60,50 +61,31 @@ export const UseCasesSection = () => {
 
 	return (
 		<section
-			className="py-20 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden"
+			className="py-20 bg-gradient-to-b from-muted to-background relative overflow-hidden"
 			ref={useCasesRef}
 		>
-			{/* Background decorative elements */}
-			<div className="absolute inset-0 overflow-hidden">
-				<div className="absolute top-[20%] -right-[5%] w-[25%] h-[25%] rounded-full bg-primary/5 blur-3xl" />
-				<div className="absolute bottom-[30%] -left-[5%] w-[30%] h-[30%] rounded-full bg-secondary/5 blur-3xl" />
-			</div>
-
 			<div className="container px-6 md:px-8 mx-auto max-w-7xl relative z-10">
 				<div className="text-center mb-16">
-					<motion.div
-						animate={
-							isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
-						}
-						className="mb-4"
-						initial={{ opacity: 0, y: 20 }}
-						transition={{ duration: 0.5 }}
-					>
-						<span className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full bg-primary/10 text-primary">
-							<Bot className="mr-1 h-3.5 w-3.5" />
-							Real-World Applications
-						</span>
-					</motion.div>
 					<motion.h2
 						animate={
-							isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+							isUseCasesInView
+								? { opacity: 1, y: 0 }
+								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 						}
-						className="text-3xl md:text-5xl font-bold text-gray-900 mb-6"
-						initial={{ opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.1 }}
+						className="text-3xl md:text-5xl font-bold text-foreground mb-6"
+						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
+						transition={{ duration: 0.5 }}
 					>
-						How Teams Use{" "}
-						<span className="text-primary relative">
-							Proddy AI
-							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
-						</span>
+						How Teams Use <span className="text-primary">Proddy AI</span>
 					</motion.h2>
 					<motion.p
 						animate={
-							isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+							isUseCasesInView
+								? { opacity: 1, y: 0 }
+								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 						}
-						className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto"
-						initial={{ opacity: 0, y: 20 }}
+						className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto"
+						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 						transition={{ duration: 0.5, delay: 0.2 }}
 					>
 						Real-world applications that boost productivity across different
@@ -114,17 +96,20 @@ export const UseCasesSection = () => {
 				<Tabs className="w-full" defaultValue="marketing">
 					<motion.div
 						animate={
-							isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+							isUseCasesInView
+								? { opacity: 1, y: 0 }
+								: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 						}
 						className="mb-12"
-						initial={{ opacity: 0, y: 20 }}
+						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 						transition={{ duration: 0.5, delay: 0.3 }}
 					>
-						<TabsList className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full h-16 max-w-4xl mx-auto bg-white p-2.5 rounded-xl shadow-sm border border-gray-200">
+						<TabsList className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full h-auto max-w-4xl mx-auto bg-card p-2.5 rounded-xl shadow-sm border border-border">
 							{tabConfig.map((tab) => (
 								<TabsTrigger
+									aria-label={tab.label}
 									className={cn(
-										"relative py-3 px-4 text-sm font-medium text-gray-700 rounded-lg ring-1 ring-gray-200",
+										"relative py-3 px-4 text-sm font-medium text-muted-foreground rounded-lg ring-1 ring-border",
 										tab.hoverBg,
 										tab.hoverText,
 										tab.activeBg,
@@ -149,17 +134,19 @@ export const UseCasesSection = () => {
 					>
 						<motion.div
 							animate={
-								isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+								isUseCasesInView
+									? { opacity: 1, y: 0 }
+									: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 							}
 							className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
-							initial={{ opacity: 0, y: 20 }}
+							initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<div>
-								<h3 className="text-2xl font-bold mb-4 text-gray-900">
+								<h3 className="text-2xl font-bold mb-4 text-foreground">
 									Marketing Teams
 								</h3>
-								<p className="text-gray-600 mb-6">
+								<p className="text-muted-foreground mb-6">
 									Marketing teams use Proddy AI to streamline campaign planning,
 									content creation, and performance tracking.
 								</p>
@@ -169,10 +156,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Campaign Coordination
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;What&apos;s the status of our Q3 social media
 												campaign?&quot; gets you instant updates on progress,
 												deadlines, and assigned tasks.
@@ -184,10 +171,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Content Research
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;Find all our blog posts about product
 												features&quot; instantly retrieves relevant content from
 												your workspace.
@@ -199,10 +186,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Meeting Summaries
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;Summarize yesterday&apos;s marketing strategy
 												meeting&quot; provides key points and action items at a
 												glance.
@@ -211,22 +198,22 @@ export const UseCasesSection = () => {
 									</li>
 								</ul>
 							</div>
-							<div className="bg-white rounded-xl shadow-md p-8 border border-gray-100 hover:shadow-lg transition-all duration-300">
+							<div className="bg-card rounded-xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
 								<div className="flex items-center gap-3 mb-6">
 									<div className="p-3 rounded-lg bg-blue-100 text-blue-600">
 										<Bot className="h-6 w-6" />
 									</div>
-									<h4 className="text-xl font-bold text-gray-900">
+									<h4 className="text-xl font-bold text-foreground">
 										Example Conversation
 									</h4>
 								</div>
 								<div className="space-y-4">
-									<div className="bg-blue-50 text-gray-800 rounded-lg rounded-tr-none p-4 border-l-4 border-blue-500">
+									<div className="bg-blue-50 text-blue-900 rounded-lg rounded-tr-none p-4">
 										<p className="font-medium">
 											What&apos;s our content calendar for next week?
 										</p>
 									</div>
-									<div className="bg-gray-50 text-gray-800 rounded-lg rounded-tl-none p-4 border-l-4 border-gray-400">
+									<div className="bg-muted text-foreground rounded-lg rounded-tl-none p-4">
 										<p className="mb-3 font-medium text-blue-600">
 											Here&apos;s your content calendar for next week:
 										</p>
@@ -248,7 +235,7 @@ export const UseCasesSection = () => {
 												media recap
 											</li>
 										</ul>
-										<p className="text-xs text-gray-500 mt-3 italic">
+										<p className="text-xs text-muted-foreground mt-3 italic">
 											Sources: Marketing Calendar, Content Plan Q3
 										</p>
 									</div>
@@ -263,17 +250,19 @@ export const UseCasesSection = () => {
 					>
 						<motion.div
 							animate={
-								isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+								isUseCasesInView
+									? { opacity: 1, y: 0 }
+									: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 							}
 							className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
-							initial={{ opacity: 0, y: 20 }}
+							initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<div>
-								<h3 className="text-2xl font-bold mb-4 text-gray-900">
+								<h3 className="text-2xl font-bold mb-4 text-foreground">
 									Product Teams
 								</h3>
-								<p className="text-gray-600 mb-6">
+								<p className="text-muted-foreground mb-6">
 									Product teams leverage Proddy AI to track feature development,
 									manage roadmaps, and coordinate cross-functional work.
 								</p>
@@ -283,10 +272,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Feature Tracking
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;What&apos;s the status of the new dashboard
 												feature?&quot; provides current progress, blockers, and
 												timeline.
@@ -298,10 +287,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Requirement Lookup
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;Find the requirements for the mobile app
 												redesign&quot; instantly retrieves relevant
 												documentation.
@@ -313,10 +302,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Sprint Planning
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;What tasks are scheduled for our next
 												sprint?&quot; gives you a quick overview of upcoming
 												work.
@@ -325,22 +314,22 @@ export const UseCasesSection = () => {
 									</li>
 								</ul>
 							</div>
-							<div className="bg-white rounded-xl shadow-md p-8 border border-gray-100 hover:shadow-lg transition-all duration-300">
+							<div className="bg-card rounded-xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
 								<div className="flex items-center gap-3 mb-6">
 									<div className="p-3 rounded-lg bg-green-100 text-green-600">
 										<Bot className="h-6 w-6" />
 									</div>
-									<h4 className="text-xl font-bold text-gray-900">
+									<h4 className="text-xl font-bold text-foreground">
 										Example Conversation
 									</h4>
 								</div>
 								<div className="space-y-4">
-									<div className="bg-green-50 text-gray-800 rounded-lg rounded-tr-none p-4 border-l-4 border-green-500">
+									<div className="bg-green-50 text-green-900 rounded-lg rounded-tr-none p-4">
 										<p className="font-medium">
 											When is the Canvas feature scheduled for release?
 										</p>
 									</div>
-									<div className="bg-gray-50 text-gray-800 rounded-lg rounded-tl-none p-4 border-l-4 border-gray-400">
+									<div className="bg-muted text-foreground rounded-lg rounded-tl-none p-4">
 										<p className="mb-3 font-medium text-green-600">
 											The Canvas feature is scheduled for release on October
 											15th. According to the product roadmap, it&apos;s
@@ -349,7 +338,7 @@ export const UseCasesSection = () => {
 											blockers, and the design team signed off on the UI last
 											week.
 										</p>
-										<p className="text-xs text-gray-500 mt-3 italic">
+										<p className="text-xs text-muted-foreground mt-3 italic">
 											Sources: Product Roadmap, Engineering Sprint Board
 										</p>
 									</div>
@@ -364,17 +353,19 @@ export const UseCasesSection = () => {
 					>
 						<motion.div
 							animate={
-								isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+								isUseCasesInView
+									? { opacity: 1, y: 0 }
+									: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 							}
 							className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
-							initial={{ opacity: 0, y: 20 }}
+							initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<div>
-								<h3 className="text-2xl font-bold mb-4 text-gray-900">
+								<h3 className="text-2xl font-bold mb-4 text-foreground">
 									Engineering Teams
 								</h3>
-								<p className="text-gray-600 mb-6">
+								<p className="text-muted-foreground mb-6">
 									Engineering teams use Proddy AI to track development progress,
 									manage sprints, and coordinate technical documentation.
 								</p>
@@ -384,10 +375,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Sprint Management
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;What tasks are still open in our current
 												sprint?&quot; gives you immediate visibility into
 												remaining work.
@@ -399,10 +390,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Documentation Access
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;Find the API documentation for the user
 												service&quot; instantly retrieves relevant technical
 												docs.
@@ -414,10 +405,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Meeting Coordination
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;When is our next code review scheduled?&quot;
 												provides immediate calendar information.
 											</p>
@@ -425,22 +416,22 @@ export const UseCasesSection = () => {
 									</li>
 								</ul>
 							</div>
-							<div className="bg-white rounded-xl shadow-md p-8 border border-gray-100 hover:shadow-lg transition-all duration-300">
+							<div className="bg-card rounded-xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
 								<div className="flex items-center gap-3 mb-6">
 									<div className="p-3 rounded-lg bg-purple-100 text-purple-600">
 										<Bot className="h-6 w-6" />
 									</div>
-									<h4 className="text-xl font-bold text-gray-900">
+									<h4 className="text-xl font-bold text-foreground">
 										Example Conversation
 									</h4>
 								</div>
 								<div className="space-y-4">
-									<div className="bg-purple-50 text-gray-800 rounded-lg rounded-tr-none p-4 border-l-4 border-purple-500">
+									<div className="bg-purple-50 text-purple-900 rounded-lg rounded-tr-none p-4">
 										<p className="font-medium">
 											What are the open bugs for the messaging feature?
 										</p>
 									</div>
-									<div className="bg-gray-50 text-gray-800 rounded-lg rounded-tl-none p-4 border-l-4 border-gray-400">
+									<div className="bg-muted text-foreground rounded-lg rounded-tl-none p-4">
 										<p className="mb-3 font-medium text-purple-600">
 											Here are the open bugs for the messaging feature:
 										</p>
@@ -458,7 +449,7 @@ export const UseCasesSection = () => {
 												issues in thread view (Priority: Low)
 											</li>
 										</ul>
-										<p className="text-xs text-gray-500 mt-3 italic">
+										<p className="text-xs text-muted-foreground mt-3 italic">
 											Sources: Engineering Board, Bug Tracker
 										</p>
 									</div>
@@ -473,17 +464,19 @@ export const UseCasesSection = () => {
 					>
 						<motion.div
 							animate={
-								isUseCasesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+								isUseCasesInView
+									? { opacity: 1, y: 0 }
+									: { opacity: 0, y: shouldReduceMotion ? 0 : 20 }
 							}
 							className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
-							initial={{ opacity: 0, y: 20 }}
+							initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
 							transition={{ duration: 0.5, delay: 0.4 }}
 						>
 							<div>
-								<h3 className="text-2xl font-bold mb-4 text-gray-900">
+								<h3 className="text-2xl font-bold mb-4 text-foreground">
 									Leadership Teams
 								</h3>
-								<p className="text-gray-600 mb-6">
+								<p className="text-muted-foreground mb-6">
 									Leadership teams rely on Proddy AI for high-level insights,
 									cross-team coordination, and strategic planning.
 								</p>
@@ -493,10 +486,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Project Status
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;What&apos;s the status of our Q3
 												initiatives?&quot; provides a high-level overview across
 												all teams.
@@ -508,10 +501,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Meeting Preparation
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;Summarize the key points from last week&apos;s
 												leadership meeting&quot; helps with quick follow-ups.
 											</p>
@@ -522,10 +515,10 @@ export const UseCasesSection = () => {
 											<CheckSquare className="h-4 w-4 text-primary" />
 										</div>
 										<div className="ml-3">
-											<p className="text-gray-800 font-medium">
+											<p className="text-foreground font-medium">
 												Strategic Planning
 											</p>
-											<p className="text-gray-600 text-sm">
+											<p className="text-muted-foreground text-sm">
 												&quot;Find all documents related to our 2024
 												strategy&quot; instantly retrieves relevant materials.
 											</p>
@@ -533,22 +526,22 @@ export const UseCasesSection = () => {
 									</li>
 								</ul>
 							</div>
-							<div className="bg-white rounded-xl shadow-md p-8 border border-gray-100 hover:shadow-lg transition-all duration-300">
+							<div className="bg-card rounded-xl shadow-md p-8 border border-border hover:shadow-lg transition-all duration-300">
 								<div className="flex items-center gap-3 mb-6">
 									<div className="p-3 rounded-lg bg-indigo-100 text-indigo-600">
 										<Bot className="h-6 w-6" />
 									</div>
-									<h4 className="text-xl font-bold text-gray-900">
+									<h4 className="text-xl font-bold text-foreground">
 										Example Conversation
 									</h4>
 								</div>
 								<div className="space-y-4">
-									<div className="bg-indigo-50 text-gray-800 rounded-lg rounded-tr-none p-4 border-l-4 border-indigo-500">
+									<div className="bg-indigo-50 text-indigo-900 rounded-lg rounded-tr-none p-4">
 										<p className="font-medium">
 											Give me a status update on our key Q3 initiatives
 										</p>
 									</div>
-									<div className="bg-gray-50 text-gray-800 rounded-lg rounded-tl-none p-4 border-l-4 border-gray-400">
+									<div className="bg-muted text-foreground rounded-lg rounded-tl-none p-4">
 										<p className="mb-3 font-medium text-indigo-600">
 											Here&apos;s the current status of your key Q3 initiatives:
 										</p>
@@ -570,7 +563,7 @@ export const UseCasesSection = () => {
 												complete, ahead of schedule
 											</li>
 										</ul>
-										<p className="text-xs text-gray-500 mt-3 italic">
+										<p className="text-xs text-muted-foreground mt-3 italic">
 											Sources: Strategic Planning, Team Updates, Project Boards
 										</p>
 									</div>

@@ -1,6 +1,10 @@
 "use client";
 
+import { Home, RefreshCw } from "lucide-react";
+import Link from "next/link";
 import { useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
 
 export default function Error({
 	error,
@@ -15,20 +19,31 @@ export default function Error({
 	}, [error]);
 
 	return (
-		<div className="flex h-screen flex-col items-center justify-center bg-red-50 text-red-900 p-8">
-			<h2 className="text-2xl font-bold mb-4">
-				Something went wrong in /workspace!
+		<div className="flex h-screen flex-col items-center justify-center bg-background px-4 text-center">
+			<h2 className="text-2xl font-semibold text-foreground">
+				Something went wrong
 			</h2>
-			<p className="font-mono text-sm bg-white p-4 rounded shadow mb-4 max-w-2xl overflow-auto">
-				{error.message}
+			<p className="mt-2 max-w-md text-sm text-muted-foreground">
+				We hit a snag loading this workspace. Try again, or head back to your
+				workspaces.
 			</p>
-			<button
-				className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-				onClick={() => reset()}
-				type="button"
-			>
-				Try again
-			</button>
+			{error.digest && (
+				<p className="mt-2 text-xs text-muted-foreground">
+					Reference: {error.digest}
+				</p>
+			)}
+			<div className="mt-6 flex flex-col gap-3 sm:flex-row">
+				<Button onClick={() => reset()} type="button" variant="outline">
+					<RefreshCw className="mr-2 size-4" />
+					Try again
+				</Button>
+				<Button asChild variant="primary">
+					<Link href="/workspace">
+						<Home className="mr-2 size-4" />
+						Go to workspaces
+					</Link>
+				</Button>
+			</div>
 		</div>
 	);
 }

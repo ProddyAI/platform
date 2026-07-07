@@ -225,43 +225,30 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 	const meetingEnded = meetingStatus?.ended;
 
 	return (
-		<Card
-			className={`w-full max-w-sm border transition-all duration-500 overflow-hidden ${
-				meetingEnded
-					? "bg-white dark:bg-[#0a0a0f] border-indigo-100 dark:border-indigo-500/20 shadow-2xl shadow-indigo-500/5"
-					: "bg-white dark:bg-[#12121a] border-slate-200 dark:border-white/5 hover:border-indigo-500/40 shadow-2xl hover:shadow-indigo-500/10"
-			}`}
-			data-message-component="true"
-		>
-			<div className="flex items-center justify-between p-4 min-h-[68px] gap-4">
-				<div className="flex items-center space-x-4 flex-1 min-w-0">
+		<Card className="w-full max-w-sm overflow-hidden">
+			<div className="flex min-h-[68px] items-center justify-between gap-4 p-4">
+				<div className="flex min-w-0 flex-1 items-center space-x-4">
 					<div
-						className={`p-2.5 rounded-2xl flex-shrink-0 transition-colors duration-500 ${
+						className={`flex-shrink-0 rounded-lg border p-2.5 transition-colors duration-fast ${
 							meetingEnded
-								? "bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20"
-								: "bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-100 dark:border-indigo-500/10"
+								? "border-border bg-muted"
+								: "border-primary/20 bg-primary/10"
 						}`}
 					>
 						{meetingEnded ? (
-							<PhoneOff className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+							<PhoneOff className="h-4 w-4 text-muted-foreground" />
 						) : (
 							<div className="relative">
-								<Icon className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-300" />
-								{!meetingEnded && (
-									<span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white dark:border-[#12121a] animate-pulse" />
-								)}
+								<Icon className="h-4 w-4 text-primary" />
+								<span className="absolute -right-1 -top-1 h-2 w-2 rounded-full border-2 border-card bg-emerald-500 motion-safe:animate-pulse" />
 							</div>
 						)}
 					</div>
-					<div className="flex-1 min-w-0">
-						<CardTitle
-							className={`text-[14px] font-extrabold tracking-tight truncate ${meetingEnded ? "!text-indigo-950 dark:!text-white" : "!text-slate-900 dark:!text-white"}`}
-						>
-							{getTitle()}
-						</CardTitle>
+					<div className="min-w-0 flex-1">
+						<CardTitle className="truncate text-sm">{getTitle()}</CardTitle>
 
 						{isFile && (
-							<div className="text-[11px] !text-slate-500 dark:!text-slate-400 mt-0.5 truncate font-semibold">
+							<div className="mt-0.5 truncate text-xs text-muted-foreground">
 								{data.fileType || "Unknown type"}
 								{data.fileSize ? ` • ${data.fileSize}` : ""}
 							</div>
@@ -270,11 +257,11 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 						{/* Meeting ended - show duration and time */}
 						{isMeeting && meetingEnded && (
 							<div className="mt-1.5 flex flex-col gap-0.5">
-								<div className="text-[11px] !text-indigo-700 dark:!text-indigo-300 flex items-center gap-2 font-bold">
-									<Clock className="w-3.5 h-3.5 text-indigo-500/60 dark:text-indigo-400/60" />
+								<div className="flex items-center gap-2 text-xs text-muted-foreground">
+									<Clock className="h-3.5 w-3.5" />
 									{formatDuration(meetingStatus?.duration ?? null)}
 								</div>
-								<div className="text-[10px] !text-indigo-400 dark:!text-slate-500 uppercase tracking-widest font-black pt-0.5">
+								<div className="text-xs text-muted-foreground">
 									Ended{" "}
 									{meetingStatus?.createdAt
 										? new Date(meetingStatus.createdAt).toLocaleTimeString([], {
@@ -288,22 +275,22 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 						{/* Active meeting status */}
 						{isMeeting && !meetingEnded && data.meetingType === "schedule" && (
-							<div className="text-[12px] !text-slate-700 dark:!text-slate-300 mt-1 truncate font-bold flex items-center gap-2">
-								<Clock className="w-3.5 h-3.5 text-indigo-500" />
+							<div className="mt-1 flex items-center gap-2 truncate text-xs text-muted-foreground">
+								<Clock className="h-3.5 w-3.5" />
 								{data.meetingDate} at {data.meetingTime}
 							</div>
 						)}
 						{isMeeting && !meetingEnded && data.meetingType === "instant" && (
-							<div className="text-[12px] !text-emerald-600 dark:!text-emerald-400 mt-1 truncate font-black flex items-center gap-2 tracking-tight uppercase">
-								<div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
+							<div className="mt-1 flex items-center gap-2 truncate text-xs font-medium text-emerald-600 dark:text-emerald-400">
+								<span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
 								Meeting Active
 							</div>
 						)}
 
 						{/* Show participants for live sessions */}
 						{(isLive || (isMeeting && !meetingEnded)) && (
-							<div className="flex items-center text-[11px] !text-slate-600 dark:!text-slate-400 mt-1 font-bold">
-								<Users className="h-3.5 w-3.5 mr-2 flex-shrink-0 text-indigo-500/50 dark:text-indigo-400/50" />
+							<div className="mt-1 flex items-center text-xs text-muted-foreground">
+								<Users className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
 								<span className="truncate">{getParticipantText()}</span>
 							</div>
 						)}
@@ -311,14 +298,10 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 				</div>
 
 				<Button
-					className={`flex-shrink-0 font-black rounded-2xl transition-all text-[11px] px-4 h-9 shadow-md uppercase tracking-tighter ${
-						meetingEnded
-							? "!bg-indigo-50 dark:!bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 !text-indigo-700 dark:!text-indigo-400 hover:!bg-indigo-600 hover:!text-white"
-							: "!bg-indigo-600 !text-white hover:!bg-indigo-700 shadow-indigo-500/20 border-none"
-					}`}
+					className="flex-shrink-0"
 					onClick={handleClick}
 					size="sm"
-					variant="outline"
+					variant={meetingEnded ? "outline" : "default"}
 				>
 					{isFile && <Download className="mr-2 h-3.5 w-3.5" />}
 					{getButtonText()}

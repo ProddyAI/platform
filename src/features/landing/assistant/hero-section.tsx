@@ -1,15 +1,7 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import {
-	ArrowRight,
-	Bot,
-	Lock,
-	MessageSquare,
-	Send,
-	Sparkles,
-	Zap,
-} from "lucide-react";
+import { ArrowRight, Bot, Lock, MessageSquare, Send, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -21,15 +13,9 @@ export const HeroSection = () => {
 
 	return (
 		<section
-			className="relative w-full pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden bg-gradient-to-b from-white via-gray-50/50 to-gray-50"
+			className="relative w-full pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden bg-gradient-to-b from-background via-muted/50 to-muted"
 			ref={heroRef}
 		>
-			{/* Background decorative elements */}
-			<div className="absolute inset-0 overflow-hidden">
-				<div className="absolute -top-[30%] -right-[10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-3xl" />
-				<div className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-secondary/5 blur-3xl" />
-			</div>
-
 			<div className="container px-6 md:px-8 mx-auto relative z-10 max-w-6xl">
 				<motion.div
 					animate={isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
@@ -37,46 +23,28 @@ export const HeroSection = () => {
 					initial={{ opacity: 0, y: 20 }}
 					transition={{ duration: 0.5 }}
 				>
-					<motion.div
-						animate={
-							isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
-						}
-						className="mb-4"
-						initial={{ opacity: 0, y: 20 }}
-						transition={{ duration: 0.5, delay: 0.1 }}
-					>
-						<span className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full bg-primary/10 text-primary">
-							<Sparkles className="mr-1 h-3.5 w-3.5" />
-							AI-Powered Workspace Assistant
-						</span>
-					</motion.div>
-
 					<motion.h1
 						animate={
 							isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 mb-4 max-w-4xl"
+						className="text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-4 max-w-4xl"
 						initial={{ opacity: 0, y: 20 }}
 						transition={{ duration: 0.5, delay: 0.2 }}
 					>
-						Just Ask,{" "}
-						<span className="text-primary relative">
-							Proddy Knows
-							<span className="absolute bottom-1 left-0 w-full h-3 bg-secondary/20 -z-10 rounded-full" />
-						</span>
+						Just Ask, <span className="text-primary">Proddy Knows</span>
 					</motion.h1>
 
 					<motion.div
 						animate={
 							isHeroInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
 						}
-						className="flex flex-col sm:flex-row gap-4 justify-center mt-5 "
+						className="flex flex-col sm:flex-row gap-4 justify-center mt-8"
 						initial={{ opacity: 0, y: 20 }}
 						transition={{ duration: 0.5, delay: 0.4 }}
 					>
 						<Link href="/auth/signup">
 							<Button
-								className="gap-2 rounded-full text-white bg-primary hover:bg-primary/90 px-6 py-2 shadow-md"
+								className="gap-2 rounded-full text-primary-foreground bg-primary hover:bg-primary/90 px-6 py-2 shadow-md"
 								size="lg"
 							>
 								Try Proddy AI <ArrowRight className="size-4" />
@@ -84,7 +52,7 @@ export const HeroSection = () => {
 						</Link>
 						<Link href="#features">
 							<Button
-								className="gap-2 rounded-full bg-white border-slate-300 text-slate-700 hover:bg-slate-100 px-6 py-2"
+								className="gap-2 rounded-full bg-card border-border text-foreground hover:bg-accent px-6 py-2"
 								size="lg"
 								variant="outline"
 							>
@@ -109,7 +77,7 @@ export const HeroSection = () => {
 							<Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-0">
 								Dashboard Integration
 							</Badge>
-							<p className="text-gray-600 mb-6">
+							<p className="text-muted-foreground mb-6">
 								Proddy AI lives in your team&apos;s dashboard, making it
 								instantly accessible whenever you need assistance. No need to
 								switch contexts or open new tools – just ask your question and
@@ -122,10 +90,10 @@ export const HeroSection = () => {
 										<Zap className="h-5 w-5 text-primary" />
 									</div>
 									<div className="ml-4">
-										<h4 className="text-lg font-medium text-gray-900">
+										<h4 className="text-lg font-medium text-foreground">
 											Instant Answers
 										</h4>
-										<p className="text-gray-600">
+										<p className="text-muted-foreground">
 											Get immediate responses to your questions about workspace
 											content, schedules, and team activities.
 										</p>
@@ -137,10 +105,10 @@ export const HeroSection = () => {
 										<Lock className="h-5 w-5 text-primary" />
 									</div>
 									<div className="ml-4">
-										<h4 className="text-lg font-medium text-gray-900">
+										<h4 className="text-lg font-medium text-foreground">
 											Privacy-Focused
 										</h4>
-										<p className="text-gray-600">
+										<p className="text-muted-foreground">
 											Your workspace data stays private. Proddy AI only accesses
 											the information it needs to answer your specific
 											questions.
@@ -153,10 +121,10 @@ export const HeroSection = () => {
 										<MessageSquare className="h-5 w-5 text-primary" />
 									</div>
 									<div className="ml-4">
-										<h4 className="text-lg font-medium text-gray-900">
+										<h4 className="text-lg font-medium text-foreground">
 											Conversational Interface
 										</h4>
-										<p className="text-gray-600">
+										<p className="text-muted-foreground">
 											Chat naturally with Proddy AI just like you would with a
 											team member. No special commands or syntax required.
 										</p>
@@ -173,46 +141,40 @@ export const HeroSection = () => {
 							initial={{ opacity: 0, x: 20 }}
 							transition={{ duration: 0.5, delay: 0.7 }}
 						>
-							<div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-								<div className="p-4 bg-primary/10 border-b border-gray-200">
+							<div className="bg-card rounded-xl shadow-lg overflow-hidden border border-border">
+								<div className="p-4 bg-primary/10 border-b border-border">
 									<div className="flex items-center gap-2">
 										<Bot className="h-5 w-5 text-primary" />
-										<h3 className="font-semibold text-gray-800">Proddy AI</h3>
+										<h3 className="font-semibold text-foreground">Proddy AI</h3>
 									</div>
 								</div>
 								<div className="p-6 space-y-6 h-[500px] overflow-y-auto">
 									{/* User Message */}
 									<div className="flex justify-end">
-										<div className="bg-primary/10 text-gray-800 rounded-lg rounded-tr-none p-3 max-w-[80%]">
+										<div className="bg-primary/10 text-foreground rounded-lg rounded-tr-none p-3 max-w-[80%]">
 											<p>How&apos;s my day looking?</p>
 										</div>
 									</div>
 
 									{/* AI Response */}
 									<div className="flex">
-										<div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 max-w-[80%]">
+										<div className="bg-muted text-foreground rounded-lg rounded-tl-none p-3 max-w-[80%]">
 											<p className="text-sm">
 												Good morning! Here&apos;s your day ahead:
 												<br />
 												<br />📅{" "}
 												<span className="font-semibold">3 meetings</span> -
-												Sprint planning at 10am (high priority)
-												<br />📧{" "}
-												<span className="font-semibold">12 unread emails</span>{" "}
-												- 2 urgent from stakeholders
-												<br />🚨{" "}
-												<span className="font-semibold">1 P1 incident</span> -
-												Database performance issue (assigned to Sarah)
-												<br />📊{" "}
-												<span className="font-semibold">Projects:</span> Payment
-												API (on track), Mobile App (2 days behind)
+												Sprint planning at 10am, 1:1 with Priya at 2pm, design
+												review at 4pm
+												<br />✅ <span className="font-semibold">Tasks:</span> 4
+												due today, 1 overdue (Update onboarding flow)
 											</p>
 										</div>
 									</div>
 
 									{/* User Message */}
 									<div className="flex justify-end">
-										<div className="bg-primary/10 text-gray-800 rounded-lg rounded-tr-none p-3 max-w-[80%]">
+										<div className="bg-primary/10 text-foreground rounded-lg rounded-tr-none p-3 max-w-[80%]">
 											<p>
 												What&apos;s the context for the 10am sprint planning?
 											</p>
@@ -221,67 +183,55 @@ export const HeroSection = () => {
 
 									{/* AI Response */}
 									<div className="flex">
-										<div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 max-w-[80%]">
+										<div className="bg-muted text-foreground rounded-lg rounded-tl-none p-3 max-w-[80%]">
 											<p className="text-sm">
-												Sprint Planning - Q2 Feature Development
+												Sprint Planning - 10:00-10:30am
 												<br />
 												<br />
 												<span className="font-semibold">Agenda:</span>
 												<br />• Review completed stories from last sprint
-												<br />• Plan capacity for upcoming sprint
-												<br />• Discuss mobile app delays
+												<br />• Plan capacity for the upcoming sprint
 												<br />
 												<br />
-												<span className="font-semibold">Attendees:</span> Your
-												team + Product Manager Lisa
-												<br />
-												<span className="font-semibold">Prep needed:</span>{" "}
-												Review velocity metrics and blocker analysis
+												<span className="font-semibold">Attendees:</span> You,
+												Priya, Marcus
 											</p>
 										</div>
 									</div>
 
 									{/* User Message */}
 									<div className="flex justify-end">
-										<div className="bg-primary/10 text-gray-800 rounded-lg rounded-tr-none p-3 max-w-[80%]">
-											<p>
-												Show me a summary of the #engineering-alerts channel
-											</p>
+										<div className="bg-primary/10 text-foreground rounded-lg rounded-tr-none p-3 max-w-[80%]">
+											<p>Show me a summary of the #product-launch channel</p>
 										</div>
 									</div>
 
-									{/* Typing Indicator */}
+									{/* AI Response */}
 									<div className="flex">
-										<div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 max-w-[80%]">
-											<div className="flex items-center gap-2">
-												<div className="flex space-x-1">
-													<div
-														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
-														style={{ animationDelay: "0ms" }}
-													/>
-													<div
-														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
-														style={{ animationDelay: "150ms" }}
-													/>
-													<div
-														className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
-														style={{ animationDelay: "300ms" }}
-													/>
-												</div>
-											</div>
+										<div className="bg-muted text-foreground rounded-lg rounded-tl-none p-3 max-w-[80%]">
+											<p className="text-sm">
+												#product-launch - last 24 hours
+												<br />
+												<br />
+												14 new messages. Priya flagged a blocker on the pricing
+												page copy, and Marcus confirmed the launch checklist is
+												on track for Friday.
+											</p>
 										</div>
 									</div>
 								</div>
-								<div className="p-4 border-t border-gray-200 bg-white">
+								<div className="p-4 border-t border-border bg-card">
 									<div className="flex gap-2">
 										<input
-											className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+											className="flex-1 border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
 											disabled
 											placeholder="Ask a question about your workspace..."
 											type="text"
 										/>
 										<Button
+											aria-label="Send message"
 											className="bg-primary hover:bg-primary/90"
+											disabled
 											size="sm"
 										>
 											<Send className="h-4 w-4" />

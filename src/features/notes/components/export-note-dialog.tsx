@@ -1,7 +1,15 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { Download, MessageSquare } from "lucide-react";
+import { jsPDF } from "jspdf";
+import {
+	Download,
+	FileJson,
+	FileText,
+	FileType,
+	Globe,
+	MessageSquare,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -15,7 +23,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { formatFileSize } from "@/lib/utils";
@@ -29,9 +36,44 @@ interface ExportNoteDialogProps {
 
 type ExportBlock = {
 	type?: string;
-	content?: string;
+	// BlockNote stores rich text here as InlineContent[] (styled text / links),
+	// never a plain string — see extractPlainText below.
+	content?: unknown;
 	props?: { level?: number };
 };
+
+// BlockNote's block.content is an array of styled-text/link nodes (InlineContent[]),
+// not a string — stringifying it directly renders "[object Object]". Walk it to
+// pull out the readable text instead.
+const extractPlainText = (content: unknown): string => {
+	if (!content) return "";
+	if (typeof content === "string") return content;
+	if (Array.isArray(content)) {
+		return content
+			.map((item) => {
+				if (typeof item === "string") return item;
+				if (item && typeof item === "object") {
+					if ("text" in item && typeof item.text === "string") {
+						return item.text;
+					}
+					if ("content" in item) {
+						return extractPlainText((item as { content?: unknown }).content);
+					}
+				}
+				return "";
+			})
+			.join("");
+	}
+	return "";
+};
+
+const escapeHtml = (value: string): string =>
+	value
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
 
 export const ExportNoteDialog = ({
 	isOpen,
@@ -79,30 +121,35 @@ export const ExportNoteDialog = ({
 
 	const convertBlockToMarkdown = (block: ExportBlock): string => {
 		if (!block?.type) return "";
+		const text = extractPlainText(block.content);
 
 		switch (block.type) {
 			case "paragraph":
-				return `${block.content || ""}\n\n`;
+				return `${text}\n\n`;
 			case "heading": {
 				const level = block.props?.level || 1;
 				const hashes = "#".repeat(level);
-				return `${hashes} ${block.content || ""}\n\n`;
+				return `${hashes} ${text}\n\n`;
 			}
 			case "bulletListItem":
-				return `- ${block.content || ""}\n`;
+				return `- ${text}\n`;
 			case "numberedListItem":
-				return `1. ${block.content || ""}\n`;
+				return `1. ${text}\n`;
 			default:
-				return `${block.content || ""}\n\n`;
+				return `${text}\n\n`;
 		}
 	};
 
 	const convertToHTML = (note: Note): string => {
+		const title = escapeHtml(note.title);
+
+		// Arial here is intentional: this markup ships as a standalone exported
+		// file that must render consistently outside the app's own theming/fonts.
 		let html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${note.title}</title>
+  <title>${title}</title>
   <style>
     body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
     h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -111,11 +158,11 @@ export const ExportNoteDialog = ({
   </style>
 </head>
 <body>
-  <h1>${note.title}</h1>
+  <h1>${title}</h1>
   <div class="meta">`;
 
 		if (note.tags && note.tags.length > 0) {
-			html += `<div class="tags">Tags: ${note.tags.join(", ")}</div><br>`;
+			html += `<div class="tags">Tags: ${escapeHtml(note.tags.join(", "))}</div><br>`;
 		}
 
 		html += `Created: ${new Date(note.createdAt).toLocaleDateString()}<br>
@@ -133,10 +180,10 @@ export const ExportNoteDialog = ({
 						html += convertBlockToHTML(block);
 					});
 				} else {
-					html += `<p>${note.content}</p>`;
+					html += `<p>${escapeHtml(note.content)}</p>`;
 				}
 			} catch {
-				html += `<p>${note.content}</p>`;
+				html += `<p>${escapeHtml(note.content)}</p>`;
 			}
 		}
 
@@ -149,28 +196,61 @@ export const ExportNoteDialog = ({
 
 	const convertBlockToHTML = (block: ExportBlock): string => {
 		if (!block?.type) return "";
+		const text = escapeHtml(extractPlainText(block.content));
 
 		switch (block.type) {
 			case "paragraph":
-				return `<p>${block.content || ""}</p>`;
+				return `<p>${text}</p>`;
 			case "heading": {
 				const level = block.props?.level || 1;
-				return `<h${level}>${block.content || ""}</h${level}>`;
+				return `<h${level}>${text}</h${level}>`;
 			}
 			case "bulletListItem":
-				return `<li>${block.content || ""}</li>`;
+				return `<li>${text}</li>`;
 			case "numberedListItem":
-				return `<li>${block.content || ""}</li>`;
+				return `<li>${text}</li>`;
 			default:
-				return `<p>${block.content || ""}</p>`;
+				return `<p>${text}</p>`;
+		}
+	};
+
+	const convertToPlainText = (note: Note): string => {
+		if (!note.content) return "";
+		try {
+			const content = JSON.parse(note.content);
+			if (Array.isArray(content)) {
+				return content
+					.map((block: ExportBlock) => extractPlainText(block?.content))
+					.filter(Boolean)
+					.join("\n");
+			}
+			return note.content;
+		} catch {
+			return note.content;
 		}
 	};
 
 	const convertToPDF = (note: Note): string => {
-		const htmlContent = convertToHTML(note);
+		const doc = new jsPDF();
 
-		// This is a placeholder - in production you'd generate actual PDF
-		return `data:text/html;base64,${btoa(htmlContent)}`;
+		doc.setFontSize(16);
+		doc.text(note.title, 20, 20);
+
+		doc.setFontSize(10);
+		const metaLines = [
+			...(note.tags && note.tags.length > 0
+				? [`Tags: ${note.tags.join(", ")}`]
+				: []),
+			`Created: ${new Date(note.createdAt).toLocaleDateString()}`,
+			`Updated: ${new Date(note.updatedAt).toLocaleDateString()}`,
+		];
+		doc.text(metaLines, 20, 30);
+
+		doc.setFontSize(12);
+		const bodyText = doc.splitTextToSize(convertToPlainText(note), 170);
+		doc.text(bodyText, 20, 30 + metaLines.length * 6 + 6);
+
+		return doc.output("datauristring");
 	};
 
 	// Export to chat (save as a message in the channel)
@@ -369,51 +449,43 @@ export const ExportNoteDialog = ({
 					</DialogDescription>
 				</DialogHeader>
 
-				<Tabs className="w-full" defaultValue="format">
-					<TabsList className="grid w-full grid-cols-1">
-						<TabsTrigger value="format">Export Format</TabsTrigger>
-					</TabsList>
+				<div className="grid grid-cols-2 gap-3">
+					<Button
+						className="h-20 flex flex-col items-center justify-center"
+						onClick={() => setExportFormat("markdown")}
+						variant={exportFormat === "markdown" ? "default" : "outline"}
+					>
+						<FileText aria-hidden="true" className="h-5 w-5 mb-1" />
+						<span className="text-xs">Markdown</span>
+					</Button>
 
-					<TabsContent className="space-y-4" value="format">
-						<div className="grid grid-cols-2 gap-3">
-							<Button
-								className="h-20 flex flex-col items-center justify-center"
-								onClick={() => setExportFormat("markdown")}
-								variant={exportFormat === "markdown" ? "default" : "outline"}
-							>
-								<span className="text-lg mb-1">📝</span>
-								<span className="text-xs">Markdown</span>
-							</Button>
+					<Button
+						className="h-20 flex flex-col items-center justify-center"
+						onClick={() => setExportFormat("html")}
+						variant={exportFormat === "html" ? "default" : "outline"}
+					>
+						<Globe aria-hidden="true" className="h-5 w-5 mb-1" />
+						<span className="text-xs">HTML</span>
+					</Button>
 
-							<Button
-								className="h-20 flex flex-col items-center justify-center"
-								onClick={() => setExportFormat("html")}
-								variant={exportFormat === "html" ? "default" : "outline"}
-							>
-								<span className="text-lg mb-1">🌐</span>
-								<span className="text-xs">HTML</span>
-							</Button>
+					<Button
+						className="h-20 flex flex-col items-center justify-center"
+						onClick={() => setExportFormat("json")}
+						variant={exportFormat === "json" ? "default" : "outline"}
+					>
+						<FileJson aria-hidden="true" className="h-5 w-5 mb-1" />
+						<span className="text-xs">JSON</span>
+					</Button>
 
-							<Button
-								className="h-20 flex flex-col items-center justify-center"
-								onClick={() => setExportFormat("json")}
-								variant={exportFormat === "json" ? "default" : "outline"}
-							>
-								<span className="text-lg mb-1">📋</span>
-								<span className="text-xs">JSON</span>
-							</Button>
-
-							<Button
-								className="h-20 flex flex-col items-center justify-center"
-								onClick={() => setExportFormat("pdf")}
-								variant={exportFormat === "pdf" ? "default" : "outline"}
-							>
-								<span className="text-lg mb-1">📄</span>
-								<span className="text-xs">PDF</span>
-							</Button>
-						</div>
-					</TabsContent>
-				</Tabs>
+					<Button
+						className="h-20 flex flex-col items-center justify-center"
+						onClick={() => setExportFormat("pdf")}
+						variant={exportFormat === "pdf" ? "default" : "outline"}
+					>
+						<FileType aria-hidden="true" className="h-5 w-5 mb-1" />
+						<span className="text-xs">PDF</span>
+					</Button>
+				</div>
 
 				<DialogFooter className="flex justify-between">
 					<Button

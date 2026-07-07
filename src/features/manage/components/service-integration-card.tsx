@@ -79,8 +79,6 @@ type ToolkitConfig = {
 	icon: React.ComponentType<{ className?: string }>;
 	/** Solid brand bg for the icon pill */
 	iconBg: string;
-	/** Gradient used on the top border strip when connected */
-	connectedGradient: string;
 	/** Tailwind class for the connect button */
 	connectBtn: string;
 	name: string;
@@ -93,7 +91,6 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 	github: {
 		icon: FaGithub,
 		iconBg: "bg-[#24292e]",
-		connectedGradient: "from-slate-700 to-slate-500",
 		connectBtn: "bg-[#24292e] hover:bg-[#3a3f47] text-white",
 		name: "GitHub",
 		description: "Manage repos, issues & pull requests with AI",
@@ -102,7 +99,6 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 	gmail: {
 		icon: Mail,
 		iconBg: "bg-red-600",
-		connectedGradient: "from-red-600 to-orange-500",
 		connectBtn: "bg-red-600 hover:bg-red-700 text-white",
 		name: "Gmail",
 		description: "Send emails, read inbox & automate email workflows",
@@ -111,7 +107,6 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 	slack: {
 		icon: FaSlack,
 		iconBg: "bg-[#4a154b]",
-		connectedGradient: "from-[#4a154b] to-purple-500",
 		connectBtn: "bg-[#4a154b] hover:bg-[#611f69] text-white",
 		name: "Slack",
 		description: "Send messages, manage channels & team notifications",
@@ -120,7 +115,6 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 	linear: {
 		icon: Ticket,
 		iconBg: "bg-[#5e6ad2]",
-		connectedGradient: "from-[#5e6ad2] to-indigo-400",
 		connectBtn: "bg-[#5e6ad2] hover:bg-indigo-600 text-white",
 		name: "Linear",
 		description: "Track issues, manage projects & team sprints",
@@ -129,7 +123,6 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 	notion: {
 		icon: FileText,
 		iconBg: "bg-neutral-800",
-		connectedGradient: "from-neutral-800 to-neutral-500",
 		connectBtn: "bg-neutral-800 hover:bg-neutral-700 text-white",
 		name: "Notion",
 		description: "Create pages, query databases & manage workspace docs",
@@ -138,7 +131,6 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 	clickup: {
 		icon: CheckSquare,
 		iconBg: "bg-[#7b68ee]",
-		connectedGradient: "from-[#7b68ee] to-pink-500",
 		connectBtn: "bg-[#7b68ee] hover:bg-violet-600 text-white",
 		name: "ClickUp",
 		description: "Create tasks, track time & manage projects",
@@ -146,19 +138,11 @@ const toolkits: Record<Toolkit, ToolkitConfig> = {
 	},
 };
 
-function IntegrationTopBar({ gradient }: { gradient: string }) {
-	return (
-		<div
-			className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${gradient}`}
-		/>
-	);
-}
-
 function IntegrationStatusBadge({ isConnected }: { isConnected: boolean }) {
 	if (isConnected) {
 		return (
-			<span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 leading-5">
-				<span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+			<span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold px-2.5 py-0.5 leading-5">
+				<span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
 				Active
 			</span>
 		);
@@ -205,7 +189,7 @@ function ConnectedAccountMeta({
 	return (
 		<div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/60 rounded-lg px-3 py-2 border border-border/40">
 			<span className="flex items-center gap-1.5">
-				<Wifi className="h-3 w-3 text-emerald-500" />
+				<Wifi className="h-3 w-3 text-emerald-500 dark:text-emerald-400" />
 				Connected
 				{connectedAccount.connectedAt && (
 					<span className="text-muted-foreground/70">
@@ -501,7 +485,7 @@ export const ServiceIntegrationCard = ({
 		<Card
 			className={`
 				relative overflow-hidden border transition-all duration-200
-				hover:shadow-md hover:-translate-y-0.5
+				hover:shadow-md
 				${
 					isConnected
 						? "border-primary/20 bg-gradient-to-br from-primary/[0.03] to-transparent"
@@ -509,8 +493,6 @@ export const ServiceIntegrationCard = ({
 				}
 			`}
 		>
-			{isConnected && <IntegrationTopBar gradient={cfg.connectedGradient} />}
-
 			<div className="absolute top-3 right-3 z-10">
 				<IntegrationStatusBadge isConnected={Boolean(isConnected)} />
 			</div>

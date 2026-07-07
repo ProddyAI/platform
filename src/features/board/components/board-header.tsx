@@ -1,5 +1,6 @@
 import {
 	Bot,
+	Check,
 	GanttChart,
 	LayoutGrid,
 	Link2,
@@ -61,7 +62,7 @@ interface ViewSwitcherProps {
 }
 
 const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
-	<div className="flex items-center bg-muted/50 dark:bg-gray-800/60 rounded-lg p-0.5 border border-border/40 dark:border-gray-700">
+	<div className="flex items-center bg-muted/50 rounded-lg p-0.5 border border-border/40">
 		{(
 			[
 				{ id: "kanban", icon: LayoutGrid, label: "Board" },
@@ -73,7 +74,7 @@ const ViewSwitcher = ({ view, setView }: ViewSwitcherProps) => (
 				className={cn(
 					"h-7 px-2.5 flex items-center gap-1.5 rounded-md text-xs transition-all",
 					view === id
-						? "bg-background dark:bg-gray-900 text-foreground shadow-sm"
+						? "bg-background text-foreground shadow-sm"
 						: "text-muted-foreground hover:text-foreground"
 				)}
 				key={id}
@@ -98,13 +99,13 @@ const AddStatusButton = ({ onClick }: AddStatusButtonProps) => (
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="Add status"
-					className="h-8 gap-1.5 text-xs border-border/50 dark:border-gray-700 bg-transparent hover:bg-muted/60 dark:hover:bg-gray-800"
+					className="h-8 gap-1.5 text-xs border-border/50 bg-transparent hover:bg-muted/60"
 					onClick={onClick}
 					size="sm"
 					variant="outline"
 				>
 					<Plus className="w-3.5 h-3.5" />
-					<span className="hidden md:inline">Add Status</span>
+					<span className="hidden md:inline">Add status</span>
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent>Add a new status column</TooltipContent>
@@ -117,16 +118,22 @@ interface SearchButtonProps {
 }
 
 const SearchButton = ({ onClick }: SearchButtonProps) => (
-	<Button
-		aria-label="Search issues"
-		className="h-8 w-8 p-0 flex-shrink-0 hover:bg-white/15 transition-colors"
-		onClick={onClick}
-		size="icon"
-		title="Search issues (⌘K)"
-		variant="ghost"
-	>
-		<Search className="w-4 h-4" />
-	</Button>
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					aria-label="Search issues"
+					className="h-8 w-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
+					onClick={onClick}
+					size="icon"
+					variant="ghost"
+				>
+					<Search className="w-4 h-4" />
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>Search issues (⌘K)</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
 );
 
 interface LinkageDiagramButtonProps {
@@ -134,16 +141,22 @@ interface LinkageDiagramButtonProps {
 }
 
 const LinkageDiagramButton = ({ onClick }: LinkageDiagramButtonProps) => (
-	<Button
-		aria-label="View linkage diagram"
-		className="h-8 w-8 p-0 flex-shrink-0 hover:bg-white/15 transition-colors"
-		onClick={onClick}
-		size="icon"
-		title="View issue linkage diagram"
-		variant="ghost"
-	>
-		<Network className="w-4 h-4" />
-	</Button>
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					aria-label="View linkage diagram"
+					className="h-8 w-8 p-0 flex-shrink-0 hover:bg-muted transition-colors"
+					onClick={onClick}
+					size="icon"
+					variant="ghost"
+				>
+					<Network className="w-4 h-4" />
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>View issue linkage diagram</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
 );
 
 interface ConnectChannelButtonProps {
@@ -157,25 +170,38 @@ const ConnectChannelButton = ({
 	isConnected = false,
 	channelName,
 }: ConnectChannelButtonProps) => (
-	<Button
-		aria-label="Connect project channel"
-		className={cn(
-			"h-8 w-8 p-0 flex-shrink-0 transition-colors",
-			isConnected
-				? "text-emerald-500 hover:bg-emerald-500/10"
-				: "hover:bg-white/15"
-		)}
-		onClick={onClick}
-		size="icon"
-		title={
-			isConnected && channelName
-				? `Connected to #${channelName}. Update connection`
-				: "Connect status updates channel"
-		}
-		variant="ghost"
-	>
-		<Link2 className="w-4 h-4" />
-	</Button>
+	<TooltipProvider>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					aria-label={
+						isConnected && channelName
+							? `Connected to #${channelName}. Update connection`
+							: "Connect status updates channel"
+					}
+					className={cn(
+						"h-8 w-8 p-0 flex-shrink-0 relative transition-colors",
+						isConnected
+							? "text-emerald-500 hover:bg-emerald-500/10"
+							: "hover:bg-muted"
+					)}
+					onClick={onClick}
+					size="icon"
+					variant="ghost"
+				>
+					<Link2 className="w-4 h-4" />
+					{isConnected && (
+						<Check className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-background text-emerald-500" />
+					)}
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>
+				{isConnected && channelName
+					? `Connected to #${channelName}. Update connection`
+					: "Connect status updates channel"}
+			</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
 );
 
 interface AnalyzeBlockersButtonProps {
@@ -191,8 +217,8 @@ const AnalyzeBlockersButton = ({
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<Button
-					aria-label="Analyze blockers"
-					className="h-8 gap-1.5 text-xs border-border/50 dark:border-gray-700 bg-transparent hover:bg-muted/60 dark:hover:bg-gray-800"
+					aria-label="Detect blockers"
+					className="h-8 gap-1.5 text-xs border-border/50 bg-transparent hover:bg-muted/60"
 					disabled={loading}
 					onClick={onClick}
 					size="sm"
@@ -201,12 +227,12 @@ const AnalyzeBlockersButton = ({
 					{loading ? (
 						<>
 							<Loader2 className="w-3.5 h-3.5 animate-spin" />
-							<span className="hidden md:inline">Analyzing…</span>
+							<span className="hidden md:inline">Detecting…</span>
 						</>
 					) : (
 						<>
 							<Bot className="w-3.5 h-3.5" />
-							<span className="hidden md:inline">Analyze Blockers 🪄</span>
+							<span className="hidden md:inline">Detect blockers</span>
 						</>
 					)}
 				</Button>
@@ -233,7 +259,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 	analyzeBlockersLoading,
 }) => {
 	return (
-		<div className="flex w-full min-w-0 max-w-full items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60 dark:border-gray-800 bg-background dark:bg-gray-950 overflow-x-hidden">
+		<div className="flex w-full min-w-0 max-w-full items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60 bg-background overflow-x-hidden">
 			<StatusStats statusCount={statusCount} totalIssues={totalIssues} />
 
 			<div className="flex items-center gap-2">

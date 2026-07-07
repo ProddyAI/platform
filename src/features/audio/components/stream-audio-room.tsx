@@ -9,6 +9,16 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { FileText, Loader2, Phone, PhoneOff } from "lucide-react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAudioRoom } from ".."; // Import from index to get the new implementation
 import { AudioControlButton } from "./audio-control-button";
@@ -32,21 +42,27 @@ export const StreamAudioRoom = ({
 	isFullScreen,
 	initialShowNotes,
 }: StreamAudioRoomProps) => {
-	const [_retryKey, setRetryKey] = useState(0);
 	const [showFallbackUI, setShowFallbackUI] = useState(false);
 	const [shouldConnect, setShouldConnect] = useState(initialShowNotes || false);
 	const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
 	const [isLeavingConfirmed, setIsLeavingConfirmed] = useState(false);
 
 	// Use our custom hook to manage the audio room
-	const { client, call, currentUser, isConnecting, isConnected, error } =
-		useAudioRoom({
-			roomId,
-			workspaceId,
-			channelId,
-			canvasName,
-			shouldConnect,
-		});
+	const {
+		client,
+		call,
+		currentUser,
+		isConnecting,
+		isConnected,
+		error,
+		connectToAudioRoom,
+	} = useAudioRoom({
+		roomId,
+		workspaceId,
+		channelId,
+		canvasName,
+		shouldConnect,
+	});
 
 	// Allow other parts of the UI (e.g. Excalidraw toolbar) to toggle audio.
 	useEffect(() => {
@@ -120,26 +136,9 @@ export const StreamAudioRoom = ({
 		}
 	}, [isLeavingConfirmed]);
 
-	// Handle keyboard events for confirmation dialog
-	useEffect(() => {
-		if (!showLeaveConfirmation) return undefined;
-
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				cancelLeaveAudio();
-			} else if (event.key === "Enter") {
-				confirmLeaveAudio();
-			}
-		};
-
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [showLeaveConfirmation, cancelLeaveAudio, confirmLeaveAudio]);
-
-	// Function to force a retry by changing the key
+	// Function to retry connecting to the audio room without reloading the page
 	const handleRetry = () => {
-		setRetryKey((prev) => prev + 1);
-		window.location.reload();
+		void connectToAudioRoom();
 	};
 
 	// Function to show fallback UI instead of retrying
@@ -151,13 +150,15 @@ export const StreamAudioRoom = ({
 		return (
 			<div className="fixed bottom-4 right-4 z-50">
 				<Button
-					className="bg-white hover:bg-gray-100 flex items-center gap-2"
+					className="bg-background hover:bg-accent flex items-center gap-2"
 					disabled
 					size="sm"
 					variant="outline"
 				>
 					<div className="animate-spin h-3 w-3 border-2 border-secondary border-t-transparent rounded-full" />
-					Connecting to audio...
+					{canvasName
+						? `Connecting to ${canvasName}...`
+						: "Connecting to audio..."}
 				</Button>
 			</div>
 		);
@@ -168,7 +169,7 @@ export const StreamAudioRoom = ({
 		return (
 			<div className="fixed bottom-4 right-4 z-50">
 				<Button
-					className="bg-white hover:bg-gray-100 flex items-center gap-2"
+					className="bg-background hover:bg-accent flex items-center gap-2"
 					onClick={() => setShowFallbackUI(false)}
 					size="sm"
 					variant="outline"
@@ -185,7 +186,7 @@ export const StreamAudioRoom = ({
 			typeof error === "string" && error.includes("WS connection");
 
 		return (
-			<div className="fixed bottom-4 right-4 z-50 bg-white p-3 rounded-md shadow-md max-w-xs">
+			<div className="fixed bottom-4 right-4 z-50 bg-card p-3 rounded-md shadow-md max-w-xs">
 				<h4 className="text-sm font-medium text-red-500 mb-1">
 					{isWSError ? "Network Connection Failed" : "Audio Connection Failed"}
 				</h4>
@@ -200,7 +201,7 @@ export const StreamAudioRoom = ({
 
 				<div className="flex gap-2">
 					<Button
-						className="flex-1 bg-white hover:bg-gray-100 text-secondary flex items-center justify-center"
+						className="flex-1 bg-background hover:bg-accent text-secondary flex items-center justify-center"
 						onClick={handleRetry}
 						size="sm"
 						variant="outline"
@@ -210,7 +211,7 @@ export const StreamAudioRoom = ({
 
 					{isWSError && (
 						<Button
-							className="flex-1 bg-white hover:bg-gray-100 text-gray-600 flex items-center justify-center"
+							className="flex-1 bg-background hover:bg-accent text-gray-600 flex items-center justify-center"
 							onClick={handleShowFallback}
 							size="sm"
 							variant="outline"
@@ -236,7 +237,7 @@ export const StreamAudioRoom = ({
 				className={`fixed ${isFullScreen ? "bottom-8 right-8" : "bottom-4 right-4"} z-50`}
 			>
 				<AudioControlButton
-					className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+					className="bg-primary hover:bg-primary/90 text-primary-foreground border-primary"
 					icon={Phone}
 					label="Join Audio Room"
 					onClick={handleJoinAudio}
@@ -268,37 +269,37 @@ export const StreamAudioRoom = ({
 			)}
 
 			{/* Leave Confirmation Dialog */}
-			{showLeaveConfirmation && (
-				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
-					<div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
-						<h3 className="text-lg font-semibold mb-2">Leave Audio Room?</h3>
-						<p className="text-gray-600 mb-4">
+			<AlertDialog
+				onOpenChange={(open) => {
+					if (!open) cancelLeaveAudio();
+				}}
+				open={showLeaveConfirmation}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Leave audio room?</AlertDialogTitle>
+						<AlertDialogDescription>
 							Are you sure you want to leave the audio room? You can rejoin at
 							any time.
-						</p>
-						<div className="flex gap-3 justify-end">
-							<Button
-								className="px-4 py-2"
-								disabled={isLeavingConfirmed}
-								onClick={cancelLeaveAudio}
-								variant="outline"
-							>
-								Cancel
-							</Button>
-							<Button
-								className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white flex items-center gap-2"
-								disabled={isLeavingConfirmed}
-								onClick={confirmLeaveAudio}
-							>
-								{isLeavingConfirmed && (
-									<Loader2 className="h-4 w-4 animate-spin" />
-								)}
-								{isLeavingConfirmed ? "Leaving..." : "Leave"}
-							</Button>
-						</div>
-					</div>
-				</div>
-			)}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isLeavingConfirmed}>
+							Cancel
+						</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2"
+							disabled={isLeavingConfirmed}
+							onClick={confirmLeaveAudio}
+						>
+							{isLeavingConfirmed && (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							)}
+							{isLeavingConfirmed ? "Leaving..." : "Leave"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</>
 	);
 };
@@ -357,7 +358,7 @@ const AudioRoomUI = ({
 					</div>
 				)}
 
-				<div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200">
+				<div className="bg-card rounded-xl p-4 shadow-lg border border-border">
 					{/* Main audio controls */}
 					<div className="flex items-center justify-center mb-3 gap-3">
 						<AudioToolbarButton />
@@ -378,7 +379,7 @@ const AudioRoomUI = ({
 					{onLeaveAudio && (
 						<div className="flex justify-center">
 							<AudioControlButton
-								className="bg-red-500 hover:bg-red-600 text-white border-red-500 text-xs px-3 py-1.5"
+								className="bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive text-xs px-3 py-1.5"
 								icon={PhoneOff}
 								label="Leave Audio"
 								onClick={handleLeaveWithConfirmation}

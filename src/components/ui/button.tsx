@@ -1,34 +1,33 @@
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-	"inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium ring-offset-background transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+	"inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] motion-reduce:active:scale-100",
 	{
 		variants: {
 			variant: {
-				default:
-					"bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-md hover:shadow-lg",
+				default: "bg-primary text-primary-foreground hover:bg-primary/90",
 				destructive:
-					"bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md hover:shadow-lg",
+					"bg-destructive text-destructive-foreground hover:bg-destructive/90",
 				outline:
 					"border border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-secondary/50",
 				secondary:
-					"bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-md hover:shadow-lg",
-				primary:
-					"bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg",
+					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
+				// Deprecated alias of `default`, kept only so existing call sites
+				// passing variant="primary" keep working. Use `default` in new code.
+				primary: "bg-primary text-primary-foreground hover:bg-primary/90",
 				ghost: "hover:bg-accent/50 hover:text-accent-foreground",
 				link: "text-secondary underline-offset-4 hover:underline",
-				transparent: "bg-transparent hover:bg-accent/10 text-accent",
-				glass:
-					"bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 shadow-md hover:shadow-lg",
+				transparent: "bg-transparent hover:bg-accent/10 text-foreground",
 			},
 			size: {
 				default: "h-10 px-4 py-2",
-				sm: "h-8 rounded-[10px] px-3",
-				lg: "h-11 rounded-[10px] px-8",
+				sm: "h-8 rounded-lg px-3",
+				lg: "h-11 rounded-lg px-8",
 				icon: "h-10 w-10",
 				iconSm: "h-8 w-8",
 			},
@@ -44,17 +43,46 @@ export interface ButtonProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement>,
 		VariantProps<typeof buttonVariants> {
 	asChild?: boolean;
+	loading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-	({ className, variant, size, asChild = false, ...props }, ref) => {
+	(
+		{
+			className,
+			variant,
+			size,
+			asChild = false,
+			loading = false,
+			disabled,
+			children,
+			...props
+		},
+		ref
+	) => {
 		const Comp = asChild ? Slot : "button";
 		return (
 			<Comp
+				aria-busy={loading || undefined}
 				className={cn(buttonVariants({ variant, size, className }))}
+				disabled={disabled || loading}
 				ref={ref}
 				{...props}
-			/>
+			>
+				{asChild ? (
+					children
+				) : (
+					<>
+						{loading ? (
+							<Loader2
+								aria-hidden="true"
+								className="mr-2 h-4 w-4 animate-spin"
+							/>
+						) : null}
+						{children}
+					</>
+				)}
+			</Comp>
 		);
 	}
 );

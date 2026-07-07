@@ -4,20 +4,21 @@ import {
 	useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import { AlertCircle, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { AudioControlButton } from "./audio-control-button";
 
 // Inner component that uses Stream hooks - only rendered when call is available
 const AudioControlsInner = () => {
 	const call = useCall();
 	const [micPermissionError, setMicPermissionError] = useState(false);
+	const [isCheckingMicPermission, setIsCheckingMicPermission] = useState(false);
 	const [speakerMuted, setSpeakerMuted] = useState(false);
 
 	// These hooks are safe to call here because we know call exists
@@ -25,23 +26,56 @@ const AudioControlsInner = () => {
 	const microphoneState = useMicrophoneState();
 	const hasAudioPermission = useHasPermissions(OwnCapability.SEND_AUDIO);
 
+	const checkMicPermission = useCallback(async () => {
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: true,
+			});
+			stream.getTracks().forEach((track) => track.stop());
+			setMicPermissionError(false);
+			return true;
+		} catch (error) {
+			console.error("Microphone permission denied:", error);
+			setMicPermissionError(true);
+			return false;
+		}
+	}, []);
+
 	// Check for microphone permission on mount
 	useEffect(() => {
-		const checkMicPermission = async () => {
-			try {
-				const stream = await navigator.mediaDevices.getUserMedia({
-					audio: true,
-				});
-				stream.getTracks().forEach((track) => track.stop());
-				setMicPermissionError(false);
-			} catch (error) {
-				console.error("Microphone permission denied:", error);
-				setMicPermissionError(true);
-			}
+		void checkMicPermission();
+	}, [checkMicPermission]);
+
+	// Apply speaker mute state to all audio elements, including ones added later
+	useEffect(() => {
+		const applyMuteState = () => {
+			document.querySelectorAll("audio").forEach((audio) => {
+				audio.muted = speakerMuted;
+			});
 		};
 
-		checkMicPermission();
-	}, []);
+		applyMuteState();
+
+		// Watch for audio elements added after the initial mute state was set,
+		// so new participants/tracks respect the current speaker mute state.
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				for (const node of mutation.addedNodes) {
+					if (node.nodeName === "AUDIO") {
+						(node as HTMLAudioElement).muted = speakerMuted;
+					} else if (node instanceof Element) {
+						node.querySelectorAll("audio").forEach((audio) => {
+							audio.muted = speakerMuted;
+						});
+					}
+				}
+			}
+		});
+
+		observer.observe(document.body, { childList: true, subtree: true });
+
+		return () => observer.disconnect();
+	}, [speakerMuted]);
 
 	// Don't render if microphone state is not available yet
 	if (!microphoneState?.microphone) {
@@ -51,18 +85,18 @@ const AudioControlsInner = () => {
 	const { microphone, isMute } = microphoneState;
 
 	const toggleSpeaker = () => {
-		setSpeakerMuted(!speakerMuted);
+		setSpeakerMuted((muted) => !muted);
+	};
 
-		// Get all audio elements and mute/unmute them
-		const audioElements = document.querySelectorAll("audio");
-		audioElements.forEach((audio) => {
-			audio.muted = !speakerMuted;
-		});
-
-		if (!speakerMuted) {
-			toast.success("Speaker muted");
-		} else {
-			toast.success("Speaker unmuted");
+	const recheckMicPermission = async () => {
+		setIsCheckingMicPermission(true);
+		try {
+			const granted = await checkMicPermission();
+			if (!granted) {
+				toast.error("Microphone permission is still blocked");
+			}
+		} finally {
+			setIsCheckingMicPermission(false);
 		}
 	};
 
@@ -84,10 +118,8 @@ const AudioControlsInner = () => {
 			// Toggle microphone
 			if (isMute) {
 				await microphone.enable();
-				toast.success("Microphone unmuted");
 			} else {
 				await microphone.disable();
-				toast.success("Microphone muted");
 			}
 		} catch (error) {
 			console.error("Failed to toggle microphone:", error);
@@ -97,64 +129,55 @@ const AudioControlsInner = () => {
 	};
 
 	return (
-		<TooltipProvider>
-			<div className="flex items-center gap-2">
-				{/* Speaker (audio output) control */}
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							className="h-8 w-8 p-0 relative"
-							onClick={toggleSpeaker}
-							size="sm"
-							variant="ghost"
-						>
-							{speakerMuted ? (
-								<VolumeX className="h-4 w-4 text-red-500" />
-							) : (
-								<Volume2 className="h-4 w-4" />
-							)}
-							{speakerMuted && (
-								<div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-							)}
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>
-						{speakerMuted ? "Unmute speaker" : "Mute speaker"}
-					</TooltipContent>
-				</Tooltip>
+		<div className="flex items-center gap-3">
+			{/* Speaker (audio output) control */}
+			<AudioControlButton
+				icon={speakerMuted ? VolumeX : Volume2}
+				isMuted={speakerMuted}
+				label={speakerMuted ? "Unmute speaker" : "Mute speaker"}
+				onClick={toggleSpeaker}
+				variant="speaker"
+			/>
 
-				{/* Microphone control */}
-				<Tooltip>
-					<TooltipTrigger asChild>
+			{/* Microphone control */}
+			{micPermissionError ? (
+				<Popover>
+					<PopoverTrigger
+						aria-label="Microphone permission denied"
+						className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-destructive bg-destructive text-destructive-foreground shadow-sm transition-all duration-200 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						title="Microphone permission denied"
+					>
+						<AlertCircle className="h-5 w-5" />
+					</PopoverTrigger>
+					<PopoverContent className="text-sm">
+						<p className="font-medium text-foreground">
+							Microphone access is blocked
+						</p>
+						<p className="mt-1 text-muted-foreground">
+							Allow microphone access for this site in your browser&apos;s
+							settings, then recheck.
+						</p>
 						<Button
-							className="h-8 w-8 p-0 relative"
-							disabled={micPermissionError}
-							onClick={micPermissionError ? undefined : toggleMicrophone}
+							className="mt-3 w-full"
+							loading={isCheckingMicPermission}
+							onClick={() => void recheckMicPermission()}
 							size="sm"
-							variant="ghost"
+							variant="secondary"
 						>
-							{micPermissionError ? (
-								<AlertCircle className="h-4 w-4 text-red-500" />
-							) : isMute ? (
-								<MicOff className="h-4 w-4 text-red-500" />
-							) : (
-								<Mic className="h-4 w-4" />
-							)}
-							{(isMute || micPermissionError) && (
-								<div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-							)}
+							Recheck permission
 						</Button>
-					</TooltipTrigger>
-					<TooltipContent>
-						{micPermissionError
-							? "Microphone permission denied"
-							: isMute
-								? "Unmute to speak"
-								: "Mute microphone"}
-					</TooltipContent>
-				</Tooltip>
-			</div>
-		</TooltipProvider>
+					</PopoverContent>
+				</Popover>
+			) : (
+				<AudioControlButton
+					icon={isMute ? MicOff : Mic}
+					isMuted={isMute}
+					label={isMute ? "Unmute to speak" : "Mute microphone"}
+					onClick={() => void toggleMicrophone()}
+					variant="mic"
+				/>
+			)}
+		</div>
 	);
 };
 

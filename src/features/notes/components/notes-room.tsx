@@ -41,8 +41,8 @@ export const NotesRoom = ({ children, noteId, fallback }: NotesRoomProps) => {
 	// If user data is still loading, show a loading indicator
 	if (!currentUser) {
 		return (
-			<div className="flex items-center justify-center h-full">
-				Loading note...
+			<div className="flex h-full items-center justify-center">
+				<Loader className="size-5 animate-spin text-muted-foreground" />
 			</div>
 		);
 	}
@@ -51,8 +51,8 @@ export const NotesRoom = ({ children, noteId, fallback }: NotesRoomProps) => {
 	if (!normalizedRoomId) {
 		console.error("Invalid room ID provided to NotesRoom component");
 		return (
-			<div className="flex items-center justify-center h-full">
-				Error: Invalid room ID
+			<div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+				This note couldn't be opened. Try reloading the page.
 			</div>
 		);
 	}

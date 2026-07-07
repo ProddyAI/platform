@@ -126,42 +126,6 @@ export const TidioChat = () => {
 
 	return (
 		<>
-			{/* Set up tidioIdentify before loading the Tidio script */}
-			{currentUser?._id && (
-				<Script
-					dangerouslySetInnerHTML={{
-						__html: `
-              // Define visitor identification data
-              document.tidioIdentify = {
-                distinct_id: "${currentUser._id}",
-                email: "${currentUser.email || ""}",
-                name: "${currentUser.name || ""}"
-              };
-
-              // Create a function to handle when Tidio is ready
-              function onTidioReady() {
-                if (window.tidioChatApi) {
-                  // Set additional visitor data
-                  window.tidioChatApi.setVisitorData({
-                    email: "${currentUser.email || ""}",
-                    name: "${currentUser.name || ""}",
-                    userId: "${currentUser._id}"
-                  });
-
-                  // Add tags for better visitor categorization
-                  window.tidioChatApi.addVisitorTags(['logged-in-user']);
-                }
-              }
-
-              // Add event listener for when Tidio is ready
-              document.addEventListener("tidioChat-ready", onTidioReady);
-            `,
-					}}
-					id="tidio-identify"
-					strategy="afterInteractive"
-				/>
-			)}
-
 			{/* Load Tidio script */}
 			{tidioKey && (
 				<Script

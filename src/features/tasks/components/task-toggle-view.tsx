@@ -3,7 +3,8 @@
 import { CheckCircle2, Circle } from "lucide-react";
 import { useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
+import { badgeVariants } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { TaskItem } from "./task-item";
 
@@ -35,80 +36,65 @@ export const TaskToggleView = ({
 	const activeTasks = tasks.filter((task) => !task.completed);
 	const completedTasks = tasks.filter((task) => task.completed);
 
-	const isEmpty =
-		activeView === "active"
-			? activeTasks.length === 0
-			: completedTasks.length === 0;
+	const renderTasks = (viewTasks: TaskData[], emptyMessage: string) => {
+		if (viewTasks.length === 0) {
+			return showEmpty ? (
+				<div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/5 py-12 text-center">
+					<p className="text-sm text-muted-foreground">{emptyMessage}</p>
+				</div>
+			) : null;
+		}
+
+		return (
+			<div className="grid gap-4">
+				{viewTasks.map((task) => (
+					<TaskItem
+						categoryId={task.categoryId}
+						completed={task.completed}
+						description={task.description}
+						dueDate={task.dueDate}
+						id={task._id}
+						key={task._id}
+						priority={task.priority}
+						title={task.title}
+						workspaceId={workspaceId}
+					/>
+				))}
+			</div>
+		);
+	};
 
 	return (
-		<div className="space-y-6">
-			{/* Toggle Buttons */}
-			<div className="flex rounded-lg border overflow-hidden dark:border-gray-700">
-				<Button
-					className={cn(
-						"flex-1 rounded-none border-0 py-2 px-4 flex items-center justify-center gap-2",
-						activeView === "active"
-							? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-							: "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-					)}
-					onClick={() => setActiveView("active")}
-					variant="ghost"
-				>
+		<Tabs
+			onValueChange={(value) => setActiveView(value as "active" | "completed")}
+			value={activeView}
+		>
+			<TabsList className="flex w-full">
+				<TabsTrigger className="flex-1 gap-2" value="active">
 					<Circle className="h-4 w-4" />
-					<span>Active</span>
-					<span className="ml-1 px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-xs font-medium">
+					Active
+					<span className={cn(badgeVariants({ variant: "outline" }), "ml-1")}>
 						{activeTasks.length}
 					</span>
-				</Button>
-
-				<Button
-					className={cn(
-						"flex-1 rounded-none border-0 py-2 px-4 flex items-center justify-center gap-2",
-						activeView === "completed"
-							? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-							: "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-					)}
-					onClick={() => setActiveView("completed")}
-					variant="ghost"
-				>
+				</TabsTrigger>
+				<TabsTrigger className="flex-1 gap-2" value="completed">
 					<CheckCircle2 className="h-4 w-4" />
-					<span>Completed</span>
-					<span className="ml-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium dark:bg-gray-800 dark:text-gray-400">
+					Completed
+					<span className={cn(badgeVariants({ variant: "outline" }), "ml-1")}>
 						{completedTasks.length}
 					</span>
-				</Button>
-			</div>
+				</TabsTrigger>
+			</TabsList>
 
-			{/* Tasks List */}
-			<div className="space-y-4">
-				{isEmpty && showEmpty ? (
-					<div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-						<div className="text-gray-400 dark:text-gray-500">
-							{activeView === "active"
-								? "No active tasks"
-								: "No completed tasks"}
-						</div>
-					</div>
-				) : (
-					<div className="grid gap-4">
-						{(activeView === "active" ? activeTasks : completedTasks).map(
-							(task) => (
-								<TaskItem
-									categoryId={task.categoryId}
-									completed={task.completed}
-									description={task.description}
-									dueDate={task.dueDate}
-									id={task._id}
-									key={task._id}
-									priority={task.priority}
-									title={task.title}
-									workspaceId={workspaceId}
-								/>
-							)
-						)}
-					</div>
+			<TabsContent className="mt-6" value="active">
+				{renderTasks(activeTasks, "Tasks you create will appear here.")}
+			</TabsContent>
+			<TabsContent className="mt-6" value="completed">
+				{renderTasks(
+					completedTasks,
+					"Completed tasks appear here once you check something off."
 				)}
-			</div>
-		</div>
+			</TabsContent>
+		</Tabs>
 	);
 };

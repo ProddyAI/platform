@@ -21,15 +21,13 @@ import "./globals.css";
 export const viewport: Viewport = {
 	width: "device-width",
 	initialScale: 1,
-	maximumScale: 1,
-	userScalable: false,
 	viewportFit: "cover",
 	themeColor: "#4A0D68",
 };
 
 const metadata: Metadata = {
 	...siteConfig,
-	title: "Proddy - Your Smart Work Management Suite  ",
+	title: "Proddy - Your Smart Work Management Suite",
 	description:
 		"Proddy unifies canvas, meetings, messaging, notes so work moves from discussion to execution without friction.",
 	manifest: "/manifest.json",

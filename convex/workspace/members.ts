@@ -238,32 +238,54 @@ export const remove = mutation({
 
 		if (!currentMember) throw new Error("Unauthorized.");
 
-		// Only owners can remove owners and admins
-		if (
-			(member.role === "owner" || member.role === "admin") &&
-			currentMember.role !== "owner"
-		) {
-			throw new Error("Only owners can remove owners and admins.");
-		}
+		const isSelfRemoval = currentMember._id === args.id;
 
-		// Owners cannot be removed
-		if (member.role === "owner") throw new Error("Owners cannot be removed.");
+		if (isSelfRemoval) {
+			// Leaving the workspace. Admins (and members/viewers) may always
+			// remove/leave themselves -- there's no workspace-integrity reason
+			// to block it. Owners may leave only if another owner remains.
+			// Mirrors the ownerCount/isOnlyOwner convention in
+			// src/features/manage/components/members-management.tsx.
+			if (currentMember.role === "owner") {
+				const workspaceMembers = await ctx.db
+					.query("members")
+					.withIndex("by_workspace_id", (q) =>
+						q.eq("workspaceId", currentMember.workspaceId)
+					)
+					.collect();
 
-		// Admins can only remove members and viewers
-		if (
-			currentMember.role === "admin" &&
-			member.role !== "member" &&
-			member.role !== "viewer"
-		) {
-			throw new Error("Admins can only remove members and viewers.");
-		}
+				const ownerCount = workspaceMembers.filter(
+					(m) => m.role === "owner"
+				).length;
 
-		// Cannot remove self if admin or owner
-		if (
-			currentMember._id === args.id &&
-			(currentMember.role === "admin" || currentMember.role === "owner")
-		) {
-			throw new Error("Cannot remove self if admin or owner.");
+				if (ownerCount <= 1) {
+					throw new Error(
+						"Cannot remove yourself as the only owner. Assign another owner first."
+					);
+				}
+			}
+		} else {
+			// Only owners can remove owners and admins
+			if (
+				(member.role === "owner" || member.role === "admin") &&
+				currentMember.role !== "owner"
+			) {
+				throw new Error("Only owners can remove owners and admins.");
+			}
+
+			// Owners cannot be removed by anyone else
+			if (member.role === "owner") {
+				throw new Error("Owners cannot be removed.");
+			}
+
+			// Admins can only remove members and viewers
+			if (
+				currentMember.role === "admin" &&
+				member.role !== "member" &&
+				member.role !== "viewer"
+			) {
+				throw new Error("Admins can only remove members and viewers.");
+			}
 		}
 
 		const [messages, reactions, conversations] = await Promise.all([
@@ -277,13 +299,17 @@ export const remove = mutation({
 				.collect(),
 			ctx.db
 				.query("conversations")
-				.filter((q) =>
-					q.or(
-						q.eq(q.field("memberOneId"), member._id),
-						q.eq(q.field("memberTwoId"), member._id)
-					)
+				.withIndex("by_workspace_id", (q) =>
+					q.eq("workspaceId", member.workspaceId)
 				)
-				.collect(),
+				.collect()
+				.then((workspaceConversations) =>
+					workspaceConversations.filter(
+						(conversation) =>
+							conversation.memberOneId === member._id ||
+							conversation.memberTwoId === member._id
+					)
+				),
 		]);
 
 		for (const message of messages) await ctx.db.delete(message._id);

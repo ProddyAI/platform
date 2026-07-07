@@ -23,7 +23,6 @@ import { Check, Edit3, GripVertical, Plus, X } from "lucide-react";
 import { cloneElement, type ReactElement, useCallback, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -153,6 +152,7 @@ const SortableWidget = ({
 			{/* Size Toggle Buttons */}
 			<div className="flex items-center gap-1 bg-background/80 backdrop-blur-sm border border-border rounded-md shadow-sm p-0.5">
 				<Button
+					aria-label="Small size"
 					className={cn(
 						"h-6 w-6 p-0 text-xs",
 						size === "small" && "edit-mode-button"
@@ -164,6 +164,7 @@ const SortableWidget = ({
 					S
 				</Button>
 				<Button
+					aria-label="Medium size"
 					className={cn(
 						"h-6 w-6 p-0 text-xs",
 						size === "medium" && "edit-mode-button"
@@ -175,6 +176,7 @@ const SortableWidget = ({
 					M
 				</Button>
 				<Button
+					aria-label="Large size"
 					className={cn(
 						"h-6 w-6 p-0 text-xs",
 						size === "large" && "edit-mode-button"
@@ -189,6 +191,7 @@ const SortableWidget = ({
 
 			{/* Delete Button */}
 			<Button
+				aria-label="Remove widget"
 				className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
 				onClick={onDelete}
 				size="sm"
@@ -198,13 +201,15 @@ const SortableWidget = ({
 			</Button>
 
 			{/* Drag Handle */}
-			<div
-				className="cursor-grab active:cursor-grabbing p-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-md shadow-sm hover:bg-muted/80 transition-colors"
+			<button
+				aria-label="Reorder widget"
+				className="cursor-grab active:cursor-grabbing p-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-md shadow-sm hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+				type="button"
 				{...attributes}
 				{...listeners}
 			>
 				<GripVertical className="h-4 w-4 text-muted-foreground" />
-			</div>
+			</button>
 		</div>
 	) : null;
 
@@ -422,12 +427,12 @@ export const DashboardWidgets = ({
 
 	return (
 		<>
-			<Card className="h-full shadow-md">
-				<CardHeader className="pb-2">
+			<div className="h-full">
+				<div className="pb-2">
 					<div className="flex items-center justify-between">
-						<CardTitle className="text-lg">Workspace Overview</CardTitle>
+						<h2 className="text-lg font-semibold">Workspace Overview</h2>
 						<div className="flex items-center gap-2">
-							{/* Add Card Button - Only visible in edit mode */}
+							{/* Add Widget Button - Only visible in edit mode */}
 							{isEditMode && (
 								<Button
 									className="h-8 px-3 gap-2"
@@ -437,7 +442,7 @@ export const DashboardWidgets = ({
 									variant="outline"
 								>
 									<Plus className="h-4 w-4" />
-									<span className="hidden sm:inline">Add Card</span>
+									<span className="hidden sm:inline">Add Widget</span>
 								</Button>
 							)}
 
@@ -465,14 +470,14 @@ export const DashboardWidgets = ({
 							</Button>
 						</div>
 					</div>
-				</CardHeader>
-				<CardContent className="p-4">
+				</div>
+				<div className="p-4 pt-0">
 					<ScrollArea className="h-[calc(100vh-180px)] pb-8">
 						{isEditMode && (
 							<div className="mb-4 p-3 bg-muted/50 rounded-lg border border-dashed">
 								<p className="text-sm text-muted-foreground">
-									<strong>Edit Mode:</strong> Drag cards to reorder • Click size
-									buttons (S/M/L) to resize • Click (✕) to remove
+									<strong>Edit Mode:</strong> Drag widgets to reorder, click the
+									size buttons (S/M/L) to resize, or click Remove to delete.
 								</p>
 							</div>
 						)}
@@ -522,22 +527,22 @@ export const DashboardWidgets = ({
 									<Plus className="h-12 w-12 mx-auto mb-2 opacity-50" />
 									<p className="text-lg font-medium">No widgets added yet</p>
 									<p className="text-sm">
-										Click &quot;Add Card&quot; to get started
+										Click &quot;Add Widget&quot; to get started
 									</p>
 								</div>
 							</div>
 						)}
 					</ScrollArea>
-				</CardContent>
-			</Card>
+				</div>
+			</div>
 
 			{/* Add Widget Dialog */}
 			<Dialog onOpenChange={handleDialogOpenChange} open={isAddDialogOpen}>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
-						<DialogTitle>Add Dashboard Cards</DialogTitle>
+						<DialogTitle>Add Dashboard Widgets</DialogTitle>
 						<DialogDescription>
-							Select one or more cards to add to your dashboard
+							Select one or more widgets to add to your dashboard
 						</DialogDescription>
 					</DialogHeader>
 					<ScrollArea className="max-h-[400px] pr-4">
@@ -590,7 +595,7 @@ export const DashboardWidgets = ({
 					{availableWidgetsToAdd.length > 0 && (
 						<div className="flex items-center justify-between pt-4 border-t">
 							<p className="text-sm text-muted-foreground">
-								{selectedWidgets.length} card
+								{selectedWidgets.length} widget
 								{selectedWidgets.length !== 1 ? "s" : ""} selected
 							</p>
 							<Button
@@ -598,7 +603,8 @@ export const DashboardWidgets = ({
 								disabled={selectedWidgets.length === 0}
 								onClick={handleAddSelectedWidgets}
 							>
-								Done
+								Add {selectedWidgets.length} widget
+								{selectedWidgets.length !== 1 ? "s" : ""}
 							</Button>
 						</div>
 					)}

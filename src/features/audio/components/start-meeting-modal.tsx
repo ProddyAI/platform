@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
+import { format } from "date-fns";
 import { CalendarIcon, Search, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -50,6 +51,11 @@ export const StartMeetingModal = ({
 	const createMessage = useMutation(api.messaging.messages.create);
 	// In a real app we might have api.meetings.schedule, but for now we'll just send a message.
 
+	const today = new Date().toISOString().split("T")[0];
+	const hasRecipients =
+		selectedMembers.size > 0 || Boolean(channelId) || Boolean(conversationId);
+	const isScheduleDisabled = meetingType === "schedule" && !hasRecipients;
+
 	const filteredMembers =
 		members?.filter((member) =>
 			member.user?.name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -80,16 +86,26 @@ export const StartMeetingModal = ({
 
 	const handleStartMeeting = async () => {
 		// Validate scheduled meetings first
-		if (meetingType === "schedule" && (!date || !time)) {
-			toast.error("Please select a date and time for the scheduled meeting.");
-			return;
+		if (meetingType === "schedule") {
+			if (!date || !time) {
+				toast.error("Please select a date and time for the scheduled meeting.");
+				return;
+			}
+			const scheduledFor = new Date(`${date}T${time}`);
+			if (
+				Number.isNaN(scheduledFor.getTime()) ||
+				scheduledFor.getTime() < Date.now()
+			) {
+				toast.error("Pick a date and time in the future.");
+				return;
+			}
 		}
 
 		const meetingId = crypto.randomUUID();
 		const meetUrl = `/meet/${meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ""}${conversationId ? `&conversationId=${conversationId}` : ""}`;
 
 		try {
-			if (selectedMembers.size > 0 || channelId || conversationId) {
+			if (hasRecipients) {
 				// Send unified message payload to chat
 				await createMessage({
 					workspaceId: workspaceId as Id<"workspaces">,
@@ -111,7 +127,12 @@ export const StartMeetingModal = ({
 				window.open(meetUrl, "_blank", "noopener,noreferrer");
 				onOpenChange(false);
 			} else {
-				toast.success("Meeting scheduled successfully!");
+				// No calendar entry or reminder exists yet, so we only confirm what
+				// actually happened: the details were posted to chat.
+				const scheduledFor = new Date(`${date}T${time}`);
+				toast.success(
+					`Meeting details sent for ${format(scheduledFor, "MMM d, h:mm a")}.`
+				);
 				onOpenChange(false);
 			}
 		} catch (error) {
@@ -148,6 +169,7 @@ export const StartMeetingModal = ({
 					<div className="flex gap-2 mb-4">
 						<Input
 							className="flex-1"
+							min={today}
 							onChange={(e) => setDate(e.target.value)}
 							type="date"
 							value={date}
@@ -164,7 +186,7 @@ export const StartMeetingModal = ({
 				<div className="space-y-4">
 					<h3 className="text-sm font-medium">Invite Participants</h3>
 					<div className="relative">
-						<Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+						<Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
 						<Input
 							className="pl-9"
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -176,48 +198,83 @@ export const StartMeetingModal = ({
 					<div className="flex items-center gap-2">
 						<Checkbox
 							checked={
-								selectedMembers.size > 0 &&
+								filteredMembers.length > 0 &&
 								selectedMembers.size === filteredMembers.length
 							}
+							disabled={filteredMembers.length === 0}
 							id="select-all"
 							onCheckedChange={handleSelectAll}
 						/>
 						<label className="text-sm font-medium" htmlFor="select-all">
-							Select All
+							{searchQuery.trim()
+								? `Select all filtered (${filteredMembers.length})`
+								: "Select All"}
 						</label>
 					</div>
 
 					<ScrollArea className="h-[200px] border rounded-md p-2">
-						{filteredMembers.map((member) => {
-							if (!member.user) return null;
-							return (
-								<div
-									className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-md"
-									key={member._id}
-								>
-									<Checkbox
-										checked={selectedMembers.has(member.user._id)}
-										id={`member-${member._id}`}
-										onCheckedChange={() => handleToggleMember(member.user._id)}
-									/>
-									<label
-										className="text-sm cursor-pointer flex-1"
-										htmlFor={`member-${member._id}`}
+						{members === undefined ? (
+							<div className="flex items-center justify-center h-full">
+								<p className="text-sm text-muted-foreground">
+									Loading members...
+								</p>
+							</div>
+						) : filteredMembers.length === 0 ? (
+							<div className="flex items-center justify-center h-full">
+								<p className="text-sm text-muted-foreground">
+									No members found
+								</p>
+							</div>
+						) : (
+							filteredMembers.map((member) => {
+								if (!member.user) return null;
+								return (
+									<div
+										className="flex items-center gap-3 p-2 hover:bg-muted rounded-md"
+										key={member._id}
 									>
-										{member.user.name}
-									</label>
-								</div>
-							);
-						})}
+										<Checkbox
+											checked={selectedMembers.has(member.user._id)}
+											id={`member-${member._id}`}
+											onCheckedChange={() =>
+												handleToggleMember(member.user._id)
+											}
+										/>
+										<label
+											className="text-sm cursor-pointer flex-1"
+											htmlFor={`member-${member._id}`}
+										>
+											{member.user.name}
+										</label>
+									</div>
+								);
+							})
+						)}
 					</ScrollArea>
 				</div>
+
+				{isScheduleDisabled && (
+					<p
+						className="text-xs text-muted-foreground"
+						id="schedule-recipient-hint"
+					>
+						Select at least one participant to schedule this meeting.
+					</p>
+				)}
 
 				<DialogFooter className="mt-6">
 					<Button onClick={() => onOpenChange(false)} variant="outline">
 						Cancel
 					</Button>
-					<Button onClick={handleStartMeeting}>
+					<Button
+						aria-describedby={
+							isScheduleDisabled ? "schedule-recipient-hint" : undefined
+						}
+						disabled={isScheduleDisabled}
+						onClick={handleStartMeeting}
+					>
 						{meetingType === "instant" ? "Start Meeting" : "Schedule Meeting"}
+						{selectedMembers.size > 0 ? ` (${selectedMembers.size})` : ""}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

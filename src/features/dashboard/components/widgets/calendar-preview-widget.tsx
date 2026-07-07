@@ -1,15 +1,17 @@
 "use client";
 
 import { addDays, endOfDay, format, isSameDay, startOfDay } from "date-fns";
-import { ArrowRight, Calendar as CalendarIcon, Loader } from "lucide-react";
+import { Calendar as CalendarIcon, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetCalendarEvents } from "@/features/calendar/api/use-get-calendar-events";
+import { WidgetCard } from "../shared/widget-card";
+import { WidgetEmptyState } from "../shared/widget-empty-state";
+import { WidgetHeader } from "../shared/widget-header";
 
 // Define the CalendarEvent interface
 interface CalendarEventMessage {
@@ -50,7 +52,7 @@ export const CalendarPreviewWidget = ({
 	controls,
 }: CalendarPreviewWidgetProps) => {
 	const router = useRouter();
-	const today = new Date();
+	const today = useMemo(() => new Date(), []);
 	const currentMonth = today.getMonth();
 	const currentYear = today.getFullYear();
 
@@ -91,49 +93,36 @@ export const CalendarPreviewWidget = ({
 	};
 
 	const EventCard = ({ event }: { event: CalendarEvent }) => (
-		<Card className="overflow-hidden border-2" key={event._id}>
-			<CardContent className="p-3">
-				<div className="flex items-center justify-between">
-					<h5 className="font-medium">{event.title}</h5>
-					<Badge
-						className="text-xs border-2"
-						variant={!event.time ? "outline" : "secondary"}
-					>
-						{!event.time ? "All day" : event.time}
-					</Badge>
-				</div>
-				<Button
-					className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-					onClick={() => handleViewEvent(event._id)}
-					size="sm"
-					variant="ghost"
+		<WidgetCard>
+			<div className="flex items-center justify-between">
+				<p className="font-medium text-sm leading-tight flex-1">
+					{event.title || "Untitled event"}
+				</p>
+				<Badge
+					className="text-xs border-2"
+					variant={!event.time ? "outline" : "secondary"}
 				>
-					View details
-				</Button>
-			</CardContent>
-		</Card>
+					{!event.time ? "All day" : event.time}
+				</Badge>
+			</div>
+			<Button
+				className="mt-1 w-full justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+				onClick={() => handleViewEvent(event._id)}
+				size="sm"
+				variant="ghost"
+			>
+				View details
+			</Button>
+		</WidgetCard>
 	);
 
 	const EmptyState = () => (
-		<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-			<CalendarIcon className="mb-2 h-10 w-10 text-muted-foreground" />
-			<h3 className="text-lg font-medium">No upcoming events</h3>
-			<p className="text-sm text-muted-foreground">
-				Schedule events to see them here
-			</p>
-			<Button
-				className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
-				onClick={handleViewCalendar}
-				size="sm"
-				variant="default"
-			>
-				View Calendar <ArrowRight className="ml-2 h-3.5 w-3.5" />
-			</Button>
-		</div>
-	);
-
-	const EmptyDay = () => (
-		<p className="text-sm text-muted-foreground">No events scheduled</p>
+		<WidgetEmptyState
+			action={{ label: "View Calendar", onClick: handleViewCalendar }}
+			description="Schedule events to see them here"
+			icon={CalendarIcon}
+			title="No upcoming events"
+		/>
 	);
 
 	// Group events by day
@@ -165,22 +154,8 @@ export const CalendarPreviewWidget = ({
 
 	return (
 		<div className="space-y-4">
-			<div className="flex items-center justify-between pr-2">
-				<div className="flex items-center gap-2">
-					<CalendarIcon className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-medium">Upcoming Events</h3>
-					{!isEditMode && upcomingEvents.length > 0 && (
-						<Badge
-							className="ml-1 h-5 px-2 text-xs font-medium"
-							variant="secondary"
-						>
-							{upcomingEvents.length}
-						</Badge>
-					)}
-				</div>
-				{isEditMode ? (
-					controls
-				) : (
+			<WidgetHeader
+				action={
 					<Button
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewCalendar}
@@ -189,36 +164,48 @@ export const CalendarPreviewWidget = ({
 					>
 						View All
 					</Button>
-				)}
-			</div>
+				}
+				badge={upcomingEvents.length > 0 ? upcomingEvents.length : undefined}
+				className="pr-2"
+				controls={controls}
+				icon={
+					<CalendarIcon className="h-5 w-5 text-primary dark:text-purple-400" />
+				}
+				isEditMode={isEditMode}
+				title="Upcoming Events"
+			/>
 
 			{upcomingEvents.length > 0 ? (
-				<ScrollArea className="h-[250px] rounded-md border-2">
+				<ScrollArea className="h-[280px]">
 					<div className="space-y-4 p-4">
-						{eventsByDay.map((dayData) => (
-							<div
-								className="space-y-2"
-								key={format(dayData.date, "yyyy-MM-dd")}
-							>
-								<div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-1">
-									<h4 className="text-sm font-medium">
-										{isSameDay(dayData.date, today)
-											? "Today"
-											: isSameDay(dayData.date, addDays(today, 1))
-												? "Tomorrow"
-												: format(dayData.date, "EEEE, MMMM d")}
-									</h4>
-								</div>
+						{eventsByDay
+							.filter((dayData) => dayData.events.length > 0)
+							.map((dayData) => (
+								<div
+									className="space-y-2"
+									key={format(dayData.date, "yyyy-MM-dd")}
+								>
+									<div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-1">
+										<h4 className="text-sm font-medium">
+											{isSameDay(dayData.date, today)
+												? "Today"
+												: isSameDay(dayData.date, addDays(today, 1))
+													? "Tomorrow"
+													: format(dayData.date, "EEEE, MMMM d")}
+										</h4>
+									</div>
 
-								{dayData.events.length > 0 ? (
-									dayData.events.map((event: CalendarEvent) => (
+									{dayData.events.map((event: CalendarEvent) => (
 										<EventCard event={event} key={event._id} />
-									))
-								) : (
-									<EmptyDay />
-								)}
-							</div>
-						))}
+									))}
+								</div>
+							))}
+
+						{eventsByDay.some((dayData) => dayData.events.length === 0) && (
+							<p className="text-center text-sm text-muted-foreground">
+								Nothing else this week
+							</p>
+						)}
 					</div>
 				</ScrollArea>
 			) : (

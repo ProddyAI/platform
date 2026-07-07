@@ -14,6 +14,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -97,24 +98,29 @@ export const CreateProjectModal = () => {
 				</DialogHeader>
 
 				<form className="space-y-4" onSubmit={handleSubmit}>
-					<Input
-						autoFocus
-						disabled={isPending}
-						maxLength={48}
-						minLength={3}
-						onChange={(e) => setName(e.target.value)}
-						placeholder="Project name"
-						required
-						value={name}
-					/>
+					<div className="space-y-1">
+						<Input
+							autoFocus
+							disabled={isPending}
+							maxLength={48}
+							minLength={3}
+							onChange={(e) => setName(e.target.value)}
+							placeholder="Project name"
+							required
+							value={name}
+						/>
+						<p className="text-xs text-muted-foreground">
+							At least 3 characters.
+						</p>
+					</div>
 
 					<div className="space-y-2">
-						<p className="text-sm text-muted-foreground">Connected channel</p>
+						<Label htmlFor="connected-channel">Connected channel</Label>
 						<Select
 							onValueChange={setConnectedChannelId}
 							value={connectedChannelId}
 						>
-							<SelectTrigger>
+							<SelectTrigger id="connected-channel">
 								<SelectValue placeholder="Not connected" />
 							</SelectTrigger>
 							<SelectContent>
@@ -128,7 +134,15 @@ export const CreateProjectModal = () => {
 						</Select>
 					</div>
 
-					<div className="flex justify-end">
+					<div className="flex justify-end gap-2">
+						<Button
+							disabled={isPending}
+							onClick={handleClose}
+							type="button"
+							variant="outline"
+						>
+							Cancel
+						</Button>
 						<Button disabled={isPending || name.trim().length < 3}>
 							Create project
 						</Button>

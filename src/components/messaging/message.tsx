@@ -65,10 +65,13 @@ const MessageComponent = ({
 
 		if (contextMenu.show) {
 			// Add a small delay to prevent immediate closing
-			setTimeout(() => {
+			const timerId = setTimeout(() => {
 				document.addEventListener("click", handleClickOutside);
 			}, 100);
-			return () => document.removeEventListener("click", handleClickOutside);
+			return () => {
+				clearTimeout(timerId);
+				document.removeEventListener("click", handleClickOutside);
+			};
 		}
 		return undefined;
 	}, [contextMenu.show, closeContextMenu]);

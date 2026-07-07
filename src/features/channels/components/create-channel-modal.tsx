@@ -63,6 +63,15 @@ export const CreateChannelModal = () => {
 		setOpen(false);
 	};
 
+	const handleOpenChange = (nextOpen: boolean) => {
+		// While a create is in flight the dialog is held open (see `open={open ||
+		// isPending}` below), so ignore close attempts instead of wiping the form.
+		if (isPending) return;
+		if (!nextOpen) {
+			handleClose();
+		}
+	};
+
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value.replace(/\s+/g, "-").toLowerCase();
 		setName(value);
@@ -188,7 +197,7 @@ export const CreateChannelModal = () => {
 	};
 
 	return (
-		<Dialog onOpenChange={handleClose} open={open || isPending}>
+		<Dialog onOpenChange={handleOpenChange} open={open || isPending}>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Add a channel</DialogTitle>
@@ -217,86 +226,91 @@ export const CreateChannelModal = () => {
 									Select emoji or upload image
 								</span>
 							</div>
-							<div className="flex items-center gap-3">
-								<div className="flex-shrink-0 relative">
-									<input
-										accept="image/*"
-										aria-label="Upload channel icon image"
-										className="hidden"
-										id="icon-upload"
-										onChange={handleIconImageUpload}
-										ref={imageInputRef}
-										type="file"
-									/>
-									<button
-										aria-label="Upload channel icon"
-										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={isUploading || maxReached}
-										onClick={() =>
-											!isUploading &&
-											!maxReached &&
-											imageInputRef.current?.click()
-										}
-										type="button"
-									>
-										{iconPreview || icon ? (
-											<>
-												{iconPreview ? (
-													<Image
-														alt="Channel icon preview"
-														className="object-cover rounded-sm"
-														fill
-														sizes="80px"
-														src={iconPreview}
-													/>
-												) : (
-													<span
-														aria-label="Channel emoji icon"
-														className="text-4xl"
-														role="img"
-													>
-														{icon}
-													</span>
-												)}
-												<button
-													aria-label="Remove icon"
-													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-													onClick={(e) => {
-														e.stopPropagation();
-														if (iconPreview || iconImage) {
-															clearIconImage();
-														}
-														if (icon) {
-															setIcon(undefined);
-														}
-													}}
-													type="button"
-												>
-													<X className="h-3.5 w-3.5" />
-												</button>
-											</>
-										) : (
-											<div className="flex flex-col items-center gap-1">
-												<Upload className="h-6 w-6 text-gray-400" />
-												<span className="text-xs text-gray-500 text-center">
-													{isUploading ? "Uploading..." : "Upload"}
-												</span>
-											</div>
-										)}
-									</button>
-									<EmojiPopover
-										hint="Select emoji icon"
-										onEmojiSelect={handleEmojiSelect}
-									>
+							<div className="flex items-start gap-3">
+								<div className="flex flex-col items-center gap-1.5">
+									<div className="flex-shrink-0 relative">
+										<input
+											accept="image/*"
+											aria-label="Upload channel icon image"
+											className="hidden"
+											id="icon-upload"
+											onChange={handleIconImageUpload}
+											ref={imageInputRef}
+											type="file"
+										/>
 										<button
-											aria-label="Select emoji icon"
-											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50 disabled:opacity-50 disabled:cursor-not-allowed"
-											disabled={maxReached}
+											aria-label="Upload channel icon"
+											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted hover:bg-accent hover:border-primary/50 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+											disabled={isUploading || maxReached}
+											onClick={() =>
+												!isUploading &&
+												!maxReached &&
+												imageInputRef.current?.click()
+											}
 											type="button"
 										>
-											<Smile className="h-4 w-4" />
+											{iconPreview || icon ? (
+												<>
+													{iconPreview ? (
+														<Image
+															alt="Channel icon preview"
+															className="object-cover rounded-sm"
+															fill
+															sizes="80px"
+															src={iconPreview}
+														/>
+													) : (
+														<span
+															aria-label="Channel emoji icon"
+															className="text-4xl"
+															role="img"
+														>
+															{icon}
+														</span>
+													)}
+													<button
+														aria-label="Remove icon"
+														className="absolute -top-2 -right-2 h-6 w-6 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
+														onClick={(e) => {
+															e.stopPropagation();
+															if (iconPreview || iconImage) {
+																clearIconImage();
+															}
+															if (icon) {
+																setIcon(undefined);
+															}
+														}}
+														type="button"
+													>
+														<X className="h-3.5 w-3.5" />
+													</button>
+												</>
+											) : (
+												<div className="flex flex-col items-center gap-1">
+													<Upload className="h-6 w-6 text-muted-foreground" />
+													<span className="text-xs text-muted-foreground text-center">
+														{isUploading ? "Uploading..." : "Upload"}
+													</span>
+												</div>
+											)}
 										</button>
-									</EmojiPopover>
+										<EmojiPopover
+											hint="Select emoji icon"
+											onEmojiSelect={handleEmojiSelect}
+										>
+											<button
+												aria-label="Select emoji icon"
+												className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50 disabled:opacity-50 disabled:cursor-not-allowed"
+												disabled={maxReached}
+												type="button"
+											>
+												<Smile className="h-4 w-4" />
+											</button>
+										</EmojiPopover>
+									</div>
+									<p className="w-20 text-center text-xs text-muted-foreground">
+										Max 5MB for images
+									</p>
 								</div>
 								<div className="flex-1">
 									<Label
@@ -317,7 +331,7 @@ export const CreateChannelModal = () => {
 										value={name}
 									/>
 									<p className="text-xs text-muted-foreground mt-1">
-										Max 5MB for images
+										3-20 characters
 									</p>
 								</div>
 							</div>
@@ -325,7 +339,12 @@ export const CreateChannelModal = () => {
 					</div>
 
 					<div className="flex justify-end">
-						<Button disabled={isPending || maxReached}>Create</Button>
+						<Button
+							disabled={isPending || maxReached || !name.trim()}
+							loading={isPending}
+						>
+							Create
+						</Button>
 					</div>
 				</form>
 			</DialogContent>

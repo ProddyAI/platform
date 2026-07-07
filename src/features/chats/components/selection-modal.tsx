@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { format } from "date-fns";
-import { Copy, Sparkles, Trash2 } from "lucide-react";
+import { Copy, Sparkles, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -53,14 +53,13 @@ export const SelectionModal = () => {
 				return;
 			}
 
-			// Check if we have too many messages selected
+			// Block summarizing when too many messages are selected
 			if (selectedMessages.length > 200) {
-				toast.warning(
-					"Too many messages selected. Please select fewer messages for better summarization.",
-					{
-						duration: 5000,
-					}
-				);
+				toast.warning("Select 200 messages or fewer to summarize.", {
+					duration: 5000,
+				});
+				setIsSummarizing(false);
+				return;
 			}
 
 			// Format messages with author names and timestamps
@@ -145,6 +144,7 @@ export const SelectionModal = () => {
 
 			await navigator.clipboard.writeText(formattedText);
 			toast.success(`${selectedMessages.length} messages copied to clipboard`);
+			clearSelectedMessages();
 		} catch (error) {
 			console.error("Error copying messages:", error);
 			toast.error("Failed to copy messages");
@@ -221,9 +221,9 @@ export const SelectionModal = () => {
 				/>
 			)}
 
-			<div className="fixed bottom-6 right-6 z-50">
-				<div className="flex items-center gap-2 rounded-lg bg-white p-2 shadow-lg dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700">
-					<span className="text-sm font-medium pl-2">
+			<div className="fixed inset-x-3 bottom-20 z-50 sm:inset-x-auto sm:bottom-6 sm:right-6">
+				<div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2 shadow-lg sm:flex-nowrap">
+					<span className="whitespace-nowrap pl-2 text-sm font-medium">
 						{selectedMessages.length}{" "}
 						{selectedMessages.length === 1 ? "message" : "messages"} selected
 					</span>
@@ -255,12 +255,22 @@ export const SelectionModal = () => {
 
 					<Button
 						aria-label="Summarize selected messages"
-						className="bg-secondary text-white hover:bg-secondary/70"
 						disabled={isSummarizing || !messageContents}
 						onClick={handleSummarize}
+						size="sm"
+						variant="secondary"
 					>
 						<Sparkles className="mr-2 size-4" />
 						{isSummarizing ? "Summarizing..." : "Summarize"}
+					</Button>
+
+					<Button
+						aria-label="Clear selection"
+						onClick={clearSelectedMessages}
+						size="iconSm"
+						variant="ghost"
+					>
+						<X className="size-4" />
 					</Button>
 				</div>
 			</div>

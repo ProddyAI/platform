@@ -14,13 +14,10 @@ import {
 	UserCheck,
 	UserPlus,
 	Users,
-	Volume2,
-	VolumeX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,10 +59,10 @@ type NotificationKey =
 
 export const NotificationSettings = () => {
 	const { data: notifications, isLoading } = useNotificationPreferences();
-	const [isUpdating, setIsUpdating] = useState(false);
-	const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
-		"idle"
-	);
+	const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+	const [saveStatus, setSaveStatus] = useState<
+		"idle" | "saving" | "saved" | "error"
+	>("idle");
 	const [allNotificationsEnabled, setAllNotificationsEnabled] = useState(true);
 	const [testPushState, setTestPushState] = useState<
 		"idle" | "sending" | "sent" | "error"
@@ -141,24 +138,23 @@ export const NotificationSettings = () => {
 		window.setTimeout(() => setSaveStatus("idle"), 1200);
 	};
 
-	const withSaveState = async (callback: () => Promise<void>) => {
-		setIsUpdating(true);
+	const withSaveState = async (key: string, callback: () => Promise<void>) => {
+		setUpdatingKey(key);
 		setSaveStatus("saving");
 		try {
 			await callback();
 			showSaved();
-			toast.success("Notification preferences saved");
 		} catch (error) {
 			console.error("Failed to save notification preferences", error);
-			toast.error("Failed to save notification preferences");
-			setSaveStatus("idle");
+			setSaveStatus("error");
+			window.setTimeout(() => setSaveStatus("idle"), 2500);
 		} finally {
-			setIsUpdating(false);
+			setUpdatingKey(null);
 		}
 	};
 
 	const handleMasterToggle = async (enabled: boolean) => {
-		await withSaveState(async () => {
+		await withSaveState("master", async () => {
 			const updates = {
 				mentions: enabled,
 				assignee: enabled,
@@ -174,7 +170,7 @@ export const NotificationSettings = () => {
 	};
 
 	const handleBrowserToggle = async (type: string, enabled: boolean) => {
-		await withSaveState(async () => {
+		await withSaveState(`browser-${type}`, async () => {
 			await updateBrowserPrefs({
 				updates: { [type]: enabled } as unknown as Record<
 					NotificationKey,
@@ -185,7 +181,7 @@ export const NotificationSettings = () => {
 	};
 
 	const handleEmailToggle = async (type: string, enabled: boolean) => {
-		await withSaveState(async () => {
+		await withSaveState(`email-${type}`, async () => {
 			await updateEmailPrefs({
 				updates: { [type]: enabled } as unknown as Record<
 					NotificationKey,
@@ -199,13 +195,13 @@ export const NotificationSettings = () => {
 		channel: "browser" | "email",
 		enabled: boolean
 	) => {
-		await withSaveState(async () => {
+		await withSaveState(`channel-${channel}`, async () => {
 			await updateChannelToggle({ channel, enabled });
 		});
 	};
 
 	const handleWeeklyDigestDayChange = async (day: string) => {
-		await withSaveState(async () => {
+		await withSaveState("weeklyDigestDay", async () => {
 			await updateSettings({
 				settings: {
 					notifications: {
@@ -218,7 +214,7 @@ export const NotificationSettings = () => {
 	};
 
 	const handleSummaryModeChange = async (mode: "realtime" | "batched30m") => {
-		await withSaveState(async () => {
+		await withSaveState("summaryMode", async () => {
 			await updateSettings({
 				settings: {
 					notifications: {
@@ -250,12 +246,10 @@ export const NotificationSettings = () => {
 			)?.User?.PushSubscription?.optIn?.();
 			await sendTestPush({});
 			setTestPushState("sent");
-			toast.success("Test notification sent");
 			window.setTimeout(() => setTestPushState("idle"), 1500);
 		} catch (error) {
 			console.error("Failed to send test notification", error);
 			setTestPushState("error");
-			toast.error("Failed to send test notification");
 		}
 	};
 
@@ -281,7 +275,6 @@ export const NotificationSettings = () => {
 			title: "Mentions",
 			description: "Get notified when someone mentions you in a message",
 			icon: MessageSquare,
-			enabled: notifications?.mentions ?? true,
 			browserEnabled: browserPrefs.mentions ?? true,
 			emailEnabled: emailPrefs.mentions ?? false,
 		},
@@ -290,7 +283,6 @@ export const NotificationSettings = () => {
 			title: "Task Assignments",
 			description: "Get notified when you are assigned to a task or card",
 			icon: UserPlus,
-			enabled: notifications?.assignee ?? true,
 			browserEnabled: browserPrefs.assignee ?? true,
 			emailEnabled: emailPrefs.assignee ?? false,
 		},
@@ -300,7 +292,6 @@ export const NotificationSettings = () => {
 			description:
 				"Get notified when someone replies to a thread you participated in",
 			icon: MessageSquare,
-			enabled: notifications?.threadReply ?? true,
 			browserEnabled: browserPrefs.threadReply ?? true,
 			emailEnabled: emailPrefs.threadReply ?? false,
 		},
@@ -309,7 +300,6 @@ export const NotificationSettings = () => {
 			title: "Direct Messages",
 			description: "Get notified when you receive a direct message",
 			icon: Mail,
-			enabled: notifications?.directMessage ?? true,
 			browserEnabled: browserPrefs.directMessage ?? true,
 			emailEnabled: emailPrefs.directMessage ?? false,
 		},
@@ -318,7 +308,6 @@ export const NotificationSettings = () => {
 			title: "Invite Links",
 			description: "Get notified when an invite link is sent to the workspace",
 			icon: Mail,
-			enabled: notifications?.inviteSent ?? true,
 			browserEnabled: browserPrefs.inviteSent ?? true,
 			emailEnabled: emailPrefs.inviteSent ?? false,
 		},
@@ -328,7 +317,6 @@ export const NotificationSettings = () => {
 			description:
 				"Get notified when someone joins a workspace (if you are online)",
 			icon: Users,
-			enabled: notifications?.workspaceJoin ?? true,
 			browserEnabled: browserPrefs.workspaceJoin ?? false,
 			emailEnabled: emailPrefs.workspaceJoin ?? false,
 		},
@@ -343,154 +331,162 @@ export const NotificationSettings = () => {
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						<Bell className="h-5 w-5" />
-						Browser Push Notifications
+						Notifications
 					</CardTitle>
 					<CardDescription>
-						Check permission status and send a test push notification.
+						Control push permissions, delivery channels, and instant alerts.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="flex items-center justify-between">
-						<Label className="text-sm font-medium">Permission Status</Label>
-						<Badge
-							variant={
-								permissionState === "granted"
-									? "default"
+				<CardContent className="space-y-6">
+					{/* Push permission + test */}
+					<div className="space-y-4">
+						<div className="flex items-center justify-between">
+							<Label className="text-sm font-medium">Permission Status</Label>
+							<Badge
+								variant={
+									permissionState === "granted"
+										? "default"
+										: permissionState === "denied"
+											? "destructive"
+											: "secondary"
+								}
+							>
+								{permissionState === "granted"
+									? "Allowed"
 									: permissionState === "denied"
-										? "destructive"
-										: "secondary"
-							}
-						>
-							{permissionState === "granted"
-								? "Allowed"
-								: permissionState === "denied"
-									? "Blocked"
-									: "Not enabled"}
-						</Badge>
-					</div>
-					<div className="flex items-center gap-3">
-						<Button
-							disabled={testPushState === "sending"}
-							onClick={handleTestPush}
-						>
-							{testPushState === "sending" ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Sending...
-								</>
-							) : (
-								<>
-									<Send className="mr-2 h-4 w-4" />
-									Send Test Notification
-								</>
-							)}
-						</Button>
-						{testPushState === "sent" && (
-							<span className="text-sm text-green-600">Success ✅</span>
-						)}
-						{testPushState === "error" && (
-							<span className="text-sm text-red-600">Error ❌</span>
-						)}
-					</div>
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<Mail className="h-5 w-5" />
-						Delivery Channels
-					</CardTitle>
-					<CardDescription>
-						Control where notifications are delivered.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="flex items-center justify-between">
-						<Label className="text-sm font-medium">Browser Notifications</Label>
-						<Switch
-							checked={browserNotificationsEnabled}
-							disabled={isUpdating}
-							onCheckedChange={(enabled) =>
-								handleChannelToggle("browser", enabled)
-							}
-						/>
-					</div>
-					<div className="flex items-center justify-between">
-						<Label className="text-sm font-medium">Email Notifications</Label>
-						<Switch
-							checked={emailNotificationsEnabled}
-							disabled={isUpdating}
-							onCheckedChange={(enabled) =>
-								handleChannelToggle("email", enabled)
-							}
-						/>
-					</div>
-					{!browserNotificationsEnabled && (
-						<Alert>
-							<BellOff className="h-4 w-4" />
-							<AlertDescription>
-								Browser channel is off. Push notifications will not be
-								delivered.
-							</AlertDescription>
-						</Alert>
-					)}
-				</CardContent>
-			</Card>
-
-			{/* Master Notification Toggle */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						{allNotificationsEnabled ? (
-							<Volume2 className="h-5 w-5 text-green-600" />
-						) : (
-							<VolumeX className="h-5 w-5 text-red-600" />
-						)}
-						Master Notification Control
-					</CardTitle>
-					<CardDescription>
-						Quickly enable or disable all instant notifications at once
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div className="flex items-center justify-between p-4 rounded-lg border bg-gradient-to-r from-primary/5 to-primary/10">
-						<div className="space-y-1">
-							<Label className="flex items-center gap-2 text-base font-medium">
-								{allNotificationsEnabled ? (
-									<Bell className="h-5 w-5 text-green-600" />
-								) : (
-									<BellOff className="h-5 w-5 text-red-600" />
-								)}
-								All Notifications
-							</Label>
-							<p className="text-sm text-muted-foreground">
-								{allNotificationsEnabled
-									? "You will receive all instant notifications"
-									: "All instant notifications are disabled"}
-							</p>
+										? "Blocked"
+										: "Not enabled"}
+							</Badge>
 						</div>
-						<Switch
-							checked={allNotificationsEnabled}
-							className="data-[state=checked]:bg-green-600"
-							disabled={isUpdating || !browserNotificationsEnabled}
-							onCheckedChange={handleMasterToggle}
-						/>
+						<div className="flex items-center gap-3">
+							<Button
+								disabled={
+									testPushState === "sending" || permissionState === "denied"
+								}
+								onClick={handleTestPush}
+							>
+								{testPushState === "sending" ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Sending...
+									</>
+								) : (
+									<>
+										<Send className="mr-2 h-4 w-4" />
+										Send Test Notification
+									</>
+								)}
+							</Button>
+							{testPushState === "sent" && (
+								<span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+									<Check className="h-4 w-4" />
+									Sent
+								</span>
+							)}
+							{testPushState === "error" && (
+								<span className="text-sm text-destructive">
+									Couldn't send. Try again.
+								</span>
+							)}
+						</div>
+						{permissionState === "denied" && (
+							<p className="text-sm text-muted-foreground">
+								Notifications are blocked for this site. Enable them in your
+								browser's site settings, then reload the page.
+							</p>
+						)}
 					</div>
 
-					{!allNotificationsEnabled && (
-						<Alert className="mt-4">
-							<BellOff className="h-4 w-4" />
-							<AlertDescription>
-								All instant notifications are currently disabled. You can still
-								enable individual notifications below or use the master toggle
-								above.
-							</AlertDescription>
-						</Alert>
-					)}
-					<div className="mt-3 text-xs text-muted-foreground">
-						{saveStatus === "saving" && "Saving..."}
-						{saveStatus === "saved" && "Saved ✅"}
+					<Separator />
+
+					{/* Delivery channels */}
+					<div className="space-y-4">
+						<div className="flex items-center justify-between">
+							<Label
+								className="text-sm font-medium"
+								htmlFor="browser-notifications-toggle"
+							>
+								Browser Notifications
+							</Label>
+							<Switch
+								checked={browserNotificationsEnabled}
+								disabled={updatingKey === "channel-browser"}
+								id="browser-notifications-toggle"
+								onCheckedChange={(enabled) =>
+									handleChannelToggle("browser", enabled)
+								}
+							/>
+						</div>
+						<div className="flex items-center justify-between">
+							<Label
+								className="text-sm font-medium"
+								htmlFor="email-notifications-toggle"
+							>
+								Email Notifications
+							</Label>
+							<Switch
+								checked={emailNotificationsEnabled}
+								disabled={updatingKey === "channel-email"}
+								id="email-notifications-toggle"
+								onCheckedChange={(enabled) =>
+									handleChannelToggle("email", enabled)
+								}
+							/>
+						</div>
+						{!browserNotificationsEnabled && (
+							<Alert>
+								<BellOff className="h-4 w-4" />
+								<AlertDescription>
+									Browser channel is off. Push notifications will not be
+									delivered.
+								</AlertDescription>
+							</Alert>
+						)}
+					</div>
+
+					<Separator />
+
+					{/* All browser notifications (master toggle) */}
+					<div className="space-y-4">
+						<div className="flex items-center justify-between rounded-lg border p-4">
+							<div className="space-y-1">
+								<Label
+									className="flex items-center gap-2 text-base font-medium"
+									htmlFor="all-browser-notifications-toggle"
+								>
+									{allNotificationsEnabled ? (
+										<Bell className="h-5 w-5 text-primary" />
+									) : (
+										<BellOff className="h-5 w-5 text-muted-foreground" />
+									)}
+									All Browser Notifications
+								</Label>
+								<p className="text-sm text-muted-foreground">
+									{allNotificationsEnabled
+										? "You will receive all instant notifications"
+										: "All instant notifications are disabled"}
+								</p>
+							</div>
+							<Switch
+								checked={allNotificationsEnabled}
+								disabled={
+									updatingKey === "master" || !browserNotificationsEnabled
+								}
+								id="all-browser-notifications-toggle"
+								onCheckedChange={handleMasterToggle}
+							/>
+						</div>
+
+						{!allNotificationsEnabled && (
+							<Alert>
+								<BellOff className="h-4 w-4" />
+								<AlertDescription>
+									All instant notifications are currently disabled. You can
+									still enable individual notifications below or use the toggle
+									above.
+								</AlertDescription>
+							</Alert>
+						)}
 					</div>
 				</CardContent>
 			</Card>
@@ -522,24 +518,40 @@ export const NotificationSettings = () => {
 								</div>
 								<div className="flex items-center gap-4">
 									<div className="flex items-center gap-2">
-										<Label className="text-xs text-muted-foreground">
+										<Label
+											className="text-xs text-muted-foreground"
+											htmlFor={`browser-${notification.key}`}
+										>
 											Browser
 										</Label>
 										<Switch
+											aria-label={`${notification.title} - Browser`}
 											checked={notification.browserEnabled}
-											disabled={isUpdating || !browserNotificationsEnabled}
+											disabled={
+												updatingKey === `browser-${notification.key}` ||
+												!browserNotificationsEnabled
+											}
+											id={`browser-${notification.key}`}
 											onCheckedChange={(enabled) =>
 												handleBrowserToggle(notification.key, enabled)
 											}
 										/>
 									</div>
 									<div className="flex items-center gap-2">
-										<Label className="text-xs text-muted-foreground">
+										<Label
+											className="text-xs text-muted-foreground"
+											htmlFor={`email-${notification.key}`}
+										>
 											Email
 										</Label>
 										<Switch
+											aria-label={`${notification.title} - Email`}
 											checked={notification.emailEnabled}
-											disabled={isUpdating || !emailNotificationsEnabled}
+											disabled={
+												updatingKey === `email-${notification.key}` ||
+												!emailNotificationsEnabled
+											}
+											id={`email-${notification.key}`}
 											onCheckedChange={(enabled) =>
 												handleEmailToggle(notification.key, enabled)
 											}
@@ -558,7 +570,10 @@ export const NotificationSettings = () => {
 					{/* Online/Offline Status Notifications */}
 					<div className="flex items-center justify-between">
 						<div className="space-y-1">
-							<Label className="flex items-center gap-2 text-base font-medium">
+							<Label
+								className="flex items-center gap-2 text-base font-medium"
+								htmlFor="online-status-toggle"
+							>
 								<UserCheck className="h-4 w-4" />
 								Online/Offline Status
 							</Label>
@@ -569,7 +584,11 @@ export const NotificationSettings = () => {
 						</div>
 						<Switch
 							checked={browserPrefs.onlineStatus ?? true}
-							disabled={isUpdating || !browserNotificationsEnabled}
+							disabled={
+								updatingKey === "browser-onlineStatus" ||
+								!browserNotificationsEnabled
+							}
+							id="online-status-toggle"
 							onCheckedChange={(enabled) =>
 								handleBrowserToggle("onlineStatus", enabled)
 							}
@@ -582,7 +601,10 @@ export const NotificationSettings = () => {
 					<div className="space-y-4">
 						<div className="flex items-center justify-between">
 							<div className="space-y-1">
-								<Label className="flex items-center gap-2 text-base font-medium">
+								<Label
+									className="flex items-center gap-2 text-base font-medium"
+									htmlFor="weekly-digest-toggle"
+								>
 									<Calendar className="h-4 w-4" />
 									Weekly Digest
 								</Label>
@@ -592,9 +614,10 @@ export const NotificationSettings = () => {
 							</div>
 							<Switch
 								checked={weeklyDigestEnabled}
-								disabled={isUpdating}
+								disabled={updatingKey === "weeklyDigest"}
+								id="weekly-digest-toggle"
 								onCheckedChange={(enabled) =>
-									withSaveState(async () => {
+									withSaveState("weeklyDigest", async () => {
 										await updateSettings({
 											settings: {
 												notifications: {
@@ -610,13 +633,18 @@ export const NotificationSettings = () => {
 
 						{weeklyDigestEnabled && (
 							<div className="ml-6 space-y-2">
-								<Label className="text-sm font-medium">Delivery Day</Label>
+								<Label
+									className="text-sm font-medium"
+									htmlFor="weekly-digest-day"
+								>
+									Delivery Day
+								</Label>
 								<Select
-									disabled={isUpdating}
+									disabled={updatingKey === "weeklyDigestDay"}
 									onValueChange={handleWeeklyDigestDayChange}
 									value={weeklyDigestDay}
 								>
-									<SelectTrigger className="w-48">
+									<SelectTrigger className="w-48" id="weekly-digest-day">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -641,7 +669,10 @@ export const NotificationSettings = () => {
 					<div className="space-y-4">
 						<div className="flex items-center justify-between">
 							<div className="space-y-1">
-								<Label className="text-base font-medium">
+								<Label
+									className="text-base font-medium"
+									htmlFor="notification-summary-mode"
+								>
 									Notification Timing
 								</Label>
 								<p className="text-sm text-muted-foreground">
@@ -649,13 +680,13 @@ export const NotificationSettings = () => {
 								</p>
 							</div>
 							<Select
-								disabled={isUpdating}
+								disabled={updatingKey === "summaryMode"}
 								onValueChange={(value) =>
 									handleSummaryModeChange(value as "realtime" | "batched30m")
 								}
 								value={notificationSummaryMode}
 							>
-								<SelectTrigger className="w-48">
+								<SelectTrigger className="w-48" id="notification-summary-mode">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
@@ -669,22 +700,16 @@ export const NotificationSettings = () => {
 					<Separator />
 
 					{/* Privacy Notice */}
-					<div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/20">
-						<div className="flex items-start gap-3">
-							<Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-							<div className="space-y-1">
-								<h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-									Email Notifications
-								</h4>
-								<p className="text-sm text-blue-700 dark:text-blue-300">
-									Enable email notifications above to receive instant emails and
-									weekly digest updates. Unsubscribe links are included in all
-									emails.
-								</p>
-							</div>
-						</div>
-					</div>
-					<div className="text-xs text-muted-foreground">
+					<Alert>
+						<Shield className="h-4 w-4" />
+						<AlertTitle>Email Notifications</AlertTitle>
+						<AlertDescription>
+							Enable email notifications above to receive instant emails and
+							weekly digest updates. Unsubscribe links are included in all
+							emails.
+						</AlertDescription>
+					</Alert>
+					<div aria-live="polite" className="text-xs text-muted-foreground">
 						{saveStatus === "saving" && (
 							<span className="inline-flex items-center gap-1">
 								<Loader2 className="h-3 w-3 animate-spin" />
@@ -692,9 +717,14 @@ export const NotificationSettings = () => {
 							</span>
 						)}
 						{saveStatus === "saved" && (
-							<span className="inline-flex items-center gap-1 text-green-600">
+							<span className="inline-flex items-center gap-1">
 								<Check className="h-3 w-3" />
-								Saved ✅
+								Saved
+							</span>
+						)}
+						{saveStatus === "error" && (
+							<span className="text-destructive">
+								Couldn't save. Try again.
 							</span>
 						)}
 					</div>

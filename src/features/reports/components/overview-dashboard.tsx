@@ -7,13 +7,13 @@ import {
 	BarChart as BarChartIcon,
 	CheckSquare,
 	Hash,
-	Loader,
 	MessageSquare,
+	Minus,
 	TrendingDown,
 	TrendingUp,
 	Users,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -24,13 +24,71 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { LineChart, PieChart } from "@/features/reports/components/charts";
+import {
+	LineChart,
+	NEUTRAL_COLOR,
+	PieChart,
+	STATUS_COLORS,
+} from "@/features/reports/components/charts";
+
+const MAX_VISIBLE_ACTIVE_USERS = 8;
+
+const TIME_RANGE_LABEL: Record<"1d" | "7d" | "30d", string> = {
+	"1d": "in the last 24 hours",
+	"7d": "in the last 7 days",
+	"30d": "in the last 30 days",
+};
+
+type TrendVisual = {
+	Icon: typeof TrendingUp;
+	className: string;
+	label: string;
+};
+
+// Shared trend styling so a positive/negative/flat change always renders the
+// same icon and color everywhere it appears, and a 0% change reads as
+// neutral rather than a false-positive green "up" arrow.
+const getTrendVisual = (change: number): TrendVisual => {
+	const label = `${Math.abs(change)}%`;
+
+	if (change > 0) {
+		return {
+			Icon: TrendingUp,
+			className: "text-green-700 dark:text-green-400",
+			label,
+		};
+	}
+
+	if (change < 0) {
+		return {
+			Icon: TrendingDown,
+			className: "text-red-600 dark:text-red-400",
+			label,
+		};
+	}
+
+	return { Icon: Minus, className: "text-muted-foreground", label };
+};
+
+// Keeps the last successfully loaded value on screen while a query is
+// refetching (e.g. after switching time range), instead of tearing the
+// whole dashboard down to a loading state on every change.
+function useStableValue<T>(value: T | undefined): T | undefined {
+	const lastValueRef = useRef<T | undefined>(undefined);
+
+	if (value !== undefined) {
+		lastValueRef.current = value;
+	}
+
+	return lastValueRef.current;
+}
 
 interface OverviewDashboardProps {
 	workspaceId: Id<"workspaces">;
@@ -41,8 +99,21 @@ export const OverviewDashboard = ({
 	workspaceId,
 	timeRange = "7d",
 }: OverviewDashboardProps) => {
-	// Calculate date ranges based on selected time range
-	const endDate = useMemo(() => Date.now(), []);
+	// Calculate date ranges based on selected time range. endDate refreshes
+	// periodically and whenever the tab regains focus so a long-lived view
+	// doesn't go stale.
+	const [endDate, setEndDate] = useState(() => Date.now());
+
+	useEffect(() => {
+		const refresh = () => setEndDate(Date.now());
+		const intervalId = setInterval(refresh, 5 * 60 * 1000);
+		window.addEventListener("focus", refresh);
+		return () => {
+			clearInterval(intervalId);
+			window.removeEventListener("focus", refresh);
+		};
+	}, []);
+
 	const startDate = useMemo(() => {
 		switch (timeRange) {
 			case "1d":
@@ -123,12 +194,21 @@ export const OverviewDashboard = ({
 			: "skip"
 	);
 
-	const isLoading =
-		!overviewData || !messageData || !taskData || !activeUsersData;
+	const stableOverviewData = useStableValue(overviewData);
+	const stableActiveUsersData = useStableValue(activeUsersData);
+	const stablePreviousOverviewData = useStableValue(previousOverviewData);
+	const stableMessageData = useStableValue(messageData);
+	const stableTaskData = useStableValue(taskData);
+
+	const isInitialLoading =
+		!stableOverviewData ||
+		!stableMessageData ||
+		!stableTaskData ||
+		!stableActiveUsersData;
 
 	// Calculate trends (percentage change from previous period)
 	const trends = useMemo(() => {
-		if (!overviewData || !previousOverviewData) return null;
+		if (!stableOverviewData || !stablePreviousOverviewData) return null;
 
 		const calculateChange = (current: number, previous: number) => {
 			if (previous === 0) return current > 0 ? 100 : 0;
@@ -137,58 +217,117 @@ export const OverviewDashboard = ({
 
 		return {
 			activeUsers: calculateChange(
-				overviewData.activeUserCount,
-				previousOverviewData.activeUserCount
+				stableOverviewData.activeUserCount,
+				stablePreviousOverviewData.activeUserCount
 			),
 			messages: calculateChange(
-				overviewData.totalMessages,
-				previousOverviewData.totalMessages
+				stableOverviewData.totalMessages,
+				stablePreviousOverviewData.totalMessages
 			),
 			tasks: calculateChange(
-				overviewData.totalTasks,
-				previousOverviewData.totalTasks
+				stableOverviewData.totalTasks,
+				stablePreviousOverviewData.totalTasks
 			),
 			completedTasks: calculateChange(
-				overviewData.completedTasks,
-				previousOverviewData.completedTasks
+				stableOverviewData.completedTasks,
+				stablePreviousOverviewData.completedTasks
 			),
 		};
-	}, [overviewData, previousOverviewData]);
+	}, [stableOverviewData, stablePreviousOverviewData]);
+
+	const trendVisuals = useMemo(() => {
+		if (!trends) return null;
+
+		return {
+			activeUsers: getTrendVisual(trends.activeUsers),
+			messages: getTrendVisual(trends.messages),
+			tasks: getTrendVisual(trends.tasks),
+		};
+	}, [trends]);
 
 	// Prepare data for activity trend chart
 	const activityTrendData = useMemo(() => {
-		if (!messageData) return [];
+		if (!stableMessageData) return [];
 
-		return messageData.messagesByDate.map((item) => ({
+		return stableMessageData.messagesByDate.map((item) => ({
 			label: format(new Date(item.date), "MMM dd"),
 			value: item.count,
 		}));
-	}, [messageData]);
+	}, [stableMessageData]);
 
 	// Prepare data for task completion rate chart
 	const taskCompletionData = useMemo(() => {
-		if (!taskData) return [];
+		if (!stableTaskData) return [];
 
 		const completionRate =
-			taskData.totalTasks > 0
-				? Math.round((taskData.completedTasks / taskData.totalTasks) * 100)
+			stableTaskData.totalTasks > 0
+				? Math.round(
+						(stableTaskData.completedTasks / stableTaskData.totalTasks) * 100
+					)
 				: 0;
 
 		return [
-			{ label: "Completed", value: completionRate, color: "#1e40af" },
-			{ label: "Remaining", value: 100 - completionRate, color: "#60a5fa" },
+			{
+				label: "Completed",
+				value: completionRate,
+				color: STATUS_COLORS.completed,
+			},
+			{
+				label: "Remaining",
+				value: 100 - completionRate,
+				color: NEUTRAL_COLOR,
+			},
 		];
-	}, [taskData]);
+	}, [stableTaskData]);
 
-	if (isLoading) {
+	if (isInitialLoading) {
 		return (
-			<div className="flex items-center justify-center h-64">
-				<Loader className="h-8 w-8 animate-spin text-secondary" />
+			<div className="space-y-6">
+				<div className="flex justify-between items-center">
+					<h2 className="text-xl font-semibold text-foreground">
+						Workspace Overview
+					</h2>
+				</div>
+
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+					{["active-users", "messages", "tasks", "channels"].map((key) => (
+						<Card className="border-border" key={key}>
+							<CardHeader className="pb-2">
+								<Skeleton className="h-4 w-24" />
+							</CardHeader>
+							<CardContent className="space-y-2">
+								<Skeleton className="h-8 w-16" />
+								<Skeleton className="h-3 w-32" />
+							</CardContent>
+						</Card>
+					))}
+				</div>
+
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					<Card className="flex flex-col">
+						<CardHeader className="pb-4 flex-shrink-0">
+							<Skeleton className="h-5 w-32" />
+							<Skeleton className="h-4 w-56 mt-2" />
+						</CardHeader>
+						<CardContent className="flex-1 p-6 pt-0">
+							<Skeleton className="h-[350px] w-full" />
+						</CardContent>
+					</Card>
+					<Card className="flex flex-col">
+						<CardHeader className="pb-4 flex-shrink-0">
+							<Skeleton className="h-5 w-32" />
+							<Skeleton className="h-4 w-48 mt-2" />
+						</CardHeader>
+						<CardContent className="flex-1 p-4 pt-0 pb-4">
+							<Skeleton className="h-[350px] w-full" />
+						</CardContent>
+					</Card>
+				</div>
 			</div>
 		);
 	}
 
-	if (!overviewData) {
+	if (!stableOverviewData) {
 		return (
 			<div className="flex flex-col items-center justify-center h-64 bg-muted/20 rounded-lg">
 				<BarChartIcon className="h-12 w-12 text-muted-foreground mb-2" />
@@ -213,7 +352,7 @@ export const OverviewDashboard = ({
 				<TooltipProvider>
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Card className="cursor-help hover:shadow-md transition-all duration-200 hover:border-secondary/50 border-border">
+							<Card className="cursor-help border-border" tabIndex={0}>
 								<CardHeader className="pb-2">
 									<CardTitle className="text-sm font-medium text-muted-foreground/90">
 										Active Users
@@ -224,25 +363,21 @@ export const OverviewDashboard = ({
 										<div className="flex items-center">
 											<Users className="h-5 w-5 text-secondary mr-2" />
 											<div className="text-2xl font-bold text-foreground">
-												{activeUsersData?.activeUserCount || 0}
+												{stableActiveUsersData?.activeUserCount || 0}
 											</div>
 										</div>
-										{trends && (
+										{trendVisuals && (
 											<div
-												className={`flex items-center text-sm font-medium ${trends.activeUsers >= 0 ? "text-green-500" : "text-red-500"}`}
+												className={`flex items-center text-sm font-medium ${trendVisuals.activeUsers.className}`}
 											>
-												{trends.activeUsers >= 0 ? (
-													<TrendingUp className="h-4 w-4 mr-1" />
-												) : (
-													<TrendingDown className="h-4 w-4 mr-1" />
-												)}
-												{Math.abs(trends.activeUsers)}%
+												<trendVisuals.activeUsers.Icon className="h-4 w-4 mr-1" />
+												{trendVisuals.activeUsers.label}
 											</div>
 										)}
 									</div>
 									<CardDescription className="text-muted-foreground/80">
-										{activeUsersData?.activeUserPercentage || 0}% of{" "}
-										{activeUsersData?.totalMembers || 0} total users
+										{stableActiveUsersData?.activeUserPercentage || 0}% of{" "}
+										{stableActiveUsersData?.totalMembers || 0} total users
 									</CardDescription>
 								</CardContent>
 							</Card>
@@ -250,14 +385,25 @@ export const OverviewDashboard = ({
 						<TooltipContent className="max-w-xs" side="top">
 							<div className="space-y-1">
 								<p className="font-medium text-sm">Active Users:</p>
-								{activeUsersData?.activeUsers &&
-								activeUsersData.activeUsers.length > 0 ? (
+								{stableActiveUsersData?.activeUsers &&
+								stableActiveUsersData.activeUsers.length > 0 ? (
 									<div className="space-y-1">
-										{activeUsersData.activeUsers.map((user, _index) => (
-											<div className="text-xs" key={user.memberId}>
-												• {user.name}
+										{stableActiveUsersData.activeUsers
+											.slice(0, MAX_VISIBLE_ACTIVE_USERS)
+											.map((user) => (
+												<div className="text-xs" key={user.memberId}>
+													• {user.name}
+												</div>
+											))}
+										{stableActiveUsersData.activeUsers.length >
+											MAX_VISIBLE_ACTIVE_USERS && (
+											<div className="text-xs text-muted-foreground">
+												and{" "}
+												{stableActiveUsersData.activeUsers.length -
+													MAX_VISIBLE_ACTIVE_USERS}{" "}
+												more
 											</div>
-										))}
+										)}
 									</div>
 								) : (
 									<p className="text-xs text-muted-foreground">
@@ -280,29 +426,25 @@ export const OverviewDashboard = ({
 							<div className="flex items-center">
 								<MessageSquare className="h-5 w-5 text-secondary mr-2" />
 								<div className="text-2xl font-bold text-foreground">
-									{overviewData.totalMessages
-										? overviewData.totalMessages.toLocaleString()
+									{stableOverviewData.totalMessages
+										? stableOverviewData.totalMessages.toLocaleString()
 										: 0}
 								</div>
 							</div>
-							{trends && (
+							{trendVisuals && (
 								<div
-									className={`flex items-center text-sm font-medium ${trends.messages >= 0 ? "text-green-500" : "text-red-500"}`}
+									className={`flex items-center text-sm font-medium ${trendVisuals.messages.className}`}
 								>
-									{trends.messages >= 0 ? (
-										<TrendingUp className="h-4 w-4 mr-1" />
-									) : (
-										<TrendingDown className="h-4 w-4 mr-1" />
-									)}
-									{Math.abs(trends.messages)}%
+									<trendVisuals.messages.Icon className="h-4 w-4 mr-1" />
+									{trendVisuals.messages.label}
 								</div>
 							)}
 						</div>
 						<CardDescription className="text-muted-foreground/80">
-							{overviewData.activeUserCount > 0
-								? `${Math.round(overviewData.totalMessages / overviewData.activeUserCount)} per active user`
+							{stableOverviewData.activeUserCount > 0
+								? `${Math.round(stableOverviewData.totalMessages / stableOverviewData.activeUserCount)} per active user`
 								: "No active users"}{" "}
-							in last 7 days
+							{TIME_RANGE_LABEL[timeRange]}
 						</CardDescription>
 					</CardContent>
 				</Card>
@@ -318,25 +460,21 @@ export const OverviewDashboard = ({
 							<div className="flex items-center">
 								<CheckSquare className="h-5 w-5 text-secondary mr-2" />
 								<div className="text-2xl font-bold text-foreground">
-									{overviewData.totalTasks}
+									{stableOverviewData.totalTasks}
 								</div>
 							</div>
-							{trends && (
+							{trendVisuals && (
 								<div
-									className={`flex items-center text-sm font-medium ${trends.tasks >= 0 ? "text-green-500" : "text-red-500"}`}
+									className={`flex items-center text-sm font-medium ${trendVisuals.tasks.className}`}
 								>
-									{trends.tasks >= 0 ? (
-										<TrendingUp className="h-4 w-4 mr-1" />
-									) : (
-										<TrendingDown className="h-4 w-4 mr-1" />
-									)}
-									{Math.abs(trends.tasks)}%
+									<trendVisuals.tasks.Icon className="h-4 w-4 mr-1" />
+									{trendVisuals.tasks.label}
 								</div>
 							)}
 						</div>
 						<CardDescription className="text-muted-foreground/80">
-							{taskData && taskData.completedTasks > 0
-								? `${Math.round((taskData.completedTasks / taskData.totalTasks) * 100)}% completion rate`
+							{stableTaskData && stableTaskData.completedTasks > 0
+								? `${Math.round((stableTaskData.completedTasks / stableTaskData.totalTasks) * 100)}% completion rate`
 								: "0% completion rate"}
 						</CardDescription>
 					</CardContent>
@@ -352,12 +490,13 @@ export const OverviewDashboard = ({
 						<div className="flex items-center">
 							<Hash className="h-5 w-5 text-secondary mr-2" />
 							<div className="text-2xl font-bold text-foreground">
-								{overviewData.totalChannels}
+								{stableOverviewData.totalChannels}
 							</div>
 						</div>
 						<CardDescription className="text-muted-foreground/80">
-							{overviewData.totalMessages > 0 && overviewData.totalChannels > 0
-								? `${Math.round(overviewData.totalMessages / overviewData.totalChannels)} messages per channel`
+							{stableOverviewData.totalMessages > 0 &&
+							stableOverviewData.totalChannels > 0
+								? `${Math.round(stableOverviewData.totalMessages / stableOverviewData.totalChannels)} messages per channel`
 								: "No messages"}
 						</CardDescription>
 					</CardContent>
@@ -416,7 +555,7 @@ export const OverviewDashboard = ({
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="flex-1 flex flex-col p-4 pt-0 pb-4 min-h-0">
-						{taskCompletionData.length > 0 && taskData ? (
+						{taskCompletionData.length > 0 && stableTaskData ? (
 							<div className="flex-1 flex flex-col items-center h-[400px] max-h-[400px] space-y-2 pt-4">
 								{/* Pie Chart */}
 								<div className="relative flex-shrink-0 h-[280px] w-full">
@@ -429,19 +568,20 @@ export const OverviewDashboard = ({
 								{/* Task Statistics */}
 								<div className="w-full space-y-2 px-2">
 									<div className="grid grid-cols-2 gap-2">
-										<div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-											<div className="text-xl font-bold text-blue-700 dark:text-blue-400">
-												{taskData.completedTasks}
+										<div className="text-center p-2 bg-chart-2/10 dark:bg-chart-2/20 rounded-lg border border-chart-2/30">
+											<div className="text-xl font-bold text-foreground">
+												{stableTaskData.completedTasks}
 											</div>
-											<div className="text-xs text-blue-700/80 dark:text-blue-400/80">
+											<div className="text-xs text-muted-foreground">
 												Completed
 											</div>
 										</div>
-										<div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-300 dark:border-blue-700">
-											<div className="text-xl font-bold text-blue-500 dark:text-blue-300">
-												{taskData.totalTasks - taskData.completedTasks}
+										<div className="text-center p-2 bg-muted/40 rounded-lg border border-muted-foreground/20">
+											<div className="text-xl font-bold text-foreground">
+												{stableTaskData.totalTasks -
+													stableTaskData.completedTasks}
 											</div>
-											<div className="text-xs text-blue-500/80 dark:text-blue-300/80">
+											<div className="text-xs text-muted-foreground">
 												Remaining
 											</div>
 										</div>
@@ -452,14 +592,15 @@ export const OverviewDashboard = ({
 										<div className="flex justify-between text-xs text-muted-foreground mb-1">
 											<span>Progress</span>
 											<span className="font-medium">
-												{taskData.completedTasks}/{taskData.totalTasks} tasks
+												{stableTaskData.completedTasks}/
+												{stableTaskData.totalTasks} tasks
 											</span>
 										</div>
 										<div className="w-full bg-muted rounded-full h-1.5">
 											<div
-												className="bg-gradient-to-r from-blue-700 to-blue-600 h-1.5 rounded-full transition-all duration-500"
+												className="bg-chart-2 h-1.5 rounded-full transition-all duration-500"
 												style={{
-													width: `${taskData.totalTasks > 0 ? (taskData.completedTasks / taskData.totalTasks) * 100 : 0}%`,
+													width: `${stableTaskData.totalTasks > 0 ? (stableTaskData.completedTasks / stableTaskData.totalTasks) * 100 : 0}%`,
 												}}
 											/>
 										</div>

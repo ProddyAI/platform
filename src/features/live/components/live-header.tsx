@@ -2,11 +2,12 @@
 
 import {
 	Check,
-	Clock,
 	Download,
 	Info,
+	Loader2,
 	Maximize2,
 	Minimize2,
+	Pencil,
 	Plus,
 	Save,
 	Search,
@@ -135,7 +136,7 @@ export const LiveHeader = ({
 	return (
 		<div
 			className={cn(
-				"border-b bg-white p-2 md:p-4 flex flex-col gap-1",
+				"border-b bg-card p-2 md:p-4 flex flex-col gap-1",
 				className
 			)}
 		>
@@ -157,13 +158,16 @@ export const LiveHeader = ({
 									/>
 								) : (
 									<button
-										className="text-lg font-semibold text-left truncate hover:text-primary transition-colors"
+										className="group flex items-center gap-1.5 text-lg font-semibold text-left truncate hover:text-primary transition-colors"
 										onClick={() => setIsEditing(true)}
 										title="Click to edit title"
 										type="button"
 									>
-										{title ||
-											`Untitled ${type === "notes" ? "Note" : "Canvas"}`}
+										<span className="truncate">
+											{title ||
+												`Untitled ${type === "notes" ? "Note" : "Canvas"}`}
+										</span>
+										<Pencil className="h-3.5 w-3.5 flex-shrink-0 opacity-0 group-hover:opacity-60 transition-opacity" />
 									</button>
 								)}
 
@@ -184,25 +188,31 @@ export const LiveHeader = ({
 													{createdAt && (
 														<div>
 															<span className="font-semibold">Created:</span>{" "}
-															{new Date(createdAt).toLocaleDateString("en-US", {
-																year: "numeric",
-																month: "short",
-																day: "numeric",
-																hour: "2-digit",
-																minute: "2-digit",
-															})}
+															{new Date(createdAt).toLocaleDateString(
+																undefined,
+																{
+																	year: "numeric",
+																	month: "short",
+																	day: "numeric",
+																	hour: "2-digit",
+																	minute: "2-digit",
+																}
+															)}
 														</div>
 													)}
 													{updatedAt && (
 														<div>
 															<span className="font-semibold">Updated:</span>{" "}
-															{new Date(updatedAt).toLocaleDateString("en-US", {
-																year: "numeric",
-																month: "short",
-																day: "numeric",
-																hour: "2-digit",
-																minute: "2-digit",
-															})}
+															{new Date(updatedAt).toLocaleDateString(
+																undefined,
+																{
+																	year: "numeric",
+																	month: "short",
+																	day: "numeric",
+																	hour: "2-digit",
+																	minute: "2-digit",
+																}
+															)}
 														</div>
 													)}
 												</div>
@@ -216,7 +226,7 @@ export const LiveHeader = ({
 							{autoSaveStatus && (
 								<div className="flex items-center gap-1 text-xs text-muted-foreground">
 									{autoSaveStatus === "saving" && (
-										<Clock className="h-3 w-3 animate-spin" />
+										<Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" />
 									)}
 									{autoSaveStatus === "saved" && (
 										<Check className="h-3 w-3 text-green-600" />
@@ -251,10 +261,27 @@ export const LiveHeader = ({
 
 					{/* Save Button */}
 					{onSave && (
-						<Button disabled={!hasUnsavedChanges} onClick={onSave} size="sm">
-							<Save className="h-4 w-4 mr-2" />
-							Save
-						</Button>
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span>
+										<Button
+											disabled={!hasUnsavedChanges}
+											onClick={onSave}
+											size="sm"
+										>
+											<Save className="h-4 w-4 mr-2" />
+											Save
+										</Button>
+									</span>
+								</TooltipTrigger>
+								{!hasUnsavedChanges && (
+									<TooltipContent side="bottom">
+										No changes to save
+									</TooltipContent>
+								)}
+							</Tooltip>
+						</TooltipProvider>
 					)}
 
 					{/* Share Button */}
@@ -296,38 +323,40 @@ export const LiveHeader = ({
 			</div>
 
 			{/* Second Row - Tags */}
-			<div className="flex items-center justify-between gap-4">
-				{/* Right - Tags or Search */}
-				<div className="flex items-center gap-4">
-					{/* Tags for both notes and canvas */}
-					{showTags && onTagsChange && (
-						<div className="flex items-center gap-2">
-							<Tag className="h-4 w-4 text-muted-foreground" />
-							<TagInput
-								className="max-w-md"
-								onTagsChange={onTagsChange}
-								placeholder="Add tags..."
-								tags={tags}
-							/>
-						</div>
-					)}
-
-					{/* Search Bar (if enabled) */}
-					{showSearch && onSearchChange && (
-						<div className="flex items-center gap-2 max-w-sm">
-							<div className="relative">
-								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								<Input
-									className="pl-9"
-									onChange={(e) => onSearchChange(e.target.value)}
-									placeholder={`Search ${type}...`}
-									value={searchQuery}
+			{((showTags && onTagsChange) || (showSearch && onSearchChange)) && (
+				<div className="flex items-center justify-between gap-4">
+					{/* Right - Tags or Search */}
+					<div className="flex items-center gap-4">
+						{/* Tags for both notes and canvas */}
+						{showTags && onTagsChange && (
+							<div className="flex items-center gap-2">
+								<Tag className="h-4 w-4 text-muted-foreground" />
+								<TagInput
+									className="max-w-md"
+									onTagsChange={onTagsChange}
+									placeholder="Add tags..."
+									tags={tags}
 								/>
 							</div>
-						</div>
-					)}
+						)}
+
+						{/* Search Bar (if enabled) */}
+						{showSearch && onSearchChange && (
+							<div className="flex items-center gap-2 max-w-sm">
+								<div className="relative">
+									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+									<Input
+										className="pl-9"
+										onChange={(e) => onSearchChange(e.target.value)}
+										placeholder={`Search ${type}...`}
+										value={searchQuery}
+									/>
+								</div>
+							</div>
+						)}
+					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 };

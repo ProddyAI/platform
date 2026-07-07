@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -255,31 +254,17 @@ export const IntegrationsManagement = ({
 					My Integrations
 				</h3>
 				<p className="text-sm text-muted-foreground">
-					Connect your personal accounts to external services using
-					Composio&apos;s unified AgentAuth system for AI-powered automation and
-					enhanced productivity features. These connections are unique to you
-					and not shared with other workspace members.
+					Connect your accounts so Proddy&apos;s assistant can act on them.
+					These connections are private to you and not shared with other
+					workspace members.
 				</p>
 			</div>
 
 			{isLoading ? (
-				<div className="space-y-6">
-					{/* Loading header with spinner */}
-					<div className="flex items-center justify-center py-8">
-						<div className="flex items-center space-x-3">
-							<Loader2 className="h-6 w-6 animate-spin text-primary" />
-							<span className="text-sm text-muted-foreground">
-								Loading integrations...
-							</span>
-						</div>
-					</div>
-
-					{/* Loading cards */}
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-						{SUPPORTED_TOOLKITS.map((toolkit) => (
-							<LoadingCard key={toolkit} />
-						))}
-					</div>
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					{SUPPORTED_TOOLKITS.map((toolkit) => (
+						<LoadingCard key={toolkit} />
+					))}
 				</div>
 			) : (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

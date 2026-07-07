@@ -67,9 +67,7 @@ export const TaskCreateForm = ({
 			});
 
 			// Show success toast
-			toast.success("Task created successfully", {
-				description: `"${title}" has been added to your tasks`,
-			});
+			toast.success("Task created");
 
 			// Reset form
 			setTitle("");
@@ -105,25 +103,25 @@ export const TaskCreateForm = ({
 		switch (value) {
 			case "high":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-red-500 mr-2" />,
+					icon: <div className="h-3 w-3 rounded-full bg-red-600 mr-2" />,
 					label: "High Priority",
 				};
 			case "medium":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-yellow-500 mr-2" />,
+					icon: <div className="h-3 w-3 rounded-full bg-amber-500 mr-2" />,
 					label: "Medium Priority",
 				};
 			case "low":
 				return {
-					icon: <div className="h-3 w-3 rounded-full bg-blue-500 mr-2" />,
+					icon: <div className="h-3 w-3 rounded-full bg-blue-600 mr-2" />,
 					label: "Low Priority",
 				};
 			default:
 				return {
 					icon: (
-						<div className="h-3 w-3 rounded-full border-2 border-dashed border-gray-300 mr-2" />
+						<div className="h-3 w-3 rounded-full border-2 border-dashed border-border mr-2" />
 					),
-					label: "Set Priority (optional)",
+					label: "Set priority (optional)",
 				};
 		}
 	};
@@ -134,7 +132,7 @@ export const TaskCreateForm = ({
 		return (
 			<div className="space-y-2">
 				{maxReached && (
-					<div className="flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+					<div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
 						<span>
 							You have reached the task limit for your plan. Upgrade to create
 							tasks.
@@ -143,17 +141,16 @@ export const TaskCreateForm = ({
 					</div>
 				)}
 				<Button
-					className="w-full flex items-center justify-center gap-2 py-6 bg-secondary hover:bg-secondary-600 text-white shadow-md hover:shadow-lg transition-all relative overflow-hidden group dark:bg-secondary dark:hover:bg-rose-900"
+					className="w-full gap-2 py-6 shadow-sm hover:shadow-md"
 					disabled={maxReached}
 					onClick={() => {
 						if (!maxReached) setIsExpanded(true);
 					}}
 					variant="default"
 				>
-					<span className="absolute inset-0 rounded-lg bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-					<Plus className="h-5 w-5 relative z-10" />
-					<span className="font-semibold text-base relative z-10 dark:group-hover:text-white">
-						{maxReached ? "Task Limit Reached" : "Add new task"}
+					<Plus className="h-5 w-5" />
+					<span className="font-semibold text-base">
+						{maxReached ? "Task limit reached" : "Add new task"}
 					</span>
 				</Button>
 			</div>
@@ -164,13 +161,13 @@ export const TaskCreateForm = ({
 
 	return (
 		<form
-			className="p-6 rounded-xl border shadow-sm bg-white"
+			className="p-6 rounded-xl border shadow-sm bg-card"
 			onSubmit={handleSubmit}
 		>
 			<div className="flex justify-between items-center mb-4">
-				{/* <h3 className="font-semibold text-lg text-gray-800">Create a new task</h3> */}
+				<h3 className="font-semibold text-lg text-foreground">Create task</h3>
 				<Button
-					className="h-8 w-8 rounded-full hover:bg-gray-100"
+					aria-label="Cancel"
 					onClick={handleCancel}
 					size="iconSm"
 					type="button"
@@ -182,7 +179,7 @@ export const TaskCreateForm = ({
 
 			<div className="space-y-4">
 				<Input
-					className="text-base font-medium border-gray-300 focus-visible:ring-secondary"
+					className="text-base font-medium"
 					onChange={(e) => setTitle(e.target.value)}
 					placeholder="Task title"
 					required
@@ -190,7 +187,7 @@ export const TaskCreateForm = ({
 				/>
 
 				<Textarea
-					className="min-h-[100px] resize-none border-gray-300 focus-visible:ring-secondary text-gray-700"
+					className="min-h-[100px] resize-none"
 					onChange={(e) => setDescription(e.target.value)}
 					placeholder="Description (optional)"
 					value={description}
@@ -202,13 +199,13 @@ export const TaskCreateForm = ({
 							<PopoverTrigger asChild>
 								<Button
 									className={cn(
-										"w-full justify-start text-left font-normal border-gray-300",
-										!dueDate ? "text-gray-500" : "text-gray-800"
+										"w-full justify-start text-left font-normal",
+										!dueDate ? "text-muted-foreground" : "text-foreground"
 									)}
 									type="button"
 									variant="outline"
 								>
-									<CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
+									<CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
 									{dueDate ? (
 										format(dueDate, "PPP")
 									) : (
@@ -225,7 +222,7 @@ export const TaskCreateForm = ({
 								{dueDate && (
 									<div className="p-2 border-t flex justify-end">
 										<Button
-											className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
+											className="text-destructive hover:bg-destructive/10 hover:text-destructive text-xs"
 											onClick={() => setDueDate(undefined)}
 											size="sm"
 											type="button"
@@ -246,8 +243,8 @@ export const TaskCreateForm = ({
 							}
 							value={priority}
 						>
-							<SelectTrigger className="border-gray-300">
-								<SelectValue placeholder="Set Priority (optional)">
+							<SelectTrigger>
+								<SelectValue placeholder="Set priority (optional)">
 									<div className="flex items-center">
 										{priorityStyles.icon}
 										{priorityStyles.label}
@@ -257,19 +254,19 @@ export const TaskCreateForm = ({
 							<SelectContent>
 								<SelectItem value="high">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-red-500 mr-2" />
+										<div className="h-3 w-3 rounded-full bg-red-600 mr-2" />
 										High Priority
 									</div>
 								</SelectItem>
 								<SelectItem value="medium">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-yellow-500 mr-2" />
+										<div className="h-3 w-3 rounded-full bg-amber-500 mr-2" />
 										Medium Priority
 									</div>
 								</SelectItem>
 								<SelectItem value="low">
 									<div className="flex items-center">
-										<div className="h-3 w-3 rounded-full bg-blue-500 mr-2" />
+										<div className="h-3 w-3 rounded-full bg-blue-600 mr-2" />
 										Low Priority
 									</div>
 								</SelectItem>
@@ -279,7 +276,7 @@ export const TaskCreateForm = ({
 				</div>
 
 				<div className="pt-2">
-					<div className="text-sm font-medium block mb-2 text-gray-700">
+					<div className="text-sm font-medium block mb-2 text-foreground">
 						Category (optional)
 					</div>
 					<TaskCategorySelector
@@ -292,7 +289,6 @@ export const TaskCreateForm = ({
 
 			<div className="flex justify-end gap-3 pt-5 mt-4 border-t">
 				<Button
-					className="border-gray-300"
 					disabled={isSubmitting}
 					onClick={handleCancel}
 					type="button"
@@ -300,12 +296,8 @@ export const TaskCreateForm = ({
 				>
 					Cancel
 				</Button>
-				<Button
-					className="bg-secondary hover:bg-secondary-600"
-					disabled={!title.trim() || isSubmitting}
-					type="submit"
-				>
-					{isSubmitting ? "Creating..." : "Create Task"}
+				<Button disabled={!title.trim() || isSubmitting} type="submit">
+					{isSubmitting ? "Creating..." : "Create task"}
 				</Button>
 			</div>
 		</form>

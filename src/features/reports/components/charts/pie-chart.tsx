@@ -2,14 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { darkenColor } from "./utils/color-utils";
-import {
-	createSidePath,
-	createTopPath,
-	DEPTH,
-	HOVER_EJECT,
-	type PieSegment,
-} from "./utils/pie-chart-paths";
 
 interface PieChartProps {
 	data: {
@@ -24,6 +16,58 @@ interface PieChartProps {
 	formatValue?: (value: number) => string;
 	onSegmentClick?: (label: string, value: number, index: number) => void;
 }
+
+interface PieSegment {
+	label: string;
+	value: number;
+	color: string;
+	percentage: number;
+	startAngle: number;
+	endAngle: number;
+	index: number;
+}
+
+/**
+ * Builds the SVG path for a flat 2D donut segment (an annulus sector), or a
+ * full ring when the segment spans the entire chart.
+ */
+const createDonutSegmentPath = (
+	segment: PieSegment,
+	innerRadius: number,
+	outerRadius: number,
+	centerX: number,
+	centerY: number
+): string => {
+	// Handle full circle case (100% or very close to it): draw a ring using
+	// two opposite-wound circles combined with an even-odd fill.
+	if (segment.percentage >= 99.9) {
+		const outerTop = `${centerX} ${centerY - outerRadius}`;
+		const outerBottom = `${centerX} ${centerY + outerRadius}`;
+		const innerTop = `${centerX} ${centerY - innerRadius}`;
+		const innerBottom = `${centerX} ${centerY + innerRadius}`;
+
+		return [
+			`M ${outerTop} A ${outerRadius} ${outerRadius} 0 0 1 ${outerBottom} A ${outerRadius} ${outerRadius} 0 0 1 ${outerTop} Z`,
+			`M ${innerTop} A ${innerRadius} ${innerRadius} 0 0 0 ${innerBottom} A ${innerRadius} ${innerRadius} 0 0 0 ${innerTop} Z`,
+		].join(" ");
+	}
+
+	const startAngleRad = (segment.startAngle / 100) * Math.PI * 2 - Math.PI / 2;
+	const endAngleRad = (segment.endAngle / 100) * Math.PI * 2 - Math.PI / 2;
+
+	const outerStartX = centerX + outerRadius * Math.cos(startAngleRad);
+	const outerStartY = centerY + outerRadius * Math.sin(startAngleRad);
+	const outerEndX = centerX + outerRadius * Math.cos(endAngleRad);
+	const outerEndY = centerY + outerRadius * Math.sin(endAngleRad);
+	const innerStartX = centerX + innerRadius * Math.cos(startAngleRad);
+	const innerStartY = centerY + innerRadius * Math.sin(startAngleRad);
+	const innerEndX = centerX + innerRadius * Math.cos(endAngleRad);
+	const innerEndY = centerY + innerRadius * Math.sin(endAngleRad);
+
+	const largeArcFlag = segment.percentage > 50 ? 1 : 0;
+
+	return `M ${outerStartX} ${outerStartY} A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${outerEndX} ${outerEndY} L ${innerEndX} ${innerEndY} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${innerStartX} ${innerStartY} Z`;
+};
 
 export const PieChart = ({
 	data,
@@ -121,13 +165,13 @@ export const PieChart = ({
 
 	// If total is 0, show a single greyed out segment
 	const isAllZero = total === 0;
-	const greyColor = "#9ca3af"; // gray-400
+	const greyColor = "hsl(var(--muted-foreground))";
 
 	let cumulativePercentage = 0;
 	const segments: PieSegment[] = isAllZero
 		? [
 				{
-					label: "No Data",
+					label: "No data",
 					value: 0,
 					color: greyColor,
 					percentage: 100,
@@ -151,385 +195,102 @@ export const PieChart = ({
 				};
 			});
 
+	const outerRadius = 44;
+	const innerRadius = 26;
+	const centerX = 50;
+	const centerY = 50;
+
 	return (
 		<div
 			className={cn(
-				"relative w-full h-full flex items-start justify-start pt-4 pl-4",
+				"relative flex h-full w-full flex-col items-center justify-center gap-3 py-2",
 				className
 			)}
 			ref={containerRef}
-			style={{ overflow: "visible" }}
 		>
-			{/* Pie Chart Container - Positioned to the left and top */}
+			{/* Flat 2D donut chart */}
 			<div
-				className="relative flex items-center justify-center"
+				className="relative flex min-h-0 flex-1 items-center justify-center"
 				style={{
-					width: "90%",
+					width: "100%",
 					height: "100%",
 					maxWidth: maxSize ?? size,
 					maxHeight: maxSize ?? size,
-					overflow: "visible",
-					marginLeft: "0",
 				}}
 			>
 				<svg
 					className="w-full h-full"
 					preserveAspectRatio="xMidYMid meet"
-					style={{ overflow: "visible", isolation: "isolate" }}
-					viewBox="0 0 140 145"
+					viewBox="0 0 100 100"
 				>
 					<title>Pie chart</title>
-					<defs>
-						{/* Side - solid darker shade for 3D depth effect */}
-						{segments.map((segment) => (
-							<linearGradient
-								id={`sideGradient-${segment.index}`}
-								key={`side-gradient-${segment.index}`}
-								x1="0%"
-								x2="0%"
-								y1="0%"
-								y2="100%"
-							>
-								<stop
-									offset="0%"
-									stopColor={darkenColor(segment.color, 0.25)}
-								/>
-								<stop
-									offset="100%"
-									stopColor={darkenColor(segment.color, 0.25)}
-								/>
-							</linearGradient>
-						))}
+					{segments.map((segment) => {
+						const isInteractive = Boolean(onSegmentClick);
+						const isDimmed =
+							hoveredIndex !== null && hoveredIndex !== segment.index;
 
-						{/* Top surface with exact color matching legend */}
-						{segments.map((segment) => (
-							<linearGradient
-								id={`topGradient-${segment.index}`}
-								key={`top-gradient-${segment.index}`}
-								x1="0%"
-								x2="0%"
-								y1="0%"
-								y2="100%"
-							>
-								<stop
-									offset="0%"
-									stopColor={isAllZero ? greyColor : segment.color}
-								/>
-								<stop
-									offset="100%"
-									stopColor={isAllZero ? greyColor : segment.color}
-								/>
-							</linearGradient>
-						))}
-
-						{/* Drop shadow filter for tooltip */}
-						<filter
-							height="200%"
-							id="tooltip-shadow"
-							width="200%"
-							x="-50%"
-							y="-50%"
-						>
-							<feGaussianBlur in="SourceAlpha" stdDeviation="2" />
-							<feOffset dx="0" dy="2" result="offsetblur" />
-							<feComponentTransfer>
-								<feFuncA slope="0.3" type="linear" />
-							</feComponentTransfer>
-							<feMerge>
-								<feMergeNode />
-								<feMergeNode in="SourceGraphic" />
-							</feMerge>
-						</filter>
-					</defs>
-
-					{/* LAYER 1: All 3D sides (non-hovered segments) */}
-					{segments
-						.filter((seg) => hoveredIndex !== seg.index)
-						.map((segment) => {
-							const isHovered = false;
-							const ejectAmount = 0;
-
-							const midAngleRad =
-								((segment.startAngle + segment.endAngle) / 2 / 100) *
-									Math.PI *
-									2 -
-								Math.PI / 2;
-							const offsetX = ejectAmount * Math.cos(midAngleRad);
-							const offsetY = ejectAmount * Math.sin(midAngleRad);
-
-							const centerX = 70 + offsetX;
-							const centerY = 52 + offsetY;
-							const radiusX = 65;
-							const radiusY = 44;
-
-							const sidePaths = createSidePath(
-								segment,
-								radiusX,
-								radiusY,
-								centerX,
-								centerY,
-								DEPTH,
-								isHovered
-							);
-
-							return (
-								<g key={`depth-${segment.index}`}>
-									{sidePaths?.map((pathData) => {
-										// Use lighter shade for outer arc to create proper cylinder effect
-										const fillColor =
-											pathData.type === "outer"
-												? darkenColor(segment.color, 0.3)
-												: darkenColor(segment.color, 0.35);
-
-										return (
-											<path
-												d={pathData.path}
-												fill={fillColor}
-												fillOpacity="1"
-												key={`side-${segment.index}-${pathData.type}`}
-												stroke="rgba(0,0,0,0.1)"
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth="0.5"
-												style={{
-													transition: "all 0.3s ease-out",
-												}}
-											/>
-										);
-									})}
-								</g>
-							);
-						})}
-
-					{/* LAYER 2: Hovered segment's 3D sides */}
-					{hoveredIndex !== null &&
-						segments
-							.filter((seg) => hoveredIndex === seg.index)
-							.map((segment) => {
-								const isHovered = true;
-								const ejectAmount = HOVER_EJECT;
-
-								const midAngleRad =
-									((segment.startAngle + segment.endAngle) / 2 / 100) *
-										Math.PI *
-										2 -
-									Math.PI / 2;
-								const offsetX = ejectAmount * Math.cos(midAngleRad);
-								const offsetY = ejectAmount * Math.sin(midAngleRad);
-
-								const centerX = 70 + offsetX;
-								const centerY = 52 + offsetY;
-								const radiusX = 65;
-								const radiusY = 44;
-
-								const sidePaths = createSidePath(
+						return (
+							<path
+								aria-label={`${segment.label}: ${formatValue(segment.value)}`}
+								className={cn(
+									"outline-none",
+									isInteractive && "cursor-pointer",
+									isInteractive &&
+										"focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+								)}
+								d={createDonutSegmentPath(
 									segment,
-									radiusX,
-									radiusY,
-									centerX,
-									centerY,
-									DEPTH,
-									isHovered
-								);
-
-								return (
-									<g key={`depth-hovered-${segment.index}`}>
-										{sidePaths?.map((pathData) => {
-											// Use lighter shade for outer arc to create proper cylinder effect
-											const fillColor =
-												pathData.type === "outer"
-													? darkenColor(segment.color, 0.3)
-													: darkenColor(segment.color, 0.35);
-
-											return (
-												<path
-													d={pathData.path}
-													fill={fillColor}
-													fillOpacity="1"
-													key={`side-${segment.index}-${pathData.type}`}
-													stroke="rgba(0,0,0,0.1)"
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth="0.5"
-													style={{
-														transition: "all 0.3s ease-out",
-														filter: "brightness(1.15)",
-													}}
-												/>
-											);
-										})}
-									</g>
-								);
-							})}
-
-					{/* LAYER 3: All top surfaces (non-hovered segments) */}
-					{segments
-						.filter((seg) => hoveredIndex !== seg.index)
-						.map((segment) => {
-							const ejectAmount = 0;
-
-							const midAngleRad =
-								((segment.startAngle + segment.endAngle) / 2 / 100) *
-									Math.PI *
-									2 -
-								Math.PI / 2;
-							const offsetX = ejectAmount * Math.cos(midAngleRad);
-							const offsetY = ejectAmount * Math.sin(midAngleRad);
-
-							const centerX = 70 + offsetX;
-							const centerY = 52 + offsetY;
-							const radiusX = 65;
-							const radiusY = 44;
-
-							const topPath = createTopPath(
-								segment,
-								radiusX,
-								radiusY,
-								centerX,
-								centerY
-							);
-
-							return (
-								<g
-									aria-disabled={!onSegmentClick}
-									className={cn(
-										"transition-all duration-300 ease-out",
-										onSegmentClick && "cursor-pointer"
-									)}
-									key={`top-${segment.index}`}
-									onBlur={handleMouseLeave}
-									onClick={
-										onSegmentClick
-											? () =>
-													onSegmentClick(
-														segment.label,
-														segment.value,
-														segment.index
-													)
-											: undefined
-									}
-									onFocus={(e) => handleMouseEnter(segment.index, e)}
-									onKeyDown={(event) => {
-										if (event.key === "Enter" || event.key === " ") {
-											event.preventDefault();
-											onSegmentClick?.(
-												segment.label,
-												segment.value,
-												segment.index
-											);
-										}
-									}}
-									onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
-									onMouseLeave={handleMouseLeave}
-									onMouseMove={handleMouseMove}
-									role="button"
-									style={{ pointerEvents: "all" }}
-									tabIndex={0}
-								>
-									<path
-										d={topPath}
-										fill={segment.color}
-										fillOpacity="1"
-										stroke={
-											segment.percentage >= 99.9 || hoveredIndex !== null
-												? "none"
-												: "rgba(255, 255, 255, 0.2)"
-										}
-										strokeWidth="0.8"
-										style={{
-											transition: "all 0.3s ease-out",
-										}}
-									/>
-								</g>
-							);
-						})}
-
-					{/* LAYER 4: Hovered segment's top surface (always on top) */}
-					{hoveredIndex !== null &&
-						segments
-							.filter((seg) => hoveredIndex === seg.index)
-							.map((segment) => {
-								const ejectAmount = HOVER_EJECT;
-
-								const midAngleRad =
-									((segment.startAngle + segment.endAngle) / 2 / 100) *
-										Math.PI *
-										2 -
-									Math.PI / 2;
-								const offsetX = ejectAmount * Math.cos(midAngleRad);
-								const offsetY = ejectAmount * Math.sin(midAngleRad);
-
-								const centerX = 70 + offsetX;
-								const centerY = 52 + offsetY;
-								const radiusX = 65;
-								const radiusY = 44;
-
-								const topPath = createTopPath(
-									segment,
-									radiusX,
-									radiusY,
+									innerRadius,
+									outerRadius,
 									centerX,
 									centerY
-								);
-
-								return (
-									<g
-										aria-disabled={!onSegmentClick}
-										className={cn(
-											"transition-all duration-300 ease-out",
-											onSegmentClick && "cursor-pointer"
-										)}
-										key={`top-hovered-${segment.index}`}
-										onBlur={handleMouseLeave}
-										onClick={
-											onSegmentClick
-												? () =>
-														onSegmentClick(
-															segment.label,
-															segment.value,
-															segment.index
-														)
-												: undefined
-										}
-										onFocus={(e) => handleMouseEnter(segment.index, e)}
-										onKeyDown={(event) => {
-											if (event.key === "Enter" || event.key === " ") {
-												event.preventDefault();
-												onSegmentClick?.(
+								)}
+								fill={segment.color}
+								fillRule="evenodd"
+								key={segment.index}
+								onBlur={handleMouseLeave}
+								onClick={
+									onSegmentClick
+										? () =>
+												onSegmentClick(
 													segment.label,
 													segment.value,
 													segment.index
-												);
-											}
-										}}
-										onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
-										onMouseLeave={handleMouseLeave}
-										onMouseMove={handleMouseMove}
-										role="button"
-										style={{ pointerEvents: "all" }}
-										tabIndex={0}
-									>
-										<path
-											d={topPath}
-											fill={segment.color}
-											fillOpacity="1"
-											stroke="none"
-											style={{
-												transition: "all 0.3s ease-out",
-												filter:
-													"brightness(1.1) drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
-											}}
-										/>
-									</g>
-								);
-							})}
+												)
+										: undefined
+								}
+								onFocus={(e) => handleMouseEnter(segment.index, e)}
+								onKeyDown={(event) => {
+									if (event.key === "Enter" || event.key === " ") {
+										event.preventDefault();
+										onSegmentClick?.(
+											segment.label,
+											segment.value,
+											segment.index
+										);
+									}
+								}}
+								onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
+								onMouseLeave={handleMouseLeave}
+								onMouseMove={handleMouseMove}
+								role={isInteractive ? "button" : undefined}
+								stroke="hsl(var(--background))"
+								strokeWidth={0.5}
+								style={{
+									opacity: isDimmed ? 0.45 : 1,
+									transition: "opacity var(--duration-normal) ease-out",
+								}}
+								tabIndex={isInteractive ? 0 : -1}
+							/>
+						);
+					})}
 				</svg>
 			</div>
 
 			{/* HTML Tooltip - Displayed following cursor */}
 			{hoveredIndex !== null && tooltipPosition && !isAllZero && (
 				<div
-					className="fixed pointer-events-none animate-in fade-in duration-200"
+					className="fixed pointer-events-none animate-in fade-in duration-fast"
 					style={{
 						left: tooltipPosition.x + 15,
 						top: tooltipPosition.y - 10,
@@ -537,12 +298,12 @@ export const PieChart = ({
 					}}
 				>
 					<div
-						className="bg-background dark:bg-gray-900 rounded-lg shadow-xl border-2 px-3 py-2"
+						className="bg-popover rounded-lg shadow-xl border-2 px-3 py-2"
 						style={{
 							borderColor: segments[hoveredIndex].color,
 						}}
 					>
-						<div className="text-xs font-bold text-foreground mb-0.5">
+						<div className="text-xs font-bold text-popover-foreground mb-0.5">
 							{segments[hoveredIndex].label}
 						</div>
 						<div
@@ -557,22 +318,20 @@ export const PieChart = ({
 				</div>
 			)}
 
-			{/* Compact Legend - Top Right */}
+			{/* Legend - wraps below the chart so it never overlaps it */}
 			{showLegend && !isAllZero && (
-				<div
-					className="absolute top-2 right-2 flex flex-col gap-1.5 bg-background dark:bg-background rounded-lg p-2.5 border border-border/40 shadow-lg"
-					style={{ zIndex: 1 }}
-				>
+				<div className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1.5 px-1">
 					{segments.map((segment) => {
 						const isHovered = hoveredIndex === segment.index;
+						const isInteractive = Boolean(onSegmentClick);
 
 						return (
 							<button
-								aria-disabled={!onSegmentClick}
+								aria-label={`${segment.label}: ${formatValue(segment.value)}`}
 								className={cn(
-									"flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all duration-300",
-									isHovered && "bg-muted/50 scale-105",
-									onSegmentClick && "cursor-pointer"
+									"flex max-w-[10rem] items-center gap-1.5 rounded px-1.5 py-0.5 transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+									isHovered && "bg-muted/50",
+									isInteractive && "cursor-pointer"
 								)}
 								key={segment.index}
 								onBlur={handleMouseLeave}
@@ -600,51 +359,37 @@ export const PieChart = ({
 								onMouseEnter={(e) => handleMouseEnter(segment.index, e)}
 								onMouseLeave={handleMouseLeave}
 								onMouseMove={handleMouseMove}
-								style={{
-									boxShadow: isHovered
-										? `0 0 0 1px ${segment.color}40`
-										: "none",
-								}}
-								tabIndex={0}
+								tabIndex={isInteractive ? 0 : -1}
 								type="button"
 							>
 								{/* Color indicator */}
-								<div
-									className={cn(
-										"w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all duration-300",
-										isHovered && "scale-125"
-									)}
-									style={{
-										backgroundColor: segment.color,
-										boxShadow: isHovered ? `0 0 8px ${segment.color}` : "none",
-									}}
+								<span
+									className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+									style={{ backgroundColor: segment.color }}
 								/>
 
 								{/* Label */}
-								<div
+								<span
 									className={cn(
-										"text-xs font-medium transition-colors duration-300 whitespace-nowrap",
+										"text-xs font-medium truncate min-w-0",
 										isHovered
 											? "text-foreground"
 											: "text-foreground/70 dark:text-foreground/60"
 									)}
 								>
 									{segment.label}
-								</div>
+								</span>
 
 								{/* Value - Show either formatted value or percentage */}
-								<div
-									className={cn(
-										"text-xs font-bold transition-all duration-300",
-										isHovered && "scale-110"
-									)}
+								<span
+									className="text-xs font-bold flex-shrink-0"
 									style={{
 										color: isHovered ? segment.color : "currentColor",
 										fontFamily: "ui-monospace, monospace",
 									}}
 								>
 									{formatValue(segment.value)}
-								</div>
+								</span>
 							</button>
 						);
 					})}
@@ -653,13 +398,10 @@ export const PieChart = ({
 
 			{/* "No Data" message for all-zero case */}
 			{showLegend && isAllZero && (
-				<div
-					className="absolute top-2 right-2 flex items-center gap-2 bg-background dark:bg-background rounded-lg px-3 py-2 border border-border/40 shadow-lg"
-					style={{ zIndex: 1 }}
-				>
-					<div className="w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0" />
+				<div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 border border-border/40 shadow-lg">
+					<div className="w-2.5 h-2.5 rounded-full bg-muted-foreground flex-shrink-0" />
 					<div className="text-xs font-medium text-muted-foreground">
-						No Data Available
+						No data available
 					</div>
 				</div>
 			)}

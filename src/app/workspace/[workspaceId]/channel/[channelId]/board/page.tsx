@@ -1,17 +1,15 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useParams, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import {
-	BoardAddCardModal,
 	BoardAddStatusModal,
-	BoardDeleteListModal,
 	BoardDeleteStatusModal,
-	BoardEditCardModal,
 	BoardEditStatusModal,
 } from "@/features/board/components/board-card-edit-dialog";
 import BoardGanttView from "@/features/board/components/board-gantt-view";
@@ -20,24 +18,22 @@ import BoardIssueDrawer from "@/features/board/components/board-issue-drawer";
 import BoardKanbanView from "@/features/board/components/board-kanban-view";
 import BoardLinkageDiagram from "@/features/board/components/board-linkage-diagram";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
+import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 const ChannelBoardPage = () => {
 	const channelId = useChannelId();
-	const params = useParams<{ workspaceId: string }>();
-	const workspaceId = params?.workspaceId as Id<"workspaces"> | undefined;
 	const searchParams = useSearchParams();
 
 	// Board search store integration
 	const { setIsBoardPage, setBoardSearchQuery, boardSearchQuery } =
 		useBoardSearchStore();
+	const [, setSearchOpen] = useWorkspaceSearch();
 
 	// ── New: issues & statuses ──────────────────────────────────────────────
 	const statuses = useQuery(api.board.board.getStatuses, { channelId });
 	const allIssues = useQuery(api.board.board.getIssues, { channelId }) || [];
-	const _uniqueIssueLabels =
-		useQuery(api.board.board.getUniqueIssueLabels, { channelId }) || [];
 	const [optimisticIssues, setOptimisticIssues] = useState<
 		typeof allIssues | null
 	>(null);
@@ -66,18 +62,9 @@ const ChannelBoardPage = () => {
 		}
 	}, [allIssues, optimisticIssues]);
 
-	// ── Existing: lists & cards (kept for table/gantt) ──────────────────────
-	const lists = useQuery(api.board.board.getLists, { channelId });
-	const allCards =
-		useQuery(api.board.board.getAllCardsForChannel, { channelId }) || [];
-	const uniqueLabels =
-		useQuery(api.board.board.getUniqueLabels, { channelId }) || [];
 	const members =
 		useQuery(api.board.board.getMembersForChannel, { channelId }) || [];
 	const channel = useQuery(api.messaging.channels.getById, { id: channelId });
-	const currentMember = useQuery(api.workspace.members.current, {
-		workspaceId,
-	});
 
 	useDocumentTitle(channel ? `Board – ${channel.name}` : "Board");
 
@@ -164,42 +151,6 @@ const ChannelBoardPage = () => {
 	const displayedStatuses = optimisticStatuses ?? statuses ?? [];
 	const previousStatusOrderRef = useRef<typeof displayedStatuses | null>(null);
 
-	// ── Old card modal state (for table/gantt views) ────────────────────────
-	const [deleteListOpen, setDeleteListOpen] = useState(false);
-	const [listToDelete, setListToDelete] = useState<{
-		_id: Id<"lists">;
-		title: string;
-		order: number;
-		channelId: Id<"channels">;
-	} | null>(null);
-	const [addCardOpen, setAddCardOpen] = useState<null | Id<"lists">>(null);
-	const [editCardOpen, setEditCardOpen] = useState<{
-		card: {
-			_id: Id<"cards">;
-			title: string;
-			description?: string;
-			listId: Id<"lists">;
-			order: number;
-			labels?: string[];
-			priority?: "lowest" | "low" | "medium" | "high" | "highest";
-			dueDate?: number;
-			assignees?: Id<"members">[];
-			isCompleted?: boolean;
-			estimate?: number;
-			timeSpent?: number;
-			watchers?: Id<"members">[];
-			blockedBy?: Id<"cards">[];
-		};
-	} | null>();
-	const [cardTitle, setCardTitle] = useState("");
-	const [cardDesc, setCardDesc] = useState("");
-	const [cardLabels, setCardLabels] = useState("");
-	const [cardPriority, setCardPriority] = useState<
-		"lowest" | "low" | "medium" | "high" | "highest" | ""
-	>("");
-	const [cardDueDate, setCardDueDate] = useState<Date | undefined>();
-	const [cardAssignees, setCardAssignees] = useState<Id<"members">[]>([]);
-
 	// ── Mutations ───────────────────────────────────────────────────────────
 	const migrate = useMutation(api.board.board.migrateListsToStatuses);
 	const createStatus = useMutation(api.board.board.createStatus);
@@ -208,13 +159,6 @@ const ChannelBoardPage = () => {
 	const reorderStatuses = useMutation(api.board.board.reorderStatuses);
 	const moveIssueStatus = useMutation(api.board.board.moveIssueStatus);
 	const createIssue = useMutation(api.board.board.createIssue);
-
-	// Existing card mutations
-	const createCard = useMutation(api.board.board.createCard);
-	const updateCard = useMutation(api.board.board.updateCard);
-	const deleteCard = useMutation(api.board.board.deleteCard);
-	const _moveCard = useMutation(api.board.board.moveCard);
-	const deleteList = useMutation(api.board.board.deleteList);
 
 	// ── Auto-migration on first load ────────────────────────────────────────
 	useEffect(() => {
@@ -472,94 +416,15 @@ const ChannelBoardPage = () => {
 
 	// ── Search filter is now handled by global search via boardSearchQuery ──
 
-	// ── Old card/list handlers (table + gantt views) ─────────────────────────
-	const handleAddCard = async (listId: Id<"lists">) => {
-		if (!cardTitle.trim()) return;
-		const cards = allCards.filter((c) => c.listId === listId) || [];
-		await createCard({
-			listId,
-			title: cardTitle,
-			description: cardDesc,
-			order: cards.length,
-			labels: cardLabels
-				.split(",")
-				.map((l) => l.trim())
-				.filter(Boolean),
-			priority: cardPriority || undefined,
-			dueDate: cardDueDate ? cardDueDate.getTime() : undefined,
-			assignees: cardAssignees.length > 0 ? cardAssignees : undefined,
-		});
-		setCardTitle("");
-		setCardDesc("");
-		setCardLabels("");
-		setCardPriority("");
-		setCardDueDate(undefined);
-		setCardAssignees([]);
-		setAddCardOpen(null);
-	};
-
-	const handleEditCard = async () => {
-		if (!editCardOpen || !cardTitle.trim()) return;
-		await updateCard({
-			cardId: editCardOpen.card._id,
-			title: cardTitle,
-			description: cardDesc,
-			labels: cardLabels
-				.split(",")
-				.map((l) => l.trim())
-				.filter(Boolean),
-			priority: cardPriority || undefined,
-			dueDate: cardDueDate ? cardDueDate.getTime() : undefined,
-			assignees: cardAssignees.length > 0 ? cardAssignees : undefined,
-		});
-		setEditCardOpen(null);
-	};
-
-	const _handleDeleteCard = async (cardId: Id<"cards">) => {
-		await deleteCard({ cardId });
-		setEditCardOpen(null);
-	};
-
-	const handleDeleteList = async () => {
-		if (!listToDelete) return;
-		await deleteList({ listId: listToDelete._id });
-		setDeleteListOpen(false);
-		setListToDelete(null);
-	};
-
-	// Card group by list (for table/gantt)
-	const cardsByList: Record<
-		string,
-		{
-			_id: Id<"cards">;
-			title: string;
-			description?: string;
-			listId: Id<"lists">;
-			order: number;
-			labels?: string[];
-			priority?: "lowest" | "low" | "medium" | "high" | "highest";
-			dueDate?: number;
-			assignees?: Id<"members">[];
-			isCompleted?: boolean;
-			estimate?: number;
-			timeSpent?: number;
-			watchers?: Id<"members">[];
-			blockedBy?: Id<"cards">[];
-		}[]
-	> = {};
-	allCards.forEach((card) => {
-		if (!cardsByList[card.listId]) cardsByList[card.listId] = [];
-		cardsByList[card.listId].push(card);
-	});
-
 	if (!channelId) return <div className="p-4">No channel selected.</div>;
 
 	return (
-		<div className="h-full w-full max-w-full flex flex-col bg-background dark:bg-gray-950 overflow-x-hidden overflow-y-hidden min-w-0">
+		<div className="h-full w-full max-w-full flex flex-col bg-background overflow-x-hidden overflow-y-hidden min-w-0">
 			{view === "kanban" ? (
 				statuses === undefined ? (
-					<div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-						Loading board…
+					<div className="flex items-center justify-center gap-2 h-full text-sm text-muted-foreground">
+						<Loader2 className="size-4 animate-spin" />
+						<span>Loading board…</span>
 					</div>
 				) : (
 					<BoardKanbanView
@@ -601,15 +466,7 @@ const ChannelBoardPage = () => {
 								throw error;
 							}
 						}}
-						onSearchClick={() => {
-							// Trigger global search open
-							const event = new KeyboardEvent("keydown", {
-								key: "k",
-								ctrlKey: true,
-								bubbles: true,
-							});
-							document.dispatchEvent(event);
-						}}
+						onSearchClick={() => setSearchOpen(true)}
 						setView={setView}
 						showHeader
 						statusCount={displayedStatuses.length}
@@ -626,34 +483,21 @@ const ChannelBoardPage = () => {
 						setAddStatusOpen(true);
 					}}
 					onLinkageDiagramClick={() => setLinkageDiagramOpen(true)}
-					onSearchClick={() => {
-						// Trigger global search open
-						const event = new KeyboardEvent("keydown", {
-							key: "k",
-							ctrlKey: true,
-							bubbles: true,
-						});
-						document.dispatchEvent(event);
-					}}
+					onSearchClick={() => setSearchOpen(true)}
 					setView={setView}
 					statusCount={displayedStatuses.length}
-					totalIssues={allCards.length}
+					totalIssues={filteredIssues.length}
 					view={view}
 				/>
 			)}
 
-			{view !== "kanban" && (
-				<div className="flex-1 overflow-auto min-h-0">
-					{/* ── Gantt (legacy cards) ─── */}
-					{view === "gantt" && (
-						<BoardGanttView
-							allCards={allCards}
-							lists={lists || []}
-							members={members}
-							readOnly
-						/>
-					)}
-				</div>
+			{view === "gantt" && (
+				<BoardGanttView
+					issues={filteredIssues}
+					members={members}
+					readOnly
+					statuses={displayedStatuses}
+				/>
 			)}
 
 			{/* ── Status modals ─────────────────────────────────────────────── */}
@@ -701,69 +545,6 @@ const ChannelBoardPage = () => {
 				channelId={channelId}
 				onOpenChange={setLinkageDiagramOpen}
 				open={linkageDiagramOpen}
-			/>
-
-			{/* ── Legacy card modals (table/gantt) ──────────────────────────── */}
-			<BoardDeleteListModal
-				onDelete={handleDeleteList}
-				onOpenChange={setDeleteListOpen}
-				open={deleteListOpen}
-			/>
-			<BoardAddCardModal
-				assignees={cardAssignees}
-				description={cardDesc}
-				dueDate={cardDueDate}
-				labelSuggestions={uniqueLabels}
-				labels={cardLabels}
-				members={members}
-				onAdd={() => addCardOpen && handleAddCard(addCardOpen)}
-				onOpenChange={(open) => {
-					if (!open) {
-						setAddCardOpen(null);
-						setCardTitle("");
-						setCardDesc("");
-						setCardLabels("");
-						setCardPriority("");
-						setCardDueDate(undefined);
-						setCardAssignees([]);
-					}
-				}}
-				open={Boolean(addCardOpen)}
-				priority={cardPriority}
-				setAssignees={setCardAssignees}
-				setDescription={setCardDesc}
-				setDueDate={setCardDueDate}
-				setLabels={setCardLabels}
-				setPriority={setCardPriority}
-				setTitle={setCardTitle}
-				title={cardTitle}
-			/>
-			<BoardEditCardModal
-				assignees={cardAssignees}
-				cardId={editCardOpen?.card._id as Id<"cards">}
-				channelId={channelId}
-				currentMemberId={currentMember?._id}
-				description={cardDesc}
-				dueDate={cardDueDate}
-				estimate={editCardOpen?.card.estimate}
-				labelSuggestions={uniqueLabels}
-				labels={cardLabels}
-				members={members}
-				onOpenChange={(open: boolean) => {
-					if (!open) setEditCardOpen(null);
-				}}
-				onSave={handleEditCard}
-				open={Boolean(editCardOpen)}
-				priority={cardPriority}
-				setAssignees={setCardAssignees}
-				setDescription={setCardDesc}
-				setDueDate={setCardDueDate}
-				setLabels={setCardLabels}
-				setPriority={setCardPriority}
-				setTitle={setCardTitle}
-				timeSpent={editCardOpen?.card.timeSpent}
-				title={cardTitle}
-				watchers={editCardOpen?.card.watchers}
 			/>
 		</div>
 	);

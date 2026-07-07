@@ -21,9 +21,11 @@ import {
 	sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { useQuery } from "convex/react";
+import { Plus } from "lucide-react";
 import React, { useCallback, useMemo } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
 import BoardHeader from "./board-header";
 import type { IssuePriority } from "./board-issue-row";
 import BoardIssueRow from "./board-issue-row";
@@ -294,8 +296,9 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 			} catch (error) {
 				console.error("Error moving issue:", error);
 			} finally {
-				// Clear active item after a small delay to allow animation to complete
-				setTimeout(() => setActiveItem(null), 50);
+				// The optimistic update above has already applied by now, so the
+				// real row is in place before the overlay disappears.
+				setActiveItem(null);
 			}
 		}
 	};
@@ -348,12 +351,24 @@ const BoardKanbanView: React.FC<BoardKanbanViewProps> = ({
 								<p className="text-xs">
 									Add a status to start tracking issues.
 								</p>
+								{onAddStatus && (
+									<Button
+										aria-label="Add status"
+										className="gap-1.5 text-xs"
+										onClick={onAddStatus}
+										size="sm"
+										variant="outline"
+									>
+										<Plus className="w-3.5 h-3.5" />
+										Add status
+									</Button>
+								)}
 							</div>
 						) : (
 							<div className="flex w-max min-w-max gap-4 px-4">
 								{sortedStatuses.map((status) => (
 									<div
-										className="w-[calc(25vw-1.5rem)] flex-shrink-0 h-full max-h-full"
+										className="w-[300px] flex-shrink-0 h-full max-h-full"
 										key={status._id}
 									>
 										<BoardStatusColumn

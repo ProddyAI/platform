@@ -77,12 +77,14 @@ const FeaturesPage = () => {
 	};
 
 	// Tab configuration with colors and predefined classes
+	// Note: class names below are written out in full (never built via
+	// `${color}` interpolation) so Tailwind's JIT scanner can actually
+	// generate them — dynamic template classes are silently dropped.
 	const tabConfig = [
 		{
 			id: "communication",
 			icon: <MessageSquare className="size-5 flex-shrink-0" />,
 			label: "Communication",
-			color: "blue",
 			hoverBg: "hover:bg-blue-50",
 			hoverText: "hover:text-blue-600",
 			hoverRing: "hover:ring-blue-200",
@@ -90,12 +92,15 @@ const FeaturesPage = () => {
 			activeText: "data-[state=active]:text-blue-700",
 			activeRing: "data-[state=active]:ring-blue-300",
 			indicatorBg: "bg-blue-500",
+			cardGradient: "bg-gradient-to-r from-blue-50 to-blue-100",
+			cardAccent: "bg-blue-400",
+			cardArrow: "text-blue-500",
+			cardHoverBorder: "hover:border-blue-200",
 		},
 		{
 			id: "taskManagement",
 			icon: <CheckSquare className="size-5 flex-shrink-0" />,
 			label: "Task Management",
-			color: "green",
 			hoverBg: "hover:bg-green-50",
 			hoverText: "hover:text-green-600",
 			hoverRing: "hover:ring-green-200",
@@ -103,12 +108,15 @@ const FeaturesPage = () => {
 			activeText: "data-[state=active]:text-green-700",
 			activeRing: "data-[state=active]:ring-green-300",
 			indicatorBg: "bg-green-500",
+			cardGradient: "bg-gradient-to-r from-green-50 to-green-100",
+			cardAccent: "bg-green-400",
+			cardArrow: "text-green-500",
+			cardHoverBorder: "hover:border-green-200",
 		},
 		{
 			id: "planning",
 			icon: <ChartNoAxesGantt className="size-5 flex-shrink-0" />,
 			label: "Planning",
-			color: "purple",
 			hoverBg: "hover:bg-purple-50",
 			hoverText: "hover:text-purple-600",
 			hoverRing: "hover:ring-purple-200",
@@ -116,12 +124,15 @@ const FeaturesPage = () => {
 			activeText: "data-[state=active]:text-purple-700",
 			activeRing: "data-[state=active]:ring-purple-300",
 			indicatorBg: "bg-purple-500",
+			cardGradient: "bg-gradient-to-r from-purple-50 to-purple-100",
+			cardAccent: "bg-purple-400",
+			cardArrow: "text-purple-500",
+			cardHoverBorder: "hover:border-purple-200",
 		},
 		{
 			id: "analytics",
 			icon: <BarChart className="size-5 flex-shrink-0" />,
 			label: "Analytics",
-			color: "indigo",
 			hoverBg: "hover:bg-indigo-50",
 			hoverText: "hover:text-indigo-600",
 			hoverRing: "hover:ring-indigo-200",
@@ -129,6 +140,10 @@ const FeaturesPage = () => {
 			activeText: "data-[state=active]:text-indigo-700",
 			activeRing: "data-[state=active]:ring-indigo-300",
 			indicatorBg: "bg-indigo-500",
+			cardGradient: "bg-gradient-to-r from-indigo-50 to-indigo-100",
+			cardAccent: "bg-indigo-400",
+			cardArrow: "text-indigo-500",
+			cardHoverBorder: "hover:border-indigo-200",
 		},
 	];
 
@@ -168,13 +183,13 @@ const FeaturesPage = () => {
 	// Feature image component
 	const FeatureImage = ({
 		feature,
-		color,
+		gradientClass,
+		accentClass,
 	}: {
 		feature: Feature;
-		color: string;
+		gradientClass: string;
+		accentClass: string;
 	}) => {
-		const gradientClass = `bg-gradient-to-r from-${color}-50 to-${color}-100`;
-		const accentClass = `bg-${color}-400`;
 		// Default image fallback if imageSrc is undefined
 		const imageSrc = feature.imageSrc || "/placeholder-feature.png";
 
@@ -199,13 +214,11 @@ const FeaturesPage = () => {
 	// Feature content component
 	const FeatureContent = ({
 		feature,
-		color,
+		arrowColorClass,
 	}: {
 		feature: Feature;
-		color: string;
+		arrowColorClass: string;
 	}) => {
-		const arrowColorClass = `text-${color}-500`;
-
 		return (
 			<div className="p-7 md:p-10 flex flex-col h-full justify-between">
 				<div>
@@ -218,10 +231,12 @@ const FeaturesPage = () => {
 						>
 							{feature.icon}
 						</div>
-						<h3 className="text-2xl font-bold text-gray-900">{feature.name}</h3>
+						<h3 className="text-2xl font-bold text-foreground">
+							{feature.name}
+						</h3>
 					</div>
 
-					<p className="text-gray-700 mb-7 text-base leading-relaxed">
+					<p className="text-foreground mb-7 text-base leading-relaxed">
 						{feature.detailedDescription.length > 180
 							? `${feature.detailedDescription.substring(0, 180)}...`
 							: feature.detailedDescription}
@@ -229,7 +244,7 @@ const FeaturesPage = () => {
 				</div>
 
 				<div className="mt-auto">
-					<h4 className="text-sm font-semibold text-gray-500 uppercase mb-4">
+					<h4 className="text-sm font-semibold text-muted-foreground uppercase mb-4">
 						Key Features
 					</h4>
 					<ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -241,7 +256,7 @@ const FeaturesPage = () => {
 								<ArrowRight
 									className={`size-4 ${arrowColorClass} mt-1 flex-shrink-0`}
 								/>
-								<span className="text-sm text-gray-700">{featureItem}</span>
+								<span className="text-sm text-foreground">{featureItem}</span>
 							</li>
 						))}
 					</ul>
@@ -254,20 +269,24 @@ const FeaturesPage = () => {
 	const FeatureCard = ({
 		feature,
 		index,
-		color,
+		cardGradient,
+		cardAccent,
+		cardArrow,
+		cardHoverBorder,
 	}: {
 		feature: Feature;
 		index: number;
-		color: string;
+		cardGradient: string;
+		cardAccent: string;
+		cardArrow: string;
+		cardHoverBorder: string;
 	}) => {
-		const hoverBorderClass = `hover:border-${color}-200`;
-
 		return (
 			<motion.div
 				id={feature.id}
 				key={feature.id}
 				{...fadeInAnimation}
-				className={`bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-xl ${hoverBorderClass} transition-all duration-300`}
+				className={`bg-card rounded-xl shadow-md overflow-hidden border border-border hover:shadow-xl ${cardHoverBorder} transition-all duration-300`}
 				transition={{ duration: 0.5, delay: index * 0.1 }}
 			>
 				<div className="grid grid-cols-1 lg:grid-cols-2 h-full">
@@ -275,20 +294,28 @@ const FeaturesPage = () => {
 						// Content on left, image on right for even indexes
 						<>
 							<div className="h-full">
-								<FeatureContent color={color} feature={feature} />
+								<FeatureContent arrowColorClass={cardArrow} feature={feature} />
 							</div>
 							<div className="h-full">
-								<FeatureImage color={color} feature={feature} />
+								<FeatureImage
+									accentClass={cardAccent}
+									feature={feature}
+									gradientClass={cardGradient}
+								/>
 							</div>
 						</>
 					) : (
 						// Image on left, content on right for odd indexes
 						<>
 							<div className="h-full">
-								<FeatureImage color={color} feature={feature} />
+								<FeatureImage
+									accentClass={cardAccent}
+									feature={feature}
+									gradientClass={cardGradient}
+								/>
 							</div>
 							<div className="h-full">
-								<FeatureContent color={color} feature={feature} />
+								<FeatureContent arrowColorClass={cardArrow} feature={feature} />
 							</div>
 						</>
 					)}
@@ -303,7 +330,7 @@ const FeaturesPage = () => {
 
 			{/* Hero Section - More compact */}
 			<section
-				className="pt-24 pb-12 md:pt-32 md:pb-16 bg-gradient-to-b from-white via-gray-50/50 to-gray-50 relative overflow-hidden"
+				className="pt-24 pb-12 md:pt-32 md:pb-16 bg-gradient-to-b from-background via-muted/50 to-muted relative overflow-hidden"
 				id="hero"
 				ref={heroRef}
 			>
@@ -315,17 +342,9 @@ const FeaturesPage = () => {
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
 						<div className="text-left lg:pr-6">
-							<motion.div
-								className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-4"
-								{...fadeInAnimation}
-							>
-								MODULAR PRODUCTIVITY SUITE
-							</motion.div>
-
 							<motion.h1
-								className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4"
+								className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4"
 								{...fadeInAnimation}
-								transition={{ duration: 0.5, delay: 0.1 }}
 							>
 								Powerful{" "}
 								<span className="text-primary relative">
@@ -336,7 +355,7 @@ const FeaturesPage = () => {
 							</motion.h1>
 
 							<motion.p
-								className="text-lg md:text-xl text-gray-600 mb-6"
+								className="text-lg md:text-xl text-muted-foreground mb-6"
 								{...fadeInAnimation}
 								transition={{ duration: 0.5, delay: 0.2 }}
 							>
@@ -359,7 +378,7 @@ const FeaturesPage = () => {
 								</Link>
 								<Link href="/auth/signup">
 									<Button
-										className="gap-2 rounded-full border-gray-300 hover:border-primary/50 px-6 py-2 text-base"
+										className="gap-2 rounded-full border-border hover:border-primary/50 px-6 py-2 text-base"
 										size="lg"
 										variant="outline"
 									>
@@ -371,11 +390,11 @@ const FeaturesPage = () => {
 
 						<motion.div
 							animate={{ opacity: 1, x: 0 }}
-							className="relative h-[300px] md:h-[350px] rounded-2xl overflow-hidden shadow-xl border border-gray-100"
+							className="relative h-[300px] md:h-[350px] rounded-2xl overflow-hidden shadow-xl border border-border"
 							initial={{ opacity: 0, x: 50 }}
 							transition={{ duration: 0.7, delay: 0.4 }}
 						>
-							<div className="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-transparent z-10" />
+							<div className="absolute inset-0 bg-gradient-to-br from-background/80 via-transparent to-transparent z-10" />
 							<div className="absolute inset-0">
 								<div className="grid grid-cols-2 gap-3 p-4 w-full h-full">
 									<div className="flex flex-col gap-3 h-full">
@@ -399,7 +418,7 @@ const FeaturesPage = () => {
 											<HeroFeatureImage
 												alt="Calendar feature"
 												bgColor="bg-purple-50"
-												src="/calender.png"
+												src="/calendar.png"
 											/>
 										</div>
 										<div className="h-1/2">
@@ -419,7 +438,7 @@ const FeaturesPage = () => {
 
 			{/* Features Tabs Section */}
 			<section
-				className="py-16 bg-gradient-to-b from-white to-gray-50"
+				className="py-16 bg-gradient-to-b from-background to-muted"
 				id="features-tabs"
 			>
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -429,18 +448,18 @@ const FeaturesPage = () => {
 						value={activeTab}
 					>
 						<div className="mb-16 text-center">
-							<h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
+							<h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
 								Explore Our Features
 							</h2>
-							<p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-12">
-								Discover the powerful tools that make Proddy the ultimate
-								productivity platform for modern teams.
+							<p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-12">
+								Messaging, tasks, planning, and analytics — everything your team
+								needs, without switching tools.
 							</p>
-							<TabsList className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full h-20 max-w-4xl mx-auto bg-white p-2.5 rounded-xl shadow-sm border border-primary/60">
+							<TabsList className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full h-20 max-w-4xl mx-auto bg-card p-2.5 rounded-xl shadow-sm border border-primary/60">
 								{tabConfig.map((tab) => (
 									<TabsTrigger
 										className={cn(
-											"relative py-4 px-5 text-base font-medium text-gray-700 rounded-lg ring-1 ring-gray-400",
+											"relative py-4 px-5 text-base font-medium text-muted-foreground rounded-lg ring-1 ring-transparent",
 											tab.hoverBg,
 											tab.hoverText,
 											tab.hoverRing,
@@ -476,7 +495,10 @@ const FeaturesPage = () => {
 								<div className="space-y-12">
 									{getFeaturesByGroup(tab.id).map((feature, index) => (
 										<FeatureCard
-											color={tab.color}
+											cardAccent={tab.cardAccent}
+											cardArrow={tab.cardArrow}
+											cardGradient={tab.cardGradient}
+											cardHoverBorder={tab.cardHoverBorder}
 											feature={feature}
 											index={index}
 											key={feature.id}

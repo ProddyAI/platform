@@ -24,60 +24,68 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { IssuePriority } from "./board-issue-row";
+import { priorityLabel } from "./board-issue-row";
 
-type BoardListItem = {
-	_id: Id<"lists">;
-	title: string;
+type BoardStatusItem = {
+	_id: Id<"statuses">;
+	name: string;
+	color: string;
 };
 
-type BoardGanttCard = {
-	_id: Id<"cards">;
-	listId: Id<"lists">;
+type BoardGanttIssue = {
+	_id: Id<"issues">;
+	statusId: Id<"statuses">;
 	title: string;
-	priority?: "lowest" | "low" | "medium" | "high" | "highest";
+	priority?: IssuePriority;
 	description?: string;
 	labels?: string[];
 	dueDate?: number;
-	parentCardId?: Id<"cards">;
+	parentIssueId?: Id<"issues">;
 	order?: number;
 };
 
-type BoardGanttCardWithDueDate = BoardGanttCard & {
+type BoardGanttIssueWithDueDate = BoardGanttIssue & {
 	dueDate: number;
 };
 
-const hasDueDate = (card: BoardGanttCard): card is BoardGanttCardWithDueDate =>
-	typeof card.dueDate === "number";
+const hasDueDate = (
+	issue: BoardGanttIssue
+): issue is BoardGanttIssueWithDueDate => typeof issue.dueDate === "number";
 
 interface BoardGanttViewProps {
-	lists: BoardListItem[];
-	allCards: BoardGanttCard[];
+	statuses: BoardStatusItem[];
+	issues: BoardGanttIssue[];
 	members?: unknown[];
 	readOnly?: boolean;
 }
 
 type GanttTask = {
-	id: Id<"cards">;
+	id: Id<"issues">;
 	title: string;
 	startDate: Date;
 	endDate: Date;
-	priority?: string;
-	listId: Id<"lists"> | string;
-	listTitle: string;
+	priority?: IssuePriority;
+	statusId: Id<"statuses"> | string;
+	statusTitle: string;
+	statusColor: string;
 	description?: string;
 	labels?: string[];
-	parentCardId?: Id<"cards">;
+	parentIssueId?: Id<"issues">;
 	isSubtask: boolean;
 	order?: number;
 	parentTitle?: string;
-	originalCard: BoardGanttCard;
+	originalIssue: BoardGanttIssue;
 };
 
-const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
+const BoardGanttView: React.FC<BoardGanttViewProps> = ({
+	statuses,
+	issues,
+}) => {
 	const initialStartDate = useMemo(() => {
-		const earliestDueDate = allCards.filter(hasDueDate).reduce(
-			(earliest, card) => {
-				const dueDate = new Date(card.dueDate);
+		const earliestDueDate = issues.filter(hasDueDate).reduce(
+			(earliest, issue) => {
+				const dueDate = new Date(issue.dueDate);
 				return earliest === null || dueDate < earliest ? dueDate : earliest;
 			},
 			null as Date | null
@@ -86,7 +94,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 		return earliestDueDate
 			? startOfWeek(earliestDueDate)
 			: startOfWeek(new Date());
-	}, [allCards]);
+	}, [issues]);
 
 	const [currentStartDate, setCurrentStartDate] =
 		useState<Date>(initialStartDate);
@@ -110,98 +118,99 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 	const timelineContainerRef = useRef<HTMLDivElement>(null);
 
 	const tasks = useMemo(() => {
-		const cardById = new Map<Id<"cards">, BoardGanttCard>();
-		allCards.forEach((card) => {
-			cardById.set(card._id, card);
+		const issueById = new Map<Id<"issues">, BoardGanttIssue>();
+		issues.forEach((issue) => {
+			issueById.set(issue._id, issue);
 		});
 
-		return allCards.filter(hasDueDate).map((card) => {
-			const list = lists.find((l) => l._id === card.listId);
-			const dueDate = new Date(card.dueDate);
+		return issues.filter(hasDueDate).map((issue) => {
+			const status = statuses.find((s) => s._id === issue.statusId);
+			const dueDate = new Date(issue.dueDate);
 
 			const startDate = new Date(dueDate);
 			startDate.setDate(startDate.getDate() - 3);
 
-			const parentTitle = card.parentCardId
-				? cardById.get(card.parentCardId)?.title
+			const parentTitle = issue.parentIssueId
+				? issueById.get(issue.parentIssueId)?.title
 				: undefined;
 
 			return {
-				id: card._id,
-				title: card.title,
+				id: issue._id,
+				title: issue.title,
 				startDate,
 				endDate: dueDate,
-				priority: card.priority,
-				listId: card.listId,
-				listTitle: list ? list.title : "Unknown List",
-				description: card.description,
-				labels: card.labels,
-				parentCardId: card.parentCardId,
-				isSubtask: Boolean(card.parentCardId),
-				order: card.order,
+				priority: issue.priority,
+				statusId: issue.statusId,
+				statusTitle: status ? status.name : "Unknown Status",
+				statusColor: status ? status.color : "#9ca3af",
+				description: issue.description,
+				labels: issue.labels,
+				parentIssueId: issue.parentIssueId,
+				isSubtask: Boolean(issue.parentIssueId),
+				order: issue.order,
 				parentTitle,
-				originalCard: card,
+				originalIssue: issue,
 			} as GanttTask;
 		});
-	}, [allCards, lists]);
+	}, [issues, statuses]);
 
 	const timelineDates = useMemo(() => {
 		const endDate = addDays(currentStartDate, zoomLevel - 1);
 		return eachDayOfInterval({ start: currentStartDate, end: endDate });
 	}, [currentStartDate, zoomLevel]);
 
-	const cardsByList = useMemo(() => {
-		const map: Record<string, BoardGanttCard[]> = {};
-		lists.forEach((list) => {
-			map[list._id] = [];
+	const issuesByStatus = useMemo(() => {
+		const map: Record<string, BoardGanttIssue[]> = {};
+		statuses.forEach((status) => {
+			map[status._id] = [];
 		});
-		allCards.forEach((card) => {
-			if (!map[card.listId]) {
-				map[card.listId] = [];
+		issues.forEach((issue) => {
+			if (!map[issue.statusId]) {
+				map[issue.statusId] = [];
 			}
-			map[card.listId].push(card);
+			map[issue.statusId].push(issue);
 		});
-		Object.values(map).forEach((cards) => {
-			cards.sort((a, b) => (a.order || 0) - (b.order || 0));
+		Object.values(map).forEach((statusIssues) => {
+			statusIssues.sort((a, b) => (a.order || 0) - (b.order || 0));
 		});
 		return map;
-	}, [allCards, lists]);
+	}, [issues, statuses]);
 
 	const tasksById = useMemo(() => {
-		const map = new Map<Id<"cards">, GanttTask>();
+		const map = new Map<Id<"issues">, GanttTask>();
 		tasks.forEach((task) => map.set(task.id, task));
 		return map;
 	}, [tasks]);
 
-	const groupedTasksByList = useMemo(() => {
+	const groupedTasksByStatus = useMemo(() => {
 		const grouped: Record<
 			string,
 			{
 				rows: {
-					card: BoardGanttCard;
+					issue: BoardGanttIssue;
 					task?: GanttTask;
 					level: "parent" | "subtask";
 				}[];
 			}
 		> = {};
 
-		lists.forEach((list) => {
-			const listCards = cardsByList[list._id] || [];
+		statuses.forEach((status) => {
+			const statusIssues = issuesByStatus[status._id] || [];
 			const rows: {
-				card: BoardGanttCard;
+				issue: BoardGanttIssue;
 				task?: GanttTask;
 				level: "parent" | "subtask";
 			}[] = [];
 
-			const parentCards = listCards.filter((card) => !card.parentCardId);
-			parentCards.forEach((parent) => {
+			const parentIssues = statusIssues.filter((issue) => !issue.parentIssueId);
+			parentIssues.forEach((parent) => {
 				const parentTask = tasksById.get(parent._id);
-				const subtaskCards = listCards.filter(
-					(card) => card.parentCardId === parent._id
+				const subtaskIssues = statusIssues.filter(
+					(issue) => issue.parentIssueId === parent._id
 				);
-				subtaskCards.sort((a, b) => (a.order || 0) - (b.order || 0));
-				const subtaskTasks = subtaskCards
-					.map((card) => tasksById.get(card._id))
+				subtaskIssues.sort((a, b) => (a.order || 0) - (b.order || 0));
+				const subtaskTasks = subtaskIssues
+					.map((issue) => tasksById.get(issue._id))
 					.filter(Boolean) as GanttTask[];
 
 				const hasVisibleSubtasks = subtaskTasks.length > 0;
@@ -209,21 +218,21 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 					return;
 				}
 
-				rows.push({ card: parent, task: parentTask, level: "parent" });
+				rows.push({ issue: parent, task: parentTask, level: "parent" });
 				subtaskTasks.forEach((task) => {
 					rows.push({
-						card: task.originalCard,
+						issue: task.originalIssue,
 						task,
 						level: "subtask",
 					});
 				});
 			});
 
-			grouped[list._id] = { rows };
+			grouped[status._id] = { rows };
 		});
 
 		return grouped;
-	}, [lists, cardsByList, tasksById]);
+	}, [statuses, issuesByStatus, tasksById]);
 
 	const goToPreviousWeek = () => {
 		setCurrentStartDate((prev) => subWeeks(prev, 1));
@@ -241,54 +250,63 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 		setZoomLevel((prev) => Math.min(28, prev + 7));
 	};
 
-	const getPriorityColor = (priority: string | undefined) => {
+	const getPriorityColor = (priority: IssuePriority | undefined) => {
 		switch (priority) {
-			case "highest":
+			case "urgent":
 				return "bg-red-500";
 			case "high":
 				return "bg-orange-500";
 			case "medium":
-				return "bg-secondary";
+				return "bg-yellow-500";
 			case "low":
 				return "bg-blue-400";
-			case "lowest":
-				return "bg-secondary/50";
 			default:
-				return "bg-gray-400";
+				return "bg-muted-foreground/40";
 		}
 	};
 
-	const getSolidPriorityColor = (priority: string | undefined) => {
+	const getPriorityBadgeBg = (priority: IssuePriority | undefined) => {
 		switch (priority) {
-			case "highest":
+			case "urgent":
+				return "bg-red-500/10";
+			case "high":
+				return "bg-orange-500/10";
+			case "medium":
+				return "bg-yellow-500/10";
+			case "low":
+				return "bg-blue-400/10";
+			default:
+				return "bg-muted-foreground/10";
+		}
+	};
+
+	const getSolidPriorityColor = (priority: IssuePriority | undefined) => {
+		switch (priority) {
+			case "urgent":
 				return "#ef4444";
 			case "high":
 				return "#f97316";
 			case "medium":
-				return "hsl(var(--secondary))";
+				return "#eab308";
 			case "low":
 				return "#60a5fa";
-			case "lowest":
-				return "#a78bfa";
 			default:
 				return "#9ca3af";
 		}
 	};
 
-	const getPriorityTextColor = (priority: string | undefined) => {
+	const getPriorityTextColor = (priority: IssuePriority | undefined) => {
 		switch (priority) {
-			case "highest":
+			case "urgent":
 				return "text-red-500";
 			case "high":
 				return "text-orange-500";
 			case "medium":
-				return "text-secondary";
+				return "text-yellow-500";
 			case "low":
 				return "text-blue-400";
-			case "lowest":
-				return "text-secondary";
 			default:
-				return "text-gray-500";
+				return "text-muted-foreground";
 		}
 	};
 
@@ -341,29 +359,29 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 	const rowHeight = 34;
 
 	return (
-		<div className="h-full flex flex-col bg-white dark:bg-gray-900">
+		<div className="h-full flex flex-col bg-card">
 			{/* Gantt Chart Controls */}
-			<div className="p-3 border-b dark:border-gray-800 flex items-center justify-between bg-gradient-to-r from-secondary/5 to-secondary/5 dark:from-gray-900 dark:to-gray-900">
-				<div className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-					Showing {tasks.length} tasks with due dates across {lists.length}{" "}
-					lists
+			<div className="p-3 border-b border-border flex items-center justify-between bg-gradient-to-r from-secondary/5 to-secondary/5">
+				<div className="text-sm font-medium text-muted-foreground">
+					Showing {tasks.length} tasks with due dates across {statuses.length}{" "}
+					statuses
 				</div>
 				<div className="flex items-center gap-2">
-					<div className="flex items-center border dark:border-gray-700 rounded-md overflow-hidden">
+					<div className="flex items-center border border-border rounded-md overflow-hidden">
 						<Button
-							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
+							className="h-8 w-8 p-0 rounded-none"
 							onClick={goToPreviousWeek}
 							size="sm"
 							variant="ghost"
 						>
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
-						<div className="px-2 text-xs font-medium border-l border-r dark:border-gray-700 dark:text-gray-300">
+						<div className="px-2 text-xs font-medium border-l border-r border-border">
 							{format(currentStartDate, "MMM d")} -{" "}
 							{format(addDays(currentStartDate, zoomLevel - 1), "MMM d, yyyy")}
 						</div>
 						<Button
-							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
+							className="h-8 w-8 p-0 rounded-none"
 							onClick={goToNextWeek}
 							size="sm"
 							variant="ghost"
@@ -372,9 +390,9 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 						</Button>
 					</div>
 
-					<div className="flex items-center border dark:border-gray-700 rounded-md overflow-hidden ml-2">
+					<div className="flex items-center border border-border rounded-md overflow-hidden ml-2">
 						<Button
-							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
+							className="h-8 w-8 p-0 rounded-none"
 							disabled={zoomLevel >= 28}
 							onClick={zoomOut}
 							size="sm"
@@ -382,11 +400,11 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 						>
 							<ZoomOut className="h-4 w-4" />
 						</Button>
-						<div className="px-2 text-xs font-medium border-l border-r dark:border-gray-700 dark:text-gray-300">
+						<div className="px-2 text-xs font-medium border-l border-r border-border">
 							{zoomLevel} days
 						</div>
 						<Button
-							className="h-8 w-8 p-0 rounded-none dark:hover:bg-gray-700"
+							className="h-8 w-8 p-0 rounded-none"
 							disabled={zoomLevel <= 7}
 							onClick={zoomIn}
 							size="sm"
@@ -397,7 +415,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 					</div>
 
 					<Button
-						className="h-8 px-2 flex items-center gap-1 dark:bg-gray-800 dark:border-gray-700"
+						className="h-8 px-2 flex items-center gap-1"
 						onClick={() => setCurrentStartDate(startOfWeek(new Date()))}
 						size="sm"
 						variant="outline"
@@ -437,19 +455,23 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
           }
         `}</style>
 				{/* Timeline Header */}
-				<div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b dark:border-gray-800">
+				<div className="sticky top-0 z-10 bg-card border-b border-border">
 					<div className="flex pl-[250px]">
 						{timelineDates.map((date) => (
 							<div
-								className="flex-1 text-center py-2 text-xs font-medium border-r dark:border-gray-800 last:border-r-0"
+								className="flex-1 text-center py-2 text-xs font-medium border-r border-border last:border-r-0"
 								key={date.getTime()}
 								style={{ minWidth: "60px" }}
 							>
-								<div className="text-muted-foreground dark:text-gray-400">
+								<div className="text-muted-foreground">
 									{format(date, "EEE")}
 								</div>
 								<div
-									className={`${isSameDay(date, new Date()) ? "bg-secondary/10 dark:bg-secondary/20 text-secondary dark:text-secondary-foreground rounded-full px-2 py-0.5 inline-block" : "dark:text-gray-300"}`}
+									className={cn(
+										isSameDay(date, new Date())
+											? "bg-secondary/10 dark:bg-secondary/20 text-secondary dark:text-secondary-foreground rounded-full px-2 py-0.5 inline-block"
+											: "text-foreground"
+									)}
 								>
 									{format(date, "d")}
 								</div>
@@ -460,39 +482,43 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 
 				{/* Gantt Chart Body */}
 				<div className="relative">
-					{lists.map((list) => {
-						const rows = groupedTasksByList[list._id]?.rows || [];
-						const listHeight = Math.max(1, rows.length) * rowHeight;
+					{statuses.map((status) => {
+						const rows = groupedTasksByStatus[status._id]?.rows || [];
+						const statusHeight = Math.max(1, rows.length) * rowHeight;
 						const taskCount = rows.filter((row) => row.task).length;
 
 						return (
 							<div
-								className="border-b dark:border-gray-800 last:border-b-0"
-								key={list._id}
+								className="border-b border-border last:border-b-0"
+								key={status._id}
 							>
 								<div className="flex">
-									<div className="w-[250px] sticky left-0 bg-white dark:bg-gray-900 z-10 border-r dark:border-gray-800">
-										<div className="p-3 border-b dark:border-gray-800">
-											<div className="font-medium truncate dark:text-gray-100">
-												{list.title}
+									<div className="w-[250px] sticky left-0 bg-card z-10 border-r border-border">
+										<div className="p-3 border-b border-border">
+											<div className="font-medium truncate flex items-center gap-2">
+												<span
+													className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
+													style={{ backgroundColor: status.color }}
+												/>
+												<span className="truncate">{status.name}</span>
 											</div>
-											<div className="text-xs text-muted-foreground dark:text-gray-400">
+											<div className="text-xs text-muted-foreground">
 												{taskCount} tasks
 											</div>
 										</div>
-										<div style={{ height: listHeight }}>
+										<div style={{ height: statusHeight }}>
 											{rows.map((row) => (
 												<div
 													className={cn(
-														"flex items-center px-3 text-xs border-b dark:border-gray-800",
+														"flex items-center px-3 text-xs border-b border-border",
 														row.level === "subtask"
 															? "pl-7 text-muted-foreground"
 															: "text-foreground"
 													)}
-													key={row.card._id}
+													key={row.issue._id}
 													style={{ height: rowHeight }}
 												>
-													<span className="truncate">{row.card.title}</span>
+													<span className="truncate">{row.issue.title}</span>
 												</div>
 											))}
 										</div>
@@ -500,27 +526,32 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 
 									<div
 										className="flex-1 relative"
-										style={{ minHeight: listHeight }}
+										style={{ minHeight: statusHeight }}
 									>
 										<div
 											className="absolute inset-0 flex"
-											style={{ height: listHeight }}
+											style={{ height: statusHeight }}
 										>
 											{timelineDates.map((date, index) => (
 												<div
-													className={`flex-1 border-r dark:border-gray-800 last:border-r-0 ${isSameDay(date, new Date()) ? "bg-secondary/5 dark:bg-secondary/10" : index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800/30" : "dark:bg-gray-900"}`}
+													className={cn(
+														"flex-1 border-r border-border last:border-r-0",
+														isSameDay(date, new Date())
+															? "bg-secondary/5 dark:bg-secondary/10"
+															: index % 2 === 0 && "bg-muted/30"
+													)}
 													key={date.getTime()}
 													style={{ minWidth: "60px" }}
 												/>
 											))}
 										</div>
 
-										<div className="relative" style={{ height: listHeight }}>
+										<div className="relative" style={{ height: statusHeight }}>
 											{rows.map((row) => {
 												if (!row.task) {
 													return (
 														<div
-															key={`${row.card._id}-empty`}
+															key={`${row.issue._id}-empty`}
 															style={{ height: rowHeight }}
 														/>
 													);
@@ -576,23 +607,23 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 
 			{/* Task Details Sidebar */}
 			{selectedTask && (
-				<div className="fixed right-0 top-[60px] bottom-0 w-[300px] bg-white dark:bg-gray-900 border-l dark:border-gray-800 shadow-lg overflow-hidden z-20 flex flex-col">
-					<div className="flex-shrink-0 p-4 border-b dark:border-gray-800 bg-white dark:bg-gray-900">
+				<div className="fixed right-0 top-[60px] bottom-0 w-[300px] bg-card border-l border-border shadow-lg overflow-hidden z-20 flex flex-col">
+					<div className="flex-shrink-0 p-4 border-b border-border bg-card">
 						<div className="flex items-center justify-between mb-2">
-							<span className="text-xs text-muted-foreground dark:text-gray-400 uppercase tracking-wide">
+							<span className="text-xs text-muted-foreground uppercase tracking-wide">
 								Task Details
 							</span>
 							<Button
 								aria-label="Close task details"
-								className="h-7 w-7 p-0 flex-shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+								className="h-7 w-7 p-0 flex-shrink-0 hover:bg-muted"
 								onClick={() => setSelectedTask(null)}
 								size="sm"
 								variant="ghost"
 							>
-								<X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+								<X className="h-4 w-4 text-muted-foreground" />
 							</Button>
 						</div>
-						<h3 className="text-lg font-semibold dark:text-gray-100">
+						<h3 className="text-lg font-semibold text-foreground">
 							{selectedTask.title}
 						</h3>
 					</div>
@@ -600,19 +631,21 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 					<div className="flex-1 overflow-y-auto p-4">
 						<div className="space-y-4">
 							<div>
-								<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
-									List
-								</div>
-								<div className="text-sm font-medium dark:text-gray-200">
-									{selectedTask.listTitle}
+								<div className="text-xs text-muted-foreground mb-1">Status</div>
+								<div className="flex items-center gap-2 text-sm font-medium">
+									<span
+										className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-inset ring-black/10 dark:ring-white/10"
+										style={{ backgroundColor: selectedTask.statusColor }}
+									/>
+									{selectedTask.statusTitle}
 								</div>
 							</div>
 
 							<div>
-								<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
+								<div className="text-xs text-muted-foreground mb-1">
 									Timeline
 								</div>
-								<div className="text-sm dark:text-gray-200">
+								<div className="text-sm">
 									{format(selectedTask.startDate, "MMM d")} -{" "}
 									{format(selectedTask.endDate, "MMM d, yyyy")}
 								</div>
@@ -620,41 +653,45 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 
 							{selectedTask.priority && (
 								<div>
-									<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
+									<div className="text-xs text-muted-foreground mb-1">
 										Priority
 									</div>
 									<div
-										className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityTextColor(selectedTask.priority)} bg-opacity-10 ${getPriorityColor(selectedTask.priority).replace("bg-", "bg-")}`}
+										className={cn(
+											"inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+											getPriorityTextColor(selectedTask.priority),
+											getPriorityBadgeBg(selectedTask.priority)
+										)}
 									>
 										<div
-											className={`w-2 h-2 rounded-full mr-1 ${getPriorityColor(selectedTask.priority)}`}
+											className={cn(
+												"w-2 h-2 rounded-full mr-1",
+												getPriorityColor(selectedTask.priority)
+											)}
 										/>
-										{selectedTask.priority.charAt(0).toUpperCase() +
-											selectedTask.priority.slice(1)}
+										{priorityLabel(selectedTask.priority)}
 									</div>
 								</div>
 							)}
 
 							{selectedTask.description && (
 								<div>
-									<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
+									<div className="text-xs text-muted-foreground mb-1">
 										Description
 									</div>
-									<div className="text-sm dark:text-gray-200">
-										{selectedTask.description}
-									</div>
+									<div className="text-sm">{selectedTask.description}</div>
 								</div>
 							)}
 
 							{selectedTask.labels && selectedTask.labels.length > 0 && (
 								<div>
-									<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
+									<div className="text-xs text-muted-foreground mb-1">
 										Labels
 									</div>
 									<div className="flex flex-wrap gap-1">
 										{selectedTask.labels.map((label) => (
 											<span
-												className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-200 text-xs rounded-full"
+												className="px-2 py-0.5 bg-muted text-xs rounded-full"
 												key={`${selectedTask.id}-${label}`}
 											>
 												{label}
@@ -665,7 +702,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 							)}
 
 							<div className="pt-2">
-								<div className="text-xs text-muted-foreground dark:text-gray-400 mb-1">
+								<div className="text-xs text-muted-foreground mb-1">
 									View Mode
 								</div>
 								<p className="text-sm text-muted-foreground">
@@ -680,14 +717,12 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({ lists, allCards }) => {
 			{/* Empty state */}
 			{tasks.length === 0 && (
 				<div className="flex-1 flex items-center justify-center flex-col p-8">
-					<div className="bg-gray-50 dark:bg-gray-800 rounded-full p-3 mb-3">
-						<Calendar className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+					<div className="bg-muted rounded-full p-3 mb-3">
+						<Calendar className="h-6 w-6 text-muted-foreground" />
 					</div>
-					<h3 className="text-lg font-medium mb-1 dark:text-gray-100">
-						No tasks with due dates
-					</h3>
-					<p className="text-sm text-muted-foreground dark:text-gray-400 text-center max-w-md">
-						Add due dates to your cards to see them in the Gantt chart view.
+					<h3 className="text-lg font-medium mb-1">No tasks with due dates</h3>
+					<p className="text-sm text-muted-foreground text-center max-w-md">
+						Add due dates to your issues to see them in the Gantt chart view.
 					</p>
 				</div>
 			)}

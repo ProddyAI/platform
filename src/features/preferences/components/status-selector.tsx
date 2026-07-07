@@ -42,9 +42,6 @@ export const StatusSelector = () => {
 				status: enabled ? "dnd" : "online",
 			});
 			setIsDndEnabled(enabled);
-			toast.success(
-				enabled ? "Do Not Disturb enabled" : "Do Not Disturb disabled"
-			);
 		} catch (error) {
 			console.error("Failed to update status:", error);
 			toast.error("Failed to update status");
@@ -60,16 +57,35 @@ export const StatusSelector = () => {
 		return null;
 	}
 
-	// Hide DND toggle when status tracking is disabled
+	// Status tracking must be on for Do Not Disturb to take effect
 	if (!statusTrackingEnabled) {
-		return null;
+		return (
+			<div className="flex items-center justify-between opacity-60">
+				<div className="space-y-1">
+					<Label
+						className="flex items-center gap-2 text-base font-medium"
+						htmlFor="dnd-toggle"
+					>
+						<Moon className="h-4 w-4" />
+						Do Not Disturb
+					</Label>
+					<p className="text-sm text-muted-foreground">
+						Turn on status tracking to use Do Not Disturb.
+					</p>
+				</div>
+				<Switch checked={isDndEnabled} disabled id="dnd-toggle" />
+			</div>
+		);
 	}
 
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<div className="space-y-1">
-					<Label className="flex items-center gap-2 text-base font-medium">
+					<Label
+						className="flex items-center gap-2 text-base font-medium"
+						htmlFor="dnd-toggle"
+					>
 						<Moon className="h-4 w-4" />
 						Do Not Disturb
 					</Label>
@@ -80,6 +96,7 @@ export const StatusSelector = () => {
 				<Switch
 					checked={isDndEnabled}
 					disabled={_isDisabled}
+					id="dnd-toggle"
 					onCheckedChange={handleDndToggle}
 				/>
 			</div>
@@ -87,9 +104,8 @@ export const StatusSelector = () => {
 			{!isDndEnabled && (
 				<div className="rounded-lg bg-muted/50 p-3">
 					<p className="text-xs text-muted-foreground">
-						💡 <strong>Automatic Status:</strong> Your status automatically
-						shows green when online, yellow if idle, and gray if offline based
-						on your activity.
+						Your status updates automatically: green when online, yellow when
+						idle, gray when offline, based on your activity.
 					</p>
 				</div>
 			)}

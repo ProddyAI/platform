@@ -19,8 +19,12 @@ export const Rectangle = ({
 
 	return (
 		<rect
-			className="drop-shadow-md"
-			fill={fill ? colorToCSS(fill) : "#000"}
+			className={
+				selectionColor
+					? "drop-shadow-md"
+					: "drop-shadow-md transition-colors duration-fast hover:stroke-primary/50"
+			}
+			fill={fill ? colorToCSS(fill) : "hsl(var(--foreground))"}
 			height={height}
 			onPointerDown={(e) => onPointerDown(e, id)}
 			stroke={selectionColor || "transparent"}

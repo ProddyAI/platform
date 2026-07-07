@@ -27,6 +27,7 @@ import { MILESTONE_STATUS_CONFIG } from "./milestone-card";
 
 const DONE_KEYWORDS = ["done", "completed", "complete", "closed", "resolved"];
 const IN_PROGRESS_KEYWORDS = ["progress", "review", "doing", "started"];
+const DAY_MS = 1000 * 60 * 60 * 24;
 
 const classify = (statusName?: string) => {
 	const normalized = (statusName ?? "").trim().toLowerCase();
@@ -56,6 +57,11 @@ export const MilestoneDetail = ({
 
 	const color = milestone.color ?? "#6366f1";
 	const status = MILESTONE_STATUS_CONFIG[milestone.status];
+	const isClosed =
+		milestone.status === "completed" || milestone.status === "archived";
+	const daysUntil = milestone.targetDate
+		? Math.ceil((milestone.targetDate - Date.now()) / DAY_MS)
+		: null;
 
 	const handleLink = async (issueIds: Id<"issues">[]) => {
 		try {
@@ -82,7 +88,13 @@ export const MilestoneDetail = ({
 		<div className="flex h-full flex-col">
 			<div className="h-1 w-full" style={{ backgroundColor: color }} />
 			<div className="flex items-center gap-2 border-b p-4">
-				<Button className="size-7" onClick={onBack} size="icon" variant="ghost">
+				<Button
+					aria-label="Back to milestones"
+					className="size-7"
+					onClick={onBack}
+					size="icon"
+					variant="ghost"
+				>
 					<ArrowLeft className="size-4" />
 				</Button>
 				<Flag className="size-4 shrink-0" style={{ color }} />
@@ -97,9 +109,29 @@ export const MilestoneDetail = ({
 						</Badge>
 					</div>
 					{milestone.targetDate && (
-						<p className="text-muted-foreground text-xs">
-							Target {format(new Date(milestone.targetDate), "MMM d, yyyy")}
-						</p>
+						<div className="flex items-center gap-2 text-muted-foreground text-xs">
+							<span>
+								Target {format(new Date(milestone.targetDate), "MMM d, yyyy")}
+							</span>
+							{daysUntil !== null && !isClosed && (
+								<span
+									className={cn(
+										"font-medium",
+										daysUntil < 0
+											? "text-destructive"
+											: daysUntil < 7
+												? "text-orange-500"
+												: "text-muted-foreground"
+									)}
+								>
+									{daysUntil < 0
+										? `${Math.abs(daysUntil)}d overdue`
+										: daysUntil === 0
+											? "Due today"
+											: `${daysUntil}d left`}
+								</span>
+							)}
+						</div>
 					)}
 				</div>
 			</div>
@@ -204,7 +236,8 @@ export const MilestoneDetail = ({
 										</div>
 									</div>
 									<Button
-										className="size-6 shrink-0 opacity-0 group-hover:opacity-100"
+										aria-label="Unlink issue"
+										className="size-6 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
 										onClick={() => handleUnlink(issue._id)}
 										size="icon"
 										variant="ghost"

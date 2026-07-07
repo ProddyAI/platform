@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, CheckCircle, Clock, Hash, Loader } from "lucide-react";
+import { AtSign, CheckCircle, Hash, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -14,8 +14,10 @@ import { useMarkAllMentionsAsRead } from "@/features/messages/api/use-mark-all-m
 import { useMarkMentionAsRead } from "@/features/messages/api/use-mark-mention-as-read";
 import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
 import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
-import { safeFormatDistanceToNow } from "@/lib/date-utils";
+import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
+import { WidgetEmptyState } from "../shared/widget-empty-state";
+import { WidgetHeader } from "../shared/widget-header";
 
 interface MentionsWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -148,30 +150,32 @@ export const MentionsWidget = ({
 
 	return (
 		<div className="space-y-4 pb-4">
-			<div className="flex items-center justify-between pr-2">
-				<div className="flex items-center gap-2">
-					<AtSign className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-medium">Mentions</h3>
-					{!isEditMode && counts && counts.total > 0 && (
-						<Badge className="ml-2" variant="default">
-							{counts.total}
-						</Badge>
-					)}
-				</div>
-				{isEditMode
-					? controls
-					: counts &&
-						counts.total > 0 && (
-							<Button onClick={handleMarkAllAsRead} size="sm" variant="default">
-								<CheckCircle className="mr-2 h-4 w-4" />
-								Mark all as read
-							</Button>
-						)}
-			</div>
+			<WidgetHeader
+				action={
+					counts &&
+					counts.total > 0 && (
+						<Button
+							className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+							onClick={handleMarkAllAsRead}
+							size="sm"
+							variant="ghost"
+						>
+							<CheckCircle className="mr-2 h-4 w-4" />
+							Mark all as read
+						</Button>
+					)
+				}
+				badge={counts && counts.total > 0 ? counts.total : undefined}
+				className="pr-2"
+				controls={controls}
+				icon={<AtSign className="h-5 w-5 text-primary dark:text-purple-400" />}
+				isEditMode={isEditMode}
+				title="Mentions"
+			/>
 
 			{mentions && mentions.length > 0 ? (
-				<ScrollArea className="widget-scroll-area">
-					<div className="space-y-2 p-4">
+				<ScrollArea className="h-[280px]">
+					<div className="space-y-2 pr-4">
 						{mentions.map((mention) => {
 							const authorUserId = mention.author.userId;
 							const status = authorUserId
@@ -199,13 +203,13 @@ export const MentionsWidget = ({
 										</div>
 										<div className="flex-1 space-y-1">
 											<div className="flex items-center justify-between">
-												<div className="flex items-center gap-2">
-													<p className="font-medium">
+												<div className="flex min-w-0 items-center gap-2">
+													<p className="truncate font-medium">
 														{mention.author.name || "Unknown User"}
 													</p>
 													{mention.source.type === "channel" && (
 														<Badge
-															className="flex items-center gap-1 border-2"
+															className="flex shrink-0 items-center gap-1 border-2"
 															variant="outline"
 														>
 															<Hash className="h-3 w-3" />
@@ -213,10 +217,10 @@ export const MentionsWidget = ({
 														</Badge>
 													)}
 												</div>
-												<div className="flex items-center text-xs text-red-600 dark:text-red-400 font-medium">
-													<Clock className="mr-1 h-3 w-3" />
-													{safeFormatDistanceToNow(mention.timestamp)}
-												</div>
+												<RelativeTime
+													className="shrink-0"
+													timestamp={mention.timestamp}
+												/>
 											</div>
 											<p className="text-sm text-muted-foreground">
 												{(() => {
@@ -230,7 +234,7 @@ export const MentionsWidget = ({
 												})()}
 											</p>
 											<Button
-												className="mt-2 h-8 px-3 w-auto justify-start text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+												className="mt-2 h-7 w-full justify-center px-2 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 												onClick={() => handleViewMention(mention)}
 												size="sm"
 												variant="ghost"
@@ -245,13 +249,11 @@ export const MentionsWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-md border-2 bg-muted/10">
-					<AtSign className="mb-2 h-10 w-10 text-muted-foreground" />
-					<h3 className="text-lg font-medium">No mentions</h3>
-					<p className="text-sm text-muted-foreground">
-						You haven&apos;t been mentioned recently
-					</p>
-				</div>
+				<WidgetEmptyState
+					description="You haven't been mentioned recently"
+					icon={AtSign}
+					title="No mentions"
+				/>
 			)}
 		</div>
 	);

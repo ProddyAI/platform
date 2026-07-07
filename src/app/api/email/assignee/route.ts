@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
 			listName,
 			channelName,
 			assignedBy,
+			cardUrl,
 			workspaceUrl,
 			workspaceName,
 		} = body;
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
 			listName,
 			channelName,
 			assignedBy,
+			cardUrl,
 			workspaceUrl,
 			workspaceName,
 			unsubscribeUrl,

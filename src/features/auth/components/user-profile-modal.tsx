@@ -7,6 +7,7 @@ import {
 	Edit3,
 	Globe,
 	Loader2,
+	Lock,
 	Mail,
 	MapPin,
 	Phone,
@@ -57,7 +58,7 @@ interface UserProfileModalProps {
 	email?: string;
 	image?: string;
 	mode: "view" | "edit";
-	defaultTab?: "profile" | "notifications";
+	defaultTab?: "profile" | "security" | "notifications";
 }
 
 export const UserProfileModal = ({
@@ -236,7 +237,7 @@ export const UserProfileModal = ({
 			// Update user profile with new image
 			await updateUser({ image: storageId });
 
-			toast.success("Avatar updated successfully!");
+			toast.success("Avatar updated successfully");
 		} catch (error) {
 			console.error("Avatar upload error:", error);
 			toast.error("Failed to upload avatar. Please try again.");
@@ -332,7 +333,7 @@ export const UserProfileModal = ({
 			// Update user profile with new banner
 			await updateUser({ banner: bannerId });
 
-			toast.success("Banner updated successfully!");
+			toast.success("Banner updated successfully");
 		} catch (error) {
 			console.error("Banner upload error:", error);
 			const message = error instanceof Error ? error.message : undefined;
@@ -390,23 +391,25 @@ export const UserProfileModal = ({
 
 	// Compute left panel banner state and styles separately to avoid complex inline expressions
 	const hasBanner = Boolean(bannerPreview || currentUser?.banner);
-	const leftPanelClass = `w-80 p-6 border-r flex-shrink-0 relative ${hasBanner ? "bg-cover bg-center" : "bg-gradient-to-b from-primary/5 to-primary/10"}`;
+	const leftPanelClass = `group w-full md:w-80 max-h-[45vh] md:max-h-none overflow-y-auto p-6 border-b md:border-b-0 md:border-r flex-shrink-0 relative ${hasBanner ? "bg-cover bg-center" : "bg-gradient-to-b from-primary/5 to-primary/10"}`;
 	const leftPanelStyle = hasBanner
 		? { backgroundImage: `url(${bannerPreview || currentUser?.banner})` }
 		: undefined;
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden">
-				<div className="flex h-full overflow-hidden">
+			<DialogContent className="max-w-4xl h-[90vh] p-0 overflow-hidden">
+				<div className="flex flex-col md:flex-row h-full overflow-hidden">
 					{/* Left Panel - Profile Overview with banner */}
 					<div className={leftPanelClass} style={leftPanelStyle}>
 						{hasBanner && (
 							<div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-primary/10 opacity-60 pointer-events-none" />
 						)}
 
-						{isEditMode && isEditing && (
-							<div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+						{isEditMode && (
+							<div
+								className={`absolute top-3 right-3 z-20 flex items-center gap-2 transition-opacity ${isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"}`}
+							>
 								<Button
 									aria-label="Reset banner"
 									className="rounded-full size-8 p-0 shadow-md"
@@ -436,10 +439,10 @@ export const UserProfileModal = ({
 						)}
 
 						<div className="flex flex-col items-center justify-center text-center h-full relative z-10">
-							<div className="w-full max-w-xs bg-white/70 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/20 dark:border-slate-700/50">
+							<div className="w-full max-w-xs bg-card/70 dark:bg-card/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-border/40">
 								<div className="space-y-4 flex-1 flex flex-col items-center justify-center">
 									<div className="relative">
-										<Avatar className="size-24 ring-4 ring-white dark:ring-slate-700 shadow-lg">
+										<Avatar className="size-24 ring-4 ring-card shadow-lg">
 											<AvatarImage
 												src={
 													avatarPreview ||
@@ -459,10 +462,10 @@ export const UserProfileModal = ({
 											</div>
 										)}
 
-										{isEditMode && isEditing && (
+										{isEditMode && (
 											<Button
 												aria-label="Change avatar"
-												className="absolute -bottom-1 -right-1 rounded-full size-8 p-0 z-10 shadow-md"
+												className={`absolute -bottom-1 -right-1 rounded-full size-8 p-0 z-10 shadow-md transition-opacity ${isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
 												disabled={isUploadingAvatar}
 												onClick={handleAvatarChange}
 												size="sm"
@@ -602,13 +605,26 @@ export const UserProfileModal = ({
 										className="w-full h-full flex flex-col overflow-hidden"
 										defaultValue={defaultTab}
 									>
-										<TabsList className="grid w-full grid-cols-2 mx-6 mt-4 flex-shrink-0">
-											<TabsTrigger className="gap-2" value="profile">
-												<User className="size-4" />
+										<TabsList className="grid w-full grid-cols-3 mx-6 mt-4 flex-shrink-0">
+											<TabsTrigger
+												className="gap-1.5 px-2 sm:gap-2 sm:px-3"
+												value="profile"
+											>
+												<User className="hidden size-4 sm:block" />
 												Profile
 											</TabsTrigger>
-											<TabsTrigger className="gap-2" value="notifications">
-												<Mail className="size-4" />
+											<TabsTrigger
+												className="gap-1.5 px-2 sm:gap-2 sm:px-3"
+												value="security"
+											>
+												<Lock className="hidden size-4 sm:block" />
+												Security
+											</TabsTrigger>
+											<TabsTrigger
+												className="gap-1.5 px-2 sm:gap-2 sm:px-3"
+												value="notifications"
+											>
+												<Mail className="hidden size-4 sm:block" />
 												Notifications
 											</TabsTrigger>
 										</TabsList>
@@ -637,7 +653,7 @@ export const UserProfileModal = ({
 																</CardDescription>
 															</CardHeader>
 															<CardContent className="space-y-4">
-																<div className="grid grid-cols-2 gap-4">
+																<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 																	<div className="space-y-2">
 																		<Label htmlFor="name">Display Name *</Label>
 																		<Input
@@ -681,7 +697,7 @@ export const UserProfileModal = ({
 																	</p>
 																</div>
 
-																<div className="grid grid-cols-2 gap-4">
+																<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 																	<div className="space-y-2">
 																		<Label htmlFor="location">Location</Label>
 																		<Input
@@ -745,7 +761,7 @@ export const UserProfileModal = ({
 																</CardDescription>
 															</CardHeader>
 															<CardContent className="space-y-4">
-																<div className="grid grid-cols-2 gap-6">
+																<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 																	<div>
 																		<Label className="text-sm font-medium text-muted-foreground">
 																			Display Name
@@ -770,9 +786,9 @@ export const UserProfileModal = ({
 																	currentUser?.phone) && (
 																	<>
 																		<Separator />
-																		<div className="grid grid-cols-2 gap-6">
+																		<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 																			{currentUser?.bio && (
-																				<div className="col-span-2">
+																				<div className="sm:col-span-2">
 																					<Label className="text-sm font-medium text-muted-foreground">
 																						Bio
 																					</Label>
@@ -838,46 +854,53 @@ export const UserProfileModal = ({
 																<StatusSelector />
 															</CardContent>
 														</Card>
-
-														{/* Password Change Form */}
-														<PasswordChangeForm />
-
-														<Card className="border-destructive/50">
-															<CardHeader>
-																<CardTitle className="text-destructive flex items-center gap-2">
-																	<AlertTriangle className="size-5" />
-																	Danger Zone
-																</CardTitle>
-																<CardDescription>
-																	Permanently delete your account and all
-																	associated data.
-																</CardDescription>
-															</CardHeader>
-															<CardContent>
-																<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-																	<div className="space-y-1">
-																		<p className="text-sm font-medium">
-																			Delete this account
-																		</p>
-																		<p className="text-sm text-muted-foreground">
-																			This action cannot be undone. Your
-																			workspaces, channels, messages, and other
-																			data will be permanently deleted.
-																		</p>
-																	</div>
-																	<Button
-																		className="gap-2 whitespace-nowrap"
-																		onClick={() => setDeleteDialogOpen(true)}
-																		variant="destructive"
-																	>
-																		<Trash2 className="size-4" />
-																		Delete Account
-																	</Button>
-																</div>
-															</CardContent>
-														</Card>
 													</div>
 												)}
+											</div>
+										</TabsContent>
+
+										<TabsContent
+											className="flex-1 overflow-y-auto min-w-0 px-6"
+											data-state="inactive"
+											value="security"
+										>
+											<div className="py-6 space-y-6">
+												<PasswordChangeForm />
+
+												<Card className="border-destructive/50">
+													<CardHeader>
+														<CardTitle className="text-destructive flex items-center gap-2">
+															<AlertTriangle className="size-5" />
+															Danger Zone
+														</CardTitle>
+														<CardDescription>
+															Permanently delete your account and all associated
+															data.
+														</CardDescription>
+													</CardHeader>
+													<CardContent>
+														<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+															<div className="space-y-1">
+																<p className="text-sm font-medium">
+																	Delete this account
+																</p>
+																<p className="text-sm text-muted-foreground">
+																	This action cannot be undone. Your workspaces,
+																	channels, messages, and other data will be
+																	permanently deleted.
+																</p>
+															</div>
+															<Button
+																className="gap-2 whitespace-nowrap"
+																onClick={() => setDeleteDialogOpen(true)}
+																variant="destructive"
+															>
+																<Trash2 className="size-4" />
+																Delete Account
+															</Button>
+														</div>
+													</CardContent>
+												</Card>
 											</div>
 										</TabsContent>
 

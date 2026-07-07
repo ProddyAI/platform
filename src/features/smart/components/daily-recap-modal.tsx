@@ -3,11 +3,20 @@
 import { format } from "date-fns";
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import { jsPDF } from "jspdf";
-import { Check, Copy, File, FileOutput, Sparkles, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Copy, File, FileOutput, Sparkles } from "lucide-react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 interface DailyRecapModalProps {
 	isOpen: boolean;
@@ -31,36 +40,6 @@ export const DailyRecapModal = ({
 		? format(new Date(date), "EEEE, MMMM d, yyyy")
 		: "";
 
-	// Handle ESC key press
-	useEffect(() => {
-		const handleEsc = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				onClose();
-			}
-		};
-
-		if (isOpen) {
-			document.addEventListener("keydown", handleEsc);
-		}
-
-		return () => {
-			document.removeEventListener("keydown", handleEsc);
-		};
-	}, [isOpen, onClose]);
-
-	// Prevent scrolling when modal is open
-	useEffect(() => {
-		if (isOpen) {
-			document.body.style.overflow = "hidden";
-		} else {
-			document.body.style.overflow = "auto";
-		}
-
-		return () => {
-			document.body.style.overflow = "auto";
-		};
-	}, [isOpen]);
-
 	const handleCopy = () => {
 		navigator.clipboard.writeText(recap);
 		setIsCopied(true);
@@ -69,64 +48,6 @@ export const DailyRecapModal = ({
 		setTimeout(() => {
 			setIsCopied(false);
 		}, 2000);
-	};
-
-	const _handleExportMarkdown = () => {
-		const blob = new Blob([recap], { type: "text/markdown" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `daily-recap-${date}.md`;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
-		toast.success("Exported as Markdown");
-	};
-
-	const _handleExportJSON = () => {
-		const jsonData = {
-			date,
-			messageCount,
-			content: recap,
-			exportedAt: new Date().toISOString(),
-		};
-
-		const blob = new Blob([JSON.stringify(jsonData, null, 2)], {
-			type: "application/json",
-		});
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `daily-recap-${date}.json`;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
-		toast.success("Exported as JSON");
-	};
-
-	const _handleExportText = () => {
-		// Convert markdown to plain text (simple conversion)
-		const plainText = recap
-			.replace(/#{1,6}\s?([^\n]+)/g, "$1\n") // headers
-			.replace(/\*\*([^*]+)\*\*/g, "$1") // bold
-			.replace(/\*([^*]+)\*/g, "$1") // italic
-			.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)") // links
-			.replace(/>\s?([^\n]+)/g, "  $1\n") // blockquotes
-			.replace(/- ([^\n]+)/g, "• $1") // bullet points
-			.replace(/\n\n/g, "\n"); // extra newlines
-
-		const blob = new Blob([plainText], { type: "text/plain" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `daily-recap-${date}.txt`;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
-		toast.success("Exported as Text");
 	};
 
 	const handleExportPDF = () => {
@@ -263,53 +184,35 @@ export const DailyRecapModal = ({
 		}
 	};
 
-	if (!isOpen) return null;
-
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-			<div
-				className="relative w-full max-w-3xl rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900"
-				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) => e.stopPropagation()}
-				role="dialog"
-				tabIndex={-1}
-			>
-				{/* Header */}
-				<div className="mb-4">
-					<div className="flex items-center justify-between">
-						<h2 className="flex items-center gap-2 text-xl font-semibold">
-							<Sparkles className="h-5 w-5 text-blue-500" />
-							<span>
-								{isCached ? "Cached Daily Recap" : "Daily Recap"}
-								<span className="ml-2 text-sm font-normal text-muted-foreground">
-									({messageCount} {messageCount === 1 ? "message" : "messages"})
-								</span>
+		<Dialog onOpenChange={onClose} open={isOpen}>
+			<DialogContent className="max-w-3xl">
+				<DialogHeader>
+					<DialogTitle className="flex items-center gap-2">
+						<Sparkles aria-hidden="true" className="h-5 w-5 text-secondary" />
+						<span>
+							{isCached ? "Cached Daily Recap" : "Daily Recap"}
+							<span className="ml-2 text-sm font-normal text-muted-foreground">
+								({messageCount} {messageCount === 1 ? "message" : "messages"})
 							</span>
-						</h2>
-						<button
-							className="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800"
-							onClick={onClose}
-							type="button"
-						>
-							<X className="h-5 w-5" />
-						</button>
-					</div>
-					<p className="mt-1 text-sm text-gray-500">
+						</span>
+					</DialogTitle>
+					<DialogDescription>
 						{isCached
 							? "This recap was retrieved from cache for faster results."
 							: `AI-generated recap of conversations from ${formattedDate}.`}
-					</p>
-				</div>
+					</DialogDescription>
+				</DialogHeader>
 
 				{/* Content */}
-				<div className="mt-2 rounded-md border bg-muted/50 p-4 max-h-[60vh] overflow-y-auto">
-					<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300">
+				<div className="rounded-md border bg-muted/50 p-4 max-h-[60vh] overflow-y-auto">
+					<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:italic prose-blockquote:text-muted-foreground">
 						<ReactMarkdown>{recap}</ReactMarkdown>
 					</div>
 				</div>
 
 				{/* Footer with export options */}
-				<div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+				<DialogFooter className="flex-row flex-wrap items-center justify-between gap-2 sm:justify-between sm:space-x-0">
 					<div className="flex flex-wrap items-center gap-2">
 						<Button
 							className="flex items-center gap-1 text-xs"
@@ -318,9 +221,9 @@ export const DailyRecapModal = ({
 							variant="outline"
 						>
 							{isCopied ? (
-								<Check className="h-3 w-3" />
+								<Check aria-hidden="true" className="h-3 w-3" />
 							) : (
-								<Copy className="h-3 w-3" />
+								<Copy aria-hidden="true" className="h-3 w-3" />
 							)}
 							{isCopied ? "Copied" : "Copy"}
 						</Button>
@@ -330,7 +233,7 @@ export const DailyRecapModal = ({
 							size="sm"
 							variant="outline"
 						>
-							<File className="h-3 w-3" />
+							<File aria-hidden="true" className="h-3 w-3" />
 							Export Word
 						</Button>
 						<Button
@@ -339,20 +242,17 @@ export const DailyRecapModal = ({
 							size="sm"
 							variant="outline"
 						>
-							<FileOutput className="h-3 w-3" />
+							<FileOutput aria-hidden="true" className="h-3 w-3" />
 							Export PDF
 						</Button>
 					</div>
-					<Button
-						className="text-xs"
-						onClick={onClose}
-						size="sm"
-						variant="ghost"
-					>
-						Close
-					</Button>
-				</div>
-			</div>
-		</div>
+					<DialogClose asChild>
+						<Button className="text-xs" size="sm" variant="ghost">
+							Close
+						</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 };

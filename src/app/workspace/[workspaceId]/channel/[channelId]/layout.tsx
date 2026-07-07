@@ -13,7 +13,13 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { type PropsWithChildren, useEffect, useRef, useState } from "react";
+import {
+	type PropsWithChildren,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { EmojiPopover } from "@/components/pickers/emoji-popover";
@@ -39,7 +45,7 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useGenerateUploadUrl } from "@/hooks/use-generate-upload-url";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../../toolbar";
+import { useSetWorkspaceTitle } from "../../workspace-title-context";
 
 interface ChannelIconProps {
 	iconImageUrl?: string | null;
@@ -227,7 +233,7 @@ const ChannelIconUploader = ({
 			</button>
 			{(iconPreview || icon) && (
 				<button
-					className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+					className="absolute -top-2 -right-2 h-6 w-6 bg-card text-foreground rounded-full flex items-center justify-center hover:bg-accent shadow-md border-2 border-border z-50"
 					onClick={(e) => {
 						e.stopPropagation();
 						if (iconPreview || iconImage) {
@@ -250,7 +256,7 @@ const ChannelIconUploader = ({
 				}}
 			>
 				<button
-					className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
+					className="absolute -bottom-1 -right-1 h-7 w-7 bg-card text-foreground rounded-full flex items-center justify-center hover:bg-accent shadow-md border-2 border-border z-50"
 					type="button"
 				>
 					<Smile className="h-4 w-4" />
@@ -325,13 +331,13 @@ const ChannelNameDialog = ({
 		<Dialog onOpenChange={setEditOpen} open={isChannelEditOpen}>
 			<DialogTrigger asChild>
 				<button
-					className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+					className="flex w-full cursor-pointer flex-col rounded-lg border bg-card px-5 py-4 hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
 					disabled={isUpdatingChannel}
 					type="button"
 				>
 					<div className="flex w-full items-center justify-between">
 						<p className="text-sm font-semibold">Channel name and icon</p>
-						<p className="text-sm font-semibold text-[#1264A3] hover:underline">
+						<p className="text-sm font-semibold text-primary hover:underline">
 							Edit
 						</p>
 					</div>
@@ -366,7 +372,7 @@ const ChannelNameDialog = ({
 					<DialogTitle>Edit channel name and icon</DialogTitle>
 					<VisuallyHiddenRoot>
 						<DialogDescription>
-							Rename this channel to match your case.
+							Update this channel's name and icon.
 						</DialogDescription>
 					</VisuallyHiddenRoot>
 				</DialogHeader>
@@ -417,23 +423,25 @@ const ChannelNameDialog = ({
 										value={value}
 									/>
 									<p className="text-xs text-muted-foreground mt-1">
-										Max 5MB for images
+										Images up to 5MB
 									</p>
-
-									{member.role === "admin" && (
-										<button
-											className="flex cursor-pointer items-center gap-x-2 rounded-lg border bg-white px-5 py-4 text-rose-600 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
-											disabled={isRemovingChannel}
-											onClick={onDelete}
-											type="button"
-										>
-											<Trash className="size-4" />
-											<p className="text-sm font-semibold">Delete channel</p>
-										</button>
-									)}
 								</div>
 							</div>
 						</div>
+
+						{(member.role === "admin" || member.role === "owner") && (
+							<div className="border-t pt-4">
+								<button
+									className="flex w-full cursor-pointer items-center gap-x-2 rounded-lg border bg-card px-5 py-4 text-destructive hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+									disabled={isRemovingChannel}
+									onClick={onDelete}
+									type="button"
+								>
+									<Trash className="size-4" />
+									<p className="text-sm font-semibold">Delete channel</p>
+								</button>
+							</div>
+						)}
 					</div>
 
 					<DialogFooter>
@@ -487,12 +495,12 @@ const ChannelIconDialog = ({
 		<Dialog onOpenChange={onIconEditOpenChange} open={iconEditOpen}>
 			<DialogTrigger asChild>
 				<button
-					className="flex w-full cursor-pointer flex-col rounded-lg border bg-white px-5 py-4 hover:bg-gray-50"
+					className="flex w-full cursor-pointer flex-col rounded-lg border bg-card px-5 py-4 hover:bg-accent"
 					type="button"
 				>
 					<div className="flex w-full items-center justify-between">
 						<p className="text-sm font-semibold">Channel icon</p>
-						<p className="text-sm font-semibold text-[#1264A3] hover:underline">
+						<p className="text-sm font-semibold text-primary hover:underline">
 							Edit
 						</p>
 					</div>
@@ -625,10 +633,6 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 			}
 		}
 	}, [channel]);
-
-	useEffect(() => {
-		setImageLoadError(false);
-	}, []);
 
 	useEffect(() => {
 		setImageLoadError(false);
@@ -801,6 +805,101 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 		);
 	};
 
+	// The title slot is just the small settings trigger button (memoized so
+	// registering it doesn't re-fire, and re-render every consumer, on every
+	// unrelated render of this page). The actual settings dialog is rendered
+	// separately below in the normal page body, fully controlled by the same
+	// channelDialogOpen/setChannelDialogOpen state, so its much larger and
+	// more volatile subtree never has to be memoized as "title content."
+	const channelTitle = useMemo(
+		() =>
+			channel ? (
+				<Button
+					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
+					onClick={() => setChannelDialogOpen(true)}
+					size="sm"
+					variant="ghost"
+				>
+					<div className="flex min-w-0 items-center gap-2">
+						<ChannelIcon
+							icon={channel.icon}
+							iconImageUrl={channel.iconImageUrl}
+							imageLoadError={imageLoadError}
+							name={channel.name}
+							onImageError={() => setImageLoadError(true)}
+						/>
+						<span className="truncate"># {channel.name}</span>
+					</div>
+					<ChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
+				</Button>
+			) : null,
+		[channel, imageLoadError]
+	);
+	useSetWorkspaceTitle(channelTitle);
+
+	const channelSettingsDialog = channel ? (
+		<Dialog onOpenChange={setChannelDialogOpen} open={channelDialogOpen}>
+			<DialogContent className="overflow-hidden bg-gray-50 p-0">
+				<DialogHeader className="border-b bg-card p-4">
+					<DialogTitle className="flex items-center gap-2">
+						<ChannelIcon
+							icon={channel.icon}
+							iconImageUrl={channel.iconImageUrl}
+							imageLoadError={imageLoadError}
+							name={channel.name}
+							onImageError={() => setImageLoadError(true)}
+							size="md"
+						/>
+						<span># {channel.name}</span>
+					</DialogTitle>
+
+					<VisuallyHiddenRoot>
+						<DialogDescription>Your channel preferences</DialogDescription>
+					</VisuallyHiddenRoot>
+				</DialogHeader>
+
+				<div className="flex flex-col gap-y-2 px-4 pb-4 pt-4">
+					{member?.role === "admin" && (
+						<ChannelNameDialog
+							channel={channel}
+							clearIconImage={clearIconImage}
+							editOpen={editOpen}
+							icon={icon}
+							iconImage={iconImage}
+							iconPreview={iconPreview}
+							imageInputRef={imageInputRef}
+							imageLoadError={imageLoadError}
+							isRemovingChannel={isRemovingChannel}
+							isUpdatingChannel={isUpdatingChannel}
+							isUploadingIcon={isUploadingIcon}
+							member={member}
+							onDelete={handleDelete}
+							onIconImageUpload={handleIconImageUpload}
+							onSubmit={handleSubmit}
+							setEditOpen={setEditOpen}
+							setIcon={setIcon}
+							setImageLoadError={setImageLoadError}
+							setValue={setValue}
+							value={value}
+						/>
+					)}
+
+					<ChannelIconDialog
+						channel={channel}
+						icon={icon}
+						iconEditOpen={iconEditOpen}
+						isUpdatingChannel={isUpdatingChannel}
+						onIconEditOpenChange={setIconEditOpen}
+						onSubmit={handleIconSubmit}
+						setIcon={setIcon}
+						setIconImage={setIconImage}
+						setIconPreview={setIconPreview}
+					/>
+				</div>
+			</DialogContent>
+		</Dialog>
+	) : null;
+
 	if (channelLoading || memberLoading) {
 		return (
 			<div className="flex h-full flex-1 items-center justify-center">
@@ -823,89 +922,7 @@ const ChannelLayout = ({ children }: PropsWithChildren) => {
 	return (
 		<div className="flex h-full flex-col w-full min-w-0 overflow-x-hidden">
 			<ConfirmDialog />
-
-			<WorkspaceToolbar>
-				<Dialog onOpenChange={setChannelDialogOpen} open={channelDialogOpen}>
-					<DialogTrigger asChild>
-						<Button
-							className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
-							size="sm"
-							variant="ghost"
-						>
-							<div className="flex min-w-0 items-center gap-2">
-								<ChannelIcon
-									icon={channel.icon}
-									iconImageUrl={channel.iconImageUrl}
-									imageLoadError={imageLoadError}
-									name={channel.name}
-									onImageError={() => setImageLoadError(true)}
-								/>
-								<span className="truncate"># {channel.name}</span>
-							</div>
-							<ChevronDown className="ml-2 size-2.5 transition-transform duration-200 group-hover:rotate-180" />
-						</Button>
-					</DialogTrigger>
-
-					<DialogContent className="overflow-hidden bg-gray-50 p-0">
-						<DialogHeader className="border-b bg-white p-4">
-							<DialogTitle className="flex items-center gap-2">
-								<ChannelIcon
-									icon={channel.icon}
-									iconImageUrl={channel.iconImageUrl}
-									imageLoadError={imageLoadError}
-									name={channel.name}
-									onImageError={() => setImageLoadError(true)}
-									size="md"
-								/>
-								<span># {channel.name}</span>
-							</DialogTitle>
-
-							<VisuallyHiddenRoot>
-								<DialogDescription>Your channel preferences</DialogDescription>
-							</VisuallyHiddenRoot>
-						</DialogHeader>
-
-						<div className="flex flex-col gap-y-2 px-4 pb-4 pt-4">
-							{member?.role === "admin" && (
-								<ChannelNameDialog
-									channel={channel}
-									clearIconImage={clearIconImage}
-									editOpen={editOpen}
-									icon={icon}
-									iconImage={iconImage}
-									iconPreview={iconPreview}
-									imageInputRef={imageInputRef}
-									imageLoadError={imageLoadError}
-									isRemovingChannel={isRemovingChannel}
-									isUpdatingChannel={isUpdatingChannel}
-									isUploadingIcon={isUploadingIcon}
-									member={member}
-									onDelete={handleDelete}
-									onIconImageUpload={handleIconImageUpload}
-									onSubmit={handleSubmit}
-									setEditOpen={setEditOpen}
-									setIcon={setIcon}
-									setImageLoadError={setImageLoadError}
-									setValue={setValue}
-									value={value}
-								/>
-							)}
-
-							<ChannelIconDialog
-								channel={channel}
-								icon={icon}
-								iconEditOpen={iconEditOpen}
-								isUpdatingChannel={isUpdatingChannel}
-								onIconEditOpenChange={setIconEditOpen}
-								onSubmit={handleIconSubmit}
-								setIcon={setIcon}
-								setIconImage={setIconImage}
-								setIconPreview={setIconPreview}
-							/>
-						</div>
-					</DialogContent>
-				</Dialog>
-			</WorkspaceToolbar>
+			{channelSettingsDialog}
 
 			<div className="flex-1 flex min-h-0 min-w-0">
 				{(!isExpanded || !isOpen) && (

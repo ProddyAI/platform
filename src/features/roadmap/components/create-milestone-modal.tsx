@@ -19,16 +19,16 @@ import { cn } from "@/lib/utils";
 import { useCreateMilestone } from "../api/use-milestones";
 
 const PRESET_COLORS = [
-	"#6366f1",
-	"#8b5cf6",
-	"#ec4899",
-	"#ef4444",
-	"#f97316",
-	"#eab308",
-	"#22c55e",
-	"#06b6d4",
-	"#3b82f6",
-	"#64748b",
+	{ hex: "#6366f1", name: "Indigo" },
+	{ hex: "#8b5cf6", name: "Violet" },
+	{ hex: "#ec4899", name: "Pink" },
+	{ hex: "#ef4444", name: "Red" },
+	{ hex: "#f97316", name: "Orange" },
+	{ hex: "#eab308", name: "Yellow" },
+	{ hex: "#22c55e", name: "Green" },
+	{ hex: "#06b6d4", name: "Cyan" },
+	{ hex: "#3b82f6", name: "Blue" },
+	{ hex: "#64748b", name: "Slate" },
 ];
 
 interface CreateMilestoneModalProps {
@@ -49,13 +49,13 @@ export const CreateMilestoneModal = ({
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [targetDate, setTargetDate] = useState("");
-	const [color, setColor] = useState(PRESET_COLORS[0]);
+	const [color, setColor] = useState(PRESET_COLORS[0].hex);
 
 	const resetForm = () => {
 		setName("");
 		setDescription("");
 		setTargetDate("");
-		setColor(PRESET_COLORS[0]);
+		setColor(PRESET_COLORS[0].hex);
 	};
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -118,6 +118,7 @@ export const CreateMilestoneModal = ({
 						<Label htmlFor="milestone-target">Target date (optional)</Label>
 						<Input
 							id="milestone-target"
+							min={new Date().toISOString().split("T")[0]}
 							onChange={(event) => setTargetDate(event.target.value)}
 							type="date"
 							value={targetDate}
@@ -129,14 +130,14 @@ export const CreateMilestoneModal = ({
 						<div className="flex flex-wrap items-center gap-2">
 							{PRESET_COLORS.map((preset) => (
 								<button
-									aria-label={`Select color ${preset}`}
+									aria-label={`Select color ${preset.name}`}
 									className={cn(
-										"size-6 rounded-full ring-offset-2 ring-offset-background transition-transform hover:scale-110",
-										color === preset && "ring-2 ring-foreground"
+										"size-6 rounded-full ring-offset-2 ring-offset-background transition-colors hover:ring-2 hover:ring-muted-foreground",
+										color === preset.hex && "ring-2 ring-foreground"
 									)}
-									key={preset}
-									onClick={() => setColor(preset)}
-									style={{ backgroundColor: preset }}
+									key={preset.hex}
+									onClick={() => setColor(preset.hex)}
+									style={{ backgroundColor: preset.hex }}
 									type="button"
 								/>
 							))}

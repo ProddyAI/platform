@@ -51,8 +51,14 @@ export const useMessageActions = ({
 		dueDate: "",
 	});
 
-	const isPending =
+	// isRemoving is scoped to the delete mutation only, so callers can key a
+	// destructive collapse/error treatment off it without also triggering that
+	// treatment on every reaction toggle or edit. isPending/isMutating remain
+	// "any mutation in flight" for callers that just need to disable controls.
+	const isRemoving = isRemovingMessage;
+	const isMutating =
 		isUpdatingMessage || isRemovingMessage || isTogglingReaction;
+	const isPending = isMutating;
 	const isSelected = isMessageSelected(messageId);
 
 	const handleUpdate = useCallback(
@@ -191,6 +197,8 @@ export const useMessageActions = ({
 	return {
 		ConfirmDialog,
 		isPending,
+		isMutating,
+		isRemoving,
 		isSelected,
 		taskModal,
 		setTaskModal,

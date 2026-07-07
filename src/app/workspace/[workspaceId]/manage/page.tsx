@@ -10,7 +10,6 @@ import {
 	Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingSection } from "@/features/billing/components/billing-section";
 import { ImportDataManagement } from "@/features/manage/components/import-data-management";
@@ -21,7 +20,10 @@ import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../toolbar";
+import {
+	useSetWorkspaceTitle,
+	WorkspaceTitle,
+} from "../workspace-title-context";
 
 const MANAGE_TABS = [
 	"workspace",
@@ -66,6 +68,8 @@ function getTabFromLocation(): ManageTab {
 const ManagePage = () => {
 	// Set document title
 	useDocumentTitle("Manage Workspace");
+
+	useSetWorkspaceTitle(<WorkspaceTitle icon={Settings} label="Manage" />);
 
 	const workspaceId = useWorkspaceId();
 	const [activeTab, setActiveTab] = useState<ManageTab>("workspace");
@@ -126,19 +130,8 @@ const ManagePage = () => {
 
 	return (
 		<div className="flex h-full flex-col">
-			<WorkspaceToolbar>
-				<Button
-					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
-					size="sm"
-					variant="ghost"
-				>
-					<Settings className="mr-2 size-5" />
-					<span className="truncate">Manage</span>
-				</Button>
-			</WorkspaceToolbar>
-
 			{/* Content */}
-			<div className="flex-1 overflow-auto p-6 bg-white">
+			<div className="flex-1 overflow-auto p-6 bg-background">
 				<div className="max-w-6xl mx-auto">
 					{/* For members, show only Integrations */}
 					{member.role === "member" ? (

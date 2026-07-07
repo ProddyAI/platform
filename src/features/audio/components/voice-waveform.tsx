@@ -1,25 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+	const audioContextRef = useRef<AudioContext | null>(null);
 	const analyserRef = useRef<AnalyserNode | null>(null);
 	const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+	const streamRef = useRef<MediaStream | null>(null);
 	const animationRef = useRef<number | null>(null);
 
 	useEffect(() => {
-		if (!isRecording) {
-			if (animationRef.current) cancelAnimationFrame(animationRef.current);
-			return undefined;
-		}
+		if (!isRecording) return undefined;
+
+		let cancelled = false;
+		const prefersReducedMotion = window.matchMedia(
+			"(prefers-reduced-motion: reduce)"
+		).matches;
 
 		const initAudio = async () => {
 			try {
 				const stream = await navigator.mediaDevices.getUserMedia({
 					audio: true,
 				});
+				if (cancelled) {
+					for (const track of stream.getTracks()) track.stop();
+					return;
+				}
+
 				const AudioContextCtor =
 					window.AudioContext ||
 					(
@@ -35,9 +43,10 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 				analyser.smoothingTimeConstant = 0.8;
 				source.connect(analyser);
 
-				setAudioContext(ctx);
+				audioContextRef.current = ctx;
 				analyserRef.current = analyser;
 				sourceRef.current = source;
+				streamRef.current = stream;
 
 				draw();
 			} catch (err) {
@@ -55,9 +64,19 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 			const analyser = analyserRef.current;
 			const bufferLength = analyser.frequencyBinCount;
 			const dataArray = new Uint8Array(bufferLength);
+			// Read the primary token once per session rather than per frame.
+			const barColor = `hsl(${getComputedStyle(document.documentElement)
+				.getPropertyValue("--primary")
+				.trim()})`;
+			// Reduced motion still shows levels, just at a calmer refresh rate.
+			const minFrameInterval = prefersReducedMotion ? 400 : 0;
+			let lastDrawTime = 0;
 
-			const renderFrame = () => {
+			const renderFrame = (time: number) => {
 				animationRef.current = requestAnimationFrame(renderFrame);
+				if (time - lastDrawTime < minFrameInterval) return;
+				lastDrawTime = time;
+
 				analyser.getByteFrequencyData(dataArray);
 
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -67,6 +86,7 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 				const barWidth = (canvas.width - (barCount - 1) * gap) / barCount;
 				const centerY = canvas.height / 2;
 
+				ctx.fillStyle = barColor;
 				for (let i = 0; i < barCount; i++) {
 					// Sample from the data array evenly
 					const dataIndex = Math.floor((i / barCount) * bufferLength);
@@ -77,18 +97,6 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 					const x = i * (barWidth + gap);
 					const y = centerY - barHeight / 2;
 
-					// Rounded bars with gradient
-					const gradient = ctx.createLinearGradient(
-						x,
-						centerY + barHeight / 2,
-						x,
-						centerY - barHeight / 2
-					);
-					gradient.addColorStop(0, "#6366f1"); // Indigo
-					gradient.addColorStop(0.5, "#818cf8"); // Lighter indigo
-					gradient.addColorStop(1, "#c084fc"); // Purple
-
-					ctx.fillStyle = gradient;
 					ctx.beginPath();
 					const radius = Math.min(barWidth / 2, 3);
 					ctx.roundRect(x, y, barWidth, barHeight, radius);
@@ -96,20 +104,41 @@ export const VoiceWaveform = ({ isRecording }: { isRecording: boolean }) => {
 				}
 			};
 
-			renderFrame();
+			animationRef.current = requestAnimationFrame(renderFrame);
 		};
 
 		initAudio();
 
 		return () => {
+			cancelled = true;
 			if (animationRef.current) cancelAnimationFrame(animationRef.current);
-			if (audioContext) audioContext.close();
+			animationRef.current = null;
+			if (sourceRef.current) {
+				sourceRef.current.disconnect();
+				sourceRef.current = null;
+			}
+			if (streamRef.current) {
+				for (const track of streamRef.current.getTracks()) track.stop();
+				streamRef.current = null;
+			}
+			if (audioContextRef.current) {
+				audioContextRef.current.close();
+				audioContextRef.current = null;
+			}
+			analyserRef.current = null;
 		};
-	}, [isRecording, audioContext]);
+	}, [isRecording]);
 
 	return (
-		<div className="flex items-center h-11 px-3 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm">
-			<canvas className="rounded-sm" height={36} ref={canvasRef} width={120} />
+		<div className="flex items-center h-11 px-3 bg-muted rounded-full border border-border">
+			<canvas
+				aria-label="Live microphone waveform"
+				className="rounded-sm"
+				height={36}
+				ref={canvasRef}
+				role="img"
+				width={120}
+			/>
 		</div>
 	);
 };

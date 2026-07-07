@@ -1,7 +1,6 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
-import { Clock, FileText, Loader, Plus } from "lucide-react";
+import { FileText, Loader, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -10,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetNotes } from "@/features/notes/api/use-get-notes";
+import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
+import { WidgetEmptyState } from "../shared/widget-empty-state";
+import { WidgetHeader } from "../shared/widget-header";
 
 interface NotesWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -28,6 +30,50 @@ interface NotesWidgetProps {
 	controls?: React.ReactNode;
 }
 
+// Quill Delta operation shape used by the note editor's stored content.
+interface DeltaOperation {
+	insert?: string | object;
+	delete?: number;
+	retain?: number;
+	attributes?: Record<string, unknown>;
+}
+
+// Extracts a single-line plain-text preview from a note's content, which may
+// be raw text or a JSON-encoded Quill Delta.
+const getNotePreview = (content: string): string => {
+	try {
+		if (!content) return "No content";
+
+		if (typeof content === "string" && !content.includes('{"ops":')) {
+			return content.substring(0, 100);
+		}
+
+		const contentStr =
+			typeof content === "string" ? content : JSON.stringify(content);
+		const parsed = JSON.parse(contentStr);
+
+		if (parsed?.ops && Array.isArray(parsed.ops)) {
+			const plainText = parsed.ops
+				.map((op: DeltaOperation) =>
+					typeof op.insert === "string" ? op.insert : ""
+				)
+				.join("")
+				.trim();
+
+			const firstLine = plainText.split("\n")[0].trim();
+			return firstLine || "No content";
+		}
+
+		return typeof content === "string"
+			? content.substring(0, 100)
+			: "Note content";
+	} catch (_e) {
+		return typeof content === "string"
+			? content.substring(0, 100)
+			: "Note content";
+	}
+};
+
 export const NotesWidget = ({
 	workspaceId,
 	isEditMode,
@@ -36,9 +82,13 @@ export const NotesWidget = ({
 	const router = useRouter();
 	const { data: channels } = useGetChannels({ workspaceId });
 
-	// Get notes from the first channel (for simplicity)
-	const firstChannelId =
-		channels && channels.length > 0 ? channels[0]._id : undefined;
+	// useGetNotes requires a channelId or it skips the query, but the
+	// underlying query already returns every note in the workspace
+	// regardless of which channel id is passed in — so this widget shows
+	// workspace-wide notes, each tagged with its real channel below.
+	const firstChannel =
+		channels && channels.length > 0 ? channels[0] : undefined;
+	const firstChannelId = firstChannel?._id;
 	const { data: channelNotes } = useGetNotes(workspaceId, firstChannelId);
 
 	// Combine notes with channel info
@@ -86,14 +136,6 @@ export const NotesWidget = ({
 		}
 	};
 
-	// View all notes button handler
-	const handleViewAll = () => {
-		// Navigate to the first channel's notes section
-		if (channels && channels.length > 0) {
-			router.push(`/workspace/${workspaceId}/channel/${channels[0]._id}/notes`);
-		}
-	};
-
 	if (!channels) {
 		return (
 			<div className="flex h-[300px] items-center justify-center">
@@ -104,32 +146,15 @@ export const NotesWidget = ({
 
 	return (
 		<div className="space-y-3">
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-2">
+			<WidgetHeader
+				badge={sortedNotes.length > 0 ? sortedNotes.length : undefined}
+				controls={controls}
+				icon={
 					<FileText className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-semibold text-base">Recent Notes</h3>
-					{!isEditMode && sortedNotes.length > 0 && (
-						<Badge
-							className="ml-1 h-5 px-2 text-xs font-medium"
-							variant="secondary"
-						>
-							{sortedNotes.length}
-						</Badge>
-					)}
-				</div>
-				{isEditMode ? (
-					controls
-				) : (
-					<Button
-						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-						onClick={handleViewAll}
-						size="sm"
-						variant="ghost"
-					>
-						View All
-					</Button>
-				)}
-			</div>
+				}
+				isEditMode={isEditMode}
+				title="Recent Notes"
+			/>
 
 			{sortedNotes.length > 0 ? (
 				<ScrollArea className="h-[280px]">
@@ -141,12 +166,11 @@ export const NotesWidget = ({
 										<h5 className="font-medium text-sm leading-tight flex-1">
 											{note.title}
 										</h5>
-										<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
-											<Clock className="h-2.5 w-2.5" />
-											{formatDistanceToNow(new Date(note.updatedAt), {
-												addSuffix: true,
-											}).replace("about ", "")}
-										</span>
+										<RelativeTime
+											className="text-[10px]"
+											iconClassName="h-2.5 w-2.5"
+											timestamp={note.updatedAt}
+										/>
 									</div>
 									<div className="flex items-center gap-2">
 										<Badge
@@ -157,58 +181,7 @@ export const NotesWidget = ({
 										</Badge>
 									</div>
 									<p className="text-xs text-muted-foreground line-clamp-1">
-										{(() => {
-											try {
-												// Define a type for Quill Delta operations
-												interface DeltaOperation {
-													insert?: string | object;
-													delete?: number;
-													retain?: number;
-													attributes?: Record<string, unknown>;
-												}
-
-												// Handle different content formats
-												if (!note.content) return "No content";
-
-												// If content is already a string but not JSON
-												if (
-													typeof note.content === "string" &&
-													!note.content.includes('{"ops":')
-												) {
-													return note.content.substring(0, 100);
-												}
-
-												// Parse JSON content
-												const contentStr =
-													typeof note.content === "string"
-														? note.content
-														: JSON.stringify(note.content);
-												const parsed = JSON.parse(contentStr);
-
-												if (parsed?.ops && Array.isArray(parsed.ops)) {
-													// Extract text from all insert operations
-													const plainText = parsed.ops
-														.map((op: DeltaOperation) =>
-															typeof op.insert === "string" ? op.insert : ""
-														)
-														.join("")
-														.trim();
-
-													// Get first line or first 100 chars
-													const firstLine = plainText.split("\n")[0].trim();
-													return firstLine || "No content";
-												}
-
-												return typeof note.content === "string"
-													? note.content.substring(0, 100)
-													: "Note content";
-											} catch (_e) {
-												// If parsing fails, return a fallback
-												return typeof note.content === "string"
-													? note.content.substring(0, 100)
-													: "Note content";
-											}
-										})()}
+										{getNotePreview(note.content)}
 									</p>
 									<Button
 										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
@@ -224,24 +197,16 @@ export const NotesWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
-					<FileText className="mb-3 h-12 w-12 text-muted-foreground/40" />
-					<h3 className="text-base font-semibold text-foreground">
-						No notes found
-					</h3>
-					<p className="text-sm text-muted-foreground mt-1">
-						Create notes to see them here
-					</p>
-					<Button
-						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
-						onClick={handleCreateNote}
-						size="sm"
-						variant="default"
-					>
-						<Plus className="mr-2 h-4 w-4" />
-						Create Note
-					</Button>
-				</div>
+				<WidgetEmptyState
+					action={{
+						label: "Create Note",
+						onClick: handleCreateNote,
+						icon: Plus,
+					}}
+					description="Create notes to see them here"
+					icon={FileText}
+					title="No notes found"
+				/>
 			)}
 		</div>
 	);

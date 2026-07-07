@@ -27,6 +27,7 @@ import { useCurrentMember } from "../api/use-current-member";
 import { useGetMember } from "../api/use-get-member";
 import { useRemoveMember } from "../api/use-remove-member";
 import { useUpdateMember } from "../api/use-update-member";
+import { ROLE_META } from "../lib/roles";
 
 interface ProfileProps {
 	memberId: Id<"members">;
@@ -96,7 +97,7 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 		);
 	};
 
-	const onUpdate = async (role: "admin" | "member") => {
+	const onUpdate = async (role: "admin" | "member" | "viewer") => {
 		if (member?.role === role) return;
 
 		const ok = await confirmUpdate();
@@ -121,7 +122,12 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
 					<p className="text-lg font-bold">Profile</p>
 
-					<Button onClick={onClose} size="iconSm" variant="ghost">
+					<Button
+						aria-label="Close profile panel"
+						onClick={onClose}
+						size="iconSm"
+						variant="ghost"
+					>
 						<XIcon className="size-5 stroke-[1.5]" />
 					</Button>
 				</div>
@@ -139,7 +145,12 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
 					<p className="text-lg font-bold">Profile</p>
 
-					<Button onClick={onClose} size="iconSm" variant="ghost">
+					<Button
+						aria-label="Close profile panel"
+						onClick={onClose}
+						size="iconSm"
+						variant="ghost"
+					>
 						<XIcon className="size-5 stroke-[1.5]" />
 					</Button>
 				</div>
@@ -164,7 +175,12 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
 					<p className="text-lg font-bold">Profile</p>
 
-					<Button onClick={onClose} size="iconSm" variant="ghost">
+					<Button
+						aria-label="Close profile panel"
+						onClick={onClose}
+						size="iconSm"
+						variant="ghost"
+					>
 						<XIcon className="size-5 stroke-[1.5]" />
 					</Button>
 				</div>
@@ -191,18 +207,21 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 									</Button>
 								</DropdownMenuTrigger>
 
-								<DropdownMenuContent className="w-full">
+								<DropdownMenuContent>
 									<DropdownMenuRadioGroup
 										onValueChange={(role) =>
-											onUpdate(role as "admin" | "member")
+											onUpdate(role as "admin" | "member" | "viewer")
 										}
 										value={member.role}
 									>
 										<DropdownMenuRadioItem value="admin">
-											Admin
+											{ROLE_META.admin.label}
 										</DropdownMenuRadioItem>
 										<DropdownMenuRadioItem value="member">
-											Member
+											{ROLE_META.member.label}
+										</DropdownMenuRadioItem>
+										<DropdownMenuRadioItem value="viewer">
+											{ROLE_META.viewer.label}
 										</DropdownMenuRadioItem>
 									</DropdownMenuRadioGroup>
 								</DropdownMenuContent>
@@ -212,8 +231,7 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 								Remove
 							</Button>
 						</div>
-					) : currentMember._id === memberId &&
-						currentMember.role !== "admin" ? (
+					) : currentMember._id === memberId ? (
 						<div className="mt-4">
 							<Button className="w-full" onClick={onLeave} variant="outline">
 								Leave
@@ -238,7 +256,7 @@ export const Profile = ({ memberId, onClose }: ProfileProps) => {
 							</p>
 
 							<Link
-								className="text-sm text-[#1264a3] hover:underline"
+								className="text-sm text-primary hover:underline"
 								href={`mailto:${member.user.email}`}
 							>
 								{member.user.email}

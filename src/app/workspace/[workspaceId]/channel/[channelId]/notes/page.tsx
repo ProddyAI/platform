@@ -1,14 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import {
-	Brain,
-	FileText,
-	Loader,
-	Plus,
-	Sparkles,
-	TriangleAlert,
-} from "lucide-react";
+import { Brain, FileText, Loader, Plus, TriangleAlert } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -217,8 +210,8 @@ const NotesPage = () => {
 							<LimitIndicator featureLabel="Notes" />
 						</div>
 					)}
-					<div className="mx-auto w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/30 dark:to-blue-900/30 flex items-center justify-center shadow-sm">
-						<FileText className="h-10 w-10 text-violet-500 dark:text-violet-400" />
+					<div className="mx-auto w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center shadow-sm">
+						<FileText className="h-10 w-10 text-primary" />
 					</div>
 					<div>
 						<h3 className="text-xl font-semibold mb-2">No notes yet</h3>
@@ -227,29 +220,23 @@ const NotesPage = () => {
 							help you clean, summarize, and transform your content.
 						</p>
 					</div>
-					<div className="flex flex-col items-center gap-3">
-						<div className="flex flex-col sm:flex-row gap-3 justify-center">
-							<Button
-								disabled={isCreating || noteLimitReached}
-								onClick={() => handleCreateNote()}
-								variant="outline"
-							>
-								<Plus className="h-4 w-4 mr-2" />
-								{noteLimitReached ? "Limit Reached" : "Standard Note"}
-							</Button>
-							<Button
-								className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg"
-								disabled={isCreating || noteLimitReached}
-								onClick={() => handleCreateNote(true)}
-							>
-								<Brain className="h-4 w-4" />
-								AI Meeting Note
-							</Button>
-						</div>
-						<p className="text-xs text-muted-foreground flex items-center gap-1.5">
-							<Sparkles className="h-3 w-3 text-violet-500" />
-							Powered by AI
-						</p>
+					<div className="flex flex-col sm:flex-row gap-3 justify-center">
+						<Button
+							disabled={isCreating || noteLimitReached}
+							onClick={() => handleCreateNote()}
+							variant="outline"
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							{noteLimitReached ? "Limit Reached" : "Standard Note"}
+						</Button>
+						<Button
+							className="gap-2"
+							disabled={isCreating || noteLimitReached}
+							onClick={() => handleCreateNote(true)}
+						>
+							<Brain className="h-4 w-4" />
+							AI Meeting Note
+						</Button>
 					</div>
 				</div>
 			</div>

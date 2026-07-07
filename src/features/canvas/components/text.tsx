@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { useEffect, useRef, useState } from "react";
 import ContentEditable, {
 	type ContentEditableEvent,
@@ -9,6 +10,10 @@ import {
 } from "../../../../liveblocks.config";
 import { cn, colorToCSS } from "../../../lib/utils";
 import type { TextLayer } from "../types";
+
+// Sanitize collaborator-authored HTML before handing it to ContentEditable,
+// same approach used for rendered SVG in mermaid.tsx.
+const sanitizeHtml = (html: string) => DOMPurify.sanitize(html);
 
 const calculateFontSize = (width: number, height: number) => {
 	const maxFontSize = 96;
@@ -394,7 +399,7 @@ export const Text = ({
 						"h-full w-full flex items-center justify-center text-center drop-shadow-md outline-none"
 					)}
 					disabled={!isEditing}
-					html={value || "Text"}
+					html={value ? sanitizeHtml(value) : "Text"}
 					innerRef={setContentRef}
 					onChange={handleContentChange}
 					onPaste={handlePaste}

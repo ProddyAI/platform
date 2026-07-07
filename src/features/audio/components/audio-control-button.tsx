@@ -6,7 +6,6 @@ interface AudioControlButtonProps {
 	icon: LucideIcon;
 	label: string;
 	onClick: () => void;
-	isActive?: boolean;
 	isMuted?: boolean;
 	variant?: "mic" | "speaker" | "action";
 	disabled?: boolean;
@@ -28,8 +27,8 @@ export const AudioControlButton = ({
 			return cn(
 				"h-10 w-10 rounded-full transition-all duration-200 shadow-sm",
 				isMuted
-					? "bg-red-500 hover:bg-red-600 text-white border-red-500"
-					: "bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200",
+					? "bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive"
+					: "bg-muted hover:bg-muted/80 text-muted-foreground border-border",
 				"border-2",
 				disabled && "opacity-50 cursor-not-allowed"
 			);
@@ -45,14 +44,21 @@ export const AudioControlButton = ({
 
 	return (
 		<Button
-			className={cn(getButtonStyles(), className)}
+			aria-label={label}
+			aria-pressed={variant !== "action" ? isMuted : undefined}
+			className={cn(
+				"focus-visible:ring-2 focus-visible:ring-offset-2",
+				isMuted ? "focus-visible:ring-destructive" : "focus-visible:ring-ring",
+				getButtonStyles(),
+				className
+			)}
 			disabled={disabled}
 			onClick={onClick}
 			size={variant === "action" ? "default" : "icon"}
 			title={label}
 			variant="ghost"
 		>
-			<Icon className={cn(variant === "action" ? "h-5 w-5" : "h-5 w-5")} />
+			<Icon className="h-5 w-5" />
 			{variant === "action" && <span className="text-sm">{label}</span>}
 		</Button>
 	);

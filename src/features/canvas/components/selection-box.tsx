@@ -11,6 +11,9 @@ interface SelectionBoxProps {
 }
 
 const HANDLE_WIDTH = 8;
+// Visual handle stays 8px, but the pointer target is padded out to a more
+// touch-friendly ~24px hit area without changing the rendered size.
+const HANDLE_HIT_WIDTH = 24;
 
 export const SelectionBox = memo(
 	({ onResizeHandlePointerDown }: SelectionBoxProps) => {
@@ -29,10 +32,66 @@ export const SelectionBox = memo(
 			return null;
 		}
 
+		const handles: {
+			side: Side;
+			cursor: string;
+			cx: number;
+			cy: number;
+		}[] = [
+			{
+				side: combineSides(Side.Top, Side.Left),
+				cursor: "nwse-resize",
+				cx: bounds.x,
+				cy: bounds.y,
+			},
+			{
+				side: Side.Top,
+				cursor: "ns-resize",
+				cx: bounds.x + bounds.width / 2,
+				cy: bounds.y,
+			},
+			{
+				side: combineSides(Side.Top, Side.Right),
+				cursor: "nesw-resize",
+				cx: bounds.x + bounds.width,
+				cy: bounds.y,
+			},
+			{
+				side: Side.Right,
+				cursor: "ew-resize",
+				cx: bounds.x + bounds.width,
+				cy: bounds.y + bounds.height / 2,
+			},
+			{
+				side: combineSides(Side.Bottom, Side.Right),
+				cursor: "nwse-resize",
+				cx: bounds.x + bounds.width,
+				cy: bounds.y + bounds.height,
+			},
+			{
+				side: Side.Bottom,
+				cursor: "ns-resize",
+				cx: bounds.x + bounds.width / 2,
+				cy: bounds.y + bounds.height,
+			},
+			{
+				side: combineSides(Side.Bottom, Side.Left),
+				cursor: "nesw-resize",
+				cx: bounds.x,
+				cy: bounds.y + bounds.height,
+			},
+			{
+				side: Side.Left,
+				cursor: "ew-resize",
+				cx: bounds.x,
+				cy: bounds.y + bounds.height / 2,
+			},
+		];
+
 		return (
 			<>
 				<rect
-					className="fill-transparent stroke-blue-500 stroke-1 pointer-events-none"
+					className="fill-transparent stroke-primary stroke-1 pointer-events-none"
 					height={bounds.height}
 					style={{
 						transform: `translate(${bounds.x}px, ${bounds.y}px)`,
@@ -41,176 +100,39 @@ export const SelectionBox = memo(
 					x={0}
 					y={0}
 				/>
-				{isShowingHandles && (
-					<>
-						<rect
-							className="fill-white stroke-1 stroke-blue-500"
-							onPointerDown={(e) => {
-								e.stopPropagation();
-								onResizeHandlePointerDown(
-									combineSides(Side.Top, Side.Left),
-									bounds
-								);
-							}}
-							style={{
-								cursor: "nwse-resize",
-								width: `${HANDLE_WIDTH}px`,
-								height: `${HANDLE_WIDTH}px`,
-								transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2}px,
-                  ${bounds.y - HANDLE_WIDTH / 2}px
-                )
-              `,
-							}}
-							x={0}
-							y={0}
-						/>
-						<rect
-							className="fill-white stroke-1 stroke-blue-500"
-							onPointerDown={(e) => {
-								e.stopPropagation();
-								onResizeHandlePointerDown(Side.Top, bounds);
-							}}
-							style={{
-								cursor: "ns-resize",
-								width: `${HANDLE_WIDTH}px`,
-								height: `${HANDLE_WIDTH}px`,
-								transform: `
-                translate(
-                  ${bounds.x + bounds.width / 2 - HANDLE_WIDTH / 2}px,
-                  ${bounds.y - HANDLE_WIDTH / 2}px
-                )
-              `,
-							}}
-							x={0}
-							y={0}
-						/>
-						<rect
-							className="fill-white stroke-1 stroke-blue-500"
-							onPointerDown={(e) => {
-								e.stopPropagation();
-								onResizeHandlePointerDown(
-									combineSides(Side.Top, Side.Right),
-									bounds
-								);
-							}}
-							style={{
-								cursor: "nesw-resize",
-								width: `${HANDLE_WIDTH}px`,
-								height: `${HANDLE_WIDTH}px`,
-								transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2 + bounds.width}px,
-                  ${bounds.y - HANDLE_WIDTH / 2}px
-                )`,
-							}}
-							x={0}
-							y={0}
-						/>
-						<rect
-							className="fill-white stroke-1 stroke-blue-500"
-							onPointerDown={(e) => {
-								e.stopPropagation();
-								onResizeHandlePointerDown(Side.Right, bounds);
-							}}
-							style={{
-								cursor: "ew-resize",
-								width: `${HANDLE_WIDTH}px`,
-								height: `${HANDLE_WIDTH}px`,
-								transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2 + bounds.width}px,
-                  ${bounds.y + bounds.height / 2 - HANDLE_WIDTH / 2}px
-                )`,
-							}}
-							x={0}
-							y={0}
-						/>
-						<rect
-							className="fill-white stroke-1 stroke-blue-500"
-							onPointerDown={(e) => {
-								e.stopPropagation();
-								onResizeHandlePointerDown(
-									combineSides(Side.Bottom, Side.Right),
-									bounds
-								);
-							}}
-							style={{
-								cursor: "nwse-resize",
-								width: `${HANDLE_WIDTH}px`,
-								height: `${HANDLE_WIDTH}px`,
-								transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2 + bounds.width}px,
-                  ${bounds.y - HANDLE_WIDTH / 2 + bounds.height}px
-                )`,
-							}}
-							x={0}
-							y={0}
-						/>
-						<rect
-							className="fill-white stroke-1 stroke-blue-500"
-							onPointerDown={(e) => {
-								e.stopPropagation();
-								onResizeHandlePointerDown(Side.Bottom, bounds);
-							}}
-							style={{
-								cursor: "ns-resize",
-								width: `${HANDLE_WIDTH}px`,
-								height: `${HANDLE_WIDTH}px`,
-								transform: `
-                translate(
-                  ${bounds.x + bounds.width / 2 - HANDLE_WIDTH / 2}px,
-                  ${bounds.y - HANDLE_WIDTH / 2 + bounds.height}px
-                )`,
-							}}
-							x={0}
-							y={0}
-						/>
-						<rect
-							className="fill-white stroke-1 stroke-blue-500"
-							onPointerDown={(e) => {
-								e.stopPropagation();
-								onResizeHandlePointerDown(
-									combineSides(Side.Bottom, Side.Left),
-									bounds
-								);
-							}}
-							style={{
-								cursor: "nesw-resize",
-								width: `${HANDLE_WIDTH}px`,
-								height: `${HANDLE_WIDTH}px`,
-								transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2}px,
-                  ${bounds.y - HANDLE_WIDTH / 2 + bounds.height}px
-                )`,
-							}}
-							x={0}
-							y={0}
-						/>
-						<rect
-							className="fill-white stroke-1 stroke-blue-500"
-							onPointerDown={(e) => {
-								e.stopPropagation();
-								onResizeHandlePointerDown(Side.Left, bounds);
-							}}
-							style={{
-								cursor: "ew-resize",
-								width: `${HANDLE_WIDTH}px`,
-								height: `${HANDLE_WIDTH}px`,
-								transform: `
-                translate(
-                  ${bounds.x - HANDLE_WIDTH / 2}px,
-                  ${bounds.y - HANDLE_WIDTH / 2 + bounds.height / 2}px
-                )`,
-							}}
-							x={0}
-							y={0}
-						/>
-					</>
-				)}
+				{isShowingHandles &&
+					handles.map(({ side, cursor, cx, cy }) => (
+						<g key={side}>
+							{/* Larger, invisible pointer target for a touch-friendly hit area. */}
+							<rect
+								aria-label="Resize selection"
+								className="fill-transparent"
+								onPointerDown={(e) => {
+									e.stopPropagation();
+									onResizeHandlePointerDown(side, bounds);
+								}}
+								role="button"
+								style={{
+									cursor,
+									width: `${HANDLE_HIT_WIDTH}px`,
+									height: `${HANDLE_HIT_WIDTH}px`,
+									transform: `translate(${cx - HANDLE_HIT_WIDTH / 2}px, ${cy - HANDLE_HIT_WIDTH / 2}px)`,
+								}}
+								x={0}
+								y={0}
+							/>
+							<rect
+								className="fill-background stroke-1 stroke-primary pointer-events-none"
+								style={{
+									width: `${HANDLE_WIDTH}px`,
+									height: `${HANDLE_WIDTH}px`,
+									transform: `translate(${cx - HANDLE_WIDTH / 2}px, ${cy - HANDLE_WIDTH / 2}px)`,
+								}}
+								x={0}
+								y={0}
+							/>
+						</g>
+					))}
 			</>
 		);
 	}

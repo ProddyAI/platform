@@ -17,10 +17,14 @@ export const Ellipse = ({
 }: EllipseProps) => {
 	return (
 		<ellipse
-			className="drop-shadow-md"
+			className={
+				selectionColor
+					? "drop-shadow-md"
+					: "drop-shadow-md transition-colors duration-fast hover:stroke-primary/50"
+			}
 			cx={layer.width / 2}
 			cy={layer.height / 2}
-			fill={layer.fill ? colorToCSS(layer.fill) : "#000"}
+			fill={layer.fill ? colorToCSS(layer.fill) : "hsl(var(--foreground))"}
 			onPointerDown={(e) => onPointerDown(e, id)}
 			rx={layer.width / 2}
 			ry={layer.height / 2}

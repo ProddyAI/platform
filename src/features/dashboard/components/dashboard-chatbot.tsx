@@ -25,6 +25,7 @@ import {
 	Plus,
 	Send,
 	Sparkles,
+	Square,
 	Trash2,
 	X,
 	Zap,
@@ -38,6 +39,16 @@ import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { ChannelPicker } from "@/components/pickers/channel-picker";
 import { MentionPicker } from "@/components/pickers/mention-picker";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +73,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface DashboardChatbotProps {
@@ -266,36 +278,10 @@ function ProddyChatAvatar() {
 	);
 }
 
-const CHAT_TOOL_STATUS_LABELS = [
-	"Calendar",
-	"Tasks",
-	"Search",
-	"Integrations",
-] as const;
-
-function ChatLoadingStatusTags() {
-	return (
-		<div className="mt-2 flex flex-wrap gap-1">
-			{CHAT_TOOL_STATUS_LABELS.map((label) => (
-				<span
-					className="inline-flex items-center rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
-					key={label}
-				>
-					{label}
-				</span>
-			))}
-		</div>
-	);
-}
-
 function ChatLoadingBody() {
 	return (
 		<div className="min-w-0 flex-1">
-			<p className="text-sm font-medium">Using tools when needed</p>
-			<p className="text-xs text-muted-foreground mt-1">
-				Checking calendar, tasks, search, and integrations…
-			</p>
-			<ChatLoadingStatusTags />
+			<p className="text-sm font-medium text-muted-foreground">Thinking…</p>
 		</div>
 	);
 }
@@ -458,6 +444,10 @@ function ChatHeaderActions({
 	onSelectConversation: (id: string) => void;
 	onStartEditTitle: (id: string, title: string) => void;
 }) {
+	const [pendingDelete, setPendingDelete] = useState<RecentConversation | null>(
+		null
+	);
+
 	return (
 		<div className="flex items-center gap-2">
 			<Button
@@ -494,7 +484,10 @@ function ChatHeaderActions({
 								<ChatHistoryItem
 									conv={conv}
 									isActive={conversationId === conv.conversationId}
-									onDelete={() => onDeleteChat(conv.conversationId)}
+									onDelete={() => {
+										setPendingDelete(conv);
+										setIsHistoryOpen(false);
+									}}
 									onSelect={() => {
 										onSelectConversation(conv.conversationId);
 										setIsHistoryOpen(false);
@@ -514,15 +507,37 @@ function ChatHeaderActions({
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-			<Button
-				className="h-8 px-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-				onClick={onNewChat}
-				size="sm"
-				variant="ghost"
+			<AlertDialog
+				onOpenChange={(open) => {
+					if (!open) setPendingDelete(null);
+				}}
+				open={pendingDelete !== null}
 			>
-				<Trash2 className="h-4 w-4 mr-1.5" />
-				Clear
-			</Button>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete this chat?</AlertDialogTitle>
+						<AlertDialogDescription>
+							{pendingDelete
+								? `"${pendingDelete.title || "New Chat"}" will be permanently deleted. This can't be undone.`
+								: "This can't be undone."}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							onClick={() => {
+								if (pendingDelete) {
+									onDeleteChat(pendingDelete.conversationId);
+								}
+								setPendingDelete(null);
+							}}
+						>
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }
@@ -571,8 +586,9 @@ function ChatHistoryItem({
 					{formatRelativeTime(conv.lastMessageAt)}
 				</p>
 			</div>
-			<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+			<div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
 				<Button
+					aria-label="Rename chat"
 					className="h-6 w-6 p-0"
 					onClick={(e) => {
 						e.stopPropagation();
@@ -584,6 +600,7 @@ function ChatHistoryItem({
 					<Edit2 className="h-3 w-3" />
 				</Button>
 				<Button
+					aria-label="Delete chat"
 					className="h-6 w-6 p-0 hover:text-destructive"
 					onClick={(e) => {
 						e.stopPropagation();
@@ -757,6 +774,7 @@ function ConversationTitleEditor({
 		<div className="flex items-center gap-2 mt-3 p-2 bg-muted/50 rounded-lg border">
 			<MessageSquare className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
 			<Input
+				aria-label="Chat title"
 				className="h-8 text-sm flex-1"
 				onChange={(event) => onChange(event.target.value)}
 				onKeyDown={(event) => {
@@ -770,6 +788,7 @@ function ConversationTitleEditor({
 				value={editingTitle}
 			/>
 			<Button
+				aria-label="Save title"
 				className="h-8 w-8 p-0"
 				onClick={onSave}
 				size="sm"
@@ -778,6 +797,7 @@ function ConversationTitleEditor({
 				<Check className="h-4 w-4 text-green-600" />
 			</Button>
 			<Button
+				aria-label="Cancel"
 				className="h-8 w-8 p-0"
 				onClick={onCancel}
 				size="sm"
@@ -937,25 +957,35 @@ function ChatComposer({
 	onKeyDown,
 	onMentionSelect,
 	onSend,
+	onStop,
 }: {
 	activeAutocomplete: "mention" | "channel" | null;
 	autocompleteOpen: boolean;
 	autocompleteQuery: string;
 	autocompleteRef: React.Ref<HTMLDivElement>;
 	input: string;
-	inputRef: React.Ref<HTMLInputElement>;
+	inputRef: React.RefObject<HTMLTextAreaElement>;
 	isLoading: boolean;
 	onChannelSelect: (channelId: Id<"channels">, channelName: string) => void;
 	onCloseAutocomplete: () => void;
 	onInputChange: (
 		value: string,
 		cursorIndex: number,
-		inputElement: HTMLInputElement | null
+		inputElement: HTMLTextAreaElement | null
 	) => void;
-	onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+	onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 	onMentionSelect: (memberId: Id<"members">, memberName: string) => void;
 	onSend: () => void;
+	onStop: () => void;
 }) {
+	// biome-ignore lint/correctness/useExhaustiveDependencies: input drives the resize, not read directly
+	useEffect(() => {
+		const el = inputRef.current;
+		if (!el) return;
+		el.style.height = "auto";
+		el.style.height = `${el.scrollHeight}px`;
+	}, [input]);
+
 	return (
 		<CardFooter className="p-4 pt-3 border-t mt-auto">
 			<ChatAutocompletePicker
@@ -967,9 +997,9 @@ function ChatComposer({
 				onClose={onCloseAutocomplete}
 				onMentionSelect={onMentionSelect}
 			/>
-			<div className="flex w-full items-center gap-2">
-				<Input
-					className="flex-1"
+			<div className="flex w-full items-end gap-2">
+				<Textarea
+					className="min-h-10 max-h-40 flex-1 resize-none py-2"
 					disabled={isLoading}
 					onChange={(event) => {
 						const next = event.target.value;
@@ -979,16 +1009,29 @@ function ChatComposer({
 					onKeyDown={onKeyDown}
 					placeholder="Ask a question about your workspace..."
 					ref={inputRef}
+					rows={1}
 					value={input}
 				/>
-				<Button
-					className="chat-send-button"
-					disabled={isLoading || !input.trim()}
-					onClick={onSend}
-					size="icon"
-				>
-					<Send className="h-4 w-4" />
-				</Button>
+				{isLoading ? (
+					<Button
+						aria-label="Stop generating"
+						onClick={onStop}
+						size="icon"
+						variant="secondary"
+					>
+						<Square className="h-4 w-4" />
+					</Button>
+				) : (
+					<Button
+						aria-label="Send message"
+						className="chat-send-button"
+						disabled={!input.trim()}
+						onClick={onSend}
+						size="icon"
+					>
+						<Send className="h-4 w-4" />
+					</Button>
+				)}
 			</div>
 		</CardFooter>
 	);
@@ -1026,6 +1069,7 @@ function DashboardChatMainCard({
 	onInputChange,
 	onKeyDown,
 	onSend,
+	onStop,
 }: {
 	editingConversationId: string | null;
 	editingTitle: string;
@@ -1040,7 +1084,7 @@ function DashboardChatMainCard({
 	renderedMessages: Message[];
 	isLoading: boolean;
 	scrollAreaRef: React.Ref<HTMLDivElement>;
-	inputRef: React.Ref<HTMLInputElement>;
+	inputRef: React.RefObject<HTMLTextAreaElement>;
 	autocompleteRef: React.Ref<HTMLDivElement>;
 	activeAutocomplete: "mention" | "channel" | null;
 	autocompleteOpen: boolean;
@@ -1062,10 +1106,11 @@ function DashboardChatMainCard({
 	onInputChange: (
 		value: string,
 		cursorIndex: number,
-		inputElement: HTMLInputElement | null
+		inputElement: HTMLTextAreaElement | null
 	) => void;
-	onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+	onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 	onSend: () => void;
+	onStop: () => void;
 }) {
 	return (
 		<Card className="flex flex-col flex-1 shadow-md overflow-hidden">
@@ -1106,6 +1151,7 @@ function DashboardChatMainCard({
 				onKeyDown={onKeyDown}
 				onMentionSelect={onMentionInsert}
 				onSend={onSend}
+				onStop={onStop}
 			/>
 		</Card>
 	);
@@ -1216,7 +1262,7 @@ const DashboardChatbotBody = ({
 	const [autocompleteCursorIndex, setAutocompleteCursorIndex] = useState<
 		number | null
 	>(null);
-	const inputRef = useRef<HTMLInputElement>(null);
+	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const autocompleteRef = useRef<HTMLDivElement>(null);
 	const initialPromptSentRef = useRef<boolean>(false);
 	const isNearBottomRef = useRef<boolean>(true);
@@ -1462,7 +1508,7 @@ Try asking me things like:`;
 					).join(", ");
 					content += `
 
-*Note: Connect supported integrations (${supportedNames}) to unlock more capabilities!*`;
+*Note: Connect supported integrations (${supportedNames}) for more capabilities.*`;
 				}
 
 				setWelcomeMessage({
@@ -1551,13 +1597,23 @@ Try asking me things like:`;
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error occurred";
 			console.error("Error in chatbot:", error);
+			setInput(userQuery);
 			toast.error("Assistant Error", {
 				description: errorMessage,
 			});
 		}
 	};
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+	const handleStopGenerating = async () => {
+		try {
+			await abort();
+		} catch (error) {
+			console.error("Error stopping generation:", error);
+			toast.error("Failed to stop generation.");
+		}
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Escape" && autocompleteOpen) {
 			e.preventDefault();
 			closeAutocomplete();
@@ -1693,7 +1749,7 @@ Try asking me things like:`;
 	const handleInputChange = (
 		next: string,
 		cursor: number,
-		_inputElement: HTMLInputElement | null
+		_inputElement: HTMLTextAreaElement | null
 	) => {
 		setInput(next);
 
@@ -1738,6 +1794,7 @@ Try asking me things like:`;
 				onSelectConversation={handleSelectConversation}
 				onSend={handleSendMessage}
 				onStartEditTitle={handleStartEditTitle}
+				onStop={handleStopGenerating}
 				recentConversations={recentConversations}
 				renderedMessages={renderedMessages}
 				scrollAreaRef={scrollAreaRef}

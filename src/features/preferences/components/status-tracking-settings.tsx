@@ -2,6 +2,7 @@
 
 import { Activity, EyeOff } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useUserPreferences } from "../api/use-user-preferences";
@@ -16,6 +17,9 @@ export const StatusTrackingSettings = () => {
 			await updateSettings({
 				statusTracking: enabled,
 			});
+		} catch (error) {
+			console.error("Failed to update status tracking:", error);
+			toast.error("Failed to update status tracking");
 		} finally {
 			setIsUpdating(false);
 		}
@@ -26,13 +30,16 @@ export const StatusTrackingSettings = () => {
 			<div className="space-y-4">
 				<div className="flex items-center justify-between">
 					<div className="space-y-1">
-						<Label className="flex items-center gap-2 text-base font-medium">
+						<Label
+							className="flex items-center gap-2 text-base font-medium"
+							htmlFor="status-tracking-toggle"
+						>
 							<Activity className="h-4 w-4" />
 							Status Tracking
 						</Label>
 						<p className="text-sm text-muted-foreground">Loading...</p>
 					</div>
-					<Switch disabled />
+					<Switch disabled id="status-tracking-toggle" />
 				</div>
 			</div>
 		);
@@ -44,7 +51,10 @@ export const StatusTrackingSettings = () => {
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<div className="space-y-1">
-					<Label className="flex items-center gap-2 text-base font-medium">
+					<Label
+						className="flex items-center gap-2 text-base font-medium"
+						htmlFor="status-tracking-toggle"
+					>
 						<Activity className="h-4 w-4" />
 						Status Tracking
 					</Label>
@@ -56,6 +66,7 @@ export const StatusTrackingSettings = () => {
 				<Switch
 					checked={statusTrackingEnabled}
 					disabled={isUpdating}
+					id="status-tracking-toggle"
 					onCheckedChange={handleStatusTrackingToggle}
 				/>
 			</div>

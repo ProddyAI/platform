@@ -4,6 +4,7 @@ import type { LiveObject } from "@liveblocks/client";
 import DOMPurify from "dompurify";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation } from "../../../../liveblocks.config";
 import { colorToCSS } from "../../../lib/utils";
 import type { MermaidLayer } from "../types";
@@ -194,17 +195,15 @@ export const Mermaid = ({
 					onPointerDown={(e) => onPointerDown(e, id)}
 					style={{
 						outline: selectionColor ? `1px solid ${selectionColor}` : "none",
-						backgroundColor: fill ? colorToCSS(fill) : "#f9f9f9",
+						backgroundColor: fill ? colorToCSS(fill) : "hsl(var(--muted))",
 					}}
 					width={width}
 					x={x}
 					y={y}
 				>
-					<div
-						className="h-full w-full flex items-center justify-center bg-gray-100 border border-gray-300 rounded"
-						style={{ fontSize: "12px", color: "#666" }}
-					>
-						<div className="text-center">
+					<div className="h-full w-full flex items-center justify-center bg-muted border border-border rounded p-2 text-xs text-muted-foreground">
+						<div className="w-full text-center">
+							<Skeleton className="h-3 w-3/4 mx-auto mb-2 bg-muted-foreground/20" />
 							<div>Loading...</div>
 						</div>
 					</div>
@@ -231,18 +230,15 @@ export const Mermaid = ({
 					onPointerDown={(e) => onPointerDown(e, id)}
 					style={{
 						outline: selectionColor ? `1px solid ${selectionColor}` : "none",
-						backgroundColor: fill ? colorToCSS(fill) : "#f9f9f9",
+						backgroundColor: fill ? colorToCSS(fill) : "hsl(var(--muted))",
 					}}
 					width={width}
 					x={x}
 					y={y}
 				>
-					<div
-						className="h-full w-full flex items-center justify-center bg-gray-100 border border-gray-300 rounded"
-						style={{ fontSize: "12px", color: "#666" }}
-					>
-						<div className="text-center">
-							<div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
+					<div className="h-full w-full flex items-center justify-center bg-muted border border-border rounded p-2 text-xs text-muted-foreground">
+						<div className="w-full text-center">
+							<Skeleton className="h-3 w-3/4 mx-auto mb-2 bg-muted-foreground/20" />
 							<div>Rendering diagram...</div>
 						</div>
 					</div>
@@ -269,16 +265,15 @@ export const Mermaid = ({
 					onPointerDown={(e) => onPointerDown(e, id)}
 					style={{
 						outline: selectionColor ? `1px solid ${selectionColor}` : "none",
-						backgroundColor: fill ? colorToCSS(fill) : "#fee2e2",
+						backgroundColor: fill
+							? colorToCSS(fill)
+							: "hsl(var(--destructive) / 0.1)",
 					}}
 					width={width}
 					x={x}
 					y={y}
 				>
-					<div
-						className="h-full w-full flex items-center justify-center bg-red-50 border border-red-300 rounded text-red-600"
-						style={{ fontSize: "12px" }}
-					>
+					<div className="h-full w-full flex items-center justify-center bg-destructive/10 border border-destructive/30 rounded text-destructive text-xs">
 						<div className="text-center p-2">
 							<div className="font-medium mb-1">Diagram Error</div>
 							<div className="text-xs">{error}</div>
@@ -306,14 +301,14 @@ export const Mermaid = ({
 				onPointerDown={(e) => onPointerDown(e, id)}
 				style={{
 					outline: selectionColor ? `1px solid ${selectionColor}` : "none",
-					backgroundColor: fill ? colorToCSS(fill) : "white",
+					backgroundColor: fill ? colorToCSS(fill) : "hsl(var(--card))",
 				}}
 				width={width}
 				x={x}
 				y={y}
 			>
 				<div
-					className="h-full w-full overflow-hidden rounded border border-gray-200 bg-white"
+					className="h-full w-full overflow-hidden rounded border border-border bg-card"
 					ref={containerRef}
 					style={{
 						display: "flex",

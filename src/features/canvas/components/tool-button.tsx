@@ -23,9 +23,9 @@ export const ToolButton = ({
 	variant = "default",
 }: ToolButtonProps) => {
 	// Determine the button variant based on the props
-	let buttonVariant: "default" | "destructive" | "secondary" = isActive
+	let buttonVariant: "ghost" | "destructive" | "secondary" = isActive
 		? "secondary"
-		: "default";
+		: "ghost";
 
 	// If danger variant is specified, use destructive style
 	if (variant === "danger") {

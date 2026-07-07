@@ -1,9 +1,19 @@
 "use client";
 
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { CheckCircle2, Circle, Clock, Edit, Trash } from "lucide-react";
 import { useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +40,36 @@ interface TaskItemProps {
 	workspaceId: Id<"workspaces">;
 }
 
+const PRIORITY_CONFIG: Record<
+	"low" | "medium" | "high",
+	{ label: string; dotClassName: string; badgeClassName: string }
+> = {
+	high: {
+		label: "High",
+		dotClassName: "bg-red-600",
+		badgeClassName:
+			"bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
+	},
+	medium: {
+		label: "Medium",
+		dotClassName: "bg-amber-500",
+		badgeClassName:
+			"bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
+	},
+	low: {
+		label: "Low",
+		dotClassName: "bg-blue-600",
+		badgeClassName:
+			"bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+	},
+};
+
+const PRIORITY_HOVER_BORDER: Record<"low" | "medium" | "high", string> = {
+	high: "hover:border-red-300 dark:hover:border-red-800",
+	medium: "hover:border-amber-300 dark:hover:border-amber-800",
+	low: "hover:border-blue-300 dark:hover:border-blue-800",
+};
+
 export const TaskItem = ({
 	id,
 	title,
@@ -44,6 +84,7 @@ export const TaskItem = ({
 	const toggleCompletion = useToggleTaskCompletion();
 	const deleteTask = useDeleteTask();
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const { data: categories } = useGetTaskCategories({ workspaceId });
 
 	const category = categories?.find((cat) => cat._id === categoryId);
@@ -66,63 +107,11 @@ export const TaskItem = ({
 		}
 	};
 
-	const getPriorityColor = (priority?: "low" | "medium" | "high") => {
-		switch (priority) {
-			case "high":
-				return "bg-red-600";
-			case "medium":
-				return "bg-amber-500";
-			case "low":
-				return "bg-blue-600";
-			default:
-				return "bg-gray-400";
-		}
-	};
-
-	const getPriorityTextColor = (priority?: "low" | "medium" | "high") => {
-		switch (priority) {
-			case "high":
-				return "text-red-700 dark:text-red-400";
-			case "medium":
-				return "text-amber-700 dark:text-amber-400";
-			case "low":
-				return "text-blue-700 dark:text-blue-400";
-			default:
-				return "text-gray-700 dark:text-gray-400";
-		}
-	};
-
-	const getPriorityBgColor = (priority?: "low" | "medium" | "high") => {
-		switch (priority) {
-			case "high":
-				return "bg-red-100 dark:bg-red-900/30";
-			case "medium":
-				return "bg-amber-100 dark:bg-amber-900/30";
-			case "low":
-				return "bg-blue-100 dark:bg-blue-900/30";
-			default:
-				return "bg-gray-100 dark:bg-gray-800";
-		}
-	};
-
-	const getPriorityLabel = (priority?: "low" | "medium" | "high") => {
-		switch (priority) {
-			case "high":
-				return "High";
-			case "medium":
-				return "Medium";
-			case "low":
-				return "Low";
-			default:
-				return "None";
-		}
-	};
-
 	const getStatusIcon = (completed: boolean) => {
 		return completed ? (
-			<CheckCircle2 className="h-5 w-5 text-green-500" />
+			<CheckCircle2 className="h-5 w-5 text-emerald-500" />
 		) : (
-			<Circle className="h-5 w-5 text-gray-400 group-hover:text-secondary transition-colors" />
+			<Circle className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-secondary" />
 		);
 	};
 
@@ -147,11 +136,9 @@ export const TaskItem = ({
 			className={cn(
 				"group p-5 rounded-xl border transition-all hover:shadow-md",
 				completed
-					? "bg-gray-50 border-gray-200 opacity-80 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))]"
-					: "bg-white border-gray-200 hover:border-secondary/30 dark:bg-[hsl(var(--card))] dark:border-[hsl(var(--border))] dark:hover:border-secondary/40",
-				priority &&
-					!completed &&
-					`hover:border-${getPriorityTextColor(priority).replace("text-", "")}/30`
+					? "bg-muted/50 border-border opacity-80"
+					: "bg-card border-border hover:border-secondary/30",
+				priority && !completed && PRIORITY_HOVER_BORDER[priority]
 			)}
 		>
 			<div className="flex items-start gap-4">
@@ -169,23 +156,23 @@ export const TaskItem = ({
 							className={cn(
 								"font-medium text-base flex-1 min-w-0 break-words",
 								completed
-									? "line-through text-gray-500 dark:text-gray-500"
-									: "text-gray-900 dark:text-gray-100"
+									? "line-through text-muted-foreground"
+									: "text-foreground"
 							)}
 						>
 							{title}
 						</h3>
-						<div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+						<div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
-											className="h-8 w-8 rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+											aria-label="Edit task"
 											onClick={() => setIsEditing(true)}
 											size="iconSm"
 											variant="ghost"
 										>
-											<Edit className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+											<Edit className="h-3.5 w-3.5 text-muted-foreground" />
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent>
@@ -197,9 +184,10 @@ export const TaskItem = ({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
-											className="h-8 w-8 rounded-full bg-gray-50 hover:bg-red-100 text-gray-600 hover:text-red-600 dark:bg-gray-800 dark:hover:bg-red-900/30 dark:text-gray-400 dark:hover:text-red-400"
+											aria-label="Delete task"
+											className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 											disabled={isDeleting}
-											onClick={handleDelete}
+											onClick={() => setShowDeleteConfirm(true)}
 											size="iconSm"
 											variant="ghost"
 										>
@@ -218,8 +206,8 @@ export const TaskItem = ({
 					{description && (
 						<p
 							className={cn(
-								"text-sm text-gray-600 mt-2 line-clamp-2 break-words dark:text-gray-400",
-								completed && "text-gray-400 dark:text-gray-500"
+								"text-sm text-muted-foreground mt-2 line-clamp-2 break-words",
+								completed && "text-muted-foreground/70"
 							)}
 						>
 							{description}
@@ -245,21 +233,21 @@ export const TaskItem = ({
 
 						{/* Priority indicator */}
 						{priority && (
-							<div
+							<Badge
 								className={cn(
-									"flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium",
-									getPriorityBgColor(priority),
-									getPriorityTextColor(priority)
+									"gap-1.5 font-medium",
+									PRIORITY_CONFIG[priority].badgeClassName
 								)}
+								variant="outline"
 							>
-								<div
+								<span
 									className={cn(
-										"w-2 h-2 rounded-full",
-										getPriorityColor(priority)
+										"h-2 w-2 rounded-full",
+										PRIORITY_CONFIG[priority].dotClassName
 									)}
 								/>
-								{getPriorityLabel(priority)}
-							</div>
+								{PRIORITY_CONFIG[priority].label}
+							</Badge>
 						)}
 
 						{/* Due date */}
@@ -267,9 +255,10 @@ export const TaskItem = ({
 							<div
 								className={cn(
 									"flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full",
-									new Date(dueDate) < new Date() && !completed
-										? "text-red-700 bg-red-100 font-medium dark:text-red-400 dark:bg-red-900/30"
-										: "text-gray-700 bg-gray-100 dark:text-gray-400 dark:bg-gray-800"
+									isBefore(new Date(dueDate), startOfDay(new Date())) &&
+										!completed
+										? "text-destructive bg-destructive/10 font-medium"
+										: "text-muted-foreground bg-muted"
 								)}
 							>
 								<Clock className="h-3 w-3" />
@@ -279,6 +268,26 @@ export const TaskItem = ({
 					</div>
 				</div>
 			</div>
+
+			<AlertDialog onOpenChange={setShowDeleteConfirm} open={showDeleteConfirm}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete task?</AlertDialogTitle>
+						<AlertDialogDescription>
+							"{title}" will be deleted. This can't be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							onClick={handleDelete}
+						>
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 };

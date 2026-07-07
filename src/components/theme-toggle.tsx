@@ -4,33 +4,30 @@ import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
+const getPreferredTheme = (): "light" | "dark" => {
+	try {
+		const stored = localStorage.getItem("theme");
+		if (stored === "light" || stored === "dark") {
+			return stored;
+		}
+		return window.matchMedia("(prefers-color-scheme: dark)").matches
+			? "dark"
+			: "light";
+	} catch (_e) {
+		return "light";
+	}
+};
+
 export const ThemeToggle = () => {
 	const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
 	useEffect(() => {
-		try {
-			const stored = localStorage.getItem("theme");
-			if (stored === "light" || stored === "dark") {
-				setTheme(stored as "light" | "dark");
-			} else {
-				setTheme("light");
-			}
-		} catch (_e) {
-			// ignore
-		}
+		setTheme(getPreferredTheme());
 	}, []);
 
 	useEffect(() => {
 		if (!theme) return;
 		try {
-			// Don't apply theme changes on /home route (it's locked to light mode)
-			if (
-				typeof window !== "undefined" &&
-				window.location.pathname === "/home"
-			) {
-				return;
-			}
-
 			if (theme === "dark") {
 				document.documentElement.classList.add("dark");
 			} else {

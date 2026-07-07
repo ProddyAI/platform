@@ -44,6 +44,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
 	Table,
@@ -77,7 +84,8 @@ const PLATFORMS = [
 		description:
 			"Import channels, messages, and user data from Slack workspaces",
 		icon: SiSlack,
-		color: "bg-purple-100 text-purple-700 border-purple-300",
+		color:
+			"bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
 		available: true,
 	},
 	{
@@ -85,7 +93,8 @@ const PLATFORMS = [
 		name: "Todoist",
 		description: "Import tasks, projects, and labels from Todoist",
 		icon: SiTodoist,
-		color: "bg-red-100 text-red-700 border-red-300",
+		color:
+			"bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
 		available: true,
 	},
 	{
@@ -93,7 +102,8 @@ const PLATFORMS = [
 		name: "Linear",
 		description: "Import issues, projects, and workflows from Linear",
 		icon: SiLinear,
-		color: "bg-blue-100 text-blue-700 border-blue-300",
+		color:
+			"bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
 		available: true,
 	},
 	{
@@ -101,7 +111,8 @@ const PLATFORMS = [
 		name: "Notion",
 		description: "Import pages, databases, and content from Notion",
 		icon: SiNotion,
-		color: "bg-gray-100 text-gray-700 border-gray-300",
+		color:
+			"bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700",
 		available: false, // Coming soon
 	},
 	{
@@ -109,7 +120,8 @@ const PLATFORMS = [
 		name: "Miro",
 		description: "Import boards, frames, and collaboration data from Miro",
 		icon: SiMiro,
-		color: "bg-yellow-100 text-yellow-700 border-yellow-300",
+		color:
+			"bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800",
 		available: false, // Coming soon
 	},
 	{
@@ -117,7 +129,8 @@ const PLATFORMS = [
 		name: "ClickUp",
 		description: "Import tasks, lists, and spaces from ClickUp",
 		icon: SiClickup,
-		color: "bg-pink-100 text-pink-700 border-pink-300",
+		color:
+			"bg-pink-100 text-pink-700 border-pink-300 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-800",
 		available: false, // Coming soon
 	},
 ];
@@ -312,7 +325,15 @@ export const ImportDataManagement = ({
 	};
 
 	const formatDate = (timestamp: number) => {
-		return new Date(timestamp).toLocaleString();
+		return new Date(timestamp).toLocaleString(undefined, {
+			dateStyle: "medium",
+			timeStyle: "short",
+		});
+	};
+
+	const formatStatusLabel = (status: string) => {
+		const label = status.replace("_", " ");
+		return label.charAt(0).toUpperCase() + label.slice(1);
 	};
 
 	const getStatusBadge = (status: string) => {
@@ -358,7 +379,7 @@ export const ImportDataManagement = ({
 		return (
 			<Badge className="flex items-center gap-1" variant={config.variant}>
 				{config.icon}
-				{status.replace("_", " ")}
+				{formatStatusLabel(status)}
 			</Badge>
 		);
 	};
@@ -758,26 +779,29 @@ export const ImportDataManagement = ({
 
 								<div className="space-y-2 pt-2">
 									<Label htmlFor="targetChannel">Import Destination</Label>
-									<select
-										className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-										id="targetChannel"
-										onChange={(e) =>
+									<Select
+										onValueChange={(value) =>
 											setImportConfig((prev) => ({
 												...prev,
-												targetChannelId: e.target.value || undefined,
+												targetChannelId: value === "none" ? undefined : value,
 											}))
 										}
-										value={importConfig.targetChannelId || ""}
+										value={importConfig.targetChannelId || "none"}
 									>
-										<option value="">
-											Create new projects (one per Linear team)
-										</option>
-										{channels?.map((channel) => (
-											<option key={channel._id} value={channel._id}>
-												Import into: {channel.name}
-											</option>
-										))}
-									</select>
+										<SelectTrigger id="targetChannel">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="none">
+												Create new projects (one per Linear team)
+											</SelectItem>
+											{channels?.map((channel) => (
+												<SelectItem key={channel._id} value={channel._id}>
+													Import into: {channel.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 									<p className="text-xs text-muted-foreground">
 										{importConfig.targetChannelId
 											? "All Linear teams and issues will be imported into the selected channel."

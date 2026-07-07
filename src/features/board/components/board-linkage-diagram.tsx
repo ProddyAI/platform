@@ -36,7 +36,21 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 	const [svgContent, setSvgContent] = useState<string>("");
 	const [error, setError] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
+	const [themeTick, setThemeTick] = useState(0);
 
+	// Re-render the diagram if the user toggles light/dark mode while the
+	// dialog is open, so the mermaid theme stays in sync.
+	useEffect(() => {
+		if (!open) return;
+		const observer = new MutationObserver(() => setThemeTick((t) => t + 1));
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+		return () => observer.disconnect();
+	}, [open]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: themeTick intentionally forces a re-render on theme toggle
 	useEffect(() => {
 		if (!open || !issues || !relationships) return;
 
@@ -52,9 +66,10 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 			setError(null);
 			try {
 				const mermaid = (await import("mermaid")).default;
+				const isDark = document.documentElement.classList.contains("dark");
 				mermaid.initialize({
 					startOnLoad: false,
-					theme: "neutral",
+					theme: isDark ? "dark" : "neutral",
 					flowchart: { useMaxWidth: true, htmlLabels: false },
 				});
 
@@ -153,7 +168,7 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 		};
 
 		renderDiagram();
-	}, [open, issues, relationships]);
+	}, [open, issues, relationships, themeTick]);
 
 	// Inject sanitized SVG into the container div
 	useEffect(() => {
@@ -188,11 +203,16 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 						</div>
 					) : topLevelCount === 0 ? (
 						<div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
-							No issues in this board yet.
+							No issues yet — the linkage diagram maps how issues block each
+							other once you add some.
 						</div>
 					) : isLoading ? (
-						<div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
-							Rendering diagram…
+						<div
+							className="flex h-64 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
+							role="status"
+						>
+							<div className="h-32 w-full max-w-sm animate-pulse rounded-md bg-muted" />
+							<span>Rendering diagram…</span>
 						</div>
 					) : error ? (
 						<div className="flex items-center justify-center h-64 text-sm text-destructive">
@@ -203,7 +223,7 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 							<div className="flex items-center gap-4 text-xs text-muted-foreground">
 								<span className="flex items-center gap-1.5">
 									<span className="inline-flex items-center gap-1">
-										<span className="w-6 inline-block border-t border-gray-500" />
+										<span className="w-6 inline-block border-t border-muted-foreground" />
 										<span>→</span>
 									</span>
 									blocks

@@ -11,12 +11,12 @@ const PrivacyPage = () => {
 			<Header />
 
 			{/* Hero Section */}
-			<section className="py-16 bg-white">
+			<section className="py-16 bg-background">
 				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center">
 						<motion.h1
 							animate={{ opacity: 1, y: 0 }}
-							className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
+							className="text-4xl md:text-5xl font-bold text-foreground mb-6"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5 }}
 						>
@@ -24,26 +24,21 @@ const PrivacyPage = () => {
 						</motion.h1>
 						<motion.p
 							animate={{ opacity: 1, y: 0 }}
-							className="text-lg text-gray-600"
+							className="text-lg text-muted-foreground"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
-							Last updated:{" "}
-							{new Date().toLocaleDateString("en-US", {
-								month: "long",
-								day: "numeric",
-								year: "numeric",
-							})}
+							Last updated: April 9, 2026
 						</motion.p>
 					</div>
 				</div>
 			</section>
 
 			{/* Privacy Policy Content */}
-			<section className="py-12 bg-gray-50">
+			<section className="py-12 bg-muted/30">
 				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="bg-white p-8 rounded-xl shadow-sm">
-						<div className="prose prose-lg max-w-none">
+					<div className="bg-card p-8 rounded-xl shadow-sm">
+						<div className="prose prose-lg dark:prose-invert max-w-none">
 							<h2 className="text-2xl font-semibold mb-4">Introduction</h2>
 							<p>
 								At Proddy, we take your privacy seriously. This Privacy Policy

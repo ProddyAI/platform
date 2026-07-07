@@ -2,9 +2,20 @@
 
 import { format } from "date-fns";
 import { Archive, CheckCircle, Flag, MoreHorizontal, Play } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import type { Doc } from "@/../convex/_generated/dataModel";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +26,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
 	useGetMilestoneStats,
@@ -57,9 +69,12 @@ interface MilestoneCardProps {
 }
 
 export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
-	const { data: stats } = useGetMilestoneStats({ milestoneId: milestone._id });
+	const { data: stats, isLoading: isLoadingStats } = useGetMilestoneStats({
+		milestoneId: milestone._id,
+	});
 	const { mutate: updateMilestone } = useUpdateMilestone();
 	const { mutate: removeMilestone } = useRemoveMilestone();
+	const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
 	const color = milestone.color ?? DEFAULT_COLOR;
 	const status = MILESTONE_STATUS_CONFIG[milestone.status];
@@ -94,18 +109,21 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 	};
 
 	return (
-		<button
+		<div
 			className={cn(
-				"group w-full overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-shadow hover:shadow-md",
+				"group w-full overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md",
 				milestone.status === "archived" && "opacity-60"
 			)}
-			onClick={onClick}
-			type="button"
 		>
-			<div className="h-1 w-full" style={{ backgroundColor: color }} />
+			<div className="h-0.5 w-full" style={{ backgroundColor: color }} />
 			<div className="p-4">
 				<div className="flex items-start justify-between gap-2">
-					<div className="min-w-0 flex-1">
+					<button
+						aria-label={`Open milestone ${milestone.name}`}
+						className="min-w-0 flex-1 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						onClick={onClick}
+						type="button"
+					>
 						<div className="mb-1 flex items-center gap-2">
 							<Flag className="size-3.5 shrink-0" style={{ color }} />
 							<Badge
@@ -129,25 +147,20 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 								{milestone.description}
 							</p>
 						)}
-					</div>
+					</button>
 
 					<DropdownMenu>
-						<DropdownMenuTrigger
-							asChild
-							onClick={(event) => event.stopPropagation()}
-						>
+						<DropdownMenuTrigger asChild>
 							<Button
-								className="size-7 shrink-0 opacity-0 group-hover:opacity-100"
+								aria-label={`More actions for ${milestone.name}`}
+								className="size-7 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
 								size="icon"
 								variant="ghost"
 							>
 								<MoreHorizontal className="size-4" />
 							</Button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent
-							align="end"
-							onClick={(event) => event.stopPropagation()}
-						>
+						<DropdownMenuContent align="end">
 							{milestone.status === "planned" && (
 								<DropdownMenuItem
 									onClick={() => handleStatusChange("in_progress")}
@@ -175,7 +188,7 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								className="text-destructive focus:text-destructive"
-								onClick={handleDelete}
+								onClick={() => setConfirmDeleteOpen(true)}
 							>
 								Delete milestone
 							</DropdownMenuItem>
@@ -209,7 +222,12 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 					</div>
 				)}
 
-				{stats && stats.total > 0 ? (
+				{isLoadingStats ? (
+					<div className="mt-3 space-y-1.5">
+						<Skeleton className="h-3.5 w-24" />
+						<Skeleton className="h-1.5 w-full" />
+					</div>
+				) : stats && stats.total > 0 ? (
 					<div className="mt-3 space-y-1.5">
 						<div className="flex justify-between text-muted-foreground text-xs">
 							<span>
@@ -225,6 +243,31 @@ export const MilestoneCard = ({ milestone, onClick }: MilestoneCardProps) => {
 					<p className="mt-3 text-muted-foreground text-xs">No issues linked</p>
 				)}
 			</div>
-		</button>
+
+			<AlertDialog onOpenChange={setConfirmDeleteOpen} open={confirmDeleteOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete milestone?</AlertDialogTitle>
+						<AlertDialogDescription>
+							{stats && stats.total > 0
+								? `"${milestone.name}" will be removed. Its ${stats.total} linked issue${stats.total === 1 ? "" : "s"} stay on the board.`
+								: `"${milestone.name}" will be removed. This can't be undone.`}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							onClick={() => {
+								handleDelete();
+								setConfirmDeleteOpen(false);
+							}}
+						>
+							Delete milestone
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</div>
 	);
 };

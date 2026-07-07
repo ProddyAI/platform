@@ -3,10 +3,10 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
 	Activity,
-	HeartPulse,
 	HelpCircle,
 	Loader,
 	LogOut,
+	MessageCircle,
 	MessageSquare,
 	Settings,
 } from "lucide-react";
@@ -82,12 +82,13 @@ export const UserButton = ({
 		router.replace("/"); // Redirect to homepage after logout
 	};
 
-	const hasHelpLinks = true;
-
 	return (
 		<>
 			<DropdownMenu modal={false}>
-				<DropdownMenuTrigger className="relative outline-none">
+				<DropdownMenuTrigger
+					aria-label="Account menu"
+					className="relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
 					<Avatar className="size-10 transition hover:opacity-75">
 						<AvatarImage alt={name} src={image || undefined} />
 						<AvatarFallback className="text-base">
@@ -105,12 +106,8 @@ export const UserButton = ({
 						Account Settings
 					</DropdownMenuItem>
 
-					{hasHelpLinks && (
-						<>
-							<DropdownMenuSeparator />
-							<DropdownMenuLabel>Help & Resources</DropdownMenuLabel>
-						</>
-					)}
+					<DropdownMenuSeparator />
+					<DropdownMenuLabel>Help & Resources</DropdownMenuLabel>
 
 					{hasFeedbackUrl && (
 						<DropdownMenuItem
@@ -135,7 +132,7 @@ export const UserButton = ({
 					)}
 
 					<DropdownMenuItem onClick={showTidioChat}>
-						<HeartPulse className="mr-2 size-4" />
+						<MessageCircle className="mr-2 size-4" />
 						Chat Support
 					</DropdownMenuItem>
 

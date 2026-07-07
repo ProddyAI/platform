@@ -5,6 +5,15 @@ import { useMutation } from "../../../../liveblocks.config";
 import { cn, colorToCSS, getContrastingTextColor } from "../../../lib/utils";
 import type { NoteLayer } from "../types";
 
+// Minimal sanitization: strip script tags, inline event handlers, and
+// javascript: URIs before handing collaborator-authored HTML to ContentEditable.
+const sanitizeHtml = (html: string) =>
+	html
+		.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+		.replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
+		.replace(/\son\w+\s*=\s*'[^']*'/gi, "")
+		.replace(/javascript:/gi, "");
+
 const calculateFontSize = (width: number, height: number) => {
 	const maxFontSize = 96;
 	const scaleFactor = 0.15;
@@ -62,23 +71,40 @@ export const Note = ({
 			onPointerDown={(e) => onPointerDown(e, id)}
 			style={{
 				outline: selectionColor ? `1px solid ${selectionColor}` : "none",
-				backgroundColor: fill ? colorToCSS(fill) : "#000",
+				backgroundColor: fill ? colorToCSS(fill) : "hsl(var(--muted))",
 			}}
 			width={width}
 			x={x}
 			y={y}
 		>
-			<ContentEditable
-				className={cn(
-					"h-full w-full flex items-center justify-center text-center outline-none"
+			<div className="relative h-full w-full">
+				{!value && (
+					<span
+						className="pointer-events-none absolute inset-0 flex items-center justify-center text-center opacity-50"
+						style={{
+							fontSize: calculateFontSize(width, height),
+							color: fill
+								? getContrastingTextColor(fill)
+								: "hsl(var(--muted-foreground))",
+						}}
+					>
+						Text
+					</span>
 				)}
-				html={value || "Text"}
-				onChange={handleContentChange}
-				style={{
-					fontSize: calculateFontSize(width, height),
-					color: fill ? getContrastingTextColor(fill) : "#000",
-				}}
-			/>
+				<ContentEditable
+					className={cn(
+						"h-full w-full flex items-center justify-center text-center outline-none"
+					)}
+					html={value ? sanitizeHtml(value) : ""}
+					onChange={handleContentChange}
+					style={{
+						fontSize: calculateFontSize(width, height),
+						color: fill
+							? getContrastingTextColor(fill)
+							: "hsl(var(--foreground))",
+					}}
+				/>
+			</div>
 		</foreignObject>
 	);
 };

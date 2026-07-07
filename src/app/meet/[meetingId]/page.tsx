@@ -34,8 +34,11 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { useGetChannel } from "@/features/channels/api/use-get-channel";
 import { LiveblocksRoom } from "@/features/live/components/liveblocks-room";
+import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import {
 	CaptionsOverlay,
 	CustomParticipantList,
@@ -62,6 +65,13 @@ export default function MeetingPage({
 	const searchParams = useSearchParams();
 	const workspaceId = searchParams.get("workspaceId") || "";
 	const channelId = searchParams.get("channelId") || "";
+	const { data: channel } = useGetChannel({
+		id: channelId ? (channelId as Id<"channels">) : undefined,
+	});
+	const { data: workspace } = useGetWorkspace({
+		id: workspaceId ? (workspaceId as Id<"workspaces">) : undefined,
+	});
+	const meetingTitle = channel?.name || workspace?.name || "Meeting";
 
 	const [showNotes, setShowNotes] = useState(false);
 	const [showParticipants, setShowParticipants] = useState(false);
@@ -252,33 +262,29 @@ export default function MeetingPage({
 
 	if (showLeaveModal) {
 		return (
-			<div className="flex h-screen w-full items-center justify-center bg-[#050505] text-white">
-				<div className="bg-[#12121a] border border-white/10 rounded-[32px] p-10 max-w-md w-full text-center space-y-8 shadow-2xl animate-in fade-in zoom-in duration-500">
-					<div className="mx-auto w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center border border-indigo-500/20">
-						<PhoneOff className="w-8 h-8 text-indigo-400" />
+			<div className="flex h-screen w-full items-center justify-center bg-background text-foreground">
+				<div className="bg-card border border-border rounded-3xl p-10 max-w-md w-full text-center space-y-8 shadow-xl animate-in fade-in zoom-in duration-300">
+					<div className="mx-auto w-20 h-20 bg-muted rounded-full flex items-center justify-center border border-border">
+						<PhoneOff className="w-8 h-8 text-muted-foreground" />
 					</div>
 					<div className="space-y-2">
 						<h2 className="text-3xl font-bold tracking-tight">Meeting Ended</h2>
 						{liveTranscript && (
-							<p className="text-gray-400 text-sm">
-								Your transcript and AI intelligence have been safely saved to
-								your workspace.
+							<p className="text-muted-foreground text-sm">
+								Transcript saved to your workspace.
 							</p>
 						)}
-						<p className="text-xs font-mono text-indigo-500/60 uppercase tracking-widest pt-2">
+						<p className="text-xs font-mono text-muted-foreground uppercase tracking-widest pt-2">
 							Duration: {elapsed}
 						</p>
 					</div>
 
 					<div className="flex flex-col gap-3 pt-4">
-						<Button
-							className="rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white h-12 font-bold shadow-lg shadow-indigo-500/20"
-							onClick={goToWorkspace}
-						>
+						<Button className="h-12 font-bold" onClick={goToWorkspace}>
 							Return to Workspace
 						</Button>
 						<Button
-							className="rounded-2xl border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 h-12 font-semibold"
+							className="h-12 font-semibold"
 							onClick={() => {
 								setShowLeaveModal(false);
 								call?.join({ create: true });
@@ -295,13 +301,15 @@ export default function MeetingPage({
 
 	if (isLoading || !user || !client || !call) {
 		return (
-			<div className="flex h-screen items-center justify-center bg-[#0a0a12] text-white">
+			<div className="flex h-screen items-center justify-center bg-background text-foreground">
 				<div className="flex flex-col items-center gap-4">
 					<div className="relative">
-						<div className="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping" />
-						<Loader2 className="h-8 w-8 animate-spin text-indigo-400 relative" />
+						<div className="absolute inset-0 rounded-full bg-secondary/20 motion-safe:animate-ping" />
+						<Loader2 className="h-8 w-8 animate-spin text-secondary relative" />
 					</div>
-					<p className="text-gray-400 font-medium">Joining meeting room...</p>
+					<p className="text-muted-foreground font-medium">
+						Joining meeting room...
+					</p>
 				</div>
 			</div>
 		);
@@ -311,9 +319,9 @@ export default function MeetingPage({
 
 	return (
 		<LiveblocksRoom roomId={`meeting-${params.meetingId}`} roomType="note">
-			<div className="relative flex h-screen w-full bg-[#0a0a12] overflow-hidden text-white font-sans flex-col">
+			<div className="relative flex h-screen w-full bg-[#1c1e21] overflow-hidden text-white font-sans flex-col">
 				{handRaised && (
-					<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 animate-bounce shadow-lg shadow-amber-500/25">
+					<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg shadow-amber-500/25 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-300">
 						<Hand className="w-4 h-4" /> Your hand is raised
 					</div>
 				)}
@@ -322,14 +330,14 @@ export default function MeetingPage({
 					className="absolute top-0 left-0 right-0 h-14 z-40 flex items-center justify-between px-6"
 					style={{
 						background:
-							"linear-gradient(to bottom, rgba(10,10,18,0.8), transparent)",
+							"linear-gradient(to bottom, rgba(28,30,33,0.8), transparent)",
 					}}
 				>
 					<div className="flex items-center gap-3">
 						<div className="flex -space-x-2">
 							{[user].map((u, i) => (
 								<div
-									className="w-8 h-8 rounded-full border-2 border-[#0a0a12] bg-indigo-500 flex items-center justify-center text-[10px] font-bold shadow-lg"
+									className="w-8 h-8 rounded-full border-2 border-[#1c1e21] bg-secondary flex items-center justify-center text-[10px] font-bold shadow-lg"
 									key={i}
 								>
 									{u.name?.[0]?.toUpperCase() || "A"}
@@ -337,11 +345,11 @@ export default function MeetingPage({
 							))}
 						</div>
 						<div className="h-4 w-px bg-white/20 mx-1" />
-						<div className="flex flex-col">
-							<span className="text-[13px] font-semibold tracking-tight">
-								{params.meetingId.slice(0, 8)}...
+						<div className="flex flex-col min-w-0">
+							<span className="text-[13px] font-semibold tracking-tight truncate max-w-[220px]">
+								{meetingTitle}
 							</span>
-							<span className="text-[10px] text-indigo-400 font-medium tracking-wider uppercase">
+							<span className="text-[10px] text-secondary font-medium tracking-wider uppercase">
 								{elapsed}
 							</span>
 						</div>
@@ -372,7 +380,7 @@ export default function MeetingPage({
 				</div>
 
 				<div className="flex-1 flex min-h-0 pt-14">
-					<div className="flex-1 relative bg-[#050505]">
+					<div className="flex-1 relative bg-[#1c1e21]">
 						<StreamVideo client={client}>
 							<StreamCall call={call}>
 								<StreamTheme>
@@ -398,7 +406,7 @@ export default function MeetingPage({
 					</div>
 
 					{sidebarOpen && (
-						<div className="w-[380px] bg-[#0a0a12] border-l border-white/10 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+						<div className="w-[380px] bg-[#1c1e21] border-l border-white/10 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
 							{showNotes && (
 								<NotesSidebar
 									isRecording={isRecording}
@@ -442,16 +450,16 @@ export default function MeetingPage({
 					)}
 				</div>
 
-				<div className="h-20 bg-[#0a0a12] border-t border-white/10 flex items-center justify-between px-8 z-40">
+				<div className="h-20 bg-[#1c1e21] border-t border-white/10 flex items-center justify-between px-8 z-40">
 					<div className="flex items-center gap-4 w-1/3">
 						<div className="bg-white/5 rounded-2xl px-4 py-2 border border-white/5 flex items-center gap-3">
-							<Presentation className="w-4 h-4 text-indigo-400" />
-							<div className="flex flex-col">
+							<Presentation className="w-4 h-4 text-secondary" />
+							<div className="flex flex-col min-w-0">
 								<span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
-									Project Space
+									Meeting
 								</span>
-								<span className="text-xs font-semibold text-white">
-									{params.meetingId.slice(0, 12)}
+								<span className="text-xs font-semibold text-white truncate">
+									{meetingTitle}
 								</span>
 							</div>
 						</div>
@@ -477,7 +485,7 @@ export default function MeetingPage({
 
 					<div className="flex items-center justify-end gap-2 w-1/3">
 						<Button
-							className={`w-11 h-11 rounded-2xl border-none transition-all ${showChat ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "bg-white/5 hover:bg-white/10 text-gray-400"}`}
+							className={`w-11 h-11 rounded-2xl border-none transition-all ${showChat ? "bg-secondary text-white shadow-lg shadow-secondary/20" : "bg-white/5 hover:bg-white/10 text-gray-400"}`}
 							onClick={() => {
 								setShowChat(!showChat);
 								setShowNotes(false);
@@ -489,7 +497,7 @@ export default function MeetingPage({
 							<MessageSquare className="w-5 h-5" />
 						</Button>
 						<Button
-							className={`w-11 h-11 rounded-2xl border-none transition-all ${showParticipants ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "bg-white/5 hover:bg-white/10 text-gray-400"}`}
+							className={`w-11 h-11 rounded-2xl border-none transition-all ${showParticipants ? "bg-secondary text-white shadow-lg shadow-secondary/20" : "bg-white/5 hover:bg-white/10 text-gray-400"}`}
 							onClick={() => {
 								setShowParticipants(!showParticipants);
 								setShowNotes(false);
@@ -502,7 +510,7 @@ export default function MeetingPage({
 						</Button>
 						<div className="w-px h-6 bg-white/10 mx-1" />
 						<Button
-							className={`px-5 h-11 rounded-2xl border-none transition-all gap-2 font-semibold ${showNotes ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400"}`}
+							className={`px-5 h-11 rounded-2xl border-none transition-all gap-2 font-semibold ${showNotes ? "bg-secondary text-white shadow-lg shadow-secondary/20" : "bg-secondary/10 hover:bg-secondary/20 text-secondary"}`}
 							onClick={() => {
 								setShowNotes(!showNotes);
 								setShowChat(false);
@@ -552,7 +560,7 @@ function BottomBarControls({
 	return (
 		<div className="flex items-center gap-3 bg-white/5 p-1.5 rounded-full border border-white/10 shadow-inner">
 			<Button
-				className={`w-11 h-11 rounded-full border-none transition-all ${micMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#3c4043] hover:bg-[#4d5154]"} text-white`}
+				className={`w-11 h-11 rounded-full border-none transition-all ${micMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#232529] hover:bg-[#2a2c32]"} text-white`}
 				onClick={() => microphone.toggle()}
 				size="icon"
 				variant="outline"
@@ -565,7 +573,7 @@ function BottomBarControls({
 			</Button>
 
 			<Button
-				className={`w-11 h-11 rounded-full border-none transition-all ${camMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#3c4043] hover:bg-[#4d5154]"} text-white`}
+				className={`w-11 h-11 rounded-full border-none transition-all ${camMuted ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20" : "bg-[#232529] hover:bg-[#2a2c32]"} text-white`}
 				onClick={() => camera.toggle()}
 				size="icon"
 				variant="outline"
@@ -578,7 +586,7 @@ function BottomBarControls({
 			</Button>
 
 			<Button
-				className={`w-11 h-11 rounded-full border-none transition-all ${isScreenSharing ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20" : "bg-[#3c4043] hover:bg-[#4d5154]"} text-white`}
+				className={`w-11 h-11 rounded-full border-none transition-all ${isScreenSharing ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20" : "bg-[#232529] hover:bg-[#2a2c32]"} text-white`}
 				onClick={() => screenShare.toggle()}
 				size="icon"
 				variant="outline"
@@ -587,7 +595,7 @@ function BottomBarControls({
 			</Button>
 
 			<Button
-				className={`w-11 h-11 rounded-full border-none transition-all ${handRaised ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-[#3c4043] hover:bg-[#4d5154] text-white"}`}
+				className={`w-11 h-11 rounded-full border-none transition-all ${handRaised ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-[#232529] hover:bg-[#2a2c32] text-white"}`}
 				onClick={toggleHandRaise}
 				size="icon"
 				variant="outline"
@@ -614,7 +622,7 @@ function BottomBarControls({
 			<style global jsx>{`
 				/* Speaker Aura Highlight */
 				.str-video__participant-tile--speaking {
-					box-shadow: 0 0 0 4px #6366f1 !important;
+					box-shadow: 0 0 0 4px hsl(var(--secondary)) !important;
 					border-radius: 24px !important;
 					position: relative;
 				}
@@ -625,11 +633,16 @@ function BottomBarControls({
 					border-radius: 32px;
 					background: radial-gradient(
 						circle at center,
-						rgba(99, 102, 241, 0.3) 0%,
+						hsl(var(--secondary) / 0.3) 0%,
 						transparent 70%
 					);
 					z-index: -1;
-					animation: speakerPulse 2s infinite ease-in-out;
+					opacity: 0.6;
+				}
+				@media (prefers-reduced-motion: no-preference) {
+					.str-video__participant-tile--speaking::after {
+						animation: speakerPulse 2s infinite ease-in-out;
+					}
 				}
 				@keyframes speakerPulse {
 					0%,
@@ -646,7 +659,7 @@ function BottomBarControls({
 				.str-video__participant-tile {
 					border-radius: 24px !important;
 					overflow: hidden !important;
-					background: #12121a !important;
+					background: #232529 !important;
 					border: 1px solid rgba(255, 255, 255, 0.05) !important;
 				}
 			`}</style>

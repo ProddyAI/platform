@@ -1,13 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
-import {
-	Brain,
-	CheckSquare,
-	FileText,
-	Loader2,
-	Sparkles,
-	Target,
-	X,
-} from "lucide-react";
+import { Brain, CheckSquare, FileText, Loader2, Target, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
@@ -41,6 +33,9 @@ export const MeetingNotesPanel = ({
 	const generations = useQuery(api.content.meetingNotes.getGenerations, {
 		roomId,
 	});
+	// Single source of truth for "current" action items — both the list
+	// below and Push to Tasks read from this, so they can't diverge.
+	const latestGeneration = generations?.[generations?.length - 1];
 
 	const { meetingNotes, isListening, triggerGenerateInsights } =
 		useMeetingTranscription(
@@ -87,7 +82,7 @@ export const MeetingNotesPanel = ({
 				icon: "✨",
 				tags: ["AI", "Meeting"],
 			});
-			toast.success("Notes saved to your workspace library!");
+			toast.success("Saved to your workspace library");
 		} catch (_e) {
 			toast.error("Failed to save to library");
 		} finally {
@@ -124,18 +119,49 @@ export const MeetingNotesPanel = ({
 		);
 	};
 
+	const handlePushToTasks = async () => {
+		if (
+			!latestGeneration?.actionItems ||
+			latestGeneration.actionItems.length === 0
+		) {
+			toast.error("No action items to push");
+			return;
+		}
+		setIsPushingTasks(true);
+		try {
+			await createBulkTasks({
+				workspaceId: workspaceId as Id<"workspaces">,
+				tasks: latestGeneration.actionItems.map((t) => ({
+					title: t.title,
+					// AI-generated assigneeUserId is a plain string,
+					// not guaranteed to be a valid Id<"users">
+					assigneeUserId: (t.assigneeUserId || undefined) as
+						| Id<"users">
+						| undefined,
+					priority: t.priority || "medium",
+				})),
+			});
+			toast.success(`Added ${latestGeneration.actionItems.length} tasks`);
+		} catch (_e) {
+			toast.error("Failed to push tasks");
+		} finally {
+			setIsPushingTasks(false);
+		}
+	};
+
 	return (
-		<div className="w-[400px] bg-[#1A1D21] border-l border-[#2B2D31] flex flex-col h-full text-white shadow-2xl z-[100] animate-in slide-in-from-right duration-300">
+		<div className="w-[400px] bg-card border-l border-border flex flex-col h-full text-card-foreground shadow-2xl z-[100] animate-in slide-in-from-right duration-300">
 			{/* Header */}
-			<div className="flex items-center justify-between p-4 border-b border-[#2B2D31]">
+			<div className="flex items-center justify-between p-4 border-b border-border">
 				<div className="flex items-center gap-2">
-					<Brain className="w-5 h-5 text-indigo-400" />
-					<h2 className="font-semibold text-lg text-gray-100">
+					<Brain className="w-5 h-5 text-primary" />
+					<h2 className="font-semibold text-lg text-foreground">
 						AI Meeting Notes
 					</h2>
 				</div>
 				<Button
-					className="text-gray-400 hover:text-white"
+					aria-label="Close meeting notes panel"
+					className="text-muted-foreground hover:text-foreground"
 					onClick={onClose}
 					size="icon"
 					variant="ghost"
@@ -145,63 +171,39 @@ export const MeetingNotesPanel = ({
 			</div>
 
 			{/* Status / Trigger */}
-			<div className="p-4 border-b border-[#2B2D31] bg-[#1E2125]">
-				<div className="flex flex-col gap-3">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2">
-							<div
-								className={`w-2 h-2 rounded-full ${isListening ? "bg-red-500 animate-pulse" : "bg-gray-500"}`}
-							/>
-							<span className="text-xs text-gray-400">
-								{isListening ? "Listening..." : "Microphone muted"}
-							</span>
-						</div>
-						<div className="flex gap-2">
-							{meetingNotes?.status === "completed" && (
-								<Button
-									className="bg-green-600 hover:bg-green-700 text-white border-0 text-xs px-3 h-8"
-									onClick={handleInsertToNote}
-									size="sm"
-									variant="secondary"
-								>
-									Insert into Note
-								</Button>
-							)}
-							<Button
-								className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 text-xs px-3 h-8"
-								disabled={
-									!meetingNotes?.transcript ||
-									meetingNotes.status === "generating"
-								}
-								onClick={handleGenerate}
-								size="sm"
-								variant="secondary"
-							>
-								{meetingNotes?.status === "generating" ? (
-									<Loader2 className="w-3 h-3 animate-spin mr-2" />
-								) : null}
-								{meetingNotes?.status === "completed"
-									? "Regenerate"
-									: "Generate AI Notes"}
-							</Button>
-						</div>
+			<div className="p-4 border-b border-border bg-muted/40">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<div
+							className={`w-2 h-2 rounded-full ${isListening ? "bg-destructive animate-pulse" : "bg-muted-foreground/40"}`}
+						/>
+						<span className="text-xs text-muted-foreground">
+							{isListening ? "Listening..." : "Microphone muted"}
+						</span>
 					</div>
-
-					{meetingNotes?.summary && (
+					<div className="flex gap-2">
+						{meetingNotes?.status === "completed" && (
+							<Button
+								className="text-xs px-3 h-8"
+								onClick={handleInsertToNote}
+								size="sm"
+								variant="outline"
+							>
+								Insert into Note
+							</Button>
+						)}
 						<Button
-							className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-xs h-8 gap-2"
-							disabled={isSavingNote}
-							onClick={handleSaveToLibrary}
+							className="text-xs px-3 h-8"
+							disabled={!meetingNotes?.transcript}
+							loading={meetingNotes?.status === "generating"}
+							onClick={handleGenerate}
 							size="sm"
 						>
-							{isSavingNote ? (
-								<Loader2 className="w-3 h-3 animate-spin" />
-							) : (
-								<Sparkles className="w-3.5 h-3.5" />
-							)}
-							Save to Workspace Note Library
+							{meetingNotes?.status === "completed"
+								? "Regenerate"
+								: "Generate AI Notes"}
 						</Button>
-					)}
+					</div>
 				</div>
 			</div>
 
@@ -211,24 +213,15 @@ export const MeetingNotesPanel = ({
 				onValueChange={setActiveTab}
 				value={activeTab}
 			>
-				<div className="px-4 pt-4 border-b border-[#2B2D31]">
-					<TabsList className="bg-[#2B2D31] w-full p-1 h-9 rounded-md grid grid-cols-3">
-						<TabsTrigger
-							className="text-xs data-[state=active]:bg-[#1A1D21] data-[state=active]:text-white text-gray-400"
-							value="transcript"
-						>
+				<div className="px-4 pt-4 border-b border-border">
+					<TabsList className="w-full h-9 grid grid-cols-3">
+						<TabsTrigger className="text-xs" value="transcript">
 							Transcript
 						</TabsTrigger>
-						<TabsTrigger
-							className="text-xs data-[state=active]:bg-[#1A1D21] data-[state=active]:text-white text-gray-400"
-							value="summary"
-						>
+						<TabsTrigger className="text-xs" value="summary">
 							Summary
 						</TabsTrigger>
-						<TabsTrigger
-							className="text-xs data-[state=active]:bg-[#1A1D21] data-[state=active]:text-white text-gray-400"
-							value="actionItems"
-						>
+						<TabsTrigger className="text-xs" value="actionItems">
 							Action Items
 						</TabsTrigger>
 					</TabsList>
@@ -242,12 +235,12 @@ export const MeetingNotesPanel = ({
 					<ScrollArea className="h-full p-4">
 						{meetingNotes?.transcript ? (
 							<div className="space-y-4">
-								<p className="text-sm text-gray-300 leading-relaxed font-mono">
+								<p className="text-sm text-muted-foreground leading-relaxed font-mono">
 									{meetingNotes.transcript}
 								</p>
 							</div>
 						) : (
-							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500">
+							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
 								<FileText className="w-8 h-8 mb-3 opacity-20" />
 								<p className="text-sm">No transcript yet.</p>
 								<p className="text-xs mt-1">
@@ -262,18 +255,30 @@ export const MeetingNotesPanel = ({
 				<TabsContent className="flex-1 p-0 m-0 overflow-hidden" value="summary">
 					<ScrollArea className="h-full p-4">
 						{meetingNotes?.status === "generating" ? (
-							<div className="flex flex-col items-center justify-center h-full py-12 text-gray-400">
-								<Loader2 className="w-8 h-8 animate-spin mb-4 text-indigo-500" />
+							<div className="flex flex-col items-center justify-center h-full py-12 text-muted-foreground">
+								<Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
 								<p className="text-sm">Analyzing conversation...</p>
 							</div>
 						) : meetingNotes?.summary ? (
 							<div className="space-y-6">
 								<div>
-									<h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-										<FileText className="w-4 h-4 text-blue-400" /> Executive
-										Summary
-									</h3>
-									<p className="text-sm text-gray-300 leading-relaxed bg-[#2B2D31] p-3 rounded-md">
+									<div className="flex items-center justify-between mb-2">
+										<h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+											<FileText className="w-4 h-4 text-muted-foreground" />{" "}
+											Executive Summary
+										</h3>
+										<Button
+											className="h-7 text-xs shrink-0"
+											disabled={isSavingNote}
+											loading={isSavingNote}
+											onClick={handleSaveToLibrary}
+											size="sm"
+											variant="outline"
+										>
+											Save to Library
+										</Button>
+									</div>
+									<p className="text-sm text-muted-foreground leading-relaxed bg-muted p-3 rounded-md">
 										{meetingNotes.summary}
 									</p>
 								</div>
@@ -281,17 +286,17 @@ export const MeetingNotesPanel = ({
 								{meetingNotes.decisions &&
 									meetingNotes.decisions.length > 0 && (
 										<div>
-											<h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-												<Target className="w-4 h-4 text-green-400" /> Key
+											<h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+												<Target className="w-4 h-4 text-muted-foreground" /> Key
 												Decisions
 											</h3>
 											<ul className="space-y-2">
 												{meetingNotes.decisions.map((decision, i) => (
 													<li
-														className="text-sm text-gray-300 flex items-start gap-2 bg-[#2B2D31] p-2.5 rounded-md"
-														key={i}
+														className="text-sm text-muted-foreground flex items-start gap-2 bg-muted p-2.5 rounded-md"
+														key={`${decision}-${i}`}
 													>
-														<div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0" />
+														<div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
 														<span>{decision}</span>
 													</li>
 												))}
@@ -300,7 +305,7 @@ export const MeetingNotesPanel = ({
 									)}
 							</div>
 						) : (
-							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500">
+							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
 								<Brain className="w-8 h-8 mb-3 opacity-20" />
 								<p className="text-sm">Summary not generated yet.</p>
 								<p className="text-xs mt-1">
@@ -318,77 +323,44 @@ export const MeetingNotesPanel = ({
 				>
 					<ScrollArea className="h-full p-4">
 						{meetingNotes?.status === "generating" ? (
-							<div className="flex flex-col items-center justify-center h-full py-12 text-gray-400">
-								<Loader2 className="w-8 h-8 animate-spin mb-4 text-indigo-500" />
+							<div className="flex flex-col items-center justify-center h-full py-12 text-muted-foreground">
+								<Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
 								<p className="text-sm">Extracting action items...</p>
 							</div>
-						) : meetingNotes?.actionItems &&
-							meetingNotes.actionItems.length > 0 ? (
+						) : latestGeneration?.actionItems &&
+							latestGeneration.actionItems.length > 0 ? (
 							<div className="space-y-3">
 								<div className="flex items-center justify-between mb-3">
-									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<CheckSquare className="w-4 h-4 text-orange-400" /> Action
-										Items
+									<h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+										<CheckSquare className="w-4 h-4 text-muted-foreground" />{" "}
+										Action Items
 									</h3>
 									<Button
-										className="h-7 text-[10px] font-bold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
-										disabled={
-											isPushingTasks || !generations || generations.length === 0
-										}
-										onClick={async () => {
-											try {
-												setIsPushingTasks(true);
-												const latestGen =
-													generations?.[generations?.length - 1];
-												if (!latestGen?.actionItems) {
-													toast.error("No action items to push");
-													return;
-												}
-												await createBulkTasks({
-													workspaceId: workspaceId as Id<"workspaces">,
-													tasks: latestGen.actionItems.map((t) => ({
-														title: t.title,
-														// AI-generated assigneeUserId is a plain string,
-														// not guaranteed to be a valid Id<"users">
-														assigneeUserId: (t.assigneeUserId || undefined) as
-															| Id<"users">
-															| undefined,
-														priority: t.priority || "medium",
-													})),
-												});
-												toast.success(
-													`Successfully pushed ${latestGen.actionItems.length} tasks to dashboard!`
-												);
-											} catch (_e) {
-												toast.error("Failed to push tasks");
-											} finally {
-												setIsPushingTasks(false);
-											}
-										}}
+										className="h-7 text-xs gap-1"
+										disabled={isPushingTasks}
+										loading={isPushingTasks}
+										onClick={handlePushToTasks}
 										size="sm"
+										variant="outline"
 									>
-										{isPushingTasks ? (
-											<Loader2 className="w-3 h-3 animate-spin" />
-										) : (
-											<Target className="w-3 h-3" />
-										)}
+										{!isPushingTasks && <Target className="w-3 h-3" />}
 										Push to Tasks
 									</Button>
 								</div>
-								{meetingNotes.actionItems.map((task, i) => (
+								{latestGeneration.actionItems.map((task, i) => (
 									<div
-										className="flex items-start gap-3 bg-[#2B2D31] p-3 rounded-md border border-[#3A3D42]"
-										key={i}
+										className="flex items-start gap-3 bg-muted p-3 rounded-md border border-border"
+										key={`${task.title}-${i}`}
 									>
 										<div className="mt-0.5">
-											<div className="w-4 h-4 rounded border border-gray-500" />
+											<div className="w-4 h-4 rounded border border-muted-foreground/40" />
 										</div>
-										<p className="text-sm text-gray-200">{task}</p>
+										<p className="text-sm text-foreground">{task.title}</p>
 									</div>
 								))}
 							</div>
 						) : (
-							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500">
+							<div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
 								<CheckSquare className="w-8 h-8 mb-3 opacity-20" />
 								<p className="text-sm">No action items found.</p>
 							</div>

@@ -1,5 +1,5 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { TriangleAlert } from "lucide-react";
+import { Loader, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
@@ -174,7 +174,14 @@ export const SignUpCard = ({
 						size="lg"
 						type="submit"
 					>
-						Continue
+						{pending ? (
+							<>
+								<Loader className="mr-2 size-4 animate-spin" />
+								Continuing…
+							</>
+						) : (
+							"Continue"
+						)}
 					</Button>
 				</form>
 
@@ -206,7 +213,7 @@ export const SignUpCard = ({
 					</Button>
 				</div>
 
-				<p className="text-center text-xs text-primary">
+				<p className="text-center text-xs text-muted-foreground">
 					Already have an account?{" "}
 					{isStandalone ? (
 						<Link

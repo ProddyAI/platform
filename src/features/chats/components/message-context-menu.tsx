@@ -1,9 +1,16 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useContextMenu } from "@/contexts/context-menu-context";
 import { useMessageSelection } from "@/contexts/message-selection-context";
-import { cn } from "@/lib/utils";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 interface MessageContextMenuProps {
@@ -34,94 +41,73 @@ export const MessageContextMenu = ({
 	};
 
 	return (
-		<div
-			className="context-menu fixed border border-gray-200 dark:border-gray-600 rounded-lg shadow-2xl z-[9999999] min-w-[180px] overflow-hidden bg-white dark:bg-[#1a1a1a]"
-			onClick={(e) => e.stopPropagation()}
-			onKeyDown={(e) => e.stopPropagation()}
-			role="dialog"
-			style={{
-				left: `${contextMenu.x}px`,
-				top: `${contextMenu.y}px`,
-				pointerEvents: "auto",
+		<DropdownMenu
+			onOpenChange={(open) => {
+				if (!open) {
+					closeContextMenu();
+				}
 			}}
-			tabIndex={-1}
+			open
 		>
-			{/* Message Actions Section */}
-			<div>
+			<DropdownMenuTrigger asChild>
+				{/* Invisible anchor positioned at the cursor; the real menu is Radix's
+				 * portaled, focus-trapped, keyboard-navigable DropdownMenuContent below. */}
 				<button
-					className={cn(
-						"w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors",
-						isSelected
-							? "bg-blue-50 dark:bg-gray-800 text-blue-600 dark:text-blue-300 font-medium"
-							: "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-					)}
-					onClick={() => handleAction("select")}
+					aria-hidden="true"
+					className="fixed h-0 w-0"
+					style={{ left: contextMenu.x, top: contextMenu.y }}
+					tabIndex={-1}
 					type="button"
-				>
-					{isSelected ? "✓ Selected" : "Select Message"}
-				</button>
-				<button
-					className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-					onClick={() => handleAction("copy")}
-					type="button"
-				>
-					Copy Message
-				</button>
-			</div>
-
-			<hr className="my-1 border-gray-200 dark:border-gray-700" />
-
-			{/* Primary Action */}
-			<button
-				className="w-full px-4 py-2.5 text-left text-sm bg-primary text-white hover:bg-primary/90 dark:bg-purple-600 dark:hover:bg-purple-700 flex items-center gap-2 font-medium transition-colors"
-				onClick={() => handleAction("addToTask")}
-				type="button"
+				/>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent
+				align="start"
+				className="min-w-[180px]"
+				onClick={(e) => e.stopPropagation()}
+				onCloseAutoFocus={(e) => e.preventDefault()}
+				side="bottom"
 			>
-				<Plus className="h-4 w-4" />
-				Add as Task
-			</button>
+				<DropdownMenuCheckboxItem
+					checked={isSelected}
+					onCheckedChange={() => handleAction("select")}
+				>
+					{isSelected ? "Selected" : "Select Message"}
+				</DropdownMenuCheckboxItem>
+				<DropdownMenuItem onClick={() => handleAction("copy")}>
+					Copy Message
+				</DropdownMenuItem>
 
-			<hr className="my-1 border-gray-200 dark:border-gray-700" />
+				<DropdownMenuSeparator />
 
-			{/* Edit/Delete Section (Author only) */}
-			{isAuthor && (
-				<div>
-					{isAuthor && (
-						<button
-							className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-							onClick={() => handleAction("edit")}
-							type="button"
-						>
+				<DropdownMenuItem onClick={() => handleAction("addToTask")}>
+					<Plus className="mr-2 h-4 w-4" />
+					Add as Task
+				</DropdownMenuItem>
+
+				{isAuthor && (
+					<>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem onClick={() => handleAction("edit")}>
 							Edit
-						</button>
-					)}
-					{isAuthor && (
-						<button
-							className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 transition-colors"
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							className="text-destructive focus:text-destructive"
 							onClick={() => handleAction("delete")}
-							type="button"
 						>
 							Delete
-						</button>
-					)}
-				</div>
-			)}
+						</DropdownMenuItem>
+					</>
+				)}
 
-			{/* Thread Section */}
-			{!hideThreadButton && (
-				<>
-					{isAuthor && (
-						<hr className="my-1 border-gray-200 dark:border-gray-700" />
-					)}
-					<button
-						className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-						onClick={() => handleAction("reply")}
-						type="button"
-					>
-						Reply in Thread
-					</button>
-				</>
-			)}
-		</div>
+				{!hideThreadButton && (
+					<>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem onClick={() => handleAction("reply")}>
+							Reply in Thread
+						</DropdownMenuItem>
+					</>
+				)}
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 };

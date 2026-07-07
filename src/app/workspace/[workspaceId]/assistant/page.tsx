@@ -3,18 +3,22 @@
 import { Bot, Loader } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
 import { DashboardChatbot } from "@/features/dashboard/components/dashboard-chatbot";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../toolbar";
+import {
+	useSetWorkspaceTitle,
+	WorkspaceTitle,
+} from "../workspace-title-context";
 
 const AssistantPage = () => {
 	// Set document title
 	useDocumentTitle("Proddy AI");
+
+	useSetWorkspaceTitle(<WorkspaceTitle icon={Bot} label="Proddy AI" />);
 
 	const workspaceId = useWorkspaceId();
 
@@ -61,16 +65,6 @@ const AssistantPage = () => {
 
 	return (
 		<div className="flex h-full flex-col">
-			<WorkspaceToolbar>
-				<Button
-					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
-					size="sm"
-					variant="ghost"
-				>
-					<Bot className="mr-2 size-5" />
-					<span className="truncate">Proddy AI</span>
-				</Button>
-			</WorkspaceToolbar>
 			<div className="flex flex-1 overflow-hidden p-4 md:p-6">
 				<div className="flex w-full flex-col">
 					{/* Full-width Proddy AI Chatbot */}

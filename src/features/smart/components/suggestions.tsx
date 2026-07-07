@@ -12,13 +12,6 @@ interface SuggestionsProps {
 	channelName?: string;
 }
 
-// Fallback suggestions in case the API fails
-const FALLBACK_SUGGESTIONS = [
-	"I'll look into this and get back to you soon.",
-	"Could we schedule a meeting to discuss this further?",
-	"Thanks for sharing! This is really helpful.",
-];
-
 // Empty channel suggestions
 const EMPTY_CHANNEL_SUGGESTIONS = [
 	"Let's start a conversation!",
@@ -33,6 +26,7 @@ export const Suggestions = ({
 	const channelId = useChannelId();
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [hasError, setHasError] = useState(false);
 	const [lastMessageId, setLastMessageId] = useState<string | null>(null);
 
 	// Get recent channel messages - always enabled since we only show this component for channels
@@ -47,55 +41,54 @@ export const Suggestions = ({
 	const fetchSuggestions = useCallback(async () => {
 		if (!channelMessages || channelMessages.length === 0) {
 			setSuggestions(EMPTY_CHANNEL_SUGGESTIONS);
+			setHasError(false);
 			return;
 		}
 
-		try {
-			setIsLoading(true);
+		setIsLoading(true);
+		setHasError(false);
 
-			// Validate message format before sending
-			const validMessages = channelMessages.filter((msg) => {
-				return msg?.id && msg.authorName;
+		// Validate message format before sending
+		const validMessages = channelMessages.filter((msg) => {
+			return msg?.id && msg.authorName;
+		});
+
+		if (validMessages.length === 0) {
+			setSuggestions(EMPTY_CHANNEL_SUGGESTIONS);
+			setIsLoading(false);
+			return;
+		}
+
+		const payload = {
+			messages: validMessages,
+			channelName,
+		};
+
+		try {
+			const response = await fetch("/api/smart/suggestions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(payload),
 			});
 
-			if (validMessages.length === 0) {
-				setSuggestions(EMPTY_CHANNEL_SUGGESTIONS);
-				setIsLoading(false);
+			if (!response.ok) {
+				setSuggestions([]);
+				setHasError(true);
 				return;
 			}
 
-			const payload = {
-				messages: validMessages,
-				channelName,
-			};
+			const data = await response.json();
 
-			try {
-				const response = await fetch("/api/smart/suggestions", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(payload),
-				});
-
-				if (!response.ok) {
-					setSuggestions(FALLBACK_SUGGESTIONS);
-					setIsLoading(false);
-					return;
-				}
-
-				const data = await response.json();
-
-				if (data.suggestions && data.suggestions.length > 0) {
-					setSuggestions(data.suggestions);
-				} else {
-					setSuggestions(EMPTY_CHANNEL_SUGGESTIONS);
-				}
-			} catch (_fetchError) {
+			if (data.suggestions && data.suggestions.length > 0) {
+				setSuggestions(data.suggestions);
+			} else {
 				setSuggestions(EMPTY_CHANNEL_SUGGESTIONS);
 			}
 		} catch (_error) {
-			setSuggestions(EMPTY_CHANNEL_SUGGESTIONS);
+			setSuggestions([]);
+			setHasError(true);
 		} finally {
 			setIsLoading(false);
 		}
@@ -116,22 +109,17 @@ export const Suggestions = ({
 		}
 	}, [channelMessages, lastMessageId, fetchSuggestions]);
 
-	// Initial fetch of suggestions when component mounts or context changes
+	// Initial fetch of suggestions once messages have resolved
 	useEffect(() => {
-		if (channelId && !channelMessagesLoading) {
-			// Delay to ensure messages are fully loaded
-			const timer = setTimeout(() => {
-				if (channelMessages && channelMessages.length > 0) {
-					fetchSuggestions();
-				} else {
-					// Empty channel suggestions
-					setSuggestions(EMPTY_CHANNEL_SUGGESTIONS);
-				}
-			}, 1000); // Reduced delay to 1 second
-
-			return () => clearTimeout(timer);
+		if (!channelId || channelMessagesLoading) {
+			return;
 		}
-		return undefined;
+
+		if (channelMessages && channelMessages.length > 0) {
+			fetchSuggestions();
+		} else {
+			setSuggestions(EMPTY_CHANNEL_SUGGESTIONS);
+		}
 	}, [channelId, channelMessagesLoading, channelMessages, fetchSuggestions]);
 
 	// Refresh suggestions manually
@@ -156,7 +144,7 @@ export const Suggestions = ({
 		<div className="mb-2 flex flex-col space-y-2 rounded-md border border-border/30 bg-muted/20 p-2">
 			<div className="flex items-center">
 				<div className="flex items-center gap-1 text-xs text-muted-foreground">
-					<Sparkles className="size-3 text-violet-500" />
+					<Sparkles className="size-3 text-primary" />
 					<span>{getContextLabel()}</span>
 				</div>
 				<div className="ml-auto">
@@ -191,6 +179,18 @@ export const Suggestions = ({
 							{suggestion}
 						</Button>
 					))
+				) : hasError ? (
+					<div className="flex w-full items-center justify-center gap-1.5 text-xs text-muted-foreground">
+						<span>Suggestions unavailable</span>
+						<Button
+							className="h-auto p-0 text-xs text-primary"
+							onClick={refreshSuggestions}
+							size="sm"
+							variant="link"
+						>
+							Retry
+						</Button>
+					</div>
 				) : (
 					<div className="w-full text-center text-xs text-muted-foreground">
 						{isLoading

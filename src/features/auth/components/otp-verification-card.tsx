@@ -25,6 +25,9 @@ interface OTPVerificationCardProps {
 	onBack?: () => void;
 }
 
+const otpSlotClassName =
+	"w-12 h-12 text-lg border-2 rounded-xl hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200";
+
 export const OTPVerificationCard = ({
 	email,
 	onBack,
@@ -169,7 +172,7 @@ export const OTPVerificationCard = ({
 				body: JSON.stringify({ email }),
 			});
 
-			await parseJsonResponse(response, "Failed to resend OTP");
+			await parseJsonResponse(response, "Failed to resend code");
 
 			// Reset cooldown
 			setResendCooldown(60);
@@ -178,7 +181,7 @@ export const OTPVerificationCard = ({
 			if (err instanceof Error) {
 				setError(err.message);
 			} else {
-				setError("Failed to resend OTP. Please try again.");
+				setError("Failed to resend code. Please try again.");
 			}
 		} finally {
 			setPending(false);
@@ -203,10 +206,10 @@ export const OTPVerificationCard = ({
 
 			{Boolean(error) && (
 				<div
-					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm border ${
+					className={`mb-6 flex items-center gap-x-2 rounded-md p-3 text-sm ${
 						errorType === "expired"
-							? "bg-orange-50 border-orange-200 text-orange-700"
-							: "bg-red-50 border-red-200 text-red-600"
+							? "border border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950/30 dark:text-orange-400"
+							: "bg-destructive/15 text-destructive"
 					}`}
 				>
 					<TriangleAlert className="size-4 flex-shrink-0" />
@@ -228,30 +231,12 @@ export const OTPVerificationCard = ({
 						value={otp}
 					>
 						<InputOTPGroup className="gap-2">
-							<InputOTPSlot
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
-								index={0}
-							/>
-							<InputOTPSlot
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
-								index={1}
-							/>
-							<InputOTPSlot
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
-								index={2}
-							/>
-							<InputOTPSlot
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
-								index={3}
-							/>
-							<InputOTPSlot
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
-								index={4}
-							/>
-							<InputOTPSlot
-								className="w-12 h-12 text-lg border-2 rounded-xl focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200 hover:border-primary/60 hover:bg-primary/5 cursor-text transition-all duration-200"
-								index={5}
-							/>
+							<InputOTPSlot className={otpSlotClassName} index={0} />
+							<InputOTPSlot className={otpSlotClassName} index={1} />
+							<InputOTPSlot className={otpSlotClassName} index={2} />
+							<InputOTPSlot className={otpSlotClassName} index={3} />
+							<InputOTPSlot className={otpSlotClassName} index={4} />
+							<InputOTPSlot className={otpSlotClassName} index={5} />
 						</InputOTPGroup>
 					</InputOTP>
 				</div>
@@ -276,7 +261,7 @@ export const OTPVerificationCard = ({
 							onClick={handleResend}
 							type="button"
 						>
-							Resend OTP
+							Resend code
 						</button>
 					) : (
 						<p className="text-sm text-muted-foreground">

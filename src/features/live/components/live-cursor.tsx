@@ -16,7 +16,7 @@ type LiveCursorProps = {
 export const LiveCursor = memo(
 	({ connectionId, variant = "canvas" }: LiveCursorProps) => {
 		const workspaceId = useWorkspaceId();
-		const [userName, setUserName] = useState<string>(`${connectionId}`);
+		const [userName, setUserName] = useState<string>("Someone");
 
 		// Use the real Liveblocks useOther hook to get cursor position and user info
 		const other = useOther(connectionId, (user) => ({
@@ -38,29 +38,18 @@ export const LiveCursor = memo(
 			const userId = other?.id;
 
 			// Determine the name to display
-			let newUserName = `${connectionId}`; // Default fallback
+			let newUserName = "Someone"; // Default fallback
 
-			if (members) {
-				// Try to find the user by their ID first
-				if (userId) {
-					const memberByUserId = members.find((m) => m.user._id === userId);
-					if (memberByUserId?.user.name) {
-						newUserName = memberByUserId.user.name;
-					}
-				} else if (members.length > 0) {
-					// If no userId but we have members, try connection ID approach
-					const memberByIndex = members[connectionId % members.length];
-					if (memberByIndex?.user.name) {
-						newUserName = memberByIndex.user.name;
-					}
+			// Try to find the user by their ID first — never guess by connection index
+			if (members && userId) {
+				const memberByUserId = members.find((m) => m.user._id === userId);
+				if (memberByUserId?.user.name) {
+					newUserName = memberByUserId.user.name;
 				}
+			}
 
-				// If we still don't have a name, use Liveblocks info if available
-				if (newUserName === `${connectionId}` && other.info?.name) {
-					newUserName = other.info.name;
-				}
-			} else if (other.info?.name) {
-				// No members but we have Liveblocks info
+			// If we still don't have a name, use Liveblocks info if available
+			if (newUserName === "Someone" && other.info?.name) {
 				newUserName = other.info.name;
 			}
 
@@ -68,16 +57,13 @@ export const LiveCursor = memo(
 			if (newUserName !== userName) {
 				setUserName(newUserName);
 			}
-		}, [members, connectionId, other, userName]);
+		}, [members, other, userName]);
 
 		// If no cursor position is available, don't render anything
 		if (!other?.cursor) return null;
 
 		const { cursor, isEditing } = other;
 		const { x, y } = cursor;
-
-		// Calculate width based on name length
-		const nameWidth = Math.max(userName.length * 12, 60);
 
 		// Different styling for canvas vs notes
 		const cursorColor = connectionIdToColor(connectionId);
@@ -90,7 +76,7 @@ export const LiveCursor = memo(
 				style={{
 					transform: `translateX(${x}px) translateY(${y}px)`,
 				}}
-				width={nameWidth * 1.5}
+				width={240}
 			>
 				<MousePointer2
 					className="h-5 w-5"
@@ -101,13 +87,11 @@ export const LiveCursor = memo(
 				/>
 
 				<div
-					className={`absolute left-5 px-2 py-0.5 rounded-md text-sm text-white font-semibold whitespace-nowrap ${
+					className={`absolute left-5 max-w-[180px] truncate rounded-md px-2 py-0.5 font-semibold text-sm text-white ${
 						isTyping ? "animate-pulse" : ""
 					}`}
 					style={{
 						backgroundColor: cursorColor,
-						minWidth: `${nameWidth - 10}px`,
-						maxWidth: `${nameWidth * 1.5}px`,
 					}}
 				>
 					{userName}

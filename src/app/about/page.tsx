@@ -14,12 +14,12 @@ const AboutPage = () => {
 			<Header />
 
 			{/* Hero Section */}
-			<section className="py-20 bg-white">
+			<section className="py-20 bg-background">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center">
 						<motion.h1
 							animate={{ opacity: 1, y: 0 }}
-							className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6"
+							className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5 }}
 						>
@@ -27,19 +27,20 @@ const AboutPage = () => {
 						</motion.h1>
 						<motion.p
 							animate={{ opacity: 1, y: 0 }}
-							className="text-xl text-gray-600 max-w-3xl mx-auto mb-10"
+							className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
-							We&apos;re building the future of team productivity with
-							AI-powered tools that help teams work smarter, not harder.
+							We&apos;re building AI-powered tools that bring messaging, tasks,
+							and boards into one workspace, so teams spend less time switching
+							apps and more time getting work done.
 						</motion.p>
 					</div>
 				</div>
 			</section>
 
 			{/* Our Story Section */}
-			<section className="py-16 bg-gray-50">
+			<section className="py-16 bg-muted/30">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 						<motion.div
@@ -49,7 +50,7 @@ const AboutPage = () => {
 							whileInView={{ opacity: 1, x: 0 }}
 						>
 							<h2 className="text-3xl font-bold mb-6">Our Story</h2>
-							<div className="space-y-4 text-gray-700">
+							<div className="space-y-4 text-foreground">
 								<p>
 									Proddy was born in Bengaluru, India in 2023 out of frustration
 									with fragmented productivity tools that didn&apos;t work well
@@ -97,11 +98,11 @@ const AboutPage = () => {
 			</section>
 
 			{/* Our Values Section */}
-			<section className="py-16 bg-white">
+			<section className="py-16 bg-background">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center mb-16">
 						<h2 className="text-3xl font-bold mb-4">Our Values</h2>
-						<p className="text-xl text-gray-600 max-w-3xl mx-auto">
+						<p className="text-xl text-muted-foreground max-w-3xl mx-auto">
 							The principles that guide everything we do at Proddy.
 						</p>
 					</div>
@@ -109,7 +110,7 @@ const AboutPage = () => {
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 						{/* Value 1 */}
 						<motion.div
-							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
+							className="bg-card rounded-xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5 }}
 							viewport={{ once: true }}
@@ -119,7 +120,7 @@ const AboutPage = () => {
 								<Users className="text-primary h-6 w-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Team First</h3>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								We believe that great products are built by great teams. We
 								prioritize collaboration, open communication, and mutual respect
 								in everything we do.
@@ -128,7 +129,7 @@ const AboutPage = () => {
 
 						{/* Value 2 */}
 						<motion.div
-							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
+							className="bg-card rounded-xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 							viewport={{ once: true }}
@@ -138,7 +139,7 @@ const AboutPage = () => {
 								<Lightbulb className="text-primary h-6 w-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Innovation</h3>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								We&apos;re not satisfied with the status quo. We constantly push
 								boundaries to find better ways to help teams work together more
 								effectively.
@@ -147,7 +148,7 @@ const AboutPage = () => {
 
 						{/* Value 3 */}
 						<motion.div
-							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
+							className="bg-card rounded-xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.2 }}
 							viewport={{ once: true }}
@@ -157,7 +158,7 @@ const AboutPage = () => {
 								<Target className="text-primary h-6 w-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Customer Focus</h3>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								Our customers&apos; success is our success. We listen carefully
 								to feedback and continuously improve our product to meet their
 								evolving needs.
@@ -166,7 +167,7 @@ const AboutPage = () => {
 
 						{/* Value 4 */}
 						<motion.div
-							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
+							className="bg-card rounded-xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.3 }}
 							viewport={{ once: true }}
@@ -176,7 +177,7 @@ const AboutPage = () => {
 								<Clock className="text-primary h-6 w-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Time Respect</h3>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								We believe time is precious. Every feature we build aims to save
 								our users time and help them focus on what truly matters.
 							</p>
@@ -184,7 +185,7 @@ const AboutPage = () => {
 
 						{/* Value 5 */}
 						<motion.div
-							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
+							className="bg-card rounded-xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.4 }}
 							viewport={{ once: true }}
@@ -194,7 +195,7 @@ const AboutPage = () => {
 								<Zap className="text-primary h-6 w-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Simplicity</h3>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								We strive for elegant simplicity in our design and
 								functionality. Complex problems deserve simple, intuitive
 								solutions.
@@ -203,7 +204,7 @@ const AboutPage = () => {
 
 						{/* Value 6 */}
 						<motion.div
-							className="bg-gray-50 rounded-xl p-8 border border-gray-100"
+							className="bg-card rounded-xl p-8 border border-border"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.5 }}
 							viewport={{ once: true }}
@@ -213,7 +214,7 @@ const AboutPage = () => {
 								<Heart className="text-primary h-6 w-6" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">Passion</h3>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								We&apos;re passionate about creating tools that people love to
 								use. This passion drives us to go the extra mile in everything
 								we do.

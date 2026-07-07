@@ -15,6 +15,7 @@ interface LineChartProps {
 	className?: string;
 	lineColor?: string;
 	pointColor?: string;
+	areaColor?: string;
 	formatValue?: (value: number) => string;
 	onPointClick?: (label: string, value: number, index: number) => void;
 }
@@ -28,6 +29,7 @@ export const LineChart = ({
 	className,
 	lineColor = "stroke-secondary",
 	pointColor = "fill-secondary",
+	areaColor = "fill-secondary/20",
 	formatValue = (value) => value.toString(),
 	onPointClick,
 }: LineChartProps) => {
@@ -47,18 +49,12 @@ export const LineChart = ({
 
 		const container = containerRef.current;
 		if (!container) {
-			console.warn(
-				"LineChart: Container ref not found for tooltip positioning"
-			);
 			setTooltipPos(null);
 			return;
 		}
 
 		const svgElement = container.querySelector("svg");
 		if (!svgElement) {
-			console.warn(
-				"LineChart: SVG element not found within container for tooltip positioning"
-			);
 			setTooltipPos(null);
 			return;
 		}
@@ -67,9 +63,6 @@ export const LineChart = ({
 			`[data-point-index="${hoveredIndex}"]`
 		) as SVGCircleElement;
 		if (!pointElement) {
-			console.warn(
-				`LineChart: Point element with index ${hoveredIndex} not found for tooltip positioning`
-			);
 			setTooltipPos(null);
 			return;
 		}
@@ -85,9 +78,6 @@ export const LineChart = ({
 				!pointRect.width ||
 				!pointRect.height
 			) {
-				console.warn(
-					"LineChart: Invalid bounding rectangles for tooltip positioning"
-				);
 				setTooltipPos(null);
 				return;
 			}
@@ -98,7 +88,6 @@ export const LineChart = ({
 
 			// Validate calculated positions are finite numbers
 			if (!Number.isFinite(left) || !Number.isFinite(top)) {
-				console.warn("LineChart: Calculated positions are not finite numbers");
 				setTooltipPos(null);
 				return;
 			}
@@ -107,8 +96,7 @@ export const LineChart = ({
 				left: `${left}px`,
 				top: `${top - 30}px`,
 			});
-		} catch (error) {
-			console.error("LineChart: Error calculating tooltip position", error);
+		} catch {
 			setTooltipPos(null);
 		}
 	}, [hoveredIndex]);
@@ -168,11 +156,20 @@ export const LineChart = ({
     Z
   `;
 
+	// Thin x-axis labels to ~6 visible ticks so long ranges (e.g. 30 days) stay legible
+	const maxVisibleLabels = 6;
+	const labelStep = Math.max(1, Math.ceil(data.length / maxVisibleLabels));
+
 	return (
 		<div
 			className={cn("w-full h-full flex flex-col overflow-hidden", className)}
 			ref={containerRef}
 		>
+			<p className="sr-only">
+				{`Line chart: ${data
+					.map((item) => `${item.label}, ${formatValue(item.value)}`)
+					.join("; ")}.`}
+			</p>
 			<div
 				className="relative overflow-visible px-4 py-2 flex-1"
 				style={{
@@ -216,7 +213,7 @@ export const LineChart = ({
 					)}
 
 					{/* Area under the line */}
-					<path className="fill-secondary/20" d={areaPath} />
+					<path className={areaColor} d={areaPath} />
 
 					{/* Line */}
 					<path
@@ -234,33 +231,50 @@ export const LineChart = ({
 							return (
 								<g key={point.index}>
 									<circle
-										aria-disabled={!onPointClick}
+										aria-label={`${point.label}: ${formatValue(point.value)}`}
 										className={cn(
-											"stroke-white transition-all duration-200",
+											"stroke-white transition-all duration-200 outline-none",
 											isHovered ? "stroke-[3.5]" : "stroke-[2.5]",
 											pointColor,
-											onPointClick && "cursor-pointer"
+											onPointClick &&
+												"cursor-pointer focus-visible:stroke-[4] focus-visible:stroke-ring"
 										)}
 										cx={point.x}
 										cy={point.y}
 										data-point-index={point.index}
+										onBlur={
+											onPointClick ? () => setHoveredIndex(null) : undefined
+										}
 										onClick={
 											onPointClick
 												? () =>
 														onPointClick(point.label, point.value, point.index)
 												: undefined
 										}
-										onKeyDown={(event) => {
-											if (event.key === "Enter" || event.key === " ") {
-												event.preventDefault();
-												onPointClick?.(point.label, point.value, point.index);
-											}
-										}}
+										onFocus={
+											onPointClick
+												? () => setHoveredIndex(point.index)
+												: undefined
+										}
+										onKeyDown={
+											onPointClick
+												? (event) => {
+														if (event.key === "Enter" || event.key === " ") {
+															event.preventDefault();
+															onPointClick(
+																point.label,
+																point.value,
+																point.index
+															);
+														}
+													}
+												: undefined
+										}
 										onMouseEnter={() => setHoveredIndex(point.index)}
 										onMouseLeave={() => setHoveredIndex(null)}
 										r={isHovered ? "3" : "2"}
-										role="button"
-										tabIndex={0}
+										role={onPointClick ? "button" : undefined}
+										tabIndex={onPointClick ? 0 : undefined}
 									/>
 									{isHovered && (
 										<line
@@ -293,21 +307,24 @@ export const LineChart = ({
 			{/* X-axis labels */}
 			{showLabels && (
 				<ul className="flex justify-between mt-2 flex-shrink-0 px-4">
-					{data.map((item, index) => (
-						<li
-							className={cn(
-								"text-xs text-muted-foreground px-1 text-center",
-								hoveredIndex === index && "font-medium text-foreground"
-							)}
-							key={item.label}
-							onBlur={() => setHoveredIndex(null)}
-							onFocus={() => setHoveredIndex(index)}
-							onMouseEnter={() => setHoveredIndex(index)}
-							onMouseLeave={() => setHoveredIndex(null)}
-						>
-							{item.label}
-						</li>
-					))}
+					{data.map((item, index) => {
+						const isLastIndex = index === data.length - 1;
+						const showLabelText = index % labelStep === 0 || isLastIndex;
+
+						return (
+							<li
+								className={cn(
+									"text-xs text-muted-foreground px-1 text-center",
+									hoveredIndex === index && "font-medium text-foreground"
+								)}
+								key={item.label}
+								onMouseEnter={() => setHoveredIndex(index)}
+								onMouseLeave={() => setHoveredIndex(null)}
+							>
+								{showLabelText ? item.label : ""}
+							</li>
+						);
+					})}
 				</ul>
 			)}
 		</div>

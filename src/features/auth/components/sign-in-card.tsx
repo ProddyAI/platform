@@ -1,5 +1,5 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { TriangleAlert } from "lucide-react";
+import { Loader, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
@@ -53,17 +53,17 @@ export const SignInCard = ({
 			// the /api/auth proxy now returns a JSON error rather than throwing,
 			// so we must check this explicitly instead of relying on `.catch`.
 			if (!result?.signingIn && !result?.redirect) {
-				setError("Invalid email or password!");
+				setError("Invalid email or password.");
 			}
 		} catch {
-			setError("Invalid email or password!");
+			setError("Invalid email or password.");
 		} finally {
 			setPending(false);
 		}
 	};
 
 	return (
-		<Card className="size-full p-8 shadow-xl border-opacity-30 backdrop-blur-sm animate-slide-up rounded-[10px]">
+		<Card className="size-full p-8 shadow-xl border-opacity-30 animate-slide-up rounded-[10px]">
 			<CardHeader className="px-0 pt-0">
 				<CardTitle>Login to continue</CardTitle>
 				<CardDescription>
@@ -113,7 +113,14 @@ export const SignInCard = ({
 						size="lg"
 						type="submit"
 					>
-						Continue
+						{pending ? (
+							<>
+								<Loader className="mr-2 size-4 animate-spin" />
+								Signing in…
+							</>
+						) : (
+							"Continue"
+						)}
 					</Button>
 				</form>
 
@@ -154,7 +161,7 @@ export const SignInCard = ({
 						</Link>
 					) : (
 						<button
-							className="cursor-pointer font-medium text-primary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
+							className="cursor-pointer font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-50 transition-all duration-200 hover:text-secondary/80"
 							disabled={pending}
 							onClick={() => setState?.("signUp")}
 							type="button"

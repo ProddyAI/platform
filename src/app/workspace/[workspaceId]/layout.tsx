@@ -24,6 +24,8 @@ import { cn } from "@/lib/utils";
 
 import { MobileFooter } from "./mobile-footer";
 import { WorkspaceSidebar } from "./sidebar";
+import { WorkspaceToolbar } from "./toolbar";
+import { WorkspaceTitleProvider } from "./workspace-title-context";
 
 const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 	const router = useRouter();
@@ -108,99 +110,113 @@ const WorkspaceIdLayout = ({ children }: Readonly<PropsWithChildren>) => {
 					} catch (e) {}
 				`}
 			</Script>
-			<MessageSelectionProvider>
-				<WorkspacePresenceTracker workspaceId={workspaceId as Id<"workspaces">}>
-					<div className="h-full w-full min-w-0 flex flex-col overflow-hidden">
-						<div className="flex h-full min-w-0 overflow-hidden">
-							{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}
-							<div
-								className={cn(
-									"h-full bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
-									"transition-all duration-300 ease-in-out flex-shrink-0 relative z-10",
-									"hidden md:block",
-									isCollapsed ? "w-[70px]" : "w-[280px]"
-								)}
-							>
-								<WorkspaceSidebar
-									isCollapsed={isCollapsed}
-									setIsCollapsed={setIsCollapsed}
-								/>
-							</div>
-
-							{/* Mobile Sidebar Overlay */}
-							{showMobileSidebar && (
-								<>
-									{/* Backdrop */}
-									<button
-										aria-label="Close mobile sidebar"
-										className="md:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
-										onClick={() => setShowMobileSidebar(false)}
-										type="button"
+			<WorkspaceTitleProvider>
+				<MessageSelectionProvider>
+					<WorkspacePresenceTracker
+						workspaceId={workspaceId as Id<"workspaces">}
+					>
+						<div className="h-full w-full min-w-0 flex flex-col overflow-hidden">
+							<div className="flex h-full min-w-0 overflow-hidden">
+								{/* Fixed-width sidebar with collapse/expand functionality - Hidden on mobile */}
+								<div
+									className={cn(
+										"h-full bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+										"transition-all duration-300 ease-in-out flex-shrink-0 relative z-10",
+										"hidden md:block",
+										isCollapsed ? "w-[70px]" : "w-[280px]"
+									)}
+								>
+									<WorkspaceSidebar
+										isCollapsed={isCollapsed}
+										setIsCollapsed={setIsCollapsed}
 									/>
-									{/* Sidebar Overlay */}
-									<div
-										className={cn(
-											"md:hidden fixed left-0 z-50",
-											"bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
-											"w-[280px] shadow-2xl",
-											"transform transition-transform duration-300 ease-in-out",
-											"overscroll-contain",
-											"top-4 bottom-4",
-											"rounded-r-2xl",
-											showMobileSidebar ? "translate-x-0" : "-translate-x-full"
-										)}
-										style={{
-											WebkitOverflowScrolling: "touch",
-										}}
-									>
-										{/* Mobile overlay: close via onMobileClose without mutating collapse state. */}
-										<WorkspaceSidebar
-											isCollapsed={false}
-											onMobileClose={() => setShowMobileSidebar(false)}
-											setIsCollapsed={setIsCollapsed}
-										/>
-									</div>
-								</>
-							)}
+								</div>
 
-							{/* Main content area - remove overflow-auto to prevent toolbar scrolling */}
-							<div className="flex-1 h-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-0">
-								{(workspaceId as string | undefined) === "create" ? (
-									<div className="flex h-full items-center justify-center">
-										<Loader className="size-6 animate-spin text-muted-foreground" />
-									</div>
-								) : (
-									children
-								)}
-							</div>
-
-							{/* Right panel for threads and profiles - Hidden on mobile */}
-							{showPanel && (
-								<div className="hidden md:block w-[350px] h-full overflow-auto border-l border-border/30 flex-shrink-0 transition-all duration-300 ease-in-out">
-									{parentMessageId ? (
-										<Thread
-											messageId={parentMessageId as Id<"messages">}
-											onClose={onClose}
+								{/* Mobile Sidebar Overlay */}
+								{showMobileSidebar && (
+									<>
+										{/* Backdrop */}
+										<button
+											aria-label="Close mobile sidebar"
+											className="md:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+											onClick={() => setShowMobileSidebar(false)}
+											type="button"
 										/>
-									) : profileMemberId ? (
-										<Profile
-											memberId={profileMemberId as Id<"members">}
-											onClose={onClose}
-										/>
-									) : (
-										<div className="flex h-full items-center justify-center">
-											<Loader className="size-5 animate-spin text-muted-foreground" />
+										{/* Sidebar Overlay */}
+										<div
+											className={cn(
+												"md:hidden fixed left-0 z-50",
+												"bg-primary overflow-y-auto overflow-x-hidden sidebar-scrollbar",
+												"w-[280px] shadow-2xl",
+												"transform transition-transform duration-300 ease-in-out",
+												"overscroll-contain",
+												"top-4 bottom-4",
+												"rounded-r-2xl",
+												showMobileSidebar
+													? "translate-x-0"
+													: "-translate-x-full"
+											)}
+											style={{
+												WebkitOverflowScrolling: "touch",
+											}}
+										>
+											{/* Mobile overlay: close via onMobileClose without mutating collapse state. */}
+											<WorkspaceSidebar
+												isCollapsed={false}
+												onMobileClose={() => setShowMobileSidebar(false)}
+												setIsCollapsed={setIsCollapsed}
+											/>
 										</div>
+									</>
+								)}
+
+								{/* Main content area - remove overflow-auto to prevent toolbar scrolling */}
+								<div className="flex-1 h-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-0">
+									{(workspaceId as string | undefined) === "create" ? (
+										<div className="flex h-full items-center justify-center">
+											<Loader className="size-6 animate-spin text-muted-foreground" />
+										</div>
+									) : (
+										<>
+											{/* Mounted once here so search/notifications/theme-toggle/user-menu
+											are available on every workspace route; pages only supply a title
+											via useSetWorkspaceTitle. */}
+											<WorkspaceToolbar />
+											<div className="flex-1 min-h-0 flex flex-col">
+												{children}
+											</div>
+										</>
 									)}
 								</div>
-							)}
+
+								{/* Right panel for threads and profiles - Hidden on mobile */}
+								{showPanel && (
+									<div className="hidden md:block w-[350px] h-full overflow-auto border-l border-border/30 flex-shrink-0 transition-all duration-300 ease-in-out">
+										{parentMessageId ? (
+											<Thread
+												messageId={parentMessageId as Id<"messages">}
+												onClose={onClose}
+											/>
+										) : profileMemberId ? (
+											<Profile
+												memberId={profileMemberId as Id<"members">}
+												onClose={onClose}
+											/>
+										) : (
+											<div className="flex h-full items-center justify-center">
+												<Loader className="size-5 animate-spin text-muted-foreground" />
+											</div>
+										)}
+									</div>
+								)}
+							</div>
+							<MobileFooter onMenuClick={handleMobileMenuToggle} />
+							<SelectionModal />
+							<NavigationListener />
 						</div>
-						<MobileFooter onMenuClick={handleMobileMenuToggle} />
-						<SelectionModal />
-						<NavigationListener />
-					</div>
-				</WorkspacePresenceTracker>
-			</MessageSelectionProvider>
+					</WorkspacePresenceTracker>
+				</MessageSelectionProvider>
+			</WorkspaceTitleProvider>
 		</>
 	);
 };

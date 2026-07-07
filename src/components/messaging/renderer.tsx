@@ -20,7 +20,7 @@ type UnifiedMessagePayload = React.ComponentProps<
 	typeof UnifiedMessage
 >["data"];
 
-const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
+const Renderer = ({ value, image }: RendererProps) => {
 	const [isEmpty, setIsEmpty] = useState(false);
 	const rendererRef = useRef<HTMLDivElement>(null);
 	const workspaceId = useWorkspaceId();
@@ -114,12 +114,9 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 		try {
 			const contents = JSON.parse(value);
 			quill.setContents(contents);
-		} catch (error) {
-			// If it's not valid JSON, it might be HTML or plain text
-			console.log(
-				"Renderer: Failed to parse value as JSON, treating as HTML/text",
-				error
-			);
+		} catch (_error) {
+			// Not valid JSON — it might be HTML or plain text, both expected
+			// for regular chat messages, so this isn't logged as an error.
 
 			// Check if it looks like HTML
 			if (value.trim().startsWith("<") && value.trim().endsWith(">")) {
@@ -139,86 +136,6 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 
 		setIsEmpty(isEmpty);
 
-		// If this message has a calendar event, remove date/time from the displayed content
-		if (calendarEvent) {
-			// First, get the text content
-			const textContent = quill.getText();
-
-			// Get the date in various formats to remove from text
-			const dateObj = new Date(calendarEvent.date);
-			const dateStr = dateObj.toLocaleDateString();
-			const timeStr = calendarEvent.time || "";
-
-			// Create different date format variations to match what might be in the text
-			const dateFormats = [
-				dateStr,
-				dateObj.toLocaleDateString("en-US", {
-					month: "long",
-					day: "numeric",
-					year: "numeric",
-				}),
-				dateObj.toLocaleDateString("en-US", {
-					month: "short",
-					day: "numeric",
-					year: "numeric",
-				}),
-				dateObj.toLocaleDateString("en-US", {
-					month: "numeric",
-					day: "numeric",
-					year: "numeric",
-				}),
-				dateObj.toLocaleDateString("en-US", {
-					weekday: "long",
-					month: "long",
-					day: "numeric",
-				}),
-				dateObj.toLocaleDateString("en-US", {
-					weekday: "long",
-					month: "long",
-					day: "numeric",
-					year: "numeric",
-				}),
-				dateObj.toLocaleDateString("en-US", {
-					weekday: "short",
-					month: "long",
-					day: "numeric",
-				}),
-				dateObj.toLocaleDateString("en-US", {
-					weekday: "short",
-					month: "short",
-					day: "numeric",
-				}),
-				`${dateObj.getMonth() + 1}/${dateObj.getDate()}/${dateObj.getFullYear()}`,
-				`${dateObj.getMonth() + 1}-${dateObj.getDate()}-${dateObj.getFullYear()}`,
-				"Today",
-				"Tomorrow",
-				"Next week",
-				"Next week - Monday",
-				"Next week - Tuesday",
-				"Next week - Wednesday",
-				"Next week - Thursday",
-				"Next week - Friday",
-				"Next week - Saturday",
-				"Next week - Sunday",
-			];
-
-			// Create time variations
-			const timeVariations = timeStr
-				? [` at ${timeStr}`, ` ${timeStr}`, `, ${timeStr}`]
-				: [""];
-
-			let cleanedText = textContent;
-			for (const dateFormat of dateFormats) {
-				for (const timeVariation of timeVariations) {
-					const pattern = dateFormat + timeVariation;
-					cleanedText = cleanedText.replace(pattern, "");
-				}
-			}
-
-			cleanedText = cleanedText.replace(/\s+/g, " ").trim();
-			quill.setText(cleanedText);
-		}
-
 		const htmlContent = quill.root.innerHTML;
 		container.innerHTML = htmlContent;
 
@@ -228,7 +145,7 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 		return () => {
 			if (container) container.innerHTML = "";
 		};
-	}, [value, calendarEvent, isUnifiedMessage]);
+	}, [value, isUnifiedMessage]);
 
 	// If this is a unified message (canvas or note type), render the UnifiedMessage component
 	if (isUnifiedMessage) {
@@ -237,7 +154,18 @@ const Renderer = ({ value, image, calendarEvent }: RendererProps) => {
 			return <UnifiedMessage data={messageData} />;
 		} else {
 			console.error("Error parsing unified message data:", value);
-			return <div>Error displaying message</div>;
+			return (
+				<div className="flex items-center gap-2 text-sm text-muted-foreground">
+					<span>This message couldn&apos;t be displayed.</span>
+					<button
+						className="rounded-sm font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+						onClick={() => window.location.reload()}
+						type="button"
+					>
+						Retry
+					</button>
+				</div>
+			);
 		}
 	}
 

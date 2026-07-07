@@ -10,14 +10,16 @@ import type {
 import type { Mutable } from "@excalidraw/excalidraw/types/utility-types";
 import { LiveObject } from "@liveblocks/client";
 import { useQuery } from "convex/react";
+import { Network, StickyNote } from "lucide-react";
 import { nanoid } from "nanoid";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	convertMermaidToExcalidrawScene,
 	normalizeMermaidCode,
@@ -94,7 +96,17 @@ const Excalidraw = dynamic(
 	},
 	{
 		ssr: false,
-		loading: () => <div className="p-4">Loading canvas…</div>,
+		loading: () => (
+			<div className="relative h-full w-full bg-background">
+				<div className="absolute inset-x-0 top-4 flex justify-center">
+					<Skeleton className="h-12 w-[420px] rounded-lg" />
+				</div>
+				<div className="absolute right-4 top-4 flex items-center gap-2">
+					<Skeleton className="h-7 w-16 rounded-full" />
+					<Skeleton className="h-7 w-7 rounded-full" />
+				</div>
+			</div>
+		),
 	}
 );
 
@@ -186,9 +198,23 @@ function getCommonBoundsFallback(elements: readonly ExcalidrawElement[]) {
 	return [x1, y1, x2, y2] as [number, number, number, number];
 }
 
-export const ExcalidrawCanvas = () => {
+// The real (non-fabricated) persistence state of the scene: "pending" while
+// a change is sitting in the debounce window / hasn't been committed yet,
+// "saved" once the Liveblocks storage mutation has been applied, "error" if
+// that mutation threw. Callers (e.g. the canvas page's header) can subscribe
+// via `onSaveStatusChange` instead of hardcoding a status.
+export type ExcalidrawCanvasSaveStatus = "saved" | "pending" | "error";
+
+interface ExcalidrawCanvasProps {
+	onSaveStatusChange?: (status: ExcalidrawCanvasSaveStatus) => void;
+}
+
+export const ExcalidrawCanvas = ({
+	onSaveStatusChange,
+}: ExcalidrawCanvasProps = {}) => {
 	const workspaceId = useWorkspaceId();
 	const saveTimerRef = useRef<number | null>(null);
+	const pendingCommitRef = useRef<(() => void) | null>(null);
 	const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
 	const excalidrawHostRef = useRef<HTMLDivElement | null>(null);
 	const latestAppStateRef = useRef<AppState | null>(null);
@@ -211,8 +237,9 @@ export const ExcalidrawCanvas = () => {
 	const isAutoLockingToolRef = useRef(false);
 	const [aiPrompt, setAiPrompt] = useState("");
 	const [isGenerating, setIsGenerating] = useState(false);
-	const [toolbarPortalTarget, setToolbarPortalTarget] =
-		useState<HTMLElement | null>(null);
+	const [generateError, setGenerateError] = useState<string | null>(null);
+	const [saveStatus, setSaveStatus] =
+		useState<ExcalidrawCanvasSaveStatus>("saved");
 
 	const currentUser = useQuery(api.workspace.users.current);
 
@@ -286,47 +313,6 @@ export const ExcalidrawCanvas = () => {
 		);
 	}, []);
 
-	// Portal the AI Format trigger into Excalidraw's main tool palette (white box).
-	useEffect(() => {
-		let cancelled = false;
-		let attempts = 0;
-		const maxAttempts = 25;
-
-		const tryResolveTarget = () => {
-			if (cancelled) return;
-			attempts += 1;
-
-			const host = excalidrawHostRef.current;
-			const target =
-				(host?.querySelector(
-					".excalidraw .App-toolbar-container .shapes-section"
-				) as HTMLElement | null) ||
-				(host?.querySelector(
-					".excalidraw .App-toolbar .shapes-section"
-				) as HTMLElement | null) ||
-				(host?.querySelector(
-					".excalidraw .shapes-section"
-				) as HTMLElement | null) ||
-				(host?.querySelector(
-					".excalidraw .App-toolbar__content"
-				) as HTMLElement | null);
-
-			if (target) {
-				setToolbarPortalTarget(target);
-				return;
-			}
-
-			if (attempts < maxAttempts) {
-				window.setTimeout(tryResolveTarget, 120);
-			}
-		};
-
-		tryResolveTarget();
-		return () => {
-			cancelled = true;
-		};
-	}, []);
-
 	const normalizeExcalidrawStorage = useMutation(({ storage }) => {
 		const existing = storage.get("excalidraw") as unknown;
 		if (!existing) return;
@@ -376,23 +362,27 @@ export const ExcalidrawCanvas = () => {
 		storage.set("lastUpdate", Date.now());
 	}, []);
 
+	const generateAbortRef = useRef<AbortController | null>(null);
+
 	const generateDiagramFromPrompt = async () => {
 		const api = excalidrawApiRef.current;
 		if (!api) return;
 
 		const prompt = aiPrompt.trim();
-		if (!prompt) {
-			toast.error("Enter a prompt first");
-			return;
-		}
+		if (!prompt) return;
+
+		const controller = new AbortController();
+		generateAbortRef.current = controller;
 
 		try {
 			setIsGenerating(true);
+			setGenerateError(null);
 
 			const res = await fetch("/api/smart/diagram", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ prompt, workspaceId }),
+				signal: controller.signal,
 			});
 
 			const body = await res.json().catch(() => ({}));
@@ -405,14 +395,14 @@ export const ExcalidrawCanvas = () => {
 			const mermaidRaw = typeof body?.mermaid === "string" ? body.mermaid : "";
 			const mermaid = normalizeMermaidCode(mermaidRaw);
 			if (!mermaid) {
-				toast.error("AI returned empty Mermaid");
+				setGenerateError("The AI didn't return a diagram. Try rephrasing.");
 				return;
 			}
 
 			const { elements: newElements, files } =
 				await convertMermaidToExcalidrawScene(mermaid);
 			if (!newElements.length) {
-				toast.error("Could not convert Mermaid to shapes");
+				setGenerateError("Could not turn that into shapes. Try rephrasing.");
 				return;
 			}
 
@@ -461,16 +451,22 @@ export const ExcalidrawCanvas = () => {
 
 			toast.success("Diagram added");
 		} catch (err) {
-			toast.error((err as Error)?.message || "AI Format failed");
+			if ((err as Error)?.name === "AbortError") return;
+			setGenerateError((err as Error)?.message || "Diagram generation failed");
 		} finally {
 			setIsGenerating(false);
+			generateAbortRef.current = null;
 		}
+	};
+
+	const cancelGenerateDiagram = () => {
+		generateAbortRef.current?.abort();
 	};
 
 	const collapsibleSidebar = () => {
 		const api = excalidrawApiRef.current;
 		if (!api) return;
-		api.toggleSidebar({ name: "ai-format", force: true });
+		api.toggleSidebar({ name: "generate-diagram", force: true });
 	};
 
 	useEffect(() => {
@@ -747,40 +743,83 @@ export const ExcalidrawCanvas = () => {
 		});
 
 		// Ensure the inserted note is visible even if the user is panned elsewhere.
+		const prefersReducedMotion = window.matchMedia?.(
+			"(prefers-reduced-motion: reduce)"
+		).matches;
 		window.requestAnimationFrame(() => {
 			try {
-				api.scrollToContent?.(newElements, { animate: true });
+				api.scrollToContent?.(newElements, { animate: !prefersReducedMotion });
 			} catch {
 				// Best-effort. If scrollToContent isn't available, insertion still works.
 			}
 		});
 	}, []);
 
-	// Keyboard shortcut: N to insert sticky note.
+	// Keyboard shortcut: N to insert sticky note. Scoped to the canvas host so
+	// focus elsewhere in the page (sidebar, header, an open dialog/menu) never
+	// hijacks the key.
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key.toLowerCase() !== "n") return;
+
 			const target = e.target as HTMLElement | null;
 			const isTypingTarget =
 				target?.tagName === "INPUT" ||
 				target?.tagName === "TEXTAREA" ||
 				target?.isContentEditable;
 			if (isTypingTarget) return;
-			if (e.key.toLowerCase() === "n") {
-				e.preventDefault();
-				insertStickyNote();
-			}
+
+			const host = excalidrawHostRef.current;
+			const activeElement = document.activeElement;
+			const isWithinCanvas =
+				!host ||
+				!activeElement ||
+				activeElement === document.body ||
+				host.contains(activeElement);
+			if (!isWithinCanvas) return;
+
+			const hasOpenOverlay = document.querySelector(
+				'[role="dialog"], [role="alertdialog"], [role="menu"]'
+			);
+			if (hasOpenOverlay) return;
+
+			e.preventDefault();
+			insertStickyNote();
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [insertStickyNote]);
 
+	// Flush any pending (debounced but not-yet-persisted) save immediately
+	// instead of silently dropping it when the user closes the tab, switches
+	// away, or navigates elsewhere in the app.
 	useEffect(() => {
-		return () => {
+		const flushPendingSave = () => {
 			if (saveTimerRef.current) {
 				window.clearTimeout(saveTimerRef.current);
+				saveTimerRef.current = null;
 			}
+			const commit = pendingCommitRef.current;
+			pendingCommitRef.current = null;
+			commit?.();
+		};
+
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "hidden") flushPendingSave();
+		};
+
+		window.addEventListener("beforeunload", flushPendingSave);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		return () => {
+			window.removeEventListener("beforeunload", flushPendingSave);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+			flushPendingSave();
 		};
 	}, []);
+
+	useEffect(() => {
+		onSaveStatusChange?.(saveStatus);
+	}, [saveStatus, onSaveStatusChange]);
 
 	return (
 		<div className="h-full w-full" ref={excalidrawHostRef}>
@@ -1004,6 +1043,7 @@ export const ExcalidrawCanvas = () => {
 
 						if (saveTimerRef.current) {
 							window.clearTimeout(saveTimerRef.current);
+							saveTimerRef.current = null;
 						}
 
 						// Broadcast incremental changes (low-latency). Persisting is still done via debounced snapshot.
@@ -1033,7 +1073,10 @@ export const ExcalidrawCanvas = () => {
 							});
 						}
 
-						saveTimerRef.current = window.setTimeout(() => {
+						const commitSave = () => {
+							saveTimerRef.current = null;
+							pendingCommitRef.current = null;
+
 							const base = Math.max(
 								currentVersionRef.current,
 								lastLocalWriteVersionRef.current,
@@ -1042,13 +1085,22 @@ export const ExcalidrawCanvas = () => {
 							const nextVersion = base + (Math.floor(Math.random() * 1000) + 1);
 							lastLocalWriteVersionRef.current = nextVersion;
 
-							persistScene({
-								elements: elementsArray,
-								appState: safeAppState,
-								files: files && typeof files === "object" ? files : {},
-								version: nextVersion,
-							});
-						}, 250);
+							try {
+								persistScene({
+									elements: elementsArray,
+									appState: safeAppState,
+									files: files && typeof files === "object" ? files : {},
+									version: nextVersion,
+								});
+								setSaveStatus("saved");
+							} catch {
+								setSaveStatus("error");
+							}
+						};
+
+						pendingCommitRef.current = commitSave;
+						setSaveStatus("pending");
+						saveTimerRef.current = window.setTimeout(commitSave, 250);
 					}}
 					onPointerUpdate={({
 						pointer,
@@ -1117,36 +1169,31 @@ export const ExcalidrawCanvas = () => {
 						const name = currentUser?.name || "Anonymous";
 						const image = currentUser?.image;
 						const bg = generateUserColor(currentUser?._id || name);
-						const showToolFallback = !toolbarPortalTarget;
 
 						return (
 							<div className="flex items-center gap-2">
-								{showToolFallback ? (
-									<>
-										<button
-											aria-label="Sticky Note"
-											className="ToolIcon ToolIcon_type_button"
-											onClick={insertStickyNote}
-											title="Sticky Note (N)"
-											type="button"
-										>
-											<div aria-hidden className="ToolIcon__icon">
-												<span style={{ fontSize: 16, lineHeight: 1 }}>🗒</span>
-											</div>
-										</button>
-										<button
-											aria-label="AI Format"
-											className="ToolIcon ToolIcon_type_button"
-											onClick={collapsibleSidebar}
-											title="AI Format"
-											type="button"
-										>
-											<div aria-hidden className="ToolIcon__icon">
-												<span style={{ fontSize: 16, lineHeight: 1 }}>✨</span>
-											</div>
-										</button>
-									</>
-								) : null}
+								<button
+									aria-label="Insert sticky note"
+									className="ToolIcon ToolIcon_type_button"
+									onClick={insertStickyNote}
+									title="Sticky note (N)"
+									type="button"
+								>
+									<div aria-hidden className="ToolIcon__icon">
+										<StickyNote size={20} />
+									</div>
+								</button>
+								<button
+									aria-label="Generate diagram"
+									className="ToolIcon ToolIcon_type_button"
+									onClick={collapsibleSidebar}
+									title="Generate diagram"
+									type="button"
+								>
+									<div aria-hidden className="ToolIcon__icon">
+										<Network size={20} />
+									</div>
+								</button>
 
 								<LiveParticipants />
 
@@ -1164,53 +1211,64 @@ export const ExcalidrawCanvas = () => {
 					}}
 					theme={theme}
 				>
-					{/* Sticky Note + AI Format: toolbar buttons (inside tool palette) */}
-					{toolbarPortalTarget
-						? createPortal(
-								<>
-									<button
-										aria-label="Sticky Note"
-										className="ToolIcon ToolIcon_type_button"
-										onClick={insertStickyNote}
-										title="Sticky Note (N)"
-										type="button"
-									>
-										<div aria-hidden className="ToolIcon__icon">
-											<span style={{ fontSize: 16, lineHeight: 1 }}>🗒</span>
-										</div>
-									</button>
-									<button
-										aria-label="AI Format"
-										className="ToolIcon ToolIcon_type_button"
-										onClick={collapsibleSidebar}
-										title="AI Format"
-										type="button"
-									>
-										<div aria-hidden className="ToolIcon__icon">
-											<span style={{ fontSize: 16, lineHeight: 1 }}>✨</span>
-										</div>
-									</button>
-								</>,
-								toolbarPortalTarget
-							)
-						: null}
-
 					{ExcalidrawSidebar ? (
-						<ExcalidrawSidebar name="ai-format">
-							<ExcalidrawSidebar.Header>AI Format</ExcalidrawSidebar.Header>
+						<ExcalidrawSidebar name="generate-diagram">
+							<ExcalidrawSidebar.Header>
+								Generate diagram
+							</ExcalidrawSidebar.Header>
 							<div className="flex flex-col gap-3 p-3">
-								<textarea
-									className="min-h-[160px] w-full resize-y rounded-md border border-input bg-background p-2 text-sm outline-none"
-									onChange={(e) => setAiPrompt(e.target.value)}
-									placeholder='Describe a diagram, e.g. "User login flow with email/password, OTP verification, success and failure paths"'
-									value={aiPrompt}
-								/>
-								<Button
-									disabled={isGenerating}
-									onClick={generateDiagramFromPrompt}
-								>
-									{isGenerating ? "Generating…" : "Generate"}
-								</Button>
+								<div className="flex flex-col gap-1.5">
+									<label
+										className="text-sm font-medium text-foreground"
+										htmlFor="canvas-generate-diagram-prompt"
+									>
+										Describe the diagram
+									</label>
+									<Textarea
+										aria-invalid={Boolean(generateError)}
+										className="min-h-[160px]"
+										id="canvas-generate-diagram-prompt"
+										onChange={(e) => {
+											setAiPrompt(e.target.value);
+											if (generateError) setGenerateError(null);
+										}}
+										onKeyDown={(e) => {
+											if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+												e.preventDefault();
+												if (aiPrompt.trim() && !isGenerating) {
+													generateDiagramFromPrompt();
+												}
+											}
+										}}
+										placeholder='e.g. "User login flow with email/password, OTP verification, success and failure paths"'
+										value={aiPrompt}
+									/>
+									{generateError ? (
+										<p className="text-xs text-destructive">{generateError}</p>
+									) : !aiPrompt.trim() ? (
+										<p className="text-xs text-muted-foreground">
+											Describe a diagram to enable generation.
+										</p>
+									) : null}
+								</div>
+								<div className="flex gap-2">
+									<Button
+										disabled={!aiPrompt.trim()}
+										loading={isGenerating}
+										onClick={generateDiagramFromPrompt}
+									>
+										{isGenerating ? "Generating…" : "Generate diagram"}
+									</Button>
+									{isGenerating ? (
+										<Button
+											onClick={cancelGenerateDiagram}
+											type="button"
+											variant="outline"
+										>
+											Cancel
+										</Button>
+									) : null}
+								</div>
 							</div>
 						</ExcalidrawSidebar>
 					) : null}

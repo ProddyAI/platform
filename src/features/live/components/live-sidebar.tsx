@@ -13,6 +13,16 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,10 +85,9 @@ export const LiveSidebar = ({
 	disableCreate = false,
 }: LiveSidebarProps) => {
 	const [searchQuery, setSearchQuery] = useState("");
-	const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
-	const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 	const [renamingItemId, setRenamingItemId] = useState<string | null>(null);
 	const [renameValue, setRenameValue] = useState("");
+	const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
 	// Filter items based on search query
 	const filteredItems = useMemo(() => {
@@ -137,10 +146,25 @@ export const LiveSidebar = ({
 		onItemSelect(item._id, item.roomId, title);
 	};
 
-	// Handle delete
+	// Handle delete - opens a confirmation dialog instead of deleting immediately.
+	// Canvas callers already gate onDeleteItem behind their own confirmation
+	// dialog (see canvas/page.tsx's useConfirm-based handleDeleteCanvas), so
+	// only intercept here for notes to avoid a double confirmation prompt.
 	const handleDelete = (e: React.MouseEvent, itemId: string) => {
 		e.stopPropagation();
-		onDeleteItem?.(itemId);
+		if (type === "notes") {
+			setDeleteItemId(itemId);
+		} else {
+			onDeleteItem?.(itemId);
+		}
+	};
+
+	// Handle confirmed delete
+	const handleConfirmDelete = () => {
+		if (deleteItemId) {
+			onDeleteItem?.(deleteItemId);
+		}
+		setDeleteItemId(null);
 	};
 
 	// Handle rename
@@ -148,7 +172,6 @@ export const LiveSidebar = ({
 		e.stopPropagation();
 		setRenamingItemId(item._id);
 		setRenameValue(getItemTitle(item));
-		setOpenDropdownId(null);
 	};
 
 	// Handle rename submit
@@ -266,7 +289,7 @@ export const LiveSidebar = ({
 								<Plus className="h-4 w-4" />
 							</Button>
 							<Button
-								className="h-9 px-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-md gap-1.5 font-medium"
+								className="h-9 px-3 gap-1.5 font-medium"
 								disabled={disableCreate}
 								onClick={() => onCreateItem(true)}
 								size="sm"
@@ -339,13 +362,6 @@ export const LiveSidebar = ({
 											handleItemClick(item);
 										}
 									}}
-									onMouseEnter={() => setHoveredItemId(item._id)}
-									onMouseLeave={() => {
-										// Don't hide if dropdown is open for this item
-										if (openDropdownId !== item._id) {
-											setHoveredItemId(null);
-										}
-									}}
 									role="button"
 									tabIndex={0}
 								>
@@ -393,53 +409,49 @@ export const LiveSidebar = ({
 
 											<div className="text-xs text-muted-foreground mt-1">
 												{item.updatedAt &&
-													new Date(item.updatedAt).toLocaleDateString()}
+													new Date(item.updatedAt).toLocaleDateString("en-US", {
+														year: "numeric",
+														month: "short",
+														day: "numeric",
+													})}
 											</div>
 										</div>
 
-										{/* Actions - Always show delete for both notes and canvas */}
-										{hoveredItemId === item._id && (
-											<DropdownMenu
-												onOpenChange={(open) => {
-													if (open) {
-														setOpenDropdownId(item._id);
-													} else {
-														setOpenDropdownId(null);
-														setHoveredItemId(null);
-													}
-												}}
-											>
-												<DropdownMenuTrigger asChild>
-													<Button
-														className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-														onClick={(e) => e.stopPropagation()}
-														size="sm"
-														variant="ghost"
+										{/* Actions - Always show delete for both notes and canvas.
+										    Visibility is CSS-driven (hover/focus) so the trigger stays
+										    reachable and operable via keyboard, not just mouse hover. */}
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													aria-label={`More actions for ${getItemTitle(item)}`}
+													className="h-6 w-6 p-0 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+													onClick={(e) => e.stopPropagation()}
+													size="sm"
+													variant="ghost"
+												>
+													<MoreHorizontal className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												{onRenameItem && (
+													<DropdownMenuItem
+														onClick={(e) => handleRename(e, item)}
 													>
-														<MoreHorizontal className="h-4 w-4" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end">
-													{onRenameItem && (
-														<DropdownMenuItem
-															onClick={(e) => handleRename(e, item)}
-														>
-															<FileText className="h-4 w-4 mr-2" />
-															Rename
-														</DropdownMenuItem>
-													)}
-													{onDeleteItem && (
-														<DropdownMenuItem
-															className="text-destructive"
-															onClick={(e) => handleDelete(e, item._id)}
-														>
-															<Trash2 className="h-4 w-4 mr-2" />
-															Delete
-														</DropdownMenuItem>
-													)}
-												</DropdownMenuContent>
-											</DropdownMenu>
-										)}
+														<FileText className="h-4 w-4 mr-2" />
+														Rename
+													</DropdownMenuItem>
+												)}
+												{onDeleteItem && (
+													<DropdownMenuItem
+														className="text-destructive"
+														onClick={(e) => handleDelete(e, item._id)}
+													>
+														<Trash2 className="h-4 w-4 mr-2" />
+														Delete
+													</DropdownMenuItem>
+												)}
+											</DropdownMenuContent>
+										</DropdownMenu>
 									</div>
 								</div>
 							))}
@@ -447,6 +459,32 @@ export const LiveSidebar = ({
 					)}
 				</div>
 			</div>
+
+			<AlertDialog
+				onOpenChange={(open) => {
+					if (!open) setDeleteItemId(null);
+				}}
+				open={deleteItemId !== null}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action cannot be undone. This will permanently delete this{" "}
+							{type === "notes" ? "note" : "canvas"}.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							onClick={handleConfirmDelete}
+						>
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 };

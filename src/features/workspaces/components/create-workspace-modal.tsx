@@ -65,13 +65,15 @@ export const CreateWorkspaceModal = () => {
 						maxLength={20}
 						minLength={3}
 						onChange={(e) => setName(e.target.value)}
-						placeholder="Workspace name e.g 'Work', 'Personal', 'Home'"
+						placeholder="e.g. Acme, Personal"
 						required
 						value={name}
 					/>
 
 					<div className="flex justify-end">
-						<Button disabled={isPending}>Create</Button>
+						<Button disabled={isPending}>
+							{isPending ? "Creating…" : "Create"}
+						</Button>
 					</div>
 				</form>
 			</DialogContent>

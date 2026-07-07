@@ -34,8 +34,9 @@ export const ProjectNavTabs = () => {
 				const isActive = activeSegment === segment;
 				return (
 					<button
+						aria-current={isActive ? "page" : undefined}
 						className={cn(
-							"flex items-center gap-1.5 border-b-2 px-3 py-2.5 font-medium text-sm transition-colors",
+							"flex items-center gap-1.5 border-b-2 px-3 py-2.5 font-medium text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 							isActive
 								? "border-primary text-primary"
 								: "border-transparent text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"

@@ -36,6 +36,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/hooks/use-confirm";
 import { UpgradeModal } from "./upgrade-modal";
 
@@ -82,9 +83,18 @@ export function BillingSection({
 	const [upgradeOpen, setUpgradeOpen] = useState(false);
 	const [selectedPlan, setSelectedPlan] = useState<"pro" | "enterprise">("pro");
 	const lastSyncedSubscriptionId = useRef<string | null>(null);
+	const pendingCancelPlanName = (subscription?.plan ?? "free") as PlanName;
+	const pendingCancelSeatCount =
+		pendingCancelPlanName === "enterprise"
+			? (subscription?.enterpriseSeats ?? 0)
+			: pendingCancelPlanName === "pro"
+				? (subscription?.proSeats ?? 0)
+				: 0;
 	const [ConfirmCancelPlanDialog, confirmCancelPlan] = useConfirm(
 		"Downgrade to Free?",
-		"This cancels the paid plan immediately and requests a refund for unused time."
+		`This cancels your ${PLANS[pendingCancelPlanName].label} plan (${pendingCancelSeatCount} paid seat${
+			pendingCancelSeatCount === 1 ? "" : "s"
+		}) immediately and requests a refund for unused time.`
 	);
 
 	useEffect(() => {
@@ -106,8 +116,27 @@ export function BillingSection({
 
 	if (!subscription) {
 		return (
-			<div className="flex items-center justify-center py-12">
-				<Loader className="size-5 animate-spin text-muted-foreground" />
+			<div className="space-y-5">
+				<Card className="overflow-hidden border-primary/15 shadow-sm">
+					<div className="border-b bg-primary/5 px-6 py-5">
+						<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+							<div className="min-w-0 space-y-3">
+								<Skeleton className="h-4 w-28" />
+								<Skeleton className="h-8 w-40" />
+								<Skeleton className="h-4 w-64" />
+							</div>
+							<div className="flex flex-col gap-2 sm:flex-row">
+								<Skeleton className="h-9 w-36" />
+								<Skeleton className="h-9 w-36" />
+							</div>
+						</div>
+					</div>
+					<CardContent className="grid gap-3 p-6 sm:grid-cols-3">
+						<Skeleton className="h-20 rounded-md" />
+						<Skeleton className="h-20 rounded-md" />
+						<Skeleton className="h-20 rounded-md" />
+					</CardContent>
+				</Card>
 			</div>
 		);
 	}
@@ -115,10 +144,10 @@ export function BillingSection({
 	if (!canManageBilling) {
 		return (
 			<div className="flex flex-col items-center justify-center py-24 text-center animate-in fade-in zoom-in duration-300">
-				<div className="bg-amber-100 p-6 rounded-full mb-6">
-					<Lock className="size-12 text-amber-600" />
+				<div className="bg-muted p-6 rounded-full mb-6">
+					<Lock className="size-12 text-muted-foreground" />
 				</div>
-				<h2 className="text-2xl font-bold text-gray-900 mb-2">
+				<h2 className="text-2xl font-bold text-foreground mb-2">
 					Billing is restricted to workspace owners.
 				</h2>
 				<p className="text-muted-foreground max-w-md mx-auto">
@@ -214,8 +243,11 @@ export function BillingSection({
 		try {
 			const url = await createPortal({ workspaceId, send_email: true });
 			window.open(url, "_blank");
-		} catch (err) {
-			console.error("Failed to open billing portal:", err);
+		} catch (err: unknown) {
+			const message =
+				err instanceof Error ? err.message : "Failed to open billing portal";
+			console.error("Failed to open billing portal:", message);
+			toast.error(message);
 		} finally {
 			setPortalLoading(false);
 		}
@@ -240,6 +272,15 @@ export function BillingSection({
 			day: "numeric",
 			year: "numeric",
 		}).format(new Date(value));
+	};
+
+	const formatStatusLabel = (status?: string | null) => {
+		if (!status) return "Active";
+		return status
+			.split(/[_\s]+/)
+			.filter(Boolean)
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(" ");
 	};
 
 	const handleCancelPlan = async () => {
@@ -295,7 +336,12 @@ export function BillingSection({
 	const formatPlanPrice = (plan: (typeof PLANS)[PlanName]) => {
 		if (plan.priceDisplayLabel) return plan.priceDisplayLabel;
 		if (plan.name === "free") return "Free";
-		return `$${plan.pricePerSeatMonthly}`;
+		return new Intl.NumberFormat("en-US", {
+			style: "currency",
+			currency: "USD",
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 2,
+		}).format(plan.pricePerSeatMonthly);
 	};
 
 	const currentPriceLabel =
@@ -358,7 +404,7 @@ export function BillingSection({
 					</p>
 				</div>
 				<div className="rounded-md border p-3">
-					<p className="text-xs text-muted-foreground">Deducted / net paid</p>
+					<p className="text-xs text-muted-foreground">Paid after refunds</p>
 					<p className="text-lg font-semibold">
 						{formatMoney(netPaidForDisplay, billingSummary?.currency) ??
 							"$0.00"}
@@ -507,16 +553,11 @@ export function BillingSection({
 							<div className="flex flex-col gap-2 sm:flex-row">
 								{canOpenBillingPortal && (
 									<Button
-										className="border-primary/20 bg-white/80 hover:border-primary/40"
-										disabled={portalLoading}
+										className="border-primary/20 bg-card/80 hover:border-primary/40"
 										onClick={handleManageBilling}
 										variant="outline"
 									>
-										{portalLoading ? (
-											<Loader className="mr-2 size-4 animate-spin" />
-										) : (
-											<ExternalLink className="mr-2 size-4" />
-										)}
+										<ExternalLink className="mr-2 size-4" />
 										Manage Billing
 									</Button>
 								)}
@@ -534,7 +575,7 @@ export function BillingSection({
 									</Button>
 								) : (
 									<Button
-										className="border-primary/20 bg-white/80 hover:border-primary/40"
+										className="border-primary/20 bg-card/80 hover:border-primary/40"
 										onClick={() => openPlanChange("pro")}
 										variant="outline"
 									>
@@ -564,8 +605,8 @@ export function BillingSection({
 								<ShieldCheck className="size-4 text-primary" />
 								Status
 							</div>
-							<p className="text-xl font-semibold capitalize">
-								{subscription.subscriptionStatus ?? "active"}
+							<p className="text-xl font-semibold">
+								{formatStatusLabel(subscription.subscriptionStatus)}
 							</p>
 						</div>
 					</CardContent>

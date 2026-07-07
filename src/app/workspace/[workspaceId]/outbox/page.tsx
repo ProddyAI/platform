@@ -40,7 +40,10 @@ import {
 import { useGetUserMessages } from "@/features/messages/api/use-get-user-messages";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../toolbar";
+import {
+	useSetWorkspaceTitle,
+	WorkspaceTitle,
+} from "../workspace-title-context";
 
 type MessageContext = {
 	name: string;
@@ -65,7 +68,9 @@ interface Message {
 
 export default function OutboxPage() {
 	// Set document title
-	useDocumentTitle("Outbox");
+	useDocumentTitle("Sent");
+
+	useSetWorkspaceTitle(<WorkspaceTitle icon={Mail} label="Sent" />);
 
 	const workspaceId = useWorkspaceId();
 	const messages = useGetUserMessages() as Message[] | undefined;
@@ -234,34 +239,23 @@ export default function OutboxPage() {
 	// Always render the same outer structure to maintain toolbar visibility
 	return (
 		<>
-			<WorkspaceToolbar>
-				<Button
-					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
-					size="sm"
-					variant="ghost"
-				>
-					<Mail className="mr-2 size-5" />
-					<span className="truncate">Outbox</span>
-				</Button>
-			</WorkspaceToolbar>
-
 			{/* Content area - changes based on state */}
 			{!messages ? (
 				// Loading state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-white">
+				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
 					<Loader className="size-12 animate-spin text-muted-foreground" />
 					<p className="text-sm text-muted-foreground">Loading messages...</p>
 				</div>
 			) : !messages.length ? (
 				// Empty state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-white">
+				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
 					<Mail className="size-12 text-muted-foreground" />
-					<h2 className="text-2xl font-semibold">Outbox</h2>
+					<h2 className="text-2xl font-semibold">Sent</h2>
 					<p className="text-sm text-muted-foreground">No messages sent yet.</p>
 				</div>
 			) : (
 				// Messages loaded state
-				<div className="flex flex-1 flex-col bg-white overflow-hidden">
+				<div className="flex flex-1 flex-col bg-background overflow-hidden">
 					<div className="border-b p-4 flex-shrink-0">
 						<div className="flex items-center justify-between mb-4">
 							<h2 className="text-xl font-semibold">Your Messages</h2>
@@ -367,26 +361,15 @@ export default function OutboxPage() {
 								/>
 							</div>
 
-							<Tabs className="w-[300px]" defaultValue="all">
+							<Tabs
+								className="w-[300px]"
+								onValueChange={setActiveFilter}
+								value={activeFilter}
+							>
 								<TabsList className="grid w-full grid-cols-3">
-									<TabsTrigger
-										onClick={() => setActiveFilter("all")}
-										value="all"
-									>
-										All
-									</TabsTrigger>
-									<TabsTrigger
-										onClick={() => setActiveFilter("channels")}
-										value="channels"
-									>
-										Channels
-									</TabsTrigger>
-									<TabsTrigger
-										onClick={() => setActiveFilter("direct")}
-										value="direct"
-									>
-										Direct
-									</TabsTrigger>
+									<TabsTrigger value="all">All</TabsTrigger>
+									<TabsTrigger value="channels">Channels</TabsTrigger>
+									<TabsTrigger value="direct">Direct</TabsTrigger>
 								</TabsList>
 							</Tabs>
 						</div>
@@ -407,13 +390,10 @@ export default function OutboxPage() {
 								{groupedMessages.today?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-3">
-											<Badge
-												className="rounded-full px-3 py-1 bg-secondary/5"
-												variant="outline"
-											>
-												<Clock className="mr-1 h-3 w-3" />
+											<Clock className="h-4 w-4 text-muted-foreground" />
+											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
 												Today
-											</Badge>
+											</h3>
 										</div>
 										<div className="space-y-3">
 											{groupedMessages.today.map((message) =>
@@ -427,13 +407,10 @@ export default function OutboxPage() {
 								{groupedMessages.yesterday?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-3">
-											<Badge
-												className="rounded-full px-3 py-1 bg-muted"
-												variant="outline"
-											>
-												<Clock className="mr-1 h-3 w-3" />
+											<Clock className="h-4 w-4 text-muted-foreground" />
+											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
 												Yesterday
-											</Badge>
+											</h3>
 										</div>
 										<div className="space-y-3">
 											{groupedMessages.yesterday.map((message) =>
@@ -447,13 +424,10 @@ export default function OutboxPage() {
 								{groupedMessages.thisWeek?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-3">
-											<Badge
-												className="rounded-full px-3 py-1 bg-muted"
-												variant="outline"
-											>
-												<Clock className="mr-1 h-3 w-3" />
+											<Clock className="h-4 w-4 text-muted-foreground" />
+											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
 												This Week
-											</Badge>
+											</h3>
 										</div>
 										<div className="space-y-3">
 											{groupedMessages.thisWeek.map((message) =>
@@ -467,13 +441,10 @@ export default function OutboxPage() {
 								{groupedMessages.earlier?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-3">
-											<Badge
-												className="rounded-full px-3 py-1 bg-muted"
-												variant="outline"
-											>
-												<Clock className="mr-1 h-3 w-3" />
+											<Clock className="h-4 w-4 text-muted-foreground" />
+											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
 												Earlier
-											</Badge>
+											</h3>
 										</div>
 										<div className="space-y-3">
 											{groupedMessages.earlier.map((message) =>
@@ -495,14 +466,14 @@ export default function OutboxPage() {
 
 		return (
 			<Link
-				className="flex flex-col rounded-lg border bg-white p-4 shadow-sm hover:shadow-md transition-all"
+				className="flex flex-col rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-all"
 				href={getMessageUrl(message)}
 				key={message._id}
 			>
 				<div className="flex items-center justify-between mb-3">
 					<div className="flex items-center gap-2">
 						<Badge
-							className={`rounded-full px-2 py-0.5 ${message.context.type === "channel" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}`}
+							className={`rounded-full px-2 py-0.5 ${message.context.type === "channel" ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" : "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"}`}
 							variant="outline"
 						>
 							{message.context.type === "channel" ? (

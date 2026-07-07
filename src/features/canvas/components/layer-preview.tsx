@@ -4,14 +4,7 @@ import type React from "react";
 import { memo } from "react";
 import { useStorage } from "../../../../liveblocks.config";
 import { colorToCSS } from "../../../lib/utils";
-import {
-	type EllipseLayer,
-	LayerType,
-	type MermaidLayer,
-	type NoteLayer,
-	type RectangleLayer,
-	type TextLayer,
-} from "../types";
+import { LayerType } from "../types";
 
 import { Ellipse } from "./ellipse";
 import { Mermaid } from "./mermaid";
@@ -44,10 +37,7 @@ export const LayerPreview = memo(
 
 		if (!layer) return null;
 
-		// Get the layer type
-		const type = layer.type;
-
-		switch (type) {
+		switch (layer.type) {
 			case LayerType.Path:
 				return (
 					<Path
@@ -65,7 +55,7 @@ export const LayerPreview = memo(
 				return (
 					<Note
 						id={id}
-						layer={layer as NoteLayer}
+						layer={layer}
 						onPointerDown={onLayerPointerDown}
 						selectionColor={selectionColor}
 					/>
@@ -74,7 +64,7 @@ export const LayerPreview = memo(
 				return (
 					<Text
 						id={id}
-						layer={layer as TextLayer}
+						layer={layer}
 						onPointerDown={onLayerPointerDown}
 						selectionColor={selectionColor}
 					/>
@@ -83,7 +73,7 @@ export const LayerPreview = memo(
 				return (
 					<Ellipse
 						id={id}
-						layer={layer as EllipseLayer}
+						layer={layer}
 						onPointerDown={onLayerPointerDown}
 						selectionColor={selectionColor}
 					/>
@@ -92,7 +82,7 @@ export const LayerPreview = memo(
 				return (
 					<Rectangle
 						id={id}
-						layer={layer as RectangleLayer}
+						layer={layer}
 						onPointerDown={onLayerPointerDown}
 						selectionColor={selectionColor}
 					/>
@@ -101,7 +91,7 @@ export const LayerPreview = memo(
 				return (
 					<Mermaid
 						id={id}
-						layer={layer as MermaidLayer}
+						layer={layer}
 						onPointerDown={onLayerPointerDown}
 						selectionColor={selectionColor}
 					/>

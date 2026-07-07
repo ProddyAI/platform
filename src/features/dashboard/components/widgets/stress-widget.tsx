@@ -1,11 +1,9 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
 import {
 	AlertTriangle,
 	Brain,
 	CheckCircle2,
-	Clock,
 	Loader2,
 	Sparkles,
 	Target,
@@ -26,7 +24,9 @@ import {
 	type TaskSummary,
 } from "@/lib/stress-prompts";
 import { cn } from "@/lib/utils";
+import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
+import { WidgetHeader } from "../shared/widget-header";
 
 interface StressWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -55,33 +55,25 @@ function StressWidgetTitleRow({
 	controls?: React.ReactNode;
 }) {
 	return (
-		<div className="flex items-center justify-between">
-			<div className="flex items-center gap-2">
+		<WidgetHeader
+			controls={controls}
+			icon={
 				<div className={cn("p-2 rounded-lg bg-primary/10", config.text)}>
 					<Brain className="h-5 w-5" />
 				</div>
-				<h3 className="font-bold text-lg tracking-tight">Stress & Focus</h3>
-			</div>
-			{isEditMode ? (
-				controls
-			) : (
-				<Badge
-					className="font-mono text-[10px] uppercase tracking-wider"
-					variant="outline"
-				>
-					Live Engine
-				</Badge>
-			)}
-		</div>
+			}
+			isEditMode={isEditMode}
+			title="Stress & Focus"
+		/>
 	);
 }
 
 function StressHighAlert() {
 	return (
-		<div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 animate-pulse">
+		<div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 motion-safe:animate-pulse">
 			<div className="flex gap-2">
-				<AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />
-				<p className="text-xs text-rose-700 dark:text-rose-300 font-medium leading-relaxed">
+				<AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+				<p className="text-xs text-destructive font-medium leading-relaxed">
 					High workload detected. Consider rescheduling non-urgent tasks or
 					taking a short break.
 				</p>
@@ -100,15 +92,12 @@ function FocusTaskDueDate({
 	const due = new Date(dueDate);
 	if (Number.isNaN(due.getTime())) return null;
 	return (
-		<span
-			className={cn(
-				"text-[9px] font-medium flex items-center gap-0.5",
-				isOverdue ? "text-rose-500" : "text-muted-foreground"
-			)}
-		>
-			<Clock className="h-2.5 w-2.5" />
-			{formatDistanceToNow(due, { addSuffix: true })}
-		</span>
+		<RelativeTime
+			className="text-[9px]"
+			iconClassName="h-2.5 w-2.5"
+			overdue={isOverdue}
+			timestamp={due.getTime()}
+		/>
 	);
 }
 
@@ -127,7 +116,7 @@ function FocusTaskMeta({ task }: { task: TaskSummary }) {
 
 function FocusTaskRow({ task }: { task: TaskSummary & { _id?: string } }) {
 	return (
-		<div className="group relative p-3 rounded-xl border bg-card hover:border-primary/30 transition-all duration-200 flex items-start gap-3">
+		<div className="group relative p-3 rounded-lg border bg-card hover:border-primary/30 transition-all duration-200 flex items-start gap-3">
 			<div className="space-y-1 min-w-0">
 				<p className="text-sm font-semibold truncate leading-none">
 					{task.title}
@@ -147,10 +136,8 @@ function StressMeterReadout({
 }) {
 	return (
 		<div className="space-y-1">
-			<p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
-				Current Load
-			</p>
-			<p className={cn("text-3xl font-black tracking-tighter", config.text)}>
+			<p className="text-xs font-medium text-muted-foreground">Current Load</p>
+			<p className={cn("text-2xl font-bold", config.text)}>
 				{stressScore}
 				<span className="text-sm font-medium text-muted-foreground ml-1">
 					/ 150
@@ -202,7 +189,7 @@ function StressMeterSection({
 			<div className="relative h-3 w-full bg-muted rounded-full overflow-hidden shadow-inner">
 				<div
 					className={cn(
-						"absolute h-full transition-all duration-1000 ease-out",
+						"absolute h-full transition-all duration-slow ease-out",
 						config.color
 					)}
 					style={{ width: `${Math.min((stressScore / 150) * 100, 100)}%` }}
@@ -219,12 +206,10 @@ function FocusSectionHeader({ onAIGuide }: { onAIGuide: () => void }) {
 		<div className="flex items-center justify-between">
 			<div className="flex items-center gap-2">
 				<Target className="h-4 w-4 text-primary" />
-				<h4 className="text-sm font-bold uppercase tracking-tight">
-					Daily Focus
-				</h4>
+				<h4 className="text-sm font-semibold">Daily Focus</h4>
 			</div>
 			<Button
-				className="h-7 text-[10px] uppercase font-bold text-primary hover:bg-primary/5"
+				className="h-7 text-xs font-medium text-primary hover:bg-primary/5"
 				onClick={onAIGuide}
 				size="sm"
 				variant="ghost"
@@ -314,8 +299,8 @@ export const StressWidget = ({
 			icon: Brain,
 		},
 		high: {
-			color: "bg-rose-500",
-			text: "text-rose-500",
+			color: "bg-destructive",
+			text: "text-destructive",
 			label: "High Stress",
 			icon: AlertTriangle,
 		},
@@ -325,7 +310,7 @@ export const StressWidget = ({
 		levelConfig[stressLevel as keyof typeof levelConfig] || levelConfig.low;
 
 	return (
-		<WidgetCard className="overflow-hidden border-none shadow-xl bg-gradient-to-br from-background to-muted/30">
+		<WidgetCard>
 			<div className="p-6 space-y-6">
 				<StressWidgetTitleRow
 					config={config}
@@ -353,7 +338,7 @@ export const StressWidget = ({
 				{/* Quick AI Actions */}
 				<div className="grid grid-cols-2 gap-2">
 					<Button
-						className="h-9 text-[10px] font-bold uppercase tracking-tight rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
+						className="h-9 hover:border-primary hover:bg-primary/5 transition-all"
 						onClick={() =>
 							metrics &&
 							openAssistantWithPrompt(buildStressDetectionPrompt(metrics))
@@ -365,7 +350,7 @@ export const StressWidget = ({
 						Analyze
 					</Button>
 					<Button
-						className="h-9 text-[10px] font-bold uppercase tracking-tight rounded-xl hover:border-rose-500 hover:bg-rose-500/5 transition-all"
+						className="h-9 hover:border-destructive hover:bg-destructive/5 transition-all"
 						onClick={() =>
 							focusTasks &&
 							openAssistantWithPrompt(

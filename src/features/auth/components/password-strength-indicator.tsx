@@ -10,6 +10,15 @@ interface PasswordStrengthIndicatorProps {
 	showRequirements?: boolean;
 }
 
+// Score-indexed label colors (>=4.5:1 contrast on the app background).
+const SCORE_LABEL_COLORS: Record<number, string> = {
+	0: "text-red-600",
+	1: "text-orange-700",
+	2: "text-yellow-700",
+	3: "text-blue-600",
+	4: "text-green-700",
+};
+
 export const PasswordStrengthIndicator = ({
 	password,
 	showRequirements = true,
@@ -27,15 +36,7 @@ export const PasswordStrengthIndicator = ({
 					<span className="text-muted-foreground">Password Strength</span>
 					<span
 						className={`font-medium ${
-							strength.score === 0
-								? "text-red-600"
-								: strength.score === 1
-									? "text-orange-600"
-									: strength.score === 2
-										? "text-yellow-600"
-										: strength.score === 3
-											? "text-blue-600"
-											: "text-green-600"
+							SCORE_LABEL_COLORS[strength.score] ?? "text-muted-foreground"
 						}`}
 					>
 						{strength.label}
@@ -46,7 +47,7 @@ export const PasswordStrengthIndicator = ({
 					{[...Array(5)].map((_, index) => (
 						<div
 							className={`flex-1 rounded-full transition-all duration-300 ${
-								index <= strength.score ? strength.color : "bg-gray-200"
+								index <= strength.score ? strength.color : "bg-muted"
 							}`}
 							key={`strength-bar-${index}`}
 						/>
@@ -63,13 +64,13 @@ export const PasswordStrengthIndicator = ({
 							key={requirement.label}
 						>
 							{requirement.met ? (
-								<Check className="size-3.5 text-green-600 flex-shrink-0" />
+								<Check className="size-3.5 text-green-700 flex-shrink-0" />
 							) : (
-								<X className="size-3.5 text-gray-400 flex-shrink-0" />
+								<X className="size-3.5 text-muted-foreground flex-shrink-0" />
 							)}
 							<span
 								className={`${
-									requirement.met ? "text-green-600" : "text-muted-foreground"
+									requirement.met ? "text-green-700" : "text-muted-foreground"
 								} transition-colors duration-200`}
 							>
 								{requirement.label}

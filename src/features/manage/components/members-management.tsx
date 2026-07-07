@@ -1,14 +1,6 @@
 "use client";
 
-import {
-	Crown,
-	MessageSquare,
-	RefreshCw,
-	Shield,
-	Trash2,
-	UserCog,
-	Users,
-} from "lucide-react";
+import { MessageSquare, Shield, Trash2, UserCog } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
@@ -41,6 +33,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -50,17 +43,15 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useRemoveMember } from "@/features/members/api/use-remove-member";
 import { useUpdateMember } from "@/features/members/api/use-update-member";
+import {
+	INVITE_ROLES,
+	ROLE_META,
+	type WorkspaceRole,
+} from "@/features/members/lib/roles";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
-import { useNewJoinCode } from "@/features/workspaces/api/use-new-join-code";
 
 interface MembersManagementProps {
 	workspaceId: Id<"workspaces">;
@@ -72,7 +63,7 @@ interface EmailInviteSectionProps {
 	currentMember: Doc<"members">;
 }
 
-type InviteRole = "owner" | "admin" | "member";
+type InviteRole = Exclude<WorkspaceRole, "viewer">;
 
 const EmailInviteSection = ({
 	workspaceId,
@@ -84,23 +75,6 @@ const EmailInviteSection = ({
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [inviteError, setInviteError] = useState<string | null>(null);
 	const [inviteSuccess, setInviteSuccess] = useState(false);
-	const [isGeneratingCode, setIsGeneratingCode] = useState(false);
-
-	const newJoinCode = useNewJoinCode();
-
-	const handleGenerateNewCode = async () => {
-		setIsGeneratingCode(true);
-		try {
-			await newJoinCode.mutate({
-				workspaceId,
-			});
-			toast.success("New join code generated");
-		} catch (_error) {
-			toast.error("Failed to generate new join code");
-		} finally {
-			setIsGeneratingCode(false);
-		}
-	};
 
 	const sendInvite = async () => {
 		setInviteError(null);
@@ -138,7 +112,6 @@ const EmailInviteSection = ({
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			setInviteError(message);
-			toast.error(message || "Failed to send invite");
 		} finally {
 			setInviteLoading(false);
 		}
@@ -150,7 +123,7 @@ const EmailInviteSection = ({
 				<Label className="text-sm font-semibold" htmlFor="emailInvite">
 					Invite by Email
 				</Label>
-				<div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto_auto]">
+				<div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
 					<Input
 						className="flex-1"
 						disabled={inviteLoading}
@@ -177,47 +150,21 @@ const EmailInviteSection = ({
 							<SelectValue placeholder="Role" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="member">
-								<div className="flex items-center gap-2">
-									<Users className="h-4 w-4" />
-									Member
-								</div>
-							</SelectItem>
-							<SelectItem value="admin">
-								<div className="flex items-center gap-2">
-									<Crown className="h-4 w-4" />
-									Admin
-								</div>
-							</SelectItem>
-							{currentMember.role === "owner" && (
-								<SelectItem value="owner">
-									<div className="flex items-center gap-2">
-										<Crown className="h-4 w-4" />
-										Owner
-									</div>
-								</SelectItem>
-							)}
+							{INVITE_ROLES.filter(
+								(value) => value !== "owner" || currentMember.role === "owner"
+							).map((value) => {
+								const { label, icon: Icon } = ROLE_META[value];
+								return (
+									<SelectItem key={value} value={value}>
+										<div className="flex items-center gap-2">
+											<Icon className="h-4 w-4" />
+											{label}
+										</div>
+									</SelectItem>
+								);
+							})}
 						</SelectContent>
 					</Select>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								disabled={isGeneratingCode}
-								onClick={handleGenerateNewCode}
-								size="icon"
-								variant="outline"
-							>
-								{isGeneratingCode ? (
-									<RefreshCw className="h-4 w-4 animate-spin" />
-								) : (
-									<RefreshCw className="h-4 w-4" />
-								)}
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>
-							<p>Refresh Code</p>
-						</TooltipContent>
-					</Tooltip>
 					<Button
 						className="min-w-[120px]"
 						disabled={inviteLoading}
@@ -249,7 +196,9 @@ const EmailInviteSection = ({
 					<p className="text-sm text-destructive">{inviteError}</p>
 				)}
 				{inviteSuccess && (
-					<p className="text-sm text-green-600">Invite sent successfully</p>
+					<p className="text-sm text-green-700 dark:text-green-400">
+						Invite sent successfully
+					</p>
 				)}
 				<p className="text-xs text-muted-foreground">
 					Send an email invitation with a secure link to join the workspace
@@ -340,213 +289,250 @@ export const MembersManagement = ({
 		}
 	};
 
-	const getRoleBadgeColor = (role: string) => {
+	const getRoleBadgeVariant = (
+		role: string
+	): "default" | "secondary" | "outline" => {
 		switch (role) {
 			case "owner":
-				return "bg-purple-100 text-purple-800 hover:bg-purple-200";
+				return "default";
 			case "admin":
-				return "bg-blue-100 text-blue-800 hover:bg-blue-200";
+				return "secondary";
 			default:
-				return "bg-gray-100 text-gray-800 hover:bg-gray-200";
+				return "outline";
 		}
 	};
 
 	return (
-		<TooltipProvider>
-			<div className="space-y-6">
-				<div className="flex justify-between items-center">
-					<div>
-						<h3 className="text-lg font-medium">Members</h3>
-						<p className="text-sm text-muted-foreground">
-							Manage the members in your workspace and their roles
-						</p>
-					</div>
+		<div className="space-y-6">
+			<div className="flex justify-between items-center">
+				<div>
+					<h3 className="text-lg font-medium">Members</h3>
+					<p className="text-sm text-muted-foreground">
+						Manage the members in your workspace and their roles
+					</p>
 				</div>
-
-				{(isOwner || isAdmin) && workspace && (
-					<EmailInviteSection
-						currentMember={currentMember}
-						workspaceId={workspaceId}
-					/>
-				)}
-
-				<Separator />
-
-				<div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
-					<span className="text-sm font-medium text-muted-foreground">
-						Workspace plan
-					</span>
-					<Badge variant="outline">
-						{workspace?.plan ? workspace.plan.toUpperCase() : "FREE"}
-					</Badge>
-				</div>
-
-				{isLoading ? (
-					<div className="flex justify-center py-8">
-						<RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-					</div>
-				) : !members || members.length === 0 ? (
-					<div className="flex flex-col items-center justify-center py-8 text-center">
-						<Shield className="h-12 w-12 text-muted-foreground mb-4" />
-						<h3 className="text-lg font-medium">No members</h3>
-						<p className="text-sm text-muted-foreground">
-							Invite members to your workspace
-						</p>
-					</div>
-				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>User</TableHead>
-								<TableHead>Role</TableHead>
-								<TableHead className="w-[200px]">Actions</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{members.map((member) => (
-								<TableRow key={member._id}>
-									<TableCell>
-										<div className="flex items-center gap-3">
-											<Avatar className="h-8 w-8">
-												<AvatarImage
-													alt={member.user.name}
-													src={member.user.image}
-												/>
-												<AvatarFallback>
-													{member.user.name?.charAt(0).toUpperCase()}
-												</AvatarFallback>
-											</Avatar>
-											<div>
-												<p className="font-medium">{member.user.name}</p>
-												<p className="text-xs text-muted-foreground">
-													{member.user.email}
-												</p>
-											</div>
-										</div>
-									</TableCell>
-									<TableCell>
-										<Badge className={getRoleBadgeColor(member.role)}>
-											{member.role}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<div className="flex items-center gap-2">
-											{/* Role Management Dropdown */}
-											{(isOwner ||
-												(isAdmin &&
-													(member.role === "member" ||
-														member.role === "viewer"))) &&
-												!(member._id === currentMember._id && isOnlyOwner) && (
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
-															<Button
-																disabled={isUpdating}
-																size="sm"
-																variant="outline"
-															>
-																<UserCog className="h-4 w-4" />
-															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end">
-															{isOwner && (
-																<DropdownMenuItem
-																	disabled={member.role === "owner"}
-																	onClick={() =>
-																		handleUpdateRole(member._id, "owner")
-																	}
-																>
-																	Make Owner
-																</DropdownMenuItem>
-															)}
-															{(isOwner || isAdmin) && (
-																<DropdownMenuItem
-																	disabled={member.role === "admin"}
-																	onClick={() =>
-																		handleUpdateRole(member._id, "admin")
-																	}
-																>
-																	Make Admin
-																</DropdownMenuItem>
-															)}
-															{(isOwner || isAdmin) && (
-																<DropdownMenuItem
-																	disabled={member.role === "member"}
-																	onClick={() =>
-																		handleUpdateRole(member._id, "member")
-																	}
-																>
-																	Make Member
-																</DropdownMenuItem>
-															)}
-															{(isOwner || isAdmin) && (
-																<DropdownMenuItem
-																	disabled={member.role === "viewer"}
-																	onClick={() =>
-																		handleUpdateRole(member._id, "viewer")
-																	}
-																>
-																	Make Viewer
-																</DropdownMenuItem>
-															)}
-														</DropdownMenuContent>
-													</DropdownMenu>
-												)}
-											{/* Show a badge for the only owner instead of role change button */}
-											{member._id === currentMember._id && isOnlyOwner && (
-												<Badge
-													className="text-xs text-muted-foreground"
-													variant="outline"
-												>
-													Only Owner
-												</Badge>
-											)}
-
-											{/* Remove Member Button */}
-											{((isOwner && member.role !== "owner") ||
-												(isAdmin &&
-													(member.role === "member" ||
-														member.role === "viewer"))) && (
-												<Button
-													className="text-destructive hover:bg-destructive/10"
-													disabled={member._id === currentMember._id}
-													onClick={() => openRemoveDialog(member._id)}
-													size="sm"
-													variant="outline"
-												>
-													<Trash2 className="h-4 w-4" />
-												</Button>
-											)}
-										</div>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				)}
-
-				{/* Remove Member Dialog */}
-				<AlertDialog onOpenChange={setRemoveDialogOpen} open={removeDialogOpen}>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Are you sure?</AlertDialogTitle>
-							<AlertDialogDescription>
-								This action cannot be undone. This will remove the member from
-								your workspace and delete all of their messages and reactions.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
-							<AlertDialogAction
-								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-								disabled={isRemoving}
-								onClick={handleRemoveMember}
-							>
-								{isRemoving ? "Removing..." : "Remove Member"}
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
 			</div>
-		</TooltipProvider>
+
+			{(isOwner || isAdmin) && workspace && (
+				<EmailInviteSection
+					currentMember={currentMember}
+					workspaceId={workspaceId}
+				/>
+			)}
+
+			<Separator />
+
+			<div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
+				<span className="text-sm font-medium text-muted-foreground">
+					Workspace plan
+				</span>
+				<Badge variant="outline">
+					{workspace?.plan ? workspace.plan.toUpperCase() : "FREE"}
+				</Badge>
+			</div>
+
+			{isLoading ? (
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>User</TableHead>
+							<TableHead>Role</TableHead>
+							<TableHead className="w-[200px]">Actions</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{Array.from({ length: 3 }).map((_, index) => (
+							<TableRow key={`member-skeleton-${index}`}>
+								<TableCell>
+									<div className="flex items-center gap-3">
+										<Skeleton className="h-8 w-8 rounded-full" />
+										<div className="space-y-1.5">
+											<Skeleton className="h-4 w-32" />
+											<Skeleton className="h-3 w-40" />
+										</div>
+									</div>
+								</TableCell>
+								<TableCell>
+									<Skeleton className="h-5 w-16 rounded-full" />
+								</TableCell>
+								<TableCell>
+									<Skeleton className="h-8 w-8" />
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			) : !members || members.length === 0 ? (
+				<div className="flex flex-col items-center justify-center py-8 text-center">
+					<Shield className="h-12 w-12 text-muted-foreground mb-4" />
+					<h3 className="text-lg font-medium">No members</h3>
+					<p className="text-sm text-muted-foreground mb-4">
+						Invite members to your workspace
+					</p>
+					{(isOwner || isAdmin) && (
+						<Button
+							onClick={() => document.getElementById("emailInvite")?.focus()}
+							size="sm"
+						>
+							Invite members
+						</Button>
+					)}
+				</div>
+			) : (
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>User</TableHead>
+							<TableHead>Role</TableHead>
+							<TableHead className="w-[200px]">Actions</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{members.map((member) => (
+							<TableRow key={member._id}>
+								<TableCell>
+									<div className="flex items-center gap-3">
+										<Avatar className="h-8 w-8">
+											<AvatarImage
+												alt={member.user.name}
+												src={member.user.image}
+											/>
+											<AvatarFallback>
+												{member.user.name?.charAt(0).toUpperCase()}
+											</AvatarFallback>
+										</Avatar>
+										<div>
+											<p className="font-medium">{member.user.name}</p>
+											<p className="text-xs text-muted-foreground">
+												{member.user.email}
+											</p>
+										</div>
+									</div>
+								</TableCell>
+								<TableCell>
+									<Badge variant={getRoleBadgeVariant(member.role)}>
+										{member.role}
+									</Badge>
+								</TableCell>
+								<TableCell>
+									<div className="flex items-center gap-2">
+										{/* Role Management Dropdown */}
+										{(isOwner ||
+											(isAdmin &&
+												(member.role === "member" ||
+													member.role === "viewer"))) &&
+											!(member._id === currentMember._id && isOnlyOwner) && (
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															aria-label={`Change role for ${member.user.name || member.user.email || "member"}`}
+															disabled={isUpdating}
+															size="sm"
+															variant="outline"
+														>
+															<UserCog className="h-4 w-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end">
+														{isOwner && (
+															<DropdownMenuItem
+																disabled={member.role === "owner"}
+																onClick={() =>
+																	handleUpdateRole(member._id, "owner")
+																}
+															>
+																Make {ROLE_META.owner.label}
+															</DropdownMenuItem>
+														)}
+														{(isOwner || isAdmin) && (
+															<DropdownMenuItem
+																disabled={member.role === "admin"}
+																onClick={() =>
+																	handleUpdateRole(member._id, "admin")
+																}
+															>
+																Make {ROLE_META.admin.label}
+															</DropdownMenuItem>
+														)}
+														{(isOwner || isAdmin) && (
+															<DropdownMenuItem
+																disabled={member.role === "member"}
+																onClick={() =>
+																	handleUpdateRole(member._id, "member")
+																}
+															>
+																Make {ROLE_META.member.label}
+															</DropdownMenuItem>
+														)}
+														{(isOwner || isAdmin) && (
+															<DropdownMenuItem
+																disabled={member.role === "viewer"}
+																onClick={() =>
+																	handleUpdateRole(member._id, "viewer")
+																}
+															>
+																Make {ROLE_META.viewer.label}
+															</DropdownMenuItem>
+														)}
+													</DropdownMenuContent>
+												</DropdownMenu>
+											)}
+										{/* Show a badge for the only owner instead of role change button */}
+										{member._id === currentMember._id && isOnlyOwner && (
+											<Badge
+												className="text-xs text-muted-foreground"
+												variant="outline"
+											>
+												Only Owner
+											</Badge>
+										)}
+
+										{/* Remove Member Button */}
+										{((isOwner && member.role !== "owner") ||
+											(isAdmin &&
+												(member.role === "member" ||
+													member.role === "viewer"))) && (
+											<Button
+												aria-label={`Remove ${member.user.name || member.user.email || "member"} from workspace`}
+												className="text-destructive hover:bg-destructive/10"
+												disabled={member._id === currentMember._id}
+												onClick={() => openRemoveDialog(member._id)}
+												size="sm"
+												variant="outline"
+											>
+												<Trash2 className="h-4 w-4" />
+											</Button>
+										)}
+									</div>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			)}
+
+			{/* Remove Member Dialog */}
+			<AlertDialog onOpenChange={setRemoveDialogOpen} open={removeDialogOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action cannot be undone. This will remove the member from
+							your workspace and delete all of their messages and reactions.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							disabled={isRemoving}
+							onClick={handleRemoveMember}
+						>
+							{isRemoving ? "Removing..." : "Remove Member"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</div>
 	);
 };

@@ -18,7 +18,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
 	type ChangeEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
-	type ReactNode,
 	useCallback,
 	useEffect,
 	useMemo,
@@ -54,10 +53,7 @@ import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useSearchMessages } from "@/features/workspaces/api/use-search-messages";
 import { useWorkspaceSearch } from "@/features/workspaces/store/use-workspace-search";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-
-interface WorkspaceToolbarProps {
-	children: ReactNode;
-}
+import { useWorkspaceTitleSlot } from "./workspace-title-context";
 
 interface SearchDialogContentProps {
 	workspaceName?: string;
@@ -471,13 +467,15 @@ const SearchDialogContent = ({
 	);
 };
 
-export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
+export const WorkspaceToolbar = () => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const params = useParams<{ channelId?: string }>();
 	const workspaceId = useWorkspaceId();
+	const title = useWorkspaceTitleSlot();
 	const [searchOpen, setSearchOpen] = useWorkspaceSearch();
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
+	const [isMac, setIsMac] = useState(true);
 	const [forceOpenUserSettings, setForceOpenUserSettings] = useState(false);
 	const [userSettingsTab, setUserSettingsTab] = useState<
 		"profile" | "notifications"
@@ -559,6 +557,11 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 		result: aiResult,
 		reset: resetAISearch,
 	} = useAISearch(workspaceId as Id<"workspaces">);
+
+	// Detect platform for the search shortcut hint (defaults to Mac, corrected after mount)
+	useEffect(() => {
+		setIsMac(/Mac|iPhone|iPad|iPod/.test(window.navigator.userAgent));
+	}, []);
 
 	// Reset search state when dialog closes
 	useEffect(() => {
@@ -779,9 +782,11 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 	}, [setSearchOpen]);
 
 	return (
+		// ml-[-2px] offsets the workspace sidebar's border-r-2 (see sidebar.tsx) so the
+		// same-color topbar and sidebar meet with no visible seam.
 		<nav className="workspace-topbar sticky top-0 z-50 flex h-16 w-full min-w-0 max-w-full items-center overflow-x-hidden overflow-y-visible border-b bg-primary text-secondary-foreground shadow-md ml-[-2px]">
-			{/* Left section - Entity info (Channel/Member/etc) */}
-			<div className="flex items-center px-2 md:px-6">{children}</div>
+			{/* Left section - Entity info (Channel/Member/etc), supplied by the routed page */}
+			<div className="flex items-center px-2 md:px-6">{title}</div>
 
 			{/* Middle section - Search - Hidden on mobile */}
 			<div className="hidden md:block min-w-[280px] max-w-[642px] shrink grow-[2] px-4">
@@ -795,7 +800,7 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 						Search {workspace?.name ?? "workspace"}...
 					</span>
 					<kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-90">
-						<span className="text-xs">⌘</span>K
+						{isMac ? <span className="text-xs">⌘</span> : "Ctrl+"}K
 					</kbd>
 				</Button>
 
@@ -862,8 +867,8 @@ export const WorkspaceToolbar = ({ children }: WorkspaceToolbarProps) => {
 					</Button>
 				</div>
 
-				{/* Notifications Button */}
-				<Hint label="Open billing" side="bottom">
+				{/* Upgrade Button */}
+				<Hint label="Upgrade" side="bottom">
 					<Button
 						aria-label="Upgrade"
 						className="h-8 gap-1.5 px-2 text-white hover:bg-white/15 transition-colors sm:px-3"

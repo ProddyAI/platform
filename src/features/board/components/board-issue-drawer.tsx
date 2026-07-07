@@ -20,6 +20,16 @@ import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import MemberSelector from "@/components/pickers/member-selector";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
@@ -37,7 +47,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { IssuePriority } from "./board-issue-row";
@@ -143,8 +153,7 @@ const getDoneStatus = (statuses: Status[]) =>
 interface DrawerHeaderProps {
 	currentStatus?: Status;
 	issueId: Id<"issues">;
-	confirmDelete: boolean;
-	onDelete: () => void;
+	onDeleteClick: () => void;
 	onClose: () => void;
 	parentIssue?: Issue | null;
 	onBackToParent?: () => void;
@@ -153,8 +162,7 @@ interface DrawerHeaderProps {
 const DrawerHeader = ({
 	currentStatus,
 	issueId,
-	confirmDelete,
-	onDelete,
+	onDeleteClick,
 	onClose,
 	parentIssue,
 	onBackToParent,
@@ -182,13 +190,13 @@ const DrawerHeader = ({
 					<ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
 				</>
 			)}
-			<span className="font-mono text-muted-foreground/70 flex-shrink-0">
+			<span className="font-mono text-muted-foreground flex-shrink-0">
 				{formatIssueId(issueId)}
 			</span>
 			{parentIssue && (
 				<>
 					<ChevronRight className="w-3 h-3 flex-shrink-0 opacity-50" />
-					<span className="truncate max-w-[150px] text-muted-foreground/90">
+					<span className="truncate max-w-[150px] text-muted-foreground">
 						{formatIssueId(parentIssue._id)}
 					</span>
 				</>
@@ -196,19 +204,9 @@ const DrawerHeader = ({
 		</div>
 
 		<div className="flex items-center gap-0.5 shrink-0">
-			{confirmDelete && (
-				<span className="text-[11px] text-destructive mr-2 font-medium">
-					Click again to confirm
-				</span>
-			)}
 			<Button
-				className={cn(
-					"h-8 w-8 rounded-lg transition-colors",
-					confirmDelete
-						? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-						: "hover:bg-destructive/10 hover:text-destructive text-muted-foreground"
-				)}
-				onClick={onDelete}
+				className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+				onClick={onDeleteClick}
 				size="icon"
 				title="Delete issue"
 				variant="ghost"
@@ -278,15 +276,25 @@ const IssueContent = ({
 	onBlur,
 }: IssueContentProps) => {
 	const currentStatus = statuses.find((s) => s._id === statusId);
+	const titleRef = useRef<HTMLTextAreaElement>(null);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: title drives the resize, not read directly
+	useEffect(() => {
+		const el = titleRef.current;
+		if (!el) return;
+		el.style.height = "auto";
+		el.style.height = `${el.scrollHeight}px`;
+	}, [title]);
 
 	return (
 		<div className="px-6 py-5 space-y-5">
 			<textarea
-				className="w-full text-[22px] font-semibold bg-transparent border-none outline-none resize-none text-foreground placeholder:text-muted-foreground/30 leading-snug"
+				className="w-full text-[22px] font-semibold bg-transparent border-none outline-none resize-none overflow-hidden text-foreground placeholder:text-muted-foreground/30 leading-snug"
 				onBlur={onBlur}
 				onChange={(e) => onTitleChange(e.target.value)}
 				placeholder="Issue title"
-				rows={title.length > 55 ? 2 : 1}
+				ref={titleRef}
+				rows={1}
 				value={title}
 			/>
 
@@ -379,21 +387,12 @@ const IssueContent = ({
 							</Button>
 						</PopoverTrigger>
 						<PopoverContent align="start" className="w-auto p-0">
-							<CalendarWidget
-								onSelect={(d) => {
-									onDueDateChange(d);
-									setTimeout(onBlur, 100);
-								}}
-								selected={dueDate}
-							/>
+							<CalendarWidget onSelect={onDueDateChange} selected={dueDate} />
 							{dueDate && (
 								<div className="p-2 border-t">
 									<Button
 										className="text-destructive text-xs w-full"
-										onClick={() => {
-											onDueDateChange(undefined);
-											setTimeout(onBlur, 100);
-										}}
+										onClick={() => onDueDateChange(undefined)}
 										size="sm"
 										variant="ghost"
 									>
@@ -412,7 +411,7 @@ const IssueContent = ({
 								{labels.map((label) => (
 									<button
 										aria-label={`Remove ${label}`}
-										className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-secondary hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer border-none"
+										className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-secondary hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer border-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
 										key={label}
 										onClick={() =>
 											onLabelsChange(labels.filter((l) => l !== label))
@@ -453,7 +452,7 @@ const IssueContent = ({
 
 			<Separator className="opacity-40" />
 
-			<div className="space-y-1.5 text-[11px] text-muted-foreground/50">
+			<div className="space-y-1.5 text-[11px] text-muted-foreground">
 				<div className="flex items-center gap-2">
 					<Calendar className="w-3 h-3" />
 					<span>Created {format(new Date(createdAt), "PPP 'at' p")}</span>
@@ -491,6 +490,9 @@ const SubIssuesSection = ({
 
 	const [isAdding, setIsAdding] = useState(false);
 	const [newTitle, setNewTitle] = useState("");
+	const [pendingDeleteId, setPendingDeleteId] = useState<Id<"issues"> | null>(
+		null
+	);
 
 	useEffect(() => {
 		if (isAdding) {
@@ -587,7 +589,7 @@ const SubIssuesSection = ({
 					variant="ghost"
 				>
 					<Plus className="w-3.5 h-3.5 mr-1" />
-					Add Sub-Issue
+					Add sub-issue
 				</Button>
 			</div>
 
@@ -609,7 +611,7 @@ const SubIssuesSection = ({
 
 					return (
 						<div
-							className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors group cursor-pointer"
+							className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
 							key={subIssue._id}
 							onClick={() => onClickIssue(subIssue)}
 							onKeyDown={(e) => {
@@ -622,15 +624,20 @@ const SubIssuesSection = ({
 							tabIndex={0}
 						>
 							<div
-								className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-								style={{
-									borderColor: isCompleted
-										? status?.color || "#00b341"
-										: "#cbd5e1",
-									backgroundColor: isCompleted
-										? status?.color || "#00b341"
-										: "transparent",
-								}}
+								className={cn(
+									"w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center",
+									isCompleted
+										? !status?.color && "border-green-600 bg-green-600"
+										: "border-border bg-transparent"
+								)}
+								style={
+									isCompleted && status?.color
+										? {
+												borderColor: status.color,
+												backgroundColor: status.color,
+											}
+										: undefined
+								}
 							>
 								{isCompleted && (
 									<Check className="w-3 h-3 text-white" strokeWidth={3} />
@@ -668,7 +675,7 @@ const SubIssuesSection = ({
 									})}
 								</div>
 							)}
-							<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+							<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
 								<Button
 									className={cn(
 										"h-6 w-6",
@@ -693,7 +700,7 @@ const SubIssuesSection = ({
 									className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 									onClick={(e) => {
 										e.stopPropagation();
-										handleDelete(subIssue._id);
+										setPendingDeleteId(subIssue._id);
 									}}
 									onKeyDown={(e) => e.stopPropagation()}
 									size="icon"
@@ -726,6 +733,7 @@ const SubIssuesSection = ({
 						value={newTitle}
 					/>
 					<Button
+						aria-label="Create sub-issue"
 						disabled={!newTitle.trim()}
 						onClick={handleAdd}
 						size="sm"
@@ -734,6 +742,7 @@ const SubIssuesSection = ({
 						<Plus className="w-3.5 h-3.5" />
 					</Button>
 					<Button
+						aria-label="Cancel adding sub-issue"
 						onClick={() => {
 							setIsAdding(false);
 							setNewTitle("");
@@ -748,10 +757,36 @@ const SubIssuesSection = ({
 
 			{!isAdding && totalCount === 0 && (
 				<div className="text-center py-4 text-sm text-muted-foreground">
-					No sub-issues yet. Click &quot;Add Sub-Issue&quot; to break down this
+					No sub-issues yet. Click &quot;Add sub-issue&quot; to break down this
 					task.
 				</div>
 			)}
+
+			<AlertDialog
+				onOpenChange={(nextOpen) => !nextOpen && setPendingDeleteId(null)}
+				open={pendingDeleteId !== null}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete sub-issue?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This can&apos;t be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							onClick={() => {
+								if (pendingDeleteId) handleDelete(pendingDeleteId);
+								setPendingDeleteId(null);
+							}}
+						>
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 };
@@ -1000,7 +1035,9 @@ const BlockingSection = ({
 							<SelectContent>
 								{availableForBlocking.map((i) => (
 									<SelectItem key={i._id} value={i._id}>
-										<span className="truncate">{i.title}</span>
+										<span className="truncate">
+											{formatIssueId(i._id)} · {i.title}
+										</span>
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -1031,7 +1068,9 @@ const BlockingSection = ({
 							<SelectContent>
 								{availableForBlocking.map((i) => (
 									<SelectItem key={i._id} value={i._id}>
-										<span className="truncate">{i.title}</span>
+										<span className="truncate">
+											{formatIssueId(i._id)} · {i.title}
+										</span>
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -1058,11 +1097,6 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 	const deleteComment = useMutation(api.board.board.deleteIssueComment);
 
 	const [message, setMessage] = useState("");
-	const messagesEndRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, []);
 
 	const handleSend = async () => {
 		if (!message.trim()) return;
@@ -1100,7 +1134,7 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 			<div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
 				{comments.length === 0 ? (
 					<div className="text-center py-6 text-sm text-muted-foreground">
-						No comments yet. Start the discussion!
+						No comments yet. Start the discussion.
 					</div>
 				) : (
 					comments.map((comment) => {
@@ -1135,7 +1169,7 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 									</p>
 								</div>
 								<Button
-									className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+									className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity h-6 w-6"
 									onClick={() => handleDelete(comment._id)}
 									size="icon"
 									variant="ghost"
@@ -1146,7 +1180,6 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 						);
 					})
 				)}
-				<div ref={messagesEndRef} />
 			</div>
 
 			<div className="flex gap-2 pt-2 border-t">
@@ -1163,6 +1196,7 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 					value={message}
 				/>
 				<Button
+					aria-label="Send comment"
 					disabled={!message.trim()}
 					onClick={handleSend}
 					size="sm"
@@ -1177,29 +1211,23 @@ const DiscussionSection = ({ issue }: DiscussionSectionProps) => {
 
 interface DrawerFooterProps {
 	issueId: Id<"issues">;
-	saving: boolean;
-	title: string;
-	onSave: () => void;
+	justSaved: boolean;
 }
 
-const DrawerFooter = ({
-	issueId,
-	saving,
-	title,
-	onSave,
-}: DrawerFooterProps) => (
+const DrawerFooter = ({ issueId, justSaved }: DrawerFooterProps) => (
 	<div className="px-5 py-3 border-t border-border/40 dark:border-gray-800/80 bg-muted/10 flex items-center justify-between shrink-0">
-		<span className="text-[11px] text-muted-foreground/50 font-mono">
+		<span className="text-[11px] text-muted-foreground font-mono">
 			{formatIssueId(issueId)}
 		</span>
-		<Button
-			className="text-xs h-8 px-4"
-			disabled={saving || !title.trim()}
-			onClick={onSave}
-			size="sm"
+		<span
+			className={cn(
+				"text-xs text-muted-foreground flex items-center gap-1 transition-opacity",
+				justSaved ? "opacity-100" : "opacity-0"
+			)}
 		>
-			{saving ? "Saving…" : "Save changes"}
-		</Button>
+			<Check className="w-3 h-3" />
+			Saved
+		</span>
 	</div>
 );
 
@@ -1224,14 +1252,27 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 	const [labels, setLabels] = useState<string[]>([]);
 	const [labelInput, setLabelInput] = useState("");
 	const [dueDate, setDueDate] = useState<Date>();
-	const [saving, setSaving] = useState(false);
-	const [confirmDelete, setConfirmDelete] = useState(false);
+	const [justSaved, setJustSaved] = useState(false);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Fetch parent issue if this is a sub-issue
 	const parentIssue = useQuery(
 		api.board.board.getIssueDetails,
 		issue?.parentIssueId ? { issueId: issue.parentIssueId } : "skip"
 	);
+
+	const flashSaved = () => {
+		setJustSaved(true);
+		if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
+		savedTimeoutRef.current = setTimeout(() => setJustSaved(false), 2000);
+	};
+
+	useEffect(() => {
+		return () => {
+			if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
+		};
+	}, []);
 
 	const normalizedMembers: SelectableMember[] = members.map((member) => ({
 		...member,
@@ -1250,7 +1291,6 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 			setAssignees(issue.assignees || []);
 			setLabels(issue.labels || []);
 			setDueDate(issue.dueDate ? new Date(issue.dueDate) : undefined);
-			setConfirmDelete(false);
 		}
 	}, [issue]);
 
@@ -1258,25 +1298,18 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 
 	const currentStatus = statuses.find((s) => s._id === statusId);
 
-	const handleSave = async () => {
+	const handleTitleDescriptionBlur = async () => {
 		if (!issue || !title.trim()) return;
-		setSaving(true);
 		try {
 			await updateIssue({
 				issueId: issue._id,
 				title: title.trim(),
 				description: description.trim() || undefined,
-				statusId: (statusId as Id<"statuses">) || issue.statusId,
-				priority,
-				assignees: assignees.length > 0 ? assignees : [],
-				labels,
-				dueDate: dueDate ? dueDate.getTime() : undefined,
 			});
+			flashSaved();
 		} catch (error) {
 			console.error("Error saving issue:", error);
 			toast.error("Failed to save issue changes");
-		} finally {
-			setSaving(false);
 		}
 	};
 
@@ -1289,6 +1322,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 				issueId: issue._id,
 				statusId: newStatusId as Id<"statuses">,
 			});
+			flashSaved();
 		} catch (error) {
 			console.error("Error updating status:", error);
 			toast.error("Failed to update status");
@@ -1302,6 +1336,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 		setPriority(newPriority);
 		try {
 			await updateIssue({ issueId: issue._id, priority: newPriority });
+			flashSaved();
 		} catch (error) {
 			console.error("Error updating priority:", error);
 			toast.error("Failed to update priority");
@@ -1309,28 +1344,65 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 		}
 	};
 
-	const handleDelete = async () => {
-		if (!confirmDelete) {
-			setConfirmDelete(true);
-			setTimeout(() => setConfirmDelete(false), 3000);
-			return;
+	const handleAssigneesChange = async (newAssignees: Id<"members">[]) => {
+		const previousAssignees = assignees;
+		setAssignees(newAssignees);
+		try {
+			await updateIssue({ issueId: issue._id, assignees: newAssignees });
+			flashSaved();
+		} catch (error) {
+			console.error("Error updating assignees:", error);
+			toast.error("Failed to update assignees");
+			setAssignees(previousAssignees);
 		}
+	};
+
+	const handleLabelsChange = async (newLabels: string[]) => {
+		const previousLabels = labels;
+		setLabels(newLabels);
+		try {
+			await updateIssue({ issueId: issue._id, labels: newLabels });
+			flashSaved();
+		} catch (error) {
+			console.error("Error updating labels:", error);
+			toast.error("Failed to update labels");
+			setLabels(previousLabels);
+		}
+	};
+
+	const handleDueDateChange = async (newDueDate: Date | undefined) => {
+		const previousDueDate = dueDate;
+		setDueDate(newDueDate);
+		try {
+			await updateIssue({
+				issueId: issue._id,
+				dueDate: newDueDate ? newDueDate.getTime() : undefined,
+			});
+			flashSaved();
+		} catch (error) {
+			console.error("Error updating due date:", error);
+			toast.error("Failed to update due date");
+			setDueDate(previousDueDate);
+		}
+	};
+
+	const handleDeleteIssue = async () => {
 		try {
 			await deleteIssue({ issueId: issue._id });
+			setDeleteDialogOpen(false);
 			onOpenChange(false);
 			onDelete?.(issue._id);
 		} catch (error) {
 			console.error("Error deleting issue:", error);
 			toast.error("Failed to delete issue");
-			setConfirmDelete(false);
 		}
 	};
 
 	const handleAddLabel = () => {
 		const trimmed = labelInput.trim();
 		if (trimmed && !labels.includes(trimmed)) {
-			setLabels([...labels, trimmed]);
 			setLabelInput("");
+			handleLabelsChange([...labels, trimmed]);
 		}
 	};
 
@@ -1359,103 +1431,124 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 	};
 
 	return (
-		<Sheet onOpenChange={onOpenChange} open={open}>
-			<SheetContent
-				className="w-full sm:max-w-[580px] p-0 flex flex-col gap-0 border-l border-border/60 dark:border-gray-800 overflow-hidden"
-				showCloseButton={false}
-				side="right"
-			>
-				<DrawerHeader
-					confirmDelete={confirmDelete}
-					currentStatus={currentStatus}
-					issueId={issue._id}
-					onBackToParent={parentIssue ? handleBackToParent : undefined}
-					onClose={() => onOpenChange(false)}
-					onDelete={handleDelete}
-					parentIssue={
-						parentIssue
-							? {
-									_id: parentIssue._id,
-									channelId: parentIssue.channelId,
-									statusId: parentIssue.statusId,
-									title: parentIssue.title,
-									order: parentIssue.order,
-									createdAt: parentIssue.createdAt,
-									updatedAt: parentIssue.updatedAt,
-								}
-							: null
-					}
-				/>
+		<>
+			<Sheet onOpenChange={onOpenChange} open={open}>
+				<SheetContent
+					className="w-full sm:max-w-[580px] p-0 flex flex-col gap-0 border-l border-border/60 dark:border-gray-800 overflow-hidden"
+					showCloseButton={false}
+					side="right"
+				>
+					<SheetTitle className="sr-only">
+						{`Issue ${formatIssueId(issue._id)}: ${title || "Untitled issue"}`}
+					</SheetTitle>
 
-				<div className="flex-1 overflow-y-auto">
-					<IssueContent
-						assignees={assignees}
-						createdAt={issue.createdAt}
-						description={description}
-						dueDate={dueDate}
-						labelInput={labelInput}
-						labels={labels}
-						members={normalizedMembers}
-						onAddLabel={handleAddLabel}
-						onAssigneesChange={setAssignees}
-						onBlur={handleSave}
-						onDescriptionChange={setDescription}
-						onDueDateChange={setDueDate}
-						onLabelInputChange={setLabelInput}
-						onLabelsChange={setLabels}
-						onPriorityChange={handlePriorityChange}
-						onStatusChange={handleStatusChange}
-						onTitleChange={setTitle}
-						priority={priority}
-						statuses={statuses}
-						statusId={statusId}
-						title={title}
-						updatedAt={issue.updatedAt}
+					<DrawerHeader
+						currentStatus={currentStatus}
+						issueId={issue._id}
+						onBackToParent={parentIssue ? handleBackToParent : undefined}
+						onClose={() => onOpenChange(false)}
+						onDeleteClick={() => setDeleteDialogOpen(true)}
+						parentIssue={
+							parentIssue
+								? {
+										_id: parentIssue._id,
+										channelId: parentIssue.channelId,
+										statusId: parentIssue.statusId,
+										title: parentIssue.title,
+										order: parentIssue.order,
+										createdAt: parentIssue.createdAt,
+										updatedAt: parentIssue.updatedAt,
+									}
+								: null
+						}
 					/>
 
-					<Separator className="opacity-40" />
+					<div className="flex-1 overflow-y-auto">
+						<IssueContent
+							assignees={assignees}
+							createdAt={issue.createdAt}
+							description={description}
+							dueDate={dueDate}
+							labelInput={labelInput}
+							labels={labels}
+							members={normalizedMembers}
+							onAddLabel={handleAddLabel}
+							onAssigneesChange={handleAssigneesChange}
+							onBlur={handleTitleDescriptionBlur}
+							onDescriptionChange={setDescription}
+							onDueDateChange={handleDueDateChange}
+							onLabelInputChange={setLabelInput}
+							onLabelsChange={handleLabelsChange}
+							onPriorityChange={handlePriorityChange}
+							onStatusChange={handleStatusChange}
+							onTitleChange={setTitle}
+							priority={priority}
+							statuses={statuses}
+							statusId={statusId}
+							title={title}
+							updatedAt={issue.updatedAt}
+						/>
 
-					{/* Sub-Issues Section - only for parent issues */}
-					{!issue.parentIssueId && (
-						<div className="px-6 py-5">
-							<SubIssuesSection
-								members={normalizedMembers}
-								onClickIssue={handleSubIssueClick}
-								parentIssue={issue}
-								statuses={statuses}
-							/>
-						</div>
-					)}
+						<Separator className="opacity-40" />
 
-					<Separator className="opacity-40" />
-
-					{/* Blocking Section */}
-					<div className="px-6 py-5">
-						{onClickIssue && (
-							<BlockingSection
-								allIssues={allIssues}
-								issue={issue}
-								onClickIssue={onClickIssue}
-							/>
+						{/* Sub-Issues Section - only for parent issues */}
+						{!issue.parentIssueId && (
+							<div className="px-6 py-5">
+								<SubIssuesSection
+									members={normalizedMembers}
+									onClickIssue={handleSubIssueClick}
+									parentIssue={issue}
+									statuses={statuses}
+								/>
+							</div>
 						)}
+
+						<Separator className="opacity-40" />
+
+						{/* Blocking Section */}
+						<div className="px-6 py-5">
+							{onClickIssue && (
+								<BlockingSection
+									allIssues={allIssues}
+									issue={issue}
+									onClickIssue={onClickIssue}
+								/>
+							)}
+						</div>
+
+						<Separator className="opacity-40" />
+
+						{/* Discussion Section */}
+						<div className="px-6 py-5">
+							<DiscussionSection issue={issue} />
+						</div>
 					</div>
 
-					<Separator className="opacity-40" />
+					<DrawerFooter issueId={issue._id} justSaved={justSaved} />
+				</SheetContent>
+			</Sheet>
 
-					{/* Discussion Section */}
-					<div className="px-6 py-5">
-						<DiscussionSection issue={issue} />
-					</div>
-				</div>
-
-				<DrawerFooter
-					issueId={issue._id}
-					onSave={handleSave}
-					saving={saving}
-					title={title}
-				/>
-			</SheetContent>
-		</Sheet>
+			<AlertDialog onOpenChange={setDeleteDialogOpen} open={deleteDialogOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete issue?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will permanently delete {formatIssueId(issue._id)}, including
+							its comments and sub-issues. This can&apos;t be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							onClick={handleDeleteIssue}
+						>
+							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
 	);
 };
 

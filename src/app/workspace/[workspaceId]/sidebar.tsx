@@ -25,7 +25,7 @@ import {
 	Users,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
@@ -47,45 +47,36 @@ import { cn } from "@/lib/utils";
 import { WorkspaceHeader } from "./header";
 import { ChannelItem, MemberItem, ProjectItem, SidebarItem } from "./options";
 
+// Remembers which sidebar sections the user last left open/closed.
+const SIDEBAR_SECTIONS_STORAGE_KEY = "proddy:sidebar-expanded-sections";
+
 interface MobileCloseWrapperProps {
 	children: React.ReactNode;
 	onClose?: () => void;
 	className?: string;
-	ariaLabel?: string;
 }
 
 const MobileCloseWrapper = ({
 	children,
 	onClose,
 	className,
-	ariaLabel = "Close mobile sidebar",
 }: MobileCloseWrapperProps) => {
-	const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-		if (!onClose) {
-			return;
-		}
-
-		if (event.key === "Enter" || event.key === " ") {
-			event.preventDefault();
-			onClose();
-		}
-	};
-
-	if (onClose) {
-		return (
-			<button
-				aria-label={ariaLabel}
-				className={cn(className, "w-full text-left")}
-				onClick={onClose}
-				onKeyDown={handleKeyDown}
-				type="button"
-			>
-				{children}
-			</button>
-		);
+	if (!onClose) {
+		return <div className={className}>{children}</div>;
 	}
 
-	return <div className={className}>{children}</div>;
+	// The children are already focusable, keyboard-operable controls (links,
+	// buttons). Wrapping them in another <button> would nest interactive
+	// controls inside one another, which is invalid HTML and breaks
+	// assistive tech. Instead, let the click bubble up from the child (fired
+	// by mouse or by native Enter-key activation of a link) to close the
+	// mobile sidebar.
+	return (
+		// biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation is handled by the nested link/button (its own Enter-key click bubbles here); giving this wrapper its own interactive role would duplicate the focus stop.
+		<div className={className} onClick={onClose}>
+			{children}
+		</div>
+	);
 };
 
 // DroppableItem Component
@@ -121,49 +112,51 @@ const DroppableItem = ({
 				isCollapsed ? "px-1" : "px-2 md:px-4"
 			)}
 		>
-			<button
-				className="group flex w-full cursor-pointer items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2.5 text-sm font-medium transition-standard text-secondary-foreground/80 hover:bg-secondary-foreground/10"
-				onClick={handleToggle}
-				type="button"
-			>
-				{isCollapsed ? (
-					<div className="relative flex-shrink-0">
-						<Hint align="center" label={label} side="right">
-							<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
-						</Hint>
-					</div>
-				) : (
-					<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
-				)}
-
-				{!isCollapsed && (
-					<>
-						<span className="truncate min-w-0">{label}</span>
-						<ChevronDown
-							className={cn(
-								"ml-auto size-4 flex-shrink-0 transition-transform duration-200",
-								!isExpanded && "-rotate-90"
-							)}
-						/>
-
-						{onNew && (
-							<Hint align="center" label={hint} side="top">
-								<Button
-									className="h-7 w-7 flex-shrink-0 p-0 text-secondary-foreground/80 opacity-0 transition-all group-hover:opacity-100 rounded-[8px] hover:bg-secondary-foreground/10"
-									onClick={(e) => {
-										e.stopPropagation();
-										onNew();
-									}}
-									size="sm"
-									variant="ghost"
-								>
-									<PlusIcon className="size-4 transition-transform duration-200 hover:scale-110" />
-								</Button>
+			{/* Toggle and "new" action are sibling controls, not nested —
+			    a button inside a button is invalid HTML and unreliable for
+			    screen readers and keyboard focus order. */}
+			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-[10px] px-2 md:px-4 py-2.5 text-sm font-medium transition-standard text-secondary-foreground/80 hover:bg-secondary-foreground/10">
+				<button
+					className="flex flex-1 min-w-0 cursor-pointer items-center gap-x-2 md:gap-x-3 text-left"
+					onClick={handleToggle}
+					type="button"
+				>
+					{isCollapsed ? (
+						<div className="relative flex-shrink-0">
+							<Hint align="center" label={label} side="right">
+								<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
 							</Hint>
-						)}
-					</>
+						</div>
+					) : (
+						<Icon className="size-4 md:size-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+					)}
+
+					{!isCollapsed && (
+						<>
+							<span className="truncate min-w-0">{label}</span>
+							<ChevronDown
+								className={cn(
+									"ml-auto size-4 flex-shrink-0 transition-transform duration-200",
+									!isExpanded && "-rotate-90"
+								)}
+							/>
+						</>
+					)}
+				</button>
+
+				{!isCollapsed && onNew && (
+					<Hint align="center" label={hint} side="top">
+						<Button
+							className="h-7 w-7 flex-shrink-0 p-0 text-secondary-foreground/80 opacity-0 transition-all group-hover:opacity-100 rounded-[8px] hover:bg-secondary-foreground/10"
+							onClick={onNew}
+							size="sm"
+							variant="ghost"
+						>
+							<PlusIcon className="size-4 transition-transform duration-200 hover:scale-110" />
+						</Button>
+					</Hint>
 				)}
-			</button>
+			</div>
 
 			{isExpanded && (
 				<div className="mt-2 space-y-1.5 pl-1 md:pl-2">{children}</div>
@@ -171,6 +164,46 @@ const DroppableItem = ({
 		</div>
 	);
 };
+
+// NewItemButton Component — shared "+ New X" trigger used by the
+// Channels/Projects/Members sections below.
+interface NewItemButtonProps {
+	label: string;
+	isCollapsed?: boolean;
+	onClick: () => void;
+}
+
+const NewItemButton = ({
+	label,
+	isCollapsed = false,
+	onClick,
+}: NewItemButtonProps) => (
+	<button
+		className={cn(
+			"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
+			isCollapsed
+				? "justify-center px-1 md:px-2 py-2 md:py-2.5"
+				: "justify-start px-2 md:px-4 py-2 md:py-2.5"
+		)}
+		onClick={onClick}
+		type="button"
+	>
+		{isCollapsed ? (
+			<div className="relative flex-shrink-0">
+				<Hint align="center" label={label} side="right">
+					<div className="flex items-center justify-center">
+						<PlusIcon className="size-4 text-secondary-foreground/80" />
+					</div>
+				</Hint>
+			</div>
+		) : (
+			<>
+				<PlusIcon className="size-4 text-secondary-foreground/80" />
+				<span className="truncate min-w-0">{label}</span>
+			</>
+		)}
+	</button>
+);
 
 // WorkspaceSidebar Component
 export const WorkspaceSidebar = ({
@@ -187,59 +220,69 @@ export const WorkspaceSidebar = ({
 	const projectId = useProjectId();
 	const memberId = useMemberId();
 	const pathname = usePathname();
-	// Track which sections are expanded
+	const activeTopSection = memberId
+		? "Members"
+		: projectId
+			? "Projects"
+			: "Channels";
+	// Track which sections are expanded. Sections toggle independently;
+	// start with the section for the current route open so the active item
+	// is visible on first render.
 	const [expandedSections, setExpandedSections] = useState<
 		Record<string, boolean>
-	>(() => {
-		const activeTopSection = memberId
-			? "Members"
-			: projectId
-				? "Projects"
-				: "Channels";
+	>(() => ({
+		Channels: activeTopSection === "Channels",
+		Projects: activeTopSection === "Projects",
+		Members: activeTopSection === "Members",
+		Planning: false,
+		Messages: false,
+		Settings: false,
+	}));
 
-		return {
-			Channels: activeTopSection === "Channels",
-			Projects: activeTopSection === "Projects",
-			Members: activeTopSection === "Members",
-			Planning: false,
-			Messages: false,
-			Settings: false,
-		};
-	});
+	// Rehydrate the user's last expanded/collapsed sections from a previous
+	// visit. Reads happen in an effect (not the state initializer) so the
+	// server-rendered and first client render agree, avoiding a hydration
+	// mismatch; the section matching the current route stays open either way.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally rehydrates once on mount only.
+	useEffect(() => {
+		if (typeof window === "undefined") {
+			return;
+		}
+		try {
+			const raw = window.localStorage.getItem(SIDEBAR_SECTIONS_STORAGE_KEY);
+			if (!raw) {
+				return;
+			}
+			const persisted = JSON.parse(raw) as Record<string, boolean>;
+			setExpandedSections((prev) => ({
+				...prev,
+				...persisted,
+				[activeTopSection]: true,
+			}));
+		} catch {
+			// Ignore malformed storage; fall back to the route-derived defaults.
+		}
+	}, []);
+
+	useEffect(() => {
+		if (typeof window === "undefined") {
+			return;
+		}
+		window.localStorage.setItem(
+			SIDEBAR_SECTIONS_STORAGE_KEY,
+			JSON.stringify(expandedSections)
+		);
+	}, [expandedSections]);
 
 	const [_open, setOpen] = useCreateChannelModal();
 	const [_createProjectOpen, setCreateProjectOpen] = useCreateProjectModal();
 	const [_inviteOpen, setInviteOpen] = useInviteMemberModal();
 
 	const handleSectionToggle = (label: string) => {
-		// Channels, Projects, and Members are mutually exclusive
-		const topSections = ["Channels", "Projects", "Members"];
-		// Planning, Messages, Settings can all be open simultaneously
-		const bottomSections = ["Planning", "Messages", "Settings"];
-
-		if (topSections.includes(label)) {
-			// For Channels/Members: collapse the other one when opening
-			if (!expandedSections[label]) {
-				const newExpandedSections = { ...expandedSections };
-				// Collapse other top sections
-				topSections.forEach((section) => {
-					newExpandedSections[section] = section === label;
-				});
-				setExpandedSections(newExpandedSections);
-			} else {
-				// Just toggle if collapsing
-				setExpandedSections({
-					...expandedSections,
-					[label]: false,
-				});
-			}
-		} else if (bottomSections.includes(label)) {
-			// For Planning/Messages/Settings: independent toggle
-			setExpandedSections({
-				...expandedSections,
-				[label]: !expandedSections[label],
-			});
-		}
+		setExpandedSections((prev) => ({
+			...prev,
+			[label]: !prev[label],
+		}));
 	};
 
 	const { data: member, isLoading: memberLoading } = useCurrentMember({
@@ -386,31 +429,11 @@ export const WorkspaceSidebar = ({
 
 							{/* New Channel option - only visible to admins and owners */}
 							{(member.role === "admin" || member.role === "owner") && (
-								<button
-									className={cn(
-										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
-										isCollapsed
-											? "justify-center px-1 md:px-2 py-2 md:py-2.5"
-											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
-									)}
+								<NewItemButton
+									isCollapsed={isCollapsed}
+									label="New Channel"
 									onClick={() => setOpen(true)}
-									type="button"
-								>
-									{isCollapsed ? (
-										<div className="relative flex-shrink-0">
-											<Hint align="center" label="New Channel" side="right">
-												<div className="flex items-center justify-center">
-													<PlusIcon className="size-4 text-secondary-foreground/80" />
-												</div>
-											</Hint>
-										</div>
-									) : (
-										<>
-											<PlusIcon className="size-4 text-secondary-foreground/80" />
-											<span className="truncate min-w-0">New Channel</span>
-										</>
-									)}
-								</button>
+								/>
 							)}
 						</DroppableItem>
 					</div>
@@ -446,31 +469,11 @@ export const WorkspaceSidebar = ({
 							))}
 
 							{(member.role === "admin" || member.role === "owner") && (
-								<button
-									className={cn(
-										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
-										isCollapsed
-											? "justify-center px-1 md:px-2 py-2 md:py-2.5"
-											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
-									)}
+								<NewItemButton
+									isCollapsed={isCollapsed}
+									label="New Project"
 									onClick={() => setCreateProjectOpen(true)}
-									type="button"
-								>
-									{isCollapsed ? (
-										<div className="relative flex-shrink-0">
-											<Hint align="center" label="New Project" side="right">
-												<div className="flex items-center justify-center">
-													<PlusIcon className="size-4 text-secondary-foreground/80" />
-												</div>
-											</Hint>
-										</div>
-									) : (
-										<>
-											<PlusIcon className="size-4 text-secondary-foreground/80" />
-											<span className="truncate min-w-0">New Project</span>
-										</>
-									)}
-								</button>
+								/>
 							)}
 						</DroppableItem>
 					</div>
@@ -501,31 +504,11 @@ export const WorkspaceSidebar = ({
 
 							{/* New Member option - only visible to admins and owners */}
 							{(member.role === "admin" || member.role === "owner") && (
-								<button
-									className={cn(
-										"group flex items-center gap-2 md:gap-3 font-medium text-sm overflow-hidden rounded-[10px] transition-standard w-full text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:translate-x-1 cursor-pointer",
-										isCollapsed
-											? "justify-center px-1 md:px-2 py-2 md:py-2.5"
-											: "justify-start px-2 md:px-4 py-2 md:py-2.5"
-									)}
+								<NewItemButton
+									isCollapsed={isCollapsed}
+									label="New Member"
 									onClick={() => setInviteOpen(true)}
-									type="button"
-								>
-									{isCollapsed ? (
-										<div className="relative flex-shrink-0">
-											<Hint align="center" label="New Member" side="right">
-												<div className="flex items-center justify-center">
-													<PlusIcon className="size-4 text-secondary-foreground/80" />
-												</div>
-											</Hint>
-										</div>
-									) : (
-										<>
-											<PlusIcon className="size-4 text-secondary-foreground/80" />
-											<span className="truncate min-w-0">New Member</span>
-										</>
-									)}
-								</button>
+								/>
 							)}
 						</DroppableItem>
 					</div>
@@ -581,7 +564,7 @@ export const WorkspaceSidebar = ({
 								id="issues"
 								isActive={pathname.includes("/issues")}
 								isCollapsed={isCollapsed}
-								label="Issue"
+								label="Issues"
 							/>
 						</MobileCloseWrapper>
 					</DroppableItem>

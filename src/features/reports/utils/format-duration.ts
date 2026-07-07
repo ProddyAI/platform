@@ -1,3 +1,12 @@
+/**
+ * Formats a duration for display.
+ *
+ * @param ms - Duration in **milliseconds** (not seconds). Callers must
+ * convert seconds-based values (e.g. threshold constants) before passing
+ * them in, since this function divides by 1000 internally.
+ * @param format - "short" for compact units (e.g. "2h 5m"), "long" for a
+ * sentence (e.g. "2 hours and 5 minutes").
+ */
 export function formatDuration(
 	ms: number,
 	format: "short" | "long" = "long"

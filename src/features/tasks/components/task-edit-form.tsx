@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -79,6 +80,10 @@ export const TaskEditForm = ({
 			onSave();
 		} catch (error) {
 			console.error("Failed to update task:", error);
+			toast.error("Couldn't save task changes", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -86,7 +91,7 @@ export const TaskEditForm = ({
 
 	return (
 		<form
-			className="p-4 rounded-lg border border-secondary/30 shadow-md bg-white"
+			className="p-4 rounded-lg border bg-card shadow-md"
 			onSubmit={handleSubmit}
 		>
 			<div className="space-y-3">
@@ -127,6 +132,19 @@ export const TaskEditForm = ({
 							</PopoverTrigger>
 							<PopoverContent align="start" className="w-auto p-0">
 								<Calendar onSelect={setDueDate} selected={dueDate} />
+								{dueDate && (
+									<div className="p-2 border-t">
+										<Button
+											className="text-destructive text-xs w-full"
+											onClick={() => setDueDate(undefined)}
+											size="sm"
+											type="button"
+											variant="ghost"
+										>
+											Clear date
+										</Button>
+									</div>
+								)}
 							</PopoverContent>
 						</Popover>
 					</div>

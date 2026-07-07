@@ -5,11 +5,13 @@ import {
 	Circle,
 	Clock,
 	Filter,
+	Search,
 	SortAsc,
 	SortDesc,
 } from "lucide-react";
 import { useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -24,14 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 export type TaskFilterOptions = {
-	status:
-		| "all"
-		| "active"
-		| "completed"
-		| "not_started"
-		| "in_progress"
-		| "on_hold"
-		| "cancelled";
+	status: "all" | "active" | "completed";
 	priority: "all" | "high" | "medium" | "low";
 	dueDate: "all" | "overdue" | "today" | "upcoming" | "no-date";
 	categoryId: string | null;
@@ -75,21 +70,7 @@ export const TaskFilter = ({
 					placeholder="Search tasks..."
 					value={searchQuery}
 				/>
-				<svg
-					className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth={2}
-					viewBox="0 0 24 24"
-					xmlns="http://www.w3.org/2000/svg"
-				>
-					<title>Search</title>
-					<path
-						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-				</svg>
+				<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 			</div>
 			<div className="flex gap-2">
 				<DropdownMenu onOpenChange={setIsFiltersOpen} open={isFiltersOpen}>
@@ -98,14 +79,17 @@ export const TaskFilter = ({
 							<Filter className="h-4 w-4" />
 							<span>Filter</span>
 							{activeFiltersCount > 0 && (
-								<span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] font-medium text-secondary-foreground">
+								<Badge
+									className="ml-1 flex h-5 w-5 items-center justify-center p-0 font-medium text-[10px]"
+									variant="outline"
+								>
 									{activeFiltersCount}
-								</span>
+								</Badge>
 							)}
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-56">
-						<DropdownMenuLabel>Filter Tasks</DropdownMenuLabel>
+						<DropdownMenuLabel>Filter tasks</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 
 						<DropdownMenuGroup>
@@ -158,18 +142,18 @@ export const TaskFilter = ({
 									All
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem className="cursor-pointer" value="high">
-									<div className="mr-2 h-3 w-3 rounded-full bg-red-500" />
+									<div className="mr-2 h-3 w-3 rounded-full bg-red-600" />
 									High
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"
 									value="medium"
 								>
-									<div className="mr-2 h-3 w-3 rounded-full bg-yellow-500" />
+									<div className="mr-2 h-3 w-3 rounded-full bg-amber-500" />
 									Medium
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem className="cursor-pointer" value="low">
-									<div className="mr-2 h-3 w-3 rounded-full bg-blue-500" />
+									<div className="mr-2 h-3 w-3 rounded-full bg-blue-600" />
 									Low
 								</DropdownMenuRadioItem>
 							</DropdownMenuRadioGroup>
@@ -179,7 +163,7 @@ export const TaskFilter = ({
 
 						<DropdownMenuGroup>
 							<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-								Due Date
+								Due date
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
 								onValueChange={(value) =>
@@ -196,25 +180,25 @@ export const TaskFilter = ({
 									className="cursor-pointer"
 									value="overdue"
 								>
-									<Clock className="mr-2 h-4 w-4 text-red-500" />
+									<Clock className="mr-2 h-4 w-4 text-red-600" />
 									Overdue
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem className="cursor-pointer" value="today">
-									<Clock className="mr-2 h-4 w-4 text-yellow-500" />
+									<Clock className="mr-2 h-4 w-4 text-amber-500" />
 									Today
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"
 									value="upcoming"
 								>
-									<Clock className="mr-2 h-4 w-4 text-blue-500" />
+									<Clock className="mr-2 h-4 w-4 text-blue-600" />
 									Upcoming
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"
 									value="no-date"
 								>
-									<Clock className="mr-2 h-4 w-4 text-gray-400" />
+									<Clock className="mr-2 h-4 w-4 text-muted-foreground" />
 									No due date
 								</DropdownMenuRadioItem>
 							</DropdownMenuRadioGroup>
@@ -234,7 +218,7 @@ export const TaskFilter = ({
 							size="sm"
 							variant="ghost"
 						>
-							Reset Filters
+							Reset filters
 						</Button>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -251,12 +235,12 @@ export const TaskFilter = ({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-56">
-						<DropdownMenuLabel>Sort Tasks</DropdownMenuLabel>
+						<DropdownMenuLabel>Sort tasks</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 
 						<DropdownMenuGroup>
 							<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-								Sort By
+								Sort by
 							</DropdownMenuLabel>
 							<DropdownMenuRadioGroup
 								onValueChange={(value) =>
@@ -270,13 +254,13 @@ export const TaskFilter = ({
 									className="cursor-pointer"
 									value="created"
 								>
-									Date Created
+									Date created
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"
 									value="dueDate"
 								>
-									Due Date
+									Due date
 								</DropdownMenuRadioItem>
 								<DropdownMenuRadioItem
 									className="cursor-pointer"

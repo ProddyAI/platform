@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Moon } from "lucide-react";
+import { Minus } from "lucide-react";
 import type { UserStatus } from "@/../convex/workspace/userStatus";
 import {
 	Tooltip,
@@ -54,36 +54,21 @@ export const PresenceIndicator = ({
 						strokeWidth={3}
 					/>
 				);
+			case "idle":
+				// Crescent moon cutout via inset box-shadow, keeping the ringed-dot
+				// shape vocabulary shared with the other statuses.
+				return (
+					<div
+						className="size-full rounded-full"
+						style={{
+							boxShadow: "1.5px -1.5px 0 0 hsl(var(--card)) inset",
+						}}
+					/>
+				);
 			default:
 				return null;
 		}
 	};
-
-	// Simple crescent moon icon for idle status
-	if (displayStatus === "idle") {
-		return (
-			<TooltipProvider delayDuration={300}>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<div
-							className={cn(
-								"absolute -bottom-0.5 -right-0.5 cursor-default",
-								className
-							)}
-						>
-							<Moon
-								className="size-3 text-yellow-500 fill-yellow-500"
-								strokeWidth={0}
-							/>
-						</div>
-					</TooltipTrigger>
-					<TooltipContent className="text-xs" side="top">
-						{statusLabels[displayStatus]}
-					</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
-		);
-	}
 
 	return (
 		<TooltipProvider delayDuration={300}>

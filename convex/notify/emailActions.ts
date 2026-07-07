@@ -3,6 +3,11 @@
 import crypto from "node:crypto";
 import { v } from "convex/values";
 import { Resend } from "resend";
+import { DirectMessageTemplate } from "../../src/features/email/components/direct-message-template";
+import { MentionTemplate } from "../../src/features/email/components/mention-template";
+import { OTPVerificationMail } from "../../src/features/email/components/otp-verification-mail";
+import { ThreadReplyTemplate } from "../../src/features/email/components/thread-reply-template";
+import { WeeklyDigestTemplate } from "../../src/features/email/components/weekly-digest-template";
 import { logger } from "../../src/lib/logger";
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -247,27 +252,18 @@ export const sendDirectMessageEmail = internalAction({
 				const { fromAddress, replyToAddress } = getEmailConfig();
 				const subject = `New direct message from ${sender.user.name || "A team member"}`;
 
-				// Send email using Resend
+				// Send email using Resend + the brand-consistent React Email template
 				const { data, error } = await getResendClient().emails.send({
 					from: fromAddress,
 					to: [recipient.user.email],
 					subject,
-					html: `
-						<html>
-							<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-								<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-									<h2>New Direct Message</h2>
-									<p>Hi ${escapeHtml(recipient.user.name || "User")},</p>
-									<p><strong>${escapeHtml(sender.user.name || "A team member")}</strong> sent you a direct message:</p>
-									<blockquote style="border-left: 4px solid #667eea; padding-left: 16px; margin: 16px 0; color: #666;">
-										${escapeHtml(messagePreview)}
-									</blockquote>
-									<p><a href="${escapeHtml(getSiteUrl())}/workspace/${escapeHtml(message.workspaceId)}" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View in Proddy</a></p>
-									${unsubscribeUrl ? `<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;"><p style="font-size: 12px; color: #999;"><a href="${escapeHtml(unsubscribeUrl)}" style="color: #999; text-decoration: none;">Unsubscribe from direct message emails</a></p>` : ""}
-								</div>
-							</body>
-						</html>
-					`,
+					react: DirectMessageTemplate({
+						firstName: recipient.user.name || "User",
+						senderName: sender.user.name || "A team member",
+						messagePreview,
+						workspaceUrl: `${getSiteUrl()}/workspace/${message.workspaceId}`,
+						unsubscribeUrl,
+					}),
 					replyTo: replyToAddress,
 				});
 
@@ -403,22 +399,14 @@ export const sendMentionEmail = internalAction({
 					from: fromAddress,
 					to: [mentionedMember.user.email],
 					subject,
-					html: `
-						<html>
-							<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-								<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-									<h2>You were mentioned in ${escapeHtml(channelName)}</h2>
-									<p>Hi ${escapeHtml(mentionedMember.user.name || "User")},</p>
-									<p><strong>${escapeHtml(mentioner.user.name || "A team member")}</strong> mentioned you in the <strong>${escapeHtml(channelName)}</strong> channel:</p>
-									<blockquote style="border-left: 4px solid #667eea; padding-left: 16px; margin: 16px 0; color: #666;">
-										${escapeHtml(messagePreview)}
-									</blockquote>
-									<p><a href="${escapeHtml(getSiteUrl())}/workspace/${escapeHtml(mention.workspaceId)}" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View in Proddy</a></p>
-									${unsubscribeUrl ? `<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;"><p style="font-size: 12px; color: #999;"><a href="${escapeHtml(unsubscribeUrl)}" style="color: #999; text-decoration: none;">Unsubscribe from mention emails</a></p>` : ""}
-								</div>
-							</body>
-						</html>
-					`,
+					react: MentionTemplate({
+						firstName: mentionedMember.user.name || "User",
+						mentionerName: mentioner.user.name || "A team member",
+						messagePreview,
+						channelName,
+						workspaceUrl: `${getSiteUrl()}/workspace/${mention.workspaceId}`,
+						unsubscribeUrl,
+					}),
 					replyTo: replyToAddress,
 				});
 
@@ -557,31 +545,15 @@ export const sendThreadReplyEmail = internalAction({
 					from: fromAddress,
 					to: [originalAuthor.user.email],
 					subject,
-					html: `
-						<html>
-							<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-								<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-									<h2>New Reply to Your Message</h2>
-									<p>Hi ${escapeHtml(originalAuthor.user.name || "User")},</p>
-									<p><strong>${escapeHtml(replier.user.name || "A team member")}</strong> replied to your message in <strong>${escapeHtml(channelName)}</strong>:</p>
-									<div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
-										<p style="margin: 0 0 10px 0; color: #666; font-size: 12px;">Your message:</p>
-										<blockquote style="border-left: 4px solid #e0e0e0; padding-left: 16px; margin: 0; color: #666;">
-											${escapeHtml(originalMessagePreview)}
-										</blockquote>
-									</div>
-									<div style="background: #f0f7ff; padding: 15px; border-radius: 5px; margin: 15px 0;">
-										<p style="margin: 0 0 10px 0; color: #666; font-size: 12px;">Reply:</p>
-										<blockquote style="border-left: 4px solid #667eea; padding-left: 16px; margin: 0; color: #333;">
-											${escapeHtml(replyMessagePreview)}
-										</blockquote>
-									</div>
-									<p><a href="${escapeHtml(getSiteUrl())}/workspace/${escapeHtml(replyMessage.workspaceId)}" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Thread</a></p>
-									${unsubscribeUrl ? `<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;"><p style="font-size: 12px; color: #999;"><a href="${escapeHtml(unsubscribeUrl)}" style="color: #999; text-decoration: none;">Unsubscribe from thread reply emails</a></p>` : ""}
-								</div>
-							</body>
-						</html>
-					`,
+					react: ThreadReplyTemplate({
+						firstName: originalAuthor.user.name || "User",
+						replierName: replier.user.name || "A team member",
+						originalMessagePreview,
+						replyMessagePreview,
+						channelName,
+						threadUrl: `${getSiteUrl()}/workspace/${replyMessage.workspaceId}`,
+						unsubscribeUrl,
+					}),
 					replyTo: replyToAddress,
 				});
 
@@ -711,39 +683,17 @@ export const sendWeeklyDigestEmails = internalAction({
 							const subject = `Your Proddy Weekly Digest - ${weekRange}`;
 							const firstName = user.name.split(" ")[0];
 
-							// Build simple HTML digest
-							const workspacesHtml = digestData.workspaces
-								.map(
-									(ws) => `
-									<div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-										<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(ws.workspaceName)}</h3>
-										<p style="margin: 5px 0; color: #666;">📊 <strong>${ws.stats.totalMessages}</strong> messages | 📋 <strong>${ws.stats.totalTasks}</strong> tasks (${ws.stats.completedTasks} completed)</p>
-										${ws.topChannels.length > 0 ? `<p style="margin: 5px 0; color: #666;"><strong>Top channels:</strong> ${ws.topChannels.map((c) => `${escapeHtml(c.name ?? "")} (${c.messageCount ?? 0})`).join(", ")}</p>` : ""}
-									</div>
-								`
-								)
-								.join("");
-
 							const { data, error } = await getResendClient().emails.send({
 								from: fromAddress,
 								to: [user.email],
 								subject,
-								html: `
-									<html>
-										<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-											<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-												<h1 style="margin-top: 0; color: #333;">Weekly Digest</h1>
-												<p>Hi ${escapeHtml(firstName)},</p>
-												<p>Here's your summary for the week of <strong>${weekRange}</strong>:</p>
-												${workspacesHtml}
-												<p style="text-align: center; margin-top: 30px;">
-													<a href="${escapeHtml(getSiteUrl())}" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View in Proddy</a>
-												</p>
-												${unsubscribeUrl ? `<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;"><p style="font-size: 12px; color: #999;"><a href="${escapeHtml(unsubscribeUrl)}" style="color: #999; text-decoration: none;">Unsubscribe from weekly digest</a></p>` : ""}
-											</div>
-										</body>
-									</html>
-								`,
+								react: WeeklyDigestTemplate({
+									firstName,
+									weekRange,
+									workspaces: digestData.workspaces,
+									totalStats: digestData.totalStats,
+									unsubscribeUrl,
+								}),
 								replyTo: replyToAddress,
 							});
 
@@ -988,41 +938,21 @@ export const sendWeeklyDigestEmail = internalAction({
 				"weeklyDigest"
 			);
 
-			// Build simple HTML digest
 			const digestData = args.digestData as DigestData;
-			const workspacesHtml = (digestData.workspaces || [])
-				.map(
-					(ws) => `
-					<div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-						<h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(ws.workspaceName)}</h3>
-						<p style="margin: 5px 0; color: #666;">📊 <strong>${ws.stats.totalMessages}</strong> messages | 📋 <strong>${ws.stats.totalTasks}</strong> tasks (${ws.stats.completedTasks} completed)</p>
-						${ws.topChannels.length > 0 ? `<p style="margin: 5px 0; color: #666;"><strong>Top channels:</strong> ${ws.topChannels.map((c) => `${escapeHtml(c.name ?? "")} (${c.messageCount ?? 0})`).join(", ")}</p>` : ""}
-					</div>
-				`
-				)
-				.join("");
 
-			// Send email directly using Resend
+			// Send email directly using Resend + the brand-consistent React
+			// Email template
 			const { data, error } = await getResendClient().emails.send({
 				from: fromAddress,
 				to: [args.email],
 				subject,
-				html: `
-					<html>
-						<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;">
-							<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-								<h1 style="margin-top: 0; color: #333;">Weekly Digest</h1>
-								<p>Hi ${escapeHtml(firstName)},</p>
-								<p>Here's your summary for the week of <strong>${args.weekRange}</strong>:</p>
-								${workspacesHtml}
-								<p style="text-align: center; margin-top: 30px;">
-									<a href="${escapeHtml(getSiteUrl())}" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View in Proddy</a>
-								</p>
-								${unsubscribeUrl ? `<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;"><p style="font-size: 12px; color: #999;"><a href="${escapeHtml(unsubscribeUrl)}" style="color: #999; text-decoration: none;">Unsubscribe from weekly digest</a></p>` : ""}
-							</div>
-						</body>
-					</html>
-				`,
+				react: WeeklyDigestTemplate({
+					firstName,
+					weekRange: args.weekRange,
+					workspaces: digestData.workspaces || [],
+					totalStats: digestData.totalStats,
+					unsubscribeUrl,
+				}),
 				replyTo: replyToAddress,
 			});
 
@@ -1461,6 +1391,50 @@ export const sendImportCompletionEmail = internalAction({
 			}
 		} catch (error) {
 			logger.error("Error in sendImportCompletionEmail:", error);
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
+	},
+});
+
+// Action to send the OTP verification email during signup. Lives here (and
+// not in convex/authn/emailVerification.ts) because this module already runs
+// "use node" and owns the Resend client -- emailVerification.ts also exports
+// mutations/queries, which can't share a "use node" file with actions.
+export const sendOTPVerificationEmail = internalAction({
+	args: {
+		email: v.string(),
+		otp: v.string(),
+	},
+	handler: async (_ctx, args): Promise<EmailNotificationResult> => {
+		try {
+			const { fromAddress, replyToAddress } = getEmailConfig();
+
+			const { data, error } = await getResendClient().emails.send({
+				from: fromAddress,
+				to: [args.email],
+				subject: "Verify your email - Proddy",
+				react: OTPVerificationMail({ email: args.email, otp: args.otp }),
+				replyTo: replyToAddress,
+			});
+
+			if (error) {
+				logger.error("Resend error sending OTP verification email:", error);
+				return {
+					success: false,
+					error: `Failed to send email: ${error.message}`,
+				};
+			}
+
+			logger.info("OTP verification email sent successfully via Resend", {
+				emailId: data?.id,
+				to: args.email,
+			});
+			return { success: true, emailId: data?.id };
+		} catch (error) {
+			logger.error("Error sending OTP verification email via Resend:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

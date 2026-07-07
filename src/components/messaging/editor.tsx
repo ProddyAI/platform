@@ -7,6 +7,7 @@ import {
 	Hash,
 	ImageIcon,
 	PaintBucket,
+	Plus,
 	Send,
 	Smile,
 	Type,
@@ -38,6 +39,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { StartMeetingModal } from "@/features/audio/components/start-meeting-modal";
 import { useCreateNote } from "@/features/notes/api/use-create-note";
@@ -117,7 +124,6 @@ const Editor = ({
 	const [filesModalOpen, setFilesModalOpen] = useState(false);
 	const [meetsModalOpen, setMeetsModalOpen] = useState(false);
 	const [mentionPickerOpen, setMentionPickerOpen] = useState(false);
-	const [lastKeyWasExclamation, setLastKeyWasExclamation] = useState(false);
 	const [activeAutocomplete, setActiveAutocomplete] = useState<
 		"mention" | "channel" | null
 	>(null);
@@ -136,11 +142,9 @@ const Editor = ({
 	const [isSharingNote, setIsSharingNote] = useState(false);
 	const mentionPickerRef = useRef<HTMLDivElement>(null);
 
-	// Refs for TEXT_CHANGE handler so it sees latest values without being in effect deps (which would remount editor on @/#/!)
-	const lastKeyWasExclamationRef = useRef(false);
+	// Refs for TEXT_CHANGE handler so it sees latest values without being in effect deps (which would remount editor on @/#)
 	const activeAutocompleteRef = useRef<"mention" | "channel" | null>(null);
 	const mentionPickerOpenRef = useRef(false);
-	lastKeyWasExclamationRef.current = lastKeyWasExclamation;
 	activeAutocompleteRef.current = activeAutocomplete;
 	mentionPickerOpenRef.current = mentionPickerOpen;
 
@@ -164,7 +168,8 @@ const Editor = ({
 		onTextChangeRef.current = onTextChange;
 	});
 
-	// Add click outside handler to close the mention picker
+	// Add click outside and Escape handlers to close the mention picker. Registered
+	// once per open/close transition (not per keystroke) to avoid leaking listeners.
 	useEffect(() => {
 		if (!mentionPickerOpen) return undefined;
 
@@ -182,14 +187,24 @@ const Editor = ({
 			}
 		};
 
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				setMentionPickerOpen(false);
+				setActiveAutocomplete(null);
+			}
+		};
+
 		// Add the event listener with a slight delay to prevent immediate closing
 		const timeoutId = setTimeout(() => {
 			document.addEventListener("mousedown", handleClickOutside);
 		}, 100);
 
+		document.addEventListener("keydown", handleEscape);
+
 		return () => {
 			clearTimeout(timeoutId);
 			document.removeEventListener("mousedown", handleClickOutside);
+			document.removeEventListener("keydown", handleEscape);
 		};
 	}, [mentionPickerOpen]);
 
@@ -259,18 +274,9 @@ const Editor = ({
 			setText(newText);
 			onTextChangeRef.current?.();
 
-			const currentLastKeyWasExclamation = lastKeyWasExclamationRef.current;
 			const currentActiveAutocomplete = activeAutocompleteRef.current;
 			const currentMentionPickerOpen = mentionPickerOpenRef.current;
 			const currentDisableMentions = disableMentionsRef.current;
-
-			// Check if the last character is "!" to trigger calendar picker
-			if (plainText.trim().endsWith("!") && !currentLastKeyWasExclamation) {
-				setLastKeyWasExclamation(true);
-				setCalendarPickerOpen(true);
-			} else if (!plainText.trim().endsWith("!")) {
-				setLastKeyWasExclamation(false);
-			}
 
 			// Autocomplete triggers:
 			// - "@" for users (disabled in direct messages)
@@ -316,18 +322,6 @@ const Editor = ({
 				setActiveAutocomplete(null);
 				setMentionPickerOpen(false);
 			}
-
-			// Add event listener for Escape key
-			document.addEventListener(
-				"keydown",
-				(e) => {
-					if (e.key === "Escape" && mentionPickerOpenRef.current) {
-						setMentionPickerOpen(false);
-						setActiveAutocomplete(null);
-					}
-				},
-				{ once: true }
-			);
 		});
 
 		return () => {
@@ -365,76 +359,18 @@ const Editor = ({
 
 	const isIOS = /iPad|iPhone|iPod|Mac/.test(navigator.userAgent);
 
-	const isEmpty = !image && text.replace(/<[^>]*>/g, "").trim().length === 0;
+	const isEmpty =
+		!image &&
+		!selectedCalendarEvent &&
+		text.replace(/<[^>]*>/g, "").trim().length === 0;
 
 	const handleCalendarSelect = (date: Date, time?: string) => {
-		const quill = quillRef.current;
-		if (!quill) return;
-
-		// Save the calendar event for submission
+		// Save the calendar event for submission; it renders as a discrete chip
+		// alongside the message rather than being written into the message body,
+		// so the user's own text is never rewritten.
 		setSelectedCalendarEvent({ date, time });
 
-		// Remove the exclamation mark that triggered the calendar
-		const currentText = quill.getText();
-		if (currentText.trim().endsWith("!")) {
-			const newText = currentText
-				.substring(0, currentText.lastIndexOf("!"))
-				.trimEnd();
-			quill.setText(`${newText} `);
-
-			// Move cursor to the end
-			const length = quill.getText().length;
-			quill.setSelection(length, 0);
-		}
-
-		// Format the date and time for display
-		let displayText = "";
-
-		// Check if date is today or tomorrow
-		const today = new Date();
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-
-		// Calculate next week range (Monday to Sunday)
-		const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-		const daysUntilNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
-		const nextWeekStart = new Date(today);
-		nextWeekStart.setDate(today.getDate() + daysUntilNextMonday);
-		const nextWeekEnd = new Date(nextWeekStart);
-		nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
-
-		// Format date based on when it is
-		if (date.toDateString() === today.toDateString()) {
-			displayText = "Today";
-		} else if (date.toDateString() === tomorrow.toDateString()) {
-			displayText = "Tomorrow";
-		} else if (date >= nextWeekStart && date <= nextWeekEnd) {
-			// For next week dates, show "Next week - Monday", "Next week - Tuesday", etc.
-			const dayNames = [
-				"Sunday",
-				"Monday",
-				"Tuesday",
-				"Wednesday",
-				"Thursday",
-				"Friday",
-				"Saturday",
-			];
-			displayText = `Next week - ${dayNames[date.getDay()]}`;
-		} else {
-			// Use standard date format for other dates
-			displayText = date.toLocaleDateString();
-		}
-
-		// Add time if provided
-		if (time) {
-			displayText += ` at ${time}`;
-		}
-
-		// Insert the formatted date at the cursor position
-		quill.insertText(
-			quill.getSelection()?.index || quill.getText().length,
-			`${displayText} `
-		);
+		quillRef.current?.focus();
 	};
 
 	const handleMentionSelect = (memberId: Id<"members">, memberName: string) => {
@@ -1062,71 +998,10 @@ const Editor = ({
 
 			<div
 				className={cn(
-					"chat-editor-compose relative flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white transition focus-within:border-slate-300 focus-within:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:focus-within:border-gray-600",
+					"chat-editor-compose relative flex flex-col overflow-hidden rounded-md border border-border bg-card transition focus-within:border-ring/50 focus-within:shadow-sm",
 					disabled && "opacity-50"
 				)}
 			>
-				{variant === "create" && (
-					<div className="absolute right-1.5 top-5 z-[6] flex -translate-y-1/2 items-center gap-x-1 md:right-2">
-						<Hint label="Calendar">
-							<Button
-								disabled={disabled}
-								onClick={() => setCalendarPickerOpen(true)}
-								size="iconSm"
-								variant="ghost"
-							>
-								<CalendarIcon className="size-3.5 md:size-4" />
-							</Button>
-						</Hint>
-						<Hint label="Notes">
-							<Button
-								disabled={disabled || isCreatingNote || isSharingNote}
-								onClick={() => {
-									setNewNoteTitle("");
-									setNotesModalOpen(true);
-								}}
-								size="iconSm"
-								variant="ghost"
-							>
-								<FileText className="size-3.5 md:size-4" />
-							</Button>
-						</Hint>
-						<Hint label="Canvas">
-							<Button
-								disabled={disabled || isCreatingCanvas || isSharingCanvas}
-								onClick={() => {
-									setNewCanvasTitle("");
-									setCanvasModalOpen(true);
-								}}
-								size="iconSm"
-								variant="ghost"
-							>
-								<PaintBucket className="size-3.5 md:size-4" />
-							</Button>
-						</Hint>
-						<Hint label="Files">
-							<Button
-								disabled={disabled || (!channelId && !conversationId)}
-								onClick={() => setFilesModalOpen(true)}
-								size="iconSm"
-								variant="ghost"
-							>
-								<FolderOpen className="size-3.5 md:size-4" />
-							</Button>
-						</Hint>
-						<Hint label="Meets">
-							<Button
-								disabled={disabled}
-								onClick={() => setMeetsModalOpen(true)}
-								size="iconSm"
-								variant="ghost"
-							>
-								<Video className="size-3.5 md:size-4" />
-							</Button>
-						</Hint>
-					</div>
-				)}
-
 				<div className="h-full" ref={containerRef} />
 
 				{image !== null && (
@@ -1204,6 +1079,57 @@ const Editor = ({
 									<ImageIcon className="size-3.5 md:size-4" />
 								</Button>
 							</Hint>
+
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										aria-label="More options"
+										disabled={disabled}
+										size="iconSm"
+										variant="ghost"
+									>
+										<Plus className="size-3.5 md:size-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="start" className="w-44">
+									<DropdownMenuItem onClick={() => setCalendarPickerOpen(true)}>
+										<CalendarIcon className="mr-2 size-4" />
+										Calendar
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										disabled={isCreatingNote || isSharingNote}
+										onClick={() => {
+											setNewNoteTitle("");
+											setNotesModalOpen(true);
+										}}
+									>
+										<FileText className="mr-2 size-4" />
+										Notes
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										disabled={isCreatingCanvas || isSharingCanvas}
+										onClick={() => {
+											setNewCanvasTitle("");
+											setCanvasModalOpen(true);
+										}}
+									>
+										<PaintBucket className="mr-2 size-4" />
+										Canvas
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										disabled={!channelId && !conversationId}
+										onClick={() => setFilesModalOpen(true)}
+									>
+										<FolderOpen className="mr-2 size-4" />
+										Files
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={() => setMeetsModalOpen(true)}>
+										<Video className="mr-2 size-4" />
+										Meets
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+
 							{!disableMentions && (
 								<Hint label="Mention User">
 									<Button
@@ -1284,7 +1210,6 @@ const Editor = ({
 							</Button>
 
 							<Button
-								className="bg-primary text-white hover:bg-primary/80"
 								disabled={disabled || isEmpty}
 								onClick={() => {
 									if (!quillRef.current) return;
@@ -1296,6 +1221,7 @@ const Editor = ({
 									});
 								}}
 								size="sm"
+								variant="primary"
 							>
 								Save
 							</Button>
@@ -1304,12 +1230,7 @@ const Editor = ({
 
 					{variant === "create" && (
 						<Button
-							className={cn(
-								"ml-auto",
-								isEmpty
-									? "bg-white text-muted-foreground hover:bg-white/80"
-									: "bg-primary text-white hover:bg-primary/80"
-							)}
+							className="ml-auto"
 							disabled={disabled || isEmpty}
 							onClick={() => {
 								if (!quillRef.current) return;
@@ -1322,6 +1243,7 @@ const Editor = ({
 							}}
 							size="iconSm"
 							title="Send Message"
+							variant="primary"
 						>
 							<Send className="size-3.5 md:size-4" />
 						</Button>

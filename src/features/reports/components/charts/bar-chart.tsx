@@ -92,15 +92,18 @@ export const BarChart = ({
 				return (
 					<button
 						aria-disabled={!onBarClick}
+						aria-label={`${item.label}: ${formatValue(item.value)}`}
 						className="relative flex flex-col items-center justify-end flex-1 group"
 						data-bar-id={item.id ?? item.label}
 						data-bar-index={index}
 						key={item.id ?? item.label}
+						onBlur={() => setHoveredIndex(null)}
 						onClick={
 							onBarClick
 								? () => onBarClick(item.label, item.value, index)
 								: undefined
 						}
+						onFocus={() => setHoveredIndex(index)}
 						onKeyDown={(event) => {
 							if (event.key === "Enter" || event.key === " ") {
 								event.preventDefault();
@@ -110,15 +113,16 @@ export const BarChart = ({
 						onMouseEnter={() => setHoveredIndex(index)}
 						onMouseLeave={() => setHoveredIndex(null)}
 						style={{ height: chartHeight }}
-						tabIndex={0}
+						tabIndex={onBarClick ? 0 : -1}
 						type="button"
 					>
 						<div
 							className={cn(
 								"w-full rounded-t-md transition-all duration-300",
-								item.color ? "" : "bg-pink-500",
-								isHovered ? "opacity-80 scale-105" : "opacity-100",
-								animate && "animate-in fade-in-50 slide-in-from-bottom-3",
+								item.color ? "" : "bg-secondary",
+								isHovered ? "opacity-80" : "opacity-100",
+								animate &&
+									"animate-in fade-in-50 slide-in-from-bottom-3 motion-reduce:animate-none",
 								onBarClick && "cursor-pointer"
 							)}
 							style={{

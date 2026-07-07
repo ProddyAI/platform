@@ -1,8 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { formatDistanceToNow } from "date-fns";
-import { Clock, Loader, PenTool, Plus } from "lucide-react";
+import { Loader, PenTool, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { api } from "@/../convex/_generated/api";
@@ -11,7 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
+import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
+import { WidgetEmptyState } from "../shared/widget-empty-state";
+import { WidgetHeader } from "../shared/widget-header";
 
 interface CanvasWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -32,7 +34,6 @@ interface CanvasWidgetProps {
 interface CanvasItem {
 	_id: Id<"messages">;
 	title: string;
-	description: string;
 	updatedAt: number;
 	channelId?: Id<"channels">;
 	channelName: string;
@@ -47,9 +48,11 @@ export const CanvasWidget = ({
 	const router = useRouter();
 	const { data: channels } = useGetChannels({ workspaceId });
 
-	// Get boards from the first channel (for simplicity)
-	const firstChannelId =
-		channels && channels.length > 0 ? channels[0]._id : undefined;
+	// Canvases are scoped to the first channel only; the heading and
+	// navigation below reflect that scope rather than implying workspace-wide data.
+	const firstChannel =
+		channels && channels.length > 0 ? channels[0] : undefined;
+	const firstChannelId = firstChannel?._id;
 
 	// Get messages from the channel to find canvas items
 	const messages = useQuery(
@@ -82,7 +85,6 @@ export const CanvasWidget = ({
 					canvasMessages.push({
 						_id: message._id,
 						title: body.canvasName || "Untitled Canvas",
-						description: "Collaborative whiteboard canvas",
 						updatedAt: message._creationTime,
 						channelId: message.channelId,
 						channelName: channel?.name || "Unknown Channel",
@@ -152,22 +154,8 @@ export const CanvasWidget = ({
 
 	return (
 		<div className="space-y-3">
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<PenTool className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-semibold text-base">Recent Canvases</h3>
-					{!isEditMode && sortedCanvasItems.length > 0 && (
-						<Badge
-							className="ml-1 h-5 px-2 text-xs font-medium"
-							variant="secondary"
-						>
-							{sortedCanvasItems.length}
-						</Badge>
-					)}
-				</div>
-				{isEditMode ? (
-					controls
-				) : (
+			<WidgetHeader
+				action={
 					<Button
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={handleViewAll}
@@ -176,8 +164,17 @@ export const CanvasWidget = ({
 					>
 						View All
 					</Button>
-				)}
-			</div>
+				}
+				badge={
+					sortedCanvasItems.length > 0 ? sortedCanvasItems.length : undefined
+				}
+				controls={controls}
+				icon={<PenTool className="h-5 w-5 text-primary dark:text-purple-400" />}
+				isEditMode={isEditMode}
+				title={
+					firstChannel ? `Canvases in #${firstChannel.name}` : "Recent Canvases"
+				}
+			/>
 
 			{sortedCanvasItems.length > 0 ? (
 				<ScrollArea className="h-[280px]">
@@ -189,12 +186,11 @@ export const CanvasWidget = ({
 										<h5 className="font-medium text-sm leading-tight flex-1">
 											{item.title}
 										</h5>
-										<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
-											<Clock className="h-2.5 w-2.5" />
-											{formatDistanceToNow(new Date(item.updatedAt), {
-												addSuffix: true,
-											}).replace("about ", "")}
-										</span>
+										<RelativeTime
+											className="text-[10px]"
+											iconClassName="h-2.5 w-2.5"
+											timestamp={item.updatedAt}
+										/>
 									</div>
 									<div className="flex items-center gap-2">
 										<Badge
@@ -204,9 +200,6 @@ export const CanvasWidget = ({
 											# {item.channelName}
 										</Badge>
 									</div>
-									<p className="text-xs text-muted-foreground line-clamp-1">
-										{item.description}
-									</p>
 									<Button
 										className="h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 										onClick={() =>
@@ -224,24 +217,16 @@ export const CanvasWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
-					<PenTool className="mb-3 h-12 w-12 text-muted-foreground/40" />
-					<h3 className="text-base font-semibold text-foreground">
-						No canvas items found
-					</h3>
-					<p className="text-sm text-muted-foreground mt-1">
-						Create a canvas to see it here
-					</p>
-					<Button
-						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
-						onClick={handleCreateCanvas}
-						size="sm"
-						variant="default"
-					>
-						<Plus className="mr-2 h-4 w-4" />
-						Create Canvas
-					</Button>
-				</div>
+				<WidgetEmptyState
+					action={{
+						label: "Create Canvas",
+						onClick: handleCreateCanvas,
+						icon: Plus,
+					}}
+					description="Create a canvas to see it here"
+					icon={PenTool}
+					title="No canvas items found"
+				/>
 			)}
 		</div>
 	);

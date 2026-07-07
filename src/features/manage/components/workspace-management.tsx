@@ -1,14 +1,11 @@
 "use client";
 
 import {
-	Calendar,
 	ChevronDown,
 	ChevronRight,
-	Hash,
 	RefreshCw,
 	Save,
 	Trash2,
-	Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,7 +24,6 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -38,7 +34,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { useNewJoinCode } from "@/features/workspaces/api/use-new-join-code";
 import { useRemoveWorkspace } from "@/features/workspaces/api/use-remove-workspace";
 import { useUpdateWorkspace } from "@/features/workspaces/api/use-update-workspace";
 import { cn } from "@/lib/utils";
@@ -60,11 +55,22 @@ const DeleteWorkspaceSection = ({
 }: DeleteWorkspaceSectionProps) => {
 	const router = useRouter();
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [isOpen, setIsOpen] = useState(false);
+	const [confirmText, setConfirmText] = useState("");
 	const removeWorkspace = useRemoveWorkspace();
 
 	if (!isOwner) return null;
 
+	const isConfirmed = confirmText.trim().toLowerCase() === "delete workspace";
+
+	const handleOpenChange = (open: boolean) => {
+		setIsOpen(open);
+		if (!open) setConfirmText("");
+	};
+
 	const handleDeleteWorkspace = async () => {
+		if (!isConfirmed) return;
+
 		setIsDeleting(true);
 
 		try {
@@ -87,7 +93,7 @@ const DeleteWorkspaceSection = ({
 				Permanently delete this workspace and all its data. This action is
 				irreversible.
 			</p>
-			<AlertDialog>
+			<AlertDialog onOpenChange={handleOpenChange} open={isOpen}>
 				<AlertDialogTrigger asChild>
 					<Button className="w-full" variant="destructive">
 						<Trash2 className="mr-2 h-4 w-4" />
@@ -103,11 +109,31 @@ const DeleteWorkspaceSection = ({
 							channels, and member information.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
+					<div className="grid gap-2">
+						<Label
+							className="text-sm font-medium"
+							htmlFor="confirm-delete-workspace"
+						>
+							Type{" "}
+							<span className="font-semibold text-destructive">
+								delete workspace
+							</span>{" "}
+							to confirm
+						</Label>
+						<Input
+							autoComplete="off"
+							disabled={isDeleting}
+							id="confirm-delete-workspace"
+							onChange={(e) => setConfirmText(e.target.value)}
+							placeholder="Type 'delete workspace' to confirm"
+							value={confirmText}
+						/>
+					</div>
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-							disabled={isDeleting}
+							disabled={isDeleting || !isConfirmed}
 							onClick={handleDeleteWorkspace}
 						>
 							{isDeleting ? "Deleting..." : "Delete"}
@@ -125,13 +151,10 @@ export const WorkspaceManagement = ({
 }: WorkspaceManagementProps) => {
 	const [name, setName] = useState(workspace.name);
 	const [isUpdating, setIsUpdating] = useState(false);
-	const [_isGeneratingCode, setIsGeneratingCode] = useState(false);
-	const [_showJoinCode, _setShowJoinCode] = useState(false);
 	const [inviteOpen, setInviteOpen] = useState(false);
 	const [channelsExpanded, setChannelsExpanded] = useState(false);
 
 	const updateWorkspace = useUpdateWorkspace();
-	const newJoinCode = useNewJoinCode();
 
 	// Fetch workspace data for overview
 	const { data: members } = useGetMembers({ workspaceId: workspace._id });
@@ -163,27 +186,7 @@ export const WorkspaceManagement = ({
 		}
 	};
 
-	const _handleGenerateNewCode = async () => {
-		setIsGeneratingCode(true);
-
-		try {
-			await newJoinCode.mutate({
-				workspaceId: workspace._id,
-			});
-
-			toast.success("New join code generated");
-		} catch (_error) {
-			toast.error("Failed to generate new join code");
-		} finally {
-			setIsGeneratingCode(false);
-		}
-	};
-
-	const _handleCopyJoinCode = () => {
-		const joinLink = `${window.location.origin}/auth/join/${workspace._id}?code=${workspace.joinCode}`;
-		navigator.clipboard.writeText(joinLink);
-		toast.success("Join link copied to clipboard");
-	};
+	const isNameDirty = name !== workspace.name;
 
 	return (
 		<>
@@ -202,61 +205,12 @@ export const WorkspaceManagement = ({
 					</p>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<Card>
-						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-								<Calendar className="h-4 w-4 mr-2" />
-								Created
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className="text-lg font-semibold">
-								{new Date(workspace._creationTime).toLocaleDateString()}
-							</div>
-							<p className="text-xs text-muted-foreground mt-1">
-								{Math.floor(
-									(Date.now() - workspace._creationTime) / (1000 * 60 * 60 * 24)
-								)}{" "}
-								days ago
-							</p>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-								<Users className="h-4 w-4 mr-2" />
-								Members
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className="text-lg font-semibold">
-								{members?.length || 0}
-							</div>
-							<p className="text-xs text-muted-foreground mt-1">
-								Total workspace members
-							</p>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-								<Hash className="h-4 w-4 mr-2" />
-								Channels
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className="text-lg font-semibold">
-								{channels?.length || 0}
-							</div>
-							<p className="text-xs text-muted-foreground mt-1">
-								Active channels
-							</p>
-						</CardContent>
-					</Card>
-				</div>
+				<p className="text-sm text-muted-foreground">
+					Created {new Date(workspace._creationTime).toLocaleDateString()} ·{" "}
+					{members?.length || 0} {members?.length === 1 ? "member" : "members"}{" "}
+					· {channels?.length || 0}{" "}
+					{channels?.length === 1 ? "channel" : "channels"}
+				</p>
 
 				<Separator />
 
@@ -284,11 +238,15 @@ export const WorkspaceManagement = ({
 								)}
 								disabled={!canRename}
 								id="name"
+								maxLength={20}
 								onChange={(e) => setName(e.target.value)}
 								value={name}
 							/>
 							{canRename && (
-								<Button disabled={isUpdating} onClick={handleUpdateName}>
+								<Button
+									disabled={isUpdating || !isNameDirty}
+									onClick={handleUpdateName}
+								>
 									{isUpdating ? (
 										<>
 											<RefreshCw className="mr-2 h-4 w-4 animate-spin" />

@@ -25,7 +25,6 @@ const ContactPage = () => {
 		subject: "",
 		message: "",
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSubmitted, setIsSubmitted] = useState(false);
 
 	const handleChange = (
@@ -39,22 +38,41 @@ const ContactPage = () => {
 		setFormState((prev) => ({ ...prev, subject: value }));
 	};
 
+	const subjectLabels: Record<string, string> = {
+		general: "General Inquiry",
+		support: "Technical Support",
+		sales: "Sales Question",
+		feedback: "Feedback",
+		other: "Other",
+	};
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		setIsSubmitting(true);
 
-		// Simulate form submission
-		setTimeout(() => {
-			setIsSubmitting(false);
-			setIsSubmitted(true);
-			setFormState({
-				name: "",
-				email: "",
-				company: "",
-				subject: "",
-				message: "",
-			});
-		}, 1500);
+		const bodyLines = [`Name: ${formState.name}`, `Email: ${formState.email}`];
+		if (formState.company) {
+			bodyLines.push(`Company: ${formState.company}`);
+		}
+		bodyLines.push("", formState.message);
+
+		const subject =
+			subjectLabels[formState.subject] ??
+			"Message from the Proddy contact form";
+		const mailtoUrl = `mailto:${
+			process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL
+		}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+			bodyLines.join("\n")
+		)}`;
+
+		window.location.href = mailtoUrl;
+		setIsSubmitted(true);
+		setFormState({
+			name: "",
+			email: "",
+			company: "",
+			subject: "",
+			message: "",
+		});
 	};
 
 	return (
@@ -62,12 +80,12 @@ const ContactPage = () => {
 			<Header />
 
 			{/* Hero Section */}
-			<section className="py-20 bg-white">
+			<section className="py-20 bg-background">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="text-center">
 						<motion.h1
 							animate={{ opacity: 1, y: 0 }}
-							className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6"
+							className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5 }}
 						>
@@ -75,7 +93,7 @@ const ContactPage = () => {
 						</motion.h1>
 						<motion.p
 							animate={{ opacity: 1, y: 0 }}
-							className="text-xl text-gray-600 max-w-3xl mx-auto mb-10"
+							className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10"
 							initial={{ opacity: 0, y: 20 }}
 							transition={{ duration: 0.5, delay: 0.1 }}
 						>
@@ -87,12 +105,12 @@ const ContactPage = () => {
 			</section>
 
 			{/* Contact Form Section */}
-			<section className="py-16 bg-gray-50">
+			<section className="py-16 bg-muted/30">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 						{/* Contact Information */}
 						<motion.div
-							className="bg-white p-8 rounded-xl shadow-sm"
+							className="bg-card p-8 rounded-xl shadow-sm"
 							initial={{ opacity: 0, x: -20 }}
 							transition={{ duration: 0.5 }}
 							viewport={{ once: true }}
@@ -106,7 +124,7 @@ const ContactPage = () => {
 										<Mail className="text-primary h-5 w-5" />
 									</div>
 									<div>
-										<h3 className="font-medium text-gray-900">Email</h3>
+										<h3 className="font-medium text-foreground">Email</h3>
 										<a
 											className="text-primary hover:underline block mb-1"
 											href={`mailto:${process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL}`}
@@ -121,8 +139,8 @@ const ContactPage = () => {
 										<MapPin className="text-primary h-5 w-5" />
 									</div>
 									<div>
-										<h3 className="font-medium text-gray-900">Location</h3>
-										<p className="text-gray-600">Bengaluru, India</p>
+										<h3 className="font-medium text-foreground">Location</h3>
+										<p className="text-muted-foreground">Bengaluru, India</p>
 									</div>
 								</div>
 
@@ -131,8 +149,8 @@ const ContactPage = () => {
 										<Phone className="text-primary h-5 w-5" />
 									</div>
 									<div>
-										<h3 className="font-medium text-gray-900">Phone</h3>
-										<p className="text-gray-600">+91 (974) 609-5420</p>
+										<h3 className="font-medium text-foreground">Phone</h3>
+										<p className="text-muted-foreground">+91 (974) 609-5420</p>
 									</div>
 								</div>
 							</div>
@@ -141,7 +159,7 @@ const ContactPage = () => {
 								<h3 className="text-xl font-semibold mb-4">Follow Us</h3>
 								<div className="flex space-x-4">
 									<a
-										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
+										className="bg-muted p-3 rounded-full hover:bg-primary/10 transition-colors"
 										href="https://www.facebook.com"
 										rel="noreferrer"
 										target="_blank"
@@ -149,7 +167,7 @@ const ContactPage = () => {
 										<span className="sr-only">Facebook</span>
 										<svg
 											aria-hidden="true"
-											className="h-5 w-5 text-gray-600"
+											className="h-5 w-5 text-muted-foreground"
 											fill="currentColor"
 											viewBox="0 0 24 24"
 										>
@@ -161,7 +179,7 @@ const ContactPage = () => {
 										</svg>
 									</a>
 									<a
-										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
+										className="bg-muted p-3 rounded-full hover:bg-primary/10 transition-colors"
 										href="https://x.com"
 										rel="noreferrer"
 										target="_blank"
@@ -169,7 +187,7 @@ const ContactPage = () => {
 										<span className="sr-only">X</span>
 										<svg
 											aria-hidden="true"
-											className="h-5 w-5 text-gray-600"
+											className="h-5 w-5 text-muted-foreground"
 											fill="currentColor"
 											viewBox="0 0 24 24"
 										>
@@ -177,7 +195,7 @@ const ContactPage = () => {
 										</svg>
 									</a>
 									<a
-										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
+										className="bg-muted p-3 rounded-full hover:bg-primary/10 transition-colors"
 										href="https://www.instagram.com"
 										rel="noreferrer"
 										target="_blank"
@@ -185,7 +203,7 @@ const ContactPage = () => {
 										<span className="sr-only">Instagram</span>
 										<svg
 											aria-hidden="true"
-											className="h-5 w-5 text-gray-600"
+											className="h-5 w-5 text-muted-foreground"
 											fill="currentColor"
 											viewBox="0 0 24 24"
 										>
@@ -197,7 +215,7 @@ const ContactPage = () => {
 										</svg>
 									</a>
 									<a
-										className="bg-gray-100 p-3 rounded-full hover:bg-primary/10 transition-colors"
+										className="bg-muted p-3 rounded-full hover:bg-primary/10 transition-colors"
 										href="https://github.com"
 										rel="noreferrer"
 										target="_blank"
@@ -205,7 +223,7 @@ const ContactPage = () => {
 										<span className="sr-only">GitHub</span>
 										<svg
 											aria-hidden="true"
-											className="h-5 w-5 text-gray-600"
+											className="h-5 w-5 text-muted-foreground"
 											fill="currentColor"
 											viewBox="0 0 24 24"
 										>
@@ -222,7 +240,7 @@ const ContactPage = () => {
 
 						{/* Contact Form */}
 						<motion.div
-							className="bg-white p-8 rounded-xl shadow-sm"
+							className="bg-card p-8 rounded-xl shadow-sm"
 							initial={{ opacity: 0, x: 20 }}
 							transition={{ duration: 0.5 }}
 							viewport={{ once: true }}
@@ -233,10 +251,11 @@ const ContactPage = () => {
 									<div className="bg-green-100 p-3 rounded-full mb-4">
 										<CheckCircle className="h-10 w-10 text-green-600" />
 									</div>
-									<h2 className="text-2xl font-bold mb-4">Thank You!</h2>
-									<p className="text-gray-600 mb-6">
-										Your message has been sent successfully. We&apos;ll get back
-										to you as soon as possible.
+									<h2 className="text-2xl font-bold mb-4">Thank you</h2>
+									<p className="text-muted-foreground mb-6">
+										Your email client should now be open with your message ready
+										to send. Send it from there and we&apos;ll get back to you
+										as soon as possible.
 									</p>
 									<Button
 										onClick={() => setIsSubmitted(false)}
@@ -253,7 +272,7 @@ const ContactPage = () => {
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 											<div>
 												<label
-													className="block text-sm font-medium text-gray-700 mb-1"
+													className="block text-sm font-medium text-foreground mb-1"
 													htmlFor="name"
 												>
 													Your Name
@@ -269,7 +288,7 @@ const ContactPage = () => {
 											</div>
 											<div>
 												<label
-													className="block text-sm font-medium text-gray-700 mb-1"
+													className="block text-sm font-medium text-foreground mb-1"
 													htmlFor="email"
 												>
 													Email Address
@@ -288,7 +307,7 @@ const ContactPage = () => {
 
 										<div>
 											<label
-												className="block text-sm font-medium text-gray-700 mb-1"
+												className="block text-sm font-medium text-foreground mb-1"
 												htmlFor="company"
 											>
 												Company (Optional)
@@ -304,7 +323,7 @@ const ContactPage = () => {
 
 										<div>
 											<label
-												className="block text-sm font-medium text-gray-700 mb-1"
+												className="block text-sm font-medium text-foreground mb-1"
 												htmlFor="subject"
 											>
 												Subject
@@ -333,7 +352,7 @@ const ContactPage = () => {
 
 										<div>
 											<label
-												className="block text-sm font-medium text-gray-700 mb-1"
+												className="block text-sm font-medium text-foreground mb-1"
 												htmlFor="message"
 											>
 												Message
@@ -351,40 +370,12 @@ const ContactPage = () => {
 
 										<Button
 											className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-											disabled={isSubmitting}
 											type="submit"
 										>
-											{isSubmitting ? (
-												<span className="flex items-center">
-													<svg
-														className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-														fill="none"
-														viewBox="0 0 24 24"
-														xmlns="http://www.w3.org/2000/svg"
-													>
-														<title>Loading</title>
-														<circle
-															className="opacity-25"
-															cx="12"
-															cy="12"
-															r="10"
-															stroke="currentColor"
-															strokeWidth="4"
-														/>
-														<path
-															className="opacity-75"
-															d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-															fill="currentColor"
-														/>
-													</svg>
-													Sending...
-												</span>
-											) : (
-												<span className="flex items-center">
-													<Send className="mr-2 h-4 w-4" />
-													Send Message
-												</span>
-											)}
+											<span className="flex items-center">
+												<Send className="mr-2 h-4 w-4" />
+												Send Message
+											</span>
 										</Button>
 									</form>
 								</>

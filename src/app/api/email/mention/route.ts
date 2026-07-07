@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
 			mentionerName,
 			messagePreview,
 			channelName,
+			channelId,
+			messageId,
 			workspaceUrl,
 			workspaceName,
 		} = body;
@@ -53,6 +55,13 @@ export async function POST(req: NextRequest) {
 		// Generate unsubscribe URL
 		const unsubscribeUrl = generateUnsubscribeUrl(userId, "mentions");
 
+		// Build a message-specific deep link (falls back to the workspace root
+		// in the template when channelId/messageId aren't available)
+		const messageUrl =
+			workspaceUrl && channelId && messageId
+				? `${workspaceUrl}/channel/${channelId}/chats?parentMessageId=${messageId}`
+				: undefined;
+
 		// Set the subject for mention emails
 		const subject = "You were mentioned in Proddy";
 
@@ -62,6 +71,7 @@ export async function POST(req: NextRequest) {
 			mentionerName: mentionerName || "Someone",
 			messagePreview: messagePreview || "You were mentioned in a message",
 			channelName: channelName || "a channel",
+			messageUrl,
 			workspaceUrl,
 			workspaceName,
 			unsubscribeUrl,

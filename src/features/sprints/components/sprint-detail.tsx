@@ -217,7 +217,8 @@ export const SprintDetail = ({ sprint, onBack }: SprintDetailProps) => {
 										</div>
 									</div>
 									<Button
-										className="size-6 shrink-0 opacity-0 group-hover:opacity-100"
+										aria-label="Remove issue from sprint"
+										className="size-6 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
 										onClick={() => handleRemove(issue._id)}
 										size="icon"
 										variant="ghost"

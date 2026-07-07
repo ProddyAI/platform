@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
 			originalMessagePreview,
 			replyMessagePreview,
 			channelName,
+			channelId,
+			messageId,
 			workspaceUrl,
 			workspaceName,
 		} = body;
@@ -54,6 +56,13 @@ export async function POST(req: NextRequest) {
 		// Generate unsubscribe URL
 		const unsubscribeUrl = generateUnsubscribeUrl(userId, "threadReply");
 
+		// Build a thread-specific deep link (falls back to the workspace root
+		// in the template when channelId/messageId aren't available)
+		const threadUrl =
+			workspaceUrl && channelId && messageId
+				? `${workspaceUrl}/channel/${channelId}/chats?parentMessageId=${messageId}`
+				: undefined;
+
 		// Set the subject for thread reply emails
 		const subject = `${replierName} replied to your message in Proddy`;
 
@@ -64,6 +73,7 @@ export async function POST(req: NextRequest) {
 			originalMessagePreview: originalMessagePreview || "Your message",
 			replyMessagePreview: replyMessagePreview || "A reply to your message",
 			channelName: channelName || "a channel",
+			threadUrl,
 			workspaceUrl,
 			workspaceName,
 			unsubscribeUrl,

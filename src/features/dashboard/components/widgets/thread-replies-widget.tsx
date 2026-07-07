@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Hash, Loader, MessageSquareText } from "lucide-react";
+import { Hash, Loader, MessageSquareText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -11,8 +11,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetThreadMessages } from "@/features/messages/api/use-get-thread-messages";
 import { PresenceIndicator } from "@/features/presence/components/presence-indicator";
 import { useMultipleUserStatuses } from "@/features/presence/hooks/use-user-status";
-import { safeFormatDistanceToNow } from "@/lib/date-utils";
+import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
+import { WidgetEmptyState } from "../shared/widget-empty-state";
+import { WidgetHeader } from "../shared/widget-header";
 
 interface ThreadRepliesWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -108,22 +110,8 @@ export const ThreadRepliesWidget = ({
 
 	return (
 		<div className="space-y-3">
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<MessageSquareText className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-semibold text-base">Thread Replies</h3>
-					{!isEditMode && threadMessages.length > 0 && (
-						<Badge
-							className="ml-1 h-5 px-2 text-xs font-medium"
-							variant="secondary"
-						>
-							{threadMessages.length}
-						</Badge>
-					)}
-				</div>
-				{isEditMode ? (
-					controls
-				) : (
+			<WidgetHeader
+				action={
 					<Button
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={() => router.push(`/workspace/${workspaceId}/threads`)}
@@ -132,8 +120,15 @@ export const ThreadRepliesWidget = ({
 					>
 						View All
 					</Button>
-				)}
-			</div>
+				}
+				badge={threadMessages.length > 0 ? threadMessages.length : undefined}
+				controls={controls}
+				icon={
+					<MessageSquareText className="h-5 w-5 text-primary dark:text-purple-400" />
+				}
+				isEditMode={isEditMode}
+				title="Thread Replies"
+			/>
 
 			{threadMessages && threadMessages.length > 0 ? (
 				<ScrollArea className="h-[280px]">
@@ -179,34 +174,22 @@ export const ThreadRepliesWidget = ({
 														</Badge>
 													)}
 												</div>
-												<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
-													<Clock className="h-2.5 w-2.5" />
-													{safeFormatDistanceToNow(
-														thread.message._creationTime,
-														{
-															addSuffix: true,
-															stripAbout: true,
-														}
-													)}
-												</span>
+												<RelativeTime
+													timestamp={thread.message._creationTime}
+												/>
 											</div>
 											<div className="rounded-md bg-muted/30 p-2 text-xs">
-												<p className="font-medium text-muted-foreground">
-													Replied to your thread:
-												</p>
-												<p className="mt-1">
-													{(() => {
-														const preview = getMessagePreview(
-															thread.message.body
-														);
-														return (
-															<>
-																{preview}
-																{preview.length >= 50 ? "..." : ""}
-															</>
-														);
-													})()}
-												</p>
+												{(() => {
+													const preview = getMessagePreview(
+														thread.message.body
+													);
+													return (
+														<>
+															{preview}
+															{preview.length >= 50 ? "..." : ""}
+														</>
+													);
+												})()}
 											</div>
 											<Button
 												className="mt-2 h-7 px-2 w-full justify-center text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
@@ -224,15 +207,11 @@ export const ThreadRepliesWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
-					<MessageSquareText className="mb-3 h-12 w-12 text-muted-foreground/40" />
-					<h3 className="text-base font-semibold text-foreground">
-						No thread replies
-					</h3>
-					<p className="text-sm text-muted-foreground mt-1">
-						You don&apos;t have any recent thread replies
-					</p>
-				</div>
+				<WidgetEmptyState
+					description="You don't have any recent thread replies"
+					icon={MessageSquareText}
+					title="No thread replies"
+				/>
 			)}
 		</div>
 	);

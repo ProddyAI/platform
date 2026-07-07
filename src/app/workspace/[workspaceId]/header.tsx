@@ -96,7 +96,7 @@ export const WorkspaceHeader = ({
 	const { data: workspaces } = useGetWorkspaces();
 
 	const onWorkspaceClick = (id: string) => {
-		setSwitchOpen(false); // updated reference
+		setSwitchOpen(false);
 		router.push(`/workspace/${id}`);
 	};
 
@@ -131,7 +131,7 @@ export const WorkspaceHeader = ({
 							onCloseAutoFocus={(e) => e.preventDefault()}
 							side="bottom"
 						>
-							<DropdownMenuItem className="cursor-pointer capitalize rounded-[8px] p-3 mb-1 hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground">
+							<div className="flex items-center capitalize rounded-[8px] p-3 mb-1">
 								<div className="relative mr-3 flex size-10 items-center justify-center overflow-hidden rounded-[10px] bg-secondary text-xl font-semibold text-secondary-foreground shadow-md">
 									{workspace.name.charAt(0).toUpperCase()}
 								</div>
@@ -142,7 +142,7 @@ export const WorkspaceHeader = ({
 										Active workspace
 									</p>
 								</div>
-							</DropdownMenuItem>
+							</div>
 
 							{isAdmin && (
 								<>
@@ -165,7 +165,7 @@ export const WorkspaceHeader = ({
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								className="cursor-pointer py-2.5 flex items-center gap-3 group rounded-[8px] hover:bg-muted/50 dark:hover:bg-accent/10 dark:hover:text-foreground"
-								onClick={() => setSwitchOpen(true)} // updated here
+								onClick={() => setSwitchOpen(true)}
 							>
 								<div className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-secondary/10 transition-standard group-hover:bg-secondary/20">
 									<RefreshCw className="size-3.5 text-secondary transition-transform duration-200 group-hover:rotate-45" />
@@ -176,7 +176,6 @@ export const WorkspaceHeader = ({
 					</DropdownMenu>
 
 					<Dialog onOpenChange={setSwitchOpen} open={switchOpen}>
-						{/* updated here */}
 						<DialogContent className="overflow-hidden p-0 rounded-[12px] border-0 shadow-xl">
 							<DialogHeader className="border-b p-5 bg-muted/30">
 								<DialogTitle className="text-xl font-semibold tracking-tight">
@@ -221,7 +220,7 @@ export const WorkspaceHeader = ({
 								<button
 									className="flex w-full cursor-pointer items-center gap-x-4 rounded-[10px] border border-dashed bg-card/50 px-4 py-3 hover:bg-accent/10 transition-standard hover:translate-x-1 group mt-2"
 									onClick={() => {
-										setSwitchOpen(false); // updated here
+										setSwitchOpen(false);
 										setCreateOpen(true);
 									}}
 									type="button"

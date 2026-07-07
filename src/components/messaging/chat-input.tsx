@@ -57,6 +57,14 @@ export const ChatInput = ({
 	const [isPending, setIsPending] = useState(false);
 
 	const innerRef = useRef<Quill | null>(null);
+	const lastSubmitArgsRef = useRef<{
+		body: string;
+		image: File | null;
+		calendarEvent?: {
+			date: Date;
+			time?: string;
+		};
+	} | null>(null);
 
 	const workspaceId = useWorkspaceId();
 
@@ -112,6 +120,8 @@ export const ChatInput = ({
 			time?: string;
 		};
 	}) => {
+		lastSubmitArgsRef.current = { body, image, calendarEvent };
+
 		try {
 			setIsPending(true);
 			innerRef.current?.enable(false);
@@ -210,7 +220,15 @@ export const ChatInput = ({
 			// Stop typing indicator after sending message
 			stopTyping();
 		} catch (_error) {
-			toast.error("Failed to send message.");
+			toast.error("Failed to send message.", {
+				action: {
+					label: "Retry",
+					onClick: () => {
+						const args = lastSubmitArgsRef.current;
+						if (args) handleSubmit(args);
+					},
+				},
+			});
 		} finally {
 			setIsPending(false);
 			innerRef?.current?.enable(true);
@@ -238,7 +256,7 @@ export const ChatInput = ({
 	return (
 		<div className="w-full px-1 md:px-5">
 			{maxReached && (
-				<div className="mb-2 flex items-center justify-between rounded-md border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-500">
+				<div className="mb-2 flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
 					<span>
 						You have reached the message limit for your plan. Upgrade to send
 						more messages.

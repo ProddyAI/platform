@@ -9,7 +9,6 @@ import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 type UploadStep =
 	| "idle"
-	| "uploading"
 	| "transcribing"
 	| "generating"
 	| "saving"
@@ -20,7 +19,7 @@ export const UploadRecordingButton = () => {
 	const workspaceId = useWorkspaceId();
 	const [step, setStep] = useState<UploadStep>("idle");
 	const [fileName, setFileName] = useState("");
-	const [_errorMsg, setErrorMsg] = useState("");
+	const [errorMsg, setErrorMsg] = useState("");
 	const fileRef = useRef<HTMLInputElement>(null);
 
 	const saveUploadTranscript = useMutation(
@@ -114,13 +113,6 @@ export const UploadRecordingButton = () => {
 			setErrorMsg(message || "An error occurred");
 			setStep("error");
 			toast.error(message || "Upload failed");
-
-			// Reset after 5 seconds
-			setTimeout(() => {
-				setStep("idle");
-				setFileName("");
-				setErrorMsg("");
-			}, 5000);
 		} finally {
 			// Reset file input
 			if (fileRef.current) fileRef.current.value = "";
@@ -131,11 +123,10 @@ export const UploadRecordingButton = () => {
 
 	const stepLabels: Record<UploadStep, string> = {
 		idle: "Upload Recording",
-		uploading: "Uploading...",
 		transcribing: "Transcribing audio...",
 		generating: "Generating AI notes...",
 		saving: "Saving transcript...",
-		done: "Done!",
+		done: "Saved",
 		error: "Failed",
 	};
 
@@ -143,7 +134,7 @@ export const UploadRecordingButton = () => {
 		if (step === "done")
 			return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
 		if (step === "error")
-			return <AlertCircle className="w-4 h-4 text-red-500" />;
+			return <AlertCircle className="w-4 h-4 text-destructive" />;
 		if (isProcessing) return <Loader2 className="w-4 h-4 animate-spin" />;
 		return <Upload className="w-4 h-4" />;
 	};
@@ -152,7 +143,7 @@ export const UploadRecordingButton = () => {
 		<div className="relative">
 			<input
 				accept="audio/*,video/mp4,video/webm"
-				className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
+				className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
 				disabled={isProcessing}
 				onChange={handleUpload}
 				ref={fileRef}
@@ -160,7 +151,7 @@ export const UploadRecordingButton = () => {
 				type="file"
 			/>
 			<Button
-				className={`gap-2 pointer-events-none text-xs ${step === "done" ? "border-emerald-200 text-emerald-700 bg-emerald-50" : step === "error" ? "border-red-200 text-red-700 bg-red-50" : ""}`}
+				className={`gap-2 pointer-events-none text-xs peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ${step === "done" ? "border-emerald-200 text-emerald-700 bg-emerald-50" : step === "error" ? "border-destructive/30 text-destructive bg-destructive/10" : ""}`}
 				disabled={isProcessing}
 				size="sm"
 				variant="outline"
@@ -169,8 +160,13 @@ export const UploadRecordingButton = () => {
 				{stepLabels[step]}
 			</Button>
 			{fileName && isProcessing && (
-				<div className="absolute top-full left-0 mt-1 text-[10px] text-gray-500 truncate max-w-[200px]">
+				<div className="absolute top-full left-0 mt-1 text-[10px] text-muted-foreground truncate max-w-[200px]">
 					{fileName}
+				</div>
+			)}
+			{step === "error" && errorMsg && (
+				<div className="absolute top-full left-0 mt-1 text-[10px] text-destructive max-w-[240px]">
+					{errorMsg}
 				</div>
 			)}
 		</div>

@@ -127,13 +127,13 @@ const JoinWorkspaceIdPage = () => {
 	// Show error state for email invite flow
 	if (inviteHash && inviteError) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-white p-8 shadow-md">
+			<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-card p-8 shadow-md">
 				<Image alt="Logo" height={60} src="/logo-nobg.png" width={60} />
 
 				<div className="flex max-w-md flex-col items-center justify-center gap-y-4">
 					<div className="flex flex-col items-center justify-center gap-y-2">
 						<h1 className="text-2xl font-bold">Invite Error</h1>
-						<p className="text-md text-center text-destructive">
+						<p className="text-center text-base text-destructive">
 							{inviteError}
 						</p>
 					</div>
@@ -152,7 +152,7 @@ const JoinWorkspaceIdPage = () => {
 
 	// Show join code input (default flow)
 	return (
-		<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-white p-8 shadow-md">
+		<div className="flex h-full flex-col items-center justify-center gap-y-8 rounded-lg bg-card p-8 shadow-md">
 			<Image alt="Logo" height={60} src="/logo-nobg.png" width={60} />
 
 			<div className="flex max-w-md flex-col items-center justify-center gap-y-4">
@@ -161,7 +161,7 @@ const JoinWorkspaceIdPage = () => {
 						Join {data?.name ?? "Workspace"}
 					</h1>
 
-					<p className="text-md text-muted-foreground">
+					<p className="text-base text-muted-foreground">
 						Enter the workspace code to join.
 					</p>
 				</div>
@@ -173,10 +173,10 @@ const JoinWorkspaceIdPage = () => {
 							isPending && "opacity-50 cursor-not-allowed pointer-events-none"
 						),
 						character:
-							"uppercase h-auto rounded-md border border-gray-300 outline-rose-500 flex items-center justify-center text-lg font-medium text-gray-500",
+							"uppercase h-auto rounded-md border border-border outline-secondary flex items-center justify-center text-lg font-medium text-muted-foreground",
 						characterInactive: "bg-muted",
-						characterSelected: "bg-white text-black",
-						characterFilled: "bg-white text-black",
+						characterSelected: "bg-background text-foreground",
+						characterFilled: "bg-background text-foreground",
 					}}
 					length={6}
 					onChange={setCode}

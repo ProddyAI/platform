@@ -38,26 +38,28 @@ export const generateOTPInternal = internalMutation({
 			);
 		}
 
+		// All verification records for this email -- bounded by the rate
+		// limit and cleanup this function itself enforces, so it's safe to
+		// fetch via the by_email index and filter in memory below instead of
+		// chaining .filter() onto the db query.
+		const emailOTPs = await ctx.db
+			.query("emailVerifications")
+			.withIndex("by_email", (q) => q.eq("email", email))
+			.collect();
+
 		// Check rate limiting - max 3 unverified OTPs per email per hour
 		// Only count unverified OTPs so successful verifications don't block legitimate users
 		const oneHourAgo = Date.now() - 60 * 60 * 1000;
-		const recentOTPs = await ctx.db
-			.query("emailVerifications")
-			.withIndex("by_email", (q) => q.eq("email", email))
-			.filter((q) => q.gte(q.field("createdAt"), oneHourAgo))
-			.filter((q) => q.eq(q.field("verified"), false))
-			.collect();
+		const recentOTPs = emailOTPs.filter(
+			(record) => record.createdAt >= oneHourAgo && !record.verified
+		);
 
 		if (recentOTPs.length >= 3) {
 			throw new Error("Too many OTP requests. Please try again after an hour.");
 		}
 
 		// Delete any existing unverified OTPs for this email
-		const existingOTPs = await ctx.db
-			.query("emailVerifications")
-			.withIndex("by_email", (q) => q.eq("email", email))
-			.filter((q) => q.eq(q.field("verified"), false))
-			.collect();
+		const existingOTPs = emailOTPs.filter((record) => !record.verified);
 
 		for (const otp of existingOTPs) {
 			await ctx.db.delete(otp._id);
@@ -124,57 +126,19 @@ export const generateAndSendOTP = action({
 			throw new Error("Failed to generate OTP");
 		}
 
-		// Send email using Resend
-		const resendApiKey = process.env.RESEND_API_KEY;
-		if (!resendApiKey) {
-			throw new Error(
-				"Email service is not configured (RESEND_API_KEY is missing)"
-			);
-		}
+		// Send email via the shared Resend client + OTPVerificationMail
+		// React Email template (same brand-consistent pattern used by every
+		// other transactional email in the app, wired through
+		// convex/notify/emailActions.ts since that module already runs
+		// "use node" and owns the Resend client).
+		const emailResult = await ctx.runAction(
+			internal.notify.emailActions.sendOTPVerificationEmail,
+			{ email, otp: result.otp }
+		);
 
-		const response = await fetch("https://api.resend.com/emails", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${resendApiKey}`,
-			},
-			body: JSON.stringify({
-				from: process.env.RESEND_FROM_EMAIL,
-				to: [email],
-				subject: "Verify your email - Proddy",
-				html: `
-					<!DOCTYPE html>
-					<html>
-						<head>
-							<meta charset="utf-8">
-							<meta name="viewport" content="width=device-width, initial-scale=1.0">
-						</head>
-						<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-							<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-								<h1 style="color: white; margin: 0; font-size: 28px;">Verify Your Email</h1>
-							</div>
-							<div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-								<p style="font-size: 16px; margin-bottom: 20px;">Hello,</p>
-								<p style="font-size: 16px; margin-bottom: 20px;">Thank you for signing up with Proddy! To complete your registration, please use the following verification code:</p>
-								<div style="background: white; padding: 20px; text-align: center; border-radius: 8px; margin: 30px 0; border: 2px solid #667eea;">
-									<p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 0; color: #667eea; font-family: 'Courier New', monospace;">${result.otp}</p>
-								</div>
-								<p style="font-size: 14px; color: #666; margin-bottom: 20px;">This code will expire in 10 minutes. If you didn't request this code, please ignore this email.</p>
-								<p style="font-size: 16px; margin-top: 30px;">Best regards,<br><strong>The Proddy Team</strong></p>
-							</div>
-							<div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-								<p>© ${new Date().getFullYear()} Proddy. All rights reserved.</p>
-							</div>
-						</body>
-					</html>
-				`,
-			}),
-		});
-
-		if (!response.ok) {
-			const error = await response.json();
-			console.error("Failed to send OTP email:", error);
-			throw new Error("Failed to send OTP email");
+		if (!emailResult.success) {
+			console.error("Failed to send OTP email:", emailResult.error);
+			throw new Error(emailResult.error || "Failed to send OTP email");
 		}
 
 		// Return success only (no OTP)
@@ -192,13 +156,14 @@ export const verifyOTP = mutation({
 		const email = args.email.toLowerCase().trim();
 		const otp = args.otp.trim();
 
-		// Find the OTP record
-		const otpRecord = await ctx.db
+		// Find the most recent unverified OTP record for this email
+		const emailOTPs = await ctx.db
 			.query("emailVerifications")
 			.withIndex("by_email", (q) => q.eq("email", email))
-			.filter((q) => q.eq(q.field("verified"), false))
 			.order("desc")
-			.first();
+			.collect();
+
+		const otpRecord = emailOTPs.find((record) => !record.verified);
 
 		if (!otpRecord) {
 			throw new Error("No OTP found for this email. Please request a new one.");
@@ -242,11 +207,12 @@ export const consumeVerifiedOTPsInternal = internalMutation({
 	handler: async (ctx, args) => {
 		const email = args.email.toLowerCase().trim();
 
-		const verifiedOTPs = await ctx.db
+		const emailOTPs = await ctx.db
 			.query("emailVerifications")
 			.withIndex("by_email", (q) => q.eq("email", email))
-			.filter((q) => q.eq(q.field("verified"), true))
 			.collect();
+
+		const verifiedOTPs = emailOTPs.filter((record) => record.verified);
 
 		for (const otp of verifiedOTPs) {
 			await ctx.db.delete(otp._id);
@@ -265,12 +231,14 @@ export const hasVerifiedOTP = query({
 		const email = args.email.toLowerCase().trim();
 		const now = Date.now();
 
-		const verifiedOTP = await ctx.db
+		const emailOTPs = await ctx.db
 			.query("emailVerifications")
 			.withIndex("by_email", (q) => q.eq("email", email))
-			.filter((q) => q.eq(q.field("verified"), true))
-			.filter((q) => q.gte(q.field("expiresAt"), now))
-			.first();
+			.collect();
+
+		const verifiedOTP = emailOTPs.find(
+			(record) => record.verified && record.expiresAt >= now
+		);
 
 		return {
 			verified: Boolean(verifiedOTP),
@@ -287,11 +255,12 @@ export const getOTPExpiry = query({
 	handler: async (ctx, args) => {
 		const email = args.email.toLowerCase().trim();
 
-		const otpRecord = await ctx.db
+		const emailOTPs = await ctx.db
 			.query("emailVerifications")
 			.withIndex("by_email", (q) => q.eq("email", email))
-			.filter((q) => q.eq(q.field("verified"), false))
-			.first();
+			.collect();
+
+		const otpRecord = emailOTPs.find((record) => !record.verified);
 
 		if (!otpRecord) {
 			return { expiresAt: null };

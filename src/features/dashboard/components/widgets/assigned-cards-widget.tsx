@@ -1,15 +1,24 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
-import { Clock, KanbanSquare, Loader } from "lucide-react";
+import { KanbanSquare, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetAssignedCards } from "@/features/board/api/use-get-assigned-cards";
-import { useGetChannels } from "@/features/channels/api/use-get-channels";
+import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
+import { WidgetEmptyState } from "../shared/widget-empty-state";
+import { WidgetHeader } from "../shared/widget-header";
+
+// A due date is only overdue once its calendar day has fully elapsed, matching
+// the convention in board-issue-row.tsx's isOverdue check.
+function isOverdue(dueDate: number): boolean {
+	const dueDateEndOfDay = new Date(dueDate);
+	dueDateEndOfDay.setHours(23, 59, 59, 999);
+	return dueDateEndOfDay < new Date();
+}
 
 interface AssignedCardsWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -33,9 +42,6 @@ export const AssignedCardsWidget = ({
 	controls,
 }: AssignedCardsWidgetProps) => {
 	const router = useRouter();
-
-	// Fetch channels for the workspace
-	const { data: channels } = useGetChannels({ workspaceId });
 
 	// Fetch board items assigned to the current user
 	const { data: assignedCards, isLoading: cardsLoading } = useGetAssignedCards({
@@ -79,37 +85,27 @@ export const AssignedCardsWidget = ({
 
 	return (
 		<div className="space-y-3">
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-semibold text-base">Assigned Issues</h3>
-					{!isEditMode && sortedCards.length > 0 && (
-						<Badge
-							className="ml-1 h-5 px-2 text-xs font-medium"
-							variant="secondary"
+			<WidgetHeader
+				action={
+					sortedCards.length > 0 && (
+						<Button
+							className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+							onClick={() => router.push(`/workspace/${workspaceId}/issues`)}
+							size="sm"
+							variant="ghost"
 						>
-							{sortedCards.length}
-						</Badge>
-					)}
-				</div>
-				{isEditMode
-					? controls
-					: channels &&
-						channels.length > 0 && (
-							<Button
-								className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
-								onClick={() =>
-									router.push(
-										`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
-									)
-								}
-								size="sm"
-								variant="ghost"
-							>
-								View all
-							</Button>
-						)}
-			</div>
+							View All
+						</Button>
+					)
+				}
+				badge={sortedCards.length > 0 ? sortedCards.length : undefined}
+				controls={controls}
+				icon={
+					<KanbanSquare className="h-5 w-5 text-primary dark:text-purple-400" />
+				}
+				isEditMode={isEditMode}
+				title="Assigned Issues"
+			/>
 
 			{sortedCards.length > 0 ? (
 				<ScrollArea className="h-[280px]">
@@ -122,12 +118,12 @@ export const AssignedCardsWidget = ({
 											{card.title}
 										</p>
 										{card.dueDate && (
-											<span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap flex items-center gap-0.5">
-												<Clock className="h-2.5 w-2.5" />
-												{formatDistanceToNow(new Date(card.dueDate), {
-													addSuffix: true,
-												}).replace("about ", "")}
-											</span>
+											<RelativeTime
+												className="text-[10px]"
+												iconClassName="h-2.5 w-2.5"
+												overdue={isOverdue(card.dueDate)}
+												timestamp={card.dueDate}
+											/>
 										)}
 									</div>
 									<div className="flex items-center gap-2">
@@ -152,29 +148,11 @@ export const AssignedCardsWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
-					<KanbanSquare className="mb-3 h-12 w-12 text-muted-foreground/40" />
-					<h3 className="text-base font-semibold text-foreground">
-						No assigned cards
-					</h3>
-					<p className="text-sm text-muted-foreground mt-1">
-						You don&apos;t have any board cards assigned
-					</p>
-					{channels && channels.length > 0 && (
-						<Button
-							className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
-							onClick={() =>
-								router.push(
-									`/workspace/${workspaceId}/channel/${channels[0]._id}/board`
-								)
-							}
-							size="sm"
-							variant="default"
-						>
-							View boards
-						</Button>
-					)}
-				</div>
+				<WidgetEmptyState
+					description="You don't have any issues assigned right now"
+					icon={KanbanSquare}
+					title="No assigned issues"
+				/>
 			)}
 		</div>
 	);

@@ -20,6 +20,13 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 interface CalendarPickerProps {
@@ -203,12 +210,16 @@ export const CalendarPicker = ({
 		<Dialog onOpenChange={onClose} open={open}>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>Add Calendar Event</DialogTitle>
+					<DialogTitle>Add calendar event</DialogTitle>
 				</DialogHeader>
 				<div className="grid gap-4 py-4 max-w-[350px] mx-auto">
 					<div className="grid gap-2">
-						<Label htmlFor="date-option">Date</Label>
-						<div className="flex flex-wrap gap-2">
+						<Label id="date-option-label">Date</Label>
+						<div
+							aria-labelledby="date-option-label"
+							className="flex flex-wrap gap-2"
+							role="group"
+						>
 							<Button
 								onClick={() => handleDateTypeChange("today")}
 								size="sm"
@@ -306,19 +317,23 @@ export const CalendarPicker = ({
 						<div className="flex items-center gap-2">
 							<Clock className="h-4 w-4 text-muted-foreground" />
 							{timeOptions.length > 0 ? (
-								<select
-									className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-									onChange={(e) => setSelectedTime(e.target.value)}
-									value={selectedTime}
-								>
-									{timeOptions.map((option) => (
-										<option key={option} value={option}>
-											{option}
-										</option>
-									))}
-								</select>
+								<Select onValueChange={setSelectedTime} value={selectedTime}>
+									<SelectTrigger id="time">
+										<SelectValue placeholder="Select a time" />
+									</SelectTrigger>
+									<SelectContent>
+										{timeOptions.map((option) => (
+											<SelectItem key={option} value={option}>
+												{option}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							) : (
-								<div className="flex h-10 w-full items-center justify-center rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground">
+								<div
+									className="flex h-10 w-full items-center justify-center rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
+									id="time"
+								>
 									Loading time options...
 								</div>
 							)}

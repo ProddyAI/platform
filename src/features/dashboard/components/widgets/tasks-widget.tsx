@@ -1,7 +1,6 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
-import { CheckCircle2, CheckSquare, Clock, Loader } from "lucide-react";
+import { CheckCircle2, CheckSquare, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,7 +11,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGetTaskCategories } from "@/features/tasks/api/use-get-task-categories";
 import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
 import { useUpdateTask } from "@/features/tasks/api/use-update-task";
+import { RelativeTime } from "../shared/relative-time";
 import { WidgetCard } from "../shared/widget-card";
+import { WidgetEmptyState } from "../shared/widget-empty-state";
+import { WidgetHeader } from "../shared/widget-header";
+
+// A due date only reads as overdue while the task is still open; matches the
+// overdue rule in task-item.tsx.
+function isOverdue(dueDate: number, completed: boolean): boolean {
+	return !completed && new Date(dueDate) < new Date();
+}
 
 interface TasksWidgetProps {
 	workspaceId: Id<"workspaces">;
@@ -83,12 +91,13 @@ export const TasksWidget = ({
 			});
 
 			if (result !== undefined) {
-				toast.success(
-					!completed ? "Task completed" : "Task marked as incomplete",
-					{
-						description: !completed ? "Great job!" : "Task reopened",
-					}
-				);
+				if (!completed) {
+					toast.success("Task completed");
+				} else {
+					toast.success("Task marked as incomplete", {
+						description: "Task reopened",
+					});
+				}
 			}
 		} catch (error) {
 			console.error("Failed to update task:", error);
@@ -112,14 +121,15 @@ export const TasksWidget = ({
 		if (!priority) return null;
 
 		const priorityColors: Record<string, string> = {
-			low: "bg-blue-100 text-blue-800",
-			medium: "bg-yellow-100 text-yellow-800",
-			high: "bg-red-100 text-red-800",
+			low: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+			medium:
+				"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+			high: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 		};
 
 		return (
 			<Badge
-				className={`${priorityColors[priority] || "bg-gray-100 text-gray-800"}`}
+				className={priorityColors[priority] || "bg-muted text-muted-foreground"}
 			>
 				{priority.charAt(0).toUpperCase() + priority.slice(1)}
 			</Badge>
@@ -128,32 +138,25 @@ export const TasksWidget = ({
 
 	return (
 		<div className="space-y-3">
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
-					<h3 className="font-semibold text-base">Your Tasks</h3>
-					{!isEditMode && sortedTasks.length > 0 && (
-						<Badge
-							className="ml-1 h-5 px-2 text-xs font-medium"
-							variant="secondary"
-						>
-							{sortedTasks.length}
-						</Badge>
-					)}
-				</div>
-				{isEditMode ? (
-					controls
-				) : (
+			<WidgetHeader
+				action={
 					<Button
 						className="h-8 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
 						onClick={() => router.push(`/workspace/${workspaceId}/tasks`)}
 						size="sm"
 						variant="ghost"
 					>
-						View all
+						View All
 					</Button>
-				)}
-			</div>
+				}
+				badge={sortedTasks.length > 0 ? sortedTasks.length : undefined}
+				controls={controls}
+				icon={
+					<CheckSquare className="h-5 w-5 text-primary dark:text-purple-400" />
+				}
+				isEditMode={isEditMode}
+				title="Your Tasks"
+			/>
 
 			{sortedTasks.length > 0 ? (
 				<ScrollArea className="h-[280px]">
@@ -166,6 +169,9 @@ export const TasksWidget = ({
 							>
 								<div className="flex items-start gap-3">
 									<Button
+										aria-label={
+											task.completed ? "Mark as incomplete" : "Mark as complete"
+										}
 										className="h-6 w-6 rounded-full flex-shrink-0 mt-0.5"
 										disabled={updatingTaskId === task._id}
 										onClick={() =>
@@ -182,26 +188,29 @@ export const TasksWidget = ({
 											<div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
 										)}
 									</Button>
-									<div className="flex-1 space-y-2 min-w-0">
+									<div className="flex-1 min-w-0 space-y-1.5">
 										<p
 											className={`font-medium break-words leading-tight ${task.completed ? "line-through text-muted-foreground" : ""}`}
 										>
 											{task.title}
 										</p>
-										{getPriorityBadge(task.priority)}
-										{task.dueDate && (
-											<div className="flex items-center gap-0.5 text-[10px] text-red-600 dark:text-red-400 font-medium">
-												<Clock className="h-2.5 w-2.5 flex-shrink-0" />
-												<span>
-													{formatDistanceToNow(new Date(task.dueDate), {
-														addSuffix: true,
-													}).replace("about ", "")}
-												</span>
-											</div>
-										)}
-										<Badge className="border-2 text-xs w-fit" variant="outline">
-											{getCategoryName(task.categoryId)}
-										</Badge>
+										<div className="flex flex-wrap items-center gap-2">
+											{getPriorityBadge(task.priority)}
+											<Badge
+												className="border-2 text-xs w-fit"
+												variant="outline"
+											>
+												{getCategoryName(task.categoryId)}
+											</Badge>
+											{task.dueDate && (
+												<RelativeTime
+													className="text-[10px]"
+													iconClassName="h-2.5 w-2.5 flex-shrink-0"
+													overdue={isOverdue(task.dueDate, task.completed)}
+													timestamp={task.dueDate}
+												/>
+											)}
+										</div>
 									</div>
 									<Button
 										className="h-7 px-2 text-xs font-medium text-primary hover:text-primary/90 hover:bg-primary/10 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950 flex-shrink-0"
@@ -217,23 +226,16 @@ export const TasksWidget = ({
 					</div>
 				</ScrollArea>
 			) : (
-				<div className="flex h-[250px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/5">
-					<CheckSquare className="mb-3 h-12 w-12 text-muted-foreground/40" />
-					<h3 className="text-base font-semibold text-foreground">No tasks</h3>
-					<p className="text-sm text-muted-foreground mt-1">
-						You don&apos;t have any tasks created
-					</p>
-					<Button
-						className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-purple-600 dark:hover:bg-purple-700"
-						onClick={() =>
-							router.push(`/workspace/${workspaceId}/tasks?action=create`)
-						}
-						size="sm"
-						variant="default"
-					>
-						Create Task
-					</Button>
-				</div>
+				<WidgetEmptyState
+					action={{
+						label: "Create Task",
+						onClick: () =>
+							router.push(`/workspace/${workspaceId}/tasks?action=create`),
+					}}
+					description="You don't have any tasks created"
+					icon={CheckSquare}
+					title="No tasks"
+				/>
 			)}
 		</div>
 	);

@@ -88,7 +88,7 @@ export const MermaidEditDialog = ({
 
 					{/* Basic validation feedback */}
 					{!isCodeValid && (
-						<p className="text-sm text-red-600">
+						<p className="text-sm text-destructive" role="alert">
 							Please enter some Mermaid code.
 						</p>
 					)}

@@ -69,6 +69,7 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 			<PopoverTrigger asChild>
 				<Button
 					aria-expanded={open}
+					aria-haspopup="listbox"
 					className="w-full justify-between"
 					role="combobox"
 					variant="outline"
@@ -128,10 +129,12 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 								</div>
 							) : (
 								filteredMembers.map((member) => (
-									<div
-										className="flex items-center justify-between p-2 hover:bg-muted rounded-md cursor-pointer"
+									<button
+										aria-pressed={selectedMemberIds.includes(member._id)}
+										className="flex w-full items-center justify-between p-2 hover:bg-muted rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 										key={member._id}
 										onClick={() => toggleMember(member._id)}
+										type="button"
 									>
 										<div className="flex items-center gap-2">
 											<Avatar className="h-6 w-6">
@@ -148,7 +151,7 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 										{selectedMemberIds.includes(member._id) ? (
 											<Check className="h-4 w-4 text-secondary" />
 										) : null}
-									</div>
+									</button>
 								))
 							)}
 						</div>
@@ -179,10 +182,14 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
 										<span className="text-xs truncate max-w-[100px]">
 											{member.user.name}
 										</span>
-										<X
-											className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer"
+										<button
+											aria-label={`Remove ${member.user.name}`}
+											className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 											onClick={(e) => removeMember(e, member._id)}
-										/>
+											type="button"
+										>
+											<X className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer" />
+										</button>
 									</Badge>
 								))}
 							</div>

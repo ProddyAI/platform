@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { subDays } from "date-fns";
 import { Clock, Loader, MessageSquare, ThumbsUp, Users } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 
@@ -14,12 +14,22 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { HorizontalBarChart } from "@/features/reports/components/charts";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+	HorizontalBarChart,
+	INTENSITY_COLOR_CLASSES,
+} from "@/features/reports/components/charts";
 import { formatDuration } from "@/features/reports/utils/format-duration";
 
-// Time threshold constants for activity color coding
-const ONE_HOUR_IN_SECONDS = 3600;
-const FIFTEEN_MINUTES_IN_SECONDS = 900;
+// Time threshold constants for activity color coding. totalTimeSpent is in
+// milliseconds (see schema.ts channelSessions.duration), matching the unit
+// formatDuration() expects, so these thresholds must be milliseconds too.
+const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
+
+// How often to nudge the range's end forward so a long-lived session doesn't
+// keep comparing against the moment the dashboard first mounted.
+const END_DATE_REFRESH_INTERVAL_MS = 60 * 1000;
 
 interface UserActivityDashboardProps {
 	workspaceId: Id<"workspaces">;
@@ -31,7 +41,23 @@ export const UserActivityDashboard = ({
 	timeRange = "7d",
 }: UserActivityDashboardProps) => {
 	// Calculate date range based on selected time range
-	const endDate = useMemo(() => Date.now(), []); // Only calculate once on component mount
+	const [endDate, setEndDate] = useState(() => Date.now());
+
+	// Keep the end of the range current instead of freezing it at mount time:
+	// refresh periodically and whenever the tab regains focus.
+	useEffect(() => {
+		const refresh = () => setEndDate(Date.now());
+		const interval = setInterval(refresh, END_DATE_REFRESH_INTERVAL_MS);
+		const handleVisibility = () => {
+			if (document.visibilityState === "visible") refresh();
+		};
+		document.addEventListener("visibilitychange", handleVisibility);
+		return () => {
+			clearInterval(interval);
+			document.removeEventListener("visibilitychange", handleVisibility);
+		};
+	}, []);
+
 	const startDate = useMemo(() => {
 		switch (timeRange) {
 			case "1d":
@@ -69,14 +95,68 @@ export const UserActivityDashboard = ({
 			: "skip"
 	);
 
-	const isLoading =
-		userActivityResult === undefined || activeUsersData === undefined;
-	const userActivity = userActivityResult || [];
+	// Keep the last successfully loaded data visible while a new range is
+	// fetched, instead of tearing down the whole view on every toggle.
+	const [cachedActivity, setCachedActivity] = useState(userActivityResult);
+	const [cachedActiveUsers, setCachedActiveUsers] = useState(activeUsersData);
 
-	if (isLoading) {
+	useEffect(() => {
+		if (userActivityResult !== undefined) {
+			setCachedActivity(userActivityResult);
+		}
+	}, [userActivityResult]);
+
+	useEffect(() => {
+		if (activeUsersData !== undefined) {
+			setCachedActiveUsers(activeUsersData);
+		}
+	}, [activeUsersData]);
+
+	const resolvedActivity = userActivityResult ?? cachedActivity;
+	const resolvedActiveUsers = activeUsersData ?? cachedActiveUsers;
+
+	const isInitialLoading =
+		resolvedActivity === undefined || resolvedActiveUsers === undefined;
+	const isRefetching =
+		!isInitialLoading &&
+		(userActivityResult === undefined || activeUsersData === undefined);
+
+	const userActivity = resolvedActivity || [];
+
+	if (isInitialLoading) {
 		return (
-			<div className="flex items-center justify-center h-64">
-				<Loader className="h-8 w-8 animate-spin text-secondary" />
+			<div aria-busy="true" aria-live="polite" className="space-y-6">
+				<div className="flex justify-between items-center">
+					<h2 className="text-xl font-semibold">User Activity</h2>
+				</div>
+
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+					{Array.from({ length: 4 }).map((_, index) => (
+						<Card key={`kpi-skeleton-${index}`}>
+							<CardHeader className="pb-2">
+								<Skeleton className="h-4 w-24" />
+							</CardHeader>
+							<CardContent>
+								<Skeleton className="h-8 w-20 mb-2" />
+								<Skeleton className="h-3 w-32" />
+							</CardContent>
+						</Card>
+					))}
+				</div>
+
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					{Array.from({ length: 2 }).map((_, index) => (
+						<Card className="flex flex-col" key={`chart-skeleton-${index}`}>
+							<CardHeader>
+								<Skeleton className="h-5 w-40 mb-2" />
+								<Skeleton className="h-4 w-56" />
+							</CardHeader>
+							<CardContent className="flex-1 min-h-0">
+								<Skeleton className="h-[400px] max-h-[400px] w-full" />
+							</CardContent>
+						</Card>
+					))}
+				</div>
 			</div>
 		);
 	}
@@ -109,7 +189,7 @@ export const UserActivityDashboard = ({
 	const messageCountData = sortedByMessages.slice(0, 10).map((item) => ({
 		label: item.member?.user?.name || "Unknown",
 		value: item.messageCount,
-		color: "bg-pink-500",
+		color: "bg-secondary",
 	}));
 
 	const timeSpentData = sortedByTimeSpent
@@ -118,12 +198,14 @@ export const UserActivityDashboard = ({
 		.map((item) => {
 			const timeValue = item.totalTimeSpent || 0;
 
+			// Single-hue sequential scale (intensity via opacity) rather than
+			// mixing unrelated semantic colors for "engagement".
 			const color =
-				timeValue > ONE_HOUR_IN_SECONDS
-					? "bg-green-500"
-					: timeValue > FIFTEEN_MINUTES_IN_SECONDS
-						? "bg-yellow-500"
-						: "bg-secondary";
+				timeValue > ONE_HOUR_IN_MS
+					? INTENSITY_COLOR_CLASSES.high
+					: timeValue > FIFTEEN_MINUTES_IN_MS
+						? INTENSITY_COLOR_CLASSES.medium
+						: INTENSITY_COLOR_CLASSES.low;
 
 			return {
 				label: item.member?.user?.name || "Unknown",
@@ -147,14 +229,23 @@ export const UserActivityDashboard = ({
 	);
 
 	// Use current active users count from dedicated query (currently logged in users)
-	const activeUsers = activeUsersData?.activeUserCount || 0;
-	const totalMembers = activeUsersData?.totalMembers || userActivity.length;
-	const activeUserPercentage = activeUsersData?.activeUserPercentage || 0;
+	const activeUsers = resolvedActiveUsers?.activeUserCount || 0;
+	const totalMembers = resolvedActiveUsers?.totalMembers || userActivity.length;
+	const activeUserPercentage = resolvedActiveUsers?.activeUserPercentage || 0;
 
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<h2 className="text-xl font-semibold">User Activity</h2>
+				{isRefetching && (
+					<span
+						className="flex items-center gap-1.5 text-xs text-muted-foreground"
+						role="status"
+					>
+						<Loader aria-hidden="true" className="h-3 w-3 animate-spin" />
+						Updating…
+					</span>
+				)}
 			</div>
 
 			{/* Stats overview */}

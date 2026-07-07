@@ -13,6 +13,7 @@ import { useState } from "react";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 import type { TaskFilterOptions } from "./task-filter";
@@ -41,8 +42,7 @@ export const TaskSidebar = ({
 		priority: true,
 		dueDate: false,
 		categories: false,
-		sortBy: false,
-		sortDirection: false,
+		sort: false,
 	});
 
 	// Toggle section visibility
@@ -72,15 +72,15 @@ export const TaskSidebar = ({
 	};
 
 	return (
-		<div className="w-[300px] h-full border-l bg-gray-50/70 p-6 overflow-y-auto flex-shrink-0 dark:bg-[hsl(var(--muted))] dark:border-[hsl(var(--border))]">
+		<div className="w-[300px] h-full border-l bg-muted/70 p-6 overflow-y-auto flex-shrink-0">
 			<div className="flex items-center justify-between mb-6">
-				<h3 className="font-semibold text-base flex items-center text-gray-800 dark:text-gray-200">
-					<Filter className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+				<h3 className="font-semibold text-base flex items-center text-foreground">
+					<Filter className="h-4 w-4 mr-2 text-muted-foreground" />
 					Filters
 				</h3>
 				{isFilterActive() && (
 					<Button
-						className="h-8 text-xs px-3 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-200/50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/50 rounded-full"
+						className="h-8 text-xs px-3 py-1 text-muted-foreground rounded-md"
 						onClick={resetAllFilters}
 						size="sm"
 						variant="ghost"
@@ -93,16 +93,17 @@ export const TaskSidebar = ({
 			{/* Priority Filter */}
 			<div className="mb-6">
 				<Button
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-gray-800 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 rounded-md"
+					aria-expanded={expandedSections.priority}
+					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
 					onClick={() => toggleSection("priority")}
 					size="sm"
 					variant="ghost"
 				>
 					<span>Priority</span>
 					{expandedSections.priority ? (
-						<ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<ChevronDown className="h-4 w-4 text-muted-foreground" />
 					) : (
-						<ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<ChevronRight className="h-4 w-4 text-muted-foreground" />
 					)}
 				</Button>
 
@@ -112,8 +113,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.priority === "all"
-									? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ priority: "all" })}
 							size="sm"
@@ -125,8 +126,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.priority === "high"
-									? "bg-red-100 text-red-700 font-medium hover:bg-red-150 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-red-100 text-red-700 font-medium hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ priority: "high" })}
 							size="sm"
@@ -141,8 +142,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.priority === "medium"
-									? "bg-amber-100 text-amber-700 font-medium hover:bg-amber-150 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ priority: "medium" })}
 							size="sm"
@@ -157,8 +158,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.priority === "low"
-									? "bg-blue-100 text-blue-700 font-medium hover:bg-blue-150 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ priority: "low" })}
 							size="sm"
@@ -174,16 +175,17 @@ export const TaskSidebar = ({
 			{/* Due Date Filter */}
 			<div className="mb-6">
 				<Button
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-gray-800 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 rounded-md"
+					aria-expanded={expandedSections.dueDate}
+					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
 					onClick={() => toggleSection("dueDate")}
 					size="sm"
 					variant="ghost"
 				>
-					<span>Due Date</span>
+					<span>Due date</span>
 					{expandedSections.dueDate ? (
-						<ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<ChevronDown className="h-4 w-4 text-muted-foreground" />
 					) : (
-						<ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<ChevronRight className="h-4 w-4 text-muted-foreground" />
 					)}
 				</Button>
 
@@ -193,8 +195,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.dueDate === "all"
-									? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "all" })}
 							size="sm"
@@ -206,8 +208,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.dueDate === "overdue"
-									? "bg-red-100 text-red-700 font-medium hover:bg-red-150 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-red-100 text-red-700 font-medium hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "overdue" })}
 							size="sm"
@@ -222,8 +224,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.dueDate === "today"
-									? "bg-amber-100 text-amber-700 font-medium hover:bg-amber-150 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "today" })}
 							size="sm"
@@ -238,8 +240,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.dueDate === "upcoming"
-									? "bg-blue-100 text-blue-700 font-medium hover:bg-blue-150 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "upcoming" })}
 							size="sm"
@@ -254,8 +256,8 @@ export const TaskSidebar = ({
 							className={cn(
 								"w-full justify-start text-sm h-9 rounded-md",
 								filterOptions.dueDate === "no-date"
-									? "bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+									? "bg-muted text-foreground font-medium hover:bg-muted/80"
+									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "no-date" })}
 							size="sm"
@@ -263,7 +265,7 @@ export const TaskSidebar = ({
 								filterOptions.dueDate === "no-date" ? "secondary" : "ghost"
 							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-gray-400" />
+							<Clock className="mr-2 h-4 w-4 text-muted-foreground" />
 							No due date
 						</Button>
 					</div>
@@ -273,24 +275,26 @@ export const TaskSidebar = ({
 			{/* Categories Filter */}
 			<div className="mb-6">
 				<Button
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-gray-800 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 rounded-md"
+					aria-expanded={expandedSections.categories}
+					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
 					onClick={() => toggleSection("categories")}
 					size="sm"
 					variant="ghost"
 				>
 					<span>Categories</span>
 					{expandedSections.categories ? (
-						<ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<ChevronDown className="h-4 w-4 text-muted-foreground" />
 					) : (
-						<ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<ChevronRight className="h-4 w-4 text-muted-foreground" />
 					)}
 				</Button>
 
 				{expandedSections.categories &&
 					(categoriesLoading ? (
-						<div className="text-sm text-gray-500 dark:text-gray-400 mt-3 px-2 flex items-center">
-							<div className="h-3 w-3 mr-2 rounded-full border-2 border-t-transparent border-gray-500 dark:border-gray-400 animate-spin" />
-							Loading categories...
+						<div className="mt-2 space-y-1.5 px-1">
+							<Skeleton className="h-9 w-full rounded-md" />
+							<Skeleton className="h-9 w-full rounded-md" />
+							<Skeleton className="h-9 w-full rounded-md" />
 						</div>
 					) : categories && categories.length > 0 ? (
 						<div className="space-y-1 mt-2 px-1">
@@ -298,8 +302,8 @@ export const TaskSidebar = ({
 								className={cn(
 									"w-full justify-start text-sm h-9 rounded-md",
 									filterOptions.categoryId === null
-										? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-										: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										: "text-foreground"
 								)}
 								onClick={() => onFilterChange({ categoryId: null })}
 								size="sm"
@@ -307,7 +311,7 @@ export const TaskSidebar = ({
 									filterOptions.categoryId === null ? "secondary" : "ghost"
 								}
 							>
-								All Categories
+								All categories
 							</Button>
 							{categories.map((category) => (
 								<Button
@@ -315,7 +319,7 @@ export const TaskSidebar = ({
 										"w-full justify-start text-sm h-9 rounded-md",
 										filterOptions.categoryId === category._id
 											? "font-medium"
-											: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+											: "text-foreground"
 									)}
 									key={category._id}
 									onClick={() => onFilterChange({ categoryId: category._id })}
@@ -348,131 +352,122 @@ export const TaskSidebar = ({
 							))}
 						</div>
 					) : (
-						<div className="text-sm text-gray-500 dark:text-gray-400 mt-3 px-2">
+						<div className="text-sm text-muted-foreground mt-3 px-2">
 							No categories available
 						</div>
 					))}
 			</div>
 
 			{/* Separator */}
-			<Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
+			<Separator className="my-6" />
 
 			{/* Sort Options */}
-			<div className="mb-6">
-				<Button
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-gray-800 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 rounded-md"
-					onClick={() => toggleSection("sortBy")}
-					size="sm"
-					variant="ghost"
-				>
-					<span>Sort By</span>
-					{expandedSections.sortBy ? (
-						<ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-					) : (
-						<ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-					)}
-				</Button>
-
-				{expandedSections.sortBy && (
-					<div className="space-y-1 mt-2 px-1">
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.sortBy === "created"
-									? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-							)}
-							onClick={() => onFilterChange({ sortBy: "created" })}
-							size="sm"
-							variant={
-								filterOptions.sortBy === "created" ? "secondary" : "ghost"
-							}
-						>
-							Date Created
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.sortBy === "dueDate"
-									? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-							)}
-							onClick={() => onFilterChange({ sortBy: "dueDate" })}
-							size="sm"
-							variant={
-								filterOptions.sortBy === "dueDate" ? "secondary" : "ghost"
-							}
-						>
-							Due Date
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.sortBy === "priority"
-									? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-							)}
-							onClick={() => onFilterChange({ sortBy: "priority" })}
-							size="sm"
-							variant={
-								filterOptions.sortBy === "priority" ? "secondary" : "ghost"
-							}
-						>
-							Priority
-						</Button>
-					</div>
-				)}
-			</div>
-
 			<div>
 				<Button
-					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-gray-800 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 rounded-md"
-					onClick={() => toggleSection("sortDirection")}
+					aria-expanded={expandedSections.sort}
+					className="w-full flex justify-between items-center px-2 h-8 font-medium text-sm text-foreground rounded-md"
+					onClick={() => toggleSection("sort")}
 					size="sm"
 					variant="ghost"
 				>
-					<span>Sort Direction</span>
-					{expandedSections.sortDirection ? (
-						<ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+					<span>Sort</span>
+					{expandedSections.sort ? (
+						<ChevronDown className="h-4 w-4 text-muted-foreground" />
 					) : (
-						<ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<ChevronRight className="h-4 w-4 text-muted-foreground" />
 					)}
 				</Button>
 
-				{expandedSections.sortDirection && (
-					<div className="space-y-1 mt-2 px-1">
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.sortDirection === "asc"
-									? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-							)}
-							onClick={() => onFilterChange({ sortDirection: "asc" })}
-							size="sm"
-							variant={
-								filterOptions.sortDirection === "asc" ? "secondary" : "ghost"
-							}
-						>
-							<SortAsc className="mr-2 h-4 w-4" />
-							Ascending
-						</Button>
-						<Button
-							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
-								filterOptions.sortDirection === "desc"
-									? "bg-secondary/10 text-secondary font-medium hover:bg-secondary/15"
-									: "text-gray-700 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-							)}
-							onClick={() => onFilterChange({ sortDirection: "desc" })}
-							size="sm"
-							variant={
-								filterOptions.sortDirection === "desc" ? "secondary" : "ghost"
-							}
-						>
-							<SortDesc className="mr-2 h-4 w-4" />
-							Descending
-						</Button>
+				{expandedSections.sort && (
+					<div className="mt-2 px-1">
+						<p className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+							Sort by
+						</p>
+						<div className="space-y-1">
+							<Button
+								className={cn(
+									"w-full justify-start text-sm h-9 rounded-md",
+									filterOptions.sortBy === "created"
+										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										: "text-foreground"
+								)}
+								onClick={() => onFilterChange({ sortBy: "created" })}
+								size="sm"
+								variant={
+									filterOptions.sortBy === "created" ? "secondary" : "ghost"
+								}
+							>
+								Date created
+							</Button>
+							<Button
+								className={cn(
+									"w-full justify-start text-sm h-9 rounded-md",
+									filterOptions.sortBy === "dueDate"
+										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										: "text-foreground"
+								)}
+								onClick={() => onFilterChange({ sortBy: "dueDate" })}
+								size="sm"
+								variant={
+									filterOptions.sortBy === "dueDate" ? "secondary" : "ghost"
+								}
+							>
+								Due date
+							</Button>
+							<Button
+								className={cn(
+									"w-full justify-start text-sm h-9 rounded-md",
+									filterOptions.sortBy === "priority"
+										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										: "text-foreground"
+								)}
+								onClick={() => onFilterChange({ sortBy: "priority" })}
+								size="sm"
+								variant={
+									filterOptions.sortBy === "priority" ? "secondary" : "ghost"
+								}
+							>
+								Priority
+							</Button>
+						</div>
+
+						<p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">
+							Direction
+						</p>
+						<div className="space-y-1">
+							<Button
+								className={cn(
+									"w-full justify-start text-sm h-9 rounded-md",
+									filterOptions.sortDirection === "asc"
+										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										: "text-foreground"
+								)}
+								onClick={() => onFilterChange({ sortDirection: "asc" })}
+								size="sm"
+								variant={
+									filterOptions.sortDirection === "asc" ? "secondary" : "ghost"
+								}
+							>
+								<SortAsc className="mr-2 h-4 w-4" />
+								Ascending
+							</Button>
+							<Button
+								className={cn(
+									"w-full justify-start text-sm h-9 rounded-md",
+									filterOptions.sortDirection === "desc"
+										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										: "text-foreground"
+								)}
+								onClick={() => onFilterChange({ sortDirection: "desc" })}
+								size="sm"
+								variant={
+									filterOptions.sortDirection === "desc" ? "secondary" : "ghost"
+								}
+							>
+								<SortDesc className="mr-2 h-4 w-4" />
+								Descending
+							</Button>
+						</div>
 					</div>
 				)}
 			</div>

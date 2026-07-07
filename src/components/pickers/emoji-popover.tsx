@@ -1,17 +1,13 @@
-import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
+import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
+import { useTheme } from "next-themes";
 import { type PropsWithChildren, useState } from "react";
 
+import { Hint } from "@/components/hint";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface EmojiPopoverProps {
 	hint?: string;
@@ -24,39 +20,26 @@ export const EmojiPopover = ({
 	onEmojiSelect,
 }: PropsWithChildren<EmojiPopoverProps>) => {
 	const [popoverOpen, setPopoverOpen] = useState(false);
-	const [tooltipOpen, setTooltipOpen] = useState(false);
+	const { theme = "system" } = useTheme();
 
 	const onSelect = (emojiData: EmojiClickData) => {
 		onEmojiSelect(emojiData.emoji);
 
 		setPopoverOpen(false);
-
-		setTimeout(() => {
-			setTooltipOpen(false);
-		}, 500);
 	};
 
 	return (
-		<TooltipProvider>
-			<Popover onOpenChange={setPopoverOpen} open={popoverOpen}>
-				<Tooltip
-					delayDuration={50}
-					onOpenChange={setTooltipOpen}
-					open={tooltipOpen}
-				>
-					<PopoverTrigger asChild>
-						<TooltipTrigger asChild>{children}</TooltipTrigger>
-					</PopoverTrigger>
+		<Popover onOpenChange={setPopoverOpen} open={popoverOpen}>
+			<Hint label={hint}>
+				<PopoverTrigger asChild>{children}</PopoverTrigger>
+			</Hint>
 
-					<TooltipContent className="border border-white/5 bg-black text-white">
-						<p className="text-xs font-medium">{hint}</p>
-					</TooltipContent>
-				</Tooltip>
-
-				<PopoverContent className="w-full border-none p-0 shadow-none">
-					<EmojiPicker onEmojiClick={onSelect} />
-				</PopoverContent>
-			</Popover>
-		</TooltipProvider>
+			<PopoverContent className="w-full border-none p-0 shadow-none">
+				<EmojiPicker
+					onEmojiClick={onSelect}
+					theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
+				/>
+			</PopoverContent>
+		</Popover>
 	);
 };

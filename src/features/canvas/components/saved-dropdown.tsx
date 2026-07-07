@@ -16,6 +16,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useChannelId } from "@/hooks/use-channel-id";
+import { useConfirm } from "@/hooks/use-confirm";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface SavedCanvas {
@@ -32,6 +33,10 @@ export const SavedCanvasesDropdown = () => {
 	const channelId = useChannelId();
 	const [savedCanvases, setSavedCanvases] = useState<SavedCanvas[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [ConfirmDeleteCanvasDialog, confirmDeleteCanvas] = useConfirm(
+		"Delete canvas?",
+		"Are you sure you want to delete this canvas? This action cannot be undone."
+	);
 
 	// Get the delete message mutation
 	const deleteMessage = useMutation(api.messaging.messages.remove);
@@ -104,6 +109,9 @@ export const SavedCanvasesDropdown = () => {
 		roomId: string,
 		canvasName: string
 	) => {
+		const ok = await confirmDeleteCanvas();
+		if (!ok) return;
+
 		try {
 			// Delete the message from Convex
 			await deleteMessage({ id: messageId });
@@ -148,8 +156,14 @@ export const SavedCanvasesDropdown = () => {
 	// Always render the component, but handle the case when channelId is undefined
 	return (
 		<DropdownMenu>
+			<ConfirmDeleteCanvasDialog />
 			<DropdownMenuTrigger asChild>
-				<Button className="h-6 w-6" size="icon" variant="ghost">
+				<Button
+					aria-label="Saved canvases"
+					className="h-6 w-6"
+					size="icon"
+					variant="ghost"
+				>
 					<FolderOpen className="h-3.5 w-3.5" />
 				</Button>
 			</DropdownMenuTrigger>
@@ -159,40 +173,36 @@ export const SavedCanvasesDropdown = () => {
 						<Loader className="h-4 w-4 animate-spin text-muted-foreground" />
 					</div>
 				) : savedCanvases.length > 0 ? (
-					savedCanvases.map((canvas) => (
-						<div className="flex flex-col" key={canvas.id}>
-							<DropdownMenuItem
-								className="cursor-pointer"
-								onClick={() =>
-									handleOpenCanvas(canvas.roomId, canvas.canvasName)
-								}
-							>
-								<div className="flex items-center justify-between w-full">
-									<div className="flex items-center gap-2">
-										<PaintBucket className="h-4 w-4" />
+					savedCanvases.map((canvas, index) => (
+						<div key={canvas.id}>
+							<div className="flex items-center gap-1">
+								<DropdownMenuItem
+									className="flex-1 min-w-0 cursor-pointer"
+									onClick={() =>
+										handleOpenCanvas(canvas.roomId, canvas.canvasName)
+									}
+								>
+									<div className="flex items-center gap-2 min-w-0">
+										<PaintBucket className="h-4 w-4 shrink-0" />
 										<span className="truncate">{canvas.canvasName}</span>
 									</div>
-								</div>
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								className="cursor-pointer text-red-500 hover:text-red-700 hover:bg-red-100"
-								onClick={(e) => {
-									e.stopPropagation();
-									handleDeleteCanvas(
-										canvas.id,
-										canvas.roomId,
-										canvas.canvasName
-									);
-								}}
-							>
-								<div className="flex items-center gap-2">
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									aria-label={`Delete canvas "${canvas.canvasName}"`}
+									className="w-8 shrink-0 justify-center px-0 cursor-pointer text-destructive focus:text-destructive"
+									onClick={(e) => {
+										e.stopPropagation();
+										handleDeleteCanvas(
+											canvas.id,
+											canvas.roomId,
+											canvas.canvasName
+										);
+									}}
+								>
 									<Trash2 className="h-4 w-4" />
-									<span>Delete</span>
-								</div>
-							</DropdownMenuItem>
-							{savedCanvases.indexOf(canvas) < savedCanvases.length - 1 && (
-								<DropdownMenuSeparator />
-							)}
+								</DropdownMenuItem>
+							</div>
+							{index < savedCanvases.length - 1 && <DropdownMenuSeparator />}
 						</div>
 					))
 				) : (

@@ -37,6 +37,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -414,9 +415,32 @@ export const ChannelsManagement = ({
 			<Separator />
 
 			{isLoading ? (
-				<div className="flex justify-center py-8">
-					<RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-				</div>
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Name</TableHead>
+							<TableHead className="w-[200px]">Actions</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{[0, 1, 2].map((row) => (
+							<TableRow key={`channel-skeleton-${row}`}>
+								<TableCell>
+									<div className="flex items-center gap-2">
+										<Skeleton className="h-4 w-4 rounded-full" />
+										<Skeleton className="h-4 w-32" />
+									</div>
+								</TableCell>
+								<TableCell>
+									<div className="flex items-center gap-2">
+										<Skeleton className="h-8 w-8 rounded-md" />
+										<Skeleton className="h-8 w-8 rounded-md" />
+									</div>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
 			) : !channels || channels.length === 0 ? (
 				<div className="flex flex-col items-center justify-center py-8 text-center">
 					<Hash className="h-12 w-12 text-muted-foreground mb-4" />
@@ -424,6 +448,12 @@ export const ChannelsManagement = ({
 					<p className="text-sm text-muted-foreground">
 						Create a channel to get started
 					</p>
+					{canManage && (
+						<Button className="mt-4" onClick={() => setCreateOpen(true)}>
+							<Plus className="mr-2 h-4 w-4" />
+							New Channel
+						</Button>
+					)}
 				</div>
 			) : (
 				<Table>
@@ -450,6 +480,7 @@ export const ChannelsManagement = ({
 									<div className="flex items-center gap-2">
 										{canManage && (
 											<Button
+												aria-label={`Edit channel "${channel.name}"`}
 												onClick={() => openEditDialog(channel)}
 												size="sm"
 												variant="outline"
@@ -459,6 +490,7 @@ export const ChannelsManagement = ({
 										)}
 										{canManage && (
 											<Button
+												aria-label={`Delete channel "${channel.name}"`}
 												className="text-destructive hover:bg-destructive/10"
 												onClick={() => openDeleteDialog(channel._id)}
 												size="sm"
@@ -492,86 +524,94 @@ export const ChannelsManagement = ({
 									Select emoji or upload image
 								</span>
 							</div>
-							<div className="flex items-center gap-3">
-								<div className="flex-shrink-0 relative">
-									<input
-										accept="image/*"
-										className="hidden"
-										id="edit-icon-upload"
-										onChange={handleEditIconImageUpload}
-										ref={editImageInputRef}
-										type="file"
-									/>
+							<div className="flex items-start gap-3">
+								<div className="flex flex-col items-center gap-1.5">
+									<div className="flex-shrink-0 relative">
+										<input
+											accept="image/*"
+											className="hidden"
+											id="edit-icon-upload"
+											onChange={handleEditIconImageUpload}
+											ref={editImageInputRef}
+											type="file"
+										/>
 
-									{/* biome-ignore lint/a11y/useSemanticElements: This upload zone contains nested controls, so replacing it with a button would create invalid nested buttons. */}
-									<div
-										className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all"
-										onClick={() =>
-											!isUploadingEdit && editImageInputRef.current?.click()
-										}
-										onKeyDown={(event) => {
-											if (event.key === "Enter" || event.key === " ") {
-												event.preventDefault();
-												if (!isUploadingEdit) {
-													editImageInputRef.current?.click();
-												}
+										{/* biome-ignore lint/a11y/useSemanticElements: This upload zone contains nested controls, so replacing it with a button would create invalid nested buttons. */}
+										<div
+											aria-label="Upload channel icon"
+											className="relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-border bg-muted hover:bg-accent hover:border-primary/50 transition-all"
+											onClick={() =>
+												!isUploadingEdit && editImageInputRef.current?.click()
 											}
-										}}
-										role="button"
-										tabIndex={0}
-									>
-										{editChannelIconPreview || editChannelIcon ? (
-											<>
-												{editChannelIconPreview ? (
-													<Image
-														alt="Icon preview"
-														className="object-cover"
-														fill
-														sizes="80px"
-														src={editChannelIconPreview}
-													/>
-												) : (
-													<span className="text-4xl">{editChannelIcon}</span>
-												)}
-												<button
-													className="absolute -top-2 -right-2 h-6 w-6 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-													onClick={(e) => {
-														e.stopPropagation();
-														if (
-															editChannelIconPreview ||
-															editChannelIconImage
-														) {
-															clearEditIconImage();
-														}
-														if (editChannelIcon) {
-															setEditChannelIcon(undefined);
-														}
-													}}
-													type="button"
-												>
-													<X className="h-3.5 w-3.5" />
-												</button>
-											</>
-										) : (
-											<div className="flex flex-col items-center gap-1">
-												<Upload className="h-6 w-6 text-gray-400" />
-												<span className="text-xs text-gray-500 text-center">
-													{isUploadingEdit ? "Uploading..." : "Upload"}
-												</span>
-											</div>
-										)}
-									</div>
-									<EmojiPopover
-										hint="Select emoji icon"
-										onEmojiSelect={handleEditChannelEmojiSelect}
-									>
-										<button
-											className="absolute -bottom-1 -right-1 h-7 w-7 bg-white text-gray-700 rounded-full flex items-center justify-center hover:bg-gray-100 shadow-md border-2 border-gray-200 z-50"
-											type="button"
+											onKeyDown={(event) => {
+												if (event.key === "Enter" || event.key === " ") {
+													event.preventDefault();
+													if (!isUploadingEdit) {
+														editImageInputRef.current?.click();
+													}
+												}
+											}}
+											role="button"
+											tabIndex={0}
 										>
-											<Smile className="h-4 w-4" />
-										</button>
-									</EmojiPopover>
+											{editChannelIconPreview || editChannelIcon ? (
+												<>
+													{editChannelIconPreview ? (
+														<Image
+															alt="Icon preview"
+															className="object-cover"
+															fill
+															sizes="80px"
+															src={editChannelIconPreview}
+														/>
+													) : (
+														<span className="text-4xl">{editChannelIcon}</span>
+													)}
+													<button
+														aria-label="Remove icon"
+														className="absolute -top-2 -right-2 h-6 w-6 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
+														onClick={(e) => {
+															e.stopPropagation();
+															if (
+																editChannelIconPreview ||
+																editChannelIconImage
+															) {
+																clearEditIconImage();
+															}
+															if (editChannelIcon) {
+																setEditChannelIcon(undefined);
+															}
+														}}
+														type="button"
+													>
+														<X className="h-3.5 w-3.5" />
+													</button>
+												</>
+											) : (
+												<div className="flex flex-col items-center gap-1">
+													<Upload className="h-6 w-6 text-muted-foreground" />
+													<span className="text-xs text-muted-foreground text-center">
+														{isUploadingEdit ? "Uploading..." : "Upload"}
+													</span>
+												</div>
+											)}
+										</div>
+										<EmojiPopover
+											hint="Select emoji icon"
+											onEmojiSelect={handleEditChannelEmojiSelect}
+										>
+											<button
+												aria-label="Select emoji icon"
+												className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-border bg-card text-foreground flex items-center justify-center hover:bg-accent shadow-md z-50"
+												type="button"
+											>
+												<Smile className="h-4 w-4" />
+											</button>
+										</EmojiPopover>
+									</div>
+									<p className="w-20 text-center text-xs text-muted-foreground">
+										Max 5MB for images
+									</p>
 								</div>
 								<div className="flex-1">
 									<Label
@@ -581,23 +621,26 @@ export const ChannelsManagement = ({
 										Channel Name
 									</Label>
 									<Input
-										className="h-10 !leading-[1.5] py-2.5"
+										className="h-10"
 										id="edit-name"
 										maxLength={20}
 										minLength={3}
 										onChange={(e) => setEditChannelName(e.target.value)}
 										required
-										style={{ lineHeight: "1.5" }}
 										value={editChannelName}
 									/>
-									<p className="text-xs text-muted-foreground mt-1">
-										Max 5MB for images
-									</p>
 								</div>
 							</div>
 						</div>
 					</div>
 					<DialogFooter>
+						<Button
+							onClick={() => setEditDialogOpen(false)}
+							type="button"
+							variant="outline"
+						>
+							Cancel
+						</Button>
 						<Button disabled={isUpdating} onClick={handleUpdateChannel}>
 							{isUpdating ? (
 								<>

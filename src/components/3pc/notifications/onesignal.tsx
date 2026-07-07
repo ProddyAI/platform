@@ -80,7 +80,7 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 		// Prevent multiple init attempts
 		if (initAttemptedRef.current) {
-			logger.debug("🔔 OneSignal init already attempted, skipping");
+			logger.debug("OneSignal init already attempted, skipping");
 			return;
 		}
 		initAttemptedRef.current = true;
@@ -89,19 +89,19 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 			try {
 				const OneSignal = await waitForOneSignal();
 				if (!OneSignal) {
-					logger.error("❌ Failed to get OneSignal SDK");
+					logger.error("Failed to get OneSignal SDK");
 					return;
 				}
 
 				// Check if already initialized by another instance
 				if (OneSignal.User?.externalId || window.__oneSignalInitialized) {
-					logger.debug("🔔 OneSignal already initialized");
+					logger.debug("OneSignal already initialized");
 					window.__oneSignalInitialized = true;
 					sdkLoadedRef.current = true;
 					return;
 				}
 
-				logger.debug("🔔 Initializing OneSignal with config:", {
+				logger.debug("Initializing OneSignal with config:", {
 					appId,
 					serviceWorkerPath: "/OneSignalSDKWorker.js",
 					serviceWorkerUpdaterPath: "/OneSignalSDKUpdaterWorker.js",
@@ -117,10 +117,10 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 				window.__oneSignalInitialized = true;
 				sdkLoadedRef.current = true;
-				logger.debug("✅ OneSignal SDK initialized successfully");
+				logger.debug("OneSignal SDK initialized successfully");
 			} catch (error) {
 				logger.error(
-					"❌ OneSignal init failed:",
+					"OneSignal init failed:",
 					error instanceof Error ? error.message : String(error)
 				);
 				sdkLoadedRef.current = false;
@@ -138,19 +138,19 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 
 		// If no userId, skip
 		if (!userId) {
-			logger.debug("🔔 No userId provided, skipping login");
+			logger.debug("No userId provided, skipping login");
 			currentUserRef.current = undefined;
 			return;
 		}
 
 		// If same user already logged in, skip
 		if (currentUserRef.current === userId) {
-			logger.debug(`🔔 User ${userId} already logged in`);
+			logger.debug(`User ${userId} already logged in`);
 			return;
 		}
 
 		if (loginInFlightRef.current) {
-			logger.debug("🔔 OneSignal login skipped: login already in progress");
+			logger.debug("OneSignal login skipped: login already in progress");
 			return;
 		}
 
@@ -167,14 +167,14 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 				while (!initCompleted && Date.now() - startTime < maxWaitMs) {
 					waitAttempts++;
 					logger.debug(
-						`⏳ [OneSignal Login] Waiting for init to complete (attempt ${waitAttempts})...`
+						`[OneSignal Login] Waiting for init to complete (attempt ${waitAttempts})...`
 					);
 					await new Promise((resolve) => setTimeout(resolve, 100));
 					initCompleted = sdkLoadedRef.current;
 				}
 
 				if (!initCompleted) {
-					logger.error("❌ OneSignal init did not complete, aborting login");
+					logger.error("OneSignal init did not complete, aborting login");
 					return;
 				}
 
@@ -183,36 +183,36 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 					| OneSignalInterface
 					| undefined;
 				if (!OneSignal) {
-					logger.error("❌ OneSignal not available on window");
+					logger.error("OneSignal not available on window");
 					return;
 				}
 
 				// Safety check: final verification userId is still valid
 				if (!userId || typeof userId !== "string") {
-					logger.error(`❌ userId is invalid: ${userId}`);
+					logger.error(`userId is invalid: ${userId}`);
 					return;
 				}
 
-				logger.debug(`🔔 Logging in user: ${userId}`);
+				logger.debug(`Logging in user: ${userId}`);
 
 				// Call login
 				await OneSignal.login(userId);
-				logger.debug("✅ OneSignal login call completed");
+				logger.debug("OneSignal login call completed");
 
 				// Wait a bit for the SDK to update User object
 				await new Promise((resolve) => setTimeout(resolve, 500));
 
 				// Check external ID
 				const externalId = OneSignal.User?.externalId;
-				logger.debug("✅ OneSignal.User.externalId after login:", externalId);
+				logger.debug("OneSignal.User.externalId after login:", externalId);
 
 				if (externalId === userId) {
-					logger.debug(`✅ Login successful: ${userId}`);
+					logger.debug(`Login successful: ${userId}`);
 					currentUserRef.current = userId;
 					await setOneSignalExternalId({ externalId: userId });
 				} else {
 					logger.warn(
-						`⚠️ External ID mismatch. Expected ${userId}, got ${externalId}`
+						`External ID mismatch. Expected ${userId}, got ${externalId}`
 					);
 					if (externalId) {
 						await setOneSignalExternalId({ externalId });
@@ -226,21 +226,21 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 					try {
 						// Request push subscription
 						await OneSignal.User.PushSubscription.optIn();
-						logger.debug("✅ Push subscription opt-in requested");
+						logger.debug("Push subscription opt-in requested");
 
 						// Wait a moment for it to process
 						await new Promise((resolve) => setTimeout(resolve, 500));
 
 						// Check new status
 						const newStatus = OneSignal.User?.PushSubscription?.optedIn;
-						logger.debug("📱 Push subscription after opt-in:", newStatus);
+						logger.debug("Push subscription after opt-in:", newStatus);
 					} catch {
-						logger.warn("⚠️ Push subscription opt-in request failed");
+						logger.warn("Push subscription opt-in request failed");
 					}
 				}
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				logger.error("❌ OneSignal login error:", errorMsg);
+				logger.error("OneSignal login error:", errorMsg);
 			} finally {
 				loginInFlightRef.current = false;
 			}
@@ -294,11 +294,11 @@ export const OneSignalTracking = ({ userId }: OneSignalTrackingProps) => {
 		<Script
 			id="onesignal-sdk"
 			onError={() => {
-				logger.error("❌ OneSignal SDK script failed to load from CDN");
+				logger.error("OneSignal SDK script failed to load from CDN");
 				sdkLoadedRef.current = false;
 			}}
 			onLoad={() => {
-				logger.debug("🔔 OneSignal SDK script loaded from CDN");
+				logger.debug("OneSignal SDK script loaded from CDN");
 			}}
 			src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
 			strategy="afterInteractive"

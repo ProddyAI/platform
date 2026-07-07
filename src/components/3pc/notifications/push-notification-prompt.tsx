@@ -63,9 +63,9 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 			<CardHeader>
 				<CardTitle className="flex items-center gap-2">
 					{permission === "granted" ? (
-						<Bell className="h-5 w-5 text-green-600" />
+						<Bell className="h-5 w-5 text-primary" />
 					) : (
-						<BellOff className="h-5 w-5 text-orange-600" />
+						<BellOff className="h-5 w-5 text-muted-foreground" />
 					)}
 					Browser Push Notifications
 				</CardTitle>
@@ -76,27 +76,26 @@ export const PushNotificationPrompt = (_props: PushNotificationPromptProps) => {
 			<CardContent className="space-y-4">
 				{/* Ad Blocker Warning */}
 				{isAdBlockerActive && (
-					<Alert className="border-red-200 bg-red-50 dark:bg-red-950/20">
-						<AlertTriangle className="h-4 w-4 text-red-600" />
-						<AlertDescription className="text-red-700 dark:text-red-300">
+					<Alert className="border-destructive/20 bg-destructive/10">
+						<AlertTriangle className="h-4 w-4 text-destructive" />
+						<AlertDescription className="text-destructive">
 							Notifications may be blocked by your browser or network settings
 						</AlertDescription>
 					</Alert>
 				)}
 
 				{permission === "granted" ? (
-					<Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
-						<CheckCircle2 className="h-4 w-4 text-green-600" />
-						<AlertDescription className="text-green-700 dark:text-green-300">
-							Push notifications are enabled! You will receive real-time alerts
-							for mentions, messages, and other activities based on your
-							notification preferences below.
+					<Alert className="border-primary/20 bg-primary/10">
+						<CheckCircle2 className="h-4 w-4 text-primary" />
+						<AlertDescription className="text-foreground">
+							Push notifications are enabled. You&apos;ll receive real-time
+							alerts based on your notification preferences below.
 						</AlertDescription>
 					</Alert>
 				) : permission === "denied" ? (
-					<Alert className="border-red-200 bg-red-50 dark:bg-red-950/20">
-						<BellOff className="h-4 w-4 text-red-600" />
-						<AlertDescription className="text-red-700 dark:text-red-300">
+					<Alert className="border-destructive/20 bg-destructive/10">
+						<BellOff className="h-4 w-4 text-destructive" />
+						<AlertDescription className="text-destructive">
 							Push notifications are blocked. To enable them, please update your
 							browser settings and allow notifications for this site.
 						</AlertDescription>

@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import {
 	Bell,
 	BellOff,
@@ -28,7 +28,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { usePomodoro } from "../hooks/use-pomodoro";
-import type { PomodoroMode } from "../types";
+import { MAX_MINUTES, MIN_MINUTES, type PomodoroMode } from "../types";
 
 const MODE_META: Record<PomodoroMode, { label: string; icon: typeof Zap }> = {
 	work: { label: "Deep Work", icon: Zap },
@@ -69,7 +69,7 @@ export const PomodoroTimer = () => {
 	const time = formatTime(remainingMs);
 
 	return (
-		<>
+		<MotionConfig reducedMotion="user">
 			<Popover onOpenChange={setPopoverOpen} open={popoverOpen}>
 				<Hint
 					label={isActive ? `${meta.label} · ${time}` : "Focus timer"}
@@ -170,13 +170,13 @@ export const PomodoroTimer = () => {
 								const active = mode === m;
 								return (
 									<Button
-										className="flex-1 rounded-lg capitalize"
+										className="flex-1 rounded-lg px-2 text-xs"
 										key={m}
 										onClick={() => switchMode(m)}
 										size="sm"
 										variant={active ? "primary" : "outline"}
 									>
-										{m}
+										{MODE_META[m].label}
 									</Button>
 								);
 							})}
@@ -254,7 +254,7 @@ export const PomodoroTimer = () => {
 				{isMinimized && (
 					<motion.div
 						animate={{ opacity: 1, scale: 1, y: 0 }}
-						className="fixed bottom-24 right-8 z-[100]"
+						className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-8 z-[100] md:bottom-24"
 						drag
 						dragConstraints={{
 							left: -window.innerWidth + 150,
@@ -306,13 +306,14 @@ export const PomodoroTimer = () => {
 									<Maximize2 className="size-4" />
 								</Button>
 								<Button
+									aria-label="Pause and dismiss timer pill"
 									className="size-8 rounded-full text-primary-foreground/70 hover:bg-white/15 hover:text-primary-foreground"
 									onClick={() => {
+										if (isActive) toggle();
 										setIsMinimized(false);
-										reset();
 									}}
 									size="icon"
-									title="Close and reset"
+									title="Pause and dismiss"
 									variant="ghost"
 								>
 									<X className="size-4" />
@@ -322,7 +323,7 @@ export const PomodoroTimer = () => {
 					</motion.div>
 				)}
 			</AnimatePresence>
-		</>
+		</MotionConfig>
 	);
 };
 
@@ -337,7 +338,9 @@ const DurationStepper = ({ label, value, onChange }: DurationStepperProps) => (
 		<span className="text-muted-foreground text-sm">{label}</span>
 		<div className="flex items-center gap-2">
 			<Button
+				aria-label={`Decrease ${label.toLowerCase()}`}
 				className="size-7 rounded-lg"
+				disabled={value <= MIN_MINUTES}
 				onClick={() => onChange(value - 1)}
 				size="icon"
 				variant="outline"
@@ -348,7 +351,9 @@ const DurationStepper = ({ label, value, onChange }: DurationStepperProps) => (
 				{value} min
 			</span>
 			<Button
+				aria-label={`Increase ${label.toLowerCase()}`}
 				className="size-7 rounded-lg"
+				disabled={value >= MAX_MINUTES}
 				onClick={() => onChange(value + 1)}
 				size="icon"
 				variant="outline"
@@ -373,6 +378,7 @@ const ToggleChip = ({
 	icon: Icon,
 }: ToggleChipProps) => (
 	<Button
+		aria-pressed={active}
 		className="flex-1 gap-1.5 rounded-lg text-xs"
 		onClick={onClick}
 		size="sm"

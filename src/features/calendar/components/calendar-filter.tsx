@@ -1,6 +1,12 @@
 "use client";
 
-import { CheckSquare, Filter, LayoutGrid, MessageSquare } from "lucide-react";
+import {
+	CheckSquare,
+	Filter,
+	LayoutGrid,
+	type LucideIcon,
+	MessageSquare,
+} from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +26,48 @@ export type EventType = "message" | "board-card" | "task";
 export type CalendarFilterOptions = {
 	eventTypes: EventType[];
 };
+
+// Single source of truth for per-event-type color and copy, shared by the
+// filter trigger dots and the toggle rows below. Keep in sync with the
+// count-badge colors in calendar-header.tsx.
+const EVENT_TYPE_META: Record<
+	EventType,
+	{
+		label: string;
+		icon: LucideIcon;
+		dotColor: string;
+		iconColor: string;
+		labelColor: string;
+		switchColor: string;
+	}
+> = {
+	message: {
+		label: "Message Events",
+		icon: MessageSquare,
+		dotColor: "bg-blue-500",
+		iconColor: "text-blue-500 dark:text-blue-400",
+		labelColor: "text-blue-700 dark:text-blue-400",
+		switchColor: "data-[state=checked]:bg-blue-500",
+	},
+	"board-card": {
+		label: "Board Assignments",
+		icon: LayoutGrid,
+		dotColor: "bg-purple-500",
+		iconColor: "text-purple-500 dark:text-purple-400",
+		labelColor: "text-purple-700 dark:text-purple-400",
+		switchColor: "data-[state=checked]:bg-purple-500",
+	},
+	task: {
+		label: "My Tasks",
+		icon: CheckSquare,
+		dotColor: "bg-green-500",
+		iconColor: "text-green-500 dark:text-green-400",
+		labelColor: "text-green-700 dark:text-green-400",
+		switchColor: "data-[state=checked]:bg-green-500",
+	},
+};
+
+const EVENT_TYPE_ORDER: EventType[] = ["message", "board-card", "task"];
 
 interface CalendarFilterProps {
 	filterOptions: CalendarFilterOptions;
@@ -51,7 +99,6 @@ export const CalendarFilter = ({
 	};
 
 	const allTypesSelected = filterOptions.eventTypes.length === 3; // All 3 types selected
-	const noTypesSelected = filterOptions.eventTypes.length === 0;
 
 	return (
 		<div className="flex items-center gap-2">
@@ -61,105 +108,82 @@ export const CalendarFilter = ({
 						className={cn(
 							"flex items-center gap-1.5 border rounded-md transition-all",
 							filterOptions.eventTypes.length > 0 &&
-								filterOptions.eventTypes.length < 3
-								? "bg-gray-100 border-gray-300 dark:bg-gray-800 dark:border-gray-600"
-								: "bg-white dark:bg-gray-900"
+								filterOptions.eventTypes.length < 3 &&
+								"bg-muted border-border"
 						)}
 						variant="outline"
 					>
-						<Filter className="h-4 w-4 dark:text-gray-300" />
-						<span className="dark:text-gray-200">Filter</span>
+						<Filter className="h-4 w-4" />
+						<span>Filter</span>
 						{filterOptions.eventTypes.length > 0 &&
 							filterOptions.eventTypes.length < 3 && (
-								<div className="flex ml-1 gap-1">
-									{filterOptions.eventTypes.includes("message") && (
-										<div className="w-2 h-2 rounded-full bg-blue-500" />
-									)}
-									{filterOptions.eventTypes.includes("board-card") && (
-										<div className="w-2 h-2 rounded-full bg-purple-500" />
-									)}
-									{filterOptions.eventTypes.includes("task") && (
-										<div className="w-2 h-2 rounded-full bg-green-500" />
-									)}
+								<div
+									aria-label={`${filterOptions.eventTypes.length} of 3 event types shown`}
+									className="flex ml-1 gap-1"
+									role="img"
+								>
+									{EVENT_TYPE_ORDER.filter((type) =>
+										filterOptions.eventTypes.includes(type)
+									).map((type) => (
+										<div
+											className={cn(
+												"w-2 h-2 rounded-full",
+												EVENT_TYPE_META[type].dotColor
+											)}
+											key={type}
+										/>
+									))}
 								</div>
 							)}
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-64">
 					<DropdownMenuLabel className="flex items-center justify-between">
-						<span className="dark:text-gray-200">Event Types</span>
+						<span>Event Types</span>
 						<Button
-							className="h-7 text-xs px-2 dark:text-gray-300 dark:hover:bg-gray-700"
+							className="h-7 text-xs px-2"
 							onClick={() =>
 								onFilterChange({
-									eventTypes:
-										allTypesSelected || noTypesSelected
-											? []
-											: ["message", "board-card", "task"],
+									eventTypes: allTypesSelected ? [] : EVENT_TYPE_ORDER,
 								})
 							}
 							size="sm"
 							variant="ghost"
 						>
-							{allTypesSelected || noTypesSelected ? "Clear All" : "Select All"}
+							{allTypesSelected ? "Clear All" : "Select All"}
 						</Button>
 					</DropdownMenuLabel>
 					<DropdownMenuSeparator />
 
 					<div className="p-2 space-y-3">
-						<div className="flex items-center justify-between space-x-2">
-							<div className="flex items-center space-x-2">
-								<MessageSquare className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-								<Label
-									className="cursor-pointer text-blue-700 dark:text-blue-400"
-									htmlFor="message-events"
-								>
-									Message Events
-								</Label>
-							</div>
-							<Switch
-								checked={isEventTypeSelected("message")}
-								className="data-[state=checked]:bg-blue-500"
-								id="message-events"
-								onCheckedChange={() => toggleEventType("message")}
-							/>
-						</div>
+						{EVENT_TYPE_ORDER.map((type) => {
+							const meta = EVENT_TYPE_META[type];
+							const Icon = meta.icon;
+							const id = `${type}-events`;
 
-						<div className="flex items-center justify-between space-x-2">
-							<div className="flex items-center space-x-2">
-								<LayoutGrid className="h-4 w-4 text-purple-500 dark:text-purple-400" />
-								<Label
-									className="cursor-pointer text-purple-700 dark:text-purple-400"
-									htmlFor="board-card-events"
+							return (
+								<div
+									className="flex items-center justify-between space-x-2"
+									key={type}
 								>
-									Board Assignments
-								</Label>
-							</div>
-							<Switch
-								checked={isEventTypeSelected("board-card")}
-								className="data-[state=checked]:bg-purple-500"
-								id="board-card-events"
-								onCheckedChange={() => toggleEventType("board-card")}
-							/>
-						</div>
-
-						<div className="flex items-center justify-between space-x-2">
-							<div className="flex items-center space-x-2">
-								<CheckSquare className="h-4 w-4 text-green-500 dark:text-green-400" />
-								<Label
-									className="cursor-pointer text-green-700 dark:text-green-400"
-									htmlFor="task-events"
-								>
-									My Tasks
-								</Label>
-							</div>
-							<Switch
-								checked={isEventTypeSelected("task")}
-								className="data-[state=checked]:bg-green-500"
-								id="task-events"
-								onCheckedChange={() => toggleEventType("task")}
-							/>
-						</div>
+									<div className="flex items-center space-x-2">
+										<Icon className={cn("h-4 w-4", meta.iconColor)} />
+										<Label
+											className={cn("cursor-pointer", meta.labelColor)}
+											htmlFor={id}
+										>
+											{meta.label}
+										</Label>
+									</div>
+									<Switch
+										checked={isEventTypeSelected(type)}
+										className={meta.switchColor}
+										id={id}
+										onCheckedChange={() => toggleEventType(type)}
+									/>
+								</div>
+							);
+						})}
 					</div>
 				</DropdownMenuContent>
 			</DropdownMenu>

@@ -4,12 +4,14 @@ import { useQuery } from "convex/react";
 import { Flag, Loader } from "lucide-react";
 
 import { api } from "@/../convex/_generated/api";
-import { Button } from "@/components/ui/button";
 import { ProjectNavTabs } from "@/features/projects/components/project-nav-tabs";
 import { RoadmapPanel } from "@/features/roadmap/components/roadmap-panel";
 import { useProjectId } from "@/hooks/use-project-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../../../toolbar";
+import {
+	useSetWorkspaceTitle,
+	WorkspaceTitle,
+} from "../../../workspace-title-context";
 
 const ProjectRoadmapPage = () => {
 	const projectId = useProjectId();
@@ -17,6 +19,13 @@ const ProjectRoadmapPage = () => {
 	const project = useQuery(
 		api.planning.projects.getById,
 		projectId ? { id: projectId } : "skip"
+	);
+
+	useSetWorkspaceTitle(
+		<WorkspaceTitle
+			icon={Flag}
+			label={project ? `${project.name} Roadmap` : "Roadmap"}
+		/>
 	);
 
 	if (!projectId || !workspaceId || project === undefined) {
@@ -37,17 +46,6 @@ const ProjectRoadmapPage = () => {
 
 	return (
 		<div className="flex h-full w-full min-w-0 flex-col overflow-x-hidden">
-			<WorkspaceToolbar>
-				<Button
-					className="group w-auto overflow-hidden px-3 py-2 font-semibold text-lg text-white transition-standard hover:bg-white/10"
-					size="sm"
-					variant="ghost"
-				>
-					<Flag className="mr-2 size-5" />
-					<span className="truncate">{project.name} Roadmap</span>
-				</Button>
-			</WorkspaceToolbar>
-
 			<ProjectNavTabs />
 
 			<div className="min-h-0 flex-1 overflow-hidden">

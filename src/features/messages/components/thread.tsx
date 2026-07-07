@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { Message } from "@/components/messaging/message";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ContextMenuProvider } from "@/contexts/context-menu-context";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
@@ -65,6 +66,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 	const [titleInput, setTitleInput] = useState<string>("");
 
 	const innerRef = useRef<Quill | null>(null);
+	const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
 	const { data: currentMember } = useCurrentMember({ workspaceId });
 	const { data: message, isLoading: isMessageLoading } = useGetMessage({
@@ -119,6 +121,23 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 	const canLoadMore = status === "CanLoadMore";
 	const isLoadingMore = status === "LoadingMore";
+
+	useEffect(() => {
+		const el = loadMoreRef.current;
+
+		if (!el) return;
+
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting && canLoadMore) loadMore();
+			},
+			{ threshold: 1.0 }
+		);
+
+		observer.observe(el);
+
+		return () => observer.disconnect();
+	}, [canLoadMore, loadMore]);
 
 	const handleSubmit = async ({
 		body,
@@ -213,6 +232,11 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 		setIsEditingTitle(true);
 	};
 
+	const handleCancelEditTitle = () => {
+		setTitleInput(savedTitle || "");
+		setIsEditingTitle(false);
+	};
+
 	if (isMessageLoading || status === "LoadingFirstPage") {
 		return (
 			<div className="flex h-full flex-col border-l border-border">
@@ -257,14 +281,27 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 					<div className="flex items-center justify-between mb-2">
 						{isEditingTitle ? (
 							<div className="flex items-center gap-2 flex-1">
-								<input
-									className="flex-1 px-2 py-1 text-sm border border-border rounded bg-background"
+								<Input
+									aria-label="Thread title"
+									autoFocus
+									className="h-8 flex-1 text-sm"
+									maxLength={100}
 									onChange={(e) => setTitleInput(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											e.preventDefault();
+											handleSaveTitle();
+										} else if (e.key === "Escape") {
+											e.preventDefault();
+											handleCancelEditTitle();
+										}
+									}}
 									placeholder="Enter thread title..."
 									type="text"
 									value={titleInput}
 								/>
 								<Button
+									aria-label="Save thread title"
 									className="h-6 w-6"
 									onClick={handleSaveTitle}
 									size="iconSm"
@@ -273,8 +310,9 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 									<Check className="size-4" />
 								</Button>
 								<Button
+									aria-label="Cancel editing thread title"
 									className="h-6 w-6"
-									onClick={() => setIsEditingTitle(false)}
+									onClick={handleCancelEditTitle}
 									size="iconSm"
 									variant="ghost"
 								>
@@ -285,6 +323,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 							<div className="flex items-center gap-2 flex-1">
 								<p className="text-lg font-bold">{savedTitle || "Thread"}</p>
 								<Button
+									aria-label="Edit thread title"
 									className="h-6 w-6"
 									onClick={handleEditTitle}
 									size="iconSm"
@@ -305,9 +344,9 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 					{Object.entries(groupedMessages || {}).map(([dateKey, messages]) => (
 						<div key={dateKey}>
 							<div className="relative my-2 text-center">
-								<hr className="absolute left-0 right-0 top-1/2 border-t border-gray-300" />
+								<hr className="absolute left-0 right-0 top-1/2 border-t border-border" />
 
-								<span className="relative inline-block rounded-full border border-gray-300 bg-white px-4 py-1 text-xs shadow-sm">
+								<span className="relative inline-block rounded-full border border-border bg-card px-4 py-1 text-xs text-foreground shadow-sm">
 									{formatDateLabel(dateKey)}
 								</span>
 							</div>
@@ -349,31 +388,13 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 						</div>
 					))}
 
-					<div
-						className="h-1"
-						ref={(el) => {
-							if (el) {
-								const observer = new IntersectionObserver(
-									([entry]) => {
-										if (entry.isIntersecting && canLoadMore) loadMore();
-									},
-									{ threshold: 1.0 }
-								);
-
-								observer.observe(el);
-
-								return () => observer.disconnect();
-							}
-
-							return undefined;
-						}}
-					/>
+					<div className="h-1" ref={loadMoreRef} />
 
 					{isLoadingMore && (
 						<div className="relative my-2 text-center">
-							<hr className="absolute left-0 right-0 top-1/2 border-t border-gray-300" />
+							<hr className="absolute left-0 right-0 top-1/2 border-t border-border" />
 
-							<span className="relative inline-block rounded-full border border-gray-300 bg-white px-4 py-1 text-xs shadow-sm">
+							<span className="relative inline-block rounded-full border border-border bg-card px-4 py-1 text-xs text-foreground shadow-sm">
 								<Loader className="size-4 animate-spin" />
 							</span>
 						</div>

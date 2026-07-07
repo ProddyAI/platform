@@ -1,24 +1,17 @@
 "use client";
 
 import { useAction, useQuery } from "convex/react";
-import {
-	AlertTriangle,
-	ChevronDown,
-	Crown,
-	MessageSquare,
-	Minus,
-	Plus,
-	Users,
-} from "lucide-react";
-import Image from "next/image";
-import type { RefObject } from "react";
-import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, MessageSquare, Minus, Plus } from "lucide-react";
+import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
+	DialogFooter,
+	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -31,6 +24,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useCurrentMember } from "@/features/members/api/use-current-member";
+import type { WorkspaceRole } from "@/features/members/lib/roles";
+import { INVITE_ROLES, ROLE_META } from "@/features/members/lib/roles";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { api } from "../../../../convex/_generated/api";
 import { useInviteMemberModal } from "../store/use-invite-member-modal";
@@ -38,105 +34,54 @@ import { useInviteMemberModal } from "../store/use-invite-member-modal";
 const getErrorMessage = (error: unknown, fallback: string) =>
 	error instanceof Error ? error.message : fallback;
 
-const InviteModalHeader = () => {
-	return (
-		<div className="bg-gradient-to-br from-primary via-primary to-secondary p-8 text-white relative overflow-hidden">
-			<div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-			<div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-secondary/25 rounded-full blur-3xl" />
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-			<div className="relative z-10 flex flex-col items-center text-center">
-				<div className="size-16 bg-white rounded-2xl flex items-center justify-center mb-4 border border-white/30 shadow-xl ring-4 ring-white/10 animate-in zoom-in duration-500">
-					<Image
-						alt="Proddy"
-						className="object-contain"
-						height={45}
-						src="/logo.png"
-						width={45}
-					/>
-				</div>
-				<DialogTitle className="text-3xl font-bold tracking-tight text-white mb-2">
-					Grow Your Team
-				</DialogTitle>
-				<DialogDescription className="text-white/85 text-lg max-w-[280px]">
-					Invite new members to collaborate on your projects.
-				</DialogDescription>
-			</div>
-		</div>
-	);
-};
-
-type WorkspaceInviteRole = "owner" | "admin" | "member";
+type WorkspaceInviteRole = Exclude<WorkspaceRole, "viewer">;
 
 interface WorkspaceRoleSelectProps {
 	role: WorkspaceInviteRole;
 	setRole: (role: WorkspaceInviteRole) => void;
+	currentUserRole: WorkspaceRole | undefined;
 }
 
-const WorkspaceRoleSelect = ({ role, setRole }: WorkspaceRoleSelectProps) => {
+const WorkspaceRoleSelect = ({
+	role,
+	setRole,
+	currentUserRole,
+}: WorkspaceRoleSelectProps) => {
+	const offeredRoles = INVITE_ROLES.filter(
+		(value) => value !== "owner" || currentUserRole === "owner"
+	) as WorkspaceInviteRole[];
+
 	return (
 		<div className="space-y-2">
-			<Label className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-				<Crown className="size-4 text-secondary" />
+			<Label className="text-sm font-semibold" htmlFor="role">
 				Workspace Role
 			</Label>
 			<Select
 				onValueChange={(v: WorkspaceInviteRole) => setRole(v)}
 				value={role}
 			>
-				<SelectTrigger className="h-14 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 transition-all font-medium text-lg">
-					<SelectValue placeholder="Select Role" />
+				<SelectTrigger id="role">
+					<SelectValue placeholder="Select role" />
 				</SelectTrigger>
-				<SelectContent className="border-none shadow-xl rounded-xl p-2">
-					<SelectItem
-						className="py-4 cursor-pointer rounded-lg hover:bg-zinc-100 transition-colors"
-						value="member"
-					>
-						<div className="flex items-center gap-4">
-							<div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary dark:bg-primary/25 dark:text-purple-200">
-								<Users className="size-5" />
-							</div>
-							<div className="flex flex-col">
-								<span className="font-bold text-base">Member</span>
-								<span className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold">
-									Standard access to workspace features
-								</span>
-							</div>
-						</div>
-					</SelectItem>
-
-					<SelectItem
-						className="py-4 cursor-pointer rounded-lg hover:bg-secondary/10 transition-colors"
-						value="owner"
-					>
-						<div className="flex items-center gap-4">
-							<div className="size-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary dark:bg-secondary/20">
-								<Crown className="size-5" />
-							</div>
-							<div className="flex flex-col">
-								<span className="font-bold text-base">Owner</span>
-								<span className="text-[11px] text-secondary uppercase tracking-wider font-bold">
-									Full billing, workspace, and role control
-								</span>
-							</div>
-						</div>
-					</SelectItem>
-
-					<SelectItem
-						className="py-4 cursor-pointer rounded-lg hover:bg-primary/10 transition-colors"
-						value="admin"
-					>
-						<div className="flex items-center gap-4">
-							<div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary dark:bg-primary/25 dark:text-purple-200">
-								<Crown className="size-5" />
-							</div>
-							<div className="flex flex-col">
-								<span className="font-bold text-base">Admin</span>
-								<span className="text-[11px] text-primary dark:text-purple-200 uppercase tracking-wider font-bold">
-									Full management and settings access
-								</span>
-							</div>
-						</div>
-					</SelectItem>
+				<SelectContent>
+					{offeredRoles.map((value) => {
+						const { label, description, icon: Icon } = ROLE_META[value];
+						return (
+							<SelectItem key={value} value={value}>
+								<div className="flex items-center gap-2">
+									<Icon className="size-4 text-muted-foreground" />
+									<div className="flex flex-col">
+										<span className="font-medium">{label}</span>
+										<span className="text-xs text-muted-foreground">
+											{description}
+										</span>
+									</div>
+								</div>
+							</SelectItem>
+						);
+					})}
 				</SelectContent>
 			</Select>
 		</div>
@@ -165,7 +110,7 @@ const SeatWarningHeader = ({ seatChangePending }: SeatWarningHeaderProps) => {
 			</div>
 			<div className="flex flex-col">
 				<span className="text-sm font-bold text-amber-900 dark:text-amber-100">
-					{seatChangePending ? "Billing Pending" : "Seats Finished"}
+					{seatChangePending ? "Billing pending" : "You're out of seats"}
 				</span>
 				<span className="text-[12px] text-amber-700 dark:text-amber-300">
 					{seatChangePending
@@ -194,28 +139,30 @@ const SeatStepper = ({
 		<div className="flex items-center gap-2">
 			<Button
 				aria-label="Decrease seats to add"
-				className="size-9 rounded-lg"
 				disabled={addingSeats || seatChangePending || seatsToAdd <= 1}
 				onClick={() => updateSeatsToAdd(seatsToAdd - 1)}
-				size="icon"
+				size="iconSm"
 				type="button"
 				variant="outline"
 			>
 				<Minus className="size-4" />
 			</Button>
 			<Input
-				className="h-9 w-20 text-center font-semibold bg-white dark:bg-zinc-950"
+				aria-label="Number of seats to add"
+				className="h-8 w-20 text-center font-semibold"
 				min={1}
 				onChange={(event) => updateSeatsToAdd(Number(event.target.value))}
+				onKeyDown={(event) => {
+					if (event.key === "Enter") event.preventDefault();
+				}}
 				type="number"
 				value={seatsToAdd}
 			/>
 			<Button
 				aria-label="Increase seats to add"
-				className="size-9 rounded-lg"
 				disabled={addingSeats || seatChangePending}
 				onClick={() => updateSeatsToAdd(seatsToAdd + 1)}
-				size="icon"
+				size="iconSm"
 				type="button"
 				variant="outline"
 			>
@@ -252,7 +199,7 @@ const SeatQuantityControls = ({
 				updateSeatsToAdd={updateSeatsToAdd}
 			/>
 			<p className="text-xs text-amber-700 dark:text-amber-300">
-				New Dodo quantity: {newTotalSeats} seats
+				Your plan will have {newTotalSeats} seats
 			</p>
 		</div>
 	);
@@ -273,23 +220,19 @@ const AddSeatsButton = ({
 }: AddSeatsButtonProps) => {
 	const buttonLabel = seatChangePending
 		? "Pending"
-		: `Add ${seatsToAdd} Seat${seatsToAdd === 1 ? "" : "s"}`;
+		: `Add ${seatsToAdd} seat${seatsToAdd === 1 ? "" : "s"}`;
 
 	return (
 		<Button
-			className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm"
+			className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
 			disabled={addingSeats || seatChangePending}
+			loading={addingSeats}
 			onClick={handleAddSeat}
 			size="sm"
+			type="button"
 		>
-			{addingSeats ? (
-				<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-			) : (
-				<div className="flex items-center gap-1">
-					<Plus className="size-4" />
-					{buttonLabel}
-				</div>
-			)}
+			{!addingSeats && <Plus className="mr-2 size-4" />}
+			{buttonLabel}
 		</Button>
 	);
 };
@@ -310,7 +253,7 @@ const SeatFullWarningBanner = ({
 	};
 
 	return (
-		<div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+		<div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg space-y-4 animate-in fade-in slide-in-from-top-2 duration-slow motion-reduce:animate-none">
 			<SeatWarningHeader seatChangePending={seatChangePending} />
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 				<SeatQuantityControls
@@ -331,63 +274,11 @@ const SeatFullWarningBanner = ({
 	);
 };
 
-interface InviteModalFooterProps {
-	workspaceName: string;
-	inviteLoading: boolean;
-	email: string;
-	isSeatsFull: boolean;
-	handleClose: () => void;
-	sendInvite: () => void;
-}
-
-const InviteModalFooter = ({
-	workspaceName,
-	inviteLoading,
-	email,
-	isSeatsFull,
-	handleClose,
-	sendInvite,
-}: InviteModalFooterProps) => {
-	return (
-		<div className="flex items-center justify-between">
-			<div className="flex flex-col">
-				<span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
-					Workspace
-				</span>
-				<span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-					{workspaceName}
-				</span>
-			</div>
-			<div className="flex gap-3">
-				<Button
-					className="px-6 h-11 font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
-					onClick={handleClose}
-					variant="ghost"
-				>
-					Cancel
-				</Button>
-				<Button
-					className="px-8 h-11 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-					disabled={inviteLoading || !email || isSeatsFull}
-					onClick={sendInvite}
-				>
-					{inviteLoading ? (
-						<div className="flex items-center gap-2">
-							<div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-							Sending...
-						</div>
-					) : (
-						"Send Invite"
-					)}
-				</Button>
-			</div>
-		</div>
-	);
-};
-
 interface InviteMemberFieldsProps {
 	email: string;
+	emailError: string | null;
 	role: WorkspaceInviteRole;
+	currentUserRole: WorkspaceRole | undefined;
 	comment: string;
 	addingSeats: boolean;
 	seatChangePending: boolean;
@@ -403,25 +294,28 @@ interface InviteMemberFieldsProps {
 
 const EmailField = ({
 	email,
+	emailError,
 	setEmail,
-}: Pick<InviteMemberFieldsProps, "email" | "setEmail">) => {
+}: Pick<InviteMemberFieldsProps, "email" | "emailError" | "setEmail">) => {
 	return (
 		<div className="space-y-2">
-			<Label
-				className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
-				htmlFor="email"
-			>
-				<Users className="size-4 text-primary" />
+			<Label className="text-sm font-semibold" htmlFor="email">
 				Colleague&apos;s Email
 			</Label>
 			<Input
-				className="h-12 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-secondary transition-all text-base"
+				aria-describedby={emailError ? "email-error" : undefined}
+				aria-invalid={Boolean(emailError)}
 				id="email"
 				onChange={(e) => setEmail(e.target.value)}
 				placeholder="colleague@example.com"
 				type="email"
 				value={email}
 			/>
+			{emailError && (
+				<p className="text-sm text-destructive" id="email-error">
+					{emailError}
+				</p>
+			)}
 		</div>
 	);
 };
@@ -433,14 +327,14 @@ const InvitationNoteField = ({
 	return (
 		<div className="space-y-2">
 			<Label
-				className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300"
+				className="flex items-center gap-2 text-sm font-semibold"
 				htmlFor="comment"
 			>
-				<MessageSquare className="size-4 text-secondary" />
+				<MessageSquare className="size-4" />
 				Invitation Note
 			</Label>
 			<Textarea
-				className="min-h-[80px] border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-secondary resize-none transition-all"
+				className="min-h-[80px] resize-none"
 				id="comment"
 				onChange={(e) => setComment(e.target.value)}
 				placeholder="Let them know why you're inviting them..."
@@ -452,7 +346,9 @@ const InvitationNoteField = ({
 
 const InviteMemberFields = ({
 	email,
+	emailError,
 	role,
+	currentUserRole,
 	comment,
 	addingSeats,
 	seatChangePending,
@@ -466,9 +362,13 @@ const InviteMemberFields = ({
 	handleAddSeat,
 }: InviteMemberFieldsProps) => {
 	return (
-		<div className="space-y-4">
-			<EmailField email={email} setEmail={setEmail} />
-			<WorkspaceRoleSelect role={role} setRole={setRole} />
+		<div className="space-y-4 py-4">
+			<EmailField email={email} emailError={emailError} setEmail={setEmail} />
+			<WorkspaceRoleSelect
+				currentUserRole={currentUserRole}
+				role={role}
+				setRole={setRole}
+			/>
 			<SeatFullWarningBanner
 				addingSeats={addingSeats}
 				handleAddSeat={handleAddSeat}
@@ -483,92 +383,68 @@ const InviteMemberFields = ({
 	);
 };
 
-interface InviteModalBodyProps extends InviteMemberFieldsProps {
-	scrollContainerRef: RefObject<HTMLDivElement>;
+interface InviteModalActionsProps {
+	inviteLoading: boolean;
+	email: string;
+	isSeatsFull: boolean;
+	handleClose: () => void;
 }
 
-const InviteModalBody = ({
-	scrollContainerRef,
-	...fieldsProps
-}: InviteModalBodyProps) => {
+const InviteModalActions = ({
+	inviteLoading,
+	email,
+	isSeatsFull,
+	handleClose,
+}: InviteModalActionsProps) => {
 	return (
-		<div
-			className="relative flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white dark:bg-zinc-950"
-			ref={scrollContainerRef}
-		>
-			<div className="p-6 sm:p-8 space-y-6">
-				<InviteMemberFields {...fieldsProps} />
-			</div>
-		</div>
-	);
-};
-
-interface ScrollToActionsButtonProps {
-	hasMoreBelow: boolean;
-	scrollToActions: () => void;
-}
-
-const ScrollToActionsButton = ({
-	hasMoreBelow,
-	scrollToActions,
-}: ScrollToActionsButtonProps) => {
-	if (!hasMoreBelow) return null;
-
-	return (
-		<Button
-			aria-label="Scroll to invite actions"
-			className="absolute bottom-24 right-6 z-20 size-9 rounded-full bg-white text-secondary border border-secondary/20 shadow-lg hover:bg-secondary hover:text-white dark:bg-zinc-900 dark:hover:bg-secondary"
-			onClick={scrollToActions}
-			size="icon"
-			type="button"
-			variant="outline"
-		>
-			<ChevronDown className="size-4" />
-		</Button>
+		<DialogFooter>
+			<Button onClick={handleClose} type="button" variant="outline">
+				Cancel
+			</Button>
+			<Button
+				disabled={inviteLoading || !email || isSeatsFull}
+				loading={inviteLoading}
+				type="submit"
+			>
+				{inviteLoading ? "Sending..." : "Send Invite"}
+			</Button>
+		</DialogFooter>
 	);
 };
 
 interface InviteDialogContentProps extends InviteMemberFieldsProps {
 	handleClose: () => void;
-	hasMoreBelow: boolean;
+	handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
 	inviteLoading: boolean;
-	scrollContainerRef: RefObject<HTMLDivElement>;
-	scrollToActions: () => void;
-	sendInvite: () => void;
 	workspaceName: string;
 }
 
 const InviteDialogContent = ({
 	handleClose,
-	hasMoreBelow,
+	handleSubmit,
 	inviteLoading,
-	scrollContainerRef,
-	scrollToActions,
-	sendInvite,
 	workspaceName,
 	...fieldsProps
 }: InviteDialogContentProps) => {
 	return (
-		<DialogContent className="sm:max-w-[500px] max-h-[calc(100vh-2rem)] p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col">
-			<InviteModalHeader />
-			<InviteModalBody
-				scrollContainerRef={scrollContainerRef}
-				{...fieldsProps}
-			/>
-			<div className="sticky bottom-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur px-6 sm:px-8 py-4 border-t border-zinc-100 dark:border-zinc-900">
-				<InviteModalFooter
+		<DialogContent>
+			<DialogHeader>
+				<DialogTitle className="truncate">
+					Invite to {workspaceName}
+				</DialogTitle>
+				<DialogDescription>
+					Invite a teammate to collaborate in this workspace.
+				</DialogDescription>
+			</DialogHeader>
+			<form onSubmit={handleSubmit}>
+				<InviteMemberFields {...fieldsProps} />
+				<InviteModalActions
 					email={fieldsProps.email}
 					handleClose={handleClose}
 					inviteLoading={inviteLoading}
 					isSeatsFull={fieldsProps.isSeatsFull}
-					sendInvite={sendInvite}
-					workspaceName={workspaceName}
 				/>
-			</div>
-			<ScrollToActionsButton
-				hasMoreBelow={hasMoreBelow}
-				scrollToActions={scrollToActions}
-			/>
+			</form>
 		</DialogContent>
 	);
 };
@@ -580,16 +456,16 @@ export const InviteMemberModal = () => {
 		api.workspace.workspaces.getById,
 		workspaceId ? { id: workspaceId } : "skip"
 	);
+	const { data: currentMember } = useCurrentMember({ workspaceId });
 
 	const [email, setEmail] = useState("");
+	const [emailError, setEmailError] = useState<string | null>(null);
 	const [role, setRole] = useState<WorkspaceInviteRole>("member");
 	const [comment, setComment] = useState("");
 	const [inviteLoading, setInviteLoading] = useState(false);
 	const [addingSeats, setAddingSeats] = useState(false);
 	const [seatChangePending, setSeatChangePending] = useState(false);
 	const [seatsToAdd, setSeatsToAdd] = useState(1);
-	const [hasMoreBelow, setHasMoreBelow] = useState(false);
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
 	const updateQuantity = useAction(
 		api.billing.payments.updateSubscriptionQuantity
@@ -617,38 +493,9 @@ export const InviteMemberModal = () => {
 		}
 	}, [isSeatsFull]);
 
-	useEffect(() => {
-		const scrollContainer = scrollContainerRef.current;
-		if (!open || !scrollContainer) return undefined;
-
-		const updateScrollButton = () => {
-			const remainingScroll =
-				scrollContainer.scrollHeight -
-				scrollContainer.scrollTop -
-				scrollContainer.clientHeight;
-			setHasMoreBelow(remainingScroll > 24);
-		};
-
-		updateScrollButton();
-		const frameId = window.requestAnimationFrame(updateScrollButton);
-		scrollContainer.addEventListener("scroll", updateScrollButton);
-		window.addEventListener("resize", updateScrollButton);
-
-		return function cleanupScrollButton() {
-			window.cancelAnimationFrame(frameId);
-			scrollContainer.removeEventListener("scroll", updateScrollButton);
-			window.removeEventListener("resize", updateScrollButton);
-		};
-	}, [open]);
-
-	const scrollToActions = () => {
-		const scrollContainer = scrollContainerRef.current;
-		if (!scrollContainer) return;
-
-		scrollContainer.scrollTo({
-			behavior: "smooth",
-			top: scrollContainer.scrollHeight,
-		});
+	const handleEmailChange = (value: string) => {
+		setEmail(value);
+		if (emailError) setEmailError(null);
 	};
 
 	const handleAddSeat = async () => {
@@ -685,7 +532,7 @@ export const InviteMemberModal = () => {
 				}
 				toast.info(
 					billingResult.message ||
-						"Dodo is processing the prorated seat charge. The seat will be available after payment succeeds."
+						"We're processing your prorated charge. The seat will be available once payment succeeds."
 				);
 				return;
 			}
@@ -695,7 +542,7 @@ export const InviteMemberModal = () => {
 				);
 				return;
 			}
-			toast.success("Seat added successfully!");
+			toast.success("Seat added.");
 		} catch (error: unknown) {
 			toast.error(getErrorMessage(error, "Failed to add seat"));
 		} finally {
@@ -707,6 +554,7 @@ export const InviteMemberModal = () => {
 	const handleClose = () => {
 		setOpen(false);
 		setEmail("");
+		setEmailError(null);
 		setRole("member");
 		setComment("");
 		setInviteLoading(false);
@@ -715,16 +563,16 @@ export const InviteMemberModal = () => {
 	};
 
 	const sendInvite = async () => {
-		if (!email) {
-			toast.error("Please enter an email address");
+		const trimmedEmail = email.trim();
+		if (!trimmedEmail) {
+			setEmailError("Enter an email address");
 			return;
 		}
-
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if (!emailRegex.test(email.trim())) {
-			toast.error("Please enter a valid email address");
+		if (!EMAIL_PATTERN.test(trimmedEmail)) {
+			setEmailError("Enter a valid email address");
 			return;
 		}
+		setEmailError(null);
 
 		setInviteLoading(true);
 		try {
@@ -754,26 +602,30 @@ export const InviteMemberModal = () => {
 		}
 	};
 
+	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		sendInvite();
+	};
+
 	return (
 		<Dialog onOpenChange={handleClose} open={open}>
 			<InviteDialogContent
 				addingSeats={addingSeats}
 				comment={comment}
+				currentUserRole={currentMember?.role}
 				email={email}
+				emailError={emailError}
 				handleAddSeat={handleAddSeat}
 				handleClose={handleClose}
-				hasMoreBelow={hasMoreBelow}
+				handleSubmit={handleSubmit}
 				inviteLoading={inviteLoading}
 				isSeatsFull={isSeatsFull}
 				newTotalSeats={newTotalSeats}
-				role={role}
-				scrollContainerRef={scrollContainerRef}
-				scrollToActions={scrollToActions}
+				role={currentMember?.role === "owner" ? role : "member"}
 				seatChangePending={seatChangePending}
 				seatsToAdd={seatsToAdd}
-				sendInvite={sendInvite}
 				setComment={setComment}
-				setEmail={setEmail}
+				setEmail={handleEmailChange}
 				setRole={setRole}
 				setSeatsToAdd={setSeatsToAdd}
 				workspaceName={workspace?.name ?? "Workspace"}

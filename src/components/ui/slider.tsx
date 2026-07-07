@@ -17,7 +17,7 @@ const Slider = React.forwardRef<
 		ref={ref}
 		{...props}
 	>
-		<Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-secondary">
+		<Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-secondary/20 dark:bg-secondary/10">
 			<Range className="absolute h-full bg-secondary" />
 		</Track>
 		<Thumb className="block h-5 w-5 rounded-full border-2 border-secondary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />

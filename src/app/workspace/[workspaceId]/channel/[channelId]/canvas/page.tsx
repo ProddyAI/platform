@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { PaintBucket } from "lucide-react";
+import { Loader2, PaintBucket } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -316,7 +316,7 @@ const CanvasPage = () => {
 	if (!activeCanvas) {
 		return (
 			<div
-				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900" : ""}`}
+				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-background" : ""}`}
 				ref={pageContainerRef}
 			>
 				{/* Canvas Sidebar - always show even when no canvas selected */}
@@ -336,7 +336,7 @@ const CanvasPage = () => {
 					/>
 				)}
 
-				<div className="flex-1 flex flex-col items-center justify-center gap-y-6 bg-white dark:bg-gray-900">
+				<div className="flex-1 flex flex-col items-center justify-center gap-y-6 bg-background">
 					<PaintBucket className="size-16 text-secondary" />
 					<h2 className="text-2xl font-semibold">Canvas</h2>
 					<p className="text-sm text-muted-foreground mb-2">
@@ -349,7 +349,7 @@ const CanvasPage = () => {
 					>
 						{isCreatingCanvas ? (
 							<>
-								<div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+								<Loader2 className="h-4 w-4 animate-spin" />
 								Creating Canvas...
 							</>
 						) : (
@@ -368,7 +368,7 @@ const CanvasPage = () => {
 	return (
 		<LiveblocksRoom roomId={activeCanvas.roomId} roomType="canvas">
 			<div
-				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-white dark:bg-gray-900" : ""}`}
+				className={`flex h-full ${isFullScreen ? "fixed inset-0 z-50 bg-background" : ""}`}
 				ref={pageContainerRef}
 			>
 				{!isFullScreen && (
@@ -390,16 +390,15 @@ const CanvasPage = () => {
 				<div className="flex flex-col flex-1 overflow-hidden relative">
 					{/* Canvas Header - hidden in fullscreen */}
 					{!isFullScreen && (
+						// autoSaveStatus/hasUnsavedChanges/lastSaved are intentionally left
+						// unset: ExcalidrawCanvas persists the scene via a debounced
+						// Liveblocks write and exposes no save-state signal today, so
+						// asserting "saved" here would be fabricated. Show nothing rather
+						// than a status we can't actually vouch for.
 						<LiveHeader
-							autoSaveStatus="saved"
 							createdAt={activeCanvas.createdAt}
-							hasUnsavedChanges={false}
 							isFullScreen={isFullScreen}
-							lastSaved={activeCanvas.updatedAt}
 							onCreateItem={handleCreateCanvas}
-							onSave={() => {
-								// Implement canvas save functionality
-							}}
 							onTagsChange={(newTags) => {
 								handleUpdateCanvasTags(activeCanvas._id, newTags);
 							}}
@@ -416,7 +415,7 @@ const CanvasPage = () => {
 								}
 							}}
 							showFullScreenToggle
-							showTags // You can track canvas changes here
+							showTags
 							tags={activeCanvas.tags || []}
 							title={activeCanvas.canvasName}
 							toggleFullScreen={toggleFullScreen}

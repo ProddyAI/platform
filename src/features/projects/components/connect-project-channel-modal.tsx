@@ -20,6 +20,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
@@ -81,7 +82,7 @@ export const ConnectProjectChannelModal = () => {
 	};
 
 	return (
-		<Dialog onOpenChange={handleClose} open={state.open || isPending}>
+		<Dialog onOpenChange={handleClose} open={state.open}>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Connect project channel</DialogTitle>
@@ -100,6 +101,7 @@ export const ConnectProjectChannelModal = () => {
 						</div>
 
 						<Select
+							disabled={isPending}
 							onValueChange={setSelectedChannelId}
 							value={selectedChannelId}
 						>
@@ -131,8 +133,9 @@ export const ConnectProjectChannelModal = () => {
 						</div>
 					</form>
 				) : (
-					<div className="text-sm text-muted-foreground">
-						Loading project...
+					<div className="space-y-4">
+						<Skeleton className="h-16 w-full rounded-md" />
+						<Skeleton className="h-9 w-full rounded-md" />
 					</div>
 				)}
 			</DialogContent>

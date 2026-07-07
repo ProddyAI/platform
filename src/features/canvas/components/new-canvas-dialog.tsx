@@ -40,7 +40,9 @@ export const NewCanvasDialog = ({
 					<Button onClick={() => onOpenChange(false)} variant="outline">
 						Cancel
 					</Button>
-					<Button onClick={handleConfirm}>Create New Canvas</Button>
+					<Button onClick={handleConfirm} variant="destructive">
+						Create New Canvas
+					</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

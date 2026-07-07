@@ -26,7 +26,10 @@ import { useGetThreadMessages } from "@/features/messages/api/use-get-thread-mes
 import { ThreadModal } from "@/features/messages/components/thread-modal";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { WorkspaceToolbar } from "../toolbar";
+import {
+	useSetWorkspaceTitle,
+	WorkspaceTitle,
+} from "../workspace-title-context";
 
 interface ThreadMessage {
 	message: {
@@ -64,6 +67,10 @@ interface ThreadMessage {
 }
 
 const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
+	useSetWorkspaceTitle(
+		<WorkspaceTitle icon={MessageSquareText} label="Threads" />
+	);
+
 	const threads = useGetThreadMessages() as ThreadMessage[] | undefined;
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeFilter, setActiveFilter] = useState<
@@ -211,7 +218,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 		return (
 			<Card
-				className="group hover:shadow-md transition-all duration-200 cursor-pointer border-2"
+				className="group hover:shadow-md transition-all duration-200 cursor-pointer"
 				key={thread.message._id}
 				onClick={() => handleOpenThread(thread)}
 			>
@@ -324,33 +331,22 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 	// We'll use a consistent structure with conditional rendering for the content
 	return (
 		<>
-			<WorkspaceToolbar>
-				<Button
-					className="group w-auto overflow-hidden px-3 py-2 text-lg font-semibold text-white hover:bg-white/10 transition-standard"
-					size="sm"
-					variant="ghost"
-				>
-					<MessageSquareText className="mr-2 size-5" />
-					<span className="truncate">Threads</span>
-				</Button>
-			</WorkspaceToolbar>
-
 			{!threads ? (
 				// Loading state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-white">
+				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
 					<Loader className="size-12 animate-spin text-muted-foreground" />
 					<p className="text-sm text-muted-foreground">Loading threads...</p>
 				</div>
 			) : !threads.length ? (
 				// Empty state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-white">
+				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
 					<MessageSquareText className="size-12 text-muted-foreground" />
 					<h2 className="text-2xl font-semibold">Threads</h2>
 					<p className="text-sm text-muted-foreground">No threads yet.</p>
 				</div>
 			) : (
 				// Threads loaded state
-				<div className="flex flex-1 flex-col bg-white overflow-hidden">
+				<div className="flex flex-1 flex-col bg-background overflow-hidden">
 					<div className="border-b p-4 flex-shrink-0">
 						<div className="flex items-center justify-between mb-4">
 							<h2 className="text-xl font-semibold">Threads</h2>
@@ -368,26 +364,17 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 								/>
 							</div>
 
-							<Tabs className="w-[300px]" defaultValue="all">
+							<Tabs
+								className="w-[300px]"
+								onValueChange={(value) =>
+									setActiveFilter(value as "all" | "channels" | "direct")
+								}
+								value={activeFilter}
+							>
 								<TabsList className="grid w-full grid-cols-3">
-									<TabsTrigger
-										onClick={() => setActiveFilter("all")}
-										value="all"
-									>
-										All
-									</TabsTrigger>
-									<TabsTrigger
-										onClick={() => setActiveFilter("channels")}
-										value="channels"
-									>
-										Channels
-									</TabsTrigger>
-									<TabsTrigger
-										onClick={() => setActiveFilter("direct")}
-										value="direct"
-									>
-										Direct
-									</TabsTrigger>
+									<TabsTrigger value="all">All</TabsTrigger>
+									<TabsTrigger value="channels">Channels</TabsTrigger>
+									<TabsTrigger value="direct">Direct</TabsTrigger>
 								</TabsList>
 							</Tabs>
 						</div>

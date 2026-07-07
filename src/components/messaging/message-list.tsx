@@ -1,6 +1,6 @@
 import { differenceInMinutes, format, isToday, isYesterday } from "date-fns";
 import { Loader, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ContextMenuProvider } from "@/contexts/context-menu-context";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
@@ -57,6 +57,7 @@ export const MessageList = ({
 		isCached?: boolean;
 	} | null>(null);
 	const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);
+	const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
 	const workspaceId = useWorkspaceId();
 	type MessageItem = NonNullable<GetMessagesReturnType>[number];
@@ -147,6 +148,23 @@ export const MessageList = ({
 		}
 	};
 
+	useEffect(() => {
+		const el = loadMoreRef.current;
+
+		if (!el) return;
+
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting && canLoadMore) loadMore();
+			},
+			{ threshold: 1.0 }
+		);
+
+		observer.observe(el);
+
+		return () => observer.disconnect();
+	}, [canLoadMore, loadMore]);
+
 	return (
 		<ContextMenuProvider>
 			<div className="messages-scrollbar flex flex-1 flex-col-reverse overflow-y-auto pb-4 px-1 md:px-4">
@@ -166,15 +184,15 @@ export const MessageList = ({
 						<div className="relative my-4 flex items-center justify-center">
 							<div className="absolute left-0 right-0 h-px bg-border" />
 
-							<div className="relative flex items-center gap-2 bg-background px-4 dark:bg-[hsl(var(--background))]">
-								<span className="inline-block rounded-full border border-border bg-card px-4 py-1 text-xs shadow-sm dark:bg-[hsl(var(--card))]">
+							<div className="relative flex items-center gap-2 bg-background px-4">
+								<span className="inline-block rounded-full border border-border bg-card px-4 py-1 text-xs shadow-sm">
 									{formatDateLabel(dateKey)}
 								</span>
 
 								<Hint label="Generate daily recap">
 									<Button
 										aria-label="Generate daily recap"
-										className="h-7 w-7 rounded-full border border-border bg-card shadow-sm hover:bg-accent text-foreground dark:text-gray-300 dark:bg-[hsl(var(--card))] dark:border-border dark:hover:bg-slate-700"
+										className="h-7 w-7 rounded-full border border-border bg-card shadow-sm hover:bg-accent text-foreground"
 										disabled={isGeneratingRecap}
 										onClick={() => handleGenerateRecap(dateKey, messages)}
 										size="iconSm"
@@ -224,31 +242,13 @@ export const MessageList = ({
 					</div>
 				))}
 
-				<div
-					className="h-1"
-					ref={(el) => {
-						if (el) {
-							const observer = new IntersectionObserver(
-								([entry]) => {
-									if (entry.isIntersecting && canLoadMore) loadMore();
-								},
-								{ threshold: 1.0 }
-							);
-
-							observer.observe(el);
-
-							return () => observer.disconnect();
-						}
-
-						return undefined;
-					}}
-				/>
+				<div className="h-1" ref={loadMoreRef} />
 
 				{isLoadingMore && (
 					<div className="relative my-4 flex items-center justify-center">
 						<div className="absolute left-0 right-0 h-px bg-border" />
 
-						<span className="relative inline-block rounded-full border border-border bg-card px-4 py-1 text-xs shadow-sm dark:bg-[hsl(var(--card))]">
+						<span className="relative inline-block rounded-full border border-border bg-card px-4 py-1 text-xs shadow-sm">
 							<Loader className="size-4 animate-spin text-foreground" />
 						</span>
 					</div>
