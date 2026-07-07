@@ -112,10 +112,6 @@ export const HeroSection = () => {
 										maxHeight: "95vh",
 										width: "100%",
 										aspectRatio: "1.761467889908257",
-										padding: "10px 0 10px 0",
-										backgroundImage: "url(/dashboard-preview.svg)",
-										backgroundSize: "cover",
-										backgroundPosition: "center",
 									}}
 								>
 									<iframe
