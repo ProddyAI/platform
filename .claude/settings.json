@@ -1,5 +1,40 @@
 {
 	"enabledPlugins": {
 		"impeccable@impeccable": true
+	},
+	"hooks": {
+		"UserPromptSubmit": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "verity intent capture"
+					}
+				]
+			}
+		],
+		"SessionStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "verity baseline capture"
+					}
+				]
+			}
+		],
+		"PreToolUse": [
+			{
+				"matcher": "Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "verity guard --on commit",
+						"timeout": 300,
+						"statusMessage": "Running Verity git-moment review"
+					}
+				]
+			}
+		]
 	}
 }

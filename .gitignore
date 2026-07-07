@@ -34,3 +34,18 @@ scratch_test.js
 .github\instructions\codacy.instructions.md
 
 /certificates/
+
+# Verity — local runtime state (credentials, caches, per-run counters)
+.verity/credentials
+.verity/.cache/
+.verity/.logs/
+.verity/.baseline/
+.verity/.conversation-buffer
+.verity/.last-analysis
+.verity/.iteration-count
+.verity/.last-pass-hash
+.verity/.last-intent
+.verity/.memory-sync-state.json
+.verity/memory/log.md
+# Verity telemetry — holds your project token
+.claude/settings.local.json
