@@ -80,7 +80,7 @@ export const TaskSidebar = ({
 				</h3>
 				{isFilterActive() && (
 					<Button
-						className="h-8 text-xs px-3 py-1 text-muted-foreground rounded-md"
+						className="h-8 text-xs px-3 py-1 text-muted-foreground rounded-full"
 						onClick={resetAllFilters}
 						size="sm"
 						variant="ghost"
@@ -111,9 +111,9 @@ export const TaskSidebar = ({
 					<div className="space-y-1 mt-2 px-1">
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.priority === "all"
-									? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+									? "bg-primary/10 text-foreground font-medium hover:bg-primary/15"
 									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ priority: "all" })}
@@ -124,9 +124,9 @@ export const TaskSidebar = ({
 						</Button>
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.priority === "high"
-									? "bg-red-100 text-red-700 font-medium hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+									? "bg-warning/10 text-warning font-medium hover:bg-warning/15"
 									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ priority: "high" })}
@@ -135,14 +135,14 @@ export const TaskSidebar = ({
 								filterOptions.priority === "high" ? "secondary" : "ghost"
 							}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-red-600" />
+							<div className="mr-2 h-3 w-3 rounded-full bg-warning" />
 							High
 						</Button>
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.priority === "medium"
-									? "bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+									? "bg-primary/10 text-primary font-medium hover:bg-primary/15"
 									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ priority: "medium" })}
@@ -151,21 +151,21 @@ export const TaskSidebar = ({
 								filterOptions.priority === "medium" ? "secondary" : "ghost"
 							}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-amber-500" />
+							<div className="mr-2 h-3 w-3 rounded-full bg-primary" />
 							Medium
 						</Button>
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.priority === "low"
-									? "bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+									? "bg-muted text-foreground font-medium hover:bg-muted/80"
 									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ priority: "low" })}
 							size="sm"
 							variant={filterOptions.priority === "low" ? "secondary" : "ghost"}
 						>
-							<div className="mr-2 h-3 w-3 rounded-full bg-blue-600" />
+							<div className="mr-2 h-3 w-3 rounded-full bg-muted-foreground/60" />
 							Low
 						</Button>
 					</div>
@@ -193,9 +193,9 @@ export const TaskSidebar = ({
 					<div className="space-y-1 mt-2 px-1">
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.dueDate === "all"
-									? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+									? "bg-primary/10 text-foreground font-medium hover:bg-primary/15"
 									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "all" })}
@@ -206,9 +206,9 @@ export const TaskSidebar = ({
 						</Button>
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.dueDate === "overdue"
-									? "bg-red-100 text-red-700 font-medium hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+									? "bg-destructive/10 text-destructive font-medium hover:bg-destructive/15"
 									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "overdue" })}
@@ -217,14 +217,14 @@ export const TaskSidebar = ({
 								filterOptions.dueDate === "overdue" ? "secondary" : "ghost"
 							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-red-600" />
+							<Clock className="mr-2 h-4 w-4 text-destructive" />
 							Overdue
 						</Button>
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.dueDate === "today"
-									? "bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+									? "bg-warning/10 text-warning font-medium hover:bg-warning/15"
 									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "today" })}
@@ -233,14 +233,14 @@ export const TaskSidebar = ({
 								filterOptions.dueDate === "today" ? "secondary" : "ghost"
 							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-amber-500" />
+							<Clock className="mr-2 h-4 w-4 text-warning" />
 							Today
 						</Button>
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.dueDate === "upcoming"
-									? "bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+									? "bg-primary/10 text-primary font-medium hover:bg-primary/15"
 									: "text-foreground"
 							)}
 							onClick={() => onFilterChange({ dueDate: "upcoming" })}
@@ -249,12 +249,12 @@ export const TaskSidebar = ({
 								filterOptions.dueDate === "upcoming" ? "secondary" : "ghost"
 							}
 						>
-							<Clock className="mr-2 h-4 w-4 text-blue-600" />
+							<Clock className="mr-2 h-4 w-4 text-primary" />
 							Upcoming
 						</Button>
 						<Button
 							className={cn(
-								"w-full justify-start text-sm h-9 rounded-md",
+								"w-full justify-start text-sm h-9 rounded-full",
 								filterOptions.dueDate === "no-date"
 									? "bg-muted text-foreground font-medium hover:bg-muted/80"
 									: "text-foreground"
@@ -292,17 +292,17 @@ export const TaskSidebar = ({
 				{expandedSections.categories &&
 					(categoriesLoading ? (
 						<div className="mt-2 space-y-1.5 px-1">
-							<Skeleton className="h-9 w-full rounded-md" />
-							<Skeleton className="h-9 w-full rounded-md" />
-							<Skeleton className="h-9 w-full rounded-md" />
+							<Skeleton className="h-9 w-full rounded-full" />
+							<Skeleton className="h-9 w-full rounded-full" />
+							<Skeleton className="h-9 w-full rounded-full" />
 						</div>
 					) : categories && categories.length > 0 ? (
 						<div className="space-y-1 mt-2 px-1">
 							<Button
 								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
+									"w-full justify-start text-sm h-9 rounded-full",
 									filterOptions.categoryId === null
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										? "bg-primary/10 text-foreground font-medium hover:bg-primary/15"
 										: "text-foreground"
 								)}
 								onClick={() => onFilterChange({ categoryId: null })}
@@ -316,7 +316,7 @@ export const TaskSidebar = ({
 							{categories.map((category) => (
 								<Button
 									className={cn(
-										"w-full justify-start text-sm h-9 rounded-md",
+										"w-full justify-start text-sm h-9 rounded-full",
 										filterOptions.categoryId === category._id
 											? "font-medium"
 											: "text-foreground"
@@ -386,9 +386,9 @@ export const TaskSidebar = ({
 						<div className="space-y-1">
 							<Button
 								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
+									"w-full justify-start text-sm h-9 rounded-full",
 									filterOptions.sortBy === "created"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										? "bg-primary/10 text-foreground font-medium hover:bg-primary/15"
 										: "text-foreground"
 								)}
 								onClick={() => onFilterChange({ sortBy: "created" })}
@@ -401,9 +401,9 @@ export const TaskSidebar = ({
 							</Button>
 							<Button
 								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
+									"w-full justify-start text-sm h-9 rounded-full",
 									filterOptions.sortBy === "dueDate"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										? "bg-primary/10 text-foreground font-medium hover:bg-primary/15"
 										: "text-foreground"
 								)}
 								onClick={() => onFilterChange({ sortBy: "dueDate" })}
@@ -416,9 +416,9 @@ export const TaskSidebar = ({
 							</Button>
 							<Button
 								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
+									"w-full justify-start text-sm h-9 rounded-full",
 									filterOptions.sortBy === "priority"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										? "bg-primary/10 text-foreground font-medium hover:bg-primary/15"
 										: "text-foreground"
 								)}
 								onClick={() => onFilterChange({ sortBy: "priority" })}
@@ -437,9 +437,9 @@ export const TaskSidebar = ({
 						<div className="space-y-1">
 							<Button
 								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
+									"w-full justify-start text-sm h-9 rounded-full",
 									filterOptions.sortDirection === "asc"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										? "bg-primary/10 text-foreground font-medium hover:bg-primary/15"
 										: "text-foreground"
 								)}
 								onClick={() => onFilterChange({ sortDirection: "asc" })}
@@ -453,9 +453,9 @@ export const TaskSidebar = ({
 							</Button>
 							<Button
 								className={cn(
-									"w-full justify-start text-sm h-9 rounded-md",
+									"w-full justify-start text-sm h-9 rounded-full",
 									filterOptions.sortDirection === "desc"
-										? "bg-secondary/10 text-foreground font-medium hover:bg-secondary/15"
+										? "bg-primary/10 text-foreground font-medium hover:bg-primary/15"
 										: "text-foreground"
 								)}
 								onClick={() => onFilterChange({ sortDirection: "desc" })}

@@ -13,10 +13,36 @@ import { useGetProjects } from "@/features/projects/api/use-get-projects";
 import { useTrackActivity } from "@/features/reports/hooks/use-track-activity";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { cn } from "@/lib/utils";
 import {
 	useSetWorkspaceTitle,
 	WorkspaceTitle,
 } from "../workspace-title-context";
+
+// Quiet, token-based priority chips for the compact event cards in the month
+// grid — high/highest align with the warning tier, medium with primary, and
+// low/lowest fall back to muted (matches the ramp in board-issue-row.tsx).
+const getBoardPriorityChipClass = (
+	priority?: "lowest" | "low" | "medium" | "high" | "highest"
+) => {
+	if (priority === "highest" || priority === "high") {
+		return "bg-warning/10 text-warning";
+	}
+	if (priority === "medium") {
+		return "bg-primary/10 text-primary";
+	}
+	return "bg-muted text-muted-foreground";
+};
+
+const getTaskPriorityChipClass = (priority?: "low" | "medium" | "high") => {
+	if (priority === "high") {
+		return "bg-warning/10 text-warning";
+	}
+	if (priority === "medium") {
+		return "bg-primary/10 text-primary";
+	}
+	return "bg-muted text-muted-foreground";
+};
 
 // Define types for calendar events
 interface CalendarEventUser {
@@ -276,12 +302,12 @@ const CalendarContent = ({
 						<Loader className="h-6 w-6 animate-spin text-muted-foreground" />
 					</div>
 				) : (
-					<div className="h-full rounded-md border">
+					<div className="h-full overflow-hidden rounded-2xl border bg-card">
 						{/* Calendar header */}
 						<div className="grid grid-cols-7 gap-px border-b bg-muted text-center">
 							{weekdays.map((day) => (
 								<div
-									className="bg-background p-2 text-xs font-medium text-muted-foreground"
+									className="bg-card p-2 text-xs font-medium text-muted-foreground"
 									key={day}
 								>
 									{day}
@@ -292,7 +318,7 @@ const CalendarContent = ({
 						<div className="grid h-[calc(100%-1rem)] grid-cols-7 grid-rows-6 gap-px bg-muted">
 							{weeks.flat().map((dayObj, index) => (
 								<div
-									className={`relative bg-background p-1 ${
+									className={`relative bg-card p-1 ${
 										dayObj.isCurrentMonth
 											? ""
 											: "text-muted-foreground opacity-50"
@@ -309,7 +335,7 @@ const CalendarContent = ({
 													new Date().getDate() === dayObj.day &&
 													new Date().getMonth() === currentDate.getMonth() &&
 													new Date().getFullYear() === currentDate.getFullYear()
-														? "h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white -mt-0.5 -mr-0.5"
+														? "h-5 w-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground -mt-0.5 -mr-0.5"
 														: ""
 												}`}
 											>
@@ -319,13 +345,7 @@ const CalendarContent = ({
 												<div className="mt-4 flex max-h-[80px] flex-col gap-1 overflow-y-auto">
 													{dayObj.events.map((event) => (
 														<Link
-															className={`block rounded-sm p-1 text-[10px] leading-tight transition-colors ${
-																event.type === "board-card"
-																	? "bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:text-purple-100"
-																	: event.type === "task"
-																		? "bg-green-100 hover:bg-green-200 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-100"
-																		: "bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-100"
-															}`}
+															className="block rounded-md border border-primary/20 bg-primary/10 p-1 text-[10px] leading-tight text-primary transition-standard hover:bg-primary/15"
 															href={
 																event.type === "board-card" && event.boardCard
 																	? getBoardCardHref(event.boardCard.channelId)
@@ -361,7 +381,7 @@ const CalendarContent = ({
 																		{event.type === "board-card" &&
 																			"boardCard" in event &&
 																			event.boardCard?.description && (
-																				<div className="text-[10px] text-gray-600 dark:text-gray-300 truncate">
+																				<div className="text-[10px] text-muted-foreground truncate">
 																					{event.boardCard.description}
 																				</div>
 																			)}
@@ -369,12 +389,12 @@ const CalendarContent = ({
 																) : event.type === "task" && event.task ? (
 																	<>
 																		<div
-																			className={`font-medium ${event.task.completed ? "line-through text-gray-500 dark:text-gray-400" : ""}`}
+																			className={`font-medium ${event.task.completed ? "line-through text-muted-foreground" : ""}`}
 																		>
 																			{event.task.title}
 																		</div>
 																		{event.task.description && (
-																			<div className="text-[10px] text-gray-600 dark:text-gray-300 truncate">
+																			<div className="text-[10px] text-muted-foreground truncate">
 																				{event.task.description}
 																			</div>
 																		)}
@@ -388,7 +408,7 @@ const CalendarContent = ({
 																	"Event"
 																)}
 															</div>
-															<div className="text-[10px] text-gray-600 dark:text-gray-400 flex items-center justify-between">
+															<div className="text-[10px] text-muted-foreground flex items-center justify-between">
 																<span>
 																	{event.type === "board-card" ? (
 																		<>
@@ -411,14 +431,12 @@ const CalendarContent = ({
 																{event.type === "board-card" &&
 																	event.boardCard?.priority && (
 																		<span
-																			className={`text-[10px] px-1 rounded ${
-																				event.boardCard.priority === "high"
-																					? "bg-purple-200 text-purple-700 dark:bg-purple-800 dark:text-purple-200"
-																					: event.boardCard.priority ===
-																							"medium"
-																						? "bg-purple-100 text-purple-600 dark:bg-purple-700 dark:text-purple-200"
-																						: "bg-purple-50 text-purple-500 dark:bg-purple-600 dark:text-purple-200"
-																			}`}
+																			className={cn(
+																				"text-[10px] px-1 rounded",
+																				getBoardPriorityChipClass(
+																					event.boardCard.priority
+																				)
+																			)}
 																		>
 																			{event.boardCard.priority}
 																		</span>
@@ -426,20 +444,19 @@ const CalendarContent = ({
 																{event.type === "task" &&
 																	event.task?.priority && (
 																		<span
-																			className={`text-[10px] px-1 rounded ${
-																				event.task.priority === "high"
-																					? "bg-green-200 text-green-700 dark:bg-green-800 dark:text-green-200"
-																					: event.task.priority === "medium"
-																						? "bg-green-100 text-green-600 dark:bg-green-700 dark:text-green-200"
-																						: "bg-green-50 text-green-500 dark:bg-green-600 dark:text-green-200"
-																			}`}
+																			className={cn(
+																				"text-[10px] px-1 rounded",
+																				getTaskPriorityChipClass(
+																					event.task.priority
+																				)
+																			)}
 																		>
 																			{event.task.priority}
 																		</span>
 																	)}
 																{event.type === "task" &&
 																	event.task?.completed && (
-																		<span className="text-[10px] px-1 rounded bg-green-200 text-green-700 font-medium dark:bg-green-800 dark:text-green-200">
+																		<span className="text-[10px] px-1 rounded bg-success/10 text-success font-medium">
 																			Completed
 																		</span>
 																	)}

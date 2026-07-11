@@ -17,6 +17,8 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 
 import type { Id } from "@/../convex/_generated/dataModel";
+import { EmptyState } from "@/components/empty-state";
+import { PageShell } from "@/components/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -238,129 +240,37 @@ export default function OutboxPage() {
 
 	// Always render the same outer structure to maintain toolbar visibility
 	return (
-		<>
+		<PageShell>
 			{/* Content area - changes based on state */}
 			{!messages ? (
 				// Loading state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
-					<Loader className="size-12 animate-spin text-muted-foreground" />
+				<div className="flex flex-col items-center justify-center gap-y-2 py-24">
+					<Loader className="size-8 animate-spin text-muted-foreground" />
 					<p className="text-sm text-muted-foreground">Loading messages...</p>
 				</div>
 			) : !messages.length ? (
 				// Empty state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
-					<Mail className="size-12 text-muted-foreground" />
-					<h2 className="text-2xl font-semibold">Sent</h2>
-					<p className="text-sm text-muted-foreground">No messages sent yet.</p>
-				</div>
+				<EmptyState
+					description="Messages you send across channels and DMs will show up here."
+					icon={Mail}
+					title="No messages sent yet"
+				/>
 			) : (
 				// Messages loaded state
-				<div className="flex flex-1 flex-col bg-background overflow-hidden">
-					<div className="border-b p-4 flex-shrink-0">
-						<div className="flex items-center justify-between mb-4">
-							<h2 className="text-xl font-semibold">Your Messages</h2>
-							<div className="flex items-center gap-2">
-								<DropdownMenu>
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<DropdownMenuTrigger asChild>
-													<Button
-														className="h-8 w-8"
-														size="icon"
-														variant="outline"
-													>
-														<Filter className="h-4 w-4" />
-													</Button>
-												</DropdownMenuTrigger>
-											</TooltipTrigger>
-											<TooltipContent>
-												<p>Filter messages</p>
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-									<DropdownMenuContent align="end" className="w-56">
-										<DropdownMenuLabel>Filter by type</DropdownMenuLabel>
-										<DropdownMenuSeparator />
-										<DropdownMenuCheckboxItem
-											checked={showTextMessages}
-											onCheckedChange={setShowTextMessages}
-										>
-											<FileText className="mr-2 h-4 w-4" />
-											Text Messages
-										</DropdownMenuCheckboxItem>
-										<DropdownMenuCheckboxItem
-											checked={showCanvasMessages}
-											onCheckedChange={setShowCanvasMessages}
-										>
-											<Brush className="mr-2 h-4 w-4" />
-											Canvas Messages
-										</DropdownMenuCheckboxItem>
-										<DropdownMenuCheckboxItem
-											checked={showNoteMessages}
-											onCheckedChange={setShowNoteMessages}
-										>
-											<FileText className="mr-2 h-4 w-4" />
-											Note Messages
-										</DropdownMenuCheckboxItem>
-									</DropdownMenuContent>
-								</DropdownMenu>
-
-								<DropdownMenu>
-									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<DropdownMenuTrigger asChild>
-													<Button
-														className="h-8 w-8"
-														size="icon"
-														variant="outline"
-													>
-														<SortDesc className="h-4 w-4" />
-													</Button>
-												</DropdownMenuTrigger>
-											</TooltipTrigger>
-											<TooltipContent>
-												<p>Sort messages</p>
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-									<DropdownMenuContent align="end" className="w-48">
-										<DropdownMenuLabel>Sort by</DropdownMenuLabel>
-										<DropdownMenuSeparator />
-										<DropdownMenuRadioGroup
-											onValueChange={(value) =>
-												setSortBy(value as typeof sortBy)
-											}
-											value={sortBy}
-										>
-											<DropdownMenuRadioItem value="newest">
-												Newest First
-											</DropdownMenuRadioItem>
-											<DropdownMenuRadioItem value="oldest">
-												Oldest First
-											</DropdownMenuRadioItem>
-											<DropdownMenuRadioItem value="name">
-												By Name (A-Z)
-											</DropdownMenuRadioItem>
-										</DropdownMenuRadioGroup>
-									</DropdownMenuContent>
-								</DropdownMenu>
-							</div>
+				<div className="space-y-6">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+						<div className="relative flex-1">
+							<Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								className="rounded-full border-border bg-muted/50 pl-10 focus:bg-card"
+								onChange={(e) => setSearchQuery(e.target.value)}
+								placeholder="Search messages..."
+								type="search"
+								value={searchQuery}
+							/>
 						</div>
 
-						<div className="flex items-center gap-4">
-							<div className="relative flex-1">
-								<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									onChange={(e) => setSearchQuery(e.target.value)}
-									placeholder="Search messages..."
-									type="search"
-									value={searchQuery}
-								/>
-							</div>
-
+						<div className="flex items-center gap-2">
 							<Tabs
 								className="w-[300px]"
 								onValueChange={setActiveFilter}
@@ -372,93 +282,167 @@ export default function OutboxPage() {
 									<TabsTrigger value="direct">Direct</TabsTrigger>
 								</TabsList>
 							</Tabs>
+
+							<DropdownMenu>
+								<TooltipProvider>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<DropdownMenuTrigger asChild>
+												<Button size="iconSm" variant="outline">
+													<Filter className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>Filter messages</p>
+										</TooltipContent>
+									</Tooltip>
+								</TooltipProvider>
+								<DropdownMenuContent align="end" className="w-56">
+									<DropdownMenuLabel>Filter by type</DropdownMenuLabel>
+									<DropdownMenuSeparator />
+									<DropdownMenuCheckboxItem
+										checked={showTextMessages}
+										onCheckedChange={setShowTextMessages}
+									>
+										<FileText className="mr-2 h-4 w-4" />
+										Text Messages
+									</DropdownMenuCheckboxItem>
+									<DropdownMenuCheckboxItem
+										checked={showCanvasMessages}
+										onCheckedChange={setShowCanvasMessages}
+									>
+										<Brush className="mr-2 h-4 w-4" />
+										Canvas Messages
+									</DropdownMenuCheckboxItem>
+									<DropdownMenuCheckboxItem
+										checked={showNoteMessages}
+										onCheckedChange={setShowNoteMessages}
+									>
+										<FileText className="mr-2 h-4 w-4" />
+										Note Messages
+									</DropdownMenuCheckboxItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+
+							<DropdownMenu>
+								<TooltipProvider>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<DropdownMenuTrigger asChild>
+												<Button size="iconSm" variant="outline">
+													<SortDesc className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+										</TooltipTrigger>
+										<TooltipContent>
+											<p>Sort messages</p>
+										</TooltipContent>
+									</Tooltip>
+								</TooltipProvider>
+								<DropdownMenuContent align="end" className="w-48">
+									<DropdownMenuLabel>Sort by</DropdownMenuLabel>
+									<DropdownMenuSeparator />
+									<DropdownMenuRadioGroup
+										onValueChange={(value) => setSortBy(value as typeof sortBy)}
+										value={sortBy}
+									>
+										<DropdownMenuRadioItem value="newest">
+											Newest First
+										</DropdownMenuRadioItem>
+										<DropdownMenuRadioItem value="oldest">
+											Oldest First
+										</DropdownMenuRadioItem>
+										<DropdownMenuRadioItem value="name">
+											By Name (A-Z)
+										</DropdownMenuRadioItem>
+									</DropdownMenuRadioGroup>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
 					</div>
 
-					<div className="flex-1 overflow-y-auto p-4">
-						{filteredAndSortedMessages?.length === 0 ? (
-							<div className="flex h-full flex-col items-center justify-center gap-y-2">
-								<Search className="size-12 text-muted-foreground" />
-								<h3 className="text-lg font-medium">No matching messages</h3>
-								<p className="text-sm text-muted-foreground">
-									Try adjusting your search or filters
-								</p>
-							</div>
-						) : (
-							<div className="space-y-6">
-								{/* Today's messages */}
-								{groupedMessages.today?.length > 0 && (
-									<div>
-										<div className="flex items-center gap-2 mb-3">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-												Today
-											</h3>
-										</div>
-										<div className="space-y-3">
-											{groupedMessages.today.map((message) =>
-												renderMessageCard(message)
-											)}
-										</div>
+					{filteredAndSortedMessages?.length === 0 ? (
+						<EmptyState
+							description="Try adjusting your search or filters"
+							icon={Search}
+							size="sm"
+							title="No matching messages"
+						/>
+					) : (
+						<div className="space-y-6">
+							{/* Today's messages */}
+							{groupedMessages.today?.length > 0 && (
+								<div>
+									<div className="flex items-center gap-2 mb-3">
+										<Clock className="h-4 w-4 text-muted-foreground" />
+										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+											Today
+										</h3>
 									</div>
-								)}
+									<div className="space-y-3">
+										{groupedMessages.today.map((message) =>
+											renderMessageCard(message)
+										)}
+									</div>
+								</div>
+							)}
 
-								{/* Yesterday's messages */}
-								{groupedMessages.yesterday?.length > 0 && (
-									<div>
-										<div className="flex items-center gap-2 mb-3">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-												Yesterday
-											</h3>
-										</div>
-										<div className="space-y-3">
-											{groupedMessages.yesterday.map((message) =>
-												renderMessageCard(message)
-											)}
-										</div>
+							{/* Yesterday's messages */}
+							{groupedMessages.yesterday?.length > 0 && (
+								<div>
+									<div className="flex items-center gap-2 mb-3">
+										<Clock className="h-4 w-4 text-muted-foreground" />
+										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+											Yesterday
+										</h3>
 									</div>
-								)}
+									<div className="space-y-3">
+										{groupedMessages.yesterday.map((message) =>
+											renderMessageCard(message)
+										)}
+									</div>
+								</div>
+							)}
 
-								{/* This week's messages */}
-								{groupedMessages.thisWeek?.length > 0 && (
-									<div>
-										<div className="flex items-center gap-2 mb-3">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-												This Week
-											</h3>
-										</div>
-										<div className="space-y-3">
-											{groupedMessages.thisWeek.map((message) =>
-												renderMessageCard(message)
-											)}
-										</div>
+							{/* This week's messages */}
+							{groupedMessages.thisWeek?.length > 0 && (
+								<div>
+									<div className="flex items-center gap-2 mb-3">
+										<Clock className="h-4 w-4 text-muted-foreground" />
+										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+											This Week
+										</h3>
 									</div>
-								)}
+									<div className="space-y-3">
+										{groupedMessages.thisWeek.map((message) =>
+											renderMessageCard(message)
+										)}
+									</div>
+								</div>
+							)}
 
-								{/* Earlier messages */}
-								{groupedMessages.earlier?.length > 0 && (
-									<div>
-										<div className="flex items-center gap-2 mb-3">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-												Earlier
-											</h3>
-										</div>
-										<div className="space-y-3">
-											{groupedMessages.earlier.map((message) =>
-												renderMessageCard(message)
-											)}
-										</div>
+							{/* Earlier messages */}
+							{groupedMessages.earlier?.length > 0 && (
+								<div>
+									<div className="flex items-center gap-2 mb-3">
+										<Clock className="h-4 w-4 text-muted-foreground" />
+										<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+											Earlier
+										</h3>
 									</div>
-								)}
-							</div>
-						)}
-					</div>
+									<div className="space-y-3">
+										{groupedMessages.earlier.map((message) =>
+											renderMessageCard(message)
+										)}
+									</div>
+								</div>
+							)}
+						</div>
+					)}
 				</div>
 			)}
-		</>
+		</PageShell>
 	);
 
 	function renderMessageCard(message: Message) {
@@ -466,16 +450,13 @@ export default function OutboxPage() {
 
 		return (
 			<Link
-				className="flex flex-col rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-all"
+				className="flex flex-col rounded-2xl border bg-card p-4 shadow-sm transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0"
 				href={getMessageUrl(message)}
 				key={message._id}
 			>
 				<div className="flex items-center justify-between mb-3">
 					<div className="flex items-center gap-2">
-						<Badge
-							className={`rounded-full px-2 py-0.5 ${message.context.type === "channel" ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" : "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"}`}
-							variant="outline"
-						>
+						<Badge variant="outline">
 							{message.context.type === "channel" ? (
 								<span className="flex items-center">
 									<Hash className="mr-1 h-3 w-3" />

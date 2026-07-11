@@ -541,12 +541,12 @@ export const WorkspaceSidebar = ({
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>
 							<SidebarItem
-								href={`/workspace/${workspaceId}/meeting-notes`}
+								href={`/workspace/${workspaceId}/meeting`}
 								icon={Brain}
-								id="meeting-notes"
-								isActive={pathname.includes("/meeting-notes")}
+								id="meeting"
+								isActive={pathname.includes("/meeting")}
 								isCollapsed={isCollapsed}
-								label="Meeting Notes"
+								label="Meetings"
 							/>
 						</MobileCloseWrapper>
 						<MobileCloseWrapper onClose={onMobileClose}>

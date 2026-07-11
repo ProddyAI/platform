@@ -191,8 +191,8 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 
 		if (isMeeting) {
 			if (meetingStatus?.ended) {
-				// Go to meeting notes
-				router.push(`/workspace/${workspaceId}/meeting-notes`);
+				// Go to the meetings page (notes for ended meetings live there)
+				router.push(`/workspace/${workspaceId}/meeting`);
 				return;
 			}
 			const meetUrl = `/meet/${data.meetingId}?workspaceId=${workspaceId}${channelId ? `&channelId=${channelId}` : ""}`;
@@ -240,7 +240,7 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 						) : (
 							<div className="relative">
 								<Icon className="h-4 w-4 text-primary" />
-								<span className="absolute -right-1 -top-1 h-2 w-2 rounded-full border-2 border-card bg-emerald-500 motion-safe:animate-pulse" />
+								<span className="absolute -right-1 -top-1 h-2 w-2 rounded-full border-2 border-card bg-success motion-safe:animate-pulse" />
 							</div>
 						)}
 					</div>
@@ -281,8 +281,8 @@ export const UnifiedMessage = ({ data }: UnifiedMessageProps) => {
 							</div>
 						)}
 						{isMeeting && !meetingEnded && data.meetingType === "instant" && (
-							<div className="mt-1 flex items-center gap-2 truncate text-xs font-medium text-emerald-600 dark:text-emerald-400">
-								<span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
+							<div className="mt-1 flex items-center gap-2 truncate text-xs font-medium text-success">
+								<span className="h-2 w-2 rounded-full bg-success motion-safe:animate-pulse" />
 								Meeting Active
 							</div>
 						)}

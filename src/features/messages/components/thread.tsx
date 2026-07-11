@@ -239,7 +239,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 	if (isMessageLoading || status === "LoadingFirstPage") {
 		return (
-			<div className="flex h-full flex-col border-l border-border">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
 					<p className="text-lg font-bold">Thread</p>
 
@@ -257,7 +257,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 	if (!message) {
 		return (
-			<div className="flex h-full flex-col border-l border-border">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-[49px] items-center justify-between border-b px-4">
 					<p className="text-lg font-bold">Thread</p>
 
@@ -276,7 +276,7 @@ export const Thread = ({ messageId, onClose }: ThreadProps) => {
 
 	return (
 		<ContextMenuProvider>
-			<div className="flex h-full flex-col border-l border-border">
+			<div className="flex h-full flex-col border-l border-border bg-card">
 				<div className="flex h-auto flex-col border-b px-4 py-3">
 					<div className="flex items-center justify-between mb-2">
 						{isEditingTitle ? (

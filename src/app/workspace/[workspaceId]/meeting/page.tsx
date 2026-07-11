@@ -22,8 +22,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/../convex/_generated/api";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
+import { EmptyState } from "@/components/empty-state";
+import { PageShell } from "@/components/page-shell";
+import { StatusDot, type StatusTone } from "@/components/status-dot";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { exportToPDF, exportToWord } from "@/lib/client/export-utils";
@@ -77,91 +81,84 @@ export default function MeetingNotesPage() {
 		.sort((a, b) => b.createdAt - a.createdAt);
 
 	return (
-		<div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-950">
+		<PageShell className="max-w-4xl">
 			{/* Header */}
-			<div className="border-b px-8 py-6 flex-shrink-0">
-				<div className="flex items-center gap-3 mb-4">
-					<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-						<Brain className="w-5 h-5 text-white" />
-					</div>
-					<div className="flex-1">
-						<h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-							Meeting Notes
-						</h1>
-						<p className="text-sm text-gray-500 dark:text-gray-400">
-							{allNotes
-								? `${allNotes.length} note${allNotes.length !== 1 ? "s" : ""}`
-								: "Loading..."}{" "}
-							— All your AI-generated meeting notes
-						</p>
-					</div>
+			<div className="flex items-center gap-3">
+				<div className="flex size-10 items-center justify-center rounded-xl border border-secondary/20 bg-secondary/10">
+					<Brain className="size-5 text-secondary" />
 				</div>
-				{/* Search + Filters */}
-				<div className="flex items-center gap-3">
-					<div className="relative flex-1 max-w-md">
-						<Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-						<input
-							className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 dark:bg-zinc-800 border-0 rounded-xl focus:bg-white dark:focus:bg-zinc-900 focus:ring-1 focus:ring-primary outline-none text-gray-900 dark:text-white placeholder:text-gray-400 transition-colors"
-							onChange={(e) => setSearchQuery(e.target.value)}
-							placeholder="Search notes, transcripts, tasks..."
-							type="text"
-							value={searchQuery}
-						/>
-					</div>
-					<div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 rounded-xl p-1">
-						{[
-							{ key: "all", label: "All", icon: null },
-							{ key: "live", label: "Live", icon: Mic },
-							{ key: "upload", label: "Upload", icon: Upload },
-							{ key: "chat", label: "Chat", icon: MessageSquare },
-						].map((f) => (
-							<button
-								className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${sourceFilter === f.key ? "bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-								key={f.key}
-								onClick={() =>
-									setSourceFilter(f.key as "all" | "live" | "upload" | "chat")
-								}
-								type="button"
-							>
-								{f.icon && <f.icon className="w-3 h-3" />}
-								{f.label}
-							</button>
-						))}
-					</div>
+				<div className="flex-1">
+					<h1 className="text-2xl font-semibold tracking-tight text-foreground">
+						Meeting Notes
+					</h1>
+					<p className="text-sm text-muted-foreground">
+						{allNotes
+							? `${allNotes.length} note${allNotes.length !== 1 ? "s" : ""}`
+							: "Loading..."}{" "}
+						— All your AI-generated meeting notes
+					</p>
 				</div>
 			</div>
 
+			{/* Search + Filters */}
+			<div className="flex items-center gap-3">
+				<div className="relative flex-1 max-w-md">
+					<Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+					<Input
+						className="rounded-full border-border bg-muted/50 pl-10 focus:bg-card"
+						onChange={(e) => setSearchQuery(e.target.value)}
+						placeholder="Search notes, transcripts, tasks..."
+						type="text"
+						value={searchQuery}
+					/>
+				</div>
+				<Tabs
+					onValueChange={(value) =>
+						setSourceFilter(value as "all" | "live" | "upload" | "chat")
+					}
+					value={sourceFilter}
+				>
+					<TabsList>
+						<TabsTrigger value="all">All</TabsTrigger>
+						<TabsTrigger className="gap-1.5" value="live">
+							<Mic className="size-3.5" /> Live
+						</TabsTrigger>
+						<TabsTrigger className="gap-1.5" value="upload">
+							<Upload className="size-3.5" /> Upload
+						</TabsTrigger>
+						<TabsTrigger className="gap-1.5" value="chat">
+							<MessageSquare className="size-3.5" /> Chat
+						</TabsTrigger>
+					</TabsList>
+				</Tabs>
+			</div>
+
 			{/* Content */}
-			<ScrollArea className="flex-1 px-8 py-6">
-				{!allNotes ? (
-					<div className="flex items-center justify-center py-20">
-						<Loader className="size-8 animate-spin text-muted-foreground" />
-					</div>
-				) : sortedNotes.length === 0 ? (
-					<div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-4">
-						<Sparkles className="w-12 h-12 opacity-30" />
-						<p className="text-lg font-medium">No meeting notes yet</p>
-						<p className="text-sm">
-							Start a meeting and record it, or upload a recording to generate
-							AI notes.
-						</p>
-					</div>
-				) : (
-					<div className="space-y-3 max-w-4xl">
-						{sortedNotes.map((note) => (
-							<NoteCard
-								isExpanded={expandedNote === note._id}
-								key={note._id}
-								note={note}
-								onToggle={() =>
-									setExpandedNote(expandedNote === note._id ? null : note._id)
-								}
-							/>
-						))}
-					</div>
-				)}
-			</ScrollArea>
-		</div>
+			{!allNotes ? (
+				<div className="flex items-center justify-center py-20">
+					<Loader className="size-8 animate-spin text-muted-foreground" />
+				</div>
+			) : sortedNotes.length === 0 ? (
+				<EmptyState
+					description="Start a meeting and record it, or upload a recording to generate AI notes."
+					icon={Sparkles}
+					title="No meeting notes yet"
+				/>
+			) : (
+				<div className="space-y-3">
+					{sortedNotes.map((note) => (
+						<NoteCard
+							isExpanded={expandedNote === note._id}
+							key={note._id}
+							note={note}
+							onToggle={() =>
+								setExpandedNote(expandedNote === note._id ? null : note._id)
+							}
+						/>
+					))}
+				</div>
+			)}
+		</PageShell>
 	);
 }
 
@@ -239,16 +236,20 @@ function NoteCard({
 			? "Uploaded Recording"
 			: "Live Meeting";
 	const SourceIcon = isChat ? MessageSquare : isUpload ? Upload : Mic;
-	const iconBg = isChat
-		? "bg-orange-100 dark:bg-orange-900/30"
-		: isUpload
-			? "bg-purple-100 dark:bg-purple-900/30"
-			: "bg-blue-100 dark:bg-blue-900/30";
-	const iconColor = isChat
-		? "text-orange-600"
-		: isUpload
-			? "text-purple-600"
-			: "text-blue-600";
+	const statusTone: StatusTone =
+		note.status === "completed"
+			? "success"
+			: note.status === "generating"
+				? "warning"
+				: note.status === "failed"
+					? "destructive"
+					: "neutral";
+
+	const priorityBadgeVariant = (priority: string) => {
+		if (priority === "high") return "destructiveSoft";
+		if (priority === "medium") return "warning";
+		return "success";
+	};
 
 	// Derive a smart title from summary or transcript if no explicit title
 	const deriveTitle = () => {
@@ -269,35 +270,29 @@ function NoteCard({
 	};
 
 	return (
-		<div className="border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden transition-all hover:border-gray-300 dark:hover:border-zinc-700">
+		<div className="rounded-2xl border border-border bg-card overflow-hidden transition-colors hover:border-primary/30">
 			{/* Card Header */}
 			<button
-				className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors"
+				className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/50 transition-colors"
 				onClick={onToggle}
 				type="button"
 			>
-				<div
-					className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}
-				>
-					<SourceIcon className={`w-4 h-4 ${iconColor}`} />
+				<div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+					<SourceIcon className="size-4 text-primary" />
 				</div>
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+						<p className="text-sm font-semibold text-foreground truncate">
 							{deriveTitle()}
 						</p>
-						<span
-							className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${note.status === "completed" ? "bg-emerald-100 text-emerald-700" : note.status === "generating" ? "bg-yellow-100 text-yellow-700" : note.status === "failed" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}
-						>
-							{note.status}
-						</span>
+						<StatusDot label={note.status} tone={statusTone} />
 					</div>
 					<div className="flex items-center gap-3 mt-0.5">
-						<span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+						<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 							{sourceLabel}
 						</span>
-						<span className="text-gray-300 dark:text-zinc-600">·</span>
-						<span className="text-xs text-gray-500 flex items-center gap-1">
+						<span className="text-muted-foreground/50">·</span>
+						<span className="text-xs text-muted-foreground flex items-center gap-1">
 							<Clock className="w-3 h-3" />
 							{date.toLocaleDateString()} at{" "}
 							{date.toLocaleTimeString([], {
@@ -306,45 +301,45 @@ function NoteCard({
 							})}
 						</span>
 						{hasGenerations && (
-							<span className="text-xs text-blue-600 font-medium">
+							<span className="text-xs text-primary font-medium">
 								{generations.length} generation
 								{generations.length > 1 ? "s" : ""}
 							</span>
 						)}
-						<span className="text-xs text-gray-400">
+						<span className="text-xs text-muted-foreground">
 							{note.transcript?.length || 0} chars
 						</span>
 					</div>
 				</div>
 				{isExpanded ? (
-					<ChevronDown className="w-4 h-4 text-gray-400" />
+					<ChevronDown className="w-4 h-4 text-muted-foreground" />
 				) : (
-					<ChevronRight className="w-4 h-4 text-gray-400" />
+					<ChevronRight className="w-4 h-4 text-muted-foreground" />
 				)}
 			</button>
 
 			{/* Export Buttons (Inline) */}
 			{isExpanded && (currentGen || note.summary) && (
-				<div className="px-5 py-2 bg-white dark:bg-zinc-950 flex items-center gap-2 border-b border-gray-100 dark:border-zinc-800">
+				<div className="px-5 py-2 bg-card flex items-center gap-2 border-b border-border">
 					<Button
-						className="h-8 text-[11px] font-medium gap-1.5 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg transition-all"
+						className="h-8 text-[11px] gap-1.5"
 						onClick={() => handleExport("pdf")}
 						size="sm"
 						variant="outline"
 					>
-						<FileDown className="w-3.5 h-3.5 text-red-500" /> Export PDF
+						<FileDown className="w-3.5 h-3.5 text-destructive" /> Export PDF
 					</Button>
 					<Button
-						className="h-8 text-[11px] font-medium gap-1.5 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg transition-all"
+						className="h-8 text-[11px] gap-1.5"
 						onClick={() => handleExport("word")}
 						size="sm"
 						variant="outline"
 					>
-						<Download className="w-3.5 h-3.5 text-blue-500" /> Export Word
+						<Download className="w-3.5 h-3.5 text-primary" /> Export Word
 					</Button>
 					<div className="flex-1" />
 					<Button
-						className="h-8 text-[11px] font-bold gap-1.5 border-emerald-100 dark:border-emerald-900/30 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
+						className="h-8 text-[11px] font-bold gap-1.5 border-success/20 bg-success/10 text-success hover:bg-success/15"
 						disabled={isSavingNote}
 						onClick={async () => {
 							if (!channels || channels.length === 0) {
@@ -395,7 +390,7 @@ function NoteCard({
 						variant="outline"
 					>
 						{isSavingNote ? (
-							<div className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent" />
+							<div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
 						) : (
 							<Sparkles className="w-3.5 h-3.5" />
 						)}
@@ -406,16 +401,16 @@ function NoteCard({
 
 			{/* Expanded Content */}
 			{isExpanded && (
-				<div className="border-t border-gray-100 dark:border-zinc-800">
+				<div className="border-t border-border">
 					{/* Generation selector */}
 					{hasGenerations && generations.length > 1 && (
-						<div className="px-5 py-2 bg-gray-50 dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-2 overflow-x-auto">
-							<span className="text-[11px] text-gray-500 font-medium shrink-0">
+						<div className="px-5 py-2 bg-muted/40 border-b border-border flex items-center gap-2 overflow-x-auto">
+							<span className="text-[11px] text-muted-foreground font-medium shrink-0">
 								Version:
 							</span>
 							{generations.map((gen, idx) => (
 								<button
-									className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors shrink-0 ${(selectedGen === -1 && idx === generations.length - 1) || selectedGen === idx ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" : "bg-white dark:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100"}`}
+									className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors shrink-0 ${(selectedGen === -1 && idx === generations.length - 1) || selectedGen === idx ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground hover:bg-muted"}`}
 									key={gen._id}
 									onClick={() => setSelectedGen(idx)}
 									type="button"
@@ -428,29 +423,17 @@ function NoteCard({
 
 					<Tabs onValueChange={setActiveTab} value={activeTab}>
 						<div className="px-5 pt-3">
-							<TabsList className="bg-gray-100 dark:bg-zinc-800 w-full p-1 h-10 rounded-xl grid grid-cols-4">
-								<TabsTrigger
-									className="text-xs font-semibold rounded-lg gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
-									value="summary"
-								>
+							<TabsList className="grid w-full grid-cols-4">
+								<TabsTrigger className="gap-1.5" value="summary">
 									<FileText className="w-3.5 h-3.5" /> Summary
 								</TabsTrigger>
-								<TabsTrigger
-									className="text-xs font-semibold rounded-lg gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
-									value="tasks"
-								>
+								<TabsTrigger className="gap-1.5" value="tasks">
 									<CheckSquare className="w-3.5 h-3.5" /> Tasks
 								</TabsTrigger>
-								<TabsTrigger
-									className="text-xs font-semibold rounded-lg gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
-									value="decisions"
-								>
+								<TabsTrigger className="gap-1.5" value="decisions">
 									<Target className="w-3.5 h-3.5" /> Decisions
 								</TabsTrigger>
-								<TabsTrigger
-									className="text-xs font-semibold rounded-lg gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
-									value="transcript"
-								>
+								<TabsTrigger className="gap-1.5" value="transcript">
 									<MessageSquare className="w-3.5 h-3.5" /> Transcript
 								</TabsTrigger>
 							</TabsList>
@@ -461,18 +444,18 @@ function NoteCard({
 							<TabsContent className="m-0" value="summary">
 								{currentGen?.summary || note.summary ? (
 									<div className="space-y-3">
-										<h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-											<FileText className="w-3.5 h-3.5 text-blue-500" />{" "}
+										<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+											<FileText className="w-3.5 h-3.5 text-primary" />{" "}
 											Executive Summary
 										</h4>
-										<div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-zinc-900 dark:to-zinc-800 p-5 rounded-2xl border border-blue-100 dark:border-zinc-700">
-											<p className="text-sm text-gray-800 dark:text-gray-200 leading-[1.8]">
+										<div className="bg-muted/40 p-5 rounded-2xl border border-border">
+											<p className="text-sm text-foreground leading-[1.8]">
 												{currentGen?.summary || note.summary}
 											</p>
 										</div>
 									</div>
 								) : (
-									<div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2">
+									<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
 										<FileText className="w-8 h-8 opacity-30" />
 										<p className="text-sm font-medium">
 											No summary generated yet
@@ -493,13 +476,13 @@ function NoteCard({
 										return (
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
-													<h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-														<CheckSquare className="w-3.5 h-3.5 text-emerald-500" />{" "}
+													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+														<CheckSquare className="w-3.5 h-3.5 text-success" />{" "}
 														Action Items
 													</h4>
 													<div className="flex items-center gap-2">
 														<Button
-															className="h-7 text-[10px] font-bold gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
+															className="h-7 text-[10px] font-bold gap-1 bg-success/10 text-success hover:bg-success/15 border-success/20"
 															disabled={isPushingTasks}
 															onClick={async () => {
 																try {
@@ -528,58 +511,58 @@ function NoteCard({
 															variant="outline"
 														>
 															{isPushingTasks ? (
-																<div className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent" />
+																<div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
 															) : (
 																<Target className="w-3 h-3" />
 															)}
 															Push to Dashboard
 														</Button>
-														<span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+														<Badge
+															className="text-[10px] font-bold"
+															variant="success"
+														>
 															{genItems.length} tasks
-														</span>
+														</Badge>
 													</div>
 												</div>
 												<div className="space-y-2">
 													{genItems.map((task, i) => (
 														<div
-															className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 rounded-xl hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors group"
+															className="bg-card border border-border p-4 rounded-xl hover:border-primary/30 transition-colors group"
 															key={i}
 														>
 															<div className="flex items-start gap-3">
-																<div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0 mt-0.5">
-																	<span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+																<div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+																	<span className="text-[11px] font-bold text-primary">
 																		{i + 1}
 																	</span>
 																</div>
 																<div className="flex-1 min-w-0">
-																	<p className="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
+																	<p className="text-sm font-semibold text-foreground leading-snug">
 																		{task.title}
 																	</p>
 																	<div className="flex items-center gap-2 mt-2 flex-wrap">
 																		{task.assignee && (
-																			<span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
-																				<span className="w-3 h-3 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center text-[7px] font-black text-blue-800 dark:text-blue-200">
+																			<span className="inline-flex items-center gap-1 text-[10px] font-bold bg-muted text-foreground px-2 py-0.5 rounded-full">
+																				<span className="w-3 h-3 rounded-full bg-primary/15 flex items-center justify-center text-[7px] font-black text-primary">
 																					{task.assignee[0]?.toUpperCase()}
 																				</span>
 																				{task.assignee}
 																			</span>
 																		)}
 																		{task.priority && (
-																			<span
-																				className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-																					task.priority === "high"
-																						? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-																						: task.priority === "medium"
-																							? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-																							: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-																				}`}
+																			<Badge
+																				className="text-[10px] font-bold"
+																				variant={priorityBadgeVariant(
+																					task.priority
+																				)}
 																			>
 																				{task.priority.charAt(0).toUpperCase() +
 																					task.priority.slice(1)}
-																			</span>
+																			</Badge>
 																		)}
 																		{task.dueDate && (
-																			<span className="text-[10px] font-medium text-gray-400 flex items-center gap-1">
+																			<span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
 																				<Clock className="w-3 h-3" />{" "}
 																				{task.dueDate}
 																			</span>
@@ -596,13 +579,16 @@ function NoteCard({
 										return (
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
-													<h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-														<CheckSquare className="w-3.5 h-3.5 text-emerald-500" />{" "}
+													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+														<CheckSquare className="w-3.5 h-3.5 text-success" />{" "}
 														Action Items
 													</h4>
-													<span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+													<Badge
+														className="text-[10px] font-bold"
+														variant="success"
+													>
 														{noteItems.length} tasks
-													</span>
+													</Badge>
 												</div>
 												<div className="space-y-2">
 													{noteItems.map((item: string, i: number) => {
@@ -628,36 +614,39 @@ function NoteCard({
 															: null;
 														return (
 															<div
-																className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 rounded-xl hover:border-emerald-200 transition-colors"
+																className="bg-card border border-border p-4 rounded-xl hover:border-primary/30 transition-colors"
 																key={i}
 															>
 																<div className="flex items-start gap-3">
-																	<div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0 mt-0.5">
-																		<span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+																	<div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+																		<span className="text-[11px] font-bold text-primary">
 																			{i + 1}
 																		</span>
 																	</div>
 																	<div className="flex-1 min-w-0">
-																		<p className="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
+																		<p className="text-sm font-semibold text-foreground leading-snug">
 																			{taskTitle}
 																		</p>
 																		{(assignee || priority) && (
 																			<div className="flex items-center gap-2 mt-2 flex-wrap">
 																				{assignee && (
-																					<span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
-																						<span className="w-3 h-3 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center text-[7px] font-black text-blue-800 dark:text-blue-200">
+																					<span className="inline-flex items-center gap-1 text-[10px] font-bold bg-muted text-foreground px-2 py-0.5 rounded-full">
+																						<span className="w-3 h-3 rounded-full bg-primary/15 flex items-center justify-center text-[7px] font-black text-primary">
 																							{assignee[0]?.toUpperCase()}
 																						</span>
 																						{assignee}
 																					</span>
 																				)}
 																				{priority && (
-																					<span
-																						className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priority === "high" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" : priority === "medium" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"}`}
+																					<Badge
+																						className="text-[10px] font-bold"
+																						variant={priorityBadgeVariant(
+																							priority
+																						)}
 																					>
 																						{priority.charAt(0).toUpperCase() +
 																							priority.slice(1)}
-																					</span>
+																					</Badge>
 																				)}
 																			</div>
 																		)}
@@ -671,7 +660,7 @@ function NoteCard({
 										);
 									} else {
 										return (
-											<div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2">
+											<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
 												<CheckSquare className="w-8 h-8 opacity-30" />
 												<p className="text-sm font-medium">
 													No action items found
@@ -696,27 +685,30 @@ function NoteCard({
 										return (
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
-													<h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-														<Target className="w-3.5 h-3.5 text-purple-500" />{" "}
-														Key Decisions
+													<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+														<Target className="w-3.5 h-3.5 text-primary" /> Key
+														Decisions
 													</h4>
-													<span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+													<Badge
+														className="text-[10px] font-bold"
+														variant="primarySoft"
+													>
 														{items.length} decisions
-													</span>
+													</Badge>
 												</div>
 												<div className="space-y-2">
 													{items.map((d: string, i: number) => (
 														<div
-															className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 rounded-xl hover:border-purple-200 dark:hover:border-purple-800 transition-colors"
+															className="bg-card border border-border p-4 rounded-xl hover:border-primary/30 transition-colors"
 															key={i}
 														>
 															<div className="flex items-start gap-3">
-																<div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0 mt-0.5">
-																	<span className="text-[11px] font-bold text-purple-700 dark:text-purple-400">
+																<div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+																	<span className="text-[11px] font-bold text-primary">
 																		{i + 1}
 																	</span>
 																</div>
-																<p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">
+																<p className="text-sm font-medium text-foreground leading-snug">
 																	{d}
 																</p>
 															</div>
@@ -727,7 +719,7 @@ function NoteCard({
 										);
 									} else {
 										return (
-											<div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2">
+											<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
 												<Target className="w-8 h-8 opacity-30" />
 												<p className="text-sm font-medium">
 													No decisions recorded
@@ -743,20 +735,20 @@ function NoteCard({
 								{note.transcript ? (
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
-											<h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-												<MessageSquare className="w-3.5 h-3.5 text-gray-400" />{" "}
+											<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+												<MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 												Full Transcript
 											</h4>
-											<span className="text-[10px] font-medium text-gray-400">
+											<span className="text-[10px] font-medium text-muted-foreground">
 												{note.transcript.length.toLocaleString()} characters
 											</span>
 										</div>
-										<div className="text-[12px] text-gray-600 dark:text-gray-400 font-mono bg-gray-50 dark:bg-zinc-900 p-5 rounded-2xl whitespace-pre-wrap max-h-[400px] overflow-y-auto leading-relaxed border border-gray-100 dark:border-zinc-800 selection:bg-blue-100">
+										<div className="text-[12px] text-muted-foreground font-mono bg-muted/40 p-5 rounded-2xl whitespace-pre-wrap max-h-[400px] overflow-y-auto leading-relaxed border border-border selection:bg-primary/15">
 											{note.transcript}
 										</div>
 									</div>
 								) : (
-									<div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2">
+									<div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
 										<MessageSquare className="w-8 h-8 opacity-30" />
 										<p className="text-sm font-medium">
 											No transcript available

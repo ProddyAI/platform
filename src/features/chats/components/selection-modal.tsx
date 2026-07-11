@@ -222,8 +222,8 @@ export const SelectionModal = () => {
 			)}
 
 			<div className="fixed inset-x-3 bottom-20 z-50 sm:inset-x-auto sm:bottom-6 sm:right-6">
-				<div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2 shadow-lg sm:flex-nowrap">
-					<span className="whitespace-nowrap pl-2 text-sm font-medium">
+				<div className="flex flex-wrap items-center gap-2 rounded-full border border-border bg-card px-3 py-2 shadow-md sm:flex-nowrap">
+					<span className="whitespace-nowrap pl-1 text-sm font-medium">
 						{selectedMessages.length}{" "}
 						{selectedMessages.length === 1 ? "message" : "messages"} selected
 					</span>

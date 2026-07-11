@@ -5,6 +5,8 @@ import { CheckSquare, Loader, Search, SlidersHorizontal } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { EmptyState } from "@/components/empty-state";
+import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -184,77 +186,69 @@ const TasksContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 	return (
 		<div className="flex h-full flex-col">
-			<div className="flex flex-1 bg-background overflow-hidden">
-				<div className="flex-1 overflow-y-auto">
-					<div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
-						<div className="mb-6 md:mb-8 space-y-4">
-							<div className="flex items-center gap-2">
-								<div className="relative flex-1">
-									<Input
-										className="pl-10 w-full bg-muted/50 focus:bg-background"
-										onChange={(e) => setSearchQuery(e.target.value)}
-										placeholder="Search tasks..."
-										value={searchQuery}
-									/>
-									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								</div>
-								<Button
-									aria-label="Open task filters"
-									className="md:hidden"
-									onClick={() => setFiltersOpen(true)}
-									size="iconSm"
-									variant="outline"
-								>
-									<SlidersHorizontal className="size-4" />
-								</Button>
-							</div>
+			<div className="flex flex-1 overflow-hidden">
+				<PageShell className="max-w-3xl" maxWidth="full">
+					<div className="flex items-center gap-2">
+						<div className="relative flex-1">
+							<Input
+								className="rounded-full bg-muted/50 pl-10 focus:bg-card"
+								onChange={(e) => setSearchQuery(e.target.value)}
+								placeholder="Search tasks..."
+								value={searchQuery}
+							/>
+							<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						</div>
+						<Button
+							aria-label="Open task filters"
+							className="md:hidden"
+							onClick={() => setFiltersOpen(true)}
+							size="iconSm"
+							variant="outline"
+						>
+							<SlidersHorizontal className="size-4" />
+						</Button>
+					</div>
 
-						{isLoading ? (
-							<div className="flex h-40 items-center justify-center">
-								<Loader className="h-6 w-6 animate-spin text-secondary" />
-							</div>
-						) : (
-							<div className="space-y-6 pb-8">
-								<div className="space-y-4">
-									{filteredTasks.length === 0 ? (
-										<div className="flex flex-col items-center justify-center py-16 text-center bg-muted/50 rounded-xl border border-dashed border-border">
-											<div className="rounded-full bg-muted p-4">
-												<CheckSquare className="h-8 w-8 text-muted-foreground" />
-											</div>
-											<h3 className="mt-4 text-xl font-semibold text-foreground">
-												No tasks found
-											</h3>
-											<p className="mt-2 text-muted-foreground max-w-md mx-auto">
-												{searchQuery ||
-												filterOptions.status !== "all" ||
-												filterOptions.priority !== "all" ||
-												filterOptions.dueDate !== "all" ||
-												filterOptions.categoryId !== null
-													? "Try adjusting your filters or search query"
-													: "Create your first task to get started"}
-											</p>
-										</div>
-									) : (
-										<TaskToggleView
-											tasks={filteredTasks}
-											workspaceId={workspaceId}
-										/>
-									)}
-								</div>
-								<div className="pt-4 border-t border-border">
-									<h2 className="text-lg font-medium text-foreground mb-4">
-										Create a new task
-									</h2>
-									<TaskCreateForm
-										onSuccess={handleTaskCreated}
+					{isLoading ? (
+						<div className="flex h-40 items-center justify-center">
+							<Loader className="h-6 w-6 animate-spin text-primary" />
+						</div>
+					) : (
+						<div className="space-y-6">
+							<div className="space-y-4">
+								{filteredTasks.length === 0 ? (
+									<EmptyState
+										description={
+											searchQuery ||
+											filterOptions.status !== "all" ||
+											filterOptions.priority !== "all" ||
+											filterOptions.dueDate !== "all" ||
+											filterOptions.categoryId !== null
+												? "Try adjusting your filters or search query"
+												: "Create your first task to get started"
+										}
+										icon={CheckSquare}
+										title="No tasks found"
+									/>
+								) : (
+									<TaskToggleView
+										tasks={filteredTasks}
 										workspaceId={workspaceId}
 									/>
-								</div>
+								)}
 							</div>
-						)}
-					</div>
-				</div>
+							<div className="pt-4 border-t border-border">
+								<h2 className="text-lg font-medium text-foreground mb-4">
+									Create a new task
+								</h2>
+								<TaskCreateForm
+									onSuccess={handleTaskCreated}
+									workspaceId={workspaceId}
+								/>
+							</div>
+						</div>
+					)}
+				</PageShell>
 
 				<Sheet onOpenChange={setFiltersOpen} open={filtersOpen}>
 					<SheetContent className="w-[280px] p-0" side="right">

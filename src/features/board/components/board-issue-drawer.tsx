@@ -167,7 +167,7 @@ const DrawerHeader = ({
 	parentIssue,
 	onBackToParent,
 }: DrawerHeaderProps) => (
-	<div className="flex items-center justify-between px-5 py-3 border-b border-border/50 dark:border-gray-800/80 bg-muted/20 dark:bg-gray-900/50 shrink-0">
+	<div className="flex items-center justify-between px-5 py-3 border-b border-border/50 bg-muted/20 shrink-0">
 		<div className="flex items-center gap-1.5 text-xs text-muted-foreground overflow-hidden">
 			{parentIssue && onBackToParent && (
 				<Button
@@ -299,7 +299,7 @@ const IssueContent = ({
 			/>
 
 			<Textarea
-				className="min-h-[90px] text-sm bg-muted/20 dark:bg-gray-800/20 border-border/30 resize-none focus-visible:ring-1 focus-visible:ring-primary/30 placeholder:text-muted-foreground/40"
+				className="min-h-[90px] text-sm bg-muted/20 border-border/30 resize-none focus-visible:ring-1 focus-visible:ring-primary/30 placeholder:text-muted-foreground/40"
 				onBlur={onBlur}
 				onChange={(e) => onDescriptionChange(e.target.value)}
 				placeholder="Add a description..."
@@ -311,7 +311,7 @@ const IssueContent = ({
 			<div className="space-y-3">
 				<PropertyRow label="Status">
 					<Select onValueChange={onStatusChange} value={statusId}>
-						<SelectTrigger className="h-8 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
+						<SelectTrigger className="h-8 rounded-full px-3 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
 							<SelectValue placeholder="Set status">
 								{currentStatus && (
 									<span className="flex items-center gap-2">
@@ -342,7 +342,7 @@ const IssueContent = ({
 
 				<PropertyRow label="Priority">
 					<Select onValueChange={onPriorityChange} value={priority}>
-						<SelectTrigger className="h-8 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
+						<SelectTrigger className="h-8 rounded-full px-3 text-xs border-border/30 bg-transparent hover:bg-muted/40 focus:ring-1 focus:ring-primary/30">
 							<SelectValue placeholder="Set priority">
 								<span className="flex items-center gap-2">
 									{priorityIcon(priority, "w-3.5 h-3.5")}
@@ -377,7 +377,7 @@ const IssueContent = ({
 						<PopoverTrigger asChild>
 							<Button
 								className={cn(
-									"h-8 w-full text-xs justify-start font-normal px-3 border border-border/30 hover:bg-muted/40 focus:ring-1 focus:ring-primary/30",
+									"h-8 w-full rounded-full text-xs justify-start font-normal px-3 border border-border/30 hover:bg-muted/40 focus:ring-1 focus:ring-primary/30",
 									!dueDate && "text-muted-foreground"
 								)}
 								variant="ghost"
@@ -411,7 +411,7 @@ const IssueContent = ({
 								{labels.map((label) => (
 									<button
 										aria-label={`Remove ${label}`}
-										className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-secondary hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer border-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+										className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-foreground hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer border-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
 										key={label}
 										onClick={() =>
 											onLabelsChange(labels.filter((l) => l !== label))
@@ -426,7 +426,7 @@ const IssueContent = ({
 						)}
 						<div className="flex gap-2">
 							<Input
-								className="flex-1 h-8 text-xs bg-muted/20 dark:bg-gray-800/20 border border-border/30 rounded-md px-3 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-colors"
+								className="flex-1 h-8 text-xs bg-muted/20 border border-border/30 rounded-md px-3 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-colors"
 								onChange={(e) => onLabelInputChange(e.target.value)}
 								onKeyDown={(e) => {
 									if (e.key === "Enter") {
@@ -627,7 +627,7 @@ const SubIssuesSection = ({
 								className={cn(
 									"w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center",
 									isCompleted
-										? !status?.color && "border-green-600 bg-green-600"
+										? !status?.color && "border-success bg-success"
 										: "border-border bg-transparent"
 								)}
 								style={
@@ -680,7 +680,7 @@ const SubIssuesSection = ({
 									className={cn(
 										"h-6 w-6",
 										isCompleted
-											? "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+											? "text-success hover:bg-success/10"
 											: "text-muted-foreground hover:bg-muted/60"
 									)}
 									onClick={(e) => {
@@ -917,7 +917,7 @@ const BlockingSection = ({
 						onClick={() => onClickIssue(blockedIssue)}
 					>
 						<div className="flex items-center gap-2 flex-1 min-w-0">
-							<div className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0" />
+							<div className="w-1.5 h-1.5 rounded-full bg-warning flex-shrink-0" />
 							<span className="text-sm truncate">
 								{formatIssueId(blockedIssue._id)} - {blockedIssue.title}
 							</span>
@@ -964,7 +964,7 @@ const BlockingSection = ({
 						>
 							<div className="flex items-start justify-between gap-2">
 								<div className="flex items-start gap-2 flex-1 min-w-0">
-									<div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0 mt-2" />
+									<div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-2" />
 									<div className="min-w-0">
 										<div className="text-sm truncate">
 											{formatIssueId(blockingIssue._id)} - {blockingIssue.title}
@@ -1018,7 +1018,7 @@ const BlockingSection = ({
 			<div>
 				<div className="flex items-center justify-between mb-2">
 					<div className="flex items-center gap-2">
-						<Shield className="w-4 h-4 text-orange-500" />
+						<Shield className="w-4 h-4 text-warning" />
 						<h3 className="text-sm font-semibold">Blocking</h3>
 						{blockingIssues && blockingIssues.length > 0 && (
 							<span className="text-xs text-muted-foreground">
@@ -1029,7 +1029,7 @@ const BlockingSection = ({
 					</div>
 					{availableForBlocking.length > 0 && (
 						<Select onValueChange={handleSelectBlocking} value="">
-							<SelectTrigger className="h-7 w-44 text-xs">
+							<SelectTrigger className="h-7 w-44 rounded-full text-xs">
 								<SelectValue placeholder="Add blocking issue..." />
 							</SelectTrigger>
 							<SelectContent>
@@ -1051,7 +1051,7 @@ const BlockingSection = ({
 			<div>
 				<div className="flex items-center justify-between mb-2">
 					<div className="flex items-center gap-2">
-						<Shield className="w-4 h-4 text-blue-500 rotate-180" />
+						<Shield className="w-4 h-4 text-primary rotate-180" />
 						<h3 className="text-sm font-semibold">Blocked By</h3>
 						{blockedByIssuesDetailed && blockedByIssuesDetailed.length > 0 && (
 							<span className="text-xs text-muted-foreground">
@@ -1062,7 +1062,7 @@ const BlockingSection = ({
 					</div>
 					{availableForBlocking.length > 0 && (
 						<Select onValueChange={handleSelectBlockedBy} value="">
-							<SelectTrigger className="h-7 w-44 text-xs">
+							<SelectTrigger className="h-7 w-44 rounded-full text-xs">
 								<SelectValue placeholder="Add blocked by issue..." />
 							</SelectTrigger>
 							<SelectContent>
@@ -1215,7 +1215,7 @@ interface DrawerFooterProps {
 }
 
 const DrawerFooter = ({ issueId, justSaved }: DrawerFooterProps) => (
-	<div className="px-5 py-3 border-t border-border/40 dark:border-gray-800/80 bg-muted/10 flex items-center justify-between shrink-0">
+	<div className="px-5 py-3 border-t border-border/40 bg-muted/10 flex items-center justify-between shrink-0">
 		<span className="text-[11px] text-muted-foreground font-mono">
 			{formatIssueId(issueId)}
 		</span>
@@ -1434,7 +1434,7 @@ const BoardIssueDrawer: React.FC<BoardIssueDrawerProps> = ({
 		<>
 			<Sheet onOpenChange={onOpenChange} open={open}>
 				<SheetContent
-					className="w-full sm:max-w-[580px] p-0 flex flex-col gap-0 border-l border-border/60 dark:border-gray-800 overflow-hidden"
+					className="w-full sm:max-w-[580px] p-0 flex flex-col gap-0 border-l border-border/60 overflow-hidden"
 					showCloseButton={false}
 					side="right"
 				>

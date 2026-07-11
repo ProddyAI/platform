@@ -91,7 +91,7 @@ export const TaskEditForm = ({
 
 	return (
 		<form
-			className="p-4 rounded-lg border bg-card shadow-md"
+			className="p-4 rounded-2xl border bg-card shadow-md"
 			onSubmit={handleSubmit}
 		>
 			<div className="space-y-3">

@@ -780,30 +780,6 @@ a.user-mention:hover {
 	border-width: 2px;
 }
 
-/* Chat send button styling for dark mode (dashboard-chatbot; owned by the
-	 assistant restyle package — remove once that migrates to Button variants) */
-.dark .chat-send-button {
-	background-color: rgba(236, 72, 153, 0.2) !important;
-	color: rgba(236, 72, 153, 0.95) !important;
-	border: 1px solid rgba(236, 72, 153, 0.35) !important;
-	transition: all 0.2s ease-in-out !important;
-}
-
-.dark .chat-send-button:hover:not(:disabled) {
-	background-color: rgba(236, 72, 153, 0.35) !important;
-	color: rgba(255, 255, 255, 0.98) !important;
-	border-color: rgba(236, 72, 153, 0.55) !important;
-	box-shadow: 0 0 16px rgba(236, 72, 153, 0.25) !important;
-	transform: translateY(-1px) scale(1.05) !important;
-}
-
-.dark .chat-send-button:disabled {
-	background-color: rgba(236, 72, 153, 0.08) !important;
-	color: rgba(236, 72, 153, 0.4) !important;
-	border-color: rgba(236, 72, 153, 0.15) !important;
-	opacity: 0.5 !important;
-}
-
 /* NOTE: the old `.dark button[class*="bg-secondary"]` softening hack was removed
 	 with the A2 primitive restyle — Button `secondary`, Switch and Checkbox no longer
 	 use `bg-secondary`, and `--secondary` is now an AI-accent/marketing garnish only. */

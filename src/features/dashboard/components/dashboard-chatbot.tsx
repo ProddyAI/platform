@@ -148,7 +148,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "List repositories, create issues, manage pull requests",
 		examplePrompt: "List my repositories",
 		icon: Github,
-		iconClassName: "text-gray-800 dark:text-gray-200",
+		iconClassName: "text-muted-foreground",
 	},
 	GMAIL: {
 		name: "Gmail",
@@ -156,7 +156,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Send emails, read inbox messages, and manage drafts",
 		examplePrompt: "Send an email to [email]",
 		icon: Mail,
-		iconClassName: "text-red-600",
+		iconClassName: "text-muted-foreground",
 	},
 	SLACK: {
 		name: "Slack",
@@ -164,7 +164,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Send messages, browse channels, and review discussions",
 		examplePrompt: "Post a Slack update to #team",
 		icon: MessageSquare,
-		iconClassName: "text-violet-600",
+		iconClassName: "text-muted-foreground",
 	},
 	NOTION: {
 		name: "Notion",
@@ -172,7 +172,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Create pages, query databases, and find Notion content",
 		examplePrompt: "Create a Notion page for sprint notes",
 		icon: FileText,
-		iconClassName: "text-slate-700 dark:text-slate-200",
+		iconClassName: "text-muted-foreground",
 	},
 	CLICKUP: {
 		name: "ClickUp",
@@ -180,7 +180,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Create tasks, manage lists, and track project work",
 		examplePrompt: "Create a ClickUp task for release QA",
 		icon: CheckSquare,
-		iconClassName: "text-pink-600",
+		iconClassName: "text-muted-foreground",
 	},
 	LINEAR: {
 		name: "Linear",
@@ -188,7 +188,7 @@ const INTEGRATION_METADATA: Record<
 		welcomeCapability: "Create issues, update projects, and review team work",
 		examplePrompt: "Create a Linear issue for onboarding bug",
 		icon: Kanban,
-		iconClassName: "text-blue-600",
+		iconClassName: "text-muted-foreground",
 	},
 };
 
@@ -304,9 +304,9 @@ function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
 	const metadata = getIntegrationMetadata(app.app);
 	const Icon = metadata?.icon ?? Zap;
 	return (
-		<div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-950/30 rounded border">
+		<div className="flex items-center gap-3 rounded-lg border border-success/20 bg-success/10 p-2">
 			<Icon
-				className={`h-4 w-4 ${metadata?.iconClassName ?? "text-green-700 dark:text-green-300"}`}
+				className={`h-4 w-4 ${metadata?.iconClassName ?? "text-success"}`}
 			/>
 			<div className="flex-1">
 				<div className="font-medium text-sm">{metadata?.name ?? app.app}</div>
@@ -315,7 +315,7 @@ function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
 						"Connected and available for assistant actions"}
 				</div>
 			</div>
-			<CheckCircle className="h-4 w-4 text-green-600" />
+			<CheckCircle className="h-4 w-4 text-success" />
 		</div>
 	);
 }
@@ -331,12 +331,12 @@ function ConnectedIntegrationsPopover({
 		<Popover>
 			<PopoverTrigger asChild>
 				<Button
-					className="h-5 px-2 text-xs hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
+					className="h-5 px-2 text-xs hover:bg-success/10 transition-standard"
 					size="sm"
 					variant="ghost"
 				>
-					<Zap className="h-3 w-3 mr-1 text-green-600" />
-					<span className="text-green-700 dark:text-green-300 font-medium">
+					<Zap className="h-3 w-3 mr-1 text-success" />
+					<span className="text-success font-medium">
 						{connected.length} connected
 					</span>
 				</Button>
@@ -344,7 +344,7 @@ function ConnectedIntegrationsPopover({
 			<PopoverContent className="w-80 p-3">
 				<div className="space-y-3">
 					<h4 className="font-medium text-sm flex items-center gap-2">
-						<CheckCircle className="h-4 w-4 text-green-600" />
+						<CheckCircle className="h-4 w-4 text-success" />
 						Connected Integrations
 					</h4>
 					<div className="space-y-2">
@@ -451,7 +451,7 @@ function ChatHeaderActions({
 	return (
 		<div className="flex items-center gap-2">
 			<Button
-				className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-md"
+				className="h-8 px-3 shadow-sm hover:shadow-md"
 				onClick={onNewChat}
 				size="sm"
 				variant="default"
@@ -462,11 +462,7 @@ function ChatHeaderActions({
 
 			<DropdownMenu onOpenChange={setIsHistoryOpen} open={isHistoryOpen}>
 				<DropdownMenuTrigger asChild>
-					<Button
-						className="h-8 px-3 rounded-lg border-2 hover:bg-accent transition-all"
-						size="sm"
-						variant="outline"
-					>
+					<Button className="h-8 px-3" size="sm" variant="outline">
 						<History className="h-4 w-4 mr-1.5" />
 						Recent Chats
 						<ChevronDown className="h-3 w-3 ml-1.5 opacity-50" />
@@ -653,7 +649,7 @@ const MARKDOWN_COMPONENTS = {
 
 function AssistantMarkdown({ content }: { content: string }) {
 	return (
-		<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300 prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
+		<div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-2 prose-headings:mb-2 prose-p:my-1 prose-blockquote:my-2 prose-blockquote:pl-3 prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:italic prose-blockquote:text-muted-foreground prose-h2:text-primary prose-h3:text-primary/90 prose-h4:text-primary/80 prose-strong:font-semibold prose-ul:my-1 prose-li:my-0.5 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-pre:overflow-x-auto">
 			<ReactMarkdown
 				components={MARKDOWN_COMPONENTS}
 				remarkPlugins={[remarkGfm]}
@@ -746,7 +742,7 @@ function MessageSourceBadges({ sources }: { sources: Message["sources"] }) {
 	if (!sources || sources.length === 0) return null;
 
 	return (
-		<div className="mt-3 rounded-md border border-border/70 bg-background/70 p-3">
+		<div className="mt-3 rounded-2xl border bg-card p-3">
 			<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 				Sources
 			</p>
@@ -794,7 +790,7 @@ function ConversationTitleEditor({
 				size="sm"
 				variant="ghost"
 			>
-				<Check className="h-4 w-4 text-green-600" />
+				<Check className="h-4 w-4 text-success" />
 			</Button>
 			<Button
 				aria-label="Cancel"
@@ -845,7 +841,7 @@ function DashboardChatHeader({
 	setIsHistoryOpen: (open: boolean) => void;
 }) {
 	return (
-		<CardHeader className="pb-3 border-b bg-gradient-to-r from-background to-muted/20">
+		<CardHeader className="pb-3 border-b">
 			<div className="flex items-center justify-between">
 				<ChatHeaderTitle status={integrationStatus} />
 				<ChatHeaderActions
@@ -1024,7 +1020,6 @@ function ChatComposer({
 				) : (
 					<Button
 						aria-label="Send message"
-						className="chat-send-button"
 						disabled={!input.trim()}
 						onClick={onSend}
 						size="icon"
@@ -1113,7 +1108,7 @@ function DashboardChatMainCard({
 	onStop: () => void;
 }) {
 	return (
-		<Card className="flex flex-col flex-1 shadow-md overflow-hidden">
+		<Card className="flex flex-col flex-1 shadow-sm overflow-hidden">
 			<DashboardChatHeader
 				conversationId={conversationId}
 				editingConversationId={editingConversationId}

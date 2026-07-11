@@ -253,13 +253,13 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	const getPriorityColor = (priority: IssuePriority | undefined) => {
 		switch (priority) {
 			case "urgent":
-				return "bg-red-500";
+				return "bg-destructive";
 			case "high":
-				return "bg-orange-500";
+				return "bg-warning";
 			case "medium":
-				return "bg-yellow-500";
+				return "bg-primary";
 			case "low":
-				return "bg-blue-400";
+				return "bg-muted-foreground";
 			default:
 				return "bg-muted-foreground/40";
 		}
@@ -268,43 +268,43 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	const getPriorityBadgeBg = (priority: IssuePriority | undefined) => {
 		switch (priority) {
 			case "urgent":
-				return "bg-red-500/10";
+				return "bg-destructive/10";
 			case "high":
-				return "bg-orange-500/10";
+				return "bg-warning/10";
 			case "medium":
-				return "bg-yellow-500/10";
+				return "bg-primary/10";
 			case "low":
-				return "bg-blue-400/10";
+				return "bg-muted-foreground/10";
 			default:
 				return "bg-muted-foreground/10";
 		}
 	};
 
-	const getSolidPriorityColor = (priority: IssuePriority | undefined) => {
+	const getPriorityBarClass = (priority: IssuePriority | undefined) => {
 		switch (priority) {
 			case "urgent":
-				return "#ef4444";
+				return "bg-destructive border-destructive";
 			case "high":
-				return "#f97316";
+				return "bg-warning border-warning";
 			case "medium":
-				return "#eab308";
+				return "bg-primary border-primary";
 			case "low":
-				return "#60a5fa";
+				return "bg-muted-foreground border-muted-foreground";
 			default:
-				return "#9ca3af";
+				return "bg-muted-foreground/40 border-muted-foreground/40";
 		}
 	};
 
 	const getPriorityTextColor = (priority: IssuePriority | undefined) => {
 		switch (priority) {
 			case "urgent":
-				return "text-red-500";
+				return "text-destructive";
 			case "high":
-				return "text-orange-500";
+				return "text-warning";
 			case "medium":
-				return "text-yellow-500";
+				return "text-primary";
 			case "low":
-				return "text-blue-400";
+				return "text-muted-foreground";
 			default:
 				return "text-muted-foreground";
 		}
@@ -361,7 +361,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 	return (
 		<div className="h-full flex flex-col bg-card">
 			{/* Gantt Chart Controls */}
-			<div className="p-3 border-b border-border flex items-center justify-between bg-gradient-to-r from-secondary/5 to-secondary/5">
+			<div className="p-3 border-b border-border flex items-center justify-between bg-muted/30">
 				<div className="text-sm font-medium text-muted-foreground">
 					Showing {tasks.length} tasks with due dates across {statuses.length}{" "}
 					statuses
@@ -441,17 +441,11 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
             background: transparent;
           }
           ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: hsl(var(--border));
             border-radius: 4px;
           }
-          .dark ::-webkit-scrollbar-thumb {
-            background: #4b5563;
-          }
           ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-          }
-          .dark ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
+            background: hsl(var(--muted-foreground));
           }
         `}</style>
 				{/* Timeline Header */}
@@ -469,7 +463,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 								<div
 									className={cn(
 										isSameDay(date, new Date())
-											? "bg-secondary/10 dark:bg-secondary/20 text-secondary dark:text-secondary-foreground rounded-full px-2 py-0.5 inline-block"
+											? "bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block"
 											: "text-foreground"
 									)}
 								>
@@ -537,7 +531,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 													className={cn(
 														"flex-1 border-r border-border last:border-r-0",
 														isSameDay(date, new Date())
-															? "bg-secondary/5 dark:bg-secondary/10"
+															? "bg-primary/5"
 															: index % 2 === 0 && "bg-muted/30"
 													)}
 													key={date.getTime()}
@@ -566,7 +560,10 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 													>
 														<button
 															aria-label={`Open task ${row.task.title}`}
-															className="absolute h-[24px] top-[5px] rounded-md border-2 shadow-sm cursor-default"
+															className={cn(
+																"absolute h-[24px] top-[5px] rounded-md border-2 shadow-sm cursor-default",
+																getPriorityBarClass(row.task.priority)
+															)}
 															onClick={() => setSelectedTask(row.task || null)}
 															onKeyDown={(e) => {
 																if (e.key === "Enter" || e.key === " ") {
@@ -574,15 +571,7 @@ const BoardGanttView: React.FC<BoardGanttViewProps> = ({
 																	setSelectedTask(row.task || null);
 																}
 															}}
-															style={{
-																...style,
-																backgroundColor: getSolidPriorityColor(
-																	row.task.priority
-																),
-																borderColor: getSolidPriorityColor(
-																	row.task.priority
-																),
-															}}
+															style={style}
 															type="button"
 														>
 															<div className="absolute inset-0 flex items-center px-2 overflow-hidden">

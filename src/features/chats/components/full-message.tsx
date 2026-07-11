@@ -61,10 +61,10 @@ export const FullMessage = ({
 		<>
 			<div
 				className={cn(
-					"group relative flex items-start gap-2 md:gap-3 p-2 md:p-3 hover:bg-muted/60 transition-standard hover:shadow-sm rounded-[10px]",
-					isEditing && "bg-secondary/20 hover:bg-secondary/20",
+					"group relative flex items-start gap-2 md:gap-3 p-2 md:p-3 hover:bg-muted/60 transition-standard hover:shadow-sm rounded-lg",
+					isEditing && "bg-primary/10 hover:bg-primary/10",
 					isPending && "opacity-60 motion-reduce:transition-none",
-					isSelected && "bg-secondary/10 hover:bg-secondary/10",
+					isSelected && "bg-primary/5 hover:bg-primary/5",
 					isAuthor && "flex-row-reverse"
 				)}
 				onContextMenu={handleContextMenu}

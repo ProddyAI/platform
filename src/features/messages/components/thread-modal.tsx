@@ -358,7 +358,7 @@ export const ThreadModal = ({ isOpen, onClose, thread }: ThreadModalProps) => {
 								className={`min-w-0 max-w-full rounded-full text-xs ${
 									thread.context.type === "channel"
 										? "bg-primary/10 text-primary border-primary/30"
-										: "bg-secondary/10 text-secondary border-secondary/30"
+										: "bg-muted text-foreground border-border"
 								}`}
 								variant="outline"
 							>

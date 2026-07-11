@@ -152,7 +152,7 @@ export const MessageContent = ({
 									<div
 										className={cn(
 											"flex items-center gap-1 text-xs mt-1",
-											isAuthor ? "text-primary-foreground/80" : "text-secondary"
+											isAuthor ? "text-primary-foreground/80" : "text-primary"
 										)}
 									>
 										<CalendarIcon className="h-3 w-3" />

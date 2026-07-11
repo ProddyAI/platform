@@ -16,6 +16,8 @@ import {
 import { useMemo, useState } from "react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { EmptyState } from "@/components/empty-state";
+import { PageShell } from "@/components/page-shell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -218,7 +220,8 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 		return (
 			<Card
-				className="group hover:shadow-md transition-all duration-200 cursor-pointer"
+				className="group cursor-pointer"
+				interactive
 				key={thread.message._id}
 				onClick={() => handleOpenThread(thread)}
 			>
@@ -236,14 +239,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 									<span className="font-semibold text-sm truncate">
 										{thread.parentUser.name}
 									</span>
-									<Badge
-										className={`rounded-full text-xs flex-shrink-0 ${
-											thread.context.type === "channel"
-												? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300"
-												: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300"
-										}`}
-										variant="outline"
-									>
+									<Badge className="flex-shrink-0" variant="outline">
 										{thread.context.type === "channel" ? (
 											<span className="flex items-center gap-1">
 												<Hash className="h-3 w-3" />
@@ -268,11 +264,11 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 
 					<div className="mb-3">
 						{parsedParentBody.isSpecial ? (
-							<div className="flex items-center gap-2 rounded-md bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 p-3 border border-primary/20">
+							<div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3 border border-border">
 								{parsedParentBody.type === "canvas" ? (
-									<PaintBucket className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+									<PaintBucket className="h-5 w-5 text-primary flex-shrink-0" />
 								) : (
-									<FileText className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+									<FileText className="h-5 w-5 text-primary flex-shrink-0" />
 								)}
 								<span className="font-semibold text-sm truncate">
 									{parsedParentBody.content}
@@ -286,7 +282,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 						)}
 					</div>
 
-					<div className="flex items-start gap-2 p-2 rounded-md bg-muted/30">
+					<div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
 						<Avatar className="h-6 w-6 flex-shrink-0">
 							<AvatarImage src={thread.currentUser.image} />
 							<AvatarFallback className="text-xs">
@@ -303,7 +299,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 						</div>
 					</div>
 
-					<div className="flex items-center justify-between mt-3 pt-3 border-t">
+					<div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
 						<div className="flex items-center gap-1 text-xs text-muted-foreground">
 							<MessageCircle className="h-3.5 w-3.5" />
 							<span>
@@ -312,7 +308,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 							</span>
 						</div>
 						<Button
-							className="h-7 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950"
+							className="h-7 text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
 							onClick={(e) => {
 								e.stopPropagation();
 								handleOpenThread(thread);
@@ -333,69 +329,66 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 		<>
 			{!threads ? (
 				// Loading state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
-					<Loader className="size-12 animate-spin text-muted-foreground" />
-					<p className="text-sm text-muted-foreground">Loading threads...</p>
-				</div>
+				<PageShell>
+					<div className="flex flex-col items-center justify-center gap-y-2 py-24">
+						<Loader className="size-8 animate-spin text-muted-foreground" />
+						<p className="text-sm text-muted-foreground">Loading threads...</p>
+					</div>
+				</PageShell>
 			) : !threads.length ? (
 				// Empty state
-				<div className="flex flex-1 w-full flex-col items-center justify-center gap-y-2 bg-background">
-					<MessageSquareText className="size-12 text-muted-foreground" />
-					<h2 className="text-2xl font-semibold">Threads</h2>
-					<p className="text-sm text-muted-foreground">No threads yet.</p>
-				</div>
+				<PageShell>
+					<EmptyState
+						description="Replies you're part of will show up here."
+						icon={MessageSquareText}
+						title="No threads yet"
+					/>
+				</PageShell>
 			) : (
 				// Threads loaded state
-				<div className="flex flex-1 flex-col bg-background overflow-hidden">
-					<div className="border-b p-4 flex-shrink-0">
-						<div className="flex items-center justify-between mb-4">
-							<h2 className="text-xl font-semibold">Threads</h2>
+				<PageShell className="max-w-4xl">
+					<div className="flex items-center gap-4">
+						<div className="relative flex-1">
+							<Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								className="rounded-full border-border bg-muted/50 pl-10 focus:bg-card"
+								onChange={(e) => setSearchQuery(e.target.value)}
+								placeholder="Search threads..."
+								type="search"
+								value={searchQuery}
+							/>
 						</div>
 
-						<div className="flex items-center gap-4">
-							<div className="relative flex-1">
-								<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									onChange={(e) => setSearchQuery(e.target.value)}
-									placeholder="Search threads..."
-									type="search"
-									value={searchQuery}
-								/>
-							</div>
-
-							<Tabs
-								className="w-[300px]"
-								onValueChange={(value) =>
-									setActiveFilter(value as "all" | "channels" | "direct")
-								}
-								value={activeFilter}
-							>
-								<TabsList className="grid w-full grid-cols-3">
-									<TabsTrigger value="all">All</TabsTrigger>
-									<TabsTrigger value="channels">Channels</TabsTrigger>
-									<TabsTrigger value="direct">Direct</TabsTrigger>
-								</TabsList>
-							</Tabs>
-						</div>
+						<Tabs
+							className="w-[300px]"
+							onValueChange={(value) =>
+								setActiveFilter(value as "all" | "channels" | "direct")
+							}
+							value={activeFilter}
+						>
+							<TabsList className="grid w-full grid-cols-3">
+								<TabsTrigger value="all">All</TabsTrigger>
+								<TabsTrigger value="channels">Channels</TabsTrigger>
+								<TabsTrigger value="direct">Direct</TabsTrigger>
+							</TabsList>
+						</Tabs>
 					</div>
 
-					<div className="flex-1 overflow-y-auto p-6">
+					<div className="mt-6">
 						{filteredThreads?.length === 0 ? (
-							<div className="flex h-full flex-col items-center justify-center gap-y-2">
-								<Search className="size-12 text-muted-foreground" />
-								<h3 className="text-lg font-medium">No matching threads</h3>
-								<p className="text-sm text-muted-foreground">
-									Try adjusting your search or filters
-								</p>
-							</div>
+							<EmptyState
+								description="Try adjusting your search or filters"
+								icon={Search}
+								size="sm"
+								title="No matching threads"
+							/>
 						) : (
-							<div className="space-y-6 max-w-4xl mx-auto">
+							<div className="space-y-6">
 								{groupedThreads.today?.length > 0 && (
 									<div>
 										<div className="flex items-center gap-2 mb-4">
 											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 												Today
 											</h3>
 										</div>
@@ -411,7 +404,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 									<div>
 										<div className="flex items-center gap-2 mb-4">
 											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 												Yesterday
 											</h3>
 										</div>
@@ -427,7 +420,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 									<div>
 										<div className="flex items-center gap-2 mb-4">
 											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 												This Week
 											</h3>
 										</div>
@@ -443,7 +436,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 									<div>
 										<div className="flex items-center gap-2 mb-4">
 											<Clock className="h-4 w-4 text-muted-foreground" />
-											<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+											<h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 												Earlier
 											</h3>
 										</div>
@@ -457,7 +450,7 @@ const ThreadsContent = ({ workspaceId }: { workspaceId: Id<"workspaces"> }) => {
 							</div>
 						)}
 					</div>
-				</div>
+				</PageShell>
 			)}
 
 			{selectedThread && (

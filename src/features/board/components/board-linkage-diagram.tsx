@@ -66,10 +66,20 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 			setError(null);
 			try {
 				const mermaid = (await import("mermaid")).default;
-				const isDark = document.documentElement.classList.contains("dark");
+				const rootStyle = getComputedStyle(document.documentElement);
+				const cssVar = (name: string) =>
+					`hsl(${rootStyle.getPropertyValue(name).trim()})`;
 				mermaid.initialize({
 					startOnLoad: false,
-					theme: isDark ? "dark" : "neutral",
+					theme: "base",
+					themeVariables: {
+						primaryColor: cssVar("--card"),
+						primaryTextColor: cssVar("--foreground"),
+						primaryBorderColor: cssVar("--border"),
+						lineColor: cssVar("--primary"),
+						textColor: cssVar("--foreground"),
+						background: cssVar("--card"),
+					},
 					flowchart: { useMaxWidth: true, htmlLabels: false },
 				});
 
@@ -223,7 +233,7 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 							<div className="flex items-center gap-4 text-xs text-muted-foreground">
 								<span className="flex items-center gap-1.5">
 									<span className="inline-flex items-center gap-1">
-										<span className="w-6 inline-block border-t border-muted-foreground" />
+										<span className="w-6 inline-block border-t border-primary" />
 										<span>→</span>
 									</span>
 									blocks
@@ -235,7 +245,7 @@ const BoardLinkageDiagram: React.FC<BoardLinkageDiagramProps> = ({
 								)}
 							</div>
 							<div
-								className="overflow-auto rounded-md border bg-muted/20 p-4 min-h-40 max-h-[60vh]"
+								className="overflow-auto rounded-2xl border bg-card p-4 min-h-40 max-h-[60vh]"
 								ref={svgRef}
 							/>
 						</div>
