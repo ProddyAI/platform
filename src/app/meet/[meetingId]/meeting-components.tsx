@@ -14,6 +14,7 @@ import {
 	FileText,
 	Loader2,
 	MicOff,
+	Send,
 	Sparkles,
 	Target,
 	X,
@@ -998,8 +999,7 @@ export const NotesSidebar = ({
 							{currentGen && currentGen.decisions.length > 0 ? (
 								<>
 									<h3 className="text-sm font-semibold text-white flex items-center gap-2">
-										<Target className="size-4 text-emerald-400" /> Key
-										Decisions
+										<Target className="size-4 text-emerald-400" /> Key Decisions
 										<span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
 											{currentGen.decisions.length}
 										</span>

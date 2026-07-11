@@ -565,11 +565,7 @@ function BottomBarControls({
 				size="icon"
 				variant="outline"
 			>
-				{micMuted ? (
-					<MicOff className="size-5" />
-				) : (
-					<Mic className="size-5" />
-				)}
+				{micMuted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
 			</Button>
 
 			<Button

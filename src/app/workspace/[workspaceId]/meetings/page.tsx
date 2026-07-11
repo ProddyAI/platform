@@ -461,8 +461,8 @@ function NoteCard({
 								{currentGen?.summary || note.summary ? (
 									<div className="space-y-3">
 										<h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-											<FileText className="size-3.5 text-primary" />{" "}
-											Executive Summary
+											<FileText className="size-3.5 text-primary" /> Executive
+											Summary
 										</h4>
 										<div className="bg-muted/40 p-5 rounded-2xl border border-border">
 											<p className="text-sm text-foreground leading-[1.8]">

@@ -305,9 +305,7 @@ function ConnectedIntegrationRow({ app }: { app: IntegrationStatusApp }) {
 	const Icon = metadata?.icon ?? Zap;
 	return (
 		<div className="flex items-center gap-3 rounded-lg border border-success/20 bg-success/10 p-2">
-			<Icon
-				className={`size-4 ${metadata?.iconClassName ?? "text-success"}`}
-			/>
+			<Icon className={`size-4 ${metadata?.iconClassName ?? "text-success"}`} />
 			<div className="flex-1">
 				<div className="font-medium text-sm">{metadata?.name ?? app.app}</div>
 				<div className="text-xs text-muted-foreground">

@@ -154,9 +154,7 @@ export const TaskCategorySelector = ({
 											}}
 										>
 											<div className="flex size-4 items-center justify-center">
-												{value === category._id && (
-													<Check className="size-3" />
-												)}
+												{value === category._id && <Check className="size-3" />}
 											</div>
 											<div
 												className="size-3 rounded-full"

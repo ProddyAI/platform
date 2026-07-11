@@ -245,10 +245,7 @@ const NotesPage = () => {
 
 	return (
 		<LiveblocksRoom roomId={channelId} roomType="note">
-			<div
-				className="flex size-full overflow-hidden"
-				ref={pageContainerRef}
-			>
+			<div className="flex size-full overflow-hidden" ref={pageContainerRef}>
 				<NotesContent
 					activeNote={activeNote || null}
 					activeNoteId={activeNoteId}

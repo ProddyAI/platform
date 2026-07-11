@@ -349,7 +349,11 @@ export const Header = () => {
 							onClick={toggleMenu}
 							type="button"
 						>
-							{isMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+							{isMenuOpen ? (
+								<X className="size-6" />
+							) : (
+								<Menu className="size-6" />
+							)}
 						</button>
 					</div>
 				</div>
