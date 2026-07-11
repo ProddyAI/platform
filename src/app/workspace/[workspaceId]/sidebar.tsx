@@ -30,6 +30,7 @@ import type { Id } from "@/../convex/_generated/dataModel";
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { UserButton } from "@/features/auth/components/user-button";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useCreateChannelModal } from "@/features/channels/store/use-create-channel-modal";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
@@ -115,7 +116,7 @@ const DroppableItem = ({
 			{/* Toggle and "new" action are sibling controls, not nested —
 			    a button inside a button is invalid HTML and unreliable for
 			    screen readers and keyboard focus order. */}
-			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-lg px-2 md:px-4 py-2.5 transition-standard text-muted-foreground hover:bg-sidebar-accent">
+			<div className="group flex w-full items-center gap-x-2 md:gap-x-3 rounded-lg px-2 md:px-4 py-1.5 transition-standard text-muted-foreground hover:bg-sidebar-accent">
 				<button
 					className="flex flex-1 min-w-0 cursor-pointer items-center gap-x-2 md:gap-x-3 text-left"
 					onClick={handleToggle}
@@ -124,11 +125,11 @@ const DroppableItem = ({
 					{isCollapsed ? (
 						<div className="relative flex-shrink-0">
 							<Hint align="center" label={label} side="right">
-								<Icon className="size-4 md:size-5 flex-shrink-0" />
+								<Icon className="size-4 flex-shrink-0 text-muted-foreground/60" />
 							</Hint>
 						</div>
 					) : (
-						<Icon className="size-4 md:size-5 flex-shrink-0" />
+						<Icon className="size-4 flex-shrink-0 text-muted-foreground/60" />
 					)}
 
 					{!isCollapsed && (
@@ -236,9 +237,9 @@ export const WorkspaceSidebar = ({
 		Channels: activeTopSection === "Channels",
 		Projects: activeTopSection === "Projects",
 		Members: activeTopSection === "Members",
-		Planning: false,
-		Messages: false,
-		Settings: false,
+		Planning: true,
+		Messages: true,
+		Settings: true,
 	}));
 
 	// Rehydrate the user's last expanded/collapsed sections from a previous
@@ -363,14 +364,14 @@ export const WorkspaceSidebar = ({
 			{/* Scrollable content container */}
 			<div
 				className={cn(
-					"flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar",
+					"flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar py-3",
 					onMobileClose && "pb-4"
 				)}
 			>
 				{/* Dashboard Link - Hidden in footer on mobile, shown in overlay */}
 				<div
 					className={cn(
-						"mt-4 px-2 md:px-4",
+						"px-2 md:px-4",
 						onMobileClose ? "block" : "hidden md:block"
 					)}
 				>
@@ -660,28 +661,43 @@ export const WorkspaceSidebar = ({
 				</div>
 			</div>
 
-			{/* Collapse/Expand Button - Hidden in mobile overlay */}
-			{!onMobileClose && (
-				<div className="mt-auto mb-4 flex justify-center">
-					<Hint
-						label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-						side="right"
+			{/* Footer: account menu (bottom-left) + collapse toggle */}
+			<div
+				className={cn(
+					"mt-auto flex-shrink-0 border-t border-sidebar-border",
+					isCollapsed ? "px-1 py-3" : "px-3 py-3"
+				)}
+			>
+				<UserButton isCollapsed={isCollapsed} variant="sidebar" />
+
+				{/* Collapse/Expand Button - Hidden in mobile overlay */}
+				{!onMobileClose && (
+					<div
+						className={cn(
+							"mt-2 flex",
+							isCollapsed ? "justify-center" : "justify-end"
+						)}
 					>
-						<Button
-							className="size-8 rounded-full p-0 flex items-center justify-center hover:bg-sidebar-accent"
-							onClick={() => setIsCollapsed(!isCollapsed)}
-							size="sm"
-							variant="ghost"
+						<Hint
+							label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+							side="right"
 						>
-							{isCollapsed ? (
-								<PanelLeftOpen className="size-4 text-muted-foreground" />
-							) : (
-								<PanelLeftClose className="size-4 text-muted-foreground" />
-							)}
-						</Button>
-					</Hint>
-				</div>
-			)}
+							<Button
+								className="size-8 rounded-full p-0 flex items-center justify-center hover:bg-sidebar-accent"
+								onClick={() => setIsCollapsed(!isCollapsed)}
+								size="sm"
+								variant="ghost"
+							>
+								{isCollapsed ? (
+									<PanelLeftOpen className="size-4 text-muted-foreground" />
+								) : (
+									<PanelLeftClose className="size-4 text-muted-foreground" />
+								)}
+							</Button>
+						</Hint>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 };

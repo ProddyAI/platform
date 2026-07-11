@@ -43,7 +43,7 @@ const CollapsedButton = forwardRef<
 			<Button
 				ref={ref}
 				{...props}
-				className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center justify-center p-1 md:p-1.5 text-foreground hover:bg-sidebar-accent transition-standard"
+				className="h-11 md:h-12 group flex items-center justify-center p-1 md:p-1.5 text-foreground hover:bg-sidebar-accent transition-standard"
 				size="icon"
 				variant="ghost"
 			>
@@ -62,7 +62,7 @@ const ExpandedButton = forwardRef<
 >(function ExpandedButton({ workspace, ...props }, ref) {
 	return (
 		<Button
-			className="mt-3 md:mt-5 h-12 md:h-14 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-foreground hover:bg-sidebar-accent transition-standard"
+			className="h-11 md:h-12 group flex items-center gap-2 md:gap-4 overflow-hidden p-1.5 md:p-2.5 text-foreground hover:bg-sidebar-accent transition-standard"
 			ref={ref}
 			size="lg"
 			variant="ghost"

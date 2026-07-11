@@ -14,7 +14,7 @@ import {
 	Search,
 	Sparkles,
 } from "lucide-react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
 	type ChangeEvent,
 	type KeyboardEvent as ReactKeyboardEvent,
@@ -42,7 +42,6 @@ import {
 	CommandSeparator,
 } from "@/components/ui/command";
 import { useAiNotemakerStore } from "@/features/ai-notemaker/store/use-ai-notemaker-store";
-import { UserButton } from "@/features/auth/components/user-button";
 import { useBoardSearchStore } from "@/features/board/store/use-board-search";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
@@ -469,17 +468,12 @@ const SearchDialogContent = ({
 
 export const WorkspaceToolbar = () => {
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	const params = useParams<{ channelId?: string }>();
 	const workspaceId = useWorkspaceId();
 	const title = useWorkspaceTitleSlot();
 	const [searchOpen, setSearchOpen] = useWorkspaceSearch();
 	const [notificationsOpen, setNotificationsOpen] = useState(false);
 	const [isMac, setIsMac] = useState(true);
-	const [forceOpenUserSettings, setForceOpenUserSettings] = useState(false);
-	const [userSettingsTab, setUserSettingsTab] = useState<
-		"profile" | "notifications"
-	>("profile");
 
 	const { setIsOpen: setAiNotemakerOpen, generateNotes } =
 		useAiNotemakerStore();
@@ -589,27 +583,6 @@ export const WorkspaceToolbar = () => {
 			aiInputRef.current?.focus();
 		}
 	}, [searchOpen, useAI]);
-
-	// Handle URL parameter for opening user settings
-	useEffect(() => {
-		const openUserSettings = searchParams.get("openUserSettings");
-		if (
-			openUserSettings === "profile" ||
-			openUserSettings === "notifications"
-		) {
-			setUserSettingsTab(openUserSettings);
-			setForceOpenUserSettings(true);
-
-			// Clean up URL parameter
-			const newUrl = new URL(window.location.href);
-			newUrl.searchParams.delete("openUserSettings");
-			router.replace(newUrl.pathname + newUrl.search);
-		}
-	}, [searchParams, router]);
-
-	const handleUserSettingsClose = () => {
-		setForceOpenUserSettings(false);
-	};
 
 	const onChannelClick = useCallback(
 		(channelId: Id<"channels">) => {
@@ -912,13 +885,6 @@ export const WorkspaceToolbar = () => {
 				<PomodoroTimer />
 
 				<ThemeToggle />
-
-				{/* UserButton - Always visible (moved from footer on mobile) */}
-				<UserButton
-					defaultTab={userSettingsTab}
-					forceOpenSettings={forceOpenUserSettings}
-					onSettingsClose={handleUserSettingsClose}
-				/>
 			</div>
 		</nav>
 	);
